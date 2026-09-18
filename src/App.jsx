@@ -8,12 +8,12 @@ import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
 import { Read } from './site/Read.jsx'
 import { goHash, readHash } from './site/hash.js'
-import { closeSession, openSession, readSession } from './site/session.js'
 import './lib/did-i.css'
 import './site/site.css'
 
 const STORAGE_KEY = 'did-i-board'
-const KNOWN = new Set(['', '#', '#/', '#/name', '#/read', '#/tonight', '#/into'])
+const SITE = new Set(['/door', '/name', '/read', '/into'])
+const KNOWN = new Set(['', '#', '#/', '#/tonight', '#/door', '#/name', '#/read', '#/into'])
 
 function readStored() {
   try {
@@ -33,9 +33,17 @@ function writeStored(book) {
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(book))
   } catch {
-    // Demo still runs if storage is blocked.
+    // Hall still runs if storage is blocked.
   }
   saveBoardForSw(book)
+}
+
+function firstBook() {
+  const stored = readStored()
+  if (stored) return stored
+  const fresh = emptyBoard()
+  writeStored(fresh)
+  return fresh
 }
 
 function usePath() {
@@ -61,13 +69,12 @@ function usePath() {
 }
 
 export default function App() {
-  const [book, setBook] = useState(readStored)
-  const [session, setSession] = useState(() => readSession().open)
+  const [book, setBook] = useState(firstBook)
   const [pingState, setPingState] = useState(pingSupport)
   const [installEvent, setInstallEvent] = useState(null)
   const path = usePath()
   const hasBoard = Boolean(book && book.lamps && (book.lamps.length || book.title))
-  const view = path === '/tonight' && !session ? '/name' : path
+  const view = SITE.has(path) ? path : '/tonight'
 
   function change(next) {
     const normalized = unlockAchievements(normalizeBook(next), new Date())
@@ -75,31 +82,18 @@ export default function App() {
     writeStored(normalized)
   }
 
-  function enter() {
-    openSession()
-    setSession(true)
+  function openHall() {
     goHash('/tonight')
   }
 
   function openSample() {
     change(sampleBoard())
-    enter()
-  }
-
-  function openHere() {
-    if (book) change(book)
-    enter()
+    openHall()
   }
 
   function startEmpty(title) {
-    change({ ...emptyBoard(), title })
-    enter()
-  }
-
-  function leave() {
-    closeSession()
-    setSession(false)
-    goHash('/')
+    change({ ...emptyBoard(), title: (title && title.trim()) || 'My hall' })
+    openHall()
   }
 
   async function askPings() {
@@ -116,10 +110,6 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (path === '/tonight' && !session) goHash('/name')
-  }, [path, session])
-
-  useEffect(() => {
     if (book) {
       saveBoardForSw(book)
       armLampPings(book)
@@ -133,8 +123,6 @@ export default function App() {
     }
     function onMessage(event) {
       if (event.data && event.data.type === 'did-i-open') {
-        openSession()
-        setSession(true)
         goHash('/tonight')
       }
     }
@@ -148,26 +136,27 @@ export default function App() {
 
   useEffect(() => {
     const titles = {
-      '/': 'Did I',
+      '/door': 'Did I',
       '/name': 'Name the board · Did I',
       '/read': 'How to use Did I',
       '/into': 'Drop into React · Did I',
       '/tonight': `${book?.title || 'Hall'} · Did I`,
     }
-    document.title = titles[view] || 'Did I'
+    document.title = titles[view] || `${book?.title || 'Hall'} · Did I`
   }, [view, book])
 
   const pingLabel = pingButtonLabel(pingState)
   const installLabel = installEvent ? 'Install' : ''
 
-  if (view === '/tonight') {
+  if (!SITE.has(path)) {
     const live = book || emptyBoard()
     return (
       <Tonight
         value={live}
         onChange={change}
         onResetSample={openSample}
-        onLeave={leave}
+        onStartEmpty={() => startEmpty('My hall')}
+        onLeave={() => goHash('/door')}
         onRead={() => goHash('/read')}
         pingLabel={pingLabel}
         onAskPings={pingLabel ? askPings : undefined}
@@ -182,7 +171,7 @@ export default function App() {
       <NameBoard
         currentTitle={book?.title || ''}
         hasBoard={Boolean(book)}
-        onOpenHere={openHere}
+        onOpenHere={openHall}
         onOpenSample={openSample}
         onStartEmpty={startEmpty}
       />
@@ -192,7 +181,7 @@ export default function App() {
   if (view === '/into') return <Into />
   return (
     <Door
-      hasBoard={hasBoard && session}
+      hasBoard={hasBoard}
       title={book?.title || 'the hall'}
       canInstall={Boolean(installEvent)}
       onInstall={installHall}

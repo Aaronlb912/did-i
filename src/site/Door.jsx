@@ -3,7 +3,7 @@ import { SiteNav } from './SiteNav.jsx'
 export function Door({ hasBoard, title, canInstall, onInstall }) {
   return (
     <div className="di-site">
-      <SiteNav path="/" />
+      <SiteNav path="/door" />
       <main className="di-door">
         <section className="di-door-plate">
           <p className="di-face-plate">By the door</p>
@@ -17,7 +17,7 @@ export function Door({ hasBoard, title, canInstall, onInstall }) {
             house if you want to try it first.
           </p>
           <p className="di-door-actions">
-            <a className="di-did di-did-small di-link-did" href="#/tonight">
+            <a className="di-did di-did-small di-link-did" href="#/">
               {hasBoard ? `Open ${title}` : 'Open the hall'}
             </a>
             <a className="di-skip" href="#/name">

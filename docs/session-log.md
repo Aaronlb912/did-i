@@ -32,3 +32,15 @@ when the browser allows it. iOS pings stay weak.
 
 Next session: Capacitor or ship only if he asks.
 
+## 2026-09-18 hall is the app
+
+What runs: http://127.0.0.1:48741/
+
+What landed: `#/` is the hall. First visit writes empty My
+hall. No session gate. Door / Name / How / Into stay under
+`#/door` and friends. Tray has Start empty. Hayes Street is
+a sample, not the starting board.
+
+Next session: Capacitor from did-i-phone-prompt.md only if
+he asks.
+

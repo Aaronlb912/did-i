@@ -35,7 +35,7 @@ export function Read() {
             u undoes the last tap for a few seconds.
           </p>
           <p>
-            <a className="di-skip" href="#/tonight">
+            <a className="di-skip" href="#/">
               Open the hall
             </a>
           </p>

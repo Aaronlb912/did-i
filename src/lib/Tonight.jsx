@@ -38,6 +38,7 @@ export function Tonight({
   onChange,
   now,
   onResetSample,
+  onStartEmpty,
   onLeave,
   onRead,
   pingLabel,
@@ -532,6 +533,11 @@ export function Tonight({
               >
                 {value.quietMode ? 'Show pips' : 'Quiet mode'}
               </button>
+              {onStartEmpty ? (
+                <button className="di-text" type="button" onClick={onStartEmpty}>
+                  Start empty
+                </button>
+              ) : null}
               {onResetSample ? (
                 <button className="di-text" type="button" onClick={onResetSample}>
                   Hayes Street sample

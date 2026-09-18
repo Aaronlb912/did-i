@@ -5,6 +5,9 @@ Did I. The unanswered question for this window. Hit DID.
 Prompt file (do not wait for a paste):
 `C:\Users\aaron\OneDrive\Documents\prompts\other prompts\did-i-prompt.md`
 
+Phone later, only when he asks:
+`C:\Users\aaron\OneDrive\Documents\prompts\other prompts\did-i-phone-prompt.md`
+
 Ship later, only when he asks:
 `C:\Users\aaron\OneDrive\Documents\prompts\multi-session-build-prompt-react.md`
 
@@ -15,13 +18,14 @@ Repo folder: `C:\Users\aaron\Documents\did-i`
 Port: 48741
 
 Pages:
-- Door `#/`
+- Hall `#/` and `#/tonight`
+- Door (site) `#/door`
 - Name `#/name`
 - How `#/read`
-- Tonight `#/tonight`
 - Drop in `#/into`
 
-Auth: none. Name is this browser opening a board.
+Auth: none. This browser is the board. First visit is empty
+My hall. Hayes Street is a tray sample.
 
 Sample: Hayes Street, apt 3.
 
@@ -44,16 +48,18 @@ Sample: Hayes Street, apt 3.
 - [x] C. Copy.
 - [x] M. Motion.
 - [x] PWA. Installable, offline, ask-after pings.
-- [ ] Capacitor. Only if he asks.
+- [x] Hall is the app. Site lives at `#/door` and friends.
+      No session gate.
+- [ ] Capacitor. Phone prompt, only if he asks.
 - [ ] Session ship: only when he asks.
 
 ## This session
 
-PWA. Installable hall, offline cache, Ask at lamp time.
+Split the hall from the brochure. Open `#/` and use it.
 
 ## Next session
 
-Capacitor or ship, only if he asks.
+Capacitor from the phone prompt, only if he asks.
 
 ## What SHIPPED means
 
@@ -62,10 +68,10 @@ hub, shipped-kinds. Only when he asks.
 
 ## Go deep (done-means)
 
-A person can see tonight’s question, DID / skip / undo, hang
-daily weekly monthly once every N, catch up last time, miss,
-download JSON, land, name a board, read How, keep work after
-refresh. Host apps get `value` / `onChange`.
+A person can open the local URL and use the hall. DID /
+skip / undo, hang daily weekly monthly once every N, catch
+up last time, miss, download JSON, keep work after refresh.
+Host apps get `value` / `onChange`. Site pages stay optional.
 
 ## Usefulness
 

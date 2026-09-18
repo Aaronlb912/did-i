@@ -1,4 +1,4 @@
-const ROUTES = new Set(['/', '/name', '/read', '/tonight', '/into'])
+const ROUTES = new Set(['/', '/tonight', '/door', '/name', '/read', '/into'])
 
 export function readHash() {
   let raw = window.location.hash.replace(/^#/, '')

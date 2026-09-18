@@ -6,7 +6,7 @@ tonight is not that night.
 
 For anyone who wants that tap without an account.
 
-## Run the demo
+## Run it
 
 ```
 npm install
@@ -15,15 +15,20 @@ npm start
 
 Local URL: http://127.0.0.1:48741/
 
-- Door: http://127.0.0.1:48741/#/
+That URL is the hall. Hang lamps and tap tonight. The board
+stays in this browser. First visit is an empty board named
+My hall. Rename it on the plate. Tray has JSON download and
+load, Start empty, and the Hayes Street sample if you want
+a fake apartment.
+
+Site pages (not the app):
+
+- Door: http://127.0.0.1:48741/#/door
 - Name: http://127.0.0.1:48741/#/name
 - How: http://127.0.0.1:48741/#/read
-- Tonight: http://127.0.0.1:48741/#/tonight
 - Drop in: http://127.0.0.1:48741/#/into
 
-The board stays in this browser. Tray has JSON download and
-load. Print tonight makes a fridge slip. Hayes Street is the
-sample.
+`#/tonight` still opens the hall.
 
 Chrome can install this hall from the address bar, or from
 Install in the tray when the browser offers it. After that it
@@ -34,7 +39,8 @@ there are weak.
 
 ## Drop into a React app
 
-Copy `src/lib/` into your `src/`.
+Copy `src/lib/` into your `src/`. Site pages stay in
+`src/site/` and are not part of the drop-in.
 
 ```
 import { Tonight, sampleBoard, emptyBoard } from './lib'
@@ -52,4 +58,4 @@ one of those.
 
 Hayes Street, apt 3. Jordan Hale, jordan@hayes-street.example.
 Evening pills, back door, Sunday bins, water bill, fern, lease
-paper.
+paper. Tray, or Name, loads it. It is not the starting board.

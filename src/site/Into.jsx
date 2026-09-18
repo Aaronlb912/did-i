@@ -17,7 +17,7 @@ export function Into() {
             if you need a frozen clock.
           </p>
           <p>
-            <a className="di-skip" href="#/">
+            <a className="di-skip" href="#/door">
               Back to the door
             </a>
           </p>
