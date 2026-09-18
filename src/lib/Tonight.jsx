@@ -171,7 +171,7 @@ export function Tonight({ value, onChange, now, onResetSample }) {
     change(next)
     setOpenId('')
     if (faceId === lamp.id) setFaceId('')
-    armUndo({ book: value, label: 'Lamp put back.' })
+    armUndo({ book: value, label: 'Lamp taken down.' })
   }
 
   function saveTitle() {
