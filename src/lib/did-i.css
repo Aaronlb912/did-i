@@ -1,0 +1,376 @@
+:root {
+  --di-hall: #1c1410;
+  --di-hall-ink: #f3ece3;
+  --di-board: #3a3228;
+  --di-board-edge: #2a241c;
+  --di-plate: #efe6d8;
+  --di-ink: #1c1410;
+  --di-ink-soft: #6a5d50;
+  --di-unlit: #4a4036;
+  --di-lit: #e6a23c;
+  --di-late: #c5d0c4;
+  --di-skip: #8a7d6b;
+  --di-miss: #8c3b28;
+  --di-focus: #e6a23c;
+  --di-question: 'Century Gothic', 'Gill Sans', 'Trebuchet MS', sans-serif;
+  --di-ui: Verdana, 'Geneva', sans-serif;
+  --di-did: 'Gill Sans', 'Century Gothic', 'Trebuchet MS', sans-serif;
+  --di-move: 160ms;
+  --di-ease: ease-out;
+}
+
+.di-hall {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 2rem 1rem 3rem;
+  background: var(--di-hall);
+  color: var(--di-hall-ink);
+  font-family: var(--di-ui);
+}
+
+.di-board {
+  width: min(32rem, 100%);
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 1rem;
+  background: var(--di-board);
+  border: 10px solid var(--di-board-edge);
+  color: var(--di-plate);
+}
+
+.di-mast {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.di-title,
+.di-title-input {
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
+  color: var(--di-plate);
+  padding: 0;
+  cursor: pointer;
+}
+
+.di-title-input {
+  border-bottom: 1px solid var(--di-lit);
+  width: 12rem;
+  cursor: text;
+}
+
+.di-date {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--di-skip);
+}
+
+.di-face,
+.di-clear,
+.di-empty,
+.di-hang,
+.di-detail {
+  background: var(--di-plate);
+  color: var(--di-ink);
+  padding: 1.4rem 1.2rem 1.3rem;
+  min-height: 16rem;
+  box-sizing: border-box;
+}
+
+.di-face-plate,
+.di-hang-kicker,
+.di-empty-plate {
+  margin: 0 0 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--di-ink-soft);
+}
+
+.di-question {
+  margin: 0 0 0.4rem;
+  font-family: var(--di-question);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 5vw, 2.35rem);
+  line-height: 1.15;
+}
+
+.di-face-short,
+.di-clear p,
+.di-empty p,
+.di-detail-meta,
+.di-hang-note {
+  margin: 0 0 1.2rem;
+  color: var(--di-ink-soft);
+  font-size: 0.9rem;
+}
+
+.di-rockers,
+.di-hang-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.di-did {
+  font-family: var(--di-did);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  min-width: 7.5rem;
+  min-height: 3.4rem;
+  padding: 0.35rem 1.2rem 0.45rem;
+  border: 0;
+  background: var(--di-ink);
+  color: var(--di-plate);
+  cursor: pointer;
+}
+
+.di-did:active {
+  transform: translateY(3px);
+}
+
+.di-did-small {
+  font-size: 1rem;
+  min-width: 5.5rem;
+  min-height: 2.6rem;
+}
+
+.di-skip,
+.di-text {
+  font: inherit;
+  font-size: 0.95rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  min-height: 2.5rem;
+}
+
+.di-skip {
+  color: var(--di-ink-soft);
+}
+
+.di-screws .di-text,
+.di-tray .di-text,
+.di-undo .di-text {
+  color: var(--di-plate);
+}
+
+.di-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.85rem;
+}
+
+.di-field span {
+  color: var(--di-ink-soft);
+}
+
+.di-field input,
+.di-field select {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-bottom: 2px solid var(--di-ink);
+  background: transparent;
+  color: var(--di-ink);
+}
+
+.di-miss {
+  margin: 0 0 0.8rem;
+  color: var(--di-miss);
+  font-size: 0.92rem;
+}
+
+.di-strip {
+  list-style: none;
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  padding: 0.2rem 0 0;
+}
+
+.di-strip-jewel {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--di-unlit);
+}
+
+.di-strip-jewel.is-yes {
+  background: var(--di-lit);
+}
+
+.di-strip-jewel.is-late {
+  background: var(--di-late);
+}
+
+.di-strip-jewel.is-skip {
+  background: var(--di-skip);
+}
+
+.di-edge {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.di-jewel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 3.6rem;
+  padding: 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--di-skip);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.di-jewel-glass {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: var(--di-unlit);
+  border: 2px solid #2a241c;
+}
+
+.di-jewel.is-on .di-jewel-glass {
+  background: var(--di-lit);
+}
+
+.di-jewel.is-late .di-jewel-glass {
+  background: var(--di-late);
+}
+
+.di-jewel.is-skip .di-jewel-glass {
+  background: var(--di-skip);
+}
+
+.di-jewel.is-face .di-jewel-label {
+  color: var(--di-plate);
+}
+
+.di-screws {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.di-tray {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--di-unlit);
+  font-size: 0.85rem;
+}
+
+.di-tray-lamps {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+}
+
+.di-tray-lamps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.di-tray-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.di-undo {
+  margin: 0.8rem 0 0;
+  font-size: 0.85rem;
+}
+
+.di-detail-q {
+  margin: 0 0 0.4rem;
+  font-family: var(--di-question);
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+
+.di-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.di-did:focus-visible,
+.di-skip:focus-visible,
+.di-text:focus-visible,
+.di-jewel:focus-visible,
+.di-title:focus-visible,
+.di-title-input:focus-visible,
+.di-field input:focus-visible,
+.di-field select:focus-visible {
+  outline: 2px solid var(--di-focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-did:active {
+    transform: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .di-hall {
+    padding: 0;
+  }
+
+  .di-board {
+    width: 100%;
+    min-height: 100vh;
+    border-width: 0;
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .di-question {
+    font-size: 1.85rem;
+  }
+
+  .di-edge {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+}
+
+@media print {
+  .di-screws,
+  .di-tray,
+  .di-undo,
+  .di-rockers,
+  .di-hang-actions {
+    display: none;
+  }
+
+  .di-hall {
+    background: white;
+    color: black;
+  }
+}
