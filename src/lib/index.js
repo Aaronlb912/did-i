@@ -38,8 +38,11 @@ export { ACHIEVEMENTS, unlockAchievements } from './achievements.js'
 export { saveBoardForSw, loadBoardForSw } from './board-store.js'
 export {
   armLampPings,
+  checkPings,
   pingButtonLabel,
   pingSupport,
   requestPings,
   upcomingPings,
 } from './notify.js'
+export { hallHeat, filamentLevel, hallHour } from './hall-feel.js'
+export { isNativeHall, shareBook } from './native.js'

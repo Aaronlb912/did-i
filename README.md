@@ -28,7 +28,8 @@ Site pages (not the app):
 - How: http://127.0.0.1:48741/#/read
 - Drop in: http://127.0.0.1:48741/#/into
 
-`#/tonight` still opens the hall.
+`#/tonight` still opens the hall. A ping can open
+`#/?face=lamp-id` so that lamp is on the plate.
 
 Chrome can install this hall from the address bar, or from
 Install in the tray when the browser offers it. After that it
@@ -36,6 +37,29 @@ works offline. Ask at lamp time is in the tray. Pings use this
 browser, not a server. They fire if the hall was opened today.
 Android and desktop Chrome first. An iPhone can install. Pings
 there are weak.
+
+Tray: Click on DID is a short click, off by default. Quiet
+mode still hides the enamel marks.
+
+## Phone (Android)
+
+Same hall, wrapped with Capacitor. App id
+`com.aaronbryant.didi`.
+
+Needs JDK 17+ and Android SDK. Then:
+
+```
+npm run cap:apk
+```
+
+The debug APK lands at
+`android/app/build/outputs/apk/debug/app-debug.apk`.
+Copy that file to a phone and install it. First open is the
+hall. Ask at lamp time is in the tray. That ping does not
+need a browser tab left open.
+
+iOS needs a Mac and Xcode. This Windows machine cannot
+build that binary.
 
 ## Drop into a React app
 
@@ -52,7 +76,7 @@ import { Tonight, sampleBoard, emptyBoard } from './lib'
 Pass `now` if you need a frozen clock.
 
 Old JSON still loads. New fields fill in blank. `inkNote` is
-one of those.
+one of those. `clickSound` is another.
 
 ## Sample
 

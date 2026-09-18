@@ -44,3 +44,19 @@ a sample, not the starting board.
 Next session: Capacitor from did-i-phone-prompt.md only if
 he asks.
 
+## 2026-09-18 phone hall
+
+What runs: http://127.0.0.1:48741/
+
+What landed: Capacitor 8, app id `com.aaronbryant.didi`,
+Android project, dark splash, amber jewel icon, safe area,
+thumb DID at 390. Local notification schedule, haptics,
+Share JSON on native, `?face=` from a ping. Hall heat,
+filament, night sit, Click on DID (off by default). iOS
+needs a Mac. APK needs JDK 17 and Android SDK, then
+`npm run cap:apk`.
+
+Next session: build the APK once Java and the SDK are on
+this machine, or ship if he asks.
+
+

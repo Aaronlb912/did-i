@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Did I</string>
+    <string name="title_activity_main">Did I</string>
+    <string name="package_name">com.aaronbryant.didi</string>
+    <string name="custom_url_scheme">com.aaronbryant.didi</string>
+</resources>

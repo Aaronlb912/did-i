@@ -1,13 +1,23 @@
 import { boardDate, waitingTonight } from './recurrence.js'
+import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 
 const timers = []
 
 export function pingSupport() {
+  if (isNativeHall()) return 'default'
   if (typeof window === 'undefined' || !('Notification' in window)) return 'missing'
   return Notification.permission
 }
 
+export async function checkPings() {
+  const native = await checkNativePings()
+  if (native) return native
+  return pingSupport()
+}
+
 export async function requestPings() {
+  const native = await requestNativePings()
+  if (native) return native
   if (!('Notification' in window)) return 'missing'
   try {
     return await Notification.requestPermission()
@@ -37,7 +47,7 @@ export function upcomingPings(book, now = new Date()) {
 }
 
 async function readyWorker() {
-  if (!('serviceWorker' in navigator)) return null
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null
   try {
     return await navigator.serviceWorker.ready
   } catch {
@@ -50,7 +60,7 @@ function showPing(reg, fire) {
     body: fire.question,
     tag: fire.tag,
     icon: './icon-192.png',
-    data: { url: './#/tonight' },
+    data: { url: `./#/?face=${encodeURIComponent(fire.id)}`, lampId: fire.id },
   }
   if (reg && reg.showNotification) return reg.showNotification('Did I', opts)
   return new Notification('Did I', opts)
@@ -59,7 +69,10 @@ function showPing(reg, fire) {
 export async function armLampPings(book, now = new Date()) {
   for (const id of timers) window.clearTimeout(id)
   timers.length = 0
-  if (!book || pingSupport() !== 'granted') return
+  await scheduleNativePings(book, now)
+  const allowed = isNativeHall() ? (await checkNativePings()) === 'granted' : pingSupport() === 'granted'
+  if (!book || !allowed) return
+  if (isNativeHall()) return
   const reg = await readyWorker()
   const fires = upcomingPings(book, now)
   for (const fire of fires) {

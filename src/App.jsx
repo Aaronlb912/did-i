@@ -2,18 +2,24 @@ import { useEffect, useState } from 'react'
 import { Tonight, emptyBoard, normalizeBook, sampleBoard } from './lib/index.js'
 import { unlockAchievements } from './lib/achievements.js'
 import { saveBoardForSw } from './lib/board-store.js'
-import { armLampPings, pingButtonLabel, pingSupport, requestPings } from './lib/notify.js'
+import {
+  armLampPings,
+  checkPings,
+  pingButtonLabel,
+  pingSupport,
+  requestPings,
+} from './lib/notify.js'
+import { bootNative, isNativeHall, listenNativeShell, shareBook } from './lib/native.js'
 import { Door } from './site/Door.jsx'
 import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
 import { Read } from './site/Read.jsx'
-import { goHash, readHash } from './site/hash.js'
+import { goHash, parseHash } from './site/hash.js'
 import './lib/did-i.css'
 import './site/site.css'
 
 const STORAGE_KEY = 'did-i-board'
 const SITE = new Set(['/door', '/name', '/read', '/into'])
-const KNOWN = new Set(['', '#', '#/', '#/tonight', '#/door', '#/name', '#/read', '#/into'])
 
 function readStored() {
   try {
@@ -46,33 +52,28 @@ function firstBook() {
   return fresh
 }
 
-function usePath() {
-  const [path, setPath] = useState(readHash)
+function useRoute() {
+  const [route, setRoute] = useState(parseHash)
 
   useEffect(() => {
     function onHash() {
-      if (!KNOWN.has(window.location.hash) && window.location.hash) {
-        window.history.replaceState(
-          null,
-          '',
-          `${window.location.pathname}${window.location.search}#/`,
-        )
-      }
-      setPath(readHash())
+      setRoute(parseHash())
     }
     window.addEventListener('hashchange', onHash)
     onHash()
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  return path
+  return route
 }
 
 export default function App() {
   const [book, setBook] = useState(firstBook)
   const [pingState, setPingState] = useState(pingSupport)
   const [installEvent, setInstallEvent] = useState(null)
-  const path = usePath()
+  const [nativeShare, setNativeShare] = useState(false)
+  const route = useRoute()
+  const path = route.path
   const hasBoard = Boolean(book && book.lamps && (book.lamps.length || book.title))
   const view = SITE.has(path) ? path : '/tonight'
 
@@ -82,8 +83,8 @@ export default function App() {
     writeStored(normalized)
   }
 
-  function openHall() {
-    goHash('/tonight')
+  function openHall(face = '') {
+    goHash('/', face)
   }
 
   function openSample() {
@@ -109,6 +110,14 @@ export default function App() {
     setInstallEvent(null)
   }
 
+  async function sendCopy() {
+    try {
+      await shareBook(book)
+    } catch {
+      // Desktop download still works from the tray.
+    }
+  }
+
   useEffect(() => {
     if (book) {
       saveBoardForSw(book)
@@ -117,20 +126,37 @@ export default function App() {
   }, [book])
 
   useEffect(() => {
+    checkPings().then(setPingState)
+    setNativeShare(isNativeHall() || Boolean(navigator.share))
+    bootNative()
     function onInstall(event) {
       event.preventDefault()
       setInstallEvent(event)
     }
     function onMessage(event) {
       if (event.data && event.data.type === 'did-i-open') {
-        goHash('/tonight')
+        openHall(event.data.lampId || '')
       }
     }
     window.addEventListener('beforeinstallprompt', onInstall)
     navigator.serviceWorker?.addEventListener('message', onMessage)
+    const stop = listenNativeShell({
+      onBack() {
+        const now = parseHash()
+        if (SITE.has(now.path)) {
+          goHash('/')
+          return
+        }
+        window.dispatchEvent(new CustomEvent('did-i-back'))
+      },
+      onOpenLamp(lampId) {
+        openHall(lampId || '')
+      },
+    })
     return () => {
       window.removeEventListener('beforeinstallprompt', onInstall)
       navigator.serviceWorker?.removeEventListener('message', onMessage)
+      stop()
     }
   }, [])
 
@@ -158,6 +184,8 @@ export default function App() {
         onStartEmpty={() => startEmpty('My hall')}
         onLeave={() => goHash('/door')}
         onRead={() => goHash('/read')}
+        onShare={nativeShare ? sendCopy : undefined}
+        focusLampId={route.face}
         pingLabel={pingLabel}
         onAskPings={pingLabel ? askPings : undefined}
         installLabel={installLabel}
@@ -171,7 +199,7 @@ export default function App() {
       <NameBoard
         currentTitle={book?.title || ''}
         hasBoard={Boolean(book)}
-        onOpenHere={openHall}
+        onOpenHere={() => openHall()}
         onOpenSample={openSample}
         onStartEmpty={startEmpty}
       />

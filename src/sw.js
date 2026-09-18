@@ -19,7 +19,7 @@ async function pingDue() {
       body: row.lamp.question,
       tag: row.periodKey,
       icon: './icon-192.png',
-      data: { url: './#/tonight' },
+      data: { url: `./#/?face=${encodeURIComponent(row.lamp.id)}`, lampId: row.lamp.id },
     })
   }
 }
@@ -30,7 +30,7 @@ self.addEventListener('periodicsync', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const dest = event.notification.data?.url || './#/tonight'
+  const dest = event.notification.data?.url || './#/'
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({
@@ -40,7 +40,10 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of windows) {
         if ('focus' in client) {
           await client.focus()
-          client.postMessage({ type: 'did-i-open' })
+          client.postMessage({
+            type: 'did-i-open',
+            lampId: event.notification.data?.lampId || '',
+          })
           return
         }
       }

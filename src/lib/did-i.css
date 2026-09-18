@@ -21,11 +21,41 @@
 
 .di-hall {
   min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
-  padding: 2rem 1rem 3rem;
+  padding: max(2rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(3rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   background: var(--di-hall);
   color: var(--di-hall-ink);
   font-family: var(--di-ui);
+}
+
+.di-hall[data-hour='night'] {
+  --di-hall: #140f0c;
+}
+
+.di-hall[data-sit='on'] {
+  --di-hall: #201610;
+}
+
+.di-board[data-heat='1'] {
+  background: #40362c;
+}
+
+.di-board[data-heat='2'] {
+  background: #463a2e;
+}
+
+.di-board[data-heat='3'] {
+  background: #4c4032;
+}
+
+.di-board[data-heat='4'] {
+  background: #524634;
+}
+
+.di-board[data-heat='5'] {
+  background: #584c36;
 }
 
 .di-board {
@@ -280,6 +310,23 @@
   background: var(--di-lit);
 }
 
+.di-jewel.is-on[data-filament='2'] .di-jewel-glass {
+  background: #ebb04a;
+}
+
+.di-jewel.is-on[data-filament='3'] .di-jewel-glass {
+  background: #f0bc58;
+}
+
+.di-jewel.is-on[data-filament='4'] .di-jewel-glass {
+  background: #f6c86a;
+}
+
+.di-jewel.is-sit .di-jewel-glass {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .di-jewel.is-late .di-jewel-glass,
 .di-jewel.is-late:hover .di-jewel-glass {
   background: var(--di-late);
@@ -442,6 +489,11 @@
 
 .di-clear-on {
   background: #f4ead4;
+  min-height: 14rem;
+}
+
+.di-clear-on .di-question {
+  font-size: clamp(1.9rem, 6vw, 2.6rem);
 }
 
 .di-print-slip {
@@ -490,22 +542,43 @@
 
 @media (max-width: 430px) {
   .di-hall {
-    padding: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
   }
 
   .di-board {
     width: 100%;
-    min-height: 100vh;
-    border-width: 0;
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border-width: 8px;
     padding: 1rem 1rem 1.5rem;
   }
 
   .di-question {
-    font-size: 1.85rem;
+    font-size: 1.95rem;
+  }
+
+  .di-rockers {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .di-did {
-    min-height: 3.6rem;
+    min-width: 100%;
+    min-height: 4.6rem;
+    font-size: 2rem;
+  }
+
+  .di-skip {
+    min-height: 2.8rem;
+  }
+
+  .di-jewel {
+    min-width: 4.2rem;
+  }
+
+  .di-jewel-glass {
+    width: 1.45rem;
+    height: 1.45rem;
   }
 
   .di-edge {

@@ -14,6 +14,8 @@ import {
   parseBookText,
   shortLabel,
 } from './board-json.js'
+import { filamentLevel, hallHeat, hallHour } from './hall-feel.js'
+import { feelTap, playClick } from './native.js'
 import {
   allClearTonight,
   boardDate,
@@ -45,6 +47,8 @@ export function Tonight({
   onAskPings,
   installLabel,
   onInstall,
+  onShare,
+  focusLampId,
 }) {
   const clock = now || new Date()
   const fileRef = useRef(null)
@@ -68,6 +72,8 @@ export function Tonight({
   const waiting = waitingTonight(value, clock)
   const catchUp = catchUpRows(value, clock)
   const hallOn = allClearTonight(value, clock)
+  const heat = hallHeat(value, clock)
+  const hour = hallHour(clock)
   const empty = (value.lamps || []).filter((lamp) => !lamp.archived).length === 0
   const slotsUsed = new Set(due.map((row) => row.lamp.slot || 'whenever'))
   const showSlotGroups = slotsUsed.size > 1
@@ -78,6 +84,32 @@ export function Tonight({
   useEffect(() => {
     setTitleDraft(value.title)
   }, [value.title])
+
+  useEffect(() => {
+    if (focusLampId) setFaceId(focusLampId)
+  }, [focusLampId])
+
+  function closePlates() {
+    if (hanging || editLamp || openId || trayOpen || titleEdit || holePick) {
+      setHanging(false)
+      setEditLamp(null)
+      setHangMiss('')
+      setOpenId('')
+      setTrayOpen(false)
+      setTitleEdit(false)
+      setHolePick(null)
+      return true
+    }
+    return false
+  }
+
+  useEffect(() => {
+    function onBack() {
+      closePlates()
+    }
+    window.addEventListener('did-i-back', onBack)
+    return () => window.removeEventListener('did-i-back', onBack)
+  })
 
   useEffect(() => {
     return () => {
@@ -170,10 +202,15 @@ export function Tonight({
   function mark(row, status) {
     if (!row) return
     const next = writeAnswer(row, status)
+    const wasClear = allClearTonight(value, clock)
     change(next)
     setFaceId('')
     setHolePick(null)
     armUndo({ book: value, label: 'Tap saved.' })
+    if (status === 'skip') feelTap('skip')
+    else feelTap('did')
+    if (value.clickSound && status === 'yes') playClick()
+    if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
   }
 
   function moveFace(step) {
@@ -372,14 +409,19 @@ export function Tonight({
       <section className="di-clear di-clear-on">
         <p className="di-face-plate">Tonight</p>
         <h2 className="di-question">The hall is on.</h2>
-        <p>Every lamp that needed a tap got one.</p>
+        <p>Every lamp that needed a tap got one. The lights are still on if you want to look.</p>
       </section>
     )
   }
 
   return (
-    <div className="di-hall">
-      <div className="di-board">
+    <div
+      className="di-hall"
+      data-heat={heat}
+      data-hour={hour}
+      data-sit={hallOn ? 'on' : 'ask'}
+    >
+      <div className="di-board" data-heat={heat}>
         <header className="di-mast">
           {titleEdit ? (
             <input
@@ -455,9 +497,11 @@ export function Tonight({
                                 late ? 'is-late' : '',
                                 row.waiting ? 'is-wait' : '',
                                 isFace ? 'is-face' : '',
+                                hallOn && on ? 'is-sit' : '',
                               ]
                                 .filter(Boolean)
                                 .join(' ')}
+                              data-filament={on ? filamentLevel(value, row.lamp.id) : 0}
                               onClick={() => jewelClick(row)}
                             >
                               <span className="di-jewel-glass" />
@@ -533,6 +577,18 @@ export function Tonight({
               >
                 {value.quietMode ? 'Show pips' : 'Quiet mode'}
               </button>
+              <button
+                className="di-text"
+                type="button"
+                onClick={() => change({ ...value, clickSound: !value.clickSound })}
+              >
+                {value.clickSound ? 'Click off' : 'Click on DID'}
+              </button>
+              {onShare ? (
+                <button className="di-text" type="button" onClick={onShare}>
+                  Share JSON
+                </button>
+              ) : null}
               {onStartEmpty ? (
                 <button className="di-text" type="button" onClick={onStartEmpty}>
                   Start empty
