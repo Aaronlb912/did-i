@@ -26,7 +26,9 @@ export function Read() {
           <p>
             Tray has JSON if you want a copy. Print tonight makes a fridge slip
             of what is still unanswered. Quiet mode hides the little enamel
-            marks.
+            marks. Ask at lamp time is in the tray. Chrome and Android can ping
+            at the ask-after hour if this hall was opened today. An iPhone can
+            install the page. Pings there are weak.
           </p>
           <p>
             y or space is DID. s is skip. n hangs a lamp. Escape closes a plate.

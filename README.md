@@ -25,6 +25,13 @@ The board stays in this browser. Tray has JSON download and
 load. Print tonight makes a fridge slip. Hayes Street is the
 sample.
 
+Chrome can install this hall from the address bar, or from
+Install in the tray when the browser offers it. After that it
+works offline. Ask at lamp time is in the tray. Pings use this
+browser, not a server. They fire if the hall was opened today.
+Android and desktop Chrome first. An iPhone can install. Pings
+there are weak.
+
 ## Drop into a React app
 
 Copy `src/lib/` into your `src/`.

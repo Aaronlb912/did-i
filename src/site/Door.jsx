@@ -1,6 +1,6 @@
 import { SiteNav } from './SiteNav.jsx'
 
-export function Door({ hasBoard, title }) {
+export function Door({ hasBoard, title, canInstall, onInstall }) {
   return (
     <div className="di-site">
       <SiteNav path="/" />
@@ -23,6 +23,11 @@ export function Door({ hasBoard, title }) {
             <a className="di-skip" href="#/name">
               Name this board
             </a>
+            {canInstall && onInstall ? (
+              <button className="di-skip" type="button" onClick={onInstall}>
+                Install
+              </button>
+            ) : null}
           </p>
         </section>
       </main>

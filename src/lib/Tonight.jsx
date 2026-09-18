@@ -33,7 +33,18 @@ const SLOTS = [
   { id: 'night', label: 'Night' },
 ]
 
-export function Tonight({ value, onChange, now, onResetSample, onLeave, onRead }) {
+export function Tonight({
+  value,
+  onChange,
+  now,
+  onResetSample,
+  onLeave,
+  onRead,
+  pingLabel,
+  onAskPings,
+  installLabel,
+  onInstall,
+}) {
   const clock = now || new Date()
   const fileRef = useRef(null)
   const undoTimer = useRef(null)
@@ -524,6 +535,16 @@ export function Tonight({ value, onChange, now, onResetSample, onLeave, onRead }
               {onResetSample ? (
                 <button className="di-text" type="button" onClick={onResetSample}>
                   Hayes Street sample
+                </button>
+              ) : null}
+              {onAskPings && pingLabel ? (
+                <button className="di-text" type="button" onClick={onAskPings}>
+                  {pingLabel}
+                </button>
+              ) : null}
+              {onInstall && installLabel ? (
+                <button className="di-text" type="button" onClick={onInstall}>
+                  {installLabel}
                 </button>
               ) : null}
               <input

@@ -43,15 +43,17 @@ Sample: Hayes Street, apt 3.
 - [x] S-0 through S-5. Hash site.
 - [x] C. Copy.
 - [x] M. Motion.
+- [x] PWA. Installable, offline, ask-after pings.
+- [ ] Capacitor. Only if he asks.
 - [ ] Session ship: only when he asks.
 
 ## This session
 
-Letters A through M and the site. Keep 48741 running.
+PWA. Installable hall, offline cache, Ask at lamp time.
 
 ## Next session
 
-None unless he asks for PWA, Capacitor, or ship.
+Capacitor or ship, only if he asks.
 
 ## What SHIPPED means
 

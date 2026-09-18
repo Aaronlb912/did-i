@@ -21,3 +21,14 @@ tonight, into), kitchen copy, old JSON `inkNote`.
 
 Next session: PWA, Capacitor, or ship only if he asks.
 
+## 2026-09-18 PWA
+
+What runs: http://127.0.0.1:48741/
+
+What landed: vite-plugin-pwa, manifest, icons, service
+worker, offline precache, IndexedDB copy for the worker,
+Ask at lamp time, page timeouts at askAfter, periodic sync
+when the browser allows it. iOS pings stay weak.
+
+Next session: Capacitor or ship only if he asks.
+

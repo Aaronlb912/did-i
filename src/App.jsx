@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Tonight, emptyBoard, normalizeBook, sampleBoard } from './lib/index.js'
 import { unlockAchievements } from './lib/achievements.js'
+import { saveBoardForSw } from './lib/board-store.js'
+import { armLampPings, pingButtonLabel, pingSupport, requestPings } from './lib/notify.js'
 import { Door } from './site/Door.jsx'
 import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
@@ -33,6 +35,7 @@ function writeStored(book) {
   } catch {
     // Demo still runs if storage is blocked.
   }
+  saveBoardForSw(book)
 }
 
 function usePath() {
@@ -60,6 +63,8 @@ function usePath() {
 export default function App() {
   const [book, setBook] = useState(readStored)
   const [session, setSession] = useState(() => readSession().open)
+  const [pingState, setPingState] = useState(pingSupport)
+  const [installEvent, setInstallEvent] = useState(null)
   const path = usePath()
   const hasBoard = Boolean(book && book.lamps && (book.lamps.length || book.title))
   const view = path === '/tonight' && !session ? '/name' : path
@@ -97,9 +102,49 @@ export default function App() {
     goHash('/')
   }
 
+  async function askPings() {
+    const next = await requestPings()
+    setPingState(next)
+    if (next === 'granted' && book) armLampPings(book)
+  }
+
+  async function installHall() {
+    if (!installEvent) return
+    installEvent.prompt()
+    await installEvent.userChoice
+    setInstallEvent(null)
+  }
+
   useEffect(() => {
     if (path === '/tonight' && !session) goHash('/name')
   }, [path, session])
+
+  useEffect(() => {
+    if (book) {
+      saveBoardForSw(book)
+      armLampPings(book)
+    }
+  }, [book])
+
+  useEffect(() => {
+    function onInstall(event) {
+      event.preventDefault()
+      setInstallEvent(event)
+    }
+    function onMessage(event) {
+      if (event.data && event.data.type === 'did-i-open') {
+        openSession()
+        setSession(true)
+        goHash('/tonight')
+      }
+    }
+    window.addEventListener('beforeinstallprompt', onInstall)
+    navigator.serviceWorker?.addEventListener('message', onMessage)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onInstall)
+      navigator.serviceWorker?.removeEventListener('message', onMessage)
+    }
+  }, [])
 
   useEffect(() => {
     const titles = {
@@ -112,6 +157,9 @@ export default function App() {
     document.title = titles[view] || 'Did I'
   }, [view, book])
 
+  const pingLabel = pingButtonLabel(pingState)
+  const installLabel = installEvent ? 'Install' : ''
+
   if (view === '/tonight') {
     const live = book || emptyBoard()
     return (
@@ -121,6 +169,10 @@ export default function App() {
         onResetSample={openSample}
         onLeave={leave}
         onRead={() => goHash('/read')}
+        pingLabel={pingLabel}
+        onAskPings={pingLabel ? askPings : undefined}
+        installLabel={installLabel}
+        onInstall={installEvent ? installHall : undefined}
       />
     )
   }
@@ -138,5 +190,12 @@ export default function App() {
   }
   if (view === '/read') return <Read />
   if (view === '/into') return <Into />
-  return <Door hasBoard={hasBoard && session} title={book?.title || 'the hall'} />
+  return (
+    <Door
+      hasBoard={hasBoard && session}
+      title={book?.title || 'the hall'}
+      canInstall={Boolean(installEvent)}
+      onInstall={installHall}
+    />
+  )
 }

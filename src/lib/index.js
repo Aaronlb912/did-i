@@ -35,3 +35,11 @@ export {
   waitingTonight,
 } from './recurrence.js'
 export { ACHIEVEMENTS, unlockAchievements } from './achievements.js'
+export { saveBoardForSw, loadBoardForSw } from './board-store.js'
+export {
+  armLampPings,
+  pingButtonLabel,
+  pingSupport,
+  requestPings,
+  upcomingPings,
+} from './notify.js'
