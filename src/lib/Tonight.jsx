@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { LampFace } from './LampFace.jsx'
 import { HangLamp } from './HangLamp.jsx'
 import { LampDetail } from './LampDetail.jsx'
-import { NightStrip } from './NightStrip.jsx'
 import { ACHIEVEMENTS, unlockAchievements } from './achievements.js'
 import {
   answeredAtIso,
@@ -28,12 +27,6 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import './did-i.css'
-
-const SLOTS = [
-  { id: 'morning', label: 'Morning' },
-  { id: 'whenever', label: 'Whenever' },
-  { id: 'night', label: 'Night' },
-]
 
 export function Tonight({
   value,
@@ -75,8 +68,6 @@ export function Tonight({
   const heat = hallHeat(value, clock)
   const hour = hallHour(clock)
   const empty = (value.lamps || []).filter((lamp) => !lamp.archived).length === 0
-  const slotsUsed = new Set(due.map((row) => row.lamp.slot || 'whenever'))
-  const showSlotGroups = slotsUsed.size > 1
 
   const faceRow = ready.find((row) => row.lamp.id === faceId) || ready[0] || null
   const openLamp = (value.lamps || []).find((lamp) => lamp.id === openId) || null
@@ -357,61 +348,39 @@ export function Tonight({
   } else if (empty) {
     body = (
       <section className="di-empty">
-        <p className="di-empty-plate">Blank plate</p>
+        <p className="di-face-plate">Blank plate</p>
         <h2 className="di-question">Nothing is hanging yet.</h2>
-        <p>Hang a lamp for the thing you keep asking yourself at the door.</p>
         <button
-          className="di-did di-did-small"
+          className="di-did"
           type="button"
           onClick={() => {
             setHanging(true)
             setEditLamp(null)
           }}
         >
-          Hang a lamp
+          Hang
         </button>
       </section>
     )
   } else if (faceRow) {
     body = (
       <>
-        <LampFace row={faceRow} onYes={() => mark(faceRow, 'yes')} onSkip={() => mark(faceRow, 'skip')} />
-        <NightStrip
+        <LampFace
+          row={faceRow}
           book={value}
-          lamp={faceRow.lamp}
           keys={recentPeriodKeys(faceRow.lamp, dateIso, 7)}
+          onPickHole={pickHole}
+          onYes={() => mark(faceRow, 'yes')}
+          onSkip={() => mark(faceRow, 'skip')}
         />
       </>
     )
   } else if (waiting.length) {
-    body = (
-      <section className="di-clear">
-        <p className="di-face-plate">Not yet</p>
-        <h2 className="di-question">Those lamps wait.</h2>
-        <p>
-          {waiting
-            .map((row) => `${shortLabel(row.lamp)} after ${row.lamp.askAfter}`)
-            .join('. ')}
-          .
-        </p>
-      </section>
-    )
+    body = <p className="di-sit-line">Those lamps wait.</p>
   } else if (due.length === 0) {
-    body = (
-      <section className="di-clear">
-        <p className="di-face-plate">Tonight</p>
-        <h2 className="di-question">Nothing is due.</h2>
-        <p>Sunday bins stay dark until Sunday. Hang a daily lamp if you need a question tonight.</p>
-      </section>
-    )
+    body = <p className="di-sit-line">Nothing is due tonight.</p>
   } else if (hallOn) {
-    body = (
-      <section className="di-clear di-clear-on">
-        <p className="di-face-plate">Tonight</p>
-        <h2 className="di-question">The hall is on.</h2>
-        <p>Every lamp that needed a tap got one. The lights are still on if you want to look.</p>
-      </section>
-    )
+    body = <p className="di-sit-line">The hall is on.</p>
   }
 
   return (
@@ -422,6 +391,10 @@ export function Tonight({
       data-sit={hallOn ? 'on' : 'ask'}
     >
       <div className="di-board" data-heat={heat}>
+        <span className="di-screw di-screw-tl" aria-hidden="true" />
+        <span className="di-screw di-screw-tr" aria-hidden="true" />
+        <span className="di-screw di-screw-bl" aria-hidden="true" />
+        <span className="di-screw di-screw-br" aria-hidden="true" />
         <header className="di-mast">
           {titleEdit ? (
             <input
@@ -445,167 +418,160 @@ export function Tonight({
           <p className="di-date">{formatBoardDate(dateIso)}</p>
         </header>
 
-        {body}
+        {dueWithWait.length > 0 && !hanging && !openLamp ? (
+          <div className="di-edge-wrap">
+            <ul className="di-edge" aria-label="Tonight's lamps">
+              {dueWithWait.map((row) => {
+                const on =
+                  row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
+                const skip = row.answer?.status === 'skip'
+                const late = row.answer?.status === 'late'
+                const isFace =
+                  faceRow && row.lamp.id === faceRow.lamp.id && !hanging && !openLamp
+                return (
+                  <li key={row.lamp.id}>
+                    <button
+                      type="button"
+                      className={[
+                        'di-jewel',
+                        on ? 'is-on' : '',
+                        skip ? 'is-skip' : '',
+                        late ? 'is-late' : '',
+                        row.waiting ? 'is-wait' : '',
+                        isFace ? 'is-face' : '',
+                        hallOn && on ? 'is-sit' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      data-filament={on ? filamentLevel(value, row.lamp.id) : 0}
+                      onClick={() => jewelClick(row)}
+                    >
+                      <span className="di-jewel-ring">
+                        <span className="di-jewel-glass" />
+                      </span>
+                      <span className="di-jewel-label">{shortLabel(row.lamp)}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ) : null}
 
         {catchUp.length > 0 && !hanging && !openLamp ? (
-          <div className="di-catch">
-            <p className="di-catch-kicker">Last time</p>
-            <ul>
+          <div className="di-holes" aria-label="Last time">
+            <p className="di-slot-label">Last night</p>
+            <ul className="di-edge">
               {catchUp.map((row) => (
                 <li key={row.lamp.id}>
-                  <span>
-                    {shortLabel(row.lamp)} · {formatBoardDate(row.dateIso)}
-                  </span>
-                  <span className="di-catch-actions">
-                    <button className="di-text" type="button" onClick={() => mark(row, 'late')}>
-                      late
-                    </button>
-                    <button className="di-text" type="button" onClick={() => mark(row, 'skip')}>
-                      skip
-                    </button>
-                  </span>
+                  <button
+                    type="button"
+                    className="di-jewel is-hole"
+                    onClick={() => pickHole(row.lamp, row.periodKey)}
+                  >
+                    <span className="di-jewel-ring">
+                      <span className="di-jewel-glass" />
+                    </span>
+                    <span className="di-jewel-label">{shortLabel(row.lamp)}</span>
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
 
-        {dueWithWait.length > 0 && !hanging ? (
-          <div className="di-edge-wrap">
-            {SLOTS.filter((slot) => dueWithWait.some((row) => (row.lamp.slot || 'whenever') === slot.id)).map(
-              (slot) => (
-                <div key={slot.id} className="di-slot">
-                  {showSlotGroups ? <p className="di-slot-label">{slot.label}</p> : null}
-                  <ul className="di-edge" aria-label={showSlotGroups ? slot.label : "Tonight's lamps"}>
-                    {dueWithWait
-                      .filter((row) => (row.lamp.slot || 'whenever') === slot.id)
-                      .map((row) => {
-                        const on =
-                          row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
-                        const skip = row.answer?.status === 'skip'
-                        const late = row.answer?.status === 'late'
-                        const isFace =
-                          faceRow && row.lamp.id === faceRow.lamp.id && !hanging && !openLamp
-                        return (
-                          <li key={row.lamp.id}>
-                            <button
-                              type="button"
-                              className={[
-                                'di-jewel',
-                                on ? 'is-on' : '',
-                                skip ? 'is-skip' : '',
-                                late ? 'is-late' : '',
-                                row.waiting ? 'is-wait' : '',
-                                isFace ? 'is-face' : '',
-                                hallOn && on ? 'is-sit' : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              data-filament={on ? filamentLevel(value, row.lamp.id) : 0}
-                              onClick={() => jewelClick(row)}
-                            >
-                              <span className="di-jewel-glass" />
-                              <span className="di-jewel-label">{shortLabel(row.lamp)}</span>
-                            </button>
-                          </li>
-                        )
-                      })}
-                  </ul>
-                </div>
-              ),
-            )}
-          </div>
+        {body}
+
+        {undo ? (
+          <p className="di-undo di-screws-print-hide">
+            {undo.label}{' '}
+            <button className="di-key" type="button" onClick={applyUndo}>
+              Undo
+            </button>
+          </p>
         ) : null}
 
-        <footer className="di-screws di-screws-print-hide">
-          <button
-            className="di-text"
-            type="button"
-            onClick={() => {
-              setHanging(true)
-              setEditLamp(null)
-              setHangMiss('')
-              setOpenId('')
-            }}
-          >
-            Hang a lamp
-          </button>
-          {onRead ? (
-            <button className="di-text" type="button" onClick={onRead}>
-              Read
+        {holePick ? (
+          <p className="di-undo di-screws-print-hide">
+            {shortLabel(holePick.lamp)} that night.{' '}
+            <button
+              className="di-key"
+              type="button"
+              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'late')}
+            >
+              late
+            </button>{' '}
+            <button
+              className="di-key"
+              type="button"
+              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'skip')}
+            >
+              skip
             </button>
-          ) : null}
-          {onLeave ? (
-            <button className="di-text" type="button" onClick={onLeave}>
-              Door
-            </button>
-          ) : null}
-          <button className="di-text" type="button" onClick={() => setTrayOpen((open) => !open)}>
-            {trayOpen ? 'Close tray' : 'Tray'}
-          </button>
-        </footer>
+          </p>
+        ) : null}
 
         {trayOpen ? (
           <div className="di-tray di-screws-print-hide">
             <ul className="di-tray-lamps">
               {(value.lamps || []).map((lamp) => (
                 <li key={lamp.id}>
-                  <button className="di-text" type="button" onClick={() => setOpenId(lamp.id)}>
+                  <button className="di-key" type="button" onClick={() => setOpenId(lamp.id)}>
                     {shortLabel(lamp)}
                     {lamp.archived ? ' (down)' : ''}
                   </button>
-                  <button className="di-text" type="button" onClick={() => removeLamp(lamp)}>
+                  <button className="di-key" type="button" onClick={() => removeLamp(lamp)}>
                     Remove
                   </button>
                 </li>
               ))}
             </ul>
             <div className="di-tray-files">
-              <button className="di-text" type="button" onClick={() => downloadBook(value)}>
+              <button className="di-key" type="button" onClick={() => downloadBook(value)}>
                 Download JSON
               </button>
-              <button className="di-text" type="button" onClick={() => fileRef.current?.click()}>
+              <button className="di-key" type="button" onClick={() => fileRef.current?.click()}>
                 Load JSON
               </button>
-              <button className="di-text" type="button" onClick={() => window.print()}>
+              <button className="di-key" type="button" onClick={() => window.print()}>
                 Print tonight
               </button>
               <button
-                className="di-text"
+                className="di-key"
                 type="button"
                 onClick={() => change({ ...value, quietMode: !value.quietMode })}
               >
                 {value.quietMode ? 'Show pips' : 'Quiet mode'}
               </button>
               <button
-                className="di-text"
+                className="di-key"
                 type="button"
                 onClick={() => change({ ...value, clickSound: !value.clickSound })}
               >
                 {value.clickSound ? 'Click off' : 'Click on DID'}
               </button>
               {onShare ? (
-                <button className="di-text" type="button" onClick={onShare}>
+                <button className="di-key" type="button" onClick={onShare}>
                   Share JSON
                 </button>
               ) : null}
               {onStartEmpty ? (
-                <button className="di-text" type="button" onClick={onStartEmpty}>
+                <button className="di-key" type="button" onClick={onStartEmpty}>
                   Start empty
                 </button>
               ) : null}
               {onResetSample ? (
-                <button className="di-text" type="button" onClick={onResetSample}>
+                <button className="di-key" type="button" onClick={onResetSample}>
                   Hayes Street sample
                 </button>
               ) : null}
               {onAskPings && pingLabel ? (
-                <button className="di-text" type="button" onClick={onAskPings}>
+                <button className="di-key" type="button" onClick={onAskPings}>
                   {pingLabel}
                 </button>
               ) : null}
               {onInstall && installLabel ? (
-                <button className="di-text" type="button" onClick={onInstall}>
+                <button className="di-key" type="button" onClick={onInstall}>
                   {installLabel}
                 </button>
               ) : null}
@@ -634,34 +600,33 @@ export function Tonight({
           </div>
         ) : null}
 
-        {undo ? (
-          <p className="di-undo di-screws-print-hide">
-            {undo.label}{' '}
-            <button className="di-text" type="button" onClick={applyUndo}>
-              Undo
+        <footer className="di-latch di-screws-print-hide">
+          <button
+            className="di-key"
+            type="button"
+            onClick={() => {
+              setHanging(true)
+              setEditLamp(null)
+              setHangMiss('')
+              setOpenId('')
+            }}
+          >
+            Hang
+          </button>
+          {onRead ? (
+            <button className="di-key" type="button" onClick={onRead}>
+              Read
             </button>
-          </p>
-        ) : null}
-
-        {holePick ? (
-          <p className="di-undo di-screws-print-hide">
-            {shortLabel(holePick.lamp)} that night.{' '}
-            <button
-              className="di-text"
-              type="button"
-              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'late')}
-            >
-              late
-            </button>{' '}
-            <button
-              className="di-text"
-              type="button"
-              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'skip')}
-            >
-              skip
+          ) : null}
+          {onLeave ? (
+            <button className="di-key" type="button" onClick={onLeave}>
+              Door
             </button>
-          </p>
-        ) : null}
+          ) : null}
+          <button className="di-key" type="button" onClick={() => setTrayOpen((open) => !open)}>
+            {trayOpen ? 'Close' : 'Tray'}
+          </button>
+        </footer>
       </div>
 
       <ol className="di-print-slip">

@@ -56,7 +56,17 @@ filament, night sit, Click on DID (off by default). iOS
 needs a Mac. APK needs JDK 17 and Android SDK, then
 `npm run cap:apk`.
 
-Next session: build the APK once Java and the SDK are on
-this machine, or ship if he asks.
+Next session: live with the hall, or APK once Java and the
+SDK are on this machine.
+
+## 2026-09-18 look pass
+
+What runs: http://127.0.0.1:48741/
+
+What landed: the hall is the board. Big brass jewels,
+switch-plate DID rocker, skip as tape, hall-on is lights,
+last night is dark holes, Hang/Read/Door/Tray sit in a
+latch. No cream essay on all-clear.
+
 
 

@@ -45,19 +45,17 @@ Sample: Hayes Street, apt 3.
       `android/app/build/outputs/apk/debug/app-debug.apk`.
 - [x] P-7. iOS gap: this Windows box has no Xcode. No fake
       binary.
-- [x] L. Phone look. Thumb DID. Board fills 390. Bezel kept.
-- [x] G. All five: hall heat, filament, ping face, night sit,
-      optional click.
+- [x] Look pass. Full-bleed board, jewels, rocker, hall-on
+      lights, last-night holes, latch.
 - [ ] Session ship: only when he asks.
 
 ## This session
 
-Capacitor Android project. Hall extras in. APK wait on JDK.
+Paint the hall as a lamp board, not a text card.
 
 ## Next session
 
-Install JDK 17 and Android SDK, run `npm run cap:apk`, put
-the file on a phone. Or ship if he asks.
+Live with the hall, or APK once JDK is on the machine.
 
 ## What SHIPPED means
 

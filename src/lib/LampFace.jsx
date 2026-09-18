@@ -1,6 +1,7 @@
 import { shortLabel } from './board-json.js'
+import { NightStrip } from './NightStrip.jsx'
 
-export function LampFace({ row, onYes, onSkip }) {
+export function LampFace({ row, onYes, onSkip, book, keys, onPickHole }) {
   if (!row) return null
   const { lamp } = row
   return (
@@ -9,15 +10,17 @@ export function LampFace({ row, onYes, onSkip }) {
       <h2 id="di-question" className="di-question">
         {lamp.question}
       </h2>
-      <p className="di-face-short">{shortLabel(lamp)}</p>
-      <div className="di-rockers">
+      <div className="di-switch">
         <button className="di-did" type="button" onClick={onYes}>
           DID
         </button>
-        <button className="di-skip" type="button" onClick={onSkip}>
+        <button className="di-tape" type="button" onClick={onSkip}>
           skip
         </button>
       </div>
+      {lamp.cadence === 'once' && (!keys || keys.length < 2) ? null : (
+        <NightStrip book={book} lamp={lamp} keys={keys} onPickHole={onPickHole} />
+      )}
     </section>
   )
 }
