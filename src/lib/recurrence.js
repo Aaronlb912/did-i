@@ -130,8 +130,59 @@ export function dueTonight(book, now = new Date()) {
   return lamps
 }
 
+export function askAfterPassed(lamp, now = new Date(), foldHour = 4) {
+  const after = String(lamp?.askAfter || '').trim()
+  if (!after) return true
+  const match = after.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  if (!match) return true
+  if (now.getHours() < foldHour) return true
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  const target = Number(match[1]) * 60 + Number(match[2])
+  return minutes >= target
+}
+
+export function previousDueDate(lamp, dateIso) {
+  if (!lamp || lamp.cadence === 'once') return ''
+  for (let i = 1; i <= 62; i += 1) {
+    const iso = addDaysIso(dateIso, -i)
+    if (isDueOn(lamp, iso)) return iso
+  }
+  return ''
+}
+
+export function catchUpRows(book, now = new Date()) {
+  const dateIso = boardDate(now, book.dayFoldHour)
+  const rows = []
+  for (const lamp of book.lamps || []) {
+    if (lamp.archived || lamp.cadence === 'once') continue
+    const prevIso = previousDueDate(lamp, dateIso)
+    if (!prevIso) continue
+    const periodKey = periodKeyFor(lamp, prevIso)
+    if (answerFor(book, lamp.id, periodKey)) continue
+    rows.push({
+      lamp,
+      dateIso: prevIso,
+      periodKey,
+      answer: null,
+    })
+  }
+  return rows
+}
+
 export function unansweredTonight(book, now = new Date()) {
   return dueTonight(book, now).filter((row) => !row.answer)
+}
+
+export function faceReadyTonight(book, now = new Date()) {
+  return unansweredTonight(book, now).filter((row) =>
+    askAfterPassed(row.lamp, now, book.dayFoldHour),
+  )
+}
+
+export function waitingTonight(book, now = new Date()) {
+  return unansweredTonight(book, now).filter(
+    (row) => !askAfterPassed(row.lamp, now, book.dayFoldHour),
+  )
 }
 
 export function allClearTonight(book, now = new Date()) {

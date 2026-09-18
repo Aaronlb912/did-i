@@ -10,7 +10,9 @@ export {
   answeredAtIso,
   blankBook,
   blankLamp,
+  cadenceLine,
   downloadBook,
+  duplicateLamp,
   missLamp,
   newAnswerId,
   newLampId,
@@ -21,10 +23,15 @@ export {
 } from './board-json.js'
 export {
   allClearTonight,
+  askAfterPassed,
   boardDate,
+  catchUpRows,
   dueTonight,
+  faceReadyTonight,
   formatBoardDate,
   isDueOn,
   periodKeyFor,
   unansweredTonight,
+  waitingTonight,
 } from './recurrence.js'
+export { ACHIEVEMENTS, unlockAchievements } from './achievements.js'

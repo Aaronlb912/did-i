@@ -9,5 +9,15 @@ question on the face. DID and skip. Hang a daily lamp. Miss
 on a blank question. Quiet remove with undo. JSON download /
 load. Demo persist. Hall CSS, not a clerk desk.
 
-Next session: A. Hang weekly / monthly / once / every N, with
-the misses from the start prompt.
+## 2026-09-18 letters A-M
+
+What runs: http://127.0.0.1:48741/
+
+What landed: cadence hangs and misses, askAfter waiting lamps,
+catch-up last time, lamp detail (edit / duplicate / archive /
+strip), hall-on and empty, pips and quiet mode, keyboard,
+slot groups, print slip, motion, hash site (door, name, read,
+tonight, into), kitchen copy, old JSON `inkNote`.
+
+Next session: PWA, Capacitor, or ship only if he asks.
+

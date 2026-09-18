@@ -35,6 +35,18 @@
   background: var(--di-board);
   border: 10px solid var(--di-board-edge);
   color: var(--di-plate);
+  animation: di-sit var(--di-move) var(--di-ease);
+}
+
+@keyframes di-sit {
+  from {
+    transform: translateY(-6px);
+    opacity: 0.65;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .di-mast {
@@ -130,6 +142,11 @@
   background: var(--di-ink);
   color: var(--di-plate);
   cursor: pointer;
+  transition: transform var(--di-move) var(--di-ease);
+}
+
+.di-did:hover {
+  filter: brightness(1.08);
 }
 
 .di-did:active {
@@ -251,18 +268,35 @@
   border-radius: 50%;
   background: var(--di-unlit);
   border: 2px solid #2a241c;
+  transition: background 180ms var(--di-ease);
 }
 
-.di-jewel.is-on .di-jewel-glass {
+.di-jewel:hover .di-jewel-glass {
+  background: #6a5c4c;
+}
+
+.di-jewel.is-on .di-jewel-glass,
+.di-jewel.is-on:hover .di-jewel-glass {
   background: var(--di-lit);
 }
 
-.di-jewel.is-late .di-jewel-glass {
+.di-jewel.is-late .di-jewel-glass,
+.di-jewel.is-late:hover .di-jewel-glass {
   background: var(--di-late);
 }
 
-.di-jewel.is-skip .di-jewel-glass {
+.di-jewel.is-skip .di-jewel-glass,
+.di-jewel.is-skip:hover .di-jewel-glass {
   background: var(--di-skip);
+}
+
+.di-jewel.is-wait .di-jewel-glass {
+  background: #3a332c;
+  opacity: 0.55;
+}
+
+.di-jewel.is-wait .di-jewel-label {
+  opacity: 0.6;
 }
 
 .di-jewel.is-face .di-jewel-label {
@@ -312,6 +346,108 @@
   font-weight: 400;
 }
 
+.di-detail-notes {
+  margin: 0 0 0.8rem;
+  color: var(--di-ink-soft);
+}
+
+.di-days {
+  border: 0;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  color: var(--di-ink);
+}
+
+.di-days legend {
+  font-size: 0.85rem;
+  color: var(--di-ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.di-days label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.7rem;
+  font-size: 0.85rem;
+}
+
+.di-catch {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.di-catch-kicker,
+.di-slot-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--di-skip);
+}
+
+.di-catch ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.di-catch li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.2rem 0;
+}
+
+.di-catch-actions {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.di-edge-wrap {
+  margin-top: 0.6rem;
+}
+
+.di-slot .di-edge {
+  margin-top: 0.2rem;
+}
+
+.di-strip {
+  align-items: center;
+}
+
+.di-strip-hit {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.di-pips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  font-size: 0.72rem;
+  color: var(--di-lit);
+}
+
+.di-pips li {
+  border: 1px solid var(--di-lit);
+  padding: 0.15rem 0.4rem;
+}
+
+.di-clear-on {
+  background: #f4ead4;
+}
+
+.di-print-slip {
+  display: none;
+}
+
 .di-visually-hidden {
   position: absolute;
   width: 1px;
@@ -327,14 +463,28 @@
 .di-title:focus-visible,
 .di-title-input:focus-visible,
 .di-field input:focus-visible,
-.di-field select:focus-visible {
+.di-field select:focus-visible,
+.di-strip-hit:focus-visible,
+.di-days input:focus-visible {
   outline: 2px solid var(--di-focus);
   outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .di-did {
+    transition: none;
+  }
+
   .di-did:active {
     transform: none;
+  }
+
+  .di-board {
+    animation: none;
+  }
+
+  .di-jewel-glass {
+    transition: none;
   }
 }
 
@@ -354,23 +504,72 @@
     font-size: 1.85rem;
   }
 
+  .di-did {
+    min-height: 3.6rem;
+  }
+
   .di-edge {
     flex-wrap: nowrap;
     overflow-x: auto;
   }
+
+  .di-catch li,
+  .di-screws {
+    flex-wrap: wrap;
+  }
+
+  .di-hang {
+    min-height: auto;
+  }
 }
 
 @media print {
-  .di-screws,
-  .di-tray,
-  .di-undo,
-  .di-rockers,
-  .di-hang-actions {
-    display: none;
+  .di-board,
+  .di-screws-print-hide,
+  .di-edge-wrap,
+  .di-catch,
+  .di-face,
+  .di-clear,
+  .di-empty,
+  .di-hang,
+  .di-detail,
+  .di-mast,
+  .di-strip {
+    display: none !important;
   }
 
   .di-hall {
     background: white;
     color: black;
+    padding: 0;
+  }
+
+  .di-print-slip {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, Geneva, sans-serif;
+    color: black;
+  }
+
+  .di-print-title {
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
+
+  .di-print-slip li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 0.7rem;
+    font-size: 1rem;
+  }
+
+  .di-print-box {
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2px solid black;
+    flex: 0 0 auto;
   }
 }

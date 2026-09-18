@@ -88,6 +88,7 @@ export function sampleBoard(now = new Date()) {
     title: 'Hayes Street',
     dayFoldHour: 4,
     quietMode: false,
+    inkNote: '',
     lamps: [pills, door, bins, water, fern, lease],
     answers: [
       {
@@ -117,6 +118,7 @@ export function sampleEmptyBoard() {
     title: 'Hayes Street',
     dayFoldHour: 4,
     quietMode: false,
+    inkNote: '',
     lamps: [],
     answers: [],
     unlocked: [],

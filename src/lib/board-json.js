@@ -51,6 +51,7 @@ export function blankBook() {
     title: 'My hall',
     dayFoldHour: 4,
     quietMode: false,
+    inkNote: '',
     lamps: [],
     answers: [],
     unlocked: [],
@@ -116,6 +117,7 @@ export function normalizeBook(raw) {
     title: asString(book.title).trim() || 'My hall',
     dayFoldHour: Number.isInteger(fold) && fold >= 0 && fold <= 12 ? fold : 4,
     quietMode: asBool(book.quietMode),
+    inkNote: asString(book.inkNote),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
     unlocked: Array.isArray(book.unlocked)
@@ -189,4 +191,33 @@ export function answeredAtIso(now = new Date()) {
 export function addUnlock(book, id) {
   if (book.unlocked.includes(id)) return book
   return { ...book, unlocked: [...book.unlocked, id] }
+}
+
+export function duplicateLamp(lamp, now = new Date()) {
+  const copy = normalizeLamp(lamp)
+  copy.id = newLampId()
+  copy.createdOn = isoDate(now)
+  copy.archived = false
+  const short = shortLabel(copy)
+  if (!copy.short) copy.short = short
+  copy.short = `${copy.short} copy`
+  return copy
+}
+
+export function cadenceLine(lamp) {
+  if (lamp.cadence === 'daily') return 'Every day'
+  if (lamp.cadence === 'weekly') {
+    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const days = (lamp.weekdays || []).map((day) => names[day]).filter(Boolean)
+    if (!days.length) return 'Weekly'
+    return days.join(', ')
+  }
+  if (lamp.cadence === 'monthly') {
+    if (lamp.monthDay === 'last') return 'Last day of the month'
+    if (lamp.monthDay) return `Monthly on the ${lamp.monthDay}`
+    return 'Monthly'
+  }
+  if (lamp.cadence === 'once') return 'Once'
+  if (lamp.cadence === 'every_n') return `Every ${lamp.everyN} days`
+  return lamp.cadence
 }

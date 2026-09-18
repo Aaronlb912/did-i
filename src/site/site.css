@@ -1,0 +1,103 @@
+.di-site {
+  min-height: 100vh;
+  background: #1c1410;
+  color: #f3ece3;
+  font-family: Verdana, Geneva, sans-serif;
+}
+
+.di-site-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.2rem 1rem 0;
+}
+
+.di-site-brand,
+.di-site-links a {
+  color: #f3ece3;
+  text-decoration: none;
+}
+
+.di-site-brand {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.di-site-links {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.di-site-links a.is-on,
+.di-site-links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.di-door {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.di-door-plate {
+  background: #efe6d8;
+  color: #1c1410;
+  padding: 1.5rem 1.25rem 1.4rem;
+}
+
+.di-door-plate p {
+  color: #6a5d50;
+  line-height: 1.45;
+}
+
+.di-door-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+  margin-top: 1.2rem;
+}
+
+.di-link-did {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.di-read p {
+  margin: 0 0 1rem;
+}
+
+.di-pre {
+  overflow: auto;
+  padding: 0.8rem;
+  background: #3a3228;
+  color: #efe6d8;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 430px) {
+  .di-door-plate .di-question {
+    font-size: 1.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-door-plate {
+    animation: none;
+  }
+}
+
+@media print {
+  .di-site-nav {
+    display: none;
+  }
+}
