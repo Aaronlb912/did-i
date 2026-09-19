@@ -1,4 +1,5 @@
 import { addDaysIso, allClearTonight, boardDate, dueTonight, parseIsoDate } from './recurrence.js'
+import { scopedBooks } from './tags.js'
 
 function noonOn(iso) {
   const date = parseIsoDate(iso)
@@ -20,6 +21,32 @@ export function hallHeat(book, now = new Date()) {
       continue
     }
     if (!allClearTonight(book, at)) break
+    heat += 1
+    cursor = addDaysIso(cursor, -1)
+  }
+  return heat
+}
+
+export function shelfHeat(boards, now = new Date(), tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  if (!books.length) return 0
+  let cursor = boardDate(now, books[0].dayFoldHour)
+  let heat = 0
+  for (let step = 0; step < 40 && heat < 5; step += 1) {
+    const at = noonOn(cursor)
+    if (!at) break
+    let dueCount = 0
+    let clear = true
+    for (const book of books) {
+      const due = dueTonight(book, at)
+      dueCount += due.length
+      if (due.length && !allClearTonight(book, at)) clear = false
+    }
+    if (dueCount === 0) {
+      cursor = addDaysIso(cursor, -1)
+      continue
+    }
+    if (!clear) break
     heat += 1
     cursor = addDaysIso(cursor, -1)
   }

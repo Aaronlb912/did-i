@@ -54,6 +54,61 @@ export function normalizePurse(book) {
   }
 }
 
+export function stampPurse(book, purse) {
+  const next = normalizePurse(purse)
+  return { ...book, ...next }
+}
+
+export function mergePurses(boards) {
+  const list = boards || []
+  if (!list.length) return normalizePurse(null)
+  const purses = list.map(normalizePurse)
+  const coinsSame = purses.every((item) => item.coins === purses[0].coins)
+  const gemsSame = purses.every((item) => item.gems === purses[0].gems)
+  return {
+    coins: coinsSame ? purses[0].coins : purses.reduce((n, item) => n + item.coins, 0),
+    gems: gemsSame ? purses[0].gems : purses.reduce((n, item) => n + item.gems, 0),
+    cheers: [...new Set(purses.flatMap((item) => item.cheers))],
+    cheerOn: purses.find((item) => item.cheerOn !== 'lime')?.cheerOn || purses[0].cheerOn,
+    looks: [...new Set(purses.flatMap((item) => item.looks))],
+    lookOn: purses.find((item) => item.lookOn !== 'lime')?.lookOn || purses[0].lookOn,
+    cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
+    cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
+  }
+}
+
+export function alignShelfPurse(shelf) {
+  if (!shelf?.boards?.length) return shelf
+  const purse = mergePurses(shelf.boards)
+  return {
+    ...shelf,
+    ...purse,
+    boards: shelf.boards.map((book) => stampPurse(book, purse)),
+  }
+}
+
+export function spreadPurseFrom(shelf, book) {
+  if (!shelf?.boards?.length) return shelf
+  const from = normalizePurse(book || shelf.boards[0])
+  const merged = mergePurses(shelf.boards)
+  const purse = {
+    ...merged,
+    coins: from.coins,
+    gems: from.gems,
+    cheerUses: from.cheerUses,
+    cheerStage: from.cheerStage,
+    lookOn: from.lookOn,
+    cheerOn: from.cheerOn,
+    looks: [...new Set([...merged.looks, ...from.looks])],
+    cheers: [...new Set([...merged.cheers, ...from.cheers])],
+  }
+  return {
+    ...shelf,
+    ...purse,
+    boards: shelf.boards.map((item) => stampPurse(item, purse)),
+  }
+}
+
 export function stageFromUses(uses) {
   let stage = 1
   for (let next = 2; next <= CHEER_STAGE_MAX; next += 1) {

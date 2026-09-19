@@ -45,7 +45,6 @@ import { Ideas } from './lib/Ideas.jsx'
 import { Later } from './lib/Later.jsx'
 import { Enter } from './lib/Enter.jsx'
 import { FirstNight } from './lib/FirstNight.jsx'
-import { Home } from './lib/Home.jsx'
 import { Marks } from './lib/Marks.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
 import { Welcome } from './lib/Welcome.jsx'
@@ -61,8 +60,7 @@ import { Read } from './site/Read.jsx'
 import { goHash, parseHash } from './site/hash.js'
 import { t } from './lib/i18n.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
-import { faceReadyTonight } from './lib/recurrence.js'
-import { taggedCatchUp } from './lib/tags.js'
+import { alignShelfPurse, spreadPurseFrom } from './lib/purse.js'
 import './lib/did-i.css'
 import './site/site.css'
 
@@ -70,21 +68,12 @@ const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
 const HALL = new Set(['/', '/home', '/tonight'])
 
-function needsTonightTap(boards, book, tagId) {
-  const shelf = boards?.length ? boards : book ? [book] : []
-  if (!shelf.length) return false
-  const clock = new Date()
-  const ready = tagId
-    ? faceReadyTonight(book, clock).length > 0
-    : shelf.some((item) => faceReadyTonight(item, clock).length > 0)
-  return ready || taggedCatchUp(shelf, clock, tagId).length > 0
-}
-
 function firstShelf() {
-  const shelf = readShelf()
+  const now = new Date()
+  const shelf = writeShelf(alignShelfPurse(readShelf()))
   return {
     ...shelf,
-    boards: shelf.boards.map((book) => unlockAchievements(book, new Date())),
+    boards: shelf.boards.map((book) => unlockAchievements(book, now)),
   }
 }
 
@@ -116,19 +105,21 @@ export default function App() {
   const hasBoard = Boolean(book && book.lamps && (book.lamps.length || book.title))
   const view = SITE.has(path) ? path : path
   const live = book || emptyBoard()
-  const emptyHall = (live.lamps || []).filter((lamp) => !lamp.archived).length === 0
+  const emptyHall = shelf.boards.every(
+    (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
+  )
 
   function persist(nextShelf) {
     const now = new Date()
     const before = currentBook(shelf)
-    const written = writeShelf({
-      ...nextShelf,
-      boards: nextShelf.boards.map((item) => {
-        let next = normalizeBook(item)
-        if (next.id === nextShelf.currentId) next = noteOpen(next, now)
-        return unlockAchievements(next, now)
-      }),
+    const mapped = nextShelf.boards.map((item) => {
+      let next = normalizeBook(item)
+      if (next.id === nextShelf.currentId) next = noteOpen(next, now)
+      return unlockAchievements(next, now)
     })
+    const drafted = { ...nextShelf, boards: mapped }
+    const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
+    const written = writeShelf(spreadPurseFrom(drafted, current))
     const after = currentBook(written)
     if (after.id === before?.id) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
@@ -478,7 +469,7 @@ export default function App() {
     )
   } else if (path === '/settings') {
     inner = <Profile book={live} onChange={change} {...hallProps} />
-  } else if (path === '/tonight' || route.face || (path === '/' && needsTonightTap(shelf.boards, live, tagId))) {
+  } else if (path === '/tonight' || path === '/' || path === '/home' || route.face) {
     inner = (
       <Tonight
         value={live}
@@ -491,8 +482,8 @@ export default function App() {
     )
   } else {
     inner = (
-      <Home
-        book={live}
+      <Tonight
+        value={live}
         boards={shelf.boards}
         tagId={tagId}
         onTag={setTag}

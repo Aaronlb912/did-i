@@ -214,6 +214,11 @@ export const es = {
   'tonight.boardName': 'Nombre de la etiqueta',
   'tonight.didI': 'Did I',
   'tonight.purse': '{coins} · {gems}',
+  'weekbar.aria': 'Semana de racha',
+  'weekbar.prev': 'Semana anterior',
+  'weekbar.next': 'Semana siguiente',
+  'weekbar.streak': 'Racha {n}',
+  'weekbar.none': 'Racha',
 
   'boards.kicker': 'Etiquetas',
   'boards.title': 'Tus etiquetas',

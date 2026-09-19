@@ -214,6 +214,11 @@ export const ja = {
   'tonight.boardName': 'tag の名前',
   'tonight.didI': 'Did I',
   'tonight.purse': '{coins} · {gems}',
+  'weekbar.aria': 'streak の週',
+  'weekbar.prev': '前の週',
+  'weekbar.next': '次の週',
+  'weekbar.streak': 'streak {n}',
+  'weekbar.none': 'streak',
 
   'boards.kicker': 'tags',
   'boards.title': 'あなたの tags',

@@ -12,6 +12,7 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { shortLabel } from './board-json.js'
+import { scopedBooks } from './tags.js'
 
 export { streakLength } from './achievements.js'
 
@@ -54,6 +55,36 @@ export function weekNights(book, now = new Date(), days = 7) {
       isToday: iso === today,
       due: at ? dueTonight(book, at) : [],
       hallOn: at ? allClearTonight(book, at) : false,
+    })
+  }
+  return nights
+}
+
+export function weekStripNights(boards, now = new Date(), tagId = '', weekShift = 0) {
+  const books = scopedBooks(boards, tagId)
+  const fold = (books[0] || boards?.[0])?.dayFoldHour
+  const today = boardDate(now, fold)
+  const end = addDaysIso(today, weekShift * 7)
+  const nights = []
+  for (let i = 6; i >= 0; i -= 1) {
+    const iso = addDaysIso(end, -i)
+    const at = noonOn(iso)
+    let dueCount = 0
+    let clear = true
+    for (const book of books) {
+      const due = at ? dueTonight(book, at) : []
+      dueCount += due.length
+      if (due.length && !allClearTonight(book, at)) clear = false
+    }
+    nights.push({
+      iso,
+      weekday: weekdayShort(iso),
+      dayNum: dayNumber(iso),
+      isToday: iso === today,
+      due: dueCount,
+      on: dueCount > 0 && clear,
+      miss: dueCount > 0 && !clear && iso < today,
+      empty: dueCount === 0,
     })
   }
   return nights

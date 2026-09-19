@@ -216,6 +216,11 @@ export const fr = {
   'tonight.boardName': 'Nom du tag',
   'tonight.didI': 'Did I',
   'tonight.purse': '{coins} · {gems}',
+  'weekbar.aria': 'Semaine de streak',
+  'weekbar.prev': 'Semaine précédente',
+  'weekbar.next': 'Semaine suivante',
+  'weekbar.streak': 'Streak {n}',
+  'weekbar.none': 'Streak',
 
   'boards.kicker': 'Tags',
   'boards.title': 'Tes tags',

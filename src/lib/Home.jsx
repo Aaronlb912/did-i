@@ -8,7 +8,7 @@ import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { normalizePurse } from './purse.js'
+import { mergePurses } from './purse.js'
 import { firstName } from './session.js'
 import { leftoverOn, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
@@ -32,7 +32,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const name = firstName(book)
   const heat = hallHeat(book, clock)
   const hunt = nextMark(book)
-  const purse = normalizePurse(book)
+  const purse = mergePurses(shelf)
   const kicker =
     !tagId && leftAll
       ? leftAll === 1

@@ -210,6 +210,11 @@ export const zh = {
   'tonight.boardName': 'tag 名称',
   'tonight.didI': 'Did I',
   'tonight.purse': '{coins} · {gems}',
+  'weekbar.aria': 'streak 周',
+  'weekbar.prev': '上一周',
+  'weekbar.next': '下一周',
+  'weekbar.streak': 'streak {n}',
+  'weekbar.none': 'streak',
 
   'boards.kicker': 'tags',
   'boards.title': '你的 tags',

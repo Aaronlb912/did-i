@@ -9,14 +9,14 @@ import { HolePlate } from './HolePlate.jsx'
 import { unlockAchievements } from './achievements.js'
 import { shortLabel } from './board-json.js'
 import { putAnswer } from './board-ops.js'
-import { filamentLevel, hallHeat, hallHour } from './hall-feel.js'
-import { HeatPips } from './HeatPips.jsx'
+import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { NightMeter } from './NightMeter.jsx'
 import { feelTap, playClick } from './native.js'
 import { usePrefs, useTheme } from './prefs.js'
-import { normalizePurse } from './purse.js'
+import { mergePurses } from './purse.js'
+import { WeekStrip } from './WeekStrip.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import {
   allClearTonight,
@@ -82,7 +82,7 @@ export function Tonight({
     : shelf.flatMap((book) => waitingTonight(book, clock))
   const catchUp = taggedCatchUp(shelf, clock, tagId)
   const hallOn = (tagId ? [liveValue] : shelf).every((book) => allClearTonight(book, clock))
-  const heat = hallHeat(liveValue, clock)
+  const heat = shelfHeat(shelf, clock, tagId)
   const hour = hallHour(clock)
   const empty = (tagId ? [liveValue] : shelf).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
@@ -347,13 +347,11 @@ export function Tonight({
       <section className="di-face">
         <p className="di-face-plate">{t('tonight.doneKicker')}</p>
         <h2 className="di-question">{t('tonight.doneTitle')}</h2>
-        <p className="di-detail-meta">{t('tonight.doneStreak', { n: heat })}</p>
-        <HeatPips heat={heat} />
       </section>
     )
   }
 
-  const purse = normalizePurse(value)
+  const purse = mergePurses(shelf)
 
   return (
     <div
@@ -475,6 +473,8 @@ export function Tonight({
             </button>
           </p>
         ) : null}
+
+        <WeekStrip boards={shelf} tagId={tagId} now={clock} />
 
         <AppNav />
       </div>

@@ -765,6 +765,104 @@ html[data-theme='light'] body {
   color: #101208;
 }
 
+.di-weekbar {
+  margin-top: auto;
+  flex: 0 0 auto;
+  padding: 0.55rem 0 0.1rem;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--di-line-soft);
+}
+
+.di-weekbar-head {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.di-weekbar-head p {
+  flex: 1 1 auto;
+  margin: 0;
+  text-align: center;
+  font-family: var(--di-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--di-ink-soft);
+}
+
+.di-weekbar-shift {
+  flex: 0 0 auto;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--di-ink-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.di-weekbar-shift:hover:not(:disabled) {
+  color: var(--di-ink);
+}
+
+.di-weekbar-shift:disabled {
+  opacity: 0.35;
+}
+
+.di-weekbar-days {
+  display: flex;
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  gap: 0.15rem;
+}
+
+.di-weekbar-days li {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  font-family: var(--di-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--di-ink-soft);
+}
+
+.di-weekbar-days li.is-today {
+  color: var(--di-ink);
+  font-weight: 600;
+}
+
+.di-weekbar-pip {
+  display: block;
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: var(--di-open);
+  border: 1px solid var(--di-line);
+  opacity: 1;
+}
+
+.di-weekbar-days li.is-on .di-weekbar-pip {
+  background: var(--di-on);
+  border-color: var(--di-on-deep);
+}
+
+.di-weekbar-days li.is-empty .di-weekbar-pip {
+  opacity: 0.4;
+}
+
+.di-weekbar-days li.is-today .di-weekbar-pip {
+  outline: 1px solid var(--di-ink-soft);
+  outline-offset: 2px;
+}
+
 /* Undo toast */
 
 .di-undo {
@@ -2072,6 +2170,7 @@ html[data-theme='light'] body {
 .di-title:focus-visible,
 .di-title-input:focus-visible,
 .di-appnav a:focus-visible,
+.di-weekbar-shift:focus-visible,
 .di-lamp-row:focus-visible,
 .di-feed-row:focus-visible,
 .di-week-name:focus-visible,
