@@ -1,16 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { CheerChip, LookChip, StageChip } from './Cosmetic.jsx'
+import { CheerChip, LookChip } from './Cosmetic.jsx'
 import {
   CHEERS,
   CHEER_STAGE_GEMS,
-  CHEER_STAGE_MAX,
-  CHEER_STAGE_USES,
   LOOKS,
   buyCheer,
   buyCheerStage,
   buyLook,
+  cheerStageOf,
   fireCheer,
   nextCheerStage,
   normalizePurse,
@@ -18,153 +17,178 @@ import {
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { useReduceMotion } from './useReduceMotion.js'
+
+function coinLine(n) {
+  return n === 1 ? t('shop.coinOne') : t('shop.coins', { n })
+}
+
+function gemLine(n) {
+  return n === 1 ? t('shop.gemOne') : t('shop.gems', { n })
+}
 
 export function Shop({ book, onChange, now }) {
   usePrefs()
+  const still = useReduceMotion()
   const clock = now || new Date()
   const purse = normalizePurse(book)
   const [miss, setMiss] = useState('')
   const [peekLook, setPeekLook] = useState('')
-  const nextStage = nextCheerStage(purse.cheerStage)
-  const tapsLeft = nextStage ? Math.max(0, CHEER_STAGE_USES[nextStage] - purse.cheerUses) : 0
-  const stageCost = nextStage ? CHEER_STAGE_GEMS[nextStage] : 0
+  const [confirm, setConfirm] = useState(null)
+
+  useEffect(() => {
+    if (!confirm) return undefined
+    function onKey(event) {
+      if (event.key === 'Escape') setConfirm(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [confirm])
 
   function take(next) {
     setMiss(next.miss)
     if (!next.miss) {
       setPeekLook('')
+      setConfirm(null)
       onChange(next.book)
     }
+  }
+
+  function askBuy(plan) {
+    setMiss('')
+    setConfirm(plan)
   }
 
   return (
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('shop.title')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
       look={peekLook || undefined}
     >
-      <section className="di-page di-shop">
-        <p className="di-face-plate">Shop</p>
-        <h2 className="di-page-title">Spend what you earned</h2>
-        <p className="di-detail-meta">
-          {purse.coins} {purse.coins === 1 ? 'coin' : 'coins'}. {purse.gems}{' '}
-          {purse.gems === 1 ? 'gem' : 'gems'}. Tap a chip to see it. Looks use
-          coins. Cheers and firework stages use gems. No real money.
+      <section className="di-page di-shop di-set">
+        <div className="di-shop-head">
+          <h2 className="di-page-title">{t('shop.title')}</h2>
+          <button className="di-key" type="button" onClick={() => goHash('/kit')}>
+            {t('shop.kit')}
+          </button>
+        </div>
+        <p className="di-shop-purse">
+          {t('tonight.purse', { coins: purse.coins, gems: purse.gems })}
         </p>
+        <p className="di-set-note">{t('shop.hint')}</p>
 
-        <div className="di-home-block">
-          <p className="di-slot-label">Looks</p>
-          <p className="di-detail-meta">{t('shop.lookHint')}</p>
-          <ul className="di-shop-list">
-            {LOOKS.map((item) => {
-              const have = purse.looks.includes(item.id)
-              const on = purse.lookOn === item.id
-              return (
-                <li key={item.id}>
-                  <button
-                    className={peekLook === item.id ? 'di-preview is-on' : 'di-preview'}
-                    type="button"
-                    aria-label={`See ${item.name}`}
-                    onClick={() => setPeekLook(item.id)}
-                  >
-                    <LookChip id={item.id} />
-                  </button>
-                  <span>
-                    <strong>{item.name}</strong>
-                    <em>{have ? item.line : `${item.coins} ${item.coins === 1 ? 'coin' : 'coins'}`}</em>
-                  </span>
-                  <button
-                    className={on ? 'di-did di-did-small' : 'di-key'}
-                    type="button"
-                    onClick={() => take(buyLook(book, item.id))}
-                  >
-                    {on ? 'On' : have ? 'Use' : 'Buy'}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-
-        <div className="di-home-block">
-          <p className="di-slot-label">Fireworks</p>
-          <p className="di-detail-meta">
-            Stage {purse.cheerStage} of {CHEER_STAGE_MAX}.{' '}
-            {purse.cheerStage === 1 ? 'One burst' : `${purse.cheerStage} bursts`} when
-            you hit DID.
-            {nextStage
-              ? ` ${tapsLeft} more ${tapsLeft === 1 ? 'DID' : 'DID taps'} to stage ${nextStage}, or ${stageCost} ${stageCost === 1 ? 'gem' : 'gems'}.`
-              : ' That is the top.'}
-          </p>
-          <ul className="di-shop-list">
-            <li>
-              <button
-                className="di-preview"
-                type="button"
-                aria-label={nextStage ? `See stage ${nextStage}` : 'See stage 5'}
-                onClick={() => fireCheer(purse.cheerOn, nextStage || purse.cheerStage)}
-              >
-                <StageChip stage={nextStage || purse.cheerStage} />
-              </button>
-              <span>
-                <strong>{nextStage ? `Stage ${nextStage}` : 'Stage 5'}</strong>
-                <em>
-                  {nextStage
-                    ? `${nextStage} ${nextStage === 1 ? 'burst' : 'bursts'}. ${stageCost} ${stageCost === 1 ? 'gem' : 'gems'}.`
-                    : 'Five bursts. You have this.'}
-                </em>
-              </span>
-              {nextStage ? (
+        <p className="di-set-cap">{t('shop.looks')}</p>
+        <div className="di-set-card di-shop-card">
+          {LOOKS.map((item) => {
+            const have = purse.looks.includes(item.id)
+            const on = purse.lookOn === item.id
+            return (
+              <div className="di-shop-row" key={item.id}>
                 <button
-                  className="di-did di-did-small"
+                  className="di-preview"
                   type="button"
-                  onClick={() => take(buyCheerStage(book))}
+                  aria-label={t('shop.see', { name: item.name })}
+                  onClick={() => setPeekLook(item.id)}
                 >
-                  Buy
+                  <LookChip id={item.id} />
                 </button>
-              ) : (
-                <button className="di-did di-did-small" type="button" disabled>
-                  On
+                <span className="di-shop-copy">
+                  <strong>{item.name}</strong>
+                  <em>{have ? item.line : coinLine(item.coins)}</em>
+                </span>
+                <button
+                  className={on ? 'di-did di-did-small' : 'di-key'}
+                  type="button"
+                  disabled={on}
+                  onClick={() => {
+                    if (have) {
+                      take(buyLook(book, item.id))
+                      return
+                    }
+                    askBuy({
+                      title: item.name,
+                      body: t('shop.buyLookBody', { cost: coinLine(item.coins) }),
+                      go: () => take(buyLook(book, item.id)),
+                    })
+                  }}
+                >
+                  {on ? t('shop.on') : have ? t('shop.use') : t('shop.buy')}
                 </button>
-              )}
-            </li>
-          </ul>
+              </div>
+            )
+          })}
         </div>
 
-        <div className="di-home-block">
-          <p className="di-slot-label">Cheers</p>
-          <p className="di-detail-meta">The look of the burst. Finish tonight for a gem.</p>
-          <ul className="di-shop-list">
-            {CHEERS.map((item) => {
-              const have = purse.cheers.includes(item.id)
-              const on = purse.cheerOn === item.id
-              return (
-                <li key={item.id}>
+        <p className="di-set-cap">{t('shop.cheers')}</p>
+        <p className="di-set-note">{t('shop.cheerHint')}</p>
+        <div className="di-set-card di-shop-card">
+          {CHEERS.map((item) => {
+            const have = purse.cheers.includes(item.id)
+            const stage = cheerStageOf(book, item.id)
+            const next = have ? nextCheerStage(stage) : 0
+            const cost = next ? CHEER_STAGE_GEMS[next] : item.gems
+            return (
+              <div className="di-shop-row" key={item.id}>
+                <button
+                  className="di-preview"
+                  type="button"
+                  aria-label={t('shop.see', { name: item.name })}
+                  onClick={() => fireCheer(item.id, have ? stage : 1)}
+                >
+                  <CheerChip id={item.id} stage={have ? stage : 1} />
+                </button>
+                <span className="di-shop-copy">
+                  <strong>{item.name}</strong>
+                  <em>
+                    {have
+                      ? next
+                        ? gemLine(cost)
+                        : t('shop.owned')
+                      : item.gems
+                        ? gemLine(item.gems)
+                        : t('shop.owned')}
+                  </em>
+                </span>
+                {have ? (
+                  next ? (
+                    <button
+                      className="di-key"
+                      type="button"
+                      onClick={() =>
+                        askBuy({
+                          title: item.name,
+                          body: t('shop.buyStageBody', { n: next, cost: gemLine(cost) }),
+                          go: () => take(buyCheerStage(book, item.id)),
+                        })
+                      }
+                    >
+                      {t('shop.nextStage')}
+                    </button>
+                  ) : (
+                    <button className="di-key" type="button" disabled>
+                      {t('shop.owned')}
+                    </button>
+                  )
+                ) : (
                   <button
-                    className="di-preview"
+                    className="di-key"
                     type="button"
-                    aria-label={`See ${item.name}`}
-                    onClick={() => fireCheer(item.id, purse.cheerStage)}
+                    onClick={() =>
+                      askBuy({
+                        title: item.name,
+                        body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
+                        go: () => take(buyCheer(book, item.id)),
+                      })
+                    }
                   >
-                    <CheerChip id={item.id} />
+                    {t('shop.buy')}
                   </button>
-                  <span>
-                    <strong>{item.name}</strong>
-                    <em>{have ? item.line : `${item.gems} ${item.gems === 1 ? 'gem' : 'gems'}`}</em>
-                  </span>
-                  <button
-                    className={on ? 'di-did di-did-small' : 'di-key'}
-                    type="button"
-                    onClick={() => take(buyCheer(book, item.id))}
-                  >
-                    {on ? 'On' : have ? 'Use' : 'Buy'}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {miss ? (
@@ -172,16 +196,40 @@ export function Shop({ book, onChange, now }) {
             {miss}
           </p>
         ) : null}
-
-        <div className="di-hang-actions">
-          <button className="di-did di-did-small" type="button" onClick={() => goHash('/kit')}>
-            Collection
-          </button>
-          <button className="di-key" type="button" onClick={() => goHash('/')}>
-            Home
-          </button>
-        </div>
       </section>
+      {confirm ? (
+        <div className="di-buy-veil" role="presentation" onClick={() => setConfirm(null)}>
+          <div
+            className={still ? 'di-buy-pop is-still' : 'di-buy-pop'}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="di-buy-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="di-face-plate">{t('shop.buyKicker')}</p>
+            <h2 id="di-buy-title" className="di-buy-title">
+              {confirm.title}
+            </h2>
+            <p className="di-detail-meta">{confirm.body}</p>
+            <div className="di-hang-actions">
+              <button
+                className="di-did di-did-small"
+                type="button"
+                onClick={() => {
+                  const go = confirm.go
+                  setConfirm(null)
+                  if (typeof go === 'function') go()
+                }}
+              >
+                {t('shop.buy')}
+              </button>
+              <button className="di-key" type="button" onClick={() => setConfirm(null)}>
+                {t('settings.neverMind')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </BoardShell>
   )
 }

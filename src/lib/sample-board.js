@@ -85,6 +85,7 @@ export function sampleBoard(now = new Date()) {
 
   return {
     version: 1,
+    id: 'board-hayes',
     title: 'Hayes Street',
     keeperName: 'Jordan Hale',
     dayFoldHour: 4,

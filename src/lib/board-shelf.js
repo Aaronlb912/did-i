@@ -19,6 +19,28 @@ export function normalizeShelf(raw) {
   const currentId = boards.some((book) => book.id === source.currentId)
     ? source.currentId
     : boards[0].id
+  return parkEmptyTags(mergeSameTitles({ currentId, boards }))
+}
+
+export function liveLampCount(book) {
+  return (book?.lamps || []).filter((lamp) => !lamp.archived).length
+}
+
+export function parkEmptyTags(shelf) {
+  const boards = (shelf.boards || []).map((book) => ({
+    ...book,
+    archived: liveLampCount(book) === 0,
+  }))
+  const live = boards.filter((book) => !book.archived)
+  if (!boards.length) return shelf
+  if (!live.length) {
+    const keep = boards.find((book) => book.id === shelf.currentId) || boards[0]
+    return {
+      currentId: keep.id,
+      boards: boards.map((book) => (book.id === keep.id ? { ...book, archived: false } : book)),
+    }
+  }
+  const currentId = live.some((book) => book.id === shelf.currentId) ? shelf.currentId : live[0].id
   return { currentId, boards }
 }
 
@@ -54,12 +76,79 @@ export function readShelf() {
   return writeShelf({ currentId: book.id, boards: [book] })
 }
 
+export function tagKey(title) {
+  return String(title || '')
+    .trim()
+    .toLowerCase()
+}
+
+export function findBookByTitle(boards, title) {
+  const key = tagKey(title)
+  if (!key) return null
+  return (boards || []).find((book) => tagKey(book.title) === key) || null
+}
+
+export function findBookHoldingLamp(boards, lampId) {
+  if (!lampId) return null
+  return (
+    (boards || []).find((book) => (book.lamps || []).some((lamp) => lamp.id === lampId)) || null
+  )
+}
+
+function foldBook(into, extra) {
+  if (!extra || extra.id === into.id) return extra || into
+  const ids = new Set((into.lamps || []).map((lamp) => lamp.id))
+  const lamps = [...(into.lamps || [])]
+  for (const lamp of extra.lamps || []) {
+    if (!ids.has(lamp.id)) lamps.push(lamp)
+  }
+  const seen = new Set((into.answers || []).map((answer) => `${answer.lampId}:${answer.periodKey}`))
+  const answers = [...(into.answers || [])]
+  for (const answer of extra.answers || []) {
+    const key = `${answer.lampId}:${answer.periodKey}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    answers.push(answer)
+  }
+  return { ...into, lamps, answers }
+}
+
+export function mergeSameTitles(shelf) {
+  const boards = []
+  const byKey = new Map()
+  for (const book of shelf.boards || []) {
+    const key = tagKey(book.title)
+    const prev = key ? byKey.get(key) : null
+    if (!prev) {
+      boards.push(book)
+      if (key) byKey.set(key, book)
+      continue
+    }
+    const merged = foldBook(prev, book)
+    const index = boards.findIndex((item) => item.id === prev.id)
+    boards[index] = merged
+    byKey.set(key, merged)
+  }
+  if (!boards.length) return shelf
+  const currentId = boards.some((book) => book.id === shelf.currentId) ? shelf.currentId : boards[0].id
+  return { currentId, boards }
+}
+
 export function putBook(shelf, book) {
   const next = normalizeBook(book)
-  const boards = shelf.boards.some((item) => item.id === next.id)
-    ? shelf.boards.map((item) => (item.id === next.id ? next : item))
-    : [...shelf.boards, next]
-  return { currentId: next.id, boards }
+  if (shelf.boards.some((item) => item.id === next.id)) {
+    const boards = shelf.boards.map((item) => (item.id === next.id ? next : item))
+    return mergeSameTitles({ currentId: next.id, boards })
+  }
+  const same = findBookByTitle(shelf.boards, next.title)
+  if (same) {
+    const merged = foldBook(same, next)
+    return {
+      currentId: same.id,
+      boards: shelf.boards.map((item) => (item.id === same.id ? merged : item)),
+    }
+  }
+  return { currentId: next.id, boards: [...shelf.boards, next] }
 }
 
 export function selectBook(shelf, id) {

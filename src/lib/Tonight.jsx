@@ -20,6 +20,7 @@ import { WeekStrip } from './WeekStrip.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import {
   allClearTonight,
+  answerFor,
   boardDate,
   faceReadyTonight,
   formatBoardDate,
@@ -81,7 +82,7 @@ export function Tonight({
     ? waitingTonight(liveValue, clock)
     : shelf.flatMap((book) => waitingTonight(book, clock))
   const catchUp = taggedCatchUp(shelf, clock, tagId)
-  const hallOn = (tagId ? [liveValue] : shelf).every((book) => allClearTonight(book, clock))
+  const hallOn = due.length > 0 && due.every((row) => row.answer)
   const heat = shelfHeat(shelf, clock, tagId)
   const hour = hallHour(clock)
   const empty = (tagId ? [liveValue] : shelf).every(
@@ -245,6 +246,10 @@ export function Tonight({
       setHolePick(null)
       return
     }
+    if (row.answer?.status === 'skip') {
+      pickHole(row.lamp, row.periodKey, row)
+      return
+    }
     if (row.answer) {
       goHash('/lamp', { id: row.lamp.id })
       return
@@ -271,12 +276,19 @@ export function Tonight({
 
   let body = null
   if (holePick) {
+    const holeBook = holePick.book || bookOf(holePick)
+    const wasSkip = answerFor(holeBook, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
     body = (
       <HolePlate
         lamp={holePick.lamp}
         periodKey={holePick.periodKey}
-        onLate={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'late')}
-        onSkip={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'skip')}
+        wasSkip={wasSkip}
+        onLate={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey, book: holeBook }, 'late')}
+        onSkip={
+          wasSkip
+            ? undefined
+            : () => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey, book: holeBook }, 'skip')
+        }
         onClose={() => setHolePick(null)}
       />
     )
@@ -349,6 +361,13 @@ export function Tonight({
         <h2 className="di-question">{t('tonight.doneTitle')}</h2>
       </section>
     )
+  } else {
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.didI')}</p>
+        <h2 className="di-question">{t('tonight.waitTitle')}</h2>
+      </section>
+    )
   }
 
   const purse = mergePurses(shelf)
@@ -396,7 +415,7 @@ export function Tonight({
 
         <TagRail boards={shelf} tagId={tagId} onTag={onTag} now={clock} />
 
-        <NightMeter due={due} done={hallOn} />
+        <NightMeter due={due} />
 
         {dueWithWait.length > 0 && !holePick && !waitPick ? (
           <div className="di-edge-wrap">
@@ -463,7 +482,7 @@ export function Tonight({
           </div>
         ) : null}
 
-        {body}
+        <div className="di-face-slot">{body}</div>
 
         {undo ? (
           <p className="di-undo di-screws-print-hide">

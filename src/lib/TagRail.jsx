@@ -4,9 +4,10 @@ import { usePrefs } from './prefs.js'
 
 export function TagRail({ boards, tagId, onTag, now }) {
   usePrefs()
-  if (!boards || boards.length < 2) return null
+  const live = (boards || []).filter((book) => !book.archived)
+  if (live.length < 2) return null
   const clock = now || new Date()
-  const allLeft = leftoverOn(boards, clock, '')
+  const allLeft = leftoverOn(live, clock, '')
   return (
     <div className="di-tags" role="tablist" aria-label={t('tags.aria')}>
       <button
@@ -19,8 +20,8 @@ export function TagRail({ boards, tagId, onTag, now }) {
         {t('tags.all')}
         {allLeft ? <em>{allLeft}</em> : null}
       </button>
-      {boards.map((book) => {
-        const left = leftoverOn(boards, clock, book.id)
+      {live.map((book) => {
+        const left = leftoverOn(live, clock, book.id)
         const on = tagId === book.id
         return (
           <button

@@ -1,12 +1,16 @@
 import { allClearTonight, boardDate } from './recurrence.js'
 
 export const CHEERS = [
-  { id: 'lime', name: 'Lime', line: 'The one you start with.', gems: 0 },
-  { id: 'tape', name: 'Tape', line: 'Short strips.', gems: 2 },
-  { id: 'paper', name: 'Paper', line: 'A thicker burst.', gems: 3 },
-  { id: 'boom', name: 'Boom', line: 'Rings and sparks.', gems: 4 },
-  { id: 'night', name: 'Night', line: 'Quiet gold bits.', gems: 5 },
+  { id: 'lime', name: 'Lime', line: 'Rings bloom from the tap.', gems: 0 },
+  { id: 'tape', name: 'Tape', line: 'Strips whip in from the sides.', gems: 2 },
+  { id: 'paper', name: 'Paper', line: 'A plane folds and flies.', gems: 3 },
+  { id: 'boom', name: 'Boom', line: 'A mortar and colored rings.', gems: 4 },
+  { id: 'night', name: 'Night', line: 'Moon up. Stars stay put.', gems: 5 },
   { id: 'dance', name: 'Dance', line: 'Little people hop.', gems: 6 },
+  { id: 'stamp', name: 'Stamp', line: 'A DID stamp slams.', gems: 7 },
+  { id: 'rain', name: 'Rain', line: 'Drops fall. A puddle stays a beat.', gems: 8 },
+  { id: 'check', name: 'Check', line: 'A tick draws itself.', gems: 9 },
+  { id: 'bubble', name: 'Bubble', line: 'Bubbles rise and pop.', gems: 10 },
 ]
 
 export const LOOKS = [
@@ -28,6 +32,17 @@ function asCount(value) {
   return n > 0 ? n : 0
 }
 
+function asCheerStages(book, owned) {
+  const raw = book?.cheerStages && typeof book.cheerStages === 'object' ? book.cheerStages : {}
+  const fallback = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(book?.cheerStage) || 0) || 1))
+  const out = {}
+  for (const id of owned) {
+    const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(raw[id]) || 0) || fallback))
+    out[id] = n
+  }
+  return out
+}
+
 export function normalizePurse(book) {
   const cheers = Array.isArray(book?.cheers)
     ? book.cheers.map((id) => String(id)).filter((id) => CHEER_IDS.has(id))
@@ -40,8 +55,8 @@ export function normalizePurse(book) {
   const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
   const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
   const cheerUses = asCount(book?.cheerUses)
-  const storedStage = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(book?.cheerStage) || 0) || 1))
-  const cheerStage = Math.max(storedStage, stageFromUses(cheerUses))
+  const cheerStages = asCheerStages(book, owned)
+  const cheerStage = Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
   return {
     coins: asCount(book?.coins),
     gems: asCount(book?.gems),
@@ -51,6 +66,7 @@ export function normalizePurse(book) {
     lookOn,
     cheerUses,
     cheerStage,
+    cheerStages: { ...cheerStages, [cheerOn]: cheerStage },
   }
 }
 
@@ -74,6 +90,12 @@ export function mergePurses(boards) {
     lookOn: purses.find((item) => item.lookOn !== 'lime')?.lookOn || purses[0].lookOn,
     cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
     cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
+    cheerStages: Object.fromEntries(
+      [...new Set(purses.flatMap((item) => Object.keys(item.cheerStages || {})))].map((id) => [
+        id,
+        Math.max(...purses.map((item) => item.cheerStages?.[id] || 1)),
+      ]),
+    ),
   }
 }
 
@@ -97,6 +119,7 @@ export function spreadPurseFrom(shelf, book) {
     gems: from.gems,
     cheerUses: from.cheerUses,
     cheerStage: from.cheerStage,
+    cheerStages: from.cheerStages,
     lookOn: from.lookOn,
     cheerOn: from.cheerOn,
     looks: [...new Set([...merged.looks, ...from.looks])],
@@ -159,9 +182,26 @@ export function payTap(before, after, row, status, clock = new Date()) {
 
 export function noteCheer(book) {
   const purse = normalizePurse(book)
+  const id = purse.cheerOn
   const cheerUses = purse.cheerUses + 1
-  const cheerStage = Math.max(purse.cheerStage, stageFromUses(cheerUses))
-  return { ...book, ...purse, cheerUses, cheerStage }
+  const fromUse = stageFromUses(cheerUses)
+  const cheerStages = {
+    ...purse.cheerStages,
+    [id]: Math.max(purse.cheerStages[id] || 1, fromUse),
+  }
+  return {
+    ...book,
+    ...purse,
+    cheerUses,
+    cheerStages,
+    cheerStage: cheerStages[id],
+  }
+}
+
+export function cheerStageOf(book, id) {
+  const purse = normalizePurse(book)
+  if (!purse.cheers.includes(id)) return 1
+  return purse.cheerStages[id] || 1
 }
 
 export function fireCheer(kind, stage = 1) {
@@ -190,18 +230,22 @@ export function buyLook(book, id) {
   }
 }
 
-export function buyCheerStage(book) {
+export function buyCheerStage(book, id) {
   const purse = normalizePurse(book)
-  const next = nextCheerStage(purse.cheerStage)
+  const cheerId = CHEER_IDS.has(id) ? id : purse.cheerOn
+  if (!purse.cheers.includes(cheerId)) return { book, miss: 'Buy that cheer first.' }
+  const next = nextCheerStage(purse.cheerStages[cheerId] || 1)
   if (!next) return { book: { ...book, ...purse }, miss: 'Stage is full.' }
   const cost = CHEER_STAGE_GEMS[next]
   if (purse.gems < cost) return { book, miss: `Need ${cost} ${cost === 1 ? 'gem' : 'gems'}.` }
+  const cheerStages = { ...purse.cheerStages, [cheerId]: next }
   return {
     book: {
       ...book,
       ...purse,
       gems: purse.gems - cost,
-      cheerStage: next,
+      cheerStages,
+      cheerStage: cheerId === purse.cheerOn ? next : purse.cheerStage,
       cheerUses: Math.max(purse.cheerUses, CHEER_STAGE_USES[next]),
     },
     miss: '',
@@ -223,6 +267,7 @@ export function buyCheer(book, id) {
       gems: purse.gems - cheer.gems,
       cheers: [...purse.cheers, id],
       cheerOn: id,
+      cheerStages: { ...purse.cheerStages, [id]: purse.cheerStages[id] || 1 },
     },
     miss: '',
   }

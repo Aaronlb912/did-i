@@ -1,21 +1,21 @@
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 
-function isAnswered(row) {
+function isComplete(row) {
   const status = row?.answer?.status
-  return status === 'yes' || status === 'skip' || status === 'late'
+  return status === 'yes' || status === 'late'
 }
 
-export function nightProgress(due = [], done = false) {
+export function nightProgress(due = []) {
   const total = due.length
-  const answered = due.filter(isAnswered).length
-  const ratio = done || (total > 0 && answered >= total) ? 1 : total ? answered / total : 0
+  const answered = due.filter(isComplete).length
+  const ratio = total ? answered / total : 0
   return { total, answered, ratio }
 }
 
-export function NightMeter({ due = [], done = false }) {
+export function NightMeter({ due = [] }) {
   usePrefs()
-  const { total, answered, ratio } = nightProgress(due, done)
+  const { total, answered, ratio } = nightProgress(due)
   if (!total) return null
   return (
     <div className="di-meter">

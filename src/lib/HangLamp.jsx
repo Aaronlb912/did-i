@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { blankLamp, lampNotifyOn, lampPriority, missLamp, shortLabel } from './board-json.js'
+import { findBookByTitle } from './board-shelf.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { STARTERS } from './starters.js'
@@ -30,6 +31,9 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
   )
   const priority = lampPriority(draft)
   const notifyOn = lampNotifyOn(draft)
+  const knownTag = Boolean(findBookByTitle(boards, tagTitle))
+  const liveTags = (boards || []).filter((item) => !item.archived)
+  const parkedTags = (boards || []).filter((item) => item.archived)
 
   useEffect(() => {
     questionRef.current?.focus()
@@ -83,20 +87,59 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
         />
       </label>
       {onTagTitle ? (
-        <label className="di-field">
-          <span>{t('hang.tag')}</span>
-          <input
-            list="di-hang-tags"
-            value={tagTitle}
-            onChange={(event) => onTagTitle(event.target.value)}
-            placeholder={t('hang.tagPh')}
-          />
-          <datalist id="di-hang-tags">
-            {boards.map((item) => (
-              <option key={item.id} value={item.title} />
-            ))}
-          </datalist>
-        </label>
+        <div className="di-field">
+          <span id="di-hang-tag">{t('hang.tag')}</span>
+          <div className="di-tagpick" role="group" aria-labelledby="di-hang-tag">
+            {liveTags.map((item) => {
+              const on = Boolean(findBookByTitle([item], tagTitle))
+              return (
+                <button
+                  key={item.id}
+                  className={on ? 'di-key is-pick' : 'di-key'}
+                  type="button"
+                  onClick={() => onTagTitle(item.title)}
+                >
+                  {item.title}
+                </button>
+              )
+            })}
+            <button
+              className="di-tagpick-new"
+              type="button"
+              aria-pressed={!knownTag}
+              onClick={() => onTagTitle('')}
+            >
+              {t('hang.tagNew')}
+            </button>
+          </div>
+          {parkedTags.length ? (
+            <div className="di-tagpick di-tagpick-later" role="group" aria-label={t('hang.tagLater')}>
+              <span className="di-tagpick-cap">{t('hang.tagLater')}</span>
+              <span className="di-tagpick-hint">{t('hang.tagLaterHint')}</span>
+              {parkedTags.map((item) => {
+                const on = Boolean(findBookByTitle([item], tagTitle))
+                return (
+                  <button
+                    key={item.id}
+                    className={on ? 'di-key is-pick' : 'di-key di-tagpick-old'}
+                    type="button"
+                    onClick={() => onTagTitle(item.title)}
+                  >
+                    {item.title}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
+          {knownTag ? null : (
+            <input
+              value={tagTitle}
+              onChange={(event) => onTagTitle(event.target.value)}
+              placeholder={t('hang.tagPh')}
+              aria-label={t('hang.tagNew')}
+            />
+          )}
+        </div>
       ) : null}
       <label className="di-field">
         <span>{t('hang.often')}</span>

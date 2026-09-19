@@ -11,7 +11,7 @@ export function NightStrip({ book, lamp, keys, onPickHole }) {
         if (answer?.status === 'yes') state = 'yes'
         else if (answer?.status === 'late') state = 'late'
         else if (answer?.status === 'skip') state = 'skip'
-        const canPick = !answer && onPickHole
+        const canPick = onPickHole && (!answer || answer.status === 'skip')
         const inner = (
           <>
             <span className={`di-strip-jewel is-${state}`} />

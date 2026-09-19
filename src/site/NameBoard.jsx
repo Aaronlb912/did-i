@@ -32,14 +32,15 @@ export function NameBoard({
           <h1 className="di-question">Name this phone.</h1>
           <p>
             Your questions stay on this computer. There is no email and no
-            password. Hayes Street is a made-up apartment you can open to try it.
+            password. Try a demo if you want to tap around without writing
+            questions first.
           </p>
           <label className="di-field">
             <span>Tag name</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Hayes Street"
+              placeholder="Home"
             />
           </label>
           {miss ? (
@@ -54,7 +55,7 @@ export function NameBoard({
               </button>
             ) : null}
             <button className="di-did di-did-small" type="button" onClick={onOpenSample}>
-              Hayes Street sample
+              Try a demo
             </button>
             <button className="di-skip" type="button" onClick={empty}>
               Start empty

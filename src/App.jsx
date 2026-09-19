@@ -13,6 +13,8 @@ import { freshMarks, noteOpen } from './lib/daily.js'
 import {
   currentBook,
   dropBook,
+  mergeSameTitles,
+  parkEmptyTags,
   nextBoardTitle,
   putBook,
   readShelf,
@@ -52,7 +54,7 @@ import { Shop } from './lib/Shop.jsx'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
-import { needsEnter } from './lib/session.js'
+import { needsEnter, openSession } from './lib/session.js'
 import { Door } from './site/Door.jsx'
 import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
@@ -67,8 +69,28 @@ import './site/site.css'
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
 const HALL = new Set(['/', '/home', '/tonight'])
+const READY_KEY = 'did-i-ready-1'
+
+function wipeDemoOnce() {
+  try {
+    if (localStorage.getItem(READY_KEY) === '1') return
+    localStorage.setItem(READY_KEY, '1')
+  } catch {
+    return
+  }
+  const old = readShelf()
+  const name = currentBook(old)?.keeperName || ''
+  const book = { ...emptyBoard(), title: 'Did I', keeperName: name }
+  writeShelf({ currentId: book.id, boards: [book] })
+  try {
+    localStorage.removeItem('did-i-welcome')
+  } catch {
+    // First night can show again.
+  }
+}
 
 function firstShelf() {
+  wipeDemoOnce()
   const now = new Date()
   const shelf = writeShelf(alignShelfPurse(readShelf()))
   return {
@@ -117,7 +139,7 @@ export default function App() {
       if (next.id === nextShelf.currentId) next = noteOpen(next, now)
       return unlockAchievements(next, now)
     })
-    const drafted = { ...nextShelf, boards: mapped }
+    const drafted = parkEmptyTags(mergeSameTitles({ ...nextShelf, boards: mapped }))
     const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
     const written = writeShelf(spreadPurseFrom(drafted, current))
     const after = currentBook(written)
@@ -137,23 +159,29 @@ export default function App() {
 
   function saveLamp(target, lamp, fromBook, clock) {
     const when = clock || new Date()
+    const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
     let next = shelf
-    if (fromBook && fromBook.id !== target.id) {
-      next = putBook(next, takeDown(fromBook, lamp))
+    let dest = target
+    if (source && source.id !== target.id) {
+      const answers = (source.answers || []).filter((item) => item.lampId === lamp.id)
+      next = putBook(next, takeDown(source, lamp))
+      dest = {
+        ...hangInto(target, lamp, false),
+        answers: [...(target.answers || []).filter((item) => item.lampId !== lamp.id), ...answers],
+      }
+    } else {
+      dest = hangInto(target, lamp, Boolean(source && source.id === target.id))
     }
-    persist(
-      putBook(
-        next,
-        commitBook(hangInto(target, lamp, Boolean(fromBook && fromBook.id === target.id)), when),
-      ),
-    )
+    persist(putBook(next, commitBook(dest, when)))
   }
 
   function switchBoard(id) {
     persist(selectBook(shelf, id))
   }
 
-  const tagId = shelf.boards.some((item) => item.id === route.tag) ? route.tag : ''
+  const tagId = shelf.boards.some((item) => item.id === route.tag && !item.archived)
+    ? route.tag
+    : ''
 
   function setTag(id) {
     if (id) persist(selectBook(shelf, id))
@@ -174,34 +202,26 @@ export default function App() {
 
   function removeBoard(id) {
     persist(dropBook(shelf, id))
+    if (tagId === id || route.tag === id) goHash(path === '/lamps' ? '/lamps' : '/', { tag: 'all' })
   }
 
   function openHall(face = '') {
     goHash(face ? '/tonight' : '/', face ? { face } : '')
   }
 
-  function openSample() {
-    const existing = shelf.boards.find((item) => item.title === 'Hayes Street')
-    change({
-      ...sampleBoard(),
-      id: existing?.id || live.id,
-      keeperName: live.keeperName || 'Jordan Hale',
-    })
+  function openDemo() {
+    const name = live.keeperName || ''
+    const home = normalizeBook({ ...sampleBoard(), keeperName: name })
+    const practice = normalizeBook({ ...samplePracticeBoard(), keeperName: name })
+    const shop = normalizeBook({ ...sampleShopBoard(), keeperName: name })
+    const nowBoard = normalizeBook({ ...sampleNowBoard(), keeperName: name })
+    openSession()
     markWelcomeSeen()
-    openHall()
-  }
-
-  function addTestBoards() {
-    const name = live.keeperName || 'Jordan Hale'
-    const practice = { ...samplePracticeBoard(), keeperName: name }
-    const shop = { ...sampleShopBoard(), keeperName: name }
-    const nowBoard = { ...sampleNowBoard(), keeperName: name }
     persist({
-      ...putBook(putBook(putBook(shelf, shop), practice), nowBoard),
       currentId: nowBoard.id,
+      boards: [home, practice, shop, nowBoard],
     })
-    markWelcomeSeen()
-    goHash('/tonight')
+    goHash('/tonight', { tag: nowBoard.id })
   }
 
   function startEmpty(title, keeperName = '') {
@@ -347,7 +367,6 @@ export default function App() {
     onAskPings: pingLabel ? askPings : undefined,
     installLabel,
     onInstall: installEvent ? installHall : undefined,
-    onShare: nativeShare ? sendCopy : undefined,
     onStartEmpty: () =>
       change({
         ...emptyBoard(),
@@ -355,8 +374,7 @@ export default function App() {
         title: live.title,
         keeperName: live.keeperName,
       }),
-    onResetSample: openSample,
-    onAddTestBoards: addTestBoards,
+    onLoadDemo: openDemo,
   }
 
   let inner = null
@@ -366,7 +384,7 @@ export default function App() {
         currentTitle={book?.title || ''}
         hasBoard={Boolean(book)}
         onOpenHere={() => openHall()}
-        onOpenSample={openSample}
+        onOpenSample={openDemo}
         onStartEmpty={startEmpty}
       />
     )
@@ -389,14 +407,14 @@ export default function App() {
     inner = (
       <Enter
         book={live}
-        onOpenSample={openSample}
+        onOpenSample={openDemo}
         onSaveKeeper={saveKeeper}
         returnTo={path === '/enter' ? (emptyHall ? '/first' : '/') : path}
         returnFace={route.face}
       />
     )
   } else if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
-    inner = <FirstNight book={live} onChange={change} />
+    inner = <FirstNight book={live} onChange={change} onLoadDemo={openDemo} />
   } else if (path === '/about') {
     inner = <About book={live} />
   } else if (path === '/help') {
@@ -468,7 +486,13 @@ export default function App() {
       />
     )
   } else if (path === '/settings') {
-    inner = <Profile book={live} onChange={change} {...hallProps} />
+    inner = (
+      <Profile
+        book={live}
+        onChange={change}
+        {...hallProps}
+      />
+    )
   } else if (path === '/tonight' || path === '/' || path === '/home' || route.face) {
     inner = (
       <Tonight

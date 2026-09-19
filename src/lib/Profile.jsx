@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { downloadBook, parseBookText } from './board-json.js'
 import { t } from './i18n.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -116,21 +115,17 @@ export function Profile({
   now,
   installLabel,
   onInstall,
-  onShare,
   onStartEmpty,
-  onResetSample,
-  onAddTestBoards,
+  onLoadDemo,
 }) {
   const clock = now || new Date()
   const prefs = usePrefs()
   const still = useReduceMotion()
-  const fileRef = useRef(null)
   const [keeperDraft, setKeeperDraft] = useState(book.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book.inkNote || '')
   const [pinDraft, setPinDraft] = useState('')
   const [pinMiss, setPinMiss] = useState('')
   const [pinOn, setPinOn] = useState(hasPin)
-  const [loadMiss, setLoadMiss] = useState('')
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const locked = pinOn
@@ -166,23 +161,6 @@ export function Profile({
     setPinOn(true)
   }
 
-  function onLoadFile(event) {
-    const file = event.target.files && event.target.files[0]
-    event.target.value = ''
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const parsed = parseBookText(String(reader.result || ''))
-      if (!parsed.ok) {
-        setLoadMiss(parsed.reason)
-        return
-      }
-      setLoadMiss('')
-      onChange(parsed.book)
-    }
-    reader.readAsText(file)
-  }
-
   if (confirm) {
     return (
       <BoardShell
@@ -200,8 +178,9 @@ export function Profile({
               className="di-did di-did-small"
               type="button"
               onClick={() => {
-                confirm.go()
+                const go = confirm.go
                 setConfirm(null)
+                if (typeof go === 'function') go()
               }}
             >
               {confirm.yes}
@@ -327,21 +306,32 @@ export function Profile({
           />
         </SetCard>
 
-        <SetCap>{t('settings.copy')}</SetCap>
+        <SetCap>{t('tags.aria')}</SetCap>
         <SetCard>
-          <SetRow label={t('settings.saveCopy')} onClick={() => downloadBook(book)} />
-          <SetRow label={t('settings.loadCopy')} onClick={() => fileRef.current?.click()} />
-          {onShare ? <SetRow label={t('settings.sendCopy')} onClick={onShare} /> : null}
-          <SetRow label={t('settings.print')} onClick={() => window.print()} />
+          <SetRow
+            label={t('tags.aria')}
+            sub={t('tags.openHint')}
+            chevron
+            onClick={() => goHash('/me')}
+          />
         </SetCard>
-        {loadMiss ? (
-          <p className="di-miss" role="alert">
-            {loadMiss}
-          </p>
-        ) : null}
 
         <SetCap>{t('settings.help')}</SetCap>
         <SetCard>
+          {onLoadDemo ? (
+            <SetRow
+              label={t('settings.demo')}
+              onClick={() =>
+                setConfirm({
+                  kicker: t('settings.demo'),
+                  title: t('settings.demoTitle'),
+                  body: t('settings.demoBody'),
+                  yes: t('settings.demoYes'),
+                  go: onLoadDemo,
+                })
+              }
+            />
+          ) : null}
           <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
           <SetRow label={t('settings.ideas')} chevron onClick={() => goHash('/ideas')} />
           <SetRow label={t('settings.what')} chevron onClick={() => goHash('/about')} />
@@ -365,34 +355,6 @@ export function Profile({
               }
             />
           ) : null}
-          {onResetSample ? (
-            <SetRow
-              label={t('settings.hayes')}
-              onClick={() =>
-                setConfirm({
-                  kicker: t('settings.sample'),
-                  title: t('settings.sampleTitle'),
-                  body: t('settings.sampleBody'),
-                  yes: t('settings.sampleYes'),
-                  go: onResetSample,
-                })
-              }
-            />
-          ) : null}
-          {onAddTestBoards ? (
-            <SetRow
-              label={t('settings.addTests')}
-              onClick={() =>
-                setConfirm({
-                  kicker: t('settings.try'),
-                  title: t('settings.tryTitle'),
-                  body: t('settings.tryBody'),
-                  yes: t('settings.tryYes'),
-                  go: onAddTestBoards,
-                })
-              }
-            />
-          ) : null}
           <SetRow
             label={t('settings.leaveBoard')}
             danger
@@ -402,14 +364,6 @@ export function Profile({
             }}
           />
         </SetCard>
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={onLoadFile}
-        />
 
         {sheet === 'theme' ? (
           <SetSheet title={t('settings.theme')} still={still} onClose={() => setSheet(null)}>

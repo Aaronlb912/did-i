@@ -6,7 +6,7 @@ import { HolePlate } from './HolePlate.jsx'
 import { commitBook, hangCopy, putAnswer, takeDown, toggleArchive } from './board-ops.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { answerFor, boardDate, formatBoardDate } from './recurrence.js'
 
 export function LampPage({ book, onChange, now, lampId }) {
   usePrefs()
@@ -40,14 +40,19 @@ export function LampPage({ book, onChange, now, lampId }) {
         <HolePlate
           lamp={holePick.lamp}
           periodKey={holePick.periodKey}
+          wasSkip={answerFor(book, holePick.lamp.id, holePick.periodKey)?.status === 'skip'}
           onLate={() => {
             change(putAnswer(book, holePick, 'late', clock))
             setHolePick(null)
           }}
-          onSkip={() => {
-            change(putAnswer(book, holePick, 'skip', clock))
-            setHolePick(null)
-          }}
+          onSkip={
+            answerFor(book, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
+              ? undefined
+              : () => {
+                  change(putAnswer(book, holePick, 'skip', clock))
+                  setHolePick(null)
+                }
+          }
           onClose={() => setHolePick(null)}
         />
       </BoardShell>
@@ -59,12 +64,14 @@ export function LampPage({ book, onChange, now, lampId }) {
     return (
       <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
         <section className="di-face">
-          <p className="di-face-plate">Delete</p>
-          <h2 className="di-question">Delete this question?</h2>
+          <p className="di-face-plate">{t('lamp.delete')}</p>
+          <h2 className="di-question">{t('lamp.deleteTitle')}</h2>
           <p className="di-detail-meta">
             {taps === 0
-              ? 'It has no answers yet.'
-              : `Its ${taps} ${taps === 1 ? 'answer' : 'answers'} go too. This cannot be undone.`}
+              ? t('lamp.deleteNone')
+              : taps === 1
+                ? t('lamp.deleteOne')
+                : t('lamp.deleteSome', { n: taps })}
           </p>
           <div className="di-hang-actions">
             <button
@@ -75,10 +82,10 @@ export function LampPage({ book, onChange, now, lampId }) {
                 goHash('/lamps')
               }}
             >
-              Delete
+              {t('lamp.delete')}
             </button>
             <button className="di-key" type="button" onClick={() => setConfirmGone(false)}>
-              Keep it
+              {t('lamp.keep')}
             </button>
           </div>
         </section>

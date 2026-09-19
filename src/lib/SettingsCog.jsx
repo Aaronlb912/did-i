@@ -6,13 +6,28 @@ const SETTINGS_ON = ['/settings', '/pings', '/about', '/help']
 
 export function ShopCog() {
   usePrefs()
-  const on = parseHash().path === '/shop' || parseHash().path === '/kit'
+  const on = parseHash().path === '/shop'
   return (
     <a className={on ? 'di-cog is-on' : 'di-cog'} href="#/shop" aria-label={t('shop.cog')}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
           fill="currentColor"
           d="M7 8V6a5 5 0 0 1 10 0v2h3.1c.5 0 .9.45.85.95l-1.2 12A1 1 0 0 1 18.76 22H5.24a1 1 0 0 1-.99-1.05l-1.2-12A.86.86 0 0 1 3.9 8H7Zm2 0h6V6a3 3 0 0 0-6 0v2Z"
+        />
+      </svg>
+    </a>
+  )
+}
+
+export function KitCog() {
+  usePrefs()
+  const on = parseHash().path === '/kit'
+  return (
+    <a className={on ? 'di-cog is-on' : 'di-cog'} href="#/kit" aria-label={t('kit.cog')}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
         />
       </svg>
     </a>
@@ -38,6 +53,7 @@ export function MastCogs() {
   return (
     <div className="di-mast-tools">
       <ShopCog />
+      <KitCog />
       <SettingsCog />
     </div>
   )

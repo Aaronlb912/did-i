@@ -58,7 +58,7 @@ export function Enter({
 
   function sample() {
     setMiss('')
-    onOpenSample()
+    if (onOpenSample) onOpenSample()
   }
 
   return (
@@ -133,7 +133,7 @@ export function Enter({
           ) : null}
           {!named ? (
             <button className="di-key" type="button" onClick={sample}>
-              {t('enter.hayes')}
+              {t('enter.demo')}
             </button>
           ) : null}
         </div>

@@ -65,7 +65,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
 
         <div className="di-home-card">
           <p className="di-face-plate">{t('home.tonight')}</p>
-          <NightMeter due={due} done={hallOn} />
+          <NightMeter due={due} />
           <h3 className="di-question">{tonightTitle}</h3>
           <div className="di-hang-actions">
             {line.kind === 'empty' ? (

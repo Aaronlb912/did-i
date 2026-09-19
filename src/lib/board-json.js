@@ -74,6 +74,7 @@ export function blankBook() {
     answers: [],
     unlocked: [],
     opens: [],
+    archived: false,
     coins: 0,
     gems: 0,
     cheers: ['lime'],
@@ -149,6 +150,7 @@ export function normalizeBook(raw) {
     quietMode: asBool(book.quietMode),
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),
+    archived: asBool(book.archived),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
     unlocked: Array.isArray(book.unlocked)
@@ -163,6 +165,7 @@ export function normalizeBook(raw) {
     cheerOn: purse.cheerOn,
     cheerUses: purse.cheerUses,
     cheerStage: purse.cheerStage,
+    cheerStages: purse.cheerStages,
     looks: purse.looks,
     lookOn: purse.lookOn,
   }

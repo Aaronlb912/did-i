@@ -25,7 +25,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
   const purse = normalizePurse(cheered)
-  fireCheer(purse.cheerOn, purse.cheerStage)
+  fireCheer(purse.cheerOn, purse.cheerStages[purse.cheerOn] || purse.cheerStage)
   return cheered
 }
 

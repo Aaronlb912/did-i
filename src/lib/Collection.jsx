@@ -1,7 +1,7 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { CheerChip, LookChip, StageChip } from './Cosmetic.jsx'
-import { CHEERS, LOOKS, buyCheer, buyLook, fireCheer, normalizePurse } from './purse.js'
+import { CheerChip, LookChip } from './Cosmetic.jsx'
+import { CHEERS, LOOKS, buyCheer, buyLook, cheerStageOf, fireCheer, normalizePurse } from './purse.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -25,103 +25,72 @@ export function Collection({ book, onChange, now }) {
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('kit.title')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
-      <section className="di-page di-kit">
-        <p className="di-face-plate">Collection</p>
-        <h2 className="di-page-title">What you already bought</h2>
-        <p className="di-detail-meta">
-          {t('kit.hint')}
-        </p>
+      <section className="di-page di-kit di-set">
+        <h2 className="di-page-title">{t('kit.title')}</h2>
+        <p className="di-set-note">{t('kit.hint')}</p>
 
-        <div className="di-home-block">
-          <p className="di-slot-label">Looks</p>
-          <ul className="di-shop-list">
-            {looks.map((item) => {
-              const on = purse.lookOn === item.id
-              return (
-                <li key={item.id}>
-                  <LookChip id={item.id} />
-                  <span>
-                    <strong>{item.name}</strong>
-                    <em>{item.line}</em>
-                  </span>
-                  <button
-                    className={on ? 'di-did di-did-small' : 'di-key'}
-                    type="button"
-                    onClick={() => wearLook(item.id)}
-                  >
-                    {on ? 'On' : 'Use'}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+        <p className="di-set-cap">{t('shop.looks')}</p>
+        <div className="di-set-card di-shop-card">
+          {looks.map((item) => {
+            const on = purse.lookOn === item.id
+            return (
+              <div className="di-shop-row" key={item.id}>
+                <LookChip id={item.id} />
+                <span className="di-shop-copy">
+                  <strong>{item.name}</strong>
+                  <em>{item.line}</em>
+                </span>
+                <button
+                  className={on ? 'di-did di-did-small' : 'di-key'}
+                  type="button"
+                  disabled={on}
+                  onClick={() => wearLook(item.id)}
+                >
+                  {on ? t('shop.on') : t('shop.use')}
+                </button>
+              </div>
+            )
+          })}
         </div>
 
-        <div className="di-home-block">
-          <p className="di-slot-label">Fireworks</p>
-          <ul className="di-shop-list">
-            <li>
-              <StageChip stage={purse.cheerStage} />
-              <span>
-                <strong>Stage {purse.cheerStage}</strong>
-                <em>
-                  {purse.cheerStage === 1
-                    ? 'One burst when you hit DID.'
-                    : `${purse.cheerStage} bursts when you hit DID.`}
-                </em>
-              </span>
-              <button
-                className="di-key"
-                type="button"
-                onClick={() => fireCheer(purse.cheerOn, purse.cheerStage)}
-              >
-                Try
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        <div className="di-home-block">
-          <p className="di-slot-label">Cheers</p>
-          <ul className="di-shop-list">
-            {cheers.map((item) => {
-              const on = purse.cheerOn === item.id
-              return (
-                <li key={item.id}>
-                  <button
-                    className="di-preview"
-                    type="button"
-                    aria-label={`See ${item.name}`}
-                    onClick={() => fireCheer(item.id, purse.cheerStage)}
-                  >
-                    <CheerChip id={item.id} />
-                  </button>
-                  <span>
-                    <strong>{item.name}</strong>
-                    <em>{item.line}</em>
-                  </span>
-                  <button
-                    className={on ? 'di-did di-did-small' : 'di-key'}
-                    type="button"
-                    onClick={() => wearCheer(item.id)}
-                  >
-                    {on ? 'On' : 'Use'}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+        <p className="di-set-cap">{t('shop.cheers')}</p>
+        <div className="di-set-card di-shop-card">
+          {cheers.map((item) => {
+            const on = purse.cheerOn === item.id
+            const stage = cheerStageOf(book, item.id)
+            return (
+              <div className="di-shop-row" key={item.id}>
+                <button
+                  className="di-preview"
+                  type="button"
+                  aria-label={t('shop.see', { name: item.name })}
+                  onClick={() => fireCheer(item.id, stage)}
+                >
+                  <CheerChip id={item.id} stage={stage} />
+                </button>
+                <span className="di-shop-copy">
+                  <strong>{item.name}</strong>
+                  <em>{t('shop.cheerStageLine', { n: stage, max: 5, line: item.line })}</em>
+                </span>
+                <button
+                  className={on ? 'di-did di-did-small' : 'di-key'}
+                  type="button"
+                  disabled={on}
+                  onClick={() => wearCheer(item.id)}
+                >
+                  {on ? t('shop.on') : t('shop.use')}
+                </button>
+              </div>
+            )
+          })}
         </div>
 
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/shop')}>
-            Shop
-          </button>
-          <button className="di-key" type="button" onClick={() => goHash('/')}>
-            Home
+            {t('shop.title')}
           </button>
         </div>
       </section>
