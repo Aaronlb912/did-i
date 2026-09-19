@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { downloadBook, parseBookText } from './board-json.js'
-import { statsCounts } from './hall-pages.js'
 import { t } from './i18n.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -134,7 +133,6 @@ export function Profile({
   const [loadMiss, setLoadMiss] = useState('')
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
-  const counts = statsCounts(book, clock)
   const locked = pinOn
 
   useEffect(() => {
@@ -217,12 +215,6 @@ export function Profile({
     )
   }
 
-  const boardCount = t('settings.boardCount', {
-    hung: counts.hung,
-    questionWord: counts.hung === 1 ? t('settings.questionOne') : t('settings.questionMany'),
-    taps: counts.did + counts.late + counts.skip,
-  })
-
   return (
     <BoardShell
       book={book}
@@ -231,32 +223,30 @@ export function Profile({
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className={sheet ? 'di-page di-fuse di-set is-sheet' : 'di-page di-fuse di-set'}>
-        <p className="di-face-plate">{t('settings.kicker')}</p>
-        <h2 className="di-page-title">{t('settings.title')}</h2>
-        <p className="di-detail-meta">{boardCount}</p>
+        <h2 className="di-page-title">{t('settings.kicker')}</h2>
 
-        <SetCap>{t('settings.follow')}</SetCap>
+        <SetCap>{t('settings.look')}</SetCap>
         <SetCard>
-          <SetRow
-            label={t('settings.language')}
-            value={t(`lang.${prefs.locale}`)}
-            chevron
-            onClick={() => setSheet('lang')}
-          />
           <SetRow
             label={t('settings.theme')}
             value={t(`theme.${prefs.theme}`)}
             chevron
             onClick={() => setSheet('theme')}
           />
+          <SetRow
+            label={t('settings.language')}
+            value={t(`lang.${prefs.locale}`)}
+            chevron
+            onClick={() => setSheet('lang')}
+          />
           <SetSwitch
             label={t('settings.lessMotion')}
-            sub={t('settings.motionHint')}
             on={prefs.lessMotion}
             onClick={() => writePrefs({ lessMotion: !prefs.lessMotion })}
           />
         </SetCard>
 
+        <SetCap>{t('settings.title')}</SetCap>
         <SetCard>
           <SetField
             label={t('settings.name')}
@@ -283,35 +273,6 @@ export function Profile({
             }}
             placeholder={t('settings.notePh')}
           />
-          <SetRow
-            label={t('settings.fold')}
-            value={foldLabel(book.dayFoldHour)}
-            chevron
-            onClick={() => setSheet('fold')}
-          />
-        </SetCard>
-
-        <SetCap>{t('settings.feel')}</SetCap>
-        <SetCard>
-          <SetRow label={t('settings.pings')} chevron onClick={() => goHash('/pings')} />
-          <SetSwitch
-            label={t('settings.sound')}
-            on={Boolean(book.clickSound)}
-            onClick={() => onChange({ ...book, clickSound: !book.clickSound })}
-          />
-          <SetSwitch
-            label={t('settings.hideMarks')}
-            on={Boolean(book.quietMode)}
-            onClick={() => onChange({ ...book, quietMode: !book.quietMode })}
-          />
-          {onInstall && installLabel ? (
-            <SetRow label={t('settings.install')} onClick={onInstall} />
-          ) : null}
-        </SetCard>
-
-        <SetCap>{t('settings.lock')}</SetCap>
-        <p className="di-set-note">{locked ? t('settings.lockOn') : t('settings.lockOff')}</p>
-        <SetCard>
           <SetField
             label={locked ? t('settings.newNumber') : t('settings.number')}
             inputMode="numeric"
@@ -335,12 +296,36 @@ export function Profile({
               }}
             />
           ) : null}
+          {onInstall && installLabel ? (
+            <SetRow label={t('settings.install')} onClick={onInstall} />
+          ) : null}
         </SetCard>
         {pinMiss ? (
           <p className="di-miss" role="alert">
             {pinMiss}
           </p>
         ) : null}
+
+        <SetCap>{t('settings.tonight')}</SetCap>
+        <SetCard>
+          <SetRow
+            label={t('settings.fold')}
+            value={foldLabel(book.dayFoldHour)}
+            chevron
+            onClick={() => setSheet('fold')}
+          />
+          <SetRow label={t('settings.reminders')} chevron onClick={() => goHash('/pings')} />
+          <SetSwitch
+            label={t('settings.soundOn')}
+            on={Boolean(book.clickSound)}
+            onClick={() => onChange({ ...book, clickSound: !book.clickSound })}
+          />
+          <SetSwitch
+            label={t('settings.hideMarks')}
+            on={Boolean(book.quietMode)}
+            onClick={() => onChange({ ...book, quietMode: !book.quietMode })}
+          />
+        </SetCard>
 
         <SetCap>{t('settings.copy')}</SetCap>
         <SetCard>
@@ -355,7 +340,15 @@ export function Profile({
           </p>
         ) : null}
 
-        <SetCap>{t('settings.startOver')}</SetCap>
+        <SetCap>{t('settings.help')}</SetCap>
+        <SetCard>
+          <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
+          <SetRow label={t('settings.ideas')} chevron onClick={() => goHash('/ideas')} />
+          <SetRow label={t('settings.what')} chevron onClick={() => goHash('/about')} />
+          <SetRow label={t('settings.intro')} chevron onClick={() => goHash('/welcome')} />
+        </SetCard>
+
+        <SetCap>{t('settings.danger')}</SetCap>
         <SetCard>
           {onStartEmpty ? (
             <SetRow
@@ -400,20 +393,6 @@ export function Profile({
               }
             />
           ) : null}
-        </SetCard>
-
-        <SetCap>{t('settings.about')}</SetCap>
-        <SetCard>
-          <SetRow label={t('nav.boards')} chevron onClick={() => goHash('/me')} />
-          <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
-          <SetRow label={t('settings.ideas')} chevron onClick={() => goHash('/ideas')} />
-          <SetRow label={t('settings.what')} chevron onClick={() => goHash('/about')} />
-          <SetRow label={t('settings.intro')} chevron onClick={() => goHash('/welcome')} />
-        </SetCard>
-
-        <SetCap>{t('settings.leave')}</SetCap>
-        <p className="di-set-note">{locked ? t('settings.leaveHintOn') : t('settings.leaveHintOff')}</p>
-        <SetCard>
           <SetRow
             label={t('settings.leaveBoard')}
             danger

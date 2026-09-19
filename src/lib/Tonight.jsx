@@ -13,6 +13,7 @@ import { filamentLevel, hallHeat, hallHour } from './hall-feel.js'
 import { HeatPips } from './HeatPips.jsx'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
+import { NightMeter } from './NightMeter.jsx'
 import { feelTap, playClick } from './native.js'
 import { usePrefs, useTheme } from './prefs.js'
 import { normalizePurse } from './purse.js'
@@ -50,15 +51,24 @@ export function Tonight({
   const [undo, setUndo] = useState(null)
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
+  const [overlay, setOverlay] = useState(null)
 
   const dateIso = boardDate(clock, value.dayFoldHour)
-  const shelf = boards.length ? boards : [value]
+  const liveValue = overlay && overlay.id === value.id ? overlay : value
+  const shelf = (boards.length ? boards : [value]).map((book) =>
+    overlay && book.id === overlay.id ? overlay : book,
+  )
   const due = taggedDue(shelf, clock, tagId)
   const unanswered = tagId
-    ? unansweredTonight(value, clock)
+    ? unansweredTonight(liveValue, clock)
     : shelf.flatMap((book) => unansweredTonight(book, clock))
   const ready = tagId
-    ? faceReadyTonight(value, clock).map((row) => ({ ...row, boardId: value.id, tag: value.title, book: value }))
+    ? faceReadyTonight(liveValue, clock).map((row) => ({
+        ...row,
+        boardId: liveValue.id,
+        tag: liveValue.title,
+        book: liveValue,
+      }))
     : shelf.flatMap((book) =>
         faceReadyTonight(book, clock).map((row) => ({
           ...row,
@@ -68,13 +78,13 @@ export function Tonight({
         })),
       )
   const waiting = tagId
-    ? waitingTonight(value, clock)
+    ? waitingTonight(liveValue, clock)
     : shelf.flatMap((book) => waitingTonight(book, clock))
   const catchUp = taggedCatchUp(shelf, clock, tagId)
-  const hallOn = (tagId ? [value] : shelf).every((book) => allClearTonight(book, clock))
-  const heat = hallHeat(value, clock)
+  const hallOn = (tagId ? [liveValue] : shelf).every((book) => allClearTonight(book, clock))
+  const heat = hallHeat(liveValue, clock)
   const hour = hallHour(clock)
-  const empty = (tagId ? [value] : shelf).every(
+  const empty = (tagId ? [liveValue] : shelf).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
 
@@ -91,6 +101,16 @@ export function Tonight({
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
   }, [focusLampId])
+
+  useEffect(() => {
+    if (!overlay) return
+    const incoming = (boards.length ? boards : [value]).find((book) => book.id === overlay.id)
+    if (!incoming) {
+      setOverlay(null)
+      return
+    }
+    if ((incoming.answers || []).length >= (overlay.answers || []).length) setOverlay(null)
+  }, [boards, overlay, value])
 
   function closePlates() {
     if (titleEdit || holePick || waitPick) {
@@ -177,6 +197,7 @@ export function Tonight({
 
   function applyUndo() {
     if (!undo) return
+    setOverlay(undo.book)
     change(undo.book)
     setUndo(null)
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
@@ -187,6 +208,7 @@ export function Tonight({
     const book = bookOf(row)
     const next = putAnswer(book, row, status, clock)
     const wasClear = allClearTonight(book, clock)
+    setOverlay(next)
     change(next)
     setFaceId('')
     setHolePick(null)
@@ -240,8 +262,6 @@ export function Tonight({
     ...row,
     waiting: !row.answer && !ready.some((item) => item.lamp.id === row.lamp.id),
   }))
-  const answeredCount = due.filter((row) => row.answer).length
-  const meterPct = due.length ? (100 * answeredCount) / due.length : 0
 
   function nextOpenTime(rows) {
     return [...rows]
@@ -378,29 +398,7 @@ export function Tonight({
 
         <TagRail boards={shelf} tagId={tagId} onTag={onTag} now={clock} />
 
-        {due.length > 0 ? (
-          <div className="di-meter">
-            <p className="di-meter-top">
-              <span className="di-meter-count">{answeredCount}</span>
-              <span className="di-meter-label">
-                {t('tonight.meter', { n: due.length })}
-              </span>
-            </p>
-            <div
-              className="di-meter-bar"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={due.length}
-              aria-valuenow={answeredCount}
-              aria-label={t('tonight.meterAria', {
-                n: answeredCount,
-                total: due.length,
-              })}
-            >
-              <span className="di-meter-fill" style={{ width: `${meterPct}%` }} />
-            </div>
-          </div>
-        ) : null}
+        <NightMeter due={due} done={hallOn} />
 
         {dueWithWait.length > 0 && !holePick && !waitPick ? (
           <div className="di-edge-wrap">

@@ -117,14 +117,15 @@ export function dueTonight(book, now = new Date()) {
   const lamps = []
   for (const lamp of book.lamps || []) {
     if (lamp.archived) continue
-    if (lamp.cadence === 'once' && isOnceClosed(book, lamp.id)) continue
     if (!isDueOn(lamp, dateIso)) continue
     const periodKey = periodKeyFor(lamp, dateIso)
+    const answer = answerFor(book, lamp.id, periodKey) || null
+    if (lamp.cadence === 'once' && isOnceClosed(book, lamp.id) && !answer) continue
     lamps.push({
       lamp,
       dateIso,
       periodKey,
-      answer: answerFor(book, lamp.id, periodKey) || null,
+      answer,
     })
   }
   return lamps

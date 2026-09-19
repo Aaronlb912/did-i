@@ -10,6 +10,7 @@ body,
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 html {

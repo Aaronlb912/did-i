@@ -10,8 +10,9 @@ import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { firstName } from './session.js'
-import { leftoverOn } from './tags.js'
+import { leftoverOn, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
+import { NightMeter } from './NightMeter.jsx'
 
 function purseLine(purse) {
   const coins = purse.coins === 1 ? t('home.coinsOne') : t('home.coins', { n: purse.coins })
@@ -24,7 +25,10 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const clock = now || new Date()
   const dateIso = boardDate(clock, book.dayFoldHour)
   const line = homeLine(book, clock)
-  const leftAll = leftoverOn(boards.length ? boards : [book], clock, tagId)
+  const shelf = boards.length ? boards : [book]
+  const due = taggedDue(shelf, clock, tagId)
+  const leftAll = leftoverOn(shelf, clock, tagId)
+  const hallOn = due.length > 0 && due.every((row) => row.answer)
   const name = firstName(book)
   const heat = hallHeat(book, clock)
   const hunt = nextMark(book)
@@ -61,6 +65,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
 
         <div className="di-home-card">
           <p className="di-face-plate">{t('home.tonight')}</p>
+          <NightMeter due={due} done={hallOn} />
           <h3 className="di-question">{tonightTitle}</h3>
           <div className="di-hang-actions">
             {line.kind === 'empty' ? (

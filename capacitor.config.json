@@ -3,7 +3,8 @@
   "appName": "Did I",
   "webDir": "dist",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "zoomEnabled": false
   },
   "plugins": {
     "SplashScreen": {

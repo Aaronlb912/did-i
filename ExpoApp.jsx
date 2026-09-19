@@ -31,6 +31,9 @@ export function ExpoApp() {
           style={styles.web}
           originWhitelist={['*']}
           allowsBackForwardNavigationGestures
+          scalesPageToFit={false}
+          setBuiltInZoomControls={false}
+          setDisplayZoomControls={false}
         />
       </SafeAreaView>
     </SafeAreaProvider>

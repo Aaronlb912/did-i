@@ -32,6 +32,7 @@
   max-height: 100dvh;
   min-height: 0;
   overflow: hidden;
+  touch-action: manipulation;
   box-sizing: border-box;
   background: var(--di-bg);
   color: var(--di-ink);
@@ -302,6 +303,8 @@ html[data-theme='light'] body {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .di-meter-top {
@@ -331,6 +334,8 @@ html[data-theme='light'] body {
 
 .di-meter-bar {
   display: block;
+  width: 100%;
+  min-width: 0;
   height: 0.45rem;
   margin: 0;
   padding: 0;
@@ -341,10 +346,11 @@ html[data-theme='light'] body {
 
 .di-meter-fill {
   display: block;
+  width: 0;
   height: 100%;
   border-radius: inherit;
   background: var(--di-on);
-  transition: width 0.35s ease;
+  transition: width 0.35s var(--di-ease);
 }
 
 .di-hall[data-sit='on'] .di-meter-count {
@@ -2321,15 +2327,15 @@ html[data-theme='light'] body {
 }
 
 .di-set .di-page-title {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
-.di-set > .di-detail-meta {
-  margin: 0.35rem 0 0.15rem;
+.di-set .di-page-title + .di-set-cap {
+  margin-top: 0.85rem;
 }
 
 .di-set-cap {
-  margin: 1.15rem 0.2rem 0.4rem;
+  margin: 1.05rem 0.2rem 0.4rem;
   font-size: 0.78rem;
   line-height: 1.35;
   color: var(--di-ink-dim);

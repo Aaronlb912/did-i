@@ -31,6 +31,12 @@
     "plugins": [
       "expo-status-bar",
       "expo-splash-screen"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "030275bb-f42d-47fd-9f6c-4d3c6a76ecc8"
+      }
+    },
+    "owner": "abryant"
   }
 }

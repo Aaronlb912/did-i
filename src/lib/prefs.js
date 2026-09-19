@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
-const LOCALES = new Set(['en', 'es'])
+const LOCALES = new Set(['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja'])
 const listeners = new Set()
 
 export const THEME_IDS = ['dark', 'light', 'phone']
-export const LOCALE_IDS = ['en', 'es']
+export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja']
 
 function blankPrefs() {
   return { theme: 'dark', locale: 'en', lessMotion: false }
