@@ -1,3 +1,4 @@
+import { lampNotifyOn } from './board-json.js'
 import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 
@@ -32,6 +33,7 @@ export function upcomingPings(book, now = new Date()) {
   const [year, month, day] = dateIso.split('-').map(Number)
   const fires = []
   for (const row of waitingTonight(book, now)) {
+    if (!lampNotifyOn(row.lamp)) continue
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
     if (!match) continue
     const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
@@ -96,5 +98,5 @@ export function pingButtonLabel(state) {
   if (state === 'missing') return ''
   if (state === 'granted') return 'Pings on'
   if (state === 'denied') return 'Pings blocked'
-  return 'Ask at lamp time'
+  return 'Remind when it is due'
 }

@@ -8,18 +8,18 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 400,
-      "backgroundColor": "#1c1410",
+      "backgroundColor": "#0e1014",
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false
     },
     "StatusBar": {
-      "backgroundColor": "#1c1410",
+      "backgroundColor": "#0e1014",
       "style": "DARK"
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_lamp",
-      "iconColor": "#e6a23c"
+      "iconColor": "#c9f24d"
     }
   }
 }

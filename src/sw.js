@@ -13,6 +13,7 @@ async function pingDue() {
   if (!book) return
   const now = new Date()
   for (const row of unansweredTonight(book, now)) {
+    if (row.lamp.notify === false) continue
     if (!row.lamp.askAfter) continue
     if (!askAfterPassed(row.lamp, now, book.dayFoldHour)) continue
     await self.registration.showNotification('Did I', {

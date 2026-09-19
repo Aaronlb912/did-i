@@ -5,24 +5,25 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { Share } from '@capacitor/share'
 import { SplashScreen } from '@capacitor/splash-screen'
 import { StatusBar, Style } from '@capacitor/status-bar'
+import { lampNotifyOn } from './board-json.js'
 import { boardDate, waitingTonight } from './recurrence.js'
+import { readReduceMotion } from './useReduceMotion.js'
 
 export function isNativeHall() {
   return Capacitor.isNativePlatform()
 }
 
 function reduceMotion() {
-  if (typeof window === 'undefined') return true
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  return readReduceMotion()
 }
 
 export async function bootNative() {
   if (!isNativeHall()) return
   try {
-    await StatusBar.setBackgroundColor({ color: '#1c1410' })
+    await StatusBar.setBackgroundColor({ color: '#0e1014' })
     await StatusBar.setStyle({ style: Style.Dark })
   } catch {
-    // WebView still paints the hall.
+    // WebView still paints the board.
   }
   try {
     await SplashScreen.hide()
@@ -80,6 +81,7 @@ export async function scheduleNativePings(book, now = new Date()) {
   const [year, month, day] = dateIso.split('-').map(Number)
   const notes = []
   for (const row of waitingTonight(book, now)) {
+    if (!lampNotifyOn(row.lamp)) continue
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
     if (!match) continue
     const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
@@ -142,10 +144,10 @@ export function playClick() {
 export async function shareBook(book) {
   const stamp = boardDate(new Date(), book.dayFoldHour)
   const slug =
-    String(book.title || 'hall')
+    String(book.title || 'board')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'hall'
+      .replace(/^-|-$/g, '') || 'board'
   const text = JSON.stringify(book, null, 2)
   if (isNativeHall()) {
     await Share.share({

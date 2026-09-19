@@ -1,4 +1,5 @@
 import { boardDate, isoDate } from './recurrence.js'
+import { normalizePurse } from './purse.js'
 
 function uid(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
@@ -6,6 +7,10 @@ function uid(prefix) {
 
 export function newLampId() {
   return uid('di')
+}
+
+export function newBoardId() {
+  return uid('board')
 }
 
 export function newAnswerId() {
@@ -16,6 +21,15 @@ const KINDS = ['house', 'pills', 'money', 'people', 'other']
 const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n']
 const SLOTS = ['morning', 'whenever', 'night']
 const STATUSES = ['yes', 'skip', 'late']
+const PRIORITIES = ['high', 'normal', 'low']
+
+export function lampPriority(lamp) {
+  return PRIORITIES.includes(lamp?.priority) ? lamp.priority : 'normal'
+}
+
+export function lampNotifyOn(lamp) {
+  return lamp?.notify !== false
+}
 
 function asString(value) {
   return String(value == null ? '' : value)
@@ -40,6 +54,8 @@ export function blankLamp(now = new Date()) {
     askAfter: '',
     slot: 'whenever',
     notes: '',
+    priority: 'normal',
+    notify: true,
     archived: false,
     createdOn: isoDate(now),
   }
@@ -48,7 +64,8 @@ export function blankLamp(now = new Date()) {
 export function blankBook() {
   return {
     version: 1,
-    title: 'My hall',
+    title: 'Did I',
+    keeperName: '',
     dayFoldHour: 4,
     quietMode: false,
     clickSound: false,
@@ -56,6 +73,13 @@ export function blankBook() {
     lamps: [],
     answers: [],
     unlocked: [],
+    opens: [],
+    coins: 0,
+    gems: 0,
+    cheers: ['lime'],
+    cheerOn: 'lime',
+    looks: ['lime'],
+    lookOn: 'lime',
   }
 }
 
@@ -92,6 +116,8 @@ export function normalizeLamp(raw) {
     askAfter: asString(lamp.askAfter).trim(),
     slot,
     notes: asString(lamp.notes),
+    priority: lampPriority(lamp),
+    notify: lampNotifyOn(lamp),
     archived: asBool(lamp.archived),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
   }
@@ -113,9 +139,12 @@ export function normalizeAnswer(raw) {
 export function normalizeBook(raw) {
   const book = raw && typeof raw === 'object' ? raw : {}
   const fold = Number(book.dayFoldHour)
+  const purse = normalizePurse(book)
   return {
     version: 1,
-    title: asString(book.title).trim() || 'My hall',
+    id: asString(book.id).trim() || newBoardId(),
+    title: asString(book.title).trim() || 'Did I',
+    keeperName: asString(book.keeperName).trim(),
     dayFoldHour: Number.isInteger(fold) && fold >= 0 && fold <= 12 ? fold : 4,
     quietMode: asBool(book.quietMode),
     clickSound: asBool(book.clickSound),
@@ -125,6 +154,17 @@ export function normalizeBook(raw) {
     unlocked: Array.isArray(book.unlocked)
       ? book.unlocked.map((id) => asString(id)).filter(Boolean)
       : [],
+    opens: Array.isArray(book.opens)
+      ? book.opens.map((day) => asString(day).trim()).filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day))
+      : [],
+    coins: purse.coins,
+    gems: purse.gems,
+    cheers: purse.cheers,
+    cheerOn: purse.cheerOn,
+    cheerUses: purse.cheerUses,
+    cheerStage: purse.cheerStage,
+    looks: purse.looks,
+    lookOn: purse.lookOn,
   }
 }
 
@@ -140,7 +180,7 @@ export function shortLabel(lamp) {
 export function missLamp(lamp) {
   if (!asString(lamp.question).trim()) return 'The question is empty.'
   if (lamp.cadence === 'weekly' && !(lamp.weekdays && lamp.weekdays.length)) {
-    return 'A weekly lamp needs a weekday.'
+    return 'A weekly question needs a weekday.'
   }
   if (lamp.cadence === 'monthly' && lamp.monthDay !== 'last' && !lamp.monthDay) {
     return 'A monthly lamp needs a day.'
@@ -164,7 +204,7 @@ export function parseBookText(text) {
     const parsed = JSON.parse(text)
     return { ok: true, book: normalizeBook(parsed) }
   } catch {
-    return { ok: false, reason: 'That file is not a Did I board.' }
+    return { ok: false, reason: 'That file is not a Did I copy.' }
   }
 }
 
@@ -173,10 +213,10 @@ export function downloadBook(book) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   const stamp = boardDate(new Date(), book.dayFoldHour)
-  const slug = String(book.title || 'hall')
+  const slug = String(book.title || 'board')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '') || 'hall'
+    .replace(/^-|-$/g, '') || 'board'
   link.href = url
   link.download = `${slug}-${stamp}.json`
   document.body.appendChild(link)

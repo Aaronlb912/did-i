@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Did I",
+    "slug": "did-i",
+    "scheme": "didi",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "icon": "./public/icon-512.png",
+    "backgroundColor": "#0e1014",
+    "splash": {
+      "image": "./public/icon-512.png",
+      "backgroundColor": "#0e1014",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.aaronbryant.didi",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.aaronbryant.didi",
+      "adaptiveIcon": {
+        "foregroundImage": "./public/icon-512.png",
+        "backgroundColor": "#0e1014"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-splash-screen"
+    ]
+  }
+}

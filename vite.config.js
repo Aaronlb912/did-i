@@ -19,8 +19,8 @@ export default defineConfig({
         name: 'Did I',
         short_name: 'Did I',
         description: 'The unanswered question for tonight. Hit DID.',
-        theme_color: '#1c1410',
-        background_color: '#1c1410',
+        theme_color: '#0e1014',
+        background_color: '#0e1014',
         display: 'standalone',
         start_url: './',
         scope: './',
@@ -49,7 +49,7 @@ export default defineConfig({
     }),
   ],
   server: {
-    host: '127.0.0.1',
+    host: true,
     port: 48741,
     strictPort: true,
     watch: {

@@ -1,0 +1,174 @@
+import { allClearTonight, boardDate } from './recurrence.js'
+
+export const CHEERS = [
+  { id: 'lime', name: 'Lime', line: 'The one you start with.', gems: 0 },
+  { id: 'tape', name: 'Tape', line: 'Short strips.', gems: 2 },
+  { id: 'paper', name: 'Paper', line: 'A thicker burst.', gems: 3 },
+  { id: 'boom', name: 'Boom', line: 'Rings and sparks.', gems: 4 },
+  { id: 'night', name: 'Night', line: 'Quiet gold bits.', gems: 5 },
+  { id: 'dance', name: 'Dance', line: 'Little people hop.', gems: 6 },
+]
+
+export const LOOKS = [
+  { id: 'lime', name: 'Lime', line: 'The one you start with.', coins: 0 },
+  { id: 'ink', name: 'Ink', line: 'Quieter green.', coins: 8 },
+  { id: 'brass', name: 'Brass', line: 'Warm pips.', coins: 16 },
+  { id: 'night', name: 'Night', line: 'Darker plate.', coins: 24 },
+]
+
+export const CHEER_STAGE_MAX = 5
+export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
+export const CHEER_STAGE_GEMS = [0, 0, 1, 2, 3, 4]
+
+const CHEER_IDS = new Set(CHEERS.map((item) => item.id))
+const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
+
+function asCount(value) {
+  const n = Math.floor(Number(value) || 0)
+  return n > 0 ? n : 0
+}
+
+export function normalizePurse(book) {
+  const cheers = Array.isArray(book?.cheers)
+    ? book.cheers.map((id) => String(id)).filter((id) => CHEER_IDS.has(id))
+    : []
+  const owned = cheers.includes('lime') ? cheers : ['lime', ...cheers]
+  const cheerOn = CHEER_IDS.has(book?.cheerOn) && owned.includes(book.cheerOn) ? book.cheerOn : 'lime'
+  const looks = Array.isArray(book?.looks)
+    ? book.looks.map((id) => String(id)).filter((id) => LOOK_IDS.has(id))
+    : []
+  const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
+  const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
+  const cheerUses = asCount(book?.cheerUses)
+  const storedStage = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(book?.cheerStage) || 0) || 1))
+  const cheerStage = Math.max(storedStage, stageFromUses(cheerUses))
+  return {
+    coins: asCount(book?.coins),
+    gems: asCount(book?.gems),
+    cheers: owned,
+    cheerOn,
+    looks: lookOwned,
+    lookOn,
+    cheerUses,
+    cheerStage,
+  }
+}
+
+export function stageFromUses(uses) {
+  let stage = 1
+  for (let next = 2; next <= CHEER_STAGE_MAX; next += 1) {
+    if (uses >= CHEER_STAGE_USES[next]) stage = next
+  }
+  return stage
+}
+
+export function nextCheerStage(stage) {
+  const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
+  return n < CHEER_STAGE_MAX ? n + 1 : 0
+}
+
+export function coinsFor(status, book, row, clock = new Date()) {
+  if (status !== 'yes' && status !== 'late') return 0
+  const today = boardDate(clock, book.dayFoldHour)
+  const born = row?.lamp?.createdOn || ''
+  if (born && born >= today) return 0
+  if (tapsPaidTonight(book, clock) >= 2) return 0
+  return status === 'yes' ? 2 : 1
+}
+
+function tapsPaidTonight(book, clock) {
+  const today = boardDate(clock, book.dayFoldHour)
+  const lamps = book.lamps || []
+  return (book.answers || []).filter((answer) => {
+    if (answer.status !== 'yes' && answer.status !== 'late') return false
+    const lamp = lamps.find((item) => item.id === answer.lampId)
+    if (lamp?.createdOn && lamp.createdOn >= today) return false
+    const period = String(answer.periodKey || '')
+    const at = String(answer.answeredAt || '')
+    return period === today || period.startsWith(today) || at.startsWith(today)
+  }).length
+}
+
+export function payTap(before, after, row, status, clock = new Date()) {
+  const purse = normalizePurse(after)
+  const prev = (before.answers || []).find(
+    (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
+  )
+  const paid = prev && (prev.status === 'yes' || prev.status === 'late')
+  let coins = purse.coins
+  let gems = purse.gems
+  if (!paid) coins += coinsFor(status, before, row, clock)
+  if (!allClearTonight(before, clock) && allClearTonight(after, clock)) gems += 1
+  return { ...after, ...purse, coins, gems }
+}
+
+export function noteCheer(book) {
+  const purse = normalizePurse(book)
+  const cheerUses = purse.cheerUses + 1
+  const cheerStage = Math.max(purse.cheerStage, stageFromUses(cheerUses))
+  return { ...book, ...purse, cheerUses, cheerStage }
+}
+
+export function fireCheer(kind, stage = 1) {
+  if (typeof window === 'undefined') return
+  const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
+  window.dispatchEvent(new CustomEvent('did-i-cheer', { detail: { kind: kind || 'lime', stage: n } }))
+}
+
+export function buyLook(book, id) {
+  const look = LOOKS.find((item) => item.id === id)
+  const purse = normalizePurse(book)
+  if (!look) return { book, miss: 'That look is gone.' }
+  if (purse.looks.includes(id)) {
+    return { book: { ...book, ...purse, lookOn: id }, miss: '' }
+  }
+  if (look.coins > purse.coins) return { book, miss: `Need ${look.coins} coins.` }
+  return {
+    book: {
+      ...book,
+      ...purse,
+      coins: purse.coins - look.coins,
+      looks: [...purse.looks, id],
+      lookOn: id,
+    },
+    miss: '',
+  }
+}
+
+export function buyCheerStage(book) {
+  const purse = normalizePurse(book)
+  const next = nextCheerStage(purse.cheerStage)
+  if (!next) return { book: { ...book, ...purse }, miss: 'Stage is full.' }
+  const cost = CHEER_STAGE_GEMS[next]
+  if (purse.gems < cost) return { book, miss: `Need ${cost} ${cost === 1 ? 'gem' : 'gems'}.` }
+  return {
+    book: {
+      ...book,
+      ...purse,
+      gems: purse.gems - cost,
+      cheerStage: next,
+      cheerUses: Math.max(purse.cheerUses, CHEER_STAGE_USES[next]),
+    },
+    miss: '',
+  }
+}
+
+export function buyCheer(book, id) {
+  const cheer = CHEERS.find((item) => item.id === id)
+  const purse = normalizePurse(book)
+  if (!cheer) return { book, miss: 'That cheer is gone.' }
+  if (purse.cheers.includes(id)) {
+    return { book: { ...book, ...purse, cheerOn: id }, miss: '' }
+  }
+  if (cheer.gems > purse.gems) return { book, miss: `Need ${cheer.gems} gems.` }
+  return {
+    book: {
+      ...book,
+      ...purse,
+      gems: purse.gems - cheer.gems,
+      cheers: [...purse.cheers, id],
+      cheerOn: id,
+    },
+    miss: '',
+  }
+}

@@ -8,13 +8,15 @@ export function NameBoard({
   onOpenSample,
   onStartEmpty,
 }) {
-  const [name, setName] = useState(currentTitle && currentTitle !== 'My hall' ? currentTitle : '')
+  const [name, setName] = useState(
+    currentTitle && currentTitle !== 'My hall' && currentTitle !== 'My board' ? currentTitle : '',
+  )
   const [miss, setMiss] = useState('')
 
   function empty() {
     const title = name.trim()
     if (!title) {
-      setMiss('The board needs a name.')
+      setMiss('This needs a name.')
       return
     }
     setMiss('')
@@ -27,14 +29,13 @@ export function NameBoard({
       <main className="di-door">
         <section className="di-door-plate">
           <p className="di-face-plate">This browser</p>
-          <h1 className="di-question">Name the board.</h1>
+          <h1 className="di-question">Name this phone.</h1>
           <p>
-            The hall stays on this computer. There is no email and no password.
-            Hayes Street is a made-up apartment you can open to see how it
-            feels.
+            Your questions stay on this computer. There is no email and no
+            password. Hayes Street is a made-up apartment you can open to try it.
           </p>
           <label className="di-field">
-            <span>Board name</span>
+            <span>Tag name</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}

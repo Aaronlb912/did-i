@@ -1,0 +1,46 @@
+import { catchUpRows, dueTonight } from './recurrence.js'
+
+export function tagOnRow(book, row) {
+  return {
+    ...row,
+    boardId: book.id,
+    tag: book.title,
+    book,
+  }
+}
+
+export function scopedBooks(boards, tagId) {
+  if (!tagId) return boards || []
+  return (boards || []).filter((book) => book.id === tagId)
+}
+
+export function taggedDue(boards, clock, tagId) {
+  return scopedBooks(boards, tagId).flatMap((book) =>
+    dueTonight(book, clock).map((row) => tagOnRow(book, row)),
+  )
+}
+
+export function taggedCatchUp(boards, clock, tagId) {
+  return scopedBooks(boards, tagId).flatMap((book) =>
+    catchUpRows(book, clock).map((row) => tagOnRow(book, row)),
+  )
+}
+
+export function taggedLamps(boards, tagId) {
+  return scopedBooks(boards, tagId).flatMap((book) =>
+    (book.lamps || []).map((lamp) => ({
+      lamp,
+      boardId: book.id,
+      tag: book.title,
+      book,
+    })),
+  )
+}
+
+export function leftoverOn(boards, clock, tagId) {
+  return taggedDue(boards, clock, tagId).filter((row) => !row.answer).length
+}
+
+export function rowKey(row) {
+  return `${row.boardId || row.book?.id || ''}:${row.lamp.id}`
+}

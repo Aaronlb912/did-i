@@ -157,6 +157,7 @@ export function catchUpRows(book, now = new Date()) {
     if (lamp.archived || lamp.cadence === 'once') continue
     const prevIso = previousDueDate(lamp, dateIso)
     if (!prevIso) continue
+    if (lamp.createdOn && prevIso < lamp.createdOn) continue
     const periodKey = periodKeyFor(lamp, prevIso)
     if (answerFor(book, lamp.id, periodKey)) continue
     rows.push({
@@ -202,19 +203,24 @@ export function formatBoardDate(iso) {
 
 export function recentPeriodKeys(lamp, dateIso, count = 7) {
   if (lamp.cadence === 'once') return [`once:${lamp.id}`]
+  const created = String(lamp.createdOn || '').trim()
   if (lamp.cadence === 'monthly') {
     const date = parseIsoDate(dateIso)
     if (!date) return []
     const keys = []
+    const createdMonth = created ? created.slice(0, 7) : ''
     for (let i = count - 1; i >= 0; i -= 1) {
       const next = new Date(date.getFullYear(), date.getMonth() - i, 1)
-      keys.push(`${next.getFullYear()}-${pad(next.getMonth() + 1)}`)
+      const key = `${next.getFullYear()}-${pad(next.getMonth() + 1)}`
+      if (createdMonth && key < createdMonth) continue
+      keys.push(key)
     }
     return keys
   }
   const keys = []
   for (let i = count - 1; i >= 0; i -= 1) {
     const iso = addDaysIso(dateIso, -i)
+    if (created && iso < created) continue
     if (isDueOn(lamp, iso)) keys.push(periodKeyFor(lamp, iso))
   }
   return keys

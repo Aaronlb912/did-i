@@ -19,13 +19,27 @@ Port: 48741
 App id: `com.aaronbryant.didi`
 
 Pages:
-- Hall `#/` and `#/tonight` (`?face=` opens that lamp)
+- Home `#/` and `#/home`
+- Tonight `#/tonight` (`?face=` opens that question)
+- Enter `#/enter` (name on this phone, optional number lock)
+- About `#/about`
+- Add `#/add` (`?id=` edits)
+- Lamps `#/lamps`, lamp `#/lamp?id=`
+- Find a lamp `#/search`
+- Taps `#/feed`
+- So far `#/stats`, seven nights `#/week`, nights in a row `#/streaks`
+- Boards `#/me` (scroll to other boards)
+- Settings `#/settings` (cog, top right), lamp time `#/pings`
+- Help `#/help`, what to ask `#/ideas`, coming up `#/later`
+- First night `#/first`, marks `#/marks`, shop `#/shop`
+- First plates `#/welcome`
 - Door (site) `#/door`
 - Name `#/name`
 - How `#/read`
 - Drop in `#/into`
 
-Auth: none. This browser is the board.
+Auth: none. This browser is the board. Enter is a local
+name, not an account.
 
 Sample: Hayes Street, apt 3.
 
@@ -47,15 +61,32 @@ Sample: Hayes Street, apt 3.
       binary.
 - [x] Look pass. Full-bleed board, jewels, rocker, hall-on
       lights, last-night holes, latch.
+- [x] App pages. Hang plate, lamp plate, wait/hole plates,
+      welcome, lamps, find, feed, stats, week, streaks, me,
+      pings.
+- [x] Bottom nav cut to Tonight / Questions / Board.
+- [x] JDK 21 and Android SDK 36 on this machine.
+- [x] P-6. Debug APK built, 4.1 MB.
+- [x] New design from scratch. Dark slate, lime accent,
+      grotesque headlines, mono labels, progress meter,
+      floating nav. No hallway hardware.
 - [ ] Session ship: only when he asks.
+
+- [x] Home, local enter, settings, about.
+- [x] Boards tab back. Settings in the cog.
+- [x] Home filled: starters, last time, taps, week, note.
+- [x] Daily loop: first night, hall heat, showed-up, marks.
 
 ## This session
 
-Paint the hall as a lamp board, not a text card.
+Theme and language in Settings. Dark / Light / Phone.
+English / Spanish. Prefs in `did-i-prefs`. New copy uses
+`t()` and `src/locales`. Shop looks stay on the board.
 
 ## Next session
 
-Live with the hall, or APK once JDK is on the machine.
+Live with the APK on a real phone. Collaborator can clone
+https://github.com/Aaronlb912/did-i
 
 ## What SHIPPED means
 
@@ -64,7 +95,7 @@ hub, shipped-kinds. Only when he asks.
 
 ## Go deep (done-means)
 
-A person can open the local URL and use the hall. Android
+A person can open the local URL and use the board. Android
 project syncs with `npm run cap:apk` once JDK and SDK exist.
 iOS needs a Mac.
 
@@ -79,5 +110,5 @@ iOS needs a Mac.
 6. Coworker test? Zip `src/lib/`, import `Tonight`.
 7. Keep a copy? JSON download, share, print slip.
 8. Miss and recover? Blank question, junk cadence, bad JSON,
-   empty hall.
+   empty board.
 9. README says how? Who, run, URL, routes, APK command.

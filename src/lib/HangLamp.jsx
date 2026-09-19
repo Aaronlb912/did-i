@@ -1,20 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
-import { blankLamp, missLamp, shortLabel } from './board-json.js'
+import { blankLamp, lampNotifyOn, lampPriority, missLamp, shortLabel } from './board-json.js'
+import { t } from './i18n.js'
+import { usePrefs } from './prefs.js'
+import { STARTERS } from './starters.js'
 
-const DAYS = [
-  { n: 0, label: 'Sun' },
-  { n: 1, label: 'Mon' },
-  { n: 2, label: 'Tue' },
-  { n: 3, label: 'Wed' },
-  { n: 4, label: 'Thu' },
-  { n: 5, label: 'Fri' },
-  { n: 6, label: 'Sat' },
-]
+const DAYS = [0, 1, 2, 3, 4, 5, 6]
+const PRIORITIES = ['high', 'normal', 'low']
 
-export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
-  const [draft, setDraft] = useState(() => (lamp ? { ...lamp } : blankLamp(now)))
+export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = [], tagTitle = '', onTagTitle }) {
+  usePrefs()
+  const [draft, setDraft] = useState(() => {
+    if (lamp) return { ...lamp }
+    const pick = STARTERS.find(
+      (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
+    )
+    return pick ? { ...blankLamp(now), ...pick } : blankLamp(now)
+  })
   const questionRef = useRef(null)
   const editing = Boolean(lamp)
+  const [more, setMore] = useState(() =>
+    Boolean(
+      lamp &&
+        (lamp.short ||
+          lamp.askAfter ||
+          lamp.notes ||
+          (lamp.slot && lamp.slot !== 'whenever') ||
+          (lamp.kind && lamp.kind !== 'other')),
+    ),
+  )
+  const priority = lampPriority(draft)
+  const notifyOn = lampNotifyOn(draft)
 
   useEffect(() => {
     questionRef.current?.focus()
@@ -44,6 +59,8 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays : [],
+      priority,
+      notify: notifyOn,
     }
     const problem = missLamp(next)
     if (problem) {
@@ -54,86 +71,84 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
   }
 
   return (
-    <form className="di-hang" onSubmit={submit}>
-      <p className="di-hang-kicker">{editing ? 'Edit plate' : 'New plate'}</p>
+    <form className="di-hang di-plate-loose" onSubmit={submit}>
+      <p className="di-hang-kicker">{editing ? t('hang.edit') : t('hang.new')}</p>
       <label className="di-field">
-        <span>Question</span>
+        <span>{t('hang.question')}</span>
         <input
           ref={questionRef}
           value={draft.question}
           onChange={(event) => change('question', event.target.value)}
-          placeholder="Did I lock the back door?"
+          placeholder={t('hang.questionPh')}
         />
       </label>
+      {onTagTitle ? (
+        <label className="di-field">
+          <span>{t('hang.tag')}</span>
+          <input
+            list="di-hang-tags"
+            value={tagTitle}
+            onChange={(event) => onTagTitle(event.target.value)}
+            placeholder={t('hang.tagPh')}
+          />
+          <datalist id="di-hang-tags">
+            {boards.map((item) => (
+              <option key={item.id} value={item.title} />
+            ))}
+          </datalist>
+        </label>
+      ) : null}
       <label className="di-field">
-        <span>Short label</span>
-        <input
-          value={draft.short}
-          onChange={(event) => change('short', event.target.value)}
-          placeholder="Back door"
-        />
-      </label>
-      <label className="di-field">
-        <span>Kind</span>
-        <select value={draft.kind} onChange={(event) => change('kind', event.target.value)}>
-          <option value="house">House</option>
-          <option value="pills">Pills</option>
-          <option value="money">Money</option>
-          <option value="people">People</option>
-          <option value="other">Other</option>
-        </select>
-      </label>
-      <label className="di-field">
-        <span>How often</span>
+        <span>{t('hang.often')}</span>
         <select
           value={draft.cadence}
           onChange={(event) => change('cadence', event.target.value)}
         >
-          <option value="daily">Every day</option>
-          <option value="weekly">Some weekdays</option>
-          <option value="monthly">Monthly</option>
-          <option value="every_n">Every N days</option>
-          <option value="once">Once</option>
+          <option value="daily">{t('hang.daily')}</option>
+          <option value="weekly">{t('hang.weekly')}</option>
+          <option value="monthly">{t('hang.monthly')}</option>
+          <option value="every_n">{t('hang.everyN')}</option>
+          <option value="once">{t('hang.once')}</option>
         </select>
       </label>
       {draft.cadence === 'weekly' ? (
         <fieldset className="di-days">
-          <legend>Weekdays</legend>
+          <legend>{t('hang.weekdays')}</legend>
           {DAYS.map((day) => (
-            <label key={day.n}>
+            <label key={day}>
               <input
                 type="checkbox"
-                checked={draft.weekdays.includes(day.n)}
-                onChange={() => toggleDay(day.n)}
+                checked={draft.weekdays.includes(day)}
+                onChange={() => toggleDay(day)}
               />
-              {day.label}
+              {t(`hang.day.${day}`)}
             </label>
           ))}
         </fieldset>
       ) : null}
       {draft.cadence === 'monthly' ? (
         <label className="di-field">
-          <span>Day of the month</span>
+          <span>{t('hang.monthDay')}</span>
           <select
             value={draft.monthDay === '' ? '' : String(draft.monthDay)}
             onChange={(event) =>
               change('monthDay', event.target.value === 'last' ? 'last' : Number(event.target.value) || '')
             }
           >
-            <option value="">Pick a day</option>
+            <option value="">{t('hang.pickDay')}</option>
             {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
               <option key={day} value={day}>
                 {day}
               </option>
             ))}
-            <option value="last">Last day</option>
+            <option value="last">{t('hang.lastDay')}</option>
           </select>
         </label>
       ) : null}
       {draft.cadence === 'every_n' ? (
         <>
           <label className="di-field">
-            <span>Every how many days</span>
+            <span>{t('hang.everyNDays')}</span>
             <input
               inputMode="numeric"
               value={draft.everyN}
@@ -142,7 +157,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
             />
           </label>
           <label className="di-field">
-            <span>Starting on</span>
+            <span>{t('hang.startingOn')}</span>
             <input
               type="date"
               value={draft.everyNAnchor}
@@ -151,29 +166,94 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
           </label>
         </>
       ) : null}
-      <label className="di-field">
-        <span>When</span>
-        <select value={draft.slot} onChange={(event) => change('slot', event.target.value)}>
-          <option value="morning">Morning</option>
-          <option value="whenever">Whenever</option>
-          <option value="night">Night</option>
-        </select>
-      </label>
-      <label className="di-field">
-        <span>Ask after (optional)</span>
-        <input
-          type="time"
-          value={draft.askAfter}
-          onChange={(event) => change('askAfter', event.target.value)}
-        />
-      </label>
-      <label className="di-field">
-        <span>Notes</span>
-        <input
-          value={draft.notes}
-          onChange={(event) => change('notes', event.target.value)}
-        />
-      </label>
+      <div className="di-field">
+        <span id="di-hang-priority">{t('hang.priority')}</span>
+        <div className="di-hang-chips" role="group" aria-labelledby="di-hang-priority">
+          {PRIORITIES.map((id) => (
+            <button
+              key={id}
+              className={priority === id ? 'di-key is-pick' : 'di-key'}
+              type="button"
+              onClick={() => change('priority', id)}
+            >
+              {t(`hang.priority.${id}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="di-field">
+        <span id="di-hang-notify">{t('hang.notify')}</span>
+        <div className="di-hang-chips" role="group" aria-labelledby="di-hang-notify">
+          <button
+            className={notifyOn ? 'di-key is-pick' : 'di-key'}
+            type="button"
+            onClick={() => change('notify', true)}
+          >
+            {t('hang.notifyOn')}
+          </button>
+          <button
+            className={!notifyOn ? 'di-key is-pick' : 'di-key'}
+            type="button"
+            onClick={() => change('notify', false)}
+          >
+            {t('hang.notifyOff')}
+          </button>
+        </div>
+      </div>
+      {more ? (
+        <>
+          <label className="di-field">
+            <span>{t('hang.short')}</span>
+            <input
+              value={draft.short}
+              onChange={(event) => change('short', event.target.value)}
+              placeholder={t('hang.shortPh')}
+            />
+          </label>
+          <label className="di-field">
+            <span>{t('hang.timeOfDay')}</span>
+            <select value={draft.slot} onChange={(event) => change('slot', event.target.value)}>
+              <option value="morning">{t('hang.morning')}</option>
+              <option value="whenever">{t('hang.whenever')}</option>
+              <option value="night">{t('hang.night')}</option>
+            </select>
+          </label>
+          <label className="di-field">
+            <span>{t('hang.askAfter')}</span>
+            <input
+              type="time"
+              value={draft.askAfter}
+              onChange={(event) => change('askAfter', event.target.value)}
+            />
+          </label>
+          <label className="di-field">
+            <span>{t('hang.kind')}</span>
+            <select value={draft.kind} onChange={(event) => change('kind', event.target.value)}>
+              <option value="house">{t('hang.kind.house')}</option>
+              <option value="pills">{t('hang.kind.pills')}</option>
+              <option value="money">{t('hang.kind.money')}</option>
+              <option value="people">{t('hang.kind.people')}</option>
+              <option value="other">{t('hang.kind.other')}</option>
+            </select>
+          </label>
+          <label className="di-field">
+            <span>{t('hang.notes')}</span>
+            <input
+              value={draft.notes}
+              onChange={(event) => change('notes', event.target.value)}
+              placeholder={t('hang.notesPh')}
+            />
+          </label>
+        </>
+      ) : null}
+      <button
+        className="di-key"
+        type="button"
+        aria-expanded={more}
+        onClick={() => setMore((open) => !open)}
+      >
+        {more ? t('hang.less') : t('hang.more')}
+      </button>
       {miss ? (
         <p className="di-miss" role="alert">
           {miss}
@@ -181,10 +261,10 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss }) {
       ) : null}
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={() => submit()}>
-          {editing ? 'Save' : 'Hang'}
+          {editing ? t('hang.save') : t('hang.add')}
         </button>
         <button className="di-skip" type="button" onClick={onCancel}>
-          Cancel
+          {t('hang.cancel')}
         </button>
       </div>
     </form>

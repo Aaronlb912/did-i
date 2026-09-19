@@ -1,12 +1,13 @@
-import { shortLabel } from './board-json.js'
 import { NightStrip } from './NightStrip.jsx'
+import { answerFor } from './recurrence.js'
 
-export function LampFace({ row, onYes, onSkip, book, keys, onPickHole }) {
+export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
   if (!row) return null
   const { lamp } = row
+  const hasHistory = (keys || []).some((key) => answerFor(book, lamp.id, key))
   return (
     <section className="di-face" aria-labelledby="di-question">
-      <p className="di-face-plate">Tonight</p>
+      <p className="di-face-plate">{tag || 'Tonight'}</p>
       <h2 id="di-question" className="di-question">
         {lamp.question}
       </h2>
@@ -15,12 +16,17 @@ export function LampFace({ row, onYes, onSkip, book, keys, onPickHole }) {
           DID
         </button>
         <button className="di-tape" type="button" onClick={onSkip}>
-          skip
+          nope
         </button>
       </div>
-      {lamp.cadence === 'once' && (!keys || keys.length < 2) ? null : (
-        <NightStrip book={book} lamp={lamp} keys={keys} onPickHole={onPickHole} />
-      )}
+      {hasHistory ? (
+        <NightStrip
+          book={book}
+          lamp={lamp}
+          keys={keys}
+          onPickHole={onPickHole ? (item, key) => onPickHole(item, key, row) : undefined}
+        />
+      ) : null}
     </section>
   )
 }

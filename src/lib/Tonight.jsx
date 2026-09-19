@@ -1,76 +1,88 @@
 import { useEffect, useRef, useState } from 'react'
+import { goHash } from '../site/hash.js'
 import { LampFace } from './LampFace.jsx'
-import { HangLamp } from './HangLamp.jsx'
-import { LampDetail } from './LampDetail.jsx'
-import { ACHIEVEMENTS, unlockAchievements } from './achievements.js'
-import {
-  answeredAtIso,
-  blankLamp,
-  downloadBook,
-  duplicateLamp,
-  missLamp,
-  newAnswerId,
-  parseBookText,
-  shortLabel,
-} from './board-json.js'
+import { AppNav } from './AppNav.jsx'
+import { StarterPicks } from './StarterPicks.jsx'
+import { MastCogs } from './SettingsCog.jsx'
+import { WaitPlate } from './WaitPlate.jsx'
+import { HolePlate } from './HolePlate.jsx'
+import { unlockAchievements } from './achievements.js'
+import { shortLabel } from './board-json.js'
+import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHeat, hallHour } from './hall-feel.js'
+import { HeatPips } from './HeatPips.jsx'
+import { bySlot, clockWords } from './hall-pages.js'
+import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
+import { usePrefs, useTheme } from './prefs.js'
+import { normalizePurse } from './purse.js'
+import { useReduceMotion } from './useReduceMotion.js'
 import {
   allClearTonight,
   boardDate,
-  catchUpRows,
-  dueTonight,
   faceReadyTonight,
   formatBoardDate,
   recentPeriodKeys,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
+import { rowKey, taggedCatchUp, taggedDue } from './tags.js'
+import { TagRail } from './TagRail.jsx'
 import './did-i.css'
 
 export function Tonight({
   value,
+  boards = [],
+  tagId = '',
+  onTag,
   onChange,
   now,
-  onResetSample,
-  onStartEmpty,
-  onLeave,
-  onRead,
-  pingLabel,
-  onAskPings,
-  installLabel,
-  onInstall,
-  onShare,
   focusLampId,
 }) {
+  usePrefs()
+  const theme = useTheme()
+  const reduce = useReduceMotion()
   const clock = now || new Date()
-  const fileRef = useRef(null)
   const undoTimer = useRef(null)
-  const [hanging, setHanging] = useState(false)
-  const [editLamp, setEditLamp] = useState(null)
-  const [hangMiss, setHangMiss] = useState('')
   const [faceId, setFaceId] = useState('')
-  const [openId, setOpenId] = useState('')
-  const [trayOpen, setTrayOpen] = useState(false)
   const [titleEdit, setTitleEdit] = useState(false)
   const [titleDraft, setTitleDraft] = useState(value.title)
-  const [loadMiss, setLoadMiss] = useState('')
   const [undo, setUndo] = useState(null)
   const [holePick, setHolePick] = useState(null)
+  const [waitPick, setWaitPick] = useState(null)
 
   const dateIso = boardDate(clock, value.dayFoldHour)
-  const due = dueTonight(value, clock)
-  const unanswered = unansweredTonight(value, clock)
-  const ready = faceReadyTonight(value, clock)
-  const waiting = waitingTonight(value, clock)
-  const catchUp = catchUpRows(value, clock)
-  const hallOn = allClearTonight(value, clock)
+  const shelf = boards.length ? boards : [value]
+  const due = taggedDue(shelf, clock, tagId)
+  const unanswered = tagId
+    ? unansweredTonight(value, clock)
+    : shelf.flatMap((book) => unansweredTonight(book, clock))
+  const ready = tagId
+    ? faceReadyTonight(value, clock).map((row) => ({ ...row, boardId: value.id, tag: value.title, book: value }))
+    : shelf.flatMap((book) =>
+        faceReadyTonight(book, clock).map((row) => ({
+          ...row,
+          boardId: book.id,
+          tag: book.title,
+          book,
+        })),
+      )
+  const waiting = tagId
+    ? waitingTonight(value, clock)
+    : shelf.flatMap((book) => waitingTonight(book, clock))
+  const catchUp = taggedCatchUp(shelf, clock, tagId)
+  const hallOn = (tagId ? [value] : shelf).every((book) => allClearTonight(book, clock))
   const heat = hallHeat(value, clock)
   const hour = hallHour(clock)
-  const empty = (value.lamps || []).filter((lamp) => !lamp.archived).length === 0
+  const empty = (tagId ? [value] : shelf).every(
+    (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
+  )
 
-  const faceRow = ready.find((row) => row.lamp.id === faceId) || ready[0] || null
-  const openLamp = (value.lamps || []).find((lamp) => lamp.id === openId) || null
+  const faceRow =
+    ready.find((row) => row.lamp.id === faceId) ||
+    ready.find((row) => rowKey(row) === faceId) ||
+    ready[0] ||
+    null
 
   useEffect(() => {
     setTitleDraft(value.title)
@@ -81,14 +93,10 @@ export function Tonight({
   }, [focusLampId])
 
   function closePlates() {
-    if (hanging || editLamp || openId || trayOpen || titleEdit || holePick) {
-      setHanging(false)
-      setEditLamp(null)
-      setHangMiss('')
-      setOpenId('')
-      setTrayOpen(false)
+    if (titleEdit || holePick || waitPick) {
       setTitleEdit(false)
       setHolePick(null)
+      setWaitPick(null)
       return true
     }
     return false
@@ -96,7 +104,7 @@ export function Tonight({
 
   useEffect(() => {
     function onBack() {
-      closePlates()
+      if (!closePlates()) goHash('/')
     }
     window.addEventListener('did-i-back', onBack)
     return () => window.removeEventListener('did-i-back', onBack)
@@ -113,12 +121,9 @@ export function Tonight({
       if (event.target.closest('input, textarea, select')) return
       if (event.key === 'Escape') {
         event.preventDefault()
-        setHanging(false)
-        setEditLamp(null)
-        setHangMiss('')
-        setOpenId('')
         setTitleEdit(false)
         setHolePick(null)
+        setWaitPick(null)
         return
       }
       if (event.key === 'u' && undo) {
@@ -126,12 +131,10 @@ export function Tonight({
         applyUndo()
         return
       }
-      if (hanging || openLamp || holePick) return
+      if (holePick || waitPick) return
       if (event.key === 'n') {
         event.preventDefault()
-        setHanging(true)
-        setEditLamp(null)
-        setHangMiss('')
+        goHash('/add')
         return
       }
       if (!faceRow) return
@@ -162,6 +165,10 @@ export function Tonight({
     onChange(unlockAchievements(next, clock))
   }
 
+  function bookOf(row) {
+    return row?.book || shelf.find((item) => item.id === row?.boardId) || value
+  }
+
   function armUndo(payload) {
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
     setUndo(payload)
@@ -175,32 +182,19 @@ export function Tonight({
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
   }
 
-  function writeAnswer(row, status) {
-    const answer = {
-      id: newAnswerId(),
-      lampId: row.lamp.id,
-      periodKey: row.periodKey,
-      status,
-      answeredAt: answeredAtIso(clock),
-      note: '',
-    }
-    return {
-      ...value,
-      answers: [...value.answers.filter((item) => !(item.lampId === row.lamp.id && item.periodKey === row.periodKey)), answer],
-    }
-  }
-
   function mark(row, status) {
     if (!row) return
-    const next = writeAnswer(row, status)
-    const wasClear = allClearTonight(value, clock)
+    const book = bookOf(row)
+    const next = putAnswer(book, row, status, clock)
+    const wasClear = allClearTonight(book, clock)
     change(next)
     setFaceId('')
     setHolePick(null)
-    armUndo({ book: value, label: 'Tap saved.' })
+    setWaitPick(null)
+    armUndo({ book, label: t('tonight.saved') })
     if (status === 'skip') feelTap('skip')
     else feelTap('did')
-    if (value.clickSound && status === 'yes') playClick()
+    if (book.clickSound && status === 'yes') playClick()
     if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
   }
 
@@ -210,58 +204,6 @@ export function Tonight({
     const current = faceRow ? ids.indexOf(faceRow.lamp.id) : 0
     const next = (current + step + ids.length) % ids.length
     setFaceId(ids[next])
-  }
-
-  function hangSave(lamp, problem) {
-    if (problem || !lamp) {
-      setHangMiss(problem || missLamp(blankLamp(clock)))
-      return
-    }
-    let next
-    if (editLamp) {
-      next = {
-        ...value,
-        lamps: value.lamps.map((item) => (item.id === lamp.id ? lamp : item)),
-      }
-    } else {
-      next = { ...value, lamps: [...value.lamps, lamp] }
-    }
-    change(next)
-    setHanging(false)
-    setEditLamp(null)
-    setHangMiss('')
-    armUndo({ book: value, label: editLamp ? 'Plate saved.' : 'Lamp hung.' })
-  }
-
-  function removeLamp(lamp) {
-    const next = {
-      ...value,
-      lamps: value.lamps.filter((item) => item.id !== lamp.id),
-      answers: value.answers.filter((item) => item.lampId !== lamp.id),
-    }
-    change(next)
-    setOpenId('')
-    if (faceId === lamp.id) setFaceId('')
-    armUndo({ book: value, label: 'Lamp taken down.' })
-  }
-
-  function archiveLamp(lamp) {
-    const next = {
-      ...value,
-      lamps: value.lamps.map((item) =>
-        item.id === lamp.id ? { ...item, archived: !item.archived } : item,
-      ),
-    }
-    change(next)
-    setOpenId('')
-    armUndo({ book: value, label: lamp.archived ? 'Hung again.' : 'Lamp taken down.' })
-  }
-
-  function copyLamp(lamp) {
-    const copy = duplicateLamp(lamp, clock)
-    change({ ...value, lamps: [...value.lamps, copy] })
-    setOpenId(copy.id)
-    armUndo({ book: value, label: 'Copy hung.' })
   }
 
   function saveTitle() {
@@ -275,113 +217,123 @@ export function Tonight({
     setTitleEdit(false)
   }
 
-  function onLoadFile(event) {
-    const file = event.target.files && event.target.files[0]
-    event.target.value = ''
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const parsed = parseBookText(String(reader.result || ''))
-      if (!parsed.ok) {
-        setLoadMiss(parsed.reason)
-        return
-      }
-      setLoadMiss('')
-      change(parsed.book)
-    }
-    reader.readAsText(file)
-  }
-
   function jewelClick(row) {
-    if (row.answer) {
-      setOpenId(row.lamp.id)
-      setHanging(false)
+    if (row.waiting && !row.answer) {
+      setWaitPick(row)
+      setHolePick(null)
       return
     }
-    if (!row.waiting) setFaceId(row.lamp.id)
-    setOpenId('')
+    if (row.answer) {
+      goHash('/lamp', { id: row.lamp.id })
+      return
+    }
+    setFaceId(row.lamp.id)
+    setWaitPick(null)
   }
 
-  function pickHole(lamp, periodKey) {
-    setHolePick({ lamp, periodKey })
+  function pickHole(lamp, periodKey, row) {
+    setHolePick({ lamp, periodKey, book: row?.book, boardId: row?.boardId })
+    setWaitPick(null)
   }
 
-  const dueWithWait = due.map((row) => ({
+  const dueWithWait = bySlot(due).map((row) => ({
     ...row,
     waiting: !row.answer && !ready.some((item) => item.lamp.id === row.lamp.id),
   }))
+  const answeredCount = due.filter((row) => row.answer).length
+  const meterPct = due.length ? (100 * answeredCount) / due.length : 0
+
+  function nextOpenTime(rows) {
+    return [...rows]
+      .filter((row) => row.lamp.askAfter)
+      .sort((a, b) => a.lamp.askAfter.localeCompare(b.lamp.askAfter))[0]
+  }
 
   let body = null
-  if (hanging) {
+  if (holePick) {
     body = (
-      <HangLamp
-        now={clock}
-        lamp={editLamp}
-        miss={hangMiss}
-        onSave={hangSave}
-        onCancel={() => {
-          setHanging(false)
-          setEditLamp(null)
-          setHangMiss('')
-        }}
+      <HolePlate
+        lamp={holePick.lamp}
+        periodKey={holePick.periodKey}
+        onLate={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'late')}
+        onSkip={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'skip')}
+        onClose={() => setHolePick(null)}
       />
     )
-  } else if (openLamp) {
+  } else if (waitPick) {
     body = (
-      <LampDetail
-        book={value}
-        lamp={openLamp}
-        dateIso={dateIso}
-        onClose={() => setOpenId('')}
-        onEdit={(lamp) => {
-          setEditLamp(lamp)
-          setHanging(true)
-          setHangMiss('')
-          setOpenId('')
-        }}
-        onDuplicate={copyLamp}
-        onArchive={archiveLamp}
-        onRemove={removeLamp}
-        onMarkHole={pickHole}
+      <WaitPlate
+        row={waitPick}
+        onClose={() => setWaitPick(null)}
+        onOpenLamp={() => goHash('/lamp', { id: waitPick.lamp.id })}
       />
     )
   } else if (empty) {
     body = (
       <section className="di-empty">
-        <p className="di-face-plate">Blank plate</p>
-        <h2 className="di-question">Nothing is hanging yet.</h2>
-        <button
-          className="di-did"
-          type="button"
-          onClick={() => {
-            setHanging(true)
-            setEditLamp(null)
-          }}
-        >
-          Hang
+        <p className="di-face-plate">{t('tonight.emptyKicker')}</p>
+        <h2 className="di-question">{t('tonight.emptyTitle')}</h2>
+        <StarterPicks book={value} onChange={onChange} now={clock} label={t('first.picks')} />
+        <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
+          {t('tonight.write')}
         </button>
       </section>
     )
   } else if (faceRow) {
     body = (
-      <>
-        <LampFace
-          row={faceRow}
-          book={value}
-          keys={recentPeriodKeys(faceRow.lamp, dateIso, 7)}
-          onPickHole={pickHole}
-          onYes={() => mark(faceRow, 'yes')}
-          onSkip={() => mark(faceRow, 'skip')}
-        />
-      </>
+      <LampFace
+        row={faceRow}
+        book={bookOf(faceRow)}
+        tag={faceRow.tag}
+        keys={recentPeriodKeys(faceRow.lamp, dateIso, 7)}
+        onPickHole={pickHole}
+        onYes={() => mark(faceRow, 'yes')}
+        onSkip={() => mark(faceRow, 'skip')}
+      />
     )
   } else if (waiting.length) {
-    body = <p className="di-sit-line">Those lamps wait.</p>
+    const next = nextOpenTime(waiting)
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.waitKicker')}</p>
+        <h2 className="di-question">{t('tonight.waitTitle')}</h2>
+        <p className="di-detail-meta">
+          {next
+            ? t('tonight.waitOpens', {
+                name: shortLabel(next.lamp),
+                time: clockWords(next.lamp.askAfter),
+              })
+            : t('tonight.waitLater')}
+        </p>
+      </section>
+    )
   } else if (due.length === 0) {
-    body = <p className="di-sit-line">Nothing is due tonight.</p>
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.offKicker')}</p>
+        <h2 className="di-question">{t('tonight.offTitle')}</h2>
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
+            {t('home.add')}
+          </button>
+          <button className="di-key" type="button" onClick={() => goHash('/lamps')}>
+            {t('tonight.seeAll')}
+          </button>
+        </div>
+      </section>
+    )
   } else if (hallOn) {
-    body = <p className="di-sit-line">The hall is on.</p>
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.doneKicker')}</p>
+        <h2 className="di-question">{t('tonight.doneTitle')}</h2>
+        <p className="di-detail-meta">{t('tonight.doneStreak', { n: heat })}</p>
+        <HeatPips heat={heat} />
+      </section>
+    )
   }
+
+  const purse = normalizePurse(value)
 
   return (
     <div
@@ -389,12 +341,11 @@ export function Tonight({
       data-heat={heat}
       data-hour={hour}
       data-sit={hallOn ? 'on' : 'ask'}
+      data-look={purse.lookOn}
+      data-theme={theme}
+      {...(reduce ? { 'data-reduce-motion': '' } : {})}
     >
       <div className="di-board" data-heat={heat}>
-        <span className="di-screw di-screw-tl" aria-hidden="true" />
-        <span className="di-screw di-screw-tr" aria-hidden="true" />
-        <span className="di-screw di-screw-bl" aria-hidden="true" />
-        <span className="di-screw di-screw-br" aria-hidden="true" />
         <header className="di-mast">
           {titleEdit ? (
             <input
@@ -408,28 +359,61 @@ export function Tonight({
                   saveTitle()
                 }
               }}
-              aria-label="Board name"
+              aria-label={t('tonight.boardName')}
             />
           ) : (
             <button className="di-title" type="button" onClick={() => setTitleEdit(true)}>
-              {value.title}
+              {tagId ? value.title : t('tonight.didI')}
             </button>
           )}
           <p className="di-date">{formatBoardDate(dateIso)}</p>
+          <p className="di-mast-purse">
+            {t('tonight.purse', { coins: purse.coins, gems: purse.gems })}
+          </p>
+          <button className="di-add" type="button" onClick={() => goHash('/add')}>
+            {t('tonight.add')}
+          </button>
+          <MastCogs />
         </header>
 
-        {dueWithWait.length > 0 && !hanging && !openLamp ? (
+        <TagRail boards={shelf} tagId={tagId} onTag={onTag} now={clock} />
+
+        {due.length > 0 ? (
+          <div className="di-meter">
+            <p className="di-meter-top">
+              <span className="di-meter-count">{answeredCount}</span>
+              <span className="di-meter-label">
+                {t('tonight.meter', { n: due.length })}
+              </span>
+            </p>
+            <div
+              className="di-meter-bar"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={due.length}
+              aria-valuenow={answeredCount}
+              aria-label={t('tonight.meterAria', {
+                n: answeredCount,
+                total: due.length,
+              })}
+            >
+              <span className="di-meter-fill" style={{ width: `${meterPct}%` }} />
+            </div>
+          </div>
+        ) : null}
+
+        {dueWithWait.length > 0 && !holePick && !waitPick ? (
           <div className="di-edge-wrap">
-            <ul className="di-edge" aria-label="Tonight's lamps">
+            <ul className="di-edge" aria-label={t('tonight.aria')}>
               {dueWithWait.map((row) => {
                 const on =
                   row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
                 const skip = row.answer?.status === 'skip'
                 const late = row.answer?.status === 'late'
                 const isFace =
-                  faceRow && row.lamp.id === faceRow.lamp.id && !hanging && !openLamp
+                  faceRow && row.lamp.id === faceRow.lamp.id && !holePick && !waitPick
                 return (
-                  <li key={row.lamp.id}>
+                  <li key={rowKey(row)}>
                     <button
                       type="button"
                       className={[
@@ -443,13 +427,16 @@ export function Tonight({
                       ]
                         .filter(Boolean)
                         .join(' ')}
-                      data-filament={on ? filamentLevel(value, row.lamp.id) : 0}
+                      data-filament={on ? filamentLevel(bookOf(row), row.lamp.id) : 0}
                       onClick={() => jewelClick(row)}
                     >
                       <span className="di-jewel-ring">
                         <span className="di-jewel-glass" />
                       </span>
-                      <span className="di-jewel-label">{shortLabel(row.lamp)}</span>
+                      <span className="di-jewel-label">
+                        {shortLabel(row.lamp)}
+                        {row.tag && shelf.length > 1 ? <i className="di-lamp-tag">{row.tag}</i> : null}
+                      </span>
                     </button>
                   </li>
                 )
@@ -458,16 +445,16 @@ export function Tonight({
           </div>
         ) : null}
 
-        {catchUp.length > 0 && !hanging && !openLamp ? (
+        {catchUp.length > 0 && !holePick && !waitPick ? (
           <div className="di-holes" aria-label="Last time">
-            <p className="di-slot-label">Last night</p>
+            <p className="di-slot-label">{t('tonight.lastNight')}</p>
             <ul className="di-edge">
               {catchUp.map((row) => (
-                <li key={row.lamp.id}>
+                <li key={rowKey(row)}>
                   <button
                     type="button"
                     className="di-jewel is-hole"
-                    onClick={() => pickHole(row.lamp, row.periodKey)}
+                    onClick={() => pickHole(row.lamp, row.periodKey, row)}
                   >
                     <span className="di-jewel-ring">
                       <span className="di-jewel-glass" />
@@ -486,147 +473,12 @@ export function Tonight({
           <p className="di-undo di-screws-print-hide">
             {undo.label}{' '}
             <button className="di-key" type="button" onClick={applyUndo}>
-              Undo
+              {t('tonight.undo')}
             </button>
           </p>
         ) : null}
 
-        {holePick ? (
-          <p className="di-undo di-screws-print-hide">
-            {shortLabel(holePick.lamp)} that night.{' '}
-            <button
-              className="di-key"
-              type="button"
-              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'late')}
-            >
-              late
-            </button>{' '}
-            <button
-              className="di-key"
-              type="button"
-              onClick={() => mark({ lamp: holePick.lamp, periodKey: holePick.periodKey }, 'skip')}
-            >
-              skip
-            </button>
-          </p>
-        ) : null}
-
-        {trayOpen ? (
-          <div className="di-tray di-screws-print-hide">
-            <ul className="di-tray-lamps">
-              {(value.lamps || []).map((lamp) => (
-                <li key={lamp.id}>
-                  <button className="di-key" type="button" onClick={() => setOpenId(lamp.id)}>
-                    {shortLabel(lamp)}
-                    {lamp.archived ? ' (down)' : ''}
-                  </button>
-                  <button className="di-key" type="button" onClick={() => removeLamp(lamp)}>
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="di-tray-files">
-              <button className="di-key" type="button" onClick={() => downloadBook(value)}>
-                Download JSON
-              </button>
-              <button className="di-key" type="button" onClick={() => fileRef.current?.click()}>
-                Load JSON
-              </button>
-              <button className="di-key" type="button" onClick={() => window.print()}>
-                Print tonight
-              </button>
-              <button
-                className="di-key"
-                type="button"
-                onClick={() => change({ ...value, quietMode: !value.quietMode })}
-              >
-                {value.quietMode ? 'Show pips' : 'Quiet mode'}
-              </button>
-              <button
-                className="di-key"
-                type="button"
-                onClick={() => change({ ...value, clickSound: !value.clickSound })}
-              >
-                {value.clickSound ? 'Click off' : 'Click on DID'}
-              </button>
-              {onShare ? (
-                <button className="di-key" type="button" onClick={onShare}>
-                  Share JSON
-                </button>
-              ) : null}
-              {onStartEmpty ? (
-                <button className="di-key" type="button" onClick={onStartEmpty}>
-                  Start empty
-                </button>
-              ) : null}
-              {onResetSample ? (
-                <button className="di-key" type="button" onClick={onResetSample}>
-                  Hayes Street sample
-                </button>
-              ) : null}
-              {onAskPings && pingLabel ? (
-                <button className="di-key" type="button" onClick={onAskPings}>
-                  {pingLabel}
-                </button>
-              ) : null}
-              {onInstall && installLabel ? (
-                <button className="di-key" type="button" onClick={onInstall}>
-                  {installLabel}
-                </button>
-              ) : null}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/json,.json"
-                hidden
-                onChange={onLoadFile}
-              />
-            </div>
-            {!value.quietMode ? (
-              <ul className="di-pips" aria-label="Marks">
-                {ACHIEVEMENTS.filter((item) => value.unlocked.includes(item.id)).map((item) => (
-                  <li key={item.id} title={item.name}>
-                    {item.name}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {loadMiss ? (
-              <p className="di-miss" role="alert">
-                {loadMiss}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        <footer className="di-latch di-screws-print-hide">
-          <button
-            className="di-key"
-            type="button"
-            onClick={() => {
-              setHanging(true)
-              setEditLamp(null)
-              setHangMiss('')
-              setOpenId('')
-            }}
-          >
-            Hang
-          </button>
-          {onRead ? (
-            <button className="di-key" type="button" onClick={onRead}>
-              Read
-            </button>
-          ) : null}
-          {onLeave ? (
-            <button className="di-key" type="button" onClick={onLeave}>
-              Door
-            </button>
-          ) : null}
-          <button className="di-key" type="button" onClick={() => setTrayOpen((open) => !open)}>
-            {trayOpen ? 'Close' : 'Tray'}
-          </button>
-        </footer>
+        <AppNav />
       </div>
 
       <ol className="di-print-slip">

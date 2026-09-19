@@ -1,3 +1,5 @@
+import { cameBackAfterHole } from './daily.js'
+import { hallHeat } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -11,13 +13,20 @@ import {
 } from './recurrence.js'
 
 export const ACHIEVEMENTS = [
-  { id: 'first-did', name: 'First DID' },
-  { id: 'hall-on', name: 'Hall is on' },
-  { id: 'honest-skip', name: 'Honest skip' },
-  { id: 'seven-door', name: 'Seven nights on the door' },
-  { id: 'hung-five', name: 'Five lamps' },
-  { id: 'month-bill', name: 'Monthly yes' },
-  { id: 'quiet-week', name: 'Quiet week' },
+  { id: 'first-open', name: 'Showed up', line: 'You opened Did I.' },
+  { id: 'first-did', name: 'First DID', line: 'You hit DID.' },
+  { id: 'honest-skip', name: 'Honest nope', line: 'Tonight was not that night.' },
+  { id: 'late-ok', name: 'Late still counts', line: 'You marked a miss late.' },
+  { id: 'hall-on', name: 'Tonight done', line: 'Everything due got an answer.' },
+  { id: 'heat-3', name: 'Three nights', line: 'Three nights in a row finished.' },
+  { id: 'heat-5', name: 'Five nights', line: 'Five nights finished.' },
+  { id: 'showed-3', name: 'Three nights here', line: 'You came back three nights.' },
+  { id: 'showed-7', name: 'A week of opens', line: 'Seven nights you opened it.' },
+  { id: 'come-back', name: 'Back after a hole', line: 'You opened after a night that was not on.' },
+  { id: 'seven-door', name: 'Seven nights on the door', line: 'The house question held a week.' },
+  { id: 'hung-five', name: 'Five questions', line: 'Five questions added.' },
+  { id: 'month-bill', name: 'Monthly yes', line: 'A monthly question got a yes.' },
+  { id: 'quiet-week', name: 'Quiet week', line: 'Seven nights with no hole.' },
 ]
 
 function add(unlocked, id) {
@@ -25,7 +34,12 @@ function add(unlocked, id) {
   return [...unlocked, id]
 }
 
-function streakLength(book, lamp, now) {
+export function nextMark(book) {
+  const have = new Set(book.unlocked || [])
+  return ACHIEVEMENTS.find((item) => !have.has(item.id)) || null
+}
+
+export function streakLength(book, lamp, now) {
   if (!lamp) return 0
   const today = boardDate(now, book.dayFoldHour)
   let cursor = isDueOn(lamp, today) ? today : previousDueDate(lamp, today)
@@ -45,15 +59,17 @@ function streakLength(book, lamp, now) {
 
 function quietWeek(book, now) {
   const today = boardDate(now, book.dayFoldHour)
+  let anyDue = false
   for (let i = 0; i < 7; i += 1) {
     const iso = addDaysIso(today, -i)
     const date = parseIsoDate(iso)
     if (!date) return false
     date.setHours(12, 0, 0, 0)
     const due = dueTonight(book, date)
+    if (due.length) anyDue = true
     if (due.some((row) => !row.answer)) return false
   }
-  return true
+  return anyDue
 }
 
 export function unlockAchievements(book, now = new Date()) {
@@ -61,11 +77,17 @@ export function unlockAchievements(book, now = new Date()) {
   const answers = book.answers || []
   const lamps = (book.lamps || []).filter((lamp) => !lamp.archived)
 
+  if ((book.opens || []).length) unlocked = add(unlocked, 'first-open')
+  if ((book.opens || []).length >= 3) unlocked = add(unlocked, 'showed-3')
+  if ((book.opens || []).length >= 7) unlocked = add(unlocked, 'showed-7')
   if (answers.some((answer) => answer.status === 'yes' || answer.status === 'late')) {
     unlocked = add(unlocked, 'first-did')
   }
   if (answers.some((answer) => answer.status === 'skip')) {
     unlocked = add(unlocked, 'honest-skip')
+  }
+  if (answers.some((answer) => answer.status === 'late')) {
+    unlocked = add(unlocked, 'late-ok')
   }
   if (lamps.length >= 5) unlocked = add(unlocked, 'hung-five')
   if (
@@ -77,6 +99,10 @@ export function unlockAchievements(book, now = new Date()) {
     unlocked = add(unlocked, 'month-bill')
   }
   if (allClearTonight(book, now)) unlocked = add(unlocked, 'hall-on')
+  const heat = hallHeat(book, now)
+  if (heat >= 3) unlocked = add(unlocked, 'heat-3')
+  if (heat >= 5) unlocked = add(unlocked, 'heat-5')
+  if (cameBackAfterHole(book, now)) unlocked = add(unlocked, 'come-back')
 
   const door =
     lamps.find((lamp) => lamp.kind === 'house' && lamp.slot === 'night') ||

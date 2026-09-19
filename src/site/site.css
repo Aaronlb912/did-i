@@ -1,67 +1,77 @@
 .di-site {
   min-height: 100vh;
-  background: #1c1410;
-  color: #f3ece3;
-  font-family: Verdana, Geneva, sans-serif;
+  background: var(--di-bg);
+  color: var(--di-ink);
+  font-family: var(--di-ui);
+  -webkit-font-smoothing: antialiased;
 }
 
 .di-site-nav {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
-  max-width: 32rem;
+  max-width: 34rem;
   margin: 0 auto;
-  padding: 1.2rem 1rem 0;
-}
-
-.di-site-brand,
-.di-site-links a {
-  color: #f3ece3;
-  text-decoration: none;
+  padding: 1.3rem 1.15rem 0;
 }
 
 .di-site-brand {
-  letter-spacing: 0.08em;
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-size: 0.85rem;
+  color: var(--di-ink);
+  text-decoration: none;
 }
 
 .di-site-links {
   display: flex;
-  gap: 1rem;
-  font-size: 0.9rem;
+  gap: 1.1rem;
+  font-size: 0.88rem;
 }
 
-.di-site-links a.is-on,
+.di-site-links a {
+  color: var(--di-ink-soft);
+  text-decoration: none;
+}
+
 .di-site-links a:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+  color: var(--di-ink);
+}
+
+.di-site-links a.is-on {
+  color: var(--di-on);
 }
 
 .di-door {
-  max-width: 32rem;
+  max-width: 34rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.6rem 1.15rem 3.5rem;
 }
 
 .di-door-plate {
-  background: #efe6d8;
-  color: #1c1410;
-  padding: 1.5rem 1.25rem 1.4rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  padding: 1.6rem 1.35rem 1.5rem;
 }
 
 .di-door-plate p {
-  color: #6a5d50;
-  line-height: 1.45;
+  color: var(--di-ink-soft);
+  line-height: 1.55;
+}
+
+.di-door-plate .di-question {
+  margin-bottom: 1.1rem;
 }
 
 .di-door-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem;
+  gap: 0.8rem;
   align-items: center;
-  margin-top: 1.2rem;
+  margin-top: 1.4rem;
 }
 
 .di-link-did {
@@ -72,28 +82,20 @@
 }
 
 .di-read p {
-  margin: 0 0 1rem;
+  margin: 0 0 1.05rem;
 }
 
 .di-pre {
   overflow: auto;
-  padding: 0.8rem;
-  background: #3a3228;
-  color: #efe6d8;
-  font-size: 0.82rem;
-  line-height: 1.4;
-}
-
-@media (max-width: 430px) {
-  .di-door-plate .di-question {
-    font-size: 1.85rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .di-door-plate {
-    animation: none;
-  }
+  margin: 0 0 1.05rem;
+  padding: 0.9rem;
+  background: var(--di-bg);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r-sm);
+  color: var(--di-ink-soft);
+  font-family: var(--di-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 @media print {

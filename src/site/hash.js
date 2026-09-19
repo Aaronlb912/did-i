@@ -1,4 +1,34 @@
-const ROUTES = new Set(['/', '/tonight', '/door', '/name', '/read', '/into'])
+const ROUTES = new Set([
+  '/',
+  '/home',
+  '/tonight',
+  '/enter',
+  '/about',
+  '/door',
+  '/name',
+  '/read',
+  '/into',
+  '/lamps',
+  '/week',
+  '/streaks',
+  '/stats',
+  '/feed',
+  '/search',
+  '/me',
+  '/settings',
+  '/add',
+  '/hang',
+  '/lamp',
+  '/welcome',
+  '/pings',
+  '/help',
+  '/ideas',
+  '/later',
+  '/first',
+  '/marks',
+  '/shop',
+  '/kit',
+])
 
 export function parseHash() {
   let raw = typeof window === 'undefined' ? '' : window.location.hash.replace(/^#/, '')
@@ -14,8 +44,12 @@ export function parseHash() {
     raw = raw.replace(/\/+$/, '') || '/'
   }
   const path = ROUTES.has(raw) ? raw : '/'
-  const face = new URLSearchParams(query).get('face') || ''
-  return { path, face }
+  const params = new URLSearchParams(query)
+  const face = params.get('face') || ''
+  const id = params.get('id') || ''
+  const start = params.get('start') || ''
+  const tag = params.get('tag') || ''
+  return { path, face, id, start, tag }
 }
 
 export function readHash() {
@@ -26,9 +60,30 @@ export function readFace() {
   return parseHash().face
 }
 
-export function goHash(path, face = '') {
+function extrasToParams(extras) {
+  if (!extras) return new URLSearchParams()
+  if (typeof extras === 'string') {
+    const params = new URLSearchParams()
+    if (extras) params.set('face', extras)
+    return params
+  }
+  const params = new URLSearchParams()
+  if (extras.face) params.set('face', extras.face)
+  if (extras.id) params.set('id', extras.id)
+  if (extras.start) params.set('start', extras.start)
+  if (extras.tag) params.set('tag', extras.tag)
+  return params
+}
+
+export function goHash(path, extras = '') {
+  const current = parseHash()
+  const extra = typeof extras === 'string' ? { face: extras } : { ...(extras || {}) }
+  if (extra.tag === undefined && current.tag) extra.tag = current.tag
+  if (extra.tag === 'all') extra.tag = ''
+  const params = extrasToParams(extra)
+  const qs = params.toString()
   const base = path === '/' ? '#/' : `#${path}`
-  const next = face ? `${path === '/' ? '#/' : `#${path}`}?face=${encodeURIComponent(face)}` : base
-  if (window.location.hash === next || (next === '#/' && !window.location.hash)) return
-  window.location.hash = next.replace(/^#/, '')
+  const hash = qs ? `${base}?${qs}` : base
+  if (window.location.hash === hash || (hash === '#/' && !window.location.hash)) return
+  window.location.hash = hash.replace(/^#/, '')
 }
