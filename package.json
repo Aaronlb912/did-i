@@ -69,6 +69,7 @@
     "react-native-screens": "^4.28.0",
     "react-native-svg": "15.15.4",
     "react-native-webview": "13.16.1",
+    "typescript": "~6.0.3",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

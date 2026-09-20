@@ -28,6 +28,8 @@ export function SwipeCard({
   onNope,
   colors,
   buddy,
+  blockDid = false,
+  blockNope = false,
   children,
 }) {
   const reduce = useReduceMotion()
@@ -63,11 +65,11 @@ export function SwipeCard({
     .onEnd((event) => {
       if (mode.value === 'fly') return
       const moved = event.translationX
-      if (mode.value === 'drag' && moved >= SWIPE_THRESHOLD) {
+      if (mode.value === 'drag' && moved >= SWIPE_THRESHOLD && !blockDid) {
         runOnJS(finish)('did')
         return
       }
-      if (mode.value === 'drag' && moved <= -SWIPE_THRESHOLD) {
+      if (mode.value === 'drag' && moved <= -SWIPE_THRESHOLD && !blockNope) {
         runOnJS(finish)('nope')
         return
       }

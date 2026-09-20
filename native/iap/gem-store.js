@@ -1,12 +1,4 @@
-import {
-  ErrorCode,
-  fetchProducts,
-  finishTransaction,
-  initConnection,
-  purchaseErrorListener,
-  purchaseUpdatedListener,
-  requestPurchase,
-} from 'expo-iap'
+import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 import { ALL_STORE_IDS, gemPack } from '../../src/lib/gem-packs.js'
 import { readShelf, writeShelf } from '../../src/lib/board-shelf.js'
@@ -20,8 +12,28 @@ let starting = false
 const prices = new Map()
 let purchaseSub = null
 let errorSub = null
+let iap = null
+
+// expo-iap needs a dev build with NitroModules. Skip in Expo Go.
+function inExpoGo() {
+  return Constants.appOwnership === 'expo'
+}
+
+// Lazy load so the rest of the app can boot without the store native module.
+async function loadIap() {
+  if (iap) return iap
+  if (inExpoGo()) return null
+  try {
+    iap = await import('expo-iap')
+    return iap
+  } catch (error) {
+    console.warn('gem iap load', error?.message || error)
+    return null
+  }
+}
 
 export function iapPossible() {
+  if (inExpoGo()) return false
   return Platform.OS === 'android' || Platform.OS === 'ios'
 }
 
@@ -36,6 +48,7 @@ export function storePrice(packId) {
 }
 
 async function creditPurchase(purchase) {
+  const mod = await loadIap()
   const out = await submitGemPurchase(purchase)
   if (out.miss) return out
   const claimed = await claimGemPurchases()
@@ -47,10 +60,12 @@ async function creditPurchase(purchase) {
       // ok
     }
   }
-  try {
-    await finishTransaction({ purchase, isConsumable: true })
-  } catch {
-    // Already finished or store will retry.
+  if (mod?.finishTransaction) {
+    try {
+      await mod.finishTransaction({ purchase, isConsumable: true })
+    } catch {
+      // Already finished or store will retry.
+    }
   }
   return out
 }
@@ -59,6 +74,17 @@ export async function initGemIap() {
   if (!iapPossible() || connected || starting) return connected ? 'ok' : 'skip'
   starting = true
   try {
+    const mod = await loadIap()
+    if (!mod) return 'fail'
+
+    const {
+      ErrorCode,
+      fetchProducts,
+      initConnection,
+      purchaseErrorListener,
+      purchaseUpdatedListener,
+    } = mod
+
     await initConnection()
     purchaseSub?.remove()
     errorSub?.remove()
@@ -92,14 +118,17 @@ export async function buyGemPack(packId) {
   if (!pack) return { miss: 'pack' }
   if (!iapPossible()) return { miss: 'app' }
 
+  const mod = await loadIap()
+  if (!mod) return { miss: 'setup' }
+
   if (!connected) {
     const boot = await initGemIap()
-    if (boot !== 'ok') return { miss: boot === 'empty' ? 'setup' : 'setup' }
+    if (boot !== 'ok') return { miss: 'setup' }
   }
 
   const sku = pack.storeId
   try {
-    await requestPurchase({
+    await mod.requestPurchase({
       request: {
         apple: { sku },
         google: { skus: [sku] },
@@ -108,7 +137,7 @@ export async function buyGemPack(packId) {
     })
     return { miss: '' }
   } catch (error) {
-    if (error?.code === ErrorCode.UserCancelled) return { miss: 'cancel' }
+    if (error?.code === mod.ErrorCode.UserCancelled) return { miss: 'cancel' }
     return { miss: 'store' }
   }
 }

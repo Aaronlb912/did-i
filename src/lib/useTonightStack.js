@@ -288,6 +288,10 @@ export function useTonightStack({
       setPillPick(null)
       return
     }
+    if (pillPick && rowKey(pillPick) === rowKey(row)) {
+      setPillPick(null)
+      return
+    }
     setRestNight(false)
     setWaitPick(null)
     setHolePick(null)

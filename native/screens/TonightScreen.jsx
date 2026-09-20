@@ -149,20 +149,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const status = stack.pillPick.answer?.status || ''
     const isDid = status === 'yes' || status === 'late'
     face = (
-      <View style={[styles.staticCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <Text style={[styles.kicker, { color: colors.on }]}>
-          {status === 'skip' ? t('pill.nope') : status === 'late' ? t('pill.late') : status === 'yes' ? t('pill.done') : t('pill.open')}
-        </Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{stack.pillPick.lamp.question}</Text>
-        <View style={styles.actions}>
-          <DidButton label={t('tonight.swipeDid')} colors={colors} small disabled={isDid} onPress={() => stack.mark(stack.pillPick, 'yes')} />
-          <KeyButton label={t('tonight.swipeNope')} colors={colors} disabled={status === 'skip'} onPress={() => stack.mark(stack.pillPick, 'skip')} />
-        </View>
-        <View style={styles.actions}>
-          <KeyButton label={t('pill.edit')} colors={colors} onPress={() => goHash('/lamp', { id: stack.pillPick.lamp.id })} />
-          <KeyButton label={t('settings.neverMind')} colors={colors} onPress={() => stack.closePlates()} />
-        </View>
-      </View>
+      <SwipeCard
+        colors={colors}
+        kicker={stack.pillPick.tag || t('tonight.didI')}
+        title={stack.pillPick.lamp.question}
+        stampDid={t('tonight.swipeDid')}
+        stampNope={t('tonight.swipeNope')}
+        blockDid={isDid}
+        blockNope={status === 'skip'}
+        onDid={() => stack.mark(stack.pillPick, 'yes')}
+        onNope={() => stack.mark(stack.pillPick, 'skip')}
+        buddy={activeBuddy(stack.bookOf(stack.pillPick))}
+      />
     )
   } else if (stack.bodyKind === 'off') {
     face = (

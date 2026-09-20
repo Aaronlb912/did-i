@@ -4,7 +4,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
 import { pullAndMerge } from '../src/lib/cloud-sync.js'
-import { initGemIap } from '../src/lib/gem-iap.js'
 import { bootNative, listenNativeShell, scheduleNativePings } from '../src/lib/native.js'
 import { startPush } from '../src/lib/push.js'
 import { needsEnter } from '../src/lib/session.js'
@@ -16,7 +15,6 @@ export function NativeApp() {
   useEffect(() => {
     bootNative()
     pullAndMerge()
-    initGemIap()
     startPush((where) => goHash(where))
     const stop = listenNativeShell({
       onBack() {

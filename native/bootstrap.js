@@ -1,23 +1,38 @@
-import { MMKV } from 'react-native-mmkv'
-
 // React Native already defines global.window (it aliases global), so this
 // file augments what is there instead of replacing it. The shared code in
 // src/lib talks to localStorage, window events, and CustomEvent; without
 // these the cloud sync throws before it ever pushes the shelf back.
 
-const store = new MMKV({ id: 'did-i' })
+const mem = new Map()
+let store = null
+
+try {
+  const { MMKV } = require('react-native-mmkv')
+  store = new MMKV({ id: 'did-i' })
+} catch (error) {
+  console.warn('mmkv unavailable', error?.message || error)
+}
 
 function kv(prefix) {
   return {
-    getItem: (key) => store.getString(`${prefix}${key}`) ?? null,
+    getItem: (key) => {
+      const id = `${prefix}${key}`
+      if (store) return store.getString(id) ?? null
+      return mem.get(id) ?? null
+    },
     setItem: (key, value) => {
-      store.set(`${prefix}${key}`, value)
+      const id = `${prefix}${key}`
+      if (store) store.set(id, value)
+      else mem.set(id, value)
     },
     removeItem: (key) => {
-      store.delete(`${prefix}${key}`)
+      const id = `${prefix}${key}`
+      if (store) store.delete(id)
+      else mem.delete(id)
     },
     clear: () => {
-      store.clearAll()
+      if (store) store.clearAll()
+      else mem.clear()
     },
   }
 }

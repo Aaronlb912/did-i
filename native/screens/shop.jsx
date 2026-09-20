@@ -1,3 +1,4 @@
+import Constants from 'expo-constants'
 import { useEffect, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
@@ -459,10 +460,14 @@ export function GemShopScreen({ book }) {
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
   const [storeReady, setStoreReady] = useState(false)
+  const [storeLoading, setStoreLoading] = useState(isReactNative())
 
   useEffect(() => {
     if (!isReactNative()) return undefined
-    initGemIap().then(() => setStoreReady(iapReady()))
+    initGemIap().then(() => {
+      setStoreReady(iapReady())
+      setStoreLoading(false)
+    })
     return undefined
   }, [])
 
@@ -481,13 +486,23 @@ export function GemShopScreen({ book }) {
     setNote(out.pending ? t('gems.pending') : t('gems.return'))
   }
 
+  const expoGo = Constants.appOwnership === 'expo'
+  const storeNote = expoGo
+    ? t('gems.appOnly')
+    : storeLoading
+      ? t('gems.loadingStore')
+      : !storeReady
+        ? t('gems.setup')
+        : ''
+
   return (
     <Page colors={colors}>
       <Kicker colors={colors}>{t('shop.title')}</Kicker>
       <Title colors={colors}>{t('gems.title')}</Title>
       <PurseLine purse={purse} colors={colors} />
+      <Meta colors={colors}>{t('gems.balance', { gems: purse.gems })}</Meta>
       <Meta colors={colors}>{t('gems.hintNative')}</Meta>
-      {!storeReady ? <Meta colors={colors}>{t('gems.loadingStore')}</Meta> : null}
+      {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
 
       {GEM_PACKS.map((pack) => {
         const each = formatUsd(Math.round(pack.cents / pack.gems))
@@ -495,6 +510,9 @@ export function GemShopScreen({ book }) {
         const price = packPriceLabel(pack, storePrice(pack.id))
         return (
           <View key={pack.id} style={[styles.shopRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+            <View style={[styles.gemMark, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
+              <Text style={[styles.gemMarkN, { color: colors.on }]}>{pack.gems}</Text>
+            </View>
             <View style={styles.shopCopy}>
               <Text style={[styles.shopName, { color: colors.ink }]}>
                 {pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })}
@@ -516,8 +534,20 @@ export function GemShopScreen({ book }) {
       })}
 
       <Meta colors={colors}>{t('gems.earn')}</Meta>
+      <Meta colors={colors}>
+        {t('legal.gemLead')}{' '}
+        <Text style={{ color: colors.on }} onPress={() => goHash('/terms')}>
+          {t('legal.termsShort')}
+        </Text>
+        {t('legal.linksAnd')}
+        <Text style={{ color: colors.on }} onPress={() => goHash('/privacy')}>
+          {t('legal.privacyShort')}
+        </Text>
+        .
+      </Meta>
       {note ? <Meta colors={colors}>{note}</Meta> : null}
       {miss ? <Meta colors={colors}>{miss}</Meta> : null}
+      <KeyButton label={t('gems.backShop')} onPress={() => goHash('/shop')} colors={colors} />
     </Page>
   )
 }
@@ -654,6 +684,20 @@ const styles = StyleSheet.create({
   shopCopy: { gap: 4, flex: 1 },
   shopName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   shopNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  gemMark: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  gemMarkN: {
+    fontFamily: fonts.mono,
+    fontSize: 17,
+    fontWeight: '700',
+  },
   keyOff: {
     borderRadius: 999,
     minHeight: 40,

@@ -394,6 +394,10 @@ export function Tonight({
       setPillPick(null)
       return
     }
+    if (pillPick && rowKey(pillPick) === rowKey(row)) {
+      setPillPick(null)
+      return
+    }
     setRestNight(false)
     setWaitPick(null)
     setHolePick(null)
@@ -446,10 +450,9 @@ export function Tonight({
     body = (
       <PillPlate
         row={pillPick}
+        buddy={activeBuddy(bookOf(pillPick))}
         onDid={() => mark(pillPick, 'yes')}
         onNope={() => mark(pillPick, 'skip')}
-        onEdit={() => goHash('/lamp', { id: pillPick.lamp.id })}
-        onClose={() => setPillPick(null)}
       />
     )
   } else if (empty) {
