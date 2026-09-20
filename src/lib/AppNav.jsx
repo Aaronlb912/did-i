@@ -6,6 +6,7 @@ import { usePrefs } from './prefs.js'
 const ITEMS = [
   { path: '/', labelKey: 'nav.home', match: ['/', '/home', '/tonight', '/later'] },
   { path: '/lamps', labelKey: 'nav.questions', match: ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'] },
+  { path: '/everyone', labelKey: 'nav.everyone', ariaKey: 'title.everyone', match: ['/everyone'] },
 ]
 
 function tabOf(path) {
@@ -45,6 +46,7 @@ export function AppNav() {
             key={item.path}
             href={`#${item.path === '/' ? '/' : item.path}`}
             className={on ? 'is-on' : undefined}
+            aria-label={item.ariaKey ? t(item.ariaKey) : undefined}
           >
             {t(item.labelKey)}
           </a>

@@ -1,0 +1,2182 @@
+[
+  {
+    "k": "nav.back",
+    "en": "Back",
+    "es": "Atrás"
+  },
+  {
+    "k": "nav.everyone",
+    "en": "DIT",
+    "es": "DIT"
+  },
+  {
+    "k": "all.kicker",
+    "en": "Did I tonight",
+    "es": "Did I esta noche"
+  },
+  {
+    "k": "all.loading",
+    "en": "Looking.",
+    "es": "Buscando."
+  },
+  {
+    "k": "all.tally",
+    "en": "{n} people showed up tonight.",
+    "es": "{n} personas aparecieron esta noche."
+  },
+  {
+    "k": "all.tallyOne",
+    "en": "One person showed up tonight.",
+    "es": "Una persona apareció esta noche."
+  },
+  {
+    "k": "all.listCap",
+    "en": "Who is on it",
+    "es": "Quién está aquí"
+  },
+  {
+    "k": "all.you",
+    "en": "You",
+    "es": "Tú"
+  },
+  {
+    "k": "all.someone",
+    "en": "Someone",
+    "es": "Alguien"
+  },
+  {
+    "k": "all.streakN",
+    "en": "{n} nights running",
+    "es": "{n} noches seguidas"
+  },
+  {
+    "k": "all.noStreak",
+    "en": "Done tonight",
+    "es": "Hecho esta noche"
+  },
+  {
+    "k": "all.nobody",
+    "en": "Nobody yet tonight.",
+    "es": "Nadie todavía esta noche."
+  },
+  {
+    "k": "all.nobodySub",
+    "en": "Finish your questions and you are the first one on it.",
+    "es": "Termina tus preguntas y serás el primero."
+  },
+  {
+    "k": "all.joinTitle",
+    "en": "You are not on this list.",
+    "es": "No estás en esta lista."
+  },
+  {
+    "k": "all.joinBody",
+    "en": "Turn this on and people see your name, your streak, and what you DID tonight. Never your full question list.",
+    "es": "Actívalo y la gente verá tu nombre, tu racha y lo que DID esta noche. Nunca la lista completa de preguntas."
+  },
+  {
+    "k": "all.join",
+    "en": "Put me on it",
+    "es": "Ponme en la lista"
+  },
+  {
+    "k": "all.youCap",
+    "en": "You",
+    "es": "Tú"
+  },
+  {
+    "k": "all.showing",
+    "en": "Show me on Did I tonight",
+    "es": "Mostrarme en Did I esta noche"
+  },
+  {
+    "k": "all.showingSub",
+    "en": "Turning this off takes you off the board.",
+    "es": "Si lo apagas, desapareces del tablero."
+  },
+  {
+    "k": "all.privacy",
+    "en": "Your questions stay on your phone. The board shows short labels from what you DID tonight.",
+    "es": "Tus preguntas quedan en tu teléfono. El tablero muestra etiquetas cortas de lo que DID esta noche."
+  },
+  {
+    "k": "all.boardHint",
+    "en": "Everything you DID tonight goes on the board when you finish.",
+    "es": "Todo lo que DID esta noche sube al tablero cuando terminas."
+  },
+  {
+    "k": "all.nowOn",
+    "en": "You are on it. Finish a night and you show up.",
+    "es": "Ya estás. Termina una noche y apareces."
+  },
+  {
+    "k": "all.nowOff",
+    "en": "You are off it.",
+    "es": "Ya no estás."
+  },
+  {
+    "k": "all.shareCap",
+    "en": "Say what you did",
+    "es": "Di lo que hiciste"
+  },
+  {
+    "k": "all.shareHint",
+    "en": "Tap one to put it up. {n} a night.",
+    "es": "Toca una para subirla. {n} por noche."
+  },
+  {
+    "k": "all.shareFull",
+    "en": "That is {n} for tonight. Take one down first.",
+    "es": "Ya van {n} esta noche. Quita una primero."
+  },
+  {
+    "k": "all.shareAlready",
+    "en": "That one is already up.",
+    "es": "Esa ya está arriba."
+  },
+  {
+    "k": "all.shared",
+    "en": "Up on the list.",
+    "es": "Subida a la lista."
+  },
+  {
+    "k": "all.took",
+    "en": "Took it down.",
+    "es": "Quitada."
+  },
+  {
+    "k": "all.takeDown",
+    "en": "Take it down",
+    "es": "Quitarla"
+  },
+  {
+    "k": "all.cheer",
+    "en": "Cheer · {n}",
+    "es": "Ánimo · {n}"
+  },
+  {
+    "k": "all.cheered",
+    "en": "Cheered · {n}",
+    "es": "Con ánimo · {n}"
+  },
+  {
+    "k": "all.cheersN",
+    "en": "{n} cheers",
+    "es": "{n} ánimos"
+  },
+  {
+    "k": "all.cheerSent",
+    "en": "Cheered {name}.",
+    "es": "Le diste ánimo a {name}."
+  },
+  {
+    "k": "all.cheeredAlready",
+    "en": "You already cheered them tonight.",
+    "es": "Ya le diste ánimo esta noche."
+  },
+  {
+    "k": "all.needGems",
+    "en": "A cheer costs {n} gem. You earn one gem a week when you clear a night.",
+    "es": "Un ánimo cuesta {n} gema. Ganas una gema a la semana al terminar una noche."
+  },
+  {
+    "k": "all.offTitle",
+    "en": "No account set up.",
+    "es": "No hay cuenta configurada."
+  },
+  {
+    "k": "all.offBody",
+    "en": "Did I tonight needs the account keys. Everything else on this phone still works.",
+    "es": "Did I esta noche necesita las claves de la cuenta. Todo lo demás sigue funcionando."
+  },
+  {
+    "k": "all.outTitle",
+    "en": "Sign in to see it.",
+    "es": "Entra para verlo."
+  },
+  {
+    "k": "all.outBody",
+    "en": "Did I tonight is other people. That needs an account.",
+    "es": "Did I esta noche son otras personas. Eso necesita una cuenta."
+  },
+  {
+    "k": "all.setupTitle",
+    "en": "Not set up on the account yet.",
+    "es": "Todavía no está en la cuenta."
+  },
+  {
+    "k": "all.setupBody",
+    "en": "Run supabase/tonight.sql, dit-board.sql, and gems-social.sql in the SQL editor. Then come back here.",
+    "es": "Ejecuta tonight.sql, dit-board.sql y gems-social.sql en el editor SQL. Luego vuelve aquí."
+  },
+  {
+    "k": "all.setupOpen",
+    "en": "Open SQL editor",
+    "es": "Abrir editor SQL"
+  },
+  {
+    "k": "all.report",
+    "en": "Report this line",
+    "es": "Reportar esta línea"
+  },
+  {
+    "k": "all.reported",
+    "en": "Reported. Two people is enough to take a line down.",
+    "es": "Reportada. Con dos personas se quita."
+  },
+  {
+    "k": "kit.cog",
+    "en": "Collection",
+    "es": "Colección"
+  },
+  {
+    "k": "title.shopLooks",
+    "en": "Looks · Did I",
+    "es": "Looks · Did I"
+  },
+  {
+    "k": "title.shopCheers",
+    "en": "Cheers · Did I",
+    "es": "Cheers · Did I"
+  },
+  {
+    "k": "title.gems",
+    "en": "Get gems · Did I",
+    "es": "Conseguir gemas · Did I"
+  },
+  {
+    "k": "title.calendar",
+    "en": "Streak · Did I",
+    "es": "Racha · Did I"
+  },
+  {
+    "k": "title.account",
+    "en": "Account · Did I",
+    "es": "Cuenta · Did I"
+  },
+  {
+    "k": "title.everyone",
+    "en": "Did I tonight",
+    "es": "Did I esta noche"
+  },
+  {
+    "k": "settings.foldAt",
+    "en": "Midnight",
+    "es": "Medianoche"
+  },
+  {
+    "k": "settings.foldSub",
+    "en": "Your clock in {zone}. Nothing to set.",
+    "es": "Tu reloj en {zone}. No hay nada que ajustar."
+  },
+  {
+    "k": "settings.demo",
+    "en": "Try a demo",
+    "es": "Probar una demo"
+  },
+  {
+    "k": "settings.demoTitle",
+    "en": "Load a demo night?",
+    "es": "¿Cargar una noche de prueba?"
+  },
+  {
+    "k": "settings.demoBody",
+    "en": "Adds sample questions, coins, and gems so you can tap around. It replaces what is here now.",
+    "es": "Añade preguntas de muestra, monedas y gemas para que puedas tocar. Sustituye lo que hay ahora."
+  },
+  {
+    "k": "settings.demoYes",
+    "en": "Load it",
+    "es": "Cargarla"
+  },
+  {
+    "k": "settings.sendCopySub",
+    "en": "Your questions as a file. Share it or keep it somewhere safe.",
+    "es": "Tus preguntas en un archivo. Compártelo o guárdalo."
+  },
+  {
+    "k": "settings.loadCopySub",
+    "en": "A file you downloaded before. It adds to what is here.",
+    "es": "Un archivo que bajaste antes. Se suma a lo que ya hay."
+  },
+  {
+    "k": "settings.loadOk",
+    "en": "Loaded. {n} questions added.",
+    "es": "Cargado. {n} preguntas agregadas."
+  },
+  {
+    "k": "settings.loadMiss",
+    "en": "That file is not a Did I copy.",
+    "es": "Ese archivo no es una copia de Did I."
+  },
+  {
+    "k": "settings.broke",
+    "en": "Last thing that broke",
+    "es": "Lo último que se rompió"
+  },
+  {
+    "k": "settings.brokeHint",
+    "en": "Only on this phone. Nothing was sent anywhere.",
+    "es": "Solo en este teléfono. No se mandó a ningún lado."
+  },
+  {
+    "k": "settings.account",
+    "en": "Account",
+    "es": "Cuenta"
+  },
+  {
+    "k": "settings.accountOff",
+    "en": "Not signed in",
+    "es": "Sin cuenta"
+  },
+  {
+    "k": "settings.accountSub",
+    "en": "Your tags follow you to a new phone.",
+    "es": "Tus etiquetas te siguen a otro teléfono."
+  },
+  {
+    "k": "settings.accountOffSub",
+    "en": "Everything is on this phone only.",
+    "es": "Todo está solo en este teléfono."
+  },
+  {
+    "k": "account.kicker",
+    "en": "Account",
+    "es": "Cuenta"
+  },
+  {
+    "k": "account.offTitle",
+    "en": "Not switched on",
+    "es": "Sin conectar"
+  },
+  {
+    "k": "account.offBody",
+    "en": "This build has no account server set. Everything stays on this phone and nothing is sent anywhere.",
+    "es": "Esta versión no tiene servidor de cuentas. Todo se queda en este teléfono y no se envía a ningún lado."
+  },
+  {
+    "k": "account.outTitle",
+    "en": "Sign in to keep your tags",
+    "es": "Entra para guardar tus etiquetas"
+  },
+  {
+    "k": "account.outBody",
+    "en": "Your questions, answers, streak, coins, gems, and the cheers you own follow you to a new phone. Nobody else sees them.",
+    "es": "Tus preguntas, respuestas, racha, monedas, gemas y los cheers que tienes te siguen a otro teléfono. Nadie más los ve."
+  },
+  {
+    "k": "account.email",
+    "en": "Email",
+    "es": "Correo"
+  },
+  {
+    "k": "account.emailHint",
+    "en": "you@example.com",
+    "es": "tu@example.com"
+  },
+  {
+    "k": "account.send",
+    "en": "Send the code",
+    "es": "Enviar el código"
+  },
+  {
+    "k": "account.sent",
+    "en": "Six digits are on the way to {email}. The code is good for an hour.",
+    "es": "Van seis dígitos a {email}. El código sirve por una hora."
+  },
+  {
+    "k": "account.code",
+    "en": "Code",
+    "es": "Código"
+  },
+  {
+    "k": "account.signIn",
+    "en": "Sign in",
+    "es": "Entrar"
+  },
+  {
+    "k": "account.again",
+    "en": "Send it again",
+    "es": "Enviarlo otra vez"
+  },
+  {
+    "k": "account.other",
+    "en": "Different email",
+    "es": "Otro correo"
+  },
+  {
+    "k": "account.stay",
+    "en": "Not now",
+    "es": "Ahora no"
+  },
+  {
+    "k": "account.tooOften",
+    "en": "Too many codes for now. Wait an hour, or use the last one you got.",
+    "es": "Demasiados códigos por ahora. Espera una hora, o usa el último que te llegó."
+  },
+  {
+    "k": "account.missEmail",
+    "en": "That email does not look right.",
+    "es": "Ese correo no se ve bien."
+  },
+  {
+    "k": "account.missCode",
+    "en": "That code did not work. Try the newest one.",
+    "es": "Ese código no sirvió. Prueba con el más nuevo."
+  },
+  {
+    "k": "account.inTitle",
+    "en": "Your account",
+    "es": "Tu cuenta"
+  },
+  {
+    "k": "account.sync",
+    "en": "Sync",
+    "es": "Sincronizar"
+  },
+  {
+    "k": "account.who",
+    "en": "Signed in as",
+    "es": "Entraste como"
+  },
+  {
+    "k": "account.syncNow",
+    "en": "Sync now",
+    "es": "Sincronizar ahora"
+  },
+  {
+    "k": "account.syncSaved",
+    "en": "Saved {time}",
+    "es": "Guardado {time}"
+  },
+  {
+    "k": "account.syncBusy",
+    "en": "Saving",
+    "es": "Guardando"
+  },
+  {
+    "k": "account.syncMiss",
+    "en": "Could not reach it",
+    "es": "No se pudo conectar"
+  },
+  {
+    "k": "account.syncIdle",
+    "en": "Not synced yet",
+    "es": "Todavía sin sincronizar"
+  },
+  {
+    "k": "account.you",
+    "en": "You",
+    "es": "Tú"
+  },
+  {
+    "k": "account.name",
+    "en": "Name",
+    "es": "Nombre"
+  },
+  {
+    "k": "account.look",
+    "en": "Look",
+    "es": "Estilo"
+  },
+  {
+    "k": "account.cheer",
+    "en": "Cheer",
+    "es": "Cheer"
+  },
+  {
+    "k": "account.devices",
+    "en": "Phones",
+    "es": "Teléfonos"
+  },
+  {
+    "k": "account.thisPhone",
+    "en": "This phone",
+    "es": "Este teléfono"
+  },
+  {
+    "k": "account.aPhone",
+    "en": "A phone",
+    "es": "Un teléfono"
+  },
+  {
+    "k": "account.seen",
+    "en": "Last here {date}",
+    "es": "Última vez {date}"
+  },
+  {
+    "k": "account.forget",
+    "en": "Remove",
+    "es": "Quitar"
+  },
+  {
+    "k": "account.noDevices",
+    "en": "Only this phone so far.",
+    "es": "Por ahora solo este teléfono."
+  },
+  {
+    "k": "account.data",
+    "en": "Your data",
+    "es": "Tus datos"
+  },
+  {
+    "k": "account.export",
+    "en": "Download my data",
+    "es": "Descargar mis datos"
+  },
+  {
+    "k": "account.out",
+    "en": "Sign out",
+    "es": "Salir de la cuenta"
+  },
+  {
+    "k": "account.outAll",
+    "en": "Sign out everywhere",
+    "es": "Salir en todos lados"
+  },
+  {
+    "k": "account.outAllTitle",
+    "en": "Sign out everywhere?",
+    "es": "¿Salir en todos lados?"
+  },
+  {
+    "k": "account.outAllBody",
+    "en": "Every phone signed in to this account gets signed out. Nothing is deleted.",
+    "es": "Todos los teléfonos con esta cuenta salen. No se borra nada."
+  },
+  {
+    "k": "account.outAllYes",
+    "en": "Sign out everywhere",
+    "es": "Salir en todos lados"
+  },
+  {
+    "k": "account.delete",
+    "en": "Delete my account",
+    "es": "Borrar mi cuenta"
+  },
+  {
+    "k": "account.deleteTitle",
+    "en": "Delete the account?",
+    "es": "¿Borrar la cuenta?"
+  },
+  {
+    "k": "account.deleteBody",
+    "en": "The account and everything synced to it go. What is on this phone stays until you clear it. This cannot be undone.",
+    "es": "La cuenta y todo lo sincronizado se van. Lo que está en este teléfono se queda hasta que lo borres. Esto no se puede deshacer."
+  },
+  {
+    "k": "account.deleteYes",
+    "en": "Delete it",
+    "es": "Borrarla"
+  },
+  {
+    "k": "first.demo",
+    "en": "Try a demo",
+    "es": "Probar una demo"
+  },
+  {
+    "k": "enter.demo",
+    "en": "Try a demo",
+    "es": "Probar una demo"
+  },
+  {
+    "k": "home.calendar",
+    "en": "Calendar",
+    "es": "Calendario"
+  },
+  {
+    "k": "tags.openHint",
+    "en": "Names, counts, and put away.",
+    "es": "Nombres, conteos y apartadas."
+  },
+  {
+    "k": "tags.putAway",
+    "en": "Empty tags",
+    "es": "Etiquetas vacías"
+  },
+  {
+    "k": "tags.putAwayHint",
+    "en": "No questions on these, so they stay off tonight. Pick one when you add a question, or remove it here.",
+    "es": "No tienen preguntas, así que no salen esta noche. Elige una al añadir una pregunta, o quítala aquí."
+  },
+  {
+    "k": "tonight.syncMiss",
+    "en": "Could not reach your account. It will try again.",
+    "es": "No se pudo conectar a tu cuenta. Lo intentará otra vez."
+  },
+  {
+    "k": "tonight.later",
+    "en": "Later",
+    "es": "Luego"
+  },
+  {
+    "k": "tonight.laterUntil",
+    "en": "Back at {time}.",
+    "es": "Vuelve a las {time}."
+  },
+  {
+    "k": "tonight.laterBack",
+    "en": "Bring it back",
+    "es": "Traerla de vuelta"
+  },
+  {
+    "k": "tonight.swipeDid",
+    "en": "DID",
+    "es": "DID"
+  },
+  {
+    "k": "tonight.swipeNope",
+    "en": "nope",
+    "es": "nope"
+  },
+  {
+    "k": "purse.aria",
+    "en": "{coins} coins, {gems} gems",
+    "es": "{coins} monedas, {gems} gemas"
+  },
+  {
+    "k": "weekbar.open",
+    "en": "Open streak calendar",
+    "es": "Abrir el calendario de racha"
+  },
+  {
+    "k": "cal.kicker",
+    "en": "Streak",
+    "es": "Racha"
+  },
+  {
+    "k": "cal.prev",
+    "en": "Earlier month",
+    "es": "Mes anterior"
+  },
+  {
+    "k": "cal.next",
+    "en": "Later month",
+    "es": "Mes siguiente"
+  },
+  {
+    "k": "cal.aria",
+    "en": "Streak calendar",
+    "es": "Calendario de racha"
+  },
+  {
+    "k": "cal.hint",
+    "en": "Nights you finished. Missed nights are dim. Nothing due stays blank.",
+    "es": "Noches que terminaste. Las que faltan se ven tenues. Si no había nada, queda vacío."
+  },
+  {
+    "k": "cal.empty",
+    "en": "Didn't have anything to do this day.",
+    "es": "No había nada que hacer este día."
+  },
+  {
+    "k": "cal.close",
+    "en": "Close",
+    "es": "Cerrar"
+  },
+  {
+    "k": "cal.open",
+    "en": "open",
+    "es": "sin marcar"
+  },
+  {
+    "k": "cal.day",
+    "en": "{date}",
+    "es": "{date}"
+  },
+  {
+    "k": "boards.calendar",
+    "en": "Calendar",
+    "es": "Calendario"
+  },
+  {
+    "k": "hang.tagNew",
+    "en": "New tag",
+    "es": "Nueva etiqueta"
+  },
+  {
+    "k": "hang.tagLater",
+    "en": "Empty tags",
+    "es": "Etiquetas vacías"
+  },
+  {
+    "k": "hang.tagLaterHint",
+    "en": "No questions on these. Tap one to use it again.",
+    "es": "No tienen preguntas. Toca una para usarla otra vez."
+  },
+  {
+    "k": "hang.priority.hint.high",
+    "en": "Asked first tonight. Reminds you at its time, and again at 9 if you have not answered.",
+    "es": "Se pregunta primero. Avisa a su hora, y otra vez a las 9 si no respondiste."
+  },
+  {
+    "k": "hang.priority.hint.normal",
+    "en": "Asked in the usual order. One reminder at its time.",
+    "es": "Se pregunta en el orden de siempre. Un aviso a su hora."
+  },
+  {
+    "k": "hang.priority.hint.low",
+    "en": "Waits until last. Never buzzes.",
+    "es": "Espera al final. Nunca suena."
+  },
+  {
+    "k": "hang.unfinished",
+    "en": "The plate is unfinished.",
+    "es": "La placa no está terminada."
+  },
+  {
+    "k": "hang.miss.empty",
+    "en": "The question is empty.",
+    "es": "La pregunta está vacía."
+  },
+  {
+    "k": "hang.miss.weekday",
+    "en": "A weekly question needs a weekday.",
+    "es": "Una pregunta semanal necesita un día de la semana."
+  },
+  {
+    "k": "hang.miss.monthDay",
+    "en": "A monthly question needs a day.",
+    "es": "Una pregunta mensual necesita un día."
+  },
+  {
+    "k": "hang.miss.everyN",
+    "en": "Every few days needs a number of 2 or more.",
+    "es": "Cada pocos días necesita un número de 2 o más."
+  },
+  {
+    "k": "hang.miss.everyNStart",
+    "en": "Every few days needs a start date.",
+    "es": "Cada pocos días necesita una fecha de inicio."
+  },
+  {
+    "k": "hang.miss.askAfter",
+    "en": "Ask after has to be a time like 20:00, or blank.",
+    "es": "Preguntar después tiene que ser una hora como 20:00, o vacío."
+  },
+  {
+    "k": "shop.title",
+    "en": "Shop",
+    "es": "Tienda"
+  },
+  {
+    "k": "shop.hubHint",
+    "en": "Pick a shelf. Tap a chip below to preview.",
+    "es": "Elige un estante. Toca un chip abajo para verlo."
+  },
+  {
+    "k": "shop.promoLooks",
+    "en": "New looks",
+    "es": "Looks nuevos"
+  },
+  {
+    "k": "shop.promoCheers",
+    "en": "New cheers",
+    "es": "Cheers nuevos"
+  },
+  {
+    "k": "shop.allLooks",
+    "en": "All looks",
+    "es": "Todos los looks"
+  },
+  {
+    "k": "shop.allCheers",
+    "en": "All cheers",
+    "es": "Todos los cheers"
+  },
+  {
+    "k": "shop.looksDoor",
+    "en": "Coin and gem coats. Tap a chip to preview.",
+    "es": "Looks de monedas y gemas. Toca un chip para verlo."
+  },
+  {
+    "k": "shop.cheersDoor",
+    "en": "Five stages each. Tap a chip to see the burst.",
+    "es": "Cinco etapas cada uno. Toca un chip para verlo."
+  },
+  {
+    "k": "shop.gemsDoor",
+    "en": "Buy packs. One dollar per gem at the smallest size.",
+    "es": "Compra packs. Una gema cuesta un dólar en el pack más pequeño."
+  },
+  {
+    "k": "shop.kitDoor",
+    "en": "What you already own. Pick what is on.",
+    "es": "Lo que ya tienes. Elige lo que llevas puesto."
+  },
+  {
+    "k": "shop.ownedN",
+    "en": "{n} owned",
+    "es": "{n} tuyos"
+  },
+  {
+    "k": "shop.looksHint",
+    "en": "Tap a chip to preview on the whole board.",
+    "es": "Toca un chip para verlo en todo el tablero."
+  },
+  {
+    "k": "shop.looksCoins",
+    "en": "Coins",
+    "es": "Monedas"
+  },
+  {
+    "k": "shop.looksGems",
+    "en": "Gems",
+    "es": "Gemas"
+  },
+  {
+    "k": "shop.looks",
+    "en": "Looks",
+    "es": "Looks"
+  },
+  {
+    "k": "shop.cheers",
+    "en": "Cheers",
+    "es": "Cheers"
+  },
+  {
+    "k": "shop.cheerHint",
+    "en": "Tap a chip to see it. Later stages add more of that cheer.",
+    "es": "Toca un chip para verlo. Las etapas siguientes añaden más de ese cheer."
+  },
+  {
+    "k": "shop.cheerStageLine",
+    "en": "Stage {n} of {max}. {line}",
+    "es": "Etapa {n} de {max}. {line}"
+  },
+  {
+    "k": "shop.stageUp",
+    "en": "Stage {n} · {cost}",
+    "es": "Etapa {n} · {cost}"
+  },
+  {
+    "k": "shop.stageOf",
+    "en": "Stage {n} of {max}",
+    "es": "Etapa {n} de {max}"
+  },
+  {
+    "k": "shop.burstOne",
+    "en": "One burst when you hit DID.",
+    "es": "Un estallido al tocar DID."
+  },
+  {
+    "k": "shop.burstN",
+    "en": "{n} bursts when you hit DID.",
+    "es": "{n} estallidos al tocar DID."
+  },
+  {
+    "k": "shop.stageNext",
+    "en": "{taps} more DID to stage {next}, or {cost} gems.",
+    "es": "{taps} DID más para la etapa {next}, o {cost} gemas."
+  },
+  {
+    "k": "shop.stageTop",
+    "en": "That is the top.",
+    "es": "Eso es el tope."
+  },
+  {
+    "k": "shop.buy",
+    "en": "Buy",
+    "es": "Comprar"
+  },
+  {
+    "k": "shop.nextStage",
+    "en": "Buy next stage",
+    "es": "Comprar la siguiente etapa"
+  },
+  {
+    "k": "shop.owned",
+    "en": "Owned",
+    "es": "Tuyo"
+  },
+  {
+    "k": "shop.buyKicker",
+    "en": "Shop",
+    "es": "Tienda"
+  },
+  {
+    "k": "shop.buyLookBody",
+    "en": "{cost}. This look goes on after you buy it.",
+    "es": "{cost}. Este look se pone al comprarlo."
+  },
+  {
+    "k": "shop.buyCheerBody",
+    "en": "{cost}. Tap the chip first if you want to see it.",
+    "es": "{cost}. Toca el chip primero si quieres verlo."
+  },
+  {
+    "k": "shop.buyStageBody",
+    "en": "Stage {n}. {cost}.",
+    "es": "Etapa {n}. {cost}."
+  },
+  {
+    "k": "shop.use",
+    "en": "Use",
+    "es": "Usar"
+  },
+  {
+    "k": "shop.on",
+    "en": "On",
+    "es": "En uso"
+  },
+  {
+    "k": "shop.see",
+    "en": "See {name}",
+    "es": "Ver {name}"
+  },
+  {
+    "k": "shop.coinOne",
+    "en": "1 coin",
+    "es": "1 moneda"
+  },
+  {
+    "k": "shop.coins",
+    "en": "{n} coins",
+    "es": "{n} monedas"
+  },
+  {
+    "k": "shop.gemOne",
+    "en": "1 gem",
+    "es": "1 gema"
+  },
+  {
+    "k": "shop.gems",
+    "en": "{n} gems",
+    "es": "{n} gemas"
+  },
+  {
+    "k": "shop.stage",
+    "en": "Stage {n}",
+    "es": "Etapa {n}"
+  },
+  {
+    "k": "shop.stageBuy",
+    "en": "{n} bursts. {cost} gems.",
+    "es": "{n} estallidos. {cost} gemas."
+  },
+  {
+    "k": "shop.stageHave",
+    "en": "Five bursts. You have this.",
+    "es": "Cinco estallidos. Ya lo tienes."
+  },
+  {
+    "k": "shop.kit",
+    "en": "Collection",
+    "es": "Colección"
+  },
+  {
+    "k": "gems.title",
+    "en": "Get gems",
+    "es": "Conseguir gemas"
+  },
+  {
+    "k": "gems.backShop",
+    "en": "Shop",
+    "es": "Tienda"
+  },
+  {
+    "k": "gems.balance",
+    "en": "You have {gems}",
+    "es": "Tienes {gems}"
+  },
+  {
+    "k": "gems.hint",
+    "en": "One gem is a dollar. Bigger packs cost less per gem. Sign in first. After checkout, come back and sync.",
+    "es": "Una gema cuesta un dólar. Los packs grandes salen más baratos. Entra primero. Después de pagar, vuelve y sincroniza."
+  },
+  {
+    "k": "gems.each",
+    "en": "{price} each",
+    "es": "{price} cada una"
+  },
+  {
+    "k": "gems.save",
+    "en": "Save {n}%",
+    "es": "Ahorra {n}%"
+  },
+  {
+    "k": "gems.buy",
+    "en": "Buy",
+    "es": "Comprar"
+  },
+  {
+    "k": "gems.return",
+    "en": "Checkout opened. When payment clears, come back and your gems land on sync.",
+    "es": "Se abrió el pago. Cuando se confirme, vuelve y las gemas llegan al sincronizar."
+  },
+  {
+    "k": "gems.needSignIn",
+    "en": "Sign in first. Gems stay on your account.",
+    "es": "Entra primero. Las gemas se quedan en tu cuenta."
+  },
+  {
+    "k": "gems.setup",
+    "en": "Gem checkout is not wired up yet.",
+    "es": "El pago de gemas aún no está conectado."
+  },
+  {
+    "k": "gems.storeSoon",
+    "en": "Google Play billing is not live yet. Use the web shop in a browser.",
+    "es": "Google Play aún no está listo. Usa la tienda web en un navegador."
+  },
+  {
+    "k": "gems.earn",
+    "en": "You also earn one gem a week when you clear a night.",
+    "es": "También ganas una gema a la semana al terminar una noche."
+  },
+  {
+    "k": "kit.title",
+    "en": "Collection",
+    "es": "Colección"
+  },
+  {
+    "k": "kit.try",
+    "en": "Try",
+    "es": "Probar"
+  },
+  {
+    "k": "kit.stages",
+    "en": "Stages",
+    "es": "Etapas"
+  },
+  {
+    "k": "kit.useStage",
+    "en": "Use stage {n}",
+    "es": "Usar etapa {n}"
+  },
+  {
+    "k": "kit.stageLocked",
+    "en": "Stage {n} is not owned yet",
+    "es": "Aún no tienes la etapa {n}"
+  },
+  {
+    "k": "stats.questions",
+    "en": "Questions",
+    "es": "Preguntas"
+  },
+  {
+    "k": "stats.did",
+    "en": "DID",
+    "es": "DID"
+  },
+  {
+    "k": "stats.late",
+    "en": "Late",
+    "es": "Tarde"
+  },
+  {
+    "k": "stats.nope",
+    "en": "Nope",
+    "es": "Nope"
+  },
+  {
+    "k": "stats.nightsOn",
+    "en": "Nights on",
+    "es": "Noches activas"
+  },
+  {
+    "k": "stats.marks",
+    "en": "Marks",
+    "es": "Marcas"
+  },
+  {
+    "k": "stats.marksAria",
+    "en": "Marks",
+    "es": "Marcas"
+  },
+  {
+    "k": "streaks.kicker",
+    "en": "Nights in a row",
+    "es": "Noches seguidas"
+  },
+  {
+    "k": "streaks.title",
+    "en": "Nights in a row",
+    "es": "Noches seguidas"
+  },
+  {
+    "k": "streaks.line",
+    "en": "Streak is {n} of 5 nights.",
+    "es": "La racha es {n} de 5 noches."
+  },
+  {
+    "k": "streaks.empty",
+    "en": "Add a question first.",
+    "es": "Añade una pregunta primero."
+  },
+  {
+    "k": "streaks.aria",
+    "en": "Streak",
+    "es": "Racha"
+  },
+  {
+    "k": "streaks.seven",
+    "en": "Seven nights",
+    "es": "Siete noches"
+  },
+  {
+    "k": "later.kicker",
+    "en": "Coming up",
+    "es": "Próximamente"
+  },
+  {
+    "k": "later.title",
+    "en": "The next nights",
+    "es": "Las próximas noches"
+  },
+  {
+    "k": "later.empty",
+    "en": "Add a question first.",
+    "es": "Añade una pregunta primero."
+  },
+  {
+    "k": "later.emptyWeek",
+    "en": "Nothing is set to ask in the next seven nights.",
+    "es": "Nada está programado para las próximas siete noches."
+  },
+  {
+    "k": "later.tonight",
+    "en": "Tonight",
+    "es": "Esta noche"
+  },
+  {
+    "k": "later.tonightBtn",
+    "en": "Tonight",
+    "es": "Esta noche"
+  },
+  {
+    "k": "later.did",
+    "en": "DID",
+    "es": "DID"
+  },
+  {
+    "k": "later.late",
+    "en": "Late",
+    "es": "Tarde"
+  },
+  {
+    "k": "later.nope",
+    "en": "Nope",
+    "es": "Nope"
+  },
+  {
+    "k": "later.open",
+    "en": "Open",
+    "es": "Abierta"
+  },
+  {
+    "k": "lamp.kicker",
+    "en": "This question",
+    "es": "Esta pregunta"
+  },
+  {
+    "k": "lamp.edit",
+    "en": "Edit",
+    "es": "Editar"
+  },
+  {
+    "k": "lamp.copy",
+    "en": "Duplicate",
+    "es": "Duplicar"
+  },
+  {
+    "k": "lamp.stop",
+    "en": "Stop asking",
+    "es": "Dejar de preguntar"
+  },
+  {
+    "k": "lamp.askAgain",
+    "en": "Ask me again",
+    "es": "Preguntar otra vez"
+  },
+  {
+    "k": "lamp.delete",
+    "en": "Delete",
+    "es": "Borrar"
+  },
+  {
+    "k": "lamp.done",
+    "en": "Done",
+    "es": "Listo"
+  },
+  {
+    "k": "lamp.deleteTitle",
+    "en": "Delete this question?",
+    "es": "¿Borrar esta pregunta?"
+  },
+  {
+    "k": "lamp.deleteNone",
+    "en": "It has no answers yet.",
+    "es": "Aún no tiene respuestas."
+  },
+  {
+    "k": "lamp.deleteOne",
+    "en": "Its 1 answer goes too. This cannot be undone.",
+    "es": "Su 1 respuesta también se va. Esto no se puede deshacer."
+  },
+  {
+    "k": "lamp.deleteSome",
+    "en": "Its {n} answers go too. This cannot be undone.",
+    "es": "Sus {n} respuestas también se van. Esto no se puede deshacer."
+  },
+  {
+    "k": "lamp.keep",
+    "en": "Keep it",
+    "es": "Dejarla"
+  },
+  {
+    "k": "lamp.until",
+    "en": "not until {time}",
+    "es": "no hasta las {time}"
+  },
+  {
+    "k": "lamp.paused",
+    "en": "not being asked",
+    "es": "ya no se pregunta"
+  },
+  {
+    "k": "hole.kicker",
+    "en": "That night",
+    "es": "Esa noche"
+  },
+  {
+    "k": "hole.nopeKicker",
+    "en": "Nope",
+    "es": "Nope"
+  },
+  {
+    "k": "hole.nopeBody",
+    "en": "You said nope. Mark late if you still did it.",
+    "es": "Dijiste nope. Márcala tarde si al final lo hiciste."
+  },
+  {
+    "k": "hole.late",
+    "en": "late",
+    "es": "tarde"
+  },
+  {
+    "k": "hole.leave",
+    "en": "Leave it",
+    "es": "Dejarla"
+  },
+  {
+    "k": "people.kicker",
+    "en": "People",
+    "es": "Gente"
+  },
+  {
+    "k": "people.rowSub",
+    "en": "Friends and family",
+    "es": "Amigos y familia"
+  },
+  {
+    "k": "people.title",
+    "en": "Friends and family",
+    "es": "Amigos y familia"
+  },
+  {
+    "k": "people.offline",
+    "en": "No signal. Friends and family will catch up when you are back.",
+    "es": "Sin señal. Amigos y familia se ponen al día cuando vuelvas."
+  },
+  {
+    "k": "people.offTitle",
+    "en": "Not switched on",
+    "es": "Sin servidor"
+  },
+  {
+    "k": "people.offBody",
+    "en": "This copy has no server set, so there is nobody to connect to. Everything else still works on this phone.",
+    "es": "Esta copia no tiene servidor, así que no hay con quién conectarse. Todo lo demás sigue funcionando en este teléfono."
+  },
+  {
+    "k": "people.outTitle",
+    "en": "Sign in first",
+    "es": "Primero inicia sesión"
+  },
+  {
+    "k": "people.outBody",
+    "en": "People need an account so a friend has somewhere to send a Did I.",
+    "es": "Gente necesita una cuenta para que un amigo tenga a dónde mandarte un Did I."
+  },
+  {
+    "k": "people.goAccount",
+    "en": "Go to account",
+    "es": "Ir a la cuenta"
+  },
+  {
+    "k": "people.you",
+    "en": "You",
+    "es": "Tú"
+  },
+  {
+    "k": "people.name",
+    "en": "Name",
+    "es": "Nombre"
+  },
+  {
+    "k": "people.namePh",
+    "en": "Aaron",
+    "es": "Aaron"
+  },
+  {
+    "k": "people.nameSaved",
+    "en": "Saved. Friends see that name.",
+    "es": "Guardado. Tus amigos ven ese nombre."
+  },
+  {
+    "k": "people.handle",
+    "en": "Handle",
+    "es": "Usuario"
+  },
+  {
+    "k": "people.handleHint",
+    "en": "Did I picked this one and nobody else has it. Give it to a friend so they can find you.",
+    "es": "Did I eligió este y nadie más lo tiene. Dáselo a un amigo para que te encuentre."
+  },
+  {
+    "k": "people.handleShort",
+    "en": "Type the whole handle, like @maple4417.",
+    "es": "Escribe el usuario completo, como @maple4417."
+  },
+  {
+    "k": "people.shareStreak",
+    "en": "Show my streak to friends",
+    "es": "Mostrar mi racha a mis amigos"
+  },
+  {
+    "k": "people.shareStreakSub",
+    "en": "They see the number, never your questions.",
+    "es": "Ven el número, nunca tus preguntas."
+  },
+  {
+    "k": "people.asks",
+    "en": "Waiting on you",
+    "es": "Esperan tu respuesta"
+  },
+  {
+    "k": "people.wantsIn",
+    "en": "wants to be friends",
+    "es": "quiere ser tu amigo"
+  },
+  {
+    "k": "people.yes",
+    "en": "Yes",
+    "es": "Sí"
+  },
+  {
+    "k": "people.no",
+    "en": "No",
+    "es": "No"
+  },
+  {
+    "k": "people.friends",
+    "en": "Friends",
+    "es": "Amigos"
+  },
+  {
+    "k": "people.cog",
+    "en": "Friends and family",
+    "es": "Amigos y familia"
+  },
+  {
+    "k": "people.cogWaiting",
+    "en": "Friends and family, {n} waiting",
+    "es": "Amigos y familia, {n} esperando"
+  },
+  {
+    "k": "people.inboxQuiet",
+    "en": "Nothing waiting",
+    "es": "Nada pendiente"
+  },
+  {
+    "k": "people.addOne",
+    "en": "Add a friend",
+    "es": "Agregar un amigo"
+  },
+  {
+    "k": "people.startFamily",
+    "en": "Start or join a family",
+    "es": "Empezar o entrar a una familia"
+  },
+  {
+    "k": "friends.title",
+    "en": "Your friends ({n})",
+    "es": "Tus amigos ({n})"
+  },
+  {
+    "k": "friends.seeSub",
+    "en": "Who is done tonight",
+    "es": "Quién terminó esta noche"
+  },
+  {
+    "k": "friends.waiting",
+    "en": "Waiting to hear back",
+    "es": "Esperando respuesta"
+  },
+  {
+    "k": "friends.notYet",
+    "en": "has not answered yet",
+    "es": "todavía no responde"
+  },
+  {
+    "k": "friends.manage",
+    "en": "Add or answer requests",
+    "es": "Agregar o responder solicitudes"
+  },
+  {
+    "k": "friends.cheer",
+    "en": "Cheer · {n}",
+    "es": "Ánimo · {n}"
+  },
+  {
+    "k": "friends.gift",
+    "en": "Gift · {n}",
+    "es": "Regalo · {n}"
+  },
+  {
+    "k": "friends.needGems",
+    "en": "Need {n} gems.",
+    "es": "Necesitas {n} gemas."
+  },
+  {
+    "k": "friends.giftSent",
+    "en": "Gift sent to {name}.",
+    "es": "Regalo enviado a {name}."
+  },
+  {
+    "k": "friends.giftCap",
+    "en": "They have enough gifts for today.",
+    "es": "Ya tiene suficientes regalos hoy."
+  },
+  {
+    "k": "block.block",
+    "en": "Block",
+    "es": "Bloquear"
+  },
+  {
+    "k": "block.title",
+    "en": "Block {name}?",
+    "es": "¿Bloquear a {name}?"
+  },
+  {
+    "k": "block.body",
+    "en": "They stop being a friend and cannot send you anything. They are not told. You can undo this here.",
+    "es": "Deja de ser tu amigo y no puede mandarte nada. No se le avisa. Puedes deshacerlo aquí."
+  },
+  {
+    "k": "block.yes",
+    "en": "Block them",
+    "es": "Bloquearlo"
+  },
+  {
+    "k": "block.andReport",
+    "en": "Block and report",
+    "es": "Bloquear y reportar"
+  },
+  {
+    "k": "block.list",
+    "en": "Blocked",
+    "es": "Bloqueados"
+  },
+  {
+    "k": "block.cannotReach",
+    "en": "cannot reach you",
+    "es": "no puede alcanzarte"
+  },
+  {
+    "k": "block.unblock",
+    "en": "Unblock",
+    "es": "Desbloquear"
+  },
+  {
+    "k": "broke.kicker",
+    "en": "Something broke",
+    "es": "Algo se rompió"
+  },
+  {
+    "k": "broke.title",
+    "en": "That screen stopped.",
+    "es": "Esa pantalla se detuvo."
+  },
+  {
+    "k": "broke.body",
+    "en": "Your questions and answers are still on this phone. Open it again.",
+    "es": "Tus preguntas y respuestas siguen en este teléfono. Ábrelo otra vez."
+  },
+  {
+    "k": "broke.again",
+    "en": "Open it again",
+    "es": "Abrirlo otra vez"
+  },
+  {
+    "k": "famNight.left",
+    "en": "{n} from your family",
+    "es": "{n} de tu familia"
+  },
+  {
+    "k": "famNight.clear",
+    "en": "Family is done",
+    "es": "La familia terminó"
+  },
+  {
+    "k": "famNight.do",
+    "en": "Did I",
+    "es": "Did I"
+  },
+  {
+    "k": "famNight.did",
+    "en": "Did",
+    "es": "Listo"
+  },
+  {
+    "k": "famNight.nope",
+    "en": "Nope",
+    "es": "Nope"
+  },
+  {
+    "k": "famNight.offline",
+    "en": "That did not reach your family. Check your signal and tap again.",
+    "es": "Eso no llegó a tu familia. Revisa la señal y toca otra vez."
+  },
+  {
+    "k": "people.add",
+    "en": "Add by handle",
+    "es": "Agregar por usuario"
+  },
+  {
+    "k": "people.addPh",
+    "en": "maple4417",
+    "es": "maple4417"
+  },
+  {
+    "k": "people.askOne",
+    "en": "Send a request",
+    "es": "Mandar solicitud"
+  },
+  {
+    "k": "people.asked",
+    "en": "Asked {name}.",
+    "es": "Le preguntaste a {name}."
+  },
+  {
+    "k": "people.noOne",
+    "en": "Nobody goes by @{handle}.",
+    "es": "Nadie se llama @{handle}."
+  },
+  {
+    "k": "people.noFriends",
+    "en": "No friends yet. Add one by handle.",
+    "es": "Todavía no hay amigos. Agrega uno por usuario."
+  },
+  {
+    "k": "people.someone",
+    "en": "Someone",
+    "es": "Alguien"
+  },
+  {
+    "k": "people.quiet",
+    "en": "nothing shared",
+    "es": "no comparte nada"
+  },
+  {
+    "k": "people.noStreak",
+    "en": "no streak yet",
+    "es": "todavía sin racha"
+  },
+  {
+    "k": "people.doneTonight",
+    "en": "done tonight",
+    "es": "listo esta noche"
+  },
+  {
+    "k": "people.streakN",
+    "en": "{n} night streak",
+    "es": "racha de {n} noches"
+  },
+  {
+    "k": "people.sendShort",
+    "en": "Send",
+    "es": "Mandar"
+  },
+  {
+    "k": "people.drop",
+    "en": "Remove",
+    "es": "Quitar"
+  },
+  {
+    "k": "people.dropped",
+    "en": "Removed {name}.",
+    "es": "Quitaste a {name}."
+  },
+  {
+    "k": "people.outstanding",
+    "en": "Waiting to hear back from {names}.",
+    "es": "Esperas respuesta de {names}."
+  },
+  {
+    "k": "people.sendTitle",
+    "en": "Send a Did I",
+    "es": "Mandar un Did I"
+  },
+  {
+    "k": "people.sendHint",
+    "en": "{name} decides whether to keep it.",
+    "es": "{name} decide si lo acepta."
+  },
+  {
+    "k": "people.sendWhat",
+    "en": "Did I",
+    "es": "Did I"
+  },
+  {
+    "k": "people.sendPh",
+    "en": "call the landlord",
+    "es": "llamar al casero"
+  },
+  {
+    "k": "people.sendNote",
+    "en": "Note",
+    "es": "Nota"
+  },
+  {
+    "k": "people.sendNotePh",
+    "en": "before five if you can",
+    "es": "antes de las cinco si puedes"
+  },
+  {
+    "k": "people.send",
+    "en": "Send it",
+    "es": "Mandarlo"
+  },
+  {
+    "k": "people.sendBlank",
+    "en": "Write the thing first.",
+    "es": "Escribe primero la cosa."
+  },
+  {
+    "k": "people.sendAlready",
+    "en": "You already sent that one today.",
+    "es": "Ya mandaste eso hoy."
+  },
+  {
+    "k": "people.sentTo",
+    "en": "Sent to {name}.",
+    "es": "Mandado a {name}."
+  },
+  {
+    "k": "people.waiting",
+    "en": "{n} sent to you",
+    "es": "{n} te mandaron"
+  },
+  {
+    "k": "people.waitingSub",
+    "en": "Keep them or pass",
+    "es": "Acéptalos o pásalos"
+  },
+  {
+    "k": "people.families",
+    "en": "Families",
+    "es": "Familias"
+  },
+  {
+    "k": "people.noFamilies",
+    "en": "No family yet. Start one, or join with a code.",
+    "es": "Todavía no hay familia. Empieza una, o entra con un código."
+  },
+  {
+    "k": "people.familyOne",
+    "en": "Family",
+    "es": "Familia"
+  },
+  {
+    "k": "people.newFamily",
+    "en": "Family name",
+    "es": "Nombre de la familia"
+  },
+  {
+    "k": "people.newFamilyPh",
+    "en": "Bryant",
+    "es": "Bryant"
+  },
+  {
+    "k": "people.makeFamily",
+    "en": "Start a family",
+    "es": "Empezar una familia"
+  },
+  {
+    "k": "people.joinCode",
+    "en": "Join code",
+    "es": "Código"
+  },
+  {
+    "k": "people.join",
+    "en": "Join a family",
+    "es": "Entrar a una familia"
+  },
+  {
+    "k": "people.codeShort",
+    "en": "A family code is six characters.",
+    "es": "Un código de familia son seis caracteres."
+  },
+  {
+    "k": "people.inviteShort",
+    "en": "An invite code is ten characters.",
+    "es": "Un código de invitación son diez caracteres."
+  },
+  {
+    "k": "people.noFamily",
+    "en": "No family has that code.",
+    "es": "Ninguna familia tiene ese código."
+  },
+  {
+    "k": "people.parent",
+    "en": "Parent",
+    "es": "Padre"
+  },
+  {
+    "k": "people.kid",
+    "en": "Kid",
+    "es": "Hijo"
+  },
+  {
+    "k": "people.invite",
+    "en": "Your code",
+    "es": "Tu código"
+  },
+  {
+    "k": "people.yourCode",
+    "en": "Code",
+    "es": "Código"
+  },
+  {
+    "k": "people.tapToSend",
+    "en": "Tap to send it to someone",
+    "es": "Tócalo para mandárselo a alguien"
+  },
+  {
+    "k": "people.inviteLine",
+    "en": "Use my code {code} when you sign up for Did I and we both get coins.",
+    "es": "Usa mi código {code} cuando te registres en Did I y los dos ganamos monedas."
+  },
+  {
+    "k": "people.copied",
+    "en": "Copied.",
+    "es": "Copiado."
+  },
+  {
+    "k": "people.shared",
+    "en": "Sent.",
+    "es": "Mandado."
+  },
+  {
+    "k": "people.joinedCount",
+    "en": "{n} joined with it",
+    "es": "{n} entraron con él"
+  },
+  {
+    "k": "people.lookWon",
+    "en": "The Night look is yours",
+    "es": "El look Night ya es tuyo"
+  },
+  {
+    "k": "people.lookLeft",
+    "en": "{n} more for the Night look",
+    "es": "{n} más para el look Night"
+  },
+  {
+    "k": "people.inviteHint",
+    "en": "They type your code when they sign up. You both get {coins} coins. At {n} friends the Night look is yours, no coins needed.",
+    "es": "Escriben tu código al registrarse. Los dos reciben {coins} monedas. Con {n} amigos el look Night es tuyo, sin monedas."
+  },
+  {
+    "k": "people.gotCode",
+    "en": "Someone invite you?",
+    "es": "¿Alguien te invitó?"
+  },
+  {
+    "k": "people.useCode",
+    "en": "Use the code",
+    "es": "Usar el código"
+  },
+  {
+    "k": "people.noInvite",
+    "en": "No code like that.",
+    "es": "No existe ese código."
+  },
+  {
+    "k": "people.ownInvite",
+    "en": "That one is your own code.",
+    "es": "Ese es tu propio código."
+  },
+  {
+    "k": "people.inviteUsed",
+    "en": "You already used a code.",
+    "es": "Ya usaste un código."
+  },
+  {
+    "k": "people.wonCoins",
+    "en": "{coins} coins from your code.",
+    "es": "{coins} monedas por tu código."
+  },
+  {
+    "k": "people.wonLook",
+    "en": "{coins} coins, and the Night look is yours.",
+    "es": "{coins} monedas, y el look Night es tuyo."
+  },
+  {
+    "k": "family.kicker",
+    "en": "Family",
+    "es": "Familia"
+  },
+  {
+    "k": "family.loading",
+    "en": "Reading the family.",
+    "es": "Leyendo la familia."
+  },
+  {
+    "k": "family.goneTitle",
+    "en": "Not here",
+    "es": "No está"
+  },
+  {
+    "k": "family.goneBody",
+    "en": "That family is gone, or you are not in it.",
+    "es": "Esa familia ya no existe, o no estás en ella."
+  },
+  {
+    "k": "family.back",
+    "en": "Back to people",
+    "es": "Volver a gente"
+  },
+  {
+    "k": "family.codeLine",
+    "en": "Join code {code}",
+    "es": "Código {code}"
+  },
+  {
+    "k": "family.codeInvite",
+    "en": "Join {name} on Did I with the code {code}.",
+    "es": "Entra a {name} en Did I con el código {code}."
+  },
+  {
+    "k": "family.tonight",
+    "en": "Tonight",
+    "es": "Esta noche"
+  },
+  {
+    "k": "family.noLamps",
+    "en": "Nothing on the family tag yet.",
+    "es": "Todavía no hay nada en el tag de la familia."
+  },
+  {
+    "k": "family.forWho",
+    "en": "for {who}",
+    "es": "para {who}"
+  },
+  {
+    "k": "family.doneCount",
+    "en": "{done} of {all} done",
+    "es": "{done} de {all} listos"
+  },
+  {
+    "k": "family.everyone",
+    "en": "Everyone",
+    "es": "Todos"
+  },
+  {
+    "k": "family.someone",
+    "en": "Someone",
+    "es": "Alguien"
+  },
+  {
+    "k": "family.youAre",
+    "en": "You",
+    "es": "Tú"
+  },
+  {
+    "k": "family.doIt",
+    "en": "Did I",
+    "es": "Did I"
+  },
+  {
+    "k": "family.did",
+    "en": "Did",
+    "es": "Listo"
+  },
+  {
+    "k": "family.nope",
+    "en": "Nope",
+    "es": "Nope"
+  },
+  {
+    "k": "family.theirDone",
+    "en": "done",
+    "es": "listo"
+  },
+  {
+    "k": "family.theirWait",
+    "en": "waiting",
+    "es": "pendiente"
+  },
+  {
+    "k": "family.remove",
+    "en": "Remove",
+    "es": "Quitar"
+  },
+  {
+    "k": "family.edit",
+    "en": "Edit",
+    "es": "Editar"
+  },
+  {
+    "k": "family.editTitle",
+    "en": "Change the question",
+    "es": "Cambiar la pregunta"
+  },
+  {
+    "k": "family.save",
+    "en": "Save it",
+    "es": "Guardarla"
+  },
+  {
+    "k": "family.week",
+    "en": "The last seven nights",
+    "es": "Las últimas siete noches"
+  },
+  {
+    "k": "family.weekCount",
+    "en": "{n} of 7",
+    "es": "{n} de 7"
+  },
+  {
+    "k": "family.weekFrom",
+    "en": "{from} to {to}",
+    "es": "Del {from} al {to}"
+  },
+  {
+    "k": "family.assign",
+    "en": "Put one on someone",
+    "es": "Ponerle una a alguien"
+  },
+  {
+    "k": "family.addYours",
+    "en": "Add one for yourself",
+    "es": "Agregar una para ti"
+  },
+  {
+    "k": "family.what",
+    "en": "Did I",
+    "es": "Did I"
+  },
+  {
+    "k": "family.whatPh",
+    "en": "take out the trash",
+    "es": "sacar la basura"
+  },
+  {
+    "k": "family.forWhoLabel",
+    "en": "For",
+    "es": "Para"
+  },
+  {
+    "k": "family.put",
+    "en": "Put it on the tag",
+    "es": "Ponerla en el tag"
+  },
+  {
+    "k": "family.blank",
+    "en": "Write the question first.",
+    "es": "Escribe primero la pregunta."
+  },
+  {
+    "k": "family.noTag",
+    "en": "This family has no tag yet. A parent can start one.",
+    "es": "Esta familia no tiene tag. Un padre puede empezar uno."
+  },
+  {
+    "k": "family.assignHint",
+    "en": "Pick who it is for, then put it on the tag. It shows up on their tonight.",
+    "es": "Elige para quién es y ponla en el tag. Aparece en su noche."
+  },
+  {
+    "k": "family.kidHint",
+    "en": "Parents put questions on other people. You can add your own.",
+    "es": "Los padres ponen preguntas a otros. Tú puedes agregar las tuyas."
+  },
+  {
+    "k": "family.people",
+    "en": "Who is in it",
+    "es": "Quién está"
+  },
+  {
+    "k": "family.cheer",
+    "en": "Cheer · {n}",
+    "es": "Ánimo · {n}"
+  },
+  {
+    "k": "family.cheerNote",
+    "en": "cleared tonight",
+    "es": "terminó esta noche"
+  },
+  {
+    "k": "family.cheerSent",
+    "en": "Cheered {name}.",
+    "es": "Le diste ánimo a {name}."
+  },
+  {
+    "k": "family.needGems",
+    "en": "Need {n} gems.",
+    "es": "Necesitas {n} gemas."
+  },
+  {
+    "k": "family.makeParent",
+    "en": "Make parent",
+    "es": "Hacer padre"
+  },
+  {
+    "k": "family.makeKid",
+    "en": "Make kid",
+    "es": "Hacer hijo"
+  },
+  {
+    "k": "family.lastParent",
+    "en": "A family keeps one parent.",
+    "es": "Una familia se queda con un padre."
+  },
+  {
+    "k": "family.lastParentLeave",
+    "en": "Make someone else a parent before you leave.",
+    "es": "Haz padre a alguien más antes de salir."
+  },
+  {
+    "k": "family.inviteHint",
+    "en": "Anyone with the code {code} can join. Parents can remove them after.",
+    "es": "Cualquiera con el código {code} puede entrar. Los padres pueden quitarlo después."
+  },
+  {
+    "k": "family.leave",
+    "en": "Leave this family",
+    "es": "Salir de esta familia"
+  },
+  {
+    "k": "inbox.kicker",
+    "en": "Sent to you",
+    "es": "Te mandaron"
+  },
+  {
+    "k": "inbox.title",
+    "en": "Sent to you",
+    "es": "Te mandaron"
+  },
+  {
+    "k": "inbox.hint",
+    "en": "Keep it and it lands on the tag you have open tonight.",
+    "es": "Si lo aceptas, cae en el tag que tengas abierto esta noche."
+  },
+  {
+    "k": "inbox.outTitle",
+    "en": "Sign in first",
+    "es": "Primero inicia sesión"
+  },
+  {
+    "k": "inbox.emptyTitle",
+    "en": "Nothing waiting",
+    "es": "Nada pendiente"
+  },
+  {
+    "k": "inbox.emptyBody",
+    "en": "When a friend sends you a Did I, it shows up here.",
+    "es": "Cuando un amigo te mande un Did I, aparece aquí."
+  },
+  {
+    "k": "inbox.goPeople",
+    "en": "Go to people",
+    "es": "Ir a gente"
+  },
+  {
+    "k": "inbox.from",
+    "en": "from {name}",
+    "es": "de {name}"
+  },
+  {
+    "k": "inbox.aCheer",
+    "en": "A cheer",
+    "es": "Un cheer"
+  },
+  {
+    "k": "inbox.keep",
+    "en": "Keep it",
+    "es": "Aceptar"
+  },
+  {
+    "k": "inbox.pass",
+    "en": "Pass",
+    "es": "Pasar"
+  },
+  {
+    "k": "inbox.thanks",
+    "en": "Thanks",
+    "es": "Gracias"
+  },
+  {
+    "k": "sent.kicker",
+    "en": "What you sent",
+    "es": "Lo que mandaste"
+  },
+  {
+    "k": "sent.rowSub",
+    "en": "Kept, passed, or still waiting",
+    "es": "Aceptado, pasado, o esperando"
+  },
+  {
+    "k": "sent.title",
+    "en": "What you sent",
+    "es": "Lo que mandaste"
+  },
+  {
+    "k": "sent.hint",
+    "en": "You can take one back until they answer it.",
+    "es": "Puedes retirarlo hasta que lo respondan."
+  },
+  {
+    "k": "sent.to",
+    "en": "to {name}",
+    "es": "a {name}"
+  },
+  {
+    "k": "sent.kept",
+    "en": "kept it",
+    "es": "lo aceptó"
+  },
+  {
+    "k": "sent.passed",
+    "en": "passed",
+    "es": "lo pasó"
+  },
+  {
+    "k": "sent.waiting",
+    "en": "has not answered",
+    "es": "no ha respondido"
+  },
+  {
+    "k": "sent.takeBack",
+    "en": "Take it back",
+    "es": "Retirarlo"
+  },
+  {
+    "k": "sent.emptyTitle",
+    "en": "Nothing sent yet",
+    "es": "Todavía no mandaste nada"
+  },
+  {
+    "k": "sent.emptyBody",
+    "en": "Send a friend a Did I and it shows up here.",
+    "es": "Mándale un Did I a un amigo y aparece aquí."
+  },
+  {
+    "k": "sent.goFriends",
+    "en": "Go to friends",
+    "es": "Ir a amigos"
+  }
+]

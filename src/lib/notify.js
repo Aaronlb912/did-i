@@ -1,4 +1,4 @@
-import { lampNotifyOn } from './board-json.js'
+import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 
@@ -27,22 +27,35 @@ export async function requestPings() {
   }
 }
 
+// The last call of the night for a high one that is still open.
+const LATE_NUDGE_HOUR = 21
+
 export function upcomingPings(book, now = new Date()) {
   if (!book) return []
-  const dateIso = boardDate(now, book.dayFoldHour)
+  const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
   const fires = []
   for (const row of waitingTonight(book, now)) {
-    if (!lampNotifyOn(row.lamp)) continue
+    if (!lampBuzzes(row.lamp)) continue
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
     if (!match) continue
     const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
-    if (at.getTime() <= now.getTime()) continue
+    if (at.getTime() > now.getTime()) {
+      fires.push({
+        id: row.lamp.id,
+        tag: row.periodKey,
+        question: row.lamp.question,
+        at: at.getTime(),
+      })
+    }
+    if (!lampNudgesLate(row.lamp)) continue
+    const late = new Date(year, month - 1, day, LATE_NUDGE_HOUR, 0, 0, 0)
+    if (late.getTime() <= now.getTime() || late.getTime() <= at.getTime()) continue
     fires.push({
       id: row.lamp.id,
-      tag: row.periodKey,
+      tag: `${row.periodKey}:late`,
       question: row.lamp.question,
-      at: at.getTime(),
+      at: late.getTime(),
     })
   }
   return fires
@@ -96,7 +109,7 @@ export async function armLampPings(book, now = new Date()) {
 
 export function pingButtonLabel(state) {
   if (state === 'missing') return ''
-  if (state === 'granted') return 'Pings on'
-  if (state === 'denied') return 'Pings blocked'
-  return 'Remind when it is due'
+  if (state === 'granted') return 'pings.state.on'
+  if (state === 'denied') return 'pings.state.blocked'
+  return 'pings.state.ask'
 }

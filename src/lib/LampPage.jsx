@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { useBackDismiss } from '../site/nav.js'
 import { BoardShell } from './BoardShell.jsx'
 import { LampDetail } from './LampDetail.jsx'
 import { HolePlate } from './HolePlate.jsx'
@@ -15,6 +16,9 @@ export function LampPage({ book, onChange, now, lampId }) {
   const lamp = (book.lamps || []).find((item) => item.id === lampId) || null
   const [holePick, setHolePick] = useState(null)
   const [confirmGone, setConfirmGone] = useState(false)
+
+  useBackDismiss(Boolean(holePick), () => setHolePick(null))
+  useBackDismiss(confirmGone, () => setConfirmGone(false))
 
   function change(next) {
     onChange(commitBook(next, clock))

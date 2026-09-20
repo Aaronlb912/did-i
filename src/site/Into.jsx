@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n.js'
 import { SiteNav } from './SiteNav.jsx'
 
 export function Into() {
@@ -6,19 +7,14 @@ export function Into() {
       <SiteNav path="/into" />
       <main className="di-door">
         <article className="di-door-plate di-read">
-          <p className="di-face-plate">Drop in</p>
-          <h1 className="di-question">If you already run a React app.</h1>
-          <p>Copy the src/lib folder into your src folder.</p>
-          <pre className="di-pre">{`import { Tonight, sampleBoard, emptyBoard } from './lib'
-
-<Tonight value={book} onChange={setBook} />`}</pre>
-          <p>
-            Tonight does not write localStorage. Persist in the host. Pass now
-            if you need a frozen clock.
-          </p>
+          <p className="di-face-plate">{t('site.into.kicker')}</p>
+          <h1 className="di-question">{t('site.into.title')}</h1>
+          <p>{t('site.into.p1')}</p>
+          <pre className="di-pre">{t('site.into.code')}</pre>
+          <p>{t('site.into.p2')}</p>
           <p>
             <a className="di-skip" href="#/door">
-              Back to the door
+              {t('site.into.back')}
             </a>
           </p>
         </article>

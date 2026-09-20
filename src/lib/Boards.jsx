@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { useBackDismiss } from '../site/nav.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -21,6 +22,8 @@ export function Boards({
   const clock = now || new Date()
   const [confirm, setConfirm] = useState(null)
   const [titleDraft, setTitleDraft] = useState(book.title)
+
+  useBackDismiss(Boolean(confirm), () => setConfirm(null))
 
   useEffect(() => {
     setTitleDraft(book.title)

@@ -6,6 +6,8 @@ import {
   CHEER_STAGE_MAX,
   LOOKS,
   buyCheer,
+  cheerText,
+  lookText,
   buyLook,
   cheerPlayOf,
   cheerStageOf,
@@ -15,6 +17,7 @@ import {
 } from './purse.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
+import { activeLook } from './dit-board.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 const STAGES = [1, 2, 3, 4, 5]
@@ -23,6 +26,7 @@ export function Collection({ book, onChange, now }) {
   usePrefs()
   const clock = now || new Date()
   const purse = normalizePurse(book)
+  const coat = activeLook(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
 
@@ -37,7 +41,7 @@ export function Collection({ book, onChange, now }) {
   function pickStage(id, n) {
     const next = wearCheerStage(book, id, n)
     if (!next.miss) {
-      fireCheer(id, n)
+      fireCheer(id, n, coat)
       onChange(next.book)
     }
   }
@@ -61,8 +65,8 @@ export function Collection({ book, onChange, now }) {
               <div className="di-shop-row" key={item.id}>
                 <LookChip id={item.id} />
                 <span className="di-shop-copy">
-                  <strong>{item.name}</strong>
-                  <em>{item.line}</em>
+                  <strong>{t(lookText(item.id, 'name'))}</strong>
+                  <em>{t(lookText(item.id, 'line'))}</em>
                 </span>
                 <button
                   className={on ? 'di-did di-did-small' : 'di-key'}
@@ -88,14 +92,20 @@ export function Collection({ book, onChange, now }) {
                 <button
                   className="di-preview"
                   type="button"
-                  aria-label={t('shop.see', { name: item.name })}
-                  onClick={() => fireCheer(item.id, play)}
+                  aria-label={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
+                  onClick={() => fireCheer(item.id, play, coat)}
                 >
                   <CheerChip id={item.id} stage={play} />
                 </button>
                 <span className="di-shop-copy">
-                  <strong>{item.name}</strong>
-                  <em>{t('shop.cheerStageLine', { n: play, max: CHEER_STAGE_MAX, line: item.line })}</em>
+                  <strong>{t(cheerText(item.id, 'name'))}</strong>
+                  <em>
+                    {t('shop.cheerStageLine', {
+                      n: play,
+                      max: CHEER_STAGE_MAX,
+                      line: t(cheerText(item.id, 'line')),
+                    })}
+                  </em>
                 </span>
                 <button
                   className={on ? 'di-did di-did-small' : 'di-key'}

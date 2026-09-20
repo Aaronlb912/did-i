@@ -1,3 +1,4 @@
+import { useBackDismiss } from '../site/nav.js'
 import { t } from './i18n.js'
 
 export function SetCard({ children }) {
@@ -67,6 +68,8 @@ export function SetPick({ label, on, onClick }) {
 }
 
 export function SetSheet({ title, onClose, still, children }) {
+  useBackDismiss(true, onClose)
+
   return (
     <div className="di-set-veil" role="presentation" onClick={onClose}>
       <div

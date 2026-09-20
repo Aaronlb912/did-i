@@ -5,6 +5,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { emptyBoard } from './board-json.js'
 import { hangInto, commitBook } from './board-ops.js'
 import { findBookByTitle, findBookHoldingLamp } from './board-shelf.js'
+import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 function bookForTag(boards, book, name) {
@@ -25,7 +26,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, s
 
   function save(lamp, problem) {
     if (problem || !lamp) {
-      setMiss(problem || 'The plate is unfinished.')
+      setMiss(problem || 'hang.unfinished')
       return
     }
     const target = bookForTag(boards, book, tagTitle)

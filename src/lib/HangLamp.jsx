@@ -223,6 +223,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
             </button>
           ))}
         </div>
+        <small className="di-field-hint">{t(`hang.priority.hint.${priority}`)}</small>
       </div>
       <div className="di-field">
         <span id="di-hang-notify">{t('hang.notify')}</span>
@@ -299,7 +300,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
       </button>
       {miss ? (
         <p className="di-miss" role="alert">
-          {miss}
+          {t(miss)}
         </p>
       ) : null}
       <div className="di-hang-actions">

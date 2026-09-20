@@ -12,26 +12,27 @@ import {
   previousDueDate,
 } from './recurrence.js'
 
-export const ACHIEVEMENTS = [
-  { id: 'first-open', name: 'Showed up', line: 'You opened Did I.' },
-  { id: 'first-did', name: 'First DID', line: 'You hit DID.' },
-  { id: 'honest-skip', name: 'Honest nope', line: 'Tonight was not that night.' },
-  { id: 'late-ok', name: 'Late still counts', line: 'You marked a miss late.' },
-  { id: 'hall-on', name: 'Tonight done', line: 'Everything due got an answer.' },
-  { id: 'heat-3', name: 'Three nights', line: 'Three nights in a row finished.' },
-  { id: 'heat-5', name: 'Five nights', line: 'Five nights finished.' },
-  { id: 'showed-3', name: 'Three nights here', line: 'You came back three nights.' },
-  { id: 'showed-7', name: 'A week of opens', line: 'Seven nights you opened it.' },
-  { id: 'come-back', name: 'Back after a hole', line: 'You opened after a night that was not on.' },
-  { id: 'seven-door', name: 'Seven nights on the door', line: 'The house question held a week.' },
-  { id: 'hung-five', name: 'Five questions', line: 'Five questions added.' },
-  { id: 'month-bill', name: 'Monthly yes', line: 'A monthly question got a yes.' },
-  { id: 'quiet-week', name: 'Quiet week', line: 'Seven nights with no hole.' },
+export const MARK_IDS = [
+  'first-open',
+  'first-did',
+  'honest-skip',
+  'late-ok',
+  'hall-on',
+  'heat-3',
+  'heat-5',
+  'showed-3',
+  'showed-7',
+  'come-back',
+  'seven-door',
+  'hung-five',
+  'month-bill',
+  'quiet-week',
 ]
 
-function add(unlocked, id) {
-  if (unlocked.includes(id)) return unlocked
-  return [...unlocked, id]
+export const ACHIEVEMENTS = MARK_IDS.map((id) => ({ id }))
+
+export function markText(id, field) {
+  return `mark.${id}.${field}`
 }
 
 export function nextMark(book) {
@@ -77,38 +78,39 @@ export function unlockAchievements(book, now = new Date()) {
   const answers = book.answers || []
   const lamps = (book.lamps || []).filter((lamp) => !lamp.archived)
 
-  if ((book.opens || []).length) unlocked = add(unlocked, 'first-open')
-  if ((book.opens || []).length >= 3) unlocked = add(unlocked, 'showed-3')
-  if ((book.opens || []).length >= 7) unlocked = add(unlocked, 'showed-7')
+  function add(id) {
+    if (unlocked.includes(id)) return
+    unlocked = [...unlocked, id]
+  }
+
+  if ((book.opens || []).length) add('first-open')
+  if ((book.opens || []).length >= 3) add('showed-3')
+  if ((book.opens || []).length >= 7) add('showed-7')
   if (answers.some((answer) => answer.status === 'yes' || answer.status === 'late')) {
-    unlocked = add(unlocked, 'first-did')
+    add('first-did')
   }
-  if (answers.some((answer) => answer.status === 'skip')) {
-    unlocked = add(unlocked, 'honest-skip')
-  }
-  if (answers.some((answer) => answer.status === 'late')) {
-    unlocked = add(unlocked, 'late-ok')
-  }
-  if (lamps.length >= 5) unlocked = add(unlocked, 'hung-five')
+  if (answers.some((answer) => answer.status === 'skip')) add('honest-skip')
+  if (answers.some((answer) => answer.status === 'late')) add('late-ok')
+  if (lamps.length >= 5) add('hung-five')
   if (
     answers.some((answer) => {
       const lamp = (book.lamps || []).find((item) => item.id === answer.lampId)
       return lamp && lamp.cadence === 'monthly' && (answer.status === 'yes' || answer.status === 'late')
     })
   ) {
-    unlocked = add(unlocked, 'month-bill')
+    add('month-bill')
   }
-  if (allClearTonight(book, now)) unlocked = add(unlocked, 'hall-on')
+  if (allClearTonight(book, now)) add('hall-on')
   const heat = hallHeat(book, now)
-  if (heat >= 3) unlocked = add(unlocked, 'heat-3')
-  if (heat >= 5) unlocked = add(unlocked, 'heat-5')
-  if (cameBackAfterHole(book, now)) unlocked = add(unlocked, 'come-back')
+  if (heat >= 3) add('heat-3')
+  if (heat >= 5) add('heat-5')
+  if (cameBackAfterHole(book, now)) add('come-back')
 
   const door =
     lamps.find((lamp) => lamp.kind === 'house' && lamp.slot === 'night') ||
     lamps.find((lamp) => lamp.kind === 'house')
-  if (door && streakLength(book, door, now) >= 7) unlocked = add(unlocked, 'seven-door')
-  if (quietWeek(book, now)) unlocked = add(unlocked, 'quiet-week')
+  if (door && streakLength(book, door, now) >= 7) add('seven-door')
+  if (quietWeek(book, now)) add('quiet-week')
 
   return { ...book, unlocked }
 }

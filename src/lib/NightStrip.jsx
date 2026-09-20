@@ -1,10 +1,11 @@
 import { answerFor } from './recurrence.js'
 import { shortLabel } from './board-json.js'
+import { t } from './i18n.js'
 
 export function NightStrip({ book, lamp, keys, onPickHole }) {
   if (!lamp || !keys.length) return null
   return (
-    <ol className="di-strip" aria-label={`${shortLabel(lamp)} recent nights`}>
+    <ol className="di-strip" aria-label={t('strip.recent', { name: shortLabel(lamp) })}>
       {keys.map((key) => {
         const answer = answerFor(book, lamp.id, key)
         let state = 'hole'

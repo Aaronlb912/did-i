@@ -21,9 +21,10 @@ import {
   signedOutSync,
   useSync,
 } from './cloud-sync.js'
-import { t } from './i18n.js'
+import { t, tMiss } from './i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { LegalLinks } from './LegalLinks.jsx'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 
 function clockWords(iso) {
@@ -98,7 +99,9 @@ function SignedOut({ on }) {
     const { miss: bad } = await sendCode(email)
     setBusy(false)
     if (bad) {
-      setMiss(bad === 'off' ? t('account.offBody') : bad)
+      if (bad === 'off') setMiss(t('account.offBody'))
+      else if (bad === 'often') setMiss(t('account.tooOften'))
+      else setMiss(bad)
       return
     }
     setMiss('')
@@ -175,6 +178,8 @@ function SignedOut({ on }) {
           {miss}
         </p>
       ) : null}
+
+      <LegalLinks leadKey="legal.signInLead" />
 
       <div className="di-hang-actions">
         {step === 'email' ? (
@@ -263,7 +268,7 @@ function SignedIn({ book, email, onChange }) {
       </SetCard>
       {sync.how === 'miss' && sync.miss ? (
         <p className="di-miss" role="alert">
-          {sync.miss}
+          {tMiss(sync.miss)}
         </p>
       ) : null}
 
@@ -281,7 +286,7 @@ function SignedIn({ book, email, onChange }) {
             }
           }}
         />
-        <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/shop')} />
+        <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/kit')} />
         <SetRow label={t('account.cheer')} value={cheerName} chevron onClick={() => goHash('/kit')} />
       </SetCard>
 

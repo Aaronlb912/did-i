@@ -12,6 +12,7 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { shortLabel } from './board-json.js'
+import { t } from './i18n.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
 export { streakLength } from './achievements.js'
@@ -232,8 +233,8 @@ export function tapWhen(answeredAt, now = new Date()) {
   const clock = timePart ? clockWords(timePart) : ''
   const today = isoDate(now)
   const yesterday = addDaysIso(today, -1)
-  if (datePart === today) return clock ? `Today ${clock}` : 'Today'
-  if (datePart === yesterday) return clock ? `Yesterday ${clock}` : 'Yesterday'
+  if (datePart === today) return clock ? t('time.todayAt', { clock }) : t('time.today')
+  if (datePart === yesterday) return clock ? t('time.yesterdayAt', { clock }) : t('time.yesterday')
   const date = parseIsoDate(datePart)
   if (!date) return raw
   const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -243,8 +244,10 @@ export function tapWhen(answeredAt, now = new Date()) {
 export function tomorrowAsk(book, now = new Date()) {
   const next = comingDays(book, now, 2).find((night) => !night.isToday)
   if (!next || !next.due.length) return ''
-  if (next.due.length === 1) return `Tomorrow: ${shortLabel(next.due[0].lamp)}.`
-  return `Tomorrow: ${next.due.length} questions.`
+  if (next.due.length === 1) {
+    return t('home.tomorrowOne', { name: shortLabel(next.due[0].lamp) })
+  }
+  return t('home.tomorrowMany', { n: next.due.length })
 }
 
 export function homeLine(book, now = new Date()) {
@@ -257,18 +260,18 @@ export function homeLine(book, now = new Date()) {
   if (!hung.length) {
     return {
       kind: 'empty',
-      kicker: 'No questions yet',
-      title: 'No questions yet.',
-      body: 'Pick a usual question, or write your own.',
+      kicker: t('home.status.empty'),
+      title: t('home.line.empty'),
+      body: t('home.body.empty'),
       face: '',
     }
   }
   if (!due.length) {
     return {
       kind: 'off',
-      kicker: 'Today',
-      title: 'Nothing is due today.',
-      body: 'Your questions are waiting for their day.',
+      kicker: t('home.status.off'),
+      title: t('home.line.off'),
+      body: t('home.body.off'),
       face: '',
     }
   }
@@ -277,9 +280,11 @@ export function homeLine(book, now = new Date()) {
     const later = tomorrowAsk(book, now)
     return {
       kind: 'on',
-      kicker: 'Done',
-      title: 'That is everything for tonight.',
-      body: later ? `Streak is ${heat} of 5. ${later}` : `Streak is ${heat} of 5. Come back tomorrow.`,
+      kicker: t('home.status.on'),
+      title: t('home.line.on'),
+      body: later
+        ? t('home.body.onLater', { n: heat, later })
+        : t('home.body.on', { n: heat }),
       face: '',
     }
   }
@@ -287,12 +292,15 @@ export function homeLine(book, now = new Date()) {
     const first = ready[0]
     return {
       kind: 'ask',
-      kicker: ready.length === 1 ? 'One left' : `${ready.length} left`,
+      kicker:
+        ready.length === 1
+          ? t('home.ask.oneLeft')
+          : t('home.ask.nLeft', { n: ready.length }),
       title: first.lamp.question,
       body:
         ready.length === 1
-          ? 'One more and the streak goes up.'
-          : `${open.length} still open. Finish them and the streak goes up.`,
+          ? t('home.body.askOne')
+          : t('home.body.askMany', { n: open.length }),
       face: first.lamp.id,
     }
   }
@@ -302,18 +310,21 @@ export function homeLine(book, now = new Date()) {
       .sort((a, b) => a.lamp.askAfter.localeCompare(b.lamp.askAfter))[0]
     return {
       kind: 'wait',
-      kicker: 'Not yet',
-      title: 'Nothing to answer right now.',
+      kicker: t('home.status.wait'),
+      title: t('home.line.wait'),
       body: next
-        ? `${shortLabel(next.lamp)} opens at ${clockWords(next.lamp.askAfter)}.`
-        : 'These open later tonight.',
+        ? t('home.body.waitOne', {
+            name: shortLabel(next.lamp),
+            time: clockWords(next.lamp.askAfter),
+          })
+        : t('home.body.waitMany'),
       face: '',
     }
   }
   return {
     kind: 'ask',
-    kicker: 'Tonight',
-    title: 'Open tonight.',
+    kicker: t('home.status.ask'),
+    title: t('home.line.ask'),
     body: '',
     face: '',
   }

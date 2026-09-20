@@ -5,6 +5,20 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
+import {
+  forgetAnswerMarks,
+  pruneAnswers,
+  pullAnswers,
+  pushAnswers,
+  shelfWithoutAnswers,
+} from './answer-log.js'
+import { personZone } from './zone.js'
+import { shelfHeat } from './hall-feel.js'
+import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
+import { didTonightLabels } from './dit-board.js'
+import { claimCheerGifts, readMine, syncTonightBoard } from './people.js'
+import { claimGemPurchases } from './gem-buy.js'
+import { addGemsShelf, mergeGiftCheers } from './purse.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
 
@@ -40,14 +54,18 @@ async function me() {
 }
 
 export function signedOutSync() {
+  // The next person to sign in on this phone starts from nothing.
+  forgetAnswerMarks()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
 }
 
+// Structure only. Answers go through answer-log.js, one at a time,
+// because they are the part that grows without end.
 async function putShelf(db, user, shelf, savedAt) {
   const { error } = await db.from('shelves').upsert(
     {
       user_id: user.id,
-      doc: shelf,
+      doc: shelfWithoutAnswers(shelf),
       saved_at: savedAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -56,16 +74,38 @@ async function putShelf(db, user, shelf, savedAt) {
   return error
 }
 
-async function putPrefs(db, user) {
+// The streak and the night, so friends and Did I tonight have something
+// to read. Answers themselves never leave answer_log.
+function nightMark(shelf, now = new Date()) {
+  const boards = shelf?.boards || []
+  const night = boardDate(now)
+  const hadAny = boards.some((book) => dueTonight(book, now).length > 0)
+  const clear =
+    hadAny &&
+    boards.every((book) => dueTonight(book, now).length === 0 || allClearTonight(book, now))
+  return { streak: shelfHeat(boards, now), doneOn: clear ? night : null }
+}
+
+async function putPrefs(db, user, shelf) {
+  const doc = shelf || readShelf()
+  const mark = nightMark(doc)
   const { error } = await db.from('profiles').upsert(
     {
       user_id: user.id,
       prefs: readPrefs(),
+      zone: personZone(),
+      streak: mark.streak,
+      done_on: mark.doneOn,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
   )
-  return error
+  if (error) return error
+  if (!mark.doneOn) return null
+  const mine = await readMine()
+  if (!mine?.public_tonight) return null
+  const synced = await syncTonightBoard(didTonightLabels(doc, mark.doneOn), mark.doneOn)
+  return synced.miss && synced.miss !== 'setup' ? new Error(synced.miss) : null
 }
 
 // Pull what the account has, fold it into what this phone has, then send
@@ -93,7 +133,20 @@ export async function pullAndMerge() {
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
     const savedAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
 
-    const written = writeShelf(merged, savedAt)
+    // Fold in every answer the account has that this phone has not seen.
+    const pulled = await pullAnswers(merged)
+    if (pulled.miss) throw new Error(pulled.miss)
+
+    let written = writeShelf(pulled.shelf, savedAt)
+    const gifts = await claimCheerGifts()
+    if (gifts.ids?.length) {
+      const boards = written.boards.map((book) => mergeGiftCheers(book, gifts.ids))
+      written = writeShelf({ ...written, boards }, savedAt)
+    }
+    const bought = await claimGemPurchases()
+    if (bought.gems > 0) {
+      written = writeShelf(addGemsShelf(written, bought.gems), savedAt)
+    }
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
@@ -101,14 +154,20 @@ export async function pullAndMerge() {
       writePrefs(remotePrefs, true)
     }
 
-    const bad = (await putShelf(db, user, written, savedAt)) || (await putPrefs(db, user))
+    const bad = (await putShelf(db, user, written, savedAt)) || (await putPrefs(db, user, written))
     if (bad) throw bad
+
+    // Opening the app is the one moment worth reconciling in full: send
+    // everything, then clear out answers whose question is gone.
+    const sent = await pushAnswers(written, true)
+    if (sent.miss) throw new Error(sent.miss)
+    await pruneAnswers(written)
 
     touchDevice()
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return written
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'Could not reach the account.' })
+    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
     return null
   }
 }
@@ -124,11 +183,15 @@ export async function pushNow(shelf) {
   setState({ how: 'busy', miss: '' })
   try {
     const doc = shelf || readShelf()
-    const bad = (await putShelf(db, user, doc, readSavedAt())) || (await putPrefs(db, user))
+    // Usually one answer. The document only moves because a tag or a
+    // question changed, and those are small.
+    const sent = await pushAnswers(doc)
+    if (sent.miss) throw new Error(sent.miss)
+    const bad = (await putShelf(db, user, doc, readSavedAt())) || (await putPrefs(db, user, doc))
     if (bad) throw bad
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'Could not reach the account.' })
+    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
   }
 }
 

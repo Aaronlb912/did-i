@@ -8,7 +8,18 @@ import { pt } from '../locales/pt.js'
 import { zh } from '../locales/zh.js'
 import { readPrefs } from './prefs.js'
 
-const packs = { de, en, es, fr, it, ja, pt, zh }
+// English fills any key a partial locale file missed. Run npm run locales:sync
+// after adding keys to en.js.
+const packs = {
+  en,
+  es: { ...en, ...es },
+  fr: { ...en, ...fr },
+  de: { ...en, ...de },
+  pt: { ...en, ...pt },
+  it: { ...en, ...it },
+  zh: { ...en, ...zh },
+  ja: { ...en, ...ja },
+}
 
 export function t(key, vars) {
   const locale = readPrefs().locale
@@ -23,4 +34,10 @@ export function t(key, vars) {
 
 export function hasLocaleKey(key) {
   return Boolean(packs.en[key])
+}
+
+export function tMiss(code, vars) {
+  if (!code) return ''
+  if (hasLocaleKey(code)) return t(code, vars)
+  return code
 }

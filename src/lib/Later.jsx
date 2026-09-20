@@ -6,6 +6,15 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
+function answerLabel(row) {
+  if (!row.answer) {
+    return row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('later.open')
+  }
+  if (row.answer.status === 'yes') return t('later.did')
+  if (row.answer.status === 'late') return t('later.late')
+  return t('later.nope')
+}
+
 export function Later({ book, now }) {
   usePrefs()
   const clock = now || new Date()
@@ -20,20 +29,18 @@ export function Later({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page di-later">
-        <p className="di-face-plate">Coming up</p>
-        <h2 className="di-page-title">The next nights</h2>
-        <p className="di-about-p">
-          {t('later.body')}
-        </p>
+        <p className="di-face-plate">{t('later.kicker')}</p>
+        <h2 className="di-page-title">{t('later.title')}</h2>
+        <p className="di-about-p">{t('later.body')}</p>
         {!hung.length ? (
-          <p className="di-detail-meta">Add a question first.</p>
+          <p className="di-detail-meta">{t('later.empty')}</p>
         ) : !nights.length ? (
-          <p className="di-detail-meta">Nothing is set to ask in the next seven nights.</p>
+          <p className="di-detail-meta">{t('later.emptyWeek')}</p>
         ) : (
           nights.map((night) => (
             <section key={night.iso} className="di-later-night">
               <p className="di-slot-label">
-                {night.isToday ? 'Tonight' : night.weekday} · {night.label}
+                {night.isToday ? t('later.tonight') : night.weekday} · {night.label}
               </p>
               <ul className="di-home-list">
                 {night.due.map((row) => (
@@ -48,17 +55,7 @@ export function Later({ book, now }) {
                       }
                     >
                       <span>{shortLabel(row.lamp)}</span>
-                      <span className="di-home-state">
-                        {row.answer
-                          ? row.answer.status === 'yes'
-                            ? 'DID'
-                            : row.answer.status === 'late'
-                              ? 'Late'
-                              : 'Nope'
-                          : row.lamp.askAfter
-                            ? clockWords(row.lamp.askAfter)
-                            : 'Open'}
-                      </span>
+                      <span className="di-home-state">{answerLabel(row)}</span>
                     </button>
                   </li>
                 ))}
@@ -68,10 +65,10 @@ export function Later({ book, now }) {
         )}
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/tonight')}>
-            Tonight
+            {t('later.tonightBtn')}
           </button>
           <button className="di-key" type="button" onClick={() => goHash('/add')}>
-            Add
+            {t('tonight.add')}
           </button>
         </div>
       </section>

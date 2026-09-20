@@ -2,12 +2,13 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { feedRows, tapWhen } from './hall-pages.js'
+import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 function statusWord(status) {
-  if (status === 'yes') return 'DID'
-  if (status === 'late') return 'late'
-  if (status === 'skip') return 'nope'
+  if (status === 'yes') return t('feed.status.did')
+  if (status === 'late') return t('feed.status.late')
+  if (status === 'skip') return t('feed.status.nope')
   return status
 }
 
@@ -23,10 +24,10 @@ export function Feed({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
-        <p className="di-face-plate">Answers</p>
-        <h2 className="di-page-title">Every answer</h2>
+        <p className="di-face-plate">{t('feed.kicker')}</p>
+        <h2 className="di-page-title">{t('feed.title')}</h2>
         {rows.length === 0 ? (
-          <p className="di-sit-line">No answers yet.</p>
+          <p className="di-sit-line">{t('feed.empty')}</p>
         ) : (
           <ol className="di-feed">
             {rows.map((row) => (
@@ -39,7 +40,7 @@ export function Feed({ book, now }) {
                   <span className={`di-feed-pip is-${row.answer.status}`} />
                   <span className="di-feed-copy">
                     <span className="di-feed-q">
-                      {row.lamp ? shortLabel(row.lamp) : 'Deleted question'}
+                      {row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
                     </span>
                     <span className="di-feed-meta">
                       {statusWord(row.answer.status)}

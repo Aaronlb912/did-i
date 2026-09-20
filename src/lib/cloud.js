@@ -37,3 +37,13 @@ export function cloudHost() {
     return URL
   }
 }
+
+export function supabaseProjectRef() {
+  const m = URL.match(/https:\/\/([^.]+)\.supabase\.co/)
+  return m ? m[1] : ''
+}
+
+export function supabaseSqlUrl() {
+  const ref = supabaseProjectRef()
+  return ref ? `https://supabase.com/dashboard/project/${ref}/sql/new` : ''
+}

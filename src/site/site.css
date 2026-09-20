@@ -98,6 +98,44 @@
   line-height: 1.5;
 }
 
+.di-site-app-link {
+  color: var(--di-on);
+}
+
+.di-site-foot {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0 1.15rem 2.5rem;
+  color: var(--di-ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.di-site-foot a {
+  color: var(--di-ink);
+}
+
+.di-landing-list {
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--di-ink-soft);
+  line-height: 1.55;
+}
+
+.di-landing-list li + li {
+  margin-top: 0.45rem;
+}
+
+.di-legal-web .di-help-block h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.di-legal-web .di-legal-title {
+  margin-bottom: 0.5rem;
+}
+
 @media print {
   .di-site-nav {
     display: none;

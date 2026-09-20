@@ -1,19 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { LampFace } from './LampFace.jsx'
+import { FamilyTonight } from './FamilyTonight.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
 import { MastCogs } from './SettingsCog.jsx'
 import { WaitPlate } from './WaitPlate.jsx'
 import { HolePlate } from './HolePlate.jsx'
 import { unlockAchievements } from './achievements.js'
-import { shortLabel } from './board-json.js'
+import { activeLook } from './dit-board.js'
+import { byPriority, shortLabel } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { NightMeter } from './NightMeter.jsx'
+import { useAccount } from './account.js'
+import { useSync } from './cloud-sync.js'
 import { feelTap, playClick } from './native.js'
 import { usePrefs, useTheme } from './prefs.js'
+import { snoozeFor, sweepSnoozes, wakeNow } from './snooze.js'
 import { PurseLine } from './PurseLine.jsx'
 import { mergePurses } from './purse.js'
 import { WeekStrip } from './WeekStrip.jsx'
@@ -44,6 +49,8 @@ export function Tonight({
   usePrefs()
   const theme = useTheme()
   const reduce = useReduceMotion()
+  const account = useAccount()
+  const sync = useSync()
   const clock = now || new Date()
   const undoTimer = useRef(null)
   const [faceId, setFaceId] = useState('')
@@ -53,37 +60,58 @@ export function Tonight({
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [overlay, setOverlay] = useState(null)
+  const [later, setLater] = useState(0)
+  const [laterNote, setLaterNote] = useState(null)
 
-  const dateIso = boardDate(clock, value.dayFoldHour)
+  const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
-  const shelf = (boards.length ? boards : [value]).map((book) =>
-    overlay && book.id === overlay.id ? overlay : book,
+  const shelf = useMemo(
+    () =>
+      (boards.length ? boards : [value]).map((book) =>
+        overlay && book.id === overlay.id ? overlay : book,
+      ),
+    [boards, value, overlay],
   )
-  const due = taggedDue(shelf, clock, tagId)
-  const unanswered = tagId
-    ? unansweredTonight(liveValue, clock)
-    : shelf.flatMap((book) => unansweredTonight(book, clock))
-  const ready = tagId
-    ? faceReadyTonight(liveValue, clock).map((row) => ({
-        ...row,
-        boardId: liveValue.id,
-        tag: liveValue.title,
-        book: liveValue,
-      }))
-    : shelf.flatMap((book) =>
-        faceReadyTonight(book, clock).map((row) => ({
-          ...row,
-          boardId: book.id,
-          tag: book.title,
-          book,
-        })),
-      )
-  const waiting = tagId
-    ? waitingTonight(liveValue, clock)
-    : shelf.flatMap((book) => waitingTonight(book, clock))
-  const catchUp = taggedCatchUp(shelf, clock, tagId)
+
+  // Working out tonight walks every question and every answer. Doing that
+  // again for a keystroke or a swipe frame is what makes a phone stutter.
+  // A question with an ask-after time still has to move from waiting to
+  // ready on its own, so the minute is part of the key.
+  const minute = Math.floor(clock.getTime() / 60000)
+  const night = useMemo(
+    () => ({
+      due: taggedDue(shelf, clock, tagId),
+      unanswered: tagId
+        ? unansweredTonight(liveValue, clock)
+        : shelf.flatMap((book) => unansweredTonight(book, clock)),
+      ready: byPriority(
+        tagId
+          ? faceReadyTonight(liveValue, clock).map((row) => ({
+              ...row,
+              boardId: liveValue.id,
+              tag: liveValue.title,
+              book: liveValue,
+            }))
+          : shelf.flatMap((book) =>
+              faceReadyTonight(book, clock).map((row) => ({
+                ...row,
+                boardId: book.id,
+                tag: book.title,
+                book,
+              })),
+            ),
+      ),
+      waiting: tagId
+        ? waitingTonight(liveValue, clock)
+        : shelf.flatMap((book) => waitingTonight(book, clock)),
+      catchUp: taggedCatchUp(shelf, clock, tagId),
+      heat: shelfHeat(shelf, clock, tagId),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, liveValue, tagId, dateIso, minute, later],
+  )
+  const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = due.length > 0 && due.every((row) => row.answer)
-  const heat = shelfHeat(shelf, clock, tagId)
   const hour = hallHour(clock)
   const empty = (tagId ? [liveValue] : shelf).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
@@ -98,6 +126,17 @@ export function Tonight({
   useEffect(() => {
     setTitleDraft(value.title)
   }, [value.title])
+
+  // Yesterday's "later tonight" is nobody's business today.
+  useEffect(() => {
+    sweepSnoozes()
+  }, [dateIso])
+
+  useEffect(() => {
+    if (!laterNote) return undefined
+    const timer = window.setTimeout(() => setLaterNote(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [laterNote])
 
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
@@ -124,8 +163,15 @@ export function Tonight({
   }
 
   useEffect(() => {
-    function onBack() {
-      if (!closePlates()) goHash('/')
+    function onBack(event) {
+      if (closePlates()) {
+        event.preventDefault()
+        return
+      }
+      if (laterNote) {
+        setLaterNote(null)
+        event.preventDefault()
+      }
     }
     window.addEventListener('did-i-back', onBack)
     return () => window.removeEventListener('did-i-back', onBack)
@@ -162,6 +208,11 @@ export function Tonight({
       if (event.key === 'y' || event.key === ' ') {
         event.preventDefault()
         mark(faceRow, 'yes')
+        return
+      }
+      if (event.key === 'l') {
+        event.preventDefault()
+        pushLater(faceRow)
         return
       }
       if (event.key === 's') {
@@ -219,6 +270,29 @@ export function Tonight({
     else feelTap('did')
     if (book.clickSound && status === 'yes') playClick()
     if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
+  }
+
+  // Not an answer. The question steps aside and comes back tonight.
+  function pushLater(row) {
+    if (!row) return
+    const until = snoozeFor(row.lamp.id, row.periodKey, clock)
+    const hh = String(until.getHours()).padStart(2, '0')
+    const mm = String(until.getMinutes()).padStart(2, '0')
+    setFaceId('')
+    setLater((n) => n + 1)
+    setLaterNote({
+      lampId: row.lamp.id,
+      periodKey: row.periodKey,
+      words: t('tonight.laterUntil', { time: clockWords(`${hh}:${mm}`) }),
+    })
+    feelTap('skip')
+  }
+
+  function bringBack() {
+    if (!laterNote) return
+    wakeNow(laterNote.lampId, laterNote.periodKey)
+    setLaterNote(null)
+    setLater((n) => n + 1)
   }
 
   function moveFace(step) {
@@ -321,6 +395,7 @@ export function Tonight({
         onPickHole={pickHole}
         onYes={() => mark(faceRow, 'yes')}
         onSkip={() => mark(faceRow, 'skip')}
+        onLater={pushLater}
       />
     )
   } else if (waiting.length) {
@@ -378,7 +453,7 @@ export function Tonight({
       data-heat={heat}
       data-hour={hour}
       data-sit={hallOn ? 'on' : 'ask'}
-      data-look={purse.lookOn}
+      data-look={activeLook(liveValue)}
       data-theme={theme}
       {...(reduce ? { 'data-reduce-motion': '' } : {})}
     >
@@ -404,14 +479,18 @@ export function Tonight({
             </button>
           )}
           <p className="di-date">{formatBoardDate(dateIso)}</p>
-          <PurseLine purse={purse} className="di-mast-purse">
-            {t('tonight.purse', { coins: purse.coins, gems: purse.gems })}
-          </PurseLine>
-          <button className="di-add" type="button" onClick={() => goHash('/add')}>
-            {t('tonight.add')}
-          </button>
-          <MastCogs />
+          <div className="di-mast-actions">
+            <PurseLine purse={purse} className="di-mast-purse" gemsLink />
+            <button className="di-add" type="button" onClick={() => goHash('/add')}>
+              {t('tonight.add')}
+            </button>
+            <MastCogs />
+          </div>
         </header>
+
+        {account.user && sync.how === 'miss' ? (
+          <p className="di-set-note di-off-line">{t('tonight.syncMiss')}</p>
+        ) : null}
 
         <TagRail boards={shelf} tagId={tagId} onTag={onTag} now={clock} />
 
@@ -461,7 +540,7 @@ export function Tonight({
         ) : null}
 
         {catchUp.length > 0 && !holePick && !waitPick ? (
-          <div className="di-holes" aria-label="Last time">
+          <div className="di-holes" aria-label={t('tonight.holesAria')}>
             <p className="di-slot-label">{t('tonight.lastNight')}</p>
             <ul className="di-edge">
               {catchUp.map((row) => (
@@ -493,6 +572,17 @@ export function Tonight({
           </p>
         ) : null}
 
+        {laterNote ? (
+          <p className="di-undo" role="status">
+            {laterNote.words}{' '}
+            <button className="di-key" type="button" onClick={bringBack}>
+              {t('tonight.laterBack')}
+            </button>
+          </p>
+        ) : null}
+
+        <FamilyTonight />
+
         <WeekStrip boards={shelf} tagId={tagId} now={clock} />
       </div>
 
@@ -506,7 +596,7 @@ export function Tonight({
             </li>
           ))
         ) : (
-          <li>Nothing left unanswered tonight.</li>
+          <li>{t('tonight.printDone')}</li>
         )}
       </ol>
     </div>

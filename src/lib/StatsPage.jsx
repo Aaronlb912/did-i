@@ -1,6 +1,6 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { ACHIEVEMENTS } from './achievements.js'
+import { ACHIEVEMENTS, markText } from './achievements.js'
 import { statsCounts } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -20,45 +20,45 @@ export function StatsPage({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
-        <p className="di-face-plate">So far</p>
+        <p className="di-face-plate">{t('stats.title')}</p>
         <h2 className="di-page-title">{t('stats.title')}</h2>
         <dl className="di-stats">
           <div>
-            <dt>Questions</dt>
+            <dt>{t('stats.questions')}</dt>
             <dd>{counts.hung}</dd>
           </div>
           <div>
-            <dt>DID</dt>
+            <dt>{t('stats.did')}</dt>
             <dd>{counts.did}</dd>
           </div>
           <div>
-            <dt>Late</dt>
+            <dt>{t('stats.late')}</dt>
             <dd>{counts.late}</dd>
           </div>
           <div>
-            <dt>Nope</dt>
+            <dt>{t('stats.nope')}</dt>
             <dd>{counts.skip}</dd>
           </div>
           <div>
-            <dt>Nights on</dt>
+            <dt>{t('stats.nightsOn')}</dt>
             <dd>{counts.heat}</dd>
           </div>
         </dl>
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/marks')}>
-            Marks
+            {t('stats.marks')}
           </button>
           <button className="di-key" type="button" onClick={() => goHash('/week')}>
-            Seven nights
+            {t('streaks.seven')}
           </button>
           <button className="di-key" type="button" onClick={() => goHash('/streaks')}>
-            Nights in a row
+            {t('streaks.title')}
           </button>
         </div>
         {book.quietMode || pips.length === 0 ? null : (
-          <ul className="di-pips" aria-label="Marks">
+          <ul className="di-pips" aria-label={t('stats.marksAria')}>
             {pips.map((item) => (
-              <li key={item.id}>{item.name}</li>
+              <li key={item.id}>{t(markText(item.id, 'name'))}</li>
             ))}
           </ul>
         )}

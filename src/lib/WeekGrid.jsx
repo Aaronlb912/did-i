@@ -2,6 +2,7 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { weekCell, weekLamps, weekNights } from './hall-pages.js'
+import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function WeekGrid({ book, now }) {
@@ -17,12 +18,12 @@ export function WeekGrid({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
-        <p className="di-face-plate">Seven nights</p>
-        <h2 className="di-page-title">Seven nights</h2>
+        <p className="di-face-plate">{t('streaks.seven')}</p>
+        <h2 className="di-page-title">{t('streaks.seven')}</h2>
         {lamps.length === 0 ? (
-          <p className="di-sit-line">Add a question first.</p>
+          <p className="di-sit-line">{t('streaks.empty')}</p>
         ) : (
-          <div className="di-week" role="table" aria-label="Seven nights">
+          <div className="di-week" role="table" aria-label={t('streaks.seven')}>
             <div className="di-week-head" role="row">
               <span className="di-week-name" />
               {nights.map((night) => (
@@ -61,7 +62,7 @@ export function WeekGrid({ book, now }) {
         )}
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/streaks')}>
-            Nights in a row
+            {t('streaks.title')}
           </button>
         </div>
       </section>

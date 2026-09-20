@@ -106,6 +106,37 @@ function paperBits(stage) {
   }))
 }
 
+function sparkBits(stage) {
+  const n = 6 + stage * 2
+  const bits = [{ id: 'flash', sparkFlash: true, delay: '0ms' }]
+  for (let i = 0; i < n; i += 1) {
+    bits.push({
+      id: `spark-${i}`,
+      spark: true,
+      rot: `${(360 / n) * i + (i % 2) * 9}deg`,
+      len: `${1.1 + (i % 4) * 0.28}rem`,
+      delay: `${30 + (i % 6) * 32}ms`,
+      tone: i % 3 === 0 ? 'gold' : i % 3 === 1 ? 'white' : 'lime',
+    })
+  }
+  if (stage >= 2) {
+    bits.push({ id: 'spark-ring', sparkRing: true, delay: '120ms', size: '2.6rem' })
+  }
+  if (stage >= 4) {
+    bits.push({ id: 'spark-ring-2', sparkRing: true, delay: '220ms', size: '4.2rem' })
+  }
+  return bits
+}
+
+function flipBits(stage) {
+  return Array.from({ length: stage }, (_, i) => ({
+    id: `flip-${i}`,
+    flip: true,
+    delay: `${i * 300}ms`,
+    hops: 2,
+  }))
+}
+
 function nightBits(stage) {
   const stars = STAR_SPOTS.slice(0, 4 + stage * 2).map((spot, i) => ({
     id: `star-${i}`,
@@ -183,6 +214,12 @@ function bitsFor(kind, pop) {
 
 function popsFor(kind, stage) {
   const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))
+  if (kind === 'spark') {
+    return [{ ox: '50%', oy: '44%', wait: '0ms', bits: sparkBits(n) }]
+  }
+  if (kind === 'flip') {
+    return [{ ox: '50%', oy: '52%', wait: '0ms', bits: flipBits(n) }]
+  }
   if (kind === 'tape') {
     return [{ ox: '50%', oy: '46%', wait: '0ms', bits: tapeBits(n) }]
   }
@@ -231,6 +268,8 @@ function popsFor(kind, stage) {
 }
 
 function holdFor(kind, pops) {
+  if (kind === 'spark') return 900
+  if (kind === 'flip') return 1200 + (pops - 1) * 300
   if (kind === 'night') return 2100
   if (kind === 'tape') return 1700
   if (kind === 'paper') return 2000
@@ -293,6 +332,19 @@ function Plane({ hop, wait, delay, from }) {
   )
 }
 
+function FlipCard({ wait, delay, hops }) {
+  return (
+    <b
+      className="di-flip-card"
+      data-hops={hops || 2}
+      style={{ animationDelay: `calc(${wait} + ${delay})` }}
+    >
+      <span className="di-flip-face is-front" />
+      <span className="di-flip-face is-back" />
+    </b>
+  )
+}
+
 function renderBit(burst, pop, bit) {
   const key = `${burst.key}-${bit.id}`
   const delay = `calc(${pop.wait} + ${bit.delay || '0ms'})`
@@ -301,6 +353,31 @@ function renderBit(burst, pop, bit) {
   }
   if (bit.plane) {
     return <Plane key={key} hop={bit.hop} wait={pop.wait} delay={bit.delay} from={bit.from} />
+  }
+  if (bit.flip) {
+    return <FlipCard key={key} wait={pop.wait} delay={bit.delay} hops={bit.hops} />
+  }
+  if (bit.sparkFlash) {
+    return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />
+  }
+  if (bit.sparkRing) {
+    return (
+      <i
+        key={key}
+        className="di-spark-ring"
+        style={{ '--sz': bit.size || '2.4rem', animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.spark) {
+    return (
+      <i
+        key={key}
+        className="di-spark-bit"
+        data-tone={bit.tone}
+        style={{ '--rot': bit.rot, '--len': bit.len, animationDelay: delay }}
+      />
+    )
   }
   if (bit.stamp) {
     return <Stamp key={key} wait={pop.wait} delay={bit.delay} rot={bit.rot} />
@@ -387,6 +464,15 @@ function renderBit(burst, pop, bit) {
   return null
 }
 
+function coatFromHall() {
+  if (typeof document === 'undefined') return { look: 'lime', theme: '' }
+  const hall = document.querySelector('.di-hall')
+  return {
+    look: hall?.getAttribute('data-look') || 'lime',
+    theme: hall?.getAttribute('data-theme') || '',
+  }
+}
+
 export function CheerBurst() {
   const reduce = useReduceMotion()
   const [burst, setBurst] = useState(null)
@@ -396,7 +482,10 @@ export function CheerBurst() {
       if (reduce) return
       const kind = event.detail?.kind || 'lime'
       const stage = event.detail?.stage || 1
-      setBurst({ kind, stage, pops: popsFor(kind, stage), key: Date.now() })
+      const coat = event.detail?.look
+        ? { look: event.detail.look, theme: event.detail.theme || coatFromHall().theme }
+        : coatFromHall()
+      setBurst({ kind, stage, pops: popsFor(kind, stage), key: Date.now(), ...coat })
     }
     window.addEventListener('did-i-cheer', onCheer)
     return () => window.removeEventListener('did-i-cheer', onCheer)
@@ -414,7 +503,14 @@ export function CheerBurst() {
   const fill = burst.kind === 'night' || burst.kind === 'rain' || burst.kind === 'bubble'
 
   return createPortal(
-    <div className="di-cheer" data-cheer={burst.kind} data-stage={burst.stage} aria-hidden="true">
+    <div
+      className="di-cheer"
+      data-cheer={burst.kind}
+      data-stage={burst.stage}
+      data-look={burst.look || 'lime'}
+      {...(burst.theme ? { 'data-theme': burst.theme } : {})}
+      aria-hidden="true"
+    >
       {burst.pops.map((pop, index) => (
         <span
           key={`${burst.key}-${index}`}

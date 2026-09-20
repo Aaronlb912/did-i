@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 
@@ -25,6 +26,29 @@ const PRIORITIES = ['high', 'normal', 'low']
 
 export function lampPriority(lamp) {
   return PRIORITIES.includes(lamp?.priority) ? lamp.priority : 'normal'
+}
+
+// High first, low last. Anything else keeps the order it came in.
+const PRIORITY_RANK = { high: 0, normal: 1, low: 2 }
+
+export function byPriority(rows) {
+  return [...rows]
+    .map((row, at) => ({ row, at }))
+    .sort((a, b) => {
+      const gap =
+        PRIORITY_RANK[lampPriority(a.row.lamp)] - PRIORITY_RANK[lampPriority(b.row.lamp)]
+      return gap || a.at - b.at
+    })
+    .map((item) => item.row)
+}
+
+// Low never buzzes. High gets a second nudge late if it is still open.
+export function lampBuzzes(lamp) {
+  return lampNotifyOn(lamp) && lampPriority(lamp) !== 'low'
+}
+
+export function lampNudgesLate(lamp) {
+  return lampBuzzes(lamp) && lampPriority(lamp) === 'high'
 }
 
 export function lampNotifyOn(lamp) {
@@ -172,33 +196,34 @@ export function normalizeBook(raw) {
   }
 }
 
+
 export function shortLabel(lamp) {
   const short = asString(lamp.short).trim()
   if (short) return short
   const question = asString(lamp.question).trim()
   const cleaned = question.replace(/^did i\s+/i, '').replace(/\?+$/, '').trim()
-  if (!cleaned) return 'Lamp'
+  if (!cleaned) return t('lamp.unnamed')
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
 }
 
 export function missLamp(lamp) {
-  if (!asString(lamp.question).trim()) return 'The question is empty.'
+  if (!asString(lamp.question).trim()) return 'hang.miss.empty'
   if (lamp.cadence === 'weekly' && !(lamp.weekdays && lamp.weekdays.length)) {
-    return 'A weekly question needs a weekday.'
+    return 'hang.miss.weekday'
   }
   if (lamp.cadence === 'monthly' && lamp.monthDay !== 'last' && !lamp.monthDay) {
-    return 'A monthly lamp needs a day.'
+    return 'hang.miss.monthDay'
   }
   if (lamp.cadence === 'every_n') {
     const n = Number(lamp.everyN)
-    if (!Number.isInteger(n) || n < 2) return 'Every N needs a number of 2 or more.'
+    if (!Number.isInteger(n) || n < 2) return 'hang.miss.everyN'
     if (!/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.everyNAnchor))) {
-      return 'Every N needs a start date.'
+      return 'hang.miss.everyNStart'
     }
   }
   const after = asString(lamp.askAfter).trim()
   if (after && !/^([01]\d|2[0-3]):[0-5]\d$/.test(after)) {
-    return 'Ask after has to be a time like 20:00, or blank.'
+    return 'hang.miss.askAfter'
   }
   return ''
 }
@@ -208,7 +233,7 @@ export function parseBookText(text) {
     const parsed = JSON.parse(text)
     return { ok: true, book: normalizeBook(parsed) }
   } catch {
-    return { ok: false, reason: 'That file is not a Did I copy.' }
+    return { ok: false, reason: 'settings.loadMiss' }
   }
 }
 
@@ -246,24 +271,23 @@ export function duplicateLamp(lamp, now = new Date()) {
   copy.archived = false
   const short = shortLabel(copy)
   if (!copy.short) copy.short = short
-  copy.short = `${copy.short} copy`
+  copy.short = `${copy.short} ${t('lamp.copySuffix')}`
   return copy
 }
 
 export function cadenceLine(lamp) {
-  if (lamp.cadence === 'daily') return 'Every day'
+  if (lamp.cadence === 'daily') return t('cadence.daily')
   if (lamp.cadence === 'weekly') {
-    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const days = (lamp.weekdays || []).map((day) => names[day]).filter(Boolean)
-    if (!days.length) return 'Weekly'
+    const days = (lamp.weekdays || []).map((day) => t(`hang.day.${day}`)).filter(Boolean)
+    if (!days.length) return t('cadence.weekly')
     return days.join(', ')
   }
   if (lamp.cadence === 'monthly') {
-    if (lamp.monthDay === 'last') return 'Last day of the month'
-    if (lamp.monthDay) return `Monthly on the ${lamp.monthDay}`
-    return 'Monthly'
+    if (lamp.monthDay === 'last') return t('cadence.monthlyLast')
+    if (lamp.monthDay) return t('cadence.monthlyOn', { day: lamp.monthDay })
+    return t('cadence.monthly')
   }
-  if (lamp.cadence === 'once') return 'Once'
-  if (lamp.cadence === 'every_n') return `Every ${lamp.everyN} days`
+  if (lamp.cadence === 'once') return t('cadence.once')
+  if (lamp.cadence === 'every_n') return t('cadence.everyN', { n: lamp.everyN })
   return lamp.cadence
 }

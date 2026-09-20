@@ -5,10 +5,11 @@ import {
   normalizeBook,
   sampleNowBoard,
 } from './lib/index.js'
-import { ACHIEVEMENTS, unlockAchievements } from './lib/achievements.js'
+import { unlockAchievements } from './lib/achievements.js'
 import { freshMarks, noteOpen } from './lib/daily.js'
 import {
   currentBook,
+  downloadShelf,
   dropBook,
   mergeSameTitles,
   parkEmptyTags,
@@ -19,6 +20,8 @@ import {
   writeShelf,
 } from './lib/board-shelf.js'
 import { commitBook, hangInto, takeDown } from './lib/board-ops.js'
+import { blankLamp } from './lib/board-json.js'
+import { isoDate } from './lib/recurrence.js'
 import {
   armLampPings,
   checkPings,
@@ -26,7 +29,8 @@ import {
   pingSupport,
   requestPings,
 } from './lib/notify.js'
-import { bootNative, isNativeHall, listenNativeShell, shareBook } from './lib/native.js'
+import { bootNative, isNativeHall, listenNativeShell, shareShelf } from './lib/native.js'
+import { startPush } from './lib/push.js'
 import { AllLamps } from './lib/AllLamps.jsx'
 import { Feed } from './lib/Feed.jsx'
 import { HangPage } from './lib/HangPage.jsx'
@@ -40,6 +44,7 @@ import { Streaks } from './lib/Streaks.jsx'
 import { WeekGrid } from './lib/WeekGrid.jsx'
 import { Calendar } from './lib/Calendar.jsx'
 import { About } from './lib/About.jsx'
+import { Privacy, Terms } from './lib/LegalDoc.jsx'
 import { Help } from './lib/Help.jsx'
 import { Ideas } from './lib/Ideas.jsx'
 import { Later } from './lib/Later.jsx'
@@ -48,8 +53,17 @@ import { FirstNight } from './lib/FirstNight.jsx'
 import { Marks } from './lib/Marks.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
 import { Welcome } from './lib/Welcome.jsx'
+import { GemShop } from './lib/GemShop.jsx'
 import { Shop } from './lib/Shop.jsx'
+import { ShopCheers } from './lib/ShopCheers.jsx'
+import { ShopLooks } from './lib/ShopLooks.jsx'
 import { Account } from './lib/Account.jsx'
+import { People } from './lib/People.jsx'
+import { Friends } from './lib/Friends.jsx'
+import { Family } from './lib/Family.jsx'
+import { Inbox } from './lib/Inbox.jsx'
+import { Sent } from './lib/Sent.jsx'
+import { Everyone } from './lib/Everyone.jsx'
 import { AppNav } from './lib/AppNav.jsx'
 import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { Collection } from './lib/Collection.jsx'
@@ -61,9 +75,10 @@ import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
 import { Read } from './site/Read.jsx'
 import { goHash, parseHash } from './site/hash.js'
+import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
-import { alignShelfPurse, spreadPurseFrom } from './lib/purse.js'
+import { alignShelfPurse, spreadPurseFrom, weeklyGemBump } from './lib/purse.js'
 import './lib/did-i.css'
 import './site/site.css'
 
@@ -105,6 +120,7 @@ function useRoute() {
 
   useEffect(() => {
     function onHash() {
+      syncNav()
       setRoute(parseHash())
     }
     window.addEventListener('hashchange', onHash)
@@ -142,20 +158,20 @@ export default function App() {
   function persist(nextShelf) {
     const now = new Date()
     const before = currentBook(shelf)
-    const mapped = nextShelf.boards.map((item) => {
+    const bumped = weeklyGemBump(nextShelf, shelf, now)
+    const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
       if (next.id === nextShelf.currentId) next = noteOpen(next, now)
       return unlockAchievements(next, now)
     })
-    const drafted = parkEmptyTags(mergeSameTitles({ ...nextShelf, boards: mapped }))
+    const drafted = parkEmptyTags(mergeSameTitles({ ...bumped, boards: mapped }))
     const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
     const written = writeShelf(spreadPurseFrom(drafted, current))
     const after = currentBook(written)
     if (after.id === before?.id) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
       if (news.length && !after.quietMode) {
-        const first = ACHIEVEMENTS.find((item) => item.id === news[0])
-        if (first) setMarkNote(first)
+        if (news[0]) setMarkNote({ id: news[0] })
       }
     }
     setShelf(written)
@@ -182,6 +198,13 @@ export default function App() {
       dest = hangInto(target, lamp, Boolean(source && source.id === target.id))
     }
     persist(putBook(next, commitBook(dest, when)))
+  }
+
+  // A Did I a friend sent, kept. It lands on the open tag as a normal question.
+  function keepSent(question) {
+    const text = String(question || '').trim()
+    if (!text) return
+    saveLamp(live, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(new Date()) })
   }
 
   function switchBoard(id) {
@@ -263,10 +286,11 @@ export default function App() {
   }
 
   async function sendCopy() {
+    const shelf = readShelf()
     try {
-      await shareBook(book)
+      await shareShelf(shelf)
     } catch {
-      // Desktop download still works from the tray.
+      downloadShelf(shelf)
     }
   }
 
@@ -305,28 +329,12 @@ export default function App() {
     document.addEventListener('visibilitychange', onWake)
     navigator.serviceWorker?.addEventListener('message', onMessage)
     pullAndMerge()
+    // Does nothing until Firebase is set up. See docs/push.md.
+    startPush((where) => goHash(where))
     const stop = listenNativeShell({
       onBack() {
-        const now = parseHash()
-        if (now.path === '/welcome') {
-          markWelcomeSeen()
-          const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
-          goHash(empty ? '/first' : '/')
-          return
-        }
-        if (now.path === '/enter') {
-          if (!needsEnter(book)) goHash('/')
-          return
-        }
-        if (now.path === '/first') {
-          goHash('/')
-          return
-        }
-        if (SITE.has(now.path) || !HOME.has(now.path)) {
-          goHash('/')
-          return
-        }
-        window.dispatchEvent(new CustomEvent('did-i-back'))
+        const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
+        goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {
         openHall(lampId || '')
@@ -368,24 +376,29 @@ export default function App() {
       '/welcome': t('title.door'),
       '/pings': t('title.pings'),
       '/help': t('title.help'),
+      '/privacy': t('title.privacy'),
+      '/terms': t('title.terms'),
       '/ideas': t('title.ideas'),
       '/later': t('title.later'),
       '/first': t('title.first'),
       '/marks': t('title.marks'),
       '/shop': t('title.shop'),
+      '/shop/looks': t('title.shopLooks'),
+      '/shop/cheers': t('title.shopCheers'),
+      '/gems': t('title.gems'),
       '/kit': t('title.kit'),
       '/account': t('title.account'),
+      '/everyone': t('title.everyone'),
     }
     document.title = titles[view] || t('title.home', { board })
   }, [view, book, prefs])
 
   const pingLabel = pingButtonLabel(pingState)
-  const installLabel = installEvent ? 'Install' : ''
   const hallProps = {
     pingLabel,
     onAskPings: pingLabel ? askPings : undefined,
-    installLabel,
     onInstall: installEvent ? installHall : undefined,
+    onImport: (next) => persist(next),
     onStartEmpty: () =>
       change({
         ...emptyBoard(),
@@ -394,6 +407,7 @@ export default function App() {
         keeperName: live.keeperName,
       }),
     onLoadDemo: openDemo,
+    onSendCopy: sendCopy,
   }
 
   let inner = null
@@ -438,6 +452,10 @@ export default function App() {
     inner = <About book={live} />
   } else if (path === '/help') {
     inner = <Help book={live} />
+  } else if (path === '/privacy') {
+    inner = <Privacy book={live} />
+  } else if (path === '/terms') {
+    inner = <Terms book={live} />
   } else if (path === '/ideas') {
     inner = <Ideas book={live} />
   } else if (path === '/later') {
@@ -445,11 +463,29 @@ export default function App() {
   } else if (path === '/marks') {
     inner = <Marks book={live} />
   } else if (path === '/shop') {
-    inner = <Shop book={live} onChange={change} />
+    inner = <Shop book={live} />
+  } else if (path === '/shop/looks') {
+    inner = <ShopLooks book={live} onChange={change} />
+  } else if (path === '/shop/cheers') {
+    inner = <ShopCheers book={live} onChange={change} />
+  } else if (path === '/gems') {
+    inner = <GemShop book={live} />
   } else if (path === '/kit') {
     inner = <Collection book={live} onChange={change} />
   } else if (path === '/account') {
     inner = <Account book={live} onChange={change} />
+  } else if (path === '/people') {
+    inner = <People book={live} onChange={change} />
+  } else if (path === '/friends') {
+    inner = <Friends book={live} onChange={change} />
+  } else if (path === '/family') {
+    inner = <Family book={live} onChange={change} familyId={route.id} />
+  } else if (path === '/inbox') {
+    inner = <Inbox book={live} onKeep={keepSent} />
+  } else if (path === '/sent') {
+    inner = <Sent book={live} />
+  } else if (path === '/everyone') {
+    inner = <Everyone book={live} boards={shelf.boards} onChange={change} />
   } else if (path === '/add' || path === '/hang') {
     inner = (
       <HangPage

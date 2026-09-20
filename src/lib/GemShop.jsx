@@ -1,0 +1,114 @@
+import { useState } from 'react'
+import { goHash } from '../site/hash.js'
+import { BoardShell } from './BoardShell.jsx'
+import { devicePlatform } from './account.js'
+import { startGemPurchase, webGemShopReady, webGemShopUrl } from './gem-buy.js'
+import { formatUsd, GEM_PACKS } from './gem-packs.js'
+import { t } from './i18n.js'
+import { usePrefs } from './prefs.js'
+import { GemIcon, PurseBits } from './PurseIcons.jsx'
+import { normalizePurse } from './purse.js'
+import { LegalLinks } from './LegalLinks.jsx'
+import { boardDate, formatBoardDate } from './recurrence.js'
+
+function gemLine(n) {
+  return n === 1 ? t('shop.gemOne') : t('shop.gems', { n })
+}
+
+function gemMiss(code) {
+  if (code === 'signin') return t('gems.needSignIn')
+  if (code === 'store') return t('gems.storeSoon')
+  if (code === 'setup') return t('gems.setup')
+  return t('gems.setup')
+}
+
+export function GemShop({ book, now }) {
+  usePrefs()
+  const clock = now || new Date()
+  const purse = normalizePurse(book)
+  const [miss, setMiss] = useState('')
+  const [note, setNote] = useState('')
+
+  async function buy(packId) {
+    setMiss('')
+    setNote('')
+    const out = await startGemPurchase(packId)
+    if (out.miss === 'signin') {
+      goHash('/account')
+      return
+    }
+    if (out.miss) {
+      setMiss(gemMiss(out.miss))
+      return
+    }
+    setNote(out.web ? t('gems.webReturn') : t('gems.return'))
+  }
+
+  return (
+    <BoardShell
+      book={book}
+      now={clock}
+      title={t('gems.title')}
+      date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
+    >
+      <section className="di-page di-gems di-set">
+        <h2 className="di-page-title">{t('gems.title')}</h2>
+
+        <p className="di-shop-purse">
+          <PurseBits purse={purse} />
+        </p>
+        <p className="di-set-note">{t('gems.hint')}</p>
+
+        {webGemShopReady() &&
+        (devicePlatform() === 'android' || devicePlatform() === 'ios') ? (
+          <div className="di-hang-actions">
+            <button
+              className="di-key"
+              type="button"
+              onClick={() => window.open(webGemShopUrl(), '_blank', 'noopener,noreferrer')}
+            >
+              {t('gems.openWeb')}
+            </button>
+            <p className="di-set-note">{t('gems.webHint')}</p>
+          </div>
+        ) : null}
+
+        <div className="di-set-card di-shop-card di-gem-packs">
+          {GEM_PACKS.map((pack) => {
+            const each = formatUsd(Math.round(pack.cents / pack.gems))
+            return (
+              <div className="di-shop-row di-gem-pack" key={pack.id}>
+                <span className="di-gem-pack-mark" aria-hidden="true">
+                  <GemIcon className="di-gem-icon di-gem-icon-pack" />
+                  <span className="di-gem-pack-n">{pack.gems}</span>
+                </span>
+                <span className="di-shop-copy">
+                  <strong>{gemLine(pack.gems)}</strong>
+                  <em>
+                    {formatUsd(pack.cents)}
+                    {pack.save ? ` · ${t('gems.save', { n: pack.save })}` : ''}
+                    {' · '}
+                    {t('gems.each', { price: each })}
+                  </em>
+                </span>
+                <button className="di-did di-did-small" type="button" onClick={() => buy(pack.id)}>
+                  {t('gems.buy')}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <p className="di-set-note">{t('gems.earn')}</p>
+        <LegalLinks leadKey="legal.gemLead" />
+
+        {note ? <p className="di-set-note">{note}</p> : null}
+        {miss ? (
+          <p className="di-miss" role="alert">
+            {miss}
+          </p>
+        ) : null}
+      </section>
+    </BoardShell>
+  )
+}

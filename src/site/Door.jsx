@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n.js'
 import { SiteNav } from './SiteNav.jsx'
 
 export function Door({ hasBoard, title, canInstall, onInstall }) {
@@ -6,33 +7,24 @@ export function Door({ hasBoard, title, canInstall, onInstall }) {
       <SiteNav path="/door" />
       <main className="di-door">
         <section className="di-door-plate">
-          <p className="di-face-plate">By the door</p>
-          <h1 className="di-question">Did I lock the back door?</h1>
-          <p>
-            Did I is the unanswered question for tonight. One on the plate. Hit
-            DID if you did it. Hit nope if tonight is not that night.
-          </p>
-          <p>
-            Home says what is left. Tonight is where you tap DID or nope.
-            Tags group questions. The cog is settings.
-          </p>
-          <p>
-            No account. This browser keeps your questions. Hayes Street is a
-            made-up apartment if you want a full set to try first.
-          </p>
+          <p className="di-face-plate">{t('site.door.kicker')}</p>
+          <h1 className="di-question">{t('site.door.title')}</h1>
+          <p>{t('site.door.p1')}</p>
+          <p>{t('site.door.p2')}</p>
+          <p>{t('site.door.p3')}</p>
           <p className="di-door-actions">
             <a className="di-did di-did-small di-link-did" href="#/">
-              {hasBoard ? `Open ${title}` : 'Open the home screen'}
+              {hasBoard ? t('site.door.openBoard', { board: title }) : t('site.door.openHome')}
             </a>
             <a className="di-skip" href="#/read">
-              How to use it
+              {t('site.door.how')}
             </a>
             <a className="di-skip" href="#/name">
-              Name this phone
+              {t('site.door.namePhone')}
             </a>
             {canInstall && onInstall ? (
               <button className="di-skip" type="button" onClick={onInstall}>
-                Install
+                {t('settings.install')}
               </button>
             ) : null}
           </p>

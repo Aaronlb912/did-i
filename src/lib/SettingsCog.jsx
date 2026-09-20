@@ -1,8 +1,10 @@
 import { parseHash } from '../site/hash.js'
+import { useAccount } from './account.js'
 import { t } from './i18n.js'
+import { usePeopleCount } from './people.js'
 import { usePrefs } from './prefs.js'
 
-const SETTINGS_ON = ['/settings', '/pings', '/about', '/help']
+const SETTINGS_ON = ['/settings', '/pings', '/about', '/help', '/privacy', '/terms']
 
 export function ShopCog() {
   usePrefs()
@@ -34,6 +36,30 @@ export function KitCog() {
   )
 }
 
+const PEOPLE_ON = ['/people', '/friends', '/family', '/inbox', '/sent']
+
+export function PeopleCog({ waiting = 0 }) {
+  usePrefs()
+  const on = PEOPLE_ON.includes(parseHash().path)
+  return (
+    <a
+      className={on ? 'di-cog di-cog-people is-on' : 'di-cog di-cog-people'}
+      href="#/people"
+      aria-label={
+        waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog')
+      }
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.33 0-7 1.67-7 4v2h14v-2c0-2.33-3.67-4-7-4Zm8.25.5c-.6 0-1.17.05-1.7.14 1.2.84 1.95 1.94 1.95 3.36V19h5v-1.75c0-2.07-3.1-3.75-5.25-3.75Z"
+        />
+      </svg>
+      {waiting ? <i className="di-cog-pip" aria-hidden="true" /> : null}
+    </a>
+  )
+}
+
 export function SettingsCog() {
   usePrefs()
   const on = SETTINGS_ON.includes(parseHash().path)
@@ -50,8 +76,11 @@ export function SettingsCog() {
 }
 
 export function MastCogs() {
+  const account = useAccount()
+  const waiting = usePeopleCount(account.user)
   return (
     <div className="di-mast-tools">
+      <PeopleCog waiting={waiting} />
       <ShopCog />
       <KitCog />
       <SettingsCog />

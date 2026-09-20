@@ -142,6 +142,52 @@ export function playClick() {
   }
 }
 
+// Nobody retypes a ten character code correctly. Hand it off instead.
+export async function passAlong(text, title) {
+  const line = String(text || '')
+  if (!line) return ''
+  try {
+    if (isNativeHall()) {
+      await Share.share({ title: title || 'Did I', text: line, dialogTitle: title || 'Did I' })
+      return 'shared'
+    }
+    if (navigator.share) {
+      await navigator.share({ title: title || 'Did I', text: line })
+      return 'shared'
+    }
+  } catch {
+    // They closed the sheet, or the browser will not do it. Copy instead.
+  }
+  try {
+    await navigator.clipboard.writeText(line)
+    return 'copied'
+  } catch {
+    return ''
+  }
+}
+
+export async function shareShelf(shelf) {
+  const stamp = boardDate(new Date(), 4)
+  const text = JSON.stringify(shelf, null, 2)
+  if (isNativeHall()) {
+    await Share.share({
+      title: 'Did I',
+      text,
+      dialogTitle: `did-i-${stamp}.json`,
+    })
+    return
+  }
+  const blob = new Blob([text], { type: 'application/json' })
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], `did-i-${stamp}.json`, { type: 'application/json' })
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Did I' })
+      return
+    }
+  }
+  throw new Error('share-unavailable')
+}
+
 export async function shareBook(book) {
   const stamp = boardDate(new Date(), book.dayFoldHour)
   const slug =

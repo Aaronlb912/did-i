@@ -1,5 +1,5 @@
 import { goHash } from '../site/hash.js'
-import { ACHIEVEMENTS } from './achievements.js'
+import { ACHIEVEMENTS, markText } from './achievements.js'
 import { BoardShell } from './BoardShell.jsx'
 import { HeatPips } from './HeatPips.jsx'
 import { hallHeat } from './hall-feel.js'
@@ -23,25 +23,26 @@ export function Marks({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page di-marks">
-        <p className="di-face-plate">Marks</p>
+        <p className="di-face-plate">{t('marks.kicker')}</p>
         <h2 className="di-page-title">{t('marks.title')}</h2>
         <p className="di-detail-meta">
-          Streak is {heat} of 5. {shown === 1 ? 'Shown up 1 night.' : `Shown up ${shown} nights.`}
+          {t('marks.streak', { n: heat })}{' '}
+          {shown === 1 ? t('marks.shownOne') : t('marks.shownN', { n: shown })}
         </p>
         <HeatPips heat={heat} />
 
         {book.quietMode ? (
-          <p className="di-detail-meta">Marks are hidden in Settings. They still unlock.</p>
+          <p className="di-detail-meta">{t('marks.hidden')}</p>
         ) : (
-          <ul className="di-mark-list" aria-label="Marks">
+          <ul className="di-mark-list" aria-label={t('marks.aria')}>
             {ACHIEVEMENTS.map((item) => {
               const on = have.has(item.id)
               return (
                 <li key={item.id} className={on ? 'is-on' : 'is-hole'}>
                   <span className="di-mark-pip" aria-hidden="true" />
                   <span>
-                    <strong>{on ? item.name : 'Not yet'}</strong>
-                    <em>{on ? item.line : item.name}</em>
+                    <strong>{on ? t(markText(item.id, 'name')) : t('marks.notYet')}</strong>
+                    <em>{on ? t(markText(item.id, 'line')) : t(markText(item.id, 'name'))}</em>
                   </span>
                 </li>
               )
@@ -51,10 +52,10 @@ export function Marks({ book, now }) {
 
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/')}>
-            Home
+            {t('marks.home')}
           </button>
           <button className="di-key" type="button" onClick={() => goHash('/stats')}>
-            So far
+            {t('marks.stats')}
           </button>
         </div>
       </section>

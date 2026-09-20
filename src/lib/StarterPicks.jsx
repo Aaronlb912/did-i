@@ -1,10 +1,11 @@
+import { t } from './i18n.js'
 import { hangStarter, unusedStarters } from './starters.js'
 
 export function StarterPicks({
   book,
   onChange,
   now,
-  label = 'Start with one of these',
+  label = t('first.picks'),
   readyNow = false,
 }) {
   const clock = now || new Date()

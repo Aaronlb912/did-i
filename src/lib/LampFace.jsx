@@ -6,18 +6,22 @@ import { answerFor } from './recurrence.js'
 import { useReduceMotion } from './useReduceMotion.js'
 
 const THRESHOLD = 72
+// A shorter pull. Lifting a card takes more effort than shoving it.
+const UP_THRESHOLD = 56
 
-export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
+export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickHole }) {
   usePrefs()
   const reduce = useReduceMotion()
   const drag = useRef(null)
   const [dx, setDx] = useState(0)
+  const [dy, setDy] = useState(0)
   const [mode, setMode] = useState('')
   const lampId = row?.lamp?.id
   const periodKey = row?.periodKey
 
   useEffect(() => {
     setDx(0)
+    setDy(0)
     setMode('')
     drag.current = null
   }, [lampId, periodKey])
@@ -26,16 +30,18 @@ export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
   const { lamp } = row
   const hasHistory = (keys || []).some((key) => answerFor(book, lamp.id, key))
   const pull = Math.max(-1, Math.min(1, dx / THRESHOLD))
+  const lift = Math.max(0, Math.min(1, -dy / UP_THRESHOLD))
 
   function finish(way) {
     if (mode === 'fly') return
     setMode('fly')
-    const go = way === 'did' ? onYes : onSkip
+    const go = way === 'did' ? onYes : way === 'later' ? () => onLater(row) : onSkip
     if (reduce) {
       go()
       return
     }
-    setDx(way === 'did' ? 460 : -460)
+    if (way === 'later') setDy(-520)
+    else setDx(way === 'did' ? 460 : -460)
     window.setTimeout(go, 180)
   }
 
@@ -60,33 +66,47 @@ export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
     const my = event.clientY - start.y
     if (!start.live) {
       if (Math.abs(mx) < 10 && Math.abs(my) < 10) return
+      // Up is later tonight. Down is left alone so the card can still
+      // scroll when the question and its week do not fit.
       if (Math.abs(my) > Math.abs(mx)) {
-        drag.current = null
-        return
+        if (my > 0 || !onLater) {
+          drag.current = null
+          return
+        }
+        start.way = 'up'
       }
       start.live = true
       setMode('drag')
     }
     start.mx = mx
+    start.my = my
     event.preventDefault()
-    setDx(mx)
+    if (start.way === 'up') setDy(Math.min(0, my))
+    else setDx(mx)
   }
 
   function onPointerUp(event) {
     const start = drag.current
     if (!start || start.id !== event.pointerId) return
     const moved = start.mx || 0
+    const lifted = start.my || 0
+    const way = start.way
     drag.current = null
     if (mode === 'fly') return
-    if (start.live && moved >= THRESHOLD) {
+    if (start.live && way === 'up' && lifted <= -UP_THRESHOLD) {
+      finish('later')
+      return
+    }
+    if (start.live && way !== 'up' && moved >= THRESHOLD) {
       finish('did')
       return
     }
-    if (start.live && moved <= -THRESHOLD) {
+    if (start.live && way !== 'up' && moved <= -THRESHOLD) {
       finish('nope')
       return
     }
     setDx(0)
+    setDy(0)
     setMode('')
   }
 
@@ -95,7 +115,7 @@ export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
       className={mode ? `di-face di-swipe is-${mode}` : 'di-face di-swipe'}
       aria-labelledby="di-question"
       style={{
-        transform: `translateX(${dx}px)${reduce ? '' : ` rotate(${dx / 42}deg)`}`,
+        transform: `translate(${dx}px, ${dy}px)${reduce ? '' : ` rotate(${dx / 42}deg)`}`,
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -108,7 +128,18 @@ export function LampFace({ row, onYes, onSkip, book, tag, keys, onPickHole }) {
       <p className="di-swipe-stamp is-nope" style={{ opacity: Math.max(0, -pull) }}>
         {t('tonight.swipeNope')}
       </p>
-      <p className="di-face-plate">{tag || t('tonight.didI')}</p>
+      {onLater ? (
+        <p className="di-swipe-stamp is-later" style={{ opacity: lift }}>
+          {t('tonight.later')}
+        </p>
+      ) : null}
+      {/* The tag sits where the DID stamp lands, so it steps aside on a pull. */}
+      <p
+        className="di-face-plate"
+        style={{ opacity: 1 - Math.max(Math.min(1, Math.abs(pull)), lift) }}
+      >
+        {tag || t('tonight.didI')}
+      </p>
       <h2 id="di-question" className="di-question">
         {lamp.question}
       </h2>

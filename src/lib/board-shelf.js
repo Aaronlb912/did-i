@@ -1,4 +1,5 @@
 import { emptyBoard, normalizeBook } from './board-json.js'
+import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 
@@ -22,7 +23,8 @@ export function normalizeShelf(raw) {
   const currentId = boards.some((book) => book.id === source.currentId)
     ? source.currentId
     : boards[0].id
-  return parkEmptyTags(mergeSameTitles({ currentId, boards }))
+  const gemWeek = String(source.gemWeek || '').trim()
+  return parkEmptyTags(mergeSameTitles({ currentId, boards, gemWeek }))
 }
 
 export function liveLampCount(book) {
@@ -62,6 +64,19 @@ export function writeShelf(shelf, savedAt) {
   else if (changed || !readSavedAt()) stampSavedAt()
   saveBoardForSw(currentBook(next))
   return next
+}
+
+export function downloadShelf(shelf) {
+  const blob = new Blob([JSON.stringify(shelf, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const stamp = new Date().toISOString().slice(0, 10)
+  link.href = url
+  link.download = `did-i-${stamp}.json`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
 export function readShelf() {
@@ -173,8 +188,9 @@ export function dropBook(shelf, id) {
 
 export function nextBoardTitle(boards) {
   const used = new Set((boards || []).map((book) => book.title))
-  if (!used.has('Tag')) return 'Tag'
+  const base = t('tags.default')
+  if (!used.has(base)) return base
   let n = 2
-  while (used.has(`Tag ${n}`)) n += 1
-  return `Tag ${n}`
+  while (used.has(t('tags.defaultN', { n }))) n += 1
+  return t('tags.defaultN', { n })
 }

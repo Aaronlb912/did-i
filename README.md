@@ -1,80 +1,99 @@
 # Did I
 
-For the question you keep asking tonight. Did I take the
-evening pills. Did I lock the back door. Tap DID. Nope if
-it is not that night.
+For the question you keep asking tonight. Did I take the evening pills.
+Did I lock the back door. Tap DID. Nope if it is not that night.
 
-No account. This phone keeps the list. Collaborators clone
-from GitHub:
+No account required to start. This phone keeps the list. Add an account
+when you want friends, family, and sync.
 
 https://github.com/Aaronlb912/did-i
 
 ## What you get
 
-Tags hold the questions. Extra tags do not cost coins.
-Tonight is the tap. Shop, coins, gems, cheer, and streak
-are in the app. No real money.
+- Tags hold the questions. Extra tags do not cost coins.
+- Tonight is the tap. Home says what is left.
+- Shop: coin looks, gem cheers, streak, marks.
+- People: friends, families, Did I sends, inbox.
+- Did I tonight: opt-in public list, three lines a night.
+- Eight languages in Settings.
+- PWA: install from Chrome or Settings. Works offline on the web.
+- Android app: same UI, local reminders, push when signed in.
 
-First visit is a few short plates, then a name on this
-phone. Bottom keys: Home and Questions.
-
-Chrome can install this from the address bar, or from
-Install on Settings when the browser offers it. After that
-it works offline. Remind when it is due is on Settings.
-Pings use this browser, not a server. They fire if the app
-was opened today. Android and desktop Chrome first. An
-iPhone can install. Pings there are weak.
-
-Settings: Click when I hit DID is a short click, off by
-default. Hide badges still hides the little marks. Number
-lock is optional and stays on this phone. Settings can load
-Hayes Street, or add test tags: Practice night, Shop try,
-and Try now.
-
-## Run it locally
-
-Node is enough for the browser app.
+## Run locally
 
 ```
 npm install
 npm start
 ```
 
-Vite serves it on port 48741.
+Vite serves on port 48741: http://127.0.0.1:48741/
+
+```
+npm run check
+```
+
+Runs tests and the night-math bench (must stay under 6 ms).
+
+## Accounts and the cloud
+
+Copy `.env.example` to `.env.local` and set:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Without those, the app is local-only. With them, Account in Settings
+offers email sign-in, sync, friends, and family.
+
+To apply the database from the terminal (needs `SUPABASE_ACCESS_TOKEN` in
+`.env.local`):
+
+```
+npm run db:apply:all
+```
+
+Then run `supabase/audit.sql` in the SQL editor. It must return no rows.
+Full steps: `docs/running-it.md`.
+
+## Web hosting (GitHub Pages)
+
+Push to `main` deploys through `.github/workflows/pages.yml` when Pages
+is enabled on the repo. Local build:
+
+```
+npm run build:pages
+```
+
+Set `VITE_WEB_APP_URL` in `.env.local` to that public URL so the Android
+app can open gem checkout in the browser.
 
 ## Android
 
-Same list, wrapped with Capacitor. App id
-`com.aaronbryant.didi`.
-
-Needs JDK 21 and the Android SDK (platform 36, build-tools
-36). Set `JAVA_HOME` to the JDK 21 folder, then:
+App id `com.aaronbryant.didi`. Needs JDK 21 and Android SDK (platform 36).
 
 ```
 npm run cap:apk
 ```
 
-That builds the web app, syncs it into Android, and makes a
-debug APK at
-`android/app/build/outputs/apk/debug/app-debug.apk`.
-Copy that file to a phone and install it. The APK itself is
-not in git.
+Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-If you already have an emulator or a phone on adb:
+Install on a connected phone:
 
 ```
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.aaronbryant.didi/.MainActivity
 ```
 
-First open is the home screen after you put your name on
-this phone. Remind when it is due is on Settings. That ping
-does not need a browser tab left open.
+Push needs Firebase (`android/app/google-services.json`) and a signed-in
+account. See `docs/push.md`.
+
+## Gem purchases
+
+Web checkout uses Stripe Payment Links (`VITE_STRIPE_PACK_*` in
+`.env.local`). Deploy the webhook per `docs/running-it.md`. On Android,
+gem packs open the web shop until Play Billing ships.
 
 ## Drop into a React app
 
-Copy `src/lib/` into your `src/`. Site pages stay in
-`src/site/` and are not part of the drop-in.
+Copy `src/lib/` into your `src/`. Site pages stay in `src/site/`.
 
 ```
 import { Tonight, sampleBoard, emptyBoard } from './lib'
@@ -83,27 +102,41 @@ import { Tonight, sampleBoard, emptyBoard } from './lib'
 ```
 
 `Tonight` does not write localStorage. Persist in the host.
-Pass `now` if you need a frozen clock.
-
-Old JSON still loads. New fields fill in blank. `inkNote` is
-one of those. `clickSound` is another.
 
 ## Sample
 
-Hayes Street, apt 3. Jordan Hale, jordan@hayes-street.example.
-Evening pills, back door, Sunday bins, water bill, fern, lease
-paper. Settings, Enter, or Name loads it. It is not the
-starting list.
+Hayes Street, apt 3. Settings can load it, or add test tags from
+Settings for shop and streak practice.
 
-## Unfinished
+## Website (did-i.app)
 
-iOS needs a Mac and Xcode. There is no iOS binary in this
-repo.
+| URL | Page |
+|-----|------|
+| `/` | Landing |
+| `/app` | The app |
+| `/privacy` | Privacy Policy |
+| `/terms` | Terms of Use |
 
-The debug APK is not in git. Build it with `npm run cap:apk`.
+Local dev: http://127.0.0.1:48741/ for the site, `/app` for the app.
 
-`npm run expo` is leftover Expo wiring. Expo Go is not the
-phone app. The Android binary is Capacitor.
+Deploy needs SPA fallback (`public/_redirects` is included for Netlify-style
+hosts). Point `did-i.app` at the built `dist/` folder.
 
-No live server. Data stays on the device. Ship screenshots
-and a public demo only when asked.
+## Legal
+
+Privacy and Terms are on the site at `/privacy` and `/terms`, and inside
+the app under Settings, Legal.
+
+Set `VITE_LEGAL_EMAIL` in `.env.local` before other people sign up. See
+`docs/legal.md`. Have a lawyer review the text for your jurisdiction.
+
+## Unfinished (needs your accounts, not code)
+
+- **Mail.** Sign-in codes need custom SMTP in Supabase. Built-in mail
+  is two sends an hour and lands in spam. Steps in `docs/running-it.md`.
+- **Push on a real phone.** Server side is live; needs a signed-in device
+  to prove end to end. See `docs/push.md`.
+- **iOS.** Needs a Mac, Xcode, and Apple Developer account. No `ios/`
+  folder on this Windows machine.
+- **Play Store release.** Debug APK builds here. Release signing and Play
+  Billing are separate steps in `docs/running-it.md`.

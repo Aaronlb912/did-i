@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../lib/i18n.js'
 import { SiteNav } from './SiteNav.jsx'
 
 export function NameBoard({
@@ -16,7 +17,7 @@ export function NameBoard({
   function empty() {
     const title = name.trim()
     if (!title) {
-      setMiss('This needs a name.')
+      setMiss(t('site.name.miss'))
       return
     }
     setMiss('')
@@ -28,19 +29,15 @@ export function NameBoard({
       <SiteNav path="/name" />
       <main className="di-door">
         <section className="di-door-plate">
-          <p className="di-face-plate">This browser</p>
-          <h1 className="di-question">Name this phone.</h1>
-          <p>
-            Your questions stay on this computer. There is no email and no
-            password. Try a demo if you want to tap around without writing
-            questions first.
-          </p>
+          <p className="di-face-plate">{t('site.name.kicker')}</p>
+          <h1 className="di-question">{t('site.name.title')}</h1>
+          <p>{t('site.name.body')}</p>
           <label className="di-field">
-            <span>Tag name</span>
+            <span>{t('site.name.label')}</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Home"
+              placeholder={t('hang.tagPh')}
             />
           </label>
           {miss ? (
@@ -51,14 +48,14 @@ export function NameBoard({
           <p className="di-door-actions">
             {hasBoard ? (
               <button className="di-did di-did-small" type="button" onClick={onOpenHere}>
-                Open {currentTitle}
+                {t('site.name.openBoard', { board: currentTitle })}
               </button>
             ) : null}
             <button className="di-did di-did-small" type="button" onClick={onOpenSample}>
-              Try a demo
+              {t('settings.demo')}
             </button>
             <button className="di-skip" type="button" onClick={empty}>
-              Start empty
+              {t('site.name.startEmpty')}
             </button>
           </p>
         </section>

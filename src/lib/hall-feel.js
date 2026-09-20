@@ -1,5 +1,6 @@
 import { addDaysIso, allClearTonight, boardDate, dueTonight, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
+import { LOOKS_LATE, wallClock } from './zone.js'
 
 function noonOn(iso) {
   const date = parseIsoDate(iso)
@@ -65,7 +66,7 @@ export function filamentLevel(book, lampId) {
 }
 
 export function hallHour(now = new Date()) {
-  const hour = now.getHours()
-  if (hour >= 20 || hour < 4) return 'night'
+  const hour = wallClock(now).getHours()
+  if (hour >= 20 || hour < LOOKS_LATE) return 'night'
   return 'day'
 }

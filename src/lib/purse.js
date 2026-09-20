@@ -1,24 +1,61 @@
 import { allClearTonight, boardDate } from './recurrence.js'
 
+// One price for every cheer while the economy is still being tuned.
+export const CHEER_GEMS = 5
+// ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
+export const LOOK_COIN_PRICE = 30
+
 export const CHEERS = [
-  { id: 'lime', name: 'Lime', line: 'Rings bloom from the tap.', gems: 0 },
-  { id: 'tape', name: 'Tape', line: 'Strips whip in from the sides.', gems: 2 },
-  { id: 'paper', name: 'Paper', line: 'A plane folds and flies.', gems: 3 },
-  { id: 'boom', name: 'Boom', line: 'A mortar and colored rings.', gems: 4 },
-  { id: 'night', name: 'Night', line: 'Moon up. Stars stay put.', gems: 5 },
-  { id: 'dance', name: 'Dance', line: 'Little people hop.', gems: 6 },
-  { id: 'stamp', name: 'Stamp', line: 'A DID stamp slams.', gems: 7 },
-  { id: 'rain', name: 'Rain', line: 'Drops fall. A puddle stays a beat.', gems: 8 },
-  { id: 'check', name: 'Check', line: 'A tick draws itself.', gems: 9 },
-  { id: 'bubble', name: 'Bubble', line: 'Bubbles rise and pop.', gems: 10 },
+  { id: 'lime', gems: 0 },
+  { id: 'tape', gems: CHEER_GEMS },
+  { id: 'paper', gems: CHEER_GEMS },
+  { id: 'boom', gems: CHEER_GEMS },
+  { id: 'night', gems: CHEER_GEMS },
+  { id: 'dance', gems: CHEER_GEMS },
+  { id: 'stamp', gems: CHEER_GEMS },
+  { id: 'rain', gems: CHEER_GEMS },
+  { id: 'check', gems: CHEER_GEMS },
+  { id: 'bubble', gems: CHEER_GEMS },
+  { id: 'spark', gems: CHEER_GEMS },
+  { id: 'flip', gems: CHEER_GEMS },
 ]
 
 export const LOOKS = [
-  { id: 'lime', name: 'Lime', line: 'The one you start with.', coins: 0 },
-  { id: 'ink', name: 'Ink', line: 'Quieter green.', coins: 8 },
-  { id: 'brass', name: 'Brass', line: 'Warm pips.', coins: 16 },
-  { id: 'night', name: 'Night', line: 'Darker plate.', coins: 24 },
+  { id: 'lime', coins: 0, gems: 0 },
+  { id: 'ink', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'brass', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'night', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'moss', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'plum', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'rose', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'steel', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'wine', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'glow', coins: 0, gems: 4 },
+  { id: 'ember', coins: 0, gems: 4 },
+  { id: 'frost', coins: 0, gems: 4 },
+  { id: 'pulse', coins: 0, gems: 4 },
 ]
+
+export function cheerText(id, field) {
+  return `cheer.${id}.${field}`
+}
+
+export function lookText(id, field) {
+  return `look.${id}.${field}`
+}
+
+export function recentLooks(count = 2) {
+  const n = Math.max(1, Math.floor(Number(count) || 2))
+  return LOOKS.slice(-n)
+}
+
+export function recentCheers(count = 2) {
+  const n = Math.max(1, Math.floor(Number(count) || 2))
+  return CHEERS.slice(-n)
+}
+
+export const FRIEND_CHEER_GEMS = 1
+export const FAMILY_CHEER_GEMS = 1
 
 export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
@@ -188,6 +225,43 @@ function tapsPaidTonight(book, clock) {
   }).length
 }
 
+export function gemWeekKey(clock = new Date(), dayFoldHour = 0) {
+  const date = boardDate(clock, dayFoldHour)
+  const [y, m, d] = date.split('-').map(Number)
+  const utc = new Date(Date.UTC(y, m - 1, d))
+  const dayNum = utc.getUTCDay() || 7
+  utc.setUTCDate(utc.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7)
+  return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+}
+
+// One gem per week, the first night you clear. shelf.gemWeek remembers.
+export function weeklyGemBump(shelf, prevShelf, clock = new Date()) {
+  if (!shelf?.boards?.length) return shelf
+  const fold = shelf.boards.find((b) => b.id === shelf.currentId)?.dayFoldHour ?? 0
+  const week = gemWeekKey(clock, fold)
+  if ((shelf.gemWeek || prevShelf?.gemWeek || '') === week) return shelf
+
+  const prevMap = new Map((prevShelf?.boards || []).map((b) => [b.id, b]))
+  let hit = false
+  for (const book of shelf.boards) {
+    const before = prevMap.get(book.id) || book
+    if (!allClearTonight(before, clock) && allClearTonight(book, clock)) {
+      hit = true
+      break
+    }
+  }
+  if (!hit) return shelf
+
+  const boards = shelf.boards.map((book) => {
+    if (book.id !== shelf.currentId) return book
+    const purse = normalizePurse(book)
+    return { ...book, gems: purse.gems + 1 }
+  })
+  return { ...shelf, gemWeek: week, boards }
+}
+
 export function payTap(before, after, row, status, clock = new Date()) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
@@ -195,10 +269,8 @@ export function payTap(before, after, row, status, clock = new Date()) {
   )
   const paid = prev && (prev.status === 'yes' || prev.status === 'late')
   let coins = purse.coins
-  let gems = purse.gems
   if (!paid) coins += coinsFor(status, before, row, clock)
-  if (!allClearTonight(before, clock) && allClearTonight(after, clock)) gems += 1
-  return { ...after, ...purse, coins, gems }
+  return { ...after, ...purse, coins }
 }
 
 export function noteCheer(book) {
@@ -235,7 +307,7 @@ export function cheerPlayOf(book, id) {
 
 export function wearCheerStage(book, id, stage) {
   const purse = normalizePurse(book)
-  if (!purse.cheers.includes(id)) return { book, miss: 'Buy that cheer first.' }
+  if (!purse.cheers.includes(id)) return { book, miss: 'shop.miss.buyCheerFirst' }
   const owned = purse.cheerStages[id] || 1
   const n = Math.min(owned, Math.max(1, Math.floor(Number(stage) || 1)))
   return {
@@ -249,25 +321,75 @@ export function wearCheerStage(book, id, stage) {
   }
 }
 
-export function fireCheer(kind, stage = 1) {
+export function fireCheer(kind, stage = 1, look, theme) {
   if (typeof window === 'undefined') return
   const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
-  window.dispatchEvent(new CustomEvent('did-i-cheer', { detail: { kind: kind || 'lime', stage: n } }))
+  const detail = { kind: kind || 'lime', stage: n }
+  if (look) detail.look = look
+  if (theme) detail.theme = theme
+  window.dispatchEvent(new CustomEvent('did-i-cheer', { detail }))
+}
+
+// A reward, not a purchase. Invites pay coins and the odd look. Gems are
+// still only for a finished night.
+export function giveCoins(book, coins, looks = []) {
+  const purse = normalizePurse(book)
+  const won = looks.filter((id) => LOOK_IDS.has(id) && !purse.looks.includes(id))
+  const paid = Math.max(0, Math.floor(Number(coins) || 0))
+  if (!paid && !won.length) return book
+  return {
+    ...book,
+    ...purse,
+    coins: purse.coins + paid,
+    looks: [...purse.looks, ...won],
+  }
+}
+
+export function addGems(book, gems) {
+  const purse = normalizePurse(book)
+  const paid = Math.max(0, Math.floor(Number(gems) || 0))
+  if (!paid) return book
+  return { ...book, ...purse, gems: purse.gems + paid }
+}
+
+export function addGemsShelf(shelf, gems) {
+  if (!shelf?.boards?.length) return shelf
+  const paid = Math.max(0, Math.floor(Number(gems) || 0))
+  if (!paid) return shelf
+  const boards = shelf.boards.map((book) => addGems(book, paid))
+  return alignShelfPurse({ ...shelf, boards })
+}
+
+// Cheering somebody on Did I tonight. Gems come from finished nights, so
+// a cheer costs something you had to earn.
+export function spendGems(book, gems) {
+  const purse = normalizePurse(book)
+  const cost = Math.max(0, Math.floor(Number(gems) || 0))
+  if (purse.gems < cost) return { book, miss: 'gems' }
+  return { book: { ...book, ...purse, gems: purse.gems - cost }, miss: '' }
 }
 
 export function buyLook(book, id) {
   const look = LOOKS.find((item) => item.id === id)
   const purse = normalizePurse(book)
-  if (!look) return { book, miss: 'That look is gone.' }
+  if (!look) return { book, miss: 'shop.miss.lookGone' }
   if (purse.looks.includes(id)) {
     return { book: { ...book, ...purse, lookOn: id }, miss: '' }
   }
-  if (look.coins > purse.coins) return { book, miss: `Need ${look.coins} coins.` }
+  const costGems = Math.max(0, Math.floor(Number(look.gems) || 0))
+  const costCoins = Math.max(0, Math.floor(Number(look.coins) || 0))
+  if (costGems && purse.gems < costGems) {
+    return { book, miss: 'shop.miss.needGems', missN: costGems }
+  }
+  if (costCoins && purse.coins < costCoins) {
+    return { book, miss: 'shop.miss.needCoins', missN: costCoins }
+  }
   return {
     book: {
       ...book,
       ...purse,
-      coins: purse.coins - look.coins,
+      coins: purse.coins - costCoins,
+      gems: purse.gems - costGems,
       looks: [...purse.looks, id],
       lookOn: id,
     },
@@ -275,14 +397,28 @@ export function buyLook(book, id) {
   }
 }
 
+export function mergeGiftCheers(book, ids) {
+  const purse = normalizePurse(book)
+  const won = (ids || []).filter((id) => CHEER_IDS.has(id) && !purse.cheers.includes(id))
+  if (!won.length) return book
+  const cheers = [...purse.cheers, ...won]
+  const cheerStages = { ...purse.cheerStages }
+  const cheerPlayStages = { ...purse.cheerPlayStages }
+  for (const id of won) {
+    cheerStages[id] = cheerStages[id] || 1
+    cheerPlayStages[id] = cheerPlayStages[id] || 1
+  }
+  return { ...book, ...purse, cheers, cheerStages, cheerPlayStages }
+}
+
 export function buyCheerStage(book, id) {
   const purse = normalizePurse(book)
   const cheerId = CHEER_IDS.has(id) ? id : purse.cheerOn
-  if (!purse.cheers.includes(cheerId)) return { book, miss: 'Buy that cheer first.' }
+  if (!purse.cheers.includes(cheerId)) return { book, miss: 'shop.miss.buyCheerFirst' }
   const next = nextCheerStage(purse.cheerStages[cheerId] || 1)
-  if (!next) return { book: { ...book, ...purse }, miss: 'Stage is full.' }
+  if (!next) return { book: { ...book, ...purse }, miss: 'shop.miss.stageFull' }
   const cost = CHEER_STAGE_GEMS[next]
-  if (purse.gems < cost) return { book, miss: `Need ${cost} ${cost === 1 ? 'gem' : 'gems'}.` }
+  if (purse.gems < cost) return { book, miss: 'shop.miss.needGems', missN: cost }
   const cheerStages = { ...purse.cheerStages, [cheerId]: next }
   return {
     book: {
@@ -300,11 +436,11 @@ export function buyCheerStage(book, id) {
 export function buyCheer(book, id) {
   const cheer = CHEERS.find((item) => item.id === id)
   const purse = normalizePurse(book)
-  if (!cheer) return { book, miss: 'That cheer is gone.' }
+  if (!cheer) return { book, miss: 'shop.miss.cheerGone' }
   if (purse.cheers.includes(id)) {
     return { book: { ...book, ...purse, cheerOn: id }, miss: '' }
   }
-  if (cheer.gems > purse.gems) return { book, miss: `Need ${cheer.gems} gems.` }
+  if (cheer.gems > purse.gems) return { book, miss: 'shop.miss.needGems', missN: cheer.gems }
   return {
     book: {
       ...book,

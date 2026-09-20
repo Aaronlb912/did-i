@@ -1,4 +1,5 @@
 import { goHash } from '../site/hash.js'
+import { goSite } from '../site/link.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -39,6 +40,19 @@ export function Help({ book, now }) {
         <section className="di-help-block" id="data">
           <h3>{t('help.phone')}</h3>
           <p>{t('help.phoneP')}</p>
+        </section>
+
+        <section className="di-help-block" id="legal">
+          <h3>{t('help.legal')}</h3>
+          <p>{t('help.legalP')}</p>
+          <div className="di-hang-actions">
+            <button className="di-key di-link-did" type="button" onClick={() => goSite('/privacy')}>
+              {t('settings.privacy')}
+            </button>
+            <button className="di-key di-link-did" type="button" onClick={() => goSite('/terms')}>
+              {t('settings.terms')}
+            </button>
+          </div>
         </section>
 
         <div className="di-hang-actions">

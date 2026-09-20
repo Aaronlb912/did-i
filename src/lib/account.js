@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { cloud, cloudSetUp } from './cloud.js'
+import { t } from './i18n.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -34,14 +35,14 @@ export function devicePlatform() {
 
 export function deviceLabel() {
   const platform = devicePlatform()
-  if (platform === 'android') return 'Android app'
-  if (platform === 'ios') return 'iPhone app'
+  if (platform === 'android') return t('device.android')
+  if (platform === 'ios') return t('device.ios')
   const agent = typeof navigator === 'undefined' ? '' : navigator.userAgent || ''
-  if (/iPhone|iPad/i.test(agent)) return 'Safari on iPhone'
-  if (/Android/i.test(agent)) return 'Browser on Android'
-  if (/Mac OS X/i.test(agent)) return 'Browser on Mac'
-  if (/Windows/i.test(agent)) return 'Browser on Windows'
-  return 'Browser'
+  if (/iPhone|iPad/i.test(agent)) return t('device.safariIphone')
+  if (/Android/i.test(agent)) return t('device.browserAndroid')
+  if (/Mac OS X/i.test(agent)) return t('device.browserMac')
+  if (/Windows/i.test(agent)) return t('device.browserWindows')
+  return t('device.browser')
 }
 
 function cleanEmail(value) {
@@ -59,7 +60,10 @@ export async function sendCode(email) {
     email: cleanEmail(email),
     options: { shouldCreateUser: true },
   })
-  return { miss: error ? error.message : '' }
+  if (!error) return { miss: '' }
+  // The built-in mailer only allows a couple of sends an hour.
+  if (error.status === 429 || /rate limit|too many/i.test(error.message)) return { miss: 'often' }
+  return { miss: error.message }
 }
 
 export async function checkCode(email, code) {

@@ -1,0 +1,33 @@
+// Apply every SQL migration in the order docs/running-it.md lists.
+// Usage: set SUPABASE_ACCESS_TOKEN in .env.local, then:
+//   npm run db:apply:all
+
+import { spawnSync } from 'node:child_process'
+import { resolve } from 'node:path'
+
+const files = [
+  'supabase/schema.sql',
+  'supabase/people.sql',
+  'supabase/handle-safe.sql',
+  'supabase/hardening.sql',
+  'supabase/answers.sql',
+  'supabase/blocks.sql',
+  'supabase/push.sql',
+  'supabase/tonight.sql',
+  'supabase/dit-board.sql',
+  'supabase/gems-social.sql',
+  'supabase/gem-purchases.sql',
+]
+
+const apply = resolve('scripts/apply-sql.mjs')
+
+for (const file of files) {
+  console.log(`\n--- ${file} ---`)
+  const out = spawnSync(process.execPath, [apply, file], { stdio: 'inherit' })
+  if (out.status !== 0) {
+    console.error(`stopped at ${file}`)
+    process.exit(out.status || 1)
+  }
+}
+
+console.log('\nall sql applied')

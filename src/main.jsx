@@ -3,10 +3,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
-import App from './App.jsx'
+import Root from './Root.jsx'
+import { Boundary } from './lib/Boundary.jsx'
 import { applyPrefsToDocument, readPrefs } from './lib/prefs.js'
+import { hookErrorReport } from './lib/report.js'
 
 applyPrefsToDocument(readPrefs())
+hookErrorReport()
 
 if (Capacitor.isNativePlatform()) {
   navigator.serviceWorker?.getRegistrations?.().then((regs) => {
@@ -21,6 +24,8 @@ if (Capacitor.isNativePlatform()) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <Boundary>
+      <Root />
+    </Boundary>
   </StrictMode>,
 )

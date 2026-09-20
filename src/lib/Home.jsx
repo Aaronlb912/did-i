@@ -1,7 +1,7 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
-import { nextMark } from './achievements.js'
+import { markText, nextMark } from './achievements.js'
 import { hallHeat } from './hall-feel.js'
 import { HeatPips } from './HeatPips.jsx'
 import { homeLine } from './hall-pages.js'
@@ -14,12 +14,6 @@ import { firstName } from './session.js'
 import { leftoverOn, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
 import { NightMeter } from './NightMeter.jsx'
-
-function purseLine(purse) {
-  const coins = purse.coins === 1 ? t('home.coinsOne') : t('home.coins', { n: purse.coins })
-  const gems = purse.gems === 1 ? t('home.gemsOne') : t('home.gems', { n: purse.gems })
-  return `${coins} · ${gems}`
-}
 
 export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   usePrefs()
@@ -50,9 +44,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
         <p className="di-detail-meta">{kicker}</p>
         <TagRail boards={boards} tagId={tagId} onTag={onTag} now={clock} />
 
-        <PurseLine purse={purse} className="di-purse">
-          {purseLine(purse)}
-        </PurseLine>
+        <PurseLine purse={purse} className="di-purse" gemsLink />
 
         <div className="di-home-card di-home-heat">
           <p className="di-face-plate">{t('home.streak')}</p>
@@ -65,7 +57,9 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
             {t('home.calendar')}
           </button>
           {!book.quietMode && hunt ? (
-            <p className="di-detail-meta">{t('home.nextMark', { name: hunt.name })}</p>
+            <p className="di-detail-meta">
+              {t('home.nextMark', { name: t(markText(hunt.id, 'name')) })}
+            </p>
           ) : null}
         </div>
 

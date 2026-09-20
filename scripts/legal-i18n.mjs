@@ -1,0 +1,268 @@
+// Privacy Policy and Terms of Use. Have a lawyer review before you rely on these.
+// Merged into locale packs by merge-i18n-additions.mjs.
+
+export const legalEn = {
+  'title.privacy': 'Privacy',
+  'title.terms': 'Terms',
+
+  'legal.privacyShort': 'Privacy Policy',
+  'legal.termsShort': 'Terms of Use',
+  'legal.linksLead': 'By continuing you agree to the',
+  'legal.linksAnd': ' and ',
+  'legal.signInLead': 'By signing in you agree to the',
+  'legal.gemLead': 'Purchases follow the',
+  'legal.ditLead': 'Public lines are visible to signed-in people. See the',
+  'legal.effective': 'Effective {date}. Operator: {operator}.',
+  'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
+  'legal.backSettings': 'Settings',
+  'legal.date': 'September 20, 2026',
+  'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
+  'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
+
+  'settings.legal': 'Legal',
+  'settings.privacy': 'Privacy Policy',
+  'settings.terms': 'Terms of Use',
+
+  'legal.privacy.kicker': 'Privacy',
+  'legal.privacy.title': 'Privacy Policy',
+  'legal.privacy.intro.title': 'Who this is for',
+  'legal.privacy.intro.body':
+    'Did I ("we", "us") is operated by {operator}. This policy explains what the app collects, why, and what you can do about it.\n\nQuestions: {email}{emailNote}.',
+  'legal.privacy.local.title': 'Without an account',
+  'legal.privacy.local.body':
+    'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
+  'legal.privacy.account.title': 'When you sign in',
+  'legal.privacy.account.body':
+    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
+  'legal.privacy.social.title': 'Friends, family, and sends',
+  'legal.privacy.social.body':
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
+  'legal.privacy.dit.title': 'Did I tonight (public list)',
+  'legal.privacy.dit.body':
+    'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
+  'legal.privacy.push.title': 'Notifications',
+  'legal.privacy.push.body':
+    'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
+  'legal.privacy.pay.title': 'Gem purchases',
+  'legal.privacy.pay.body':
+    'If you buy gem packs, Stripe processes payment. We receive your user id, pack id, gem count, and payment status so we can credit your shelf. We do not store your card number. Stripe handles card data under its own privacy policy.',
+  'legal.privacy.vendors.title': 'Service providers',
+  'legal.privacy.vendors.body':
+    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Stripe (web checkout). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
+  'legal.privacy.use.title': 'How we use data',
+  'legal.privacy.use.body':
+    'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
+  'legal.privacy.share.title': 'When we share',
+  'legal.privacy.share.body':
+    'We share data with service providers listed above, when you direct us to (for example showing your public lines), when required by law, or to protect safety and rights.\n\nOther users see only what the product shows them (friend names, family boards, public tonight lines, and the like).',
+  'legal.privacy.retain.title': 'How long we keep it',
+  'legal.privacy.retain.body':
+    'Local data stays until you clear it or uninstall. Account data stays while your account exists.\n\nPublic tonight lines and cheers roll off after about fourteen nights. Push queue rows clear after sending.\n\nWhen you delete your account we remove your shelf, profile, devices, and auth user through the in-app delete flow.',
+  'legal.privacy.rights.title': 'Your choices and rights',
+  'legal.privacy.rights.body':
+    'Export: Settings can download a JSON copy of this phone. Account has Download my data.\n\nDelete: Account can delete this account, which removes cloud data tied to you.\n\nOpt out: Stay signed out, turn off public tonight, block people, sign out devices, or disable notifications.\n\nDepending on where you live you may have rights to access, correct, or delete personal data. Email {email} and we will respond within a reasonable time.',
+  'legal.privacy.kids.title': 'Children',
+  'legal.privacy.kids.body':
+    'Did I is a general reminder app, not a children\'s product. We do not knowingly collect personal information from children under 13. If you believe a child under 13 signed up, email {email} and we will delete the account.\n\nFamilies can include a kid role for shared chores. A parent should create and supervise kid use.',
+  'legal.privacy.security.title': 'Security',
+  'legal.privacy.security.body':
+    'We use row-level security, HTTPS, and access controls on the database. No method is perfect. Use a phone lock and do not share your email code.',
+  'legal.privacy.intl.title': 'Where data lives',
+  'legal.privacy.intl.body':
+    'Data is processed in the United States and where our providers operate. If you use Did I from another country, you consent to that transfer.',
+  'legal.privacy.changes.title': 'Changes',
+  'legal.privacy.changes.body':
+    'We may update this policy. The effective date at the top will change. Continued use after an update means you accept the revised policy.',
+  'legal.privacy.contact.title': 'Contact',
+  'legal.privacy.contact.body': 'Privacy questions and requests: {email}{emailNote}.',
+
+  'legal.terms.kicker': 'Terms',
+  'legal.terms.title': 'Terms of Use',
+  'legal.terms.intro.title': 'Agreement',
+  'legal.terms.intro.body':
+    'These Terms are between you and {operator}, who operates Did I. By using the app you agree to these Terms and the Privacy Policy. If you do not agree, do not use Did I.',
+  'legal.terms.eligible.title': 'Who may use Did I',
+  'legal.terms.eligible.body':
+    'You must be at least 13 years old, or have a parent or guardian\'s permission. You must be able to form a binding contract where you live.\n\nYou are responsible for following local law.',
+  'legal.terms.service.title': 'What Did I is',
+  'legal.terms.service.body':
+    'Did I is a personal reminder tool. It helps you track habits and questions you choose. It is not a medical device, emergency service, or professional advice. Do not rely on Did I for medication timing, safety-critical checks, or anything where a missed tap could cause harm.\n\nUse your own judgment. Verify important tasks yourself.',
+  'legal.terms.content.title': 'Your questions and answers',
+  'legal.terms.content.body':
+    'You own the content you enter. You grant us a license to store, sync, and display it as the app requires (including public tonight lines you opt into).\n\nYou are responsible for what you write. Do not enter illegal content or someone else\'s private information without permission.',
+  'legal.terms.account.title': 'Accounts',
+  'legal.terms.account.body':
+    'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.',
+  'legal.terms.social.title': 'People features',
+  'legal.terms.social.body':
+    'Friends, families, sends, and invites are optional. You may block someone; blocking removes friendship and pending nudges on our side. You may report users or public lines.\n\nWe may suspend accounts that abuse others or the service.',
+  'legal.terms.dit.title': 'Did I tonight',
+  'legal.terms.dit.body':
+    'The public list is opt in. Lines are short labels from your board, not private notes. Do not post harassing, illegal, or identifying information about others. We may remove lines through reports or at our discretion.',
+  'legal.terms.family.title': 'Families and kid role',
+  'legal.terms.family.body':
+    'Families share questions among members. Parent and kid roles control who can assign tasks. Did I is not directed at children; parents are responsible for kid accounts they allow on a family.',
+  'legal.terms.pay.title': 'Gem purchases',
+  'legal.terms.pay.body':
+    'Gem packs are digital goods for in-app cheers and looks. Prices are shown before checkout. Web purchases go through Stripe. Android may open the web shop until in-app billing is available.\n\nExcept where required by law, gem purchases are final once delivered to your shelf. Chargebacks for valid purchases may lead to account suspension.',
+  'legal.terms.rules.title': 'Rules',
+  'legal.terms.rules.body':
+    'Do not: break the law, harass others, spam invites or sends, attempt to hack the service, scrape other users, impersonate others, or use bots to abuse caps.\n\nDo not reverse engineer the service to bypass paywalls or limits.',
+  'legal.terms.end.title': 'Ending use',
+  'legal.terms.end.body':
+    'You may stop using Did I anytime and delete your account. We may suspend or terminate access if you break these Terms or harm others. Sections that should survive (disclaimers, limits, disputes) survive termination.',
+  'legal.terms.warranty.title': 'No warranty',
+  'legal.terms.warranty.body':
+    'Did I is provided "as is" and "as available" without warranties of any kind, express or implied, including fitness for a particular purpose, accuracy, or non-infringement.',
+  'legal.terms.liability.title': 'Limit of liability',
+  'legal.terms.liability.body':
+    'To the fullest extent allowed by law, {operator} is not liable for indirect, incidental, special, consequential, or punitive damages, or for lost data, missed reminders, or harm from relying on the app.\n\nOur total liability for any claim is limited to the greater of fifty US dollars or the amount you paid us in the twelve months before the claim.',
+  'legal.terms.indemnify.title': 'Indemnity',
+  'legal.terms.indemnify.body':
+    'You agree to hold {operator} harmless from claims arising out of your use of Did I, your content, or your violation of these Terms or someone else\'s rights.',
+  'legal.terms.law.title': 'Disputes',
+  'legal.terms.law.body':
+    'These Terms are governed by the laws of the United States and the state where {operator} lives, without regard to conflict-of-law rules.\n\nDisputes should first be emailed to {email}. If we cannot resolve a dispute, courts in that state have exclusive jurisdiction, unless your local consumer law requires otherwise.',
+  'legal.terms.changes.title': 'Changes',
+  'legal.terms.changes.body':
+    'We may change these Terms. The effective date will update. Continued use after a change means you accept the new Terms.',
+  'legal.terms.contact.title': 'Contact',
+  'legal.terms.contact.body': 'Questions about these Terms: {email}{emailNote}.',
+
+  'help.legal': 'Legal',
+  'help.legalP':
+    'Privacy Policy and Terms of Use live in Settings under Legal. Read them before you sign in, buy gems, or join Did I tonight.',
+}
+
+export const legalEs = {
+  'title.privacy': 'Privacidad',
+  'title.terms': 'Términos',
+
+  'legal.privacyShort': 'Política de privacidad',
+  'legal.termsShort': 'Términos de uso',
+  'legal.linksLead': 'Al continuar aceptas los',
+  'legal.linksAnd': ' y la ',
+  'legal.signInLead': 'Al iniciar sesión aceptas los',
+  'legal.gemLead': 'Las compras siguen los',
+  'legal.ditLead': 'Las líneas públicas las ven personas con cuenta. Lee la',
+  'legal.effective': 'Vigente desde {date}. Operador: {operator}.',
+  'legal.notLawyer': 'Esto es información clara, no asesoría legal.',
+  'legal.backSettings': 'Ajustes',
+  'legal.date': '20 de septiembre de 2026',
+  'legal.emailMissing': ' (configura VITE_LEGAL_EMAIL antes de publicar)',
+  'legal.operatorWarn': 'Configura VITE_LEGAL_EMAIL en .env.local antes de que otros se registren.',
+
+  'settings.legal': 'Legal',
+  'settings.privacy': 'Política de privacidad',
+  'settings.terms': 'Términos de uso',
+
+  'legal.privacy.kicker': 'Privacidad',
+  'legal.privacy.title': 'Política de privacidad',
+  'legal.privacy.intro.title': 'Para quién es',
+  'legal.privacy.intro.body':
+    'Did I ("nosotros") lo opera {operator}. Esta política explica qué recopila la app, por qué y qué puedes hacer.\n\nPreguntas: {email}{emailNote}.',
+  'legal.privacy.local.title': 'Sin cuenta',
+  'legal.privacy.local.body':
+    'Puedes usar Did I en este teléfono sin iniciar sesión. Tus preguntas, respuestas, monedas, gemas y ajustes quedan en este navegador o app hasta que actives una cuenta.\n\nNo recibimos esos datos locales a menos que sincronices o compartas una copia.',
+  'legal.privacy.account.title': 'Con cuenta',
+  'legal.privacy.account.body':
+    'Si creas cuenta con un código por email, guardamos:\n\nTu email (para entrar).\n\nTu nombre visible y handle.\n\nUna copia de tu estante (etiquetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
+  'legal.privacy.social.title': 'Amigos, familia y envíos',
+  'legal.privacy.social.body':
+    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
+  'legal.privacy.dit.title': 'Did I tonight (lista pública)',
+  'legal.privacy.dit.body':
+    'La lista está apagada por defecto. Si entras, guardamos que eres público esta noche, hasta tres líneas cortas de tus etiquetas DID de esa noche, rachas visibles y conteos de cheer.\n\nLas líneas se pueden reportar. Dos reportes distintos pueden quitar una línea sin esperar revisión humana. Los reportes se guardan para moderación.',
+  'legal.privacy.push.title': 'Notificaciones',
+  'legal.privacy.push.body':
+    'En Android, si permites avisos, guardamos un token push ligado a tu cuenta y dispositivo para envíos de amigos, solicitudes y similares. Puedes apagarlos en ajustes del teléfono.\n\nLos recordatorios locales de preguntas due quedan en el dispositivo y no requieren cuenta.',
+  'legal.privacy.pay.title': 'Compra de gemas',
+  'legal.privacy.pay.body':
+    'Si compras packs de gemas, Stripe procesa el pago. Recibimos tu id de usuario, id de pack, cantidad de gemas y estado del pago para acreditar tu estante. No guardamos tu número de tarjeta. Stripe maneja los datos de pago con su propia política.',
+  'legal.privacy.vendors.title': 'Proveedores',
+  'legal.privacy.vendors.body':
+    'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android) y Stripe (checkout web). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
+  'legal.privacy.use.title': 'Uso de datos',
+  'legal.privacy.use.body':
+    'Usamos tus datos para operar la app: sincronizar tu estante, funciones sociales, lista pública si optas, pushes que pidas, compras, prevenir abuso y corregir errores.\n\nNo vendemos tu información personal.',
+  'legal.privacy.share.title': 'Cuándo compartimos',
+  'legal.privacy.share.body':
+    'Compartimos con proveedores listados arriba, cuando tú lo indicas (p. ej. líneas públicas), cuando la ley lo exige, o para proteger seguridad y derechos.\n\nOtros usuarios solo ven lo que el producto muestra (nombres de amigos, tableros familiares, líneas públicas, etc.).',
+  'legal.privacy.retain.title': 'Cuánto tiempo',
+  'legal.privacy.retain.body':
+    'Datos locales quedan hasta que los borres o desinstales. Datos de cuenta mientras exista la cuenta.\n\nLíneas y cheers públicos caducan tras unas catorce noches. Filas de push se limpian al enviar.\n\nAl borrar tu cuenta quitamos estante, perfil, dispositivos y usuario de auth con el flujo en la app.',
+  'legal.privacy.rights.title': 'Tus derechos',
+  'legal.privacy.rights.body':
+    'Exportar: Ajustes puede descargar JSON de este teléfono. Cuenta tiene Descargar mis datos.\n\nBorrar: Cuenta puede eliminar la cuenta y datos en la nube.\n\nOptar fuera: quédate sin sesión, apaga lista pública, bloquea personas, cierra sesión en dispositivos o desactiva avisos.\n\nSegún tu país puedes tener derechos de acceso, corrección o borrado. Escribe a {email} y responderemos en un plazo razonable.',
+  'legal.privacy.kids.title': 'Menores',
+  'legal.privacy.kids.body':
+    'Did I es una app general de recordatorios, no un producto infantil. No recopilamos a sabiendas datos de menores de 13 años. Si crees que un menor se registró, escribe a {email} y borraremos la cuenta.\n\nLas familias pueden incluir rol kid para tareas compartidas. Un padre debe crear y supervisar ese uso.',
+  'legal.privacy.security.title': 'Seguridad',
+  'legal.privacy.security.body':
+    'Usamos seguridad a nivel de fila, HTTPS y controles de acceso en la base de datos. Ningún método es perfecto. Usa bloqueo del teléfono y no compartas tu código de email.',
+  'legal.privacy.intl.title': 'Dónde viven los datos',
+  'legal.privacy.intl.body':
+    'Los datos se procesan en Estados Unidos y donde operen nuestros proveedores. Si usas Did I desde otro país, aceptas esa transferencia.',
+  'legal.privacy.changes.title': 'Cambios',
+  'legal.privacy.changes.body':
+    'Podemos actualizar esta política. La fecha vigente arriba cambiará. Seguir usando la app tras un cambio significa que aceptas la política revisada.',
+  'legal.privacy.contact.title': 'Contacto',
+  'legal.privacy.contact.body': 'Privacidad y solicitudes: {email}{emailNote}.',
+
+  'legal.terms.kicker': 'Términos',
+  'legal.terms.title': 'Términos de uso',
+  'legal.terms.intro.title': 'Acuerdo',
+  'legal.terms.intro.body':
+    'Estos Términos son entre tú y {operator}, quien opera Did I. Al usar la app aceptas estos Términos y la Política de privacidad. Si no estás de acuerdo, no uses Did I.',
+  'legal.terms.eligible.title': 'Quién puede usar Did I',
+  'legal.terms.eligible.body':
+    'Debes tener al menos 13 años, o permiso de padre o tutor. Debes poder celebrar un contrato vinculante donde vivas.\n\nEres responsable de cumplir la ley local.',
+  'legal.terms.service.title': 'Qué es Did I',
+  'legal.terms.service.body':
+    'Did I es una herramienta personal de recordatorios. No es un dispositivo médico, servicio de emergencia ni asesoría profesional. No confíes en Did I para horarios de medicación, comprobaciones críticas de seguridad ni nada donde un toque perdido cause daño.\n\nUsa tu criterio. Verifica tareas importantes tú mismo.',
+  'legal.terms.content.title': 'Tus preguntas y respuestas',
+  'legal.terms.content.body':
+    'Tú eres dueño del contenido que escribes. Nos concedes licencia para guardarlo, sincronizarlo y mostrarlo como requiera la app (incluidas líneas públicas si optas).\n\nEres responsable de lo que escribes. No introduzcas contenido ilegal ni datos privados de otros sin permiso.',
+  'legal.terms.account.title': 'Cuentas',
+  'legal.terms.account.body':
+    'El inicio de sesión usa un código único por email. Protege tu email. Puedes cerrar sesión en un dispositivo o en todos, exportar datos o borrar la cuenta en Ajustes de cuenta.',
+  'legal.terms.social.title': 'Personas',
+  'legal.terms.social.body':
+    'Amigos, familias, envíos e invitaciones son opcionales. Puedes bloquear a alguien; el bloqueo quita amistad y avisos pendientes de nuestro lado. Puedes reportar usuarios o líneas públicas.\n\nPodemos suspender cuentas que abusen de otros o del servicio.',
+  'legal.terms.dit.title': 'Did I tonight',
+  'legal.terms.dit.body':
+    'La lista pública es opt-in. Las líneas son etiquetas cortas de tu tablero, no notas privadas. No publiques acoso, ilegalidad ni datos identificativos de otros. Podemos quitar líneas por reportes o a nuestra discreción.',
+  'legal.terms.family.title': 'Familias y rol kid',
+  'legal.terms.family.body':
+    'Las familias comparten preguntas entre miembros. Los roles parent y kid controlan quién asigna tareas. Did I no está dirigida a niños; los padres son responsables de cuentas kid en una familia.',
+  'legal.terms.pay.title': 'Compra de gemas',
+  'legal.terms.pay.body':
+    'Los packs de gemas son bienes digitales para cheers y looks. Los precios se muestran antes del checkout. Compras web van por Stripe. Android puede abrir la tienda web hasta que haya facturación in-app.\n\nSalvo ley en contrario, las compras de gemas son finales una vez acreditadas. Contracargos injustificados pueden suspender la cuenta.',
+  'legal.terms.rules.title': 'Reglas',
+  'legal.terms.rules.body':
+    'No: infringir la ley, acosar, spam de invitaciones o envíos, hackear el servicio, raspar usuarios, suplantar identidades ni usar bots para abusar límites.\n\nNo desmontes el servicio para saltar pagos o topes.',
+  'legal.terms.end.title': 'Fin del uso',
+  'legal.terms.end.body':
+    'Puedes dejar de usar Did I y borrar tu cuenta cuando quieras. Podemos suspender acceso si incumples estos Términos o dañas a otros. Las secciones que deban sobrevivir (exenciones, límites, disputas) sobreviven.',
+  'legal.terms.warranty.title': 'Sin garantía',
+  'legal.terms.warranty.body':
+    'Did I se ofrece "tal cual" y "según disponibilidad" sin garantías de ningún tipo, expresas o implícitas, incluida idoneidad para un fin particular, exactitud o no infracción.',
+  'legal.terms.liability.title': 'Límite de responsabilidad',
+  'legal.terms.liability.body':
+    'En la máxima medida permitida por la ley, {operator} no responde por daños indirectos, incidentales, especiales, consecuentes o punitivos, ni por datos perdidos, recordatorios fallidos o daño por confiar en la app.\n\nNuestra responsabilidad total por cualquier reclamación se limita al mayor de cincuenta dólares estadounidenses o lo que nos pagaste en los doce meses previos.',
+  'legal.terms.indemnify.title': 'Indemnización',
+  'legal.terms.indemnify.body':
+    'Aceptas mantener indemne a {operator} frente a reclamaciones por tu uso de Did I, tu contenido o tu violación de estos Términos o derechos de terceros.',
+  'legal.terms.law.title': 'Disputas',
+  'legal.terms.law.body':
+    'Estos Términos se rigen por las leyes de Estados Unidos y del estado donde vive {operator}, sin reglas de conflicto de leyes.\n\nPrimero escribe a {email}. Si no resolvemos, los tribunales de ese estado tienen jurisdicción exclusiva, salvo que la ley de consumo local exija otra cosa.',
+  'legal.terms.changes.title': 'Cambios',
+  'legal.terms.changes.body':
+    'Podemos cambiar estos Términos. La fecha vigente se actualizará. Seguir usando la app tras un cambio significa que aceptas los nuevos Términos.',
+  'legal.terms.contact.title': 'Contacto',
+  'legal.terms.contact.body': 'Preguntas sobre estos Términos: {email}{emailNote}.',
+
+  'help.legal': 'Legal',
+  'help.legalP':
+    'Política de privacidad y Términos de uso están en Ajustes, Legal. Léelos antes de iniciar sesión, comprar gemas o unirte a Did I tonight.',
+}

@@ -1,26 +1,36 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { useBackDismiss } from '../site/nav.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { clearPin, closeSession, hasPin, setPin } from './session.js'
+import { lastBreak } from './Boundary.jsx'
+import { readShelf } from './board-shelf.js'
+import { mergeShelves } from './shelf-merge.js'
+import { zoneWords } from './zone.js'
 import { SetCap, SetCard, SetField, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
+import { legalEmail } from './legal.js'
+import { goSite } from '../site/link.js'
 
-function foldLabel(hour) {
-  return hour === 0 ? t('settings.midnight') : `${hour}:00 AM`
+function clockLine(iso) {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  return at.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 export function Profile({
   book,
   onChange,
   now,
-  installLabel,
   onInstall,
   onStartEmpty,
   onLoadDemo,
+  onImport,
+  onSendCopy,
 }) {
   const clock = now || new Date()
   const prefs = usePrefs()
@@ -33,7 +43,11 @@ export function Profile({
   const [pinOn, setPinOn] = useState(hasPin)
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
+  const [loadNote, setLoadNote] = useState('')
+  const broke = lastBreak()
   const locked = pinOn
+
+  useBackDismiss(Boolean(confirm), () => setConfirm(null))
 
   useEffect(() => {
     if (!sheet) return undefined
@@ -54,6 +68,38 @@ export function Profile({
     const inkNote = noteDraft.trim()
     setNoteDraft(inkNote)
     onChange({ ...book, inkNote })
+  }
+
+  // Reads back what Download my data wrote, and also a single tag file.
+  // It folds in rather than replacing, so loading the wrong copy does
+  // not cost anybody their questions.
+  function pickFile() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'application/json,.json'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      try {
+        const parsed = JSON.parse(await file.text())
+        const shelf = parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
+        const one = !shelf && parsed?.lamps ? { currentId: parsed.id, boards: [parsed] } : null
+        const coming = shelf || one
+        if (!coming) {
+          setLoadNote(t('settings.loadMiss'))
+          return
+        }
+        const before = readShelf()
+        const merged = mergeShelves(before, coming, '', new Date().toISOString())
+        onImport(merged)
+        const was = before.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
+        const now = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
+        setLoadNote(t('settings.loadOk', { n: Math.max(0, now - was) }))
+      } catch {
+        setLoadNote(t('settings.loadMiss'))
+      }
+    }
+    input.click()
   }
 
   function saveLock() {
@@ -117,6 +163,12 @@ export function Profile({
             value={account.email || t('settings.accountOff')}
             chevron
             onClick={() => goHash('/account')}
+          />
+          <SetRow
+            label={t('people.kicker')}
+            sub={t('people.rowSub')}
+            chevron
+            onClick={() => goHash('/people')}
           />
         </SetCard>
 
@@ -191,7 +243,7 @@ export function Profile({
               }}
             />
           ) : null}
-          {onInstall && installLabel ? (
+          {onInstall ? (
             <SetRow label={t('settings.install')} onClick={onInstall} />
           ) : null}
         </SetCard>
@@ -205,9 +257,8 @@ export function Profile({
         <SetCard>
           <SetRow
             label={t('settings.fold')}
-            value={foldLabel(book.dayFoldHour)}
-            chevron
-            onClick={() => setSheet('fold')}
+            sub={t('settings.foldSub', { zone: zoneWords() })}
+            value={t('settings.foldAt')}
           />
           <SetRow label={t('settings.reminders')} chevron onClick={() => goHash('/pings')} />
           <SetSwitch
@@ -248,11 +299,41 @@ export function Profile({
               }
             />
           ) : null}
+          {onSendCopy ? (
+            <SetRow
+              label={t('settings.sendCopy')}
+              sub={t('settings.sendCopySub')}
+              onClick={onSendCopy}
+            />
+          ) : null}
+          <SetRow label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onClick={pickFile} />
           <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
           <SetRow label={t('settings.ideas')} chevron onClick={() => goHash('/ideas')} />
           <SetRow label={t('settings.what')} chevron onClick={() => goHash('/about')} />
           <SetRow label={t('settings.intro')} chevron onClick={() => goHash('/welcome')} />
         </SetCard>
+        {loadNote ? <p className="di-set-note">{loadNote}</p> : null}
+
+        <SetCap>{t('settings.legal')}</SetCap>
+        <SetCard>
+          <SetRow label={t('settings.privacy')} chevron onClick={() => goSite('/privacy')} />
+          <SetRow label={t('settings.terms')} chevron onClick={() => goSite('/terms')} />
+        </SetCard>
+        {!legalEmail() ? (
+          <p className="di-miss" role="status">
+            {t('legal.operatorWarn')}
+          </p>
+        ) : null}
+
+        {broke ? (
+          <>
+            <SetCap>{t('settings.broke')}</SetCap>
+            <SetCard>
+              <SetRow label={broke.what} sub={`${broke.page} · ${clockLine(broke.at)}`} />
+            </SetCard>
+            <p className="di-set-note">{t('settings.brokeHint')}</p>
+          </>
+        ) : null}
 
         <SetCap>{t('settings.danger')}</SetCap>
         <SetCard>
@@ -313,21 +394,6 @@ export function Profile({
           </SetSheet>
         ) : null}
 
-        {sheet === 'fold' ? (
-          <SetSheet title={t('settings.fold')} still={still} onClose={() => setSheet(null)}>
-            {[0, 1, 2, 3, 4, 5, 6].map((hour) => (
-              <SetPick
-                key={hour}
-                label={foldLabel(hour)}
-                on={Number(book.dayFoldHour) === hour}
-                onClick={() => {
-                  onChange({ ...book, dayFoldHour: hour })
-                  setSheet(null)
-                }}
-              />
-            ))}
-          </SetSheet>
-        ) : null}
       </section>
     </BoardShell>
   )

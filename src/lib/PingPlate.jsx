@@ -1,6 +1,7 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { clockWords } from './hall-pages.js'
+import { t } from './i18n.js'
 import { upcomingPings } from './notify.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
@@ -13,9 +14,9 @@ function fireClock(at) {
 
 export function PingPlate({ book, now, pingLabel, onAskPings }) {
   const clock = now || new Date()
-  const label = pingLabel || 'Pings on'
+  const labelKey = pingLabel || 'pings.state.on'
+  const on = labelKey === 'pings.state.on'
   const fires = upcomingPings(book, clock)
-  const on = label === 'Pings on' || label === 'On'
 
   return (
     <BoardShell
@@ -25,25 +26,21 @@ export function PingPlate({ book, now, pingLabel, onAskPings }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
-        <p className="di-face-plate">Reminders</p>
-        <h2 className="di-page-title">When it is due</h2>
-        <p className="di-about-p">
-          This phone can tap you when a question opens. No account. The tap
-          stays on this device. Chrome and the Android app can do it. An
-          iPhone page install stays weak.
-        </p>
+        <p className="di-face-plate">{t('pings.kicker')}</p>
+        <h2 className="di-page-title">{t('pings.title')}</h2>
+        <p className="di-about-p">{t('pings.body')}</p>
         <div className="di-hang-actions">
           {onAskPings ? (
             <button className="di-did di-did-small" type="button" onClick={onAskPings}>
-              {on ? 'Reminders are on' : label}
+              {on ? t('pings.on') : t(labelKey)}
             </button>
           ) : (
-            <p className="di-sit-line">This browser will not tap you.</p>
+            <p className="di-sit-line">{t('pings.noBrowser')}</p>
           )}
         </div>
 
         <div className="di-home-block">
-          <p className="di-slot-label">Still waiting tonight</p>
+          <p className="di-slot-label">{t('pings.waitingTonight')}</p>
           {fires.length ? (
             <ul className="di-home-list">
               {fires.map((fire) => (
@@ -60,16 +57,16 @@ export function PingPlate({ book, now, pingLabel, onAskPings }) {
               ))}
             </ul>
           ) : (
-            <p className="di-detail-meta">Nothing left waiting on a clock time tonight.</p>
+            <p className="di-detail-meta">{t('pings.emptyTonight')}</p>
           )}
         </div>
 
         <div className="di-hang-actions">
           <button className="di-key" type="button" onClick={() => goHash('/later')}>
-            Coming up
+            {t('pings.comingUp')}
           </button>
           <button className="di-key" type="button" onClick={() => goHash('/help')}>
-            Help
+            {t('pings.help')}
           </button>
         </div>
       </section>

@@ -3,6 +3,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { streakLength } from './achievements.js'
 import { hallHeat } from './hall-feel.js'
+import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function Streaks({ book, now }) {
@@ -21,16 +22,16 @@ export function Streaks({ book, now }) {
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
-        <p className="di-face-plate">Nights in a row</p>
-        <h2 className="di-page-title">Nights in a row</h2>
-        <p className="di-streak-line">Streak is {heat} of 5 nights.</p>
-        <ol className="di-heat-row" aria-label="Streak">
+        <p className="di-face-plate">{t('streaks.kicker')}</p>
+        <h2 className="di-page-title">{t('streaks.title')}</h2>
+        <p className="di-streak-line">{t('streaks.line', { n: heat })}</p>
+        <ol className="di-heat-row" aria-label={t('streaks.aria')}>
           {[1, 2, 3, 4, 5].map((n) => (
             <li key={n} className={n <= heat ? 'is-on' : undefined} />
           ))}
         </ol>
         {rows.length === 0 ? (
-          <p className="di-sit-line">Add a question first.</p>
+          <p className="di-sit-line">{t('streaks.empty')}</p>
         ) : (
           <ul className="di-streak-list">
             {rows.map((row) => (
@@ -45,7 +46,7 @@ export function Streaks({ book, now }) {
         )}
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/week')}>
-            Seven nights
+            {t('streaks.seven')}
           </button>
         </div>
       </section>

@@ -1,3 +1,6 @@
+import { snoozedNow } from './snooze.js'
+import { DAY_FOLD, wallClock } from './zone.js'
+
 function pad(value) {
   return String(value).padStart(2, '0')
 }
@@ -20,18 +23,12 @@ export function parseIsoDate(value) {
   return date
 }
 
-export function boardDate(now = new Date(), foldHour = 4) {
-  const hour = Number(foldHour)
-  const fold = Number.isFinite(hour) ? hour : 4
-  const local = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds(),
-  )
-  if (local.getHours() < fold) {
+// The fold hour used to be a setting. It is not one any more: the night
+// ends at 4 in the morning where the person is. Callers still pass their
+// old value and it is ignored on purpose.
+export function boardDate(now = new Date()) {
+  const local = wallClock(now)
+  if (local.getHours() < DAY_FOLD) {
     local.setDate(local.getDate() - 1)
   }
   return isoDate(new Date(local.getFullYear(), local.getMonth(), local.getDate()))
@@ -106,10 +103,28 @@ function isOnceClosed(book, lampId) {
   )
 }
 
+// Looking an answer up used to walk the whole list, and the streak walk
+// does that thousands of times for one screen. The index hangs off the
+// answers array itself, so editing a book throws it away on its own.
+const byLampAndNight = new WeakMap()
+
+function answerIndex(rows) {
+  let found = byLampAndNight.get(rows)
+  if (!found) {
+    found = new Map()
+    for (const answer of rows) {
+      const key = `${answer.lampId}\u0000${answer.periodKey}`
+      if (!found.has(key)) found.set(key, answer)
+    }
+    byLampAndNight.set(rows, found)
+  }
+  return found
+}
+
 export function answerFor(book, lampId, periodKey) {
-  return (book.answers || []).find(
-    (answer) => answer.lampId === lampId && answer.periodKey === periodKey,
-  )
+  const rows = book?.answers
+  if (!rows || !rows.length) return undefined
+  return answerIndex(rows).get(`${lampId}\u0000${periodKey}`)
 }
 
 export function dueTonight(book, now = new Date()) {
@@ -131,13 +146,14 @@ export function dueTonight(book, now = new Date()) {
   return lamps
 }
 
-export function askAfterPassed(lamp, now = new Date(), foldHour = 4) {
+export function askAfterPassed(lamp, now = new Date()) {
   const after = String(lamp?.askAfter || '').trim()
   if (!after) return true
   const match = after.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
   if (!match) return true
-  if (now.getHours() < foldHour) return true
-  const minutes = now.getHours() * 60 + now.getMinutes()
+  const local = wallClock(now)
+  if (local.getHours() < DAY_FOLD) return true
+  const minutes = local.getHours() * 60 + local.getMinutes()
   const target = Number(match[1]) * 60 + Number(match[2])
   return minutes >= target
 }
@@ -175,16 +191,19 @@ export function unansweredTonight(book, now = new Date()) {
   return dueTonight(book, now).filter((row) => !row.answer)
 }
 
+// Ready and waiting are two halves of the same list. A question is
+// waiting if its time has not come round yet, or if it was pushed to
+// later tonight.
+function standingBy(row, now) {
+  return !askAfterPassed(row.lamp, now) || snoozedNow(row.lamp.id, row.periodKey, now)
+}
+
 export function faceReadyTonight(book, now = new Date()) {
-  return unansweredTonight(book, now).filter((row) =>
-    askAfterPassed(row.lamp, now, book.dayFoldHour),
-  )
+  return unansweredTonight(book, now).filter((row) => !standingBy(row, now))
 }
 
 export function waitingTonight(book, now = new Date()) {
-  return unansweredTonight(book, now).filter(
-    (row) => !askAfterPassed(row.lamp, now, book.dayFoldHour),
-  )
+  return unansweredTonight(book, now).filter((row) => standingBy(row, now))
 }
 
 export function allClearTonight(book, now = new Date()) {
