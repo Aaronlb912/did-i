@@ -481,10 +481,7 @@ export function Tonight({
           <p className="di-date">{formatBoardDate(dateIso)}</p>
           <div className="di-mast-actions">
             <PurseLine purse={purse} className="di-mast-purse" gemsLink />
-            <button className="di-add" type="button" onClick={() => goHash('/add')}>
-              {t('tonight.add')}
-            </button>
-            <MastCogs />
+            <MastCogs showAdd />
           </div>
         </header>
 

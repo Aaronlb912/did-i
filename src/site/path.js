@@ -1,6 +1,8 @@
-// Pathname routes for did-i.app marketing pages. The app itself stays on /app or #/…
+// Pathname routes for did-i.app marketing pages. The app lives on /app with #/… routes.
 
-const MARKETING = new Set(['/', '/privacy', '/terms'])
+import { webAppPublic } from './web-app.js'
+
+const MARKETING = new Set(['/', '/privacy', '/terms', '/download'])
 
 export function normalizePath(pathname) {
   let raw = String(pathname || '/')
@@ -16,11 +18,9 @@ export function readMarketingPath() {
 
 export function isAppPath() {
   if (typeof window === 'undefined') return true
+  if (!webAppPublic()) return false
   const path = readMarketingPath()
-  if (path === '/app' || path.startsWith('/app/')) return true
-  const hash = window.location.hash.replace(/^#/, '')
-  if (hash && hash !== '/') return true
-  return false
+  return path === '/app' || path.startsWith('/app/')
 }
 
 export function isMarketingOnlyPath() {
@@ -29,10 +29,33 @@ export function isMarketingOnlyPath() {
 }
 
 export function shouldShowMarketing() {
+  return MARKETING.has(readMarketingPath())
+}
+
+/** Production site: /app and other non-marketing paths go back to landing. */
+export function redirectBlockedWebApp() {
+  if (typeof window === 'undefined') return false
+  if (webAppPublic()) return false
   const path = readMarketingPath()
-  if (path === '/privacy' || path === '/terms') return true
-  if (path === '/' && !isAppPath()) return true
-  return false
+  if (MARKETING.has(path)) return false
+  window.location.replace('/')
+  return true
+}
+
+/** Old bookmarks used /#/tonight on the landing URL. Send them to /app when web app is public. */
+export function redirectLegacyAppHash() {
+  if (typeof window === 'undefined') return false
+  const path = readMarketingPath()
+  if (!MARKETING.has(path)) return false
+  const hash = window.location.hash.replace(/^#/, '')
+  if (!hash || hash === '/') return false
+  if (!webAppPublic()) {
+    window.location.replace(path)
+    return true
+  }
+  const nextHash = hash.startsWith('/') ? hash : `/${hash}`
+  window.location.replace(`/app#${nextHash}`)
+  return true
 }
 
 export function goMarketing(path) {

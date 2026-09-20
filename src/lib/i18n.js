@@ -4,6 +4,7 @@ import { es } from '../locales/es.js'
 import { fr } from '../locales/fr.js'
 import { it } from '../locales/it.js'
 import { ja } from '../locales/ja.js'
+import { ko } from '../locales/ko.js'
 import { pt } from '../locales/pt.js'
 import { zh } from '../locales/zh.js'
 import { readPrefs } from './prefs.js'
@@ -19,6 +20,7 @@ const packs = {
   it: { ...en, ...it },
   zh: { ...en, ...zh },
   ja: { ...en, ...ja },
+  ko: { ...en, ...ko },
 }
 
 export function t(key, vars) {

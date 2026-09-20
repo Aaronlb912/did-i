@@ -12,7 +12,7 @@ export const legalEn = {
   'legal.signInLead': 'By signing in you agree to the',
   'legal.gemLead': 'Purchases follow the',
   'legal.ditLead': 'Public lines are visible to signed-in people. See the',
-  'legal.effective': 'Effective {date}. Operator: {operator}.',
+  'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
   'legal.date': 'September 20, 2026',
@@ -27,7 +27,7 @@ export const legalEn = {
   'legal.privacy.title': 'Privacy Policy',
   'legal.privacy.intro.title': 'Who this is for',
   'legal.privacy.intro.body':
-    'Did I ("we", "us") is operated by {operator}. This policy explains what the app collects, why, and what you can do about it.\n\nQuestions: {email}{emailNote}.',
+    'Did I ("we", "us") runs this app. This policy explains what we collect, why, and what you can do about it.\n\nQuestions: {email}{emailNote}.',
   'legal.privacy.local.title': 'Without an account',
   'legal.privacy.local.body':
     'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
@@ -80,10 +80,10 @@ export const legalEn = {
   'legal.terms.title': 'Terms of Use',
   'legal.terms.intro.title': 'Agreement',
   'legal.terms.intro.body':
-    'These Terms are between you and {operator}, who operates Did I. By using the app you agree to these Terms and the Privacy Policy. If you do not agree, do not use Did I.',
-  'legal.terms.eligible.title': 'Who may use Did I',
+    'These Terms are between you and Did I. By using the app you agree to these Terms and the Privacy Policy. If you do not agree, do not use Did I.',
+  'legal.terms.eligible.title': 'Age restrictions',
   'legal.terms.eligible.body':
-    'You must be at least 13 years old, or have a parent or guardian\'s permission. You must be able to form a binding contract where you live.\n\nYou are responsible for following local law.',
+    'Users under the age of 13 must obtain parental consent before using the App.',
   'legal.terms.service.title': 'What Did I is',
   'legal.terms.service.body':
     'Did I is a personal reminder tool. It helps you track habits and questions you choose. It is not a medical device, emergency service, or professional advice. Do not rely on Did I for medication timing, safety-critical checks, or anything where a missed tap could cause harm.\n\nUse your own judgment. Verify important tasks yourself.',
@@ -116,13 +116,13 @@ export const legalEn = {
     'Did I is provided "as is" and "as available" without warranties of any kind, express or implied, including fitness for a particular purpose, accuracy, or non-infringement.',
   'legal.terms.liability.title': 'Limit of liability',
   'legal.terms.liability.body':
-    'To the fullest extent allowed by law, {operator} is not liable for indirect, incidental, special, consequential, or punitive damages, or for lost data, missed reminders, or harm from relying on the app.\n\nOur total liability for any claim is limited to the greater of fifty US dollars or the amount you paid us in the twelve months before the claim.',
+    'To the fullest extent allowed by law, Did I is not liable for indirect, incidental, special, consequential, or punitive damages, or for lost data, missed reminders, or harm from relying on the app.\n\nOur total liability for any claim is limited to the greater of fifty US dollars or the amount you paid us in the twelve months before the claim.',
   'legal.terms.indemnify.title': 'Indemnity',
   'legal.terms.indemnify.body':
-    'You agree to hold {operator} harmless from claims arising out of your use of Did I, your content, or your violation of these Terms or someone else\'s rights.',
+    'You agree to hold Did I harmless from claims arising out of your use of the app, your content, or your violation of these Terms or someone else\'s rights.',
   'legal.terms.law.title': 'Disputes',
   'legal.terms.law.body':
-    'These Terms are governed by the laws of the United States and the state where {operator} lives, without regard to conflict-of-law rules.\n\nDisputes should first be emailed to {email}. If we cannot resolve a dispute, courts in that state have exclusive jurisdiction, unless your local consumer law requires otherwise.',
+    'These Terms are governed by the laws of the United States, without regard to conflict-of-law rules.\n\nDisputes should first be emailed to {email}. If we cannot resolve a dispute, courts in the United States have exclusive jurisdiction, unless your local consumer law requires otherwise.',
   'legal.terms.changes.title': 'Changes',
   'legal.terms.changes.body':
     'We may change these Terms. The effective date will update. Continued use after a change means you accept the new Terms.',
@@ -145,7 +145,7 @@ export const legalEs = {
   'legal.signInLead': 'Al iniciar sesión aceptas los',
   'legal.gemLead': 'Las compras siguen los',
   'legal.ditLead': 'Las líneas públicas las ven personas con cuenta. Lee la',
-  'legal.effective': 'Vigente desde {date}. Operador: {operator}.',
+  'legal.effective': 'Vigente desde {date}.',
   'legal.notLawyer': 'Esto es información clara, no asesoría legal.',
   'legal.backSettings': 'Ajustes',
   'legal.date': '20 de septiembre de 2026',
@@ -160,7 +160,7 @@ export const legalEs = {
   'legal.privacy.title': 'Política de privacidad',
   'legal.privacy.intro.title': 'Para quién es',
   'legal.privacy.intro.body':
-    'Did I ("nosotros") lo opera {operator}. Esta política explica qué recopila la app, por qué y qué puedes hacer.\n\nPreguntas: {email}{emailNote}.',
+    'Did I ("nosotros") opera esta app. Esta política explica qué recopilamos, por qué y qué puedes hacer.\n\nPreguntas: {email}{emailNote}.',
   'legal.privacy.local.title': 'Sin cuenta',
   'legal.privacy.local.body':
     'Puedes usar Did I en este teléfono sin iniciar sesión. Tus preguntas, respuestas, monedas, gemas y ajustes quedan en este navegador o app hasta que actives una cuenta.\n\nNo recibimos esos datos locales a menos que sincronices o compartas una copia.',
@@ -213,10 +213,10 @@ export const legalEs = {
   'legal.terms.title': 'Términos de uso',
   'legal.terms.intro.title': 'Acuerdo',
   'legal.terms.intro.body':
-    'Estos Términos son entre tú y {operator}, quien opera Did I. Al usar la app aceptas estos Términos y la Política de privacidad. Si no estás de acuerdo, no uses Did I.',
-  'legal.terms.eligible.title': 'Quién puede usar Did I',
+    'Estos Términos son entre tú y Did I. Al usar la app aceptas estos Términos y la Política de privacidad. Si no estás de acuerdo, no uses Did I.',
+  'legal.terms.eligible.title': 'Restricciones de edad',
   'legal.terms.eligible.body':
-    'Debes tener al menos 13 años, o permiso de padre o tutor. Debes poder celebrar un contrato vinculante donde vivas.\n\nEres responsable de cumplir la ley local.',
+    'Los menores de 13 años deben contar con el consentimiento de sus padres antes de usar la app.',
   'legal.terms.service.title': 'Qué es Did I',
   'legal.terms.service.body':
     'Did I es una herramienta personal de recordatorios. No es un dispositivo médico, servicio de emergencia ni asesoría profesional. No confíes en Did I para horarios de medicación, comprobaciones críticas de seguridad ni nada donde un toque perdido cause daño.\n\nUsa tu criterio. Verifica tareas importantes tú mismo.',
@@ -249,13 +249,13 @@ export const legalEs = {
     'Did I se ofrece "tal cual" y "según disponibilidad" sin garantías de ningún tipo, expresas o implícitas, incluida idoneidad para un fin particular, exactitud o no infracción.',
   'legal.terms.liability.title': 'Límite de responsabilidad',
   'legal.terms.liability.body':
-    'En la máxima medida permitida por la ley, {operator} no responde por daños indirectos, incidentales, especiales, consecuentes o punitivos, ni por datos perdidos, recordatorios fallidos o daño por confiar en la app.\n\nNuestra responsabilidad total por cualquier reclamación se limita al mayor de cincuenta dólares estadounidenses o lo que nos pagaste en los doce meses previos.',
+    'En la máxima medida permitida por la ley, Did I no responde por daños indirectos, incidentales, especiales, consecuentes o punitivos, ni por datos perdidos, recordatorios fallidos o daño por confiar en la app.\n\nNuestra responsabilidad total por cualquier reclamación se limita al mayor de cincuenta dólares estadounidenses o lo que nos pagaste en los doce meses previos.',
   'legal.terms.indemnify.title': 'Indemnización',
   'legal.terms.indemnify.body':
-    'Aceptas mantener indemne a {operator} frente a reclamaciones por tu uso de Did I, tu contenido o tu violación de estos Términos o derechos de terceros.',
+    'Aceptas mantener indemne a Did I frente a reclamaciones por tu uso de la app, tu contenido o tu violación de estos Términos o derechos de terceros.',
   'legal.terms.law.title': 'Disputas',
   'legal.terms.law.body':
-    'Estos Términos se rigen por las leyes de Estados Unidos y del estado donde vive {operator}, sin reglas de conflicto de leyes.\n\nPrimero escribe a {email}. Si no resolvemos, los tribunales de ese estado tienen jurisdicción exclusiva, salvo que la ley de consumo local exija otra cosa.',
+    'Estos Términos se rigen por las leyes de Estados Unidos, sin reglas de conflicto de leyes.\n\nPrimero escribe a {email}. Si no resolvemos, los tribunales de Estados Unidos tienen jurisdicción exclusiva, salvo que la ley de consumo local exija otra cosa.',
   'legal.terms.changes.title': 'Cambios',
   'legal.terms.changes.body':
     'Podemos cambiar estos Términos. La fecha vigente se actualizará. Seguir usando la app tras un cambio significa que aceptas los nuevos Términos.',

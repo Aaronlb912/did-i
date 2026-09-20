@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { goHash } from './hash.js'
+import { webAppPublic } from './web-app.js'
 
 export function sitePath(path) {
   if (Capacitor.isNativePlatform()) return `#${path}`
@@ -14,9 +15,15 @@ export function goSite(path) {
 }
 
 export function openApp() {
+  if (!webAppPublic()) {
+    window.location.href = '/download'
+    return
+  }
   window.location.href = '/app'
 }
 
 export function appHomeHref() {
-  return '/app'
+  return webAppPublic() ? '/app' : '/download'
 }
+
+export { webAppPublic }

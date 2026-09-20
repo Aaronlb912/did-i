@@ -5,7 +5,7 @@ import { markWelcomeSeen } from '../lib/hall-pages.js'
 const STACK_KEY = 'did-i-stack'
 let muteStack = false
 
-/** Tab roots — no back affordance. */
+/** Tab roots. No back affordance. */
 export const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later', '/everyone'])
 
 /** When there is no browser history, step here instead. */

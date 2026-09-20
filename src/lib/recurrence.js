@@ -80,8 +80,11 @@ export function isDueOn(lamp, dateIso) {
       if (day > last) day = last
       return date.getDate() === day
     }
-    case 'once':
+    case 'once': {
+      const on = String(lamp.onceOn || '').trim()
+      if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return on === dateIso
       return true
+    }
     case 'every_n': {
       const n = Number(lamp.everyN)
       if (!Number.isInteger(n) || n < 2) return false

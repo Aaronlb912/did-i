@@ -3,11 +3,11 @@ import { stampSavedAt } from './saved-at.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
-const LOCALES = new Set(['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja'])
+const LOCALES = new Set(['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko'])
 const listeners = new Set()
 
 export const THEME_IDS = ['dark', 'light', 'phone']
-export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja']
+export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 
 function blankPrefs() {
   return { theme: 'dark', locale: 'en', lessMotion: false }

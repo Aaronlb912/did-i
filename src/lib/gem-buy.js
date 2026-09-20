@@ -1,6 +1,7 @@
 import { cloud } from './cloud.js'
 import { devicePlatform, readUser } from './account.js'
 import { GEM_PACKS, gemPack } from './gem-packs.js'
+import { webAppPublic } from '../site/web-app.js'
 
 function stripeLink(packId) {
   const key = `VITE_STRIPE_PACK_${packId}`
@@ -13,15 +14,17 @@ function webAppUrl() {
 }
 
 export function webGemShopUrl() {
+  if (!webAppPublic()) return ''
   const base = webAppUrl()
   if (!base) return ''
   try {
     const url = new URL(base)
+    url.pathname = '/app'
     url.hash = '#/gems'
     return url.toString()
   } catch {
     const trimmed = base.replace(/\/$/, '')
-    return `${trimmed}/#/gems`
+    return `${trimmed}/app#/gems`
   }
 }
 

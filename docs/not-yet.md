@@ -98,5 +98,6 @@ Ship checklist (your accounts, not the repo):
   StarterPicks default, and people network miss through `t()` / `tMiss()`.
 - Ship tooling: `npm run db:apply:all`, `vercel.json` SPA deploy, optional
   `VITE_REPORT_URL`, native gem web fallback via `VITE_WEB_APP_URL`.
-- Marketing site at `/` with `/app`, `/privacy`, `/terms` on one build
-  (`src/site/`, `docs/site.md`). PWA start URL is `/app`.
+- Marketing site at `/` with `/privacy`, `/terms`, `/download` on one build
+  (`src/site/`, `docs/site.md`). Web app at `/app` is off in production unless
+  `VITE_WEB_APP_PUBLIC=true`.

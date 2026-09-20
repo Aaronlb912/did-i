@@ -9,7 +9,20 @@ const THRESHOLD = 72
 // A shorter pull. Lifting a card takes more effort than shoving it.
 const UP_THRESHOLD = 56
 
-export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickHole }) {
+export function LampFace({
+  row,
+  onYes,
+  onSkip,
+  onLater,
+  book,
+  tag,
+  keys,
+  onPickHole,
+  demoPull = 0,
+  demoFly = '',
+  demoQuiet = false,
+  questionId = 'di-question',
+}) {
   usePrefs()
   const reduce = useReduceMotion()
   const drag = useRef(null)
@@ -18,6 +31,7 @@ export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickH
   const [mode, setMode] = useState('')
   const lampId = row?.lamp?.id
   const periodKey = row?.periodKey
+  const demoOn = demoQuiet || demoFly || demoPull > 0
 
   useEffect(() => {
     setDx(0)
@@ -29,8 +43,11 @@ export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickH
   if (!row) return null
   const { lamp } = row
   const hasHistory = (keys || []).some((key) => answerFor(book, lamp.id, key))
-  const pull = Math.max(-1, Math.min(1, dx / THRESHOLD))
-  const lift = Math.max(0, Math.min(1, -dy / UP_THRESHOLD))
+  const liveDx = demoFly === 'did' ? 460 : demoFly === 'nope' ? -460 : demoOn ? demoPull * THRESHOLD : dx
+  const liveDy = demoFly === 'later' ? -520 : dy
+  const liveMode = demoFly ? 'fly' : demoOn && demoPull > 0.08 ? 'drag' : mode
+  const pull = Math.max(-1, Math.min(1, liveDx / THRESHOLD))
+  const lift = Math.max(0, Math.min(1, -liveDy / UP_THRESHOLD))
 
   function finish(way) {
     if (mode === 'fly') return
@@ -46,7 +63,7 @@ export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickH
   }
 
   function onPointerDown(event) {
-    if (mode === 'fly') return
+    if (demoQuiet || mode === 'fly') return
     if (event.pointerType === 'mouse' && event.button !== 0) return
     if (event.target.closest('button, a, input')) return
     drag.current = {
@@ -112,10 +129,10 @@ export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickH
 
   return (
     <section
-      className={mode ? `di-face di-swipe is-${mode}` : 'di-face di-swipe'}
-      aria-labelledby="di-question"
+      className={liveMode ? `di-face di-swipe is-${liveMode}` : 'di-face di-swipe'}
+      aria-labelledby={questionId}
       style={{
-        transform: `translate(${dx}px, ${dy}px)${reduce ? '' : ` rotate(${dx / 42}deg)`}`,
+        transform: `translate(${liveDx}px, ${liveDy}px)${reduce ? '' : ` rotate(${liveDx / 42}deg)`}`,
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -140,7 +157,7 @@ export function LampFace({ row, onYes, onSkip, onLater, book, tag, keys, onPickH
       >
         {tag || t('tonight.didI')}
       </p>
-      <h2 id="di-question" className="di-question">
+      <h2 id={questionId} className="di-question">
         {lamp.question}
       </h2>
       {hasHistory ? (

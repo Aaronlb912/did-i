@@ -2,40 +2,146 @@ export const webEn = {
   'web.nav.home': 'Home',
   'web.nav.privacy': 'Privacy',
   'web.nav.terms': 'Terms',
-  'web.nav.app': 'Open app',
-  'web.openApp': 'Open the app',
+  'web.nav.download': 'Download app',
+
+  'web.download.kicker': 'Download',
+  'web.download.title': 'Get Did I on your phone',
+  'web.download.lead':
+    'Pick your phone. Store links land here when the Android and iPhone builds ship.',
+  'web.download.androidKicker': 'Android',
+  'web.download.android': 'Google Play',
+  'web.download.androidNote': 'Play Store link coming soon.',
+  'web.download.iphoneKicker': 'iPhone',
+  'web.download.iphone': 'App Store',
+  'web.download.iphoneNote': 'App Store link coming soon.',
+  'web.download.soon': 'Coming soon',
   'web.footer.copy': 'Did I. The unanswered question for tonight.',
 
   'web.landing.kicker': 'Did I',
   'web.landing.title': 'Did I lock the back door?',
   'web.landing.lead':
-    'One question at a time. Tap DID if you did it. Nope if tonight is not that night. No account required to start.',
-  'web.landing.b1': 'Tonight is the tap. Home says what is left.',
-  'web.landing.b2': 'Friends, family, and sync when you want an account.',
-  'web.landing.b3': 'Install on your phone. Works offline.',
-  'web.landing.b4': 'Coins, gems, cheer, and streak stay on this phone.',
-  'web.landing.cta': 'Try Did I',
+    "I kept replaying the same checks on the walk to bed. Door, stove, pills. One question on your phone. Swipe right if you did. Swipe left if you didn't.",
   'web.landing.note':
-    'Android app and web install available. iPhone can install the page; native iOS is coming.',
+    'Store links land here when the Android and iPhone builds ship.',
+
+  'web.landing.phoneKicker': 'Tonight',
+  'web.landing.demo1': 'Did I lock the back door?',
+  'web.landing.demo2': 'Did I take my pills?',
+  'web.landing.demo3': 'Did I feed the cat?',
+  'web.landing.demo4': 'Did I put the bins out?',
+  'web.landing.chip1': 'Door',
+  'web.landing.chip2': 'Pills',
+  'web.landing.chip3': 'Cat',
+  'web.landing.float1': 'Keys',
+  'web.landing.float2': 'Pills',
+  'web.landing.float3': 'Charge',
+
+  'web.waitlist.label': 'Email',
+  'web.waitlist.placeholder': 'you@example.com',
+  'web.waitlist.submit': 'Join the waitlist',
+  'web.waitlist.sending': 'Saving…',
+  'web.waitlist.ok': "You're on the list. We'll email when your turn is close.",
+  'web.waitlist.dup': "You're already on the list.",
+  'web.waitlist.bad': 'Enter a valid email.',
+  'web.waitlist.miss': "Couldn't save. Try again in a minute.",
+  'web.waitlist.offline': "Waitlist needs a connection. Try again when you're back online.",
+  'web.waitlist.count': '{n} people on the waitlist',
+
+  'web.landing.stepsTitle': 'How it goes',
+  'web.landing.step1.num': '1',
+  'web.landing.step1.title': 'One question at a time',
+  'web.landing.step1.line':
+    "Not your whole chore list. Just the one you're still replaying on the walk to bed.",
+  'web.landing.step2.num': '2',
+  'web.landing.step2.title': 'Swipe right or left',
+  'web.landing.step2.line':
+    "Did it? Swipe right. Not tonight? Swipe left. That's the whole answer for tonight.",
+  'web.landing.step3.num': '3',
+  'web.landing.step3.title': "Home shows what's left",
+  'web.landing.step3.line':
+    "Everything else waits for another night. No list to tap through. Your streak stays honest.",
+
+  'web.landing.band': "When you're past one question",
+  'web.landing.b1': "Swipe on Tonight. Home shows what's still open.",
+  'web.landing.b2': 'Friends and family sync when you add an account.',
+  'web.landing.b3': 'Install it on your phone. Still works with no signal.',
+  'web.landing.b4': 'Coins, gems, cheer, and streak stay on this phone.',
+
+  'web.landing.closeTitle': 'Stop circling the same worry',
+  'web.landing.closeLead':
+    'Join the waitlist and we will email when launch is close.',
 }
 
 export const webEs = {
   'web.nav.home': 'Inicio',
   'web.nav.privacy': 'Privacidad',
   'web.nav.terms': 'Términos',
-  'web.nav.app': 'Abrir app',
-  'web.openApp': 'Abrir la app',
+  'web.nav.download': 'Descargar app',
+
+  'web.download.kicker': 'Descargar',
+  'web.download.title': 'Did I en tu teléfono',
+  'web.download.lead':
+    'Elige tu teléfono. Los enlaces de las tiendas van aquí cuando salgan las versiones Android e iPhone.',
+  'web.download.androidKicker': 'Android',
+  'web.download.android': 'Google Play',
+  'web.download.androidNote': 'Enlace de Play Store pronto.',
+  'web.download.iphoneKicker': 'iPhone',
+  'web.download.iphone': 'App Store',
+  'web.download.iphoneNote': 'Enlace de App Store pronto.',
+  'web.download.soon': 'Pronto',
   'web.footer.copy': 'Did I. La pregunta sin respuesta de esta noche.',
 
   'web.landing.kicker': 'Did I',
   'web.landing.title': '¿Cerré la puerta de atrás?',
   'web.landing.lead':
-    'Una pregunta a la vez. DID si lo hiciste. Nope si esta noche no toca. No hace falta cuenta para empezar.',
-  'web.landing.b1': 'Esta noche es el toque. Inicio dice lo que queda.',
-  'web.landing.b2': 'Amigos, familia y sync cuando quieras una cuenta.',
-  'web.landing.b3': 'Instala en el teléfono. Funciona sin señal.',
-  'web.landing.b4': 'Monedas, gemas, cheer y racha quedan en este teléfono.',
-  'web.landing.cta': 'Probar Did I',
+    'Seguía repitiendo las mismas comprobaciones al ir a la cama. Puerta, estufa, pastillas. Did I pone una pregunta en tu teléfono. Desliza a la derecha si lo hiciste. Desliza a la izquierda si no.',
   'web.landing.note':
-    'App Android e instalación web disponibles. iPhone puede instalar la página; iOS nativo viene.',
+    'Los enlaces de tienda aparecen aquí cuando salgan las apps de Android e iPhone.',
+
+  'web.landing.phoneKicker': 'Esta noche',
+  'web.landing.demo1': '¿Cerré la puerta de atrás?',
+  'web.landing.demo2': '¿Tomé mis pastillas?',
+  'web.landing.demo3': '¿Le puse comida al gato?',
+  'web.landing.demo4': '¿Saqué la basura?',
+  'web.landing.chip1': 'Puerta',
+  'web.landing.chip2': 'Pastillas',
+  'web.landing.chip3': 'Gato',
+  'web.landing.float1': 'Llaves',
+  'web.landing.float2': 'Pastillas',
+  'web.landing.float3': 'Carga',
+
+  'web.waitlist.label': 'Correo',
+  'web.waitlist.placeholder': 'tu@ejemplo.com',
+  'web.waitlist.submit': 'Unirme a la lista',
+  'web.waitlist.sending': 'Guardando…',
+  'web.waitlist.ok': 'Estás en la lista. Te escribimos cuando se acerque tu turno.',
+  'web.waitlist.dup': 'Ya estás en la lista.',
+  'web.waitlist.bad': 'Escribe un correo válido.',
+  'web.waitlist.miss': 'No se pudo guardar. Prueba en un minuto.',
+  'web.waitlist.offline': 'La lista necesita conexión. Prueba otra vez cuando vuelva la señal.',
+  'web.waitlist.count': '{n} personas en la lista',
+
+  'web.landing.stepsTitle': 'Cómo va',
+  'web.landing.step1.num': '1',
+  'web.landing.step1.title': 'Una pregunta a la vez',
+  'web.landing.step1.line':
+    'No toda la lista. Solo la que sigues repitiendo al ir a la cama.',
+  'web.landing.step2.num': '2',
+  'web.landing.step2.title': 'Desliza a la derecha o izquierda',
+  'web.landing.step2.line':
+    '¿Lo hiciste? Derecha. ¿Esta noche no? Izquierda. Esa es la respuesta de esta noche.',
+  'web.landing.step3.num': '3',
+  'web.landing.step3.title': 'Inicio muestra lo que queda',
+  'web.landing.step3.line':
+    'Lo demás espera a otra noche. Sin lista que tocar. Tu racha se queda honesta.',
+
+  'web.landing.band': 'Cuando ya no es una sola pregunta',
+  'web.landing.b1': 'Desliza en Esta noche. Inicio muestra lo que sigue abierto.',
+  'web.landing.b2': 'Amigos y familia hacen sync cuando creas cuenta.',
+  'web.landing.b3': 'Instálala en el teléfono. Sigue funcionando sin señal.',
+  'web.landing.b4': 'Monedas, gemas, cheer y racha se quedan en este teléfono.',
+
+  'web.landing.closeTitle': 'Deja de dar vueltas a la misma duda',
+  'web.landing.closeLead':
+    'Únete a la lista y te escribiremos cuando el lanzamiento esté cerca.',
 }

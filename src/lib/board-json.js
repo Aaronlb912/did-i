@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { boardDate, isoDate } from './recurrence.js'
+import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 
 function uid(prefix) {
@@ -18,9 +18,20 @@ export function newAnswerId() {
   return uid('ans')
 }
 
-const KINDS = ['house', 'pills', 'money', 'people', 'other']
+const LEGACY_KINDS = ['house', 'pills', 'money', 'people', 'other']
+const KIND_MAX = 40
 const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n']
 const SLOTS = ['morning', 'whenever', 'night']
+
+export function slotFromAskAfter(askAfter) {
+  const after = asString(askAfter).trim()
+  if (!after) return 'whenever'
+  const hour = Number(after.split(':')[0])
+  if (Number.isNaN(hour)) return 'whenever'
+  if (hour < 12) return 'morning'
+  if (hour < 17) return 'whenever'
+  return 'night'
+}
 const STATUSES = ['yes', 'skip', 'late']
 const PRIORITIES = ['high', 'normal', 'low']
 
@@ -68,7 +79,7 @@ export function blankLamp(now = new Date()) {
     id: newLampId(),
     question: '',
     short: '',
-    kind: 'other',
+    kind: '',
     cadence: 'daily',
     weekdays: [],
     monthDay: '',
@@ -114,9 +125,14 @@ export function emptyBoard() {
 
 export function normalizeLamp(raw) {
   const lamp = raw && typeof raw === 'object' ? raw : {}
-  const kind = KINDS.includes(lamp.kind) ? lamp.kind : 'other'
+  const kind = asString(lamp.kind).trim().slice(0, KIND_MAX)
   const cadence = CADENCES.includes(lamp.cadence) ? lamp.cadence : 'daily'
-  const slot = SLOTS.includes(lamp.slot) ? lamp.slot : 'whenever'
+  const askAfter = asString(lamp.askAfter).trim()
+  const slot = askAfter
+    ? slotFromAskAfter(askAfter)
+    : SLOTS.includes(lamp.slot)
+      ? lamp.slot
+      : 'whenever'
   const weekdays = Array.isArray(lamp.weekdays)
     ? lamp.weekdays.map((day) => Number(day)).filter((day) => day >= 0 && day <= 6)
     : []
@@ -138,7 +154,7 @@ export function normalizeLamp(raw) {
     everyN,
     everyNAnchor: asString(lamp.everyNAnchor).trim(),
     onceOn: asString(lamp.onceOn).trim(),
-    askAfter: asString(lamp.askAfter).trim(),
+    askAfter,
     slot,
     notes: asString(lamp.notes),
     priority: lampPriority(lamp),
@@ -197,6 +213,13 @@ export function normalizeBook(raw) {
 }
 
 
+export function kindLabel(lamp) {
+  const kind = asString(lamp?.kind).trim()
+  if (!kind) return ''
+  if (LEGACY_KINDS.includes(kind)) return t(`hang.kind.${kind}`)
+  return kind
+}
+
 export function shortLabel(lamp) {
   const short = asString(lamp.short).trim()
   if (short) return short
@@ -213,6 +236,9 @@ export function missLamp(lamp) {
   }
   if (lamp.cadence === 'monthly' && lamp.monthDay !== 'last' && !lamp.monthDay) {
     return 'hang.miss.monthDay'
+  }
+  if (lamp.cadence === 'once' && !/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.onceOn))) {
+    return 'hang.miss.onceOn'
   }
   if (lamp.cadence === 'every_n') {
     const n = Number(lamp.everyN)
@@ -287,7 +313,11 @@ export function cadenceLine(lamp) {
     if (lamp.monthDay) return t('cadence.monthlyOn', { day: lamp.monthDay })
     return t('cadence.monthly')
   }
-  if (lamp.cadence === 'once') return t('cadence.once')
+  if (lamp.cadence === 'once') {
+    const on = asString(lamp.onceOn).trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('cadence.onceOn', { date: formatBoardDate(on) })
+    return t('cadence.once')
+  }
   if (lamp.cadence === 'every_n') return t('cadence.everyN', { n: lamp.everyN })
   return lamp.cadence
 }

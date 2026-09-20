@@ -22,6 +22,7 @@ import { pt } from '../src/locales/pt.js'
 import { it } from '../src/locales/it.js'
 import { zh } from '../src/locales/zh.js'
 import { ja } from '../src/locales/ja.js'
+import { ko } from '../src/locales/ko.js'
 
 let ran = 0
 let failed = 0
@@ -219,7 +220,7 @@ test('bigger gem packs cost less per gem', () => {
 
 test('every supported locale has the same keys as English', () => {
   const enKeys = Object.keys(en)
-  for (const [code, pack] of Object.entries({ es, fr, de, pt, it, zh, ja })) {
+  for (const [code, pack] of Object.entries({ es, fr, de, pt, it, zh, ja, ko })) {
     const keys = Object.keys(pack)
     assert.equal(keys.length, enKeys.length, `${code} key count`)
     for (const key of enKeys) {

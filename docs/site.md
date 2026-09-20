@@ -7,12 +7,16 @@ One Vite build serves the marketing site and the app.
 | Path | What |
 |------|------|
 | `/` | Landing page |
-| `/app` | Did I (PWA start URL) |
+| `/download` | Android and iPhone download picks |
 | `/privacy` | Privacy Policy |
 | `/terms` | Terms of Use |
 
-Hash routes still work for the app (`/#/tonight`, etc.) when someone
-bookmarks an in-app screen.
+The web app at `/app` is **off in production** unless you set
+`VITE_WEB_APP_PUBLIC=true` on Vercel. Local dev serves `/app` by default
+so you can test beside the marketing site.
+
+When the web app is on, in-app screens use hash routes on `/app`
+(`/app#/tonight`, etc.).
 
 ## Local
 
@@ -20,9 +24,13 @@ bookmarks an in-app screen.
 npm start
 ```
 
-- http://127.0.0.1:48741/ — landing
-- http://127.0.0.1:48741/app — app
-- http://127.0.0.1:48741/privacy — privacy
+- http://127.0.0.1:48741/ (landing)
+- http://127.0.0.1:48741/download (download)
+- http://127.0.0.1:48741/app (app)
+- http://127.0.0.1:48741/privacy (privacy)
+
+The home page is a waitlist landing with a live phone demo. Emails land in
+`public.waitlist` (see `supabase/waitlist.sql`).
 
 ## Deploy on Vercel
 
@@ -32,8 +40,9 @@ npm start
 
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_LEGAL_EMAIL`
+   - `VITE_LEGAL_EMAIL` = `support@did-i.app`
    - `VITE_WEB_APP_URL` = `https://did-i.app`
+   - Do **not** set `VITE_WEB_APP_PUBLIC` unless you want `/app` live
    - `VITE_STRIPE_PACK_*` when Stripe checkout is live
 
    Use the same values as `.env.local`. Never commit `.env.local`.

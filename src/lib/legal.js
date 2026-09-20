@@ -1,21 +1,28 @@
-// Operator contact for privacy and terms. Set in .env.local before you ship.
-// VITE_LEGAL_EMAIL is required for store listings and GDPR/CCPA requests.
+// Support and legal contact. Override with VITE_LEGAL_EMAIL in .env.local or Vercel.
+
+const DEFAULT_EMAIL = 'support@did-i.app'
+const LEGACY_EMAIL = 'codes@did-i.app'
 
 export function legalEmail() {
-  return String(import.meta.env?.VITE_LEGAL_EMAIL || '').trim()
+  const raw = String(import.meta.env?.VITE_LEGAL_EMAIL || DEFAULT_EMAIL).trim()
+  if (!raw || raw === LEGACY_EMAIL) return DEFAULT_EMAIL
+  return raw
 }
+
+const DEFAULT_OPERATOR = 'Did I'
+const LEGACY_OPERATOR = 'Aaron Bryant'
 
 export function legalOperator() {
-  return String(import.meta.env?.VITE_LEGAL_OPERATOR || '').trim() || 'Aaron Bryant'
+  const raw = String(import.meta.env?.VITE_LEGAL_OPERATOR || '').trim()
+  if (!raw || raw === LEGACY_OPERATOR) return DEFAULT_OPERATOR
+  return raw
 }
-
-import { t } from './i18n.js'
 
 export function legalVars() {
   const email = legalEmail()
   return {
     operator: legalOperator(),
-    email: email || 'privacy@example.com',
-    emailNote: email ? '' : t('legal.emailMissing'),
+    email,
+    emailNote: '',
   }
 }

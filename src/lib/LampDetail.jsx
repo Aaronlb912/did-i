@@ -1,5 +1,5 @@
 import { NightStrip } from './NightStrip.jsx'
-import { cadenceLine, lampNotifyOn, lampPriority } from './board-json.js'
+import { cadenceLine, kindLabel, lampNotifyOn, lampPriority } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -21,7 +21,7 @@ export function LampDetail({
   const keys = recentPeriodKeys(lamp, dateIso, 7)
   const priority = lampPriority(lamp)
   const meta = [
-    t(`hang.kind.${lamp.kind}`) || t('hang.kind.other'),
+    kindLabel(lamp),
     cadenceLine(lamp),
     priority !== 'normal' ? t(`hang.priority.${priority}`) : '',
     lampNotifyOn(lamp) ? '' : t('hang.notifyOff'),

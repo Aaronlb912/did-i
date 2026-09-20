@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { blankLamp, lampNotifyOn, lampPriority, missLamp, shortLabel } from './board-json.js'
+import {
+  blankLamp,
+  lampNotifyOn,
+  lampPriority,
+  missLamp,
+  shortLabel,
+  slotFromAskAfter,
+} from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
+import { HangMonthCal } from './HangMonthCal.jsx'
+import { HangSelect } from './HangSelect.jsx'
+import { HangTimeSelect } from './HangTimeSelect.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
+import { isoDate } from './recurrence.js'
 import { STARTERS } from './starters.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -22,11 +33,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
   const [more, setMore] = useState(() =>
     Boolean(
       lamp &&
-        (lamp.short ||
-          lamp.askAfter ||
-          lamp.notes ||
-          (lamp.slot && lamp.slot !== 'whenever') ||
-          (lamp.kind && lamp.kind !== 'other')),
+        (lamp.short || lamp.askAfter || lamp.notes || String(lamp.kind || '').trim()),
     ),
   )
   const priority = lampPriority(draft)
@@ -41,6 +48,24 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
 
   function change(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function changeAskAfter(next) {
+    setDraft((prev) => ({
+      ...prev,
+      askAfter: next,
+      slot: slotFromAskAfter(next),
+    }))
+  }
+
+  function changeCadence(value) {
+    setDraft((prev) => {
+      const next = { ...prev, cadence: value }
+      if (value === 'once' && !/^\d{4}-\d{2}-\d{2}$/.test(String(prev.onceOn || ''))) {
+        next.onceOn = isoDate(new Date(now))
+      }
+      return next
+    })
   }
 
   function toggleDay(day) {
@@ -60,6 +85,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
       question: draft.question.trim(),
       short: draft.short.trim() || shortLabel(draft),
       monthDay: draft.cadence === 'monthly' ? draft.monthDay : '',
+      onceOn: draft.cadence === 'once' ? draft.onceOn : '',
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays : [],
@@ -80,6 +106,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
       <label className="di-field">
         <span>{t('hang.question')}</span>
         <input
+          className="di-hang-input"
           ref={questionRef}
           value={draft.question}
           onChange={(event) => change('question', event.target.value)}
@@ -133,6 +160,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
           ) : null}
           {knownTag ? null : (
             <input
+              className="di-hang-input"
               value={tagTitle}
               onChange={(event) => onTagTitle(event.target.value)}
               placeholder={t('hang.tagPh')}
@@ -141,19 +169,21 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
           )}
         </div>
       ) : null}
-      <label className="di-field">
-        <span>{t('hang.often')}</span>
-        <select
+      <div className="di-field">
+        <span id="di-hang-cadence">{t('hang.often')}</span>
+        <HangSelect
+          ariaLabel={t('hang.often')}
           value={draft.cadence}
-          onChange={(event) => change('cadence', event.target.value)}
-        >
-          <option value="daily">{t('hang.daily')}</option>
-          <option value="weekly">{t('hang.weekly')}</option>
-          <option value="monthly">{t('hang.monthly')}</option>
-          <option value="every_n">{t('hang.everyN')}</option>
-          <option value="once">{t('hang.once')}</option>
-        </select>
-      </label>
+          onChange={changeCadence}
+          options={[
+            { value: 'daily', label: t('hang.daily') },
+            { value: 'weekly', label: t('hang.weekly') },
+            { value: 'monthly', label: t('hang.monthly') },
+            { value: 'every_n', label: t('hang.everyN') },
+            { value: 'once', label: t('hang.once') },
+          ]}
+        />
+      </div>
       {draft.cadence === 'weekly' ? (
         <fieldset className="di-days">
           <legend>{t('hang.weekdays')}</legend>
@@ -170,43 +200,53 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
         </fieldset>
       ) : null}
       {draft.cadence === 'monthly' ? (
-        <label className="di-field">
-          <span>{t('hang.monthDay')}</span>
-          <select
-            value={draft.monthDay === '' ? '' : String(draft.monthDay)}
-            onChange={(event) =>
-              change('monthDay', event.target.value === 'last' ? 'last' : Number(event.target.value) || '')
-            }
-          >
-            <option value="">{t('hang.pickDay')}</option>
-            {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-              <option key={day} value={day}>
-                {day}
-              </option>
-            ))}
-            <option value="last">{t('hang.lastDay')}</option>
-          </select>
-        </label>
+        <div className="di-field">
+          <span id="di-hang-month">{t('hang.monthDay')}</span>
+          <HangMonthCal
+            mode="monthly"
+            value={draft.monthDay === '' ? '' : draft.monthDay}
+            onChange={(day) => change('monthDay', day)}
+            now={now}
+            dayFoldHour={4}
+          />
+          <small className="di-field-hint">{t('hang.monthCalHint')}</small>
+        </div>
+      ) : null}
+      {draft.cadence === 'once' ? (
+        <div className="di-field">
+          <span id="di-hang-once">{t('hang.onceOn')}</span>
+          <HangMonthCal
+            mode="date"
+            value={draft.onceOn}
+            onChange={(iso) => change('onceOn', iso)}
+            now={now}
+            dayFoldHour={4}
+          />
+          <small className="di-field-hint">{t('hang.onceOnHint')}</small>
+        </div>
       ) : null}
       {draft.cadence === 'every_n' ? (
         <>
           <label className="di-field">
             <span>{t('hang.everyNDays')}</span>
             <input
+              className="di-hang-input"
               inputMode="numeric"
               value={draft.everyN}
               onChange={(event) => change('everyN', event.target.value)}
               placeholder="3"
             />
           </label>
-          <label className="di-field">
-            <span>{t('hang.startingOn')}</span>
-            <input
-              type="date"
+          <div className="di-field">
+            <span id="di-hang-anchor">{t('hang.startingOn')}</span>
+            <HangMonthCal
+              mode="date"
               value={draft.everyNAnchor}
-              onChange={(event) => change('everyNAnchor', event.target.value)}
+              onChange={(iso) => change('everyNAnchor', iso)}
+              now={now}
+              dayFoldHour={4}
             />
-          </label>
+          </div>
         </>
       ) : null}
       <div className="di-field">
@@ -249,40 +289,33 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
           <label className="di-field">
             <span>{t('hang.short')}</span>
             <input
+              className="di-hang-input"
               value={draft.short}
               onChange={(event) => change('short', event.target.value)}
               placeholder={t('hang.shortPh')}
             />
           </label>
-          <label className="di-field">
-            <span>{t('hang.timeOfDay')}</span>
-            <select value={draft.slot} onChange={(event) => change('slot', event.target.value)}>
-              <option value="morning">{t('hang.morning')}</option>
-              <option value="whenever">{t('hang.whenever')}</option>
-              <option value="night">{t('hang.night')}</option>
-            </select>
-          </label>
-          <label className="di-field">
-            <span>{t('hang.askAfter')}</span>
-            <input
-              type="time"
+          <div className="di-field">
+            <span id="di-hang-after">{t('hang.askAfter')}</span>
+            <HangTimeSelect
+              ariaLabel={t('hang.askAfter')}
               value={draft.askAfter}
-              onChange={(event) => change('askAfter', event.target.value)}
+              onChange={changeAskAfter}
             />
-          </label>
+          </div>
           <label className="di-field">
             <span>{t('hang.kind')}</span>
-            <select value={draft.kind} onChange={(event) => change('kind', event.target.value)}>
-              <option value="house">{t('hang.kind.house')}</option>
-              <option value="pills">{t('hang.kind.pills')}</option>
-              <option value="money">{t('hang.kind.money')}</option>
-              <option value="people">{t('hang.kind.people')}</option>
-              <option value="other">{t('hang.kind.other')}</option>
-            </select>
+            <input
+              className="di-hang-input"
+              value={draft.kind}
+              onChange={(event) => change('kind', event.target.value)}
+              placeholder={t('hang.kindPh')}
+            />
           </label>
           <label className="di-field">
             <span>{t('hang.notes')}</span>
             <input
+              className="di-hang-input"
               value={draft.notes}
               onChange={(event) => change('notes', event.target.value)}
               placeholder={t('hang.notesPh')}

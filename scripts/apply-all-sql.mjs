@@ -17,6 +17,7 @@ const files = [
   'supabase/dit-board.sql',
   'supabase/gems-social.sql',
   'supabase/gem-purchases.sql',
+  'supabase/waitlist.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

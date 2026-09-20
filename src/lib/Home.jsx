@@ -8,8 +8,6 @@ import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { PurseLine } from './PurseLine.jsx'
-import { mergePurses } from './purse.js'
 import { firstName } from './session.js'
 import { leftoverOn, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
@@ -27,7 +25,6 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const name = firstName(book)
   const heat = hallHeat(book, clock)
   const hunt = nextMark(book)
-  const purse = mergePurses(shelf)
   const kicker =
     !tagId && leftAll
       ? leftAll === 1
@@ -37,14 +34,12 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const tonightTitle = line.kind === 'ask' ? line.title : t(`home.line.${line.kind}`)
 
   return (
-    <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
+    <BoardShell book={book} boards={shelf} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
       <section className="di-page di-home">
         <p className="di-face-plate">{t('home.kicker')}</p>
         <h2 className="di-page-title">{name ? t('home.hey', { name }) : book.title}</h2>
         <p className="di-detail-meta">{kicker}</p>
         <TagRail boards={boards} tagId={tagId} onTag={onTag} now={clock} />
-
-        <PurseLine purse={purse} className="di-purse" gemsLink />
 
         <div className="di-home-card di-home-heat">
           <p className="di-face-plate">{t('home.streak')}</p>
