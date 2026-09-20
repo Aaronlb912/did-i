@@ -1,5 +1,4 @@
 import { goHash } from '../site/hash.js'
-import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
