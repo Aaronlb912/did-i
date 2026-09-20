@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  Tonight,
-  emptyBoard,
-  normalizeBook,
-  sampleNowBoard,
-} from './lib/index.js'
+import { Tonight, emptyBoard, normalizeBook } from './lib/index.js'
 import { unlockAchievements } from './lib/achievements.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from './lib/daily.js'
 import {
@@ -70,7 +65,7 @@ import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
-import { needsEnter, openSession } from './lib/session.js'
+import { needsEnter } from './lib/session.js'
 import { Door } from './site/Door.jsx'
 import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
@@ -88,28 +83,7 @@ import './site/site.css'
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
 const HALL = new Set(['/', '/home', '/tonight'])
-const READY_KEY = 'did-i-ready-1'
-
-function wipeDemoOnce() {
-  try {
-    if (localStorage.getItem(READY_KEY) === '1') return
-    localStorage.setItem(READY_KEY, '1')
-  } catch {
-    return
-  }
-  const old = readShelf()
-  const name = currentBook(old)?.keeperName || ''
-  const book = { ...emptyBoard(), title: 'Did I', keeperName: name }
-  writeShelf({ currentId: book.id, boards: [book] })
-  try {
-    localStorage.removeItem('did-i-welcome')
-  } catch {
-    // First night can show again.
-  }
-}
-
 function firstShelf() {
-  wipeDemoOnce()
   const now = new Date()
   const shelf = writeShelf(alignShelfPurse(readShelf()))
   return {
@@ -243,18 +217,6 @@ export default function App() {
 
   function openHall(face = '') {
     goHash(face ? '/tonight' : '/', face ? { face } : '')
-  }
-
-  function openDemo() {
-    const name = live.keeperName || ''
-    const nowBoard = normalizeBook({ ...sampleNowBoard(), keeperName: name })
-    openSession()
-    markWelcomeSeen()
-    persist({
-      currentId: nowBoard.id,
-      boards: [nowBoard],
-    })
-    goHash('/tonight', { tag: nowBoard.id })
   }
 
   function startEmpty(title, keeperName = '') {
@@ -451,7 +413,6 @@ export default function App() {
   const hallProps = {
     pingLabel,
     onAskPings: pingLabel ? askPings : undefined,
-    onInstall: installEvent ? installHall : undefined,
     onImport: (next) => persist(next),
     onStartEmpty: () =>
       change({
@@ -460,7 +421,6 @@ export default function App() {
         title: live.title,
         keeperName: live.keeperName,
       }),
-    onLoadDemo: openDemo,
     onSendCopy: sendCopy,
   }
 
@@ -471,7 +431,6 @@ export default function App() {
         currentTitle={book?.title || ''}
         hasBoard={Boolean(book)}
         onOpenHere={() => openHall()}
-        onOpenSample={openDemo}
         onStartEmpty={startEmpty}
       />
     )
@@ -494,14 +453,13 @@ export default function App() {
     inner = (
       <Enter
         book={live}
-        onOpenSample={openDemo}
         onSaveKeeper={saveKeeper}
         returnTo={path === '/enter' ? (emptyHall ? '/first' : '/') : path}
         returnFace={route.face}
       />
     )
   } else if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
-    inner = <FirstNight book={live} onChange={change} onLoadDemo={openDemo} />
+    inner = <FirstNight book={live} onChange={change} />
   } else if (path === '/about') {
     inner = <About book={live} />
   } else if (path === '/help') {

@@ -32,7 +32,6 @@ export { Collection } from './Collection.jsx'
 export { PingPlate } from './PingPlate.jsx'
 export { WaitPlate } from './WaitPlate.jsx'
 export { HolePlate } from './HolePlate.jsx'
-export { sampleBoard, sampleEmptyBoard, sampleNowBoard, samplePracticeBoard, sampleShopBoard } from './sample-board.js'
 export { emptyBoard } from './board-json.js'
 export {
   addUnlock,

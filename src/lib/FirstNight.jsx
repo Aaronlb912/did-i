@@ -24,7 +24,7 @@ function shortFrom(question) {
     .slice(0, 24)
 }
 
-export function FirstNight({ book, onChange, onLoadDemo, now }) {
+export function FirstNight({ book, onChange, now }) {
   usePrefs()
   const clock = now || new Date()
   const named = firstName(book)
@@ -101,11 +101,6 @@ export function FirstNight({ book, onChange, onLoadDemo, now }) {
           <button className="di-did di-did-small" type="button" onClick={addOwn}>
             {t('first.add')}
           </button>
-          {onLoadDemo ? (
-            <button className="di-key" type="button" onClick={onLoadDemo}>
-              {t('first.demo')}
-            </button>
-          ) : null}
         </div>
       </section>
     </BoardShell>

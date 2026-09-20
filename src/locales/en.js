@@ -251,7 +251,7 @@ export const en = {
   'enter.openTitle': 'Open {board}.',
   'enter.backTitle': 'Back on this phone.',
   'enter.whoTitle': 'Who is this for?',
-  'enter.body': 'No email and no password. Your questions stay on this phone.',
+  'enter.body': 'Sign in under Settings to sync across phones. A number lock still works on this phone only.',
   'enter.pin': 'Number lock',
   'enter.name': 'Your name',
   'enter.nameHint': 'Optional',
@@ -391,7 +391,7 @@ export const en = {
   'help.marks': 'Marks',
   'help.phone': 'This phone',
   'help.phoneP':
-    'No account. Your questions stay here. Settings has a copy, a number lock, and reminders.',
+    'Sign in under Settings to sync your questions. Settings also has a copy, a number lock, and reminders.',
   'help.home': 'Home',
   'hang.tag': 'Tag',
   'hang.tagPh': 'Home',
@@ -479,11 +479,11 @@ export const en = {
   'questions.hint': 'Pick a usual one, or write your own.',
   'questions.down': 'Not being asked',
   'about.p2':
-    'There is no account. Your name and your tags live on this phone, in this browser. Nothing is sent to a server. Closing the tab does not log you out of a website, because there is not one.',
+    'Sign in under Settings to sync your questions across phones. Your name and tags still live on this phone until you sign in.',
   'about.p3':
     'Settings can lock this phone with a short number here only. That number is not a password for the internet.',
   'about.p5':
-    'Settings has a Try a demo button if you want sample questions without writing them.',
+    'Settings has account sign-in, a copy of your shelf, and reminders.',
   'shop.title': 'Shop',
   'shop.hubHint': 'Pick a shelf. Tap a chip below to preview.',
   'shop.promoLooks': 'New looks',
@@ -965,7 +965,7 @@ export const en = {
   'site.door.p2':
     'Home says what is left. Tonight is where you tap DID or nope. Tags group questions. The cog is settings.',
   'site.door.p3':
-    'No account. This browser keeps your questions. Hayes Street is a made-up apartment if you want a full set to try first.',
+    'Sign in under Settings to sync across phones. This browser keeps your questions until you do.',
   'site.door.openBoard': 'Open {board}',
   'site.door.openHome': 'Open the home screen',
   'site.door.how': 'How to use it',
@@ -973,7 +973,7 @@ export const en = {
   'site.name.kicker': 'This browser',
   'site.name.title': 'Name this phone.',
   'site.name.body':
-    'Your questions stay on this computer. There is no email and no password. Try a demo if you want to tap around without writing questions first.',
+    'Name this tag and add your first question. Sign in under Settings when you want sync across phones.',
   'site.name.label': 'Tag name',
   'site.name.miss': 'This needs a name.',
   'site.name.openBoard': 'Open {board}',
@@ -996,7 +996,7 @@ export const en = {
   'site.into.title': 'If you already run a React app.',
   'site.into.p1': 'Copy the src/lib folder into your src folder.',
   'site.into.code':
-    'import { Tonight, sampleBoard, emptyBoard } from \'./lib\'\n\n<Tonight value={book} onChange={setBook} />',
+    'import { Tonight, emptyBoard } from \'./lib\'\n\n<Tonight value={book} onChange={setBook} />',
   'site.into.p2':
     'Tonight does not write localStorage. Persist in the host. Pass now if you need a frozen clock.',
   'site.into.back': 'Back to the door',

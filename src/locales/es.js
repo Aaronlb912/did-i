@@ -253,7 +253,7 @@ export const es = {
   'enter.openTitle': 'Abrir {board}.',
   'enter.backTitle': 'De vuelta en este teléfono.',
   'enter.whoTitle': '¿Para quién es esto?',
-  'enter.body': 'Sin correo y sin contraseña. Tus preguntas se quedan en este teléfono.',
+  'enter.body': 'Inicia sesión en Ajustes para sincronizar entre teléfonos. El candado numérico sigue siendo solo en este teléfono.',
   'enter.pin': 'Candado numérico',
   'enter.name': 'Tu nombre',
   'enter.nameHint': 'Opcional',
@@ -394,7 +394,7 @@ export const es = {
   'help.marks': 'Marcas',
   'help.phone': 'Este teléfono',
   'help.phoneP':
-    'Sin cuenta. Tus preguntas se quedan aquí. Ajustes tiene una copia, un candado y avisos.',
+    'Inicia sesión en Ajustes para sincronizar tus preguntas. Ajustes también tiene copia, candado y avisos.',
   'help.home': 'Inicio',
   'hang.tag': 'Etiqueta',
   'hang.tagPh': 'Inicio',
@@ -482,11 +482,11 @@ export const es = {
   'questions.hint': 'Elige una de las de siempre, o escribe la tuya.',
   'questions.down': 'Ya no se preguntan',
   'about.p2':
-    'No hay cuenta. Tu nombre y tus etiquetas viven en este teléfono, en este navegador. No se envía nada a un servidor. Cerrar la pestaña no te saca de un sitio, porque no hay uno.',
+    'Inicia sesión en Ajustes para sincronizar tus preguntas entre teléfonos. Tu nombre y etiquetas siguen en este teléfono hasta que lo hagas.',
   'about.p3':
     'Ajustes puede poner un número corto solo en este teléfono. Ese número no es una contraseña de internet.',
   'about.p5':
-    'En Ajustes hay un botón Probar una demo si quieres preguntas de muestra sin escribirlas.',
+    'Ajustes tiene inicio de sesión, una copia de tu estante y avisos.',
   'shop.title': 'Tienda',
   'shop.hubHint': 'Elige un estante. Toca un chip abajo para verlo.',
   'shop.promoLooks': 'Looks nuevos',
@@ -971,7 +971,7 @@ export const es = {
   'site.door.p2':
     'Inicio dice lo que queda. Esta noche es donde das DID o nope. Las etiquetas agrupan preguntas. El engranaje es ajustes.',
   'site.door.p3':
-    'Sin cuenta. Este navegador guarda tus preguntas. Hayes Street es un apartamento inventado si quieres un set completo para probar.',
+    'Inicia sesión en Ajustes para sincronizar entre teléfonos. Este navegador guarda tus preguntas hasta entonces.',
   'site.door.openBoard': 'Abrir {board}',
   'site.door.openHome': 'Abrir la pantalla de inicio',
   'site.door.how': 'Cómo usarlo',
@@ -979,7 +979,7 @@ export const es = {
   'site.name.kicker': 'Este navegador',
   'site.name.title': 'Nombra este teléfono.',
   'site.name.body':
-    'Tus preguntas se quedan en este ordenador. No hay email ni contraseña. Prueba una demo si quieres tocar sin escribir preguntas primero.',
+    'Nombra esta etiqueta y añade tu primera pregunta. Inicia sesión en Ajustes cuando quieras sync entre teléfonos.',
   'site.name.label': 'Nombre de etiqueta',
   'site.name.miss': 'Hace falta un nombre.',
   'site.name.openBoard': 'Abrir {board}',
@@ -1002,7 +1002,7 @@ export const es = {
   'site.into.title': 'Si ya tienes una app React.',
   'site.into.p1': 'Copia la carpeta src/lib en tu carpeta src.',
   'site.into.code':
-    'import { Tonight, sampleBoard, emptyBoard } from \'./lib\'\n\n<Tonight value={book} onChange={setBook} />',
+    'import { Tonight, emptyBoard } from \'./lib\'\n\n<Tonight value={book} onChange={setBook} />',
   'site.into.p2':
     'Tonight no escribe localStorage. Persiste en el host. Pasa now si necesitas un reloj fijo.',
   'site.into.back': 'Volver a la puerta',

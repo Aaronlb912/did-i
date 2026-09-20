@@ -19,7 +19,6 @@ import { useAccount } from './account.js'
 import { useSync } from './cloud-sync.js'
 import { feelTap, playClick } from './native.js'
 import { usePrefs, useTheme } from './prefs.js'
-import { snoozeFor, sweepSnoozes, wakeNow } from './snooze.js'
 import { PurseLine } from './PurseLine.jsx'
 import { mergePurses } from './purse.js'
 import { WeekStrip } from './WeekStrip.jsx'
@@ -61,9 +60,6 @@ export function Tonight({
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [overlay, setOverlay] = useState(null)
-  const [later, setLater] = useState(0)
-  const [laterNote, setLaterNote] = useState(null)
-
   const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
   const shelf = useMemo(
@@ -109,7 +105,7 @@ export function Tonight({
       heat: shelfHeat(shelf, clock, tagId),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shelf, liveValue, tagId, dateIso, minute, later],
+    [shelf, liveValue, tagId, dateIso, minute],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = due.length > 0 && due.every((row) => row.answer)
@@ -127,17 +123,6 @@ export function Tonight({
   useEffect(() => {
     setTitleDraft(value.title)
   }, [value.title])
-
-  // Yesterday's "later tonight" is nobody's business today.
-  useEffect(() => {
-    sweepSnoozes()
-  }, [dateIso])
-
-  useEffect(() => {
-    if (!laterNote) return undefined
-    const timer = window.setTimeout(() => setLaterNote(null), 6000)
-    return () => window.clearTimeout(timer)
-  }, [laterNote])
 
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
@@ -168,10 +153,6 @@ export function Tonight({
       if (closePlates()) {
         event.preventDefault()
         return
-      }
-      if (laterNote) {
-        setLaterNote(null)
-        event.preventDefault()
       }
     }
     window.addEventListener('did-i-back', onBack)
@@ -209,11 +190,6 @@ export function Tonight({
       if (event.key === 'y' || event.key === ' ') {
         event.preventDefault()
         mark(faceRow, 'yes')
-        return
-      }
-      if (event.key === 'l') {
-        event.preventDefault()
-        pushLater(faceRow)
         return
       }
       if (event.key === 's') {
@@ -259,11 +235,17 @@ export function Tonight({
   function mark(row, status) {
     if (!row) return
     const book = bookOf(row)
+    const ids = ready.map((item) => item.lamp.id)
+    const at = ids.indexOf(row.lamp.id)
+    if (status === 'skip' && at >= 0 && ids.length > 1) {
+      setFaceId(ids[(at + 1) % ids.length])
+    } else {
+      setFaceId('')
+    }
     const next = putAnswer(book, row, status, clock)
     const wasClear = allClearTonight(book, clock)
     setOverlay(next)
     change(next)
-    setFaceId('')
     setHolePick(null)
     setWaitPick(null)
     armUndo({ book, label: t('tonight.saved') })
@@ -271,29 +253,6 @@ export function Tonight({
     else feelTap('did')
     if (book.clickSound && status === 'yes') playClick()
     if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
-  }
-
-  // Not an answer. The question steps aside and comes back tonight.
-  function pushLater(row) {
-    if (!row) return
-    const until = snoozeFor(row.lamp.id, row.periodKey, clock)
-    const hh = String(until.getHours()).padStart(2, '0')
-    const mm = String(until.getMinutes()).padStart(2, '0')
-    setFaceId('')
-    setLater((n) => n + 1)
-    setLaterNote({
-      lampId: row.lamp.id,
-      periodKey: row.periodKey,
-      words: t('tonight.laterUntil', { time: clockWords(`${hh}:${mm}`) }),
-    })
-    feelTap('skip')
-  }
-
-  function bringBack() {
-    if (!laterNote) return
-    wakeNow(laterNote.lampId, laterNote.periodKey)
-    setLaterNote(null)
-    setLater((n) => n + 1)
   }
 
   function moveFace(step) {
@@ -322,7 +281,9 @@ export function Tonight({
       return
     }
     if (row.answer?.status === 'skip') {
-      pickHole(row.lamp, row.periodKey, row)
+      setFaceId(row.lamp.id)
+      setWaitPick(null)
+      setHolePick(null)
       return
     }
     if (row.answer) {
@@ -389,6 +350,7 @@ export function Tonight({
   } else if (faceRow) {
     body = (
       <LampFace
+        key={`${rowKey(faceRow)}:${faceRow.periodKey}:${faceRow.answer?.status || 'open'}`}
         row={faceRow}
         book={bookOf(faceRow)}
         tag={faceRow.tag}
@@ -397,7 +359,6 @@ export function Tonight({
         onPickHole={pickHole}
         onYes={() => mark(faceRow, 'yes')}
         onSkip={() => mark(faceRow, 'skip')}
-        onLater={pushLater}
       />
     )
   } else if (waiting.length) {
@@ -567,15 +528,6 @@ export function Tonight({
             {undo.label}{' '}
             <button className="di-key" type="button" onClick={applyUndo}>
               {t('tonight.undo')}
-            </button>
-          </p>
-        ) : null}
-
-        {laterNote ? (
-          <p className="di-undo" role="status">
-            {laterNote.words}{' '}
-            <button className="di-key" type="button" onClick={bringBack}>
-              {t('tonight.laterBack')}
             </button>
           </p>
         ) : null}

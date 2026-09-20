@@ -6,13 +6,7 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { checkPin, hasPin, keeperNamed, openSession } from './session.js'
 
-export function Enter({
-  book,
-  onOpenSample,
-  onSaveKeeper,
-  returnTo = '/',
-  returnFace = '',
-}) {
+export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
   usePrefs()
   const named = keeperNamed(book)
   const locked = named && hasPin()
@@ -54,11 +48,6 @@ export function Enter({
   function later() {
     setMiss('')
     finish()
-  }
-
-  function sample() {
-    setMiss('')
-    if (onOpenSample) onOpenSample()
   }
 
   return (
@@ -129,11 +118,6 @@ export function Enter({
           {!locked ? (
             <button className="di-key" type="button" onClick={later}>
               {t('enter.later')}
-            </button>
-          ) : null}
-          {!named ? (
-            <button className="di-key" type="button" onClick={sample}>
-              {t('enter.demo')}
             </button>
           ) : null}
         </div>

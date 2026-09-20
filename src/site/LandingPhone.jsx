@@ -5,20 +5,13 @@ import { hallHeat, hallHour } from '../lib/hall-feel.js'
 import { LampFace } from '../lib/LampFace.jsx'
 import { NightMeter } from '../lib/NightMeter.jsx'
 import { PurseLine } from '../lib/PurseLine.jsx'
-import { sampleNowBoard } from '../lib/sample-board.js'
+import { landingDemoBook } from './landing-demo.js'
 import { MastCogs } from '../lib/SettingsCog.jsx'
 import { WeekStrip } from '../lib/WeekStrip.jsx'
 import { t } from '../lib/i18n.js'
 import { usePrefs, useTheme } from '../lib/prefs.js'
 import { normalizePurse } from '../lib/purse.js'
-import {
-  addDaysIso,
-  boardDate,
-  faceReadyTonight,
-  formatBoardDate,
-  periodKeyFor,
-  recentPeriodKeys,
-} from '../lib/recurrence.js'
+import { boardDate, faceReadyTonight, formatBoardDate, recentPeriodKeys } from '../lib/recurrence.js'
 import { rowKey, taggedDue } from '../lib/tags.js'
 import { useReduceMotion } from '../lib/useReduceMotion.js'
 
@@ -39,37 +32,6 @@ const DEMO_CHIP_KEYS = [
   'web.landing.chip2',
   'web.landing.chip3',
 ]
-
-function demoBook() {
-  const base = sampleNowBoard()
-  const today = boardDate(new Date(), base.dayFoldHour)
-  const lamps = base.lamps.slice(0, DEMO_KEYS.length)
-  const door = lamps[0]
-  return {
-    ...base,
-    title: 'Hayes Street',
-    lamps,
-    answers: [
-      {
-        id: `ans-${door.id}-${addDaysIso(today, -1)}`,
-        lampId: door.id,
-        periodKey: periodKeyFor(door, addDaysIso(today, -1)),
-        status: 'yes',
-        answeredAt: `${addDaysIso(today, -1)}T21:04:00`,
-        note: '',
-      },
-      {
-        id: `ans-${door.id}-${addDaysIso(today, -2)}`,
-        lampId: door.id,
-        periodKey: periodKeyFor(door, addDaysIso(today, -2)),
-        status: 'yes',
-        answeredAt: `${addDaysIso(today, -2)}T21:11:00`,
-        note: '',
-      },
-    ],
-    opens: [today, addDaysIso(today, -1), addDaysIso(today, -2)],
-  }
-}
 
 function withDemoCopy(book) {
   return {
@@ -98,7 +60,7 @@ export function LandingPhone() {
   const theme = useTheme()
   const reduce = useReduceMotion()
   const clock = useMemo(() => new Date(), [])
-  const [book, setBook] = useState(() => withDemoCopy(demoBook()))
+  const [book, setBook] = useState(() => withDemoCopy(landingDemoBook()))
 
   useEffect(() => {
     setBook((prev) => withDemoCopy(prev))
@@ -145,7 +107,7 @@ export function LandingPhone() {
     let timer
 
     function resetBook() {
-      setBook(withDemoCopy(demoBook()))
+      setBook(withDemoCopy(landingDemoBook()))
       setDemoPull(0)
       setDemoFly('')
     }
@@ -168,7 +130,7 @@ export function LandingPhone() {
               const row = faceReadyTonight(prev, clock)[0]
               if (!row) {
                 resetBook()
-                return withDemoCopy(demoBook())
+                return withDemoCopy(landingDemoBook())
               }
               const next = putAnswer(prev, row, 'yes', clock)
               const left = faceReadyTonight(next, clock)

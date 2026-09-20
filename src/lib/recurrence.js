@@ -1,4 +1,3 @@
-import { snoozedNow } from './snooze.js'
 import { DAY_FOLD, wallClock } from './zone.js'
 
 function pad(value) {
@@ -195,14 +194,16 @@ export function unansweredTonight(book, now = new Date()) {
 }
 
 // Ready and waiting are two halves of the same list. A question is
-// waiting if its time has not come round yet, or if it was pushed to
-// later tonight.
+// waiting if its time has not come round yet.
 function standingBy(row, now) {
-  return !askAfterPassed(row.lamp, now) || snoozedNow(row.lamp.id, row.periodKey, now)
+  return !askAfterPassed(row.lamp, now)
 }
 
 export function faceReadyTonight(book, now = new Date()) {
-  return unansweredTonight(book, now).filter((row) => !standingBy(row, now))
+  const due = dueTonight(book, now)
+  const open = due.filter((row) => !row.answer && !standingBy(row, now))
+  const noped = due.filter((row) => row.answer?.status === 'skip')
+  return [...open, ...noped]
 }
 
 export function waitingTonight(book, now = new Date()) {

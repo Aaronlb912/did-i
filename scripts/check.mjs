@@ -4,7 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
-import { addDaysIso, answerFor, boardDate, isoDate } from '../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, faceReadyTonight, isoDate } from '../src/lib/recurrence.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { byPriority, lampBuzzes, lampNudgesLate } from '../src/lib/board-json.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
@@ -76,6 +76,23 @@ test('today still open does not close before the night ends', () => {
   noon.setHours(12, 0, 0, 0)
   assert.equal(closePastNights(book, noon), book)
   assert.equal(answerFor(book, 'door', today), undefined)
+})
+
+test('a nope stays on the face stack at the back', () => {
+  const today = boardDate(new Date())
+  const book = {
+    dayFoldHour: 0,
+    lamps: [
+      lamp('door', { createdOn: '2024-01-01' }),
+      lamp('pills', { createdOn: '2024-01-01', short: 'Pills' }),
+    ],
+    answers: [{ lampId: 'door', periodKey: today, status: 'skip', answeredAt: '2026-01-01T10:00:00' }],
+  }
+  const stack = faceReadyTonight(book, new Date())
+  assert.equal(stack.length, 2)
+  assert.equal(stack[0].lamp.id, 'pills')
+  assert.equal(stack[1].lamp.id, 'door')
+  assert.equal(stack[1].answer.status, 'skip')
 })
 
 test('an answer is found by lamp and night', () => {

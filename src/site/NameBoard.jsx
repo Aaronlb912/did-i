@@ -2,13 +2,7 @@ import { useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { SiteNav } from './SiteNav.jsx'
 
-export function NameBoard({
-  currentTitle,
-  hasBoard,
-  onOpenHere,
-  onOpenSample,
-  onStartEmpty,
-}) {
+export function NameBoard({ currentTitle, hasBoard, onOpenHere, onStartEmpty }) {
   const [name, setName] = useState(
     currentTitle && currentTitle !== 'My hall' && currentTitle !== 'My board' ? currentTitle : '',
   )
@@ -51,9 +45,6 @@ export function NameBoard({
                 {t('site.name.openBoard', { board: currentTitle })}
               </button>
             ) : null}
-            <button className="di-did di-did-small" type="button" onClick={onOpenSample}>
-              {t('settings.demo')}
-            </button>
             <button className="di-skip" type="button" onClick={empty}>
               {t('site.name.startEmpty')}
             </button>

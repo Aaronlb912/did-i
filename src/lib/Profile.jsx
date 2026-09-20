@@ -7,7 +7,6 @@ import { t } from './i18n.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { clearPin, closeSession, hasPin, setPin } from './session.js'
-import { lastBreak } from './Boundary.jsx'
 import { readShelf } from './board-shelf.js'
 import { mergeShelves } from './shelf-merge.js'
 import { zoneWords } from './zone.js'
@@ -16,19 +15,11 @@ import { useReduceMotion } from './useReduceMotion.js'
 import { legalEmail } from './legal.js'
 import { goSite } from '../site/link.js'
 
-function clockLine(iso) {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) return ''
-  return at.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-}
-
 export function Profile({
   book,
   onChange,
   now,
-  onInstall,
   onStartEmpty,
-  onLoadDemo,
   onImport,
   onSendCopy,
 }) {
@@ -44,7 +35,6 @@ export function Profile({
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
-  const broke = lastBreak()
   const locked = pinOn
 
   useBackDismiss(Boolean(confirm), () => setConfirm(null))
@@ -243,9 +233,6 @@ export function Profile({
               }}
             />
           ) : null}
-          {onInstall ? (
-            <SetRow label={t('settings.install')} onClick={onInstall} />
-          ) : null}
         </SetCard>
         {pinMiss ? (
           <p className="di-miss" role="alert">
@@ -285,20 +272,6 @@ export function Profile({
 
         <SetCap>{t('settings.help')}</SetCap>
         <SetCard>
-          {onLoadDemo ? (
-            <SetRow
-              label={t('settings.demo')}
-              onClick={() =>
-                setConfirm({
-                  kicker: t('settings.demo'),
-                  title: t('settings.demoTitle'),
-                  body: t('settings.demoBody'),
-                  yes: t('settings.demoYes'),
-                  go: onLoadDemo,
-                })
-              }
-            />
-          ) : null}
           {onSendCopy ? (
             <SetRow
               label={t('settings.sendCopy')}
@@ -323,16 +296,6 @@ export function Profile({
           <p className="di-miss" role="status">
             {t('legal.operatorWarn')}
           </p>
-        ) : null}
-
-        {broke ? (
-          <>
-            <SetCap>{t('settings.broke')}</SetCap>
-            <SetCard>
-              <SetRow label={broke.what} sub={`${broke.page} · ${clockLine(broke.at)}`} />
-            </SetCard>
-            <p className="di-set-note">{t('settings.brokeHint')}</p>
-          </>
         ) : null}
 
         <SetCap>{t('settings.danger')}</SetCap>
