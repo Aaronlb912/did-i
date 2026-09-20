@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { LampFace } from './LampFace.jsx'
-import { AppNav } from './AppNav.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
 import { MastCogs } from './SettingsCog.jsx'
 import { WaitPlate } from './WaitPlate.jsx'
@@ -495,8 +494,6 @@ export function Tonight({
         ) : null}
 
         <WeekStrip boards={shelf} tagId={tagId} now={clock} />
-
-        <AppNav />
       </div>
 
       <ol className="di-print-slip">

@@ -50,6 +50,7 @@ import { MarkToast } from './lib/MarkToast.jsx'
 import { Welcome } from './lib/Welcome.jsx'
 import { Shop } from './lib/Shop.jsx'
 import { Account } from './lib/Account.jsx'
+import { AppNav } from './lib/AppNav.jsx'
 import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
@@ -130,6 +131,13 @@ export default function App() {
   const emptyHall = shelf.boards.every(
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
+  const showNav =
+    !SITE.has(path) &&
+    path !== '/welcome' &&
+    path !== '/enter' &&
+    path !== '/first' &&
+    !(needsEnter(live) && !SITE.has(path) && path !== '/welcome') &&
+    !(HALL.has(path) && emptyHall && !welcomeSeen())
 
   function persist(nextShelf) {
     const now = new Date()
@@ -534,6 +542,7 @@ export default function App() {
   return (
     <>
       {inner}
+      {showNav ? <AppNav /> : null}
       {SITE.has(path) ? null : (
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
       )}

@@ -167,7 +167,7 @@ html[data-theme='light'] body {
   text-transform: uppercase;
   background: transparent;
   border: 0;
-  padding: 0 0.14em 0 0;
+  padding: 0 0.14em;
   margin: 0;
   color: var(--di-ink);
   cursor: pointer;
@@ -341,7 +341,7 @@ html[data-theme='light'] body {
   font-family: var(--di-mono);
   font-size: 0.72rem;
   letter-spacing: 0.1em;
-  padding-inline-end: 0.1em;
+  padding-inline: 0.1em;
   text-transform: uppercase;
   color: var(--di-ink-dim);
 }
@@ -389,7 +389,7 @@ html[data-theme='light'] body {
   font-family: var(--di-mono);
   font-size: 0.66rem;
   letter-spacing: 0.14em;
-  padding-inline-end: 0.14em;
+  padding-inline: 0.14em;
   text-transform: uppercase;
   color: var(--di-ink-dim);
 }
@@ -579,7 +579,7 @@ html[data-theme='light'] body {
   font-family: var(--di-mono);
   font-size: 0.66rem;
   letter-spacing: 0.16em;
-  padding-inline-end: 0.16em;
+  padding-inline: 0.2em;
   text-transform: uppercase;
   color: var(--di-on);
 }
@@ -856,7 +856,33 @@ html[data-theme='light'] body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
+.di-appnav-pip {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  width: calc((100% - 0.8rem) / 2);
+  border-radius: var(--di-pill);
+  background: var(--di-on);
+  pointer-events: none;
+  transform: translateX(0);
+}
+
+.di-appnav.is-live .di-appnav-pip {
+  transition: transform 380ms var(--di-spring), opacity 180ms var(--di-ease);
+}
+
+.di-appnav[data-at='1'] .di-appnav-pip {
+  transform: translateX(calc(100% + 0.2rem));
+}
+
+.di-appnav[data-at='none'] .di-appnav-pip {
+  opacity: 0;
+}
+
 .di-appnav a {
+  position: relative;
+  z-index: 1;
   flex: 1 1 0;
   display: flex;
   align-items: center;
@@ -868,8 +894,8 @@ html[data-theme='light'] body {
   font-weight: 600;
   text-decoration: none;
   color: var(--di-ink-soft);
-  transition: background var(--di-move) var(--di-ease),
-    color var(--di-move) var(--di-ease);
+  background: transparent;
+  transition: color var(--di-move-2) var(--di-ease);
 }
 
 .di-appnav a:hover {
@@ -877,7 +903,7 @@ html[data-theme='light'] body {
 }
 
 .di-appnav a.is-on {
-  background: var(--di-on);
+  background: transparent;
   color: #101208;
 }
 
@@ -3815,6 +3841,11 @@ html[data-theme='light'] body {
   overflow: hidden;
 }
 
+.di-set .di-face-plate,
+.di-account .di-face-plate {
+  margin-left: 0.2rem;
+}
+
 .di-set .di-page-title {
   margin-bottom: 0.15rem;
 }
@@ -4114,6 +4145,7 @@ html[data-theme='light'] body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--di-on);
+  padding-inline: 0.2em;
 }
 
 .di-set-x {

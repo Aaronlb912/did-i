@@ -1,5 +1,4 @@
 import { hallHeat, hallHour } from './hall-feel.js'
-import { AppNav } from './AppNav.jsx'
 import { MastCogs } from './SettingsCog.jsx'
 import { useTheme } from './prefs.js'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -29,7 +28,6 @@ export function BoardShell({ book, now, title, date, nav = true, cog = true, sit
           {cog ? <MastCogs /> : null}
         </header>
         {children}
-        {nav ? <AppNav /> : null}
       </div>
     </div>
   )
