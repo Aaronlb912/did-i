@@ -6,7 +6,7 @@ import {
   sampleNowBoard,
 } from './lib/index.js'
 import { unlockAchievements } from './lib/achievements.js'
-import { freshMarks, noteOpen } from './lib/daily.js'
+import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from './lib/daily.js'
 import {
   currentBook,
   downloadShelf,
@@ -80,6 +80,7 @@ import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { DIT_ENABLED } from './lib/features.js'
+import { wallClock } from './lib/zone.js'
 import { alignShelfPurse, spreadPurseFrom, weeklyGemBump } from './lib/purse.js'
 import './lib/did-i.css'
 import './site/site.css'
@@ -113,7 +114,7 @@ function firstShelf() {
   const shelf = writeShelf(alignShelfPurse(readShelf()))
   return {
     ...shelf,
-    boards: shelf.boards.map((book) => unlockAchievements(book, now)),
+    boards: shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now)),
   }
 }
 
@@ -163,6 +164,7 @@ export default function App() {
     const bumped = weeklyGemBump(nextShelf, shelf, now)
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
+      next = closePastNights(next, now)
       if (next.id === nextShelf.currentId) next = noteOpen(next, now)
       return unlockAchievements(next, now)
     })
@@ -303,9 +305,54 @@ export default function App() {
   useEffect(() => {
     if (SITE.has(path)) return
     const current = currentBook(shelf)
+    const closed = closePastNights(current, new Date())
+    if (closed !== current) {
+      persist(putBook(shelf, closed))
+      return
+    }
     if (noteOpen(current) === current) return
     persist(shelf)
   }, [path, shelf])
+
+  useEffect(() => {
+    if (SITE.has(path)) return undefined
+    let timeout = 0
+
+    function onNight() {
+      const fresh = readShelf()
+      const now = new Date()
+      const closed = closeShelfPastNights(fresh, now)
+      const same = closed.boards.every((book, i) => book === fresh.boards[i])
+      if (same) {
+        const current = currentBook(fresh)
+        if (noteOpen(current, now) === current) return
+        persist(fresh)
+      } else {
+        persist(closed)
+      }
+      arm()
+    }
+
+    function arm() {
+      window.clearTimeout(timeout)
+      const local = wallClock(new Date())
+      const next = new Date(local)
+      next.setDate(next.getDate() + 1)
+      next.setHours(0, 0, 1, 0)
+      timeout = window.setTimeout(onNight, Math.max(1000, next.getTime() - Date.now()))
+    }
+
+    function onShow() {
+      if (document.visibilityState === 'visible') onNight()
+    }
+
+    arm()
+    document.addEventListener('visibilitychange', onShow)
+    return () => {
+      window.clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onShow)
+    }
+  }, [path])
 
   useEffect(() => {
     checkPings().then(setPingState)

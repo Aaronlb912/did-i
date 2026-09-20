@@ -20,6 +20,7 @@ import { DIT_ENABLED } from './features.js'
 import { claimCheerGifts, readMine, syncTonightBoard } from './people.js'
 import { claimGemPurchases } from './gem-buy.js'
 import { addGemsShelf, mergeGiftCheers } from './purse.js'
+import { closeShelfPastNights } from './daily.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
 
@@ -138,7 +139,7 @@ export async function pullAndMerge() {
     const pulled = await pullAnswers(merged)
     if (pulled.miss) throw new Error(pulled.miss)
 
-    let written = writeShelf(pulled.shelf, savedAt)
+    let written = writeShelf(closeShelfPastNights(pulled.shelf), savedAt)
     const gifts = await claimCheerGifts()
     if (gifts.ids?.length) {
       const boards = written.boards.map((book) => mergeGiftCheers(book, gifts.ids))

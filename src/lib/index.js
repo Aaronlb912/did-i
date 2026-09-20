@@ -76,5 +76,5 @@ export {
   upcomingPings,
 } from './notify.js'
 export { hallHeat, filamentLevel, hallHour } from './hall-feel.js'
-export { noteOpen, showedNights, freshMarks } from './daily.js'
+export { closePastNights, closeShelfPastNights, noteOpen, showedNights, freshMarks } from './daily.js'
 export { isNativeHall, shareBook } from './native.js'
