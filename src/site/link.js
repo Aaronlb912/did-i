@@ -1,16 +1,15 @@
-import { Capacitor } from '@capacitor/core'
 import { goHash } from './hash.js'
 import { isAppPath } from './path.js'
 import { webAppPublic } from './web-app.js'
 
 export function sitePath(path) {
-  if (Capacitor.isNativePlatform() || isAppPath()) return `#${path}`
+  if (isAppPath()) return `#${path}`
   if (path === '/privacy' || path === '/terms') return path
   return `#${path}`
 }
 
 export function goSite(path) {
-  if (Capacitor.isNativePlatform() || isAppPath()) {
+  if (isAppPath()) {
     goHash(path)
     return
   }

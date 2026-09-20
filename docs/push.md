@@ -4,7 +4,7 @@ Set up and running as of 2026-09-20.
 
 Firebase project `did-i-a235d`, Android app `com.aaronbryant.didi`,
 owned by abryantdev@gmail.com. `android/app/google-services.json` is in
-place; Capacitor's gradle files pick it up on their own once that file
+place; Expo's Android build picks it up once that file
 exists.
 
 ## What runs without anybody touching it

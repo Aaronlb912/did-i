@@ -50,12 +50,8 @@ function isReactNative() {
 export function resolveTheme(theme) {
   if (theme === 'phone') {
     if (isReactNative()) {
-      try {
-        const { Appearance } = require('react-native')
-        return Appearance.getColorScheme() === 'light' ? 'light' : 'dark'
-      } catch {
-        return 'dark'
-      }
+      const scheme = globalThis.__didIAppearance?.getColorScheme?.()
+      return scheme === 'light' ? 'light' : 'dark'
     }
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   }
@@ -92,14 +88,10 @@ export function useTheme() {
       if (typeof document !== 'undefined') document.documentElement.dataset.theme = next
     }
     sync()
-    if (isReactNative()) {
-      try {
-        const { Appearance } = require('react-native')
-        const sub = Appearance.addChangeListener(sync)
-        return () => sub.remove()
-      } catch {
-        return undefined
-      }
+    const appearance = globalThis.__didIAppearance
+    if (appearance?.addChangeListener) {
+      const sub = appearance.addChangeListener(sync)
+      return () => sub.remove()
     }
     const media = window.matchMedia('(prefers-color-scheme: light)')
     media.addEventListener('change', sync)

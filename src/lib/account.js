@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Capacitor } from '@capacitor/core'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 
@@ -25,19 +24,8 @@ export function deviceKey() {
 }
 
 export function devicePlatform() {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-      const { Platform } = require('react-native')
-      if (Platform.OS === 'ios' || Platform.OS === 'android') return Platform.OS
-    }
-  } catch {
-    // Web or tests.
-  }
-  try {
-    if (Capacitor.isNativePlatform()) return Capacitor.getPlatform()
-  } catch {
-    // Fall through to the browser guess.
-  }
+  const native = globalThis.__didIPlatform
+  if (native === 'ios' || native === 'android') return native
   return 'web'
 }
 

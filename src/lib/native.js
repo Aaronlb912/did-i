@@ -1,122 +1,47 @@
-import { Capacitor } from '@capacitor/core'
-import { App } from '@capacitor/app'
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
-import { LocalNotifications } from '@capacitor/local-notifications'
-import { Share } from '@capacitor/share'
-import { SplashScreen } from '@capacitor/splash-screen'
-import { StatusBar, Style } from '@capacitor/status-bar'
-import { lampNotifyOn } from './board-json.js'
-import { boardDate, waitingTonight } from './recurrence.js'
+import { boardDate } from './recurrence.js'
 import { readReduceMotion } from './useReduceMotion.js'
 
+// Web build. Native uses native/shim/native.js via Metro.
+
 export function isNativeHall() {
-  return Capacitor.isNativePlatform()
+  return false
 }
 
 function reduceMotion() {
   return readReduceMotion()
 }
 
-export async function bootNative() {
-  if (!isNativeHall()) return
-  try {
-    await StatusBar.setBackgroundColor({ color: '#0e1014' })
-    await StatusBar.setStyle({ style: Style.Light })
-    await StatusBar.setOverlaysWebView({ overlay: false })
-  } catch {
-    // WebView still paints the board.
-  }
-  try {
-    await SplashScreen.hide()
-  } catch {
-    // Splash may already be gone.
-  }
-}
+export async function bootNative() {}
 
 export async function checkNativePings() {
-  if (!isNativeHall()) return null
-  try {
-    const { display } = await LocalNotifications.checkPermissions()
-    if (display === 'granted') return 'granted'
-    if (display === 'denied') return 'denied'
-    return 'default'
-  } catch {
-    return 'missing'
-  }
+  return null
 }
 
 export async function requestNativePings() {
-  if (!isNativeHall()) return null
-  try {
-    const { display } = await LocalNotifications.requestPermissions()
-    if (display === 'granted') return 'granted'
-    if (display === 'denied') return 'denied'
-    return 'default'
-  } catch {
-    return 'denied'
-  }
+  return null
 }
 
-function notifyId(lampId, periodKey) {
-  const text = `${lampId}:${periodKey}`
-  let hash = 1
-  for (let i = 0; i < text.length; i += 1) {
-    hash = (Math.imul(hash, 31) + text.charCodeAt(i)) >>> 0
-  }
-  return (hash % 2147483646) + 1
-}
-
-export async function scheduleNativePings(book, now = new Date()) {
-  if (!isNativeHall() || !book) return
-  const allowed = await checkNativePings()
-  if (allowed !== 'granted') return
-  try {
-    const pending = await LocalNotifications.getPending()
-    if (pending.notifications && pending.notifications.length) {
-      await LocalNotifications.cancel({ notifications: pending.notifications })
-    }
-  } catch {
-    // Fresh install has none.
-  }
-  const dateIso = boardDate(now, book.dayFoldHour)
-  const [year, month, day] = dateIso.split('-').map(Number)
-  const notes = []
-  for (const row of waitingTonight(book, now)) {
-    if (!lampNotifyOn(row.lamp)) continue
-    const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    if (!match) continue
-    const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
-    if (at.getTime() <= now.getTime()) continue
-    notes.push({
-      id: notifyId(row.lamp.id, row.periodKey),
-      title: 'Did I',
-      body: row.lamp.question,
-      schedule: { at, allowWhileIdle: true },
-      extra: { lampId: row.lamp.id, url: '#/' },
-    })
-  }
-  if (!notes.length) return
-  try {
-    await LocalNotifications.schedule({ notifications: notes })
-  } catch {
-    // Some ROMs block exact alarms until the user allows it.
-  }
-}
+export async function scheduleNativePings() {}
 
 export async function feelTap(kind) {
   if (reduceMotion()) return
   try {
-    if (kind === 'skip') {
-      await Haptics.impact({ style: ImpactStyle.Light })
-      return
-    }
-    if (kind === 'hall-on') {
-      await Haptics.notification({ type: NotificationType.Success })
-      return
-    }
-    await Haptics.impact({ style: ImpactStyle.Heavy })
+    const AudioCtx = window.AudioContext || window.webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'square'
+    osc.frequency.value = kind === 'skip' ? 140 : kind === 'hall-on' ? 520 : 190
+    gain.gain.setValueAtTime(kind === 'skip' ? 0.03 : 0.05, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    osc.stop(ctx.currentTime + 0.045)
+    window.setTimeout(() => ctx.close(), 80)
   } catch {
-    // Browser has no motor.
+    // No audio.
   }
 }
 
@@ -142,15 +67,10 @@ export function playClick() {
   }
 }
 
-// Nobody retypes a ten character code correctly. Hand it off instead.
 export async function passAlong(text, title) {
   const line = String(text || '')
   if (!line) return ''
   try {
-    if (isNativeHall()) {
-      await Share.share({ title: title || 'Did I', text: line, dialogTitle: title || 'Did I' })
-      return 'shared'
-    }
     if (navigator.share) {
       await navigator.share({ title: title || 'Did I', text: line })
       return 'shared'
@@ -169,14 +89,6 @@ export async function passAlong(text, title) {
 export async function shareShelf(shelf) {
   const stamp = boardDate(new Date(), 4)
   const text = JSON.stringify(shelf, null, 2)
-  if (isNativeHall()) {
-    await Share.share({
-      title: 'Did I',
-      text,
-      dialogTitle: `did-i-${stamp}.json`,
-    })
-    return
-  }
   const blob = new Blob([text], { type: 'application/json' })
   if (navigator.share && navigator.canShare) {
     const file = new File([blob], `did-i-${stamp}.json`, { type: 'application/json' })
@@ -196,14 +108,6 @@ export async function shareBook(book) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'board'
   const text = JSON.stringify(book, null, 2)
-  if (isNativeHall()) {
-    await Share.share({
-      title: book.title || 'Did I',
-      text,
-      dialogTitle: `${slug}-${stamp}.json`,
-    })
-    return
-  }
   const blob = new Blob([text], { type: 'application/json' })
   if (navigator.share && navigator.canShare) {
     const file = new File([blob], `${slug}-${stamp}.json`, { type: 'application/json' })
@@ -215,41 +119,6 @@ export async function shareBook(book) {
   throw new Error('share-unavailable')
 }
 
-export function listenNativeShell({ onBack, onOpenLamp }) {
-  if (!isNativeHall()) return () => {}
-  let handles = []
-  let dead = false
-  Promise.all([
-    App.addListener('backButton', () => {
-      onBack()
-    }),
-    App.addListener('appUrlOpen', (event) => {
-      const lampId = lampFromUrl(event.url)
-      onOpenLamp(lampId || '')
-    }),
-    LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
-      const lampId = event.notification?.extra?.lampId || ''
-      onOpenLamp(lampId)
-    }),
-  ]).then((list) => {
-    if (dead) {
-      list.forEach((handle) => handle.remove())
-      return
-    }
-    handles = list
-  })
-  return () => {
-    dead = true
-    handles.forEach((handle) => handle.remove())
-  }
-}
-
-function lampFromUrl(url) {
-  try {
-    const hash = String(url).split('#')[1] || ''
-    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : ''
-    return new URLSearchParams(q).get('face') || ''
-  } catch {
-    return ''
-  }
+export function listenNativeShell() {
+  return () => {}
 }

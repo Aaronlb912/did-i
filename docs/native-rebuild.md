@@ -1,8 +1,7 @@
 # React Native rebuild
 
 The native app lives in `native/`. Business logic stays in `src/lib/*.js`.
-Screens are rebuilt in React Native. Capacitor WebView is legacy; Expo is the
-native target.
+Screens are rebuilt in React Native. Expo is the native target.
 
 ## Run it
 
@@ -49,12 +48,12 @@ Parity with the web app shell:
 
 ## Build
 
-`npx expo export --platform android` bundles cleanly (1718 modules). Capacitor
-`android/` stays for the legacy web APK; store builds use `npx expo prebuild`.
+`npx expo export --platform android` bundles cleanly. Store builds use
+`npx expo prebuild` then `expo run:android` or EAS.
 
 Gem purchases need a dev build on a real device (not Expo Go). See `docs/iap.md`.
 
 ## Web app
 
-`npm run dev` and `npm run cap:apk` still use `src/App.jsx`. Drop Capacitor when
-you ship Expo builds to the stores.
+`npm run dev` serves the Vite app at `src/App.jsx`. Native uses `index.js` and
+`native/`.

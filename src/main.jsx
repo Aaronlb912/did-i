@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
@@ -13,14 +12,7 @@ import { hookErrorReport } from './lib/report.js'
 applyPrefsToDocument(readPrefs())
 hookErrorReport()
 
-if (Capacitor.isNativePlatform()) {
-  navigator.serviceWorker?.getRegistrations?.().then((regs) => {
-    regs.forEach((reg) => reg.unregister())
-  })
-  if (typeof caches !== 'undefined') {
-    caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
-  }
-} else if (webAppPublic()) {
+if (webAppPublic()) {
   registerSW({ immediate: true })
 }
 

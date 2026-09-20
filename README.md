@@ -97,16 +97,6 @@ More detail: `docs/native-rebuild.md`.
 Push needs Firebase (`android/app/google-services.json`) and a signed-in
 account. See `docs/push.md`.
 
-## Android (legacy Capacitor web APK)
-
-Still builds the web app in a WebView:
-
-```
-npm run cap:apk
-```
-
-Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-
 ## Gem purchases
 
 Native builds use in-app purchases (`expo-iap`). Pack ids, the edge function,

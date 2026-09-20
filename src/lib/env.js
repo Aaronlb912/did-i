@@ -7,13 +7,8 @@ export function env(name) {
   if (typeof import.meta !== 'undefined' && import.meta.env?.[name] != null) {
     return String(import.meta.env[name]).trim()
   }
-  try {
-    const Constants = require('expo-constants').default
-    const fromExtra = Constants.expoConfig?.extra?.[name]
-    if (fromExtra != null) return String(fromExtra).trim()
-  } catch {
-    // Web or tests.
-  }
+  const fromExtra = globalThis.__didIExpoExtra?.[name]
+  if (fromExtra != null) return String(fromExtra).trim()
   if (typeof process !== 'undefined' && process.env?.[name] != null) {
     return String(process.env[name]).trim()
   }

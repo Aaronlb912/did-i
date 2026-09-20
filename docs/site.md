@@ -64,5 +64,5 @@ Upload `dist/` anywhere with the same SPA fallback if not using Vercel.
 
 ## Android / native
 
-The Capacitor app skips the marketing site and opens the app shell
+The native app skips the marketing site and opens the app shell
 directly. Store listing privacy URL: `https://did-i.app/privacy`.

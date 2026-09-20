@@ -3,8 +3,15 @@
 // src/lib talks to localStorage, window events, and CustomEvent; without
 // these the cloud sync throws before it ever pushes the shelf back.
 
+import Constants from 'expo-constants'
+import { Appearance, Platform } from 'react-native'
+
 const mem = new Map()
 let store = null
+
+globalThis.__didIPlatform = Platform.OS
+globalThis.__didIAppearance = Appearance
+globalThis.__didIExpoExtra = Constants.expoConfig?.extra || {}
 
 try {
   const { MMKV } = require('react-native-mmkv')
