@@ -4,7 +4,7 @@
 // these the cloud sync throws before it ever pushes the shelf back.
 
 import Constants from 'expo-constants'
-import { Appearance, Platform } from 'react-native'
+import { Appearance, AppState, Platform } from 'react-native'
 
 const mem = new Map()
 let store = null
@@ -13,9 +13,16 @@ globalThis.__didIPlatform = Platform.OS
 globalThis.__didIAppearance = Appearance
 globalThis.__didIExpoExtra = Constants.expoConfig?.extra || {}
 
+globalThis.__didIOnVisible = (fn) => {
+  const sub = AppState.addEventListener('change', (state) => {
+    if (state === 'active') fn()
+  })
+  return () => sub.remove()
+}
+
 try {
-  const { MMKV } = require('react-native-mmkv')
-  store = new MMKV({ id: 'did-i' })
+  const { createMMKV } = require('react-native-mmkv')
+  store = createMMKV({ id: 'did-i' })
 } catch (error) {
   console.warn('mmkv unavailable', error?.message || error)
 }
@@ -34,7 +41,7 @@ function kv(prefix) {
     },
     removeItem: (key) => {
       const id = `${prefix}${key}`
-      if (store) store.delete(id)
+      if (store) store.remove(id)
       else mem.delete(id)
     },
     clear: () => {

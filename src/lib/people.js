@@ -662,6 +662,19 @@ function boardDateIn(foldHour) {
   return isoDate(local)
 }
 
+function onVisible(fn) {
+  if (typeof document !== 'undefined') {
+    function onShow() {
+      if (!document.hidden) fn()
+    }
+    document.addEventListener('visibilitychange', onShow)
+    return () => document.removeEventListener('visibilitychange', onShow)
+  }
+  const hook = globalThis.__didIOnVisible
+  if (typeof hook === 'function') return hook(fn)
+  return () => {}
+}
+
 export function useFamilyTonight(user) {
   const [rows, setRows] = useState([])
 
@@ -675,11 +688,7 @@ export function useFamilyTonight(user) {
 
   useEffect(() => {
     look()
-    function onShow() {
-      if (!document.hidden) look()
-    }
-    document.addEventListener('visibilitychange', onShow)
-    return () => document.removeEventListener('visibilitychange', onShow)
+    return onVisible(look)
   }, [look])
 
   return { rows, reload: look }
@@ -772,14 +781,11 @@ export function usePeopleCount(user) {
     // Every minute per person is a lot of traffic for a badge. The check on
     // coming back to the tab is what actually keeps it fresh.
     const timer = window.setInterval(look, 300000)
-    function onShow() {
-      if (!document.hidden) look()
-    }
-    document.addEventListener('visibilitychange', onShow)
+    const stopVisible = onVisible(look)
     return () => {
       alive = false
       window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onShow)
+      stopVisible()
     }
   }, [user])
 
