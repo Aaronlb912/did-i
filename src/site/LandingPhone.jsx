@@ -85,11 +85,10 @@ function withDemoCopy(book) {
 function LandingAppNav() {
   usePrefs()
   return (
-    <nav className="di-appnav is-live" data-at="0" aria-hidden="true">
+    <nav className="di-appnav is-live" data-at="0" data-tabs="2" aria-hidden="true">
       <i className="di-appnav-pip" />
       <span className="is-on">{t('nav.home')}</span>
       <span>{t('nav.questions')}</span>
-      <span>{t('nav.everyone')}</span>
     </nav>
   )
 }

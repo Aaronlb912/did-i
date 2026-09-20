@@ -2,6 +2,8 @@ import { allClearTonight, boardDate } from './recurrence.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 5
+// About fifteen dollars at the one-dollar gem list price.
+export const BUDDY_GEMS = 15
 // ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
 export const LOOK_COIN_PRICE = 30
 
@@ -18,6 +20,11 @@ export const CHEERS = [
   { id: 'bubble', gems: CHEER_GEMS },
   { id: 'spark', gems: CHEER_GEMS },
   { id: 'flip', gems: CHEER_GEMS },
+]
+
+export const BUDDIES = [
+  { id: 'cat', gems: BUDDY_GEMS },
+  { id: 'dog', gems: BUDDY_GEMS },
 ]
 
 export const LOOKS = [
@@ -44,6 +51,10 @@ export function lookText(id, field) {
   return `look.${id}.${field}`
 }
 
+export function buddyText(id, field) {
+  return `buddy.${id}.${field}`
+}
+
 export function recentLooks(count = 2) {
   const n = Math.max(1, Math.floor(Number(count) || 2))
   return LOOKS.slice(-n)
@@ -63,6 +74,7 @@ export const CHEER_STAGE_GEMS = [0, 0, 1, 2, 3, 4]
 
 const CHEER_IDS = new Set(CHEERS.map((item) => item.id))
 const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
+const BUDDY_IDS = new Set(BUDDIES.map((item) => item.id))
 
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
@@ -102,6 +114,11 @@ export function normalizePurse(book) {
     : []
   const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
   const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
+  const buddies = Array.isArray(book?.buddies)
+    ? book.buddies.map((id) => String(id)).filter((id) => BUDDY_IDS.has(id))
+    : []
+  const buddyOn =
+    BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
   const cheerStage = Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
@@ -114,6 +131,8 @@ export function normalizePurse(book) {
     cheerOn,
     looks: lookOwned,
     lookOn,
+    buddies,
+    buddyOn,
     cheerUses,
     cheerStage,
     cheerStages: stages,
@@ -139,6 +158,8 @@ export function mergePurses(boards) {
     cheerOn: purses.find((item) => item.cheerOn !== 'lime')?.cheerOn || purses[0].cheerOn,
     looks: [...new Set(purses.flatMap((item) => item.looks))],
     lookOn: purses.find((item) => item.lookOn !== 'lime')?.lookOn || purses[0].lookOn,
+    buddies: [...new Set(purses.flatMap((item) => item.buddies))],
+    buddyOn: purses.find((item) => item.buddyOn)?.buddyOn || '',
     cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
     cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
     cheerStages: Object.fromEntries(
@@ -180,8 +201,10 @@ export function spreadPurseFrom(shelf, book) {
     cheerPlayStages: from.cheerPlayStages,
     lookOn: from.lookOn,
     cheerOn: from.cheerOn,
+    buddyOn: from.buddyOn,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
+    buddies: [...new Set([...merged.buddies, ...from.buddies])],
   }
   return {
     ...shelf,
@@ -431,6 +454,33 @@ export function buyCheerStage(book, id) {
     },
     miss: '',
   }
+}
+
+export function buyBuddy(book, id) {
+  const buddy = BUDDIES.find((item) => item.id === id)
+  const purse = normalizePurse(book)
+  if (!buddy) return { book, miss: 'shop.miss.buddyGone' }
+  if (purse.buddies.includes(id)) {
+    return { book: { ...book, ...purse, buddyOn: id }, miss: '' }
+  }
+  if (buddy.gems > purse.gems) return { book, miss: 'shop.miss.needGems', missN: buddy.gems }
+  return {
+    book: {
+      ...book,
+      ...purse,
+      gems: purse.gems - buddy.gems,
+      buddies: [...purse.buddies, id],
+      buddyOn: id,
+    },
+    miss: '',
+  }
+}
+
+export function wearBuddy(book, id) {
+  const purse = normalizePurse(book)
+  if (!id) return { book: { ...book, ...purse, buddyOn: '' }, miss: '' }
+  if (!purse.buddies.includes(id)) return { book, miss: 'shop.miss.buyBuddyFirst' }
+  return { book: { ...book, ...purse, buddyOn: id }, miss: '' }
 }
 
 export function buyCheer(book, id) {

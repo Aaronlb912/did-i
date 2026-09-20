@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DIT_ENABLED } from './features.js'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
@@ -363,30 +364,34 @@ export function People({ book, onChange, now }) {
           }}
         />
         <SetRow label={t('people.handle')} value={handle ? `@${handle}` : '...'} />
-        <SetSwitch
-          label={t('people.shareStreak')}
-          sub={t('people.shareStreakSub')}
-          on={Boolean(mine?.share_streak)}
-          onClick={async () => {
-            await shareStreak(!mine?.share_streak)
-            load()
-          }}
-        />
-        <SetSwitch
-          label={t('all.showing')}
-          sub={t('all.joinBody')}
-          on={Boolean(mine?.public_tonight)}
-          onClick={async () => {
-            await setPublicTonight(!mine?.public_tonight)
-            load()
-          }}
-        />
-        <SetRow
-          label={t('all.kicker')}
-          sub={t('all.listCap')}
-          chevron
-          onClick={() => goHash('/everyone')}
-        />
+        {DIT_ENABLED ? (
+          <>
+            <SetSwitch
+              label={t('people.shareStreak')}
+              sub={t('people.shareStreakSub')}
+              on={Boolean(mine?.share_streak)}
+              onClick={async () => {
+                await shareStreak(!mine?.share_streak)
+                load()
+              }}
+            />
+            <SetSwitch
+              label={t('all.showing')}
+              sub={t('all.joinBody')}
+              on={Boolean(mine?.public_tonight)}
+              onClick={async () => {
+                await setPublicTonight(!mine?.public_tonight)
+                load()
+              }}
+            />
+            <SetRow
+              label={t('all.kicker')}
+              sub={t('all.listCap')}
+              chevron
+              onClick={() => goHash('/everyone')}
+            />
+          </>
+        ) : null}
       </SetCard>
       <p className="di-set-note">{t('people.handleHint')}</p>
 

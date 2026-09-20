@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { CheerChip, LookChip } from './Cosmetic.jsx'
+import { BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
 import { activeLook } from './dit-board.js'
 import { GemIcon } from './PurseIcons.jsx'
 import {
@@ -15,7 +15,16 @@ import {
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { cheerText, fireCheer, lookText, normalizePurse, recentCheers, recentLooks } from './purse.js'
+import {
+  BUDDIES,
+  buddyText,
+  cheerText,
+  fireCheer,
+  lookText,
+  normalizePurse,
+  recentCheers,
+  recentLooks,
+} from './purse.js'
 
 export function Shop({ book, now }) {
   usePrefs()
@@ -25,6 +34,7 @@ export function Shop({ book, now }) {
   const [peekLook, setPeekLook] = useState('')
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
+  const buddyCount = purse.buddies.length
   const promoLooks = recentLooks(2)
   const promoCheers = recentCheers(2)
   const previewLook = peekLook || coat
@@ -100,6 +110,13 @@ export function Shop({ book, now }) {
             note={t('shop.cheersDoor')}
             meta={t('shop.ownedN', { n: cheerCount })}
             onClick={() => goHash('/shop/cheers')}
+          />
+          <ShopDoor
+            preview={<BuddyChip id={purse.buddyOn || BUDDIES[0].id} />}
+            title={t('shop.buddies')}
+            note={t('shop.buddiesDoor')}
+            meta={t('shop.ownedN', { n: buddyCount })}
+            onClick={() => goHash('/shop/buddies')}
           />
           <ShopDoor
             preview={<GemIcon className="di-gem-icon di-gem-icon-door" />}

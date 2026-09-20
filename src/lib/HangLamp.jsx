@@ -19,10 +19,28 @@ import { STARTERS } from './starters.js'
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 const PRIORITIES = ['high', 'normal', 'low']
 
-export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = [], tagTitle = '', onTagTitle }) {
+function hasExtraFields(item) {
+  return Boolean(
+    item && (item.short || item.askAfter || item.notes || String(item.kind || '').trim()),
+  )
+}
+
+export function HangLamp({
+  now,
+  lamp,
+  seed,
+  onSave,
+  onCancel,
+  miss,
+  start,
+  boards = [],
+  tagTitle = '',
+  onTagTitle,
+}) {
   usePrefs()
   const [draft, setDraft] = useState(() => {
     if (lamp) return { ...lamp }
+    if (seed) return { ...seed }
     const pick = STARTERS.find(
       (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
     )
@@ -30,12 +48,7 @@ export function HangLamp({ now, lamp, onSave, onCancel, miss, start, boards = []
   })
   const questionRef = useRef(null)
   const editing = Boolean(lamp)
-  const [more, setMore] = useState(() =>
-    Boolean(
-      lamp &&
-        (lamp.short || lamp.askAfter || lamp.notes || String(lamp.kind || '').trim()),
-    ),
-  )
+  const [more, setMore] = useState(() => hasExtraFields(lamp) || hasExtraFields(seed))
   const priority = lampPriority(draft)
   const notifyOn = lampNotifyOn(draft)
   const knownTag = Boolean(findBookByTitle(boards, tagTitle))

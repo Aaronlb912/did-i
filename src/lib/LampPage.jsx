@@ -4,7 +4,7 @@ import { useBackDismiss } from '../site/nav.js'
 import { BoardShell } from './BoardShell.jsx'
 import { LampDetail } from './LampDetail.jsx'
 import { HolePlate } from './HolePlate.jsx'
-import { commitBook, hangCopy, putAnswer, takeDown, toggleArchive } from './board-ops.js'
+import { commitBook, putAnswer, takeDown, toggleArchive } from './board-ops.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { answerFor, boardDate, formatBoardDate } from './recurrence.js'
@@ -105,11 +105,7 @@ export function LampPage({ book, onChange, now, lampId }) {
         dateIso={dateIso}
         onClose={() => goHash('/lamps')}
         onEdit={(item) => goHash('/add', { id: item.id })}
-        onDuplicate={(item) => {
-          const next = hangCopy(book, item, clock)
-          change(next.book)
-          goHash('/lamp', { id: next.copy.id })
-        }}
+        onDuplicate={(item) => goHash('/add', { copy: item.id })}
         onArchive={(item) => change(toggleArchive(book, item))}
         onRemove={() => setConfirmGone(true)}
         onMarkHole={(item, periodKey) => setHolePick({ lamp: item, periodKey })}

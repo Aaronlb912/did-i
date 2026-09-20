@@ -56,6 +56,7 @@ import { Welcome } from './lib/Welcome.jsx'
 import { GemShop } from './lib/GemShop.jsx'
 import { Shop } from './lib/Shop.jsx'
 import { ShopCheers } from './lib/ShopCheers.jsx'
+import { ShopBuddies } from './lib/ShopBuddies.jsx'
 import { ShopLooks } from './lib/ShopLooks.jsx'
 import { Account } from './lib/Account.jsx'
 import { People } from './lib/People.jsx'
@@ -78,6 +79,7 @@ import { goHash, parseHash } from './site/hash.js'
 import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
+import { DIT_ENABLED } from './lib/features.js'
 import { alignShelfPurse, spreadPurseFrom, weeklyGemBump } from './lib/purse.js'
 import './lib/did-i.css'
 import './site/site.css'
@@ -350,6 +352,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (!DIT_ENABLED && path === '/everyone') goHash('/')
+  }, [path])
+
+  useEffect(() => {
     applyPrefsToDocument(prefs)
     const board = book?.title || 'Did I'
     const titles = {
@@ -385,6 +391,7 @@ export default function App() {
       '/shop': t('title.shop'),
       '/shop/looks': t('title.shopLooks'),
       '/shop/cheers': t('title.shopCheers'),
+      '/shop/buddies': t('title.shopBuddies'),
       '/gems': t('title.gems'),
       '/kit': t('title.kit'),
       '/account': t('title.account'),
@@ -468,6 +475,8 @@ export default function App() {
     inner = <ShopLooks book={live} onChange={change} />
   } else if (path === '/shop/cheers') {
     inner = <ShopCheers book={live} onChange={change} />
+  } else if (path === '/shop/buddies') {
+    inner = <ShopBuddies book={live} onChange={change} />
   } else if (path === '/gems') {
     inner = <GemShop book={live} />
   } else if (path === '/kit') {
@@ -484,7 +493,7 @@ export default function App() {
     inner = <Inbox book={live} onKeep={keepSent} />
   } else if (path === '/sent') {
     inner = <Sent book={live} />
-  } else if (path === '/everyone') {
+  } else if (path === '/everyone' && DIT_ENABLED) {
     inner = <Everyone book={live} boards={shelf.boards} onChange={change} />
   } else if (path === '/add' || path === '/hang') {
     inner = (
@@ -494,6 +503,7 @@ export default function App() {
         onChange={change}
         onSaveTo={saveLamp}
         lampId={route.id}
+        copyId={route.copy}
         start={route.start}
       />
     )

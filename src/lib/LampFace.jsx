@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { BuddyHang } from './Cosmetic.jsx'
 import { NightStrip } from './NightStrip.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -22,6 +23,7 @@ export function LampFace({
   demoFly = '',
   demoQuiet = false,
   questionId = 'di-question',
+  buddy = '',
 }) {
   usePrefs()
   const reduce = useReduceMotion()
@@ -139,6 +141,7 @@ export function LampFace({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      <BuddyHang id={buddy} />
       <p className="di-swipe-stamp is-did" style={{ opacity: Math.max(0, pull) }}>
         {t('tonight.swipeDid')}
       </p>

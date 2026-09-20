@@ -45,6 +45,9 @@ Ship checklist (your accounts, not the repo):
 
 ## Ideas parked (not built)
 
+- **Did I tonight (DIT)** is off in the main app (`VITE_DIT_ENABLED` unset).
+  Code stays in repo for a future split. Friends, family, and account sync
+  still work; the public wall tab and opt-in are hidden.
 - Pin your row on DIT for a night (skipped on purpose).
 - A fourth line slot on DIT (board shows all DID labels now instead).
 - Google Play Billing in the Android app (Stripe web checkout works first).

@@ -6,7 +6,7 @@ const STACK_KEY = 'did-i-stack'
 let muteStack = false
 
 /** Tab roots. No back affordance. */
-export const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later', '/everyone'])
+export const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later'])
 
 /** When there is no browser history, step here instead. */
 const FALLBACK = {
@@ -19,6 +19,7 @@ const FALLBACK = {
   '/gems': '/shop',
   '/shop/looks': '/shop',
   '/shop/cheers': '/shop',
+  '/shop/buddies': '/shop',
   '/pings': '/settings',
   '/me': '/settings',
   '/help': '/settings',

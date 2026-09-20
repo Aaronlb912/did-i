@@ -28,3 +28,10 @@ export function activeLook(book) {
   const pick = String(book.lookOn || 'lime')
   return looks.includes(pick) ? pick : book.lookOn || 'lime'
 }
+
+export function activeBuddy(book) {
+  if (!book) return ''
+  const buddies = Array.isArray(book.buddies) ? book.buddies : []
+  const pick = String(book.buddyOn || '')
+  return buddies.includes(pick) ? pick : ''
+}

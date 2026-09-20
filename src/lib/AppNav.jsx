@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { parseHash } from '../site/hash.js'
+import { DIT_ENABLED } from './features.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 
 const ITEMS = [
   { path: '/', labelKey: 'nav.home', match: ['/', '/home', '/tonight', '/later'] },
   { path: '/lamps', labelKey: 'nav.questions', match: ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'] },
-  { path: '/everyone', labelKey: 'nav.everyone', ariaKey: 'title.everyone', match: ['/everyone'] },
+  ...(DIT_ENABLED
+    ? [{ path: '/everyone', labelKey: 'nav.everyone', ariaKey: 'title.everyone', match: ['/everyone'] }]
+    : []),
 ]
 
 function tabOf(path) {
@@ -37,6 +40,7 @@ export function AppNav() {
       className={live ? 'di-appnav di-screws-print-hide is-live' : 'di-appnav di-screws-print-hide'}
       aria-label={t('nav.aria')}
       data-at={at}
+      data-tabs={String(ITEMS.length)}
     >
       <i className="di-appnav-pip" aria-hidden="true" />
       {ITEMS.map((item) => {

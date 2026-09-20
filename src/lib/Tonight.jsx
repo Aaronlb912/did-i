@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { LampFace } from './LampFace.jsx'
+import { DIT_ENABLED } from './features.js'
 import { FamilyTonight } from './FamilyTonight.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
 import { MastCogs } from './SettingsCog.jsx'
 import { WaitPlate } from './WaitPlate.jsx'
 import { HolePlate } from './HolePlate.jsx'
 import { unlockAchievements } from './achievements.js'
-import { activeLook } from './dit-board.js'
+import { activeBuddy, activeLook } from './dit-board.js'
 import { byPriority, shortLabel } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
@@ -392,6 +393,7 @@ export function Tonight({
         book={bookOf(faceRow)}
         tag={faceRow.tag}
         keys={recentPeriodKeys(faceRow.lamp, dateIso, 7)}
+        buddy={activeBuddy(bookOf(faceRow))}
         onPickHole={pickHole}
         onYes={() => mark(faceRow, 'yes')}
         onSkip={() => mark(faceRow, 'skip')}
@@ -578,7 +580,7 @@ export function Tonight({
           </p>
         ) : null}
 
-        <FamilyTonight />
+        {DIT_ENABLED ? <FamilyTonight /> : null}
 
         <WeekStrip boards={shelf} tagId={tagId} now={clock} />
       </div>

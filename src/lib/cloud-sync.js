@@ -16,6 +16,7 @@ import { personZone } from './zone.js'
 import { shelfHeat } from './hall-feel.js'
 import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
 import { didTonightLabels } from './dit-board.js'
+import { DIT_ENABLED } from './features.js'
 import { claimCheerGifts, readMine, syncTonightBoard } from './people.js'
 import { claimGemPurchases } from './gem-buy.js'
 import { addGemsShelf, mergeGiftCheers } from './purse.js'
@@ -101,7 +102,7 @@ async function putPrefs(db, user, shelf) {
     { onConflict: 'user_id' },
   )
   if (error) return error
-  if (!mark.doneOn) return null
+  if (!DIT_ENABLED || !mark.doneOn) return null
   const mine = await readMine()
   if (!mine?.public_tonight) return null
   const synced = await syncTonightBoard(didTonightLabels(doc, mark.doneOn), mark.doneOn)

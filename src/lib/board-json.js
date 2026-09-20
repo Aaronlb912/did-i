@@ -116,6 +116,8 @@ export function blankBook() {
     cheerOn: 'lime',
     looks: ['lime'],
     lookOn: 'lime',
+    buddies: [],
+    buddyOn: '',
   }
 }
 
@@ -209,6 +211,8 @@ export function normalizeBook(raw) {
     cheerPlayStages: purse.cheerPlayStages,
     looks: purse.looks,
     lookOn: purse.lookOn,
+    buddies: purse.buddies,
+    buddyOn: purse.buddyOn,
   }
 }
 

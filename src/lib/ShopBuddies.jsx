@@ -1,0 +1,110 @@
+import { useState } from 'react'
+import { BoardShell } from './BoardShell.jsx'
+import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
+import { BUDDIES, buddyText, buyBuddy, normalizePurse } from './purse.js'
+import { BuyConfirm, ShopPurse, gemLine, shopMiss } from './shop-bits.jsx'
+import { t } from './i18n.js'
+import { usePrefs } from './prefs.js'
+import { boardDate, formatBoardDate } from './recurrence.js'
+
+export function ShopBuddies({ book, onChange, now }) {
+  usePrefs()
+  const clock = now || new Date()
+  const purse = normalizePurse(book)
+  const [miss, setMiss] = useState('')
+  const [peekBuddy, setPeekBuddy] = useState('')
+  const [confirm, setConfirm] = useState(null)
+
+  function take(next) {
+    setMiss(shopMiss(next))
+    if (!next.miss) {
+      setPeekBuddy('')
+      setConfirm(null)
+      onChange(next.book)
+    }
+  }
+
+  function buddyRow(item) {
+    const have = purse.buddies.includes(item.id)
+    const on = purse.buddyOn === item.id
+    const cost = gemLine(item.gems)
+    return (
+      <div className="di-shop-row" key={item.id}>
+        <button
+          className={peekBuddy === item.id ? 'di-preview is-on' : 'di-preview'}
+          type="button"
+          aria-label={t('shop.see', { name: t(buddyText(item.id, 'name')) })}
+          onClick={() => setPeekBuddy(item.id)}
+        >
+          <BuddyChip id={item.id} />
+        </button>
+        <span className="di-shop-copy">
+          <strong>{t(buddyText(item.id, 'name'))}</strong>
+          <em>{have ? t(buddyText(item.id, 'line')) : cost}</em>
+        </span>
+        <button
+          className={on ? 'di-did di-did-small' : 'di-key'}
+          type="button"
+          disabled={on}
+          onClick={() => {
+            if (have) {
+              take(buyBuddy(book, item.id))
+              return
+            }
+            setMiss('')
+            setConfirm({
+              title: t(buddyText(item.id, 'name')),
+              body: t('shop.buyBuddyBody', { cost }),
+              go: () => take(buyBuddy(book, item.id)),
+            })
+          }}
+        >
+          {on ? t('shop.on') : have ? t('shop.use') : t('shop.buy')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <BoardShell
+      book={book}
+      now={clock}
+      title={t('shop.buddies')}
+      date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
+    >
+      <section className="di-page di-shop di-set">
+        <h2 className="di-page-title">{t('shop.buddies')}</h2>
+        <ShopPurse purse={purse} />
+        <p className="di-set-note">{t('shop.buddiesHint')}</p>
+
+        {peekBuddy ? (
+          <div className="di-buddy-preview">
+            <p className="di-set-cap">{t('shop.buddyPreview')}</p>
+            <div className="di-buddy-preview-card di-face di-swipe">
+              <BuddyHang id={peekBuddy} />
+              <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
+              <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="di-set-card di-shop-card">{BUDDIES.map(buddyRow)}</div>
+
+        {miss ? (
+          <p className="di-miss" role="alert">
+            {miss}
+          </p>
+        ) : null}
+      </section>
+      <BuyConfirm
+        confirm={confirm}
+        onClose={() => setConfirm(null)}
+        onGo={() => {
+          const go = confirm?.go
+          setConfirm(null)
+          if (typeof go === 'function') go()
+        }}
+      />
+    </BoardShell>
+  )
+}

@@ -32,6 +32,7 @@ const ROUTES = new Set([
   '/shop',
   '/shop/looks',
   '/shop/cheers',
+  '/shop/buddies',
   '/gems',
   '/kit',
   '/account',
@@ -62,7 +63,8 @@ export function parseHash() {
   const id = params.get('id') || ''
   const start = params.get('start') || ''
   const tag = params.get('tag') || ''
-  return { path, face, id, start, tag }
+  const copy = params.get('copy') || ''
+  return { path, face, id, start, tag, copy }
 }
 
 export function readHash() {
@@ -85,6 +87,7 @@ function extrasToParams(extras) {
   if (extras.id) params.set('id', extras.id)
   if (extras.start) params.set('start', extras.start)
   if (extras.tag) params.set('tag', extras.tag)
+  if (extras.copy) params.set('copy', extras.copy)
   return params
 }
 
