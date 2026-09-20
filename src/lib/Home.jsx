@@ -8,6 +8,7 @@ import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { PurseLine } from './PurseLine.jsx'
 import { mergePurses } from './purse.js'
 import { firstName } from './session.js'
 import { leftoverOn, taggedDue } from './tags.js'
@@ -49,7 +50,9 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
         <p className="di-detail-meta">{kicker}</p>
         <TagRail boards={boards} tagId={tagId} onTag={onTag} now={clock} />
 
-        <p className="di-purse">{purseLine(purse)}</p>
+        <PurseLine purse={purse} className="di-purse">
+          {purseLine(purse)}
+        </PurseLine>
 
         <div className="di-home-card di-home-heat">
           <p className="di-face-plate">{t('home.streak')}</p>
@@ -58,6 +61,9 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
             <span>{t('home.of5')}</span>
           </p>
           <HeatPips heat={heat} />
+          <button className="di-text" type="button" onClick={() => goHash('/calendar')}>
+            {t('home.calendar')}
+          </button>
           {!book.quietMode && hunt ? (
             <p className="di-detail-meta">{t('home.nextMark', { name: hunt.name })}</p>
           ) : null}
@@ -91,6 +97,9 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
         <div className="di-group">
           <p className="di-slot-label">{t('home.look')}</p>
           <div className="di-tray-files">
+            <button className="di-key" type="button" onClick={() => goHash('/calendar')}>
+              {t('home.calendar')}
+            </button>
             <button className="di-key" type="button" onClick={() => goHash('/week')}>
               {t('home.week')}
             </button>

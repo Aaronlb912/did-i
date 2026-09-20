@@ -1,5 +1,8 @@
 import { emptyBoard, normalizeBook } from './board-json.js'
 import { saveBoardForSw } from './board-store.js'
+import { readSavedAt, stampSavedAt } from './saved-at.js'
+
+export { readSavedAt, stampSavedAt }
 
 const SHELF_KEY = 'did-i-shelf'
 const OLD_KEY = 'did-i-board'
@@ -44,14 +47,19 @@ export function parkEmptyTags(shelf) {
   return { currentId, boards }
 }
 
-export function writeShelf(shelf) {
+export function writeShelf(shelf, savedAt) {
   const next = normalizeShelf(shelf)
+  const text = JSON.stringify(next)
+  let changed = true
   try {
-    localStorage.setItem(SHELF_KEY, JSON.stringify(next))
+    changed = localStorage.getItem(SHELF_KEY) !== text
+    localStorage.setItem(SHELF_KEY, text)
     localStorage.setItem(OLD_KEY, JSON.stringify(currentBook(next)))
   } catch {
     // Board still runs if storage is blocked.
   }
+  if (savedAt) stampSavedAt(savedAt)
+  else if (changed || !readSavedAt()) stampSavedAt()
   saveBoardForSw(currentBook(next))
   return next
 }

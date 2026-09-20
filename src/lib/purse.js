@@ -43,6 +43,17 @@ function asCheerStages(book, owned) {
   return out
 }
 
+function asCheerPlayStages(book, owned, cheerStages) {
+  const raw = book?.cheerPlayStages && typeof book.cheerPlayStages === 'object' ? book.cheerPlayStages : {}
+  const out = {}
+  for (const id of owned) {
+    const cap = cheerStages[id] || 1
+    const n = Math.min(cap, Math.max(1, Math.floor(Number(raw[id]) || 0) || cap))
+    out[id] = n
+  }
+  return out
+}
+
 export function normalizePurse(book) {
   const cheers = Array.isArray(book?.cheers)
     ? book.cheers.map((id) => String(id)).filter((id) => CHEER_IDS.has(id))
@@ -57,6 +68,8 @@ export function normalizePurse(book) {
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
   const cheerStage = Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
+  const stages = { ...cheerStages, [cheerOn]: cheerStage }
+  const cheerPlayStages = asCheerPlayStages(book, owned, stages)
   return {
     coins: asCount(book?.coins),
     gems: asCount(book?.gems),
@@ -66,7 +79,8 @@ export function normalizePurse(book) {
     lookOn,
     cheerUses,
     cheerStage,
-    cheerStages: { ...cheerStages, [cheerOn]: cheerStage },
+    cheerStages: stages,
+    cheerPlayStages,
   }
 }
 
@@ -96,6 +110,12 @@ export function mergePurses(boards) {
         Math.max(...purses.map((item) => item.cheerStages?.[id] || 1)),
       ]),
     ),
+    cheerPlayStages: Object.fromEntries(
+      [...new Set(purses.flatMap((item) => Object.keys(item.cheerPlayStages || {})))].map((id) => [
+        id,
+        Math.max(...purses.map((item) => item.cheerPlayStages?.[id] || 1)),
+      ]),
+    ),
   }
 }
 
@@ -120,6 +140,7 @@ export function spreadPurseFrom(shelf, book) {
     cheerUses: from.cheerUses,
     cheerStage: from.cheerStage,
     cheerStages: from.cheerStages,
+    cheerPlayStages: from.cheerPlayStages,
     lookOn: from.lookOn,
     cheerOn: from.cheerOn,
     looks: [...new Set([...merged.looks, ...from.looks])],
@@ -204,6 +225,30 @@ export function cheerStageOf(book, id) {
   return purse.cheerStages[id] || 1
 }
 
+export function cheerPlayOf(book, id) {
+  const purse = normalizePurse(book)
+  const kind = CHEER_IDS.has(id) ? id : purse.cheerOn
+  const owned = purse.cheerStages[kind] || 1
+  const play = Math.floor(Number(purse.cheerPlayStages?.[kind]) || owned)
+  return Math.min(owned, Math.max(1, play))
+}
+
+export function wearCheerStage(book, id, stage) {
+  const purse = normalizePurse(book)
+  if (!purse.cheers.includes(id)) return { book, miss: 'Buy that cheer first.' }
+  const owned = purse.cheerStages[id] || 1
+  const n = Math.min(owned, Math.max(1, Math.floor(Number(stage) || 1)))
+  return {
+    book: {
+      ...book,
+      ...purse,
+      cheerOn: id,
+      cheerPlayStages: { ...purse.cheerPlayStages, [id]: n },
+    },
+    miss: '',
+  }
+}
+
 export function fireCheer(kind, stage = 1) {
   if (typeof window === 'undefined') return
   const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
@@ -268,6 +313,7 @@ export function buyCheer(book, id) {
       cheers: [...purse.cheers, id],
       cheerOn: id,
       cheerStages: { ...purse.cheerStages, [id]: purse.cheerStages[id] || 1 },
+      cheerPlayStages: { ...purse.cheerPlayStages, [id]: purse.cheerPlayStages[id] || 1 },
     },
     miss: '',
   }

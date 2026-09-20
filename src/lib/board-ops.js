@@ -1,6 +1,6 @@
 import { answeredAtIso, duplicateLamp, newAnswerId } from './board-json.js'
 import { unlockAchievements } from './achievements.js'
-import { fireCheer, noteCheer, normalizePurse, payTap } from './purse.js'
+import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
@@ -25,7 +25,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
   const purse = normalizePurse(cheered)
-  fireCheer(purse.cheerOn, purse.cheerStages[purse.cheerOn] || purse.cheerStage)
+  fireCheer(purse.cheerOn, cheerPlayOf(purse, purse.cheerOn))
   return cheered
 }
 

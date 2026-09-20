@@ -166,6 +166,7 @@ export function normalizeBook(raw) {
     cheerUses: purse.cheerUses,
     cheerStage: purse.cheerStage,
     cheerStages: purse.cheerStages,
+    cheerPlayStages: purse.cheerPlayStages,
     looks: purse.looks,
     lookOn: purse.lookOn,
   }

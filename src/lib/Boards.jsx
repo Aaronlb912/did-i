@@ -213,6 +213,9 @@ export function Boards({
         <div className="di-group">
           <p className="di-slot-label">{t('boards.look')}</p>
           <div className="di-tray-files">
+            <button className="di-key" type="button" onClick={() => goHash('/calendar')}>
+              {t('boards.calendar')}
+            </button>
             <button className="di-key" type="button" onClick={() => goHash('/week')}>
               {t('boards.week')}
             </button>

@@ -10,6 +10,7 @@ import {
   buyCheerStage,
   buyLook,
   cheerStageOf,
+  cheerPlayOf,
   fireCheer,
   nextCheerStage,
   normalizePurse,
@@ -135,7 +136,7 @@ export function Shop({ book, onChange, now }) {
                   className="di-preview"
                   type="button"
                   aria-label={t('shop.see', { name: item.name })}
-                  onClick={() => fireCheer(item.id, have ? stage : 1)}
+                  onClick={() => fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1)}
                 >
                   <CheerChip id={item.id} stage={have ? stage : 1} />
                 </button>

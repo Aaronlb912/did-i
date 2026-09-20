@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { goHash } from '../site/hash.js'
 import { shelfHeat } from './hall-feel.js'
 import { weekStripNights } from './hall-pages.js'
 import { t } from './i18n.js'
@@ -28,7 +29,14 @@ export function WeekStrip({ boards = [], tagId = '', now }) {
         >
           ‹
         </button>
-        <p>{label}</p>
+        <button
+          className="di-weekbar-open"
+          type="button"
+          onClick={() => goHash('/calendar')}
+          aria-label={t('weekbar.open')}
+        >
+          {label}
+        </button>
         <button
           className="di-weekbar-shift"
           type="button"

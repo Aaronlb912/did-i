@@ -7,6 +7,7 @@ export const ROOMS = [
   { path: '/ideas', kicker: 'What to ask', title: 'What belongs here', body: 'This is not a to-do list.' },
   { path: '/feed', kicker: 'Answers', title: 'Every tap', body: 'What you already hit.' },
   { path: '/week', kicker: 'Week', title: 'Seven nights', body: 'A row of nights.' },
+  { path: '/calendar', kicker: 'Streak', title: 'The month', body: 'Nights you finished, on a calendar.' },
   { path: '/streaks', kicker: 'In a row', title: 'Nights in a row', body: 'Which questions stayed on.' },
   { path: '/marks', kicker: 'Marks', title: 'What landed', body: 'The streak and the closed list.' },
   { path: '/kit', kicker: 'Collection', title: 'What you bought', body: 'Looks and cheers you bought.' },

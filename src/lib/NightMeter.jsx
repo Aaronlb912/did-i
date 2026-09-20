@@ -1,4 +1,5 @@
 import { t } from './i18n.js'
+import { usePop } from './pop.js'
 import { usePrefs } from './prefs.js'
 
 function isComplete(row) {
@@ -16,11 +17,14 @@ export function nightProgress(due = []) {
 export function NightMeter({ due = [] }) {
   usePrefs()
   const { total, answered, ratio } = nightProgress(due)
+  const pop = usePop(answered)
   if (!total) return null
   return (
-    <div className="di-meter">
+    <div className={ratio >= 1 ? 'di-meter is-done' : 'di-meter'}>
       <p className="di-meter-top">
-        <span className="di-meter-count">{answered}</span>
+        <span className={pop === 'is-pop' ? 'di-meter-count is-pop' : 'di-meter-count'}>
+          {answered}
+        </span>
         <span className="di-meter-label">{t('tonight.meter', { n: total })}</span>
       </p>
       <div

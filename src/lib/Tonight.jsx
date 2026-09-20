@@ -15,6 +15,7 @@ import { t } from './i18n.js'
 import { NightMeter } from './NightMeter.jsx'
 import { feelTap, playClick } from './native.js'
 import { usePrefs, useTheme } from './prefs.js'
+import { PurseLine } from './PurseLine.jsx'
 import { mergePurses } from './purse.js'
 import { WeekStrip } from './WeekStrip.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -404,9 +405,9 @@ export function Tonight({
             </button>
           )}
           <p className="di-date">{formatBoardDate(dateIso)}</p>
-          <p className="di-mast-purse">
+          <PurseLine purse={purse} className="di-mast-purse">
             {t('tonight.purse', { coins: purse.coins, gems: purse.gems })}
-          </p>
+          </PurseLine>
           <button className="di-add" type="button" onClick={() => goHash('/add')}>
             {t('tonight.add')}
           </button>

@@ -28,6 +28,7 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
     "@shopify/react-native-skia": "2.6.2",
+    "@supabase/supabase-js": "^2.116.0",
     "expo": "^57.0.24",
     "expo-constants": "~57.0.19",
     "expo-glass-effect": "~57.0.3",

@@ -3,10 +3,7 @@ import {
   Tonight,
   emptyBoard,
   normalizeBook,
-  sampleBoard,
   sampleNowBoard,
-  samplePracticeBoard,
-  sampleShopBoard,
 } from './lib/index.js'
 import { ACHIEVEMENTS, unlockAchievements } from './lib/achievements.js'
 import { freshMarks, noteOpen } from './lib/daily.js'
@@ -41,6 +38,7 @@ import { SearchLamps } from './lib/SearchLamps.jsx'
 import { StatsPage } from './lib/StatsPage.jsx'
 import { Streaks } from './lib/Streaks.jsx'
 import { WeekGrid } from './lib/WeekGrid.jsx'
+import { Calendar } from './lib/Calendar.jsx'
 import { About } from './lib/About.jsx'
 import { Help } from './lib/Help.jsx'
 import { Ideas } from './lib/Ideas.jsx'
@@ -51,6 +49,8 @@ import { Marks } from './lib/Marks.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
 import { Welcome } from './lib/Welcome.jsx'
 import { Shop } from './lib/Shop.jsx'
+import { Account } from './lib/Account.jsx'
+import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
@@ -151,6 +151,7 @@ export default function App() {
       }
     }
     setShelf(written)
+    pushSoon(written)
   }
 
   function change(next) {
@@ -211,15 +212,12 @@ export default function App() {
 
   function openDemo() {
     const name = live.keeperName || ''
-    const home = normalizeBook({ ...sampleBoard(), keeperName: name })
-    const practice = normalizeBook({ ...samplePracticeBoard(), keeperName: name })
-    const shop = normalizeBook({ ...sampleShopBoard(), keeperName: name })
     const nowBoard = normalizeBook({ ...sampleNowBoard(), keeperName: name })
     openSession()
     markWelcomeSeen()
     persist({
       currentId: nowBoard.id,
-      boards: [home, practice, shop, nowBoard],
+      boards: [nowBoard],
     })
     goHash('/tonight', { tag: nowBoard.id })
   }
@@ -288,8 +286,17 @@ export default function App() {
         openHall(event.data.lampId || '')
       }
     }
+    function onShelfIn(event) {
+      if (event.detail) setShelf(event.detail)
+    }
+    function onWake() {
+      if (document.visibilityState === 'visible') pullAndMerge()
+    }
     window.addEventListener('beforeinstallprompt', onInstall)
+    window.addEventListener(SHELF_IN, onShelfIn)
+    document.addEventListener('visibilitychange', onWake)
     navigator.serviceWorker?.addEventListener('message', onMessage)
+    pullAndMerge()
     const stop = listenNativeShell({
       onBack() {
         const now = parseHash()
@@ -319,6 +326,8 @@ export default function App() {
     })
     return () => {
       window.removeEventListener('beforeinstallprompt', onInstall)
+      window.removeEventListener(SHELF_IN, onShelfIn)
+      document.removeEventListener('visibilitychange', onWake)
       navigator.serviceWorker?.removeEventListener('message', onMessage)
       stop()
     }
@@ -338,6 +347,7 @@ export default function App() {
       '/about': t('title.about'),
       '/lamps': t('title.questions'),
       '/week': t('title.week'),
+      '/calendar': t('title.calendar'),
       '/streaks': t('title.streaks'),
       '/stats': t('title.stats'),
       '/feed': t('title.feed'),
@@ -356,6 +366,7 @@ export default function App() {
       '/marks': t('title.marks'),
       '/shop': t('title.shop'),
       '/kit': t('title.kit'),
+      '/account': t('title.account'),
     }
     document.title = titles[view] || t('title.home', { board })
   }, [view, book, prefs])
@@ -429,6 +440,8 @@ export default function App() {
     inner = <Shop book={live} onChange={change} />
   } else if (path === '/kit') {
     inner = <Collection book={live} onChange={change} />
+  } else if (path === '/account') {
+    inner = <Account book={live} onChange={change} />
   } else if (path === '/add' || path === '/hang') {
     inner = (
       <HangPage
@@ -460,6 +473,8 @@ export default function App() {
     inner = <SearchLamps book={live} />
   } else if (path === '/week') {
     inner = <WeekGrid book={live} />
+  } else if (path === '/calendar') {
+    inner = <Calendar book={live} boards={shelf.boards} tagId={tagId} />
   } else if (path === '/streaks') {
     inner = <Streaks book={live} />
   } else if (path === '/stats') {

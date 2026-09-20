@@ -1,112 +1,16 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { clearPin, closeSession, hasPin, setPin } from './session.js'
+import { SetCap, SetCard, SetField, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 
 function foldLabel(hour) {
   return hour === 0 ? t('settings.midnight') : `${hour}:00 AM`
-}
-
-function SetCard({ children }) {
-  return <div className="di-set-card">{children}</div>
-}
-
-function SetCap({ children }) {
-  return <p className="di-set-cap">{children}</p>
-}
-
-function SetRow({ label, value, sub, onClick, chevron, danger }) {
-  return (
-    <button
-      className={danger ? 'di-set-row is-miss' : 'di-set-row'}
-      type="button"
-      onClick={onClick}
-    >
-      <span className="di-set-copy">
-        <span>{label}</span>
-        {sub ? <small>{sub}</small> : null}
-      </span>
-      <span className="di-set-end">
-        {value ? <span className="di-set-val">{value}</span> : null}
-        {chevron ? <i className="di-set-chev" aria-hidden="true" /> : null}
-      </span>
-    </button>
-  )
-}
-
-function SetSwitch({ label, sub, on, onClick }) {
-  return (
-    <button
-      className="di-set-row"
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={onClick}
-    >
-      <span className="di-set-copy">
-        <span>{label}</span>
-        {sub ? <small>{sub}</small> : null}
-      </span>
-      <span className={on ? 'di-set-switch is-on' : 'di-set-switch'} aria-hidden="true">
-        <i />
-      </span>
-    </button>
-  )
-}
-
-function SetField({ label, ...inputProps }) {
-  return (
-    <label className="di-set-row di-set-field">
-      <span>{label}</span>
-      <input {...inputProps} />
-    </label>
-  )
-}
-
-function SetPick({ label, on, onClick }) {
-  return (
-    <button
-      className={on ? 'di-set-row is-on' : 'di-set-row'}
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-    >
-      <span>{label}</span>
-      {on ? (
-        <span className="di-set-check" aria-hidden="true">
-          ✓
-        </span>
-      ) : null}
-    </button>
-  )
-}
-
-function SetSheet({ title, onClose, still, children }) {
-  return (
-    <div className="di-set-veil" role="presentation" onClick={onClose}>
-      <div
-        className={still ? 'di-set-sheet is-still' : 'di-set-sheet'}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="di-set-sheet-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="di-set-sheet-bar">
-          <p id="di-set-sheet-title" className="di-set-sheet-title">
-            {title}
-          </p>
-          <button className="di-set-x" type="button" onClick={onClose} aria-label={t('settings.close')}>
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
 }
 
 export function Profile({
@@ -121,6 +25,7 @@ export function Profile({
   const clock = now || new Date()
   const prefs = usePrefs()
   const still = useReduceMotion()
+  const account = useAccount()
   const [keeperDraft, setKeeperDraft] = useState(book.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book.inkNote || '')
   const [pinDraft, setPinDraft] = useState('')
@@ -203,6 +108,17 @@ export function Profile({
     >
       <section className={sheet ? 'di-page di-fuse di-set is-sheet' : 'di-page di-fuse di-set'}>
         <h2 className="di-page-title">{t('settings.kicker')}</h2>
+
+        <SetCap>{t('account.kicker')}</SetCap>
+        <SetCard>
+          <SetRow
+            label={t('settings.account')}
+            sub={account.email ? t('settings.accountSub') : t('settings.accountOffSub')}
+            value={account.email || t('settings.accountOff')}
+            chevron
+            onClick={() => goHash('/account')}
+          />
+        </SetCard>
 
         <SetCap>{t('settings.look')}</SetCap>
         <SetCard>

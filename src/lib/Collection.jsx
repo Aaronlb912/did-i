@@ -1,10 +1,23 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { CheerChip, LookChip } from './Cosmetic.jsx'
-import { CHEERS, LOOKS, buyCheer, buyLook, cheerStageOf, fireCheer, normalizePurse } from './purse.js'
+import {
+  CHEERS,
+  CHEER_STAGE_MAX,
+  LOOKS,
+  buyCheer,
+  buyLook,
+  cheerPlayOf,
+  cheerStageOf,
+  fireCheer,
+  normalizePurse,
+  wearCheerStage,
+} from './purse.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+
+const STAGES = [1, 2, 3, 4, 5]
 
 export function Collection({ book, onChange, now }) {
   usePrefs()
@@ -19,6 +32,14 @@ export function Collection({ book, onChange, now }) {
 
   function wearCheer(id) {
     onChange(buyCheer(book, id).book)
+  }
+
+  function pickStage(id, n) {
+    const next = wearCheerStage(book, id, n)
+    if (!next.miss) {
+      fireCheer(id, n)
+      onChange(next.book)
+    }
   }
 
   return (
@@ -60,20 +81,21 @@ export function Collection({ book, onChange, now }) {
         <div className="di-set-card di-shop-card">
           {cheers.map((item) => {
             const on = purse.cheerOn === item.id
-            const stage = cheerStageOf(book, item.id)
+            const owned = cheerStageOf(book, item.id)
+            const play = cheerPlayOf(book, item.id)
             return (
-              <div className="di-shop-row" key={item.id}>
+              <div className="di-shop-row di-cheer-pick" key={item.id}>
                 <button
                   className="di-preview"
                   type="button"
                   aria-label={t('shop.see', { name: item.name })}
-                  onClick={() => fireCheer(item.id, stage)}
+                  onClick={() => fireCheer(item.id, play)}
                 >
-                  <CheerChip id={item.id} stage={stage} />
+                  <CheerChip id={item.id} stage={play} />
                 </button>
                 <span className="di-shop-copy">
                   <strong>{item.name}</strong>
-                  <em>{t('shop.cheerStageLine', { n: stage, max: 5, line: item.line })}</em>
+                  <em>{t('shop.cheerStageLine', { n: play, max: CHEER_STAGE_MAX, line: item.line })}</em>
                 </span>
                 <button
                   className={on ? 'di-did di-did-small' : 'di-key'}
@@ -83,6 +105,25 @@ export function Collection({ book, onChange, now }) {
                 >
                   {on ? t('shop.on') : t('shop.use')}
                 </button>
+                <div className="di-stage-picks" role="group" aria-label={t('kit.stages')}>
+                  {STAGES.map((n) => {
+                    const have = n <= owned
+                    const using = on && play === n
+                    return (
+                      <button
+                        key={n}
+                        className={using ? 'di-stage-use is-on' : 'di-stage-use'}
+                        type="button"
+                        disabled={!have}
+                        aria-pressed={using}
+                        aria-label={have ? t('kit.useStage', { n }) : t('kit.stageLocked', { n })}
+                        onClick={() => pickStage(item.id, n)}
+                      >
+                        {n}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )
           })}

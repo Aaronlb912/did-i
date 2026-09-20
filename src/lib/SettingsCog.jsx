@@ -23,7 +23,7 @@ export function KitCog() {
   usePrefs()
   const on = parseHash().path === '/kit'
   return (
-    <a className={on ? 'di-cog is-on' : 'di-cog'} href="#/kit" aria-label={t('kit.cog')}>
+    <a className={on ? 'di-cog di-cog-kit is-on' : 'di-cog di-cog-kit'} href="#/kit" aria-label={t('kit.cog')}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
           fill="currentColor"

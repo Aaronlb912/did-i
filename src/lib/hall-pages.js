@@ -12,7 +12,7 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { shortLabel } from './board-json.js'
-import { scopedBooks } from './tags.js'
+import { scopedBooks, tagOnRow } from './tags.js'
 
 export { streakLength } from './achievements.js'
 
@@ -39,6 +39,35 @@ function noonOn(iso) {
   if (!date) return null
   date.setHours(12, 0, 0, 0)
   return date
+}
+
+// A question you added on Friday was not something you missed on Monday.
+function dueOnNight(book, iso, at) {
+  return dueTonight(book, at).filter((row) => !row.lamp.createdOn || row.lamp.createdOn <= iso)
+}
+
+function nightMarks(books, iso, today) {
+  const at = noonOn(iso)
+  let dueCount = 0
+  let clear = true
+  for (const book of books) {
+    const due = at ? dueOnNight(book, iso, at) : []
+    dueCount += due.length
+    if (due.length && !due.every((row) => row.answer)) clear = false
+  }
+  return {
+    due: dueCount,
+    on: dueCount > 0 && clear,
+    miss: dueCount > 0 && !clear && iso < today,
+    empty: dueCount === 0,
+  }
+}
+
+export function nightDueRows(boards, iso, tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  const at = noonOn(iso)
+  if (!at) return []
+  return books.flatMap((book) => dueOnNight(book, iso, at).map((row) => tagOnRow(book, row)))
 }
 
 export function weekNights(book, now = new Date(), days = 7) {
@@ -68,26 +97,60 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   const nights = []
   for (let i = 6; i >= 0; i -= 1) {
     const iso = addDaysIso(end, -i)
-    const at = noonOn(iso)
-    let dueCount = 0
-    let clear = true
-    for (const book of books) {
-      const due = at ? dueTonight(book, at) : []
-      dueCount += due.length
-      if (due.length && !allClearTonight(book, at)) clear = false
-    }
+    const marks = nightMarks(books, iso, today)
     nights.push({
       iso,
       weekday: weekdayShort(iso),
       dayNum: dayNumber(iso),
       isToday: iso === today,
-      due: dueCount,
-      on: dueCount > 0 && clear,
-      miss: dueCount > 0 && !clear && iso < today,
-      empty: dueCount === 0,
+      ...marks,
     })
   }
   return nights
+}
+
+export function monthStripNights(boards, now = new Date(), tagId = '', monthShift = 0) {
+  const books = scopedBooks(boards, tagId)
+  const fold = (books[0] || boards?.[0])?.dayFoldHour
+  const today = boardDate(now, fold)
+  const todayDate = parseIsoDate(today) || now
+  const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
+  const pad = start.getDay()
+  const last = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+  const nights = []
+  for (let i = 0; i < pad; i += 1) {
+    nights.push({
+      iso: `pad-${i}`,
+      pad: true,
+      dayNum: '',
+      isToday: false,
+      on: false,
+      miss: false,
+      empty: true,
+    })
+  }
+  for (let day = 1; day <= last; day += 1) {
+    const iso = isoDate(new Date(start.getFullYear(), start.getMonth(), day))
+    nights.push({
+      iso,
+      pad: false,
+      dayNum: String(day),
+      isToday: iso === today,
+      ...nightMarks(books, iso, today),
+    })
+  }
+  while (nights.length % 7 !== 0) {
+    nights.push({
+      iso: `pad-end-${nights.length}`,
+      pad: true,
+      dayNum: '',
+      isToday: false,
+      on: false,
+      miss: false,
+      empty: true,
+    })
+  }
+  return { start, nights }
 }
 
 export function comingDays(book, now = new Date(), days = 7) {

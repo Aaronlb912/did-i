@@ -2,9 +2,11 @@
   "appId": "com.aaronbryant.didi",
   "appName": "Did I",
   "webDir": "dist",
+  "backgroundColor": "#0e1014",
   "android": {
     "allowMixedContent": false,
-    "zoomEnabled": false
+    "zoomEnabled": false,
+    "backgroundColor": "#0e1014"
   },
   "plugins": {
     "SplashScreen": {
@@ -16,7 +18,8 @@
     },
     "StatusBar": {
       "backgroundColor": "#0e1014",
-      "style": "DARK"
+      "style": "LIGHT",
+      "overlaysWebView": false
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_lamp",

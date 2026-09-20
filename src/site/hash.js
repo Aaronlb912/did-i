@@ -10,6 +10,7 @@ const ROUTES = new Set([
   '/into',
   '/lamps',
   '/week',
+  '/calendar',
   '/streaks',
   '/stats',
   '/feed',
@@ -28,6 +29,7 @@ const ROUTES = new Set([
   '/marks',
   '/shop',
   '/kit',
+  '/account',
 ])
 
 export function parseHash() {

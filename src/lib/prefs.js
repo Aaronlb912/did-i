@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { stampSavedAt } from './saved-at.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
@@ -28,9 +29,10 @@ export function readPrefs() {
   }
 }
 
-export function writePrefs(patch) {
+export function writePrefs(patch, fromCloud = false) {
   const next = cleanPrefs({ ...readPrefs(), ...patch })
   localStorage.setItem(KEY, JSON.stringify(next))
+  if (!fromCloud) stampSavedAt()
   listeners.forEach((fn) => fn(next))
   applyPrefsToDocument(next)
   return next

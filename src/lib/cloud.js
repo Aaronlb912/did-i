@@ -1,0 +1,39 @@
+import { createClient } from '@supabase/supabase-js'
+
+const URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim()
+const KEY = String(import.meta.env?.VITE_SUPABASE_ANON_KEY || '').trim()
+
+let client = null
+let built = false
+
+export function cloudSetUp() {
+  return Boolean(URL && KEY)
+}
+
+export function cloud() {
+  if (!cloudSetUp()) return null
+  if (built) return client
+  built = true
+  try {
+    client = createClient(URL, KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        storageKey: 'did-i-auth',
+      },
+    })
+  } catch {
+    client = null
+  }
+  return client
+}
+
+export function cloudHost() {
+  if (!URL) return ''
+  try {
+    return new global.URL(URL).host
+  } catch {
+    return URL
+  }
+}
