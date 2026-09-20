@@ -61,7 +61,9 @@ import { Inbox } from './lib/Inbox.jsx'
 import { Sent } from './lib/Sent.jsx'
 import { Everyone } from './lib/Everyone.jsx'
 import { AppNav } from './lib/AppNav.jsx'
+import { forgetAnswerMarks } from './lib/answer-log.js'
 import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
+import { stripDemoShelf } from './lib/demo-strip.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
@@ -83,7 +85,21 @@ import './site/site.css'
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
 const HALL = new Set(['/', '/home', '/tonight'])
+const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
+
+function purgeDemoOnce() {
+  try {
+    if (localStorage.getItem(DEMO_PURGE_KEY) === '1') return
+    localStorage.setItem(DEMO_PURGE_KEY, '1')
+  } catch {
+    return
+  }
+  forgetAnswerMarks()
+  writeShelf(stripDemoShelf(readShelf()))
+}
+
 function firstShelf() {
+  purgeDemoOnce()
   const now = new Date()
   const shelf = writeShelf(alignShelfPurse(readShelf()))
   return {

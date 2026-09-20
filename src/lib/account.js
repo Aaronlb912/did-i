@@ -26,6 +26,14 @@ export function deviceKey() {
 
 export function devicePlatform() {
   try {
+    if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+      const { Platform } = require('react-native')
+      if (Platform.OS === 'ios' || Platform.OS === 'android') return Platform.OS
+    }
+  } catch {
+    // Web or tests.
+  }
+  try {
     if (Capacitor.isNativePlatform()) return Capacitor.getPlatform()
   } catch {
     // Fall through to the browser guess.

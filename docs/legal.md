@@ -14,8 +14,8 @@ Did I ships with in-app Privacy Policy (`#/privacy`) and Terms of Use
 3. For Google Play and the website, use clean URLs on did-i.app:
    `https://did-i.app/privacy` and `https://did-i.app/terms`
 
-4. Stripe checkout should link to the same terms URL in the Payment Link
-   settings if Stripe asks for it.
+4. App Store Connect and Google Play should link to the same terms URL
+   in each store listing.
 
 ## What the documents cover
 
@@ -23,7 +23,7 @@ Did I ships with in-app Privacy Policy (`#/privacy`) and Terms of Use
 - Friends, family, sends, blocks, reports
 - Did I tonight opt-in public lines
 - Push tokens (Firebase)
-- Gem purchases (Stripe)
+- Gem purchases (App Store / Google Play)
 - Not a medical device / not for emergencies
 - Age 13+ and family kid role
 - Export, delete account, CCPA/GDPR-style requests by email

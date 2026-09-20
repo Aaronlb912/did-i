@@ -1,3 +1,4 @@
+import './native/bootstrap.js'
 import { registerRootComponent } from 'expo'
 import { ExpoApp } from './ExpoApp.jsx'
 

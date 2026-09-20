@@ -301,6 +301,12 @@ export const fr = {
   'home.marks': 'Marques',
   'tags.all': 'Tous',
   'tags.aria': 'Tags',
+  'tags.pick': 'Tag: {name}. Pick another.',
+  'pill.open': 'Not answered yet',
+  'pill.done': 'Marked DID',
+  'pill.late': 'Marked late',
+  'pill.nope': 'Marked nope',
+  'pill.edit': 'Edit question',
   'tags.openHint': 'Noms, comptes et rangés.',
   'tags.putAway': 'Tags vides',
   'tags.putAwayHint':
@@ -318,6 +324,15 @@ export const fr = {
   'tonight.seeAll': 'Tout voir',
   'tonight.doneKicker': 'Fini',
   'tonight.doneTitle': 'C’est tout pour ce soir.',
+  'tonight.finishKicker': 'Encore ouvert',
+  'tonight.finishOne': 'Une question reste ce soir.',
+  'tonight.finishTitle': '{n} questions restent ce soir.',
+  'tonight.finishKeep': 'Keep going',
+  'tonight.finishLeave': 'Leave them',
+  'tonight.restKicker': 'Left open',
+  'tonight.restOne': 'One question is still open.',
+  'tonight.restTitle': '{n} questions are still open.',
+  'tonight.restHint': 'Tap a question up top when you want it back.',
   'tonight.doneStreak': 'Le streak est {n} sur 5.',
   'tonight.meter': 'sur {n}',
   'tonight.meterAria': '{n} sur {total}',
@@ -493,8 +508,10 @@ export const fr = {
   'shop.hubHint': 'Choisis une étagère. Touche un chip en bas pour prévisualiser.',
   'shop.promoLooks': 'Nouveaux looks',
   'shop.promoCheers': 'Nouveaux cheers',
+  'shop.promoBuddies': 'New buddies',
   'shop.allLooks': 'Tous les looks',
   'shop.allCheers': 'Tous les cheers',
+  'shop.allBuddies': 'All buddies',
   'shop.looksDoor': 'Looks coins et gems. Touche un chip pour prévisualiser.',
   'shop.cheersDoor': 'Cinq étapes chacun. Touche un chip pour voir l\'éclat.',
   'shop.gemsDoor': 'Achète des packs. Une gem vaut un dollar au plus petit pack.',
@@ -544,11 +561,17 @@ export const fr = {
   'gems.balance': 'Tu as {gems}',
   'gems.hint':
     'Une gem vaut un dollar. Les gros packs coûtent moins par gem. Connecte-toi d\'abord. Après le paiement, reviens et sync.',
+  'gems.hintNative':
+    'One gem is a dollar. Bigger packs cost less per gem. Sign in first. Prices come from the App Store or Google Play.',
   'gems.each': '{price} chacune',
   'gems.save': 'Économise {n} %',
   'gems.buy': 'Acheter',
   'gems.return':
     'Paiement ouvert. Quand c\'est confirmé, reviens et tes gems arrivent au sync.',
+  'gems.pending': 'Waiting on the store. Gems land here when payment clears.',
+  'gems.appOnly': 'Gem packs sell in the Did I app on your phone.',
+  'gems.loadingStore': 'Loading store prices…',
+  'gems.storeError': 'The store did not finish. Try again.',
   'gems.needSignIn': 'Connecte-toi d\'abord. Les gems restent sur ton compte.',
   'gems.setup': 'Le paiement de gems n\'est pas encore branché.',
   'gems.storeSoon':
@@ -560,6 +583,8 @@ export const fr = {
   'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',
   'kit.buddyOff': 'No buddy',
   'kit.buddyOffLine': 'Cards go back to plain.',
+  'kit.cheerOff': 'No cheer',
+  'kit.cheerOffLine': 'DID taps stay quiet.',
   'kit.stages': 'Étapes',
   'kit.useStage': 'Utiliser l\'étape {n}',
   'kit.stageLocked': 'Étape {n} pas encore possédée',
@@ -1146,10 +1171,10 @@ export const fr = {
     'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
   'legal.privacy.pay.title': 'Gem purchases',
   'legal.privacy.pay.body':
-    'If you buy gem packs, Stripe processes payment. We receive your user id, pack id, gem count, and payment status so we can credit your shelf. We do not store your card number. Stripe handles card data under its own privacy policy.',
+    'If you buy gem packs, Apple or Google processes payment. We receive your user id, pack id, gem count, and purchase status so we can credit your shelf. We do not store your card number. The store handles payment data under its own privacy policy.',
   'legal.privacy.vendors.title': 'Service providers',
   'legal.privacy.vendors.body':
-    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Stripe (web checkout). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
+    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Apple App Store / Google Play (in-app purchases). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
   'legal.privacy.use.title': 'How we use data',
   'legal.privacy.use.body':
     'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
@@ -1204,7 +1229,7 @@ export const fr = {
     'Families share questions among members. Parent and kid roles control who can assign tasks. Did I is not directed at children; parents are responsible for kid accounts they allow on a family.',
   'legal.terms.pay.title': 'Gem purchases',
   'legal.terms.pay.body':
-    'Gem packs are digital goods for in-app cheers and looks. Prices are shown before checkout. Web purchases go through Stripe. Android may open the web shop until in-app billing is available.\n\nExcept where required by law, gem purchases are final once delivered to your shelf. Chargebacks for valid purchases may lead to account suspension.',
+    'Gem packs are digital goods for in-app cheers and looks. Prices are shown before checkout through the App Store or Google Play.\n\nExcept where required by law, gem purchases are final once delivered to your shelf. Chargebacks for valid purchases may lead to account suspension.',
   'legal.terms.rules.title': 'Rules',
   'legal.terms.rules.body':
     'Do not: break the law, harass others, spam invites or sends, attempt to hack the service, scrape other users, impersonate others, or use bots to abuse caps.\n\nDo not reverse engineer the service to bypass paywalls or limits.',

@@ -1,5 +1,5 @@
 import { goHash } from '../site/hash.js'
-import { goSite } from '../site/link.js'
+import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -46,10 +46,10 @@ export function Help({ book, now }) {
           <h3>{t('help.legal')}</h3>
           <p>{t('help.legalP')}</p>
           <div className="di-hang-actions">
-            <button className="di-key di-link-did" type="button" onClick={() => goSite('/privacy')}>
+            <button className="di-key di-link-did" type="button" onClick={() => goHash('/privacy')}>
               {t('settings.privacy')}
             </button>
-            <button className="di-key di-link-did" type="button" onClick={() => goSite('/terms')}>
+            <button className="di-key di-link-did" type="button" onClick={() => goHash('/terms')}>
               {t('settings.terms')}
             </button>
           </div>

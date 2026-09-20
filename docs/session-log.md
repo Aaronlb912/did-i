@@ -258,5 +258,39 @@ the Android launcher. Capacitor web assets synced. GitHub
 is the copy for a collaborator. Extra tags stay free. Nav
 is Home and Questions.
 
+## 2026-09-20 native rebuild
+
+What runs: `npm run expo` (Expo Go) and http://127.0.0.1:48741/
+(web).
+
+What landed: Full React Native shell in `native/`. Tonight,
+questions, shop, settings, legal, account, people, and the
+rest route through `ScreenRouter`. Shared night logic in
+`useTonightStack.js`. Metro shims for hash, native feel,
+and push. Android export bundles (1559 modules). Web app
+unchanged; Capacitor APK still ships the web build.
+
+## 2026-09-20 native parity + doc cleanup
+
+What runs: `npm run expo` and http://127.0.0.1:48741/
+
+What landed: Native at web shell parity (social, settings, account,
+search, lamp detail, FamilyTonight, offline, clipboard, pings, cheer
+burst). IAP framework in repo (`expo-iap`, `gem-iap`). Docs trimmed so
+`docs/not-yet.md` only lists account/ops work (mail, push on a real
+phone, store products + secrets for gems). Stripe references removed
+from ship docs and legal copy.
+
+## 2026-09-20 custom SMTP
+
+What runs: same as above.
+
+What landed: `scripts/setup-smtp.mjs` and `npm run smtp:setup`. Pushed
+Resend SMTP (`support@did-i.app`) to Supabase project `lsvvxslgizihbktqoybt`.
+`external_email_enabled` is true.
+
+Next session: send yourself a code and check the inbox, then `npx expo
+prebuild` and a phone.
+
 
 

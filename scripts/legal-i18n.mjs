@@ -45,10 +45,10 @@ export const legalEn = {
     'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
   'legal.privacy.pay.title': 'Gem purchases',
   'legal.privacy.pay.body':
-    'If you buy gem packs, Stripe processes payment. We receive your user id, pack id, gem count, and payment status so we can credit your shelf. We do not store your card number. Stripe handles card data under its own privacy policy.',
+    'If you buy gem packs, Apple or Google processes payment. We receive your user id, pack id, gem count, and purchase status so we can credit your shelf. We do not store your card number. The store handles payment data under its own privacy policy.',
   'legal.privacy.vendors.title': 'Service providers',
   'legal.privacy.vendors.body':
-    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Stripe (web checkout). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
+    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Apple App Store / Google Play (in-app purchases). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
   'legal.privacy.use.title': 'How we use data',
   'legal.privacy.use.body':
     'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
@@ -104,7 +104,7 @@ export const legalEn = {
     'Families share questions among members. Parent and kid roles control who can assign tasks. Did I is not directed at children; parents are responsible for kid accounts they allow on a family.',
   'legal.terms.pay.title': 'Gem purchases',
   'legal.terms.pay.body':
-    'Gem packs are digital goods for in-app cheers and looks. Prices are shown before checkout. Web purchases go through Stripe. Android may open the web shop until in-app billing is available.\n\nExcept where required by law, gem purchases are final once delivered to your shelf. Chargebacks for valid purchases may lead to account suspension.',
+    'Gem packs are digital goods for in-app cheers and looks. Prices are shown before checkout through the App Store or Google Play.\n\nExcept where required by law, gem purchases are final once delivered to your shelf. Chargebacks for valid purchases may lead to account suspension.',
   'legal.terms.rules.title': 'Rules',
   'legal.terms.rules.body':
     'Do not: break the law, harass others, spam invites or sends, attempt to hack the service, scrape other users, impersonate others, or use bots to abuse caps.\n\nDo not reverse engineer the service to bypass paywalls or limits.',
@@ -178,10 +178,10 @@ export const legalEs = {
     'En Android, si permites avisos, guardamos un token push ligado a tu cuenta y dispositivo para envíos de amigos, solicitudes y similares. Puedes apagarlos en ajustes del teléfono.\n\nLos recordatorios locales de preguntas due quedan en el dispositivo y no requieren cuenta.',
   'legal.privacy.pay.title': 'Compra de gemas',
   'legal.privacy.pay.body':
-    'Si compras packs de gemas, Stripe procesa el pago. Recibimos tu id de usuario, id de pack, cantidad de gemas y estado del pago para acreditar tu estante. No guardamos tu número de tarjeta. Stripe maneja los datos de pago con su propia política.',
+    'Si compras packs de gemas, Apple o Google procesa el pago. Recibimos tu id de usuario, id de pack, cantidad de gemas y estado de la compra para acreditar tu estante. No guardamos tu número de tarjeta. La tienda maneja los datos de pago con su propia política.',
   'legal.privacy.vendors.title': 'Proveedores',
   'legal.privacy.vendors.body':
-    'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android) y Stripe (checkout web). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
+    'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android) y Apple App Store / Google Play (compras in-app). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
   'legal.privacy.use.title': 'Uso de datos',
   'legal.privacy.use.body':
     'Usamos tus datos para operar la app: sincronizar tu estante, funciones sociales, lista pública si optas, pushes que pidas, compras, prevenir abuso y corregir errores.\n\nNo vendemos tu información personal.',
@@ -237,7 +237,7 @@ export const legalEs = {
     'Las familias comparten preguntas entre miembros. Los roles parent y kid controlan quién asigna tareas. Did I no está dirigida a niños; los padres son responsables de cuentas kid en una familia.',
   'legal.terms.pay.title': 'Compra de gemas',
   'legal.terms.pay.body':
-    'Los packs de gemas son bienes digitales para cheers y looks. Los precios se muestran antes del checkout. Compras web van por Stripe. Android puede abrir la tienda web hasta que haya facturación in-app.\n\nSalvo ley en contrario, las compras de gemas son finales una vez acreditadas. Contracargos injustificados pueden suspender la cuenta.',
+    'Los packs de gemas son bienes digitales para cheers y looks. Los precios se muestran antes del checkout en App Store o Google Play.\n\nSalvo ley en contrario, las compras de gemas son finales una vez acreditadas. Contracargos injustificados pueden suspender la cuenta.',
   'legal.terms.rules.title': 'Reglas',
   'legal.terms.rules.body':
     'No: infringir la ley, acosar, spam de invitaciones o envíos, hackear el servicio, raspar usuarios, suplantar identidades ni usar bots para abusar límites.\n\nNo desmontes el servicio para saltar pagos o topes.',

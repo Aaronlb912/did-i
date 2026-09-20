@@ -7,7 +7,7 @@ import { HeatPips } from './HeatPips.jsx'
 import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { boardDate, dueClearTonight, formatBoardDate } from './recurrence.js'
 import { firstName } from './session.js'
 import { leftoverOn, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
@@ -21,7 +21,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const shelf = boards.length ? boards : [book]
   const due = taggedDue(shelf, clock, tagId)
   const leftAll = leftoverOn(shelf, clock, tagId)
-  const hallOn = due.length > 0 && due.every((row) => row.answer)
+  const hallOn = dueClearTonight(due)
   const name = firstName(book)
   const heat = hallHeat(book, clock)
   const hunt = nextMark(book)

@@ -4,9 +4,14 @@ import { NightStrip } from './NightStrip.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { answerFor } from './recurrence.js'
+import {
+  SWIPE_THRESHOLD as THRESHOLD,
+  SWIPE_WAKE,
+  stampOpacity,
+  swipePull,
+  swipeTilt,
+} from './swipe-face.js'
 import { useReduceMotion } from './useReduceMotion.js'
-
-const THRESHOLD = 72
 
 export function LampFace({
   row,
@@ -42,7 +47,7 @@ export function LampFace({
   const hasHistory = (keys || []).some((key) => answerFor(book, lamp.id, key))
   const liveDx = demoFly === 'did' ? 460 : demoFly === 'nope' ? -460 : demoOn ? demoPull * THRESHOLD : dx
   const liveMode = demoFly ? 'fly' : demoOn && demoPull > 0.08 ? 'drag' : mode
-  const pull = Math.max(-1, Math.min(1, liveDx / THRESHOLD))
+  const pull = swipePull(liveDx)
 
   function finish(way) {
     if (mode === 'fly') return
@@ -76,7 +81,7 @@ export function LampFace({
     const mx = event.clientX - start.x
     const my = event.clientY - start.y
     if (!start.live) {
-      if (Math.abs(mx) < 10 && Math.abs(my) < 10) return
+      if (Math.abs(mx) < SWIPE_WAKE && Math.abs(my) < SWIPE_WAKE) return
       if (Math.abs(my) > Math.abs(mx)) {
         drag.current = null
         return
@@ -112,7 +117,7 @@ export function LampFace({
       className={liveMode ? `di-face di-swipe is-${liveMode}` : 'di-face di-swipe'}
       aria-labelledby={questionId}
       style={{
-        transform: `translate(${liveDx}px, 0)${reduce ? '' : ` rotate(${liveDx / 42}deg)`}`,
+        transform: `translate(${liveDx}px, 0)${reduce ? '' : ` rotate(${swipeTilt(liveDx)}deg)`}`,
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -120,10 +125,10 @@ export function LampFace({
       onPointerCancel={onPointerUp}
     >
       <BuddyHang id={buddy} />
-      <p className="di-swipe-stamp is-did" style={{ opacity: Math.max(0, pull) }}>
+      <p className="di-swipe-stamp is-did" style={{ opacity: stampOpacity(pull, 'did') }}>
         {t('tonight.swipeDid')}
       </p>
-      <p className="di-swipe-stamp is-nope" style={{ opacity: Math.max(0, -pull) }}>
+      <p className="di-swipe-stamp is-nope" style={{ opacity: stampOpacity(pull, 'nope') }}>
         {t('tonight.swipeNope')}
       </p>
       {/* The tag sits where the DID stamp lands, so it steps aside on a pull. */}

@@ -45,24 +45,29 @@ Packs are one dollar per gem at the smallest size, with a lower per-gem
 price on bigger packs. The list lives in `supabase/gem-purchases.sql` and
 `src/lib/gem-packs.js`.
 
-**Web (Stripe).** For each pack, create a Payment Link in Stripe at the
-price in `src/lib/gem-packs.js`. Put each URL in `.env.local` as
-`VITE_STRIPE_PACK_gems_1`, `VITE_STRIPE_PACK_gems_3`, and so on. Deploy
-the webhook:
+**In-app purchases (Expo).** Gem packs sell through the App Store and
+Google Play only. Product ids are in `src/lib/gem-packs.js` as
+`com.aaronbryant.didi.gems_1` through `gems_50`. Create matching
+consumable products in each console.
 
-    supabase functions deploy gem-stripe --no-verify-jwt
+Deploy the credit function:
 
-Set secrets `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Point Stripe
-at `https://<project>.supabase.co/functions/v1/gem-stripe` for
-`checkout.session.completed`. The app sends
-`client_reference_id=userId:packId` on checkout.
+    supabase functions deploy gem-iap
 
-**Android (Google Play).** Play Billing is not wired in the app yet.
-Product ids are `com.aaronbryant.didi.gems_1` through `gems_50`. Until
-that ships, the Android app can send people to the web shop.
+Set secrets on the project:
 
-After payment, the person comes back to the app. Sync on visibility
-claims unclaimed packs into the shelf.
+- `GOOGLE_PLAY_PACKAGE_NAME=com.aaronbryant.didi`
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (Play Console API access)
+- `APPLE_IAP_SHARED_SECRET` (App Store Connect)
+
+For local testing only, `GEM_IAP_TRUST=1` skips store verification.
+Never use that in production.
+
+Build with a dev client (`npx expo prebuild`, then `expo run:android` or
+EAS). IAP does not work in Expo Go.
+
+After payment, the app verifies with `gem-iap`, claims gems on sync, and
+finishes the store transaction.
 
 ## Before other people sign up
 
@@ -71,11 +76,25 @@ mailer, which allows two sends an hour for the whole project and lands in
 spam. Nothing in the repo can fix this; it needs an account with a mail
 provider.
 
-To do it: pick a provider, verify the sending domain, then put the host,
-port, user, and password into Supabase under Project Settings, Auth,
-SMTP. The sender address has to be on a domain that passes SPF and DKIM,
-or the mail still goes to spam. Then send yourself a code and check it
-arrives in the inbox rather than the junk folder.
+To do it: pick a provider, verify the sending domain (SPF and DKIM on
+`did-i.app` or whatever domain you send from), then put credentials in
+`.env.local`:
+
+    SMTP_HOST=
+    SMTP_PORT=587
+    SMTP_USER=
+    SMTP_PASS=
+    SMTP_FROM=support@did-i.app
+
+Push them to Supabase:
+
+    npm run smtp:setup
+
+That calls the Management API with `SUPABASE_ACCESS_TOKEN`. Your PAT needs
+Administrator on the project, not just Developer. Or paste the same
+values in the dashboard under Project Settings, Auth, SMTP.
+
+Send yourself a sign-in code and check it lands in the inbox, not junk.
 
 The templates are already set to send a six digit code rather than a
 link, so nothing else needs changing.

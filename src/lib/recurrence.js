@@ -206,13 +206,45 @@ export function faceReadyTonight(book, now = new Date()) {
   return [...open, ...noped]
 }
 
+// The nope that ends a lap. Open questions come first in the stack, so the
+// lap is over once nothing open is left ahead of this card.
+export function shouldFinishAfterNope(ready, row, at) {
+  if (at < 0 || !ready?.length) return false
+  const othersOpen = ready.some((item, index) => index !== at && !item.answer)
+  if (othersOpen) return false
+  // Never answered, and it was the last open one.
+  if (!row?.answer) return true
+  // Already noped, so this is a second look. Ask when the stack wraps.
+  return at === ready.length - 1
+}
+
+export function finishStackCount(ready) {
+  const open = ready.filter((row) => !row.answer).length
+  if (open) return open
+  return ready.filter((row) => row.answer?.status === 'skip').length
+}
+
 export function waitingTonight(book, now = new Date()) {
   return unansweredTonight(book, now).filter((row) => standingBy(row, now))
 }
 
+export function rowDoneTonight(row) {
+  const status = row?.answer?.status
+  return status === 'yes' || status === 'late'
+}
+
+// A DID on a card you already noped tonight counts as late, not a fresh yes.
+export function didStatusForRow(row) {
+  return row?.answer?.status === 'skip' ? 'late' : 'yes'
+}
+
 export function allClearTonight(book, now = new Date()) {
   const due = dueTonight(book, now)
-  return due.length > 0 && due.every((row) => row.answer)
+  return due.length > 0 && due.every(rowDoneTonight)
+}
+
+export function dueClearTonight(due) {
+  return due.length > 0 && due.every(rowDoneTonight)
 }
 
 export function formatBoardDate(iso) {

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { devicePlatform } from './account.js'
-import { startGemPurchase, webGemShopReady, webGemShopUrl } from './gem-buy.js'
-import { formatUsd, GEM_PACKS } from './gem-packs.js'
+import { isReactNative } from './env.js'
+import { startGemPurchase } from './gem-buy.js'
+import { formatUsd, GEM_PACKS, packPriceLabel } from './gem-packs.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { GemIcon, PurseBits } from './PurseIcons.jsx'
@@ -17,8 +17,9 @@ function gemLine(n) {
 
 function gemMiss(code) {
   if (code === 'signin') return t('gems.needSignIn')
-  if (code === 'store') return t('gems.storeSoon')
+  if (code === 'app') return t('gems.appOnly')
   if (code === 'setup') return t('gems.setup')
+  if (code === 'store') return t('gems.storeError')
   return t('gems.setup')
 }
 
@@ -41,7 +42,7 @@ export function GemShop({ book, now }) {
       setMiss(gemMiss(out.miss))
       return
     }
-    setNote(out.web ? t('gems.webReturn') : t('gems.return'))
+    setNote(out.pending ? t('gems.pending') : t('gems.return'))
   }
 
   return (
@@ -57,47 +58,37 @@ export function GemShop({ book, now }) {
         <p className="di-shop-purse">
           <PurseBits purse={purse} />
         </p>
-        <p className="di-set-note">{t('gems.hint')}</p>
+        <p className="di-set-note">
+          {isReactNative() ? t('gems.hintNative') : t('gems.appOnly')}
+        </p>
 
-        {webGemShopReady() &&
-        (devicePlatform() === 'android' || devicePlatform() === 'ios') ? (
-          <div className="di-hang-actions">
-            <button
-              className="di-key"
-              type="button"
-              onClick={() => window.open(webGemShopUrl(), '_blank', 'noopener,noreferrer')}
-            >
-              {t('gems.openWeb')}
-            </button>
-            <p className="di-set-note">{t('gems.webHint')}</p>
+        {isReactNative() ? (
+          <div className="di-set-card di-shop-card di-gem-packs">
+            {GEM_PACKS.map((pack) => {
+              const each = formatUsd(Math.round(pack.cents / pack.gems))
+              return (
+                <div className="di-shop-row di-gem-pack" key={pack.id}>
+                  <span className="di-gem-pack-mark" aria-hidden="true">
+                    <GemIcon className="di-gem-icon di-gem-icon-pack" />
+                    <span className="di-gem-pack-n">{pack.gems}</span>
+                  </span>
+                  <span className="di-shop-copy">
+                    <strong>{gemLine(pack.gems)}</strong>
+                    <em>
+                      {packPriceLabel(pack)}
+                      {pack.save ? ` · ${t('gems.save', { n: pack.save })}` : ''}
+                      {' · '}
+                      {t('gems.each', { price: each })}
+                    </em>
+                  </span>
+                  <button className="di-did di-did-small" type="button" onClick={() => buy(pack.id)}>
+                    {t('gems.buy')}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         ) : null}
-
-        <div className="di-set-card di-shop-card di-gem-packs">
-          {GEM_PACKS.map((pack) => {
-            const each = formatUsd(Math.round(pack.cents / pack.gems))
-            return (
-              <div className="di-shop-row di-gem-pack" key={pack.id}>
-                <span className="di-gem-pack-mark" aria-hidden="true">
-                  <GemIcon className="di-gem-icon di-gem-icon-pack" />
-                  <span className="di-gem-pack-n">{pack.gems}</span>
-                </span>
-                <span className="di-shop-copy">
-                  <strong>{gemLine(pack.gems)}</strong>
-                  <em>
-                    {formatUsd(pack.cents)}
-                    {pack.save ? ` · ${t('gems.save', { n: pack.save })}` : ''}
-                    {' · '}
-                    {t('gems.each', { price: each })}
-                  </em>
-                </span>
-                <button className="di-did di-did-small" type="button" onClick={() => buy(pack.id)}>
-                  {t('gems.buy')}
-                </button>
-              </div>
-            )
-          })}
-        </div>
 
         <p className="di-set-note">{t('gems.earn')}</p>
         <LegalLinks leadKey="legal.gemLead" />

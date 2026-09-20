@@ -9,16 +9,18 @@ import {
   forgetAnswerMarks,
   pruneAnswers,
   pullAnswers,
+  purgeDemoAnswers,
   pushAnswers,
   shelfWithoutAnswers,
 } from './answer-log.js'
+import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
 import { shelfHeat } from './hall-feel.js'
 import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
 import { didTonightLabels } from './dit-board.js'
 import { DIT_ENABLED } from './features.js'
 import { claimCheerGifts, readMine, syncTonightBoard } from './people.js'
-import { claimGemPurchases } from './gem-buy.js'
+import { claimGemPurchases } from './gem-claim.js'
 import { addGemsShelf, mergeGiftCheers } from './purse.js'
 import { closeShelfPastNights } from './daily.js'
 

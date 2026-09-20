@@ -1,7 +1,9 @@
 // Optional crash reporting. Set VITE_REPORT_URL to a POST endpoint.
 // Boundary fires did-i-broke; this listener forwards the detail.
 
-const URL = String(import.meta.env?.VITE_REPORT_URL || '').trim()
+import { env } from './env.js'
+
+const URL = env('VITE_REPORT_URL')
 
 function send(detail) {
   if (!URL) return

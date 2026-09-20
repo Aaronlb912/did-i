@@ -61,12 +61,45 @@ Import the repo at [vercel.com/new](https://vercel.com/new). Build:
 Vercel project settings (never commit `.env.local`). Point `did-i.app` at
 Vercel DNS. Full steps: `docs/site.md`.
 
-Set `VITE_WEB_APP_URL=https://did-i.app` so the Android app can open gem
-checkout in the browser.
+## Native app (Expo)
 
-## Android
+App id `com.aaronbryant.didi`. The native rebuild lives in `native/`.
+Shared logic stays in `src/lib/`.
 
-App id `com.aaronbryant.didi`. Needs JDK 21 and Android SDK (platform 36).
+```
+npm install
+cp .env.example .env.local
+```
+
+Ask Aaron for `.env.local` values (`VITE_SUPABASE_*` at minimum). Without
+them the app runs local-only; account, friends, and sync need the keys.
+
+**Quick look (simulator or Expo Go):**
+
+```
+npm run expo
+```
+
+Press `i` for iOS Simulator (Mac + Xcode) or `a` for Android emulator.
+Expo Go is fine for Tonight, questions, and settings. IAP and some native
+pieces need a dev build.
+
+**Full native dev build (recommended for testers):**
+
+```
+npx expo prebuild
+npx expo run:ios      # Mac + Xcode
+npx expo run:android  # JDK 21 + Android SDK 36
+```
+
+More detail: `docs/native-rebuild.md`.
+
+Push needs Firebase (`android/app/google-services.json`) and a signed-in
+account. See `docs/push.md`.
+
+## Android (legacy Capacitor web APK)
+
+Still builds the web app in a WebView:
 
 ```
 npm run cap:apk
@@ -74,20 +107,11 @@ npm run cap:apk
 
 Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-Install on a connected phone:
-
-```
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Push needs Firebase (`android/app/google-services.json`) and a signed-in
-account. See `docs/push.md`.
-
 ## Gem purchases
 
-Web checkout uses Stripe Payment Links (`VITE_STRIPE_PACK_*` in
-`.env.local`). Deploy the webhook per `docs/running-it.md`. On Android,
-gem packs open the web shop until Play Billing ships.
+Native builds use in-app purchases (`expo-iap`). Pack ids, the edge function,
+and setup steps are in `docs/iap.md`. Requires a dev build on a real device;
+Expo Go cannot bill.
 
 ## Drop into a React app
 
@@ -130,11 +154,6 @@ Set `VITE_LEGAL_EMAIL` in `.env.local` before other people sign up. See
 
 ## Unfinished (needs your accounts, not code)
 
-- **Mail.** Sign-in codes need custom SMTP in Supabase. Built-in mail
-  is two sends an hour and lands in spam. Steps in `docs/running-it.md`.
-- **Push on a real phone.** Server side is live; needs a signed-in device
-  to prove end to end. See `docs/push.md`.
-- **iOS.** Needs a Mac, Xcode, and Apple Developer account. No `ios/`
-  folder on this Windows machine.
-- **Play Store release.** Debug APK builds here. Release signing and Play
-  Billing are separate steps in `docs/running-it.md`.
+See `docs/not-yet.md`. Short list: confirm sign-in mail lands in the inbox
+(`npm run smtp:setup`), push on a real signed-in phone, store IAP when you
+want paid gems (`docs/iap.md`), Play/App Store release signing.

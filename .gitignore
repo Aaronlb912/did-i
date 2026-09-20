@@ -40,3 +40,6 @@ android/app/src/main/assets/public
 
 
 .vercel
+.tmp-expo-export
+.tmp-nav*.png
+supabase/.temp

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { FinishFace } from './FinishFace.jsx'
 import { LampFace } from './LampFace.jsx'
+import { PillPlate } from './PillPlate.jsx'
 import { DIT_ENABLED } from './features.js'
 import { FamilyTonight } from './FamilyTonight.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
@@ -27,15 +29,21 @@ import {
   allClearTonight,
   answerFor,
   boardDate,
+  didStatusForRow,
+  dueClearTonight,
   faceReadyTonight,
+  finishStackCount,
   formatBoardDate,
   recentPeriodKeys,
+  shouldFinishAfterNope,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
 import { rowKey, taggedCatchUp, taggedDue } from './tags.js'
 import { TagRail } from './TagRail.jsx'
 import './did-i.css'
+
+const FINISH_FACE = '__finish__'
 
 export function Tonight({
   value,
@@ -54,11 +62,14 @@ export function Tonight({
   const clock = now || new Date()
   const undoTimer = useRef(null)
   const [faceId, setFaceId] = useState('')
+  const [skipReview, setSkipReview] = useState(false)
+  const [restNight, setRestNight] = useState(false)
   const [titleEdit, setTitleEdit] = useState(false)
   const [titleDraft, setTitleDraft] = useState(value.title)
   const [undo, setUndo] = useState(null)
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
+  const [pillPick, setPillPick] = useState(null)
   const [overlay, setOverlay] = useState(null)
   const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
@@ -108,17 +119,30 @@ export function Tonight({
     [shelf, liveValue, tagId, dateIso, minute],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
-  const hallOn = due.length > 0 && due.every((row) => row.answer)
+  const hallOn = dueClearTonight(due)
+  const openReady = ready.filter((row) => !row.answer)
+  const finishCount = finishStackCount(ready)
+  const onFinish = faceId === FINISH_FACE && finishCount > 0 && !hallOn
   const hour = hallHour(clock)
   const empty = (tagId ? [liveValue] : shelf).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
 
+  const pickedRow =
+    faceId && faceId !== FINISH_FACE
+      ? ready.find((row) => row.lamp.id === faceId) ||
+        ready.find((row) => rowKey(row) === faceId)
+      : null
   const faceRow =
-    ready.find((row) => row.lamp.id === faceId) ||
-    ready.find((row) => rowKey(row) === faceId) ||
-    ready[0] ||
-    null
+    hallOn || faceId === FINISH_FACE
+      ? null
+      : openReady.length > 0
+        ? skipReview && pickedRow?.answer?.status === 'skip'
+          ? pickedRow
+          : pickedRow && !pickedRow.answer
+            ? pickedRow
+            : openReady[0]
+        : pickedRow || ready[0] || null
 
   useEffect(() => {
     setTitleDraft(value.title)
@@ -127,6 +151,31 @@ export function Tonight({
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
   }, [focusLampId])
+
+  useEffect(() => {
+    if (skipReview || faceId === FINISH_FACE || hallOn || !openReady.length) return
+    const picked = ready.find((row) => row.lamp.id === faceId)
+    if (picked?.answer?.status === 'skip') setFaceId(openReady[0].lamp.id)
+  }, [faceId, hallOn, openReady, ready, skipReview])
+
+  // Landing on a stack that is all nopes, with nothing open, is the same
+  // place a nope lap ends. Ask rather than leave the slot blank.
+  useEffect(() => {
+    if (hallOn || restNight || skipReview) return
+    if (faceId === FINISH_FACE || openReady.length || !finishCount) return
+    setFaceId(FINISH_FACE)
+  }, [faceId, finishCount, hallOn, openReady.length, restNight, skipReview])
+
+  // Nothing left to finish, so the prompt has no question to send you back to.
+  useEffect(() => {
+    if (faceId !== FINISH_FACE) return
+    if (hallOn || !finishCount) setFaceId('')
+  }, [faceId, finishCount, hallOn])
+
+  // A fresh question, a cleared night, or a new day puts the stack back.
+  useEffect(() => {
+    setRestNight(false)
+  }, [dateIso, hallOn, openReady.length > 0])
 
   useEffect(() => {
     if (!overlay) return
@@ -139,10 +188,11 @@ export function Tonight({
   }, [boards, overlay, value])
 
   function closePlates() {
-    if (titleEdit || holePick || waitPick) {
+    if (titleEdit || holePick || waitPick || pillPick) {
       setTitleEdit(false)
       setHolePick(null)
       setWaitPick(null)
+      setPillPick(null)
       return true
     }
     return false
@@ -173,6 +223,7 @@ export function Tonight({
         setTitleEdit(false)
         setHolePick(null)
         setWaitPick(null)
+        setPillPick(null)
         return
       }
       if (event.key === 'u' && undo) {
@@ -180,10 +231,21 @@ export function Tonight({
         applyUndo()
         return
       }
-      if (holePick || waitPick) return
+      if (holePick || waitPick || pillPick) return
       if (event.key === 'n') {
         event.preventDefault()
         goHash('/add')
+        return
+      }
+      if (onFinish) {
+        if (event.key === ' ' || event.key === 'Enter' || event.key === 'y') {
+          event.preventDefault()
+          continueStack()
+        }
+        if (event.key === 's' || event.key === 'Escape') {
+          event.preventDefault()
+          restStack()
+        }
         return
       }
       if (!faceRow) return
@@ -237,22 +299,70 @@ export function Tonight({
     const book = bookOf(row)
     const ids = ready.map((item) => item.lamp.id)
     const at = ids.indexOf(row.lamp.id)
-    if (status === 'skip' && at >= 0 && ids.length > 1) {
+    const wasSkip = row?.answer?.status === 'skip'
+    const finalStatus = status === 'yes' ? didStatusForRow(row) : status
+
+    if (finalStatus === 'skip' && shouldFinishAfterNope(ready, row, at)) {
+      setFaceId(FINISH_FACE)
+      setSkipReview(false)
+    } else if (finalStatus === 'skip' && at >= 0 && ids.length > 1) {
       setFaceId(ids[(at + 1) % ids.length])
+      setSkipReview(false)
+    } else if (finalStatus === 'late' && wasSkip) {
+      const nextSkip = ready.find(
+        (item) => item.lamp.id !== row.lamp.id && item.answer?.status === 'skip',
+      )
+      if (nextSkip) {
+        setSkipReview(true)
+        setFaceId(nextSkip.lamp.id)
+      } else {
+        setSkipReview(false)
+        setFaceId('')
+      }
     } else {
       setFaceId('')
+      setSkipReview(false)
     }
-    const next = putAnswer(book, row, status, clock)
+    setRestNight(false)
+    const next = putAnswer(book, row, finalStatus, clock)
     const wasClear = allClearTonight(book, clock)
     setOverlay(next)
     change(next)
     setHolePick(null)
     setWaitPick(null)
+    setPillPick(null)
     armUndo({ book, label: t('tonight.saved') })
-    if (status === 'skip') feelTap('skip')
+    if (finalStatus === 'skip') feelTap('skip')
     else feelTap('did')
-    if (book.clickSound && status === 'yes') playClick()
+    if (book.clickSound && finalStatus === 'yes') playClick()
     if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
+  }
+
+  // Back into the stack: the first open question, else the first nope for
+  // a second look. skipReview is what keeps the prompt from firing again.
+  function continueStack() {
+    setRestNight(false)
+    if (openReady.length > 0) {
+      setSkipReview(false)
+      setFaceId(openReady[0].lamp.id)
+      feelTap('did')
+      return
+    }
+    const skipped = ready.find((row) => row.answer?.status === 'skip')
+    if (skipped) {
+      setSkipReview(true)
+      setFaceId(skipped.lamp.id)
+      feelTap('did')
+      return
+    }
+    setFaceId('')
+  }
+
+  function restStack() {
+    setRestNight(true)
+    setSkipReview(false)
+    setFaceId('')
+    feelTap('skip')
   }
 
   function moveFace(step) {
@@ -260,6 +370,9 @@ export function Tonight({
     const ids = ready.map((row) => row.lamp.id)
     const current = faceRow ? ids.indexOf(faceRow.lamp.id) : 0
     const next = (current + step + ids.length) % ids.length
+    const nextRow = ready[next]
+    setRestNight(false)
+    setSkipReview(nextRow?.answer?.status === 'skip')
     setFaceId(ids[next])
   }
 
@@ -278,20 +391,13 @@ export function Tonight({
     if (row.waiting && !row.answer) {
       setWaitPick(row)
       setHolePick(null)
+      setPillPick(null)
       return
     }
-    if (row.answer?.status === 'skip') {
-      setFaceId(row.lamp.id)
-      setWaitPick(null)
-      setHolePick(null)
-      return
-    }
-    if (row.answer) {
-      goHash('/lamp', { id: row.lamp.id })
-      return
-    }
-    setFaceId(row.lamp.id)
+    setRestNight(false)
     setWaitPick(null)
+    setHolePick(null)
+    setPillPick(row)
   }
 
   function pickHole(lamp, periodKey, row) {
@@ -336,6 +442,16 @@ export function Tonight({
         onOpenLamp={() => goHash('/lamp', { id: waitPick.lamp.id })}
       />
     )
+  } else if (pillPick) {
+    body = (
+      <PillPlate
+        row={pillPick}
+        onDid={() => mark(pillPick, 'yes')}
+        onNope={() => mark(pillPick, 'skip')}
+        onEdit={() => goHash('/lamp', { id: pillPick.lamp.id })}
+        onClose={() => setPillPick(null)}
+      />
+    )
   } else if (empty) {
     body = (
       <section className="di-empty">
@@ -345,6 +461,32 @@ export function Tonight({
         <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
           {t('tonight.write')}
         </button>
+      </section>
+    )
+  } else if (onFinish) {
+    body = <FinishFace count={finishCount} onContinue={continueStack} onRest={restStack} />
+  } else if (hallOn) {
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.doneKicker')}</p>
+        <h2 className="di-question">{t('tonight.doneTitle')}</h2>
+      </section>
+    )
+  } else if (restNight && finishCount > 0) {
+    body = (
+      <section className="di-face">
+        <p className="di-face-plate">{t('tonight.restKicker')}</p>
+        <h2 className="di-question">
+          {finishCount === 1
+            ? t('tonight.restOne')
+            : t('tonight.restTitle', { n: finishCount })}
+        </h2>
+        <p className="di-detail-meta">{t('tonight.restHint')}</p>
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="button" onClick={continueStack}>
+            {t('tonight.finishKeep')}
+          </button>
+        </div>
       </section>
     )
   } else if (faceRow) {
@@ -390,13 +532,6 @@ export function Tonight({
             {t('tonight.seeAll')}
           </button>
         </div>
-      </section>
-    )
-  } else if (hallOn) {
-    body = (
-      <section className="di-face">
-        <p className="di-face-plate">{t('tonight.doneKicker')}</p>
-        <h2 className="di-question">{t('tonight.doneTitle')}</h2>
       </section>
     )
   } else {
@@ -464,8 +599,9 @@ export function Tonight({
                   row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
                 const skip = row.answer?.status === 'skip'
                 const late = row.answer?.status === 'late'
-                const isFace =
-                  faceRow && row.lamp.id === faceRow.lamp.id && !holePick && !waitPick
+                const isFace = pillPick
+                  ? rowKey(row) === rowKey(pillPick)
+                  : Boolean(faceRow) && row.lamp.id === faceRow.lamp.id && !holePick && !waitPick
                 return (
                   <li key={rowKey(row)}>
                     <button

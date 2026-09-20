@@ -1,4 +1,5 @@
 import { emptyBoard, normalizeBook } from './board-json.js'
+import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'

@@ -43,8 +43,20 @@ export function onPrefs(fn) {
   return () => listeners.delete(fn)
 }
 
+function isReactNative() {
+  return typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
+}
+
 export function resolveTheme(theme) {
   if (theme === 'phone') {
+    if (isReactNative()) {
+      try {
+        const { Appearance } = require('react-native')
+        return Appearance.getColorScheme() === 'light' ? 'light' : 'dark'
+      } catch {
+        return 'dark'
+      }
+    }
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   }
   return theme === 'light' ? 'light' : 'dark'
@@ -52,6 +64,7 @@ export function resolveTheme(theme) {
 
 export function applyPrefsToDocument(prefs) {
   const next = prefs || readPrefs()
+  if (typeof document === 'undefined') return
   document.documentElement.lang = next.locale
   document.documentElement.dataset.theme = resolveTheme(next.theme)
   const reduce =
@@ -76,9 +89,18 @@ export function useTheme() {
     function sync() {
       const next = resolveTheme(prefs.theme)
       setTheme(next)
-      document.documentElement.dataset.theme = next
+      if (typeof document !== 'undefined') document.documentElement.dataset.theme = next
     }
     sync()
+    if (isReactNative()) {
+      try {
+        const { Appearance } = require('react-native')
+        const sub = Appearance.addChangeListener(sync)
+        return () => sub.remove()
+      } catch {
+        return undefined
+      }
+    }
     const media = window.matchMedia('(prefers-color-scheme: light)')
     media.addEventListener('change', sync)
     return () => media.removeEventListener('change', sync)

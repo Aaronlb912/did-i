@@ -1,4 +1,5 @@
 import { cloud } from './cloud.js'
+import { demoLampIds } from './demo-strip.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -126,6 +127,16 @@ export async function pullAnswers(shelf) {
   const next = applyAnswers(shelf, data || [])
   if (data?.length) write(SEEN, data[data.length - 1].updated_at)
   return { ...next, miss: '' }
+}
+
+// Rows the sample board left behind on a real account.
+export async function purgeDemoAnswers() {
+  const db = cloud()
+  if (!db) return { miss: '' }
+  const ids = demoLampIds()
+  if (!ids.length) return { miss: '' }
+  const { error } = await db.from('answer_log').delete().in('lamp_id', ids)
+  return { miss: error ? error.message : '' }
 }
 
 // Answers for questions that no longer exist anywhere.

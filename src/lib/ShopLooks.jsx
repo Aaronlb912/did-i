@@ -43,7 +43,6 @@ export function ShopLooks({ book, onChange, now }) {
         </button>
         <span className="di-shop-copy">
           <strong>{t(lookText(item.id, 'name'))}</strong>
-          <em>{have ? t(lookText(item.id, 'line')) : cost}</em>
         </span>
         <button
           className={on ? 'di-did di-did-small' : 'di-key'}

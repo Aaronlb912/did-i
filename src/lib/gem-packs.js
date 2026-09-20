@@ -10,20 +10,36 @@ const RAW = [
   { id: 'gems_50', gems: 50, cents: 3000 },
 ]
 
+const BUNDLE = 'com.aaronbryant.didi'
+
 export const GEM_PACKS = RAW.map((pack) => {
   const list = pack.gems * GEM_UNIT_CENTS
   const save = list > pack.cents ? Math.round(100 - (pack.cents / list) * 100) : 0
+  const storeId = `${BUNDLE}.${pack.id}`
   return {
     ...pack,
     save,
-    playId: `com.aaronbryant.didi.${pack.id}`,
+    storeId,
+    playId: storeId,
   }
 })
 
+export const ALL_STORE_IDS = GEM_PACKS.map((pack) => pack.storeId)
+
 const PACK_BY_ID = new Map(GEM_PACKS.map((pack) => [pack.id, pack]))
+const PACK_BY_STORE = new Map(GEM_PACKS.map((pack) => [pack.storeId, pack]))
 
 export function gemPack(id) {
   return PACK_BY_ID.get(id) || null
+}
+
+export function gemPackByStoreId(storeId) {
+  return PACK_BY_STORE.get(String(storeId || '')) || null
+}
+
+export function packPriceLabel(pack, storePrice = '') {
+  if (storePrice) return storePrice
+  return formatUsd(pack.cents)
 }
 
 export function formatUsd(cents) {

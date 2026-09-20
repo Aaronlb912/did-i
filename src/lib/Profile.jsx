@@ -13,7 +13,6 @@ import { zoneWords } from './zone.js'
 import { SetCap, SetCard, SetField, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import { legalEmail } from './legal.js'
-import { goSite } from '../site/link.js'
 
 export function Profile({
   book,
@@ -289,8 +288,8 @@ export function Profile({
 
         <SetCap>{t('settings.legal')}</SetCap>
         <SetCard>
-          <SetRow label={t('settings.privacy')} chevron onClick={() => goSite('/privacy')} />
-          <SetRow label={t('settings.terms')} chevron onClick={() => goSite('/terms')} />
+          <SetRow label={t('settings.privacy')} chevron onClick={() => goHash('/privacy')} />
+          <SetRow label={t('settings.terms')} chevron onClick={() => goHash('/terms')} />
         </SetCard>
         {!legalEmail() ? (
           <p className="di-miss" role="status">

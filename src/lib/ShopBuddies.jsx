@@ -40,7 +40,6 @@ export function ShopBuddies({ book, onChange, now }) {
         </button>
         <span className="di-shop-copy">
           <strong>{t(buddyText(item.id, 'name'))}</strong>
-          <em>{have ? t(buddyText(item.id, 'line')) : cost}</em>
         </span>
         <button
           className={on ? 'di-did di-did-small' : 'di-key'}

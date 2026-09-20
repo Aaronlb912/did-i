@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { env } from './env.js'
 
-const URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim()
-const KEY = String(import.meta.env?.VITE_SUPABASE_ANON_KEY || '').trim()
+const URL = env('VITE_SUPABASE_URL')
+const KEY = env('VITE_SUPABASE_ANON_KEY')
 
 let client = null
 let built = false

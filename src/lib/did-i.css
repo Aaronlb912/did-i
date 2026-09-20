@@ -678,13 +678,16 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='pulse']) bo
   margin-left: auto;
 }
 
-.di-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.di-tagbox {
+  position: relative;
+  align-self: flex-start;
 }
 
-.di-tag {
+.di-tagpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
   font-family: var(--di-mono);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
@@ -698,15 +701,101 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='pulse']) bo
   cursor: pointer;
 }
 
-.di-tag.is-on {
+.di-tagpick.is-on {
   border-color: var(--di-on-deep);
   color: var(--di-on);
 }
 
-.di-tag em {
-  margin-left: 0.35rem;
+.di-tagpick-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-tagpick em {
   font-style: normal;
   color: var(--di-on);
+}
+
+/* Three stacked rules, shortest last. Reads as a filter without a word. */
+.di-tagpick-bars {
+  display: block;
+  width: 0.8rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  position: relative;
+}
+
+.di-tagpick-bars::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 60%;
+  border-top: 1px solid currentColor;
+}
+
+.di-tagmenu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  min-width: 11rem;
+  max-width: min(18rem, 80vw);
+  max-height: 16rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem;
+  border-radius: var(--di-r-sm);
+  border: 1px solid var(--di-line);
+  background: var(--di-panel-2);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 38%);
+}
+
+.di-tagmenu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 2.3rem;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: calc(var(--di-r-sm) - 0.2rem);
+  background: transparent;
+  color: var(--di-ink);
+  font-family: var(--di-ui);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.di-tagmenu-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-tagmenu-row em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+  color: var(--di-on);
+}
+
+.di-tagmenu-row.is-on {
+  background: var(--di-panel-3);
+  color: var(--di-on);
+}
+
+.di-tagmenu-row:hover {
+  background: var(--di-panel-3);
 }
 
 .di-lamp-tag {
@@ -960,20 +1049,30 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='pulse']) bo
   color: var(--di-ink-dim);
 }
 
+/* One line that scrolls sideways. Wrapping pushed the card down the screen
+   as soon as a night had more than a few questions on it. */
 .di-edge {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.45rem;
   list-style: none;
   margin: 0;
   padding: 0.15rem 0 0.35rem;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.di-edge::-webkit-scrollbar {
+  display: none;
 }
 
 .di-edge > li {
   flex: 0 0 auto;
-  max-width: 100%;
+  max-width: 14rem;
 }
 
 .di-jewel {
@@ -1300,6 +1399,16 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='pulse']) bo
   flex: 0 0 2.4rem;
   border: 1px dashed var(--di-line);
   border-radius: 0.55rem;
+}
+
+.di-cheer-chip-off {
+  display: block;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 2.4rem;
+  border: 1px dashed var(--di-line);
+  border-radius: 0.55rem;
+  background: var(--di-panel-3);
 }
 
 .di-buddy-hang {
@@ -3512,7 +3621,8 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='pulse']) bo
 }
 
 .di-shop-promo-chip .di-look-chip,
-.di-shop-promo-chip .di-cheer-chip {
+.di-shop-promo-chip .di-cheer-chip,
+.di-shop-promo-chip .di-buddy-chip {
   width: 2.7rem;
   height: 2.7rem;
   flex: 0 0 2.7rem;

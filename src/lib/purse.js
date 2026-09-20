@@ -65,6 +65,11 @@ export function recentCheers(count = 2) {
   return CHEERS.slice(-n)
 }
 
+export function recentBuddies(count = 2) {
+  const n = Math.max(1, Math.floor(Number(count) || 2))
+  return BUDDIES.slice(-n)
+}
+
 export const FRIEND_CHEER_GEMS = 1
 export const FAMILY_CHEER_GEMS = 1
 
@@ -108,7 +113,13 @@ export function normalizePurse(book) {
     ? book.cheers.map((id) => String(id)).filter((id) => CHEER_IDS.has(id))
     : []
   const owned = cheers.includes('lime') ? cheers : ['lime', ...cheers]
-  const cheerOn = CHEER_IDS.has(book?.cheerOn) && owned.includes(book.cheerOn) ? book.cheerOn : 'lime'
+  const rawCheerOn = book?.cheerOn
+  const cheerOn =
+    rawCheerOn === ''
+      ? ''
+      : CHEER_IDS.has(rawCheerOn) && owned.includes(rawCheerOn)
+        ? rawCheerOn
+        : 'lime'
   const looks = Array.isArray(book?.looks)
     ? book.looks.map((id) => String(id)).filter((id) => LOOK_IDS.has(id))
     : []
@@ -121,8 +132,10 @@ export function normalizePurse(book) {
     BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
-  const cheerStage = Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
-  const stages = { ...cheerStages, [cheerOn]: cheerStage }
+  const cheerStage = cheerOn
+    ? Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
+    : 1
+  const stages = cheerOn ? { ...cheerStages, [cheerOn]: cheerStage } : cheerStages
   const cheerPlayStages = asCheerPlayStages(book, owned, stages)
   return {
     coins: asCount(book?.coins),
@@ -299,6 +312,7 @@ export function payTap(before, after, row, status, clock = new Date()) {
 export function noteCheer(book) {
   const purse = normalizePurse(book)
   const id = purse.cheerOn
+  if (!id) return book
   const cheerUses = purse.cheerUses + 1
   const fromUse = stageFromUses(cheerUses)
   const cheerStages = {
@@ -345,7 +359,7 @@ export function wearCheerStage(book, id, stage) {
 }
 
 export function fireCheer(kind, stage = 1, look, theme) {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || !kind) return
   const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
   const detail = { kind: kind || 'lime', stage: n }
   if (look) detail.look = look
@@ -481,6 +495,14 @@ export function wearBuddy(book, id) {
   if (!id) return { book: { ...book, ...purse, buddyOn: '' }, miss: '' }
   if (!purse.buddies.includes(id)) return { book, miss: 'shop.miss.buyBuddyFirst' }
   return { book: { ...book, ...purse, buddyOn: id }, miss: '' }
+}
+
+// An empty id is the off slot, not a bad id. Cheers stay quiet until picked.
+export function wearCheer(book, id) {
+  const purse = normalizePurse(book)
+  if (!id) return { book: { ...book, ...purse, cheerOn: '' }, miss: '' }
+  if (!purse.cheers.includes(id)) return buyCheer(book, id)
+  return { book: { ...book, ...purse, cheerOn: id }, miss: '' }
 }
 
 export function buyCheer(book, id) {

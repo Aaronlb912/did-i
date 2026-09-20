@@ -43,9 +43,9 @@ The home page is a waitlist landing with a live phone demo. Emails land in
    - `VITE_LEGAL_EMAIL` = `support@did-i.app`
    - `VITE_WEB_APP_URL` = `https://did-i.app`
    - Do **not** set `VITE_WEB_APP_PUBLIC` unless you want `/app` live
-   - `VITE_STRIPE_PACK_*` when Stripe checkout is live
 
-   Use the same values as `.env.local`. Never commit `.env.local`.
+   Use the same values as `.env.local`. Never commit `.env.local`. Gem packs
+   sell through in-app purchases on native builds (`docs/iap.md`), not the web.
 
 4. Add domain **did-i.app** under Project → Settings → Domains.
 5. At your DNS host, point `did-i.app` at Vercel (A/CNAME records Vercel shows you).

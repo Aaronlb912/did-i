@@ -7,18 +7,23 @@ Last worked through 2026-09-20.
 
 ## Waiting on an account, not on code
 
-**Mail.** Sign-in codes still go through Supabase's built-in mailer: two
-sends an hour for the whole project, and they land in spam. Nothing in
-the repo can fix it. Steps are in `docs/running-it.md`.
+**Mail delivery test.** Custom SMTP is on (Resend, `support@did-i.app`,
+`npm run smtp:setup`). Send yourself a sign-in code and confirm it hits
+the inbox, not junk. If it does not, check SPF/DKIM on `did-i.app` in
+Resend and the Auth rate limits in the Supabase dashboard.
 
-**Push is live on Android.** Firebase is set up, the function is
-deployed and locked behind a JWT, and cron drains the queue every
-minute. The only thing untested is a notification landing on a real
-phone, which needs a signed-in device. See `docs/push.md`.
+**Push on a real phone.** Firebase is set up, the function is deployed,
+and cron drains the queue every minute. Nobody has confirmed a
+notification landing on a signed-in device yet. See `docs/push.md`.
 
-**iPhone needs a Mac.** The sending side already speaks to Apple, but
-there is no iOS app: no `ios/` folder, and building one needs Xcode and
-a paid Apple Developer account. Nothing left to do in this repo.
+**iPhone needs a Mac.** There is no `ios/` folder. Building one needs
+Xcode and a paid Apple Developer account.
+
+**Gem packs in the stores.** The app framework is in (`docs/iap.md`):
+pack ids, `expo-iap`, `gem-iap` edge function, claim on sync. Still
+needs your store products, `supabase functions deploy gem-iap`, store
+secrets (or `GEM_IAP_TRUST=1` for local only), and a dev build on a real
+phone. Production receipt checks flip on when those secrets are set.
 
 ## Decided, not building
 
@@ -27,21 +32,15 @@ and the parent and kid roles decide who can assign what. Did I is not a
 children's app and does not claim to be one. Blocking covers the case
 where somebody is a nuisance.
 
-## Still to build
+## Before launch (your accounts, not the repo)
 
-Nothing in code. Add what turns up.
-
-Legal pages at `/privacy` and `/terms` (and `#/privacy` in the app). Disclosures
-at sign-in, gem checkout, and Did I tonight opt-in. Set `VITE_LEGAL_EMAIL`
-before launch. Have a lawyer review `scripts/legal-i18n.mjs` for your state.
-
-Ship checklist (your accounts, not the repo):
-
-1. Custom SMTP in Supabase so sign-in codes arrive.
+1. Confirm sign-in codes arrive in the inbox (SMTP is configured; see above).
 2. Point `did-i.app` DNS at Vercel; import repo and set env vars (see `docs/site.md`).
-3. Set `VITE_WEB_APP_URL=https://did-i.app` before building the Android APK.
-4. Stripe Payment Links + webhook for gem packs (see `docs/running-it.md`).
-5. Install the debug APK on a phone and test push with a second account.
+3. Set `VITE_LEGAL_EMAIL` and have a lawyer review `scripts/legal-i18n.mjs`.
+4. Privacy and terms at `/privacy` and `/terms` (and in the app). Disclosures
+   at sign-in, gem checkout, and Did I tonight opt-in are already in copy.
+5. When you are ready for paid gems: store products + `gem-iap` secrets per `docs/iap.md`.
+6. `npx expo prebuild` and install on a phone; walk social, settings, and push with a second account.
 
 ## Ideas parked (not built)
 
@@ -50,10 +49,15 @@ Ship checklist (your accounts, not the repo):
   still work; the public wall tab and opt-in are hidden.
 - Pin your row on DIT for a night (skipped on purpose).
 - A fourth line slot on DIT (board shows all DID labels now instead).
-- Google Play Billing in the Android app (Stripe web checkout works first).
 
 ## Done
 
+- Native app at parity with the web shell (Expo in `native/`). Social,
+  settings, account, search, lamp detail, FamilyTonight, offline banner,
+  clipboard fallback, pings permission, cheer burst, error boundary, and
+  the rest route through `ScreenRouter`.
+- In-app purchase framework: `expo-iap`, `gem-iap` function, claim on sync
+  (`docs/iap.md`). No Stripe in the app.
 - Answers sync on their own instead of riding in the whole shelf
   document. The document is structure only now.
 - Block and report, with the friendship and any waiting nudge torn down,
@@ -100,7 +104,7 @@ Ship checklist (your accounts, not the repo):
 - Shop cheers and looks (names, lines, buy errors), push channel label,
   StarterPicks default, and people network miss through `t()` / `tMiss()`.
 - Ship tooling: `npm run db:apply:all`, `vercel.json` SPA deploy, optional
-  `VITE_REPORT_URL`, native gem web fallback via `VITE_WEB_APP_URL`.
+  `VITE_REPORT_URL`.
 - Marketing site at `/` with `/privacy`, `/terms`, `/download` on one build
   (`src/site/`, `docs/site.md`). Web app at `/app` is off in production unless
   `VITE_WEB_APP_PUBLIC=true`.

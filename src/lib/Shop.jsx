@@ -1,17 +1,10 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
+import { BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
 import { activeLook } from './dit-board.js'
 import { GemIcon } from './PurseIcons.jsx'
-import {
-  ShopDoor,
-  ShopPromoShelf,
-  ShopPromoTile,
-  ShopPurse,
-  coinLine,
-  gemLine,
-} from './shop-bits.jsx'
+import { ShopDoor, ShopPromoShelf, ShopPromoTile, ShopPurse } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -22,6 +15,7 @@ import {
   fireCheer,
   lookText,
   normalizePurse,
+  recentBuddies,
   recentCheers,
   recentLooks,
 } from './purse.js'
@@ -32,11 +26,13 @@ export function Shop({ book, now }) {
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const [peekLook, setPeekLook] = useState('')
+  const [peekBuddy, setPeekBuddy] = useState('')
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
   const promoLooks = recentLooks(2)
   const promoCheers = recentCheers(2)
+  const promoBuddies = recentBuddies(2)
   const previewLook = peekLook || coat
 
   return (
@@ -58,20 +54,18 @@ export function Shop({ book, now }) {
             allLabel={t('shop.allLooks')}
             onAll={() => goHash('/shop/looks')}
           >
-            {promoLooks.map((item) => {
-              const have = purse.looks.includes(item.id)
-              const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
-              return (
-                <ShopPromoTile
-                  key={item.id}
-                  chip={<LookChip id={item.id} />}
-                  name={t(lookText(item.id, 'name'))}
-                  note={have ? t(lookText(item.id, 'line')) : cost}
-                  ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
-                  onClick={() => setPeekLook(item.id)}
-                />
-              )
-            })}
+            {promoLooks.map((item) => (
+              <ShopPromoTile
+                key={item.id}
+                chip={<LookChip id={item.id} />}
+                name={t(lookText(item.id, 'name'))}
+                ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
+                onClick={() => {
+                  setPeekBuddy('')
+                  setPeekLook(item.id)
+                }}
+              />
+            ))}
           </ShopPromoShelf>
 
           <ShopPromoShelf
@@ -79,22 +73,50 @@ export function Shop({ book, now }) {
             allLabel={t('shop.allCheers')}
             onAll={() => goHash('/shop/cheers')}
           >
-            {promoCheers.map((item) => {
-              const have = purse.cheers.includes(item.id)
-              const cost = item.gems ? gemLine(item.gems) : t('shop.owned')
-              return (
-                <ShopPromoTile
-                  key={item.id}
-                  chip={<CheerChip id={item.id} stage={1} />}
-                  name={t(cheerText(item.id, 'name'))}
-                  note={have ? t(cheerText(item.id, 'line')) : cost}
-                  ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
-                  onClick={() => fireCheer(item.id, 1, previewLook)}
-                />
-              )
-            })}
+            {promoCheers.map((item) => (
+              <ShopPromoTile
+                key={item.id}
+                chip={<CheerChip id={item.id} stage={1} />}
+                name={t(cheerText(item.id, 'name'))}
+                ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
+                onClick={() => {
+                  setPeekBuddy('')
+                  fireCheer(item.id, 1, previewLook)
+                }}
+              />
+            ))}
+          </ShopPromoShelf>
+
+          <ShopPromoShelf
+            cap={t('shop.promoBuddies')}
+            allLabel={t('shop.allBuddies')}
+            onAll={() => goHash('/shop/buddies')}
+          >
+            {promoBuddies.map((item) => (
+              <ShopPromoTile
+                key={item.id}
+                chip={<BuddyChip id={item.id} />}
+                name={t(buddyText(item.id, 'name'))}
+                ariaLabel={t('shop.see', { name: t(buddyText(item.id, 'name')) })}
+                onClick={() => {
+                  setPeekLook('')
+                  setPeekBuddy(item.id)
+                }}
+              />
+            ))}
           </ShopPromoShelf>
         </div>
+
+        {peekBuddy ? (
+          <div className="di-buddy-preview">
+            <p className="di-set-cap">{t('shop.buddyPreview')}</p>
+            <div className="di-buddy-preview-card di-face di-swipe">
+              <BuddyHang id={peekBuddy} />
+              <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
+              <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+            </div>
+          </div>
+        ) : null}
 
         <div className="di-set-card di-shop-doors">
           <ShopDoor

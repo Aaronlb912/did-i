@@ -8,12 +8,14 @@ import { addDaysIso, answerFor, boardDate, faceReadyTonight, isoDate } from '../
 import { closePastNights } from '../src/lib/daily.js'
 import { byPriority, lampBuzzes, lampNudgesLate } from '../src/lib/board-json.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
+import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
+
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import { cleanCode, cleanInvite, cleanHandle, cleanLine } from '../src/lib/people.js'
 import { HANDLE_WORDS, isHandleSafe } from '../src/lib/handle-safe.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { gemWeekKey, spendGems, weeklyGemBump } from '../src/lib/purse.js'
-import { allClearTonight } from '../src/lib/recurrence.js'
+import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
 import { en } from '../src/locales/en.js'
 import { es } from '../src/locales/es.js'
@@ -76,6 +78,76 @@ test('today still open does not close before the night ends', () => {
   noon.setHours(12, 0, 0, 0)
   assert.equal(closePastNights(book, noon), book)
   assert.equal(answerFor(book, 'door', today), undefined)
+})
+
+test('a finish card appears when open questions remain after a nope', () => {
+  const skip = { status: 'skip' }
+
+  // Another question is still open, so the nope just moves the stack along.
+  const more = [
+    { lamp: { id: 'a' }, answer: null },
+    { lamp: { id: 'b' }, answer: null },
+    { lamp: { id: 'c' }, answer: skip },
+  ]
+  assert.equal(shouldFinishAfterNope(more, more[0], 0), false)
+
+  // Last open one, with nopes sat behind it. End of the lap.
+  const lap = [
+    { lamp: { id: 'b' }, answer: null },
+    { lamp: { id: 'a' }, answer: skip },
+    { lamp: { id: 'c' }, answer: skip },
+  ]
+  assert.equal(shouldFinishAfterNope(lap, lap[0], 0), true)
+
+  // A one-question night still gets asked.
+  const one = [{ lamp: { id: 'a' }, answer: null }]
+  assert.equal(shouldFinishAfterNope(one, one[0], 0), true)
+
+  // Second look at nopes cycles through them, then asks on the wrap.
+  const review = [
+    { lamp: { id: 'a' }, answer: skip },
+    { lamp: { id: 'b' }, answer: skip },
+    { lamp: { id: 'c' }, answer: skip },
+  ]
+  assert.equal(shouldFinishAfterNope(review, review[0], 0), false)
+  assert.equal(shouldFinishAfterNope(review, review[1], 1), false)
+  assert.equal(shouldFinishAfterNope(review, review[2], 2), true)
+
+  // Nothing to go back to.
+  assert.equal(shouldFinishAfterNope([], { lamp: { id: 'a' } }, -1), false)
+})
+
+test('a second look at a nope counts as late, not a fresh did', () => {
+  assert.equal(didStatusForRow({ answer: { status: 'skip' } }), 'late')
+  assert.equal(didStatusForRow({ answer: null }), 'yes')
+  assert.equal(didStatusForRow({ answer: { status: 'yes' } }), 'yes')
+})
+
+test('demo boards do not ride along after sign-in', () => {
+  const polluted = {
+    currentId: 'board-try-now',
+    boards: [
+      {
+        id: 'board-try-now',
+        title: 'Try now',
+        keeperName: 'Jordan Hale',
+        lamps: [{ id: 'di-now-pills', question: 'Pills?', cadence: 'daily', archived: false }],
+        answers: [{ lampId: 'di-now-pills', periodKey: '2026-01-01', status: 'yes', answeredAt: '1' }],
+        coins: 80,
+      },
+      {
+        id: 'board-real',
+        title: 'Mine',
+        keeperName: 'Aaron',
+        lamps: [{ id: 'di-abc123', question: 'Did I feed the dog?', cadence: 'daily', archived: false }],
+        answers: [],
+      },
+    ],
+  }
+  const clean = stripDemoShelf(polluted)
+  assert.equal(clean.boards.length, 1)
+  assert.equal(clean.boards[0].id, 'board-real')
+  assert.equal(isDemoBoard(polluted.boards[0]), true)
 })
 
 test('a nope stays on the face stack at the back', () => {
@@ -245,6 +317,12 @@ test('a gem lands once per week when a night clears', () => {
     answers: [{ lampId: 'a', periodKey: '2026-09-20', status: 'yes', answeredAt: '2026-09-20T12:00:00' }],
   }
   assert.equal(allClearTonight(cleared, clock), true)
+
+  const noped = {
+    ...book,
+    answers: [{ lampId: 'a', periodKey: '2026-09-20', status: 'skip', answeredAt: '2026-09-20T12:00:00' }],
+  }
+  assert.equal(allClearTonight(noped, clock), false)
 
   const shelf = { currentId: 'b1', boards: [cleared], gemWeek: '' }
   const prev = { currentId: 'b1', boards: [book], gemWeek: '' }

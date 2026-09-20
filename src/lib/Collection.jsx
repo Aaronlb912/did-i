@@ -6,7 +6,6 @@ import {
   CHEERS,
   CHEER_STAGE_MAX,
   LOOKS,
-  buyCheer,
   buddyText,
   cheerText,
   lookText,
@@ -16,6 +15,7 @@ import {
   fireCheer,
   normalizePurse,
   wearBuddy,
+  wearCheer,
   wearCheerStage,
 } from './purse.js'
 import { t } from './i18n.js'
@@ -31,15 +31,14 @@ export function Collection({ book, onChange, now }) {
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
-  const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
-
+  const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
   function wearLook(id) {
     onChange(buyLook(book, id).book)
   }
 
-  function wearCheer(id) {
-    onChange(buyCheer(book, id).book)
+  function pickCheer(id) {
+    onChange(wearCheer(book, id).book)
   }
 
   function pickStage(id, n) {
@@ -87,47 +86,41 @@ export function Collection({ book, onChange, now }) {
 
         <p className="di-set-cap">{t('shop.buddies')}</p>
         <div className="di-set-card di-shop-card">
-          {buddies.length ? (
-            buddies.map((item) => {
-              const on = purse.buddyOn === item.id
-              return (
-                <div className="di-shop-row" key={item.id}>
-                  <BuddyChip id={item.id} />
-                  <span className="di-shop-copy">
-                    <strong>{t(buddyText(item.id, 'name'))}</strong>
-                    <em>{t(buddyText(item.id, 'line'))}</em>
-                  </span>
-                  <button
-                    className={on ? 'di-did di-did-small' : 'di-key'}
-                    type="button"
-                    disabled={on}
-                    onClick={() => onChange(wearBuddy(book, item.id).book)}
-                  >
-                    {on ? t('shop.on') : t('shop.use')}
-                  </button>
-                </div>
-              )
-            })
-          ) : (
-            <p className="di-detail-meta di-kit-empty">{t('kit.noBuddies')}</p>
-          )}
-          {buddies.length ? (
-            <div className="di-shop-row">
-              <span className="di-buddy-chip di-buddy-chip-off" aria-hidden="true" />
-              <span className="di-shop-copy">
-                <strong>{t('kit.buddyOff')}</strong>
-                <em>{t('kit.buddyOffLine')}</em>
-              </span>
-              <button
-                className={!purse.buddyOn ? 'di-did di-did-small' : 'di-key'}
-                type="button"
-                disabled={!purse.buddyOn}
-                onClick={() => onChange(wearBuddy(book, '').book)}
-              >
-                {!purse.buddyOn ? t('shop.on') : t('shop.use')}
-              </button>
-            </div>
-          ) : null}
+          {buddies.map((item) => {
+            const on = purse.buddyOn === item.id
+            return (
+              <div className="di-shop-row" key={item.id}>
+                <BuddyChip id={item.id} />
+                <span className="di-shop-copy">
+                  <strong>{t(buddyText(item.id, 'name'))}</strong>
+                  <em>{t(buddyText(item.id, 'line'))}</em>
+                </span>
+                <button
+                  className={on ? 'di-did di-did-small' : 'di-key'}
+                  type="button"
+                  disabled={on}
+                  onClick={() => onChange(wearBuddy(book, item.id).book)}
+                >
+                  {on ? t('shop.on') : t('shop.use')}
+                </button>
+              </div>
+            )
+          })}
+          <div className="di-shop-row">
+            <span className="di-buddy-chip di-buddy-chip-off" aria-hidden="true" />
+            <span className="di-shop-copy">
+              <strong>{t('kit.buddyOff')}</strong>
+              <em>{t('kit.buddyOffLine')}</em>
+            </span>
+            <button
+              className={!purse.buddyOn ? 'di-did di-did-small' : 'di-key'}
+              type="button"
+              disabled={!purse.buddyOn}
+              onClick={() => onChange(wearBuddy(book, '').book)}
+            >
+              {!purse.buddyOn ? t('shop.on') : t('shop.use')}
+            </button>
+          </div>
         </div>
 
         <p className="di-set-cap">{t('shop.cheers')}</p>
@@ -160,7 +153,7 @@ export function Collection({ book, onChange, now }) {
                   className={on ? 'di-did di-did-small' : 'di-key'}
                   type="button"
                   disabled={on}
-                  onClick={() => wearCheer(item.id)}
+                  onClick={() => pickCheer(item.id)}
                 >
                   {on ? t('shop.on') : t('shop.use')}
                 </button>
@@ -186,6 +179,21 @@ export function Collection({ book, onChange, now }) {
               </div>
             )
           })}
+          <div className="di-shop-row">
+            <span className="di-cheer-chip di-cheer-chip-off" aria-hidden="true" />
+            <span className="di-shop-copy">
+              <strong>{t('kit.cheerOff')}</strong>
+              <em>{t('kit.cheerOffLine')}</em>
+            </span>
+            <button
+              className={!purse.cheerOn ? 'di-did di-did-small' : 'di-key'}
+              type="button"
+              disabled={!purse.cheerOn}
+              onClick={() => pickCheer('')}
+            >
+              {!purse.cheerOn ? t('shop.on') : t('shop.use')}
+            </button>
+          </div>
         </div>
 
         <div className="di-hang-actions">

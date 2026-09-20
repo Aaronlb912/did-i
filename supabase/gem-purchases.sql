@@ -52,7 +52,7 @@ create trigger cap_gem_purchases
   before insert on public.gem_purchases
   for each row execute function public.cap_gem_purchases();
 
--- Called from the Stripe webhook with the service role only.
+-- Called from gem-iap (store receipt verify) with the service role only.
 create or replace function public.record_gem_purchase(
   who uuid,
   pack text,

@@ -60,17 +60,6 @@ export function ShopCheers({ book, onChange, now }) {
                 </button>
                 <span className="di-shop-copy">
                   <strong>{t(cheerText(item.id, 'name'))}</strong>
-                  <em>
-                    {t(cheerText(item.id, 'line'))}
-                    {' · '}
-                    {have
-                      ? next
-                        ? gemLine(cost)
-                        : t('shop.owned')
-                      : item.gems
-                        ? gemLine(item.gems)
-                        : t('shop.owned')}
-                  </em>
                 </span>
                 {have ? (
                   next ? (
