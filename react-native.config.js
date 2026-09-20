@@ -1,14 +1,8 @@
-const capacitorPackages = [
-  '@capacitor/android',
-  '@capacitor/app',
-  '@capacitor/cli',
-  '@capacitor/core',
-  '@capacitor/haptics',
-  '@capacitor/local-notifications',
-  '@capacitor/share',
-  '@capacitor/splash-screen',
-  '@capacitor/status-bar',
-];
+const { dependencies, devDependencies } = require('./package.json');
+
+const capacitorPackages = Object.keys({ ...dependencies, ...devDependencies }).filter((name) =>
+  name.startsWith('@capacitor/')
+);
 
 module.exports = {
   dependencies: Object.fromEntries(
