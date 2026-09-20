@@ -54,17 +54,15 @@ npm run db:apply:all
 Then run `supabase/audit.sql` in the SQL editor. It must return no rows.
 Full steps: `docs/running-it.md`.
 
-## Web hosting (GitHub Pages)
+## Web hosting (Vercel)
 
-Push to `main` deploys through `.github/workflows/pages.yml` when Pages
-is enabled on the repo. Local build:
+Import the repo at [vercel.com/new](https://vercel.com/new). Build:
+`npm run build`. Output: `dist`. Add env vars from `.env.example` in the
+Vercel project settings (never commit `.env.local`). Point `did-i.app` at
+Vercel DNS. Full steps: `docs/site.md`.
 
-```
-npm run build:pages
-```
-
-Set `VITE_WEB_APP_URL` in `.env.local` to that public URL so the Android
-app can open gem checkout in the browser.
+Set `VITE_WEB_APP_URL=https://did-i.app` so the Android app can open gem
+checkout in the browser.
 
 ## Android
 

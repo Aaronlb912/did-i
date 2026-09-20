@@ -2,12 +2,8 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const pagesBuild =
-  process.env.GITHUB_PAGES === 'true' && process.env.npm_lifecycle_event === 'build'
-
 export default defineConfig({
-  // Custom domain (did-i.app) uses /. github.io/repo/ would use /did-i/.
-  base: process.env.VITE_BASE || (pagesBuild ? '/did-i/' : '/'),
+  base: process.env.VITE_BASE || '/',
   plugins: [
     react(),
     VitePWA({

@@ -38,7 +38,7 @@ before launch. Have a lawyer review `scripts/legal-i18n.mjs` for your state.
 Ship checklist (your accounts, not the repo):
 
 1. Custom SMTP in Supabase so sign-in codes arrive.
-2. Point `did-i.app` DNS at hosting; deploy `dist/` (see `docs/site.md`).
+2. Point `did-i.app` DNS at Vercel; import repo and set env vars (see `docs/site.md`).
 3. Set `VITE_WEB_APP_URL=https://did-i.app` before building the Android APK.
 4. Stripe Payment Links + webhook for gem packs (see `docs/running-it.md`).
 5. Install the debug APK on a phone and test push with a second account.
@@ -96,8 +96,7 @@ Ship checklist (your accounts, not the repo):
   line copy through `t()` in all eight locales.
 - Shop cheers and looks (names, lines, buy errors), push channel label,
   StarterPicks default, and people network miss through `t()` / `tMiss()`.
-- Ship tooling: `npm run db:apply:all`, `npm run build:pages`, GitHub Pages
-  workflow, optional `VITE_REPORT_URL`, native gem web fallback via
-  `VITE_WEB_APP_URL`.
+- Ship tooling: `npm run db:apply:all`, `vercel.json` SPA deploy, optional
+  `VITE_REPORT_URL`, native gem web fallback via `VITE_WEB_APP_URL`.
 - Marketing site at `/` with `/app`, `/privacy`, `/terms` on one build
   (`src/site/`, `docs/site.md`). PWA start URL is `/app`.

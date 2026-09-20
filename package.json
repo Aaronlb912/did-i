@@ -16,7 +16,7 @@
     "locales:sync": "node scripts/sync-locales.mjs",
     "db:apply": "node scripts/apply-sql.mjs",
     "db:apply:all": "node scripts/apply-all-sql.mjs",
-    "build:pages": "node scripts/build-pages.mjs",
+    "build:pages": "vite build",
     "expo": "expo start",
     "expo:android": "expo start --android",
     "expo:ios": "expo start --ios",

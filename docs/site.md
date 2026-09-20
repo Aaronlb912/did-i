@@ -24,44 +24,34 @@ npm start
 - http://127.0.0.1:48741/app — app
 - http://127.0.0.1:48741/privacy — privacy
 
-## Deploy
+## Deploy on Vercel
+
+1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new).
+2. Framework preset: **Vite**. Build command: `npm run build`. Output: `dist`.
+3. Environment variables (Project → Settings → Environment Variables):
+
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_LEGAL_EMAIL`
+   - `VITE_WEB_APP_URL` = `https://did-i.app`
+   - `VITE_STRIPE_PACK_*` when Stripe checkout is live
+
+   Use the same values as `.env.local`. Never commit `.env.local`.
+
+4. Add domain **did-i.app** under Project → Settings → Domains.
+5. At your DNS host, point `did-i.app` at Vercel (A/CNAME records Vercel shows you).
+   Remove old GitHub Pages A records if you used those.
+
+`vercel.json` rewrites all paths to `index.html` so `/privacy` and `/app`
+load the SPA. Static assets in `dist/assets/` are served as files first.
+
+Manual deploy:
 
 ```
 npm run build
 ```
 
-Upload `dist/` to your host, or use GitHub Pages (`.github/workflows/pages.yml`).
-
-### GitHub Pages + did-i.app
-
-1. Repo **Settings → Pages → Build and deployment**: GitHub Actions.
-2. Secrets (Settings → Secrets → Actions): `VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_ANON_KEY`, `VITE_LEGAL_EMAIL`.
-3. At your DNS host for `did-i.app`, add four **A** records pointing at GitHub:
-
-   - `185.199.108.153`
-   - `185.199.109.153`
-   - `185.199.110.153`
-   - `185.199.111.153`
-
-   Or **CNAME** `www` → `aaronlb912.github.io` if you only use `www.did-i.app`.
-
-4. In GitHub **Settings → Pages → Custom domain**, enter `did-i.app`.
-   `public/CNAME` in the repo should match.
-
-Push to `master` (or `main`) runs the workflow and deploys `dist/`.
-
-**SPA fallback** so `/privacy` loads `index.html`:
-
-- Netlify / Cloudflare Pages: `public/_redirects` is included
-- GitHub Pages: `public/404.html` is a copy of `index.html`
-- Vercel: add `vercel.json` with `{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }` if needed
-
-Set env at build time:
-
-- `VITE_LEGAL_EMAIL`
-- `VITE_WEB_APP_URL=https://did-i.app`
-- Supabase and Stripe vars if accounts are live
+Upload `dist/` anywhere with the same SPA fallback if not using Vercel.
 
 ## Android / native
 
