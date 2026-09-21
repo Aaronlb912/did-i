@@ -46,7 +46,9 @@ export function NativeApp() {
     if (book) scheduleNativePings(book)
   }, [])
 
-  if (!fontsLoaded) return null
+  if (!fontsLoaded) {
+    return <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }} />
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

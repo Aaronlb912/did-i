@@ -24,11 +24,6 @@ export async function bootNative() {
   } catch {
     // ok
   }
-  try {
-    await SplashScreen.hideAsync()
-  } catch {
-    // ok
-  }
 }
 
 function notifyId(lampId, periodKey) {

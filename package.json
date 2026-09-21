@@ -28,6 +28,7 @@
     "build:pages": "vite build",
     "expo": "expo start --dev-client",
     "expo:dev": "expo start --dev-client --tunnel",
+    "expo:connect": "node scripts/dev-connect.mjs",
     "expo:android": "expo start --dev-client --android",
     "expo:ios": "expo start --dev-client --ios",
     "ios:device": "eas device:create",

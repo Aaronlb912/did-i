@@ -70,9 +70,13 @@ and load the bundle.
 
 If it does not connect:
 
-- Shake the phone → **Enter URL manually** → paste the `exp://` URL from the
-  terminal
-- Or scan the QR code in the terminal with the iPhone camera
+- Run `npm run expo:connect` in a second terminal and copy the tunnel URL
+- On the phone, open **Did I** → shake → **Enter URL manually** → paste that URL
+- Or scan the QR code in the Metro terminal with the iPhone camera
+
+If you see a **blank dark screen** after the splash: Metro is probably running
+but the phone is pointed at the wrong URL. LAN URLs (`192.168.x.x`) fail when
+the phone is on another network. Always use the tunnel URL from `npm run expo:dev`.
 
 ### 3. Reload
 
@@ -83,6 +87,7 @@ Save a file in the repo; the app reloads. Shake → **Reload** if it sticks.
 | Command | What |
 |---------|------|
 | `npm run expo:dev` | Metro + dev client + tunnel |
+| `npm run expo:connect` | Print tunnel URL + `didi://` deep link |
 | `npm run expo` | Metro + dev client (LAN) |
 | `npm run ios:build` | EAS development build for iPhone |
 | `npm run ios:device` | Register this iPhone with EAS |
@@ -100,3 +105,11 @@ server setup in `docs/iap.md`. Everything else works in the dev client.
 
 **Android instead** — You already have `android/` checked in. On a device or
 emulator: `npm run android:build` then `npm run expo:dev`.
+
+**Android emulator** — After `npm run expo:dev`, run `npm run expo:connect`.
+It sets `adb reverse` and prints the `didi://` link. Do not leave multiple
+Metro processes running; only one `expo:dev` on port 8081.
+
+**Blank screen or “Cannot connect to Expo CLI”** — The dev client is pointed
+at the wrong URL. Stop every Metro terminal, run `npm run expo:dev` once, wait
+for `Tunnel ready`, then `npm run expo:connect` and follow the printed link.

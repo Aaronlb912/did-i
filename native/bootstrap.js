@@ -6,6 +6,21 @@
 import Constants from 'expo-constants'
 import { Appearance, AppState, Platform } from 'react-native'
 
+// Hermes has no document. Shared web code checks typeof document, but some
+// paths still touch document.documentElement after the guard.
+if (typeof global.document === 'undefined') {
+  const root = { dataset: {}, lang: 'en' }
+  global.document = {
+    documentElement: root,
+    body: {},
+    hidden: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    createElement: () => ({ click: () => {}, href: '', download: '' }),
+    querySelector: () => null,
+  }
+}
+
 const mem = new Map()
 let store = null
 

@@ -11,7 +11,7 @@ import {
 } from '@expo-google-fonts/jetbrains-mono'
 
 export function useAppFonts() {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -19,5 +19,5 @@ export function useAppFonts() {
     JetBrainsMono_400Regular,
     JetBrainsMono_500Medium,
   })
-  return loaded
+  return loaded || Boolean(error)
 }
