@@ -4,6 +4,11 @@ import { unlockAchievements } from './achievements.js'
 import { byPriority, shortLabel } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
+import {
+  deliverStreakHit,
+  maybeStreakHit,
+  shelfHeatNow,
+} from './streak-moments.js'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
@@ -239,7 +244,19 @@ export function useTonightStack({
     if (finalStatus === 'skip') feelTap('skip')
     else feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
-    if (!wasClear && allClearTonight(next, clock)) feelTap('hall-on')
+    if (!wasClear && allClearTonight(next, clock)) {
+      feelTap('hall-on')
+      const beforeHeat = shelfHeatNow(shelf, clock, tagId)
+      const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
+      const afterHeat = shelfHeatNow(afterBooks, clock, tagId)
+      const hit = maybeStreakHit({
+        beforeHeat,
+        afterHeat,
+        clearedTonight: true,
+        dateIso,
+      })
+      if (hit) void deliverStreakHit(hit, dateIso)
+    }
   }
 
   function continueStack() {

@@ -2,8 +2,6 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
 import { markText, nextMark } from './achievements.js'
-import { hallHeat } from './hall-feel.js'
-import { HeatPips } from './HeatPips.jsx'
 import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -23,7 +21,6 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
   const leftAll = leftoverOn(shelf, clock, tagId)
   const hallOn = dueClearTonight(due)
   const name = firstName(book)
-  const heat = hallHeat(book, clock)
   const hunt = nextMark(book)
   const kicker =
     !tagId && leftAll
@@ -41,22 +38,11 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
         <p className="di-detail-meta">{kicker}</p>
         <TagRail boards={boards} tagId={tagId} onTag={onTag} now={clock} />
 
-        <div className="di-home-card di-home-heat">
-          <p className="di-face-plate">{t('home.streak')}</p>
-          <p className="di-heat-score">
-            {heat}
-            <span>{t('home.of5')}</span>
+        {!book.quietMode && hunt ? (
+          <p className="di-detail-meta">
+            {t('home.nextMark', { name: t(markText(hunt.id, 'name')) })}
           </p>
-          <HeatPips heat={heat} />
-          <button className="di-text" type="button" onClick={() => goHash('/calendar')}>
-            {t('home.calendar')}
-          </button>
-          {!book.quietMode && hunt ? (
-            <p className="di-detail-meta">
-              {t('home.nextMark', { name: t(markText(hunt.id, 'name')) })}
-            </p>
-          ) : null}
-        </div>
+        ) : null}
 
         <div className="di-home-card">
           <p className="di-face-plate">{t('home.tonight')}</p>

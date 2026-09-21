@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
-import { shelfHeat } from './hall-feel.js'
 import { weekStripNights } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -15,8 +14,7 @@ export function WeekStrip({ boards = [], tagId = '', now }) {
   }, [tagId])
 
   const nights = weekStripNights(boards, clock, tagId, weekShift)
-  const heat = shelfHeat(boards, clock, tagId)
-  const label = heat > 0 ? t('weekbar.streak', { n: heat }) : t('weekbar.none')
+  const label = t('weekbar.week')
 
   return (
     <section className="di-weekbar" aria-label={t('weekbar.aria')}>

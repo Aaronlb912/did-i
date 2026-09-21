@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 import { boardDate } from './recurrence.js'
 import { readReduceMotion } from './useReduceMotion.js'
 
@@ -22,6 +23,26 @@ export async function requestNativePings() {
 }
 
 export async function scheduleNativePings() {}
+
+export function isAppForeground() {
+  if (typeof document === 'undefined') return true
+  return document.visibilityState === 'visible'
+}
+
+export async function pingStreakHit(hit, dateIso) {
+  if (!hit || typeof window === 'undefined' || !('Notification' in window)) return false
+  if (Notification.permission !== 'granted') return false
+  try {
+    new Notification(t('streak.hitTitle'), {
+      body: t('streak.hitBody', { n: hit.n }),
+      tag: `streak-hit:${dateIso}`,
+      icon: './icon-192.png',
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export async function feelTap(kind) {
   if (reduceMotion()) return

@@ -85,10 +85,8 @@ function SureModal({ sure, colors, onClose, onGo }) {
 
 function ScreenShell({ book, title, children, colors, showAdd = false }) {
   const live = book || currentBook(readShelf())
-  const clock = new Date()
-  const date = formatBoardDate(boardDate(clock, live.dayFoldHour))
   return (
-    <BoardShell book={live} title={title} date={date} colors={colors} showAdd={showAdd}>
+    <BoardShell book={live} title={title} colors={colors} showAdd={showAdd}>
       {children}
     </BoardShell>
   )
@@ -298,11 +296,9 @@ export function FeedScreen({ book, now }) {
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const today = formatBoardDate(boardDate(clock, book?.dayFoldHour))
 
   return (
     <ScreenShell title={t('cal.aria')} colors={colors}>
-      <Meta colors={colors}>{today}</Meta>
       <Meta colors={colors}>{t('cal.hint')}</Meta>
       <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
       <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />

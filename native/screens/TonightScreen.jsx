@@ -302,8 +302,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               </Text>
             </Pressable>
           )}
-          <Text style={[styles.mastDot, { color: colors.line }]}>·</Text>
-          <Text style={[styles.mastDate, { color: colors.inkDim }]}>{stack.formatBoardDate(stack.dateIso)}</Text>
         </View>
         <View style={styles.mastActions}>
           <PurseLine purse={purse} colors={colors} gemsLink mast />
@@ -434,8 +432,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
-  mastDot: { fontFamily: fonts.mono, fontSize: 11, marginHorizontal: 4 },
-  mastDate: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   jewels: { maxHeight: 52, marginBottom: 10 },
   weekFoot: { marginTop: 'auto', paddingBottom: 4 },

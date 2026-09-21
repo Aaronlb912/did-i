@@ -3,14 +3,22 @@ import * as Haptics from 'expo-haptics'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
 import * as SplashScreen from 'expo-splash-screen'
-import { BackHandler, Share, StatusBar } from 'react-native'
+import { AppState, BackHandler, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
+import { t } from '../../src/lib/i18n.js'
 import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
+import { streakRiskFire } from '../../src/lib/streak-moments.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goFromPush, goHash } from '../navigation/hash.js'
 
 export function isNativeHall() {
   return true
+}
+
+let appForeground = AppState.currentState === 'active'
+
+export function isAppForeground() {
+  return appForeground
 }
 
 function reduceMotion() {
@@ -23,6 +31,30 @@ export async function bootNative() {
     StatusBar.setBackgroundColor('#0e1014')
   } catch {
     // ok
+  }
+  appForeground = AppState.currentState === 'active'
+  AppState.addEventListener('change', (next) => {
+    appForeground = next === 'active'
+  })
+}
+
+export async function pingStreakHit(hit, dateIso) {
+  if (!hit) return false
+  const allowed = await checkNativePings()
+  if (allowed !== 'granted') return false
+  try {
+    await Notifications.scheduleNotificationAsync({
+      identifier: String(notifyId('streak-hit', dateIso)),
+      content: {
+        title: t('streak.hitTitle'),
+        body: t('streak.hitBody', { n: hit.n }),
+        data: { go: '/tonight', streakHit: true },
+      },
+      trigger: null,
+    })
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -66,7 +98,7 @@ export async function scheduleNativePings(book, now = new Date()) {
   } catch {
     // ok
   }
-  const dateIso = boardDate(now, book.dayFoldHour)
+  const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
   const notes = []
   for (const row of waitingTonight(book, now)) {
@@ -83,6 +115,18 @@ export async function scheduleNativePings(book, now = new Date()) {
         data: { lampId: row.lamp.id, go: '/tonight' },
       },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
+    })
+  }
+  const risk = streakRiskFire(book, now)
+  if (risk) {
+    notes.push({
+      identifier: String(notifyId('streak', risk.tag)),
+      content: {
+        title: t('streak.riskTitle'),
+        body: t('streak.riskBody'),
+        data: { go: '/tonight', streakRisk: true },
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(risk.at) },
     })
   }
   for (const note of notes) {

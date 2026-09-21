@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { shelfHeat } from '../../src/lib/hall-feel.js'
 import { monthStripNights, nightDueRows } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
@@ -42,7 +41,6 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
 
   const shelf = boards.length ? boards : [book]
   const pack = monthStripNights(shelf, clock, tagId, monthShift)
-  const heat = shelfHeat(shelf, clock, tagId)
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
@@ -64,9 +62,6 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
           <Text style={[styles.shift, { color: monthShift >= 0 ? colors.line : colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
-      <Text style={[styles.streak, { color: colors.inkSoft }]}>
-        {heat > 0 ? t('weekbar.streak', { n: heat }) : t('weekbar.none')}
-      </Text>
       <View style={styles.grid}>
         {dows.map((day, i) => (
           <Text key={`dow-${i}`} style={[styles.dow, { color: colors.inkDim }]}>{day}</Text>
@@ -137,7 +132,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
   month: { fontFamily: fonts.ui, fontSize: 17, fontWeight: '600' },
-  streak: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dow: { width: '14.28%', textAlign: 'center', fontSize: 11, marginBottom: 4 },
   pad: { width: '14.28%', aspectRatio: 1 },

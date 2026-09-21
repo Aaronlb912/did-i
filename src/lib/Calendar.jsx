@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { shortLabel } from './board-json.js'
 import { BoardShell } from './BoardShell.jsx'
-import { shelfHeat } from './hall-feel.js'
 import { monthStripNights, nightDueRows } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -51,7 +50,6 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
 
   const shelf = boards.length ? boards : [book]
   const pack = monthStripNights(shelf, clock, tagId, monthShift)
-  const heat = shelfHeat(shelf, clock, tagId)
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
@@ -92,9 +90,6 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
             ›
           </button>
         </div>
-        <p className="di-cal-streak">
-          {heat > 0 ? t('weekbar.streak', { n: heat }) : t('weekbar.none')}
-        </p>
         <p className="di-detail-meta">{t('cal.hint')}</p>
         <div className="di-cal-grid" role="grid" aria-label={t('cal.aria')}>
           {dows.map((day, i) => (

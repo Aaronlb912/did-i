@@ -276,15 +276,12 @@ export function homeLine(book, now = new Date()) {
     }
   }
   if (allClearTonight(book, now)) {
-    const heat = hallHeat(book, now)
     const later = tomorrowAsk(book, now)
     return {
       kind: 'on',
       kicker: t('home.status.on'),
       title: t('home.line.on'),
-      body: later
-        ? t('home.body.onLater', { n: heat, later })
-        : t('home.body.on', { n: heat }),
+      body: later ? t('home.body.onLater', { later }) : t('home.body.on'),
       face: '',
     }
   }

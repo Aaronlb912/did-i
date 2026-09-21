@@ -16,7 +16,7 @@ import {
 } from './lib/board-shelf.js'
 import { commitBook, hangInto, takeDown } from './lib/board-ops.js'
 import { blankLamp } from './lib/board-json.js'
-import { isoDate } from './lib/recurrence.js'
+import { boardDate, isoDate } from './lib/recurrence.js'
 import {
   armLampPings,
   checkPings,
@@ -78,6 +78,12 @@ import { goFromPush, goHash, parseHash } from './site/hash.js'
 import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { DiagnosticsAsk } from './lib/DiagnosticsAsk.jsx'
+import { StreakMomentHost } from './lib/StreakMoment.jsx'
+import {
+  maybeStreakMiss,
+  queueStreakMoment,
+  shelfHeatNow,
+} from './lib/streak-moments.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { DIT_ENABLED } from './lib/features.js'
 import { wallClock } from './lib/zone.js'
@@ -105,10 +111,16 @@ function firstShelf() {
   purgeDemoOnce()
   const now = new Date()
   const shelf = writeShelf(alignShelfPurse(readShelf()))
-  return {
-    ...shelf,
-    boards: shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now)),
-  }
+  const heatBefore = shelfHeatNow(shelf.boards, now)
+  const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
+  const heatAfter = shelfHeatNow(boards, now)
+  const miss = maybeStreakMiss({
+    beforeHeat: heatBefore,
+    afterHeat: heatAfter,
+    dateIso: boardDate(now),
+  })
+  if (miss) queueStreakMoment(miss, boardDate(now))
+  return { ...shelf, boards }
 }
 
 function useRoute() {
@@ -148,6 +160,7 @@ export default function App() {
   function persist(nextShelf) {
     const now = new Date()
     const before = currentBook(shelf)
+    const heatBefore = shelfHeatNow(shelf.boards, now)
     const bumped = weeklyGemBump(nextShelf, shelf, now)
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
@@ -158,6 +171,13 @@ export default function App() {
     const drafted = parkEmptyTags(mergeSameTitles({ ...bumped, boards: mapped }))
     const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
     const written = writeShelf(spreadPurseFrom(drafted, current))
+    const heatAfter = shelfHeatNow(written.boards, now)
+    const miss = maybeStreakMiss({
+      beforeHeat: heatBefore,
+      afterHeat: heatAfter,
+      dateIso: boardDate(now),
+    })
+    if (miss) queueStreakMoment(miss, boardDate(now))
     const after = currentBook(written)
     if (after.id === before?.id) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
@@ -616,6 +636,7 @@ export default function App() {
       )}
       <CheerBurst />
       <DiagnosticsAsk />
+      <StreakMomentHost />
     </>
   )
 }

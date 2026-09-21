@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { shelfHeat } from '../../src/lib/hall-feel.js'
 import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
@@ -13,8 +12,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
     setWeekShift(0)
   }, [tagId])
   const nights = weekStripNights(boards, clock, tagId, weekShift)
-  const heat = shelfHeat(boards, clock, tagId)
-  const label = heat > 0 ? t('weekbar.streak', { n: heat }) : t('weekbar.none')
+  const label = t('weekbar.week')
 
   return (
     <View style={[styles.wrap, { borderTopColor: colors.lineSoft }]}>

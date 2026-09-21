@@ -23,7 +23,6 @@ export function BoardShell({
   boards = [],
   now,
   title,
-  date,
   look,
   back,
   sit,
@@ -79,12 +78,6 @@ export function BoardShell({
           <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>
             {title || book?.title || 'Did I'}
           </Text>
-          {date ? (
-            <>
-              <Text style={[styles.dot, { color: colors.line }]}>·</Text>
-              <Text style={[styles.date, { color: colors.inkDim }]} numberOfLines={1}>{date}</Text>
-            </>
-          ) : null}
         </View>
         {showCogs ? (
           <View style={styles.actions}>
@@ -174,7 +167,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     flexShrink: 1,
   },
-  dot: { fontFamily: fonts.mono, fontSize: 11 },
-  date: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.7, flexShrink: 1 },
   actions: { alignItems: 'flex-end', gap: 6, zIndex: 21 },
 })

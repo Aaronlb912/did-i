@@ -10,6 +10,7 @@ import { startPush } from '../src/lib/push.js'
 import { needsEnter } from '../src/lib/session.js'
 import { Boundary } from './components/Boundary.jsx'
 import { DiagnosticsAsk } from './components/DiagnosticsAsk.jsx'
+import { StreakMomentHost } from './components/StreakMoment.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
 import { goBack, goFromPush } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
@@ -58,6 +59,7 @@ export function NativeApp() {
         <Boundary>
           <RootNavigator />
           <DiagnosticsAsk />
+          <StreakMomentHost />
         </Boundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
