@@ -15,6 +15,7 @@ export function LampDetail({
   onArchive,
   onRemove,
   onMarkHole,
+  stripNoPickKeys = [],
 }) {
   usePrefs()
   if (!lamp) return null
@@ -36,7 +37,13 @@ export function LampDetail({
       <h2 className="di-question di-detail-q">{lamp.question}</h2>
       <p className="di-detail-meta">{meta}</p>
       {lamp.notes ? <p className="di-detail-notes">{lamp.notes}</p> : null}
-      <NightStrip book={book} lamp={lamp} keys={keys} onPickHole={onMarkHole} />
+      <NightStrip
+        book={book}
+        lamp={lamp}
+        keys={keys}
+        onPickHole={onMarkHole}
+        noPickKeys={stripNoPickKeys}
+      />
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={() => onEdit(lamp)}>
           {t('lamp.edit')}

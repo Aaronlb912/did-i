@@ -2,7 +2,7 @@ import { answerFor } from './recurrence.js'
 import { shortLabel } from './board-json.js'
 import { t } from './i18n.js'
 
-export function NightStrip({ book, lamp, keys, onPickHole }) {
+export function NightStrip({ book, lamp, keys, onPickHole, noPickKeys = [] }) {
   if (!lamp || !keys.length) return null
   return (
     <ol className="di-strip" aria-label={t('strip.recent', { name: shortLabel(lamp) })}>
@@ -12,7 +12,8 @@ export function NightStrip({ book, lamp, keys, onPickHole }) {
         if (answer?.status === 'yes') state = 'yes'
         else if (answer?.status === 'late') state = 'late'
         else if (answer?.status === 'skip') state = 'skip'
-        const canPick = onPickHole && (!answer || answer.status === 'skip')
+        const canPick =
+          onPickHole && !noPickKeys.includes(key) && (!answer || answer.status === 'skip')
         const inner = (
           <>
             <span className={`di-strip-jewel is-${state}`} />

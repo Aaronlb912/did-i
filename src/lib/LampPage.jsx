@@ -9,7 +9,7 @@ import { putAnswer, takeDown, toggleArchive } from './board-ops.js'
 import { findBookHoldingLamp } from './board-shelf.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { answerFor, boardDate, formatBoardDate } from './recurrence.js'
+import { answerFor, boardDate, formatBoardDate, periodKeyFor } from './recurrence.js'
 
 export function LampPage({ book, boards = [], onChange, now, lampId }) {
   usePrefs()
@@ -112,6 +112,7 @@ export function LampPage({ book, boards = [], onChange, now, lampId }) {
         onDuplicate={(item) => goHash('/add', { copy: item.id })}
         onArchive={(item) => change(toggleArchive(lampBook, item))}
         onRemove={() => setConfirmGone(true)}
+        stripNoPickKeys={[periodKeyFor(lamp, dateIso)]}
         onMarkHole={(item, periodKey) => setHolePick({ lamp: item, periodKey })}
       />
     </BoardShell>

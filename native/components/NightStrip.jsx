@@ -11,7 +11,7 @@ function jewelColor(state, colors) {
   return colors.open
 }
 
-export function NightStrip({ book, lamp, keys, colors, onPickHole }) {
+export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = [] }) {
   if (!lamp || !keys.length) return null
 
   return (
@@ -24,7 +24,8 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole }) {
           if (answer?.status === 'yes') state = 'yes'
           else if (answer?.status === 'late') state = 'late'
           else if (answer?.status === 'skip') state = 'skip'
-          const canPick = onPickHole && (!answer || answer.status === 'skip')
+          const canPick =
+            onPickHole && !noPickKeys.includes(key) && (!answer || answer.status === 'skip')
           const dot = (
             <View
               style={[

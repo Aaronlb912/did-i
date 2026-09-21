@@ -15,7 +15,7 @@ import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { matchLamps } from '../../src/lib/hall-pages.js'
-import { answerFor, boardDate, dueTonight, formatBoardDate, recentPeriodKeys } from '../../src/lib/recurrence.js'
+import { answerFor, boardDate, dueTonight, formatBoardDate, periodKeyFor, recentPeriodKeys } from '../../src/lib/recurrence.js'
 import { NightStrip } from '../components/NightStrip.jsx'
 import { STARTERS } from '../../src/lib/starters.js'
 import {
@@ -534,9 +534,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const [holePick, setHolePick] = useState(null)
   const stripKeys = lamp ? recentPeriodKeys(lamp, dateIso, 7) : []
 
-  const dueRow = dueTonight(lampBook, clock).find((item) => item.lamp.id === lampId) || null
-  const answered = dueRow ? answerFor(lampBook, lampId, dueRow.periodKey) : null
-
   function change(next) {
     onChange(commitBook(next, clock))
   }
@@ -618,28 +615,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         lamp={lamp}
         keys={stripKeys}
         colors={colors}
+        noPickKeys={[periodKeyFor(lamp, dateIso)]}
         onPickHole={(picked, key) => setHolePick({ ...picked, key, question: picked.question })}
       />
-
-      {dueRow ? (
-        <View style={styles.tonight}>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('tonight.didI')}</Text>
-          <View style={styles.tonightRow}>
-            <DidButton
-              label={t('tonight.swipeDid')}
-              onPress={() => change(putAnswer(lampBook, dueRow, 'yes', clock))}
-              colors={colors}
-              small
-              disabled={answered?.status === 'yes' || answered?.status === 'late'}
-            />
-            <KeyButton
-              label={t('tonight.swipeNope')}
-              onPress={() => change(putAnswer(lampBook, dueRow, 'skip', clock))}
-              colors={colors}
-            />
-          </View>
-        </View>
-      ) : null}
 
       <View style={styles.actions}>
         <DidButton label={t('lamp.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} small />
