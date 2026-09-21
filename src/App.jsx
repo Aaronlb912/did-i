@@ -54,7 +54,9 @@ import { ShopCheers } from './lib/ShopCheers.jsx'
 import { ShopBuddies } from './lib/ShopBuddies.jsx'
 import { ShopLooks } from './lib/ShopLooks.jsx'
 import { Account } from './lib/Account.jsx'
+import { PhoneSettings } from './lib/PhoneSettings.jsx'
 import { People } from './lib/People.jsx'
+import { PeopleConnect } from './lib/PeopleConnect.jsx'
 import { Friends } from './lib/Friends.jsx'
 import { Family } from './lib/Family.jsx'
 import { Inbox } from './lib/Inbox.jsx'
@@ -72,9 +74,10 @@ import { Door } from './site/Door.jsx'
 import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
 import { Read } from './site/Read.jsx'
-import { goHash, parseHash } from './site/hash.js'
+import { goFromPush, goHash, parseHash } from './site/hash.js'
 import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
+import { DiagnosticsAsk } from './lib/DiagnosticsAsk.jsx'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { DIT_ENABLED } from './lib/features.js'
 import { wallClock } from './lib/zone.js'
@@ -351,7 +354,7 @@ export default function App() {
     navigator.serviceWorker?.addEventListener('message', onMessage)
     pullAndMerge()
     // Does nothing until Firebase is set up. See docs/push.md.
-    startPush((where) => goHash(where))
+    startPush((where) => goFromPush(where))
     const stop = listenNativeShell({
       onBack() {
         const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
@@ -500,8 +503,10 @@ export default function App() {
     inner = <Account book={live} onChange={change} />
   } else if (path === '/people') {
     inner = <People book={live} onChange={change} />
+  } else if (path === '/people/connect') {
+    inner = <PeopleConnect book={live} onChange={change} />
   } else if (path === '/friends') {
-    inner = <Friends book={live} onChange={change} />
+    inner = <Friends book={live} onChange={change} highlightAsk={route.id} />
   } else if (path === '/family') {
     inner = <Family book={live} onChange={change} familyId={route.id} />
   } else if (path === '/inbox') {
@@ -577,6 +582,8 @@ export default function App() {
         {...hallProps}
       />
     )
+  } else if (path === '/settings/phone') {
+    inner = <PhoneSettings book={live} onChange={change} />
   } else if (path === '/tonight' || path === '/' || path === '/home' || route.face) {
     inner = (
       <Tonight
@@ -608,6 +615,7 @@ export default function App() {
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
       )}
       <CheerBurst />
+      <DiagnosticsAsk />
     </>
   )
 }

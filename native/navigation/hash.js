@@ -17,6 +17,7 @@ const ROUTES = new Set([
   '/search',
   '/me',
   '/settings',
+  '/settings/phone',
   '/add',
   '/hang',
   '/lamp',
@@ -37,6 +38,7 @@ const ROUTES = new Set([
   '/kit',
   '/account',
   '/people',
+  '/people/connect',
   '/friends',
   '/family',
   '/inbox',
@@ -48,6 +50,7 @@ const STACK_KEY = 'did-i-stack'
 const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later'])
 const FALLBACK = {
   '/friends': '/people',
+  '/people/connect': '/people',
   '/family': '/people',
   '/inbox': '/people',
   '/sent': '/people',
@@ -57,6 +60,7 @@ const FALLBACK = {
   '/shop/looks': '/shop',
   '/shop/cheers': '/shop',
   '/shop/buddies': '/shop',
+  '/settings/phone': '/settings',
   '/pings': '/settings',
   '/me': '/settings',
   '/help': '/settings',
@@ -249,6 +253,19 @@ function cleanPath(raw) {
   if (!path.startsWith('/')) path = `/${path}`
   path = path.replace(/\/+$/, '') || '/'
   return ROUTES.has(path) ? path : '/'
+}
+
+export function goFromPush(where) {
+  const raw = String(where || '/').trim()
+  if (!raw) return
+  const cut = raw.indexOf('?')
+  const pathPart = cut >= 0 ? raw.slice(0, cut) : raw
+  const params = new URLSearchParams(cut >= 0 ? raw.slice(cut + 1) : '')
+  const extras = {}
+  if (params.get('id')) extras.id = params.get('id')
+  if (params.get('face')) extras.face = params.get('face')
+  if (params.get('start')) extras.start = params.get('start')
+  goHash(pathPart, extras)
 }
 
 export function goHash(path, extras = '') {

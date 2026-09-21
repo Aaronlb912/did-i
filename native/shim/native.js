@@ -7,7 +7,7 @@ import { BackHandler, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { goHash } from '../navigation/hash.js'
+import { goFromPush, goHash } from '../navigation/hash.js'
 
 export function isNativeHall() {
   return true
@@ -169,7 +169,7 @@ export function listenNativeShell({ onBack, onOpenLamp }) {
     const lampId = response?.notification?.request?.content?.data?.lampId || ''
     const go = response?.notification?.request?.content?.data?.go || ''
     if (lampId) onOpenLamp?.(String(lampId))
-    else if (go) goHash(String(go))
+    else if (go) goFromPush(String(go))
   })
   Linking.getInitialURL().then((url) => {
     if (!url) return

@@ -5929,6 +5929,21 @@ html[data-reduce-motion] .di-hall[data-look='wine']::after {
   color: var(--di-ink-dim);
 }
 
+.di-people-asks {
+  margin-bottom: 0.75rem;
+}
+
+.di-people-asks .di-set-card {
+  border-color: var(--di-on);
+  border-width: 2px;
+}
+
+.di-people-row.is-pick {
+  background: color-mix(in srgb, var(--di-on) 12%, var(--di-panel));
+  outline: 2px solid var(--di-on);
+  outline-offset: -2px;
+}
+
 .di-people-row {
   display: flex;
   align-items: center;

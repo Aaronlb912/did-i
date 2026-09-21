@@ -6,8 +6,8 @@ import { feelTap } from './native.js'
 import { usePeopleCount } from './people.js'
 import { usePrefs } from './prefs.js'
 
-const SETTINGS_ON = ['/settings', '/pings', '/about', '/help', '/privacy', '/terms']
-const PEOPLE_ON = ['/people', '/friends', '/family', '/inbox', '/sent']
+const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
+const PEOPLE_ON = ['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent']
 const ADD_ON = ['/add', '/hang']
 
 const ICONS = {

@@ -21,6 +21,11 @@ function note(error, info) {
   } catch {
     // Not worth failing twice over.
   }
+  try {
+    global.window?.dispatchEvent?.(new global.CustomEvent('did-i-broke', { detail: line }))
+  } catch {
+    // Same.
+  }
   return line
 }
 

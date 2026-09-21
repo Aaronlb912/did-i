@@ -14,8 +14,8 @@ import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
-import { cleanCode, cleanInvite, cleanHandle, cleanLine } from '../src/lib/people.js'
-import { HANDLE_WORDS, isHandleSafe } from '../src/lib/handle-safe.js'
+import { cleanCode, cleanInvite, cleanLine } from '../src/lib/people.js'
+import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { mergeSameTitles, normalizeShelf, parkEmptyTags } from '../src/lib/board-shelf.js'
 import { gemWeekKey, spendGems, weeklyGemBump } from '../src/lib/purse.js'
@@ -282,19 +282,11 @@ test('a family code is six and an invite code is ten', () => {
   assert.equal(cleanInvite('D93AQ5LBS4').length, 10)
 })
 
-test('a handle is folded the same way the database folds it', () => {
-  assert.equal(cleanHandle('  @Maple_4417 '), 'maple_4417')
-  assert.equal(cleanHandle('no spaces here'), 'nospaceshere')
-})
-
-test('a generated handle word never lands on hate text or codes', () => {
-  for (const word of HANDLE_WORDS) {
-    assert.ok(isHandleSafe(`${word}1234`), `${word}1234 should pass`)
-    assert.ok(!isHandleSafe(`${word}1488`), `${word}1488 should fail`)
-    assert.ok(isHandleSafe(word), `${word} should pass alone`)
-  }
-  assert.ok(!isHandleSafe('maple1488'))
-  assert.ok(!isHandleSafe('badnigger123'))
+test('a phone number folds to e164 the same way the database folds it', () => {
+  assert.equal(cleanPhone('(555) 123-4567'), '+15551234567')
+  assert.equal(cleanPhone('1 555 123 4567'), '+15551234567')
+  assert.equal(cleanPhone('123'), '')
+  assert.ok(looksLikePhone('5551234567'))
 })
 
 test('a line on Did I tonight is trimmed to what the column allows', () => {

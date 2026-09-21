@@ -4,15 +4,15 @@ import { useBackDismiss } from '../site/nav.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
+import { setShareDiagnostics } from './diagnostics.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
-import { clearPin, closeSession, hasPin, setPin } from './session.js'
 import { readShelf } from './board-shelf.js'
 import { mergeShelves } from './shelf-merge.js'
+import { boardDate, formatBoardDate } from './recurrence.js'
 import { zoneWords } from './zone.js'
-import { SetCap, SetCard, SetField, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
-import { useReduceMotion } from './useReduceMotion.js'
 import { legalEmail } from './legal.js'
+import { SetCap, SetCard, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
+import { useReduceMotion } from './useReduceMotion.js'
 
 export function Profile({
   book,
@@ -26,15 +26,9 @@ export function Profile({
   const prefs = usePrefs()
   const still = useReduceMotion()
   const account = useAccount()
-  const [keeperDraft, setKeeperDraft] = useState(book.keeperName || '')
-  const [noteDraft, setNoteDraft] = useState(book.inkNote || '')
-  const [pinDraft, setPinDraft] = useState('')
-  const [pinMiss, setPinMiss] = useState('')
-  const [pinOn, setPinOn] = useState(hasPin)
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
-  const locked = pinOn
 
   useBackDismiss(Boolean(confirm), () => setConfirm(null))
 
@@ -47,21 +41,6 @@ export function Profile({
     return () => window.removeEventListener('keydown', onKey)
   }, [sheet])
 
-  function saveKeeper() {
-    const keeperName = keeperDraft.trim()
-    setKeeperDraft(keeperName)
-    onChange({ ...book, keeperName })
-  }
-
-  function saveNote() {
-    const inkNote = noteDraft.trim()
-    setNoteDraft(inkNote)
-    onChange({ ...book, inkNote })
-  }
-
-  // Reads back what Download my data wrote, and also a single tag file.
-  // It folds in rather than replacing, so loading the wrong copy does
-  // not cost anybody their questions.
   function pickFile() {
     const input = document.createElement('input')
     input.type = 'file'
@@ -82,23 +61,13 @@ export function Profile({
         const merged = mergeShelves(before, coming, '', new Date().toISOString())
         onImport(merged)
         const was = before.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
-        const now = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
-        setLoadNote(t('settings.loadOk', { n: Math.max(0, now - was) }))
+        const nowCount = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
+        setLoadNote(t('settings.loadOk', { n: Math.max(0, nowCount - was) }))
       } catch {
         setLoadNote(t('settings.loadMiss'))
       }
     }
     input.click()
-  }
-
-  function saveLock() {
-    if (!setPin(pinDraft)) {
-      setPinMiss(t('settings.pinDigits'))
-      return
-    }
-    setPinMiss('')
-    setPinDraft('')
-    setPinOn(true)
   }
 
   if (confirm) {
@@ -182,63 +151,6 @@ export function Profile({
           />
         </SetCard>
 
-        <SetCap>{t('settings.title')}</SetCap>
-        <SetCard>
-          <SetField
-            label={t('settings.name')}
-            value={keeperDraft}
-            onChange={(event) => setKeeperDraft(event.target.value)}
-            onBlur={saveKeeper}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                saveKeeper()
-              }
-            }}
-          />
-          <SetField
-            label={t('settings.note')}
-            value={noteDraft}
-            onChange={(event) => setNoteDraft(event.target.value)}
-            onBlur={saveNote}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                saveNote()
-              }
-            }}
-            placeholder={t('settings.notePh')}
-          />
-          <SetField
-            label={locked ? t('settings.newNumber') : t('settings.number')}
-            inputMode="numeric"
-            autoComplete="off"
-            value={pinDraft}
-            onChange={(event) => setPinDraft(event.target.value)}
-          />
-          <SetRow
-            label={locked ? t('settings.changeNumber') : t('settings.lockPhone')}
-            onClick={saveLock}
-          />
-          {locked ? (
-            <SetRow
-              label={t('settings.removeLock')}
-              danger
-              onClick={() => {
-                clearPin()
-                setPinDraft('')
-                setPinMiss('')
-                setPinOn(false)
-              }}
-            />
-          ) : null}
-        </SetCard>
-        {pinMiss ? (
-          <p className="di-miss" role="alert">
-            {pinMiss}
-          </p>
-        ) : null}
-
         <SetCap>{t('settings.tonight')}</SetCap>
         <SetCard>
           <SetRow
@@ -269,6 +181,15 @@ export function Profile({
           />
         </SetCard>
 
+        <SetCard>
+          <SetRow
+            label={t('settings.title')}
+            sub={t('settings.phoneSub')}
+            chevron
+            onClick={() => goHash('/settings/phone')}
+          />
+        </SetCard>
+
         <SetCap>{t('settings.help')}</SetCap>
         <SetCard>
           {onSendCopy ? (
@@ -285,6 +206,16 @@ export function Profile({
           <SetRow label={t('settings.intro')} chevron onClick={() => goHash('/welcome')} />
         </SetCard>
         {loadNote ? <p className="di-set-note">{loadNote}</p> : null}
+
+        <SetCap>{t('settings.privacyChoices')}</SetCap>
+        <SetCard>
+          <SetSwitch
+            label={t('settings.diagnostics')}
+            sub={t('settings.diagnosticsSub')}
+            on={Boolean(prefs.shareDiagnostics)}
+            onClick={() => setShareDiagnostics(!prefs.shareDiagnostics)}
+          />
+        </SetCard>
 
         <SetCap>{t('settings.legal')}</SetCap>
         <SetCard>
@@ -314,14 +245,6 @@ export function Profile({
               }
             />
           ) : null}
-          <SetRow
-            label={t('settings.leaveBoard')}
-            danger
-            onClick={() => {
-              closeSession()
-              goHash('/enter')
-            }}
-          />
         </SetCard>
 
         {sheet === 'theme' ? (
@@ -355,7 +278,6 @@ export function Profile({
             ))}
           </SetSheet>
         ) : null}
-
       </section>
     </BoardShell>
   )

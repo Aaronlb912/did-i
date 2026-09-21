@@ -5,6 +5,7 @@
 
 import Constants from 'expo-constants'
 import { Appearance, AppState, Platform } from 'react-native'
+import { hookErrorReport } from '../src/lib/report.js'
 
 // Hermes has no document. Shared web code checks typeof document, but some
 // paths still touch document.documentElement after the guard.
@@ -142,3 +143,5 @@ export function emitHashChange(hash) {
 export function emit(type, detail) {
   fire(new global.CustomEvent(type, { detail }))
 }
+
+hookErrorReport()

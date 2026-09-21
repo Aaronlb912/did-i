@@ -10,7 +10,13 @@ export const THEME_IDS = ['dark', 'light', 'phone']
 export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 
 function blankPrefs() {
-  return { theme: 'dark', locale: 'en', lessMotion: false }
+  return {
+    theme: 'dark',
+    locale: 'en',
+    lessMotion: false,
+    diagnosticsAsked: false,
+    shareDiagnostics: false,
+  }
 }
 
 export function deviceLocale() {
@@ -33,6 +39,8 @@ function cleanPrefs(raw) {
   if (THEMES.has(raw?.theme)) next.theme = raw.theme
   if (LOCALES.has(raw?.locale)) next.locale = raw.locale
   if (raw?.lessMotion === true) next.lessMotion = true
+  if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
+  if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
   return next
 }
 

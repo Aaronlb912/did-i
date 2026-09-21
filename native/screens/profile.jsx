@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
+import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
   LOCALE_IDS,
   THEME_IDS,
@@ -13,7 +14,7 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareShelf } from '../../src/lib/native.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
-import { clearPin, closeSession, hasPin, setPin } from '../../src/lib/session.js'
+import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -33,24 +34,14 @@ import {
   SetSwitch,
 } from '../components/SetBits.jsx'
 
-export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCopy }) {
+export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
-  const prefs = usePrefs()
-  const account = useAccount()
   const [keeperDraft, setKeeperDraft] = useState(book?.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book?.inkNote || '')
-  const [pinDraft, setPinDraft] = useState('')
-  const [pinMiss, setPinMiss] = useState('')
-  const [pinOn, setPinOn] = useState(hasPin)
-  const [confirm, setConfirm] = useState(null)
-  const [sheet, setSheet] = useState(null)
-  const [loadNote, setLoadNote] = useState('')
-  const locked = pinOn
 
   useEffect(() => {
     setKeeperDraft(book?.keeperName || '')
     setNoteDraft(book?.inkNote || '')
-    setPinOn(hasPin)
   }, [book?.keeperName, book?.inkNote])
 
   useEffect(() => {
@@ -68,6 +59,51 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     const timer = setTimeout(() => onChange({ ...book, inkNote }), 400)
     return () => clearTimeout(timer)
   }, [noteDraft, book, onChange])
+
+  return (
+    <BoardShell book={book} title={t('settings.title')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
+      <PageTitle colors={colors}>{t('settings.title')}</PageTitle>
+      <SetNote colors={colors}>{t('settings.phoneBody')}</SetNote>
+
+      <SetCap colors={colors}>{t('settings.title')}</SetCap>
+      <SetCard colors={colors}>
+        <SetField colors={colors} label={t('settings.name')} value={keeperDraft} onChangeText={setKeeperDraft} />
+        <SetField
+          colors={colors}
+          label={t('settings.note')}
+          value={noteDraft}
+          onChangeText={setNoteDraft}
+          placeholder={t('settings.notePh')}
+          multiline
+        />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('settings.danger')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          label={t('settings.signOut')}
+          note={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
+          danger
+          onPress={() => {
+            closeSession()
+            goHash('/enter')
+          }}
+        />
+      </SetCard>
+
+      <KeyButton colors={colors} label={t('settings.back')} onPress={() => goHash('/settings')} />
+    </BoardShell>
+  )
+}
+
+export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCopy }) {
+  const colors = useHallColors(book)
+  const prefs = usePrefs()
+  const account = useAccount()
+  const [confirm, setConfirm] = useState(null)
+  const [sheet, setSheet] = useState(null)
+  const [loadNote, setLoadNote] = useState('')
 
   async function pickFile() {
     try {
@@ -91,16 +127,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     } catch {
       setLoadNote(t('settings.loadMiss'))
     }
-  }
-
-  function saveLock() {
-    if (!setPin(pinDraft)) {
-      setPinMiss(t('settings.pinDigits'))
-      return
-    }
-    setPinMiss('')
-    setPinDraft('')
-    setPinOn(true)
   }
 
   if (confirm) {
@@ -173,48 +199,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
       </SetCard>
 
-      <SetCap colors={colors}>{t('settings.title')}</SetCap>
-      <SetCard colors={colors}>
-        <SetField
-          colors={colors}
-          label={t('settings.name')}
-          value={keeperDraft}
-          onChangeText={setKeeperDraft}
-        />
-        <SetField
-          colors={colors}
-          label={t('settings.note')}
-          value={noteDraft}
-          onChangeText={setNoteDraft}
-          placeholder={t('settings.notePh')}
-          multiline
-        />
-        <SetField
-          colors={colors}
-          label={locked ? t('settings.newNumber') : t('settings.number')}
-          value={pinDraft}
-          onChangeText={setPinDraft}
-          keyboardType="number-pad"
-          secureTextEntry
-          maxLength={8}
-        />
-        <SetRow colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />
-        {locked ? (
-          <SetRow
-            colors={colors}
-            label={t('settings.removeLock')}
-            danger
-            onPress={() => {
-              clearPin()
-              setPinDraft('')
-              setPinMiss('')
-              setPinOn(false)
-            }}
-          />
-        ) : null}
-      </SetCard>
-      {pinMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{pinMiss}</Text> : null}
-
       <SetCap colors={colors}>{t('settings.tonight')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
@@ -244,6 +228,16 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         <SetRow colors={colors} label={t('marks.kicker')} chevron onPress={() => goHash('/marks')} />
       </SetCard>
 
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          label={t('settings.title')}
+          sub={t('settings.phoneSub')}
+          chevron
+          onPress={() => goHash('/settings/phone')}
+        />
+      </SetCard>
+
       <SetCap colors={colors}>{t('settings.help')}</SetCap>
       <SetCard colors={colors}>
         {onSendCopy ? (
@@ -263,6 +257,24 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         <SetRow colors={colors} label={t('settings.intro')} chevron onPress={() => goHash('/welcome')} />
       </SetCard>
       {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
+
+      <SetCap colors={colors}>{t('settings.privacyChoices')}</SetCap>
+      <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          label={t('settings.diagnostics')}
+          sub={t('settings.diagnosticsSub')}
+          on={Boolean(prefs.shareDiagnostics)}
+          onPress={() => setShareDiagnostics(!prefs.shareDiagnostics)}
+        />
+        <SetRow
+          colors={colors}
+          label={t('settings.phonePrivacy')}
+          sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
+          chevron
+          onPress={() => Linking.openSettings()}
+        />
+      </SetCard>
 
       <SetCap colors={colors}>{t('settings.legal')}</SetCap>
       <SetCard colors={colors}>
@@ -289,15 +301,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             }
           />
         ) : null}
-        <SetRow
-          colors={colors}
-          label={t('settings.leaveBoard')}
-          danger
-          onPress={() => {
-            closeSession()
-            goHash('/enter')
-          }}
-        />
       </SetCard>
 
       {sheet === 'theme' ? (

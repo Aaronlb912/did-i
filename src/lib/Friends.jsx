@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useBackDismiss } from '../site/nav.js'
 import { useAccount } from './account.js'
@@ -8,10 +8,15 @@ import { t, tMiss } from './i18n.js'
 import {
   blockPerson,
   dropFriend,
+  friendAskNote,
+  friendAskTitle,
   giftCheer,
   listBlocks,
   listFriends,
+  formatPhone,
   personName,
+  sayNo,
+  sayYes,
   sendCheer,
   unblockPerson,
 } from './people.js'
@@ -33,7 +38,7 @@ function line(person) {
   return t('people.noStreak')
 }
 
-export function Friends({ book, onChange, now }) {
+export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const clock = now || new Date()
   const account = useAccount()
   const purse = normalizePurse(book)
@@ -42,6 +47,7 @@ export function Friends({ book, onChange, now }) {
   const [miss, setMiss] = useState('')
   const [blocks, setBlocks] = useState([])
   const [confirm, setConfirm] = useState(null)
+  const pickRef = useRef(null)
   const online = useOnline()
 
   useBackDismiss(Boolean(confirm), () => setConfirm(null))
@@ -60,6 +66,11 @@ export function Friends({ book, onChange, now }) {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    if (!highlightAsk || !pickRef.current) return
+    pickRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [highlightAsk, links.asked, ready])
 
   const shell = (children) => (
     <BoardShell
@@ -92,9 +103,45 @@ export function Friends({ book, onChange, now }) {
 
   if (!ready) return shell(<p className="di-set-note">{t('family.loading')}</p>)
 
+  async function answerAsk(id, yes) {
+    const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
+    if (why) setMiss(why)
+    load()
+  }
+
   return shell(
     <>
       <h2 className="di-page-title">{t('friends.title', { n: links.friends.length })}</h2>
+
+      {links.asked.length ? (
+        <div className="di-people-asks">
+          <SetCap>{t('people.askBanner', { n: links.asked.length })}</SetCap>
+          <SetCard>
+            {links.asked.map((row) => (
+              <div
+                className={row.id === highlightAsk ? 'di-people-row is-pick' : 'di-people-row'}
+                key={row.id}
+                ref={row.id === highlightAsk ? pickRef : null}
+              >
+                <span className="di-people-who">
+                  <strong>{friendAskTitle(row.person) || t('people.someone')}</strong>
+                  <em>{friendAskNote(row.person)}</em>
+                </span>
+                <button
+                  className="di-did di-did-small"
+                  type="button"
+                  onClick={() => answerAsk(row.id, true)}
+                >
+                  {t('people.yes')}
+                </button>
+                <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
+                  {t('people.no')}
+                </button>
+              </div>
+            ))}
+          </SetCard>
+        </div>
+      ) : null}
 
       {links.friends.length ? (
         <SetCard>
@@ -103,7 +150,7 @@ export function Friends({ book, onChange, now }) {
               <span className="di-people-who">
                 <strong>{personName(row.person) || t('people.someone')}</strong>
                 <em>
-                  {row.person?.handle ? `@${row.person.handle} · ` : ''}
+                  {row.person?.phone ? `${formatPhone(row.person.phone)} · ` : ''}
                   {line(row.person)}
                 </em>
               </span>
@@ -189,7 +236,7 @@ export function Friends({ book, onChange, now }) {
               <div className="di-people-row" key={row.user_id}>
                 <span className="di-people-who">
                   <strong>
-                    {row.display_name || (row.handle ? `@${row.handle}` : t('people.someone'))}
+                    {row.display_name || formatPhone(row.phone) || t('people.someone')}
                   </strong>
                   <em>{t('block.cannotReach')}</em>
                 </span>
@@ -266,8 +313,11 @@ export function Friends({ book, onChange, now }) {
       ) : null}
 
       <div className="di-hang-actions">
-        <button className="di-did di-did-small" type="button" onClick={() => goHash('/people')}>
-          {t('friends.manage')}
+        <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>
+          {t('people.connect')}
+        </button>
+        <button className="di-key" type="button" onClick={() => goHash('/people')}>
+          {t('people.back')}
         </button>
       </div>
     </>,

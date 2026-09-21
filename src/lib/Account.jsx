@@ -26,6 +26,8 @@ import { t, tMiss } from './i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
+import { readMine, savePhone } from './people.js'
+import { clearPin, hasPin, setPin } from './session.js'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 
 function clockWords(iso) {
@@ -84,6 +86,57 @@ function Pop({ note, onClose }) {
   )
 }
 
+function PhoneLockCard() {
+  const [pinDraft, setPinDraft] = useState('')
+  const [pinMiss, setPinMiss] = useState('')
+  const [pinOn, setPinOn] = useState(hasPin)
+  const locked = pinOn
+
+  function saveLock() {
+    if (!setPin(pinDraft)) {
+      setPinMiss(t('settings.pinDigits'))
+      return
+    }
+    setPinMiss('')
+    setPinDraft('')
+    setPinOn(true)
+  }
+
+  return (
+    <>
+      <SetCap>{t('account.lockCap')}</SetCap>
+      <SetCard>
+        <p className="di-set-note">{locked ? t('settings.lockOn') : t('settings.lockOff')}</p>
+        <SetField
+          label={locked ? t('settings.newNumber') : t('settings.number')}
+          inputMode="numeric"
+          autoComplete="off"
+          value={pinDraft}
+          onChange={(event) => setPinDraft(event.target.value)}
+        />
+        <SetRow label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onClick={saveLock} />
+        {locked ? (
+          <SetRow
+            label={t('settings.removeLock')}
+            danger
+            onClick={() => {
+              clearPin()
+              setPinDraft('')
+              setPinMiss('')
+              setPinOn(false)
+            }}
+          />
+        ) : null}
+      </SetCard>
+      {pinMiss ? (
+        <p className="di-miss" role="alert">
+          {pinMiss}
+        </p>
+      ) : null}
+    </>
+  )
+}
+
 function SignedOut({ on }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -133,6 +186,8 @@ function SignedOut({ on }) {
     <>
       <h2 className="di-page-title">{t('account.outTitle')}</h2>
       <p className="di-detail-meta">{t('account.outBody')}</p>
+
+      <PhoneLockCard />
 
       <SetCard>
         <SetField
@@ -219,6 +274,8 @@ function SignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book.keeperName || '')
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [note, setNote] = useState(null)
   const here = deviceKey()
@@ -231,6 +288,9 @@ function SignedIn({ book, email, onChange }) {
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book.keeperName) setNameDraft(row.display_name)
     })
+    readMine().then((row) => {
+      if (alive && row?.phone) setPhoneDraft(row.phone)
+    })
     return () => {
       alive = false
     }
@@ -241,6 +301,15 @@ function SignedIn({ book, email, onChange }) {
     setNameDraft(keeperName)
     onChange({ ...book, keeperName })
     saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+  }
+
+  async function keepPhone() {
+    setPhoneMiss('')
+    const { miss, phone } = await savePhone(phoneDraft)
+    if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
+    if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
+    if (miss) return setPhoneMiss(tMiss(miss))
+    if (phone) setPhoneDraft(phone)
   }
 
   const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
@@ -286,9 +355,31 @@ function SignedIn({ book, email, onChange }) {
             }
           }}
         />
+        <SetField
+          label={t('account.phone')}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          value={phoneDraft}
+          placeholder={t('people.addPh')}
+          onChange={(event) => setPhoneDraft(event.target.value)}
+          onBlur={keepPhone}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              keepPhone()
+            }
+          }}
+        />
         <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/kit')} />
         <SetRow label={t('account.cheer')} value={cheerName} chevron onClick={() => goHash('/kit')} />
       </SetCard>
+      {phoneMiss ? (
+        <p className="di-miss" role="alert">
+          {phoneMiss}
+        </p>
+      ) : null}
+      <p className="di-set-note">{t('account.phoneHint')}</p>
 
       <SetCap>{t('account.devices')}</SetCap>
       <SetCard>
@@ -313,6 +404,8 @@ function SignedIn({ book, email, onChange }) {
           <p className="di-set-note">{t('account.noDevices')}</p>
         )}
       </SetCard>
+
+      <PhoneLockCard />
 
       <SetCap>{t('account.data')}</SetCap>
       <SetCard>

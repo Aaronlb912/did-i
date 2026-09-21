@@ -9,8 +9,9 @@ import { bootNative, listenNativeShell, scheduleNativePings } from '../src/lib/n
 import { startPush } from '../src/lib/push.js'
 import { needsEnter } from '../src/lib/session.js'
 import { Boundary } from './components/Boundary.jsx'
+import { DiagnosticsAsk } from './components/DiagnosticsAsk.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
-import { goBack, goHash } from './navigation/hash.js'
+import { goBack, goFromPush } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -25,7 +26,7 @@ export function NativeApp() {
   useEffect(() => {
     bootNative()
     pullAndMerge()
-    startPush((where) => goHash(where))
+    startPush((where) => goFromPush(where))
     const stop = listenNativeShell({
       onBack() {
         const shelf = readShelf()
@@ -56,6 +57,7 @@ export function NativeApp() {
         <StatusBar style="light" />
         <Boundary>
           <RootNavigator />
+          <DiagnosticsAsk />
         </Boundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

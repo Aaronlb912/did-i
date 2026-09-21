@@ -54,8 +54,6 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   matches DOM more closely.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
-- **iOS swipe-back** on subpages (web has `useSwipeBack`; native has
-  mast back + Android key only).
 
 Tonight parity landed 2026-09-20: wait/hole plates, sync miss line,
 title edit, idle face, night-strip history gate, meter/purse pop,

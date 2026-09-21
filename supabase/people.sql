@@ -428,8 +428,8 @@ create policy "take back a send" on public.sends
 -- Calls the client makes ----------------------------------------------
 
 -- Look someone up by handle without opening the profiles table to everyone.
--- Handles are handed out, not picked. A plain word and four digits, so it
--- is easy to read out loud and hard to collide with.
+-- Handles are handed out, not picked. Two short words run together so each
+-- one reads differently and friends do not get near-miss numbers.
 create or replace function public.my_handle()
 returns text
 language plpgsql
@@ -450,6 +450,9 @@ declare
   ];
   try text;
   n integer := 0;
+  w integer;
+  i integer;
+  j integer;
 begin
   if me is null then
     raise exception 'not signed in';
@@ -458,9 +461,14 @@ begin
   if have is not null and have <> '' then
     return have;
   end if;
+  w := array_length(words, 1);
   loop
-    try := words[1 + floor(random() * array_length(words, 1))::int]
-      || lpad(floor(random() * 10000)::int::text, 4, '0');
+    i := 1 + floor(random() * w)::int;
+    loop
+      j := 1 + floor(random() * w)::int;
+      exit when j <> i;
+    end loop;
+    try := words[i] || words[j];
     exit when public.handle_safe(try)
       and not exists (select 1 from public.profiles where lower(handle) = try);
     n := n + 1;

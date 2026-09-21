@@ -1,4 +1,4 @@
-// Keep in sync with supabase/people.sql (my_handle words + handle_safe fragments).
+// Keep in sync with supabase/people.sql (my_handle word pairs + handle_safe fragments).
 
 export const HANDLE_WORDS = [
   'acorn',

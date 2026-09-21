@@ -21,7 +21,7 @@ import {
   WeekGridScreen,
   WelcomeScreen,
 } from './more.jsx'
-import { ProfileScreen } from './profile.jsx'
+import { PhoneSettingsScreen, ProfileScreen } from './profile.jsx'
 import { HangScreen, LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
 import {
   CollectionScreen,
@@ -36,6 +36,7 @@ import {
   FamilyScreen,
   FriendsScreen,
   InboxScreen,
+  PeopleConnectScreen,
   PeopleScreen,
   SentScreen,
 } from './social.jsx'
@@ -95,7 +96,8 @@ export function ScreenRouter({
   if (path === '/kit') return <CollectionScreen book={book} onChange={change} />
   if (path === '/account') return <AccountScreen book={book} onChange={change} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
-  if (path === '/friends') return <FriendsScreen book={book} onChange={change} />
+  if (path === '/people/connect') return <PeopleConnectScreen book={book} onChange={change} />
+  if (path === '/friends') return <FriendsScreen book={book} onChange={change} highlightAsk={route.id} />
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />
   if (path === '/inbox') return <InboxScreen book={book} onChange={change} onKeep={keepSent} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
@@ -164,6 +166,9 @@ export function ScreenRouter({
         onSendCopy={onSendCopy}
       />
     )
+  }
+  if (path === '/settings/phone') {
+    return <PhoneSettingsScreen book={book} onChange={change} />
   }
 
   return (

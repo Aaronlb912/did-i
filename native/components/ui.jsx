@@ -45,10 +45,21 @@ export function DidButton({ label, onPress, colors, small, disabled }) {
   )
 }
 
-export function KeyButton({ label, onPress, colors }) {
+export function KeyButton({ label, onPress, colors, picked, disabled }) {
   return (
-    <Pressable onPress={onPress} style={[styles.key, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
-      <Text style={[styles.keyText, { color: colors.ink }]}>{label}</Text>
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.key,
+        {
+          borderColor: picked ? colors.onDeep : colors.line,
+          backgroundColor: colors.panel2,
+          opacity: disabled ? 0.5 : 1,
+        },
+      ]}
+    >
+      <Text style={[styles.keyText, { color: picked ? colors.on : colors.ink }]}>{label}</Text>
     </Pressable>
   )
 }

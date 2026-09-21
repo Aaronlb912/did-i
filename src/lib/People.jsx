@@ -6,34 +6,21 @@ import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
-  INVITE_COINS,
-  INVITE_LOOK_AT,
-  askFriend,
-  claimInvites,
-  cleanCode,
-  cleanHandle,
-  cleanInvite,
-  cleanName,
-  dropFriend,
+  formatPhone,
+  friendAskNote,
+  friendAskTitle,
   inboxCount,
-  joinFamily,
   listFamilies,
   listFriends,
-  makeFamily,
-  myHandle,
-  myInvite,
   personName,
   readMine,
-  saveName,
   sayNo,
   sayYes,
   sendDidI,
   setPublicTonight,
   shareStreak,
-  useInvite,
+  syncDisplayName,
 } from './people.js'
-import { giveCoins } from './purse.js'
-import { passAlong } from './native.js'
 import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { SetCap, SetCard, SetField, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
@@ -116,120 +103,40 @@ export function People({ book, onChange, now }) {
   const [links, setLinks] = useState({ friends: [], asked: [], sent: [] })
   const [families, setFamilies] = useState([])
   const [waiting, setWaiting] = useState(0)
-  const [invite, setInvite] = useState('')
-  const [joined, setJoined] = useState(0)
-  const [inviteDraft, setInviteDraft] = useState('')
-  const [nameDraft, setNameDraft] = useState('')
-  const [handle, setHandle] = useState('')
-  const [addDraft, setAddDraft] = useState('')
-  const [famDraft, setFamDraft] = useState('')
-  const [codeDraft, setCodeDraft] = useState('')
+  const [phone, setPhone] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
 
   const load = useCallback(async () => {
     if (!account.user) return
-    const [who, friendRows, famRows, count, code, tag] = await Promise.all([
+    const [who, friendRows, famRows, count] = await Promise.all([
       readMine(),
       listFriends(),
       listFamilies(),
       inboxCount(),
-      myInvite(),
-      myHandle(),
     ])
     setMine(who)
-    setNameDraft(who?.display_name || '')
-    setHandle(tag || who?.handle || '')
+    setPhone(who?.phone || '')
+    await syncDisplayName(book.keeperName)
     setLinks(friendRows)
     setFamilies(famRows)
     setWaiting(count)
-    setInvite(code)
-  }, [account.user])
-
-  // Anything an invite earned lands in the purse the next time this
-  // screen opens. The server only pays each one once.
-  const payOut = useCallback(async () => {
-    if (!account.user) return
-    const won = await claimInvites()
-    setJoined(won.joined)
-    if (!won.coins && !won.looks.length) return
-    if (onChange) onChange(giveCoins(book, won.coins, won.looks))
-    setSaid(
-      won.looks.length
-        ? t('people.wonLook', { coins: won.coins })
-        : t('people.wonCoins', { coins: won.coins }),
-    )
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account.user])
+  }, [account.user, book.keeperName])
 
   useEffect(() => {
     load()
-    payOut()
-  }, [load, payOut])
+  }, [load])
 
   function say(words) {
     setMiss('')
     setSaid(words)
   }
 
-  async function keepName() {
-    const { miss: why, name } = await saveName(nameDraft)
-    if (why) return setMiss(why)
-    setNameDraft(name)
-    say(t('people.nameSaved'))
-    return load()
-  }
-
-  async function redeem() {
-    const { miss: why } = await useInvite(inviteDraft)
-    if (why === 'code') return setMiss(t('people.inviteShort'))
-    if (why === 'nobody') return setMiss(t('people.noInvite'))
-    if (why === 'self') return setMiss(t('people.ownInvite'))
-    if (why === 'used') return setMiss(t('people.inviteUsed'))
-    if (why) return setMiss(why)
-    setInviteDraft('')
-    await payOut()
-    return load()
-  }
-
-  async function ask() {
-    const { miss: why, person } = await askFriend(addDraft)
-    if (why === 'short') return setMiss(t('people.handleShort'))
-    if (why === 'nobody') return setMiss(t('people.noOne', { handle: cleanHandle(addDraft) }))
-    if (why) return setMiss(why)
-    setAddDraft('')
-    say(t('people.asked', { name: personName(person) }))
-    return load()
-  }
-
   async function answerAsk(id, yes) {
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(why)
     return load()
-  }
-
-  async function cut(person) {
-    const { miss: why } = await dropFriend(person.user_id)
-    if (why) return setMiss(why)
-    say(t('people.dropped', { name: personName(person) }))
-    return load()
-  }
-
-  async function newFamily() {
-    const { miss: why, id } = await makeFamily(famDraft || t('people.familyOne'))
-    if (why) return setMiss(why)
-    setFamDraft('')
-    return goHash('/family', { id })
-  }
-
-  async function join() {
-    const { miss: why, id } = await joinFamily(codeDraft)
-    if (why === 'code') return setMiss(t('people.codeShort'))
-    if (why === 'nofamily') return setMiss(t('people.noFamily'))
-    if (why) return setMiss(why)
-    setCodeDraft('')
-    return goHash('/family', { id })
   }
 
   const shell = (children) => (
@@ -278,8 +185,32 @@ export function People({ book, onChange, now }) {
     <>
       <h2 className="di-page-title">{t('people.title')}</h2>
 
-      {/* What is actually between you and other people comes first. The
-          settings for your own name and code sit underneath it. */}
+      {links.asked.length ? (
+        <div className="di-people-asks">
+          <SetCap>{t('people.askBanner', { n: links.asked.length })}</SetCap>
+          <SetCard>
+            {links.asked.map((row) => (
+              <div className="di-people-row" key={row.id}>
+                <span className="di-people-who">
+                  <strong>{friendAskTitle(row.person) || t('people.someone')}</strong>
+                  <em>{friendAskNote(row.person)}</em>
+                </span>
+                <button
+                  className="di-did di-did-small"
+                  type="button"
+                  onClick={() => answerAsk(row.id, true)}
+                >
+                  {t('people.yes')}
+                </button>
+                <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
+                  {t('people.no')}
+                </button>
+              </div>
+            ))}
+          </SetCard>
+        </div>
+      ) : null}
+
       <SetCard>
         <SetRow
           label={waiting ? t('people.waiting', { n: waiting }) : t('inbox.kicker')}
@@ -350,20 +281,18 @@ export function People({ book, onChange, now }) {
 
       <SetCap>{t('people.you')}</SetCap>
       <SetCard>
-        <SetField
-          label={t('people.name')}
-          value={nameDraft}
-          placeholder={t('people.namePh')}
-          onChange={(event) => setNameDraft(cleanName(event.target.value))}
-          onBlur={keepName}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              keepName()
-            }
-          }}
+        {mine?.display_name ? (
+          <SetRow label={t('people.name')} value={mine.display_name} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
+        ) : (
+          <SetRow label={t('people.name')} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
+        )}
+        <SetRow
+          label={t('people.phone')}
+          value={phone ? formatPhone(phone) : t('people.phoneMissing')}
+          sub={phone ? '' : t('people.phoneMissingSub')}
+          chevron
+          onClick={() => goHash('/account')}
         />
-        <SetRow label={t('people.handle')} value={handle ? `@${handle}` : '...'} />
         {DIT_ENABLED ? (
           <>
             <SetSwitch
@@ -393,96 +322,13 @@ export function People({ book, onChange, now }) {
           </>
         ) : null}
       </SetCard>
-      <p className="di-set-note">{t('people.handleHint')}</p>
-
-      <SetCap>{t('people.invite')}</SetCap>
       <SetCard>
         <SetRow
-          label={t('people.yourCode')}
-          value={invite || '...'}
-          sub={invite ? t('people.tapToSend') : ''}
-          onClick={
-            invite
-              ? async () => {
-                  const how = await passAlong(
-                    t('people.inviteLine', { code: invite }),
-                    t('people.invite'),
-                  )
-                  if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-                }
-              : undefined
-          }
+          label={t('people.connect')}
+          sub={t('people.connectSub')}
+          chevron
+          onClick={() => goHash('/people/connect')}
         />
-        <SetRow
-          label={t('people.joinedCount', { n: joined })}
-          sub={
-            joined >= INVITE_LOOK_AT
-              ? t('people.lookWon')
-              : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })
-          }
-        />
-      </SetCard>
-      <p className="di-set-note">
-        {t('people.inviteHint', { coins: INVITE_COINS, n: INVITE_LOOK_AT })}
-      </p>
-
-      {mine && !mine.invited_by ? (
-        <SetCard>
-          <SetField
-            label={t('people.gotCode')}
-            value={inviteDraft}
-            placeholder="D93AQ5LBS4"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            onChange={(event) => setInviteDraft(cleanInvite(event.target.value))}
-          />
-          <SetRow label={t('people.useCode')} onClick={redeem} />
-        </SetCard>
-      ) : null}
-
-      {links.asked.length ? (
-        <>
-          <SetCap>{t('people.asks')}</SetCap>
-          <SetCard>
-            {links.asked.map((row) => (
-              <div className="di-people-row" key={row.id}>
-                <span className="di-people-who">
-                  <strong>{personName(row.person) || t('people.someone')}</strong>
-                  <em>{t('people.wantsIn')}</em>
-                </span>
-                <button
-                  className="di-did di-did-small"
-                  type="button"
-                  onClick={() => answerAsk(row.id, true)}
-                >
-                  {t('people.yes')}
-                </button>
-                <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
-                  {t('people.no')}
-                </button>
-              </div>
-            ))}
-          </SetCard>
-        </>
-      ) : null}
-
-      <SetCap>{t('people.addOne')}</SetCap>
-      <SetCard>
-        <SetField
-          label={t('people.add')}
-          value={addDraft}
-          placeholder={t('people.addPh')}
-          autoCapitalize="off"
-          autoCorrect="off"
-          onChange={(event) => setAddDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              ask()
-            }
-          }}
-        />
-        <SetRow label={t('people.askOne')} onClick={ask} />
       </SetCard>
 
       {links.sent.length ? (
@@ -492,26 +338,6 @@ export function People({ book, onChange, now }) {
           })}
         </p>
       ) : null}
-
-      <SetCap>{t('people.startFamily')}</SetCap>
-      <SetCard>
-        <SetField
-          label={t('people.newFamily')}
-          value={famDraft}
-          placeholder={t('people.newFamilyPh')}
-          onChange={(event) => setFamDraft(event.target.value)}
-        />
-        <SetRow label={t('people.makeFamily')} onClick={newFamily} />
-        <SetField
-          label={t('people.joinCode')}
-          value={codeDraft}
-          placeholder="ABC234"
-          autoCapitalize="characters"
-          autoCorrect="off"
-          onChange={(event) => setCodeDraft(cleanCode(event.target.value))}
-        />
-        <SetRow label={t('people.join')} onClick={join} />
-      </SetCard>
 
       {miss ? (
         <p className="di-miss" role="alert">

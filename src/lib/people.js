@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
+import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 
 // Everything here needs an account. With no Supabase keys the app still
@@ -16,18 +17,27 @@ function bad(error) {
   return { miss: error?.message || 'people.reach' }
 }
 
-export function cleanHandle(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^@+/, '')
-    .replace(/[^a-z0-9_]/g, '')
-    .slice(0, 20)
+export function cleanPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
+  if (digits.length >= 10 && digits.length <= 15) return `+${digits}`
+  return ''
 }
 
-export function looksLikeHandle(value) {
-  const handle = cleanHandle(value)
-  return handle.length >= 3
+export function looksLikePhone(value) {
+  return cleanPhone(value).length >= 11
+}
+
+export function formatPhone(value) {
+  const clean = cleanPhone(value)
+  if (!clean) return ''
+  const digits = clean.slice(1)
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 11)}`
+  }
+  return clean
 }
 
 // A family join code is six. An invite code is ten. Same alphabet.
@@ -47,10 +57,26 @@ export function cleanInvite(value) {
 
 export function personName(row) {
   if (!row) return ''
-  return row.display_name || (row.handle ? `@${row.handle}` : '')
+  return row.display_name || formatPhone(row.phone) || ''
 }
 
-// Handle and what friends are allowed to see -------------------------
+export function friendAskTitle(person) {
+  const name = person?.display_name?.trim()
+  if (name) return name
+  if (person?.phone) return formatPhone(person.phone)
+  return ''
+}
+
+export function friendAskNote(person) {
+  const name = person?.display_name?.trim()
+  const phone = person?.phone ? formatPhone(person.phone) : ''
+  if (name && phone) return t('people.wantsFrom', { name, phone })
+  if (phone) return t('people.wantsFromPhone', { phone })
+  if (name) return t('people.wantsFromName', { name })
+  return t('people.wantsIn')
+}
+
+// Profile and what friends are allowed to see -----------------------
 
 export function cleanName(value) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 40)
@@ -64,11 +90,34 @@ export async function readMine() {
   const { data } = await db
     .from('profiles')
     .select(
-      'user_id, handle, display_name, share_streak, public_tonight, streak, done_on, invite_code, invited_by',
+      'user_id, phone, display_name, share_streak, public_tonight, streak, done_on, invite_code, invited_by',
     )
     .eq('user_id', user.id)
     .maybeSingle()
-  return data || { user_id: user.id, handle: '', display_name: '', share_streak: true }
+  return data || { user_id: user.id, phone: '', display_name: '', share_streak: true }
+}
+
+export async function savePhone(value) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const phone = cleanPhone(value)
+  if (!looksLikePhone(phone)) return { miss: 'short' }
+  const { data, error } = await db.rpc('set_my_phone', { wanted: phone })
+  if (error) {
+    if (/unique|duplicate/i.test(error.message)) return { miss: 'taken' }
+    return bad(error)
+  }
+  return { miss: '', phone: data || phone }
+}
+
+export async function syncDisplayName(keeperName) {
+  const name = cleanName(keeperName)
+  if (!name) return { miss: '' }
+  const mine = await readMine()
+  if (!mine || mine.display_name?.trim()) return { miss: '' }
+  return saveName(name)
 }
 
 export async function saveName(name) {
@@ -81,14 +130,6 @@ export async function saveName(name) {
     { onConflict: 'user_id' },
   )
   return error ? bad(error) : { miss: '', name: cleanName(name) }
-}
-
-// Handed out by the server on first look, never typed in.
-export async function myHandle() {
-  const db = cloud()
-  if (!db) return ''
-  const { data } = await db.rpc('my_handle')
-  return data || ''
 }
 
 export async function shareStreak(on) {
@@ -165,14 +206,16 @@ export async function listFriends() {
   return { friends, asked, sent }
 }
 
-export async function askFriend(handle) {
+export async function askFriend(phone) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'out' }
-  const want = cleanHandle(handle)
-  if (!looksLikeHandle(want)) return { miss: 'short' }
-  const { data, error } = await db.rpc('find_handle', { wanted: want })
+  const want = cleanPhone(phone)
+  if (!looksLikePhone(want)) return { miss: 'short' }
+  const mine = await readMine()
+  if (!mine?.phone) return { miss: 'nophone' }
+  const { data, error } = await db.rpc('find_phone', { wanted: want })
   if (error) return bad(error)
   const found = Array.isArray(data) ? data[0] : data
   if (!found) return { miss: 'nobody' }
@@ -301,6 +344,24 @@ export async function inboxCount() {
     .eq('to_id', user.id)
     .eq('state', 'sent')
   return count || 0
+}
+
+export async function friendAskCount() {
+  const db = cloud()
+  if (!db) return 0
+  const user = await me()
+  if (!user) return 0
+  const { count } = await db
+    .from('friend_links')
+    .select('id', { count: 'exact', head: true })
+    .eq('to_id', user.id)
+    .eq('state', 'asked')
+  return count || 0
+}
+
+export async function peopleBadgeCount() {
+  const [inbox, asks] = await Promise.all([inboxCount(), friendAskCount()])
+  return inbox + asks
 }
 
 // What you have sent other people, and how it went.
@@ -768,7 +829,7 @@ export function usePeopleCount(user) {
     }
     let alive = true
     async function look() {
-      const n = await inboxCount()
+      const n = await peopleBadgeCount()
       if (alive) setCount(n)
     }
     look()

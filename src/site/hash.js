@@ -17,6 +17,7 @@ const ROUTES = new Set([
   '/search',
   '/me',
   '/settings',
+  '/settings/phone',
   '/add',
   '/hang',
   '/lamp',
@@ -37,6 +38,7 @@ const ROUTES = new Set([
   '/kit',
   '/account',
   '/people',
+  '/people/connect',
   '/friends',
   '/family',
   '/inbox',
@@ -89,6 +91,19 @@ function extrasToParams(extras) {
   if (extras.tag) params.set('tag', extras.tag)
   if (extras.copy) params.set('copy', extras.copy)
   return params
+}
+
+export function goFromPush(where) {
+  const raw = String(where || '/').trim()
+  if (!raw) return
+  const cut = raw.indexOf('?')
+  const pathPart = cut >= 0 ? raw.slice(0, cut) : raw
+  const params = new URLSearchParams(cut >= 0 ? raw.slice(cut + 1) : '')
+  const extras = {}
+  if (params.get('id')) extras.id = params.get('id')
+  if (params.get('face')) extras.face = params.get('face')
+  if (params.get('start')) extras.start = params.get('start')
+  goHash(pathPart, extras)
 }
 
 export function goHash(path, extras = '') {

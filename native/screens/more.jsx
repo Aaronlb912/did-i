@@ -38,9 +38,18 @@ import {
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { shareShelf } from '../../src/lib/native.js'
+import { readMine, savePhone } from '../../src/lib/people.js'
+import {
+  checkPin,
+  clearPin,
+  firstName,
+  hasPin,
+  keeperNamed,
+  openSession,
+  setPin,
+} from '../../src/lib/session.js'
 import { upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { checkPin, firstName, hasPin, keeperNamed, openSession } from '../../src/lib/session.js'
 import { hangStarter, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -658,6 +667,53 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
   )
 }
 
+function PhoneLockSection({ colors }) {
+  const [pinDraft, setPinDraft] = useState('')
+  const [pinMiss, setPinMiss] = useState('')
+  const [pinOn, setPinOn] = useState(hasPin)
+  const locked = pinOn
+
+  function saveLock() {
+    if (!setPin(pinDraft)) {
+      setPinMiss(t('settings.pinDigits'))
+      return
+    }
+    setPinMiss('')
+    setPinDraft('')
+    setPinOn(true)
+  }
+
+  return (
+    <>
+      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('account.lockCap')}</Text>
+      <Meta colors={colors}>{locked ? t('settings.lockOn') : t('settings.lockOff')}</Meta>
+      <Field
+        colors={colors}
+        label={locked ? t('settings.newNumber') : t('settings.number')}
+        value={pinDraft}
+        onChangeText={setPinDraft}
+        keyboardType="number-pad"
+        secureTextEntry
+        maxLength={8}
+      />
+      <Row colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />
+      {locked ? (
+        <Row
+          colors={colors}
+          label={t('settings.removeLock')}
+          onPress={() => {
+            clearPin()
+            setPinDraft('')
+            setPinMiss('')
+            setPinOn(false)
+          }}
+        />
+      ) : null}
+      {pinMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{pinMiss}</Text> : null}
+    </>
+  )
+}
+
 function AccountSignedOut({ on }) {
   const colors = useHallColors()
   const [email, setEmail] = useState('')
@@ -706,6 +762,7 @@ function AccountSignedOut({ on }) {
   return (
     <ScreenShell title={t('account.outTitle')} colors={colors}>
       <Meta colors={colors}>{t('account.outBody')}</Meta>
+      <PhoneLockSection colors={colors} />
       <Field
         colors={colors}
         label={t('account.email')}
@@ -758,6 +815,8 @@ function AccountSignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [sure, setSure] = useState(null)
   const here = deviceKey()
@@ -773,6 +832,9 @@ function AccountSignedIn({ book, email, onChange }) {
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
+    })
+    readMine().then((row) => {
+      if (alive && row?.phone) setPhoneDraft(row.phone)
     })
     return () => {
       alive = false
@@ -815,8 +877,27 @@ function AccountSignedIn({ book, email, onChange }) {
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
       <Field colors={colors} label={t('account.name')} value={nameDraft} onChangeText={setNameDraft} />
+      <Field
+        colors={colors}
+        label={t('account.phone')}
+        value={phoneDraft}
+        onChangeText={setPhoneDraft}
+        keyboardType="phone-pad"
+        onSubmitEditing={async () => {
+          setPhoneMiss('')
+          const { miss, phone } = await savePhone(phoneDraft)
+          if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
+          if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
+          if (miss) return setPhoneMiss(tMiss(miss))
+          if (phone) setPhoneDraft(phone)
+        }}
+      />
+      {phoneMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{phoneMiss}</Text> : null}
+      <Meta colors={colors}>{t('account.phoneHint')}</Meta>
       <Row colors={colors} label={t('account.look')} note={lookName} onPress={() => goHash('/kit')} />
       <Row colors={colors} label={t('account.cheer')} note={cheerName} onPress={() => goHash('/kit')} />
+
+      <PhoneLockSection colors={colors} />
 
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('account.devices')}</Text>
       {devices.length ? (

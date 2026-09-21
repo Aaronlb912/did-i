@@ -30,6 +30,10 @@ export default ({ config }) => ({
   },
   android: {
     ...config.android,
+    blockedPermissions: [
+      ...(config.android?.blockedPermissions || []),
+      'com.google.android.gms.permission.AD_ID',
+    ],
     ...(existsSync(googleServices) ? { googleServicesFile: googleServices } : {}),
   },
   extra: {

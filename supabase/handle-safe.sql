@@ -57,6 +57,9 @@ declare
   ];
   try text;
   n integer := 0;
+  w integer;
+  i integer;
+  j integer;
 begin
   if me is null then
     raise exception 'not signed in';
@@ -65,9 +68,14 @@ begin
   if have is not null and have <> '' then
     return have;
   end if;
+  w := array_length(words, 1);
   loop
-    try := words[1 + floor(random() * array_length(words, 1))::int]
-      || lpad(floor(random() * 10000)::int::text, 4, '0');
+    i := 1 + floor(random() * w)::int;
+    loop
+      j := 1 + floor(random() * w)::int;
+      exit when j <> i;
+    end loop;
+    try := words[i] || words[j];
     exit when public.handle_safe(try)
       and not exists (select 1 from public.profiles where lower(handle) = try);
     n := n + 1;

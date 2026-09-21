@@ -9,6 +9,7 @@ const files = [
   'supabase/schema.sql',
   'supabase/people.sql',
   'supabase/handle-safe.sql',
+  'supabase/phone-friends.sql',
   'supabase/hardening.sql',
   'supabase/answers.sql',
   'supabase/blocks.sql',

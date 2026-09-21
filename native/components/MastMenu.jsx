@@ -9,9 +9,9 @@ import { goHash, onRoute, readRoute } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 
-const PEOPLE_ON = new Set(['/people', '/friends', '/family', '/inbox', '/sent'])
+const PEOPLE_ON = new Set(['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent'])
 const ADD_ON = new Set(['/add', '/hang'])
-const SETTINGS_ON = new Set(['/settings', '/pings', '/about', '/help', '/privacy', '/terms'])
+const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 const MastMenuCtx = createContext(null)
 

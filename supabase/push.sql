@@ -80,17 +80,30 @@ security definer
 set search_path = public
 as $$
 declare
-  who text;
+  dname text;
+  ph text;
+  body text;
 begin
   if new.state <> 'asked' then
     return new;
   end if;
-  select coalesce(nullif(p.display_name, ''), '@' || coalesce(p.handle, ''), 'Someone')
-  into who
+  select coalesce(nullif(trim(p.display_name), ''), ''),
+         coalesce(p.phone, '')
+  into dname, ph
   from public.profiles p where p.user_id = new.from_id;
 
+  if dname <> '' and ph <> '' then
+    body := dname || ' (' || ph || ') wants to be friends.';
+  elsif ph <> '' then
+    body := ph || ' wants to be friends.';
+  elsif dname <> '' then
+    body := dname || ' wants to be friends.';
+  else
+    body := 'Someone wants to be friends.';
+  end if;
+
   insert into public.push_queue (to_id, title, body, go)
-  values (new.to_id, coalesce(who, 'Someone'), 'wants to be friends.', '/people');
+  values (new.to_id, 'Friend request', body, '/friends?id=' || new.id::text);
   return new;
 end;
 $$;
