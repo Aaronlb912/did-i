@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
@@ -11,7 +10,6 @@ import { t } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
-import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { useTonightStack } from '../../src/lib/useTonightStack.js'
 import { UndoToast } from '../components/UndoToast.jsx'
@@ -26,7 +24,6 @@ import { WaitPlate } from '../components/WaitPlate.jsx'
 import { PurseLine } from '../components/PurseLine.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCard } from '../components/SwipeCard.jsx'
-import { SwipeEdgeRails } from '../components/SwipeEdgeRails.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { goHash } from '../navigation/hash.js'
@@ -57,8 +54,6 @@ function useMinuteNow() {
 export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId }) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
-  const reduce = useReduceMotion()
-  const swipePull = useSharedValue(0)
   const look = activeLook(book)
   const colors = hallColors(look, theme)
   const account = useAccount()
@@ -73,12 +68,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
   const gemAura = premium ? <GemFaceAura look={look} theme={theme} /> : null
-  const swiping = stack.bodyKind === 'face' || stack.bodyKind === 'finish' || stack.bodyKind === 'pill'
-
-  useEffect(() => {
-    swipePull.value = 0
-  }, [stack.bodyKind, stack.faceRow, stack.pillPick, stack.finishCount, swipePull])
-
   let face = null
   if (stack.bodyKind === 'finish') {
     face = (
@@ -98,7 +87,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         stampNope={t('tonight.finishLeave')}
         onDid={stack.continueStack}
         onNope={stack.restStack}
-        pullOut={swipePull}
         buddy={activeBuddy(book)}
       />
     )
@@ -121,7 +109,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         stampNope={t('tonight.swipeNope')}
         onDid={() => stack.mark(faceRow, 'yes')}
         onNope={() => stack.mark(faceRow, 'skip')}
-        pullOut={swipePull}
         buddy={activeBuddy(faceBook)}
       >
         {hasHistory ? (
@@ -242,7 +229,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         blockNope={status === 'skip' || isDid}
         onDid={() => stack.mark(pillRow, 'yes')}
         onNope={() => stack.mark(pillRow, 'skip')}
-        pullOut={swipePull}
         buddy={activeBuddy(stack.bookOf(pillRow))}
       />
     )
@@ -271,15 +257,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      {swiping ? (
-        <SwipeEdgeRails
-          pull={swipePull}
-          colors={colors}
-          didLabel={stack.bodyKind === 'finish' ? t('tonight.finishKeep') : t('tonight.swipeDid')}
-          nopeLabel={stack.bodyKind === 'finish' ? t('tonight.finishLeave') : t('tonight.swipeNope')}
-          reduce={reduce}
-        />
-      ) : null}
       {premium ? <HallHalo look={look} /> : null}
       <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       <View
@@ -437,6 +414,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   jewelsIn: { gap: 8, paddingRight: 8 },
-  slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative' },
+  slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
   buddyFoot: { alignItems: 'center', marginBottom: 8, minHeight: 52 },
 })

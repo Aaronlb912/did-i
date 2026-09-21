@@ -63,6 +63,7 @@ import { Inbox } from './lib/Inbox.jsx'
 import { Sent } from './lib/Sent.jsx'
 import { Everyone } from './lib/Everyone.jsx'
 import { AppNav } from './lib/AppNav.jsx'
+import { showBottomNav } from './lib/app-nav.js'
 import { forgetAnswerMarks } from './lib/answer-log.js'
 import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { stripDemoShelf } from './lib/demo-strip.js'
@@ -155,7 +156,7 @@ export default function App() {
   const emptyHall = shelf.boards.every(
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
-  const showNav = !SITE.has(path)
+  const showNav = !SITE.has(path) && showBottomNav(path)
 
   function persist(nextShelf) {
     const now = new Date()

@@ -115,11 +115,11 @@ function routeKey(route = current) {
   return qs ? `${route.path}?${qs}` : route.path
 }
 
-function applyRouteKey(key) {
+function routeFromKey(key) {
   const [pathPart, query = ''] = key.split('?')
   const path = cleanPath(pathPart)
   const params = new URLSearchParams(query)
-  current = {
+  return {
     path,
     face: params.get('face') || '',
     id: params.get('id') || '',
@@ -127,8 +127,29 @@ function applyRouteKey(key) {
     tag: params.get('tag') || '',
     copy: params.get('copy') || '',
   }
+}
+
+function applyRouteKey(key) {
+  current = routeFromKey(key)
   navigate?.(current)
   notify()
+}
+
+export function peekBackRoute() {
+  const stack = readStack()
+  if (stack.length > 1) return routeFromKey(stack[stack.length - 2])
+  const parent = FALLBACK[current.path]
+  if (parent) {
+    return {
+      ...current,
+      path: parent,
+      face: '',
+      id: '',
+      start: '',
+      copy: '',
+    }
+  }
+  return null
 }
 
 export function syncNav() {

@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { BackHandler, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
+import { showMainNavInMenu } from '../../src/lib/app-nav.js'
+import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeopleCount } from '../../src/lib/people.js'
@@ -9,6 +11,9 @@ import { goHash, onRoute, readRoute } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 
+const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
+const QUESTIONS_ON = new Set(['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'])
+const EVERYONE_ON = new Set(['/everyone'])
 const PEOPLE_ON = new Set(['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent'])
 const ADD_ON = new Set(['/add', '/hang'])
 const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
@@ -18,6 +23,29 @@ const MastMenuCtx = createContext(null)
 function menuItems(showAdd, waiting) {
   const path = readRoute().path
   const items = []
+  if (showMainNavInMenu(path)) {
+    items.push(
+      { key: 'home', path: '/tonight', label: t('nav.home'), on: HOME_ON.has(path), icon: 'home', stroke: true },
+      {
+        key: 'questions',
+        path: '/lamps',
+        label: t('nav.questions'),
+        on: QUESTIONS_ON.has(path),
+        icon: 'boards',
+        stroke: true,
+      },
+    )
+    if (DIT_ENABLED) {
+      items.push({
+        key: 'everyone',
+        path: '/everyone',
+        label: t('nav.everyone'),
+        on: EVERYONE_ON.has(path),
+        icon: 'people',
+      })
+    }
+    items.push({ key: 'nav-divider', divider: true })
+  }
   if (showAdd) {
     items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
   }
@@ -118,28 +146,32 @@ function MastMenuModal() {
           ]}
           onPress={(event) => event.stopPropagation()}
         >
-          {items.map((item) => (
-            <Pressable
-              key={item.key}
-              onPress={() => {
-                feelTap()
-                close()
-                goHash(item.path)
-              }}
-              style={[styles.row, item.on && { backgroundColor: colors.panel3 }]}
-            >
-              <View style={styles.ico}>
-                <MenuIcon
-                  name={item.icon}
-                  color={item.on ? colors.on : colors.inkSoft}
-                  stroke={item.stroke}
-                  size={18}
-                />
-              </View>
-              <Text style={[styles.label, { color: item.on ? colors.on : colors.ink }]}>{item.label}</Text>
-              {item.pip ? <View style={[styles.pip, { backgroundColor: colors.on }]} /> : null}
-            </Pressable>
-          ))}
+          {items.map((item) =>
+            item.divider ? (
+              <View key={item.key} style={[styles.divider, { backgroundColor: colors.line }]} />
+            ) : (
+              <Pressable
+                key={item.key}
+                onPress={() => {
+                  feelTap()
+                  close()
+                  goHash(item.path)
+                }}
+                style={[styles.row, item.on && { backgroundColor: colors.panel3 }]}
+              >
+                <View style={styles.ico}>
+                  <MenuIcon
+                    name={item.icon}
+                    color={item.on ? colors.on : colors.inkSoft}
+                    stroke={item.stroke}
+                    size={18}
+                  />
+                </View>
+                <Text style={[styles.label, { color: item.on ? colors.on : colors.ink }]}>{item.label}</Text>
+                {item.pip ? <View style={[styles.pip, { backgroundColor: colors.on }]} /> : null}
+              </Pressable>
+            ),
+          )}
         </Pressable>
       </Pressable>
     </Modal>
@@ -198,6 +230,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
   },
+  divider: { height: 1, marginHorizontal: 12, marginVertical: 4 },
   row: { paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   ico: { width: 22, alignItems: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },

@@ -14,7 +14,7 @@ import { Boundary } from './components/Boundary.jsx'
 import { DiagnosticsAsk } from './components/DiagnosticsAsk.jsx'
 import { StreakMomentHost } from './components/StreakMoment.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
-import { goBack, goFromPush } from './navigation/hash.js'
+import { goBack, goFromPush, goHash } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -52,20 +52,18 @@ export function NativeApp() {
     if (book) scheduleNativePings(book)
   }, [])
 
-  if (!fontsLoaded) {
-    return <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }} />
-  }
-
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <Boundary>
-          <RootNavigator />
-          <DiagnosticsAsk />
-          <StreakMomentHost />
-        </Boundary>
-      </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }}>
+      {!fontsLoaded ? null : (
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          <Boundary>
+            <RootNavigator />
+            <DiagnosticsAsk />
+            <StreakMomentHost />
+          </Boundary>
+        </SafeAreaProvider>
+      )}
     </GestureHandlerRootView>
   )
 }

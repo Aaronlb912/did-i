@@ -37,3 +37,15 @@ export function edgeOpacity(pull, way) {
   if (lean <= EDGE_AT) return 0
   return Math.min(1, (lean - EDGE_AT) / (0.92 - EDGE_AT))
 }
+
+// Rails sit on the glass; they should read sooner than the stamp on the card.
+const RAIL_AT = 0.04
+
+export function railOpacity(pull, way, dragging = true) {
+  'worklet'
+  if (!dragging) return 0
+  const lean = way === 'did' ? pull : -pull
+  if (lean <= RAIL_AT) return 0
+  const ramp = (lean - RAIL_AT) / (0.78 - RAIL_AT)
+  return Math.min(1, 0.35 + ramp * 0.65)
+}

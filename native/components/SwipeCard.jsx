@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from 'react'
-import { Text } from 'react-native'
+import { useCallback, useEffect, useMemo } from 'react'
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -19,7 +20,10 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { BuddyHang } from './Cosmetic.jsx'
 import { GemFaceAura } from './GemFaceAura.jsx'
+import { SwipeEdgeRails } from './SwipeEdgeRails.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
+
+const SPRING = { damping: 20, stiffness: 260 }
 
 export function SwipeCard({
   cardKey = '',
@@ -35,24 +39,33 @@ export function SwipeCard({
   blockNope = false,
   panelStyle,
   gemLook = '',
-  pullOut,
   children,
 }) {
   const theme = useTheme()
   const reduce = useReduceMotion()
+  const { height: winH } = useWindowDimensions()
   const x = useSharedValue(0)
   const mode = useSharedValue('idle')
 
   useEffect(() => {
+    cancelAnimation(x)
     x.value = 0
     mode.value = 'idle'
-    if (pullOut) pullOut.value = 0
-  }, [cardKey, mode, pullOut, x])
+  }, [cardKey, mode, x])
+
+  const snapBack = useCallback(() => {
+    mode.value = 'idle'
+    cancelAnimation(x)
+    x.value = withSpring(0, SPRING)
+  }, [mode, x])
 
   const finish = useCallback(
     (way) => {
+      mode.value = 'idle'
       const done = way === 'did' ? onDid : onNope
       if (reduce || way === 'nope') {
+        cancelAnimation(x)
+        x.value = 0
         done()
         return
       }
@@ -64,33 +77,37 @@ export function SwipeCard({
     [onDid, onNope, reduce, mode, x],
   )
 
-  const pan = Gesture.Pan()
-    .onUpdate((event) => {
-      if (mode.value === 'fly') return
-      if (Math.abs(event.translationY) > Math.abs(event.translationX) && Math.abs(event.translationX) < SWIPE_WAKE) {
-        return
-      }
-      if (Math.abs(event.translationX) >= SWIPE_WAKE || Math.abs(event.translationY) >= SWIPE_WAKE) {
-        mode.value = 'drag'
-      }
-      x.value = event.translationX
-      if (pullOut) pullOut.value = swipePull(event.translationX)
-    })
-    .onEnd((event) => {
-      if (mode.value === 'fly') return
-      const moved = event.translationX
-      if (mode.value === 'drag' && moved >= SWIPE_THRESHOLD && !blockDid) {
-        runOnJS(finish)('did')
-        return
-      }
-      if (mode.value === 'drag' && moved <= -SWIPE_THRESHOLD && !blockNope) {
-        runOnJS(finish)('nope')
-        return
-      }
-      x.value = withSpring(0, { damping: 18, stiffness: 220 })
-      mode.value = 'idle'
-      if (pullOut) pullOut.value = 0
-    })
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-SWIPE_WAKE, SWIPE_WAKE])
+        .onUpdate((event) => {
+          if (mode.value === 'fly') return
+          mode.value = 'drag'
+          x.value = event.translationX
+        })
+        .onEnd((event) => {
+          if (mode.value === 'fly') return
+          const moved = event.translationX
+          if (moved >= SWIPE_THRESHOLD && !blockDid) {
+            runOnJS(finish)('did')
+            return
+          }
+          if (moved <= -SWIPE_THRESHOLD && !blockNope) {
+            runOnJS(finish)('nope')
+            return
+          }
+          mode.value = 'idle'
+          x.value = withSpring(0, SPRING)
+        })
+        .onFinalize(() => {
+          if (mode.value === 'drag') {
+            mode.value = 'idle'
+            x.value = withSpring(0, SPRING)
+          }
+        }),
+    [blockDid, blockNope, finish, mode, x],
+  )
 
   const cardStyle = useAnimatedStyle(() => {
     const tilt = reduce ? 0 : swipeTilt(x.value)
@@ -112,19 +129,50 @@ export function SwipeCard({
   }))
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle]}>
-        {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
-        <BuddyHang id={buddy} />
-        <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
-        <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
-        {kicker ? (
-          <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
-        ) : null}
-        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{title}</Text>
-        {children}
-      </Animated.View>
-    </GestureDetector>
+    <View style={styles.host} pointerEvents="box-none">
+      <View style={styles.railsHost} pointerEvents="none">
+        <SwipeEdgeRails
+          x={x}
+          mode={mode}
+          colors={colors}
+          winH={winH}
+          didLabel={stampDid}
+          nopeLabel={stampNope}
+          reduce={reduce}
+        />
+      </View>
+      <GestureDetector gesture={pan}>
+        <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle, styles.card]}>
+          {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
+          <BuddyHang id={buddy} />
+          <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
+          <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
+          {kicker ? (
+            <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
+          ) : null}
+          <Text style={[faceCardStyles.title, { color: colors.ink }]}>{title}</Text>
+          {children}
+        </Animated.View>
+      </GestureDetector>
+    </View>
   )
 }
 
+const styles = StyleSheet.create({
+  host: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  railsHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 8,
+    overflow: 'visible',
+  },
+  card: {
+    zIndex: 1,
+    elevation: 0,
+  },
+})

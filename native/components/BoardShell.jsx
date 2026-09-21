@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { GestureDetector } from 'react-native-gesture-handler'
-import { useSwipeBack } from '../hooks/useSwipeBack.js'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { activeLook } from '../../src/lib/dit-board.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -47,8 +45,6 @@ export function BoardShell({
   const halo = isGemLook(coat)
   const gemFrame = gemFrameStyle(coat, theme)
   const [showBack, setShowBack] = useState(() => back !== false && canGoBack())
-  const swipeBack = useSwipeBack(showBack)
-
   useEffect(() => {
     if (back === false) {
       setShowBack(false)
@@ -122,11 +118,6 @@ export function BoardShell({
       <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
       <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
         {inner}
-        {showBack && swipeBack ? (
-          <GestureDetector gesture={swipeBack}>
-            <View style={styles.edgeBack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
-          </GestureDetector>
-        ) : null}
       </View>
     </View>
   )
@@ -143,14 +134,6 @@ export function BoardShell({
 const styles = StyleSheet.create({
   frame: { flex: 1, position: 'relative' },
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
-  edgeBack: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 28,
-    zIndex: 40,
-  },
   scroll: { flex: 1 },
   shell: { flex: 1, position: 'relative' },
   sitOn: {},

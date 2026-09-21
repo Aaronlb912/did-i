@@ -1105,6 +1105,12 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   animation: di-pop-in var(--di-move-2) var(--di-ease-out);
 }
 
+.di-mast-menu-divider {
+  height: 1px;
+  margin: 0.25rem 0.75rem;
+  background: var(--di-line);
+}
+
 .di-mast-menu-row {
   display: flex;
   align-items: center;

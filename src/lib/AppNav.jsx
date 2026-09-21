@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { parseHash } from '../site/hash.js'
-import { DIT_ENABLED } from './features.js'
+import { showBottomNav } from './app-nav.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 
 const ITEMS = [
   { path: '/', labelKey: 'nav.home', match: ['/', '/home', '/tonight', '/later'] },
-  { path: '/lamps', labelKey: 'nav.questions', match: ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'] },
-  ...(DIT_ENABLED
-    ? [{ path: '/everyone', labelKey: 'nav.everyone', ariaKey: 'title.everyone', match: ['/everyone'] }]
-    : []),
+  { path: '/lamps', labelKey: 'nav.questions', match: ['/lamps'] },
 ]
 
 function tabOf(path) {
@@ -34,6 +31,8 @@ export function AppNav() {
       window.cancelAnimationFrame(frame)
     }
   }, [])
+
+  if (!showBottomNav(path)) return null
 
   return (
     <nav

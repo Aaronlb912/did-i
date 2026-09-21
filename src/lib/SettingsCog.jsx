@@ -1,11 +1,16 @@
 import { useEffect, useId, useState } from 'react'
 import { parseHash } from '../site/hash.js'
+import { showMainNavInMenu } from './app-nav.js'
 import { useAccount } from './account.js'
+import { DIT_ENABLED } from './features.js'
 import { t } from './i18n.js'
 import { feelTap } from './native.js'
 import { usePeopleCount } from './people.js'
 import { usePrefs } from './prefs.js'
 
+const HOME_ON = ['/', '/home', '/tonight', '/later']
+const QUESTIONS_ON = ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas']
+const EVERYONE_ON = ['/everyone']
 const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
 const PEOPLE_ON = ['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent']
 const ADD_ON = ['/add', '/hang']
@@ -16,6 +21,8 @@ const ICONS = {
     'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.33 0-7 1.67-7 4v2h14v-2c0-2.33-3.67-4-7-4Zm8.25.5c-.6 0-1.17.05-1.7.14 1.2.84 1.95 1.94 1.95 3.36V19h5v-1.75c0-2.07-3.1-3.75-5.25-3.75Z',
   shop: 'M7 8V6a5 5 0 0 1 10 0v2h3.1c.5 0 .9.45.85.95l-1.2 12A1 1 0 0 1 18.76 22H5.24a1 1 0 0 1-.99-1.05l-1.2-12A.86.86 0 0 1 3.9 8H7Zm2 0h6V6a3 3 0 0 0-6 0v2Z',
   grid: 'M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z',
+  boards: 'M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z',
+  home: 'M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z',
   collection:
     'M12 2a9.5 9.5 0 0 0-9.2 11.9L12 22l9.2-8.1A9.5 9.5 0 0 0 12 2Zm-1.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-4.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z',
   settings:
@@ -46,6 +53,36 @@ function MenuIcon({ path, stroke = false }) {
 function mastMenuItems(showAdd, waiting) {
   const path = parseHash().path
   const items = []
+  if (showMainNavInMenu(path)) {
+    items.push(
+      {
+        key: 'home',
+        href: '#/tonight',
+        label: t('nav.home'),
+        on: HOME_ON.includes(path),
+        icon: 'home',
+        stroke: true,
+      },
+      {
+        key: 'questions',
+        href: '#/lamps',
+        label: t('nav.questions'),
+        on: QUESTIONS_ON.includes(path),
+        icon: 'boards',
+        stroke: true,
+      },
+    )
+    if (DIT_ENABLED) {
+      items.push({
+        key: 'everyone',
+        href: '#/everyone',
+        label: t('nav.everyone'),
+        on: EVERYONE_ON.includes(path),
+        icon: 'people',
+      })
+    }
+    items.push({ key: 'nav-divider', divider: true })
+  }
   if (showAdd) {
     items.push({
       key: 'add',
@@ -152,24 +189,28 @@ export function MastMenu({ showAdd = false }) {
             onClick={close}
           />
           <div className="di-mast-menu-panel" id={menuId} role="menu">
-            {items.map((item) => (
-              <a
-                key={item.key}
-                role="menuitem"
-                href={item.href}
-                className={item.on ? 'di-mast-menu-row is-on' : 'di-mast-menu-row'}
-                onClick={() => {
-                  feelTap()
-                  close()
-                }}
-              >
-                <span className="di-mast-menu-ico">
-                  <MenuIcon path={ICONS[item.icon]} stroke={item.stroke} />
-                </span>
-                <span className="di-mast-menu-text">{item.label}</span>
-                {item.pip ? <i className="di-mast-menu-row-pip" aria-hidden="true" /> : null}
-              </a>
-            ))}
+            {items.map((item) =>
+              item.divider ? (
+                <div key={item.key} className="di-mast-menu-divider" aria-hidden="true" />
+              ) : (
+                <a
+                  key={item.key}
+                  role="menuitem"
+                  href={item.href}
+                  className={item.on ? 'di-mast-menu-row is-on' : 'di-mast-menu-row'}
+                  onClick={() => {
+                    feelTap()
+                    close()
+                  }}
+                >
+                  <span className="di-mast-menu-ico">
+                    <MenuIcon path={ICONS[item.icon]} stroke={item.stroke} />
+                  </span>
+                  <span className="di-mast-menu-text">{item.label}</span>
+                  {item.pip ? <i className="di-mast-menu-row-pip" aria-hidden="true" /> : null}
+                </a>
+              ),
+            )}
           </div>
         </>
       ) : null}
