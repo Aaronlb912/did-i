@@ -140,13 +140,7 @@ export default function App() {
   const emptyHall = shelf.boards.every(
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
-  const showNav =
-    !SITE.has(path) &&
-    path !== '/welcome' &&
-    path !== '/enter' &&
-    path !== '/first' &&
-    !(needsEnter(live) && !SITE.has(path) && path !== '/welcome') &&
-    !(HALL.has(path) && emptyHall && !welcomeSeen())
+  const showNav = !SITE.has(path)
 
   function persist(nextShelf) {
     const now = new Date()

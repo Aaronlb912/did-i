@@ -7,8 +7,6 @@ import { t } from '../src/lib/i18n.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useHallColors } from './hooks/useHallColors.js'
-import { needsEnter } from '../src/lib/session.js'
-import { welcomeSeen } from '../src/lib/hall-pages.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
 import { onRoute, goHash, readRoute } from './navigation/hash.js'
 import { CheerBurst } from './components/CheerBurst.jsx'
@@ -21,7 +19,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true)
 }
 
-const HALL = new Set(['/', '/home', '/tonight'])
 const SITE = new Set()
 
 function useNativeRoute() {
@@ -60,8 +57,6 @@ function AppNav({ path, colors }) {
     slot.value = withSpring(at >= 0 ? at : 0, SPRING)
     showPip.value = withSpring(at >= 0 ? 1 : 0, SPRING)
   }, [at, slot, showPip])
-
-  if (SITE.has(path) || path === '/welcome' || path === '/enter' || path === '/first') return null
 
   const gap = 2
   const pad = NAV_PAD
@@ -124,18 +119,6 @@ export function AppShell() {
   }, [app.book])
 
   const pingLabel = pingButtonLabel(pingState)
-  const emptyHall = app.shelf.boards.every(
-    (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
-  )
-  const showNav =
-    !SITE.has(route.path) &&
-    route.path !== '/welcome' &&
-    route.path !== '/enter' &&
-    route.path !== '/first' &&
-    route.path !== '/privacy' &&
-    route.path !== '/terms' &&
-    !(needsEnter(app.book) && route.path !== '/welcome') &&
-    !(HALL.has(route.path) && emptyHall && !welcomeSeen())
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -160,7 +143,7 @@ export function AppShell() {
       {SITE.has(route.path) ? null : (
         <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
       )}
-      {showNav ? <AppNav path={route.path} colors={colors} /> : null}
+      <AppNav path={route.path} colors={colors} />
       {SITE.has(route.path) ? null : <CheerBurst />}
     </View>
   )
@@ -172,6 +155,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 50,
     alignItems: 'center',
     paddingHorizontal: 16,
   },
