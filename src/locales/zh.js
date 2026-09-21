@@ -182,6 +182,7 @@ export const zh = {
   'settings.accountOffSub': '所有内容仅在此手机上。',
   'account.phone': 'Phone number',
   'account.phoneHint': 'Friends find you by this number. Only friends see it.',
+  'account.phoneOn': 'Pulled from your phone. Friends find you by this number.',
   'account.lockCap': 'Phone lock',
   'account.kicker': '账户',
   'account.offTitle': '未启用',

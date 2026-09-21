@@ -10,6 +10,9 @@ import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
 import { streakRiskFire } from '../../src/lib/streak-moments.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goFromPush, goHash } from '../navigation/hash.js'
+import { readDevicePhone } from './device-phone.js'
+
+export { readDevicePhone }
 
 export function isNativeHall() {
   return true

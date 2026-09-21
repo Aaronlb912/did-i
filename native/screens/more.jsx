@@ -38,7 +38,7 @@ import {
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { shareShelf } from '../../src/lib/native.js'
-import { readMine, savePhone } from '../../src/lib/people.js'
+import { ensureMyPhone, formatPhone, readMine, savePhone } from '../../src/lib/people.js'
 import {
   checkPin,
   clearPin,
@@ -829,8 +829,8 @@ function AccountSignedIn({ book, email, onChange }) {
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
     })
-    readMine().then((row) => {
-      if (alive && row?.phone) setPhoneDraft(row.phone)
+    ensureMyPhone().then(({ phone }) => {
+      if (alive && phone) setPhoneDraft(phone)
     })
     return () => {
       alive = false
@@ -873,23 +873,27 @@ function AccountSignedIn({ book, email, onChange }) {
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
       <Field colors={colors} label={t('account.name')} value={nameDraft} onChangeText={setNameDraft} />
-      <Field
-        colors={colors}
-        label={t('account.phone')}
-        value={phoneDraft}
-        onChangeText={setPhoneDraft}
-        keyboardType="phone-pad"
-        onSubmitEditing={async () => {
-          setPhoneMiss('')
-          const { miss, phone } = await savePhone(phoneDraft)
-          if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
-          if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
-          if (miss) return setPhoneMiss(tMiss(miss))
-          if (phone) setPhoneDraft(phone)
-        }}
-      />
+      {phoneDraft ? (
+        <Row colors={colors} label={t('account.phone')} note={formatPhone(phoneDraft)} />
+      ) : (
+        <Field
+          colors={colors}
+          label={t('account.phone')}
+          value={phoneDraft}
+          onChangeText={setPhoneDraft}
+          keyboardType="phone-pad"
+          onSubmitEditing={async () => {
+            setPhoneMiss('')
+            const { miss, phone } = await savePhone(phoneDraft)
+            if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
+            if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
+            if (miss) return setPhoneMiss(tMiss(miss))
+            if (phone) setPhoneDraft(phone)
+          }}
+        />
+      )}
       {phoneMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{phoneMiss}</Text> : null}
-      <Meta colors={colors}>{t('account.phoneHint')}</Meta>
+      <Meta colors={colors}>{phoneDraft ? t('account.phoneOn') : t('account.phoneHint')}</Meta>
       <Row colors={colors} label={t('account.look')} note={lookName} onPress={() => goHash('/kit')} />
       <Row colors={colors} label={t('account.cheer')} note={cheerName} onPress={() => goHash('/kit')} />
 

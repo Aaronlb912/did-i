@@ -188,6 +188,7 @@ export const pt = {
   'settings.accountOffSub': 'Tudo está só neste telefone.',
   'account.phone': 'Phone number',
   'account.phoneHint': 'Friends find you by this number. Only friends see it.',
+  'account.phoneOn': 'Pulled from your phone. Friends find you by this number.',
   'account.lockCap': 'Phone lock',
   'account.kicker': 'Conta',
   'account.offTitle': 'Não ligado',

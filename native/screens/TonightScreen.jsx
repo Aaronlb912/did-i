@@ -29,7 +29,6 @@ import { SwipeCard } from '../components/SwipeCard.jsx'
 import { SwipeEdgeRails } from '../components/SwipeEdgeRails.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
-import { WeekStrip } from '../components/WeekStrip.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { GemFaceAura } from '../components/GemFaceAura.jsx'
@@ -272,6 +271,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
+      {swiping ? (
+        <SwipeEdgeRails
+          pull={swipePull}
+          colors={colors}
+          didLabel={stack.bodyKind === 'finish' ? t('tonight.finishKeep') : t('tonight.swipeDid')}
+          nopeLabel={stack.bodyKind === 'finish' ? t('tonight.finishLeave') : t('tonight.swipeNope')}
+          reduce={reduce}
+        />
+      ) : null}
       {premium ? <HallHalo look={look} /> : null}
       <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       <View
@@ -364,24 +372,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <View style={styles.slot} pointerEvents="box-none">
-        {swiping ? (
-          <SwipeEdgeRails
-            pull={swipePull}
-            colors={colors}
-            didLabel={stack.bodyKind === 'finish' ? t('tonight.finishKeep') : t('tonight.swipeDid')}
-            nopeLabel={stack.bodyKind === 'finish' ? t('tonight.finishLeave') : t('tonight.swipeNope')}
-            reduce={reduce}
-          />
-        ) : null}
         {face}
         <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
       </View>
 
       <FamilyTonight colors={colors} />
-
-      <View style={styles.weekFoot}>
-        <WeekStrip boards={stack.shelf} tagId={tagId} now={stack.clock} colors={colors} />
-      </View>
 
       {activeBuddy(book) && stack.bodyKind !== 'face' && stack.bodyKind !== 'finish' ? (
         <View style={styles.buddyFoot}>
@@ -434,7 +429,6 @@ const styles = StyleSheet.create({
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   jewels: { maxHeight: 52, marginBottom: 10 },
-  weekFoot: { marginTop: 'auto', paddingBottom: 4 },
   holes: { marginBottom: 10, gap: 6 },
   holesLabel: {
     fontFamily: fonts.mono,

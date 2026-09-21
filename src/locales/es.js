@@ -189,6 +189,7 @@ export const es = {
   'settings.accountSub': 'Tus etiquetas te siguen a otro teléfono.',
   'settings.accountOffSub': 'Todo está solo en este teléfono.',
   'account.phone': 'Número de teléfono',
+  'account.phoneOn': 'Sale de tu teléfono. Tus amigos te encuentran con este número.',
   'account.phoneHint': 'Tus amigos te encuentran con este número. Solo ellos lo ven.',
   'account.lockCap': 'Candado del teléfono',
   'account.kicker': 'Cuenta',

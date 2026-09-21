@@ -181,6 +181,7 @@ export const ja = {
   'settings.accountOffSub': '全部このスマホだけ。',
   'account.phone': 'Phone number',
   'account.phoneHint': 'Friends find you by this number. Only friends see it.',
+  'account.phoneOn': 'Pulled from your phone. Friends find you by this number.',
   'account.lockCap': 'Phone lock',
   'account.kicker': 'アカウント',
   'account.offTitle': 'オフ',

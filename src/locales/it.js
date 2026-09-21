@@ -190,6 +190,7 @@ export const it = {
   'settings.accountOffSub': 'Tutto è solo su questo telefono.',
   'account.phone': 'Phone number',
   'account.phoneHint': 'Friends find you by this number. Only friends see it.',
+  'account.phoneOn': 'Pulled from your phone. Friends find you by this number.',
   'account.lockCap': 'Phone lock',
   'account.kicker': 'Account',
   'account.offTitle': 'Non attivo',

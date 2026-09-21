@@ -24,6 +24,10 @@ export async function requestNativePings() {
 
 export async function scheduleNativePings() {}
 
+export async function readDevicePhone() {
+  return ''
+}
+
 export function isAppForeground() {
   if (typeof document === 'undefined') return true
   return document.visibilityState === 'visible'

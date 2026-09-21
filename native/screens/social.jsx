@@ -32,6 +32,7 @@ import {
   syncDisplayName,
   myInvite,
   personName,
+  ensureMyPhone,
   readMine,
   reportTonightLine,
   sayNo,
@@ -252,6 +253,7 @@ export function PeopleScreen({ book, onChange }) {
       return
     }
     try {
+      await ensureMyPhone()
       const [who, friendRows, famRows, count] = await Promise.all([
         readMine(),
         listFriends(),
@@ -457,6 +459,7 @@ export function PeopleConnectScreen({ book, onChange }) {
       return
     }
     try {
+      await ensureMyPhone()
       const [who, code] = await Promise.all([readMine(), myInvite()])
       setMine(who)
       setInvite(code)

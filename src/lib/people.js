@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
+import { readDevicePhone } from './native.js'
 import { boardDate, isoDate } from './recurrence.js'
 
 // Everything here needs an account. With no Supabase keys the app still
@@ -110,6 +111,15 @@ export async function savePhone(value) {
     return bad(error)
   }
   return { miss: '', phone: data || phone }
+}
+
+export async function ensureMyPhone() {
+  const mine = await readMine()
+  if (!mine || mine.phone) return { miss: '', phone: mine?.phone || '' }
+  const raw = await readDevicePhone()
+  const phone = cleanPhone(raw)
+  if (!looksLikePhone(phone)) return { miss: '', phone: '' }
+  return savePhone(phone)
 }
 
 export async function syncDisplayName(keeperName) {

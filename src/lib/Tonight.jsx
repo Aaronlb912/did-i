@@ -17,7 +17,6 @@ import { useSync } from './cloud-sync.js'
 import { usePrefs, useTheme } from './prefs.js'
 import { PurseLine } from './PurseLine.jsx'
 import { mergePurses } from './purse.js'
-import { WeekStrip } from './WeekStrip.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import { useTonightKeys } from './useTonightKeys.js'
 import { useTonightStack } from './useTonightStack.js'
@@ -303,8 +302,6 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
         ) : null}
 
         {DIT_ENABLED ? <FamilyTonight /> : null}
-
-        <WeekStrip boards={stack.shelf} tagId={tagId} now={stack.clock} />
       </div>
 
       <ol className="di-print-slip">

@@ -1500,17 +1500,17 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 }
 
 .di-swipe-edges {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 30;
   pointer-events: none;
 }
 
 .di-swipe-edge {
   position: absolute;
-  top: 14%;
-  bottom: 14%;
-  width: 5px;
+  top: 8%;
+  bottom: 8%;
+  width: 8px;
   border-radius: 3px;
   transform-origin: center;
   pointer-events: none;

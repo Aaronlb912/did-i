@@ -182,6 +182,7 @@ export const ko = {
   'settings.accountOffSub': '전부 이 폰에만 있어.',
   'account.phone': 'Phone number',
   'account.phoneHint': 'Friends find you by this number. Only friends see it.',
+  'account.phoneOn': 'Pulled from your phone. Friends find you by this number.',
   'account.lockCap': 'Phone lock',
   'account.kicker': '계정',
   'account.offTitle': '꺼짐',

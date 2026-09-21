@@ -8,7 +8,7 @@ export function SwipeEdgeRails({ pull, colors, didLabel, nopeLabel, reduce = fal
     const op = reduce ? 0 : edgeOpacity(pull.value, 'did')
     return {
       opacity: op,
-      transform: [{ scaleX: 0.4 + op * 0.85 }],
+      transform: [{ scaleX: 0.45 + op * 0.9 }],
     }
   })
 
@@ -16,16 +16,36 @@ export function SwipeEdgeRails({ pull, colors, didLabel, nopeLabel, reduce = fal
     const op = reduce ? 0 : edgeOpacity(pull.value, 'nope')
     return {
       opacity: op,
-      transform: [{ scaleX: 0.4 + op * 0.85 }],
+      transform: [{ scaleX: 0.45 + op * 0.9 }],
     }
   })
 
   return (
     <View pointerEvents="none" style={styles.shell}>
-      <Animated.View style={[styles.edge, styles.did, { backgroundColor: colors.on }, didStyle]}>
+      <Animated.View
+        style={[
+          styles.edge,
+          styles.did,
+          {
+            backgroundColor: colors.on,
+            shadowColor: colors.on,
+          },
+          didStyle,
+        ]}
+      >
         <Text style={[styles.label, { color: colors.bg }]}>{didLabel}</Text>
       </Animated.View>
-      <Animated.View style={[styles.edge, styles.nope, { backgroundColor: colors.skip }, nopeStyle]}>
+      <Animated.View
+        style={[
+          styles.edge,
+          styles.nope,
+          {
+            backgroundColor: colors.skip,
+            shadowColor: colors.skip,
+          },
+          nopeStyle,
+        ]}
+      >
         <Text style={[styles.label, { color: colors.bg }]}>{nopeLabel}</Text>
       </Animated.View>
     </View>
@@ -35,17 +55,21 @@ export function SwipeEdgeRails({ pull, colors, didLabel, nopeLabel, reduce = fal
 const styles = StyleSheet.create({
   shell: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    zIndex: 40,
   },
   edge: {
     position: 'absolute',
-    top: '14%',
-    bottom: '14%',
-    width: 5,
-    borderRadius: 3,
+    top: '8%',
+    bottom: '8%',
+    width: 8,
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    elevation: 8,
   },
   did: {
     right: 0,
