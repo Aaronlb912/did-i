@@ -233,6 +233,8 @@ export const it = {
   'account.syncBusy': 'Salvataggio',
   'account.syncMiss': 'Non raggiungibile',
   'account.syncIdle': 'Non ancora sync',
+  'account.syncNote':
+    'Domande e tap finiscono sul tuo account. Browser e telefono condividono lo stesso scaffale. Cambia app o tocca Sync ora se non tornano.',
   'account.you': 'Tu',
   'account.name': 'Nome',
   'account.look': 'Look',

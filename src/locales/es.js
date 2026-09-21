@@ -235,6 +235,8 @@ export const es = {
   'account.syncBusy': 'Guardando',
   'account.syncMiss': 'No se pudo conectar',
   'account.syncIdle': 'Todavía sin sincronizar',
+  'account.syncNote':
+    'Las preguntas y los toques se guardan en tu cuenta. El navegador y el teléfono comparten el mismo tablero. Cambia de app o toca Sincronizar ahora si no coinciden.',
   'account.you': 'Tú',
   'account.name': 'Nombre',
   'account.look': 'Estilo',
@@ -449,7 +451,7 @@ export const es = {
   'help.marks': 'Marcas',
   'help.phone': 'Este teléfono',
   'help.phoneP':
-    'Inicia sesión en Ajustes para sincronizar tus preguntas. Ajustes también tiene copia, candado y avisos.',
+    'Inicia sesión en Cuenta con tu correo. Tus preguntas, respuestas, racha, monedas y gemas siguen la cuenta entre este navegador y la app del teléfono. Toca Sincronizar ahora en Cuenta si dos pantallas no coinciden. Ajustes también tiene copia, candado y avisos.',
   'help.home': 'Inicio',
   'help.feedback': 'Comentarios',
   'help.feedbackP':
@@ -914,7 +916,7 @@ export const es = {
   'about.p1':
     'Did I es la pregunta sin respuesta de esta noche. Una a la vez. DID si lo hiciste. Did not si esta noche no toca.',
   'about.p4':
-    'El día cambia a la hora que pusiste. Un toque a la 1am sigue siendo anoche si el cambio es a las 4. Los avisos suenan en este teléfono cuando toca una pregunta, si los activaste.',
+    'La noche cambia a medianoche en tu zona horaria. Los avisos suenan en este teléfono cuando toca una pregunta, si los activaste.',
   'about.home': 'Inicio',
   'about.how': 'Cómo usarlo',
   'marks.kicker': 'Marcas',
@@ -1089,7 +1091,7 @@ export const es = {
   'site.name.kicker': 'Este navegador',
   'site.name.title': 'Nombra este teléfono.',
   'site.name.body':
-    'Tus preguntas se quedan en este ordenador. No hay email ni contraseña. Prueba una demo si quieres tocar sin escribir preguntas primero.',
+    'Puedes probar aquí sin iniciar sesión. Tus preguntas se quedan en este navegador hasta que crees una cuenta en Cuenta.',
   'site.name.label': 'Nombre de etiqueta',
   'site.name.miss': 'Hace falta un nombre.',
   'site.name.openBoard': 'Abrir {board}',
@@ -1101,9 +1103,9 @@ export const es = {
   'site.read.p2':
     'Una pregunta puede esperar hasta una hora. Próximamente muestra las próximas noches para que una pregunta en espera no sea pantalla en blanco. La última vez es anoche, o el último día que tocaba, si fallaste. Tarde también vale.',
   'site.read.p3':
-    'Añade una pregunta desde Preguntas, o empieza en Qué preguntar. Puede ser cada día, algunos días, mensual, cada pocos días, o una vez. El día cambia a la hora en Ajustes, así un toque a la 1am sigue siendo anoche si el cambio es a las 4.',
+    'Añade una pregunta desde Preguntas, o empieza en Qué preguntar. Puede ser cada día, algunos días, mensual, cada pocos días, una vez en una fecha, o una vez con fecha límite. La noche cambia a medianoche en tu zona horaria.',
   'site.read.p4':
-    'Este teléfono guarda tus preguntas. No hay email. Ajustes tiene una copia del archivo, un candado opcional y avisos. Chrome y Android pueden avisar a la hora de preguntar. Un iPhone puede instalar la página. Los avisos ahí son débiles hasta que un Mac compile la app nativa.',
+    'Inicia sesión en Cuenta con tu correo para sincronizar el mismo tablero en la app del teléfono y en el navegador. Ajustes tiene una copia del archivo, un candado opcional y avisos. Chrome y Android pueden avisar a la hora de preguntar.',
   'site.read.p5':
     'y o espacio es DID. s es did not. n añade una pregunta. Escape cierra una placa. u deshace el último toque unos segundos.',
   'site.read.openHome': 'Abrir la pantalla de inicio',
@@ -1366,9 +1368,12 @@ export const es = {
   'web.landing.lead':
     'Seguía repitiendo las mismas comprobaciones al ir a la cama. Puerta, estufa, pastillas. Did I pone una pregunta en tu teléfono. Desliza a la derecha si lo hiciste. Desliza a la izquierda si no.',
   'web.landing.b1': 'Desliza en Esta noche. Inicio muestra lo que sigue abierto.',
-  'web.landing.b2': 'Amigos y familia hacen sync cuando creas cuenta.',
-  'web.landing.b3': 'Instálala en el teléfono. Sigue funcionando sin señal.',
-  'web.landing.b4': 'Monedas, gemas, cheer y racha se quedan en este teléfono.',
+  'web.landing.b2':
+    'Inicia sesión con tu correo. Las mismas preguntas y respuestas te siguen en la web y en el teléfono.',
+  'web.landing.b3':
+    'Instálala en el teléfono. Los toques locales funcionan sin señal; la cuenta necesita conexión.',
+  'web.landing.b4':
+    'Amigos y familia necesitan cuenta. Racha, monedas, gemas y cheer van con ella.',
   'web.landing.note':
     'Los enlaces de tienda aparecen aquí cuando salgan las apps de Android e iPhone.',
   'web.landing.phoneKicker': 'Esta noche',
@@ -1408,7 +1413,7 @@ export const es = {
   'web.download.kicker': 'Descargar',
   'web.download.title': 'Did I en tu teléfono',
   'web.download.lead':
-    'Elige tu teléfono. Los enlaces de las tiendas van aquí cuando salgan las versiones Android e iPhone.',
+    'Usa el mismo correo en did-i.app en el navegador y en la app. Los enlaces de las tiendas van aquí cuando salgan las versiones Android e iPhone.',
   'web.download.androidKicker': 'Android',
   'web.download.android': 'Google Play',
   'web.download.androidNote': 'Enlace de Play Store pronto.',

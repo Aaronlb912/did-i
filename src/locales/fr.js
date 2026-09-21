@@ -235,6 +235,8 @@ export const fr = {
   'account.syncBusy': 'Enregistrement',
   'account.syncMiss': 'Impossible de joindre',
   'account.syncIdle': 'Pas encore sync',
+  'account.syncNote':
+    'Les questions et les taps vont sur ton compte. Le navigateur et le téléphone partagent le même plateau. Change d’app ou touche Sync maintenant si ça ne colle pas.',
   'account.you': 'Toi',
   'account.name': 'Nom',
   'account.look': 'Look',

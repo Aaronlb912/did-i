@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { accountMissText, checkCode, looksLikeEmail, sendCode } from './account.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { cloud } from './cloud.js'
-import { pullAndMerge } from './cloud-sync.js'
+import { armSyncForUser, pullAndMerge } from './cloud-sync.js'
 import { t } from './i18n.js'
 
 export function useAuthSignIn({ onSignedIn }) {
@@ -14,6 +14,7 @@ export function useAuthSignIn({ onSignedIn }) {
 
   const finish = useCallback(async () => {
     clearAuthSkip()
+    armSyncForUser()
     await pullAndMerge()
     onSignedIn?.()
   }, [onSignedIn])

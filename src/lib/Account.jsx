@@ -313,6 +313,7 @@ function SignedIn({ book, email, onChange }) {
       <SetCard>
         <SetRow label={t('account.who')} value={email} />
         <SetRow label={t('account.syncNow')} value={syncWords(sync)} onClick={() => pullAndMerge()} />
+        <p className="di-detail-meta">{t('account.syncNote')}</p>
       </SetCard>
       {sync.how === 'miss' && sync.miss ? (
         <p className="di-miss" role="alert">

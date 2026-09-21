@@ -4,7 +4,7 @@ import { clearAuthSkip } from './auth-gate.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readPrefs, writePrefs } from './prefs.js'
-import { readSavedAt } from './saved-at.js'
+import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
   forgetAnswerMarks,
@@ -24,6 +24,7 @@ import { claimCheerGifts, claimInvites, readMine, syncTonightBoard } from './peo
 import { claimGemPurchases } from './gem-claim.js'
 import { addGemsShelf, applyInvitePayout, mergeGiftCheers } from './purse.js'
 import { closeShelfPastNights } from './daily.js'
+import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
 const LAST_USER = 'did-i-last-user'
@@ -31,6 +32,9 @@ const SYNC_KEY = 'did-i-sync'
 
 const listeners = new Set()
 let timer = 0
+let pulling = null
+let foregroundBound = false
+let authBound = false
 
 function loadPersistedSync() {
   try {
@@ -170,9 +174,60 @@ async function putPrefs(db, user, shelf) {
   return synced.miss && synced.miss !== 'setup' ? new Error(synced.miss) : null
 }
 
+/** Lets push run while a session exists but sync UI still says signed out. */
+export function armSyncForUser() {
+  if (!cloudSetUp() || state.how === 'off') return
+  if (state.how === 'out') setState({ how: 'busy', miss: '' })
+}
+
+/** Pull when the account session appears or returns. */
+export function bindAuthSync() {
+  if (authBound) return
+  authBound = true
+  const db = cloud()
+  if (!db) return
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      armSyncForUser()
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
+      return
+    }
+    if (event === 'SIGNED_OUT') signedOutSync()
+  })
+}
+
+/** Push pending edits, then pull and merge when the app comes to the front. */
+export function bindForegroundSync() {
+  if (foregroundBound) return
+  foregroundBound = true
+  bindAuthSync()
+
+  function onWake() {
+    if (!isAppForeground()) return
+    pullAndMerge()
+  }
+
+  function onSleep() {
+    flushPushSoon()
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') onWake()
+      else onSleep()
+    })
+  }
+
+  onAppForegroundChange((on) => {
+    if (on) onWake()
+    else onSleep()
+  })
+}
+
 // Pull what the account has, fold it into what this phone has, then send
 // the combined shelf back so every phone ends up holding the same thing.
-export async function pullAndMerge() {
+async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
   try {
@@ -198,29 +253,32 @@ export async function pullAndMerge() {
     const remote = shelfRow.data?.doc || null
     const remoteSavedAt = shelfRow.data?.saved_at || ''
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
-    const savedAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
+    const metaAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
 
     // Fold in every answer the account has that this phone has not seen.
     const pulled = await pullAnswers(merged)
     if (pulled.miss) throw new Error(pulled.miss)
 
-    let written = writeShelf(closeShelfPastNights(pulled.shelf), savedAt)
+    let written = writeShelf(closeShelfPastNights(pulled.shelf), metaAt)
     const gifts = await claimCheerGifts()
     if (gifts.ids?.length) {
       const boards = written.boards.map((book) => mergeGiftCheers(book, gifts.ids))
-      written = writeShelf({ ...written, boards }, savedAt)
+      written = writeShelf({ ...written, boards }, metaAt)
     }
     const bought = await claimGemPurchases()
     if (bought.gems > 0) {
-      written = writeShelf(addGemsShelf(written, bought.gems), savedAt)
+      written = writeShelf(addGemsShelf(written, bought.gems), metaAt)
     }
     const invited = await claimInvites()
     if (invited.gems > 0 || invited.looks.length) {
       const boards = written.boards.map((item) =>
         item.id === written.currentId ? applyInvitePayout(item, invited) : item,
       )
-      written = writeShelf({ ...written, boards }, savedAt)
+      written = writeShelf({ ...written, boards }, metaAt)
     }
+
+    const uploadAt = new Date().toISOString()
+    written = writeShelf(written, uploadAt)
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
@@ -228,7 +286,7 @@ export async function pullAndMerge() {
       writePrefs(remotePrefs, true)
     }
 
-    const bad = (await putShelf(db, user, written, savedAt)) || (await putPrefs(db, user, written))
+    const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
     if (bad) throw bad
 
     // Opening the app is the one moment worth reconciling in full: send
@@ -247,6 +305,14 @@ export async function pullAndMerge() {
   }
 }
 
+export function pullAndMerge() {
+  if (pulling) return pulling
+  pulling = pullAndMergeOnce().finally(() => {
+    pulling = null
+  })
+  return pulling
+}
+
 export async function pushNow(shelf) {
   const db = cloud()
   if (!db) return
@@ -262,7 +328,9 @@ export async function pushNow(shelf) {
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
-    const bad = (await putShelf(db, user, doc, readSavedAt())) || (await putPrefs(db, user, doc))
+    const uploadAt = new Date().toISOString()
+    stampSavedAt(uploadAt)
+    const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
     if (bad) throw bad
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
   } catch (error) {

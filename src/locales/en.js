@@ -232,6 +232,8 @@ export const en = {
   'account.syncBusy': 'Saving',
   'account.syncMiss': 'Could not reach it',
   'account.syncIdle': 'Not synced yet',
+  'account.syncNote':
+    'Questions and taps save to your account. The browser and the phone share one shelf. Switch apps or tap Sync now if they look different.',
   'account.you': 'You',
   'account.name': 'Name',
   'account.look': 'Look',
@@ -446,7 +448,7 @@ export const en = {
   'help.marks': 'Marks',
   'help.phone': 'This phone',
   'help.phoneP':
-    'Sign in under Settings to sync your questions. Settings also has a copy, a number lock, and reminders.',
+    'Sign in under Account with email. Your questions, answers, streak, coins, and gems follow the account between this browser and the phone app. Tap Sync now on Account if two screens disagree. Settings also has a copy, a number lock, and reminders.',
   'help.home': 'Home',
   'help.feedback': 'Feedback',
   'help.feedbackP':
@@ -910,7 +912,7 @@ export const en = {
   'about.p1':
     'Did I is the unanswered question for tonight. One at a time. Hit DID if you did it. Hit did not if tonight is not that night.',
   'about.p4':
-    'The day folds at the hour you set. A 1am tap still belongs to last night if the fold is 4. Reminders fire on this device when a question is due, if you turned them on.',
+    'The night turns over at midnight in your time zone. Reminders fire on this device when a question is due, if you turned them on.',
   'about.home': 'Home',
   'about.how': 'How to use it',
   'marks.kicker': 'Marks',
@@ -1085,7 +1087,7 @@ export const en = {
   'site.name.kicker': 'This browser',
   'site.name.title': 'Name this phone.',
   'site.name.body':
-    'Your questions stay on this computer. There is no email and no password. Try a demo if you want to tap around without writing questions first.',
+    'You can try it here without signing in. Your questions stay in this browser until you create an account under Account.',
   'site.name.label': 'Tag name',
   'site.name.miss': 'This needs a name.',
   'site.name.openBoard': 'Open {board}',
@@ -1097,9 +1099,9 @@ export const en = {
   'site.read.p2':
     'A question can wait until a clock time. Coming up shows the next nights so a waiting question is not a blank screen. Last time is last night, or the last due day, if you missed it. Late still counts.',
   'site.read.p3':
-    'Add a question from Questions, or start from What to ask. It can be every day, some weekdays, monthly, every few days, or once. The day folds at the hour in Settings, so a 1am tap still belongs to last night if the fold is 4.',
+    'Add a question from Questions, or start from What to ask. It can be every day, some weekdays, monthly, every few days, once on a date, or once with a deadline. The night turns over at midnight in your time zone.',
   'site.read.p4':
-    'This phone keeps your questions. There is no email. Settings has a copy of the file, an optional number lock, and reminders. Chrome and Android can ping at the ask-after hour. An iPhone can install the page. Pings there are weak until a Mac builds the native app.',
+    'Sign in under Account with email to sync the same shelf on the phone app and in the browser. Settings has a copy of the file, an optional number lock, and reminders. Chrome and Android can ping at the ask-after hour.',
   'site.read.p5':
     'y or space is DID. s is did not. n adds a question. Escape closes a plate. u undoes the last tap for a few seconds.',
   'site.read.openHome': 'Open the home screen',
@@ -1361,9 +1363,10 @@ export const en = {
   'web.landing.lead':
     'I kept replaying the same checks on the walk to bed. Door, stove, pills. One question on your phone. Swipe right if you did. Swipe left if you didn\'t.',
   'web.landing.b1': 'Swipe on Tonight. Home shows what\'s still open.',
-  'web.landing.b2': 'Friends and family sync when you add an account.',
-  'web.landing.b3': 'Install it on your phone. Still works with no signal.',
-  'web.landing.b4': 'Coins, gems, cheer, and streak stay on this phone.',
+  'web.landing.b2':
+    'Sign in with email. The same questions and answers follow you on the web app and on your phone.',
+  'web.landing.b3': 'Install on your phone. Local taps work offline; account sync needs a connection.',
+  'web.landing.b4': 'Friends and family need an account. Streak, coins, gems, and cheer ride with it.',
   'web.landing.note': 'Store links land here when the Android and iPhone builds ship.',
   'web.landing.phoneKicker': 'Tonight',
   'web.landing.demo1': 'Did I lock the back door?',
@@ -1403,7 +1406,7 @@ export const en = {
   'web.download.kicker': 'Download',
   'web.download.title': 'Get Did I on your phone',
   'web.download.lead':
-    'Pick your phone. Store links land here when the Android and iPhone builds ship.',
+    'Use the same email on did-i.app in a browser and in the app. Store links land here when the Android and iPhone builds ship.',
   'web.download.androidKicker': 'Android',
   'web.download.android': 'Google Play',
   'web.download.androidNote': 'Play Store link coming soon.',

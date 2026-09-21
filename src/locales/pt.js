@@ -231,6 +231,8 @@ export const pt = {
   'account.syncBusy': 'A guardar',
   'account.syncMiss': 'Não deu para ligar',
   'account.syncIdle': 'Ainda sem sync',
+  'account.syncNote':
+    'Perguntas e toques vão para a tua conta. O navegador e o telemóvel partilham a mesma prateleira. Muda de app ou toca Sync agora se não bater certo.',
   'account.you': 'Tu',
   'account.name': 'Nome',
   'account.look': 'Look',

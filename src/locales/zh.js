@@ -223,6 +223,8 @@ export const zh = {
   'account.syncBusy': '保存中',
   'account.syncMiss': '无法连接',
   'account.syncIdle': '尚未 sync',
+  'account.syncNote':
+    '问题和点击会存到你的账号。浏览器和手机共用同一套架子。两边不一致就切换应用，或点立即 sync。',
   'account.you': '你',
   'account.name': '名称',
   'account.look': 'Look',

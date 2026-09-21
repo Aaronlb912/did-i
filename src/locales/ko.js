@@ -223,6 +223,8 @@ export const ko = {
   'account.syncBusy': '저장 중',
   'account.syncMiss': '연결 안 됨',
   'account.syncIdle': '아직 sync 안 함',
+  'account.syncNote':
+    '질문과 탭은 계정에 저장돼. 브라우저와 앱이 같은 선반을 씀. 다르면 앱을 바꾸거나 지금 sync.',
   'account.you': '나',
   'account.name': '이름',
   'account.look': 'Look',

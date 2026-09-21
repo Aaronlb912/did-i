@@ -67,7 +67,13 @@ import { Everyone } from './lib/Everyone.jsx'
 import { AppNav } from './lib/AppNav.jsx'
 import { showBottomNav } from './lib/app-nav.js'
 import { forgetAnswerMarks } from './lib/answer-log.js'
-import { SHELF_IN, flushPushSoon, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
+import {
+  SHELF_IN,
+  bindForegroundSync,
+  flushPushSoon,
+  pullAndMerge,
+  pushSoon,
+} from './lib/cloud-sync.js'
 import { stripDemoShelf } from './lib/demo-strip.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
@@ -368,10 +374,6 @@ export default function App() {
     function onShelfIn(event) {
       if (event.detail) setShelf(event.detail)
     }
-    function onWake() {
-      if (document.visibilityState === 'visible') pullAndMerge()
-      else flushPushSoon()
-    }
     function onLeave() {
       flushPushSoon()
     }
@@ -379,8 +381,8 @@ export default function App() {
     window.addEventListener(SHELF_IN, onShelfIn)
     window.addEventListener('pagehide', onLeave)
     window.addEventListener('beforeunload', onLeave)
-    document.addEventListener('visibilitychange', onWake)
     navigator.serviceWorker?.addEventListener('message', onMessage)
+    bindForegroundSync()
     pullAndMerge()
     // Does nothing until Firebase is set up. See docs/push.md.
     startPush((where) => goFromPush(where))
@@ -398,7 +400,6 @@ export default function App() {
       window.removeEventListener(SHELF_IN, onShelfIn)
       window.removeEventListener('pagehide', onLeave)
       window.removeEventListener('beforeunload', onLeave)
-      document.removeEventListener('visibilitychange', onWake)
       navigator.serviceWorker?.removeEventListener('message', onMessage)
       stop()
     }

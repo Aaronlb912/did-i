@@ -222,6 +222,8 @@ export const ja = {
   'account.syncBusy': '保存中',
   'account.syncMiss': '届かない',
   'account.syncIdle': 'まだ sync してない',
+  'account.syncNote':
+    '質問とタップはアカウントに保存される。ブラウザとアプリは同じ棚。違って見えたらアプリを切り替えるか、今すぐ sync。',
   'account.you': 'あなた',
   'account.name': '名前',
   'account.look': 'Look',

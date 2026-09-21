@@ -235,6 +235,8 @@ export const de = {
   'account.syncBusy': 'Speichern',
   'account.syncMiss': 'Konnte nicht erreicht werden',
   'account.syncIdle': 'Noch nicht gesynced',
+  'account.syncNote':
+    'Fragen und Taps landen auf deinem Konto. Browser und Handy teilen ein Brett. App wechseln oder Jetzt syncen, wenn es nicht passt.',
   'account.you': 'Du',
   'account.name': 'Name',
   'account.look': 'Look',
