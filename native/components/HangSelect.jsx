@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { fonts, radius } from '../theme.js'
 
 export function HangSelect({ value, onChange, options, ariaLabel, colors, open: openIn, onOpenChange }) {
@@ -18,7 +18,7 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
   }
 
   return (
-    <View style={[styles.shell, open && styles.shellOpen]}>
+    <View style={styles.shell}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={ariaLabel}
@@ -35,10 +35,9 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
         </Text>
         <Text style={[styles.chev, { color: colors.inkDim }]}>▾</Text>
       </Pressable>
-      {open ? (
-        <>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="" />
-          <View
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <Pressable
             style={[
               styles.menu,
               {
@@ -47,8 +46,9 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
                 shadowColor: colors.bg,
               },
             ]}
+            onPress={(event) => event.stopPropagation()}
           >
-            <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={styles.menuScroll}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.menuScroll}>
               {options.map((opt) => {
                 const on = opt.value === value
                 return (
@@ -61,27 +61,28 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
                       on && { backgroundColor: colors.panel2 },
                     ]}
                   >
-                    <Text style={[styles.optText, { color: on ? colors.on : colors.ink, fontWeight: on ? '600' : '400' }]}>
+                    <Text
+                      style={[
+                        styles.optText,
+                        { color: on ? colors.on : colors.ink, fontWeight: on ? '600' : '400' },
+                      ]}
+                    >
                       {opt.label}
                     </Text>
                   </Pressable>
                 )
               })}
             </ScrollView>
-          </View>
-        </>
-      ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   shell: {
-    position: 'relative',
-    zIndex: 1,
-  },
-  shellOpen: {
-    zIndex: 10,
+    width: '100%',
   },
   trigger: {
     minHeight: 44,
@@ -97,41 +98,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 15,
     flex: 1,
+    minWidth: 0,
   },
   chev: {
     fontFamily: fonts.ui,
     fontSize: 12,
   },
   backdrop: {
-    position: 'absolute',
-    top: -400,
-    left: -400,
-    right: -400,
-    bottom: -400,
-    zIndex: 1,
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 48,
   },
   menu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 4,
     borderWidth: 1,
     borderRadius: radius.rSm,
-    maxHeight: 220,
-    zIndex: 2,
+    maxHeight: '70%',
+    overflow: 'hidden',
     elevation: 8,
     shadowOpacity: 0.35,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    overflow: 'hidden',
   },
   menuScroll: {
-    maxHeight: 220,
+    maxHeight: 360,
   },
   opt: {
-    minHeight: 40,
-    paddingHorizontal: 12,
+    minHeight: 44,
+    paddingHorizontal: 14,
     justifyContent: 'center',
   },
   optText: {

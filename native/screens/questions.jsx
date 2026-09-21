@@ -262,6 +262,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   )
   const schedule = schedulePick(hang.draft)
   const deadline = isDeadlineMode(hang.draft)
+  const [cadenceOpen, setCadenceOpen] = useState(false)
 
   function cancel() {
     if (existing) goHash('/lamp', { id: existing.id })
@@ -383,9 +384,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
               onChange={(value) => hang.change('cadence', value)}
               options={cadenceOptions}
               colors={colors}
+              open={cadenceOpen}
+              onOpenChange={setCadenceOpen}
             />
-            <Text style={[styles.timingOr, { color: colors.inkDim }]}>{t('hang.or')}</Text>
-            <KeyButton colors={colors} label={t('hang.deadline')} onPress={() => hang.changeSchedule('deadline')} />
+            <View style={styles.timingAlt}>
+              <Text style={[styles.timingOr, { color: colors.inkDim }]}>{t('hang.or')}</Text>
+              <KeyButton colors={colors} label={t('hang.deadline')} onPress={() => hang.changeSchedule('deadline')} />
+            </View>
           </View>
         </View>
       )}
@@ -676,7 +681,8 @@ const styles = StyleSheet.create({
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, marginBottom: 8 },
   timingRow: { gap: 6, marginBottom: 4 },
-  timingPick: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  timingPick: { gap: 8 },
+  timingAlt: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   timingOr: { fontFamily: fonts.ui, fontSize: 13 },
   timingBack: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline', marginTop: 6 },
   weekdays: { gap: 6 },
