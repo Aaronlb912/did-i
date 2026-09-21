@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { t } from './i18n.js'
-import { answerFamilyLamp, useFamilyTonight } from './people.js'
+import { answerFamilyLamp, familyLampMeta, useFamilyTonight } from './people.js'
 
 // What a family put on you, sitting on your own tonight. Answering here
 // writes to the family, not to your shelf, so it never touches your
@@ -57,7 +57,10 @@ export function FamilyTonight() {
             <li className={done ? 'di-fam-row is-done' : 'di-fam-row'} key={row.lamp.id}>
               <span className="di-fam-copy">
                 <strong>{row.lamp.question}</strong>
-                <em>{row.family.name}</em>
+                <em>
+                  {row.family.name}
+                  {row.lamp.cadence !== 'daily' ? ` · ${familyLampMeta(row.lamp)}` : ''}
+                </em>
               </span>
               {/* Both stay tappable after an answer, so a mistake is one
                   tap to fix rather than something you live with. */}

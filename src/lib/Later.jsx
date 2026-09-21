@@ -1,13 +1,20 @@
 import { goHash } from '../site/hash.js'
-import { shortLabel } from './board-json.js'
+import { isOnceBy, shortLabel } from './board-json.js'
 import { BoardShell } from './BoardShell.jsx'
 import { clockWords, comingDays } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
-function answerLabel(row) {
+function answerLabel(row, nightIso) {
   if (!row.answer) {
+    if (isOnceBy(row.lamp)) {
+      const dueBy = String(row.lamp.dueBy || '').trim()
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dueBy)) {
+        if (dueBy === nightIso) return t('later.dueTonight')
+        return t('later.dueBy', { date: formatBoardDate(dueBy) })
+      }
+    }
     return row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('later.open')
   }
   if (row.answer.status === 'yes') return t('later.did')
@@ -55,7 +62,7 @@ export function Later({ book, now }) {
                       }
                     >
                       <span>{shortLabel(row.lamp)}</span>
-                      <span className="di-home-state">{answerLabel(row)}</span>
+                      <span className="di-home-state">{answerLabel(row, night.iso)}</span>
                     </button>
                   </li>
                 ))}

@@ -121,7 +121,7 @@ export function ScreenRouter({
     )
   }
   if (path === '/lamp') {
-    return <LampScreen book={book} onChange={change} route={route} />
+    return <LampScreen book={book} boards={boards} onChange={change} route={route} />
   }
   if (path === '/lamps') {
     return (

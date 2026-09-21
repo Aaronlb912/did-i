@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
+import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
+
+const FAMILY_LAMP_FIELDS =
+  'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
+
+export function familyLampMeta(lamp) {
+  return cadenceLine({
+    cadence: lamp.cadence || 'daily',
+    onceWhen: lamp.once_when === 'by' ? 'by' : 'on',
+    onceOn: lamp.once_on || '',
+    dueBy: lamp.due_by || '',
+    createdOn: lamp.made_on || '',
+    weekdays: lamp.weekdays || [],
+  })
+}
 
 // Everything here needs an account. With no Supabase keys the app still
 // runs, these calls just say 'off' and the screens explain why.
@@ -622,7 +637,7 @@ export async function listFamilyLamps(familyId, periodKey) {
   const [lampRows, answerRows] = await Promise.all([
     db
       .from('family_lamps')
-      .select('id, question, short, cadence, weekdays, once_on, for_id, made_by, made_on')
+      .select(FAMILY_LAMP_FIELDS)
       .eq('family_id', familyId)
       .eq('archived', false)
       .order('made_on'),
@@ -682,7 +697,16 @@ export async function answerFamilyLamp(familyId, lampId, periodKey, status) {
 // Tonight, across every family you are in -----------------------------
 
 function dueOnFamilyNight(lamp, night) {
-  if (lamp.cadence === 'once') return !lamp.once_on || lamp.once_on === night
+  if (lamp.cadence === 'once') {
+    if (lamp.once_when === 'by') {
+      const dueBy = String(lamp.due_by || '').trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueBy)) return true
+      const start = String(lamp.made_on || '').trim() || night
+      if (night < start) return false
+      return night <= dueBy
+    }
+    return !lamp.once_on || lamp.once_on === night
+  }
   if (lamp.cadence === 'weekly') {
     const day = new Date(`${night}T12:00:00`).getDay()
     return (lamp.weekdays || []).includes(day)
@@ -712,7 +736,7 @@ export async function familyTonight() {
   const [lampRows, answerRows] = await Promise.all([
     db
       .from('family_lamps')
-      .select('id, family_id, question, short, cadence, weekdays, once_on, for_id, made_by, made_on')
+      .select(FAMILY_LAMP_FIELDS)
       .in('family_id', ids)
       .eq('archived', false)
       .or(`for_id.is.null,for_id.eq.${user.id}`),

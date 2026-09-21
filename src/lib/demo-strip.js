@@ -26,9 +26,9 @@ const DEMO_LAMP_IDS = new Set([
   'di-now-pills',
   'di-now-trash',
   'di-now-landlord',
+  'di-land-door',
   'di-land-pills',
-  'di-land-trash',
-  'di-land-landlord',
+  'di-land-cat',
 ])
 
 const DEMO_TITLES = new Set(['Hayes Street', 'Practice night', 'Shop try', 'Try now'])

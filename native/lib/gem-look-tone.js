@@ -14,6 +14,8 @@ const TONES = {
       chipGlow: 'rgba(94, 232, 255, 0.75)',
       chipBg: '#0c1218',
       panelTint: '#0f1822',
+      faceGlow: 24,
+      panelShadow: 34,
     },
     light: {
       top: 'rgba(8, 145, 178, 0.12)',
@@ -27,6 +29,8 @@ const TONES = {
       chipGlow: 'rgba(8, 145, 178, 0.5)',
       chipBg: '#eaf6fa',
       panelTint: '#f2fbff',
+      faceGlow: 18,
+      panelShadow: 26,
     },
   },
   ember: {
@@ -278,30 +282,42 @@ export function gemLookChipMeta(look, theme = 'dark') {
   }
 }
 
+const CARD_RADIUS = 18
+
 export function gemPanelStyle(look, theme = 'dark') {
   const tone = gemLookTone(look, theme)
   if (!tone) return undefined
   return {
     backgroundColor: tone.panelTint,
-    borderColor: tone.ring,
-    borderWidth: 1.5,
+    borderColor: 'transparent',
+  }
+}
+
+/** Shadow on the card shell — one layer, follows the rounded rect. */
+export function gemGlowHostStyle(look, theme = 'dark') {
+  const tone = gemLookTone(look, theme)
+  if (!tone) return undefined
+  const strong = look === 'glow'
+  return {
+    borderRadius: CARD_RADIUS,
     shadowColor: tone.accent,
-    shadowOpacity: 0.58,
-    shadowRadius: 22,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 12,
+    shadowOpacity: strong ? 0.38 : 0.26,
+    shadowRadius: strong ? 14 : 10,
+    elevation: strong ? 6 : 4,
   }
 }
 
 export function gemFrameStyle(look, theme = 'dark') {
+  if (look === 'glow') return undefined
   const tone = gemLookTone(look, theme)
   if (!tone) return undefined
   return {
     shadowColor: tone.accent,
-    shadowOpacity: 0.35,
-    shadowRadius: 28,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
+    elevation: 3,
   }
 }
 

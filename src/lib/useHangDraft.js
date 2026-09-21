@@ -9,6 +9,7 @@ import {
   slotFromAskAfter,
 } from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
+import { applySchedulePick } from './hang-schedule.js'
 import { boardDate } from './recurrence.js'
 import { STARTERS } from './starters.js'
 
@@ -64,16 +65,19 @@ export function useHangDraft({
 
   function change(field, value) {
     setDraft((prev) => {
-      const next = { ...prev, [field]: value }
-      if (
-        field === 'cadence' &&
-        value === 'once' &&
-        !/^\d{4}-\d{2}-\d{2}$/.test(String(prev.onceOn || ''))
-      ) {
-        next.onceOn = boardDate(clock, book.dayFoldHour)
+      const today = boardDate(clock, book.dayFoldHour)
+      if (field === 'cadence') {
+        return applySchedulePick(prev, value, today)
       }
+      const next = { ...prev, [field]: value }
       return next
     })
+    if (miss) setMiss('')
+  }
+
+  function changeSchedule(pick) {
+    const today = boardDate(clock, book.dayFoldHour)
+    setDraft((prev) => applySchedulePick(prev, pick, today))
     if (miss) setMiss('')
   }
 
@@ -97,7 +101,9 @@ export function useHangDraft({
       question: draft.question.trim(),
       short: String(draft.short || '').trim() || shortLabel(draft),
       monthDay: draft.cadence === 'monthly' ? draft.monthDay : '',
-      onceOn: draft.cadence === 'once' ? draft.onceOn : '',
+      onceWhen: draft.cadence === 'once' ? (draft.onceWhen === 'by' ? 'by' : 'on') : '',
+      onceOn: draft.cadence === 'once' && draft.onceWhen !== 'by' ? draft.onceOn : '',
+      dueBy: draft.cadence === 'once' && draft.onceWhen === 'by' ? draft.dueBy : '',
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
@@ -136,6 +142,7 @@ export function useHangDraft({
     priority,
     notifyOn,
     change,
+    changeSchedule,
     changeAskAfter,
     toggleDay,
     buildLamp,

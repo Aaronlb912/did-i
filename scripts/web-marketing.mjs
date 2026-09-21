@@ -2,6 +2,7 @@ export const webEn = {
   'web.nav.home': 'Home',
   'web.nav.privacy': 'Privacy',
   'web.nav.terms': 'Terms',
+  'web.nav.feedback': 'Feedback',
   'web.nav.download': 'Download app',
 
   'web.download.kicker': 'Download',
@@ -38,14 +39,14 @@ export const webEn = {
 
   'web.waitlist.label': 'Email',
   'web.waitlist.placeholder': 'you@example.com',
-  'web.waitlist.submit': 'Join the waitlist',
+  'web.waitlist.submit': 'Join the beta',
   'web.waitlist.sending': 'Saving…',
-  'web.waitlist.ok': "You're on the list. We'll email when your turn is close.",
-  'web.waitlist.dup': "You're already on the list.",
+  'web.waitlist.ok': "You're in the beta. We'll email when there's a build for you.",
+  'web.waitlist.dup': "You're already in the beta.",
   'web.waitlist.bad': 'Enter a valid email.',
   'web.waitlist.miss': "Couldn't save. Try again in a minute.",
-  'web.waitlist.offline': "Waitlist needs a connection. Try again when you're back online.",
-  'web.waitlist.count': '{n} people on the waitlist',
+  'web.waitlist.offline': "Beta sign-up needs a connection. Try again when you're back online.",
+  'web.waitlist.count': '{n} people in the beta',
 
   'web.landing.stepsTitle': 'How it goes',
   'web.landing.step1.num': '1',
@@ -69,13 +70,14 @@ export const webEn = {
 
   'web.landing.closeTitle': 'Stop circling the same worry',
   'web.landing.closeLead':
-    'Join the waitlist and we will email when launch is close.',
+    'Join the beta and we will email when a build is ready.',
 }
 
 export const webEs = {
   'web.nav.home': 'Inicio',
   'web.nav.privacy': 'Privacidad',
   'web.nav.terms': 'Términos',
+  'web.nav.feedback': 'Comentarios',
   'web.nav.download': 'Descargar app',
 
   'web.download.kicker': 'Descargar',
@@ -112,14 +114,14 @@ export const webEs = {
 
   'web.waitlist.label': 'Correo',
   'web.waitlist.placeholder': 'tu@ejemplo.com',
-  'web.waitlist.submit': 'Unirme a la lista',
+  'web.waitlist.submit': 'Unirme a la beta',
   'web.waitlist.sending': 'Guardando…',
-  'web.waitlist.ok': 'Estás en la lista. Te escribimos cuando se acerque tu turno.',
-  'web.waitlist.dup': 'Ya estás en la lista.',
+  'web.waitlist.ok': 'Estás en la beta. Te escribimos cuando haya una build para ti.',
+  'web.waitlist.dup': 'Ya estás en la beta.',
   'web.waitlist.bad': 'Escribe un correo válido.',
   'web.waitlist.miss': 'No se pudo guardar. Prueba en un minuto.',
-  'web.waitlist.offline': 'La lista necesita conexión. Prueba otra vez cuando vuelva la señal.',
-  'web.waitlist.count': '{n} personas en la lista',
+  'web.waitlist.offline': 'La beta necesita conexión. Prueba otra vez cuando vuelva la señal.',
+  'web.waitlist.count': '{n} personas en la beta',
 
   'web.landing.stepsTitle': 'Cómo va',
   'web.landing.step1.num': '1',
@@ -143,5 +145,5 @@ export const webEs = {
 
   'web.landing.closeTitle': 'Deja de dar vueltas a la misma duda',
   'web.landing.closeLead':
-    'Únete a la lista y te escribiremos cuando el lanzamiento esté cerca.',
+    'Únete a la beta y te escribiremos cuando haya una build lista.',
 }

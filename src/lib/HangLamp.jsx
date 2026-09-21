@@ -2,6 +2,12 @@ import { useEffect, useMemo, useRef } from 'react'
 import { HangMonthCal } from './HangMonthCal.jsx'
 import { HangSelect } from './HangSelect.jsx'
 import { HangTimeSelect } from './HangTimeSelect.jsx'
+import {
+  CADENCE_OPTIONS,
+  cadenceDropdownValue,
+  isDeadlineMode,
+  schedulePick,
+} from './hang-schedule.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { useHangDraft } from './useHangDraft.js'
@@ -36,14 +42,10 @@ export function HangLamp({
   })
   const miss = missOut || hang.miss
 
+  const schedule = schedulePick(hang.draft)
+  const deadline = isDeadlineMode(hang.draft)
   const cadenceOptions = useMemo(
-    () => [
-      { value: 'daily', label: t('hang.daily') },
-      { value: 'weekly', label: t('hang.weekly') },
-      { value: 'monthly', label: t('hang.monthly') },
-      { value: 'every_n', label: t('hang.everyN') },
-      { value: 'once', label: t('hang.once') },
-    ],
+    () => CADENCE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) })),
     [],
   )
 
@@ -76,9 +78,9 @@ export function HangLamp({
         />
       </label>
       {onTagTitle ? (
-        <div className="di-field">
+        <div className="di-field di-field-tag">
           <span id="di-hang-tag">{t('hang.tag')}</span>
-          <div className="di-tagpick" role="group" aria-labelledby="di-hang-tag">
+          <div className="di-hang-tags" role="group" aria-labelledby="di-hang-tag">
             {hang.liveTags.map((item) => {
               const on = hang.isTagSelected(item.title)
               return (
@@ -92,25 +94,37 @@ export function HangLamp({
                 </button>
               )
             })}
-            <button
-              className="di-tagpick-new"
-              type="button"
-              aria-pressed={!hang.knownTag}
-              onClick={() => onTagTitle('')}
-            >
-              {t('hang.tagNew')}
-            </button>
+            {hang.knownTag ? (
+              <button
+                className="di-hang-tags-new"
+                type="button"
+                onClick={() => onTagTitle('')}
+              >
+                {t('hang.tagNew')}
+              </button>
+            ) : (
+              <input
+                className="di-hang-tags-input"
+                value={hang.tagTitle}
+                onChange={(event) => hang.setTagTitle(event.target.value)}
+                placeholder={t('hang.tagPh')}
+                aria-label={t('hang.tagNew')}
+              />
+            )}
           </div>
           {hang.parkedTags.length ? (
-            <div className="di-tagpick di-tagpick-later" role="group" aria-label={t('hang.tagLater')}>
-              <span className="di-tagpick-cap">{t('hang.tagLater')}</span>
-              <span className="di-tagpick-hint">{t('hang.tagLaterHint')}</span>
+            <div
+              className="di-hang-tags-parked"
+              role="group"
+              aria-label={`${t('hang.tagLater')}. ${t('hang.tagLaterHint')}`}
+            >
+              <span className="di-hang-tags-parked-label">{t('hang.tagLater')}</span>
               {hang.parkedTags.map((item) => {
                 const on = hang.isTagSelected(item.title)
                 return (
                   <button
                     key={item.id}
-                    className={on ? 'di-key is-pick' : 'di-key di-tagpick-old'}
+                    className={on ? 'di-key is-pick' : 'di-key di-hang-tags-muted'}
                     type="button"
                     onClick={() => onTagTitle(item.title)}
                   >
@@ -120,27 +134,41 @@ export function HangLamp({
               })}
             </div>
           ) : null}
-          {hang.knownTag ? null : (
-            <input
-              className="di-hang-input"
-              value={hang.tagTitle}
-              onChange={(event) => hang.setTagTitle(event.target.value)}
-              placeholder={t('hang.tagPh')}
-              aria-label={t('hang.tagNew')}
-            />
-          )}
         </div>
       ) : null}
-      <div className="di-field">
-        <span id="di-hang-cadence">{t('hang.often')}</span>
-        <HangSelect
-          ariaLabel={t('hang.often')}
-          value={hang.draft.cadence}
-          onChange={(value) => hang.change('cadence', value)}
-          options={cadenceOptions}
-        />
-      </div>
-      {hang.draft.cadence === 'weekly' ? (
+      {deadline ? (
+        <div className="di-field">
+          <span id="di-hang-due">{t('hang.dueBy')}</span>
+          <HangMonthCal
+            mode="date"
+            value={hang.draft.dueBy}
+            onChange={(iso) => hang.change('dueBy', iso)}
+            now={hang.clock}
+            dayFoldHour={book.dayFoldHour}
+          />
+          <small className="di-field-hint">{t('hang.dueByHint')}</small>
+          <button className="di-text di-hang-timing-back" type="button" onClick={() => hang.change('cadence', 'daily')}>
+            {t('hang.useOften')}
+          </button>
+        </div>
+      ) : (
+        <div className="di-field di-hang-timing">
+          <span id="di-hang-cadence">{t('hang.often')}</span>
+          <div className="di-hang-timing-row">
+            <HangSelect
+              ariaLabel={t('hang.often')}
+              value={cadenceDropdownValue(hang.draft)}
+              onChange={(value) => hang.change('cadence', value)}
+              options={cadenceOptions}
+            />
+            <span className="di-hang-or">{t('hang.or')}</span>
+            <button className="di-key" type="button" onClick={() => hang.changeSchedule('deadline')}>
+              {t('hang.deadline')}
+            </button>
+          </div>
+        </div>
+      )}
+      {!deadline && hang.draft.cadence === 'weekly' ? (
         <fieldset className="di-days">
           <legend>{t('hang.weekdays')}</legend>
           {DAYS.map((day) => (
@@ -155,7 +183,7 @@ export function HangLamp({
           ))}
         </fieldset>
       ) : null}
-      {hang.draft.cadence === 'monthly' ? (
+      {!deadline && hang.draft.cadence === 'monthly' ? (
         <div className="di-field">
           <span id="di-hang-month">{t('hang.monthDay')}</span>
           <HangMonthCal
@@ -168,7 +196,7 @@ export function HangLamp({
           <small className="di-field-hint">{t('hang.monthCalHint')}</small>
         </div>
       ) : null}
-      {hang.draft.cadence === 'once' ? (
+      {!deadline && schedule === 'once_on' ? (
         <div className="di-field">
           <span id="di-hang-once">{t('hang.onceOn')}</span>
           <HangMonthCal
@@ -181,7 +209,7 @@ export function HangLamp({
           <small className="di-field-hint">{t('hang.onceOnHint')}</small>
         </div>
       ) : null}
-      {hang.draft.cadence === 'every_n' ? (
+      {!deadline && hang.draft.cadence === 'every_n' ? (
         <>
           <label className="di-field">
             <span>{t('hang.everyNDays')}</span>
@@ -221,7 +249,7 @@ export function HangLamp({
         </div>
         <small className="di-field-hint">{t(`hang.priority.hint.${hang.priority}`)}</small>
       </div>
-      <div className="di-field">
+      <div className="di-field di-field-notify">
         <span id="di-hang-notify">{t('hang.notify')}</span>
         <div className="di-hang-chips" role="group" aria-labelledby="di-hang-notify">
           <button
@@ -237,6 +265,14 @@ export function HangLamp({
             onClick={() => hang.change('notify', false)}
           >
             {t('hang.notifyOff')}
+          </button>
+          <button
+            className="di-text di-hang-more"
+            type="button"
+            aria-expanded={hang.more}
+            onClick={() => hang.setMore((open) => !open)}
+          >
+            {hang.more ? t('hang.less') : t('hang.more')}
           </button>
         </div>
       </div>
@@ -279,14 +315,6 @@ export function HangLamp({
           </label>
         </>
       ) : null}
-      <button
-        className="di-key"
-        type="button"
-        aria-expanded={hang.more}
-        onClick={() => hang.setMore((open) => !open)}
-      >
-        {hang.more ? t('hang.less') : t('hang.more')}
-      </button>
       {miss ? (
         <p className="di-miss" role="alert">
           {t(miss)}

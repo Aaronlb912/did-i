@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, View } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { holdFor, popsFor } from '../../src/lib/cheer-pops.js'
 import { t } from '../../src/lib/i18n.js'
@@ -10,33 +11,12 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { hallColors, fonts } from '../theme.js'
 
 const CHEER_TOP = 3.6 * 16
-const FILL_KINDS = new Set(['night', 'rain', 'bubble'])
-
-function isFillKind(kind) {
-  return FILL_KINDS.has(kind)
-}
-
-function previewOrigin(kind) {
-  if (kind === 'dance') return { ox: '50%', oy: '68%' }
-  if (kind === 'flip') return { ox: '50%', oy: '52%' }
-  if (kind === 'spark') return { ox: '50%', oy: '44%' }
-  if (kind === 'tape') return { ox: '50%', oy: '46%' }
-  if (kind === 'paper') return { ox: '50%', oy: '58%' }
-  if (kind === 'lime' || kind === 'boom') return { ox: '50%', oy: '42%' }
-  return { ox: '50%', oy: '50%' }
-}
 
 function toneColor(tone, colors) {
   if (tone === 'gold') return colors.onDeep
   if (tone === 'blue') return colors.late
   if (tone === 'white') return '#fff'
   return colors.on
-}
-
-function stagePops(kind, pops, preview) {
-  if (!preview || isFillKind(kind)) return pops
-  const spot = previewOrigin(kind)
-  return pops.map((pop) => ({ ...pop, ...spot }))
 }
 
 function driftPx(value) {
@@ -59,6 +39,12 @@ function remPx(value) {
 function pct(value, dim) {
   const n = Number.parseFloat(String(value || '50'))
   return (n / 100) * dim
+}
+
+function offsetPx(value, dim) {
+  const raw = String(value || '0')
+  if (raw.includes('rem')) return remPx(raw)
+  return pct(raw, dim)
 }
 
 function useTimed(delay, duration) {
@@ -196,10 +182,11 @@ function SparkRing({ delay, size }) {
   )
 }
 
-function Tape({ delay, side, y, fat, colors, stageW }) {
+function Tape({ delay, side, y, fat, colors, stageW, reach }) {
   const progress = useTimed(delay, 900)
   const yPx = Number.parseFloat(y) || 0
-  const w = Math.min(stageW * 0.46, remPx('14'))
+  const reachPct = Number.parseFloat(String(reach || '46')) || 46
+  const w = Math.min(stageW * (reachPct / 100), remPx('14'))
   const h = fat ? remPx('0.72') : remPx('0.5')
   const scaleX = progress.interpolate({ inputRange: [0, 0.28, 1], outputRange: [0, 1, 1] })
   const opacity = progress.interpolate({ inputRange: [0, 0.28, 0.78, 1], outputRange: [0, 1, 1, 0] })
@@ -224,10 +211,10 @@ function Tape({ delay, side, y, fat, colors, stageW }) {
   )
 }
 
-function BoomStem({ delay, color }) {
+function BoomStem({ delay, color, tall }) {
   const progress = useTimed(delay, 280)
   const w = remPx('0.16')
-  const h = remPx('3.4')
+  const h = remPx(tall || '3.4')
   const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [remPx('4.2'), 0] })
   const scaleY = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.2] })
   const opacity = progress.interpolate({ inputRange: [0, 0.6, 1], outputRange: [1, 0.4, 0] })
@@ -297,9 +284,9 @@ function BoomStreak({ delay, rot, len, tone, colors }) {
   )
 }
 
-function Star({ delay, x, y, stageW, stageH, ink, on }) {
+function Star({ delay, x, y, stageW, size, ink, on }) {
   const twinkle = useMemo(() => new Animated.Value(0), [])
-  const px = remPx('0.28')
+  const px = remPx(size || '0.28')
   useEffect(() => {
     const timer = setTimeout(() => {
       Animated.loop(
@@ -319,8 +306,8 @@ function Star({ delay, x, y, stageW, stageH, ink, on }) {
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: pct(x, stageW) - px / 2,
-        top: pct(y, stageH) - px / 2,
+        left: offsetPx(x, stageW) - px / 2,
+        top: offsetPx(y, stageW) - px / 2,
         width: px,
         height: px,
         borderRadius: px / 2,
@@ -336,9 +323,9 @@ function Star({ delay, x, y, stageW, stageH, ink, on }) {
   )
 }
 
-function Moon({ delay, color, bg, stageW, stageH }) {
+function Moon({ delay, color, bg, size }) {
   const progress = useTimed(delay, 1600)
-  const px = remPx('3.2')
+  const px = remPx(size || '3.2')
   const bite = remPx('0.85')
   const translateY = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [remPx('1.8'), 0, -remPx('0.4')] })
   const scale = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0.6, 1, 1] })
@@ -348,8 +335,8 @@ function Moon({ delay, color, bg, stageW, stageH }) {
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: stageW * 0.58 - px / 2,
-        top: stageH * 0.26 - px / 2,
+        left: remPx('0.5') - px / 2,
+        top: remPx('-1.8') - px / 2,
         width: px,
         height: px,
         borderRadius: px / 2,
@@ -374,26 +361,54 @@ function Moon({ delay, color, bg, stageW, stageH }) {
   )
 }
 
-function Veil({ delay, color }) {
+function Veil({ delay, color, screen, stageW, stageH }) {
   const progress = useTimed(delay, 2000)
   const opacity = progress.interpolate({ inputRange: [0, 0.18, 1], outputRange: [0, 1, 0] })
+  if (screen) {
+    return (
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: stageW,
+          height: stageH,
+          backgroundColor: color || 'rgba(8, 10, 14, 0.55)',
+          opacity,
+        }}
+      />
+    )
+  }
+  const w = remPx('14')
+  const h = remPx('11')
   return (
     <Animated.View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, { backgroundColor: color || 'rgba(8, 10, 14, 0.55)', opacity }]}
+      style={{
+        position: 'absolute',
+        top: remPx('-5.5') - h / 2,
+        left: remPx('-7') - w / 2,
+        width: w,
+        height: h,
+        borderRadius: w / 2,
+        backgroundColor: color || 'rgba(8, 10, 14, 0.55)',
+        opacity,
+      }}
     />
   )
 }
 
-function RainDrop({ delay, x, len, fat, stageW, stageH, color, ink }) {
-  const fall = useMemo(() => new Animated.Value(0), [])
+function RainDrop({ delay, x, len, fat, stageW, color, ink, fall }) {
+  const fallAnim = useMemo(() => new Animated.Value(0), [])
   const opacity = useMemo(() => new Animated.Value(0), [])
   const height = remPx(len)
+  const fallPx = remPx(fall || '6.5')
   useEffect(() => {
     Animated.sequence([
       Animated.delay(delay),
       Animated.parallel([
-        Animated.timing(fall, {
+        Animated.timing(fallAnim, {
           toValue: 1,
           duration: 1050,
           easing: Easing.linear,
@@ -405,15 +420,15 @@ function RainDrop({ delay, x, len, fat, stageW, stageH, color, ink }) {
         ]),
       ]),
     ]).start()
-  }, [delay, fall, opacity])
-  const translateY = fall.interpolate({ inputRange: [0, 1], outputRange: [0, stageH * 1.12] })
+  }, [delay, fallAnim, opacity])
+  const translateY = fallAnim.interpolate({ inputRange: [0, 1], outputRange: [0, fallPx] })
   return (
     <Animated.View
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: pct(x, stageW) - (fat ? 2.5 : 1.5),
-        top: -stageH * 0.12,
+        left: offsetPx(x, stageW) - (fat ? 2.5 : 1.5),
+        top: -remPx('3.2'),
         width: fat ? 5 : 3,
         height,
         backgroundColor: fat ? ink : color,
@@ -425,16 +440,17 @@ function RainDrop({ delay, x, len, fat, stageW, stageH, color, ink }) {
   )
 }
 
-function Bubble({ delay, x, size, color, stageW, stageH, drift }) {
-  const rise = useMemo(() => new Animated.Value(0), [])
+function Bubble({ delay, x, size, color, stageW, drift, rise }) {
+  const riseAnim = useMemo(() => new Animated.Value(0), [])
   const opacity = useMemo(() => new Animated.Value(0), [])
   const px = remPx(size)
   const driftX = driftPx(drift)
+  const risePx = remPx(rise || '8')
   useEffect(() => {
     Animated.sequence([
       Animated.delay(delay),
       Animated.parallel([
-        Animated.timing(rise, {
+        Animated.timing(riseAnim, {
           toValue: 1,
           duration: 1850,
           easing: Easing.out(Easing.cubic),
@@ -447,18 +463,18 @@ function Bubble({ delay, x, size, color, stageW, stageH, drift }) {
         ]),
       ]),
     ]).start()
-  }, [delay, opacity, rise])
-  const translateY = rise.interpolate({ inputRange: [0, 1], outputRange: [0, -stageH * 0.94] })
-  const translateX = rise.interpolate({ inputRange: [0, 1], outputRange: [0, driftX] })
-  const scale = rise.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1.15] })
+  }, [delay, opacity, riseAnim])
+  const translateY = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -risePx] })
+  const translateX = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0, driftX] })
+  const scale = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1.15] })
   const shine = px * 0.35
   return (
     <Animated.View
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: pct(x, stageW) - px / 2,
-        bottom: -stageH * 0.08,
+        left: offsetPx(x, stageW) - px / 2,
+        bottom: -remPx('1'),
         width: px,
         height: px,
         borderRadius: px / 2,
@@ -513,13 +529,24 @@ function Stamp({ delay, rot, color, panel }) {
   )
 }
 
-function Tick({ delay, color }) {
-  const short = useTimed(delay, 280)
-  const long = useTimed(delay + 180, 340)
-  const shortScale = short.interpolate({ inputRange: [0, 1], outputRange: [0, 1] })
-  const longScale = long.interpolate({ inputRange: [0, 1], outputRange: [0, 1] })
-  const boxW = remPx('7.2')
-  const boxH = remPx('5')
+const AnimatedPath = Animated.createAnimatedComponent(Path)
+
+function Tick({ delay, color, scale }) {
+  const dash = useMemo(() => new Animated.Value(100), [])
+  const boxW = remPx('7.2') * (scale || 1)
+  const boxH = remPx('5') * (scale || 1)
+  useEffect(() => {
+    dash.setValue(100)
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(dash, {
+        toValue: 0,
+        duration: 550,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    ]).start()
+  }, [dash, delay])
   return (
     <View
       pointerEvents="none"
@@ -531,30 +558,18 @@ function Tick({ delay, color }) {
         height: boxH,
       }}
     >
-      <Animated.View
-        style={{
-          position: 'absolute',
-          left: remPx('0.1'),
-          bottom: remPx('1.55'),
-          width: remPx('2.2'),
-          height: remPx('0.7'),
-          borderRadius: 3,
-          backgroundColor: color,
-          transform: [{ rotate: '45deg' }, { scaleX: shortScale }],
-        }}
-      />
-      <Animated.View
-        style={{
-          position: 'absolute',
-          left: remPx('1.85'),
-          bottom: remPx('0.7'),
-          width: remPx('4.9'),
-          height: remPx('0.7'),
-          borderRadius: 3,
-          backgroundColor: color,
-          transform: [{ rotate: '-48deg' }, { scaleX: longScale }],
-        }}
-      />
+      <Svg width={boxW} height={boxH} viewBox="0 0 72 50">
+        <AnimatedPath
+          d="M10 27 L26 43 L62 9"
+          stroke={color}
+          strokeWidth={6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          strokeDasharray="100"
+          strokeDashoffset={dash}
+        />
+      </Svg>
     </View>
   )
 }
@@ -738,7 +753,7 @@ function Plane({ delay, from, hop, colors, stageW, stageH }) {
   )
 }
 
-function Puddle({ delay, color, stageW, stageH }) {
+function Puddle({ delay, color, width }) {
   const scale = useMemo(() => new Animated.Value(0.15), [])
   const opacity = useMemo(() => new Animated.Value(0), [])
   useEffect(() => {
@@ -753,14 +768,14 @@ function Puddle({ delay, color, stageW, stageH }) {
       ]),
     ]).start()
   }, [delay, opacity, scale])
-  const w = Math.min(stageW * 0.78, 352)
+  const w = remPx(width || '4.5')
   return (
     <Animated.View
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: stageW / 2 - w / 2,
-        bottom: stageH * 0.14,
+        left: -w / 2,
+        bottom: -remPx('0.55'),
         width: w,
         height: remPx('0.7'),
         borderRadius: 999,
@@ -772,7 +787,7 @@ function Puddle({ delay, color, stageW, stageH }) {
   )
 }
 
-function Shoot({ delay, color, stageW, stageH }) {
+function Shoot({ delay, color, len }) {
   const progress = useMemo(() => new Animated.Value(0), [])
   useEffect(() => {
     Animated.sequence([
@@ -784,14 +799,14 @@ function Shoot({ delay, color, stageW, stageH }) {
   const scaleX = progress.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] })
   const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, remPx('12')] })
   const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [0, remPx('7')] })
-  const w = remPx('4.2')
+  const w = remPx(len || '4.2')
   return (
     <Animated.View
       pointerEvents="none"
       style={{
         position: 'absolute',
-        top: stageH * 0.22,
-        left: stageW * 0.12,
+        top: remPx('-2.4'),
+        left: remPx('-2.8'),
         width: w,
         height: 2,
         backgroundColor: color,
@@ -802,7 +817,9 @@ function Shoot({ delay, color, stageW, stageH }) {
   )
 }
 
-function Bit({ bit, wait, colors, stageW, stageH }) {
+function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
+  if (bit.screen && !screen) return null
+  if (!bit.screen && screen) return null
   const delay = ms(wait) + ms(bit.delay)
   const on = colors.on
 
@@ -812,45 +829,77 @@ function Bit({ bit, wait, colors, stageW, stageH }) {
   if (bit.spark) return <SparkRay delay={delay} rot={bit.rot} len={bit.len} tone={bit.tone} colors={colors} />
   if (bit.sparkRing) return <SparkRing delay={delay} size={bit.size} />
   if (bit.tape) {
-    return <Tape delay={delay} side={bit.side} y={bit.y} fat={bit.fat} colors={colors} stageW={stageW} />
+    return (
+      <Tape
+        delay={delay}
+        side={bit.side}
+        y={bit.y}
+        fat={bit.fat}
+        reach={bit.reach}
+        colors={colors}
+        stageW={stageW}
+      />
+    )
   }
   if (bit.streak) return <BoomStreak delay={delay} rot={bit.rot} len={bit.len} tone={bit.tone} colors={colors} />
   if (bit.ring) return <BoomRing delay={delay} tone={bit.tone} colors={colors} />
-  if (bit.stem) return <BoomStem delay={delay} color={colors.onDeep} />
-  if (bit.star) return <Star delay={delay} x={bit.x} y={bit.y} stageW={stageW} stageH={stageH} ink={colors.ink} on={on} />
-  if (bit.veil) return <Veil delay={delay} color={colors.veil} />
-  if (bit.moon) return <Moon delay={delay} color={on} bg={colors.bg} stageW={stageW} stageH={stageH} />
+  if (bit.stem) return <BoomStem delay={delay} color={colors.onDeep} tall={bit.tall} />
+  if (bit.star) {
+    return (
+      <Star
+        delay={delay}
+        x={bit.x}
+        y={bit.y}
+        size={bit.size}
+        stageW={stageW}
+        ink={colors.ink}
+        on={on}
+      />
+    )
+  }
+  if (bit.veil) {
+    return (
+      <Veil
+        delay={delay}
+        color={colors.veil}
+        screen={bit.screen}
+        stageW={stageW}
+        stageH={stageH}
+      />
+    )
+  }
+  if (bit.moon) return <Moon delay={delay} color={on} bg={colors.bg} size={bit.size} />
   if (bit.drop) {
     return (
       <RainDrop
         delay={delay}
         x={bit.x}
         len={bit.len}
+        fall={bit.fall}
         fat={bit.fat}
         stageW={stageW}
-        stageH={stageH}
         color={on}
         ink={colors.ink}
       />
     )
   }
-  if (bit.puddle) return <Puddle delay={delay} color={on} stageW={stageW} stageH={stageH} />
-  if (bit.shoot) return <Shoot delay={delay} color={on} stageW={stageW} stageH={stageH} />
+  if (bit.puddle) return <Puddle delay={delay} color={on} width={bit.width} />
+  if (bit.shoot) return <Shoot delay={delay} color={on} len={bit.len} />
   if (bit.bubble) {
     return (
       <Bubble
         delay={delay}
         x={bit.x}
         size={bit.size}
+        rise={bit.rise}
         color={on}
         stageW={stageW}
-        stageH={stageH}
         drift={bit.drift}
       />
     )
   }
   if (bit.stamp) return <Stamp delay={delay} rot={bit.rot} color={on} panel={colors.panel} />
-  if (bit.tick) return <Tick delay={delay} color={on} />
+  if (bit.tick) return <Tick delay={delay} color={on} scale={bit.scale} />
   if (bit.dancer) {
     return (
       <Dancer
@@ -867,12 +916,9 @@ function Bit({ bit, wait, colors, stageW, stageH }) {
   return <Pip delay={delay} color={on} />
 }
 
-function Pop({ pop, burstKey, colors, stageW, stageH, fill }) {
-  const style = fill
-    ? [styles.popFill, { width: stageW, height: stageH }]
-    : [styles.pop, { left: pct(pop.ox, stageW), top: pct(pop.oy, stageH) }]
+function Pop({ pop, burstKey, colors, stageW, stageH }) {
   return (
-    <View pointerEvents="none" style={style}>
+    <View pointerEvents="none" style={[styles.pop, { left: pct(pop.ox, stageW), top: pct(pop.oy, stageH) }]}>
       {pop.bits.map((bit) => (
         <Bit
           key={`${burstKey}-${bit.id}`}
@@ -911,15 +957,18 @@ export function CheerBurst() {
 
   useEffect(() => {
     if (!burst) return undefined
-    const timer = setTimeout(() => setBurst(null), holdFor(burst.kind, burst.pops.length))
+    const timer = setTimeout(
+      () => setBurst(null),
+      holdFor(burst.kind, burst.stage, burst.pops.length),
+    )
     return () => clearTimeout(timer)
   }, [burst])
 
   if ((reduce && !burst?.preview) || !burst?.pops?.length) return null
 
   const colors = hallColors(burst.look, theme)
-  const fill = isFillKind(burst.kind)
-  const pops = stagePops(burst.kind, burst.pops, burst.preview)
+  const pops = burst.pops
+  const screenPop = pops.find((pop) => pop.bits.some((bit) => bit.screen))
   const stageTop = burst.preview ? insets.top + 12 : insets.top + CHEER_TOP
   const stageH = Math.max(180, winH - stageTop - navBottom)
   const stageW = winW
@@ -928,6 +977,21 @@ export function CheerBurst() {
     <Modal visible transparent animationType="none" statusBarTranslucent presentationStyle="overFullScreen">
       <View pointerEvents="box-none" style={styles.layer}>
         <View style={[styles.stage, { top: stageTop, width: stageW, height: stageH }]}>
+          {screenPop
+            ? screenPop.bits
+                .filter((bit) => bit.screen)
+                .map((bit) => (
+                  <Bit
+                    key={`${burst.key}-screen-${bit.id}`}
+                    bit={bit}
+                    wait={screenPop.wait}
+                    colors={colors}
+                    stageW={stageW}
+                    stageH={stageH}
+                    screen
+                  />
+                ))
+            : null}
           {pops.map((pop, index) => (
             <Pop
               key={`${burst.key}-${index}`}
@@ -936,7 +1000,6 @@ export function CheerBurst() {
               colors={colors}
               stageW={stageW}
               stageH={stageH}
-              fill={fill}
             />
           ))}
         </View>

@@ -1,3 +1,4 @@
+import { feedbackMailto } from '../lib/feedback.js'
 import { t } from '../lib/i18n.js'
 import { legalEmail } from '../lib/legal.js'
 import { usePrefs } from '../lib/prefs.js'
@@ -7,6 +8,7 @@ export function MarketingShell({ children, path, wide = false }) {
   usePrefs()
   const here = path || readMarketingPath()
   const email = legalEmail()
+  const feedback = feedbackMailto()
   const home = here === '/'
 
   return (
@@ -27,6 +29,11 @@ export function MarketingShell({ children, path, wide = false }) {
           <a href="/terms" className={here === '/terms' ? 'is-on' : undefined}>
             {t('web.nav.terms')}
           </a>
+          {feedback ? (
+            <a href={feedback} className="di-site-feedback">
+              {t('web.nav.feedback')}
+            </a>
+          ) : null}
           <a
             href="/download"
             className={['di-site-download', here === '/download' ? 'is-on' : '']

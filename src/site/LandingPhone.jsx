@@ -5,9 +5,9 @@ import { hallHeat, hallHour } from '../lib/hall-feel.js'
 import { LampFace } from '../lib/LampFace.jsx'
 import { NightMeter } from '../lib/NightMeter.jsx'
 import { PurseLine } from '../lib/PurseLine.jsx'
+import { SwipePullSlot } from '../lib/SwipePull.jsx'
 import { landingDemoBook } from './landing-demo.js'
 import { MastCogs } from '../lib/SettingsCog.jsx'
-import { WeekStrip } from '../lib/WeekStrip.jsx'
 import { t } from '../lib/i18n.js'
 import { usePrefs, useTheme } from '../lib/prefs.js'
 import { normalizePurse } from '../lib/purse.js'
@@ -49,8 +49,8 @@ function LandingAppNav() {
   return (
     <nav className="di-appnav is-live" data-at="0" data-tabs="2" aria-hidden="true">
       <i className="di-appnav-pip" />
-      <span className="is-on">{t('nav.home')}</span>
-      <span>{t('nav.questions')}</span>
+      <a href="#/" className="is-on" tabIndex={-1}>{t('nav.home')}</a>
+      <a href="#/lamps" tabIndex={-1}>{t('nav.questions')}</a>
     </nav>
   )
 }
@@ -183,7 +183,9 @@ export function LandingPhone() {
               >
               <div className="di-board di-land-board" data-heat={heat}>
                 <header className="di-mast">
-                  <p className="di-title-static">{t('tonight.didI')}</p>
+                  <button className="di-title" type="button" tabIndex={-1}>
+                    {t('tonight.didI')}
+                  </button>
                   <p className="di-date">{formatBoardDate(dateIso)}</p>
                   <div className="di-mast-actions">
                     <PurseLine purse={purse} className="di-mast-purse" gemsLink />
@@ -229,7 +231,7 @@ export function LandingPhone() {
                   </div>
                 ) : null}
 
-                <div className="di-face-slot">
+                <SwipePullSlot>
                   {faceRow ? (
                     <LampFace
                       row={faceRow}
@@ -248,9 +250,7 @@ export function LandingPhone() {
                       <h2 className="di-question">{t('tonight.doneTitle')}</h2>
                     </section>
                   )}
-                </div>
-
-                <WeekStrip boards={[book]} now={clock} />
+                </SwipePullSlot>
               </div>
               <LandingAppNav />
               </div>

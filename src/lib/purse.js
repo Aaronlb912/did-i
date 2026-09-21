@@ -1,9 +1,10 @@
 import { allClearTonight, boardDate } from './recurrence.js'
 
 // One price for every cheer while the economy is still being tuned.
-export const CHEER_GEMS = 5
-// About fifteen dollars at the one-dollar gem list price.
-export const BUDDY_GEMS = 15
+export const CHEER_GEMS = 2
+export const CHEER_STAGE_COIN = 15
+export const LOOK_GEM_PRICE = 2
+export const BUDDY_GEMS = 5
 // ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
 export const LOOK_COIN_PRICE = 30
 
@@ -25,6 +26,8 @@ export const CHEERS = [
 export const BUDDIES = [
   { id: 'cat', gems: BUDDY_GEMS },
   { id: 'dog', gems: BUDDY_GEMS },
+  { id: 'rabbit', gems: BUDDY_GEMS },
+  { id: 'owl', gems: BUDDY_GEMS },
 ]
 
 export const LOOKS = [
@@ -32,15 +35,15 @@ export const LOOKS = [
   { id: 'ink', coins: LOOK_COIN_PRICE, gems: 0 },
   { id: 'brass', coins: LOOK_COIN_PRICE, gems: 0 },
   { id: 'night', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'moss', coins: 0, gems: 4 },
-  { id: 'plum', coins: 0, gems: 4 },
-  { id: 'rose', coins: 0, gems: 4 },
-  { id: 'steel', coins: 0, gems: 4 },
-  { id: 'wine', coins: 0, gems: 4 },
-  { id: 'glow', coins: 0, gems: 4 },
-  { id: 'ember', coins: 0, gems: 4 },
-  { id: 'frost', coins: 0, gems: 4 },
-  { id: 'pulse', coins: 0, gems: 4 },
+  { id: 'moss', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'plum', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'rose', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'steel', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'wine', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'glow', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'ember', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'frost', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'pulse', coins: 0, gems: LOOK_GEM_PRICE },
 ]
 
 export function cheerText(id, field) {
@@ -93,7 +96,7 @@ export const FAMILY_CHEER_GEMS = 1
 
 export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
-export const CHEER_STAGE_GEMS = [0, 0, 1, 2, 3, 4]
+export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
 const CHEER_IDS = new Set(CHEERS.map((item) => item.id))
 const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
@@ -481,14 +484,14 @@ export function buyCheerStage(book, id) {
   if (!purse.cheers.includes(cheerId)) return { book, miss: 'shop.miss.buyCheerFirst' }
   const next = nextCheerStage(purse.cheerStages[cheerId] || 1)
   if (!next) return { book: { ...book, ...purse }, miss: 'shop.miss.stageFull' }
-  const cost = CHEER_STAGE_GEMS[next]
-  if (purse.gems < cost) return { book, miss: 'shop.miss.needGems', missN: cost }
+  const cost = CHEER_STAGE_COINS[next]
+  if (purse.coins < cost) return { book, miss: 'shop.miss.needCoins', missN: cost }
   const cheerStages = { ...purse.cheerStages, [cheerId]: next }
   return {
     book: {
       ...book,
       ...purse,
-      gems: purse.gems - cost,
+      coins: purse.coins - cost,
       cheerStages,
       cheerStage: cheerId === purse.cheerOn ? next : purse.cheerStage,
       cheerUses: Math.max(purse.cheerUses, CHEER_STAGE_USES[next]),

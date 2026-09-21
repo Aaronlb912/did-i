@@ -30,13 +30,18 @@ function Stamp({ wait, delay, rot }) {
   )
 }
 
-function Tick({ wait, delay }) {
+function Tick({ wait, delay, scale }) {
   const start = `calc(${wait} + ${delay})`
+  const grow = scale && scale !== 1 ? `scale(${scale})` : undefined
   return (
-    <b className="di-tick">
-      <span className="di-tick-short" style={{ animationDelay: start }} />
-      <span className="di-tick-long" style={{ animationDelay: `calc(${start} + 0.18s)` }} />
-    </b>
+    <svg
+      className="di-tick"
+      viewBox="0 0 72 50"
+      aria-hidden="true"
+      style={grow ? { transform: grow } : undefined}
+    >
+      <path className="di-tick-path" d="M10 27 L26 43 L62 9" pathLength="100" style={{ animationDelay: start }} />
+    </svg>
   )
 }
 
@@ -55,11 +60,12 @@ function Plane({ hop, wait, delay, from }) {
 }
 
 function FlipCard({ wait, delay, hops }) {
+  const n = Math.min(5, Math.max(1, Math.floor(Number(hops) || 2)))
   return (
     <b
       className="di-flip-card"
-      data-hops={hops || 2}
-      style={{ animationDelay: `calc(${wait} + ${delay})` }}
+      data-hops={n}
+      style={{ '--hops': n, animationDelay: `calc(${wait} + ${delay})` }}
     >
       <span className="di-flip-face is-front" />
       <span className="di-flip-face is-back" />
@@ -67,8 +73,10 @@ function FlipCard({ wait, delay, hops }) {
   )
 }
 
-function renderBit(burst, pop, bit) {
-  const key = `${burst.key}-${bit.id}`
+function renderBit(burst, pop, bit, screen = false) {
+  if (bit.screen && !screen) return null
+  if (!bit.screen && screen) return null
+  const key = `${burst.key}-${screen ? 'screen' : pop.wait}-${bit.id}`
   const delay = `calc(${pop.wait} + ${bit.delay || '0ms'})`
   if (bit.dancer) {
     return <Dancer key={key} hop={bit.hop} wait={pop.wait} delay={bit.delay} />
@@ -105,19 +113,25 @@ function renderBit(burst, pop, bit) {
     return <Stamp key={key} wait={pop.wait} delay={bit.delay} rot={bit.rot} />
   }
   if (bit.tick) {
-    return <Tick key={key} wait={pop.wait} delay={bit.delay} />
+    return <Tick key={key} wait={pop.wait} delay={bit.delay} scale={bit.scale} />
   }
   if (bit.drop) {
     return (
       <i
         key={key}
         className={bit.fat ? 'di-rain-drop is-fat' : 'di-rain-drop'}
-        style={{ '--rx': bit.x, '--len': bit.len, animationDelay: delay }}
+        style={{ '--rx': bit.x, '--len': bit.len, '--fall': bit.fall || '6.5rem', animationDelay: delay }}
       />
     )
   }
   if (bit.puddle) {
-    return <i key={key} className="di-rain-puddle" style={{ animationDelay: delay }} />
+    return (
+      <i
+        key={key}
+        className="di-rain-puddle"
+        style={{ '--pw': bit.width || '4.5rem', animationDelay: delay }}
+      />
+    )
   }
   if (bit.bubble) {
     return (
@@ -128,6 +142,7 @@ function renderBit(burst, pop, bit) {
           '--bx': bit.x,
           '--sz': bit.size,
           '--drift': bit.drift,
+          '--rise': bit.rise || '8rem',
           animationDelay: delay,
         }}
       />
@@ -145,30 +160,54 @@ function renderBit(burst, pop, bit) {
         key={key}
         className={bit.fat ? 'di-tape-bit is-fat' : 'di-tape-bit'}
         data-side={bit.side}
-        style={{ '--ty': bit.y, animationDelay: delay }}
+        style={{ '--ty': bit.y, '--reach': bit.reach || '46vw', animationDelay: delay }}
       />
     )
   }
   if (bit.veil) {
-    return <i key={key} className="di-night-veil" style={{ animationDelay: delay }} />
+    return (
+      <i
+        key={key}
+        className={bit.screen ? 'di-night-veil di-night-veil-screen' : 'di-night-veil'}
+        style={{ animationDelay: delay }}
+      />
+    )
   }
   if (bit.moon) {
-    return <i key={key} className="di-night-moon" style={{ animationDelay: delay }} />
+    return (
+      <i
+        key={key}
+        className="di-night-moon"
+        style={{ '--sz': bit.size || '3.2rem', animationDelay: delay }}
+      />
+    )
   }
   if (bit.star) {
     return (
       <i
         key={key}
         className="di-night-star"
-        style={{ '--sx': bit.x, '--sy': bit.y, animationDelay: delay }}
+        style={{ '--sx': bit.x, '--sy': bit.y, '--sz': bit.size || '0.28rem', animationDelay: delay }}
       />
     )
   }
   if (bit.shoot) {
-    return <i key={key} className="di-night-shoot" style={{ animationDelay: delay }} />
+    return (
+      <i
+        key={key}
+        className="di-night-shoot"
+        style={{ '--len': bit.len || '4.2rem', animationDelay: delay }}
+      />
+    )
   }
   if (bit.stem) {
-    return <i key={key} className="di-boom-stem" style={{ animationDelay: delay }} />
+    return (
+      <i
+        key={key}
+        className="di-boom-stem"
+        style={{ '--tall': bit.tall || '3.4rem', animationDelay: delay }}
+      />
+    )
   }
   if (bit.ring) {
     return <i key={key} className="di-boom-ring" data-tone={bit.tone} style={{ animationDelay: delay }} />
@@ -201,13 +240,21 @@ export function CheerBurst() {
 
   useEffect(() => {
     function onCheer(event) {
-      if (reduce) return
+      const preview = Boolean(event.detail?.preview)
+      if (reduce && !preview) return
       const kind = event.detail?.kind || 'lime'
       const stage = event.detail?.stage || 1
       const coat = event.detail?.look
         ? { look: event.detail.look, theme: event.detail.theme || coatFromHall().theme }
         : coatFromHall()
-      setBurst({ kind, stage, pops: popsFor(kind, stage), key: Date.now(), ...coat })
+      setBurst({
+        kind,
+        stage,
+        preview,
+        pops: popsFor(kind, stage),
+        key: Date.now(),
+        ...coat,
+      })
     }
     window.addEventListener('did-i-cheer', onCheer)
     return () => window.removeEventListener('did-i-cheer', onCheer)
@@ -215,14 +262,17 @@ export function CheerBurst() {
 
   useEffect(() => {
     if (!burst) return undefined
-    const timer = window.setTimeout(() => setBurst(null), holdFor(burst.kind, burst.pops.length))
+    const timer = window.setTimeout(
+      () => setBurst(null),
+      holdFor(burst.kind, burst.stage, burst.pops.length),
+    )
     return () => window.clearTimeout(timer)
   }, [burst])
 
-  if (reduce || !burst?.pops) return null
+  if ((reduce && !burst?.preview) || !burst?.pops) return null
   if (typeof document === 'undefined') return null
 
-  const fill = burst.kind === 'night' || burst.kind === 'rain' || burst.kind === 'bubble'
+  const screenPop = burst.pops.find((pop) => pop.bits.some((bit) => bit.screen))
 
   return createPortal(
     <div
@@ -233,10 +283,15 @@ export function CheerBurst() {
       {...(burst.theme ? { 'data-theme': burst.theme } : {})}
       aria-hidden="true"
     >
+      {screenPop
+        ? screenPop.bits
+            .filter((bit) => bit.screen)
+            .map((bit) => renderBit(burst, screenPop, bit, true))
+        : null}
       {burst.pops.map((pop, index) => (
         <span
           key={`${burst.key}-${index}`}
-          className={fill ? 'di-cheer-pop is-fill' : 'di-cheer-pop'}
+          className="di-cheer-pop"
           style={{ '--ox': pop.ox, '--oy': pop.oy, '--wait': pop.wait }}
         >
           {pop.bits.map((bit) => renderBit(burst, pop, bit))}

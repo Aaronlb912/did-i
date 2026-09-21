@@ -1,5 +1,6 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
+import { openFeedback } from './feedback.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -50,6 +51,16 @@ export function Help({ book, now }) {
             </button>
             <button className="di-key di-link-did" type="button" onClick={() => goHash('/terms')}>
               {t('settings.terms')}
+            </button>
+          </div>
+        </section>
+
+        <section className="di-help-block" id="feedback">
+          <h3>{t('help.feedback')}</h3>
+          <p>{t('help.feedbackP')}</p>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" onClick={openFeedback}>
+              {t('feedback.send')}
             </button>
           </div>
         </section>

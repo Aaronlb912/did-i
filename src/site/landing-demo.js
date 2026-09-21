@@ -19,35 +19,34 @@ function lamp(partial) {
 export function landingDemoBook() {
   const today = boardDate(new Date(), 4)
   const born = addDaysIso(today, -1)
-  const pills = lamp({
-    id: 'di-land-pills',
-    question: 'Did I take the morning pills?',
-    short: 'Pills',
-    kind: 'pills',
-    cadence: 'daily',
-    slot: 'morning',
-    createdOn: born,
-  })
-  const trash = lamp({
-    id: 'di-land-trash',
-    question: 'Did I take the trash to the chute?',
-    short: 'Trash',
+  const door = lamp({
+    id: 'di-land-door',
+    question: 'Did I lock the back door?',
+    short: 'Door',
     kind: 'house',
     cadence: 'daily',
     slot: 'whenever',
     createdOn: born,
   })
-  const landlord = lamp({
-    id: 'di-land-landlord',
-    question: 'Did I text the landlord back?',
-    short: 'Landlord',
-    kind: 'people',
+  const pills = lamp({
+    id: 'di-land-pills',
+    question: 'Did I take my pills?',
+    short: 'Pills',
+    kind: 'pills',
+    cadence: 'daily',
+    slot: 'evening',
+    createdOn: born,
+  })
+  const cat = lamp({
+    id: 'di-land-cat',
+    question: 'Did I feed the cat?',
+    short: 'Cat',
+    kind: 'house',
     cadence: 'daily',
     slot: 'whenever',
     createdOn: born,
   })
-  const lamps = [pills, trash, landlord]
-  const door = lamps[0]
+  const lamps = [door, pills, cat]
   return {
     version: 1,
     id: 'board-landing-demo',
@@ -55,7 +54,7 @@ export function landingDemoBook() {
     keeperName: 'Jordan Hale',
     dayFoldHour: 0,
     quietMode: false,
-    inkNote: 'Three due tonight. Swipe DID or nope.',
+    inkNote: 'Three due tonight. Swipe DID or did not.',
     lamps,
     answers: [
       {

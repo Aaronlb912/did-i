@@ -721,24 +721,6 @@ html[data-site='marketing'] body::-webkit-scrollbar {
   will-change: transform;
 }
 
-.di-land-hall .di-appnav span {
-  position: relative;
-  z-index: 1;
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.7rem;
-  border-radius: var(--di-pill);
-  font-family: var(--di-ui);
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--di-ink-soft);
-}
-
-.di-land-hall .di-appnav span.is-on {
-  color: #101208;
-}
 
 .di-land-hall {
   position: relative;
@@ -785,12 +767,6 @@ html[data-site='marketing'] body::-webkit-scrollbar {
   overflow: hidden;
 }
 
-.di-land-hall .di-weekbar {
-  flex: 0 0 auto;
-  margin-top: auto;
-  padding-top: 0.4rem;
-}
-
 .di-land-hall .di-question {
   font-size: clamp(1.28rem, 5vw, 1.62rem);
   line-height: 1.15;
@@ -798,7 +774,7 @@ html[data-site='marketing'] body::-webkit-scrollbar {
 
 .di-land-hall .di-mast-menu-btn,
 .di-land-hall .di-jewel,
-.di-land-hall .di-weekbar button {
+.di-land-hall .di-title {
   pointer-events: none;
 }
 

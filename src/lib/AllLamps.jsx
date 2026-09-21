@@ -1,6 +1,13 @@
+import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { cadenceLine, shortLabel } from './board-json.js'
+import {
+  activeDeadline,
+  cadenceLine,
+  dueByUrgency,
+  prepQuestionRows,
+  shortLabel,
+} from './board-json.js'
 import { filamentLevel } from './hall-feel.js'
 import { boardDate, dueTonight, formatBoardDate } from './recurrence.js'
 import { StarterPicks } from './StarterPicks.jsx'
@@ -15,8 +22,16 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
   const dateIso = boardDate(clock, book.dayFoldHour)
   const shelf = boards.length ? boards : [book]
   const rows = taggedLamps(shelf, tagId)
-  const hung = rows.filter((row) => !row.lamp.archived)
-  const down = rows.filter((row) => row.lamp.archived)
+  const [deadlineOnly, setDeadlineOnly] = useState(false)
+  const hasDeadlines = rows.some((row) => activeDeadline(row.lamp, dateIso))
+  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived), {
+    dateIso,
+    deadlineOnly,
+  })
+  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived), {
+    dateIso,
+    deadlineOnly,
+  })
 
   function rowClass(row) {
     const due = dueTonight(row.book, clock)
@@ -26,6 +41,9 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
       return hit.answer.status === 'late' ? 'di-jewel is-on is-late' : 'di-jewel is-on'
     }
     if (hit.answer?.status === 'skip') return 'di-jewel is-skip'
+    const urgency = dueByUrgency(row.lamp, dateIso)
+    if (urgency === 'today') return 'di-jewel is-due-today'
+    if (urgency === 'soon') return 'di-jewel is-due-soon'
     return 'di-jewel'
   }
 
@@ -74,6 +92,27 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
         <p className="di-face-plate">{t('questions.kicker')}</p>
         <h2 className="di-page-title">{hung.length ? t('questions.title') : t('questions.empty')}</h2>
         <TagRail boards={shelf} tagId={tagId} onTag={onTag} now={clock} />
+        {hasDeadlines ? (
+          <div className="di-field di-questions-filter">
+            <span id="di-questions-filter">{t('questions.filter')}</span>
+            <div className="di-hang-chips" role="group" aria-labelledby="di-questions-filter">
+              <button
+                className={!deadlineOnly ? 'di-key is-pick' : 'di-key'}
+                type="button"
+                onClick={() => setDeadlineOnly(false)}
+              >
+                {t('questions.filterAll')}
+              </button>
+              <button
+                className={deadlineOnly ? 'di-key is-pick' : 'di-key'}
+                type="button"
+                onClick={() => setDeadlineOnly(true)}
+              >
+                {t('questions.filterDeadline')}
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="di-page-keys">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
             {t('tonight.add')}
@@ -81,6 +120,8 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
         </div>
         {hung.length ? (
           list(hung, t('questions.list'))
+        ) : deadlineOnly ? (
+          <p className="di-detail-meta">{t('questions.emptyDeadline')}</p>
         ) : (
           <>
             <p className="di-detail-meta">{t('questions.hint')}</p>

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t } from '../../src/lib/i18n.js'
-import { answerFamilyLamp, useFamilyTonight } from '../../src/lib/people.js'
+import { answerFamilyLamp, familyLampMeta, useFamilyTonight } from '../../src/lib/people.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
@@ -54,7 +54,10 @@ export function FamilyTonight({ colors }) {
           <View key={row.lamp.id} style={[styles.row, { borderTopColor: colors.line }]}>
             <View style={styles.copy}>
               <Text style={[styles.question, { color: colors.ink }]}>{row.lamp.question}</Text>
-              <Text style={[styles.family, { color: colors.inkDim }]}>{row.family.name}</Text>
+              <Text style={[styles.family, { color: colors.inkDim }]}>
+                {row.family.name}
+                {row.lamp.cadence !== 'daily' ? ` · ${familyLampMeta(row.lamp)}` : ''}
+              </Text>
             </View>
             <DidButton
               colors={colors}

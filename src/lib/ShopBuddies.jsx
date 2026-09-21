@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
-import { BUDDIES, buddyText, buyBuddy, normalizePurse } from './purse.js'
+import { BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
 import { BuyConfirm, ShopPurse, gemLine, shopMiss } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -74,7 +74,7 @@ export function ShopBuddies({ book, onChange, now }) {
       <section className="di-page di-shop di-set">
         <h2 className="di-page-title">{t('shop.buddies')}</h2>
         <ShopPurse purse={purse} />
-        <p className="di-set-note">{t('shop.buddiesHint')}</p>
+        <p className="di-set-note">{t('shop.buddiesHint', { n: BUDDY_GEMS })}</p>
 
         {peekBuddy ? (
           <div className="di-buddy-preview">

@@ -4,7 +4,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
 import { activeLook } from './dit-board.js'
 import { GemIcon } from './PurseIcons.jsx'
-import { ShopDoor, ShopPromoShelf, ShopPromoTile, ShopPurse } from './shop-bits.jsx'
+import { LookPreviewCard, ShopDoor, ShopPromoShelf, ShopPromoTile, ShopPurse } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -13,6 +13,7 @@ import {
   buddyText,
   cheerText,
   fireCheer,
+  isGemLook,
   lookText,
   normalizePurse,
   recentBuddies,
@@ -81,7 +82,7 @@ export function Shop({ book, now }) {
                 ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
                 onClick={() => {
                   setPeekBuddy('')
-                  fireCheer(item.id, 1, previewLook)
+                  fireCheer(item.id, 1, previewLook, undefined, true)
                 }}
               />
             ))}
@@ -106,6 +107,8 @@ export function Shop({ book, now }) {
             ))}
           </ShopPromoShelf>
         </div>
+
+        {peekLook && isGemLook(peekLook) ? <LookPreviewCard /> : null}
 
         {peekBuddy ? (
           <div className="di-buddy-preview">

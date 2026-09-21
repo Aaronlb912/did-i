@@ -50,6 +50,18 @@ export function ShopPromoShelf({ cap, allLabel, onAll, children }) {
   )
 }
 
+export function LookPreviewCard() {
+  return (
+    <div className="di-buddy-preview di-look-preview">
+      <p className="di-set-cap">{t('shop.buddyPreview')}</p>
+      <div className="di-buddy-preview-card di-face di-swipe">
+        <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
+        <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+      </div>
+    </div>
+  )
+}
+
 export function ShopDoor({ preview, title, note, meta, onClick }) {
   return (
     <button className="di-shop-door" type="button" onClick={onClick}>

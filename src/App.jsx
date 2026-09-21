@@ -561,7 +561,7 @@ export default function App() {
       />
     )
   } else if (path === '/lamp') {
-    inner = <LampPage book={live} onChange={change} lampId={route.id} />
+    inner = <LampPage book={live} boards={shelf.boards} onChange={change} lampId={route.id} />
   } else if (path === '/lamps') {
     inner = (
       <AllLamps

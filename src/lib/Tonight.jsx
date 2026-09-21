@@ -1,3 +1,4 @@
+import { dueByUrgency } from './board-json.js'
 import { goHash } from '../site/hash.js'
 import { FinishFace } from './FinishFace.jsx'
 import { LampFace } from './LampFace.jsx'
@@ -22,6 +23,7 @@ import { useTonightKeys } from './useTonightKeys.js'
 import { useTonightStack } from './useTonightStack.js'
 import { TagRail } from './TagRail.jsx'
 import { SwipePullSlot } from './SwipePull.jsx'
+import { EdgeScroll } from './EdgeScroll.jsx'
 import './did-i.css'
 
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
@@ -224,7 +226,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
         {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
           <div className="di-edge-wrap">
-            <ul className="di-edge" aria-label={t('tonight.aria')}>
+            <EdgeScroll ariaLabel={t('tonight.aria')}>
               {stack.dueWithWait.map((row) => {
                 const on =
                   row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
@@ -233,6 +235,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
                 const isFace = stack.pillPick
                   ? stack.rowKey(row) === stack.rowKey(stack.pillPick)
                   : Boolean(stack.faceRow) && stack.rowKey(row) === stack.rowKey(stack.faceRow)
+                const dueUrgency = !on && !skip ? dueByUrgency(row.lamp, stack.dateIso) : ''
                 return (
                   <li key={stack.rowKey(row)}>
                     <button
@@ -243,6 +246,9 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
                         skip ? 'is-skip' : '',
                         late ? 'is-late' : '',
                         row.waiting ? 'is-wait' : '',
+                        dueUrgency === 'today' ? 'is-due-today' : '',
+                        dueUrgency === 'soon' ? 'is-due-soon' : '',
+                        row.optionalDeadline ? 'is-optional' : '',
                         isFace ? 'is-face' : '',
                         stack.hallOn && on ? 'is-sit' : '',
                       ]
@@ -262,7 +268,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
                   </li>
                 )
               })}
-            </ul>
+            </EdgeScroll>
           </div>
         ) : null}
 
@@ -271,7 +277,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
         {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
           <div className="di-holes" aria-label={t('tonight.holesAria')}>
             <p className="di-slot-label">{t('tonight.lastNight')}</p>
-            <ul className="di-edge">
+            <EdgeScroll>
               {stack.catchUp.map((row) => (
                 <li key={stack.rowKey(row)}>
                   <button
@@ -286,7 +292,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
                   </button>
                 </li>
               ))}
-            </ul>
+            </EdgeScroll>
           </div>
         ) : null}
 

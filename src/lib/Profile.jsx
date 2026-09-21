@@ -10,6 +10,7 @@ import { readShelf } from './board-shelf.js'
 import { mergeShelves } from './shelf-merge.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { zoneWords } from './zone.js'
+import { openFeedback } from './feedback.js'
 import { legalEmail } from './legal.js'
 import { SetCap, SetCard, SetPick, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -201,6 +202,7 @@ export function Profile({
           ) : null}
           <SetRow label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onClick={pickFile} />
           <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
+          <SetRow label={t('feedback.send')} sub={t('feedback.sub')} onClick={openFeedback} />
           <SetRow label={t('settings.ideas')} chevron onClick={() => goHash('/ideas')} />
           <SetRow label={t('settings.what')} chevron onClick={() => goHash('/about')} />
           <SetRow label={t('settings.intro')} chevron onClick={() => goHash('/welcome')} />

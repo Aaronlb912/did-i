@@ -253,6 +253,8 @@ create table if not exists public.family_lamps (
   cadence text not null default 'daily' check (cadence in ('daily', 'weekly', 'once')),
   weekdays smallint[] not null default '{}',
   once_on date,
+  once_when text not null default 'on' check (once_when in ('on', 'by')),
+  due_by date,
   for_id uuid references auth.users on delete cascade,
   made_by uuid references auth.users on delete set null,
   made_on date not null default current_date,
@@ -260,6 +262,9 @@ create table if not exists public.family_lamps (
 );
 
 create index if not exists family_lamps_family_idx on public.family_lamps (family_id, archived);
+
+alter table public.family_lamps add column if not exists once_when text not null default 'on';
+alter table public.family_lamps add column if not exists due_by date;
 
 create table if not exists public.family_answers (
   id uuid primary key default gen_random_uuid(),

@@ -8,15 +8,22 @@ export const FACE_PAD_BOTTOM = 22
 export const FACE_MIN_H = 168
 
 export function faceCardStyle(colors, extra = null) {
+  const gemCard = extra && extra.borderColor === 'transparent'
   return [
     faceCardStyles.card,
-    { backgroundColor: colors.panel, borderColor: colors.line },
+    { backgroundColor: colors.panel, borderColor: gemCard ? 'transparent' : colors.line },
     extra,
   ]
 }
 
 export const faceCardStyles = StyleSheet.create({
+  gemShell: {
+    width: '100%',
+    position: 'relative',
+    overflow: 'visible',
+  },
   card: {
+    position: 'relative',
     borderWidth: 1,
     borderRadius: radius.r,
     overflow: 'hidden',

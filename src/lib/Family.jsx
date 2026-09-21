@@ -11,6 +11,7 @@ import {
   dropMember,
   editFamilyLamp,
   familyHistory,
+  familyLampMeta,
   leaveFamily,
   listFamilyLamps,
   personName,
@@ -182,6 +183,7 @@ export function Family({ book, onChange, now, familyId }) {
                   <strong>{lamp.question}</strong>
                   <em>
                     {t('family.forWho', { who: whoFor(lamp) })}
+                    {lamp.cadence !== 'daily' ? ` · ${familyLampMeta(lamp)}` : ''}
                     {' · '}
                     {t('family.doneCount', { done: done.length, all: crowd.length })}
                   </em>

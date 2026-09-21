@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
-import { byPriority, shortLabel } from './board-json.js'
+import { byPriority, mustSwipeDeadline, shortLabel } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
 import {
@@ -15,10 +15,11 @@ import { feelTap, playClick } from './native.js'
 import {
   allClearTonight,
   answerFor,
+  askAfterPassed,
   boardDate,
   didStatusForRow,
   dueClearTonight,
-  faceReadyTonight,
+  faceSwipeTonight,
   finishStackCount,
   formatBoardDate,
   recentPeriodKeys,
@@ -69,14 +70,14 @@ export function useTonightStack({
         : shelf.flatMap((book) => unansweredTonight(book, clock)),
       ready: byPriority(
         tagId
-          ? faceReadyTonight(liveValue, clock).map((row) => ({
+          ? faceSwipeTonight(liveValue, clock).map((row) => ({
               ...row,
               boardId: liveValue.id,
               tag: liveValue.title,
               book: liveValue,
             }))
           : shelf.flatMap((book) =>
-              faceReadyTonight(book, clock).map((row) => ({
+              faceSwipeTonight(book, clock).map((row) => ({
                 ...row,
                 boardId: book.id,
                 tag: book.title,
@@ -341,7 +342,8 @@ export function useTonightStack({
 
   const dueWithWait = bySlot(due).map((row) => ({
     ...row,
-    waiting: !row.answer && !ready.some((item) => rowKey(item) === rowKey(row)),
+    waiting: !row.answer && !askAfterPassed(row.lamp, clock),
+    optionalDeadline: !row.answer && !mustSwipeDeadline(row.lamp, row.dateIso),
   }))
 
   const activePillPick = pillPick

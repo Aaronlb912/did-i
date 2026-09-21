@@ -6,15 +6,18 @@ import { LampDetail } from './LampDetail.jsx'
 import { HolePlate } from './HolePlate.jsx'
 import { commitBook } from './achievements.js'
 import { putAnswer, takeDown, toggleArchive } from './board-ops.js'
+import { findBookHoldingLamp } from './board-shelf.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { answerFor, boardDate, formatBoardDate } from './recurrence.js'
 
-export function LampPage({ book, onChange, now, lampId }) {
+export function LampPage({ book, boards = [], onChange, now, lampId }) {
   usePrefs()
   const clock = now || new Date()
-  const dateIso = boardDate(clock, book.dayFoldHour)
-  const lamp = (book.lamps || []).find((item) => item.id === lampId) || null
+  const shelf = boards.length ? boards : [book]
+  const lampBook = findBookHoldingLamp(shelf, lampId) || book
+  const dateIso = boardDate(clock, lampBook.dayFoldHour)
+  const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const [holePick, setHolePick] = useState(null)
   const [confirmGone, setConfirmGone] = useState(false)
 
@@ -27,7 +30,7 @@ export function LampPage({ book, onChange, now, lampId }) {
 
   if (!lamp) {
     return (
-      <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
+      <BoardShell book={lampBook} now={clock} title={lampBook.title} date={formatBoardDate(dateIso)}>
         <section className="di-empty">
           <p className="di-face-plate">{t('lamp.missing')}</p>
           <h2 className="di-question">{t('lamp.gone')}</h2>
@@ -41,20 +44,20 @@ export function LampPage({ book, onChange, now, lampId }) {
 
   if (holePick) {
     return (
-      <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
+      <BoardShell book={lampBook} now={clock} title={lampBook.title} date={formatBoardDate(dateIso)}>
         <HolePlate
           lamp={holePick.lamp}
           periodKey={holePick.periodKey}
-          wasSkip={answerFor(book, holePick.lamp.id, holePick.periodKey)?.status === 'skip'}
+          wasSkip={answerFor(lampBook, holePick.lamp.id, holePick.periodKey)?.status === 'skip'}
           onLate={() => {
-            change(putAnswer(book, holePick, 'late', clock))
+            change(putAnswer(lampBook, holePick, 'late', clock))
             setHolePick(null)
           }}
           onSkip={
-            answerFor(book, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
+            answerFor(lampBook, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
               ? undefined
               : () => {
-                  change(putAnswer(book, holePick, 'skip', clock))
+                  change(putAnswer(lampBook, holePick, 'skip', clock))
                   setHolePick(null)
                 }
           }
@@ -65,9 +68,9 @@ export function LampPage({ book, onChange, now, lampId }) {
   }
 
   if (confirmGone) {
-    const taps = (book.answers || []).filter((item) => item.lampId === lamp.id).length
+    const taps = (lampBook.answers || []).filter((item) => item.lampId === lamp.id).length
     return (
-      <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
+      <BoardShell book={lampBook} now={clock} title={lampBook.title} date={formatBoardDate(dateIso)}>
         <section className="di-face">
           <p className="di-face-plate">{t('lamp.delete')}</p>
           <h2 className="di-question">{t('lamp.deleteTitle')}</h2>
@@ -83,7 +86,7 @@ export function LampPage({ book, onChange, now, lampId }) {
               className="di-did di-did-small"
               type="button"
               onClick={() => {
-                change(takeDown(book, lamp))
+                change(takeDown(lampBook, lamp))
                 goHash('/lamps')
               }}
             >
@@ -99,15 +102,15 @@ export function LampPage({ book, onChange, now, lampId }) {
   }
 
   return (
-    <BoardShell book={book} now={clock} title={book.title} date={formatBoardDate(dateIso)}>
+    <BoardShell book={lampBook} now={clock} title={lampBook.title} date={formatBoardDate(dateIso)}>
       <LampDetail
-        book={book}
+        book={lampBook}
         lamp={lamp}
         dateIso={dateIso}
         onClose={() => goHash('/lamps')}
         onEdit={(item) => goHash('/add', { id: item.id })}
         onDuplicate={(item) => goHash('/add', { copy: item.id })}
-        onArchive={(item) => change(toggleArchive(book, item))}
+        onArchive={(item) => change(toggleArchive(lampBook, item))}
         onRemove={() => setConfirmGone(true)}
         onMarkHole={(item, periodKey) => setHolePick({ lamp: item, periodKey })}
       />

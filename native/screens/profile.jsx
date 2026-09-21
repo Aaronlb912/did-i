@@ -11,6 +11,7 @@ import {
 } from '../../src/lib/prefs.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
+import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareShelf } from '../../src/lib/native.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
@@ -251,6 +252,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         )}
         <SetRow colors={colors} label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onPress={pickFile} />
         <SetRow colors={colors} label={t('settings.how')} chevron onPress={() => goHash('/help')} />
+        <SetRow
+          colors={colors}
+          label={t('feedback.send')}
+          sub={t('feedback.sub')}
+          onPress={() => {
+            const url = feedbackMailto()
+            if (url) Linking.openURL(url)
+          }}
+        />
         <SetRow colors={colors} label={t('settings.ideas')} chevron onPress={() => goHash('/ideas')} />
         <SetRow colors={colors} label={t('settings.what')} chevron onPress={() => goHash('/about')} />
         <SetRow colors={colors} label={t('settings.intro')} chevron onPress={() => goHash('/welcome')} />

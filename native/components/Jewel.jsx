@@ -13,6 +13,9 @@ export function Jewel({
   face,
   hole,
   sit,
+  dueToday,
+  dueSoon,
+  optional,
   filament = 0,
   colors,
   onPress,
@@ -20,8 +23,25 @@ export function Jewel({
 }) {
   const glow = on && filament > 0
   const ink = on || face ? colors.ink : skip && !on ? colors.inkDim : colors.inkSoft
-  const rim = on || face ? colors.onDeep : colors.line
-  const glassColor = late ? colors.late : on ? colors.on : skip ? colors.skip : colors.open
+  const rim =
+    on || face
+      ? colors.onDeep
+      : dueToday
+        ? colors.miss
+        : dueSoon
+          ? colors.late
+          : colors.line
+  const glassColor = late
+    ? colors.late
+    : on
+      ? colors.on
+      : skip
+        ? colors.skip
+        : dueToday
+          ? colors.miss
+          : dueSoon
+            ? colors.late
+            : colors.open
 
   return (
     <Pressable
@@ -35,6 +55,7 @@ export function Jewel({
           opacity: pressed ? 0.88 : hole ? 0.9 : 1,
         },
         waiting && styles.wait,
+        optional && styles.optional,
         hole && styles.hole,
       ]}
     >
@@ -89,6 +110,9 @@ const styles = StyleSheet.create({
   },
   wait: {
     borderStyle: 'dashed',
+  },
+  optional: {
+    borderStyle: 'dotted',
   },
   hole: {
     borderStyle: 'dashed',

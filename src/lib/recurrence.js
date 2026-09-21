@@ -1,3 +1,4 @@
+import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, wallClock } from './zone.js'
 
 function pad(value) {
@@ -80,6 +81,13 @@ export function isDueOn(lamp, dateIso) {
       return date.getDate() === day
     }
     case 'once': {
+      if (lamp.onceWhen === 'by') {
+        const dueBy = String(lamp.dueBy || '').trim()
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dueBy)) return true
+        const start = String(lamp.createdOn || '').trim()
+        if (start && dateIso < start) return false
+        return dateIso <= dueBy
+      }
       const on = String(lamp.onceOn || '').trim()
       if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return on === dateIso
       return true
@@ -206,6 +214,10 @@ export function faceReadyTonight(book, now = new Date()) {
   return [...open, ...noped]
 }
 
+export function faceSwipeTonight(book, now = new Date()) {
+  return faceReadyTonight(book, now).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
+}
+
 // The nope that ends a lap. Open questions come first in the stack, so the
 // lap is over once nothing open is left ahead of this card.
 export function shouldFinishAfterNope(ready, row, at) {
@@ -238,13 +250,23 @@ export function didStatusForRow(row) {
   return row?.answer?.status === 'skip' ? 'late' : 'yes'
 }
 
+function requiredTonightRows(rows) {
+  return rows.filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
+}
+
 export function allClearTonight(book, now = new Date()) {
   const due = dueTonight(book, now)
-  return due.length > 0 && due.every(rowDoneTonight)
+  if (!due.length) return false
+  const required = requiredTonightRows(due)
+  if (!required.length) return true
+  return required.every(rowDoneTonight)
 }
 
 export function dueClearTonight(due) {
-  return due.length > 0 && due.every(rowDoneTonight)
+  if (!due.length) return false
+  const required = requiredTonightRows(due)
+  if (!required.length) return true
+  return required.every(rowDoneTonight)
 }
 
 export function formatBoardDate(iso) {

@@ -1,6 +1,9 @@
 import { t } from './i18n.js'
-import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
+import { addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
+
+export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
 function uid(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
@@ -66,6 +69,27 @@ export function lampNotifyOn(lamp) {
   return lamp?.notify !== false
 }
 
+export function dueByUrgency(lamp, dateIso) {
+  const dueBy = activeDeadline(lamp, dateIso)
+  if (!dueBy) return ''
+  if (dueBy === dateIso) return 'today'
+  if (dueBy === addDaysIso(dateIso, 1)) return 'soon'
+  return ''
+}
+
+export function prepQuestionRows(rows, { dateIso, deadlineOnly = false }) {
+  let out = rows
+  if (deadlineOnly) out = out.filter((row) => activeDeadline(row.lamp, dateIso))
+  return [...out].sort((a, b) => {
+    const aDue = activeDeadline(a.lamp, dateIso)
+    const bDue = activeDeadline(b.lamp, dateIso)
+    if (aDue && bDue) return aDue.localeCompare(bDue)
+    if (aDue) return -1
+    if (bDue) return 1
+    return 0
+  })
+}
+
 function asString(value) {
   return String(value == null ? '' : value)
 }
@@ -86,6 +110,8 @@ export function blankLamp(now = new Date()) {
     everyN: '',
     everyNAnchor: '',
     onceOn: '',
+    onceWhen: 'on',
+    dueBy: '',
     askAfter: '',
     slot: 'whenever',
     notes: '',
@@ -156,6 +182,9 @@ export function normalizeLamp(raw) {
     everyN,
     everyNAnchor: asString(lamp.everyNAnchor).trim(),
     onceOn: asString(lamp.onceOn).trim(),
+    onceWhen: cadence === 'once' && lamp.onceWhen === 'by' ? 'by' : cadence === 'once' ? 'on' : '',
+    dueBy:
+      cadence === 'once' && lamp.onceWhen === 'by' ? asString(lamp.dueBy).trim() : '',
     askAfter,
     slot,
     notes: asString(lamp.notes),
@@ -248,8 +277,15 @@ export function missLamp(lamp) {
   if (lamp.cadence === 'monthly' && lamp.monthDay !== 'last' && !lamp.monthDay) {
     return 'hang.miss.monthDay'
   }
-  if (lamp.cadence === 'once' && !/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.onceOn))) {
-    return 'hang.miss.onceOn'
+  if (lamp.cadence === 'once') {
+    if (isOnceBy(lamp)) {
+      const dueBy = asString(lamp.dueBy).trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueBy)) return 'hang.miss.dueBy'
+      const start = asString(lamp.createdOn).trim()
+      if (start && dueBy < start) return 'hang.miss.dueByBefore'
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.onceOn))) {
+      return 'hang.miss.onceOn'
+    }
   }
   if (lamp.cadence === 'every_n') {
     const n = Number(lamp.everyN)
@@ -325,6 +361,13 @@ export function cadenceLine(lamp) {
     return t('cadence.monthly')
   }
   if (lamp.cadence === 'once') {
+    if (isOnceBy(lamp)) {
+      const due = asString(lamp.dueBy).trim()
+      if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+        return t('cadence.onceBy', { date: formatBoardDate(due) })
+      }
+      return t('cadence.once')
+    }
     const on = asString(lamp.onceOn).trim()
     if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('cadence.onceOn', { date: formatBoardDate(on) })
     return t('cadence.once')

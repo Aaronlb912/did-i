@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { LookChip } from './Cosmetic.jsx'
-import { LOOKS, buyLook, lookText, normalizePurse } from './purse.js'
-import { BuyConfirm, ShopPurse, coinLine, gemLine, shopMiss } from './shop-bits.jsx'
+import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, LOOKS, buyLook, isGemLook, lookText, normalizePurse } from './purse.js'
+import { BuyConfirm, LookPreviewCard, ShopPurse, coinLine, gemLine, shopMiss } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -78,7 +78,9 @@ export function ShopLooks({ book, onChange, now }) {
       <section className="di-page di-shop di-set">
         <h2 className="di-page-title">{t('shop.looks')}</h2>
         <ShopPurse purse={purse} />
-        <p className="di-set-note">{t('shop.looksHint')}</p>
+        <p className="di-set-note">{t('shop.looksHint', { coins: LOOK_COIN_PRICE, gems: LOOK_GEM_PRICE })}</p>
+
+        {peekLook && isGemLook(peekLook) ? <LookPreviewCard /> : null}
 
         <p className="di-set-cap">{t('shop.looksCoins')}</p>
         <div className="di-set-card di-shop-card">{COIN_LOOKS.map(lookRow)}</div>

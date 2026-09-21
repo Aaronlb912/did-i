@@ -48,5 +48,50 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
     )
   }
 
+  if (id === 'rabbit') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="17" cy="12" rx="4" ry="11" fill="#b8b8c8" transform="rotate(-8 17 12)" />
+        <Ellipse cx="31" cy="12" rx="4" ry="11" fill="#b8b8c8" transform="rotate(8 31 12)" />
+        <Ellipse cx="17" cy="12" rx="2.2" ry="7" fill="#f0b8c8" transform="rotate(-8 17 12)" />
+        <Ellipse cx="31" cy="12" rx="2.2" ry="7" fill="#f0b8c8" transform="rotate(8 31 12)" />
+        <Ellipse cx="24" cy="32" rx="14" ry="13" fill="#b8b8c8" />
+        <Ellipse cx="24" cy="34" rx="9" ry="8" fill="#e8e8f0" />
+        <Ellipse cx="18" cy="29" rx="2" ry="2.8" fill="#2d241c" />
+        <Ellipse cx="30" cy="29" rx="2" ry="2.8" fill="#2d241c" />
+        <Ellipse cx="18.7" cy="28.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        <Ellipse cx="30.7" cy="28.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        <Ellipse cx="24" cy="33" rx="2" ry="1.5" fill="#f0b8c8" />
+        <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#b8b8c8" />
+        <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#b8b8c8" />
+        <Ellipse cx="17" cy="45" rx="3" ry="2" fill="#e8e8f0" />
+        <Ellipse cx="31" cy="45" rx="3" ry="2" fill="#e8e8f0" />
+      </Svg>
+    )
+  }
+
+  if (id === 'owl') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Polygon points="14,14 16,6 18,15" fill="#6b5038" />
+        <Polygon points="30,15 32,6 34,14" fill="#6b5038" />
+        <Ellipse cx="24" cy="32" rx="14" ry="13" fill="#8b6b4a" />
+        <Ellipse cx="24" cy="30" rx="11" ry="10" fill="#d4c4a8" />
+        <Ellipse cx="18" cy="28" rx="4" ry="4.5" fill="#f0e080" />
+        <Ellipse cx="30" cy="28" rx="4" ry="4.5" fill="#f0e080" />
+        <Ellipse cx="18" cy="28" rx="2" ry="2.5" fill="#2d241c" />
+        <Ellipse cx="30" cy="28" rx="2" ry="2.5" fill="#2d241c" />
+        <Ellipse cx="18.5" cy="27.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        <Ellipse cx="30.5" cy="27.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        <Polygon points="24,31 22,34 26,34" fill="#d4a040" />
+        <Ellipse cx="24" cy="38" rx="7" ry="6" fill="#c4a882" />
+        <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8b6b4a" />
+        <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8b6b4a" />
+        <Ellipse cx="17" cy="45" rx="3" ry="2" fill="#c4a882" />
+        <Ellipse cx="31" cy="45" rx="3" ry="2" fill="#c4a882" />
+      </Svg>
+    )
+  }
+
   return null
 }

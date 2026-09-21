@@ -25,6 +25,17 @@ function closeOnceRows(book, now) {
     if (lamp.archived || lamp.cadence !== 'once') continue
     const periodKey = periodKeyFor(lamp, today)
     if (answerFor(book, lamp.id, periodKey)) continue
+    if (lamp.onceWhen === 'by') {
+      const dueBy = String(lamp.dueBy || '').trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueBy) || dueBy >= today) continue
+      rows.push({
+        lamp,
+        dateIso: dueBy,
+        periodKey: periodKeyFor(lamp, dueBy),
+        answer: null,
+      })
+      continue
+    }
     const on = String(lamp.onceOn || '').trim()
     if (/^\d{4}-\d{2}-\d{2}$/.test(on)) {
       if (on >= today) continue

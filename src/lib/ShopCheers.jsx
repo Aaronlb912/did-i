@@ -3,7 +3,9 @@ import { BoardShell } from './BoardShell.jsx'
 import { CheerChip } from './Cosmetic.jsx'
 import {
   CHEERS,
-  CHEER_STAGE_GEMS,
+  CHEER_GEMS,
+  CHEER_STAGE_COIN,
+  CHEER_STAGE_COINS,
   buyCheer,
   buyCheerStage,
   cheerPlayOf,
@@ -14,7 +16,7 @@ import {
   normalizePurse,
 } from './purse.js'
 import { activeLook } from './dit-board.js'
-import { BuyConfirm, ShopPurse, gemLine, shopMiss } from './shop-bits.jsx'
+import { BuyConfirm, ShopPurse, coinLine, gemLine, shopMiss } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -40,21 +42,23 @@ export function ShopCheers({ book, onChange, now }) {
       <section className="di-page di-shop di-set">
         <h2 className="di-page-title">{t('shop.cheers')}</h2>
         <ShopPurse purse={purse} />
-        <p className="di-set-note">{t('shop.cheerHint')}</p>
+        <p className="di-set-note">{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</p>
 
         <div className="di-set-card di-shop-card">
           {CHEERS.map((item) => {
             const have = purse.cheers.includes(item.id)
             const stage = cheerStageOf(book, item.id)
             const next = have ? nextCheerStage(stage) : 0
-            const cost = next ? CHEER_STAGE_GEMS[next] : item.gems
+            const stageCost = next ? CHEER_STAGE_COINS[next] : 0
             return (
               <div className="di-shop-row" key={item.id}>
                 <button
                   className="di-preview"
                   type="button"
                   aria-label={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
-                  onClick={() => fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1, coat)}
+                  onClick={() =>
+                    fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1, coat, undefined, true)
+                  }
                 >
                   <CheerChip id={item.id} stage={have ? stage : 1} />
                 </button>
@@ -70,7 +74,7 @@ export function ShopCheers({ book, onChange, now }) {
                         setMiss('')
                         setConfirm({
                           title: t(cheerText(item.id, 'name')),
-                          body: t('shop.buyStageBody', { n: next, cost: gemLine(cost) }),
+                          body: t('shop.buyStageBody', { n: next, cost: coinLine(stageCost) }),
                           go: () => take(buyCheerStage(book, item.id)),
                         })
                       }}

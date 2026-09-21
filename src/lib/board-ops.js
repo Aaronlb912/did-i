@@ -1,4 +1,5 @@
 import { answeredAtIso, duplicateLamp, newAnswerId } from './board-json.js'
+import { activeLook } from './dit-board.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 
 export function putAnswer(book, row, status, clock = new Date()) {
@@ -24,7 +25,9 @@ export function putAnswer(book, row, status, clock = new Date()) {
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
   const purse = normalizePurse(cheered)
-  fireCheer(purse.cheerOn, cheerPlayOf(purse, purse.cheerOn))
+  if (purse.cheerOn) {
+    fireCheer(purse.cheerOn, cheerPlayOf(cheered, purse.cheerOn), activeLook(cheered))
+  }
   return cheered
 }
 

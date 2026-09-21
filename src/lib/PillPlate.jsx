@@ -9,6 +9,8 @@ import {
   swipePull,
   swipeTilt,
 } from './swipe-face.js'
+import { mustSwipeDeadline } from './board-json.js'
+import { formatBoardDate } from './recurrence.js'
 import { pillStatusLabel } from './pill-status.js'
 import { useSwipePullReport } from './SwipePull.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -35,6 +37,8 @@ export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) 
   const isDid = status === 'yes' || status === 'late'
   const blockDid = isDid
   const blockNope = status === 'skip' || isDid
+  const optionalEarly =
+    row.dateIso && row.lamp && !mustSwipeDeadline(row.lamp, row.dateIso)
   const pull = swipePull(dx)
   useSwipePullReport(pull)
 
@@ -133,6 +137,11 @@ export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) 
         {row.tag || t('tonight.didI')}
       </p>
       <h2 className="di-question">{row.lamp.question}</h2>
+      {optionalEarly ? (
+        <p className="di-detail-meta">
+          {t('tonight.deadlineOptional', { date: formatBoardDate(row.lamp.dueBy) })}
+        </p>
+      ) : null}
     </section>
   )
 }

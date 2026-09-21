@@ -85,6 +85,7 @@ Save a file in the repo; the app reloads. Shake → **Reload** if it sticks.
 | Command | What |
 |---------|------|
 | `npm run expo:dev` | Metro + dev client + tunnel |
+| `npm run expo:stop` | Kill stale ngrok / Metro on 8081 |
 | `npm run expo:connect` | Print tunnel URL + `didi://` deep link |
 | `npm run expo` | Metro + dev client (LAN) |
 | `npm run ios:build` | EAS development build for iPhone |
@@ -111,3 +112,9 @@ Metro processes running; only one `expo:dev` on port 8081.
 **Blank screen or “Cannot connect to Expo CLI”** — The dev client is pointed
 at the wrong URL. Stop every Metro terminal, run `npm run expo:dev` once, wait
 for `Tunnel ready`, then `npm run expo:connect` and follow the printed link.
+
+**`Cannot read properties of undefined (reading 'body')` on tunnel start** —
+Usually a stale ngrok from an old `expo:dev` still running. Run
+`npm run expo:stop`, then `npm run expo:dev` again. You should see
+`Tunnel ready`. If it still fails, delete `.expo/settings.json` so Expo picks
+a fresh tunnel name (old hostname was still online at ngrok).

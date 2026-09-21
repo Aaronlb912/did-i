@@ -8,9 +8,24 @@ import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { addDaysIso, answerFor, boardDate, faceReadyTonight, isoDate } from '../src/lib/recurrence.js'
+import {
+  addDaysIso,
+  answerFor,
+  boardDate,
+  faceReadyTonight,
+  faceSwipeTonight,
+  isDueOn,
+  isoDate,
+} from '../src/lib/recurrence.js'
 import { closePastNights } from '../src/lib/daily.js'
-import { byPriority, lampBuzzes, lampNudgesLate } from '../src/lib/board-json.js'
+import {
+  activeDeadline,
+  byPriority,
+  dueByUrgency,
+  lampBuzzes,
+  lampNudgesLate,
+  prepQuestionRows,
+} from '../src/lib/board-json.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 
@@ -26,6 +41,7 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
+import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
   clearLocalShelf,
   enterLand,
@@ -100,6 +116,73 @@ test('an unanswered night closes as nope when the day turns', () => {
   const closed = closePastNights(book, tomorrow)
   assert.equal(answerFor(closed, 'door', today)?.status, 'skip')
   assert.equal(closePastNights(closed, tomorrow), closed)
+})
+
+test('once by deadline shows every night until due', () => {
+  const item = lamp('tax', {
+    cadence: 'once',
+    onceWhen: 'by',
+    dueBy: '2024-01-05',
+    createdOn: '2024-01-01',
+  })
+  assert.equal(isDueOn(item, '2023-12-31'), false)
+  assert.equal(isDueOn(item, '2024-01-01'), true)
+  assert.equal(isDueOn(item, '2024-01-05'), true)
+  assert.equal(isDueOn(item, '2024-01-06'), false)
+})
+
+test('deadline questions skip the swipe stack until the due night', () => {
+  const item = lamp('tax', {
+    cadence: 'once',
+    onceWhen: 'by',
+    dueBy: '2024-01-10',
+    createdOn: '2024-01-01',
+  })
+  const book = { dayFoldHour: 0, lamps: [item], answers: [] }
+  const early = faceSwipeTonight(book, new Date('2024-01-05T12:00:00'))
+  assert.equal(early.length, 0)
+  assert.equal(faceReadyTonight(book, new Date('2024-01-05T12:00:00')).length, 1)
+  const due = faceSwipeTonight(book, new Date('2024-01-10T12:00:00'))
+  assert.equal(due.length, 1)
+})
+
+test('deadline urgency is today or tomorrow only', () => {
+  const item = lamp('tax', {
+    cadence: 'once',
+    onceWhen: 'by',
+    dueBy: '2024-01-05',
+    createdOn: '2024-01-01',
+  })
+  assert.equal(dueByUrgency(item, '2024-01-05'), 'today')
+  assert.equal(dueByUrgency(item, '2024-01-04'), 'soon')
+  assert.equal(dueByUrgency(item, '2024-01-03'), '')
+  assert.equal(activeDeadline(item, '2024-01-06'), '')
+})
+
+test('question rows sort deadlines first', () => {
+  const soon = { lamp: lamp('a', { cadence: 'once', onceWhen: 'by', dueBy: '2024-01-03', createdOn: '2024-01-01' }) }
+  const later = { lamp: lamp('b', { cadence: 'once', onceWhen: 'by', dueBy: '2024-01-05', createdOn: '2024-01-01' }) }
+  const daily = { lamp: lamp('c', { cadence: 'daily', createdOn: '2024-01-01' }) }
+  const sorted = prepQuestionRows([daily, later, soon], { dateIso: '2024-01-01' })
+  assert.equal(sorted.map((row) => row.lamp.id).join(','), 'a,b,c')
+})
+
+test('once by deadline closes after the last night', () => {
+  const book = {
+    dayFoldHour: 0,
+    lamps: [
+      lamp('tax', {
+        cadence: 'once',
+        onceWhen: 'by',
+        dueBy: '2024-01-05',
+        createdOn: '2024-01-01',
+      }),
+    ],
+    answers: [],
+  }
+  const after = new Date('2024-01-06T10:00:00')
+  const closed = closePastNights(book, after)
+  assert.equal(answerFor(closed, 'tax', 'once:tax')?.status, 'skip')
 })
 
 test('today still open does not close before the night ends', () => {
@@ -222,6 +305,27 @@ test('a referral code is ten characters after cleaning', () => {
 test('native flip cheer runs at 960ms', () => {
   const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/components/CheerBurst.jsx'), 'utf8')
   assert.match(src, /const FLIP_MS = 960/)
+})
+
+test('every cheer adds a burst per stage', () => {
+  for (const kind of cheerKinds()) {
+    assert.equal(popsFor(kind, 1).length, 1)
+    assert.equal(popsFor(kind, 3).length, 3)
+    assert.equal(popsFor(kind, 5).length, 5)
+  }
+})
+
+test('cheer bursts scale up with stage', () => {
+  const low = popsFor('lime', 1)[0].bits.find((bit) => bit.bloom)
+  const high = popsFor('lime', 5)[0].bits.find((bit) => bit.bloom)
+  assert.ok(Number.parseFloat(high.size) > Number.parseFloat(low.size))
+})
+
+test('later cheer bursts scale harder than the first', () => {
+  const first = popsFor('spark', 5)[0].bits.filter((bit) => bit.spark).length
+  const last = popsFor('spark', 5)[4].bits.filter((bit) => bit.spark).length
+  assert.ok(last > first)
+  assert.ok(holdFor('rain', 5, 5) > holdFor('rain', 1, 1))
 })
 
 test('demo boards do not ride along after sign-in', () => {

@@ -17,8 +17,9 @@ const LOOK_META = {
   glow: {
     on: '#5ee8ff',
     bg: '#0c1218',
-    glow: 'rgba(94, 232, 255, 0.55)',
-    dotGlow: 'rgba(94, 232, 255, 0.75)',
+    glow: 'rgba(94, 232, 255, 0.72)',
+    dotGlow: 'rgba(94, 232, 255, 0.95)',
+    chipShadow: 10,
   },
   ember: {
     on: '#ff9a4a',
@@ -49,13 +50,13 @@ function rem(n) {
   return n * R
 }
 
-function chipShell(colors, bg, glow) {
+function chipShell(colors, bg, glow, chipShadow, borderless = false) {
   const shell = {
     width: CHIP,
     height: CHIP,
     borderRadius: CHIP_R,
-    borderWidth: 1,
-    borderColor: colors?.line || '#2b3140',
+    borderWidth: borderless ? 0 : 1,
+    borderColor: borderless ? 'transparent' : colors?.line || '#2b3140',
     backgroundColor: bg || colors?.panel3 || '#242935',
   }
   if (glow) {
@@ -64,8 +65,8 @@ function chipShell(colors, bg, glow) {
       shadowColor: glow,
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.9,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowRadius: chipShadow || 6,
+      elevation: chipShadow ? 6 : 4,
     }
   }
   return shell
@@ -94,8 +95,8 @@ export function LookChip({ id, colors }) {
   const chipBg = meta.bg
   const chipGlow = meta.glow
   const chip = (
-    <View style={[styles.lookChip, chipShell(colors, chipBg, chipGlow)]}>
-      {premium && meta.ring ? (
+    <View style={[styles.lookChip, chipShell(colors, chipBg, chipGlow, meta.chipShadow, id === 'glow')]}>
+      {premium && meta.ring && id !== 'glow' ? (
         <View style={[styles.lookInset, { borderColor: meta.ring }]} pointerEvents="none" />
       ) : null}
       <View style={dotStyle(0)} />
@@ -105,6 +106,15 @@ export function LookChip({ id, colors }) {
   )
 
   if (!premium) return chip
+
+  if (id === 'glow') {
+    return (
+      <View style={styles.premiumWrap}>
+        <View style={[styles.premiumHalo, { shadowColor: meta.glow }]} />
+        {chip}
+      </View>
+    )
+  }
 
   return (
     <View style={styles.premiumWrap}>
@@ -598,15 +608,13 @@ const styles = StyleSheet.create({
   },
   premiumHalo: {
     position: 'absolute',
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-    borderWidth: 1,
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
     borderRadius: CHIP_R + 5,
-    opacity: 0.45,
-    shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowOpacity: 0.9,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
     elevation: 3,
   },

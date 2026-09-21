@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { activeLook } from '../../src/lib/dit-board.js'
 import {
+  activeDeadline,
   cadenceLine,
+  dueByUrgency,
   duplicateLamp,
+  prepQuestionRows,
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
@@ -15,6 +18,13 @@ import { matchLamps } from '../../src/lib/hall-pages.js'
 import { answerFor, boardDate, dueTonight, formatBoardDate, recentPeriodKeys } from '../../src/lib/recurrence.js'
 import { NightStrip } from '../components/NightStrip.jsx'
 import { STARTERS } from '../../src/lib/starters.js'
+import {
+  CADENCE_OPTIONS,
+  cadenceDropdownValue,
+  isDeadlineMode,
+  schedulePick,
+} from '../../src/lib/hang-schedule.js'
+import { HangSelect } from '../components/HangSelect.jsx'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
 import { rowKey, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
@@ -48,7 +58,7 @@ function shellDate(book, clock = new Date()) {
   return formatBoardDate(boardDate(clock, book.dayFoldHour))
 }
 
-function rowJewelState(row, clock) {
+function rowJewelState(row, clock, dateIso) {
   const due = dueTonight(row.book, clock)
   const hit = due.find((item) => item.lamp.id === row.lamp.id)
   if (!hit) return {}
@@ -56,6 +66,9 @@ function rowJewelState(row, clock) {
     return { on: true, late: hit.answer.status === 'late' }
   }
   if (hit.answer?.status === 'skip') return { skip: true }
+  const urgency = dueByUrgency(row.lamp, dateIso)
+  if (urgency === 'today') return { dueToday: true }
+  if (urgency === 'soon') return { dueSoon: true }
   return {}
 }
 
@@ -67,13 +80,13 @@ function openStarters(book) {
   )
 }
 
-function LampBlock({ label, items, shelf, clock, colors, onOpen }) {
+function LampBlock({ label, items, shelf, clock, dateIso, colors, onOpen }) {
   if (!items.length) return null
   return (
     <View style={styles.block}>
       <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{label}</Text>
       {items.map((row) => {
-        const jewel = rowJewelState(row, clock)
+        const jewel = rowJewelState(row, clock, dateIso)
         return (
           <Pressable
             key={rowKey(row)}
@@ -88,6 +101,8 @@ function LampBlock({ label, items, shelf, clock, colors, onOpen }) {
               on={jewel.on}
               skip={jewel.skip}
               late={jewel.late}
+              dueToday={jewel.dueToday}
+              dueSoon={jewel.dueSoon}
               colors={colors}
             />
             <View style={styles.lampCopy}>
@@ -110,13 +125,36 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
   const rows = taggedLamps(shelf, tagId)
-  const hung = rows.filter((row) => !row.lamp.archived)
-  const down = rows.filter((row) => row.lamp.archived)
+  const [deadlineOnly, setDeadlineOnly] = useState(false)
+  const hasDeadlines = rows.some((row) => activeDeadline(row.lamp, dateIso))
+  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived), {
+    dateIso,
+    deadlineOnly,
+  })
+  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived), {
+    dateIso,
+    deadlineOnly,
+  })
   const starters = openStarters(book)
 
   return (
     <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
       <TagFilter boards={shelf} tagId={tagId} onTag={onTag} now={clock} colors={colors} />
+
+      {hasDeadlines ? (
+        <>
+          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('questions.filter')}</Text>
+          <ChipRow
+            items={[
+              { id: 'all', label: t('questions.filterAll') },
+              { id: 'deadline', label: t('questions.filterDeadline') },
+            ]}
+            value={deadlineOnly ? 'deadline' : 'all'}
+            onPick={(value) => setDeadlineOnly(value === 'deadline')}
+            colors={colors}
+          />
+        </>
+      ) : null}
 
       <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
 
@@ -126,9 +164,12 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           items={hung}
           shelf={shelf}
           clock={clock}
+          dateIso={dateIso}
           colors={colors}
           onOpen={onOpen}
         />
+      ) : deadlineOnly ? (
+        <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
       ) : (
         <>
           <Meta colors={colors}>{t('questions.hint')}</Meta>
@@ -157,6 +198,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         items={down}
         shelf={shelf}
         clock={clock}
+        dateIso={dateIso}
         colors={colors}
         onOpen={onOpen}
       />
@@ -165,14 +207,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 }
 
 const PRIORITIES = ['high', 'normal', 'low']
-const CADENCE_ITEMS = [
-  { id: 'daily', labelKey: 'hang.daily' },
-  { id: 'weekly', labelKey: 'hang.weekly' },
-  { id: 'monthly', labelKey: 'hang.monthly' },
-  { id: 'every_n', labelKey: 'hang.everyN' },
-  { id: 'once', labelKey: 'hang.once' },
-]
-
 export function SearchScreen({ book }) {
   const { colors } = useHall(book)
   const [query, setQuery] = useState('')
@@ -222,10 +256,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     start,
     tagTitle: sourceBook?.title || book.title,
   })
-  const cadenceItems = useMemo(
-    () => CADENCE_ITEMS.map((item) => ({ id: item.id, label: t(item.labelKey) })),
+  const cadenceOptions = useMemo(
+    () => CADENCE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) })),
     [],
   )
+  const schedule = schedulePick(hang.draft)
+  const deadline = isDeadlineMode(hang.draft)
 
   function cancel() {
     if (existing) goHash('/lamp', { id: existing.id })
@@ -281,51 +317,80 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
             </Pressable>
           )
         })}
-        <Pressable
-          onPress={() => hang.setTagTitle('')}
-          style={[
-            styles.weekdayChip,
-            { borderColor: !hang.knownTag ? colors.onDeep : colors.line, backgroundColor: !hang.knownTag ? colors.panel3 : colors.panel2 },
-          ]}
-        >
-          <Text style={{ color: !hang.knownTag ? colors.on : colors.ink, fontSize: 12 }}>{t('hang.tagNew')}</Text>
-        </Pressable>
+        {hang.knownTag ? (
+          <Pressable onPress={() => hang.setTagTitle('')}>
+            <Text style={[styles.tagNewLink, { color: colors.inkDim }]}>{t('hang.tagNew')}</Text>
+          </Pressable>
+        ) : (
+          <TextInput
+            style={[styles.tagNewInput, { borderColor: colors.line, color: colors.ink, backgroundColor: colors.bg }]}
+            value={hang.tagTitle}
+            onChangeText={hang.setTagTitle}
+            placeholder={t('hang.tagPh')}
+            placeholderTextColor={colors.inkDim}
+            accessibilityLabel={t('hang.tagNew')}
+          />
+        )}
       </View>
       {hang.parkedTags.length ? (
-        <View style={styles.weekdayRow}>
+        <View style={[styles.parkedTags, { borderTopColor: colors.line }]}>
+          <Text style={[styles.parkedLabel, { color: colors.inkDim }]}>{t('hang.tagLater')}</Text>
           {hang.parkedTags.map((item) => {
             const on = hang.isTagSelected(item.title)
             return (
               <Pressable
                 key={item.id}
                 onPress={() => hang.setTagTitle(item.title)}
-                style={[styles.weekdayChip, { borderColor: colors.line, opacity: on ? 1 : 0.7 }]}
+                style={[
+                  styles.weekdayChip,
+                  {
+                    borderColor: on ? colors.onDeep : colors.line,
+                    backgroundColor: on ? colors.panel3 : colors.panel2,
+                    opacity: on ? 1 : 0.85,
+                  },
+                ]}
               >
-                <Text style={{ color: colors.inkDim, fontSize: 12 }}>{item.title}</Text>
+                <Text style={{ color: on ? colors.on : colors.inkDim, fontSize: 12 }}>{item.title}</Text>
               </Pressable>
             )
           })}
         </View>
       ) : null}
-      {hang.knownTag ? null : (
-        <Field
-          label={t('hang.tagNew')}
-          value={hang.tagTitle}
-          onChangeText={hang.setTagTitle}
-          colors={colors}
-          placeholder={t('hang.tagPh')}
-        />
+
+      {deadline ? (
+        <View>
+          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.dueBy')}</Text>
+          <HangMonthCal
+            mode="date"
+            value={hang.draft.dueBy}
+            onChange={(iso) => hang.change('dueBy', iso)}
+            now={clock}
+            dayFoldHour={book.dayFoldHour}
+            colors={colors}
+          />
+          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.dueByHint')}</Text>
+          <Pressable onPress={() => hang.change('cadence', 'daily')} hitSlop={8}>
+            <Text style={[styles.timingBack, { color: colors.inkSoft }]}>{t('hang.useOften')}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.timingRow}>
+          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.often')}</Text>
+          <View style={styles.timingPick}>
+            <HangSelect
+              ariaLabel={t('hang.often')}
+              value={cadenceDropdownValue(hang.draft)}
+              onChange={(value) => hang.change('cadence', value)}
+              options={cadenceOptions}
+              colors={colors}
+            />
+            <Text style={[styles.timingOr, { color: colors.inkDim }]}>{t('hang.or')}</Text>
+            <KeyButton colors={colors} label={t('hang.deadline')} onPress={() => hang.changeSchedule('deadline')} />
+          </View>
+        </View>
       )}
 
-      <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.often')}</Text>
-      <ChipRow
-        items={cadenceItems}
-        value={hang.draft.cadence}
-        onPick={(value) => hang.change('cadence', value)}
-        colors={colors}
-      />
-
-      {hang.draft.cadence === 'weekly' ? (
+      {!deadline && hang.draft.cadence === 'weekly' ? (
         <View style={styles.weekdays}>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.weekdays')}</Text>
           <View style={styles.weekdayRow}>
@@ -348,7 +413,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </View>
       ) : null}
 
-      {hang.draft.cadence === 'monthly' ? (
+      {!deadline && hang.draft.cadence === 'monthly' ? (
         <View>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.monthDay')}</Text>
           <HangMonthCal
@@ -363,7 +428,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </View>
       ) : null}
 
-      {hang.draft.cadence === 'once' ? (
+      {!deadline && schedule === 'once_on' ? (
         <View>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.onceOn')}</Text>
           <HangMonthCal
@@ -374,10 +439,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
             dayFoldHour={book.dayFoldHour}
             colors={colors}
           />
+          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.onceOnHint')}</Text>
         </View>
       ) : null}
 
-      {hang.draft.cadence === 'every_n' ? (
+      {!deadline && hang.draft.cadence === 'every_n' ? (
         <>
           <Field
             label={t('hang.everyNDays')}
@@ -407,15 +473,22 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       />
 
       <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.notify')}</Text>
-      <ChipRow
-        items={[
-          { id: 'on', label: t('hang.notifyOn') },
-          { id: 'off', label: t('hang.notifyOff') },
-        ]}
-        value={hang.notifyOn ? 'on' : 'off'}
-        onPick={(value) => hang.change('notify', value === 'on')}
-        colors={colors}
-      />
+      <View style={styles.notifyRow}>
+        <ChipRow
+          items={[
+            { id: 'on', label: t('hang.notifyOn') },
+            { id: 'off', label: t('hang.notifyOff') },
+          ]}
+          value={hang.notifyOn ? 'on' : 'off'}
+          onPick={(value) => hang.change('notify', value === 'on')}
+          colors={colors}
+        />
+        <Pressable onPress={() => hang.setMore((open) => !open)} hitSlop={8}>
+          <Text style={[styles.moreLink, { color: colors.inkSoft }]}>
+            {hang.more ? t('hang.less') : t('hang.more')}
+          </Text>
+        </Pressable>
+      </View>
 
       {hang.more ? (
         <>
@@ -437,12 +510,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </>
       ) : null}
 
-      <KeyButton
-        label={hang.more ? t('hang.less') : t('hang.more')}
-        onPress={() => hang.setMore((open) => !open)}
-        colors={colors}
-      />
-
       {hang.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {t(hang.miss)}
@@ -457,16 +524,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   )
 }
 
-export function LampScreen({ book, onChange, route }) {
-  const { colors, clock, dateIso } = useHall(book)
+export function LampScreen({ book, boards = [], onChange, route }) {
   const lampId = route?.id || ''
-  const lamp = (book.lamps || []).find((item) => item.id === lampId) || null
+  const shelf = boards.length ? boards : [book]
+  const lampBook = findBookHoldingLamp(shelf, lampId) || book
+  const { colors, clock, dateIso } = useHall(lampBook)
+  const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const [confirmGone, setConfirmGone] = useState(false)
   const [holePick, setHolePick] = useState(null)
   const stripKeys = lamp ? recentPeriodKeys(lamp, dateIso, 7) : []
 
-  const dueRow = dueTonight(book, clock).find((item) => item.lamp.id === lampId) || null
-  const answered = dueRow ? answerFor(book, lampId, dueRow.periodKey) : null
+  const dueRow = dueTonight(lampBook, clock).find((item) => item.lamp.id === lampId) || null
+  const answered = dueRow ? answerFor(lampBook, lampId, dueRow.periodKey) : null
 
   function change(next) {
     onChange(commitBook(next, clock))
@@ -474,23 +543,23 @@ export function LampScreen({ book, onChange, route }) {
 
   if (!lamp) {
     return (
-      <BoardShell book={book} title={t('lamp.gone')} date={shellDate(book, clock)} colors={colors}>
+      <BoardShell book={lampBook} title={t('lamp.gone')} date={shellDate(lampBook, clock)} colors={colors}>
         <DidButton label={t('nav.questions')} onPress={() => goHash('/lamps')} colors={colors} small />
       </BoardShell>
     )
   }
 
   if (holePick) {
-    const wasSkip = answerFor(book, holePick.id, holePick.key)?.status === 'skip'
+    const wasSkip = answerFor(lampBook, holePick.id, holePick.key)?.status === 'skip'
     return (
-      <BoardShell book={book} title={holePick.question} date={shellDate(book, clock)} colors={colors}>
+      <BoardShell book={lampBook} title={holePick.question} date={shellDate(lampBook, clock)} colors={colors}>
         <View style={styles.actions}>
           <DidButton
             label={t('hole.late')}
             colors={colors}
             small
             onPress={() => {
-              change(putAnswer(book, { lamp: holePick, periodKey: holePick.key }, 'late', clock))
+              change(putAnswer(lampBook, { lamp: holePick, periodKey: holePick.key }, 'late', clock))
               setHolePick(null)
             }}
           />
@@ -499,7 +568,7 @@ export function LampScreen({ book, onChange, route }) {
               label={t('tonight.swipeNope')}
               colors={colors}
               onPress={() => {
-                change(putAnswer(book, { lamp: holePick, periodKey: holePick.key }, 'skip', clock))
+                change(putAnswer(lampBook, { lamp: holePick, periodKey: holePick.key }, 'skip', clock))
                 setHolePick(null)
               }}
             />
@@ -511,7 +580,7 @@ export function LampScreen({ book, onChange, route }) {
   }
 
   if (confirmGone) {
-    const taps = (book.answers || []).filter((item) => item.lampId === lamp.id).length
+    const taps = (lampBook.answers || []).filter((item) => item.lampId === lamp.id).length
     const note =
       taps === 0
         ? t('lamp.deleteNone')
@@ -519,13 +588,13 @@ export function LampScreen({ book, onChange, route }) {
           ? t('lamp.deleteOne')
           : t('lamp.deleteSome', { n: taps })
     return (
-      <BoardShell book={book} title={t('lamp.deleteTitle')} date={shellDate(book, clock)} colors={colors}>
+      <BoardShell book={lampBook} title={t('lamp.deleteTitle')} date={shellDate(lampBook, clock)} colors={colors}>
         <Meta colors={colors}>{note}</Meta>
         <View style={styles.actions}>
           <DidButton
             label={t('lamp.delete')}
             onPress={() => {
-              change(takeDown(book, lamp))
+              change(takeDown(lampBook, lamp))
               goHash('/lamps')
             }}
             colors={colors}
@@ -538,14 +607,14 @@ export function LampScreen({ book, onChange, route }) {
   }
 
   return (
-    <BoardShell book={book} title={lamp.question} date={shellDate(book, clock)} colors={colors}>
+    <BoardShell book={lampBook} title={lamp.question} date={shellDate(lampBook, clock)} colors={colors}>
       <Meta colors={colors}>
         {[cadenceLine(lamp), lamp.archived ? t('lamp.paused') : ''].filter(Boolean).join(' · ')}
       </Meta>
       {lamp.notes ? <Meta colors={colors}>{lamp.notes}</Meta> : null}
 
       <NightStrip
-        book={book}
+        book={lampBook}
         lamp={lamp}
         keys={stripKeys}
         colors={colors}
@@ -558,14 +627,14 @@ export function LampScreen({ book, onChange, route }) {
           <View style={styles.tonightRow}>
             <DidButton
               label={t('tonight.swipeDid')}
-              onPress={() => change(putAnswer(book, dueRow, 'yes', clock))}
+              onPress={() => change(putAnswer(lampBook, dueRow, 'yes', clock))}
               colors={colors}
               small
               disabled={answered?.status === 'yes' || answered?.status === 'late'}
             />
             <KeyButton
               label={t('tonight.swipeNope')}
-              onPress={() => change(putAnswer(book, dueRow, 'skip', clock))}
+              onPress={() => change(putAnswer(lampBook, dueRow, 'skip', clock))}
               colors={colors}
             />
           </View>
@@ -579,7 +648,7 @@ export function LampScreen({ book, onChange, route }) {
       </View>
 
       <View style={styles.more}>
-        <Pressable onPress={() => change(toggleArchive(book, lamp))}>
+        <Pressable onPress={() => change(toggleArchive(lampBook, lamp))}>
           <Text style={[styles.textBtn, { color: colors.inkSoft }]}>
             {lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
           </Text>
@@ -628,8 +697,59 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, marginBottom: 8 },
+  timingRow: { gap: 6, marginBottom: 4 },
+  timingPick: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  timingOr: { fontFamily: fonts.ui, fontSize: 13 },
+  timingBack: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline', marginTop: 6 },
   weekdays: { gap: 6 },
-  weekdayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  weekdayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginBottom: 4 },
+  tagNewLink: {
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    textDecorationLine: 'underline',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  tagNewInput: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 100,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontFamily: fonts.ui,
+    fontSize: 14,
+  },
+  parkedTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  parkedLabel: {
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginRight: 2,
+  },
+  notifyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  moreLink: {
+    fontFamily: fonts.ui,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    paddingVertical: 4,
+  },
   weekdayChip: {
     borderWidth: 1,
     borderRadius: 999,

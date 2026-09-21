@@ -24,7 +24,7 @@ import {
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { BuddyHang } from './Cosmetic.jsx'
-import { GemFaceAura } from './GemFaceAura.jsx'
+import { gemGlowHostStyle } from '../lib/gem-look-tone.js'
 import { SwipeEdgeRails } from './SwipeEdgeRails.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 
@@ -191,8 +191,8 @@ export function SwipeCard({
         />
       </View>
       <GestureDetector gesture={pan} enabled={!demo}>
-        <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle, styles.card]}>
-          {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
+        <View style={[styles.glowHost, gemLook ? gemGlowHostStyle(gemLook, theme) : null]}>
+          <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle, styles.card]}>
           <BuddyHang id={buddy} />
           <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
           <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
@@ -201,7 +201,8 @@ export function SwipeCard({
           ) : null}
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>{title}</Text>
           {children}
-        </Animated.View>
+          </Animated.View>
+        </View>
       </GestureDetector>
     </View>
   )
@@ -218,6 +219,11 @@ const styles = StyleSheet.create({
   railsHost: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 8,
+    overflow: 'visible',
+  },
+  glowHost: {
+    width: '100%',
+    position: 'relative',
     overflow: 'visible',
   },
   card: {

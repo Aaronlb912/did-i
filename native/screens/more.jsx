@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
 import {
   deleteAccount,
@@ -16,10 +16,11 @@ import {
   loadProfile,
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
-import { blankLamp, shortFromQuestion, shortLabel } from '../../src/lib/board-json.js'
+import { blankLamp, isOnceBy, shortFromQuestion, shortLabel } from '../../src/lib/board-json.js'
 import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
+import { feedbackMailto } from '../../src/lib/feedback.js'
 import { hallHeat } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
@@ -105,8 +106,15 @@ function statusWord(status) {
   return status
 }
 
-function answerLabel(row) {
+function answerLabel(row, nightIso) {
   if (!row.answer) {
+    if (isOnceBy(row.lamp)) {
+      const dueBy = String(row.lamp.dueBy || '').trim()
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dueBy)) {
+        if (dueBy === nightIso) return t('later.dueTonight')
+        return t('later.dueBy', { date: formatBoardDate(dueBy) })
+      }
+    }
     return row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('later.open')
   }
   if (row.answer.status === 'yes') return t('later.did')
@@ -146,6 +154,16 @@ export function HelpScreen() {
       <Meta colors={colors}>{t('help.legalP')}</Meta>
       <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
       <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
+      <Meta colors={colors}>{t('help.feedbackP')}</Meta>
+      <DidButton
+        colors={colors}
+        label={t('feedback.send')}
+        onPress={() => {
+          const url = feedbackMailto()
+          if (url) Linking.openURL(url)
+        }}
+      />
       <DidButton colors={colors} label={t('help.home')} onPress={() => goHash('/tonight')} />
     </ScreenShell>
   )
@@ -175,7 +193,7 @@ export function LaterScreen({ book, now }) {
                 key={row.lamp.id}
                 colors={colors}
                 label={shortLabel(row.lamp)}
-                note={answerLabel(row)}
+                note={answerLabel(row, night.iso)}
                 onPress={() =>
                   night.isToday
                     ? goHash('/tonight', { face: row.lamp.id })

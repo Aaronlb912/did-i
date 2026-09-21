@@ -10,6 +10,7 @@ import {
   dropMember,
   editFamilyLamp,
   familyHistory,
+  familyLampMeta,
   leaveFamily,
   listFamilyLamps,
   personName,
@@ -163,7 +164,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             <View key={lamp.id} style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <Text style={[styles.rowTitle, { color: colors.ink }]}>{lamp.question}</Text>
               <Text style={{ color: colors.inkDim, fontSize: 13 }}>
-                {t('family.forWho', { who: whoFor(lamp) })} · {t('family.doneCount', { done: done.length, all: crowd.length })}
+                {t('family.forWho', { who: whoFor(lamp) })}
+                {lamp.cadence !== 'daily' ? ` · ${familyLampMeta(lamp)}` : ''}
+                {' · '}
+                {t('family.doneCount', { done: done.length, all: crowd.length })}
               </Text>
               {mineToAnswer(lamp) ? (
                 <View style={styles.rowActions}>
