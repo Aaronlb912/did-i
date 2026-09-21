@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useAccount } from '../../src/lib/account.js'
+import { authGated } from '../../src/lib/auth-gate.js'
 import { showBottomNav } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
@@ -21,6 +23,7 @@ function tabIndex(path) {
 }
 
 export function AppNav({ path, colors }) {
+  const account = useAccount()
   const insets = useSafeAreaInsets()
   const at = tabIndex(path)
   const [barWidth, setBarWidth] = useState(0)
@@ -47,7 +50,7 @@ export function AppNav({ path, colors }) {
     transform: [{ translateX: slot.value * (tabW + gap) }],
   }))
 
-  if (!showBottomNav(path)) return null
+  if (authGated(path, account) || !showBottomNav(path)) return null
 
   return (
     <View pointerEvents="box-none" style={[styles.navWrap, { paddingBottom: insets.bottom + NAV_GAP }]}>

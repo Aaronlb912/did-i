@@ -53,13 +53,8 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
         live.value = 0
         return
       }
-      if (reduce) {
-        runOnJS(finishBack)()
-        return
-      }
-      x.value = withTiming(w, { duration: 180 }, () => {
-        runOnJS(finishBack)()
-      })
+      runOnJS(finishBack)()
+      if (!reduce) x.value = withTiming(w, { duration: 180 })
     })
     .onFinalize(() => {
       if (x.value <= 0) live.value = 0

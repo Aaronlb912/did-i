@@ -1,11 +1,8 @@
-import { hallHeat, shelfHeat } from './hall-feel.js'
-import { isAppForeground, pingStreakHit } from './native.js'
-import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
+import { shelfHeat } from './hall-feel.js'
+import { isAppForeground } from './app-foreground.js'
 
 const PENDING = 'did-i-streak-pending'
 const SEEN = 'did-i-streak-seen'
-
-export const STREAK_RISK_HOUR = 21
 
 export function fireStreakMoment(detail) {
   if (!detail?.kind) return
@@ -22,6 +19,7 @@ export async function deliverStreakHit(hit, dateIso) {
     fireStreakMoment({ ...hit, dateIso })
     return
   }
+  const { pingStreakHit } = await import('./native.js')
   const sent = await pingStreakHit(hit, dateIso)
   if (sent) markStreakSeen('hit', dateIso)
   else queueStreakMoment(hit, dateIso)
@@ -92,25 +90,3 @@ export function maybeStreakMiss({ beforeHeat, afterHeat, dateIso }) {
   return { kind: 'miss', was: beforeHeat }
 }
 
-export function streakAtRisk(book, now = new Date()) {
-  if (!book) return false
-  const heat = hallHeat(book, now)
-  if (heat <= 0) return false
-  if (allClearTonight(book, now)) return false
-  return dueTonight(book, now).length > 0
-}
-
-export function streakRiskFire(book, now = new Date()) {
-  if (!streakAtRisk(book, now)) return null
-  const dateIso = boardDate(now)
-  const [year, month, day] = dateIso.split('-').map(Number)
-  const at = new Date(year, month - 1, day, STREAK_RISK_HOUR, 0, 0, 0)
-  if (at.getTime() <= now.getTime()) return null
-  return {
-    at: at.getTime(),
-    tag: `streak-risk:${dateIso}`,
-    id: `streak-risk:${dateIso}`,
-    question: '',
-    streakRisk: true,
-  }
-}

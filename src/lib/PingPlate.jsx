@@ -1,4 +1,5 @@
 import { goHash } from '../site/hash.js'
+import { shortFromQuestion } from './board-json.js'
 import { BoardShell } from './BoardShell.jsx'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
@@ -50,7 +51,7 @@ export function PingPlate({ book, now, pingLabel, onAskPings }) {
                     type="button"
                     onClick={() => goHash('/tonight', { face: fire.id })}
                   >
-                    <span>{fire.question.replace(/^Did I\s+/i, '').replace(/\?+$/, '')}</span>
+                    <span>{shortFromQuestion(fire.question) || t('lamp.unnamed')}</span>
                     <span className="di-home-state">{fireClock(fire.at)}</span>
                   </button>
                 </li>

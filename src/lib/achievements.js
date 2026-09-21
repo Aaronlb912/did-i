@@ -1,4 +1,3 @@
-import { cameBackAfterHole } from './daily.js'
 import { hallHeat } from './hall-feel.js'
 import {
   addDaysIso,
@@ -58,6 +57,20 @@ export function streakLength(book, lamp, now) {
   return count
 }
 
+function cameBackAfterHole(book, now = new Date()) {
+  const today = boardDate(now, book.dayFoldHour)
+  const yesterday = addDaysIso(today, -1)
+  const at = parseIsoDate(yesterday)
+  if (!at) return false
+  at.setHours(12, 0, 0, 0)
+  const due = dueTonight(book, at).filter(
+    (row) => !row.lamp.createdOn || row.lamp.createdOn <= yesterday,
+  )
+  if (!due.length) return false
+  if (due.every((row) => row.answer)) return false
+  return (book.opens || []).includes(today)
+}
+
 function quietWeek(book, now) {
   const today = boardDate(now, book.dayFoldHour)
   let anyDue = false
@@ -113,4 +126,8 @@ export function unlockAchievements(book, now = new Date()) {
   if (quietWeek(book, now)) add('quiet-week')
 
   return { ...book, unlocked }
+}
+
+export function commitBook(book, clock = new Date()) {
+  return unlockAchievements(book, clock)
 }

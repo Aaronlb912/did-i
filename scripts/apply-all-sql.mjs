@@ -11,6 +11,8 @@ const files = [
   'supabase/handle-safe.sql',
   'supabase/phone-friends.sql',
   'supabase/hardening.sql',
+  'supabase/rls-subselect.sql',
+  'supabase/invite-guard.sql',
   'supabase/answers.sql',
   'supabase/blocks.sql',
   'supabase/push.sql',

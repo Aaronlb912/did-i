@@ -1227,6 +1227,14 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   color: var(--di-on);
 }
 
+.di-invite-meter {
+  margin-bottom: 0.85rem;
+}
+
+.di-invite-meter-note {
+  margin: 0;
+}
+
 /* Chip row for tonight, and the last-night row */
 
 .di-edge-wrap,
@@ -5220,6 +5228,14 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   margin-top: 0.75rem;
 }
 
+.di-legal-links-subtle {
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0.72;
+}
+
 .di-legal-link {
   padding: 0;
   border: 0;
@@ -5231,8 +5247,19 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   cursor: pointer;
 }
 
+.di-legal-links-subtle .di-legal-link {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, var(--di-ink-dim) 50%, transparent);
+  text-underline-offset: 0.14em;
+}
+
 .di-legal-link:hover {
   color: var(--di-ink);
+}
+
+.di-legal-links-subtle .di-legal-link:hover {
+  color: var(--di-ink-soft);
+  text-decoration-color: currentcolor;
 }
 
 .di-enter .di-field {
@@ -6276,12 +6303,91 @@ html[data-reduce-motion] .di-hall[data-look='wine']::after {
   padding: 0.9rem 0.95rem;
 }
 
+.di-savable-field-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 1.55rem;
+  padding: 0.2rem 0.95rem 0.65rem;
+}
+
+.di-savable-field-hint,
+.di-savable-field-saved {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--di-ink-dim);
+}
+
+.di-savable-field-saved {
+  color: var(--di-on);
+  font-weight: 600;
+}
+
 .di-set-row.is-flat {
   cursor: default;
 }
 
 .di-account .di-detail-meta {
   margin: 0.5rem 0.2rem 1rem;
+}
+
+.di-account-lead {
+  margin-bottom: 1.1rem;
+}
+
+.di-auth-card {
+  margin: 0 0 1.2rem;
+  padding: 1.05rem 1rem 1rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
+}
+
+.di-auth-card .di-set-cap {
+  margin: 0 0 0.45rem;
+}
+
+.di-auth-card-title {
+  margin: 0 0 0.85rem;
+  font-family: var(--di-display);
+  font-size: 1.45rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--di-ink);
+}
+
+.di-auth-card .di-set-row.di-set-field {
+  margin-top: 0.55rem;
+  border-radius: 10px;
+}
+
+.di-auth-card-note {
+  margin: 0.75rem 0.15rem 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--di-ink-soft);
+}
+
+.di-auth-card-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  margin-top: 0.95rem;
+}
+
+.di-auth-card-actions .di-did,
+.di-auth-card-actions .di-key {
+  width: 100%;
+  justify-content: center;
+}
+
+.di-auth-lock {
+  padding: 0.95rem 1rem 0.35rem;
+  background: var(--di-panel-2);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
 }
 
 .di-account .di-hang-actions {

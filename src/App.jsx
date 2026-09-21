@@ -14,7 +14,8 @@ import {
   selectBook,
   writeShelf,
 } from './lib/board-shelf.js'
-import { commitBook, hangInto, takeDown } from './lib/board-ops.js'
+import { commitBook } from './lib/achievements.js'
+import { hangInto, takeDown } from './lib/board-ops.js'
 import { blankLamp } from './lib/board-json.js'
 import { boardDate, isoDate } from './lib/recurrence.js'
 import {
@@ -57,6 +58,7 @@ import { Account } from './lib/Account.jsx'
 import { PhoneSettings } from './lib/PhoneSettings.jsx'
 import { People } from './lib/People.jsx'
 import { PeopleConnect } from './lib/PeopleConnect.jsx'
+import { PeopleRefer } from './lib/PeopleRefer.jsx'
 import { Friends } from './lib/Friends.jsx'
 import { Family } from './lib/Family.jsx'
 import { Inbox } from './lib/Inbox.jsx'
@@ -65,7 +67,7 @@ import { Everyone } from './lib/Everyone.jsx'
 import { AppNav } from './lib/AppNav.jsx'
 import { showBottomNav } from './lib/app-nav.js'
 import { forgetAnswerMarks } from './lib/answer-log.js'
-import { SHELF_IN, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
+import { SHELF_IN, flushPushSoon, pullAndMerge, pushSoon } from './lib/cloud-sync.js'
 import { stripDemoShelf } from './lib/demo-strip.js'
 import { Collection } from './lib/Collection.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
@@ -368,9 +370,15 @@ export default function App() {
     }
     function onWake() {
       if (document.visibilityState === 'visible') pullAndMerge()
+      else flushPushSoon()
+    }
+    function onLeave() {
+      flushPushSoon()
     }
     window.addEventListener('beforeinstallprompt', onInstall)
     window.addEventListener(SHELF_IN, onShelfIn)
+    window.addEventListener('pagehide', onLeave)
+    window.addEventListener('beforeunload', onLeave)
     document.addEventListener('visibilitychange', onWake)
     navigator.serviceWorker?.addEventListener('message', onMessage)
     pullAndMerge()
@@ -388,6 +396,8 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeinstallprompt', onInstall)
       window.removeEventListener(SHELF_IN, onShelfIn)
+      window.removeEventListener('pagehide', onLeave)
+      window.removeEventListener('beforeunload', onLeave)
       document.removeEventListener('visibilitychange', onWake)
       navigator.serviceWorker?.removeEventListener('message', onMessage)
       stop()
@@ -488,7 +498,7 @@ export default function App() {
       <Enter
         book={live}
         onSaveKeeper={saveKeeper}
-        returnTo={path === '/enter' ? (emptyHall ? '/first' : '/') : path}
+        returnTo={path === '/enter' ? undefined : path}
         returnFace={route.face}
       />
     )
@@ -524,6 +534,8 @@ export default function App() {
     inner = <Account book={live} onChange={change} />
   } else if (path === '/people') {
     inner = <People book={live} onChange={change} />
+  } else if (path === '/people/refer') {
+    inner = <PeopleRefer book={live} onChange={change} />
   } else if (path === '/people/connect') {
     inner = <PeopleConnect book={live} onChange={change} />
   } else if (path === '/friends') {

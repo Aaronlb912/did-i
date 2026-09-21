@@ -1,5 +1,4 @@
 import { answeredAtIso, duplicateLamp, newAnswerId } from './board-json.js'
-import { unlockAchievements } from './achievements.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 
 export function putAnswer(book, row, status, clock = new Date()) {
@@ -67,6 +66,3 @@ export function hangCopy(book, lamp, clock = new Date()) {
   }
 }
 
-export function commitBook(book, clock = new Date()) {
-  return unlockAchievements(book, clock)
-}

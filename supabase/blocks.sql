@@ -99,6 +99,8 @@ create policy "ask a friend" on public.friend_links
   );
 
 -- A blocked person drops out of every list you read.
+drop function if exists public.known_people();
+
 create or replace function public.known_people()
 returns table (
   user_id uuid,

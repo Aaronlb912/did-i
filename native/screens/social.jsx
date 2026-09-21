@@ -7,8 +7,9 @@ import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { passAlong } from '../../src/lib/native.js'
 import {
-  INVITE_COINS,
+  INVITE_GEMS_CAP,
   INVITE_LOOK_AT,
+  invitePayoutNote,
   answerSend,
   askFriend,
   blockPerson,
@@ -16,7 +17,6 @@ import {
   cleanCode,
   cleanPhone,
   formatPhone,
-  cleanInvite,
   dropFriend,
   friendAskNote,
   friendAskTitle,
@@ -32,7 +32,6 @@ import {
   syncDisplayName,
   myInvite,
   personName,
-  ensureMyPhone,
   readMine,
   reportTonightLine,
   sayNo,
@@ -47,13 +46,12 @@ import {
   TONIGHT_CHEER_GEMS,
   cheerOn,
   unblockPerson,
-  useInvite,
 } from '../../src/lib/people.js'
 import {
   CHEER_GEMS,
   FRIEND_CHEER_GEMS,
   fireCheer,
-  giveCoins,
+  applyInvitePayout,
   normalizePurse,
   spendGems,
 } from '../../src/lib/purse.js'
@@ -61,6 +59,8 @@ import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
+import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
 import {
   DidButton,
   Field,
@@ -253,7 +253,6 @@ export function PeopleScreen({ book, onChange }) {
       return
     }
     try {
-      await ensureMyPhone()
       const [who, friendRows, famRows, count] = await Promise.all([
         readMine(),
         listFriends(),
@@ -439,16 +438,12 @@ export function PeopleScreen({ book, onChange }) {
   )
 }
 
-export function PeopleConnectScreen({ book, onChange }) {
+export function PeopleReferScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [mine, setMine] = useState(null)
   const [invite, setInvite] = useState('')
   const [joined, setJoined] = useState(0)
-  const [inviteDraft, setInviteDraft] = useState('')
-  const [addDraft, setAddDraft] = useState('')
-  const [famDraft, setFamDraft] = useState('')
-  const [codeDraft, setCodeDraft] = useState('')
+  const [gemsPaid, setGemsPaid] = useState(0)
   const [ready, setReady] = useState(false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
@@ -459,10 +454,9 @@ export function PeopleConnectScreen({ book, onChange }) {
       return
     }
     try {
-      await ensureMyPhone()
-      const [who, code] = await Promise.all([readMine(), myInvite()])
-      setMine(who)
+      const [code, who] = await Promise.all([myInvite(), readMine()])
       setInvite(code)
+      setGemsPaid(Number(who?.invite_gems_paid) || 0)
       setMiss('')
     } catch {
       setMiss(t('people.reach'))
@@ -475,13 +469,11 @@ export function PeopleConnectScreen({ book, onChange }) {
     try {
       const won = await claimInvites()
       setJoined(won.joined)
-      if (!won.coins && !won.looks.length) return
-      if (onChange) onChange(giveCoins(book, won.coins, won.looks))
-      setSaid(
-        won.looks.length
-          ? t('people.wonLook', { coins: won.coins })
-          : t('people.wonCoins', { coins: won.coins }),
-      )
+      const who = await readMine()
+      setGemsPaid(Number(who?.invite_gems_paid) || 0)
+      if (!won.gems && !won.looks.length) return
+      if (onChange) onChange(applyInvitePayout(book, won))
+      setSaid(invitePayoutNote(won))
     } catch {
       setMiss(t('people.reach'))
     }
@@ -497,16 +489,66 @@ export function PeopleConnectScreen({ book, onChange }) {
     setSaid(words)
   }
 
-  async function redeem() {
-    const { miss: why } = await useInvite(inviteDraft)
-    if (why === 'code') return setMiss(t('people.inviteShort'))
-    if (why === 'nobody') return setMiss(t('people.noInvite'))
-    if (why === 'self') return setMiss(t('people.ownInvite'))
-    if (why === 'used') return setMiss(t('people.inviteUsed'))
-    if (why) return setMiss(tMiss(why))
-    setInviteDraft('')
-    await payOut()
-    return load()
+  if (!cloudSetUp()) return <CloudOff colors={colors} />
+  if (!account.user) {
+    return <NeedAccount kicker={t('people.refer')} title={t('people.outTitle')} colors={colors} />
+  }
+  if (!ready) {
+    return (
+      <ScreenShell title={t('people.refer')} colors={colors}>
+        <Meta colors={colors}>{t('family.loading')}</Meta>
+      </ScreenShell>
+    )
+  }
+
+  return (
+    <ScreenShell title={t('people.refer')} colors={colors}>
+      <OfflineLine colors={colors} />
+      <Meta colors={colors}>{t('people.referBody')}</Meta>
+
+      <InviteRewardBar colors={colors} gemsPaid={gemsPaid} joined={joined} />
+
+      <Cap colors={colors}>{t('people.yourCode')}</Cap>
+      <Row
+        colors={colors}
+        label={t('people.yourCode')}
+        note={invite || '...'}
+        onPress={
+          invite
+            ? async () => {
+                const how = await passAlong(t('people.inviteLine', { code: invite }), t('people.invite'))
+                if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
+              }
+            : undefined
+        }
+      />
+      <Meta colors={colors}>
+        {joined >= INVITE_LOOK_AT
+          ? t('people.lookWon')
+          : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })}
+      </Meta>
+      <Meta colors={colors}>{t('people.inviteHint', { max: INVITE_GEMS_CAP, n: INVITE_LOOK_AT })}</Meta>
+
+      <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
+
+      <Miss colors={colors}>{miss}</Miss>
+      {said ? <Meta colors={colors}>{said}</Meta> : null}
+    </ScreenShell>
+  )
+}
+
+export function PeopleConnectScreen({ book }) {
+  const colors = useHallColors()
+  const account = useAccount()
+  const [addDraft, setAddDraft] = useState('')
+  const [famDraft, setFamDraft] = useState('')
+  const [codeDraft, setCodeDraft] = useState('')
+  const [miss, setMiss] = useState('')
+  const [said, setSaid] = useState('')
+
+  function say(words) {
+    setMiss('')
+    setSaid(words)
   }
 
   async function ask() {
@@ -517,7 +559,6 @@ export function PeopleConnectScreen({ book, onChange }) {
     if (why) return setMiss(tMiss(why))
     setAddDraft('')
     say(t('people.asked', { name: personName(person) }))
-    return load()
   }
 
   async function newFamily() {
@@ -540,52 +581,18 @@ export function PeopleConnectScreen({ book, onChange }) {
   if (!account.user) {
     return <NeedAccount kicker={t('people.connect')} title={t('people.outTitle')} colors={colors} />
   }
-  if (!ready) {
-    return (
-      <ScreenShell title={t('people.connect')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
-      </ScreenShell>
-    )
-  }
 
   return (
     <ScreenShell title={t('people.connect')} colors={colors}>
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('people.connectBody')}</Meta>
 
-      <Cap colors={colors}>{t('people.invite')}</Cap>
       <Row
         colors={colors}
-        label={t('people.yourCode')}
-        note={invite || '...'}
-        onPress={
-          invite
-            ? async () => {
-                const how = await passAlong(t('people.inviteLine', { code: invite }), t('people.invite'))
-                if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-              }
-            : undefined
-        }
+        label={t('people.refer')}
+        note={t('people.referSub')}
+        onPress={() => goHash('/people/refer')}
       />
-      <Meta colors={colors}>
-        {joined >= INVITE_LOOK_AT
-          ? t('people.lookWon')
-          : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })}
-      </Meta>
-      <Meta colors={colors}>{t('people.inviteHint', { coins: INVITE_COINS, n: INVITE_LOOK_AT })}</Meta>
-
-      {mine && !mine.invited_by ? (
-        <>
-          <Field
-            colors={colors}
-            label={t('people.gotCode')}
-            value={inviteDraft}
-            onChangeText={(value) => setInviteDraft(cleanInvite(value))}
-            autoCapitalize="characters"
-          />
-          <DidButton colors={colors} label={t('people.useCode')} onPress={redeem} />
-        </>
-      ) : null}
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
       <Field colors={colors} label={t('people.add')} value={addDraft} onChangeText={setAddDraft} />
@@ -605,7 +612,6 @@ export function PeopleConnectScreen({ book, onChange }) {
 
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
-      <KeyButton colors={colors} label={t('people.back')} onPress={() => goHash('/people')} />
     </ScreenShell>
   )
 }

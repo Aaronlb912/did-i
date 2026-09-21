@@ -7,6 +7,7 @@ const ROUTES = new Set([
   '/home',
   '/tonight',
   '/enter',
+  '/sign-in',
   '/about',
   '/lamps',
   '/week',
@@ -39,6 +40,7 @@ const ROUTES = new Set([
   '/account',
   '/people',
   '/people/connect',
+  '/people/refer',
   '/friends',
   '/family',
   '/inbox',
@@ -51,6 +53,7 @@ const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later'])
 const FALLBACK = {
   '/friends': '/people',
   '/people/connect': '/people',
+  '/people/refer': '/people/connect',
   '/family': '/people',
   '/inbox': '/people',
   '/sent': '/people',

@@ -54,13 +54,10 @@ export function LampFace({
   function finish(way) {
     if (mode === 'fly') return
     const go = way === 'did' ? onYes : onSkip
-    if (reduce || way === 'nope') {
-      go()
-      return
-    }
+    go()
+    if (reduce || way === 'nope') return
     setMode('fly')
     setDx(460)
-    window.setTimeout(go, 180)
   }
 
   function onPointerDown(event) {

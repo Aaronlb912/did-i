@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { unlockAchievements } from '../../src/lib/achievements.js'
+import { AppState } from 'react-native'
+import { commitBook, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
 import {
   currentBook,
@@ -12,11 +13,11 @@ import {
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { hangInto, commitBook, takeDown } from '../../src/lib/board-ops.js'
+import { hangInto, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
-import { pullAndMerge, pushSoon, SHELF_IN } from '../../src/lib/cloud-sync.js'
+import { flushPushSoon, pullAndMerge, pushSoon, SHELF_IN } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
 import { boardDate, isoDate } from '../../src/lib/recurrence.js'
 import {
@@ -161,14 +162,22 @@ export function useAppShelf() {
   )
 
   useEffect(() => {
-    pullAndMerge().then((result) => {
-      if (result?.shelf) setShelf(result.shelf)
-    })
+    pullAndMerge()
+      .then((result) => {
+        if (result) setShelf(result)
+      })
+      .catch(() => {})
     function onShelfIn(event) {
       if (event?.detail) setShelf(event.detail)
     }
     window.addEventListener(SHELF_IN, onShelfIn)
-    return () => window.removeEventListener(SHELF_IN, onShelfIn)
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'background' || next === 'inactive') flushPushSoon()
+    })
+    return () => {
+      window.removeEventListener(SHELF_IN, onShelfIn)
+      sub.remove()
+    }
   }, [])
 
   useEffect(() => {

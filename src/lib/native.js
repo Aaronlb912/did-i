@@ -1,3 +1,4 @@
+import { isAppForeground } from './app-foreground.js'
 import { t } from './i18n.js'
 import { boardDate } from './recurrence.js'
 import { readReduceMotion } from './useReduceMotion.js'
@@ -24,14 +25,7 @@ export async function requestNativePings() {
 
 export async function scheduleNativePings() {}
 
-export async function readDevicePhone() {
-  return ''
-}
-
-export function isAppForeground() {
-  if (typeof document === 'undefined') return true
-  return document.visibilityState === 'visible'
-}
+export { isAppForeground }
 
 export async function pingStreakHit(hit, dateIso) {
   if (!hit || typeof window === 'undefined' || !('Notification' in window)) return false

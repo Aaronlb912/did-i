@@ -37,6 +37,7 @@ import {
   FriendsScreen,
   InboxScreen,
   PeopleConnectScreen,
+  PeopleReferScreen,
   PeopleScreen,
   SentScreen,
 } from './social.jsx'
@@ -67,7 +68,6 @@ export function ScreenRouter({
   const emptyHall = boards.every(
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
-
   if (path === '/privacy') return <LegalScreen kind="privacy" book={book} />
   if (path === '/terms') return <LegalScreen kind="terms" book={book} />
   if (path === '/welcome') return <WelcomeScreen book={book} />
@@ -76,7 +76,7 @@ export function ScreenRouter({
       <EnterScreen
         book={book}
         onSaveKeeper={(patch) => change({ ...book, ...patch })}
-        returnTo={path === '/enter' ? (emptyHall ? '/first' : '/tonight') : path}
+        returnTo={path === '/enter' ? undefined : path}
       />
     )
   }
@@ -96,6 +96,7 @@ export function ScreenRouter({
   if (path === '/kit') return <CollectionScreen book={book} onChange={change} />
   if (path === '/account') return <AccountScreen book={book} onChange={change} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
+  if (path === '/people/refer') return <PeopleReferScreen book={book} onChange={change} />
   if (path === '/people/connect') return <PeopleConnectScreen book={book} onChange={change} />
   if (path === '/friends') return <FriendsScreen book={book} onChange={change} highlightAsk={route.id} />
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />

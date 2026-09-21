@@ -223,13 +223,21 @@ export function kindLabel(lamp) {
   return kind
 }
 
+export function shortFromQuestion(question, max = 0) {
+  const text = asString(question).trim()
+  if (!text) return ''
+  const cleaned = text.replace(/^did i\s+/i, '').replace(/\?+$/, '').trim()
+  if (!cleaned) return ''
+  const out = cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+  return max > 0 ? out.slice(0, max) : out
+}
+
 export function shortLabel(lamp) {
-  const short = asString(lamp.short).trim()
+  const short = asString(lamp?.short).trim()
   if (short) return short
-  const question = asString(lamp.question).trim()
-  const cleaned = question.replace(/^did i\s+/i, '').replace(/\?+$/, '').trim()
+  const cleaned = shortFromQuestion(lamp?.question)
   if (!cleaned) return t('lamp.unnamed')
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+  return cleaned
 }
 
 export function missLamp(lamp) {

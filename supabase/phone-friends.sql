@@ -97,7 +97,7 @@ drop function if exists public.known_people();
 create or replace function public.known_people()
 returns table (
   user_id uuid,
-  phone text,
+  handle text,
   display_name text,
   share_streak boolean,
   streak integer,
@@ -119,7 +119,7 @@ as $$
     join public.family_members theirs on theirs.family_id = mine.family_id
     where mine.user_id = (select id from me)
   )
-  select p.user_id, p.phone, p.display_name, p.share_streak, p.streak, p.done_on
+  select p.user_id, p.handle, p.display_name, p.share_streak, p.streak, p.done_on
   from public.profiles p
   join mine on mine.who = p.user_id
   where p.user_id <> (select id from me);

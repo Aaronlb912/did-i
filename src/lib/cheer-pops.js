@@ -263,7 +263,7 @@ export function popsFor(kind, stage) {
 
 export function holdFor(kind, pops) {
   if (kind === 'spark') return 900
-  if (kind === 'flip') return 1200 + (pops - 1) * 300
+  if (kind === 'flip') return 1320 + (pops - 1) * 300
   if (kind === 'night') return 2100
   if (kind === 'tape') return 1700
   if (kind === 'paper') return 2000

@@ -20,7 +20,7 @@ export function cloud() {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
+        detectSessionInUrl: typeof document !== 'undefined' && !globalThis.__didIPlatform,
         storageKey: 'did-i-auth',
       },
     })

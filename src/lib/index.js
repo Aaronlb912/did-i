@@ -49,6 +49,7 @@ export {
   normalizeBook,
   normalizeLamp,
   parseBookText,
+  shortFromQuestion,
   shortLabel,
 } from './board-json.js'
 export {

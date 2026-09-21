@@ -21,12 +21,12 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import {
   PageTitle,
   SetCap,
   SetCard,
-  SetField,
   SetNote,
   SetPick,
   SetRow,
@@ -44,22 +44,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
     setNoteDraft(book?.inkNote || '')
   }, [book?.keeperName, book?.inkNote])
 
-  useEffect(() => {
-    if (!book || !onChange) return undefined
-    const keeperName = keeperDraft.trim()
-    if (keeperName === (book.keeperName || '')) return undefined
-    const timer = setTimeout(() => onChange({ ...book, keeperName }), 400)
-    return () => clearTimeout(timer)
-  }, [keeperDraft, book, onChange])
-
-  useEffect(() => {
-    if (!book || !onChange) return undefined
-    const inkNote = noteDraft.trim()
-    if (inkNote === (book.inkNote || '')) return undefined
-    const timer = setTimeout(() => onChange({ ...book, inkNote }), 400)
-    return () => clearTimeout(timer)
-  }, [noteDraft, book, onChange])
-
   return (
     <BoardShell book={book} title={t('settings.title')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
       <PageTitle colors={colors}>{t('settings.title')}</PageTitle>
@@ -67,14 +51,29 @@ export function PhoneSettingsScreen({ book, onChange }) {
 
       <SetCap colors={colors}>{t('settings.title')}</SetCap>
       <SetCard colors={colors}>
-        <SetField colors={colors} label={t('settings.name')} value={keeperDraft} onChangeText={setKeeperDraft} />
-        <SetField
+        <SavableSetField
+          colors={colors}
+          label={t('settings.name')}
+          value={keeperDraft}
+          savedValue={book?.keeperName || ''}
+          onChangeText={setKeeperDraft}
+          onSave={(keeperName) => {
+            setKeeperDraft(keeperName)
+            onChange({ ...book, keeperName })
+          }}
+        />
+        <SavableSetField
           colors={colors}
           label={t('settings.note')}
           value={noteDraft}
+          savedValue={book?.inkNote || ''}
           onChangeText={setNoteDraft}
           placeholder={t('settings.notePh')}
           multiline
+          onSave={(inkNote) => {
+            setNoteDraft(inkNote)
+            onChange({ ...book, inkNote })
+          }}
         />
       </SetCard>
 

@@ -85,6 +85,9 @@ export function Field({
   secureTextEntry,
   maxLength,
   onSubmitEditing,
+  onEndEditing,
+  returnKeyType,
+  blurOnSubmit,
   autoFocus,
 }) {
   return (
@@ -100,8 +103,10 @@ export function Field({
         secureTextEntry={secureTextEntry}
         maxLength={maxLength}
         onSubmitEditing={onSubmitEditing}
+        onEndEditing={onEndEditing}
         autoFocus={autoFocus}
-        returnKeyType={onSubmitEditing ? 'done' : undefined}
+        blurOnSubmit={blurOnSubmit}
+        returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
         placeholderTextColor={colors.inkDim}
         style={[
           styles.input,

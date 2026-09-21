@@ -36,7 +36,7 @@ const DEMO_TITLES = new Set(['Hayes Street', 'Practice night', 'Shop try', 'Try 
 const DEMO_INK = new Set([
   'Tap DID. Watch the cheer. Then open Shop.',
   'Tonight is done. Spend coins on a look. Spend gems on a cheer.',
-  'Three due tonight. Swipe DID or nope.',
+  'Three due tonight. Swipe DID or did not.',
 ])
 
 export function isDemoLampId(id) {

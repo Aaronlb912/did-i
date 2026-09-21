@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Platform, UIManager, View } from 'react-native'
+import { useAccount } from '../src/lib/account.js'
+import { readShelf } from '../src/lib/board-shelf.js'
+import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
-import { canGoBack, goBack, onRoute, peekBackRoute, readRoute } from './navigation/hash.js'
+import { canGoBack, goBack, goHash, onRoute, peekBackRoute, readRoute } from './navigation/hash.js'
 import { AppNav } from './components/AppNav.jsx'
 import { CheerBurst } from './components/CheerBurst.jsx'
 import { MarkToast } from './components/MarkToast.jsx'
 import { SwipeBackShell } from './components/SwipeBackShell.jsx'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
+import { SignInScreen } from './screens/SignInScreen.jsx'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -27,7 +31,9 @@ export function AppShell() {
   usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
+  const account = useAccount()
   const colors = useHallColors(app.book)
+  const gated = authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
   const backRoute = useMemo(() => peekBackRoute(), [route])
   const swipeBack = canGoBack()
@@ -39,7 +45,7 @@ export function AppShell() {
   }, [app.book])
 
   useEffect(() => {
-    checkPings().then(setPingState)
+    checkPings().then(setPingState).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -47,6 +53,22 @@ export function AppShell() {
   }, [app.book])
 
   const pingLabel = pingButtonLabel(pingState)
+
+  if (gated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <SignInScreen
+          onDone={() => {
+            const shelf = readShelf()
+            const empty = shelf.boards.every(
+              (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
+            )
+            goHash(empty ? '/first' : '/tonight')
+          }}
+        />
+      </View>
+    )
+  }
 
   const screenProps = {
     book: app.book,

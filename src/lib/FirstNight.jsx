@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
-import { blankLamp } from './board-json.js'
+import { blankLamp, shortFromQuestion } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { BoardShell } from './BoardShell.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
@@ -15,13 +15,6 @@ function asQuestion(raw) {
   if (!/^did i\b/i.test(question)) question = `Did I ${question}`
   if (!question.endsWith('?')) question += '?'
   return question
-}
-
-function shortFrom(question) {
-  return question
-    .replace(/^Did I /i, '')
-    .replace(/\?$/, '')
-    .slice(0, 24)
 }
 
 export function FirstNight({ book, onChange, now }) {
@@ -49,7 +42,7 @@ export function FirstNight({ book, onChange, now }) {
     const lamp = {
       ...blankLamp(clock),
       question,
-      short: shortFrom(question),
+      short: shortFromQuestion(question, 24),
       cadence: 'daily',
       askAfter: '',
       slot: 'whenever',

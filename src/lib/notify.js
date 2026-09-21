@@ -2,7 +2,7 @@ import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { t } from './i18n.js'
 import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
-import { streakRiskFire } from './streak-moments.js'
+import { streakRiskFire } from './streak-risk.js'
 
 const timers = []
 
@@ -46,7 +46,7 @@ export function upcomingPings(book, now = new Date()) {
       fires.push({
         id: row.lamp.id,
         tag: row.periodKey,
-        question: row.lamp.question,
+        question: String(row.lamp.question ?? ''),
         at: at.getTime(),
       })
     }
@@ -56,7 +56,7 @@ export function upcomingPings(book, now = new Date()) {
     fires.push({
       id: row.lamp.id,
       tag: `${row.periodKey}:late`,
-      question: row.lamp.question,
+      question: String(row.lamp.question ?? ''),
       at: late.getTime(),
     })
   }

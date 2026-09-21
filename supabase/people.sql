@@ -86,6 +86,7 @@ alter table public.profiles add column if not exists invite_code text;
 alter table public.profiles add column if not exists invited_by uuid references auth.users on delete set null;
 alter table public.profiles add column if not exists joined_paid boolean not null default false;
 alter table public.profiles add column if not exists invites_paid integer not null default 0;
+alter table public.profiles add column if not exists invite_gems_paid integer not null default 0;
 alter table public.profiles add column if not exists invite_look_paid boolean not null default false;
 
 create unique index if not exists profiles_invite_code_key
@@ -314,34 +315,34 @@ drop policy if exists "own profile" on public.profiles;
 drop policy if exists "read known profiles" on public.profiles;
 create policy "read known profiles" on public.profiles
   for select using (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     or public.are_friends(user_id)
     or exists (
       select 1 from public.family_members mine
       join public.family_members theirs on theirs.family_id = mine.family_id
-      where mine.user_id = auth.uid() and theirs.user_id = public.profiles.user_id
+      where mine.user_id = (select auth.uid()) and theirs.user_id = public.profiles.user_id
     )
   );
 
 drop policy if exists "write own profile" on public.profiles;
 create policy "write own profile" on public.profiles
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 drop policy if exists "see my links" on public.friend_links;
 create policy "see my links" on public.friend_links
-  for select using (auth.uid() in (from_id, to_id));
+  for select using ((select auth.uid()) in (from_id, to_id));
 
 drop policy if exists "ask a friend" on public.friend_links;
 create policy "ask a friend" on public.friend_links
-  for insert with check (auth.uid() = from_id);
+  for insert with check ((select auth.uid()) = from_id);
 
 drop policy if exists "answer a link" on public.friend_links;
 create policy "answer a link" on public.friend_links
-  for update using (auth.uid() = to_id) with check (auth.uid() = to_id);
+  for update using ((select auth.uid()) = to_id) with check ((select auth.uid()) = to_id);
 
 drop policy if exists "drop a link" on public.friend_links;
 create policy "drop a link" on public.friend_links
-  for delete using (auth.uid() in (from_id, to_id));
+  for delete using ((select auth.uid()) in (from_id, to_id));
 
 drop policy if exists "see my family" on public.families;
 create policy "see my family" on public.families
@@ -369,7 +370,7 @@ create policy "parents set roles" on public.family_members
 
 drop policy if exists "leave or remove" on public.family_members;
 create policy "leave or remove" on public.family_members
-  for delete using (auth.uid() = user_id or public.is_parent(family_id));
+  for delete using ((select auth.uid()) = user_id or public.is_parent(family_id));
 
 drop policy if exists "see family tags" on public.family_tags;
 create policy "see family tags" on public.family_tags
@@ -387,18 +388,21 @@ create policy "see family questions" on public.family_lamps
 drop policy if exists "add a family question" on public.family_lamps;
 create policy "add a family question" on public.family_lamps
   for insert with check (
-    auth.uid() = made_by
-    and (public.is_parent(family_id) or (public.in_family(family_id) and for_id = auth.uid()))
+    (select auth.uid()) = made_by
+    and (
+      public.is_parent(family_id)
+      or (public.in_family(family_id) and for_id = (select auth.uid()))
+    )
   );
 
 drop policy if exists "edit a family question" on public.family_lamps;
 create policy "edit a family question" on public.family_lamps
-  for update using (public.is_parent(family_id) or auth.uid() = made_by)
-  with check (public.is_parent(family_id) or auth.uid() = made_by);
+  for update using (public.is_parent(family_id) or (select auth.uid()) = made_by)
+  with check (public.is_parent(family_id) or (select auth.uid()) = made_by);
 
 drop policy if exists "drop a family question" on public.family_lamps;
 create policy "drop a family question" on public.family_lamps
-  for delete using (public.is_parent(family_id) or auth.uid() = made_by);
+  for delete using (public.is_parent(family_id) or (select auth.uid()) = made_by);
 
 drop policy if exists "see family answers" on public.family_answers;
 create policy "see family answers" on public.family_answers
@@ -406,24 +410,24 @@ create policy "see family answers" on public.family_answers
 
 drop policy if exists "answer for yourself" on public.family_answers;
 create policy "answer for yourself" on public.family_answers
-  for all using (auth.uid() = user_id and public.in_family(family_id))
-  with check (auth.uid() = user_id and public.in_family(family_id));
+  for all using ((select auth.uid()) = user_id and public.in_family(family_id))
+  with check ((select auth.uid()) = user_id and public.in_family(family_id));
 
 drop policy if exists "see my sends" on public.sends;
 create policy "see my sends" on public.sends
-  for select using (auth.uid() in (from_id, to_id));
+  for select using ((select auth.uid()) in (from_id, to_id));
 
 drop policy if exists "send to a friend" on public.sends;
 create policy "send to a friend" on public.sends
-  for insert with check (auth.uid() = from_id and public.are_friends(to_id));
+  for insert with check ((select auth.uid()) = from_id and public.are_friends(to_id));
 
 drop policy if exists "keep or pass a send" on public.sends;
 create policy "keep or pass a send" on public.sends
-  for update using (auth.uid() = to_id) with check (auth.uid() = to_id);
+  for update using ((select auth.uid()) = to_id) with check ((select auth.uid()) = to_id);
 
 drop policy if exists "take back a send" on public.sends;
 create policy "take back a send" on public.sends
-  for delete using (auth.uid() in (from_id, to_id));
+  for delete using ((select auth.uid()) in (from_id, to_id));
 
 -- Calls the client makes ----------------------------------------------
 
@@ -617,12 +621,21 @@ $$;
 -- Invites -------------------------------------------------------------
 --
 -- What a code is worth, in one place so the screen and the payout cannot
--- drift apart: ten coins to each side per friend who joins, and the Night
--- look once three of them have. Coins, never gems. Gems still only come
--- from a finished night.
+-- drift apart: gems scale by friend count, ten gems total per person, and
+-- the Night look once three friends have joined.
 
-create or replace function public.invite_coins()
+create or replace function public.invite_gems_cap()
 returns integer language sql immutable as $$ select 10 $$;
+
+create or replace function public.invite_gems_for(which integer)
+returns integer language sql immutable as $$
+  select greatest(which, 1)
+$$;
+
+create or replace function public.invite_gems_left(already integer)
+returns integer language sql immutable as $$
+  select greatest(public.invite_gems_cap() - greatest(already, 0), 0)
+$$;
 
 create or replace function public.invite_look_at()
 returns integer language sql immutable as $$ select 3 $$;
@@ -660,6 +673,7 @@ begin
       raise exception 'could not find a free code';
     end if;
   end loop;
+  perform set_config('did_i.invite_write', '1', true);
   insert into public.profiles (user_id, invite_code) values (me, try)
   on conflict (user_id) do update set invite_code = try;
   return try;
@@ -676,31 +690,48 @@ declare
   me uuid := auth.uid();
   owner uuid;
   mine text;
-  already uuid;
+  row public.profiles;
+  code text := upper(btrim(want_code));
 begin
   if me is null then
     raise exception 'not signed in';
   end if;
-  select p.invited_by, p.invite_code into already, mine
-  from public.profiles p where p.user_id = me;
-  if already is not null then
+  if code is null or length(code) <> 10 then
+    return 'code';
+  end if;
+
+  insert into public.profiles (user_id) values (me)
+  on conflict (user_id) do nothing;
+
+  select * into row from public.profiles where user_id = me for update;
+  if row.invited_by is not null then
     return 'used';
   end if;
-  if mine is not null and upper(mine) = upper(btrim(want_code)) then
+
+  select p.invite_code into mine from public.profiles p where p.user_id = me;
+  if mine is not null and upper(mine) = code then
     return 'self';
   end if;
+
   select p.user_id into owner
   from public.profiles p
-  where p.invite_code is not null and upper(p.invite_code) = upper(btrim(want_code));
+  where p.invite_code is not null and upper(p.invite_code) = code;
   if owner is null then
     return 'nobody';
   end if;
   if owner = me then
     return 'self';
   end if;
-  insert into public.profiles (user_id, invited_by) values (me, owner)
-  on conflict (user_id) do update set invited_by = owner
-  where public.profiles.invited_by is null;
+
+  perform set_config('did_i.invite_write', '1', true);
+  update public.profiles
+  set invited_by = owner
+  where user_id = me and invited_by is null;
+
+  if not found then
+    return 'used';
+  end if;
+
   return 'ok';
 end;
 $$;
@@ -716,41 +747,91 @@ as $$
 declare
   me uuid := auth.uid();
   row public.profiles;
-  coins integer := 0;
+  gems integer := 0;
   looks text[] := '{}';
   joined integer;
-  owed integer;
+  i integer;
+  wins_look boolean;
+  gems_left integer;
+  pay integer;
 begin
   if me is null then
     raise exception 'not signed in';
   end if;
   select * into row from public.profiles where user_id = me for update;
   if row is null then
-    return jsonb_build_object('coins', 0, 'looks', '[]'::jsonb, 'joined', 0);
+    return jsonb_build_object('gems', 0, 'looks', '[]'::jsonb, 'joined', 0);
   end if;
 
   select count(*) into joined from public.profiles where invited_by = me;
+  gems_left := public.invite_gems_left(row.invite_gems_paid);
 
-  if row.invited_by is not null and not row.joined_paid then
-    coins := coins + public.invite_coins();
+  if row.invited_by is not null and not row.joined_paid and gems_left > 0 then
+    pay := least(public.invite_gems_for(1), gems_left);
+    gems := gems + pay;
+    gems_left := gems_left - pay;
   end if;
 
-  owed := greatest(joined - row.invites_paid, 0);
-  coins := coins + owed * public.invite_coins();
+  for i in (row.invites_paid + 1)..joined loop
+    if gems_left <= 0 then
+      exit;
+    end if;
+    pay := least(public.invite_gems_for(i), gems_left);
+    gems := gems + pay;
+    gems_left := gems_left - pay;
+  end loop;
 
-  if joined >= public.invite_look_at() and not row.invite_look_paid then
+  wins_look := joined >= public.invite_look_at() and not row.invite_look_paid;
+  if wins_look then
     looks := array_append(looks, 'night');
   end if;
 
-  update public.profiles set
-    joined_paid = (invited_by is not null),
-    invites_paid = joined,
-    invite_look_paid = invite_look_paid or joined >= public.invite_look_at()
-  where user_id = me;
+  if gems > 0 or wins_look then
+    perform set_config('did_i.invite_write', '1', true);
+    update public.profiles set
+      joined_paid = (invited_by is not null),
+      invites_paid = joined,
+      invite_gems_paid = row.invite_gems_paid + gems,
+      invite_look_paid = invite_look_paid or wins_look
+    where user_id = me;
+  end if;
 
-  return jsonb_build_object('coins', coins, 'looks', to_jsonb(looks), 'joined', joined);
+  return jsonb_build_object('gems', gems, 'looks', to_jsonb(looks), 'joined', joined);
 end;
 $$;
+
+create or replace function public.guard_profile_invites()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if current_setting('did_i.invite_write', true) = '1' then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.invited_by := null;
+    new.invite_code := null;
+    new.joined_paid := false;
+    new.invites_paid := 0;
+    new.invite_gems_paid := 0;
+    new.invite_look_paid := false;
+  else
+    new.invited_by := old.invited_by;
+    new.invite_code := old.invite_code;
+    new.joined_paid := old.joined_paid;
+    new.invites_paid := old.invites_paid;
+    new.invite_gems_paid := old.invite_gems_paid;
+    new.invite_look_paid := old.invite_look_paid;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_profile_invites on public.profiles;
+create trigger guard_profile_invites
+  before insert or update on public.profiles
+  for each row execute function public.guard_profile_invites();
 
 revoke all on function public.my_invite() from public;
 revoke all on function public.use_invite(text) from public;

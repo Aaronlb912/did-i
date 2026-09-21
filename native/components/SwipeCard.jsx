@@ -3,9 +3,14 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   cancelAnimation,
+  Easing,
   runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
@@ -39,6 +44,7 @@ export function SwipeCard({
   blockNope = false,
   panelStyle,
   gemLook = '',
+  demo = false,
   children,
 }) {
   const theme = useTheme()
@@ -53,6 +59,42 @@ export function SwipeCard({
     mode.value = 'idle'
   }, [cardKey, mode, x])
 
+  useEffect(() => {
+    if (!demo) return undefined
+    if (reduce) return undefined
+
+    const frame = requestAnimationFrame(() => {
+      x.value = withRepeat(
+        withSequence(
+          withDelay(700, withTiming(0, { duration: 0 })),
+          withTiming(148, { duration: 780, easing: Easing.out(Easing.cubic) }),
+          withDelay(180, withTiming(0, { duration: 200 })),
+          withDelay(480, withTiming(0, { duration: 0 })),
+          withTiming(-148, { duration: 780, easing: Easing.out(Easing.cubic) }),
+          withDelay(180, withTiming(0, { duration: 200 })),
+          withDelay(620, withTiming(0, { duration: 0 })),
+        ),
+        -1,
+        false,
+      )
+    })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      cancelAnimation(x)
+      x.value = 0
+      mode.value = 'idle'
+    }
+  }, [cardKey, demo, mode, reduce, x])
+
+  useAnimatedReaction(
+    () => (demo ? Math.abs(x.value) : 0),
+    (abs) => {
+      if (!demo) return
+      mode.value = abs > 14 ? 'drag' : 'idle'
+    },
+  )
+
   const snapBack = useCallback(() => {
     mode.value = 'idle'
     cancelAnimation(x)
@@ -61,17 +103,21 @@ export function SwipeCard({
 
   const finish = useCallback(
     (way) => {
-      mode.value = 'idle'
       const done = way === 'did' ? onDid : onNope
+      // Save before the fly animation. Closing the app mid-flight used to
+      // drop the mark because done() only ran after 180ms.
+      done()
       if (reduce || way === 'nope') {
+        mode.value = 'idle'
         cancelAnimation(x)
         x.value = 0
-        done()
         return
       }
       mode.value = 'fly'
-      x.value = withTiming(460, { duration: 180 }, () => {
-        runOnJS(done)()
+      x.value = withTiming(460, { duration: 180 }, (finished) => {
+        if (!finished) return
+        mode.value = 'idle'
+        x.value = 0
       })
     },
     [onDid, onNope, reduce, mode, x],
@@ -79,7 +125,9 @@ export function SwipeCard({
 
   const pan = useMemo(
     () =>
-      Gesture.Pan()
+      demo
+        ? Gesture.Pan().enabled(false)
+        : Gesture.Pan()
         .activeOffsetX([-SWIPE_WAKE, SWIPE_WAKE])
         .onUpdate((event) => {
           if (mode.value === 'fly') return
@@ -106,7 +154,7 @@ export function SwipeCard({
             x.value = withSpring(0, SPRING)
           }
         }),
-    [blockDid, blockNope, finish, mode, x],
+    [blockDid, blockNope, demo, finish, mode, x],
   )
 
   const cardStyle = useAnimatedStyle(() => {
@@ -139,9 +187,10 @@ export function SwipeCard({
           didLabel={stampDid}
           nopeLabel={stampNope}
           reduce={reduce}
+          alwaysOn={demo}
         />
       </View>
-      <GestureDetector gesture={pan}>
+      <GestureDetector gesture={pan} enabled={!demo}>
         <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle, styles.card]}>
           {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
           <BuddyHang id={buddy} />

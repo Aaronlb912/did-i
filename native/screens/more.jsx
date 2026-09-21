@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
 import {
-  accountMissText,
-  checkCode,
   deleteAccount,
   deviceKey,
-  looksLikeEmail,
-  sendCode,
   signOutEverywhere,
   signOutHere,
   useAccount,
@@ -19,9 +16,9 @@ import {
   loadProfile,
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
-import { blankLamp, shortLabel } from '../../src/lib/board-json.js'
+import { blankLamp, shortFromQuestion, shortLabel } from '../../src/lib/board-json.js'
 import { hangInto } from '../../src/lib/board-ops.js'
-import { currentBook, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
+import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { hallHeat } from '../../src/lib/hall-feel.js'
 import {
@@ -38,7 +35,7 @@ import {
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { shareShelf } from '../../src/lib/native.js'
-import { ensureMyPhone, formatPhone, readMine, savePhone } from '../../src/lib/people.js'
+import { formatPhone, readMine, savePhone } from '../../src/lib/people.js'
 import {
   checkPin,
   clearPin,
@@ -57,6 +54,8 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { CalendarGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
+import { SavableField } from '../components/SavableField.jsx'
 import { DidButton, Field, KeyButton, Meta, Page, Row } from '../components/ui.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
@@ -83,7 +82,7 @@ function SureModal({ sure, colors, onClose, onGo }) {
   )
 }
 
-function ScreenShell({ book, title, children, colors, showAdd = false }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell book={live} title={title} colors={colors} showAdd={showAdd}>
@@ -403,14 +402,6 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setTitleDraft(book?.title || '')
   }, [book?.title, book?.id])
 
-  useEffect(() => {
-    if (!book || !onChange) return undefined
-    const title = titleDraft.trim()
-    if (!title || title === (book.title || '')) return undefined
-    const timer = setTimeout(() => onChange({ ...book, title }), 400)
-    return () => clearTimeout(timer)
-  }, [titleDraft, book, onChange])
-
   return (
     <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
       {live.map((item) => {
@@ -433,11 +424,17 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               }}
             />
             {on ? (
-              <Field
+              <SavableField
                 colors={colors}
                 label={t('boards.name')}
                 value={titleDraft}
+                savedValue={book?.title || ''}
                 onChangeText={setTitleDraft}
+                onSave={(title) => {
+                  if (!title) return false
+                  setTitleDraft(title)
+                  onChange({ ...book, title })
+                }}
               />
             ) : null}
           </View>
@@ -465,7 +462,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   )
 }
 
-export function EnterScreen({ book, onSaveKeeper, returnTo = '/tonight' }) {
+export function EnterScreen({ book, onSaveKeeper, returnTo }) {
   const colors = useHallColors()
   const named = keeperNamed(book)
   const locked = named && hasPin()
@@ -479,7 +476,7 @@ export function EnterScreen({ book, onSaveKeeper, returnTo = '/tonight' }) {
   function finish() {
     openSession()
     markWelcomeSeen()
-    goHash(returnTo || '/tonight')
+    goHash(returnTo ?? enterLand('/tonight'))
   }
 
   function openNamed() {
@@ -558,13 +555,6 @@ function asQuestion(raw) {
   return question
 }
 
-function shortFrom(question) {
-  return question
-    .replace(/^Did I /i, '')
-    .replace(/\?$/, '')
-    .slice(0, 24)
-}
-
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -591,7 +581,7 @@ export function FirstNightScreen({ book, onChange, now }) {
     const lamp = {
       ...blankLamp(clock),
       question,
-      short: shortFrom(question),
+      short: shortFromQuestion(question, 24),
       cadence: 'daily',
       askAfter: '',
       slot: 'whenever',
@@ -651,7 +641,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
           <Row
             key={fire.id}
             colors={colors}
-            label={fire.question.replace(/^Did I\s+/i, '').replace(/\?+$/, '')}
+            label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
             note={foldClock(fire.at)}
             onPress={() => goHash('/tonight', { face: fire.id })}
           />
@@ -666,17 +656,21 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
 function PhoneLockSection({ colors }) {
   const [pinDraft, setPinDraft] = useState('')
   const [pinMiss, setPinMiss] = useState('')
+  const [pinSaved, setPinSaved] = useState(false)
   const [pinOn, setPinOn] = useState(hasPin)
   const locked = pinOn
 
   function saveLock() {
     if (!setPin(pinDraft)) {
       setPinMiss(t('settings.pinDigits'))
+      setPinSaved(false)
       return
     }
     setPinMiss('')
     setPinDraft('')
     setPinOn(true)
+    setPinSaved(true)
+    setTimeout(() => setPinSaved(false), 2000)
   }
 
   return (
@@ -706,45 +700,14 @@ function PhoneLockSection({ colors }) {
         />
       ) : null}
       {pinMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{pinMiss}</Text> : null}
+      {pinSaved ? <Text style={[styles.saved, { color: colors.on }]}>{t('settings.saved')}</Text> : null}
     </>
   )
 }
 
 function AccountSignedOut({ on }) {
   const colors = useHallColors()
-  const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [step, setStep] = useState('email')
-  const [busy, setBusy] = useState(false)
-  const [miss, setMiss] = useState('')
-
-  async function ask() {
-    if (!looksLikeEmail(email)) {
-      setMiss(t('account.missEmail'))
-      return
-    }
-    setBusy(true)
-    const { miss: bad } = await sendCode(email)
-    setBusy(false)
-    if (bad) {
-      setMiss(accountMissText(bad))
-      return
-    }
-    setMiss('')
-    setStep('code')
-  }
-
-  async function open() {
-    setBusy(true)
-    const { miss: bad } = await checkCode(email, code)
-    setBusy(false)
-    if (bad) {
-      setMiss(accountMissText(bad))
-      return
-    }
-    setMiss('')
-    await pullAndMerge()
-  }
+  const auth = useAuthSignIn({})
 
   if (!on) {
     return (
@@ -757,44 +720,18 @@ function AccountSignedOut({ on }) {
 
   return (
     <ScreenShell title={t('account.outTitle')} colors={colors}>
-      <Meta colors={colors}>{t('account.outBody')}</Meta>
-      <PhoneLockSection colors={colors} />
-      <Field
+      <Text style={[styles.accountLead, { color: colors.inkSoft }]}>{t('account.outBody')}</Text>
+
+      <AuthEmailCard
         colors={colors}
-        label={t('account.email')}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
+        auth={auth}
+        body=""
+        footer={<KeyButton colors={colors} label={t('account.stay')} onPress={() => goHash('/settings')} />}
       />
-      {step === 'code' ? (
-        <Field colors={colors} label={t('account.code')} value={code} onChangeText={setCode} />
-      ) : null}
-      {step === 'code' ? <Meta colors={colors}>{t('account.sent', { email })}</Meta> : null}
-      {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
-      <Meta colors={colors}>
-        {t('legal.signInLead')} {t('legal.termsShort')} {t('legal.linksAnd')} {t('legal.privacyShort')}.
-      </Meta>
-      {step === 'email' ? (
-        <DidButton colors={colors} label={t('account.send')} disabled={busy} onPress={ask} />
-      ) : (
-        <>
-          <DidButton colors={colors} label={t('account.signIn')} disabled={busy} onPress={open} />
-          <KeyButton colors={colors} label={t('account.again')} disabled={busy} onPress={ask} />
-          <KeyButton
-            colors={colors}
-            label={t('account.other')}
-            onPress={() => {
-              setStep('email')
-              setCode('')
-              setMiss('')
-            }}
-          />
-        </>
-      )}
-      <KeyButton colors={colors} label={t('account.stay')} onPress={() => goHash('/settings')} />
-      <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
-      <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
+
+      <View style={[styles.lockPanel, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <PhoneLockSection colors={colors} />
+      </View>
     </ScreenShell>
   )
 }
@@ -812,6 +749,7 @@ function AccountSignedIn({ book, email, onChange }) {
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
   const [phoneDraft, setPhoneDraft] = useState('')
+  const [savedPhone, setSavedPhone] = useState('')
   const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [sure, setSure] = useState(null)
@@ -829,24 +767,38 @@ function AccountSignedIn({ book, email, onChange }) {
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
     })
-    ensureMyPhone().then(({ phone }) => {
-      if (alive && phone) setPhoneDraft(phone)
+    readMine().then((row) => {
+      if (alive && row?.phone) {
+        setPhoneDraft(row.phone)
+        setSavedPhone(row.phone)
+      }
     })
     return () => {
       alive = false
     }
   }, [book?.keeperName, sync.at])
 
-  useEffect(() => {
-    if (!book || !onChange) return undefined
-    const keeperName = nameDraft.trim()
-    if (keeperName === (book.keeperName || '')) return undefined
-    const timer = setTimeout(() => {
-      onChange({ ...book, keeperName })
-      saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [nameDraft, book, onChange, purse.cheerOn, purse.lookOn])
+  async function savePhoneField(phone) {
+    setPhoneMiss('')
+    const { miss, phone: kept } = await savePhone(phone)
+    if (miss === 'short') {
+      setPhoneMiss(t('people.phoneShort'))
+      return false
+    }
+    if (miss === 'taken') {
+      setPhoneMiss(t('people.phoneTaken'))
+      return false
+    }
+    if (miss) {
+      setPhoneMiss(tMiss(miss))
+      return false
+    }
+    if (kept) {
+      setPhoneDraft(kept)
+      setSavedPhone(kept)
+    }
+    return true
+  }
 
   const syncNote =
     sync.how === 'busy'
@@ -872,28 +824,33 @@ function AccountSignedIn({ book, email, onChange }) {
       {sync.how === 'miss' && sync.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
-      <Field colors={colors} label={t('account.name')} value={nameDraft} onChangeText={setNameDraft} />
-      {phoneDraft ? (
-        <Row colors={colors} label={t('account.phone')} note={formatPhone(phoneDraft)} />
+      <SavableField
+        colors={colors}
+        label={t('account.name')}
+        value={nameDraft}
+        savedValue={book?.keeperName || ''}
+        onChangeText={setNameDraft}
+        onSave={(keeperName) => {
+          setNameDraft(keeperName)
+          onChange({ ...book, keeperName })
+          saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+        }}
+      />
+      {savedPhone ? (
+        <Row colors={colors} label={t('account.phone')} note={formatPhone(savedPhone)} />
       ) : (
-        <Field
+        <SavableField
           colors={colors}
           label={t('account.phone')}
           value={phoneDraft}
+          savedValue={savedPhone}
           onChangeText={setPhoneDraft}
           keyboardType="phone-pad"
-          onSubmitEditing={async () => {
-            setPhoneMiss('')
-            const { miss, phone } = await savePhone(phoneDraft)
-            if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
-            if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
-            if (miss) return setPhoneMiss(tMiss(miss))
-            if (phone) setPhoneDraft(phone)
-          }}
+          onSave={savePhoneField}
         />
       )}
       {phoneMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{phoneMiss}</Text> : null}
-      <Meta colors={colors}>{phoneDraft ? t('account.phoneOn') : t('account.phoneHint')}</Meta>
+      <Meta colors={colors}>{savedPhone ? t('account.phoneOn') : t('account.phoneHint')}</Meta>
       <Row colors={colors} label={t('account.look')} note={lookName} onPress={() => goHash('/kit')} />
       <Row colors={colors} label={t('account.cheer')} note={cheerName} onPress={() => goHash('/kit')} />
 
@@ -984,6 +941,19 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  accountLead: {
+    fontFamily: fonts.ui,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  lockPanel: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
@@ -993,6 +963,7 @@ const styles = StyleSheet.create({
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
+  saved: { fontFamily: fonts.ui, fontSize: 12, fontWeight: '600', marginTop: 6 },
   veil: { flex: 1, justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },

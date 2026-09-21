@@ -3,25 +3,20 @@ import * as Haptics from 'expo-haptics'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
 import * as SplashScreen from 'expo-splash-screen'
-import { AppState, BackHandler, Share, StatusBar } from 'react-native'
+import { AppState, BackHandler, Platform, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
-import { streakRiskFire } from '../../src/lib/streak-moments.js'
+import { setAppForeground } from '../../src/lib/app-foreground.js'
+import { streakRiskFire } from '../../src/lib/streak-risk.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goFromPush, goHash } from '../navigation/hash.js'
-import { readDevicePhone } from './device-phone.js'
-
-export { readDevicePhone }
-
 export function isNativeHall() {
   return true
 }
 
-let appForeground = AppState.currentState === 'active'
-
 export function isAppForeground() {
-  return appForeground
+  return AppState.currentState === 'active'
 }
 
 function reduceMotion() {
@@ -31,13 +26,13 @@ function reduceMotion() {
 export async function bootNative() {
   try {
     StatusBar.setBarStyle('light-content')
-    StatusBar.setBackgroundColor('#0e1014')
+    if (Platform.OS === 'android') StatusBar.setBackgroundColor('#0e1014')
   } catch {
     // ok
   }
-  appForeground = AppState.currentState === 'active'
+  setAppForeground(AppState.currentState === 'active')
   AppState.addEventListener('change', (next) => {
-    appForeground = next === 'active'
+    setAppForeground(next === 'active')
   })
 }
 
@@ -218,11 +213,13 @@ export function listenNativeShell({ onBack, onOpenLamp }) {
     if (lampId) onOpenLamp?.(String(lampId))
     else if (go) goFromPush(String(go))
   })
-  Linking.getInitialURL().then((url) => {
-    if (!url) return
-    const lampId = lampFromUrl(url)
-    if (lampId) onOpenLamp?.(lampId)
-  })
+  Linking.getInitialURL()
+    .then((url) => {
+      if (!url) return
+      const lampId = lampFromUrl(url)
+      if (lampId) onOpenLamp?.(lampId)
+    })
+    .catch(() => {})
   return () => {
     backSub.remove()
     linkSub.remove()

@@ -58,6 +58,7 @@ function mapAuthMiss(error) {
   if (/invalid.*email|email.*invalid|unable to validate email/i.test(msg)) return 'badEmail'
   if (/expired|otp_expired/i.test(msg)) return 'codeExpired'
   if (/invalid.*otp|token.*invalid|otp.*invalid|invalid login/i.test(msg)) return 'codeBad'
+  if (/cancel/i.test(msg)) return 'cancel'
   return 'sendFail'
 }
 
@@ -71,6 +72,7 @@ export function accountMissText(bad) {
     codeExpired: 'account.codeExpired',
     signupOff: 'account.signupOff',
     sendFail: 'account.sendFail',
+    cancel: '',
   }[bad]
   return key ? t(key) : bad
 }

@@ -10,13 +10,13 @@ const RAIL_DROP = 58
 const FULL_RAIL_RATIO = 0.74
 const RAIL_W = 50
 
-function EdgeRail({ x, mode, reduce, way, fill, label, ink, winH }) {
+function EdgeRail({ x, mode, reduce, alwaysOn, way, fill, label, ink, winH }) {
   const fullH = Math.round(winH * FULL_RAIL_RATIO)
   const H = fullH - BOTTOM_TRIM
   const isNope = way === 'nope'
 
   const shellStyle = useAnimatedStyle(() => {
-    if (reduce || mode.value !== 'drag') return { opacity: 0 }
+    if (reduce || (!alwaysOn && mode.value !== 'drag')) return { opacity: 0 }
     const op = railOpacity(swipePull(x.value), way, true)
     const pull = swipePull(x.value)
     const lean = way === 'did' ? pull : -pull
@@ -54,13 +54,23 @@ function EdgeRail({ x, mode, reduce, way, fill, label, ink, winH }) {
   )
 }
 
-export function SwipeEdgeRails({ x, mode, colors, winH, didLabel, nopeLabel, reduce = false }) {
+export function SwipeEdgeRails({
+  x,
+  mode,
+  colors,
+  winH,
+  didLabel,
+  nopeLabel,
+  reduce = false,
+  alwaysOn = false,
+}) {
   return (
     <>
       <EdgeRail
         x={x}
         mode={mode}
         reduce={reduce}
+        alwaysOn={alwaysOn}
         way="nope"
         fill={colors.skip}
         label={nopeLabel}
@@ -71,6 +81,7 @@ export function SwipeEdgeRails({ x, mode, colors, winH, didLabel, nopeLabel, red
         x={x}
         mode={mode}
         reduce={reduce}
+        alwaysOn={alwaysOn}
         way="did"
         fill={colors.on}
         label={didLabel}

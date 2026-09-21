@@ -54,13 +54,10 @@ export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) 
     if (way === 'did' && blockDid) return
     if (way === 'nope' && blockNope) return
     const go = way === 'did' ? onDid : onNope
-    if (reduce || way === 'nope') {
-      go()
-      return
-    }
+    go()
+    if (reduce || way === 'nope') return
     setMode('fly')
     setDx(460)
-    window.setTimeout(go, 180)
   }
 
   function onPointerDown(event) {

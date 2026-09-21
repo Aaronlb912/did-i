@@ -465,7 +465,7 @@ function FlipChip({ on, panel2, panel3, line }) {
     top,
   }
   return (
-    <View style={styles.chipBox}>
+    <View style={[styles.chipBox, styles.flipChip]}>
       <View
         style={[
           card,
@@ -476,6 +476,7 @@ function FlipChip({ on, panel2, panel3, line }) {
             shadowOffset: { width: rem(0.14), height: rem(0.08) },
             shadowOpacity: 1,
             shadowRadius: 0,
+            elevation: 2,
           },
         ]}
       />
@@ -645,6 +646,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   paperChip: { alignItems: 'center', justifyContent: 'center' },
+  flipChip: {
+    transform: [{ perspective: rem(2.4) }],
+  },
   stampChip: { alignItems: 'center', justifyContent: 'center' },
   danceChip: {
     flex: 1,

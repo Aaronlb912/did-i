@@ -14,7 +14,7 @@ import { MenuIcon } from './MenuIcon.jsx'
 const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
 const QUESTIONS_ON = new Set(['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'])
 const EVERYONE_ON = new Set(['/everyone'])
-const PEOPLE_ON = new Set(['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent'])
+const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
 const ADD_ON = new Set(['/add', '/hang'])
 const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 

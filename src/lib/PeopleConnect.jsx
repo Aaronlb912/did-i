@@ -1,86 +1,35 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
-  INVITE_COINS,
-  INVITE_LOOK_AT,
   askFriend,
-  claimInvites,
   cleanCode,
   cleanPhone,
-  cleanInvite,
   joinFamily,
   makeFamily,
-  myInvite,
   personName,
-  readMine,
-  useInvite,
 } from './people.js'
-import { giveCoins } from './purse.js'
-import { passAlong } from './native.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
-export function PeopleConnect({ book, onChange, now }) {
+export function PeopleConnect({ book, now }) {
   const clock = now || new Date()
   const account = useAccount()
   const online = useOnline()
 
-  const [mine, setMine] = useState(null)
-  const [invite, setInvite] = useState('')
-  const [joined, setJoined] = useState(0)
-  const [inviteDraft, setInviteDraft] = useState('')
   const [addDraft, setAddDraft] = useState('')
   const [famDraft, setFamDraft] = useState('')
   const [codeDraft, setCodeDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
 
-  const load = useCallback(async () => {
-    if (!account.user) return
-    const [who, code] = await Promise.all([readMine(), myInvite()])
-    setMine(who)
-    setInvite(code)
-  }, [account.user])
-
-  const payOut = useCallback(async () => {
-    if (!account.user) return
-    const won = await claimInvites()
-    setJoined(won.joined)
-    if (!won.coins && !won.looks.length) return
-    if (onChange) onChange(giveCoins(book, won.coins, won.looks))
-    setSaid(
-      won.looks.length
-        ? t('people.wonLook', { coins: won.coins })
-        : t('people.wonCoins', { coins: won.coins }),
-    )
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account.user])
-
-  useEffect(() => {
-    load()
-    payOut()
-  }, [load, payOut])
-
   function say(words) {
     setMiss('')
     setSaid(words)
-  }
-
-  async function redeem() {
-    const { miss: why } = await useInvite(inviteDraft)
-    if (why === 'code') return setMiss(t('people.inviteShort'))
-    if (why === 'nobody') return setMiss(t('people.noInvite'))
-    if (why === 'self') return setMiss(t('people.ownInvite'))
-    if (why === 'used') return setMiss(t('people.inviteUsed'))
-    if (why) return setMiss(why)
-    setInviteDraft('')
-    await payOut()
-    return load()
   }
 
   async function ask() {
@@ -91,7 +40,6 @@ export function PeopleConnect({ book, onChange, now }) {
     if (why) return setMiss(why)
     setAddDraft('')
     say(t('people.asked', { name: personName(person) }))
-    return load()
   }
 
   async function newFamily() {
@@ -144,50 +92,14 @@ export function PeopleConnect({ book, onChange, now }) {
       <h2 className="di-page-title">{t('people.connect')}</h2>
       <p className="di-set-note">{t('people.connectBody')}</p>
 
-      <SetCap>{t('people.invite')}</SetCap>
       <SetCard>
         <SetRow
-          label={t('people.yourCode')}
-          value={invite || '...'}
-          sub={invite ? t('people.tapToSend') : ''}
-          onClick={
-            invite
-              ? async () => {
-                  const how = await passAlong(
-                    t('people.inviteLine', { code: invite }),
-                    t('people.invite'),
-                  )
-                  if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-                }
-              : undefined
-          }
-        />
-        <SetRow
-          label={t('people.joinedCount', { n: joined })}
-          sub={
-            joined >= INVITE_LOOK_AT
-              ? t('people.lookWon')
-              : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })
-          }
+          label={t('people.refer')}
+          sub={t('people.referSub')}
+          chevron
+          onClick={() => goHash('/people/refer')}
         />
       </SetCard>
-      <p className="di-set-note">
-        {t('people.inviteHint', { coins: INVITE_COINS, n: INVITE_LOOK_AT })}
-      </p>
-
-      {mine && !mine.invited_by ? (
-        <SetCard>
-          <SetField
-            label={t('people.gotCode')}
-            value={inviteDraft}
-            placeholder="D93AQ5LBS4"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            onChange={(event) => setInviteDraft(cleanInvite(event.target.value))}
-          />
-          <SetRow label={t('people.useCode')} onClick={redeem} />
-        </SetCard>
-      ) : null}
 
       <SetCap>{t('people.addOne')}</SetCap>
       <SetCard>

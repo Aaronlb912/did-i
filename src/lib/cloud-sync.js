@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { deviceKey, deviceLabel, devicePlatform } from './account.js'
-import { readShelf, writeShelf } from './board-shelf.js'
+import { clearAuthSkip } from './auth-gate.js'
+import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt } from './saved-at.js'
@@ -19,19 +20,53 @@ import { shelfHeat } from './hall-feel.js'
 import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
 import { didTonightLabels } from './dit-board.js'
 import { DIT_ENABLED } from './features.js'
-import { claimCheerGifts, readMine, syncTonightBoard } from './people.js'
+import { claimCheerGifts, claimInvites, readMine, syncTonightBoard } from './people.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { addGemsShelf, mergeGiftCheers } from './purse.js'
+import { addGemsShelf, applyInvitePayout, mergeGiftCheers } from './purse.js'
 import { closeShelfPastNights } from './daily.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+const LAST_USER = 'did-i-last-user'
+const SYNC_KEY = 'did-i-sync'
 
 const listeners = new Set()
-let state = { how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' }
 let timer = 0
+
+function loadPersistedSync() {
+  try {
+    const raw = localStorage.getItem(SYNC_KEY)
+    if (!raw) return null
+    const saved = JSON.parse(raw)
+    if (!saved || typeof saved !== 'object') return null
+    return {
+      how: saved.how || 'out',
+      at: saved.at || '',
+      miss: saved.miss || '',
+    }
+  } catch {
+    return null
+  }
+}
+
+function persistSync(next) {
+  try {
+    if (next.how === 'off') localStorage.removeItem(SYNC_KEY)
+    else {
+      localStorage.setItem(
+        SYNC_KEY,
+        JSON.stringify({ how: next.how, at: next.at || '', miss: next.miss || '' }),
+      )
+    }
+  } catch {
+    // ok
+  }
+}
+
+let state = loadPersistedSync() || { how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' }
 
 function setState(patch) {
   state = { ...state, ...patch }
+  persistSync(state)
   listeners.forEach((fn) => fn(state))
 }
 
@@ -57,10 +92,33 @@ async function me() {
   return data?.session?.user || null
 }
 
+function readLastUser() {
+  try {
+    return localStorage.getItem(LAST_USER) || ''
+  } catch {
+    return ''
+  }
+}
+
+function writeLastUser(id) {
+  try {
+    if (id) localStorage.setItem(LAST_USER, id)
+    else localStorage.removeItem(LAST_USER)
+  } catch {
+    // ok
+  }
+}
+
 export function signedOutSync() {
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
+  const shelf = clearLocalShelf()
+  writeLastUser('')
+  clearAuthSkip()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: shelf }))
+  }
 }
 
 // Structure only. Answers go through answer-log.js, one at a time,
@@ -117,21 +175,26 @@ async function putPrefs(db, user, shelf) {
 export async function pullAndMerge() {
   const db = cloud()
   if (!db) return null
-  const user = await me()
-  if (!user) {
-    signedOutSync()
-    return null
-  }
-  setState({ how: 'busy', miss: '' })
   try {
+    const user = await me()
+    if (!user) {
+      signedOutSync()
+      return null
+    }
+    setState({ how: 'busy', miss: '' })
     const [shelfRow, profileRow] = await Promise.all([
       db.from('shelves').select('doc, saved_at').eq('user_id', user.id).maybeSingle(),
       db.from('profiles').select('prefs').eq('user_id', user.id).maybeSingle(),
     ])
     if (shelfRow.error) throw shelfRow.error
 
-    const local = readShelf()
-    const localSavedAt = readSavedAt()
+    const lastUser = readLastUser()
+    let local = readShelf()
+    let localSavedAt = readSavedAt()
+    if (lastUser && lastUser !== user.id) {
+      local = clearLocalShelf()
+      localSavedAt = ''
+    }
     const remote = shelfRow.data?.doc || null
     const remoteSavedAt = shelfRow.data?.saved_at || ''
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
@@ -151,6 +214,13 @@ export async function pullAndMerge() {
     if (bought.gems > 0) {
       written = writeShelf(addGemsShelf(written, bought.gems), savedAt)
     }
+    const invited = await claimInvites()
+    if (invited.gems > 0 || invited.looks.length) {
+      const boards = written.boards.map((item) =>
+        item.id === written.currentId ? applyInvitePayout(item, invited) : item,
+      )
+      written = writeShelf({ ...written, boards }, savedAt)
+    }
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
@@ -168,6 +238,7 @@ export async function pullAndMerge() {
     await pruneAnswers(written)
 
     touchDevice()
+    writeLastUser(user.id)
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return written
   } catch (error) {
@@ -205,6 +276,15 @@ export function pushSoon(shelf) {
   window.clearTimeout(timer)
   const doc = shelf
   timer = window.setTimeout(() => pushNow(doc), 1500)
+}
+
+export function flushPushSoon() {
+  if (!cloudSetUp()) return
+  if (state.how === 'off' || state.how === 'out') return
+  if (!timer) return
+  window.clearTimeout(timer)
+  timer = 0
+  return pushNow(readShelf())
 }
 
 export async function touchDevice() {

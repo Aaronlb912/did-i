@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
-import { readDevicePhone } from './native.js'
 import { boardDate, isoDate } from './recurrence.js'
 
 // Everything here needs an account. With no Supabase keys the app still
@@ -91,7 +90,7 @@ export async function readMine() {
   const { data } = await db
     .from('profiles')
     .select(
-      'user_id, phone, display_name, share_streak, public_tonight, streak, done_on, invite_code, invited_by',
+      'user_id, phone, display_name, share_streak, public_tonight, streak, done_on, invite_code, invited_by, invite_gems_paid',
     )
     .eq('user_id', user.id)
     .maybeSingle()
@@ -111,15 +110,6 @@ export async function savePhone(value) {
     return bad(error)
   }
   return { miss: '', phone: data || phone }
-}
-
-export async function ensureMyPhone() {
-  const mine = await readMine()
-  if (!mine || mine.phone) return { miss: '', phone: mine?.phone || '' }
-  const raw = await readDevicePhone()
-  const phone = cleanPhone(raw)
-  if (!looksLikePhone(phone)) return { miss: '', phone: '' }
-  return savePhone(phone)
 }
 
 export async function syncDisplayName(keeperName) {
@@ -257,7 +247,7 @@ export async function dropFriend(otherId) {
   return error ? bad(error) : { miss: '' }
 }
 
-// Sending a Did I to a friend -----------------------------------------
+// Sending a did you to a friend ---------------------------------------
 
 export async function sendDidI(toId, question, note, dueOn) {
   const db = cloud()
@@ -458,8 +448,28 @@ export async function listBlocks() {
 
 // Invites --------------------------------------------------------------
 
-export const INVITE_COINS = 10
+export const INVITE_GEMS_CAP = 10
 export const INVITE_LOOK_AT = 3
+
+export function inviteGemsFor(which) {
+  const n = Math.floor(Number(which) || 0)
+  return n < 1 ? 1 : n
+}
+
+export function inviteGemsLeft(already) {
+  return Math.max(INVITE_GEMS_CAP - Math.max(0, Math.floor(Number(already) || 0)), 0)
+}
+
+export function inviteGemsDue(joined, invitesPaid, gemsPaid) {
+  let left = inviteGemsLeft(gemsPaid)
+  let due = 0
+  for (let i = invitesPaid + 1; i <= joined && left > 0; i += 1) {
+    const pay = Math.min(inviteGemsFor(i), left)
+    due += pay
+    left -= pay
+  }
+  return due
+}
 
 export async function myInvite() {
   const db = cloud()
@@ -482,13 +492,20 @@ export async function useInvite(code) {
 // What the account owes you. Calling it twice pays once.
 export async function claimInvites() {
   const db = cloud()
-  if (!db) return { coins: 0, looks: [], joined: 0 }
+  if (!db) return { gems: 0, looks: [], joined: 0 }
   const { data } = await db.rpc('claim_invites')
   return {
-    coins: Number(data?.coins) || 0,
+    gems: Number(data?.gems) || 0,
     looks: Array.isArray(data?.looks) ? data.looks : [],
     joined: Number(data?.joined) || 0,
   }
+}
+
+export function invitePayoutNote(won) {
+  if (!won) return ''
+  if (won.looks?.length) return t('people.wonLook', { gems: won.gems })
+  if (won.gems > 0) return t('people.wonGems', { gems: won.gems })
+  return ''
 }
 
 // Families -------------------------------------------------------------

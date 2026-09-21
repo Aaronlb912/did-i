@@ -21,13 +21,10 @@ export function FinishFace({ count, onContinue, onRest }) {
   function go(way) {
     if (mode === 'fly') return
     const done = way === 'did' ? onContinue : onRest
-    if (reduce || way === 'nope') {
-      done()
-      return
-    }
+    done()
+    if (reduce || way === 'nope') return
     setMode('fly')
     setDx(460)
-    window.setTimeout(done, 180)
   }
 
   function onPointerDown(event) {

@@ -6,7 +6,8 @@ import {
   duplicateLamp,
   shortLabel,
 } from '../../src/lib/board-json.js'
-import { commitBook, hangInto, putAnswer, takeDown, toggleArchive } from '../../src/lib/board-ops.js'
+import { commitBook } from '../../src/lib/achievements.js'
+import { hangInto, putAnswer, takeDown, toggleArchive } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'

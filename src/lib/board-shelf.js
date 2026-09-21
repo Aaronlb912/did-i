@@ -32,6 +32,14 @@ export function liveLampCount(book) {
   return (book?.lamps || []).filter((lamp) => !lamp.archived).length
 }
 
+export function hallEmpty(shelf) {
+  return (shelf?.boards || []).every((item) => liveLampCount(item) === 0)
+}
+
+export function enterLand(home = '/') {
+  return hallEmpty(readShelf()) ? '/first' : home
+}
+
 export function parkEmptyTags(shelf) {
   const boards = (shelf.boards || []).map((book) => ({
     ...book,
@@ -49,6 +57,18 @@ export function parkEmptyTags(shelf) {
   }
   const currentId = live.some((book) => book.id === shelf.currentId) ? shelf.currentId : live[0].id
   return { ...shelf, currentId, boards }
+}
+
+export function clearLocalShelf() {
+  try {
+    localStorage.removeItem(SHELF_KEY)
+    localStorage.removeItem(OLD_KEY)
+    localStorage.removeItem('did-i-saved')
+  } catch {
+    // Board still runs if storage is blocked.
+  }
+  const book = emptyBoard()
+  return writeShelf({ currentId: book.id, boards: [book] })
 }
 
 export function writeShelf(shelf, savedAt) {

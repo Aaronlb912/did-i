@@ -220,8 +220,6 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           <p className="di-set-note di-off-line">{t('tonight.syncMiss')}</p>
         ) : null}
 
-        <TagRail boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} />
-
         <NightMeter due={stack.due} />
 
         {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
@@ -267,6 +265,8 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
             </ul>
           </div>
         ) : null}
+
+        <TagRail boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} />
 
         {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
           <div className="di-holes" aria-label={t('tonight.holesAria')}>

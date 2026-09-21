@@ -298,7 +298,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Text style={[styles.syncNote, { color: colors.inkSoft }]}>{t('tonight.syncMiss')}</Text>
       ) : null}
 
-      <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
       <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
 
       {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
@@ -330,6 +329,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           })}
         </ScrollView>
       ) : null}
+
+      <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
 
       {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
         <View style={styles.holes} accessibilityLabel={t('tonight.holesAria')}>

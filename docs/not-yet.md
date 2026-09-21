@@ -3,7 +3,7 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-20.
+Last worked through 2026-09-21.
 
 ## Waiting on an account, not on code
 
@@ -89,7 +89,7 @@ cheer skip under reduce-motion.
   as an answer and without touching a streak.
 - Loading back a copy you downloaded.
 - A line on the People screens when there is no signal.
-- `npm test`, `npm run bench`, and `supabase/audit.sql`.
+- `npm test`, `npm run bench`, and `npm run db:audit` (`supabase/audit.sql`).
 - A way back: a chevron in the mast, a swipe in from the left edge, and
   the Android key, all on one stack.
 - Did I tonight, the public list of who showed up. Opt in, off by
@@ -124,3 +124,5 @@ cheer skip under reduce-motion.
 - Marketing site at `/` with `/privacy`, `/terms`, `/download` on one build
   (`src/site/`, `docs/site.md`). Web app at `/app` is off in production unless
   `VITE_WEB_APP_PUBLIC=true`.
+- Shared-device shelf isolation: sign-out wipes local shelf and auth skip;
+  `pullAndMerge` drops stale local data when the signed-in user changes.

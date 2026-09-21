@@ -385,8 +385,7 @@ export function fireCheer(kind, stage = 1, look, theme, preview = false) {
   window.dispatchEvent(new CustomEvent('did-i-cheer', { detail }))
 }
 
-// A reward, not a purchase. Invites pay coins and the odd look. Gems are
-// still only for a finished night.
+// A reward, not a purchase. Invites pay scaling gems and the odd look.
 export function giveCoins(book, coins, looks = []) {
   const purse = normalizePurse(book)
   const won = looks.filter((id) => LOOK_IDS.has(id) && !purse.looks.includes(id))
@@ -405,6 +404,16 @@ export function addGems(book, gems) {
   const paid = Math.max(0, Math.floor(Number(gems) || 0))
   if (!paid) return book
   return { ...book, ...purse, gems: purse.gems + paid }
+}
+
+export function applyInvitePayout(book, won) {
+  let next = book
+  const gems = Math.max(0, Math.floor(Number(won?.gems) || 0))
+  const coins = Math.max(0, Math.floor(Number(won?.coins) || 0))
+  const looks = Array.isArray(won?.looks) ? won.looks : []
+  if (gems > 0) next = addGems(next, gems)
+  if (coins > 0 || looks.length) next = giveCoins(next, coins, looks)
+  return next
 }
 
 export function addGemsShelf(shelf, gems) {

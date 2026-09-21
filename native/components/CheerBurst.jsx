@@ -617,17 +617,42 @@ function Dancer({ delay, hop, color, ink, inkSoft }) {
   )
 }
 
+const FLIP_W = remPx('3.2')
+const FLIP_H = remPx('4.4')
+const FLIP_MS = 960
+const FLIP_MS_LONG = 1180
+const FLIP_EASE = Easing.bezier(0.2, 0.7, 0.3, 1)
+const FLIP_LIFT = [remPx('0.6'), -remPx('0.2'), -remPx('1.4')]
+const FLIP_FRONT_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: remPx('0.35') },
+  shadowOpacity: 0.35,
+  shadowRadius: remPx('0.8'),
+  elevation: 6,
+}
+// |cos| over two turns — full width at each face, thin only at the quarter turns.
+const FLIP_SPIN_RANGE = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1]
+const FLIP_WIDTH_RANGE = [1, 0.72, 0.06, 0.72, 1, 0.72, 0.06, 0.72, 1]
+// Hard face swap at 90° / 270° — no crossfade blink.
+const FLIP_FACE_RANGE = [0, 0.249, 0.25, 0.499, 0.5, 0.749, 0.75, 0.999, 1]
+const FLIP_FRONT_RANGE = [1, 1, 0, 0, 1, 1, 0, 0, 1]
+const FLIP_BACK_RANGE = [0, 0, 1, 1, 0, 0, 1, 1, 0]
+
 function FlipCard({ delay, hops, colors }) {
   const spin = useMemo(() => new Animated.Value(0), [])
   const lift = useMemo(() => new Animated.Value(0), [])
   const fade = useMemo(() => new Animated.Value(0), [])
-  const duration = hops >= 3 ? 880 : 720
+  const duration = hops >= 3 ? FLIP_MS_LONG : FLIP_MS
+
   useEffect(() => {
+    spin.setValue(0)
+    lift.setValue(0)
+    fade.setValue(0)
     Animated.sequence([
       Animated.delay(delay),
       Animated.parallel([
-        Animated.timing(spin, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(lift, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(spin, { toValue: 1, duration, easing: FLIP_EASE, useNativeDriver: true }),
+        Animated.timing(lift, { toValue: 1, duration, easing: FLIP_EASE, useNativeDriver: true }),
         Animated.sequence([
           Animated.timing(fade, { toValue: 1, duration: duration * 0.08, useNativeDriver: true }),
           Animated.timing(fade, { toValue: 1, duration: duration * 0.84, useNativeDriver: true }),
@@ -636,30 +661,37 @@ function FlipCard({ delay, hops, colors }) {
       ]),
     ]).start()
   }, [delay, duration, fade, lift, spin])
-  const rotateY = spin.interpolate({ inputRange: [0, 0.45, 1], outputRange: ['0deg', '180deg', '360deg'] })
-  const translateY = lift.interpolate({ inputRange: [0, 0.45, 1], outputRange: [remPx('0.6'), -remPx('0.2'), -remPx('1.4')] })
+
+  const translateY = lift.interpolate({ inputRange: [0, 0.45, 1], outputRange: FLIP_LIFT })
+  const scaleX = spin.interpolate({ inputRange: FLIP_SPIN_RANGE, outputRange: FLIP_WIDTH_RANGE })
+  const frontOpacity = spin.interpolate({ inputRange: FLIP_FACE_RANGE, outputRange: FLIP_FRONT_RANGE })
+  const backOpacity = spin.interpolate({ inputRange: FLIP_FACE_RANGE, outputRange: FLIP_BACK_RANGE })
+
   return (
-    <Animated.View pointerEvents="none" style={[styles.flipCard, { opacity: fade, transform: [{ translateY }] }]}>
-      <Animated.View style={{ flex: 1, transform: [{ perspective: remPx('12') }, { rotateY }] }}>
-        <View
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.flipCard, { opacity: fade, transform: [{ translateY }] }]}
+    >
+      <Animated.View style={[styles.flipBody, { transform: [{ scaleX }] }]}>
+        <Animated.View
           style={[
             styles.flipFace,
+            FLIP_FRONT_SHADOW,
             {
               backgroundColor: colors.on,
               borderColor: colors.onDeep,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: remPx('0.35') },
-              shadowOpacity: 0.35,
-              shadowRadius: remPx('0.8'),
-              elevation: 6,
+              opacity: frontOpacity,
             },
           ]}
         />
-        <View
+        <Animated.View
           style={[
             styles.flipFace,
-            styles.flipBack,
-            { backgroundColor: colors.panel2, borderColor: colors.line },
+            {
+              backgroundColor: colors.panel2,
+              borderColor: colors.line,
+              opacity: backOpacity,
+            },
           ]}
         />
       </Animated.View>
@@ -1002,17 +1034,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: remPx('-1.6'),
     top: remPx('-2.2'),
-    width: remPx('3.2'),
-    height: remPx('4.4'),
+    width: FLIP_W,
+    height: FLIP_H,
+    overflow: 'visible',
+  },
+  flipBody: {
+    width: FLIP_W,
+    height: FLIP_H,
   },
   flipFace: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: FLIP_W,
+    height: FLIP_H,
     borderRadius: remPx('0.35'),
     borderWidth: 1,
-    backfaceVisibility: 'hidden',
-  },
-  flipBack: {
-    transform: [{ rotateY: '180deg' }],
   },
   plane: {
     position: 'absolute',

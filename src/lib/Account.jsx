@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import {
-  checkCode,
   deleteAccount,
   deviceKey,
-  looksLikeEmail,
-  sendCode,
   signOutEverywhere,
   signOutHere,
   useAccount,
-  accountMissText,
 } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import {
@@ -26,8 +22,10 @@ import { t, tMiss } from './i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
-import { readMine, savePhone } from './people.js'
+import { formatPhone, readMine, savePhone } from './people.js'
+import { useAuthSignIn } from './useAuthSignIn.js'
 import { clearPin, hasPin, setPin } from './session.js'
+import { SavableSetField } from './SavableSetField.jsx'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 
 function clockWords(iso) {
@@ -89,17 +87,21 @@ function Pop({ note, onClose }) {
 function PhoneLockCard() {
   const [pinDraft, setPinDraft] = useState('')
   const [pinMiss, setPinMiss] = useState('')
+  const [pinSaved, setPinSaved] = useState(false)
   const [pinOn, setPinOn] = useState(hasPin)
   const locked = pinOn
 
   function saveLock() {
     if (!setPin(pinDraft)) {
       setPinMiss(t('settings.pinDigits'))
+      setPinSaved(false)
       return
     }
     setPinMiss('')
     setPinDraft('')
     setPinOn(true)
+    setPinSaved(true)
+    window.setTimeout(() => setPinSaved(false), 2000)
   }
 
   return (
@@ -133,44 +135,13 @@ function PhoneLockCard() {
           {pinMiss}
         </p>
       ) : null}
+      {pinSaved ? <p className="di-savable-field-saved">{t('settings.saved')}</p> : null}
     </>
   )
 }
 
 function SignedOut({ on }) {
-  const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
-  const [step, setStep] = useState('email')
-  const [busy, setBusy] = useState(false)
-  const [miss, setMiss] = useState('')
-
-  async function ask() {
-    if (!looksLikeEmail(email)) {
-      setMiss(t('account.missEmail'))
-      return
-    }
-    setBusy(true)
-    const { miss: bad } = await sendCode(email)
-    setBusy(false)
-    if (bad) {
-      setMiss(accountMissText(bad))
-      return
-    }
-    setMiss('')
-    setStep('code')
-  }
-
-  async function open() {
-    setBusy(true)
-    const { miss: bad } = await checkCode(email, code)
-    setBusy(false)
-    if (bad) {
-      setMiss(accountMissText(bad))
-      return
-    }
-    setMiss('')
-    await pullAndMerge()
-  }
+  const auth = useAuthSignIn({})
 
   if (!on) {
     return (
@@ -185,86 +156,84 @@ function SignedOut({ on }) {
   return (
     <>
       <h2 className="di-page-title">{t('account.outTitle')}</h2>
-      <p className="di-detail-meta">{t('account.outBody')}</p>
+      <p className="di-detail-meta di-account-lead">{t('account.outBody')}</p>
 
-      <PhoneLockCard />
+      <div className="di-auth-card">
+        <p className="di-set-cap">{t('account.kicker')}</p>
+        <h3 className="di-auth-card-title">{t('auth.title')}</h3>
+        {auth.step === 'start' ? <p className="di-auth-card-note">{t('auth.newHere')}</p> : null}
 
-      <SetCard>
         <SetField
           label={t('account.email')}
           type="email"
           inputMode="email"
           autoComplete="email"
           placeholder={t('account.emailHint')}
-          value={email}
-          disabled={step === 'code'}
-          onChange={(event) => setEmail(event.target.value)}
+          value={auth.email}
+          disabled={auth.step === 'code'}
+          onChange={(event) => auth.setEmail(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              ask()
+              auth.askEmail()
             }
           }}
         />
-        {step === 'code' ? (
+        {auth.step === 'code' ? (
           <SetField
             label={t('account.code')}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+            value={auth.code}
+            onChange={(event) => auth.setCode(event.target.value.replace(/\D/g, ''))}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault()
-                open()
+                auth.openEmail()
               }
             }}
           />
         ) : null}
-      </SetCard>
 
-      {step === 'code' ? (
-        <p className="di-detail-meta">{t('account.sent', { email })}</p>
-      ) : null}
+        {auth.step === 'code' ? (
+          <p className="di-auth-card-note">{t('account.sent', { email: auth.email })}</p>
+        ) : null}
 
-      {miss ? (
-        <p className="di-miss" role="alert">
-          {miss}
-        </p>
-      ) : null}
+        {auth.miss ? (
+          <p className="di-miss" role="alert">
+            {auth.miss}
+          </p>
+        ) : null}
 
-      <LegalLinks leadKey="legal.signInLead" />
-
-      <div className="di-hang-actions">
-        {step === 'email' ? (
-          <button className="di-did di-did-small" type="button" disabled={busy} onClick={ask}>
-            {t('account.send')}
+        <div className="di-hang-actions di-auth-card-actions">
+          {auth.step === 'start' ? (
+            <button className="di-did di-did-small" type="button" disabled={auth.busy} onClick={auth.askEmail}>
+              {t('account.send')}
+            </button>
+          ) : (
+            <>
+              <button className="di-did di-did-small" type="button" disabled={auth.busy} onClick={auth.openEmail}>
+                {t('account.signIn')}
+              </button>
+              <button className="di-key" type="button" disabled={auth.busy} onClick={auth.askEmail}>
+                {t('account.again')}
+              </button>
+              <button className="di-key" type="button" onClick={auth.useDifferentEmail}>
+                {t('account.other')}
+              </button>
+            </>
+          )}
+          <button className="di-key" type="button" onClick={() => goHash('/settings')}>
+            {t('account.stay')}
           </button>
-        ) : (
-          <>
-            <button className="di-did di-did-small" type="button" disabled={busy} onClick={open}>
-              {t('account.signIn')}
-            </button>
-            <button className="di-key" type="button" disabled={busy} onClick={ask}>
-              {t('account.again')}
-            </button>
-            <button
-              className="di-key"
-              type="button"
-              onClick={() => {
-                setStep('email')
-                setCode('')
-                setMiss('')
-              }}
-            >
-              {t('account.other')}
-            </button>
-          </>
-        )}
-        <button className="di-key" type="button" onClick={() => goHash('/settings')}>
-          {t('account.stay')}
-        </button>
+        </div>
+
+        <LegalLinks leadKey="legal.signInLead" subtle />
+      </div>
+
+      <div className="di-auth-lock">
+        <PhoneLockCard />
       </div>
     </>
   )
@@ -275,6 +244,7 @@ function SignedIn({ book, email, onChange }) {
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book.keeperName || '')
   const [phoneDraft, setPhoneDraft] = useState('')
+  const [savedPhone, setSavedPhone] = useState('')
   const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [note, setNote] = useState(null)
@@ -289,27 +259,36 @@ function SignedIn({ book, email, onChange }) {
       if (alive && row?.display_name && !book.keeperName) setNameDraft(row.display_name)
     })
     readMine().then((row) => {
-      if (alive && row?.phone) setPhoneDraft(row.phone)
+      if (alive && row?.phone) {
+        setPhoneDraft(row.phone)
+        setSavedPhone(row.phone)
+      }
     })
     return () => {
       alive = false
     }
   }, [book.keeperName, sync.at])
 
-  function saveName() {
-    const keeperName = nameDraft.trim()
-    setNameDraft(keeperName)
-    onChange({ ...book, keeperName })
-    saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
-  }
-
-  async function keepPhone() {
+  async function savePhoneField(phone) {
     setPhoneMiss('')
-    const { miss, phone } = await savePhone(phoneDraft)
-    if (miss === 'short') return setPhoneMiss(t('people.phoneShort'))
-    if (miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
-    if (miss) return setPhoneMiss(tMiss(miss))
-    if (phone) setPhoneDraft(phone)
+    const { miss, phone: kept } = await savePhone(phone)
+    if (miss === 'short') {
+      setPhoneMiss(t('people.phoneShort'))
+      return false
+    }
+    if (miss === 'taken') {
+      setPhoneMiss(t('people.phoneTaken'))
+      return false
+    }
+    if (miss) {
+      setPhoneMiss(tMiss(miss))
+      return false
+    }
+    if (kept) {
+      setPhoneDraft(kept)
+      setSavedPhone(kept)
+    }
+    return true
   }
 
   const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
@@ -343,34 +322,32 @@ function SignedIn({ book, email, onChange }) {
 
       <SetCap>{t('account.you')}</SetCap>
       <SetCard>
-        <SetField
+        <SavableSetField
           label={t('account.name')}
           value={nameDraft}
+          savedValue={book.keeperName || ''}
           onChange={(event) => setNameDraft(event.target.value)}
-          onBlur={saveName}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              saveName()
-            }
+          onSave={(keeperName) => {
+            setNameDraft(keeperName)
+            onChange({ ...book, keeperName })
+            saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
           }}
         />
-        <SetField
-          label={t('account.phone')}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          value={phoneDraft}
-          placeholder={t('people.addPh')}
-          onChange={(event) => setPhoneDraft(event.target.value)}
-          onBlur={keepPhone}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              keepPhone()
-            }
-          }}
-        />
+        {savedPhone ? (
+          <SetRow label={t('account.phone')} value={formatPhone(savedPhone)} />
+        ) : (
+          <SavableSetField
+            label={t('account.phone')}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={phoneDraft}
+            savedValue={savedPhone}
+            placeholder={t('people.addPh')}
+            onChange={(event) => setPhoneDraft(event.target.value)}
+            onSave={savePhoneField}
+          />
+        )}
         <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/kit')} />
         <SetRow label={t('account.cheer')} value={cheerName} chevron onClick={() => goHash('/kit')} />
       </SetCard>

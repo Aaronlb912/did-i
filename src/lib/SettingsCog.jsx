@@ -12,7 +12,7 @@ const HOME_ON = ['/', '/home', '/tonight', '/later']
 const QUESTIONS_ON = ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas']
 const EVERYONE_ON = ['/everyone']
 const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
-const PEOPLE_ON = ['/people', '/people/connect', '/friends', '/family', '/inbox', '/sent']
+const PEOPLE_ON = ['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent']
 const ADD_ON = ['/add', '/hang']
 
 const ICONS = {

@@ -4,6 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
+import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,10 +15,28 @@ import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
-import { cleanCode, cleanInvite, cleanLine } from '../src/lib/people.js'
+import {
+  INVITE_CODE_LEN,
+  INVITE_GEMS_CAP,
+  cleanCode,
+  cleanInvite,
+  cleanLine,
+  inviteGemsDue,
+} from '../src/lib/people.js'
+import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
-import { mergeSameTitles, normalizeShelf, parkEmptyTags } from '../src/lib/board-shelf.js'
+import {
+  clearLocalShelf,
+  enterLand,
+  hallEmpty,
+  mergeSameTitles,
+  normalizeShelf,
+  parkEmptyTags,
+  readShelf,
+  writeShelf,
+} from '../src/lib/board-shelf.js'
+import { signedOutSync } from '../src/lib/cloud-sync.js'
 import { gemWeekKey, spendGems, weeklyGemBump } from '../src/lib/purse.js'
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
@@ -32,6 +51,16 @@ import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
 import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
+
+const shelfStore = new Map()
+globalThis.localStorage = {
+  getItem: (key) => (shelfStore.has(key) ? shelfStore.get(key) : null),
+  setItem: (key, value) => shelfStore.set(key, String(value)),
+  removeItem: (key) => shelfStore.delete(key),
+}
+if (!globalThis.window) {
+  globalThis.window = { dispatchEvent() {} }
+}
 
 let ran = 0
 let failed = 0
@@ -127,6 +156,62 @@ test('a second look at a nope counts as late, not a fresh did', () => {
   assert.equal(didStatusForRow({ answer: { status: 'skip' } }), 'late')
   assert.equal(didStatusForRow({ answer: null }), 'yes')
   assert.equal(didStatusForRow({ answer: { status: 'yes' } }), 'yes')
+})
+
+test('sign-out clears the shelf for the next person', () => {
+  const book = {
+    id: 'board-a',
+    title: 'House',
+    keeperName: 'Aaron',
+    lamps: [{ id: 'di-door', question: 'Did I lock up?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  writeShelf({ currentId: book.id, boards: [book] })
+  localStorage.setItem('did-i-last-user', 'user-a')
+  signedOutSync()
+  assert.equal(localStorage.getItem('did-i-last-user'), null)
+  assert.equal(hallEmpty(readShelf()), true)
+})
+
+test('enter lands on tonight when the shelf already has questions', () => {
+  const book = {
+    id: 'board-b',
+    title: 'House',
+    keeperName: 'Aaron',
+    lamps: [{ id: 'di-pills', question: 'Did I take the pills?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  writeShelf({ currentId: book.id, boards: [book] })
+  assert.equal(enterLand('/tonight'), '/tonight')
+  assert.equal(enterLand('/'), '/')
+})
+
+test('referral gems scale but stop at ten total', () => {
+  assert.equal(inviteGemsDue(4, 0, 0), 10)
+  assert.equal(inviteGemsDue(10, 0, 0), 10)
+  assert.equal(inviteGemsDue(10, 4, 10), 0)
+  assert.equal(inviteGemsDue(2, 0, 8), 2)
+  assert.equal(INVITE_GEMS_CAP, 10)
+})
+
+test('referral reward bar tracks paid gems toward the cap', () => {
+  assert.deepEqual(inviteRewardProgress(0), { paid: 0, cap: 10, pct: 0, full: false, left: 10 })
+  assert.deepEqual(inviteRewardProgress(6), { paid: 6, cap: 10, pct: 60, full: false, left: 4 })
+  assert.deepEqual(inviteRewardProgress(10), { paid: 10, cap: 10, pct: 100, full: true, left: 0 })
+  assert.equal(inviteNextFriendGems(0, 0), 1)
+  assert.equal(inviteNextFriendGems(3, 6), 4)
+  assert.equal(inviteNextFriendGems(5, 10), 0)
+})
+
+test('a referral code is ten characters after cleaning', () => {
+  assert.equal(cleanInvite('d93-aq5 lbs4'), 'D93AQ5LBS4')
+  assert.equal(cleanInvite('D93AQ5LBS4').length, INVITE_CODE_LEN)
+  assert.equal(cleanInvite('short').length, 5)
+})
+
+test('native flip cheer runs at 960ms', () => {
+  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/components/CheerBurst.jsx'), 'utf8')
+  assert.match(src, /const FLIP_MS = 960/)
 })
 
 test('demo boards do not ride along after sign-in', () => {

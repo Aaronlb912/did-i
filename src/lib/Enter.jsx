@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { enterLand } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { markWelcomeSeen } from './hall-pages.js'
 import { t } from './i18n.js'
@@ -24,7 +25,7 @@ export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
       goHash('/tonight', { face: returnFace })
       return
     }
-    goHash(returnTo || '/')
+    goHash(returnTo ?? enterLand('/'))
   }
 
   function openNamed() {

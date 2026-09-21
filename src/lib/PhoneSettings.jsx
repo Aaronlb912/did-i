@@ -4,7 +4,8 @@ import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { closeSession, hasPin } from './session.js'
-import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
+import { SavableSetField } from './SavableSetField.jsx'
+import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 
 export function PhoneSettings({ book, onChange, now }) {
   const clock = now || new Date()
@@ -15,18 +16,6 @@ export function PhoneSettings({ book, onChange, now }) {
     setKeeperDraft(book.keeperName || '')
     setNoteDraft(book.inkNote || '')
   }, [book.keeperName, book.inkNote])
-
-  function saveKeeper() {
-    const keeperName = keeperDraft.trim()
-    setKeeperDraft(keeperName)
-    onChange({ ...book, keeperName })
-  }
-
-  function saveNote() {
-    const inkNote = noteDraft.trim()
-    setNoteDraft(inkNote)
-    onChange({ ...book, inkNote })
-  }
 
   return (
     <BoardShell
@@ -41,29 +30,25 @@ export function PhoneSettings({ book, onChange, now }) {
 
         <SetCap>{t('settings.title')}</SetCap>
         <SetCard>
-          <SetField
+          <SavableSetField
             label={t('settings.name')}
             value={keeperDraft}
+            savedValue={book.keeperName || ''}
             onChange={(event) => setKeeperDraft(event.target.value)}
-            onBlur={saveKeeper}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                saveKeeper()
-              }
+            onSave={(keeperName) => {
+              setKeeperDraft(keeperName)
+              onChange({ ...book, keeperName })
             }}
           />
-          <SetField
+          <SavableSetField
             label={t('settings.note')}
             value={noteDraft}
+            savedValue={book.inkNote || ''}
             placeholder={t('settings.notePh')}
             onChange={(event) => setNoteDraft(event.target.value)}
-            onBlur={saveNote}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                saveNote()
-              }
+            onSave={(inkNote) => {
+              setNoteDraft(inkNote)
+              onChange({ ...book, inkNote })
             }}
           />
         </SetCard>
