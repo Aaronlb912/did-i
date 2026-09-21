@@ -7,6 +7,7 @@ import {
   swipePull,
   swipeTilt,
 } from './swipe-face.js'
+import { useSwipePullReport } from './SwipePull.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 
 export function FinishFace({ count, onContinue, onRest }) {
@@ -15,6 +16,7 @@ export function FinishFace({ count, onContinue, onRest }) {
   const [dx, setDx] = useState(0)
   const [mode, setMode] = useState('')
   const pull = swipePull(dx)
+  useSwipePullReport(pull)
 
   function go(way) {
     if (mode === 'fly') return

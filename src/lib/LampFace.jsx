@@ -11,6 +11,7 @@ import {
   swipePull,
   swipeTilt,
 } from './swipe-face.js'
+import { useSwipePullReport } from './SwipePull.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 
 export function LampFace({
@@ -48,6 +49,7 @@ export function LampFace({
   const liveDx = demoFly === 'did' ? 460 : demoFly === 'nope' ? -460 : demoOn ? demoPull * THRESHOLD : dx
   const liveMode = demoFly ? 'fly' : demoOn && demoPull > 0.08 ? 'drag' : mode
   const pull = swipePull(liveDx)
+  useSwipePullReport(pull)
 
   function finish(way) {
     if (mode === 'fly') return

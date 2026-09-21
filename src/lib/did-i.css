@@ -1496,6 +1496,52 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+}
+
+.di-swipe-edges {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.di-swipe-edge {
+  position: absolute;
+  top: 14%;
+  bottom: 14%;
+  width: 5px;
+  border-radius: 3px;
+  transform-origin: center;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.di-swipe-edge.is-did {
+  right: 0;
+  background: var(--di-on);
+  box-shadow: -6px 0 20px color-mix(in srgb, var(--di-on) 45%, transparent);
+}
+
+.di-swipe-edge.is-nope {
+  left: 0;
+  background: var(--di-skip);
+  box-shadow: 6px 0 20px color-mix(in srgb, var(--di-skip) 45%, transparent);
+}
+
+.di-swipe-edge-label {
+  position: absolute;
+  font-family: var(--di-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--di-bg);
+  transform: rotate(-90deg);
+  white-space: nowrap;
 }
 
 .di-face-slot > .di-face,
@@ -5567,6 +5613,10 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 [data-reduce-motion] .di-appnav a,
 [data-reduce-motion] .di-meter-fill {
   transition: none;
+}
+
+[data-reduce-motion] .di-swipe-edges {
+  display: none;
 }
 
 [data-reduce-motion] .di-swipe,

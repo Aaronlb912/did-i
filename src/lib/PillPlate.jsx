@@ -10,6 +10,7 @@ import {
   swipeTilt,
 } from './swipe-face.js'
 import { pillStatusLabel } from './pill-status.js'
+import { useSwipePullReport } from './SwipePull.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 
 // Answering from the pill, for the nights you know the answer before the
@@ -35,6 +36,7 @@ export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) 
   const blockDid = isDid
   const blockNope = status === 'skip' || isDid
   const pull = swipePull(dx)
+  useSwipePullReport(pull)
 
   if (readOnly) {
     return (

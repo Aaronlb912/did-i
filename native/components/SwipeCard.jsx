@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import { Text, View } from 'react-native'
+import { Text } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
@@ -35,6 +35,7 @@ export function SwipeCard({
   blockNope = false,
   panelStyle,
   gemLook = '',
+  pullOut,
   children,
 }) {
   const theme = useTheme()
@@ -45,7 +46,8 @@ export function SwipeCard({
   useEffect(() => {
     x.value = 0
     mode.value = 'idle'
-  }, [cardKey, mode, x])
+    if (pullOut) pullOut.value = 0
+  }, [cardKey, mode, pullOut, x])
 
   const finish = useCallback(
     (way) => {
@@ -72,6 +74,7 @@ export function SwipeCard({
         mode.value = 'drag'
       }
       x.value = event.translationX
+      if (pullOut) pullOut.value = swipePull(event.translationX)
     })
     .onEnd((event) => {
       if (mode.value === 'fly') return
@@ -86,6 +89,7 @@ export function SwipeCard({
       }
       x.value = withSpring(0, { damping: 18, stiffness: 220 })
       mode.value = 'idle'
+      if (pullOut) pullOut.value = 0
     })
 
   const cardStyle = useAnimatedStyle(() => {

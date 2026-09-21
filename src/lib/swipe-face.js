@@ -11,6 +11,9 @@ export const SWIPE_WAKE = 14
 // Nothing shows until the pull is this far along.
 const STAMP_AT = 0.4
 
+// Screen edges light up before the stamp so you feel the wall coming.
+const EDGE_AT = 0.12
+
 export function swipePull(dx) {
   'worklet'
   return Math.max(-1, Math.min(1, dx / SWIPE_THRESHOLD))
@@ -26,4 +29,11 @@ export function stampOpacity(pull, way) {
 export function swipeTilt(dx) {
   'worklet'
   return dx / 78
+}
+
+export function edgeOpacity(pull, way) {
+  'worklet'
+  const lean = way === 'did' ? pull : -pull
+  if (lean <= EDGE_AT) return 0
+  return Math.min(1, (lean - EDGE_AT) / (0.92 - EDGE_AT))
 }

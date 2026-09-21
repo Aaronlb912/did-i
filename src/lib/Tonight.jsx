@@ -22,6 +22,7 @@ import { useReduceMotion } from './useReduceMotion.js'
 import { useTonightKeys } from './useTonightKeys.js'
 import { useTonightStack } from './useTonightStack.js'
 import { TagRail } from './TagRail.jsx'
+import { SwipePullSlot } from './SwipePull.jsx'
 import './did-i.css'
 
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
@@ -290,7 +291,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           </div>
         ) : null}
 
-        <div className="di-face-slot">{body}</div>
+        <SwipePullSlot>{body}</SwipePullSlot>
 
         {stack.undo ? (
           <p className="di-undo di-screws-print-hide">
