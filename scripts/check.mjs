@@ -4,7 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -201,6 +201,16 @@ test('referral reward bar tracks paid gems toward the cap', () => {
   assert.equal(inviteNextFriendGems(0, 0), 1)
   assert.equal(inviteNextFriendGems(3, 6), 4)
   assert.equal(inviteNextFriendGems(5, 10), 0)
+})
+
+test('every sql file in db:apply:all is on disk', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  const files = [...src.matchAll(/'([^']+\.sql)'/g)].map((match) => match[1])
+  assert.ok(files.length >= 10)
+  for (const file of files) {
+    assert.ok(existsSync(path.join(root, file)), file)
+  }
 })
 
 test('a referral code is ten characters after cleaning', () => {

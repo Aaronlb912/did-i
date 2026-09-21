@@ -5,20 +5,28 @@ to do when something is wrong.
 
 ## The database
 
-SQL files go in this order. Each one is safe to run again.
+SQL files go in this order. Each one is safe to run again. `npm run
+db:apply:all` uses this same list (`scripts/apply-all-sql.mjs`).
 
 1. `supabase/schema.sql` shelves, profiles, devices
 2. `supabase/people.sql` friends, families, invites, handles
-   (or `supabase/handle-safe.sql` alone if people already ran without it)
-3. `supabase/hardening.sql` indexes, policies, write caps
-4. `supabase/answers.sql` the answer log, and the migration off the
+3. `supabase/handle-safe.sql` safe handle generation (no-op if people
+   already ran with it)
+4. `supabase/phone-friends.sql` phone lookup for friend requests
+5. `supabase/hardening.sql` indexes, policies, write caps
+6. `supabase/rls-subselect.sql` policy helpers without row-by-row
+   subqueries
+7. `supabase/invite-guard.sql` referral codes, gem cap, one code per
+   person
+8. `supabase/answers.sql` the answer log, and the migration off the
    one-document shelf
-5. `supabase/blocks.sql` blocking and reporting
-6. `supabase/push.sql` push tokens and the nudge queue
-7. `supabase/tonight.sql` Did I tonight, the public list
-8. `supabase/dit-board.sql` DIT board sync, no line cap
-9. `supabase/gems-social.sql` cheer sends, gifts
-10. `supabase/gem-purchases.sql` real-money gem packs
+9. `supabase/blocks.sql` blocking and reporting
+10. `supabase/push.sql` push tokens and the nudge queue
+11. `supabase/tonight.sql` Did I tonight, the public list
+12. `supabase/dit-board.sql` DIT board sync, no line cap
+13. `supabase/gems-social.sql` cheer sends, gifts
+14. `supabase/gem-purchases.sql` real-money gem packs
+15. `supabase/waitlist.sql` landing-page waitlist
 
 After any change to any of them, run `supabase/audit.sql`. It has to come
 back with no rows.
