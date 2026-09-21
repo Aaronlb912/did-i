@@ -74,6 +74,7 @@ export function Field({
   secureTextEntry,
   maxLength,
   onSubmitEditing,
+  autoFocus,
 }) {
   return (
     <View style={styles.field}>
@@ -88,6 +89,7 @@ export function Field({
         secureTextEntry={secureTextEntry}
         maxLength={maxLength}
         onSubmitEditing={onSubmitEditing}
+        autoFocus={autoFocus}
         returnKeyType={onSubmitEditing ? 'done' : undefined}
         placeholderTextColor={colors.inkDim}
         style={[

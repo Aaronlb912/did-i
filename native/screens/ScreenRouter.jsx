@@ -67,8 +67,8 @@ export function ScreenRouter({
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
 
-  if (path === '/privacy') return <LegalScreen kind="privacy" />
-  if (path === '/terms') return <LegalScreen kind="terms" />
+  if (path === '/privacy') return <LegalScreen kind="privacy" book={book} />
+  if (path === '/terms') return <LegalScreen kind="terms" book={book} />
   if (path === '/welcome') return <WelcomeScreen book={book} />
   if (path === '/enter' || (needsEnter(book) && path !== '/welcome' && path !== '/first')) {
     return (

@@ -328,6 +328,8 @@ export const ko = {
   'tonight.lastNight': '어젯밤',
   'tonight.saved': '저장했어.',
   'tonight.undo': '되돌리기',
+  'tonight.undoShake': '휴대폰을 흔들어 실행 취소',
+  'tonight.undoTap': '탭하여 실행 취소',
   'tonight.boardName': 'tag 이름',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

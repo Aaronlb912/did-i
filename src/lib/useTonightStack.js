@@ -88,7 +88,7 @@ export function useTonightStack({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shelf, liveValue, tagId, dateIso, minute],
   )
-  const { due, ready, waiting, catchUp, heat } = night
+  const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = finishStackCount(ready)
@@ -193,10 +193,18 @@ export function useTonightStack({
   function mark(row, status) {
     if (!row) return
     const book = bookOf(row)
+    const liveAnswer = answerFor(book, row.lamp.id, row.periodKey)
+    if (
+      status === 'skip' &&
+      (liveAnswer?.status === 'yes' || liveAnswer?.status === 'late')
+    ) {
+      return
+    }
     const ids = ready.map((item) => item.lamp.id)
-    const at = ids.indexOf(row.lamp.id)
-    const wasSkip = row?.answer?.status === 'skip'
-    const finalStatus = status === 'yes' ? didStatusForRow(row) : status
+    const at = ready.findIndex((item) => rowKey(item) === rowKey(row))
+    const wasSkip = liveAnswer?.status === 'skip'
+    const finalStatus =
+      status === 'yes' ? didStatusForRow({ ...row, answer: liveAnswer || row.answer }) : status
 
     if (finalStatus === 'skip' && shouldFinishAfterNope(ready, row, at)) {
       setFaceId(FINISH_FACE)
@@ -316,8 +324,12 @@ export function useTonightStack({
 
   const dueWithWait = bySlot(due).map((row) => ({
     ...row,
-    waiting: !row.answer && !ready.some((item) => item.lamp.id === row.lamp.id),
+    waiting: !row.answer && !ready.some((item) => rowKey(item) === rowKey(row)),
   }))
+
+  const activePillPick = pillPick
+    ? due.find((row) => rowKey(row) === rowKey(pillPick)) || null
+    : null
 
   function nextOpenTime(rows) {
     return [...rows]
@@ -332,7 +344,8 @@ export function useTonightStack({
     const holeBook = holePick.book || bookOf(holePick)
     holeWasSkip = answerFor(holeBook, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
   } else if (waitPick) bodyKind = 'wait'
-  else if (pillPick) bodyKind = 'pill'
+  else if (activePillPick?.answer) bodyKind = 'pillView'
+  else if (activePillPick) bodyKind = 'pill'
   else if (empty) bodyKind = 'empty'
   else if (onFinish) bodyKind = 'finish'
   else if (hallOn) bodyKind = 'hall'
@@ -346,6 +359,7 @@ export function useTonightStack({
     shelf,
     liveValue,
     due,
+    unanswered,
     ready,
     catchUp,
     heat,
@@ -360,7 +374,7 @@ export function useTonightStack({
     holePick,
     holeWasSkip,
     waitPick,
-    pillPick,
+    pillPick: activePillPick,
     titleEdit,
     titleDraft,
     setTitleEdit,

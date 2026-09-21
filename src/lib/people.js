@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
-import { isoDate } from './recurrence.js'
+import { boardDate, isoDate } from './recurrence.js'
 
 // Everything here needs an account. With no Supabase keys the app still
 // runs, these calls just say 'off' and the screens explain why.
@@ -619,7 +619,7 @@ export async function familyTonight() {
   // One query for every family's questions, one for my answers, instead of
   // a pair per family. Somebody in four families made nine round trips.
   const ids = families.map((family) => family.id)
-  const nights = new Map(families.map((family) => [family.id, boardDateIn(family.fold_hour)]))
+  const nights = new Map(families.map((family) => [family.id, boardDate()]))
 
   const [lampRows, answerRows] = await Promise.all([
     db
@@ -654,12 +654,6 @@ export async function familyTonight() {
     })
   }
   return out
-}
-
-function boardDateIn(foldHour) {
-  const local = new Date()
-  if (local.getHours() < (Number(foldHour) || 0)) local.setDate(local.getDate() - 1)
-  return isoDate(local)
 }
 
 function onVisible(fn) {

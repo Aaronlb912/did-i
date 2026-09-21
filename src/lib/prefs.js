@@ -93,9 +93,12 @@ export function useTheme() {
       const sub = appearance.addChangeListener(sync)
       return () => sub.remove()
     }
-    const media = window.matchMedia('(prefers-color-scheme: light)')
-    media.addEventListener('change', sync)
-    return () => media.removeEventListener('change', sync)
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const media = window.matchMedia('(prefers-color-scheme: light)')
+      media.addEventListener('change', sync)
+      return () => media.removeEventListener('change', sync)
+    }
+    return undefined
   }, [prefs.theme])
 
   return theme

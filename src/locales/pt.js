@@ -338,6 +338,8 @@ export const pt = {
   'tonight.lastNight': 'Ontem à noite',
   'tonight.saved': 'Salvo.',
   'tonight.undo': 'Desfazer',
+  'tonight.undoShake': 'Agite o telefone para desfazer',
+  'tonight.undoTap': 'Toque para desfazer',
   'tonight.boardName': 'Nome da tag',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

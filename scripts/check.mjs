@@ -14,6 +14,7 @@ import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import { cleanCode, cleanInvite, cleanHandle, cleanLine } from '../src/lib/people.js'
 import { HANDLE_WORDS, isHandleSafe } from '../src/lib/handle-safe.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
+import { mergeSameTitles, normalizeShelf, parkEmptyTags } from '../src/lib/board-shelf.js'
 import { gemWeekKey, spendGems, weeklyGemBump } from '../src/lib/purse.js'
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
@@ -332,6 +333,39 @@ test('a gem lands once per week when a night clears', () => {
 
   const twice = weeklyGemBump(once, once, clock)
   assert.equal(twice.boards[0].gems, 1)
+})
+
+test('gem week survives shelf writes', () => {
+  const clock = new Date('2026-09-20T12:00:00')
+  const week = gemWeekKey(clock)
+  const book = {
+    id: 'b1',
+    title: 'Home',
+    dayFoldHour: 0,
+    gems: 0,
+    lamps: [lamp('a')],
+    answers: [],
+    cheers: ['lime'],
+    looks: ['lime'],
+  }
+  const cleared = {
+    ...book,
+    answers: [{ lampId: 'a', periodKey: '2026-09-20', status: 'yes', answeredAt: '2026-09-20T12:00:00' }],
+  }
+  const shelf = { currentId: 'b1', boards: [cleared], gemWeek: '' }
+  const prev = { currentId: 'b1', boards: [book], gemWeek: '' }
+  const bumped = weeklyGemBump(shelf, prev, clock)
+  assert.equal(bumped.gemWeek, week)
+
+  const drafted = parkEmptyTags(mergeSameTitles({ ...bumped, boards: bumped.boards }))
+  assert.equal(drafted.gemWeek, week)
+
+  const normalized = normalizeShelf(drafted)
+  assert.equal(normalized.gemWeek, week)
+  assert.equal(normalized.boards[0].gems, 1)
+
+  const again = weeklyGemBump(normalized, normalized, clock)
+  assert.equal(again.boards[0].gems, 1)
 })
 
 test('bigger gem packs cost less per gem', () => {

@@ -17,31 +17,41 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const label = heat > 0 ? t('weekbar.streak', { n: heat }) : t('weekbar.none')
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { borderTopColor: colors.lineSoft }]}>
       <View style={styles.head}>
-        <Pressable onPress={() => setWeekShift((n) => n - 1)} hitSlop={8}>
-          <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
+        <Pressable onPress={() => setWeekShift((n) => n - 1)} hitSlop={8} style={styles.shiftBtn}>
+          <Text style={[styles.shift, { color: colors.inkSoft }]}>‹</Text>
         </Pressable>
-        <Pressable onPress={() => goHash('/calendar')}>
-          <Text style={[styles.open, { color: colors.ink }]}>{label}</Text>
+        <Pressable onPress={() => goHash('/calendar')} style={styles.labelHit}>
+          <Text style={[styles.open, { color: colors.inkSoft }]}>{label}</Text>
         </Pressable>
-        <Pressable disabled={weekShift >= 0} onPress={() => setWeekShift((n) => Math.min(0, n + 1))} hitSlop={8}>
-          <Text style={[styles.shift, { color: weekShift >= 0 ? colors.line : colors.inkDim }]}>›</Text>
+        <Pressable
+          disabled={weekShift >= 0}
+          onPress={() => setWeekShift((n) => Math.min(0, n + 1))}
+          hitSlop={8}
+          style={styles.shiftBtn}
+        >
+          <Text style={[styles.shift, { color: weekShift >= 0 ? colors.line : colors.inkSoft }]}>›</Text>
         </Pressable>
       </View>
       <View style={styles.days}>
         {nights.map((night) => (
           <View key={night.iso} style={styles.day}>
             <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{night.weekday[0]}</Text>
-            <View
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
-                  opacity: night.empty ? 0.35 : 1,
-                },
-              ]}
-            />
+            <View style={styles.dotWrap}>
+              {night.isToday && night.on ? (
+                <View style={[styles.todayRing, { borderColor: colors.on }]} />
+              ) : null}
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                    opacity: night.empty ? 0.35 : 1,
+                  },
+                ]}
+              />
+            </View>
           </View>
         ))}
       </View>
@@ -50,12 +60,28 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 8, marginBottom: 4, gap: 8 },
+  wrap: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    gap: 6,
+  },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shift: { fontSize: 20, paddingHorizontal: 8 },
-  open: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+  shiftBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  shift: { fontSize: 20, lineHeight: 22 },
+  labelHit: { flex: 1, alignItems: 'center' },
+  open: { fontFamily: fonts.ui, fontSize: 12.5, fontWeight: '600' },
   days: { flexDirection: 'row', justifyContent: 'space-between' },
   day: { alignItems: 'center', gap: 4, flex: 1 },
-  dayLabel: { fontFamily: fonts.mono, fontSize: 10 },
+  dayLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.4 },
+  dotWrap: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  todayRing: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    opacity: 0.85,
+  },
   dot: { width: 8, height: 8, borderRadius: 4 },
 })

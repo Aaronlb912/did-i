@@ -53,7 +53,7 @@ export function landingDemoBook() {
     id: 'board-landing-demo',
     title: 'Hayes Street',
     keeperName: 'Jordan Hale',
-    dayFoldHour: 4,
+    dayFoldHour: 0,
     quietMode: false,
     inkNote: 'Three due tonight. Swipe DID or nope.',
     lamps,

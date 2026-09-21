@@ -20,7 +20,7 @@ import {
 } from '../../src/lib/cloud-sync.js'
 import { blankLamp, shortLabel } from '../../src/lib/board-json.js'
 import { hangInto } from '../../src/lib/board-ops.js'
-import { liveLampCount } from '../../src/lib/board-shelf.js'
+import { currentBook, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { hallHeat } from '../../src/lib/hall-feel.js'
 import {
@@ -46,7 +46,8 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { CalendarGrid } from '../components/CalendarGrid.jsx'
-import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { BoardShell } from '../components/BoardShell.jsx'
+import { DidButton, Field, KeyButton, Meta, Page, Row } from '../components/ui.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -72,13 +73,14 @@ function SureModal({ sure, colors, onClose, onGo }) {
   )
 }
 
-function ScreenShell({ kicker, title, children, colors }) {
+function ScreenShell({ book, title, children, colors, showAdd = false }) {
+  const live = book || currentBook(readShelf())
+  const clock = new Date()
+  const date = formatBoardDate(boardDate(clock, live.dayFoldHour))
   return (
-    <Page colors={colors}>
-      {kicker ? <Kicker colors={colors}>{kicker}</Kicker> : null}
-      {title ? <Title colors={colors}>{title}</Title> : null}
+    <BoardShell book={live} title={title} date={date} colors={colors} showAdd={showAdd}>
       {children}
-    </Page>
+    </BoardShell>
   )
 }
 
@@ -108,7 +110,7 @@ function answerLabel(row) {
 export function AboutScreen({ book }) {
   const colors = useHallColors()
   return (
-    <ScreenShell kicker={t('about.kicker')} title={t('about.title')} colors={colors}>
+    <ScreenShell book={book} title={t('about.title')} colors={colors}>
       <Meta colors={colors}>{t('about.p1')}</Meta>
       <Meta colors={colors}>{t('about.p2')}</Meta>
       <Meta colors={colors}>{t('about.p3')}</Meta>
@@ -123,7 +125,7 @@ export function AboutScreen({ book }) {
 export function HelpScreen() {
   const colors = useHallColors()
   return (
-    <ScreenShell kicker={t('help.kicker')} title={t('help.title')} colors={colors}>
+    <ScreenShell title={t('help.title')} colors={colors}>
       <Meta colors={colors}>{t('help.lead')}</Meta>
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
       <Meta colors={colors}>{t('help.tonightP1')}</Meta>
@@ -149,7 +151,7 @@ export function LaterScreen({ book, now }) {
   const hung = (book?.lamps || []).filter((lamp) => !lamp.archived)
 
   return (
-    <ScreenShell kicker={t('later.kicker')} title={t('later.title')} colors={colors}>
+    <ScreenShell book={book} title={t('later.title')} colors={colors}>
       <Meta colors={colors}>{t('later.body')}</Meta>
       {!hung.length ? (
         <Meta colors={colors}>{t('later.empty')}</Meta>
@@ -190,7 +192,7 @@ export function MarksScreen({ book, now }) {
   const have = new Set(book?.unlocked || [])
 
   return (
-    <ScreenShell kicker={t('marks.kicker')} title={t('marks.title')} colors={colors}>
+    <ScreenShell book={book} title={t('marks.title')} colors={colors}>
       <Meta colors={colors}>{t('marks.streak', { n: heat })}</Meta>
       {book?.quietMode ? (
         <Meta colors={colors}>{t('marks.hidden')}</Meta>
@@ -218,7 +220,7 @@ export function MarksScreen({ book, now }) {
 export function IdeasScreen() {
   const colors = useHallColors()
   return (
-    <ScreenShell kicker={t('ideas.kicker')} title={t('ideas.title')} colors={colors}>
+    <ScreenShell title={t('ideas.title')} colors={colors}>
       <Meta colors={colors}>{t('ideas.body')}</Meta>
       {IDEA_IDS.map((id) => (
         <View key={id} style={[styles.idea, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -244,7 +246,7 @@ export function StatsScreen({ book, now }) {
   const counts = statsCounts(book, clock)
 
   return (
-    <ScreenShell kicker={t('stats.title')} title={t('stats.title')} colors={colors}>
+    <ScreenShell title={t('stats.title')} colors={colors}>
       <Row colors={colors} label={t('stats.questions')} note={String(counts.hung)} />
       <Row colors={colors} label={t('stats.did')} note={String(counts.did)} />
       <Row colors={colors} label={t('stats.late')} note={String(counts.late)} />
@@ -263,7 +265,7 @@ export function FeedScreen({ book, now }) {
   const rows = feedRows(book)
 
   return (
-    <ScreenShell kicker={t('feed.kicker')} title={t('feed.title')} colors={colors}>
+    <ScreenShell title={t('feed.title')} colors={colors}>
       {!rows.length ? (
         <Meta colors={colors}>{t('feed.empty')}</Meta>
       ) : (
@@ -289,7 +291,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const today = formatBoardDate(boardDate(clock, book?.dayFoldHour))
 
   return (
-    <ScreenShell kicker={t('cal.kicker')} title={t('cal.aria')} colors={colors}>
+    <ScreenShell title={t('cal.aria')} colors={colors}>
       <Meta colors={colors}>{today}</Meta>
       <Meta colors={colors}>{t('cal.hint')}</Meta>
       <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
@@ -314,7 +316,7 @@ export function WeekGridScreen({ book, now }) {
   }
 
   return (
-    <ScreenShell kicker={t('streaks.seven')} title={t('streaks.seven')} colors={colors}>
+    <ScreenShell title={t('streaks.seven')} colors={colors}>
       {!lamps.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -365,7 +367,7 @@ export function StreaksScreen({ book, now }) {
     .sort((a, b) => b.n - a.n)
 
   return (
-    <ScreenShell kicker={t('streaks.kicker')} title={t('streaks.title')} colors={colors}>
+    <ScreenShell title={t('streaks.title')} colors={colors}>
       <Meta colors={colors}>{t('streaks.line', { n: heat })}</Meta>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
@@ -404,7 +406,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   }, [titleDraft, book, onChange])
 
   return (
-    <ScreenShell kicker={t('boards.kicker')} title={t('boards.title')} colors={colors}>
+    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
       {live.map((item) => {
         const left = leftoverOn(boards, new Date(), item.id)
         const n = liveLampCount(item)
@@ -493,7 +495,7 @@ export function EnterScreen({ book, onSaveKeeper, returnTo = '/tonight' }) {
 
   return (
     <ScreenShell
-      kicker={locked ? t('enter.locked') : t('enter.thisPhone')}
+      book={book}
       title={
         locked
           ? t('enter.openTitle', { board: book?.title })
@@ -535,7 +537,7 @@ export function WelcomeScreen({ book }) {
   }
 
   return (
-    <ScreenShell kicker={t('welcome.plate')} title={t('welcome.title')} colors={colors}>
+    <ScreenShell title={t('welcome.title')} colors={colors}>
       <Meta colors={colors}>{t('welcome.body')}</Meta>
       <DidButton colors={colors} label={t('welcome.start')} onPress={finish} />
     </ScreenShell>
@@ -593,7 +595,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 
   return (
     <ScreenShell
-      kicker={t('first.kicker')}
+      book={book}
       title={named ? t('first.titleNamed', { name: named }) : t('first.title')}
       colors={colors}
     >
@@ -628,7 +630,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
   const fires = upcomingPings(book, clock)
 
   return (
-    <ScreenShell kicker={t('pings.kicker')} title={t('pings.title')} colors={colors}>
+    <ScreenShell title={t('pings.title')} colors={colors}>
       <Meta colors={colors}>{t('pings.body')}</Meta>
       {onAskPings ? (
         <DidButton colors={colors} label={on ? t('pings.on') : t(labelKey)} onPress={onAskPings} />
@@ -695,14 +697,14 @@ function AccountSignedOut({ on }) {
 
   if (!on) {
     return (
-      <ScreenShell kicker={t('account.kicker')} title={t('account.offTitle')} colors={colors}>
+      <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
       </ScreenShell>
     )
   }
 
   return (
-    <ScreenShell kicker={t('account.kicker')} title={t('account.outTitle')} colors={colors}>
+    <ScreenShell title={t('account.outTitle')} colors={colors}>
       <Meta colors={colors}>{t('account.outBody')}</Meta>
       <Field
         colors={colors}
@@ -804,7 +806,7 @@ function AccountSignedIn({ book, email, onChange }) {
   }
 
   return (
-    <ScreenShell kicker={t('account.kicker')} title={t('account.inTitle')} colors={colors}>
+    <ScreenShell title={t('account.inTitle')} colors={colors}>
       <Row colors={colors} label={t('account.who')} note={email} />
       <Row colors={colors} label={t('account.syncNow')} note={syncNote} onPress={() => pullAndMerge()} />
       {sync.how === 'miss' && sync.miss ? (

@@ -42,6 +42,27 @@ where somebody is a nuisance.
 5. When you are ready for paid gems: store products + `gem-iap` secrets per `docs/iap.md`.
 6. `npx expo prebuild` and install on a phone; walk social, settings, and push with a second account.
 
+## Native Android vs localhost web
+
+The Expo app in `native/` shares night maths, swipe, cheer recipes, and
+`useTonightStack.js` with the browser build. These still differ:
+
+- **Cheer burst fidelity.** Native `CheerBurst.jsx` renders a subset of
+  bit types (no full dancers, puddles, shooting stars). Web CSS is richer.
+- **Hall ambient.** Web `data-heat` / `data-hour` / `data-sit` on
+  `.di-hall` tint the whole board. Native has gem halos and meter glow
+  only.
+- **Jewel chrome.** Web brass rings and glass; native dot jewels in a
+  horizontal scroller. Same data, different look.
+- **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
+- **Print slip** on Tonight (web only).
+- **iOS swipe-back** on subpages (web has `useSwipeBack`; native has
+  mast back + Android key only).
+
+Tonight parity landed 2026-09-20: wait/hole plates, sync miss line,
+title edit, idle face, night-strip history gate, meter/purse pop,
+cheer skip under reduce-motion.
+
 ## Ideas parked (not built)
 
 - **Did I tonight (DIT)** is off in the main app (`VITE_DIT_ENABLED` unset).
@@ -52,10 +73,11 @@ where somebody is a nuisance.
 
 ## Done
 
-- Native app at parity with the web shell (Expo in `native/`). Social,
-  settings, account, search, lamp detail, FamilyTonight, offline banner,
-  clipboard fallback, pings permission, cheer burst, error boundary, and
-  the rest route through `ScreenRouter`.
+- Native app shell (Expo in `native/`): social, settings, account,
+  search, lamp detail, FamilyTonight, offline banner, clipboard fallback,
+  pings permission, cheer burst, error boundary, and routes through
+  `ScreenRouter`. Tonight and shop previews still catching up to web
+  (see Native Android vs localhost web).
 - In-app purchase framework: `expo-iap`, `gem-iap` function, claim on sync
   (`docs/iap.md`). No Stripe in the app.
 - Answers sync on their own instead of riding in the whole shelf

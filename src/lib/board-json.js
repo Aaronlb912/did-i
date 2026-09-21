@@ -101,7 +101,7 @@ export function blankBook() {
     version: 1,
     title: 'Did I',
     keeperName: '',
-    dayFoldHour: 4,
+    dayFoldHour: 0,
     quietMode: false,
     clickSound: false,
     inkNote: '',
@@ -181,14 +181,13 @@ export function normalizeAnswer(raw) {
 
 export function normalizeBook(raw) {
   const book = raw && typeof raw === 'object' ? raw : {}
-  const fold = Number(book.dayFoldHour)
   const purse = normalizePurse(book)
   return {
     version: 1,
     id: asString(book.id).trim() || newBoardId(),
     title: asString(book.title).trim() || 'Did I',
     keeperName: asString(book.keeperName).trim(),
-    dayFoldHour: Number.isInteger(fold) && fold >= 0 && fold <= 12 ? fold : 4,
+    dayFoldHour: 0,
     quietMode: asBool(book.quietMode),
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),

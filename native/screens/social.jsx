@@ -56,29 +56,28 @@ import {
   spendGems,
 } from '../../src/lib/purse.js'
 import { useOnline } from '../hooks/useOnline.js'
-import { boardDate, isoDate } from '../../src/lib/recurrence.js'
+import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
+import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
+import { BoardShell } from '../components/BoardShell.jsx'
 import {
   DidButton,
   Field,
-  Kicker,
   KeyButton,
   Meta,
-  Page,
   Row,
-  Title,
 } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { fonts } from '../theme.js'
 
-function ScreenShell({ kicker, title, children, colors }) {
+function ScreenShell({ book, title, children, colors }) {
+  const live = book || currentBook(readShelf())
+  const date = formatBoardDate(boardDate(new Date(), live.dayFoldHour))
   return (
-    <Page colors={colors}>
-      {kicker ? <Kicker colors={colors}>{kicker}</Kicker> : null}
-      {title ? <Title colors={colors}>{title}</Title> : null}
+    <BoardShell book={live} title={title} date={date} colors={colors}>
       {children}
-    </Page>
+    </BoardShell>
   )
 }
 
@@ -182,7 +181,7 @@ function BlockModal({ person, colors, onClose, onDone }) {
 
 function NeedAccount({ kicker, title, colors }) {
   return (
-    <ScreenShell kicker={kicker} title={title} colors={colors}>
+    <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
       <DidButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
     </ScreenShell>
@@ -191,7 +190,7 @@ function NeedAccount({ kicker, title, colors }) {
 
 function CloudOff({ colors }) {
   return (
-    <ScreenShell kicker={t('people.kicker')} title={t('people.offTitle')} colors={colors}>
+    <ScreenShell title={t('people.offTitle')} colors={colors}>
       <Meta colors={colors}>{t('people.offBody')}</Meta>
     </ScreenShell>
   )
@@ -360,14 +359,14 @@ export function PeopleScreen({ book, onChange }) {
   }
   if (!ready) {
     return (
-      <ScreenShell kicker={t('people.kicker')} title={t('people.title')} colors={colors}>
+      <ScreenShell title={t('people.title')} colors={colors}>
         <Meta colors={colors}>{t('family.loading')}</Meta>
       </ScreenShell>
     )
   }
 
   return (
-    <ScreenShell kicker={t('people.kicker')} title={t('people.title')} colors={colors}>
+    <ScreenShell title={t('people.title')} colors={colors}>
       <OfflineLine colors={colors} />
 
       <Cap colors={colors}>{t('inbox.kicker')}</Cap>
@@ -601,14 +600,14 @@ export function FriendsScreen({ book, onChange }) {
   }
   if (!ready) {
     return (
-      <ScreenShell kicker={t('people.friends')} title={t('friends.title', { n: 0 })} colors={colors}>
+      <ScreenShell title={t('friends.title', { n: 0 })} colors={colors}>
         <Meta colors={colors}>{t('family.loading')}</Meta>
       </ScreenShell>
     )
   }
 
   return (
-    <ScreenShell kicker={t('people.friends')} title={t('friends.title', { n: links.friends.length })} colors={colors}>
+    <ScreenShell title={t('friends.title', { n: links.friends.length })} colors={colors}>
       <OfflineLine colors={colors} />
       {links.friends.length ? (
         <>
@@ -784,14 +783,14 @@ function FamilyListScreen({ colors }) {
   }
   if (!ready) {
     return (
-      <ScreenShell kicker={t('family.kicker')} title={t('people.families')} colors={colors}>
+      <ScreenShell title={t('people.families')} colors={colors}>
         <Meta colors={colors}>{t('family.loading')}</Meta>
       </ScreenShell>
     )
   }
 
   return (
-    <ScreenShell kicker={t('family.kicker')} title={t('people.families')} colors={colors}>
+    <ScreenShell title={t('people.families')} colors={colors}>
       <OfflineLine colors={colors} />
       {families.length ? (
         <>
@@ -831,10 +830,9 @@ export function FamilyScreen({ book, onChange, route }) {
   const familyId = route?.id || ''
   if (familyId) {
     return (
-      <Page colors={colors}>
-        <Kicker colors={colors}>{t('family.kicker')}</Kicker>
+      <BoardShell book={book} title={t('family.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
         <FamilyDetailScreen book={book} onChange={onChange} familyId={familyId} colors={colors} />
-      </Page>
+      </BoardShell>
     )
   }
   return <FamilyListScreen colors={colors} />
@@ -880,14 +878,14 @@ export function InboxScreen({ book, onChange, onKeep }) {
   }
   if (!ready) {
     return (
-      <ScreenShell kicker={t('inbox.kicker')} title={t('inbox.title')} colors={colors}>
+      <ScreenShell title={t('inbox.title')} colors={colors}>
         <Meta colors={colors}>{t('family.loading')}</Meta>
       </ScreenShell>
     )
   }
   if (!rows.length) {
     return (
-      <ScreenShell kicker={t('inbox.kicker')} title={t('inbox.emptyTitle')} colors={colors}>
+      <ScreenShell title={t('inbox.emptyTitle')} colors={colors}>
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
         <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
       </ScreenShell>
@@ -895,7 +893,7 @@ export function InboxScreen({ book, onChange, onKeep }) {
   }
 
   return (
-    <ScreenShell kicker={t('inbox.kicker')} title={t('inbox.title')} colors={colors}>
+    <ScreenShell title={t('inbox.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('inbox.hint')}</Meta>
       {rows.map((row) => (
@@ -952,14 +950,14 @@ export function SentScreen({ book, onChange }) {
   }
   if (!ready) {
     return (
-      <ScreenShell kicker={t('sent.kicker')} title={t('sent.title')} colors={colors}>
+      <ScreenShell title={t('sent.title')} colors={colors}>
         <Meta colors={colors}>{t('family.loading')}</Meta>
       </ScreenShell>
     )
   }
   if (!rows.length) {
     return (
-      <ScreenShell kicker={t('sent.kicker')} title={t('sent.emptyTitle')} colors={colors}>
+      <ScreenShell title={t('sent.emptyTitle')} colors={colors}>
         <Meta colors={colors}>{t('sent.emptyBody')}</Meta>
         <DidButton colors={colors} label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
       </ScreenShell>
@@ -967,7 +965,7 @@ export function SentScreen({ book, onChange }) {
   }
 
   return (
-    <ScreenShell kicker={t('sent.kicker')} title={t('sent.title')} colors={colors}>
+    <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('sent.hint')}</Meta>
       {rows.map((row) => (
@@ -1077,7 +1075,7 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
 
   if (!DIT_ENABLED) {
     return (
-      <ScreenShell kicker={t('all.kicker')} title={t('nav.everyone')} colors={colors}>
+      <ScreenShell title={t('nav.everyone')} colors={colors}>
         <Meta colors={colors}>{t('people.offTitle')}</Meta>
         <Meta colors={colors}>{t('all.offBody')}</Meta>
         <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
@@ -1087,7 +1085,7 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
 
   if (!cloudSetUp()) {
     return (
-      <ScreenShell kicker={t('all.kicker')} title={t('all.offTitle')} colors={colors}>
+      <ScreenShell title={t('all.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('all.offBody')}</Meta>
       </ScreenShell>
     )
@@ -1099,7 +1097,7 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
 
   if (!ready) {
     return (
-      <ScreenShell kicker={t('all.kicker')} title={t('all.kicker')} colors={colors}>
+      <ScreenShell title={t('all.kicker')} colors={colors}>
         <Meta colors={colors}>{t('all.loading')}</Meta>
       </ScreenShell>
     )
@@ -1108,7 +1106,7 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
   if (setup) {
     const sqlUrl = supabaseSqlUrl()
     return (
-      <ScreenShell kicker={t('all.kicker')} title={t('all.setupTitle')} colors={colors}>
+      <ScreenShell title={t('all.setupTitle')} colors={colors}>
         <Meta colors={colors}>{t('all.setupBody')}</Meta>
         {sqlUrl ? (
           <DidButton colors={colors} label={t('all.setupOpen')} onPress={() => Linking.openURL(sqlUrl)} />
@@ -1122,7 +1120,7 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
 
   return (
     <ScreenShell
-      kicker={t('all.kicker')}
+      book={book}
       title={tally === 1 ? t('all.tallyOne') : t('all.tally', { n: tally })}
       colors={colors}
     >

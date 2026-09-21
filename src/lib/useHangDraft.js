@@ -1,0 +1,145 @@
+import { useMemo, useState } from 'react'
+import {
+  blankLamp,
+  emptyBoard,
+  lampNotifyOn,
+  lampPriority,
+  missLamp,
+  shortLabel,
+  slotFromAskAfter,
+} from './board-json.js'
+import { findBookByTitle } from './board-shelf.js'
+import { boardDate } from './recurrence.js'
+import { STARTERS } from './starters.js'
+
+export function hasExtraFields(item) {
+  return Boolean(
+    item && (item.short || item.askAfter || item.notes || String(item.kind || '').trim()),
+  )
+}
+
+export function bookForTag(boards, book, name) {
+  const title = String(name || '').trim() || book.title
+  const hit = findBookByTitle(boards, title)
+  if (hit) return hit
+  return { ...emptyBoard(), title, keeperName: book.keeperName }
+}
+
+function initialDraft({ clock, lamp, seed, start, dayFoldHour }) {
+  if (lamp) return { ...lamp }
+  if (seed) return { ...seed }
+  const pick = STARTERS.find(
+    (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
+  )
+  return pick ? { ...blankLamp(clock), ...pick } : blankLamp(clock)
+}
+
+export function useHangDraft({
+  book,
+  boards = [],
+  now,
+  lamp = null,
+  seed = null,
+  start = '',
+  tagTitle: controlledTag = '',
+  onTagTitle,
+}) {
+  const clock = now || new Date()
+  const editing = Boolean(lamp)
+  const [draft, setDraft] = useState(() =>
+    initialDraft({ clock, lamp, seed, start, dayFoldHour: book.dayFoldHour }),
+  )
+  const [tagTitleLocal, setTagTitleLocal] = useState(controlledTag)
+  const tagTitle = onTagTitle ? controlledTag : tagTitleLocal
+  const setTagTitle = onTagTitle || setTagTitleLocal
+  const [more, setMore] = useState(() => hasExtraFields(lamp) || hasExtraFields(seed))
+  const [miss, setMiss] = useState('')
+
+  const liveTags = useMemo(() => (boards || []).filter((item) => !item.archived), [boards])
+  const parkedTags = useMemo(() => (boards || []).filter((item) => item.archived), [boards])
+  const tagPick = useMemo(() => String(tagTitle || '').trim(), [tagTitle])
+  const knownTag = useMemo(() => Boolean(findBookByTitle(boards, tagPick)), [boards, tagPick])
+  const priority = lampPriority(draft)
+  const notifyOn = lampNotifyOn(draft)
+
+  function change(field, value) {
+    setDraft((prev) => {
+      const next = { ...prev, [field]: value }
+      if (
+        field === 'cadence' &&
+        value === 'once' &&
+        !/^\d{4}-\d{2}-\d{2}$/.test(String(prev.onceOn || ''))
+      ) {
+        next.onceOn = boardDate(clock, book.dayFoldHour)
+      }
+      return next
+    })
+    if (miss) setMiss('')
+  }
+
+  function changeAskAfter(value) {
+    setDraft((prev) => ({ ...prev, askAfter: value, slot: slotFromAskAfter(value) }))
+  }
+
+  function toggleDay(day) {
+    setDraft((prev) => {
+      const has = (prev.weekdays || []).includes(day)
+      const weekdays = has
+        ? (prev.weekdays || []).filter((item) => item !== day)
+        : [...(prev.weekdays || []), day].sort((a, b) => a - b)
+      return { ...prev, weekdays }
+    })
+  }
+
+  function buildLamp() {
+    const next = {
+      ...draft,
+      question: draft.question.trim(),
+      short: String(draft.short || '').trim() || shortLabel(draft),
+      monthDay: draft.cadence === 'monthly' ? draft.monthDay : '',
+      onceOn: draft.cadence === 'once' ? draft.onceOn : '',
+      everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
+      everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
+      weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
+      priority,
+      notify: notifyOn,
+    }
+    return { lamp: next, problem: missLamp(next) }
+  }
+
+  function validate() {
+    const { lamp: next, problem } = buildLamp()
+    if (problem) {
+      setMiss(problem)
+      return null
+    }
+    return next
+  }
+
+  function isTagSelected(title) {
+    return tagPick === String(title || '').trim()
+  }
+
+  return {
+    clock,
+    draft,
+    tagTitle,
+    setTagTitle,
+    more,
+    setMore,
+    miss,
+    setMiss,
+    editing,
+    liveTags,
+    parkedTags,
+    knownTag,
+    priority,
+    notifyOn,
+    change,
+    changeAskAfter,
+    toggleDay,
+    buildLamp,
+    validate,
+    isTagSelected,
+  }
+}

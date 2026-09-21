@@ -2,37 +2,32 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { activeLook } from '../../src/lib/dit-board.js'
 import {
-  blankLamp,
   cadenceLine,
-  emptyBoard,
-  lampNotifyOn,
-  lampPriority,
-  missLamp,
+  duplicateLamp,
   shortLabel,
-  slotFromAskAfter,
 } from '../../src/lib/board-json.js'
 import { commitBook, hangInto, putAnswer, takeDown, toggleArchive } from '../../src/lib/board-ops.js'
-import { findBookByTitle, findBookHoldingLamp } from '../../src/lib/board-shelf.js'
+import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { matchLamps } from '../../src/lib/hall-pages.js'
 import { answerFor, boardDate, dueTonight, formatBoardDate, recentPeriodKeys } from '../../src/lib/recurrence.js'
 import { NightStrip } from '../components/NightStrip.jsx'
 import { STARTERS } from '../../src/lib/starters.js'
+import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
 import { rowKey, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { Jewel } from '../components/Jewel.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
+import { BoardShell } from '../components/BoardShell.jsx'
 import {
   ChipRow,
   DidButton,
   Field,
-  Kicker,
   KeyButton,
   Meta,
   Page,
-  Title,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts, hallColors } from '../theme.js'
@@ -46,6 +41,10 @@ function useHall(book) {
   const clock = useMemo(() => new Date(), [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
+}
+
+function shellDate(book, clock = new Date()) {
+  return formatBoardDate(boardDate(clock, book.dayFoldHour))
 }
 
 function rowJewelState(row, clock) {
@@ -115,11 +114,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const starters = openStarters(book)
 
   return (
-    <Page colors={colors}>
-      <Text style={[styles.mastDate, { color: colors.inkDim }]}>{formatBoardDate(dateIso)}</Text>
-      <Kicker colors={colors}>{t('questions.kicker')}</Kicker>
-      <Title colors={colors}>{hung.length ? t('questions.title') : t('questions.empty')}</Title>
-
+    <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
       <TagFilter boards={shelf} tagId={tagId} onTag={onTag} now={clock} colors={colors} />
 
       <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
@@ -164,24 +159,18 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         colors={colors}
         onOpen={onOpen}
       />
-    </Page>
-  )
-}
-
-function bookForTag(boards, book, name) {
-  const title = String(name || '').trim() || book.title
-  const hit = findBookByTitle(boards, title)
-  if (hit) return hit
-  return { ...emptyBoard(), title, keeperName: book.keeperName }
-}
-
-function hasExtraFields(item) {
-  return Boolean(
-    item && (item.short || item.askAfter || item.notes || String(item.kind || '').trim()),
+    </BoardShell>
   )
 }
 
 const PRIORITIES = ['high', 'normal', 'low']
+const CADENCE_ITEMS = [
+  { id: 'daily', labelKey: 'hang.daily' },
+  { id: 'weekly', labelKey: 'hang.weekly' },
+  { id: 'monthly', labelKey: 'hang.monthly' },
+  { id: 'every_n', labelKey: 'hang.everyN' },
+  { id: 'once', labelKey: 'hang.once' },
+]
 
 export function SearchScreen({ book }) {
   const { colors } = useHall(book)
@@ -189,9 +178,7 @@ export function SearchScreen({ book }) {
   const hits = matchLamps(book, query)
 
   return (
-    <Page colors={colors}>
-      <Kicker colors={colors}>{t('search.kicker')}</Kicker>
-      <Title colors={colors}>{t('search.title')}</Title>
+    <BoardShell book={book} title={t('search.title')} date={shellDate(book)} colors={colors}>
       <Field colors={colors} label={t('search.label')} value={query} onChangeText={setQuery} placeholder={t('search.ph')} />
       {!hits.length ? (
         <Meta colors={colors}>{query.trim() ? t('search.empty') : t('search.type')}</Meta>
@@ -210,7 +197,7 @@ export function SearchScreen({ book }) {
         ))
       )}
       <KeyButton label={t('nav.questions')} onPress={() => goHash('/lamps')} colors={colors} />
-    </Page>
+    </BoardShell>
   )
 }
 
@@ -225,61 +212,19 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     copyId && !existing
       ? (sourceBook?.lamps || []).find((lamp) => lamp.id === copyId) || null
       : null
-  const editing = Boolean(existing)
-
-  const [draft, setDraft] = useState(() => {
-    if (existing) return { ...existing }
-    if (copySource) {
-      const fresh = blankLamp(clock)
-      return { ...fresh, ...copySource, id: fresh.id, archived: false }
-    }
-    const pick = STARTERS.find(
-      (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
-    )
-    return pick ? { ...blankLamp(clock), ...pick } : blankLamp(clock)
+  const hang = useHangDraft({
+    book,
+    boards,
+    now: clock,
+    lamp: existing,
+    seed: copySource ? duplicateLamp(copySource, clock) : null,
+    start,
+    tagTitle: sourceBook?.title || book.title,
   })
-  const [tagTitle, setTagTitle] = useState(sourceBook?.title || book.title)
-  const [more, setMore] = useState(() => hasExtraFields(existing) || hasExtraFields(copySource))
-  const [miss, setMiss] = useState('')
-
-  const liveTags = (boards || []).filter((item) => !item.archived)
-  const parkedTags = (boards || []).filter((item) => item.archived)
-  const knownTag = Boolean(findBookByTitle(boards, tagTitle))
-  const priority = lampPriority(draft)
-  const notifyOn = lampNotifyOn(draft)
-
-  const cadenceItems = [
-    { id: 'daily', label: t('hang.daily') },
-    { id: 'weekly', label: t('hang.weekly') },
-    { id: 'monthly', label: t('hang.monthly') },
-    { id: 'every_n', label: t('hang.everyN') },
-    { id: 'once', label: t('hang.once') },
-  ]
-
-  function change(field, value) {
-    setDraft((prev) => {
-      const next = { ...prev, [field]: value }
-      if (field === 'cadence' && value === 'once' && !/^\d{4}-\d{2}-\d{2}$/.test(String(prev.onceOn || ''))) {
-        next.onceOn = boardDate(clock, book.dayFoldHour)
-      }
-      return next
-    })
-    if (miss) setMiss('')
-  }
-
-  function changeAskAfter(next) {
-    setDraft((prev) => ({ ...prev, askAfter: next, slot: slotFromAskAfter(next) }))
-  }
-
-  function toggleDay(day) {
-    setDraft((prev) => {
-      const has = (prev.weekdays || []).includes(day)
-      const weekdays = has
-        ? prev.weekdays.filter((item) => item !== day)
-        : [...(prev.weekdays || []), day].sort((a, b) => a - b)
-      return { ...prev, weekdays }
-    })
-  }
+  const cadenceItems = useMemo(
+    () => CADENCE_ITEMS.map((item) => ({ id: item.id, label: t(item.labelKey) })),
+    [],
+  )
 
   function cancel() {
     if (existing) goHash('/lamp', { id: existing.id })
@@ -288,51 +233,44 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   }
 
   function save() {
-    const next = {
-      ...draft,
-      question: draft.question.trim(),
-      short: String(draft.short || '').trim() || shortLabel(draft),
-      monthDay: draft.cadence === 'monthly' ? draft.monthDay : '',
-      onceOn: draft.cadence === 'once' ? draft.onceOn : '',
-      everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
-      everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
-      weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
-      priority,
-      notify: notifyOn,
-    }
-    const problem = missLamp(next)
+    const { lamp: next, problem } = hang.buildLamp()
     if (problem) {
-      setMiss(problem)
+      hang.setMiss(problem)
       return
     }
-    const target = bookForTag(boards, book, tagTitle)
+    const target = bookForTag(boards, book, hang.tagTitle)
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     if (onSaveTo) onSaveTo(target, next, sourceBook)
-    else onChange(commitBook(hangInto(target, next, editing), clock))
-    if (editing) goHash('/lamp', { id: next.id })
+    else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    if (hang.editing) goHash('/lamp', { id: next.id })
     else goHash(wasEmpty ? '/tonight' : '/lamps')
   }
 
   return (
-    <Page colors={colors}>
-      <Kicker colors={colors}>{editing ? t('hang.edit') : t('hang.new')}</Kicker>
-
+    <BoardShell
+      book={book}
+      title={hang.editing ? t('hang.edit') : t('hang.new')}
+      date={shellDate(book, clock)}
+      colors={colors}
+      showAdd
+    >
       <Field
         label={t('hang.question')}
-        value={draft.question}
-        onChangeText={(value) => change('question', value)}
+        value={hang.draft.question}
+        onChangeText={(value) => hang.change('question', value)}
         colors={colors}
         multiline
+        autoFocus
       />
 
       <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.tag')}</Text>
       <View style={styles.weekdayRow}>
-        {liveTags.map((item) => {
-          const on = item.title === tagTitle
+        {hang.liveTags.map((item) => {
+          const on = hang.isTagSelected(item.title)
           return (
             <Pressable
               key={item.id}
-              onPress={() => setTagTitle(item.title)}
+              onPress={() => hang.setTagTitle(item.title)}
               style={[
                 styles.weekdayChip,
                 { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
@@ -343,23 +281,23 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           )
         })}
         <Pressable
-          onPress={() => setTagTitle('')}
+          onPress={() => hang.setTagTitle('')}
           style={[
             styles.weekdayChip,
-            { borderColor: !knownTag ? colors.onDeep : colors.line, backgroundColor: !knownTag ? colors.panel3 : colors.panel2 },
+            { borderColor: !hang.knownTag ? colors.onDeep : colors.line, backgroundColor: !hang.knownTag ? colors.panel3 : colors.panel2 },
           ]}
         >
-          <Text style={{ color: !knownTag ? colors.on : colors.ink, fontSize: 12 }}>{t('hang.tagNew')}</Text>
+          <Text style={{ color: !hang.knownTag ? colors.on : colors.ink, fontSize: 12 }}>{t('hang.tagNew')}</Text>
         </Pressable>
       </View>
-      {parkedTags.length ? (
+      {hang.parkedTags.length ? (
         <View style={styles.weekdayRow}>
-          {parkedTags.map((item) => {
-            const on = item.title === tagTitle
+          {hang.parkedTags.map((item) => {
+            const on = hang.isTagSelected(item.title)
             return (
               <Pressable
                 key={item.id}
-                onPress={() => setTagTitle(item.title)}
+                onPress={() => hang.setTagTitle(item.title)}
                 style={[styles.weekdayChip, { borderColor: colors.line, opacity: on ? 1 : 0.7 }]}
               >
                 <Text style={{ color: colors.inkDim, fontSize: 12 }}>{item.title}</Text>
@@ -368,29 +306,34 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           })}
         </View>
       ) : null}
-      {knownTag ? null : (
+      {hang.knownTag ? null : (
         <Field
           label={t('hang.tagNew')}
-          value={tagTitle}
-          onChangeText={setTagTitle}
+          value={hang.tagTitle}
+          onChangeText={hang.setTagTitle}
           colors={colors}
           placeholder={t('hang.tagPh')}
         />
       )}
 
       <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.often')}</Text>
-      <ChipRow items={cadenceItems} value={draft.cadence} onPick={(value) => change('cadence', value)} colors={colors} />
+      <ChipRow
+        items={cadenceItems}
+        value={hang.draft.cadence}
+        onPick={(value) => hang.change('cadence', value)}
+        colors={colors}
+      />
 
-      {draft.cadence === 'weekly' ? (
+      {hang.draft.cadence === 'weekly' ? (
         <View style={styles.weekdays}>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.weekdays')}</Text>
           <View style={styles.weekdayRow}>
             {WEEKDAYS.map((day) => {
-              const on = (draft.weekdays || []).includes(day)
+              const on = (hang.draft.weekdays || []).includes(day)
               return (
                 <Pressable
                   key={day}
-                  onPress={() => toggleDay(day)}
+                  onPress={() => hang.toggleDay(day)}
                   style={[
                     styles.weekdayChip,
                     { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
@@ -404,13 +347,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </View>
       ) : null}
 
-      {draft.cadence === 'monthly' ? (
+      {hang.draft.cadence === 'monthly' ? (
         <View>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.monthDay')}</Text>
           <HangMonthCal
             mode="monthly"
-            value={draft.monthDay === '' ? '' : draft.monthDay}
-            onChange={(day) => change('monthDay', day)}
+            value={hang.draft.monthDay === '' ? '' : hang.draft.monthDay}
+            onChange={(day) => hang.change('monthDay', day)}
             now={clock}
             dayFoldHour={book.dayFoldHour}
             colors={colors}
@@ -419,13 +362,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </View>
       ) : null}
 
-      {draft.cadence === 'once' ? (
+      {hang.draft.cadence === 'once' ? (
         <View>
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.onceOn')}</Text>
           <HangMonthCal
             mode="date"
-            value={draft.onceOn}
-            onChange={(iso) => change('onceOn', iso)}
+            value={hang.draft.onceOn}
+            onChange={(iso) => hang.change('onceOn', iso)}
             now={clock}
             dayFoldHour={book.dayFoldHour}
             colors={colors}
@@ -433,20 +376,20 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </View>
       ) : null}
 
-      {draft.cadence === 'every_n' ? (
+      {hang.draft.cadence === 'every_n' ? (
         <>
           <Field
             label={t('hang.everyNDays')}
-            value={String(draft.everyN || '')}
-            onChangeText={(value) => change('everyN', value)}
+            value={String(hang.draft.everyN || '')}
+            onChangeText={(value) => hang.change('everyN', value)}
             colors={colors}
             placeholder="3"
           />
           <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.startingOn')}</Text>
           <HangMonthCal
             mode="date"
-            value={draft.everyNAnchor}
-            onChange={(iso) => change('everyNAnchor', iso)}
+            value={hang.draft.everyNAnchor}
+            onChange={(iso) => hang.change('everyNAnchor', iso)}
             now={clock}
             dayFoldHour={book.dayFoldHour}
             colors={colors}
@@ -457,8 +400,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.priority')}</Text>
       <ChipRow
         items={PRIORITIES.map((id) => ({ id, label: t(`hang.priority.${id}`) }))}
-        value={priority}
-        onPick={(value) => change('priority', value)}
+        value={hang.priority}
+        onPick={(value) => hang.change('priority', value)}
         colors={colors}
       />
 
@@ -468,33 +411,48 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           { id: 'on', label: t('hang.notifyOn') },
           { id: 'off', label: t('hang.notifyOff') },
         ]}
-        value={notifyOn ? 'on' : 'off'}
-        onPick={(value) => change('notify', value === 'on')}
+        value={hang.notifyOn ? 'on' : 'off'}
+        onPick={(value) => hang.change('notify', value === 'on')}
         colors={colors}
       />
 
-      {more ? (
+      {hang.more ? (
         <>
-          <Field label={t('hang.short')} value={draft.short} onChangeText={(value) => change('short', value)} colors={colors} />
-          <HangTimePick value={draft.askAfter} onChange={changeAskAfter} colors={colors} />
-          <Field label={t('hang.kind')} value={draft.kind} onChangeText={(value) => change('kind', value)} colors={colors} />
-          <Field label={t('hang.notes')} value={draft.notes} onChangeText={(value) => change('notes', value)} colors={colors} multiline />
+          <Field
+            label={t('hang.short')}
+            value={hang.draft.short}
+            onChangeText={(value) => hang.change('short', value)}
+            colors={colors}
+          />
+          <HangTimePick value={hang.draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
+          <Field label={t('hang.kind')} value={hang.draft.kind} onChangeText={(value) => hang.change('kind', value)} colors={colors} />
+          <Field
+            label={t('hang.notes')}
+            value={hang.draft.notes}
+            onChangeText={(value) => hang.change('notes', value)}
+            colors={colors}
+            multiline
+          />
         </>
       ) : null}
 
-      <KeyButton label={more ? t('hang.less') : t('hang.more')} onPress={() => setMore((open) => !open)} colors={colors} />
+      <KeyButton
+        label={hang.more ? t('hang.less') : t('hang.more')}
+        onPress={() => hang.setMore((open) => !open)}
+        colors={colors}
+      />
 
-      {miss ? (
+      {hang.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
-          {t(miss)}
+          {t(hang.miss)}
         </Text>
       ) : null}
 
       <View style={styles.actions}>
-        <DidButton label={editing ? t('hang.save') : t('hang.add')} onPress={save} colors={colors} small />
+        <DidButton label={hang.editing ? t('hang.save') : t('hang.add')} onPress={save} colors={colors} small />
         <KeyButton label={t('hang.cancel')} onPress={cancel} colors={colors} />
       </View>
-    </Page>
+    </BoardShell>
   )
 }
 
@@ -515,20 +473,16 @@ export function LampScreen({ book, onChange, route }) {
 
   if (!lamp) {
     return (
-      <Page colors={colors}>
-        <Kicker colors={colors}>{t('lamp.missing')}</Kicker>
-        <Title colors={colors}>{t('lamp.gone')}</Title>
+      <BoardShell book={book} title={t('lamp.gone')} date={shellDate(book, clock)} colors={colors}>
         <DidButton label={t('nav.questions')} onPress={() => goHash('/lamps')} colors={colors} small />
-      </Page>
+      </BoardShell>
     )
   }
 
   if (holePick) {
     const wasSkip = answerFor(book, holePick.id, holePick.key)?.status === 'skip'
     return (
-      <Page colors={colors}>
-        <Kicker colors={colors}>{wasSkip ? t('hole.nopeKicker') : t('hole.kicker')}</Kicker>
-        <Title colors={colors}>{holePick.question}</Title>
+      <BoardShell book={book} title={holePick.question} date={shellDate(book, clock)} colors={colors}>
         <View style={styles.actions}>
           <DidButton
             label={t('hole.late')}
@@ -551,7 +505,7 @@ export function LampScreen({ book, onChange, route }) {
           ) : null}
           <KeyButton label={t('hole.leave')} colors={colors} onPress={() => setHolePick(null)} />
         </View>
-      </Page>
+      </BoardShell>
     )
   }
 
@@ -564,9 +518,7 @@ export function LampScreen({ book, onChange, route }) {
           ? t('lamp.deleteOne')
           : t('lamp.deleteSome', { n: taps })
     return (
-      <Page colors={colors}>
-        <Kicker colors={colors}>{t('lamp.delete')}</Kicker>
-        <Title colors={colors}>{t('lamp.deleteTitle')}</Title>
+      <BoardShell book={book} title={t('lamp.deleteTitle')} date={shellDate(book, clock)} colors={colors}>
         <Meta colors={colors}>{note}</Meta>
         <View style={styles.actions}>
           <DidButton
@@ -580,15 +532,12 @@ export function LampScreen({ book, onChange, route }) {
           />
           <KeyButton label={t('lamp.keep')} onPress={() => setConfirmGone(false)} colors={colors} />
         </View>
-      </Page>
+      </BoardShell>
     )
   }
 
   return (
-    <Page colors={colors}>
-      <Text style={[styles.mastDate, { color: colors.inkDim }]}>{formatBoardDate(dateIso)}</Text>
-      <Kicker colors={colors}>{t('lamp.kicker')}</Kicker>
-      <Title colors={colors}>{lamp.question}</Title>
+    <BoardShell book={book} title={lamp.question} date={shellDate(book, clock)} colors={colors}>
       <Meta colors={colors}>
         {[cadenceLine(lamp), lamp.archived ? t('lamp.paused') : ''].filter(Boolean).join(' · ')}
       </Meta>
@@ -638,7 +587,7 @@ export function LampScreen({ book, onChange, route }) {
           <Text style={[styles.textBtn, { color: colors.miss }]}>{t('lamp.delete')}</Text>
         </Pressable>
       </View>
-    </Page>
+    </BoardShell>
   )
 }
 

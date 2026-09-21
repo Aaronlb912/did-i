@@ -9,11 +9,12 @@ import {
   swipePull,
   swipeTilt,
 } from './swipe-face.js'
+import { pillStatusLabel } from './pill-status.js'
 import { useReduceMotion } from './useReduceMotion.js'
 
 // Answering from the pill, for the nights you know the answer before the
 // card comes round. Same swipe as the face card.
-export function PillPlate({ row, onDid, onNope, buddy = '' }) {
+export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) {
   usePrefs()
   const reduce = useReduceMotion()
   const drag = useRef(null)
@@ -32,8 +33,19 @@ export function PillPlate({ row, onDid, onNope, buddy = '' }) {
   const status = row.answer?.status || ''
   const isDid = status === 'yes' || status === 'late'
   const blockDid = isDid
-  const blockNope = status === 'skip'
+  const blockNope = status === 'skip' || isDid
   const pull = swipePull(dx)
+
+  if (readOnly) {
+    return (
+      <section className="di-face">
+        <BuddyHang id={buddy} />
+        <p className="di-face-plate">{row.tag || t('tonight.didI')}</p>
+        <h2 className="di-question">{row.lamp.question}</h2>
+        <p className="di-detail-meta">{pillStatusLabel(status)}</p>
+      </section>
+    )
+  }
 
   function finish(way) {
     if (mode === 'fly') return

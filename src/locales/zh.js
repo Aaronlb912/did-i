@@ -328,6 +328,8 @@ export const zh = {
   'tonight.lastNight': '昨晚',
   'tonight.saved': '已保存。',
   'tonight.undo': '撤销',
+  'tonight.undoShake': '摇动手机以撤销',
+  'tonight.undoTap': '点按以撤销',
   'tonight.boardName': 'tag 名称',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

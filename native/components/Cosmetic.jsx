@@ -1,95 +1,563 @@
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
+import { isGemLook } from '../../src/lib/purse.js'
+import { useTheme } from '../../src/lib/prefs.js'
+import { gemLookChipMeta } from '../lib/gem-look-tone.js'
 import { BuddyArt } from './BuddyArt.jsx'
-const LOOK_ON = {
-  lime: '#c9f24d',
-  ink: '#b8c48a',
-  brass: '#e2c36a',
-  night: '#d4c07a',
-  glow: '#5ee8ff',
-  moss: '#8fd48a',
-  plum: '#c49cff',
-  rose: '#ff8ab0',
-  steel: '#9eb4d4',
-  wine: '#d47a8a',
-  frost: '#b8e8ff',
-  pulse: '#ff6ec8',
-  ember: '#ff9a4a',
+import { fonts } from '../theme.js'
+
+const R = 16
+const CHIP = 2.4 * R
+const CHIP_R = 0.55 * R
+
+const LOOK_META = {
+  lime: { on: '#c9f24d' },
+  ink: { on: '#b8c48a' },
+  brass: { on: '#e2c36a' },
+  night: { on: '#d4c07a' },
+  glow: {
+    on: '#5ee8ff',
+    bg: '#0c1218',
+    glow: 'rgba(94, 232, 255, 0.55)',
+    dotGlow: 'rgba(94, 232, 255, 0.75)',
+  },
+  ember: {
+    on: '#ff9a4a',
+    bg: '#140e0a',
+    glow: 'rgba(255, 154, 74, 0.55)',
+    dotGlow: 'rgba(255, 154, 74, 0.75)',
+  },
+  moss: { on: '#8fbf7a' },
+  plum: { on: '#c8a0ff' },
+  rose: { on: '#f0a8b8' },
+  steel: { on: '#8eb4d8' },
+  wine: { on: '#d86a88' },
+  frost: {
+    on: '#d8f0ff',
+    bg: '#0c1218',
+    glow: 'rgba(216, 240, 255, 0.5)',
+    dotGlow: 'rgba(216, 240, 255, 0.7)',
+  },
+  pulse: {
+    on: '#ff6ec8',
+    bg: '#100a14',
+    glow: 'rgba(255, 110, 200, 0.5)',
+    dotGlow: 'rgba(255, 110, 200, 0.7)',
+  },
 }
 
-const CHEER_ON = {
-  lime: '#c9f24d',
-  tape: '#f4d35e',
-  paper: '#f8f4e8',
-  boom: '#ff6f61',
-  night: '#6fb7ff',
-  dance: '#ff8ab0',
-  stamp: '#e07a8a',
-  rain: '#8fd4ff',
-  check: '#8fd48a',
-  bubble: '#c9f0ff',
-  spark: '#fff6a8',
-  flip: '#c9f24d',
+function rem(n) {
+  return n * R
+}
+
+function chipShell(colors, bg, glow) {
+  const shell = {
+    width: CHIP,
+    height: CHIP,
+    borderRadius: CHIP_R,
+    borderWidth: 1,
+    borderColor: colors?.line || '#2b3140',
+    backgroundColor: bg || colors?.panel3 || '#242935',
+  }
+  if (glow) {
+    return {
+      ...shell,
+      shadowColor: glow,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.9,
+      shadowRadius: 6,
+      elevation: 4,
+    }
+  }
+  return shell
 }
 
 export function LookChip({ id, colors }) {
-  const on = LOOK_ON[id] || colors?.on || '#c9f24d'
+  const theme = useTheme()
+  const meta = isGemLook(id) ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
+  const on = meta.on
+  const premium = isGemLook(id)
+  const dot = rem(0.34)
+  const dotStyle = (i) => ({
+    width: dot,
+    height: dot,
+    borderRadius: dot / 2,
+    backgroundColor: on,
+    ...(meta.dotGlow
+      ? {
+          shadowColor: meta.dotGlow,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 4,
+        }
+      : null),
+  })
+  const chipBg = premium ? meta.bg : undefined
+  const chip = (
+    <View style={[styles.lookChip, chipShell(colors, chipBg, premium ? meta.glow : undefined)]}>
+      {premium && meta.ring ? (
+        <View style={[styles.lookInset, { borderColor: meta.ring }]} pointerEvents="none" />
+      ) : null}
+      <View style={dotStyle(0)} />
+      <View style={dotStyle(1)} />
+      <View style={dotStyle(2)} />
+    </View>
+  )
+
+  if (!premium) return chip
+
   return (
-    <View style={[styles.lookChip, { borderColor: colors?.line || '#2b3140' }]}>
-      <View style={[styles.lookDot, { backgroundColor: on }]} />
-      <View style={[styles.lookDot, { backgroundColor: on, opacity: 0.7 }]} />
-      <View style={[styles.lookDot, { backgroundColor: on, opacity: 0.45 }]} />
+    <View style={styles.premiumWrap}>
+      <View
+        style={[
+          styles.premiumRing,
+          {
+            borderColor: meta.glow,
+            shadowColor: meta.glow,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.premiumHalo,
+          {
+            borderColor: meta.glow,
+            shadowColor: meta.glow,
+          },
+        ]}
+      />
+      {chip}
+    </View>
+  )
+}
+
+function LimeChip({ on }) {
+  const rings = [0.5, 0.95, 1.35]
+  return (
+    <View style={styles.chipBox}>
+      {rings.map((size) => {
+        const px = rem(size)
+        return (
+          <View
+            key={size}
+            style={{
+              position: 'absolute',
+              left: CHIP / 2 - px / 2,
+              top: CHIP / 2 - px / 2,
+              width: px,
+              height: px,
+              borderRadius: px / 2,
+              borderWidth: 2,
+              borderColor: on,
+              backgroundColor: 'transparent',
+            }}
+          />
+        )
+      })}
+    </View>
+  )
+}
+
+function SparkChip({ on, onDeep }) {
+  const rays = [
+    { deg: 0, color: '#fff', h: 0.52 },
+    { deg: 45, color: onDeep, h: 0.52 },
+    { deg: 90, color: '#fff', h: 0.52 },
+    { deg: 135, color: on, h: 0.52 },
+    { deg: 225, color: '#fff', h: 0.42 },
+  ]
+  const pivot = { left: CHIP / 2, top: CHIP / 2 }
+  return (
+    <View style={styles.chipBox}>
+      {rays.map((ray) => {
+        const h = rem(ray.h)
+        const w = rem(0.1)
+        return (
+          <View key={ray.deg} style={{ position: 'absolute', ...pivot, width: 0, height: 0 }}>
+            <View
+              style={{
+                position: 'absolute',
+                left: -w / 2,
+                top: -h,
+                width: w,
+                height: h,
+                borderRadius: 1,
+                backgroundColor: ray.color,
+                transform: [{ rotate: `${ray.deg}deg` }],
+              }}
+            />
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
+function TapeChip({ ink, on }) {
+  const bars = [
+    { w: 1.45, c: ink },
+    { w: 1.1, c: on },
+    { w: 1.3, c: ink },
+  ]
+  return (
+    <View style={[styles.chipBox, styles.tapeChip]}>
+      {bars.map((bar, i) => (
+        <View key={i} style={{ width: rem(bar.w), height: rem(0.16), borderRadius: 1, backgroundColor: bar.c }} />
+      ))}
+    </View>
+  )
+}
+
+function PaperChip({ on }) {
+  return (
+    <View style={[styles.chipBox, styles.paperChip]}>
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: rem(1.15),
+          borderTopWidth: rem(0.36),
+          borderBottomWidth: rem(0.36),
+          borderLeftColor: on,
+          borderTopColor: 'transparent',
+          borderBottomColor: 'transparent',
+        }}
+      />
+    </View>
+  )
+}
+
+function NightChip({ on, ink, panel3 }) {
+  const moon = rem(1.05)
+  const bite = rem(0.28)
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - moon / 2,
+          top: CHIP / 2 - moon / 2,
+          width: moon,
+          height: moon,
+          borderRadius: moon / 2,
+          backgroundColor: on,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            position: 'absolute',
+            right: -bite / 2,
+            top: 0,
+            width: moon,
+            height: moon,
+            borderRadius: moon / 2,
+            backgroundColor: panel3,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          top: rem(0.32),
+          right: rem(0.32),
+          width: rem(0.16),
+          height: rem(0.16),
+          borderRadius: rem(0.08),
+          backgroundColor: ink,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: rem(0.38),
+          left: rem(0.38),
+          width: rem(0.16),
+          height: rem(0.16),
+          borderRadius: rem(0.08),
+          backgroundColor: ink,
+        }}
+      />
+    </View>
+  )
+}
+
+function BoomChip({ on, onDeep }) {
+  const outer = rem(0.7)
+  const inner = rem(0.42)
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - outer / 2,
+          top: CHIP / 2 - outer / 2,
+          width: outer,
+          height: outer,
+          borderRadius: outer / 2,
+          borderWidth: 2,
+          borderColor: onDeep,
+          backgroundColor: 'transparent',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - inner / 2,
+          top: CHIP / 2 - inner / 2,
+          width: inner,
+          height: inner,
+          borderRadius: inner / 2,
+          borderWidth: 2,
+          borderColor: on,
+          backgroundColor: 'transparent',
+        }}
+      />
+    </View>
+  )
+}
+
+function DanceChip({ ink, on }) {
+  const barW = rem(0.22)
+  const barH = rem(0.7)
+  const head = rem(0.26)
+  return (
+    <View style={[styles.chipBox, styles.danceChip]}>
+      {[0, 1].map((i) => (
+        <View key={i} style={{ width: barW, height: barH, position: 'relative' }}>
+          <View
+            style={{
+              position: 'absolute',
+              top: -rem(0.28),
+              left: -rem(0.02),
+              width: head,
+              height: head,
+              borderRadius: head / 2,
+              backgroundColor: on,
+            }}
+          />
+          <View
+            style={{
+              width: barW,
+              height: barH,
+              borderTopLeftRadius: 1,
+              borderTopRightRadius: 1,
+              backgroundColor: ink,
+            }}
+          />
+        </View>
+      ))}
+    </View>
+  )
+}
+
+function StampChip({ on }) {
+  return (
+    <View style={[styles.chipBox, styles.stampChip]}>
+      <Text style={[styles.stampText, { color: on }]}>DID</Text>
+    </View>
+  )
+}
+
+function RainChip({ on }) {
+  const drops = [0.85, 1.15, 0.7]
+  return (
+    <View style={[styles.chipBox, styles.rainChip]}>
+      {drops.map((h, i) => (
+        <View key={i} style={{ width: rem(0.12), height: rem(h), borderRadius: 1, backgroundColor: on }} />
+      ))}
+    </View>
+  )
+}
+
+function CheckChip({ on }) {
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          width: rem(0.55),
+          height: rem(0.2),
+          left: rem(0.42),
+          bottom: rem(0.72),
+          backgroundColor: on,
+          borderRadius: 1,
+          transform: [{ rotate: '42deg' }],
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          width: rem(1.05),
+          height: rem(0.2),
+          left: rem(0.72),
+          bottom: rem(0.82),
+          backgroundColor: on,
+          borderRadius: 1,
+          transform: [{ rotate: '-48deg' }],
+        }}
+      />
+    </View>
+  )
+}
+
+function BubbleChip({ on }) {
+  const big = rem(0.72)
+  const small = rem(0.42)
+  const shine = rem(0.35)
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          width: big,
+          height: big,
+          borderRadius: big / 2,
+          borderWidth: 2,
+          borderColor: on,
+          left: rem(0.38),
+          top: rem(0.55),
+          backgroundColor: 'transparent',
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            position: 'absolute',
+            right: shine * 0.4,
+            bottom: shine * 0.3,
+            width: shine,
+            height: shine * 0.8,
+            borderRadius: shine,
+            backgroundColor: on,
+            opacity: 0.35,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          width: small,
+          height: small,
+          borderRadius: small / 2,
+          borderWidth: 2,
+          borderColor: on,
+          right: rem(0.32),
+          top: rem(0.32),
+          backgroundColor: 'transparent',
+        }}
+      />
+    </View>
+  )
+}
+
+function FlipChip({ on, panel2, panel3, line }) {
+  const w = rem(0.95)
+  const h = rem(1.25)
+  const left = CHIP / 2 - rem(0.48)
+  const top = CHIP / 2 - rem(0.62)
+  const card = {
+    position: 'absolute',
+    width: w,
+    height: h,
+    borderRadius: rem(0.12),
+    left,
+    top,
+  }
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={[
+          card,
+          {
+            backgroundColor: on,
+            transform: [{ rotateY: '-28deg' }],
+            shadowColor: panel3,
+            shadowOffset: { width: rem(0.14), height: rem(0.08) },
+            shadowOpacity: 1,
+            shadowRadius: 0,
+          },
+        ]}
+      />
+      <View
+        style={[
+          card,
+          {
+            borderWidth: 1,
+            borderColor: line,
+            backgroundColor: panel2,
+            transform: [{ rotateY: '52deg' }, { translateX: rem(0.35) }],
+          },
+        ]}
+      />
+    </View>
+  )
+}
+
+function DefaultChip({ n, on }) {
+  const bit = rem(0.28)
+  return (
+    <View style={[styles.center, { flexDirection: 'row', gap: rem(0.16) }]}>
+      {Array.from({ length: n }).map((_, i) => (
+        <View key={i} style={{ width: bit, height: bit, borderRadius: 1, backgroundColor: on }} />
+      ))}
     </View>
   )
 }
 
 export function CheerChip({ id, stage = 1, colors }) {
-  const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))
-  const accent = CHEER_ON[id] || colors?.on || '#c9f24d'
-  if (id === 'lime') {
-    return (
-      <View style={styles.cheerChip}>
-        {[0.5, 0.95, 1.35].slice(0, n).map((size) => (
-          <View
-            key={size}
-            style={[
-              styles.limeRing,
-              {
-                width: size * 14,
-                height: size * 14,
-                borderRadius: size * 7,
-                borderColor: accent,
-              },
-            ]}
-          />
-        ))}
-      </View>
-    )
+  const on = colors?.on || '#c9f24d'
+  const ink = colors?.ink || '#f4f6fa'
+  const onDeep = colors?.onDeep || on
+  const panel2 = colors?.panel2 || '#1d212a'
+  const panel3 = colors?.panel3 || '#242935'
+  const line = colors?.line || '#2b3140'
+  const shell = chipShell(colors)
+
+  let art = null
+  switch (id) {
+    case 'lime':
+      art = <LimeChip on={on} />
+      break
+    case 'spark':
+      art = <SparkChip on={on} onDeep={onDeep} />
+      break
+    case 'tape':
+      art = <TapeChip ink={ink} on={on} />
+      break
+    case 'paper':
+      art = <PaperChip on={on} />
+      break
+    case 'night':
+      art = <NightChip on={on} ink={ink} panel3={panel3} />
+      break
+    case 'boom':
+      art = <BoomChip on={on} onDeep={onDeep} />
+      break
+    case 'dance':
+      art = <DanceChip ink={ink} on={on} />
+      break
+    case 'stamp':
+      art = <StampChip on={on} />
+      break
+    case 'rain':
+      art = <RainChip on={on} />
+      break
+    case 'check':
+      art = <CheckChip on={on} />
+      break
+    case 'bubble':
+      art = <BubbleChip on={on} />
+      break
+    case 'flip':
+      art = <FlipChip on={on} panel2={panel2} panel3={panel3} line={line} />
+      break
+    default: {
+      const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))
+      art = <DefaultChip n={n} on={on} />
+    }
   }
-  if (id === 'spark') {
-    return (
-      <View style={styles.cheerChip}>
-        {[0, 45, 90, 135, 225].slice(0, n).map((deg) => (
-          <View
-            key={deg}
-            style={[
-              styles.sparkRay,
-              {
-                backgroundColor: deg % 90 === 0 ? accent : colors?.onDeep || accent,
-                transform: [{ rotate: `${deg}deg` }],
-              },
-            ]}
-          />
-        ))}
-      </View>
-    )
-  }
-  return (
-    <View style={styles.cheerChip}>
-      {Array.from({ length: n }).map((_, i) => (
-        <View key={i} style={[styles.cheerBit, { backgroundColor: accent, opacity: 1 - i * 0.12 }]} />
-      ))}
-    </View>
-  )
+
+  return <View style={[styles.cheerChip, shell]}>{art}</View>
 }
 
 export function BuddyChip({ id }) {
@@ -111,39 +579,98 @@ export function BuddyHang({ id, inline = false }) {
 }
 
 const styles = StyleSheet.create({
-  lookChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  premiumWrap: {
+    width: CHIP + 6,
+    height: CHIP + 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumRing: {
+    ...StyleSheet.absoluteFillObject,
     borderWidth: 1,
+    borderRadius: CHIP_R + 3,
+    shadowOpacity: 0.85,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 5,
+  },
+  premiumHalo: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderWidth: 1,
+    borderRadius: CHIP_R + 5,
+    opacity: 0.45,
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
+  lookInset: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderRadius: CHIP_R - 1,
+    opacity: 0.55,
+  },
+  lookChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    backgroundColor: '#16191f',
-  },
-  lookDot: { width: 6, height: 6, borderRadius: 3 },
-  cheerChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#16191f',
+    gap: rem(0.16),
     overflow: 'hidden',
   },
-  cheerBit: { width: 5, height: 5, borderRadius: 1, margin: 1 },
-  limeRing: { position: 'absolute', borderWidth: 2, backgroundColor: 'transparent' },
-  sparkRay: {
-    position: 'absolute',
-    width: 2,
-    height: 14,
-    borderRadius: 1,
-    top: 11,
-    left: 17,
-    transformOrigin: 'bottom center',
+  cheerChip: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  buddyChip: { width: 36, height: 36, alignItems: 'center', justifyContent: 'flex-end' },
+  center: {
+    width: CHIP,
+    height: CHIP,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipBox: {
+    width: CHIP,
+    height: CHIP,
+    position: 'relative',
+  },
+  tapeChip: {
+    flex: 1,
+    gap: rem(0.2),
+    paddingVertical: rem(0.32),
+    paddingHorizontal: rem(0.28),
+    justifyContent: 'center',
+  },
+  paperChip: { alignItems: 'center', justifyContent: 'center' },
+  stampChip: { alignItems: 'center', justifyContent: 'center' },
+  danceChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: rem(0.28),
+    paddingBottom: rem(0.22),
+    paddingHorizontal: rem(0.15),
+  },
+  rainChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: rem(0.22),
+    paddingTop: rem(0.28),
+    paddingHorizontal: rem(0.2),
+    paddingBottom: rem(0.2),
+  },
+  stampText: {
+    fontFamily: fonts.display,
+    fontSize: rem(0.58),
+    fontWeight: '700',
+    letterSpacing: rem(0.1),
+  },
+  buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'flex-end' },
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
 })

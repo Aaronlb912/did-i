@@ -42,12 +42,13 @@ export function parkEmptyTags(shelf) {
   if (!live.length) {
     const keep = boards.find((book) => book.id === shelf.currentId) || boards[0]
     return {
+      ...shelf,
       currentId: keep.id,
       boards: boards.map((book) => (book.id === keep.id ? { ...book, archived: false } : book)),
     }
   }
   const currentId = live.some((book) => book.id === shelf.currentId) ? shelf.currentId : live[0].id
-  return { currentId, boards }
+  return { ...shelf, currentId, boards }
 }
 
 export function writeShelf(shelf, savedAt) {
@@ -155,24 +156,25 @@ export function mergeSameTitles(shelf) {
   }
   if (!boards.length) return shelf
   const currentId = boards.some((book) => book.id === shelf.currentId) ? shelf.currentId : boards[0].id
-  return { currentId, boards }
+  return { ...shelf, currentId, boards }
 }
 
 export function putBook(shelf, book) {
   const next = normalizeBook(book)
   if (shelf.boards.some((item) => item.id === next.id)) {
     const boards = shelf.boards.map((item) => (item.id === next.id ? next : item))
-    return mergeSameTitles({ currentId: next.id, boards })
+    return mergeSameTitles({ ...shelf, currentId: next.id, boards })
   }
   const same = findBookByTitle(shelf.boards, next.title)
   if (same) {
     const merged = foldBook(same, next)
     return {
+      ...shelf,
       currentId: same.id,
       boards: shelf.boards.map((item) => (item.id === same.id ? merged : item)),
     }
   }
-  return { currentId: next.id, boards: [...shelf.boards, next] }
+  return { ...shelf, currentId: next.id, boards: [...shelf.boards, next] }
 }
 
 export function selectBook(shelf, id) {

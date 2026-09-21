@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { answerFor } from '../../src/lib/recurrence.js'

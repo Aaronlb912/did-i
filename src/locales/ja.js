@@ -327,6 +327,8 @@ export const ja = {
   'tonight.lastNight': '昨夜',
   'tonight.saved': '保存した。',
   'tonight.undo': '取り消す',
+  'tonight.undoShake': '端末を振って取り消す',
+  'tonight.undoTap': 'タップして取り消す',
   'tonight.boardName': 'tag の名前',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

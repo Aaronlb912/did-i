@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
@@ -28,6 +29,7 @@ const STAGES = [1, 2, 3, 4, 5]
 export function Collection({ book, onChange, now }) {
   usePrefs()
   const clock = now || new Date()
+  const [peekLook, setPeekLook] = useState('')
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
@@ -55,6 +57,7 @@ export function Collection({ book, onChange, now }) {
       now={clock}
       title={t('kit.title')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
+      look={peekLook || undefined}
     >
       <section className="di-page di-kit di-set">
         <h2 className="di-page-title">{t('kit.title')}</h2>
@@ -66,7 +69,14 @@ export function Collection({ book, onChange, now }) {
             const on = purse.lookOn === item.id
             return (
               <div className="di-shop-row" key={item.id}>
-                <LookChip id={item.id} />
+                <button
+                  className={peekLook === item.id ? 'di-preview is-on' : 'di-preview'}
+                  type="button"
+                  aria-label={t('shop.see', { name: t(lookText(item.id, 'name')) })}
+                  onClick={() => setPeekLook(peekLook === item.id ? '' : item.id)}
+                >
+                  <LookChip id={item.id} />
+                </button>
                 <span className="di-shop-copy">
                   <strong>{t(lookText(item.id, 'name'))}</strong>
                   <em>{t(lookText(item.id, 'line'))}</em>

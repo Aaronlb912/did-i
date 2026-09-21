@@ -31,7 +31,7 @@ function monthDays(year, month, todayIso) {
   return nights
 }
 
-export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 4, colors }) {
+export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 0, colors }) {
   const prefs = usePrefs()
   const todayIso = boardDate(now, dayFoldHour)
   const todayDate = parseIsoDate(todayIso) || now

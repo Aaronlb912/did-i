@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -16,10 +16,13 @@ import {
   swipeTilt,
 } from '../../src/lib/swipe-face.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { useTheme } from '../../src/lib/prefs.js'
 import { BuddyHang } from './Cosmetic.jsx'
+import { GemFaceAura } from './GemFaceAura.jsx'
 import { fonts } from '../theme.js'
 
 export function SwipeCard({
+  cardKey = '',
   kicker,
   title,
   stampDid,
@@ -30,11 +33,19 @@ export function SwipeCard({
   buddy,
   blockDid = false,
   blockNope = false,
+  panelStyle,
+  gemLook = '',
   children,
 }) {
+  const theme = useTheme()
   const reduce = useReduceMotion()
   const x = useSharedValue(0)
   const mode = useSharedValue('idle')
+
+  useEffect(() => {
+    x.value = 0
+    mode.value = 'idle'
+  }, [cardKey, mode, x])
 
   const finish = useCallback(
     (way) => {
@@ -102,9 +113,11 @@ export function SwipeCard({
         style={[
           styles.card,
           { backgroundColor: colors.panel, borderColor: colors.line },
+          panelStyle,
           cardStyle,
         ]}
       >
+        {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
         <BuddyHang id={buddy} />
         <Animated.Text style={[styles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
         <Animated.Text style={[styles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
@@ -122,6 +135,7 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderRadius: 18,
+    overflow: 'hidden',
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 24,

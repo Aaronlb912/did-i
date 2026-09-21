@@ -40,7 +40,7 @@ function monthDays(year, month, todayIso) {
 }
 
 /** mode date: value is YYYY-MM-DD. mode monthly: value is 1-31 or 'last'. */
-export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 4 }) {
+export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 0 }) {
   const prefs = usePrefs()
   const todayIso = boardDate(now, dayFoldHour)
   const todayDate = parseIsoDate(todayIso) || now

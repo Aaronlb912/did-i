@@ -341,6 +341,8 @@ export const de = {
   'tonight.lastNight': 'Letzte Nacht',
   'tonight.saved': 'Gespeichert.',
   'tonight.undo': 'Rückgängig',
+  'tonight.undoShake': 'Schüttle das Handy zum Rückgängigmachen',
+  'tonight.undoTap': 'Tippen zum Rückgängigmachen',
   'tonight.boardName': 'Tags-Name',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

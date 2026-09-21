@@ -23,8 +23,8 @@ export function parseIsoDate(value) {
 }
 
 // The fold hour used to be a setting. It is not one any more: the night
-// ends at 4 in the morning where the person is. Callers still pass their
-// old value and it is ignored on purpose.
+// ends at midnight in the person's timezone. Callers still pass their old
+// value and it is ignored on purpose.
 export function boardDate(now = new Date()) {
   const local = wallClock(now)
   if (local.getHours() < DAY_FOLD) {

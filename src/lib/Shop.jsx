@@ -62,7 +62,7 @@ export function Shop({ book, now }) {
                 ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
                 onClick={() => {
                   setPeekBuddy('')
-                  setPeekLook(item.id)
+                  setPeekLook((prev) => (prev === item.id ? '' : item.id))
                 }}
               />
             ))}

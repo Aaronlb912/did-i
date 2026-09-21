@@ -2,18 +2,11 @@ import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { HangLamp } from './HangLamp.jsx'
 import { BoardShell } from './BoardShell.jsx'
-import { duplicateLamp, emptyBoard } from './board-json.js'
+import { duplicateLamp } from './board-json.js'
 import { hangInto, commitBook } from './board-ops.js'
-import { findBookByTitle, findBookHoldingLamp } from './board-shelf.js'
-import { t } from './i18n.js'
+import { findBookHoldingLamp } from './board-shelf.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-
-function bookForTag(boards, book, name) {
-  const title = name.trim() || book.title
-  const hit = findBookByTitle(boards, title)
-  if (hit) return hit
-  return { ...emptyBoard(), title, keeperName: book.keeperName }
-}
+import { bookForTag } from './useHangDraft.js'
 
 export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, copyId, start }) {
   const clock = now || new Date()
@@ -38,7 +31,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
     if (onSaveTo) onSaveTo(target, lamp, sourceBook, clock)
     else onChange(commitBook(hangInto(target, lamp, Boolean(existing)), clock))
     if (existing) goHash('/lamp', { id: lamp.id })
-    else goHash(wasEmpty ? '/tonight' : '/')
+    else goHash(wasEmpty ? '/tonight' : '/lamps')
   }
 
   return (
@@ -49,6 +42,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <HangLamp
+        book={book}
         now={clock}
         lamp={existing}
         seed={copySource ? duplicateLamp(copySource, clock) : null}
@@ -61,7 +55,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
         onCancel={() => {
           if (existing) goHash('/lamp', { id: existing.id })
           else if (copySource) goHash('/lamp', { id: copySource.id })
-          else goHash('/')
+          else goHash('/lamps')
         }}
       />
     </BoardShell>

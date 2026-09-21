@@ -1,0 +1,135 @@
+import { StyleSheet, View } from 'react-native'
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg'
+
+function gemPackMarkLayout(count) {
+  const n = Math.max(1, Math.floor(Number(count) || 0))
+  const pad = 5
+
+  if (n === 1) {
+    return { boxW: 44, boxH: 44, cols: 1, rows: 1, icon: 20, gap: 0, pad, count: n }
+  }
+
+  const cols = n <= 3 ? n : 5
+  const rows = Math.ceil(n / cols)
+  const boxW = 48
+  const boxH = rows <= 2 ? 48 : rows <= 5 ? 48 : rows <= 8 ? 54 : 60
+  const innerW = boxW - pad * 2
+  const innerH = boxH - pad * 2
+  const gap = n <= 10 ? 2 : 1.5
+  const iconByW = (innerW - (cols - 1) * gap) / cols
+  const iconByH = (innerH - (rows - 1) * gap) / rows
+  const icon = Math.max(4, Math.floor(Math.min(iconByW, iconByH)))
+
+  return { boxW, boxH, cols, rows, icon, gap, pad, count: n }
+}
+
+export function CoinIcon({ size = 16 }) {
+  return (
+    <Svg pointerEvents="none" width={size} height={size} viewBox="0 0 16 16">
+      <Circle cx="8" cy="8.5" r="6.2" fill="#6b5420" />
+      <Circle cx="8" cy="7.8" r="6.2" fill="#e2c36a" />
+      <Ellipse cx="8" cy="6.1" rx="3.8" ry="1.05" fill="#f8ecc4" opacity={0.85} />
+      <Path
+        d="M8 4.4c-1.6 0-2.9.55-2.9 1.25S6.4 6.9 8 6.9s2.9-.55 2.9-1.25S9.6 4.4 8 4.4zm0 5.1c-1.6 0-2.9.55-2.9 1.25S6.4 10.9 8 10.9s2.9-.55 2.9-1.25S9.6 9.5 8 9.5z"
+        fill="#9a7a28"
+      />
+    </Svg>
+  )
+}
+
+export function GemIcon({ size = 16 }) {
+  return (
+    <Svg pointerEvents="none" width={size} height={size} viewBox="0 0 16 16">
+      <Path d="M8 1.6 14.2 6.2 8 14.4 1.8 6.2 8 1.6z" fill="#2a9db5" />
+      <Path d="M8 1.6 1.8 6.2 8 8.2 14.2 6.2 8 1.6z" fill="#9ef5ff" />
+      <Path d="M8 8.2 1.8 6.2 8 14.4 14.2 6.2 8 8.2z" fill="#5ee8ff" />
+      <Path d="M8 1.6v6.6M1.8 6.2h12.4" stroke="#c9faff" strokeWidth={0.6} />
+    </Svg>
+  )
+}
+
+export function GemPackMark({ count, colors, accessibilityLabel }) {
+  const layout = gemPackMarkLayout(count)
+
+  return (
+    <View
+      accessible={Boolean(accessibilityLabel)}
+      accessibilityLabel={accessibilityLabel}
+      style={[
+        styles.packMark,
+        {
+          width: layout.boxW,
+          height: layout.boxH,
+          padding: layout.pad,
+          borderColor: colors.line,
+          backgroundColor: colors.panel2,
+        },
+      ]}
+    >
+      <View style={[styles.packGrid, { gap: layout.gap }]}>
+        {Array.from({ length: layout.rows }, (_, row) => {
+          const start = row * layout.cols
+          const slice = Array.from({ length: layout.cols }, (_, col) => start + col).filter(
+            (i) => i < layout.count,
+          )
+          return (
+            <View key={row} style={[styles.packRow, { gap: layout.gap }]}>
+              {slice.map((i) => (
+                <View key={i} style={{ width: layout.icon, height: layout.icon }}>
+                  <GemIcon size={layout.icon} />
+                </View>
+              ))}
+            </View>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+// Loose gem row for balance and other inline spots. Caps how many draw on screen.
+export function GemStack({ count, accessibilityLabel, max = 12 }) {
+  const n = Math.max(0, Math.floor(Number(count) || 0))
+  if (!n) return <GemIcon size={16} />
+
+  const show = Math.min(n, max)
+  const icon = show <= 3 ? 14 : show <= 6 ? 11 : 9
+  const gap = 3
+
+  return (
+    <View
+      accessible={Boolean(accessibilityLabel)}
+      accessibilityLabel={accessibilityLabel}
+      style={[styles.inlineStack, { gap }]}
+    >
+      {Array.from({ length: show }, (_, i) => (
+        <GemIcon key={i} size={icon} />
+      ))}
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  packMark: {
+    borderWidth: 1,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+  packGrid: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  packRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineStack: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+})

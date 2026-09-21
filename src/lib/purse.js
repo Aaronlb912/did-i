@@ -32,11 +32,11 @@ export const LOOKS = [
   { id: 'ink', coins: LOOK_COIN_PRICE, gems: 0 },
   { id: 'brass', coins: LOOK_COIN_PRICE, gems: 0 },
   { id: 'night', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'moss', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'plum', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'rose', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'steel', coins: LOOK_COIN_PRICE, gems: 0 },
-  { id: 'wine', coins: LOOK_COIN_PRICE, gems: 0 },
+  { id: 'moss', coins: 0, gems: 4 },
+  { id: 'plum', coins: 0, gems: 4 },
+  { id: 'rose', coins: 0, gems: 4 },
+  { id: 'steel', coins: 0, gems: 4 },
+  { id: 'wine', coins: 0, gems: 4 },
   { id: 'glow', coins: 0, gems: 4 },
   { id: 'ember', coins: 0, gems: 4 },
   { id: 'frost', coins: 0, gems: 4 },
@@ -55,8 +55,26 @@ export function buddyText(id, field) {
   return `buddy.${id}.${field}`
 }
 
+export const GEM_LOOK_IDS = [
+  'glow',
+  'ember',
+  'frost',
+  'pulse',
+  'moss',
+  'plum',
+  'rose',
+  'steel',
+  'wine',
+]
+
+export function isGemLook(id) {
+  return GEM_LOOK_IDS.includes(id)
+}
+
 export function recentLooks(count = 2) {
   const n = Math.max(1, Math.floor(Number(count) || 2))
+  const gem = LOOKS.filter((item) => item.gems > 0)
+  if (gem.length) return gem.slice(0, Math.min(n, gem.length))
   return LOOKS.slice(-n)
 }
 
@@ -358,10 +376,10 @@ export function wearCheerStage(book, id, stage) {
   }
 }
 
-export function fireCheer(kind, stage = 1, look, theme) {
+export function fireCheer(kind, stage = 1, look, theme, preview = false) {
   if (typeof window === 'undefined' || !kind) return
   const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
-  const detail = { kind: kind || 'lime', stage: n }
+  const detail = { kind: kind || 'lime', stage: n, preview: Boolean(preview) }
   if (look) detail.look = look
   if (theme) detail.theme = theme
   window.dispatchEvent(new CustomEvent('did-i-cheer', { detail }))

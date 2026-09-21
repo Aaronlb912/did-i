@@ -1,6 +1,9 @@
 // Tokens lifted from src/lib/did-i.css. Keep these in step with the
 // --di-* custom properties; a look that is missing here silently falls
 // back to lime, so somebody sees a look they did not buy.
+//
+// Coin looks (ink, brass) only swap accent. Gem looks repaint the hall.
+import { isGemLook } from '../src/lib/purse.js'
 
 const DARK = {
   bg: '#0e1014',
@@ -51,22 +54,8 @@ const LOOKS = {
     light: { on: '#8a6a18', onDeep: '#5c4610' },
   },
   night: {
-    dark: {
-      bg: '#0a0b0e',
-      panel: '#12141a',
-      panel2: '#181b22',
-      panel3: '#1e222c',
-      on: '#d4c07a',
-      onDeep: '#8a7840',
-    },
-    light: {
-      bg: '#e6e4dc',
-      panel: '#f7f5ee',
-      panel2: '#efece3',
-      panel3: '#e4e0d4',
-      on: '#6e5c28',
-      onDeep: '#4a3d18',
-    },
+    dark: { on: '#d4c07a', onDeep: '#8a7840' },
+    light: { on: '#6e5c28', onDeep: '#4a3d18' },
   },
   moss: {
     dark: {
@@ -273,6 +262,19 @@ export const LOOK_IDS = Object.keys(LOOKS)
 export function hallColors(look = 'lime', theme = 'dark') {
   const base = theme === 'light' ? LIGHT : DARK
   const patch = (LOOKS[look] || LOOKS.lime)[theme === 'light' ? 'light' : 'dark'] || {}
+  if (isGemLook(look)) {
+    const colors = { ...base, ...patch }
+    colors.gemLook = look
+    colors.gemAccent = colors.on
+    return colors
+  }
+  if (look && look !== 'lime') {
+    return {
+      ...base,
+      on: patch.on || base.on,
+      onDeep: patch.onDeep || base.onDeep,
+    }
+  }
   return { ...base, ...patch }
 }
 

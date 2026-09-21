@@ -1,10 +1,12 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { StyleSheet, Text, View } from 'react-native'
 import { PRIVACY_SECTIONS, TERMS_SECTIONS } from '../../src/lib/LegalArticle.jsx'
 import { legalVars } from '../../src/lib/legal.js'
 import { t } from '../../src/lib/i18n.js'
+import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { BoardShell } from '../components/BoardShell.jsx'
+import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash } from '../navigation/hash.js'
+import { goBack, goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 
 function Section({ kind, id, vars, colors }) {
@@ -21,37 +23,38 @@ function Section({ kind, id, vars, colors }) {
   )
 }
 
-export function LegalScreen({ kind }) {
-  const insets = useSafeAreaInsets()
-  const colors = useHallColors()
+export function LegalScreen({ kind, book }) {
+  const colors = useHallColors(book)
   const sections = kind === 'privacy' ? PRIVACY_SECTIONS : TERMS_SECTIONS
   const vars = { ...legalVars(), date: t('legal.date') }
+  const otherPath = kind === 'privacy' ? '/terms' : '/privacy'
+  const otherLabelKey = kind === 'privacy' ? 'legal.termsShort' : 'legal.privacyShort'
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24, paddingHorizontal: 16 }}
+    <BoardShell
+      book={book}
+      title={t(`legal.${kind}.title`)}
+      date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))}
+      colors={colors}
+      back
+      showCogs={false}
     >
-      <Text style={[styles.kicker, { color: colors.on }]}>{t(`legal.${kind}.kicker`)}</Text>
-      <Text style={[styles.title, { color: colors.ink }]}>{t(`legal.${kind}.title`)}</Text>
-      <Text style={[styles.note, { color: colors.inkDim }]}>{t('legal.effective', vars)}</Text>
-      <Text style={[styles.note, { color: colors.inkDim }]}>{t('legal.notLawyer')}</Text>
+      <Meta colors={colors}>{t('legal.effective', vars)}</Meta>
+      <Meta colors={colors}>{t('legal.notLawyer')}</Meta>
       {sections.map((id) => (
         <Section key={id} kind={kind} id={id} vars={vars} colors={colors} />
       ))}
-      <Text onPress={() => goHash('/settings')} style={[styles.link, { color: colors.on }]}>
-        {t('legal.backSettings')}
-      </Text>
-    </ScrollView>
+      <View style={styles.actions}>
+        <DidButton colors={colors} label={t('nav.back')} small onPress={() => goBack()} />
+        <KeyButton colors={colors} label={t(otherLabelKey)} onPress={() => goHash(otherPath)} />
+      </View>
+    </BoardShell>
   )
 }
 
 const styles = StyleSheet.create({
-  kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
-  title: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700', marginTop: 8, marginBottom: 8 },
-  note: { fontFamily: fonts.ui, fontSize: 13, marginBottom: 6 },
   block: { marginTop: 20, gap: 8 },
   h2: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   p: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },
-  link: { marginTop: 28, fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 28 },
 })

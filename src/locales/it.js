@@ -341,6 +341,8 @@ export const it = {
   'tonight.lastNight': 'Ieri notte',
   'tonight.saved': 'Salvato.',
   'tonight.undo': 'Annulla',
+  'tonight.undoShake': 'Scuoti il telefono per annullare',
+  'tonight.undoTap': 'Tocca per annullare',
   'tonight.boardName': 'Nome del tag',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',

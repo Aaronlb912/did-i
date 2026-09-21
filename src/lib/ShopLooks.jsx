@@ -7,7 +7,7 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
-const COIN_LOOKS = LOOKS.filter((item) => !item.gems)
+const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
 
 export function ShopLooks({ book, onChange, now }) {
@@ -34,10 +34,10 @@ export function ShopLooks({ book, onChange, now }) {
     return (
       <div className="di-shop-row" key={item.id}>
         <button
-          className="di-preview"
+          className={peekLook === item.id ? 'di-preview is-on' : 'di-preview'}
           type="button"
           aria-label={t('shop.see', { name: t(lookText(item.id, 'name')) })}
-          onClick={() => setPeekLook(item.id)}
+          onClick={() => setPeekLook(peekLook === item.id ? '' : item.id)}
         >
           <LookChip id={item.id} />
         </button>

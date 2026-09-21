@@ -10,7 +10,6 @@ import {
 } from '../../src/lib/prefs.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { clockWords } from '../../src/lib/hall-pages.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareShelf } from '../../src/lib/native.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
@@ -19,13 +18,12 @@ import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
-import { ChipRow, DidButton, Field, KeyButton, Kicker, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { BoardShell } from '../components/BoardShell.jsx'
+import { ChipRow, DidButton, Field, KeyButton, Meta, Row } from '../components/ui.jsx'
 
-function foldAtWords(dayFoldHour) {
-  const hour = Number(dayFoldHour)
-  if (!Number.isFinite(hour) || hour <= 0) return t('settings.foldAt')
-  const padded = `${String(hour).padStart(2, '0')}:00`
-  return clockWords(padded) || t('settings.foldAt')
+function foldAtWords() {
+  return t('settings.foldAt')
 }
 
 function Cap({ children, colors }) {
@@ -66,7 +64,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     return () => clearTimeout(timer)
   }, [noteDraft, book, onChange])
 
-  const foldLabel = foldAtWords(book?.dayFoldHour)
+  const foldLabel = foldAtWords()
 
   async function pickFile() {
     try {
@@ -104,9 +102,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   if (confirm) {
     return (
-      <Page colors={colors}>
-        <Kicker colors={colors}>{confirm.kicker}</Kicker>
-        <Title colors={colors}>{confirm.title}</Title>
+      <BoardShell book={book} title={confirm.title} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
         <Meta colors={colors}>{confirm.body}</Meta>
         <View style={styles.popRow}>
           <DidButton
@@ -121,15 +117,12 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           />
           <KeyButton label={t('settings.neverMind')} onPress={() => setConfirm(null)} colors={colors} />
         </View>
-      </Page>
+      </BoardShell>
     )
   }
 
   return (
-    <Page colors={colors}>
-      <Kicker colors={colors}>{t('settings.kicker')}</Kicker>
-      <Title colors={colors}>{t('settings.kicker')}</Title>
-
+    <BoardShell book={book} title={t('settings.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
       <Cap colors={colors}>{t('account.kicker')}</Cap>
       <Row
         colors={colors}
@@ -269,7 +262,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           goHash('/enter')
         }}
       />
-    </Page>
+    </BoardShell>
   )
 }
 
