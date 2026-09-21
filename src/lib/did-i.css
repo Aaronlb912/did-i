@@ -2714,9 +2714,7 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 }
 
 .di-hang-more {
-  margin-left: 0.15rem;
-  min-height: 2.35rem;
-  padding: 0 0.35rem;
+  margin-top: 0.85rem;
 }
 
 .di-field-notify .di-hang-chips {

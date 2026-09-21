@@ -266,15 +266,15 @@ export function HangLamp({
           >
             {t('hang.notifyOff')}
           </button>
-          <button
-            className="di-text di-hang-more"
-            type="button"
-            aria-expanded={hang.more}
-            onClick={() => hang.setMore((open) => !open)}
-          >
-            {hang.more ? t('hang.less') : t('hang.more')}
-          </button>
         </div>
+        <button
+          className={hang.more ? 'di-key is-pick di-hang-more' : 'di-key di-hang-more'}
+          type="button"
+          aria-expanded={hang.more}
+          onClick={() => hang.setMore((open) => !open)}
+        >
+          {hang.more ? t('hang.less') : t('hang.more')}
+        </button>
       </div>
       {hang.more ? (
         <>

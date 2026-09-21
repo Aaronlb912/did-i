@@ -488,11 +488,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           onPick={(value) => hang.change('notify', value === 'on')}
           colors={colors}
         />
-        <Pressable onPress={() => hang.setMore((open) => !open)} hitSlop={8}>
-          <Text style={[styles.moreLink, { color: colors.inkSoft }]}>
-            {hang.more ? t('hang.less') : t('hang.more')}
-          </Text>
-        </Pressable>
+        <KeyButton
+          label={hang.more ? t('hang.less') : t('hang.more')}
+          colors={colors}
+          picked={hang.more}
+          onPress={() => hang.setMore((open) => !open)}
+        />
       </View>
 
       {hang.more ? (
@@ -722,17 +723,9 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   notifyRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 8,
+    gap: 12,
     marginBottom: 4,
-  },
-  moreLink: {
-    fontFamily: fonts.ui,
-    fontSize: 14,
-    textDecorationLine: 'underline',
-    paddingVertical: 4,
+    alignItems: 'flex-start',
   },
   weekdayChip: {
     borderWidth: 1,
