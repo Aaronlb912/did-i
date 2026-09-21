@@ -116,10 +116,8 @@ cheer skip under reduce-motion.
 - Handle safety on generated names (client + `supabase/handle-safe.sql`).
 - Hang form errors, WeekGrid, and StatsPage copy through `t()` in English
   and Spanish.
-- Full locale parity for fr, de, pt, it, zh, ja (1015 keys each). After
-  new English keys: add to `scripts/i18n-additions.mjs`, run
-  `node scripts/merge-i18n-additions.mjs`, translate gaps, then
-  `npm run locales:sync`.
+- Partial locale parity (fr, de, pt, it, zh, ja, ko). Workflow:
+  `docs/locales.md`. Ship quality is `en` + `es`; `npm test` guards Spanish.
 - Marks, achievements toast, Feed, Search, About, Ideas, PingPlate,
   WaitPlate, site pages, AppMap, cadence lines, device labels, and home
   line copy through `t()` in all eight locales.

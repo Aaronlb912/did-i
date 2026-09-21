@@ -1,3 +1,4 @@
+// Deprecated. Use locale-gaps/*.json and npm run locales:sync. See docs/locales.md.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

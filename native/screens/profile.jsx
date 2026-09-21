@@ -145,7 +145,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         onPick={(id) => writePrefs({ theme: id })}
       />
       <Text style={[styles.pickLabel, { color: colors.inkSoft }]}>{t('settings.language')}</Text>
+      <Meta colors={colors}>{t('settings.languageHint')}</Meta>
       <ChipRow
+        scroll
         colors={colors}
         items={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
         value={prefs.locale}

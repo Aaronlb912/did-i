@@ -102,23 +102,27 @@ export function Field({
   )
 }
 
-export function ChipRow({ items, value, onPick, colors }) {
-  return (
-    <View style={styles.chips}>
-      {items.map((item) => {
-        const on = value === item.id
-        return (
-          <Pressable
-            key={item.id}
-            onPress={() => onPick(item.id)}
-            style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
-          >
-            <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
-          </Pressable>
-        )
-      })}
-    </View>
-  )
+export function ChipRow({ items, value, onPick, colors, scroll }) {
+  const chips = items.map((item) => {
+    const on = value === item.id
+    return (
+      <Pressable
+        key={item.id}
+        onPress={() => onPick(item.id)}
+        style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
+      >
+        <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
+      </Pressable>
+    )
+  })
+  if (scroll) {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {chips}
+      </ScrollView>
+    )
+  }
+  return <View style={styles.chips}>{chips}</View>
 }
 
 const styles = StyleSheet.create({

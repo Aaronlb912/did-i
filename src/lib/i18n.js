@@ -7,7 +7,7 @@ import { ja } from '../locales/ja.js'
 import { ko } from '../locales/ko.js'
 import { pt } from '../locales/pt.js'
 import { zh } from '../locales/zh.js'
-import { readPrefs } from './prefs.js'
+import { readPrefs, usePrefs } from './prefs.js'
 
 // English fills any key a partial locale file missed. Run npm run locales:sync
 // after adding keys to en.js.
@@ -21,6 +21,15 @@ const packs = {
   zh: { ...en, ...zh },
   ja: { ...en, ...ja },
   ko: { ...en, ...ko },
+}
+
+export function localePack(locale = readPrefs().locale) {
+  return packs[locale] ?? packs.en
+}
+
+export function useLocale() {
+  const prefs = usePrefs()
+  return prefs.locale
 }
 
 export function t(key, vars) {

@@ -81,3 +81,4 @@ for (const code of ['fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']) {
 }
 
 console.log(`en.js: ${Object.keys(enPack).length} keys`)
+console.log('next: translate additionsEs, npm run locales:missing -- --export fr, npm run locales:sync')

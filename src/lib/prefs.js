@@ -13,6 +13,21 @@ function blankPrefs() {
   return { theme: 'dark', locale: 'en', lessMotion: false }
 }
 
+export function deviceLocale() {
+  try {
+    const raw =
+      typeof Intl !== 'undefined'
+        ? Intl.DateTimeFormat().resolvedOptions().locale
+        : typeof navigator !== 'undefined'
+          ? navigator.language
+          : 'en'
+    const code = String(raw || 'en').split('-')[0].toLowerCase()
+    return LOCALES.has(code) ? code : 'en'
+  } catch {
+    return 'en'
+  }
+}
+
 function cleanPrefs(raw) {
   const next = blankPrefs()
   if (THEMES.has(raw?.theme)) next.theme = raw.theme
@@ -23,7 +38,13 @@ function cleanPrefs(raw) {
 
 export function readPrefs() {
   try {
-    return cleanPrefs(JSON.parse(localStorage.getItem(KEY) || ''))
+    const raw = localStorage.getItem(KEY)
+    if (!raw) {
+      const next = cleanPrefs({ ...blankPrefs(), locale: deviceLocale() })
+      localStorage.setItem(KEY, JSON.stringify(next))
+      return next
+    }
+    return cleanPrefs(JSON.parse(raw))
   } catch {
     return blankPrefs()
   }

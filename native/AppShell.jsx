@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DIT_ENABLED } from '../src/lib/features.js'
 import { t } from '../src/lib/i18n.js'
+import { usePrefs } from '../src/lib/prefs.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { needsEnter } from '../src/lib/session.js'
@@ -102,6 +103,7 @@ function AppNav({ path, colors }) {
 }
 
 export function AppShell() {
+  usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
   const colors = useHallColors(app.book)

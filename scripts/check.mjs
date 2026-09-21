@@ -27,6 +27,8 @@ import { it } from '../src/locales/it.js'
 import { zh } from '../src/locales/zh.js'
 import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
+import { additionsEn, additionsEs } from './i18n-additions.mjs'
+import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 
 let ran = 0
 let failed = 0
@@ -385,6 +387,29 @@ test('every supported locale has the same keys as English', () => {
       assert.ok(key in pack, `${code} missing ${key}`)
       assert.ok(String(pack[key]).trim(), `${code} empty ${key}`)
     }
+  }
+})
+
+test('i18n additions ship with Spanish', () => {
+  for (const key of Object.keys(additionsEn)) {
+    assert.ok(key in additionsEs, `additionsEs missing ${key}`)
+    if (mayMatchEnglish(key)) continue
+    assert.notEqual(
+      additionsEs[key],
+      additionsEn[key],
+      `additionsEs same as English: ${key}`,
+    )
+  }
+})
+
+test('Spanish ship locale does not copy English by mistake', () => {
+  for (const key of Object.keys(en)) {
+    if (mayMatchEnglish(key)) continue
+    if (isLegalKey(key)) {
+      assert.notEqual(es[key], en[key], `es legal same as English: ${key}`)
+      continue
+    }
+    assert.notEqual(es[key], en[key], `es same as English: ${key}`)
   }
 })
 
