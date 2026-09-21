@@ -8,6 +8,7 @@ export default ({ config }) => ({
   ...config,
   plugins: [
     ...(config.plugins || []),
+    'expo-dev-client',
     'expo-notifications',
     'expo-iap',
     [

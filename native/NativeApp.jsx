@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar'
+import * as SplashScreen from 'expo-splash-screen'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
@@ -10,8 +11,17 @@ import { needsEnter } from '../src/lib/session.js'
 import { Boundary } from './components/Boundary.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
 import { goBack, goHash } from './navigation/hash.js'
+import { useAppFonts } from './useAppFonts.js'
+
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export function NativeApp() {
+  const fontsLoaded = useAppFonts()
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {})
+  }, [fontsLoaded])
+
   useEffect(() => {
     bootNative()
     pullAndMerge()
@@ -35,6 +45,8 @@ export function NativeApp() {
     const book = currentBook(shelf)
     if (book) scheduleNativePings(book)
   }, [])
+
+  if (!fontsLoaded) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

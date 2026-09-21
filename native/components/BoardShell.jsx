@@ -11,6 +11,8 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { hallColors, fonts } from '../theme.js'
 import { gemFrameStyle } from '../lib/gem-look-tone.js'
 import { HallHalo } from './HallHalo.jsx'
+import { HallAmbient } from './HallAmbient.jsx'
+import { BackChevron } from './BackChevron.jsx'
 import { MastMenuCog, MastMenuRoot } from './MastMenu.jsx'
 import { PurseLine } from './PurseLine.jsx'
 
@@ -65,16 +67,21 @@ export function BoardShell({
       <View style={styles.mastTop}>
         {showBack ? (
           <Pressable onPress={() => goBack()} style={styles.back} accessibilityLabel={t('nav.back')}>
-            <Text style={[styles.backText, { color: colors.ink }]}>‹</Text>
+            <BackChevron color={colors.inkDim} />
           </Pressable>
         ) : (
           <View style={styles.backPad} />
         )}
         <View style={styles.mastCopy}>
-          <Text style={[styles.title, { color: colors.ink }]} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>
             {title || book?.title || 'Did I'}
           </Text>
-          {date ? <Text style={[styles.date, { color: colors.inkDim }]}>{date}</Text> : null}
+          {date ? (
+            <>
+              <Text style={[styles.dot, { color: colors.line }]}>·</Text>
+              <Text style={[styles.date, { color: colors.inkDim }]} numberOfLines={1}>{date}</Text>
+            </>
+          ) : null}
         </View>
         {showCogs ? (
           <View style={styles.actions}>
@@ -116,7 +123,8 @@ export function BoardShell({
   const frame = (
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
       {halo ? <HallHalo look={coat} /> : null}
-      <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: colors.bg }]}>
+      <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
+      <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
         {inner}
       </View>
     </View>
@@ -139,12 +147,18 @@ const styles = StyleSheet.create({
   sitOn: {},
   page: { gap: 12 },
   mast: { marginBottom: 4 },
-  mastTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  back: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  backPad: { width: 32 },
-  backText: { fontFamily: fonts.ui, fontSize: 28, lineHeight: 30 },
-  mastCopy: { flex: 1, gap: 2, minWidth: 0 },
-  title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700', lineHeight: 28 },
-  date: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+  mastTop: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 0 },
+  back: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: -4 },
+  backPad: { width: 28 },
+  mastCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' },
+  title: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    flexShrink: 1,
+  },
+  dot: { fontFamily: fonts.mono, fontSize: 11 },
+  date: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.7, flexShrink: 1 },
   actions: { alignItems: 'flex-end', gap: 6, zIndex: 21 },
 })

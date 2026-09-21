@@ -38,6 +38,8 @@ import { BuddyChip, BuddyHang, CheerChip, LookChip } from '../components/Cosmeti
 import { GemFaceAura } from '../components/GemFaceAura.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
+import { PageTitle } from '../components/SetBits.jsx'
+import { PurseLine } from '../components/PurseLine.jsx'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { goHash } from '../navigation/hash.js'
 import { GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
@@ -285,6 +287,10 @@ export function ShopScreen({ book, onChange }) {
 
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined}>
+      <PageTitle colors={colors}>{t('shop.title')}</PageTitle>
+      <View style={styles.purseRow}>
+        <PurseLine purse={purse} colors={colors} gemsLink />
+      </View>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
 
       <ShopPromoShelf
@@ -850,6 +856,7 @@ export function CollectionScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  purseRow: { marginBottom: 4 },
   cap: {
     fontFamily: fonts.mono,
     fontSize: 11,

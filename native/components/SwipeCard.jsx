@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
@@ -19,7 +19,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { BuddyHang } from './Cosmetic.jsx'
 import { GemFaceAura } from './GemFaceAura.jsx'
-import { fonts } from '../theme.js'
+import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 
 export function SwipeCard({
   cardKey = '',
@@ -109,70 +109,18 @@ export function SwipeCard({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View
-        style={[
-          styles.card,
-          { backgroundColor: colors.panel, borderColor: colors.line },
-          panelStyle,
-          cardStyle,
-        ]}
-      >
+      <Animated.View style={[...faceCardStyle(colors, panelStyle), cardStyle]}>
         {gemLook ? <GemFaceAura look={gemLook} theme={theme} /> : null}
         <BuddyHang id={buddy} />
-        <Animated.Text style={[styles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
-        <Animated.Text style={[styles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
+        <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
+        <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
         {kicker ? (
-          <Animated.Text style={[styles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
+          <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
         ) : null}
-        <Text style={[styles.title, { color: colors.ink }]}>{title}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{title}</Text>
         {children}
       </Animated.View>
     </GestureDetector>
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: 18,
-    overflow: 'hidden',
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 24,
-    minHeight: 168,
-    justifyContent: 'center',
-  },
-  kicker: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: 26,
-    fontWeight: '700',
-    lineHeight: 32,
-  },
-  stampDid: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    fontFamily: fonts.display,
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  stampNope: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    fontFamily: fonts.display,
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-})

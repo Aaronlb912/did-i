@@ -4,6 +4,9 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
+import { spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { addDaysIso, answerFor, boardDate, faceReadyTonight, isoDate } from '../src/lib/recurrence.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { byPriority, lampBuzzes, lampNudgesLate } from '../src/lib/board-json.js'
@@ -421,6 +424,16 @@ test('a cheer cannot be sent on gems you do not have', () => {
   const paid = spendGems({ gems: 3 }, 1)
   assert.equal(paid.miss, '')
   assert.equal(paid.book.gems, 2)
+})
+
+test('native look ids match did-i.css', () => {
+  const scriptsDir = path.dirname(fileURLToPath(import.meta.url))
+  const syncScript = path.join(scriptsDir, 'sync-theme-tokens.mjs')
+  const result = spawnSync(process.execPath, [syncScript], {
+    cwd: path.dirname(scriptsDir),
+    encoding: 'utf8',
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

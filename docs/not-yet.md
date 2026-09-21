@@ -47,13 +47,11 @@ where somebody is a nuisance.
 The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 `useTonightStack.js` with the browser build. These still differ:
 
-- **Cheer burst fidelity.** Native `CheerBurst.jsx` renders a subset of
-  bit types (no full dancers, puddles, shooting stars). Web CSS is richer.
-- **Hall ambient.** Web `data-heat` / `data-hour` / `data-sit` on
-  `.di-hall` tint the whole board. Native has gem halos and meter glow
-  only.
-- **Jewel chrome.** Web brass rings and glass; native dot jewels in a
-  horizontal scroller. Same data, different look.
+- **Cheer burst fidelity.** Native has dancers, puddles, and stars now.
+  Web CSS animations may still feel snappier on some cheers.
+- **Visual diff caps.** `npm run visual` compares web vs native fixtures at
+  390px. Jewel is tight (~10%); face/settings are looser until RN-web layout
+  matches DOM more closely.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
 - **iOS swipe-back** on subpages (web has `useSwipeBack`; native has
@@ -76,8 +74,8 @@ cheer skip under reduce-motion.
 - Native app shell (Expo in `native/`): social, settings, account,
   search, lamp detail, FamilyTonight, offline banner, clipboard fallback,
   pings permission, cheer burst, error boundary, and routes through
-  `ScreenRouter`. Tonight and shop previews still catching up to web
-  (see Native Android vs localhost web).
+  `  ScreenRouter`. Visual parity pass 2026-09-20: jewels, face cards,
+  settings cards, mast chrome, shop hub purse, hall ambient, theme sync.
 - In-app purchase framework: `expo-iap`, `gem-iap` function, claim on sync
   (`docs/iap.md`). No Stripe in the app.
 - Answers sync on their own instead of riding in the whole shelf

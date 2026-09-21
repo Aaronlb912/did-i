@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { fonts } from '../theme.js'
+import { fonts, radius } from '../theme.js'
+
+const GLASS = 9
 
 export function Jewel({
   label,
@@ -19,6 +21,8 @@ export function Jewel({
   const glow = on && filament > 0
   const ink = on || face ? colors.ink : skip && !on ? colors.inkDim : colors.inkSoft
   const rim = on || face ? colors.onDeep : colors.line
+  const glassColor = late ? colors.late : on ? colors.on : skip ? colors.skip : colors.open
+
   return (
     <Pressable
       disabled={disabled}
@@ -32,18 +36,17 @@ export function Jewel({
         },
         waiting && styles.wait,
         hole && styles.hole,
-        skip && !on && styles.skip,
       ]}
     >
-      <View style={styles.dotWrap}>
+      <View style={styles.ring}>
         {glow ? (
           <View
             style={[
               styles.filament,
               {
-                width: 9 + filament * 3,
-                height: 9 + filament * 3,
-                borderRadius: 9 + filament * 3,
+                width: GLASS + filament * 3,
+                height: GLASS + filament * 3,
+                borderRadius: GLASS + filament * 3,
                 borderColor: colors.on,
                 opacity: 0.18 + filament * 0.12,
               },
@@ -52,11 +55,10 @@ export function Jewel({
         ) : null}
         <View
           style={[
-            styles.dot,
-            {
-              backgroundColor: late ? colors.late : on ? colors.on : skip ? colors.skip : colors.open,
-              opacity: hole && !on ? 0.35 : 1,
-            },
+            styles.glass,
+            hole && !on
+              ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.inkDim }
+              : { backgroundColor: glassColor },
           ]}
         />
       </View>
@@ -81,7 +83,7 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 40,
     paddingHorizontal: 14,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     borderWidth: 1,
     maxWidth: 220,
   },
@@ -89,10 +91,9 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   hole: {
-    borderStyle: 'dotted',
+    borderStyle: 'dashed',
   },
-  skip: {},
-  dotWrap: {
+  ring: {
     width: 18,
     height: 18,
     alignItems: 'center',
@@ -102,10 +103,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: 1,
   },
-  dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+  glass: {
+    width: GLASS,
+    height: GLASS,
+    borderRadius: GLASS / 2,
   },
   copy: {
     minWidth: 0,

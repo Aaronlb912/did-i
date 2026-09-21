@@ -32,6 +32,8 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { GemFaceAura } from '../components/GemFaceAura.jsx'
 import { gemFrameStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { hallColors, fonts } from '../theme.js'
+import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
+import { HallAmbient } from '../components/HallAmbient.jsx'
 
 function useMinuteNow() {
   const [now, setNow] = useState(() => new Date())
@@ -65,11 +67,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const premium = isGemLook(look)
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
-  const staticCardStyle = [
-    styles.staticCard,
-    { backgroundColor: colors.panel, borderColor: colors.line },
-    gemCard,
-  ]
+  const staticCardStyle = [...faceCardStyle(colors, gemCard)]
   const gemAura = premium ? <GemFaceAura look={look} theme={theme} /> : null
 
   let face = null
@@ -130,19 +128,19 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
       </View>
     )
   } else if (stack.bodyKind === 'rest') {
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.restKicker')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.restKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>
           {stack.finishCount === 1 ? t('tonight.restOne') : t('tonight.restTitle', { n: stack.finishCount })}
         </Text>
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
         <View style={styles.actions}>
           <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.continueStack} />
         </View>
@@ -153,9 +151,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
           {next
             ? t('tonight.waitOpens', {
                 name: stack.shortLabel(next.lamp),
@@ -169,8 +167,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.emptyKicker')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{t('tonight.emptyTitle')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.emptyKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.emptyTitle')}</Text>
         <StarterPicks book={book} onChange={onChange} colors={colors} />
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
       </View>
@@ -208,9 +206,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{pillRow.tag || t('tonight.didI')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag || t('tonight.didI')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
       </View>
     )
   } else if (stack.bodyKind === 'pill' && stack.pillPick) {
@@ -240,8 +238,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.offKicker')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{t('tonight.offTitle')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.offKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.offTitle')}</Text>
         <View style={styles.actions}>
           <DidButton label={t('home.add')} colors={colors} small onPress={() => goHash('/add')} />
           <KeyButton label={t('tonight.seeAll')} colors={colors} onPress={() => goHash('/lamps')} />
@@ -252,8 +250,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <View style={staticCardStyle}>
         {gemAura}
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('tonight.didI')}</Text>
-        <Text style={[styles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.didI')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
       </View>
     )
   }
@@ -262,12 +260,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
       {premium ? <HallHalo look={look} /> : null}
+      <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       <View
         pointerEvents="box-none"
         style={[
           styles.shell,
           premium && styles.aboveHalo,
-          { paddingTop: insets.top, paddingBottom: bottomPad, backgroundColor: colors.bg },
+          { paddingTop: insets.top, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
           stack.hallOn && styles.sitOn,
         ]}
       >
@@ -427,23 +426,5 @@ const styles = StyleSheet.create({
   },
   jewelsIn: { gap: 8, paddingRight: 8 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120 },
-  staticCard: {
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    minHeight: 168,
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  kicker: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  title: { fontFamily: fonts.display, fontSize: 26, fontWeight: '700', lineHeight: 32 },
-  meta: { fontFamily: fonts.ui, fontSize: 14, marginTop: 10, lineHeight: 20 },
   buddyFoot: { alignItems: 'center', marginBottom: 8, minHeight: 52 },
 })

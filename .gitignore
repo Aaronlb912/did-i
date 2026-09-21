@@ -10,8 +10,10 @@ lerna-debug.log*
 node_modules
 .expo
 dist
+dist-visual
 dev-dist
 dist-ssr
+scripts/visual/output
 *.local
 
 # Editor directories and files

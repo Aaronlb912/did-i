@@ -16,7 +16,11 @@
     },
     "ios": {
       "bundleIdentifier": "com.aaronbryant.didi",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "deploymentTarget": "16.4",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.aaronbryant.didi",

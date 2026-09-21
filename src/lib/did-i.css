@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
   --di-coin-face: #e2c36a;
   --di-coin-edge: #9a7a28;
@@ -23,10 +25,10 @@
   --di-open: #39404e;
   --di-miss: #ff6f61;
   --di-veil: rgba(8, 10, 14, 0.55);
-  --di-display: ui-sans-serif, system-ui, 'Segoe UI Variable Display', 'Segoe UI',
+  --di-display: 'Inter', ui-sans-serif, system-ui, 'Segoe UI Variable Display', 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
-  --di-ui: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --di-mono: ui-monospace, 'Cascadia Mono', 'Consolas', 'SFMono-Regular', monospace;
+  --di-ui: 'Inter', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --di-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'Consolas', 'SFMono-Regular', monospace;
   --di-r: 18px;
   --di-r-sm: 12px;
   --di-pill: 999px;
