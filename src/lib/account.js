@@ -49,6 +49,32 @@ export function looksLikeEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(value))
 }
 
+function mapAuthMiss(error) {
+  if (!error) return ''
+  const msg = String(error.message || error).toLowerCase()
+  const status = error.status
+  if (status === 429 || /rate limit|too many|over_email_send_rate_limit/i.test(msg)) return 'often'
+  if (/signups not allowed|signup.*disabled/i.test(msg)) return 'signupOff'
+  if (/invalid.*email|email.*invalid|unable to validate email/i.test(msg)) return 'badEmail'
+  if (/expired|otp_expired/i.test(msg)) return 'codeExpired'
+  if (/invalid.*otp|token.*invalid|otp.*invalid|invalid login/i.test(msg)) return 'codeBad'
+  return 'sendFail'
+}
+
+export function accountMissText(bad) {
+  if (!bad) return ''
+  const key = {
+    off: 'account.offBody',
+    often: 'account.tooOften',
+    badEmail: 'account.missEmail',
+    codeBad: 'account.missCode',
+    codeExpired: 'account.codeExpired',
+    signupOff: 'account.signupOff',
+    sendFail: 'account.sendFail',
+  }[bad]
+  return key ? t(key) : bad
+}
+
 export async function sendCode(email) {
   const db = cloud()
   if (!db) return { miss: 'off' }
@@ -57,20 +83,20 @@ export async function sendCode(email) {
     options: { shouldCreateUser: true },
   })
   if (!error) return { miss: '' }
-  // The built-in mailer only allows a couple of sends an hour.
-  if (error.status === 429 || /rate limit|too many/i.test(error.message)) return { miss: 'often' }
-  return { miss: error.message }
+  return { miss: mapAuthMiss(error) }
 }
 
 export async function checkCode(email, code) {
   const db = cloud()
   if (!db) return { miss: 'off', user: null }
+  const token = String(code || '').replace(/\D/g, '')
+  if (token.length < 6) return { miss: 'codeBad', user: null }
   const { data, error } = await db.auth.verifyOtp({
     email: cleanEmail(email),
-    token: String(code || '').replace(/\D/g, ''),
+    token,
     type: 'email',
   })
-  return { miss: error ? error.message : '', user: data?.user || null }
+  return { miss: error ? mapAuthMiss(error) : '', user: data?.user || null }
 }
 
 export async function signOutHere() {

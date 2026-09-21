@@ -186,6 +186,8 @@ export const es = {
   'account.offTitle': 'Sin conectar',
   'account.offBody':
     'Esta versión no tiene servidor de cuentas. Todo se queda en este teléfono y no se envía a ningún lado.',
+  'account.offTester':
+    'Si a otra persona sí le funciona, esta instalación necesita un rebuild con las claves de Supabase. Los builds de EAS no leen .env.local. O entra en did-i.app en el navegador.',
   'account.outTitle': 'Entra para guardar tus etiquetas',
   'account.outBody':
     'Tus preguntas, respuestas, racha, monedas, gemas y los cheers que tienes te siguen a otro teléfono. Nadie más los ve.',
@@ -202,6 +204,9 @@ export const es = {
     'Demasiados códigos por ahora. Espera una hora, o usa el último que te llegó.',
   'account.missEmail': 'Ese correo no se ve bien.',
   'account.missCode': 'Ese código no sirvió. Prueba con el más nuevo.',
+  'account.codeExpired': 'Ese código caducó. Pide uno nuevo.',
+  'account.signupOff': 'Las cuentas nuevas están apagadas en este servidor.',
+  'account.sendFail': 'No se pudo enviar el código. Revisa el correo e inténtalo otra vez.',
   'account.inTitle': 'Tu cuenta',
   'account.sync': 'Sincronizar',
   'account.who': 'Entraste como',
@@ -1102,11 +1107,11 @@ export const es = {
   'look.lime.name': 'Lime',
   'look.lime.line': 'Con el que empiezas.',
   'look.ink.name': 'Ink',
-  'look.ink.line': 'Verde más quieto.',
+  'look.ink.line': 'Sala papel, acento salvia.',
   'look.brass.name': 'Brass',
-  'look.brass.line': 'Pips cálidos.',
+  'look.brass.line': 'Placas cálidas, brillo latón.',
   'look.night.name': 'Night',
-  'look.night.line': 'Pips dorados.',
+  'look.night.line': 'Sala profunda, oro estrella.',
   'look.moss.name': 'Moss',
   'look.moss.line': 'Sala bosque, brillo salvia.',
   'look.plum.name': 'Plum',

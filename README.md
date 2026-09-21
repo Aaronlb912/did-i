@@ -71,8 +71,9 @@ npm install
 cp .env.example .env.local
 ```
 
-Ask Aaron for `.env.local` values (`VITE_SUPABASE_*` at minimum). Without
-them the app runs local-only; account, friends, and sync need the keys.
+Supabase client keys ship in `env.client.js` so EAS builds can sign in
+without extra setup. Copy `.env.example` to `.env.local` only to point
+at a different project.
 
 **Quick look (simulator or Expo Go):**
 

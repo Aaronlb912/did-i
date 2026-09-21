@@ -11,9 +11,9 @@ const CHIP_R = 0.55 * R
 
 const LOOK_META = {
   lime: { on: '#c9f24d' },
-  ink: { on: '#b8c48a' },
-  brass: { on: '#e2c36a' },
-  night: { on: '#d4c07a' },
+  ink: { on: '#a8b878', bg: '#141618', glow: 'rgba(168, 184, 120, 0.35)' },
+  brass: { on: '#e2c36a', bg: '#1a1610', glow: 'rgba(226, 195, 106, 0.4)' },
+  night: { on: '#e8d070', bg: '#0a0e14', glow: 'rgba(232, 208, 112, 0.38)' },
   glow: {
     on: '#5ee8ff',
     bg: '#0c1218',
@@ -91,9 +91,10 @@ export function LookChip({ id, colors }) {
         }
       : null),
   })
-  const chipBg = premium ? meta.bg : undefined
+  const chipBg = meta.bg
+  const chipGlow = meta.glow
   const chip = (
-    <View style={[styles.lookChip, chipShell(colors, chipBg, premium ? meta.glow : undefined)]}>
+    <View style={[styles.lookChip, chipShell(colors, chipBg, chipGlow)]}>
       {premium && meta.ring ? (
         <View style={[styles.lookInset, { borderColor: meta.ring }]} pointerEvents="none" />
       ) : null}

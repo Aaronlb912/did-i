@@ -42,16 +42,100 @@ const LIGHT = {
 const LOOKS = {
   lime: { dark: {}, light: {} },
   ink: {
-    dark: { on: '#b8c48a', onDeep: '#6f7a4a' },
-    light: { on: '#5a6240', onDeep: '#3d442c' },
+    dark: {
+      bg: '#0c0e10',
+      panel: '#141618',
+      panel2: '#1a1c1f',
+      panel3: '#222528',
+      line: '#2e3238',
+      lineSoft: '#24282e',
+      ink: '#e8e4dc',
+      inkSoft: '#9a9588',
+      inkDim: '#6a6560',
+      on: '#a8b878',
+      onDeep: '#6a7848',
+      late: '#7eb0c0',
+      veil: 'rgba(8, 10, 12, 0.58)',
+    },
+    light: {
+      bg: '#e8e4d8',
+      panel: '#f8f6f0',
+      panel2: '#f0ece2',
+      panel3: '#e4dfd2',
+      line: '#c8c0b0',
+      lineSoft: '#d8d4c8',
+      ink: '#1c1a16',
+      inkSoft: '#5a5448',
+      inkDim: '#7a7468',
+      on: '#5a6240',
+      onDeep: '#3d442c',
+      late: '#3a7890',
+      veil: 'rgba(28, 26, 22, 0.38)',
+    },
   },
   brass: {
-    dark: { on: '#e2c36a', onDeep: '#9a7a28' },
-    light: { on: '#8a6a18', onDeep: '#5c4610' },
+    dark: {
+      bg: '#12100c',
+      panel: '#1a1610',
+      panel2: '#221c14',
+      panel3: '#2a2218',
+      line: '#3a3020',
+      lineSoft: '#2e261c',
+      ink: '#f4ece0',
+      inkSoft: '#a89880',
+      inkDim: '#786858',
+      on: '#e2c36a',
+      onDeep: '#9a7a28',
+      late: '#c0a060',
+      veil: 'rgba(10, 8, 6, 0.58)',
+    },
+    light: {
+      bg: '#f0e8dc',
+      panel: '#faf6f0',
+      panel2: '#f2ebe0',
+      panel3: '#e8ddd0',
+      line: '#d0c0a8',
+      lineSoft: '#e0d4c4',
+      ink: '#1e1810',
+      inkSoft: '#6a5c48',
+      inkDim: '#8a7a68',
+      on: '#8a6a18',
+      onDeep: '#5c4610',
+      late: '#9a7028',
+      veil: 'rgba(30, 24, 16, 0.38)',
+    },
   },
   night: {
-    dark: { on: '#d4c07a', onDeep: '#8a7840' },
-    light: { on: '#6e5c28', onDeep: '#4a3d18' },
+    dark: {
+      bg: '#060810',
+      panel: '#0c1018',
+      panel2: '#101620',
+      panel3: '#141c28',
+      line: '#1e2838',
+      lineSoft: '#161e2c',
+      ink: '#e0e4f0',
+      inkSoft: '#8898b0',
+      inkDim: '#586878',
+      on: '#e8d070',
+      onDeep: '#a88830',
+      late: '#88b8e8',
+      veil: 'rgba(4, 6, 12, 0.62)',
+    },
+    light: {
+      bg: '#dce4f0',
+      panel: '#f4f8fc',
+      panel2: '#e8f0f8',
+      panel3: '#d8e4f0',
+      line: '#b8c8d8',
+      lineSoft: '#ccd8e4',
+      ink: '#101820',
+      inkSoft: '#485868',
+      inkDim: '#687888',
+      on: '#6e5c28',
+      onDeep: '#4a3d18',
+      late: '#2868a8',
+      veil: 'rgba(16, 24, 32, 0.38)',
+    },
   },
   moss: {
     dark: {
@@ -258,20 +342,12 @@ export const LOOK_IDS = Object.keys(LOOKS)
 export function hallColors(look = 'lime', theme = 'dark') {
   const base = theme === 'light' ? LIGHT : DARK
   const patch = (LOOKS[look] || LOOKS.lime)[theme === 'light' ? 'light' : 'dark'] || {}
+  const colors = { ...base, ...patch }
   if (isGemLook(look)) {
-    const colors = { ...base, ...patch }
     colors.gemLook = look
     colors.gemAccent = colors.on
-    return colors
   }
-  if (look && look !== 'lime') {
-    return {
-      ...base,
-      on: patch.on || base.on,
-      onDeep: patch.onDeep || base.onDeep,
-    }
-  }
-  return { ...base, ...patch }
+  return colors
 }
 
 export const radius = { r: 18, rSm: 12, pill: 999 }

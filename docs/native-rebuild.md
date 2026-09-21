@@ -11,8 +11,8 @@ npm run expo:dev
 
 Use a **development build** on the phone (not Expo Go). iPhone from Windows:
 `docs/iphone-preview.md`. Android: `npm run android:build` once, then
-`npm run expo:dev`. Env vars from `.env.local` load through `app.config.js`
-into `src/lib/env.js` (Supabase, legal email).
+`npm run expo:dev`. Supabase client keys ship in `env.client.js` and load
+through `app.config.js` into `src/lib/env.js` (override with `.env.local`).
 
 ## Architecture
 

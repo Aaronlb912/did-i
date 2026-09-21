@@ -176,6 +176,8 @@ export const ja = {
   'account.kicker': 'アカウント',
   'account.offTitle': 'オフ',
   'account.offBody': 'このビルドにアカウントサーバーなし。全部スマホに残り、送らない。',
+  'account.offTester':
+    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': 'ログインして tags を残す',
   'account.outBody': 'questions、回答、streak、coins、gems、持ってる cheers は新しいスマホについてくる。他の人には見えない。',
   'account.email': 'Email',
@@ -190,6 +192,9 @@ export const ja = {
   'account.tooOften': 'コードが多すぎ。1 時間待つか、最後のを使って。',
   'account.missEmail': 'email がおかしい。',
   'account.missCode': 'コードが合わない。最新を試して。',
+  'account.codeExpired': 'That code expired. Send a fresh one.',
+  'account.signupOff': 'New accounts are off on this server right now.',
+  'account.sendFail': 'Could not send the code. Check the email and try again.',
   'account.inTitle': 'アカウント',
   'account.sync': 'Sync',
   'account.who': 'ログイン中',

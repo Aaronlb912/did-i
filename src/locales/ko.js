@@ -177,6 +177,8 @@ export const ko = {
   'account.kicker': '계정',
   'account.offTitle': '꺼짐',
   'account.offBody': '이 빌드에는 계정 서버가 없어. 전부 폰에 남고 어디에도 안 보내.',
+  'account.offTester':
+    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': '로그인해서 tags 유지',
   'account.outBody': 'questions, 답, streak, coins, gems, 가진 cheers가 새 폰으로 따라와. 다른 사람은 못 봐.',
   'account.email': 'Email',
@@ -191,6 +193,9 @@ export const ko = {
   'account.tooOften': '코드가 너무 많아. 1시간 기다리거나 마지막 걸 써.',
   'account.missEmail': 'email이 이상해.',
   'account.missCode': '코드가 안 맞아. 최신 걸로 해봐.',
+  'account.codeExpired': 'That code expired. Send a fresh one.',
+  'account.signupOff': 'New accounts are off on this server right now.',
+  'account.sendFail': 'Could not send the code. Check the email and try again.',
   'account.inTitle': '계정',
   'account.sync': 'Sync',
   'account.who': '로그인',

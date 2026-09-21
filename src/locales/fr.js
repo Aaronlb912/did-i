@@ -187,6 +187,8 @@ export const fr = {
   'account.offTitle': 'Pas activé',
   'account.offBody':
     'Cette version n\'a pas de serveur de compte. Tout reste sur ce téléphone et rien n\'est envoyé.',
+  'account.offTester':
+    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': 'Connecte-toi pour garder tes tags',
   'account.outBody':
     'Tes questions, réponses, streak, coins, gems et les cheers que tu possèdes te suivent sur un nouveau téléphone. Personne d\'autre ne les voit.',
@@ -203,6 +205,9 @@ export const fr = {
     'Trop de codes pour l\'instant. Attends une heure, ou utilise le dernier reçu.',
   'account.missEmail': 'Cet email ne semble pas bon.',
   'account.missCode': 'Ce code n\'a pas marché. Essaie le plus récent.',
+  'account.codeExpired': 'That code expired. Send a fresh one.',
+  'account.signupOff': 'New accounts are off on this server right now.',
+  'account.sendFail': 'Could not send the code. Check the email and try again.',
   'account.inTitle': 'Ton compte',
   'account.sync': 'Synchroniser',
   'account.who': 'Connecté en tant que',

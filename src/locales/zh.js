@@ -177,6 +177,8 @@ export const zh = {
   'account.kicker': '账户',
   'account.offTitle': '未启用',
   'account.offBody': '此版本未设置账户服务器。所有内容留在手机上，不会发送。',
+  'account.offTester':
+    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': '登录以保留 tags',
   'account.outBody': '你的 questions、回答、streak、coins、gems 和拥有的 cheers 会跟着你到新手机。别人看不到。',
   'account.email': 'Email',
@@ -191,6 +193,9 @@ export const zh = {
   'account.tooOften': '验证码太频繁。等一小时，或用上次收到的。',
   'account.missEmail': '该 email 看起来不对。',
   'account.missCode': '验证码无效。试试最新的。',
+  'account.codeExpired': 'That code expired. Send a fresh one.',
+  'account.signupOff': 'New accounts are off on this server right now.',
+  'account.sendFail': 'Could not send the code. Check the email and try again.',
   'account.inTitle': '你的账户',
   'account.sync': 'Sync',
   'account.who': '登录为',

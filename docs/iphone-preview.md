@@ -43,13 +43,11 @@ changes reload from Metro.
 
 ### 5. Env on the phone
 
-`.env.local` is baked in at build time through `app.config.js`. Set at least:
+Supabase client keys ship in `env.client.js` and bake in at build time
+through `app.config.js`. EAS and local builds pick them up automatically.
+Override with `.env.local` only when you need a different project.
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_LEGAL_EMAIL` (optional for legal screens)
-
-Rebuild after changing env vars.
+Rebuild after changing `env.client.js`.
 
 ## Every dev session
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
 import {
+  accountMissText,
   checkCode,
   deleteAccount,
   deviceKey,
@@ -674,9 +675,7 @@ function AccountSignedOut({ on }) {
     const { miss: bad } = await sendCode(email)
     setBusy(false)
     if (bad) {
-      if (bad === 'off') setMiss(t('account.offBody'))
-      else if (bad === 'often') setMiss(t('account.tooOften'))
-      else setMiss(bad)
+      setMiss(accountMissText(bad))
       return
     }
     setMiss('')
@@ -688,7 +687,7 @@ function AccountSignedOut({ on }) {
     const { miss: bad } = await checkCode(email, code)
     setBusy(false)
     if (bad) {
-      setMiss(t('account.missCode'))
+      setMiss(accountMissText(bad))
       return
     }
     setMiss('')
@@ -699,6 +698,7 @@ function AccountSignedOut({ on }) {
     return (
       <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
+        <Meta colors={colors}>{t('account.offTester')}</Meta>
       </ScreenShell>
     )
   }
@@ -711,6 +711,8 @@ function AccountSignedOut({ on }) {
         label={t('account.email')}
         value={email}
         onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
       {step === 'code' ? (
         <Field colors={colors} label={t('account.code')} value={code} onChangeText={setCode} />

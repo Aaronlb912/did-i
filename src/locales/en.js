@@ -184,6 +184,8 @@ export const en = {
   'account.offTitle': 'Not switched on',
   'account.offBody':
     'This build has no account server set. Everything stays on this phone and nothing is sent anywhere.',
+  'account.offTester':
+    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': 'Sign in to keep your tags',
   'account.outBody':
     'Your questions, answers, streak, coins, gems, and the cheers you own follow you to a new phone. Nobody else sees them.',
@@ -199,6 +201,9 @@ export const en = {
   'account.tooOften': 'Too many codes for now. Wait an hour, or use the last one you got.',
   'account.missEmail': 'That email does not look right.',
   'account.missCode': 'That code did not work. Try the newest one.',
+  'account.codeExpired': 'That code expired. Send a fresh one.',
+  'account.signupOff': 'New accounts are off on this server right now.',
+  'account.sendFail': 'Could not send the code. Check the email and try again.',
   'account.inTitle': 'Your account',
   'account.sync': 'Sync',
   'account.who': 'Signed in as',
@@ -1097,11 +1102,11 @@ export const en = {
   'look.lime.name': 'Lime',
   'look.lime.line': 'The one you start with.',
   'look.ink.name': 'Ink',
-  'look.ink.line': 'Quieter green.',
+  'look.ink.line': 'Paper hall, sage accent.',
   'look.brass.name': 'Brass',
-  'look.brass.line': 'Warm pips.',
+  'look.brass.line': 'Warm plates, brass glow.',
   'look.night.name': 'Night',
-  'look.night.line': 'Gold pips.',
+  'look.night.line': 'Deep hall, star gold.',
   'look.moss.name': 'Moss',
   'look.moss.line': 'Forest hall, sage glow.',
   'look.plum.name': 'Plum',

@@ -9,6 +9,7 @@ import {
   signOutEverywhere,
   signOutHere,
   useAccount,
+  accountMissText,
 } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import {
@@ -99,9 +100,7 @@ function SignedOut({ on }) {
     const { miss: bad } = await sendCode(email)
     setBusy(false)
     if (bad) {
-      if (bad === 'off') setMiss(t('account.offBody'))
-      else if (bad === 'often') setMiss(t('account.tooOften'))
-      else setMiss(bad)
+      setMiss(accountMissText(bad))
       return
     }
     setMiss('')
@@ -113,7 +112,7 @@ function SignedOut({ on }) {
     const { miss: bad } = await checkCode(email, code)
     setBusy(false)
     if (bad) {
-      setMiss(t('account.missCode'))
+      setMiss(accountMissText(bad))
       return
     }
     setMiss('')
@@ -125,6 +124,7 @@ function SignedOut({ on }) {
       <>
         <h2 className="di-page-title">{t('account.offTitle')}</h2>
         <p className="di-detail-meta">{t('account.offBody')}</p>
+        <p className="di-detail-meta">{t('account.offTester')}</p>
       </>
     )
   }

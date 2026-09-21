@@ -1,3 +1,5 @@
+import { clientEnv } from '../../env.client.js'
+
 /** Vite uses import.meta.env; Expo uses app.config extra. */
 export function isReactNative() {
   return typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
@@ -12,5 +14,5 @@ export function env(name) {
   if (typeof process !== 'undefined' && process.env?.[name] != null) {
     return String(process.env[name]).trim()
   }
-  return ''
+  return clientEnv(name)
 }
