@@ -2,7 +2,14 @@ import './native/fatal-guard.cjs'
 import './native/bootstrap.js'
 import 'react-native-gesture-handler'
 import 'react-native-reanimated'
+import { Platform } from 'react-native'
 import { registerRootComponent } from 'expo'
 import { Boot } from './native/Boot.jsx'
+
+// A home-screen tap starts JS and expects the widget task during this evaluation.
+// Waiting for the iOS bridge delay drops Did and Did not.
+if (Platform.OS === 'android') {
+  require('./native/widget-setup.android.js')
+}
 
 registerRootComponent(Boot)

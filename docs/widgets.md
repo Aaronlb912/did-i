@@ -97,6 +97,10 @@ Expo expects this sequence; Did I follows it in `native/widget-bridge.js`:
 
 Never call WidgetKit from JS before step 2. Builds without the widget extension (`EAS_INCLUDE_WIDGETS=0`) skip all of the above (`nativeWidgetsEnabled()`).
 
+### Android
+
+`index.js` registers the Did I tonight task while the bundle evaluates, before the iOS bridge delay. Did and Did not are a broadcast. The widget library addresses that click at `DidITonight`, which hands it to `WidgetTapReceiver` before returning. The receiver writes the lamp id, Did or Did not (`did` / `nope`), and the night, calls `commit()` on that row, advances the card to the next question already in the last snapshot, then starts the same headless task. The task, and the next time the app opens, read the row, write it with the shelf answer path, and clear it. The same lamp and night a second time does not write again. If that snapshot has no next question, the card waits for the task. The task redraws the bitmap, including the buddy. The first snapshot from the open app still waits until the UI is up. The card clips to the rounded rect: only the outer frame is `match_parent`, and that frame sets `overflow: 'hidden'`.
+
 ## Code map
 
 - `src/lib/widget-tonight.js` — snapshot + merge answers from the widget
@@ -105,6 +109,8 @@ Never call WidgetKit from JS before step 2. Builds without the widget extension 
 - `native/widget-bridge.js` — init, snapshot, timeline refresh
 - `native/widget-sync.js` — push snapshot after shelf writes
 - `native/widget-setup.ios.js` / `.android.js` — interaction handlers
+- `android/.../widget/WidgetTapReceiver.java` — Android tap, stored before JS
+- `android/.../widget/WidgetCardStore.java` — next question from the last snapshot, at tap time
 - `native/deep-link.js` — `didi://tonight` → `/tonight`
 
 ## Settings (in app)

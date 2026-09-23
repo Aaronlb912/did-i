@@ -81,7 +81,7 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { ownedLookIds, widgetBook, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
-import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf } from '../src/lib/widget-tonight.js'
+import { advanceTonightCard, applyWidgetTapOnce, buildTonightWidgetProps, mergeWidgetPropsIntoShelf } from '../src/lib/widget-tonight.js'
 
 const require = createRequire(import.meta.url)
 
@@ -874,6 +874,141 @@ test('the tonight widget can draw a question without the app', () => {
   )
   assert.ok(glow.includes('#5ee8ff'), 'a glow look rings the card')
   assert.ok(glow.includes('#111820'))
+})
+
+test('an android widget tap for one lamp and night applies once', () => {
+  writePrefs({ widgetTagMode: 'active', widgetTagId: '' })
+  const book = {
+    id: 'tap-1',
+    title: 'Home',
+    lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  }
+  writeShelf({ currentId: 'tap-1', boards: [book] })
+  const night = '2026-09-23'
+  const first = applyWidgetTapOnce('door', 'did', night)
+  assert.ok(first)
+  const answer = first.boards.find((row) => row.id === 'tap-1').answers[0]
+  assert.equal(answer.lampId, 'door')
+  assert.equal(answer.periodKey, night)
+  assert.equal(answer.status, 'yes')
+  const again = applyWidgetTapOnce('door', 'did', night)
+  assert.equal(again, null)
+  const flipped = applyWidgetTapOnce('door', 'nope', night)
+  assert.equal(flipped, null)
+  const stored = readShelf().boards.find((row) => row.id === 'tap-1')
+  assert.equal(stored.answers.length, 1)
+  assert.equal(stored.answers[0].id, answer.id)
+  assert.equal(stored.answers[0].status, 'yes')
+  assert.equal(stored.coins, first.boards.find((row) => row.id === 'tap-1').coins)
+  assert.equal(stored.cheerUses, first.boards.find((row) => row.id === 'tap-1').cheerUses)
+  const otherNight = applyWidgetTapOnce('door', 'did', '2026-09-22')
+  assert.ok(otherNight)
+  assert.equal(readShelf().boards.find((row) => row.id === 'tap-1').answers.length, 2)
+})
+
+test('an android widget card steps to the next question already on it', () => {
+  const props = {
+    question: 'Door?',
+    leadLampId: 'door',
+    items: [
+      { lampId: 'door', periodKey: '2026-09-23', question: 'Door?', label: 'Door', status: 'open' },
+      { lampId: 'cat', periodKey: '2026-09-23', question: 'Feed the cat?', label: 'Cat', status: 'open' },
+    ],
+    left: 2,
+    footer: '2 left tonight.',
+    clearLabel: 'All clear for tonight.',
+    emptyLabel: 'No questions yet.',
+    openLabel: 'Tonight',
+  }
+  const next = advanceTonightCard(props, 'door', 'did', '2026-09-23')
+  assert.equal(next.question, 'Feed the cat?')
+  assert.equal(next.leadLampId, 'cat')
+  assert.equal(props.items[0].status, 'open')
+  const back = advanceTonightCard(next, 'door', 'nope', '2026-09-23')
+  assert.equal(back, null)
+  assert.equal(next.items[0].status, 'yes')
+  const done = advanceTonightCard(next, 'cat', 'nope', '2026-09-23')
+  assert.equal(done.leadLampId, '')
+  assert.equal(done.question, '')
+  assert.equal(done.footer, 'All clear for tonight.')
+  assert.equal(advanceTonightCard(props, 'door', 'did', '2026-09-22'), null)
+  assert.equal(
+    advanceTonightCard(
+      {
+        leadLampId: 'door',
+        items: [{ lampId: 'door', periodKey: 'n', status: 'open', question: '', label: '' }],
+        footer: '',
+      },
+      'door',
+      'did',
+      'n',
+    ),
+    null,
+  )
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const receiver = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/WidgetTapReceiver.java'),
+    'utf8',
+  )
+  const advanceAt = receiver.indexOf('WidgetCardStore.advance')
+  const updateAt = receiver.indexOf('requestWidgetUpdate')
+  assert.ok(advanceAt > 0 && advanceAt < updateAt, 'the tap advances the card before the headless redraw')
+  const card = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/WidgetCardStore.java'),
+    'utf8',
+  )
+  assert.ok(card.includes('clearLabel') && card.includes('emptyLabel'))
+  assert.ok(!card.includes('No questions yet') && !card.includes('All clear'))
+  const iosWidget = readFileSync(path.join(root, 'widgets/DidITonightWidget.tsx'), 'utf8')
+  assert.ok(!iosWidget.includes('WidgetCardStore') && !iosWidget.includes('advanceTonightCard'))
+})
+
+test('the android tonight widget stays inside its frame', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const widget = readFileSync(path.join(root, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
+  const heights = widget.match(/height: 'match_parent'/g) || []
+  assert.equal(heights.length, 1, 'only the outer frame uses the widget height')
+  assert.ok(widget.includes("overflow: 'hidden'"), 'the card clips to the rounded rect')
+  assert.ok(widget.includes("kind: 'nope'") && widget.includes("kind: 'did'"), 'the widget can mark did and did not')
+  assert.ok(widget.includes('night:'), 'did and did not send the night with the tap')
+  assert.ok(widget.indexOf("kind: 'nope'") < widget.indexOf("kind: 'did'"), 'did not sits left of did')
+  assert.ok(widget.includes('question'), 'the widget shows the question')
+  const setup = readFileSync(path.join(root, 'native/widget-setup.android.js'), 'utf8')
+  const registerAt = setup.indexOf('registerWidgetTaskHandler(')
+  const installAt = setup.indexOf('export function installWidgetSetup')
+  assert.ok(registerAt > 0 && registerAt < installAt, 'the click task registers when the module loads')
+  const entry = readFileSync(path.join(root, 'index.js'), 'utf8')
+  assert.ok(entry.includes("require('./native/widget-setup.android.js')"))
+  assert.ok(
+    entry.indexOf('widget-setup.android.js') < entry.indexOf('registerRootComponent(Boot)'),
+    'the task is registered before the app mounts',
+  )
+  const taskBody = setup.slice(setup.indexOf('async function handleDidITonightWidgetTask'))
+  const pendingAt = taskBody.indexOf('await applyPendingAndroidWidgetTap')
+  const clickAt = taskBody.indexOf('handleAndroidWidgetClick')
+  assert.ok(pendingAt > 0 && clickAt > pendingAt, 'the widget task applies a stored tap before the click')
+  const renderAt = taskBody.indexOf('renderWidget(')
+  const syncAt = taskBody.indexOf('syncTonightWidget(')
+  assert.ok(renderAt > 0 && renderAt < syncAt, 'the widget task draws the question before another widget sync')
+  const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
+  assert.ok(manifest.includes('.widget.WidgetTapReceiver'), 'the tap receiver is registered')
+  const provider = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/DidITonight.java'),
+    'utf8',
+  )
+  const store = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/WidgetTapStore.java'),
+    'utf8',
+  )
+  assert.ok(provider.indexOf('WidgetTapReceiver.deliver') < provider.indexOf('super.onReceive'))
+  assert.ok(store.includes('.commit()'), 'the tap is committed before the receiver returns')
+  const ios = readFileSync(path.join(root, 'native/widget-setup.ios.js'), 'utf8')
+  assert.ok(ios.includes('recordWidgetAnswer'))
+  assert.ok(!ios.includes('WidgetTap') && !ios.includes('applyPendingAndroidWidgetTap'))
+  const open = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
+  assert.ok(open.includes("Platform.OS === 'android'"))
+  assert.ok(open.includes('applyPendingAndroidWidgetTap'))
 })
 
 test('widget settings pick a tag and open tonight with that tag', () => {

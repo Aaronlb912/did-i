@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Platform } from 'react-native'
 import { commitBook, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
 import {
@@ -46,8 +47,22 @@ import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
+import { applyPendingAndroidWidgetTap } from '../widget-tap'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
+
+function withNightsClosed(shelf, now) {
+  const heatBefore = shelfHeatNow(shelf.boards, now)
+  const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
+  const heatAfter = shelfHeatNow(boards, now)
+  const miss = maybeStreakMiss({
+    beforeHeat: heatBefore,
+    afterHeat: heatAfter,
+    dateIso: boardDate(now),
+  })
+  if (miss) queueStreakMoment(miss, boardDate(now))
+  return { ...shelf, boards }
+}
 
 function firstShelf() {
   try {
@@ -60,17 +75,10 @@ function firstShelf() {
     // ok
   }
   const now = new Date()
-  let shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
-  const heatBefore = shelfHeatNow(shelf.boards, now)
-  const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
-  const heatAfter = shelfHeatNow(boards, now)
-  const miss = maybeStreakMiss({
-    beforeHeat: heatBefore,
-    afterHeat: heatAfter,
-    dateIso: boardDate(now),
-  })
-  if (miss) queueStreakMoment(miss, boardDate(now))
-  return { ...shelf, boards }
+  const shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
+  // Android applies a stored widget tap before nights close, in the open effect.
+  if (Platform.OS === 'android') return shelf
+  return withNightsClosed(shelf, now)
 }
 
 export function useAppShelf() {
@@ -202,36 +210,53 @@ export function useAppShelf() {
   useEffect(() => {
     bindForegroundSync()
     let cancelled = false
-    try {
-      const jsMerged = reconcileShelfFromWidget(readShelf())
-      if (jsMerged !== readShelf()) setShelf(writeShelf(jsMerged))
-    } catch {
-      // ok
-    }
-    pullAndMerge()
-      .then((result) => {
-        if (cancelled) return
-        if (result) setShelf(result)
-      })
-      .catch(() => {})
-    afterNativeBridgeReady(() => {
+    async function boot() {
+      if (Platform.OS === 'android') {
+        try {
+          const applied = await applyPendingAndroidWidgetTap()
+          if (cancelled) return
+          if (applied) syncTonightWidget(applied).catch(() => {})
+        } catch {
+          // The row stays in storage when take did not run.
+        }
+      }
       if (cancelled) return
-      if (!nativeWidgetsEnabled()) return
-      refreshWidgetTimelineFromKit()
-        .then((merged) => {
-          if (cancelled) return merged
-          const before = readShelf()
-          setShelf(merged)
-          if (merged !== before) pushShelfAfterWidgetAnswer(merged, { now: true }).catch(() => {})
-          return merged
-        })
-        .then(() => pullAndMerge())
+      try {
+        const jsMerged = reconcileShelfFromWidget(readShelf())
+        if (jsMerged !== readShelf()) setShelf(writeShelf(jsMerged))
+      } catch {
+        // ok
+      }
+      pullAndMerge()
         .then((result) => {
           if (cancelled) return
-          if (result) setShelf(result)
+          const merged = result || readShelf()
+          const closed =
+            Platform.OS === 'android' ? withNightsClosed(merged, new Date()) : merged
+          if (closed !== merged) setShelf(writeShelf(closed))
+          else if (result) setShelf(result)
         })
         .catch(() => {})
-    })
+      afterNativeBridgeReady(() => {
+        if (cancelled) return
+        if (!nativeWidgetsEnabled()) return
+        refreshWidgetTimelineFromKit()
+          .then((merged) => {
+            if (cancelled) return merged
+            const before = readShelf()
+            setShelf(merged)
+            if (merged !== before) pushShelfAfterWidgetAnswer(merged, { now: true }).catch(() => {})
+            return merged
+          })
+          .then(() => pullAndMerge())
+          .then((result) => {
+            if (cancelled) return
+            if (result) setShelf(result)
+          })
+          .catch(() => {})
+      })
+    }
+    boot()
     function onShelfIn(event) {
       if (event?.detail) setShelf(event.detail)
     }

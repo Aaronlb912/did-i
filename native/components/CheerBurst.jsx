@@ -981,15 +981,17 @@ export function CheerBurst() {
 
   if ((reduce && !burst?.preview) || !burst?.pops?.length) return null
 
-  const colors = hallColors(burst.look, theme)
+  const colors = hallColors(burst.look || burst.kind, theme)
   const pops = burst.pops
   const screenPop = pops.find((pop) => pop.bits.some((bit) => bit.screen))
   const stageTop = burst.preview ? insets.top + 12 : insets.top + CHEER_TOP
   const stageH = Math.max(180, winH - stageTop - navBottom)
   const stageW = winW
 
+  const layerStyle = burst.preview ? [styles.layer, styles.layerPreview] : styles.layer
+
   return (
-    <View pointerEvents="none" style={styles.layer}>
+    <View pointerEvents="none" style={layerStyle} collapsable={false}>
       <Text
         pointerEvents="none"
         style={[styles.cheerName, { color: colors.on, top: stageTop + stageH * 0.36 }]}
@@ -1034,6 +1036,10 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 120,
     elevation: 30,
+  },
+  layerPreview: {
+    zIndex: 240,
+    elevation: 48,
   },
   stage: {
     position: 'absolute',

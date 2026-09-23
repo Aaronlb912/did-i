@@ -198,6 +198,13 @@ export function bindForegroundSync() {
   foregroundBound = true
   bindAuthSync()
 
+  const db = cloud()
+  if (db) {
+    db.auth.getSession().then(({ data }) => {
+      if (data?.session) armSyncForUser()
+    })
+  }
+
   function onWake() {
     if (!isAppForeground()) return
     pullAndMerge()
@@ -345,7 +352,11 @@ export async function pushNow(shelf) {
 
 export function pushSoon(shelf) {
   if (!cloudSetUp()) return
-  if (state.how === 'off' || state.how === 'out') return
+  if (state.how === 'off') return
+  if (state.how === 'out') {
+    armSyncForUser()
+    if (state.how === 'out') return
+  }
   window.clearTimeout(timer)
   const doc = shelf
   timer = window.setTimeout(() => pushNow(doc), 1500)

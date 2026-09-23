@@ -81,8 +81,30 @@ Parity with the web app shell:
 
 ## Build
 
-`npx expo export --platform android` bundles cleanly. Store builds use
-`npx expo prebuild` then `expo run:android` or EAS.
+**Default: GitHub Actions** (no Mac required for Android).
+
+| Platform | Workflow | Artifact |
+|----------|----------|----------|
+| Android internal APK | Actions → **Android APK** (`android-apk.yml`) | `assembleRelease` APK |
+| iOS store / TestFlight | Actions → **iOS IPA** (`ios-ipa.yml`) on `macos-latest` | unsigned `.xcarchive` until signing secrets are set |
+
+Repo `android/` is committed; the Android workflow runs `./gradlew assembleRelease`
+after `npm run check`. Install the APK from the workflow artifact.
+
+**iOS signing on GHA** (when you are ready for a signed IPA): add GitHub
+repository secrets:
+
+- `IOS_DIST_CERT_P12` — base64 of the distribution `.p12`
+- `IOS_DIST_CERT_PASSWORD`
+- `IOS_PROVISIONING_PROFILE` — base64 of the App Store or Ad Hoc profile
+  (main app + `com.aaronbryant.didi.widgets` with App Group)
+- `GOOGLE_SERVICES_PLIST` — base64 of `GoogleService-Info.plist` (push)
+
+Then extend `ios-ipa.yml` to import the cert, apply the profile, and
+`xcodebuild -exportArchive`. EAS remains a fallback (`docs/app-store-connect.md`).
+
+`npx expo export --platform android` bundles cleanly for smoke tests.
+Local: `npm run android:build` after a dev client install.
 
 Gem purchases need a dev build on a real device (not Expo Go). See `docs/iap.md`.
 

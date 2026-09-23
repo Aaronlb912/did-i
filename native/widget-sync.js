@@ -71,6 +71,8 @@ export async function syncTonightWidget(shelf) {
       if (!requestWidgetUpdate) return
       const { renderDidITonightAndroidWidget } = await import('../widgets/android/DidITonightAndroidWidget.jsx')
       const stored = readWidgetTonightProps() || props
+      const { saveAndroidWidgetCard } = await import('./widget-tap.android.js')
+      await saveAndroidWidgetCard(stored)
       await requestWidgetUpdate({
         widgetName: WIDGET_NAME,
         renderWidget: (info) => renderDidITonightAndroidWidget(stored, info),

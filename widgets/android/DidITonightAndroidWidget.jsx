@@ -81,6 +81,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const buddyId = String(p.buddyId || '')
   const question =
     String(p.question || '').trim() || lead?.label || p.footer || p.openLabel
+  const radius = compact ? 16 : 22
 
   return (
     <FlexWidget
@@ -89,117 +90,129 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
         width: 'match_parent',
         backgroundColor: gem ? C.bg : C.panel,
         flexDirection: 'column',
-        padding: gem ? 8 : 0,
+        padding: compact ? 8 : 10,
+        borderRadius: radius,
+        overflow: 'hidden',
       }}
     >
       <FlexWidget
         style={{
           flex: 1,
           width: 'match_parent',
-          height: 'match_parent',
-          backgroundColor: C.panel,
-          borderRadius: 18,
-          borderWidth: 2,
-          borderColor: C.on,
-          padding: compact ? 12 : 16,
+          backgroundColor: C.on,
+          borderRadius: radius,
+          padding: 2,
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          overflow: 'hidden',
         }}
       >
         <FlexWidget
           style={{
-            width: 'match_parent',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-          }}
-        >
-          <FlexWidget style={{ width: buddyId ? 36 : 0, height: 1 }} />
-          <TextWidget
-            text={String(p.tagTitle || 'Did I').toUpperCase()}
-            style={{ fontSize: 11, fontWeight: '700', color: C.on, textAlign: 'center', flex: 1 }}
-            maxLines={1}
-          />
-          {buddyId ? <BuddyMark id={buddyId} /> : <FlexWidget style={{ width: 0, height: 1 }} />}
-        </FlexWidget>
-        <FlexWidget
-          style={{
             flex: 1,
             width: 'match_parent',
-            justifyContent: 'center',
+            backgroundColor: C.panel,
+            borderRadius: compact ? 14 : 20,
+            padding: compact ? 10 : 14,
+            flexDirection: 'column',
+            justifyContent: 'space-between',
             alignItems: 'center',
+            overflow: 'hidden',
           }}
-          clickAction="OPEN_URI"
-          clickActionData={{ uri: tonightUri }}
         >
-          <TextWidget
-            text={lead ? question : p.footer || p.openLabel}
-            style={{
-              fontSize: lead ? (compact ? 16 : 22) : 14,
-              fontWeight: lead ? '700' : '500',
-              color: lead ? C.ink : C.inkSoft,
-              textAlign: 'center',
-            }}
-            maxLines={compact ? 3 : 4}
-          />
-        </FlexWidget>
-        {lead ? (
           <FlexWidget
             style={{
-              flexDirection: 'row',
               width: 'match_parent',
+              flexDirection: 'row',
               justifyContent: 'space-between',
+              alignItems: 'flex-start',
             }}
           >
-            <FlexWidget
-              style={{
-                flex: 1,
-                backgroundColor: C.skip,
-                borderRadius: 12,
-                paddingVertical: 8,
-                marginRight: 6,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              clickAction="ANSWER"
-              clickActionData={{ lampId: lead.lampId, kind: 'nope' }}
-            >
-              <TextWidget
-                text={p.nopeLabel || 'Did not'}
-                style={{ fontSize: 14, fontWeight: '700', color: C.ink, textAlign: 'center' }}
-                maxLines={1}
-              />
-            </FlexWidget>
-            <FlexWidget
-              style={{
-                flex: 1,
-                backgroundColor: C.on,
-                borderRadius: 12,
-                paddingVertical: 8,
-                marginLeft: 6,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              clickAction="ANSWER"
-              clickActionData={{ lampId: lead.lampId, kind: 'did' }}
-            >
-              <TextWidget
-                text={p.didLabel || 'Did'}
-                style={{ fontSize: 14, fontWeight: '700', color: C.bg, textAlign: 'center' }}
-                maxLines={1}
-              />
-            </FlexWidget>
+            <FlexWidget style={{ width: buddyId ? 36 : 0, height: 1 }} />
+            <TextWidget
+              text={String(p.tagTitle || 'Did I').toUpperCase()}
+              style={{ fontSize: 11, fontWeight: '700', color: C.on, textAlign: 'center', flex: 1 }}
+              maxLines={1}
+            />
+            {buddyId ? <BuddyMark id={buddyId} /> : <FlexWidget style={{ width: 0, height: 1 }} />}
           </FlexWidget>
-        ) : (
-          <TextWidget
-            text={p.openLabel}
-            style={{ fontSize: 12, fontWeight: '600', color: C.on, textAlign: 'center' }}
-            maxLines={1}
+          <FlexWidget
+            style={{
+              flex: 1,
+              width: 'match_parent',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
             clickAction="OPEN_URI"
             clickActionData={{ uri: tonightUri }}
-          />
-        )}
+          >
+            <TextWidget
+              text={lead ? question : p.footer || p.openLabel}
+              style={{
+                fontSize: lead ? (compact ? 16 : 22) : 14,
+                fontWeight: lead ? '700' : '500',
+                color: lead ? C.ink : C.inkSoft,
+                textAlign: 'center',
+              }}
+              maxLines={compact ? 3 : 4}
+            />
+          </FlexWidget>
+          {lead ? (
+            <FlexWidget
+              style={{
+                flexDirection: 'row',
+                width: 'match_parent',
+                justifyContent: 'space-between',
+              }}
+            >
+              <FlexWidget
+                style={{
+                  flex: 1,
+                  backgroundColor: C.skip,
+                  borderRadius: 12,
+                  paddingVertical: 8,
+                  marginRight: 6,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                clickAction="ANSWER"
+                clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
+              >
+                <TextWidget
+                  text={p.nopeLabel || 'Did not'}
+                  style={{ fontSize: 14, fontWeight: '700', color: C.ink, textAlign: 'center' }}
+                  maxLines={1}
+                />
+              </FlexWidget>
+              <FlexWidget
+                style={{
+                  flex: 1,
+                  backgroundColor: C.on,
+                  borderRadius: 12,
+                  paddingVertical: 8,
+                  marginLeft: 6,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                clickAction="ANSWER"
+                clickActionData={{ lampId: lead.lampId, kind: 'did', night: String(lead.periodKey || '') }}
+              >
+                <TextWidget
+                  text={p.didLabel || 'Did'}
+                  style={{ fontSize: 14, fontWeight: '700', color: C.bg, textAlign: 'center' }}
+                  maxLines={1}
+                />
+              </FlexWidget>
+            </FlexWidget>
+          ) : (
+            <TextWidget
+              text={p.openLabel}
+              style={{ fontSize: 12, fontWeight: '600', color: C.on, textAlign: 'center' }}
+              maxLines={1}
+              clickAction="OPEN_URI"
+              clickActionData={{ uri: tonightUri }}
+            />
+          )}
+        </FlexWidget>
       </FlexWidget>
     </FlexWidget>
   )

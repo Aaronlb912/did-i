@@ -10,7 +10,7 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { normalizePurse } from './purse.js'
-import { faceReadyTonight } from './recurrence.js'
+import { answerFor, boardDate, faceReadyTonight } from './recurrence.js'
 import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
@@ -94,9 +94,69 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     didLabel: t('widget.tonight.did'),
     nopeLabel: t('widget.tonight.nope'),
     openLabel: t('widget.tonight.openApp'),
+    emptyLabel: t('widget.tonight.empty'),
+    clearLabel: t('widget.tonight.clear'),
     openUri: widgetTonightUri(book),
     buddyId: normalizePurse(book).buddyOn || '',
     updatedAt: now.getTime(),
+  }
+}
+
+function leadCardItem(props) {
+  const items = Array.isArray(props?.items) ? props.items : []
+  const id = String(props?.leadLampId || '').trim()
+  if (id) {
+    const hit = items.find((item) => item.lampId === id && item.status === 'open')
+    if (hit) return hit
+  }
+  return items.find((item) => item.status === 'open') || null
+}
+
+// The Android card steps forward from the snapshot it already has.
+// A tap for a lamp that is no longer the open lead does not move it back.
+export function advanceTonightCard(props, lampId, kind, night = '') {
+  if (!props || !Array.isArray(props.items)) return null
+  const id = String(lampId || '').trim()
+  const mark = kind === 'did' ? 'yes' : kind === 'nope' ? 'skip' : ''
+  if (!id || !mark) return null
+  const nightKey = String(night || '').trim()
+  const lead = leadCardItem(props)
+  if (!lead || lead.lampId !== id) return null
+  if (nightKey && String(lead.periodKey || '') !== nightKey) return null
+  const items = props.items.map((item) => {
+    const same =
+      item.lampId === lead.lampId &&
+      String(item.periodKey || '') === String(lead.periodKey || '') &&
+      item.status === 'open'
+    if (!same) return item
+    return { ...item, status: mark }
+  })
+  const nextLead = items.find((item) => item.status === 'open') || null
+  const left = items.filter((item) => item.status === 'open').length
+  if (!nextLead) {
+    const clear = String(props.clearLabel || '').trim()
+    const empty = String(props.emptyLabel || '').trim()
+    const open = String(props.openLabel || '').trim()
+    const line = (items.length ? clear : empty) || open || String(props.footer || '').trim()
+    if (!line) return null
+    return {
+      ...props,
+      items,
+      leadLampId: '',
+      question: '',
+      left,
+      footer: line,
+    }
+  }
+  const question = String(nextLead.question || nextLead.label || '').trim()
+  if (!question) return null
+  return {
+    ...props,
+    items,
+    leadLampId: nextLead.lampId,
+    question,
+    left,
+    footer: props.footer,
   }
 }
 
@@ -120,6 +180,55 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
   if (nextBook === book) return shelf
   const boards = shelf.boards.map((b) => (b.id === nextBook.id ? nextBook : b))
   return { ...shelf, boards }
+}
+
+function widgetStatus(kind) {
+  if (kind === 'did' || kind === 'yes') return 'yes'
+  if (kind === 'nope' || kind === 'skip') return 'skip'
+  return ''
+}
+
+function rowForStoredNight(book, lampId, night, clock) {
+  const lamp = (book.lamps || []).find((item) => item.id === lampId && !item.archived)
+  if (!lamp) return null
+  const stored = String(night || '').trim()
+  if (!stored) {
+    return faceReadyTonight(book, clock).find((row) => row.lamp.id === lampId) || null
+  }
+  const dateIso = /^\d{4}-\d{2}-\d{2}$/.test(stored) ? stored : boardDate(clock)
+  return {
+    lamp,
+    dateIso,
+    periodKey: stored,
+    answer: answerFor(book, lamp.id, stored) || null,
+  }
+}
+
+// Android only. The receiver and the widget task can both see one tap.
+// A second apply for the same lamp and night does not write again.
+export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date()) {
+  const status = widgetStatus(kind)
+  const id = String(lampId || '').trim()
+  if (!status || !id) return null
+  const shelf = readShelf()
+  const book = widgetBook(shelf)
+  const row = rowForStoredNight(book, id, night, clock)
+  if (!row || row.answer) return null
+  const nextBook = putAnswer(book, row, status, clock)
+  if (nextBook === book) return null
+  const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
+  const nextShelf = writeShelf({ ...shelf, boards })
+  const previous = readWidgetTonightProps()
+  const props = buildTonightWidgetProps(nextShelf, clock)
+  const items = props.items.map((item) =>
+    item.lampId === id && (!night || item.periodKey === row.periodKey) ? { ...item, status } : item,
+  )
+  const nextProps = { ...props, items }
+  if (previous?.colors) nextProps.colors = previous.colors
+  writeWidgetTonightProps(nextProps)
+  publishShelf(nextShelf)
+  pushShelfAfterWidgetAnswer(nextShelf, { now: true }).catch(() => {})
+  return nextShelf
 }
 
 export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
@@ -154,6 +263,7 @@ export function handleAndroidWidgetClick(clickAction, clickActionData) {
   if (clickAction === 'OPEN_APP' || clickAction === 'OPEN_URI') return null
   const lampId = String(clickActionData?.lampId || '').trim()
   const kind = String(clickActionData?.kind || '').trim()
+  const night = String(clickActionData?.night || '').trim()
   if (!lampId || (kind !== 'did' && kind !== 'nope')) return null
-  return recordWidgetAnswer(lampId, kind)
+  return applyWidgetTapOnce(lampId, kind, night)
 }

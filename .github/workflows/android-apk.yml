@@ -1,0 +1,40 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Assemble release APK
+        working-directory: android
+        run: ./gradlew assembleRelease -x lint -x test
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: did-i-android-release
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

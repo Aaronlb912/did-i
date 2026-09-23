@@ -1,3 +1,4 @@
+import { Platform } from 'react-native'
 import { isGemLook } from '../../src/lib/purse.js'
 
 const TONES = {
@@ -299,26 +300,48 @@ export function gemGlowHostStyle(look, theme = 'dark') {
   const tone = gemLookTone(look, theme)
   if (!tone) return undefined
   const strong = look === 'glow'
-  return {
+  const base = {
     borderRadius: CARD_RADIUS,
     shadowColor: tone.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: strong ? 0.38 : 0.26,
     shadowRadius: strong ? 14 : 10,
-    elevation: strong ? 6 : 4,
+    elevation: strong ? 8 : 5,
+  }
+  if (Platform.OS !== 'android') return base
+  return {
+    ...base,
+    borderWidth: strong ? 1.5 : 1,
+    borderColor: tone.ring,
+    backgroundColor: tone.panelTint,
+    elevation: strong ? 10 : 6,
   }
 }
 
 export function gemFrameStyle(look, theme = 'dark') {
-  if (look === 'glow') return undefined
   const tone = gemLookTone(look, theme)
   if (!tone) return undefined
+  if (look === 'glow') {
+    if (Platform.OS !== 'android') return undefined
+    return {
+      borderWidth: 1,
+      borderColor: tone.ring,
+      shadowColor: tone.accent,
+      shadowOpacity: 0.28,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 4,
+    }
+  }
   return {
     shadowColor: tone.accent,
     shadowOpacity: 0.2,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 3,
+    elevation: Platform.OS === 'android' ? 4 : 3,
+    ...(Platform.OS === 'android'
+      ? { borderWidth: 1, borderColor: tone.ring }
+      : null),
   }
 }
 

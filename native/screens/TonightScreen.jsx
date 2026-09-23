@@ -6,7 +6,7 @@ import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/dit-board.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { t } from '../../src/lib/i18n.js'
+import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -328,7 +328,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       </View>
 
       {account.user && sync.how === 'miss' ? (
-        <Text style={[styles.syncNote, { color: colors.inkSoft }]}>{t('tonight.syncMiss')}</Text>
+        <Text style={[styles.syncNote, { color: colors.miss }]}>
+          {sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')}
+        </Text>
       ) : null}
 
       <Slot>

@@ -12,10 +12,7 @@
     android:description="@string/widget_diditonight_description"
 
     android:initialLayout="@layout/rn_widget"
-
-
-
-
+    android:previewLayout="@layout/widget_tonight_card"
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen">
 </appwidget-provider>

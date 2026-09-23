@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { BackHandler, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { showMainNavInMenu } from '../../src/lib/app-nav.js'
@@ -128,6 +128,16 @@ export function MastMenuRoot({ colors, showAdd = true, children }) {
 
   useEffect(() => () => publishMenu(null), [])
 
+  useEffect(() => {
+    if (!open) return undefined
+    function onBack(event) {
+      close()
+      event?.preventDefault?.()
+    }
+    window.addEventListener('did-i-back', onBack)
+    return () => window.removeEventListener('did-i-back', onBack)
+  }, [open, close])
+
   return (
     <MastMenuCtx.Provider value={value}>
       <View style={styles.root}>{children}</View>
@@ -152,19 +162,12 @@ function MastMenuSheet({ colors, showAdd, close }) {
   const waiting = usePeopleCount(account.user)
   const items = menuItems(showAdd, waiting)
   const [live, setLive] = useState(false)
+  const on = menuIsOn(showAdd, waiting)
 
   useEffect(() => {
     const timer = setTimeout(() => setLive(true), 280)
     return () => clearTimeout(timer)
   }, [])
-
-  useEffect(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      close()
-      return true
-    })
-    return () => sub.remove()
-  }, [close])
 
   return (
     <View style={styles.modalFill}>
@@ -176,6 +179,28 @@ function MastMenuSheet({ colors, showAdd, close }) {
         accessibilityLabel={t('mast.menuClose')}
         accessibilityRole="button"
       />
+      <Pressable
+        onPress={() => {
+          feelTap()
+          close()
+        }}
+        hitSlop={12}
+        style={[
+          styles.cog,
+          styles.cogOverlay,
+          {
+            top: insets.top + 8,
+            right: Math.max(16, insets.right + 16),
+            borderColor: on ? colors.onDeep : colors.line,
+            backgroundColor: on ? colors.panel3 : colors.panel2,
+          },
+        ]}
+        accessibilityLabel={t('mast.menuClose')}
+        accessibilityRole="button"
+      >
+        <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+        {waiting > 0 ? <View style={[styles.menuPip, { backgroundColor: colors.on }]} /> : null}
+      </Pressable>
       <View
         style={[
           styles.panel,
@@ -287,6 +312,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 30,
     elevation: 30,
+  },
+  cogOverlay: {
+    position: 'absolute',
+    zIndex: 90,
+    elevation: 32,
   },
   menuPip: {
     position: 'absolute',

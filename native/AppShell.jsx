@@ -138,8 +138,8 @@ export function AppShell() {
       )}
       {SITE.has(route.path) ? null : (
         <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
-          <CheerBurstHost />
           <SheetHost />
+          <CheerBurstHost />
         </View>
       )}
     </View>

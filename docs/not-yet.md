@@ -3,7 +3,7 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-22.
+Last worked through 2026-09-23.
 
 ## Waiting on an account, not on code
 
@@ -25,6 +25,13 @@ End-to-end nudge still unconfirmed.
 
 **iOS store IPA from Windows.** EAS (`docs/app-store-connect.md`). No local
 `ios/` folder; Xcode on a Mac is only if you prebuild locally.
+
+**Android internal APK.** Default path: GitHub Actions workflow **Android APK**
+(`.github/workflows/android-apk.yml`), artifact `did-i-android-release`.
+EAS `internal` profile is fallback only. WorkManager pinned to 2.8.1.
+**Phone check:** install a fresh GHA APK and confirm the Tonight widget appears
+in the picker as **Did I tonight**, menu closes (cog, backdrop, back), cheer
+previews in Shop, glow look on cards, sync after sign-in on two phones.
 
 **Gem packs in the stores.** Code is in (`docs/iap.md`). Play products,
 `gem-iap` deploy + secrets, Paid Apps agreement, and a sandbox buy on a
@@ -76,6 +83,11 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   matches DOM more closely.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
+- **One stored widget tap.** If Did or Did not is tapped twice, for two questions, before JS runs, only the last row is kept. The card can step ahead for both, then the shelf redraw snaps back to the question that is still open. A second tap of the other button for the same lamp and night keeps the first mark.
+- **iOS IPA signing on GHA.** `ios-ipa.yml` builds an unsigned archive until
+  `IOS_DIST_CERT_P12`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE`,
+  and `GOOGLE_SERVICES_PLIST` secrets are wired (see `docs/native-rebuild.md`).
+- **Widget card without a snapshot.** A tap paints the next question from the last snapshot before JS. If that snapshot has no next question text, the card waits for the headless redraw. The buddy is on that redraw, not on the tap paint.
 
 Tonight parity landed 2026-09-20: wait/hole plates, sync miss line,
 title edit, idle face, night-strip history gate, meter/purse pop,
@@ -89,6 +101,15 @@ cheer skip under reduce-motion.
   still work; the public wall tab and opt-in are hidden.
 - Pin your row on DIT for a night (skipped on purpose).
 - A fourth line slot on DIT (board shows all DID labels now instead).
+
+## Done (2026-09-23 phone pass)
+
+- Mast menu closes on Android/iOS: `did-i-back`, backdrop, cog overlay on the modal.
+- Cloud sync: `pushSoon` arms after sign-in; Android boot waits for pull before night close; Tonight shows `tMiss(sync.miss)`.
+- Android Tonight widget: provider `exported`, preview layout, picker label **Did I tonight**.
+- Cheer shop previews paint above sheets; gem glow gets Android border/elevation.
+- Still-open count on finish face uses persisted shelf, not optimistic overlay.
+- GHA workflows: `android-apk.yml`, `ios-ipa.yml` (unsigned until signing secrets).
 
 ## Done
 
@@ -149,3 +170,7 @@ cheer skip under reduce-motion.
   `VITE_WEB_APP_PUBLIC=true`.
 - Shared-device shelf isolation: sign-out wipes local shelf and auth skip;
   `pullAndMerge` drops stale local data when the signed-in user changes.
+- Android Tonight widget clips to the rounded rect. Only the outer frame is
+  `match_parent`. Did and Did not register when the bundle loads, not after
+  the iOS bridge delay. A tap is committed by `WidgetTapReceiver` before the
+  headless task runs. The same lamp and night applied again does not write.

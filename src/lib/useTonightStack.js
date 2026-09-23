@@ -97,7 +97,13 @@ export function useTonightStack({
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
   const openReady = ready.filter((row) => !row.answer)
-  const finishCount = finishStackCount(ready)
+  const finishCount = useMemo(() => {
+    const books = boards.length ? boards : [value]
+    const persistedReady = tagId
+      ? faceSwipeTonight(books.find((book) => book.id === value.id) || value, clock)
+      : books.flatMap((book) => faceSwipeTonight(book, clock))
+    return finishStackCount(persistedReady)
+  }, [boards, value, tagId, dateIso, minute])
   const onFinish = faceId === FINISH_FACE && finishCount > 0 && !hallOn
   const hour = hallHour(clock)
   const empty = (tagId ? [liveValue] : shelf).every(

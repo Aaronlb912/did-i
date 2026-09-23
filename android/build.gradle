@@ -22,3 +22,13 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// work-runtime 2.8.1 and work-runtime-ktx 2.7.1 both ship OneTimeWorkRequestKt.
+subprojects {
+  configurations.configureEach {
+    resolutionStrategy {
+      force 'androidx.work:work-runtime:2.8.1'
+      force 'androidx.work:work-runtime-ktx:2.8.1'
+    }
+  }
+}

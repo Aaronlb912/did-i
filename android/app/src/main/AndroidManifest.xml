@@ -32,12 +32,17 @@
         <data android:scheme="exp+did-i"/>
       </intent-filter>
     </activity>
-    <receiver android:name=".widget.DidITonight" android:exported="false" android:label="Did I tonight">
+    <receiver android:name=".widget.DidITonight" android:exported="true" android:label="Did I tonight">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
         <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_diditonight"/>
+    </receiver>
+    <receiver android:name=".widget.WidgetTapReceiver" android:exported="false">
+      <intent-filter>
+        <action android:name="com.aaronbryant.didi.WIDGET_TAP"/>
+      </intent-filter>
     </receiver>
   </application>
 </manifest>
