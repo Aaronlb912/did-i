@@ -86,22 +86,49 @@ Parity with the web app shell:
 | Platform | Workflow | Artifact |
 |----------|----------|----------|
 | Android internal APK | Actions → **Android APK** (`android-apk.yml`) | `assembleRelease` APK |
-| iOS store / TestFlight | Actions → **iOS IPA** (`ios-ipa.yml`) on `macos-latest` | unsigned `.xcarchive` until signing secrets are set |
+| iOS store / TestFlight | Actions → **iOS IPA** (`ios-ipa.yml`) on `macos-latest` | signed `.ipa` when signing secrets are set; else unsigned `.xcarchive` |
 
 Repo `android/` is committed; the Android workflow runs `./gradlew assembleRelease`
 after `npm run check`. Install the APK from the workflow artifact.
 
-**iOS signing on GHA** (when you are ready for a signed IPA): add GitHub
-repository secrets:
+### GitHub Actions → TestFlight (iOS)
 
-- `IOS_DIST_CERT_P12` — base64 of the distribution `.p12`
-- `IOS_DIST_CERT_PASSWORD`
-- `IOS_PROVISIONING_PROFILE` — base64 of the App Store or Ad Hoc profile
-  (main app + `com.aaronbryant.didi.widgets` with App Group)
-- `GOOGLE_SERVICES_PLIST` — base64 of `GoogleService-Info.plist` (push)
+Workflow: **Actions → iOS IPA → Run workflow** (`workflow_dispatch`). It runs
+`npm run check`, `expo export`, `expo prebuild` (widgets on), `pod install`,
+then archives **DidI**. It does **not** submit for App Store review. When App
+Store Connect API secrets are set, it uploads the IPA for TestFlight processing
+only.
 
-Then extend `ios-ipa.yml` to import the cert, apply the profile, and
-`xcodebuild -exportArchive`. EAS remains a fallback (`docs/app-store-connect.md`).
+**Where to add secrets:** GitHub repo → **Settings → Secrets and variables →
+Actions → New repository secret**. Names only (never commit values):
+
+| Secret | What it is |
+|--------|------------|
+| `IOS_DIST_CERT_P12` | Base64 of the **Apple Distribution** `.p12` (Distribution cert + private key). |
+| `IOS_DIST_CERT_PASSWORD` | Password you set when exporting the `.p12`. |
+| `IOS_PROVISIONING_PROFILE` | Base64 of the **App Store** profile for `com.aaronbryant.didi` with **App Groups** (`group.com.aaronbryant.didi`), Sign in with Apple, push if used. |
+| `IOS_WIDGET_PROVISIONING_PROFILE` | Base64 of the App Store profile for `com.aaronbryant.didi.widgets` (same App Group). Required for widget builds; see `docs/widgets.md`. |
+| `GOOGLE_SERVICES_PLIST` | Base64 of repo-root `GoogleService-Info.plist` (gitignored; push/Firebase). Written before prebuild. |
+| `APP_STORE_CONNECT_API_KEY_ID` | Key ID from [App Store Connect → Users and Access → Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api). |
+| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID on the same page. |
+| `APP_STORE_CONNECT_API_KEY_P8` | Base64 of the downloaded `AuthKey_XXXXXX.p8` (Admin or App Manager role). |
+
+Optional overrides (usually unnecessary; defaults live in `env.client.js` via
+`app.config.js`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+`VITE_LEGAL_EMAIL`, `VITE_WEB_APP_URL`, `VITE_DIT_ENABLED`, `VITE_REPORT_URL`,
+`VITE_APPLE_AUTH` — same names as `.env.example`.
+
+**Export credentials from EAS into GitHub (no secrets in the repo):**
+
+1. [Expo credentials](https://expo.dev/accounts/abryant/projects/did-i/credentials) → **com.aaronbryant.didi** → **Distribution Certificate** → download `.p12` (or export from Keychain on a Mac that has it). On your machine: `base64 -i YourCert.p12 | pbcopy` (Windows: `[Convert]::ToBase64String([IO.File]::ReadAllBytes('cert.p12'))` in PowerShell) → paste into `IOS_DIST_CERT_P12`.
+2. Same page → **Provisioning Profile** → download `.mobileprovision` for the main app → base64 → `IOS_PROVISIONING_PROFILE`.
+3. Open **com.aaronbryant.didi.widgets** on Expo credentials (or [Apple Identifiers](https://developer.apple.com/account/resources/profiles/list)) → download the widget App Store profile → base64 → `IOS_WIDGET_PROVISIONING_PROFILE`.
+4. If profiles lack App Groups, fix identifiers first (`docs/widgets.md`), regenerate profiles on Apple, then refresh on Expo or download fresh `.mobileprovision` files.
+5. Create an App Store Connect API key (Integrations → **Generate**), download the `.p8` once, base64 → `APP_STORE_CONNECT_API_KEY_P8`, plus Key ID and Issuer ID.
+
+Without the three signing secrets (`IOS_DIST_CERT_*` + `IOS_PROVISIONING_PROFILE`),
+the workflow still produces an **unsigned** archive artifact for smoke tests.
+EAS remains a fallback (`docs/app-store-connect.md`).
 
 `npx expo export --platform android` bundles cleanly for smoke tests.
 Local: `npm run android:build` after a dev client install.

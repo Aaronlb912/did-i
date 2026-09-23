@@ -23,8 +23,9 @@ production APNs auth key → Upload** (Browse → `AuthKey_TL92CR5TVF.p8`, Key I
 `TL92CR5TVF`, Team ID `2ZUKFKSSV8`). Then install a **new store build** with the plist baked in (`docs/push-ios.md`).
 End-to-end nudge still unconfirmed.
 
-**iOS store IPA from Windows.** EAS (`docs/app-store-connect.md`). No local
-`ios/` folder; Xcode on a Mac is only if you prebuild locally.
+**iOS store IPA from Windows.** Default: GitHub **iOS IPA** workflow with signing
+secrets (`docs/native-rebuild.md`). EAS fallback (`docs/app-store-connect.md`).
+No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`.
 
 **Android internal APK.** Default path: GitHub Actions workflow **Android APK**
 (`.github/workflows/android-apk.yml`), artifact `did-i-android-release`.

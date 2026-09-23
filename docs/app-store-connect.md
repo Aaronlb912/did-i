@@ -66,6 +66,10 @@ Local-only use (no account) does not send data to you; the label still covers si
 
 ## iOS build (EAS)
 
+**GitHub Actions (preferred from Windows):** signing secrets + **Actions → iOS IPA**
+(`docs/native-rebuild.md`). Uploads to TestFlight when API key secrets are set;
+does not submit for review.
+
 Run from **PowerShell** with `$env:CI=''` (Cursor sets `CI=true` and freezes credential sync).
 
 **Store build with widgets** (`production`, `EAS_INCLUDE_WIDGETS=1`):
