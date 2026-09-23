@@ -1,5 +1,7 @@
 import { AppState, Platform } from 'react-native'
 import { readShelf } from '../src/lib/board-shelf.js'
+import { setWidgetBeforePull } from '../src/lib/widget-reconcile.js'
+import { publishShelf } from '../src/lib/widget-tonight.js'
 import { nativeBridgeReady } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
 import { pullWidgetTimelineIntoShelf, syncTonightWidget } from './widget-sync.js'
@@ -7,6 +9,7 @@ import { reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 let started = false
 let appStateSub = null
+let pendingRefresh = null
 
 async function loadWidgetModule() {
   return import('../widgets/DidITonightWidget.tsx')
@@ -34,7 +37,7 @@ export async function initWidgetsOnLaunch(shelf = readShelf()) {
   if (!appStateSub) {
     appStateSub = AppState.addEventListener('change', (state) => {
       if (state !== 'active' || !nativeBridgeReady()) return
-      refreshWidgetTimelineFromKit().catch(() => {})
+      beginWidgetRefresh().catch(() => {})
     })
   }
 }
@@ -43,9 +46,24 @@ export async function initWidgetsOnLaunch(shelf = readShelf()) {
 export async function refreshWidgetTimelineFromKit() {
   if (!nativeWidgetsEnabled() || !nativeBridgeReady()) return readShelf()
   const merged = await reconcileShelfFromWidgetNow({ pullTimeline: true })
-  await syncTonightWidget(merged)
+  publishShelf(merged)
+  syncTonightWidget(merged).catch(() => {})
   return merged
 }
+
+export function beginWidgetRefresh() {
+  if (!nativeWidgetsEnabled() || Platform.OS === 'web' || !nativeBridgeReady()) {
+    return Promise.resolve(readShelf())
+  }
+  if (!pendingRefresh) {
+    pendingRefresh = refreshWidgetTimelineFromKit().finally(() => {
+      pendingRefresh = null
+    })
+  }
+  return pendingRefresh
+}
+
+setWidgetBeforePull(() => beginWidgetRefresh())
 
 export async function pullTimelineOnly(shelf) {
   if (!nativeWidgetsEnabled()) return shelf

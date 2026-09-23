@@ -1,0 +1,16 @@
+---
+description: Checks mean the phone app, not the website
+alwaysApply: true
+---
+
+# App checks
+
+When Aaron says check or run checks, that is the phone app.
+
+Run `npm run ios:prepare:store`. That is `npm run check`, `npm run lint`, `npm run typecheck`, then the iOS bundle export. Do not skip one of them.
+
+When Aaron asks to fix something, change the phone code. That is `native/`, the iOS widget in `widgets/`, and the Android widget. Do not fix the website instead, and do not stop after a website walk.
+
+The website at port 48741 is a different program. A click there does not show that the phone menu, cheer, shop, or widget works.
+
+Say which commands passed. Say if the change is not in the TestFlight build he has installed. Do not say the phone works unless a phone showed it.

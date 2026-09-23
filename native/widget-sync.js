@@ -28,12 +28,22 @@ function enrichProps(shelf, props) {
   return { ...props, colors: snapshotColors(hallColors(look, theme), look) }
 }
 
-async function tonightWidgetApi() {
-  const mod = await import('../widgets/DidITonightWidget.tsx')
-  if (!mod) return null
-  const api = mod.default ?? mod
-  if (!api || typeof api.updateSnapshot !== 'function') return null
-  return api
+let widgetApiPromise = null
+
+function tonightWidgetApi() {
+  if (!widgetApiPromise) {
+    widgetApiPromise = import('../widgets/DidITonightWidget.tsx')
+      .then((mod) => {
+        const api = mod?.default ?? mod
+        if (!api || typeof api.updateSnapshot !== 'function') return null
+        return api
+      })
+      .catch((error) => {
+        widgetApiPromise = null
+        throw error
+      })
+  }
+  return widgetApiPromise
 }
 
 export async function syncTonightWidget(shelf) {

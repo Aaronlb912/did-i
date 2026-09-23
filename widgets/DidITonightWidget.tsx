@@ -23,6 +23,7 @@ import { createWidget, type WidgetEnvironment } from 'expo-widgets'
 type TonightItem = {
   lampId: string
   label: string
+  question?: string
   status: 'open' | 'yes' | 'skip'
 }
 
@@ -137,12 +138,13 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const nextItems = items.map((item) => (item.lampId === leadId ? { ...item, status } : item))
     const nextLead = nextItems.find((item) => item.status === 'open') || null
     const nextLeft = nextItems.filter((item) => item.status === 'open').length
+    const nextQuestion = nextLead ? String(nextLead.question || nextLead.label || '') : ''
     return {
       items: nextItems,
       leadLampId: nextLead ? nextLead.lampId : '',
-      question: nextLead ? String(nextLead.label || '') : '',
+      question: nextQuestion,
       left: nextLeft,
-      footer: nextLead ? footer : 'No questions yet.',
+      footer: nextLeft === 0 ? 'No questions yet.' : footer,
     }
   }
 

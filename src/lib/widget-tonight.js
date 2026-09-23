@@ -15,7 +15,7 @@ import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
 
-function notifyShelf(shelf) {
+export function publishShelf(shelf) {
   try {
     globalThis.window?.dispatchEvent?.(new CustomEvent(SHELF_IN, { detail: shelf }))
   } catch {
@@ -40,6 +40,7 @@ function mapRow(row) {
     periodKey: row.periodKey,
     dateIso: row.dateIso,
     label: shortLabel(row.lamp),
+    question: String(row.lamp.question || '').trim() || shortLabel(row.lamp),
     status: rowStatus(row),
   }
 }
@@ -138,7 +139,7 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
     item.lampId === lampId ? { ...item, status } : item,
   )
   writeWidgetTonightProps({ ...props, items })
-  notifyShelf(nextShelf)
+  publishShelf(nextShelf)
   pushShelfAfterWidgetAnswer(nextShelf, { now: true }).catch(() => {})
   return nextShelf
 }

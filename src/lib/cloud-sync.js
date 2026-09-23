@@ -28,7 +28,7 @@ import { closeShelfPastNights } from './daily.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
 import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync.js'
-import { reconcileShelfFromWidgetNow } from './widget-reconcile.js'
+import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
 export { accountSessionOn } from './session-id.js'
@@ -243,6 +243,7 @@ async function pullAndMergeOnce() {
     ])
     if (shelfRow.error) throw shelfRow.error
 
+    await awaitWidgetTimeline()
     const lastUser = readLastUser()
     let local = reconcileLocalShelfFromWidget()
     let localSavedAt = readSavedAt()
@@ -280,6 +281,7 @@ async function pullAndMergeOnce() {
     if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
 
     const uploadAt = new Date().toISOString()
+    written = reconcileShelfFromWidget(written)
     written = writeShelf(written, uploadAt)
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 

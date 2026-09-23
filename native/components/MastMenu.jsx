@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { showMainNavInMenu } from '../../src/lib/app-nav.js'
@@ -130,23 +130,24 @@ export function MastMenuRoot({ colors, showAdd = true, children }) {
 
   return (
     <MastMenuCtx.Provider value={value}>
-      <View style={styles.root}>
-        <View style={styles.screen} collapsable={false}>
-          {children}
-        </View>
-        {open ? (
-          <View style={styles.host} pointerEvents="box-none">
-            <MastMenuSheet />
-          </View>
-        ) : null}
-      </View>
+      <View style={styles.root}>{children}</View>
+      {open ? (
+        <Modal
+          visible
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={close}
+        >
+          <MastMenuSheet colors={colors} showAdd={showAdd} close={close} />
+        </Modal>
+      ) : null}
     </MastMenuCtx.Provider>
   )
 }
 
-function MastMenuSheet() {
+function MastMenuSheet({ colors, showAdd, close }) {
   const insets = useSafeAreaInsets()
-  const { open, colors, showAdd, close } = useMenu()
   const account = useAccount()
   const waiting = usePeopleCount(account.user)
   const items = menuItems(showAdd, waiting)
@@ -158,17 +159,15 @@ function MastMenuSheet() {
   }, [])
 
   useEffect(() => {
-    if (!open) return undefined
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       close()
       return true
     })
     return () => sub.remove()
-  }, [open, close])
-
-  if (!open) return null
+  }, [close])
 
   return (
+    <View style={styles.modalFill}>
     <View style={styles.backdrop} pointerEvents="box-none">
       <Pressable
         pointerEvents={live ? 'auto' : 'none'}
@@ -216,6 +215,7 @@ function MastMenuSheet() {
           )}
       </View>
     </View>
+    </View>
   )
 }
 
@@ -257,7 +257,7 @@ export function MastMenuCog() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  screen: { flex: 1, zIndex: 1 },
+  modalFill: { flex: 1 },
   host: { ...StyleSheet.absoluteFillObject, zIndex: 200, elevation: 40 },
   backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 80, elevation: 28 },
   panel: {
