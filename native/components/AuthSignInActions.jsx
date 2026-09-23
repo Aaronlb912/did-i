@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { AuthAppleSignIn } from './AuthAppleSignIn.jsx'
+import { Slot } from './Slot.jsx'
 import { DidButton, KeyButton } from './ui.jsx'
 
 export function AuthSignInActions({ colors, auth }) {
@@ -7,6 +9,9 @@ export function AuthSignInActions({ colors, auth }) {
     return (
       <View style={styles.actions}>
         <DidButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
+        <Slot fallback={null}>
+          <AuthAppleSignIn colors={colors} auth={auth} />
+        </Slot>
       </View>
     )
   }

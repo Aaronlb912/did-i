@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, UIManager, View } from 'react-native'
+import { Platform, StyleSheet, UIManager, View } from 'react-native'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
@@ -8,12 +8,15 @@ import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
 import { canGoBack, goBack, goHash, onRoute, peekBackRoute, readRoute } from './navigation/hash.js'
-import { AppNav } from './components/AppNav.jsx'
-import { CheerBurst } from './components/CheerBurst.jsx'
+import { AppNavHost } from './components/AppNavHost.jsx'
+import { Slot } from './components/Slot.jsx'
+import { CheerBurstHost } from './components/CheerBurstHost.jsx'
+import { SheetHost } from './components/SheetHost.jsx'
 import { MarkToast } from './components/MarkToast.jsx'
-import { SwipeBackShell } from './components/SwipeBackShell.jsx'
+import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
+import { afterNativeBridgeReady } from './lib/defer-native.js'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -45,11 +48,28 @@ export function AppShell() {
   }, [app.book])
 
   useEffect(() => {
-    checkPings().then(setPingState).catch(() => {})
+    let alive = true
+    afterNativeBridgeReady(() => {
+      checkPings()
+        .then((next) => {
+          if (alive) setPingState(next)
+        })
+        .catch(() => {})
+    })
+    return () => {
+      alive = false
+    }
   }, [])
 
   useEffect(() => {
-    if (app.book) armLampPings(app.book)
+    if (!app.book) return undefined
+    let alive = true
+    afterNativeBridgeReady(() => {
+      if (alive) armLampPings(app.book)
+    })
+    return () => {
+      alive = false
+    }
   }, [app.book])
 
   const pingLabel = pingButtonLabel(pingState)
@@ -90,7 +110,7 @@ export function AppShell() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <SwipeBackShell
+      <SwipeBackShellHost
         enabled={swipeBack}
         back={backRoute}
         onBack={goBack}
@@ -105,12 +125,41 @@ export function AppShell() {
         <View style={{ flex: 1 }}>
           <ScreenRouter route={route} {...screenProps} />
         </View>
-      </SwipeBackShell>
+      </SwipeBackShellHost>
       {SITE.has(route.path) ? null : (
-        <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
+        <Slot>
+          <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
+        </Slot>
       )}
-      {SITE.has(route.path) ? null : <AppNav path={route.path} colors={colors} />}
-      {SITE.has(route.path) ? null : <CheerBurst />}
+      {SITE.has(route.path) ? null : (
+        <View pointerEvents="box-none" style={styles.navLayer}>
+          <AppNavHost path={route.path} colors={colors} />
+        </View>
+      )}
+      {SITE.has(route.path) ? null : (
+        <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
+          <CheerBurstHost />
+          <SheetHost />
+        </View>
+      )}
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  // Only the bar. A full-screen layer here sat on top of the menu and the
+  // shop chips, so those taps never landed.
+  navLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 80,
+    elevation: 24,
+  },
+  overlayLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 200,
+    elevation: 40,
+  },
+})

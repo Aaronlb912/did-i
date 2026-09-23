@@ -21,10 +21,29 @@
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "EAS_INCLUDE_WIDGETS": "1"
+      },
+      "ios": {
+        "image": "sdk-57"
+      }
+    },
+    "production-safe": {
+      "extends": "production",
+      "env": {
+        "EAS_INCLUDE_WIDGETS": "0"
+      },
+      "ios": {
+        "image": "sdk-57"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6814688066"
+      }
+    }
   }
 }

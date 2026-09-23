@@ -305,9 +305,13 @@ export function goHash(path, extras = '') {
     tag: extra.tag || '',
     copy: extra.copy || '',
   }
-  navigate?.(current)
   const hash = nextPath === '/' ? '#/' : `#${nextPath}`
   if (global.window?.location) global.window.location.hash = hash
   notify()
+  try {
+    navigate?.(current)
+  } catch {
+    // The screen already moved. A navigator reject must not freeze the tap.
+  }
   syncNav()
 }

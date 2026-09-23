@@ -3,27 +3,49 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-21.
+Last worked through 2026-09-22.
 
 ## Waiting on an account, not on code
+
+**Sign in with Apple.** Portal + Supabase configured (`npm run
+apple:auth:setup` done). Use a **launch-clean** store build on iOS 1.0 (not
+**23**; see iOS build below).
 
 **Mail delivery test.** Custom SMTP is on (Resend, `support@did-i.app`,
 `npm run smtp:setup`). Send yourself a sign-in code and confirm it hits
 the inbox, not junk. If it does not, check SPF/DKIM on `did-i.app` in
 Resend and the Auth rate limits in the Supabase dashboard.
 
-**Push on a real phone.** Firebase is set up, the function is deployed,
-and cron drains the queue every minute. Nobody has confirmed a
-notification landing on a signed-in device yet. See `docs/push.md`.
+**Push on a real phone.** Android path is live; **iOS** has
+`GoogleService-Info.plist` at repo root (gitignored) and APNs key **Did I
+Firebase Push** (`TL92CR5TVF`). Finish **Firebase → Cloud Messaging →
+production APNs auth key → Upload** (Browse → `AuthKey_TL92CR5TVF.p8`, Key ID
+`TL92CR5TVF`, Team ID `2ZUKFKSSV8`). Then install a **new store build** with the plist baked in (`docs/push-ios.md`).
+End-to-end nudge still unconfirmed.
 
-**iPhone needs a Mac.** There is no `ios/` folder. Building one needs
-Xcode and a paid Apple Developer account.
+**iOS store IPA from Windows.** EAS (`docs/app-store-connect.md`). No local
+`ios/` folder; Xcode on a Mac is only if you prebuild locally.
 
-**Gem packs in the stores.** The app framework is in (`docs/iap.md`):
-pack ids, `expo-iap`, `gem-iap` edge function, claim on sync. Still
-needs your store products, `supabase functions deploy gem-iap`, store
-secrets (or `GEM_IAP_TRUST=1` for local only), and a dev build on a real
-phone. Production receipt checks flip on when those secrets are set.
+**Gem packs in the stores.** Code is in (`docs/iap.md`). Play products,
+`gem-iap` deploy + secrets, Paid Apps agreement, and a sandbox buy on a
+real phone are still open on both stores.
+
+**App Store Connect — Did I???** (`6814688066`, `docs/app-store-connect.md`):
+
+- [x] **IAP `gems_5`** — $4.99, all countries, EN (U.S.) localization.
+- [x] **IAP `gems_3`** — `6814690359`; reference name **3 gems**, all countries, price schedule, EN (U.S.).
+- [x] **IAP `gems_10`** — $6.99, all countries, EN (U.S.).
+- [x] **IAP `gems_25`** — created (`6814694264`); $14.99, all countries, EN (U.S.).
+- [x] **IAP `gems_50`** — `6814694882`, $29.99, all countries, EN (U.S.).
+- [ ] **`gems_1` verify** — quick pass $0.99, countries, EN; IAP review screenshot (Shop → gems, e.g. `screen.png`) on one IAP.
+- [x] **Age ratings** — questionnaire saved; **9+** (172 regions), wellness topics yes, medical **None**.
+- [x] **App Information** — subtitle **One question at a time.**, category **Lifestyle**, saved.
+- [x] **App Privacy** — all six data types configured and **Published** (nutrition labels live).
+- [ ] **Privacy Policy URL** on App Privacy page still **–**; set via **Edit** → `https://did-i.app/privacy` (Save stayed disabled in automation; also set on **1.0** if required).
+- [ ] **Version 1.0 listing** — metadata saved; **App Review** sign-in (`support@did-i.app` / `email-code`), contact name/email, notes filled in UI; add **phone**, click **Save**. Still **screenshots** and **attach six IAPs** on 1.0. Production build **51** is uploaded and waiting on Apple processing.
+- [ ] **TestFlight launch** — **52** is submitted (`37ac657b-8c29-4c82-939a-958c53d089a3`, submission `477ea53b-07fb-4ea0-8ba5-1ea5765d70ca`). It clips the widget card, puts Did not on the left in skip gray and Did on the right in the look color, draws the menu on the same screen as the cog, and leaves the swipe layer flat until a drag so the cheer preview is not stuck under it. Apple is still processing it, so the installed app stays **51** until TestFlight shows 52. The six gem IAPs are still not on version 1.0. TestFlight: https://appstoreconnect.apple.com/apps/6814688066/testflight/ios
+- [ ] **iOS 1.0** — attach launch-clean build; screenshots; review **phone** + **Save**; attach IAPs; **manual release**. Test Tonight widget on device.
+- [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 
 ## Decided, not building
 
@@ -61,6 +83,7 @@ cheer skip under reduce-motion.
 
 ## Ideas parked (not built)
 
+- **More coin sinks** from the brainstorm (buddy accessories, undo token, preview gem looks, extra tag slot, streak stamps, tag badges) are still open. Signed-in **coin earns and spends** for looks and cheer stages go through `wallet.sql`; run `db:apply:all` after SQL edits.
 - **Did I tonight (DIT)** is off in the main app (`VITE_DIT_ENABLED` unset).
   Code stays in repo for a future split. Friends, family, and account sync
   still work; the public wall tab and opt-in are hidden.
@@ -102,8 +125,8 @@ cheer skip under reduce-motion.
   stops eating the mast title.
 - One gem a week when you clear a night, not one per night.
 - DIT as a board: opt in, every DID label syncs up, no picking lines.
-- Friend cheer with your animation (1 gem), gift a cheer (5 gems), family
-  cheer when someone cleared tonight (1 gem).
+- Friend and family cheers spend the same stored balance. One gem buys
+  five. Gift a cheer stays its own price.
 - Shop: Spark and Flip cheers, Glow and Ember gem looks.
 - Save a copy in Settings (full shelf export, share or download).
 - Sync miss line on Tonight when signed in and the cloud is unreachable.

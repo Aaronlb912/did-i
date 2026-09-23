@@ -4,6 +4,7 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
 import { radius } from '../theme.js'
 import { AuthSwipeBackdrop } from './AuthSwipeBackdrop.jsx'
+import { Slot } from './Slot.jsx'
 
 function AuthFrostFallback({ colors }) {
   return (
@@ -17,13 +18,23 @@ function AuthFrostFallback({ colors }) {
 
 function AuthBlurLayer({ colors, blurTarget, tint }) {
   if (!blurNativeReady()) return <AuthFrostFallback colors={colors} />
-  const { BlurView } = require('expo-blur')
+  let BlurView = null
+  try {
+    BlurView = require('expo-blur').BlurView
+  } catch {
+    return <AuthFrostFallback colors={colors} />
+  }
+  if (!BlurView) return <AuthFrostFallback colors={colors} />
+  const blurProps =
+    Platform.OS === 'android'
+      ? { blurMethod: 'dimezisBlurViewSdk31Plus' }
+      : {}
   return (
     <BlurView
       blurTarget={blurTarget}
       intensity={Platform.OS === 'ios' ? 74 : 92}
       tint={tint}
-      blurMethod="dimezisBlurViewSdk31Plus"
+      {...blurProps}
       style={StyleSheet.absoluteFill}
     />
   )
@@ -37,7 +48,19 @@ function AuthBlurTarget({ blurTarget, colors, children }) {
       </View>
     )
   }
-  const { BlurTargetView } = require('expo-blur')
+  let BlurTargetView = null
+  try {
+    BlurTargetView = require('expo-blur').BlurTargetView
+  } catch {
+    BlurTargetView = null
+  }
+  if (!BlurTargetView) {
+    return (
+      <View ref={blurTarget} style={styles.backdropFill} collapsable={false}>
+        {children}
+      </View>
+    )
+  }
   return (
     <BlurTargetView ref={blurTarget} style={styles.backdropFill} collapsable={false}>
       {children}
@@ -53,14 +76,16 @@ export function AuthSignInStage({ colors, children }) {
 
   return (
     <View style={styles.stage}>
-      <View style={styles.backdropClip} pointerEvents="none">
-        <AuthBlurTarget blurTarget={blurTarget} colors={colors}>
-          <AuthSwipeBackdrop colors={colors} behind />
-        </AuthBlurTarget>
-        <AuthBlurLayer colors={colors} blurTarget={blurTarget} tint={tint} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, opacity: 0.1 }]} />
-      </View>
-      <View style={[styles.panel, { borderColor: colors.line }]}>
+      <Slot fallback={null}>
+        <View style={styles.backdropClip} pointerEvents="none">
+          <AuthBlurTarget blurTarget={blurTarget} colors={colors}>
+            <AuthSwipeBackdrop colors={colors} behind />
+          </AuthBlurTarget>
+          <AuthBlurLayer colors={colors} blurTarget={blurTarget} tint={tint} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, opacity: 0.1 }]} />
+        </View>
+      </Slot>
+      <View style={[styles.panel, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View
           pointerEvents="none"
           style={[
@@ -101,7 +126,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 22,
     paddingBottom: 16,
-    backgroundColor: 'transparent',
     position: 'relative',
   },
   panelWash: {

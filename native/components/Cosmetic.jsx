@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from 'react-native'
 import { isGemLook } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { gemLookChipMeta } from '../lib/gem-look-tone.js'
-import { BuddyArt } from './BuddyArt.jsx'
+import { BuddyArt, BuddyPlain } from './BuddyArt.jsx'
+import { Slot } from './Slot.jsx'
 import { fonts } from '../theme.js'
 
 const R = 16
@@ -576,16 +577,24 @@ export function BuddyChip({ id }) {
   if (!id) return null
   return (
     <View style={styles.buddyChip}>
-      <BuddyArt id={id} width={28} height={34} />
+      <Slot fallback={<BuddyPlain id={id} width={28} height={34} />}>
+        <BuddyArt id={id} width={28} height={34} />
+      </Slot>
     </View>
   )
 }
 
 export function BuddyHang({ id, inline = false }) {
   if (!id) return null
+  const width = inline ? 48 : 40
+  const height = inline ? 58 : 48
+  // The owl's face sits lower in the same box than the other three.
+  const lift = id === 'owl' ? styles.buddyOwl : null
   return (
-    <View style={inline ? styles.buddyInline : styles.buddyHang} pointerEvents="none">
-      <BuddyArt id={id} width={inline ? 48 : 40} height={inline ? 58 : 48} />
+    <View style={[inline ? styles.buddyInline : styles.buddyHang, lift]} pointerEvents="none">
+      <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
+        <BuddyArt id={id} width={width} height={height} />
+      </Slot>
     </View>
   )
 }
@@ -683,7 +692,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: rem(0.1),
   },
-  buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'flex-end' },
+  buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
+  buddyOwl: { marginTop: -6 },
 })

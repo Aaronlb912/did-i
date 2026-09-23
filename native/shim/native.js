@@ -1,7 +1,6 @@
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import * as Linking from 'expo-linking'
-import * as Notifications from 'expo-notifications'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
@@ -10,7 +9,8 @@ import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { goFromPush, goHash } from '../navigation/hash.js'
+import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
+import { goHash } from '../navigation/hash.js'
 export function isNativeHall() {
   return true
 }
@@ -36,11 +36,16 @@ export async function bootNative() {
   })
 }
 
+async function notifications() {
+  return import('expo-notifications')
+}
+
 export async function pingStreakHit(hit, dateIso) {
   if (!hit) return false
   const allowed = await checkNativePings()
   if (allowed !== 'granted') return false
   try {
+    const Notifications = await notifications()
     await Notifications.scheduleNotificationAsync({
       identifier: String(notifyId('streak-hit', dateIso)),
       content: {
@@ -67,9 +72,11 @@ function notifyId(lampId, periodKey) {
 
 export async function checkNativePings() {
   try {
-    const { status } = await Notifications.getPermissionsAsync()
-    if (status === 'granted') return 'granted'
-    if (status === 'denied') return 'denied'
+    const { verifyNotificationPermission } = await import('../lib/notification-perms.js')
+    const check = await verifyNotificationPermission()
+    if (!check.ok) return 'missing'
+    if (check.status === 'granted') return 'granted'
+    if (check.status === 'denied') return 'denied'
     return 'default'
   } catch {
     return 'missing'
@@ -78,8 +85,13 @@ export async function checkNativePings() {
 
 export async function requestNativePings() {
   try {
-    const { status } = await Notifications.requestPermissionsAsync()
-    if (status === 'granted') return 'granted'
+    const { askNotificationPermission } = await import('../lib/notification-perms.js')
+    const status = await askNotificationPermission()
+    if (status === 'granted') {
+      const { syncPushTokenIfAllowed } = await import('./push.js')
+      await syncPushTokenIfAllowed()
+      return 'granted'
+    }
     if (status === 'denied') return 'denied'
     return 'default'
   } catch {
@@ -89,50 +101,55 @@ export async function requestNativePings() {
 
 export async function scheduleNativePings(book, now = new Date()) {
   if (!book) return
-  const allowed = await checkNativePings()
-  if (allowed !== 'granted') return
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync()
-  } catch {
-    // ok
-  }
-  const dateIso = boardDate(now)
-  const [year, month, day] = dateIso.split('-').map(Number)
-  const notes = []
-  for (const row of waitingTonight(book, now)) {
-    if (!lampNotifyOn(row.lamp)) continue
-    const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    if (!match) continue
-    const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
-    if (at.getTime() <= now.getTime()) continue
-    notes.push({
-      identifier: String(notifyId(row.lamp.id, row.periodKey)),
-      content: {
-        title: 'Did I',
-        body: row.lamp.question,
-        data: { lampId: row.lamp.id, go: '/tonight' },
-      },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
-    })
-  }
-  const risk = streakRiskFire(book, now)
-  if (risk) {
-    notes.push({
-      identifier: String(notifyId('streak', risk.tag)),
-      content: {
-        title: t('streak.riskTitle'),
-        body: t('streak.riskBody'),
-        data: { go: '/tonight', streakRisk: true },
-      },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(risk.at) },
-    })
-  }
-  for (const note of notes) {
+    const allowed = await checkNativePings()
+    if (allowed !== 'granted') return
+    const Notifications = await notifications()
     try {
-      await Notifications.scheduleNotificationAsync(note)
+      await Notifications.cancelAllScheduledNotificationsAsync()
     } catch {
-      // Some ROMs block exact alarms.
+      // ok
     }
+    const dateIso = boardDate(now)
+    const [year, month, day] = dateIso.split('-').map(Number)
+    const notes = []
+    for (const row of waitingTonight(book, now)) {
+      if (!lampNotifyOn(row.lamp)) continue
+      const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+      if (!match) continue
+      const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
+      if (at.getTime() <= now.getTime()) continue
+      notes.push({
+        identifier: String(notifyId(row.lamp.id, row.periodKey)),
+        content: {
+          title: 'Did I',
+          body: row.lamp.question,
+          data: { lampId: row.lamp.id, go: '/tonight' },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
+      })
+    }
+    const risk = streakRiskFire(book, now)
+    if (risk) {
+      notes.push({
+        identifier: String(notifyId('streak', risk.tag)),
+        content: {
+          title: t('streak.riskTitle'),
+          body: t('streak.riskBody'),
+          data: { go: '/tonight', streakRisk: true },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(risk.at) },
+      })
+    }
+    for (const note of notes) {
+      try {
+        await Notifications.scheduleNotificationAsync(note)
+      } catch {
+        // Some ROMs block exact alarms.
+      }
+    }
+  } catch {
+    // Notifications native module not ready or misconfigured.
   }
 }
 
@@ -189,13 +206,9 @@ export async function shareBook(book) {
 }
 
 function lampFromUrl(url) {
-  try {
-    const parsed = Linking.parse(url)
-    const lampId = parsed?.queryParams?.id || parsed?.queryParams?.face || ''
-    return String(lampId || '')
-  } catch {
-    return ''
-  }
+  const route = routeFromDeepLink(url)
+  if (route?.face) return route.face
+  return ''
 }
 
 export function listenNativeShell({ onBack, onOpenLamp }) {
@@ -204,25 +217,21 @@ export function listenNativeShell({ onBack, onOpenLamp }) {
     return true
   })
   const linkSub = Linking.addEventListener('url', ({ url }) => {
+    if (goFromDeepLink(url)) return
     const lampId = lampFromUrl(url)
     onOpenLamp?.(lampId || '')
-  })
-  const noteSub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const lampId = response?.notification?.request?.content?.data?.lampId || ''
-    const go = response?.notification?.request?.content?.data?.go || ''
-    if (lampId) onOpenLamp?.(String(lampId))
-    else if (go) goFromPush(String(go))
   })
   Linking.getInitialURL()
     .then((url) => {
       if (!url) return
+      if (goFromDeepLink(url)) return
       const lampId = lampFromUrl(url)
       if (lampId) onOpenLamp?.(lampId)
+      else onOpenLamp?.('')
     })
     .catch(() => {})
   return () => {
     backSub.remove()
     linkSub.remove()
-    noteSub.remove()
   }
 }

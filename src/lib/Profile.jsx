@@ -6,6 +6,8 @@ import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { setShareDiagnostics } from './diagnostics.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
+import { ownedLookIds, readWidgetSettings, widgetTagChoices } from './widget-config.js'
+import { applyWidgetPrefs } from './widget-settings.js'
 import { readShelf } from './board-shelf.js'
 import { mergeShelves } from './shelf-merge.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -30,6 +32,20 @@ export function Profile({
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
+  const widget = readWidgetSettings()
+  const widgetTags = widgetTagChoices(readShelf())
+  const widgetLooks = [...ownedLookIds(readShelf())].sort()
+
+  function widgetTagWords() {
+    if (widget.tagMode === 'active') return t('widget.settings.tagActive')
+    const hit = widgetTags.find((row) => row.id === widget.tagId)
+    return hit?.title || t('widget.settings.tagMissing')
+  }
+
+  function widgetLookWords() {
+    if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
+    return t(`look.${widget.lookId}.name`)
+  }
 
   useBackDismiss(Boolean(confirm), () => setConfirm(null))
 
@@ -149,6 +165,30 @@ export function Profile({
             label={t('settings.lessMotion')}
             on={prefs.lessMotion}
             onClick={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+          />
+        </SetCard>
+
+        <SetCap>{t('widget.settings.cap')}</SetCap>
+        <SetCard>
+          <SetRow
+            label={t('widget.settings.tag')}
+            sub={t('widget.settings.tagSub')}
+            value={widgetTagWords()}
+            chevron
+            onClick={() => setSheet('widgetTag')}
+          />
+          <SetRow
+            label={t('widget.settings.look')}
+            sub={t('widget.settings.lookSub')}
+            value={widgetLookWords()}
+            chevron
+            onClick={() => setSheet('widgetLook')}
+          />
+          <SetSwitch
+            label={t('widget.settings.openOnly')}
+            sub={t('widget.settings.openOnlySub')}
+            on={widget.openOnly}
+            onClick={() => applyWidgetPrefs({ widgetOpenOnly: !widget.openOnly })}
           />
         </SetCard>
 
@@ -274,6 +314,55 @@ export function Profile({
                 on={prefs.locale === id}
                 onClick={() => {
                   writePrefs({ locale: id })
+                  setSheet(null)
+                }}
+              />
+            ))}
+          </SetSheet>
+        ) : null}
+
+        {sheet === 'widgetTag' ? (
+          <SetSheet title={t('widget.settings.tag')} still={still} onClose={() => setSheet(null)}>
+            <SetPick
+              label={t('widget.settings.tagActive')}
+              on={widget.tagMode === 'active'}
+              onClick={() => {
+                applyWidgetPrefs({ widgetTagMode: 'active', widgetTagId: '' })
+                setSheet(null)
+              }}
+            />
+            {widgetTags.map((row) => (
+              <SetPick
+                key={row.id}
+                label={row.title}
+                on={widget.tagMode === 'pick' && widget.tagId === row.id}
+                onClick={() => {
+                  applyWidgetPrefs({ widgetTagMode: 'pick', widgetTagId: row.id })
+                  setSheet(null)
+                }}
+              />
+            ))}
+            {!widgetTags.length ? <p className="di-set-note">{t('widget.settings.noTags')}</p> : null}
+          </SetSheet>
+        ) : null}
+
+        {sheet === 'widgetLook' ? (
+          <SetSheet title={t('widget.settings.look')} still={still} onClose={() => setSheet(null)}>
+            <SetPick
+              label={t('widget.settings.lookTag')}
+              on={widget.lookMode === 'tag'}
+              onClick={() => {
+                applyWidgetPrefs({ widgetLookMode: 'tag' })
+                setSheet(null)
+              }}
+            />
+            {widgetLooks.map((id) => (
+              <SetPick
+                key={id}
+                label={t(`look.${id}.name`)}
+                on={widget.lookMode === 'pick' && widget.lookId === id}
+                onClick={() => {
+                  applyWidgetPrefs({ widgetLookMode: 'pick', widgetLookId: id })
                   setSheet(null)
                 }}
               />

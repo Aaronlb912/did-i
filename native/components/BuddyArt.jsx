@@ -1,6 +1,69 @@
-import Svg, { Ellipse, Line, Path, Polygon } from 'react-native-svg'
+import { View } from 'react-native'
+import { svgParts } from '../lib/svg-parts.js'
+
+const COAT = {
+  cat: { body: '#f0a64a', belly: '#ffe8c8', ear: '#f0a64a' },
+  dog: { body: '#c68b52', belly: '#f3ddc4', ear: '#9a6538' },
+  rabbit: { body: '#b8b8c8', belly: '#e8e8f0', ear: '#f0b8c8' },
+  owl: { body: '#8b6b4a', belly: '#d4c4a8', ear: '#6b5038' },
+}
+
+function spot(box, x, y, w, h, color, radius) {
+  const sx = box.w / 48
+  const sy = box.h / 58
+  return {
+    position: 'absolute',
+    left: x * sx,
+    top: y * sy,
+    width: w * sx,
+    height: h * sy,
+    borderRadius: radius == null ? (w * sx) / 2 : radius,
+    backgroundColor: color,
+  }
+}
+
+export function BuddyPlain({ id, width = 48, height = 58 }) {
+  const coat = COAT[id]
+  if (!coat) return null
+  const box = { w: width, h: height }
+  const pupil = id === 'owl' ? '#2d241c' : '#2d241c'
+  const eye = id === 'owl' ? '#f0e080' : pupil
+  const tall = id === 'rabbit'
+  return (
+    <View style={{ width, height }}>
+      {tall ? (
+        <>
+          <View style={spot(box, 12, 2, 8, 22, coat.body)} />
+          <View style={spot(box, 28, 2, 8, 22, coat.body)} />
+          <View style={spot(box, 14, 6, 4, 14, coat.ear)} />
+          <View style={spot(box, 30, 6, 4, 14, coat.ear)} />
+        </>
+      ) : (
+        <>
+          <View style={spot(box, 8, 14, 10, 12, coat.ear, 4)} />
+          <View style={spot(box, 30, 14, 10, 12, coat.ear, 4)} />
+        </>
+      )}
+      <View style={spot(box, 9, 20, 30, 26, coat.body)} />
+      <View style={spot(box, 14, 26, 20, 16, coat.belly)} />
+      <View style={spot(box, 16, 26, id === 'owl' ? 8 : 5, id === 'owl' ? 9 : 6, eye)} />
+      <View style={spot(box, 27, 26, id === 'owl' ? 8 : 5, id === 'owl' ? 9 : 6, eye)} />
+      {id === 'owl' ? (
+        <>
+          <View style={spot(box, 18, 28, 4, 5, pupil)} />
+          <View style={spot(box, 29, 28, 4, 5, pupil)} />
+        </>
+      ) : null}
+      <View style={spot(box, 12, 42, 9, 6, coat.body)} />
+      <View style={spot(box, 27, 42, 9, 6, coat.body)} />
+    </View>
+  )
+}
 
 export function BuddyArt({ id, width = 48, height = 58 }) {
+  const parts = svgParts()
+  if (!parts) return <BuddyPlain id={id} width={width} height={height} />
+  const { Svg, Ellipse, Line, Path, Polygon } = parts
   if (id === 'cat') {
     return (
       <Svg width={width} height={height} viewBox="0 0 48 58">

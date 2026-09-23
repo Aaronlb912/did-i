@@ -12,7 +12,24 @@ real-device buy test. Production receipt verification runs when
 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and `APPLE_IAP_SHARED_SECRET` are set.
 Until then, `GEM_IAP_TRUST=1` is for local dev only.
 
-## Product ids
+## App SKU (Apple only)
+
+When you add the app in **App Store Connect**, use:
+
+| Field | Value |
+|-------|--------|
+| **SKU** | `did-i` |
+| **Bundle ID** | `com.aaronbryant.didi` |
+
+Defined in `src/lib/store-skus.js` as `APP_STORE_SKU` and `STORE_APP_ID`. If you
+already registered the app with a different SKU, keep that one in Connect; only
+new registrations should use `did-i`.
+
+Step-by-step in Connect (products, tiers, listing): `docs/app-store-connect.md`.
+
+Google Play has no app SKU. Use package name `com.aaronbryant.didi`.
+
+## Gem product ids (IAP SKUs)
 
 | Pack | Store id |
 |------|----------|

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
-import { ALL_STORE_IDS, gemPack } from '../../src/lib/gem-packs.js'
+import { GEM_PACKS, gemPack } from '../../src/lib/gem-packs.js'
 import { readShelf, writeShelf } from '../../src/lib/board-shelf.js'
 import { claimGemPurchases } from '../../src/lib/gem-claim.js'
 import { SHELF_IN } from '../../src/lib/cloud-sync.js'
@@ -9,7 +9,9 @@ import { addGemsShelf } from '../../src/lib/purse.js'
 
 let connected = false
 let starting = false
+let linked = false
 const prices = new Map()
+const liveSku = new Map()
 let purchaseSub = null
 let errorSub = null
 let iap = null
@@ -32,19 +34,48 @@ async function loadIap() {
   }
 }
 
+function iapApi(mod) {
+  if (!mod) return null
+  if (typeof mod.initConnection === 'function' || typeof mod.requestPurchase === 'function') return mod
+  return mod.default || mod
+}
+
 export function iapPossible() {
   if (inExpoGo()) return false
   return Platform.OS === 'android' || Platform.OS === 'ios'
 }
 
 export function iapReady() {
-  return connected && prices.size > 0
+  return linked
+}
+
+function priceOf(item) {
+  return String(item?.displayPrice || item?.localizedPrice || item?.price || item?.localizedPriceString || '')
+}
+
+function rememberProduct(item) {
+  const id = String(item?.id || item?.productId || item?.sku || '')
+  if (!id) return
+  const label = priceOf(item)
+  if (label) prices.set(id, label)
+  const pack = GEM_PACKS.find((row) => row.storeId === id || row.id === id)
+  if (pack) liveSku.set(pack.id, id)
+}
+
+function skusToAsk() {
+  const ids = []
+  for (const pack of GEM_PACKS) {
+    ids.push(pack.storeId)
+    if (pack.id && pack.id !== pack.storeId) ids.push(pack.id)
+  }
+  return ids
 }
 
 export function storePrice(packId) {
   const pack = gemPack(packId)
   if (!pack) return ''
-  return prices.get(pack.storeId) || ''
+  const sku = liveSku.get(pack.id) || pack.storeId
+  return prices.get(sku) || prices.get(pack.storeId) || ''
 }
 
 async function creditPurchase(purchase) {
@@ -71,21 +102,25 @@ async function creditPurchase(purchase) {
 }
 
 export async function initGemIap() {
-  if (!iapPossible() || connected || starting) return connected ? 'ok' : 'skip'
+  if (!iapPossible() || starting) return linked ? 'ok' : 'skip'
+  if (linked && liveSku.size) return 'ok'
   starting = true
   try {
     const mod = await loadIap()
     if (!mod) return 'fail'
 
+    const api = iapApi(mod)
     const {
       ErrorCode,
       fetchProducts,
       initConnection,
       purchaseErrorListener,
       purchaseUpdatedListener,
-    } = mod
+    } = api
 
     await initConnection()
+    linked = true
+    connected = true
     purchaseSub?.remove()
     errorSub?.remove()
     purchaseSub = purchaseUpdatedListener(async (purchase) => {
@@ -95,19 +130,15 @@ export async function initGemIap() {
       if (error?.code === ErrorCode.UserCancelled) return
       console.warn('gem iap', error?.message || error)
     })
-    const result = await fetchProducts({ skus: ALL_STORE_IDS, type: 'in-app' })
-    const list = Array.isArray(result) ? result : result?.products || []
+    const result = await fetchProducts({ skus: skusToAsk(), type: 'in-app' })
+    const list = Array.isArray(result) ? result : result?.products || result?.value || []
     prices.clear()
-    for (const item of list) {
-      const id = String(item?.id || item?.productId || '')
-      const label = String(item?.displayPrice || item?.localizedPrice || '')
-      if (id && label) prices.set(id, label)
-    }
-    connected = true
-    return prices.size ? 'ok' : 'empty'
+    liveSku.clear()
+    for (const item of list) rememberProduct(item)
+    return liveSku.size ? 'ok' : 'empty'
   } catch (error) {
     console.warn('gem iap init', error?.message || error)
-    return 'fail'
+    return linked ? 'empty' : 'fail'
   } finally {
     starting = false
   }
@@ -121,14 +152,15 @@ export async function buyGemPack(packId) {
   const mod = await loadIap()
   if (!mod) return { miss: 'setup' }
 
-  if (!connected) {
-    const boot = await initGemIap()
-    if (boot !== 'ok') return { miss: 'setup' }
+  if (!linked) {
+    await initGemIap()
+    if (!linked) return { miss: 'setup' }
   }
 
-  const sku = pack.storeId
+  const sku = liveSku.get(pack.id) || pack.storeId
+  const api = iapApi(mod)
   try {
-    await mod.requestPurchase({
+    await api.requestPurchase({
       request: {
         apple: { sku },
         google: { skus: [sku] },
@@ -137,7 +169,7 @@ export async function buyGemPack(packId) {
     })
     return { miss: '' }
   } catch (error) {
-    if (error?.code === mod.ErrorCode.UserCancelled) return { miss: 'cancel' }
+    if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
     return { miss: 'store' }
   }
 }

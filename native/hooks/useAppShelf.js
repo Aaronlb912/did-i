@@ -25,8 +25,27 @@ import {
   shelfHeatNow,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
-import { alignShelfPurse, spreadPurseFrom, weeklyGemBump } from '../../src/lib/purse.js'
+import { cloudSetUp } from '../../src/lib/cloud.js'
+import {
+  alignShelfPurse,
+  mergePurses,
+  spreadPurseFrom,
+  weeklyGemBump,
+} from '../../src/lib/purse.js'
+import {
+  applyCoinBalanceToShelf,
+  applyGemBalanceToShelf,
+  creditNightCoins,
+  grantWeeklyGem,
+} from '../../src/lib/wallet.js'
 import { goHash, readRoute } from '../navigation/hash.js'
+import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
+import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
+import { syncTonightWidget } from '../widget-sync.js'
+import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
+import { afterNativeBridgeReady } from '../lib/defer-native.js'
+import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
+import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -41,7 +60,7 @@ function firstShelf() {
     // ok
   }
   const now = new Date()
-  const shelf = writeShelf(alignShelfPurse(readShelf()))
+  let shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
   const heatBefore = shelfHeatNow(shelf.boards, now)
   const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
   const heatAfter = shelfHeatNow(boards, now)
@@ -67,7 +86,8 @@ export function useAppShelf() {
     const now = new Date()
     const before = currentBook(shelf)
     const heatBefore = shelfHeatNow(shelf.boards, now)
-    const bumped = weeklyGemBump(nextShelf, shelf, now)
+    const coinsBefore = mergePurses(shelf.boards).coins
+    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
       next = closePastNights(next, now)
@@ -86,8 +106,27 @@ export function useAppShelf() {
     if (miss) queueStreakMoment(miss, boardDate(now))
     setShelf(written)
     pushSoon(written)
+    const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
+    const coinsAfter = mergePurses(written.boards).coins
+    if (cloudSetUp() && coinsAfter > coinsBefore) {
+      creditNightCoins(boardDate(now, fold), coinsAfter - coinsBefore).then((bal) => {
+        if (bal == null) return
+        const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
+        setShelf(synced)
+        pushSoon(synced)
+      })
+    }
+    if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
+      grantWeeklyGem(bumped.gemWeek).then((bal) => {
+        if (bal == null) return
+        const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
+        setShelf(synced)
+        pushSoon(synced)
+      })
+    }
     const after = currentBook(written)
     if (after) scheduleNativePings(after)
+    syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
@@ -162,16 +201,43 @@ export function useAppShelf() {
 
   useEffect(() => {
     bindForegroundSync()
+    let cancelled = false
+    try {
+      const jsMerged = reconcileShelfFromWidget(readShelf())
+      if (jsMerged !== readShelf()) setShelf(writeShelf(jsMerged))
+    } catch {
+      // ok
+    }
     pullAndMerge()
       .then((result) => {
+        if (cancelled) return
         if (result) setShelf(result)
       })
       .catch(() => {})
+    afterNativeBridgeReady(() => {
+      if (cancelled) return
+      if (!nativeWidgetsEnabled()) return
+      refreshWidgetTimelineFromKit()
+        .then((merged) => {
+          if (cancelled) return merged
+          const before = readShelf()
+          setShelf(merged)
+          if (merged !== before) pushShelfAfterWidgetAnswer(merged, { now: true }).catch(() => {})
+          return merged
+        })
+        .then(() => pullAndMerge())
+        .then((result) => {
+          if (cancelled) return
+          if (result) setShelf(result)
+        })
+        .catch(() => {})
+    })
     function onShelfIn(event) {
       if (event?.detail) setShelf(event.detail)
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {
+      cancelled = true
       window.removeEventListener(SHELF_IN, onShelfIn)
     }
   }, [])

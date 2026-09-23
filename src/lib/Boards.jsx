@@ -40,7 +40,6 @@ export function Boards({
 
   const live = (boards || []).filter((item) => !item.archived)
   const parked = (boards || []).filter((item) => item.archived)
-
   if (confirm) {
     return (
       <BoardShell
@@ -116,21 +115,23 @@ export function Boards({
                   </p>
                 </button>
                 {on ? (
-                  <label className="di-field">
-                    <span>{t('boards.name')}</span>
-                    <input
-                      key={book.id}
-                      value={titleDraft}
-                      onChange={(event) => setTitleDraft(event.target.value)}
-                      onBlur={saveTitle}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault()
-                          saveTitle()
-                        }
-                      }}
-                    />
-                  </label>
+                  <>
+                    <label className="di-field">
+                      <span>{t('boards.name')}</span>
+                      <input
+                        key={book.id}
+                        value={titleDraft}
+                        onChange={(event) => setTitleDraft(event.target.value)}
+                        onBlur={saveTitle}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            saveTitle()
+                          }
+                        }}
+                      />
+                    </label>
+                  </>
                 ) : null}
               </article>
             )

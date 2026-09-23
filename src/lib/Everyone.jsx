@@ -19,6 +19,7 @@ import {
 import { fireCheer, normalizePurse, spendGems } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
+import { GemShort } from './shop-bits.jsx'
 import { SetCap, SetCard, SetRow, SetSwitch } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
@@ -42,6 +43,7 @@ export function Everyone({ book, boards = [], onChange, now }) {
   const [setup, setSetup] = useState(false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
+  const [gemShort, setGemShort] = useState(false)
 
   const load = useCallback(async () => {
     if (!cloudSetUp() || !account.user) {
@@ -97,14 +99,18 @@ export function Everyone({ book, boards = [], onChange, now }) {
 
   async function cheer(row) {
     if (purse.gems < TONIGHT_CHEER_GEMS) {
-      return setMiss(t('all.needGems', { n: TONIGHT_CHEER_GEMS }))
+      setGemShort(true)
+      return
     }
     const { miss: why, fresh } = await cheerOn(row.user_id, night)
     if (why === 'setup') return setSetup(true)
     if (why) return setMiss(why)
     if (!fresh) return setMiss(t('all.cheeredAlready'))
     const spent = spendGems(book, TONIGHT_CHEER_GEMS)
-    if (spent.miss) return setMiss(t('all.needGems', { n: TONIGHT_CHEER_GEMS }))
+    if (spent.miss) {
+      setGemShort(true)
+      return
+    }
     if (onChange) onChange(spent.book)
     fireCheer(purse.cheerOn, 1)
     feelTap('did')
@@ -258,6 +264,7 @@ export function Everyone({ book, boards = [], onChange, now }) {
         </>
       ) : null}
 
+      <GemShort open={gemShort} onClose={() => setGemShort(false)} />
       {miss ? (
         <p className="di-miss" role="alert">
           {tMiss(miss)}

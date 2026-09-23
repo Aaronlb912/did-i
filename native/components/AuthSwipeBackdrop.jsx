@@ -5,7 +5,8 @@ import { fonts } from '../theme.js'
 import { HallAmbient } from './HallAmbient.jsx'
 import { Jewel } from './Jewel.jsx'
 import { NightMeter } from './NightMeter.jsx'
-import { SwipeCard } from './SwipeCard.jsx'
+import { Slot } from './Slot.jsx'
+import { SwipeCardHost } from './SwipeCardHost.jsx'
 
 const JEWELS = [
   { id: 'pills', labelKey: 'ideas.pills.start', face: true },
@@ -22,9 +23,12 @@ export function AuthSwipeBackdrop({ colors, behind = false }) {
   if (behind) {
     return (
       <View style={[styles.behindFrame, { backgroundColor: colors.bg }]}>
-        <HallAmbient heat={2} hour={21} hallOn accent={colors.on} />
+        <Slot>
+          <HallAmbient heat={2} hour={21} hallOn accent={colors.on} />
+        </Slot>
         <View style={styles.behindCard}>
-          <SwipeCard
+          <Slot>
+          <SwipeCardHost
             demo
             cardKey="auth-demo"
             colors={colors}
@@ -35,6 +39,7 @@ export function AuthSwipeBackdrop({ colors, behind = false }) {
             onDid={() => {}}
             onNope={() => {}}
           />
+          </Slot>
         </View>
       </View>
     )
@@ -42,11 +47,15 @@ export function AuthSwipeBackdrop({ colors, behind = false }) {
 
   return (
     <View style={[styles.frame, { backgroundColor: colors.bg }]}>
-      <HallAmbient heat={2} hour={21} hallOn accent={colors.on} />
+      <Slot>
+        <HallAmbient heat={2} hour={21} hallOn accent={colors.on} />
+      </Slot>
       <View style={styles.shell}>
         <Text style={[styles.mastTitle, { color: colors.ink }]}>{t('tonight.didI')}</Text>
 
-        <NightMeter due={demoDue} colors={colors} />
+        <Slot>
+          <NightMeter due={demoDue} colors={colors} />
+        </Slot>
 
         <ScrollView
           horizontal
@@ -67,7 +76,8 @@ export function AuthSwipeBackdrop({ colors, behind = false }) {
         </ScrollView>
 
         <View style={styles.slot}>
-          <SwipeCard
+          <Slot>
+          <SwipeCardHost
             demo
             cardKey="auth-demo"
             colors={colors}
@@ -78,6 +88,7 @@ export function AuthSwipeBackdrop({ colors, behind = false }) {
             onDid={() => {}}
             onNope={() => {}}
           />
+          </Slot>
         </View>
       </View>
     </View>

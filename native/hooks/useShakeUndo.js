@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
+import { emptyShake, shakeStep } from '../../src/lib/shake-undo.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
-const SHAKE_FORCE = 1.72
-const SHAKE_GAP_MS = 900
+const QUIET_MS = 1500
+
+function loadAccelerometer() {
+  try {
+    const mod = require('expo-sensors')
+    const sensor = mod && (mod.Accelerometer || mod.default?.Accelerometer)
+    if (!sensor || typeof sensor.isAvailableAsync !== 'function') return null
+    return sensor
+  } catch (error) {
+    global.__didISensorsError = String((error && error.message) || error)
+    return null
+  }
+}
 
 export function useShakeUndo(active, onUndo) {
   const reduce = useReduceMotion()
-  const lastShake = useRef(0)
   const undoRef = useRef(onUndo)
+  const motion = useRef(emptyShake())
   const [shakeOk, setShakeOk] = useState(false)
   undoRef.current = onUndo
 
@@ -17,28 +29,41 @@ export function useShakeUndo(active, onUndo) {
       return undefined
     }
 
-    let sub = null
-    let cancelled = false
+    const Accelerometer = loadAccelerometer()
+    if (!Accelerometer) {
+      setShakeOk(false)
+      return undefined
+    }
 
-    import('expo-sensors/build/Accelerometer.js')
-      .then(async (mod) => {
-        if (cancelled) return
-        const Accelerometer = mod.default
-        const ok = await Accelerometer.isAvailableAsync()
+    let sub = null
+    let quiet = null
+    let cancelled = false
+    let heard = false
+    motion.current = emptyShake()
+
+    const ask =
+      typeof Accelerometer.requestPermissionsAsync === 'function'
+        ? Accelerometer.requestPermissionsAsync().catch(() => null)
+        : Promise.resolve(null)
+
+    ask
+      .then(() => Accelerometer.isAvailableAsync())
+      .then((ok) => {
         if (cancelled || !ok) {
           setShakeOk(false)
           return
         }
         setShakeOk(true)
         Accelerometer.setUpdateInterval(80)
-        sub = Accelerometer.addListener(({ x, y, z }) => {
-          const force = Math.sqrt(x * x + y * y + z * z)
-          if (force < SHAKE_FORCE) return
-          const now = Date.now()
-          if (now - lastShake.current < SHAKE_GAP_MS) return
-          lastShake.current = now
-          undoRef.current?.()
+        sub = Accelerometer.addListener((sample) => {
+          heard = true
+          const step = shakeStep(motion.current, sample, Date.now())
+          motion.current = step
+          if (step.hit) undoRef.current?.()
         })
+        quiet = setTimeout(() => {
+          if (!cancelled && !heard) setShakeOk(false)
+        }, QUIET_MS)
       })
       .catch(() => {
         if (!cancelled) setShakeOk(false)
@@ -46,6 +71,7 @@ export function useShakeUndo(active, onUndo) {
 
     return () => {
       cancelled = true
+      if (quiet) clearTimeout(quiet)
       sub?.remove()
       setShakeOk(false)
     }

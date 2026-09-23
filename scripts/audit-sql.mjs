@@ -12,7 +12,9 @@ function loadEnvLocal() {
     const cut = line.indexOf('=')
     const key = line.slice(0, cut).trim()
     const val = line.slice(cut + 1).trim()
-    if (!process.env[key]) process.env[key] = val
+    if (key === 'SUPABASE_ACCESS_TOKEN' || key === 'SB_PAT' || !process.env[key]) {
+      process.env[key] = val
+    }
   }
 }
 

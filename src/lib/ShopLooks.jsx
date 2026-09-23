@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { LookChip } from './Cosmetic.jsx'
+import { buyLookWithCoins } from './coin-shop.js'
 import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, LOOKS, buyLook, isGemLook, lookText, normalizePurse } from './purse.js'
-import { BuyConfirm, LookPreviewCard, ShopPurse, coinLine, gemLine, shopMiss } from './shop-bits.jsx'
+import { goHash } from '../site/hash.js'
+import { BuyConfirm, LookPreviewCard, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -19,12 +21,22 @@ export function ShopLooks({ book, onChange, now }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (isGemShort(next)) {
+      setMiss('')
+      setConfirm(shortGemConfirm())
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setPeekLook('')
       setConfirm(null)
       onChange(next.book)
     }
+  }
+
+  async function buyRow(item) {
+    const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
+    take(next)
   }
 
   function lookRow(item) {
@@ -53,11 +65,15 @@ export function ShopLooks({ book, onChange, now }) {
               take(buyLook(book, item.id))
               return
             }
+            if (item.gems > 0 && purse.gems < item.gems) {
+              setConfirm(shortGemConfirm())
+              return
+            }
             setMiss('')
             setConfirm({
               title: t(lookText(item.id, 'name')),
               body: t('shop.buyLookBody', { cost }),
-              go: () => take(buyLook(book, item.id)),
+              go: () => buyRow(item),
             })
           }}
         >
@@ -98,6 +114,11 @@ export function ShopLooks({ book, onChange, now }) {
         confirm={confirm}
         onClose={() => setConfirm(null)}
         onGo={() => {
+          if (confirm?.short) {
+            setConfirm(null)
+            goHash('/gems')
+            return
+          }
           const go = confirm?.go
           setConfirm(null)
           if (typeof go === 'function') go()

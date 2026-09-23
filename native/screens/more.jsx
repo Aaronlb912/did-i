@@ -63,8 +63,9 @@ const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
 function SureModal({ sure, colors, onClose, onGo }) {
+  if (!sure) return null
   return (
-    <Modal visible={Boolean(sure)} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}

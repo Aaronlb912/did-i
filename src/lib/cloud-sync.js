@@ -22,12 +22,16 @@ import { didTonightLabels } from './dit-board.js'
 import { DIT_ENABLED } from './features.js'
 import { claimCheerGifts, claimInvites, readMine, syncTonightBoard } from './people.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { addGemsShelf, applyInvitePayout, mergeGiftCheers } from './purse.js'
+import { applyInvitePayout, mergeGiftCheers } from './purse.js'
+import { applyCoinCatalogToShelf, applyGemBalanceToShelf, readCoinCatalog, readGemBalance } from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
+import { readAccountUserId, writeAccountUserId } from './session-id.js'
+import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync.js'
+import { reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
-const LAST_USER = 'did-i-last-user'
+export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
 
 const listeners = new Set()
@@ -97,20 +101,11 @@ async function me() {
 }
 
 function readLastUser() {
-  try {
-    return localStorage.getItem(LAST_USER) || ''
-  } catch {
-    return ''
-  }
+  return readAccountUserId()
 }
 
 function writeLastUser(id) {
-  try {
-    if (id) localStorage.setItem(LAST_USER, id)
-    else localStorage.removeItem(LAST_USER)
-  } catch {
-    // ok
-  }
+  writeAccountUserId(id)
 }
 
 export function signedOutSync() {
@@ -209,6 +204,7 @@ export function bindForegroundSync() {
   }
 
   function onSleep() {
+    reconcileLocalShelfFromWidget()
     flushPushSoon()
   }
 
@@ -227,6 +223,10 @@ export function bindForegroundSync() {
 
 // Pull what the account has, fold it into what this phone has, then send
 // the combined shelf back so every phone ends up holding the same thing.
+function reconcileLocalShelfFromWidget() {
+  return reconcileShelfFromWidgetNow()
+}
+
 async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
@@ -244,7 +244,7 @@ async function pullAndMergeOnce() {
     if (shelfRow.error) throw shelfRow.error
 
     const lastUser = readLastUser()
-    let local = readShelf()
+    let local = reconcileLocalShelfFromWidget()
     let localSavedAt = readSavedAt()
     if (lastUser && lastUser !== user.id) {
       local = clearLocalShelf()
@@ -265,10 +265,7 @@ async function pullAndMergeOnce() {
       const boards = written.boards.map((book) => mergeGiftCheers(book, gifts.ids))
       written = writeShelf({ ...written, boards }, metaAt)
     }
-    const bought = await claimGemPurchases()
-    if (bought.gems > 0) {
-      written = writeShelf(addGemsShelf(written, bought.gems), metaAt)
-    }
+    await claimGemPurchases()
     const invited = await claimInvites()
     if (invited.gems > 0 || invited.looks.length) {
       const boards = written.boards.map((item) =>
@@ -276,6 +273,11 @@ async function pullAndMergeOnce() {
       )
       written = writeShelf({ ...written, boards }, metaAt)
     }
+
+    const bal = await readGemBalance()
+    if (bal != null) written = applyGemBalanceToShelf(written, bal)
+    const coinBag = await readCoinCatalog()
+    if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
 
     const uploadAt = new Date().toISOString()
     written = writeShelf(written, uploadAt)
@@ -294,6 +296,7 @@ async function pullAndMergeOnce() {
     const sent = await pushAnswers(written, true)
     if (sent.miss) throw new Error(sent.miss)
     await pruneAnswers(written)
+    if (widgetCloudPending()) await flushPendingWidgetCloud()
 
     touchDevice()
     writeLastUser(user.id)
@@ -400,7 +403,7 @@ export async function loadProfile() {
   if (!user) return null
   const { data } = await db
     .from('profiles')
-    .select('display_name, look_on, badge_cheer, prefs')
+    .select('display_name, look_on, badge_cheer, prefs, gem_balance')
     .eq('user_id', user.id)
     .maybeSingle()
   return data || null

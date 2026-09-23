@@ -15,11 +15,21 @@ import {
   listFamilyLamps,
   personName,
   readFamily,
-  sendCheer,
+  buyCheers,
+  cheerFamily,
+  readFriendCheers,
   setRole,
 } from '../../src/lib/people.js'
-import { FAMILY_CHEER_GEMS, fireCheer, normalizePurse, spendGems } from '../../src/lib/purse.js'
+import {
+  FRIEND_CHEER_CAP,
+  FRIEND_CHEER_GEMS,
+  FRIEND_CHEERS_PER_GEM,
+  fireCheer,
+  friendCheerMissKey,
+  normalizePurse,
+} from '../../src/lib/purse.js'
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { offerMoreGems } from '../components/SheetHost.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -46,6 +56,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
+  const [stock, setStock] = useState(null)
+  const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
     if (!familyId || !account.user) {
@@ -60,10 +72,12 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       const back = []
       for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
       setNights(back)
-      const [tonightRows, pastRows] = await Promise.all([
+      const [tonightRows, pastRows, serverCheers] = await Promise.all([
         listFamilyLamps(familyId, key),
         familyHistory(familyId, back),
+        readFriendCheers(),
       ])
+      if (typeof serverCheers === 'number') setStock(serverCheers)
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
       setPast(pastRows)
@@ -251,6 +265,31 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         {t('family.weekFrom', { from: formatBoardDate(nights[0] || night), to: formatBoardDate(night) })}
       </Meta>
 
+      <Cap colors={colors}>{t('friends.cheerStock', { n: cheersLeft })}</Cap>
+      <Meta colors={colors}>{t('friends.cheerNote')}</Meta>
+      <KeyButton
+        colors={colors}
+        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+        label={t('friends.cheerBuy')}
+        onPress={async () => {
+          if (purse.gems < FRIEND_CHEER_GEMS) {
+            offerMoreGems(colors)
+            return
+          }
+          setMiss('')
+          const bought = await buyCheers(book)
+          if (bought.miss === 'gems') {
+            offerMoreGems(colors)
+            return
+          }
+          const known = friendCheerMissKey(bought.miss)
+          if (known) return setMiss(t(known.key, known.vars))
+          if (bought.miss) return setMiss(tMiss(bought.miss))
+          setStock(normalizePurse(bought.book).friendCheers)
+          if (onChange) onChange(bought.book)
+        }}
+      />
+
       <Cap colors={colors}>{t('family.people')}</Cap>
       {fam.members.map((row) => (
         <View key={row.user_id} style={[styles.row, { borderColor: colors.line }]}>
@@ -262,16 +301,17 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             {!row.you && row.person?.done_on === night ? (
               <KeyButton
                 colors={colors}
-                disabled={purse.gems < FAMILY_CHEER_GEMS}
-                label={t('family.cheer', { n: FAMILY_CHEER_GEMS })}
+                disabled={cheersLeft < 1}
+                label={t('friends.cheerUse')}
                 onPress={async () => {
                   setMiss('')
                   setSaid('')
-                  const spent = spendGems(book, FAMILY_CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('family.needGems', { n: FAMILY_CHEER_GEMS }))
-                  const { miss: why } = await sendCheer(row.user_id, t('family.cheerNote'), purse.cheerOn)
-                  if (why) return setMiss(why)
-                  if (onChange) onChange(spent.book)
+                  const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                  const known = friendCheerMissKey(sent.miss)
+                  if (known) return setMiss(t(known.key, known.vars))
+                  if (sent.miss) return setMiss(tMiss(sent.miss))
+                  setStock(normalizePurse(sent.book).friendCheers)
+                  if (onChange) onChange(sent.book)
                   fireCheer(purse.cheerOn, 1)
                   return setSaid(
                     t('family.cheerSent', { name: personName(row.person) || t('family.someone') }),
@@ -323,7 +363,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       <Meta colors={colors}>{t('family.inviteHint', { code: fam.code })}</Meta>
       <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/family')} />
 
-      <Modal visible={Boolean(edit)} transparent animationType="fade" onRequestClose={() => setEdit(null)}>
+      {edit ? (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
         <Pressable style={styles.veil} onPress={() => setEdit(null)}>
           <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
             <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
@@ -343,6 +384,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
     </ScrollView>
   )
 }

@@ -1,5 +1,9 @@
+import { gemProductSku, PLAY_PACKAGE, STORE_APP_ID } from './store-skus.js'
+
 // One gem = $1. Bigger packs shave the per-gem price.
 export const GEM_UNIT_CENTS = 100
+
+export { APP_STORE_SKU, PLAY_PACKAGE, STORE_APP_ID } from './store-skus.js'
 
 const RAW = [
   { id: 'gems_1', gems: 1, cents: 100 },
@@ -10,12 +14,10 @@ const RAW = [
   { id: 'gems_50', gems: 50, cents: 3000 },
 ]
 
-const BUNDLE = 'com.aaronbryant.didi'
-
 export const GEM_PACKS = RAW.map((pack) => {
   const list = pack.gems * GEM_UNIT_CENTS
   const save = list > pack.cents ? Math.round(100 - (pack.cents / list) * 100) : 0
-  const storeId = `${BUNDLE}.${pack.id}`
+  const storeId = gemProductSku(pack.id)
   return {
     ...pack,
     save,

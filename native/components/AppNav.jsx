@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { useEffect, useRef, useState } from 'react'
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { authGated } from '../../src/lib/auth-gate.js'
 import { showBottomNav } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash } from '../navigation/hash.js'
 import { NAV_GAP, NAV_PAD, NAV_TAB_HEIGHT } from '../hooks/useAppInsets.js'
 import { fonts } from '../theme.js'
@@ -15,7 +15,7 @@ const TABS = [
   { path: '/lamps', labelKey: 'nav.questions', match: ['/lamps'] },
 ]
 
-const SPRING = { damping: 20, stiffness: 280, mass: 0.8 }
+const SLIDE = Easing.bezier(0.34, 1.56, 0.64, 1)
 
 function tabIndex(path) {
   const i = TABS.findIndex((tab) => tab.match.includes(path))
@@ -25,30 +25,47 @@ function tabIndex(path) {
 export function AppNav({ path, colors }) {
   const account = useAccount()
   const insets = useSafeAreaInsets()
+  const reduce = useReduceMotion()
   const at = tabIndex(path)
   const [barWidth, setBarWidth] = useState(0)
-  const [live, setLive] = useState(false)
-  const slot = useSharedValue(at >= 0 ? at : 0)
-  const showPip = useSharedValue(at >= 0 ? 1 : 0)
+  const slot = useRef(new Animated.Value(at >= 0 ? at : 0)).current
+  const showPip = useRef(new Animated.Value(at >= 0 ? 1 : 0)).current
+  const seen = useRef(false)
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setLive(true))
-    return () => cancelAnimationFrame(frame)
-  }, [])
-
-  useEffect(() => {
-    slot.value = withSpring(at >= 0 ? at : 0, SPRING)
-    showPip.value = withSpring(at >= 0 ? 1 : 0, SPRING)
-  }, [at, slot, showPip])
+    const to = at >= 0 ? at : 0
+    const show = at >= 0 ? 1 : 0
+    if (!seen.current || reduce) {
+      seen.current = true
+      slot.setValue(to)
+      showPip.setValue(show)
+      return undefined
+    }
+    const slide = Animated.timing(slot, {
+      toValue: to,
+      duration: 380,
+      easing: SLIDE,
+      useNativeDriver: true,
+    })
+    const fade = Animated.timing(showPip, {
+      toValue: show,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    })
+    const run = Animated.parallel([slide, fade])
+    run.start()
+    return () => run.stop()
+  }, [at, reduce, showPip, slot])
 
   const gap = 2
   const pad = NAV_PAD
   const tabW = barWidth > 0 ? (barWidth - pad * 2 - gap * (TABS.length - 1)) / TABS.length : 0
 
-  const pipStyle = useAnimatedStyle(() => ({
-    opacity: showPip.value,
-    transform: [{ translateX: slot.value * (tabW + gap) }],
-  }))
+  const pipStyle = {
+    opacity: showPip,
+    transform: [{ translateX: Animated.multiply(slot, tabW + gap) }],
+  }
 
   if (authGated(path, account) || !showBottomNav(path)) return null
 
@@ -63,7 +80,6 @@ export function AppNav({ path, colors }) {
             pointerEvents="none"
             style={[
               styles.pip,
-              live && styles.pipLive,
               { backgroundColor: colors.on, width: tabW, left: pad },
               pipStyle,
             ]}
@@ -112,7 +128,6 @@ const styles = StyleSheet.create({
     bottom: NAV_PAD,
     borderRadius: 999,
   },
-  pipLive: {},
   tab: {
     flex: 1,
     minHeight: NAV_TAB_HEIGHT,

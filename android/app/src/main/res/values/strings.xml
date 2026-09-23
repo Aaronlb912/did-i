@@ -1,3 +1,4 @@
 <resources>
   <string name="app_name">Did I</string>
+  <string name="widget_diditonight_description" translatable="false">Tonight questions for your tag. Settings → Widget.</string>
 </resources>

@@ -1,113 +1,123 @@
-import { useEffect } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  interpolate,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, PanResponder, StyleSheet, View } from 'react-native'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 const EDGE = 28
-const SPRING = { damping: 22, stiffness: 280 }
+const SPRING = { damping: 22, stiffness: 280, useNativeDriver: true }
 
 export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
   const reduce = useReduceMotion()
-  const width = useSharedValue(0)
-  const x = useSharedValue(0)
-  const live = useSharedValue(0)
+  const x = useRef(new Animated.Value(0)).current
+  const width = useRef(1)
+  const live = useRef(false)
+  const [span, setSpan] = useState(1)
+  const [lifted, setLifted] = useState(false)
+  const props = useRef({ enabled, onBack, reduce })
+  props.current = { enabled, onBack, reduce }
 
   useEffect(() => {
-    x.value = 0
-    live.value = 0
-  }, [children, backChild, live, x])
+    x.stopAnimation()
+    x.setValue(0)
+    live.current = false
+    setLifted(false)
+  }, [children, backChild, x])
 
-  function finishBack() {
-    onBack?.()
-    x.value = 0
-    live.value = 0
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) => {
+          if (!props.current.enabled) return false
+          return gesture.dx > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy)
+        },
+        onPanResponderGrant: () => {
+          live.current = Boolean(props.current.enabled)
+          if (live.current) setLifted(true)
+        },
+        onPanResponderMove: (_, gesture) => {
+          if (!live.current) return
+          const next = Math.max(0, Math.min(width.current, gesture.dx))
+          x.setValue(next)
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (!live.current) return
+          const w = width.current || 1
+          const go = gesture.dx > w * 0.28 || gesture.vx > 0.7
+          if (!go) {
+            live.current = false
+            Animated.spring(x, { ...SPRING, toValue: 0 }).start(() => setLifted(false))
+            return
+          }
+          const done = () => {
+            props.current.onBack?.()
+            x.setValue(0)
+            live.current = false
+          }
+          if (props.current.reduce) {
+            done()
+            return
+          }
+          Animated.timing(x, { toValue: w, duration: 180, useNativeDriver: true }).start(({ finished }) => {
+            if (finished) done()
+          })
+        },
+        onPanResponderTerminate: () => {
+          live.current = false
+          Animated.spring(x, { ...SPRING, toValue: 0 }).start(() => setLifted(false))
+        },
+      }),
+    [x],
+  )
+
+  const backMotion = {
+    opacity: x.interpolate({ inputRange: [0, span], outputRange: [0.92, 1], extrapolate: 'clamp' }),
+    transform: [
+      {
+        translateX: x.interpolate({
+          inputRange: [0, span],
+          outputRange: [-span * 0.22, 0],
+          extrapolate: 'clamp',
+        }),
+      },
+    ],
   }
-
-  const pan = Gesture.Pan()
-    .activeOffsetX(8)
-    .failOffsetX(-6)
-    .failOffsetY([-40, 40])
-    .onBegin((event) => {
-      if (!enabled || event.x > EDGE) return
-      live.value = 1
-    })
-    .onUpdate((event) => {
-      if (!enabled || !live.value) return
-      const next = Math.max(0, Math.min(width.value, event.translationX))
-      x.value = next
-    })
-    .onEnd((event) => {
-      if (!enabled || !live.value) return
-      const w = width.value || 1
-      const go = x.value > w * 0.28 || event.velocityX > 720
-      if (!go) {
-        x.value = withSpring(0, SPRING)
-        live.value = 0
-        return
-      }
-      runOnJS(finishBack)()
-      if (!reduce) x.value = withTiming(w, { duration: 180 })
-    })
-    .onFinalize(() => {
-      if (x.value <= 0) live.value = 0
-    })
-
-  const backStyle = useAnimatedStyle(() => {
-    const w = width.value || 1
-    const pull = x.value / w
-    return {
-      opacity: interpolate(pull, [0, 1], [0.92, 1]),
-      transform: [{ translateX: interpolate(pull, [0, 1], [-w * 0.22, 0]) }],
-    }
-  })
-
-  const frontStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }],
-    shadowOpacity: interpolate(x.value, [0, width.value || 1], [0, 0.18]),
-    elevation: interpolate(x.value, [0, width.value || 1], [0, 10]),
-  }))
-
-  const shadeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(x.value, [0, width.value || 1], [0, 0.12]),
-  }))
+  const backStyle = lifted ? backMotion : null
+  const frontStyle = lifted ? { transform: [{ translateX: x }] } : null
+  const shadeStyle = {
+    opacity: x.interpolate({ inputRange: [0, span], outputRange: [0, 0.12], extrapolate: 'clamp' }),
+  }
 
   return (
     <View
       style={styles.shell}
       onLayout={(event) => {
-        width.value = event.nativeEvent.layout.width
+        const next = event.nativeEvent.layout.width || 1
+        width.current = next
+        if (next !== span) setSpan(next)
       }}
     >
-      {enabled && back ? (
+      {enabled && back && lifted ? (
         <Animated.View pointerEvents="none" style={[styles.back, backStyle]}>
           <View style={styles.backInner}>{backChild}</View>
         </Animated.View>
       ) : null}
       <Animated.View style={[styles.front, frontStyle]}>
         <View style={styles.frontInner}>{children}</View>
-        {enabled ? (
-          <Animated.View pointerEvents="none" style={[styles.shade, shadeStyle]} />
-        ) : null}
+        {enabled ? <Animated.View pointerEvents="none" style={[styles.shade, shadeStyle]} /> : null}
       </Animated.View>
       {enabled ? (
-        <GestureDetector gesture={pan}>
-          <View style={styles.edge} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
-        </GestureDetector>
+        <View
+          style={styles.edge}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          {...pan.panHandlers}
+        />
       ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, overflow: 'hidden' },
+  shell: { flex: 1, overflow: 'hidden', zIndex: 0 },
   back: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,

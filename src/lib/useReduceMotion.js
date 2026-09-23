@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import { readPrefs, usePrefs } from './prefs.js'
 
-function isReactNative() {
-  return typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
-}
-
 function webReduceMotion() {
   if (typeof window === 'undefined' || !window.matchMedia) return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -17,29 +13,6 @@ function applyReduceMotionAttr(reduce) {
 }
 
 function subscribeSystem(onChange) {
-  if (isReactNative()) {
-    let alive = true
-    let sub
-    const name = 'react-native'
-    import(/* @vite-ignore */ name)
-      .then(({ AccessibilityInfo }) => {
-        if (!alive) return
-        AccessibilityInfo.isReduceMotionEnabled().then((on) => {
-          if (alive) onChange(Boolean(on))
-        })
-        sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (on) => {
-          if (alive) onChange(Boolean(on))
-        })
-      })
-      .catch(() => {
-        if (alive) onChange(false)
-      })
-    return () => {
-      alive = false
-      sub?.remove?.()
-    }
-  }
-
   if (typeof window === 'undefined' || !window.matchMedia) {
     onChange(false)
     return () => {}

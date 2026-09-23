@@ -3,7 +3,7 @@
     "name": "Did I",
     "slug": "did-i",
     "scheme": "didi",
-    "version": "0.0.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
@@ -17,9 +17,10 @@
     "ios": {
       "bundleIdentifier": "com.aaronbryant.didi",
       "supportsTablet": false,
-      "deploymentTarget": "16.4",
+      "deploymentTarget": "17.0",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMotionUsageDescription": "Did I uses a shake to undo the last tap."
       }
     },
     "android": {

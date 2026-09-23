@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { goHash } from '../site/hash.js'
 import { useBackDismiss } from '../site/nav.js'
 import { PurseBits } from './PurseIcons.jsx'
 import { t } from './i18n.js'
@@ -16,6 +17,32 @@ export function shopMiss(next) {
   if (!next?.miss) return ''
   if (next.missN != null) return t(next.miss, { n: next.missN })
   return t(next.miss)
+}
+
+export function isGemShort(next) {
+  return next?.miss === 'shop.miss.needGems' || next?.miss === 'gems'
+}
+
+export function shortGemConfirm() {
+  return {
+    short: true,
+    title: t('gems.shortTitle'),
+    body: t('gems.shortBody'),
+    goLabel: t('gems.shortGo'),
+  }
+}
+
+export function GemShort({ open, onClose }) {
+  return (
+    <BuyConfirm
+      confirm={open ? shortGemConfirm() : null}
+      onClose={onClose}
+      onGo={() => {
+        onClose()
+        goHash('/gems')
+      }}
+    />
+  )
 }
 
 export function ShopPurse({ purse }) {
@@ -100,14 +127,14 @@ export function BuyConfirm({ confirm, onClose, onGo }) {
         aria-labelledby="di-buy-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="di-face-plate">{t('shop.buyKicker')}</p>
+        {confirm.short ? null : <p className="di-face-plate">{t('shop.buyKicker')}</p>}
         <h2 id="di-buy-title" className="di-buy-title">
           {confirm.title}
         </h2>
         <p className="di-detail-meta">{confirm.body}</p>
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={onGo}>
-            {t('shop.buy')}
+            {confirm.goLabel || t('shop.buy')}
           </button>
           <button className="di-key" type="button" onClick={onClose}>
             {t('settings.neverMind')}

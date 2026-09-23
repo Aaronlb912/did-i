@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
 import { KitFocus, KitTabs, KitTile, kitTabDefault } from './kit-bits.jsx'
+import { buyLookWithCoins } from './coin-shop.js'
 import {
   BUDDIES,
   CHEERS,
@@ -12,10 +13,10 @@ import {
   cheerText,
   lookText,
   buyLook,
+  isGemLook,
   cheerPlayOf,
   cheerStageOf,
   fireCheer,
-  isGemLook,
   normalizePurse,
   wearBuddy,
   wearCheer,
@@ -47,8 +48,13 @@ export function Collection({ book, onChange, now }) {
     setPeekLook('')
   }, [tab])
 
-  function wearLook(id) {
-    onChange(buyLook(book, id).book)
+  async function wearLook(id) {
+    const item = LOOKS.find((row) => row.id === id)
+    const next =
+      item && item.coins > 0 && !isGemLook(id)
+        ? await buyLookWithCoins(book, id)
+        : buyLook(book, id)
+    if (!next.miss) onChange(next.book)
   }
 
   function pickCheer(id) {

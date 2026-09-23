@@ -1,3 +1,4 @@
+import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 
 // One price for every cheer while the economy is still being tuned.
@@ -7,7 +8,6 @@ export const LOOK_GEM_PRICE = 2
 export const BUDDY_GEMS = 5
 // ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
 export const LOOK_COIN_PRICE = 30
-
 export const CHEERS = [
   { id: 'lime', gems: 0 },
   { id: 'tape', gems: CHEER_GEMS },
@@ -92,7 +92,8 @@ export function recentBuddies(count = 2) {
 }
 
 export const FRIEND_CHEER_GEMS = 1
-export const FAMILY_CHEER_GEMS = 1
+export const FRIEND_CHEERS_PER_GEM = 5
+export const FRIEND_CHEER_CAP = 20
 
 export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
@@ -105,6 +106,12 @@ const BUDDY_IDS = new Set(BUDDIES.map((item) => item.id))
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
   return n > 0 ? n : 0
+}
+
+function asFriendCheers(value) {
+  const n = Math.floor(Number(value) || 0)
+  if (n < 0) return 0
+  return Math.min(FRIEND_CHEER_CAP, n)
 }
 
 function asCheerStages(book, owned) {
@@ -171,6 +178,7 @@ export function normalizePurse(book) {
     cheerStage,
     cheerStages: stages,
     cheerPlayStages,
+    friendCheers: asFriendCheers(book?.friendCheers),
   }
 }
 
@@ -208,6 +216,7 @@ export function mergePurses(boards) {
         Math.max(...purses.map((item) => item.cheerPlayStages?.[id] || 1)),
       ]),
     ),
+    friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
   }
 }
 
@@ -236,6 +245,7 @@ export function spreadPurseFrom(shelf, book) {
     lookOn: from.lookOn,
     cheerOn: from.cheerOn,
     buddyOn: from.buddyOn,
+    friendCheers: from.friendCheers,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
     buddies: [...new Set([...merged.buddies, ...from.buddies])],
@@ -294,7 +304,7 @@ export function gemWeekKey(clock = new Date(), dayFoldHour = 0) {
 }
 
 // One gem per week, the first night you clear. shelf.gemWeek remembers.
-export function weeklyGemBump(shelf, prevShelf, clock = new Date()) {
+export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
   if (!shelf?.boards?.length) return shelf
   const fold = shelf.boards.find((b) => b.id === shelf.currentId)?.dayFoldHour ?? 0
   const week = gemWeekKey(clock, fold)
@@ -311,6 +321,10 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date()) {
   }
   if (!hit) return shelf
 
+  if (opts.accountSync) {
+    return { ...shelf, gemWeek: week }
+  }
+
   const boards = shelf.boards.map((book) => {
     if (book.id !== shelf.currentId) return book
     const purse = normalizePurse(book)
@@ -326,7 +340,7 @@ export function payTap(before, after, row, status, clock = new Date()) {
   )
   const paid = prev && (prev.status === 'yes' || prev.status === 'late')
   let coins = purse.coins
-  if (!paid) coins += coinsFor(status, before, row, clock)
+  if (!paid && !accountSessionOn()) coins += coinsFor(status, before, row, clock)
   return { ...after, ...purse, coins }
 }
 
@@ -385,14 +399,28 @@ export function fireCheer(kind, stage = 1, look, theme, preview = false) {
   const detail = { kind: kind || 'lime', stage: n, preview: Boolean(preview) }
   if (look) detail.look = look
   if (theme) detail.theme = theme
-  window.dispatchEvent(new CustomEvent('did-i-cheer', { detail }))
+  if (typeof window.__didIEmit === 'function') {
+    window.__didIEmit('did-i-cheer', detail)
+    return
+  }
+  let event = null
+  try {
+    event = new CustomEvent('did-i-cheer', { detail })
+  } catch {
+    event = null
+  }
+  if (!event || event.detail == null) {
+    window.dispatchEvent({ type: 'did-i-cheer', detail })
+    return
+  }
+  window.dispatchEvent(event)
 }
 
 // A reward, not a purchase. Invites pay scaling gems and the odd look.
 export function giveCoins(book, coins, looks = []) {
   const purse = normalizePurse(book)
   const won = looks.filter((id) => LOOK_IDS.has(id) && !purse.looks.includes(id))
-  const paid = Math.max(0, Math.floor(Number(coins) || 0))
+  const paid = accountSessionOn() ? 0 : Math.max(0, Math.floor(Number(coins) || 0))
   if (!paid && !won.length) return book
   return {
     ...book,
@@ -410,13 +438,10 @@ export function addGems(book, gems) {
 }
 
 export function applyInvitePayout(book, won) {
-  let next = book
-  const gems = Math.max(0, Math.floor(Number(won?.gems) || 0))
   const coins = Math.max(0, Math.floor(Number(won?.coins) || 0))
   const looks = Array.isArray(won?.looks) ? won.looks : []
-  if (gems > 0) next = addGems(next, gems)
-  if (coins > 0 || looks.length) next = giveCoins(next, coins, looks)
-  return next
+  if (!coins && !looks.length) return book
+  return giveCoins(book, coins, looks)
 }
 
 export function addGemsShelf(shelf, gems) {
@@ -429,6 +454,48 @@ export function addGemsShelf(shelf, gems) {
 
 // Cheering somebody on Did I tonight. Gems come from finished nights, so
 // a cheer costs something you had to earn.
+/** One gem adds five cheers. They sit in the balance until a cheer spends one. */
+export function buyFriendCheers(book) {
+  const purse = normalizePurse(book)
+  if (purse.gems < FRIEND_CHEER_GEMS) return { book: stampPurse(book, purse), miss: 'gems' }
+  if (purse.friendCheers + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) {
+    return { book: stampPurse(book, purse), miss: 'cap' }
+  }
+  return {
+    book: stampPurse(book, {
+      ...purse,
+      gems: purse.gems - FRIEND_CHEER_GEMS,
+      friendCheers: purse.friendCheers + FRIEND_CHEERS_PER_GEM,
+    }),
+    miss: '',
+  }
+}
+
+export function takeFriendCheer(book) {
+  const purse = normalizePurse(book)
+  if (purse.friendCheers < 1) return { book: stampPurse(book, purse), miss: 'cheers' }
+  return {
+    book: stampPurse(book, { ...purse, friendCheers: purse.friendCheers - 1 }),
+    miss: '',
+  }
+}
+
+export function friendCheerMissKey(miss) {
+  if (miss === 'gems') return { key: 'friends.needGems', vars: { n: FRIEND_CHEER_GEMS } }
+  if (miss === 'cap') return { key: 'friends.cheerCap', vars: { n: FRIEND_CHEER_CAP } }
+  if (miss === 'cheers') return { key: 'friends.cheerNeed', vars: {} }
+  return null
+}
+
+export function applyFriendCheerStock(book, gems, cheers) {
+  const purse = normalizePurse(book)
+  return stampPurse(book, {
+    ...purse,
+    gems: asCount(gems),
+    friendCheers: cheers == null ? purse.friendCheers : asFriendCheers(cheers),
+  })
+}
+
 export function spendGems(book, gems) {
   const purse = normalizePurse(book)
   const cost = Math.max(0, Math.floor(Number(gems) || 0))
@@ -556,3 +623,4 @@ export function buyCheer(book, id) {
     miss: '',
   }
 }
+

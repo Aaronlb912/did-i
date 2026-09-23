@@ -1,5 +1,6 @@
 import { t } from './i18n.js'
 import { legalVars } from './legal.js'
+export { PRIVACY_SECTIONS, TERMS_SECTIONS } from './legal-sections.js'
 
 function paras(text) {
   return String(text || '')
@@ -11,46 +12,6 @@ function paras(text) {
       </p>
     ))
 }
-
-export const PRIVACY_SECTIONS = [
-  'intro',
-  'local',
-  'account',
-  'social',
-  'dit',
-  'push',
-  'pay',
-  'vendors',
-  'use',
-  'share',
-  'retain',
-  'rights',
-  'kids',
-  'security',
-  'intl',
-  'changes',
-  'contact',
-]
-
-export const TERMS_SECTIONS = [
-  'intro',
-  'eligible',
-  'service',
-  'content',
-  'account',
-  'social',
-  'dit',
-  'family',
-  'pay',
-  'rules',
-  'end',
-  'warranty',
-  'liability',
-  'indemnify',
-  'law',
-  'changes',
-  'contact',
-]
 
 export function LegalArticle({ kind, sections }) {
   const vars = { ...legalVars(), date: t('legal.date') }

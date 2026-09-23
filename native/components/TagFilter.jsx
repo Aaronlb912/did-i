@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { leftoverOn } from '../../src/lib/tags.js'
 import { t } from '../../src/lib/i18n.js'
 import { fonts } from '../theme.js'
@@ -26,7 +26,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
   return (
     <View style={styles.wrap}>
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => setOpen((live) => !live)}
         style={[styles.pick, { backgroundColor: colors.panel2, borderColor: tagId ? colors.onDeep : colors.line }]}
       >
         <Text style={[styles.bars, { color: tagId ? colors.on : colors.ink }]}>≡</Text>
@@ -35,8 +35,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
         </Text>
         {count ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+      {open ? (
           <View style={[styles.menu, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
             <Pressable style={styles.row} onPress={() => pick('')}>
               <Text style={{ color: !tagId ? colors.on : colors.ink }}>{t('tags.all')}</Text>
@@ -55,14 +54,13 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
               )
             })}
           </View>
-        </Pressable>
-      </Modal>
+      ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 8, alignSelf: 'flex-start' },
+  wrap: { marginBottom: 8, alignSelf: 'flex-start', zIndex: 12 },
   pick: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -76,7 +74,6 @@ const styles = StyleSheet.create({
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
   count: { fontFamily: fonts.mono, fontSize: 11 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', padding: 20, paddingTop: 120 },
-  menu: { borderWidth: 1, borderRadius: 12, padding: 6, gap: 2 },
+  menu: { marginTop: 6, borderWidth: 1, borderRadius: 12, padding: 6, gap: 2, minWidth: 180 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 10, gap: 12 },
 })

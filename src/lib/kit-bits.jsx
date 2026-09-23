@@ -1,16 +1,11 @@
 import { t } from './i18n.js'
+export { kitTabDefault } from './kit-tab.js'
 
 const TABS = [
   { id: 'looks', key: 'shop.looks' },
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
 ]
-
-export function kitTabDefault(tab, purse) {
-  if (tab === 'looks') return purse.lookOn
-  if (tab === 'cheers') return purse.cheerOn || 'off'
-  return purse.buddyOn || 'off'
-}
 
 export function KitTabs({ tab, onTab, counts }) {
   return (

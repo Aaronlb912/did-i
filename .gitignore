@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 .expo
+.expo-sweep-*
+.expo-export-sweep*
+.expo-export-ios
 dist
 dist-visual
 dev-dist
@@ -37,6 +40,8 @@ android/.idea
 *.aab
 *.keystore
 ios
+GoogleService-Info.plist
+AuthKey_*.p8
 android/app/src/main/assets/public
 
 

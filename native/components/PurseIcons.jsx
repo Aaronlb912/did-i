@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native'
-import Svg, { Circle, Ellipse, Path } from 'react-native-svg'
+import { svgParts } from '../lib/svg-parts.js'
 
 function gemPackMarkLayout(count) {
   const n = Math.max(1, Math.floor(Number(count) || 0))
@@ -24,6 +24,11 @@ function gemPackMarkLayout(count) {
 }
 
 export function CoinIcon({ size = 16 }) {
+  const parts = svgParts()
+  if (!parts) {
+    return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#e2c36a' }} />
+  }
+  const { Svg, Circle, Ellipse, Path } = parts
   return (
     <Svg pointerEvents="none" width={size} height={size} viewBox="0 0 16 16">
       <Circle cx="8" cy="8.5" r="6.2" fill="#6b5420" />
@@ -38,6 +43,20 @@ export function CoinIcon({ size = 16 }) {
 }
 
 export function GemIcon({ size = 16 }) {
+  const parts = svgParts()
+  if (!parts) {
+    return (
+      <View
+        style={{
+          width: size,
+          height: size,
+          backgroundColor: '#5ee8ff',
+          transform: [{ rotate: '45deg' }],
+        }}
+      />
+    )
+  }
+  const { Svg, Path } = parts
   return (
     <Svg pointerEvents="none" width={size} height={size} viewBox="0 0 16 16">
       <Path d="M8 1.6 14.2 6.2 8 14.4 1.8 6.2 8 1.6z" fill="#2a9db5" />

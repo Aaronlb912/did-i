@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
-import { useEffect, useMemo, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
@@ -39,16 +39,26 @@ import {
   wearCheerStage,
 } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
-import { BuddyChip, BuddyHang, CheerChip, LookChip } from '../components/Cosmetic.jsx'
+import {
+  BuddyChip,
+  BuddyHang,
+  CheerChip,
+  LookChip,
+} from '../components/Cosmetic.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { PageTitle } from '../components/SetBits.jsx'
 import { PurseLine } from '../components/PurseLine.jsx'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import {
+  buyCheerStageWithCoins,
+  buyLookWithCoins,
+} from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
+import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
-import { kitTabDefault } from '../../src/lib/kit-bits.jsx'
+import { kitTabDefault } from '../../src/lib/kit-tab.js'
 import { hallColors, fonts } from '../theme.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
@@ -63,6 +73,12 @@ function shopMiss(next) {
   if (!next?.miss) return ''
   if (next.missN != null) return t(next.miss, { n: next.missN })
   return t(next.miss)
+}
+
+function shortOnGems(next, colors) {
+  if (next?.miss !== 'shop.miss.needGems' && next?.miss !== 'gems') return false
+  offerMoreGems(colors)
+  return true
 }
 
 function wearLook(book, id) {
@@ -98,7 +114,7 @@ function BuddyPreviewCard({ id, colors }) {
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
       <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={id} inline />
+        <BuddyHang id={id} />
         <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
         <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{t('shop.buddyPreviewQ')}</Text>
       </View>
@@ -190,24 +206,30 @@ function gemLine(n) {
 
 // Coins and gems do not come back, so a tap never spends on its own.
 function BuyConfirm({ confirm, onClose, onGo, colors }) {
-  return (
-    <Modal visible={Boolean(confirm)} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
-        <Pressable
-          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <Text style={[styles.popKicker, { color: colors.on }]}>{t('shop.buyKicker')}</Text>
-          <Text style={[styles.popTitle, { color: colors.ink }]}>{confirm?.title}</Text>
-          <Text style={[styles.shopNote, { color: colors.inkSoft }]}>{confirm?.body}</Text>
-          <View style={styles.popRow}>
-            <DidButton small label={t('shop.buy')} onPress={onGo} colors={colors} />
-            <KeyButton label={t('settings.neverMind')} onPress={onClose} colors={colors} />
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  )
+  const closeRef = useRef(onClose)
+  const goRef = useRef(onGo)
+  closeRef.current = onClose
+  goRef.current = onGo
+
+  useEffect(() => {
+    if (!confirm) {
+      publishSheet(null)
+      return undefined
+    }
+    publishSheet({
+      kicker: t('shop.buyKicker'),
+      title: confirm.title,
+      body: confirm.body,
+      goLabel: t('shop.buy'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => closeRef.current?.(),
+      onGo: () => goRef.current?.(),
+    })
+    return () => publishSheet(null)
+  }, [confirm, colors])
+
+  return null
 }
 
 function ShopActionRow({ name, note, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
@@ -291,7 +313,6 @@ export function ShopScreen({ book, onChange }) {
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
-
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined}>
       <PageTitle colors={colors}>{t('shop.title')}</PageTitle>
@@ -416,6 +437,11 @@ export function ShopLooksScreen({ book, onChange }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (shortOnGems(next, colors)) {
+      setMiss('')
+      setConfirm(null)
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setPeekLook('')
@@ -446,11 +472,18 @@ export function ShopLooksScreen({ book, onChange }) {
             take(buyLook(book, item.id))
             return
           }
+          if (item.gems > 0 && purse.gems < item.gems) {
+            offerMoreGems(colors)
+            return
+          }
           setMiss('')
           setConfirm({
             title: t(lookText(item.id, 'name')),
             body: t('shop.buyLookBody', { cost }),
-            go: () => take(buyLook(book, item.id)),
+            go: async () => {
+              const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
+              take(next)
+            },
           })
         }}
       />
@@ -498,6 +531,11 @@ export function ShopCheersScreen({ book, onChange }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (shortOnGems(next, colors)) {
+      setMiss('')
+      setConfirm(null)
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setConfirm(null)
@@ -515,6 +553,10 @@ export function ShopCheersScreen({ book, onChange }) {
         const next = have ? nextCheerStage(stage) : 0
         let actionLabel = t('shop.buy')
         let onAction = () => {
+          if (purse.gems < item.gems) {
+            offerMoreGems(colors)
+            return
+          }
           setMiss('')
           setConfirm({
             title: t(cheerText(item.id, 'name')),
@@ -533,7 +575,7 @@ export function ShopCheersScreen({ book, onChange }) {
               setConfirm({
                 title: t(cheerText(item.id, 'name')),
                 body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
-                go: () => take(buyCheerStage(book, item.id)),
+                go: async () => take(await buyCheerStageWithCoins(book, item.id)),
               })
             }
           } else {
@@ -581,6 +623,11 @@ export function ShopBuddiesScreen({ book, onChange }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (shortOnGems(next, colors)) {
+      setMiss('')
+      setConfirm(null)
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setPeekBuddy('')
@@ -616,6 +663,10 @@ export function ShopBuddiesScreen({ book, onChange }) {
                 take(wearBuddy(book, item.id))
                 return
               }
+              if (purse.gems < item.gems) {
+                offerMoreGems(colors)
+                return
+              }
               setMiss('')
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
@@ -645,33 +696,61 @@ export function ShopBuddiesScreen({ book, onChange }) {
 export function GemShopScreen({ book }) {
   const colors = useShopColors(book)
   const purse = normalizePurse(book)
-  const [miss, setMiss] = useState('')
-  const [note, setNote] = useState('')
+  const [banner, setBanner] = useState('')
   const [storeReady, setStoreReady] = useState(false)
   const [storeLoading, setStoreLoading] = useState(isReactNative())
 
   useEffect(() => {
     if (!isReactNative()) return undefined
-    initGemIap().then(() => {
-      setStoreReady(iapReady())
-      setStoreLoading(false)
-    })
-    return undefined
+    let alive = true
+    const timer = setTimeout(() => {
+      if (alive) setStoreLoading(false)
+    }, 8000)
+    initGemIap()
+      .catch(() => {})
+      .finally(() => {
+        if (!alive) return
+        setStoreReady(iapReady())
+        setStoreLoading(false)
+      })
+    return () => {
+      alive = false
+      clearTimeout(timer)
+    }
   }, [])
 
+  function gemNotice(body) {
+    publishSheet({
+      title: t('gems.title'),
+      body,
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
   async function buy(packId) {
-    setMiss('')
-    setNote('')
-    const out = await startGemPurchase(packId)
+    setBanner(t('gems.loadingStore'))
+    let out
+    try {
+      out = await startGemPurchase(packId)
+    } catch {
+      setBanner('')
+      gemNotice(t('gems.storeError'))
+      return
+    }
     if (out.miss === 'signin') {
+      setBanner('')
+      publishSheet(null)
       goHash('/account')
       return
     }
     if (out.miss) {
-      setMiss(gemMiss(out.miss))
+      setBanner('')
+      gemNotice(gemMiss(out.miss))
       return
     }
-    setNote(out.pending ? t('gems.pending') : t('gems.return'))
+    setBanner(out.pending ? t('gems.pending') : '')
   }
 
   const expoGo = Constants.appOwnership === 'expo'
@@ -690,6 +769,11 @@ export function GemShopScreen({ book }) {
       </View>
       <Meta colors={colors}>{t('gems.hintNative')}</Meta>
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
+      {banner ? (
+        <View style={[styles.gemSheet, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+          <Text style={[styles.gemSheetText, { color: colors.ink }]}>{banner}</Text>
+        </View>
+      ) : null}
 
       {GEM_PACKS.map((pack) => {
         const each = formatUsd(Math.round(pack.cents / pack.gems))
@@ -715,7 +799,7 @@ export function GemShopScreen({ book }) {
               label={t('gems.buy')}
               onPress={() => buy(pack.id)}
               colors={colors}
-              disabled={!storeReady}
+              disabled={storeLoading}
             />
           </View>
         )
@@ -733,8 +817,6 @@ export function GemShopScreen({ book }) {
         </Text>
         .
       </Meta>
-      {note ? <Meta colors={colors}>{note}</Meta> : null}
-      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       <KeyButton label={t('gems.backShop')} onPress={() => goHash('/shop')} colors={colors} />
     </BoardShell>
   )
@@ -1053,6 +1135,14 @@ const styles = StyleSheet.create({
   shopCopy: { gap: 4, flex: 1 },
   shopName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   shopNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  gemSheet: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  gemSheetText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   gemBalance: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1117,11 +1207,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 18,
+    paddingTop: 28,
     gap: 8,
     alignItems: 'center',
     minHeight: 160,
     justifyContent: 'center',
-    overflow: 'hidden',
+    overflow: 'visible',
+    position: 'relative',
   },
   buddyPreviewCardGem: {
     overflow: 'visible',

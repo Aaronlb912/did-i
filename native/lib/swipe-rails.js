@@ -1,11 +1,33 @@
-import { makeMutable } from 'react-native-reanimated'
+let railPull = { value: 0 }
+let railLive = { value: 0 }
+let ready = false
 
-// Only one card can be dragged at a time, so the pull lives outside React.
-// The rails read these straight off the UI thread; nothing re-renders mid drag.
-export const railPull = makeMutable(0)
-export const railLive = makeMutable(0)
+function ensureRails() {
+  if (ready) return
+  ready = true
+  try {
+    const { makeMutable } = require('react-native-reanimated')
+    if (typeof makeMutable === 'function') {
+      railPull = makeMutable(0)
+      railLive = makeMutable(0)
+    }
+  } catch {
+    // Plain objects keep imports from throwing at bundle load.
+  }
+}
+
+export function getRailPull() {
+  ensureRails()
+  return railPull
+}
+
+export function getRailLive() {
+  ensureRails()
+  return railLive
+}
 
 export function restRails() {
+  ensureRails()
   railPull.value = 0
   railLive.value = 0
 }

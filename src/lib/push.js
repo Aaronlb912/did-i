@@ -11,6 +11,15 @@ export async function startPush() {
   return 'not native'
 }
 
+export async function preparePush() {
+  return 'not native'
+}
+
+export async function syncPushTokenIfAllowed() {
+  return 'not native'
+}
+
+
 export async function dropToken() {
   const db = cloud()
   if (!db) return

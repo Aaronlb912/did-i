@@ -1,11 +1,27 @@
-import { useEffect, useRef } from 'react'
+import { Component, useEffect, useRef } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { fonts } from '../theme.js'
 
-export function UndoToast({ undo, onUndo, colors }) {
+class ToastBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { dead: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { dead: true }
+  }
+
+  render() {
+    if (this.state.dead) return null
+    return this.props.children
+  }
+}
+
+function UndoToastInner({ undo, onUndo, colors }) {
   const reduce = useReduceMotion()
   const fade = useRef(new Animated.Value(0)).current
   const slide = useRef(new Animated.Value(8)).current
@@ -54,12 +70,20 @@ export function UndoToast({ undo, onUndo, colors }) {
   )
 }
 
+export function UndoToast(props) {
+  return (
+    <ToastBoundary>
+      <UndoToastInner {...props} />
+    </ToastBoundary>
+  )
+}
+
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 10,
+    bottom: 76,
     alignItems: 'center',
     zIndex: 12,
     elevation: 12,

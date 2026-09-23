@@ -24,6 +24,24 @@ if (typeof global.document === 'undefined') {
 
 const mem = new Map()
 let store = null
+let mmkvTried = false
+
+function mmkvStore() {
+  if (mmkvTried) return store
+  mmkvTried = true
+  try {
+    const { createMMKV } = require('react-native-mmkv')
+    store = createMMKV({ id: 'did-i' })
+  } catch (error) {
+    console.warn('mmkv unavailable', error?.message || error)
+    store = null
+  }
+  return store
+}
+
+function storageBox() {
+  return mmkvStore() || mem
+}
 
 globalThis.__didIPlatform = Platform.OS
 globalThis.__didIAppearance = Appearance
@@ -36,33 +54,46 @@ globalThis.__didIOnVisible = (fn) => {
   return () => sub.remove()
 }
 
-try {
-  const { createMMKV } = require('react-native-mmkv')
-  store = createMMKV({ id: 'did-i' })
-} catch (error) {
-  console.warn('mmkv unavailable', error?.message || error)
-}
-
 function kv(prefix) {
   return {
     getItem: (key) => {
       const id = `${prefix}${key}`
-      if (store) return store.getString(id) ?? null
-      return mem.get(id) ?? null
+      try {
+        const box = storageBox()
+        if (box.getString) return box.getString(id) ?? null
+        return box.get(id) ?? null
+      } catch {
+        return mem.get(id) ?? null
+      }
     },
     setItem: (key, value) => {
       const id = `${prefix}${key}`
-      if (store) store.set(id, value)
-      else mem.set(id, value)
+      try {
+        const box = storageBox()
+        if (box.set) box.set(id, value)
+        else mem.set(id, value)
+      } catch {
+        mem.set(id, value)
+      }
     },
     removeItem: (key) => {
       const id = `${prefix}${key}`
-      if (store) store.remove(id)
-      else mem.delete(id)
+      try {
+        const box = storageBox()
+        if (box.remove) box.remove(id)
+        else mem.delete(id)
+      } catch {
+        mem.delete(id)
+      }
     },
     clear: () => {
-      if (store) store.clearAll()
-      else mem.clear()
+      try {
+        const box = storageBox()
+        if (box.clearAll) box.clearAll()
+        else mem.clear()
+      } catch {
+        mem.clear()
+      }
     },
   }
 }
@@ -76,21 +107,19 @@ const win = global.window
 
 if (!win.location) win.location = { hash: '#/' }
 
-if (typeof global.CustomEvent !== 'function') {
-  class NativeCustomEvent {
-    constructor(type, options = {}) {
-      this.type = String(type)
-      this.detail = options.detail
-      this.defaultPrevented = false
-    }
-
-    preventDefault() {
-      this.defaultPrevented = true
-    }
+class NativeCustomEvent {
+  constructor(type, options = {}) {
+    this.type = String(type)
+    this.detail = options.detail
+    this.defaultPrevented = false
   }
-  global.CustomEvent = NativeCustomEvent
-  win.CustomEvent = NativeCustomEvent
+
+  preventDefault() {
+    this.defaultPrevented = true
+  }
 }
+global.CustomEvent = NativeCustomEvent
+win.CustomEvent = NativeCustomEvent
 
 // A real bus. The old stub accepted only hashchange and threw every other
 // listener away, so SHELF_IN from cloud sync never reached the shelf.
@@ -141,7 +170,11 @@ export function emitHashChange(hash) {
 }
 
 export function emit(type, detail) {
-  fire(new global.CustomEvent(type, { detail }))
+  const event = new global.CustomEvent(type, { detail })
+  if (event.detail == null) event.detail = detail
+  fire(event)
 }
+
+win.__didIEmit = emit
 
 hookErrorReport()

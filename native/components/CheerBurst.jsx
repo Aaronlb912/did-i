@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { svgParts } from '../lib/svg-parts.js'
 import { holdFor, popsFor } from '../../src/lib/cheer-pops.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -9,6 +9,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { hallColors, fonts } from '../theme.js'
+import { Slot } from './Slot.jsx'
 
 const CHEER_TOP = 3.6 * 16
 
@@ -529,45 +530,59 @@ function Stamp({ delay, rot, color, panel }) {
   )
 }
 
-const AnimatedPath = Animated.createAnimatedComponent(Path)
-
-function Tick({ delay, color, scale }) {
-  const dash = useMemo(() => new Animated.Value(100), [])
+function Tick({ color, scale }) {
+  const parts = svgParts()
   const boxW = remPx('7.2') * (scale || 1)
   const boxH = remPx('5') * (scale || 1)
-  useEffect(() => {
-    dash.setValue(100)
-    Animated.sequence([
-      Animated.delay(delay),
-      Animated.timing(dash, {
-        toValue: 0,
-        duration: 550,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-    ]).start()
-  }, [dash, delay])
+  const frame = {
+    position: 'absolute',
+    left: -boxW / 2,
+    top: -boxH / 2,
+    width: boxW,
+    height: boxH,
+  }
+  if (!parts) {
+    const thick = Math.max(4, boxH * 0.12)
+    return (
+      <View pointerEvents="none" style={frame}>
+        <View
+          style={{
+            position: 'absolute',
+            width: boxW * 0.28,
+            height: thick,
+            left: boxW * 0.14,
+            top: boxH * 0.52,
+            backgroundColor: color,
+            borderRadius: thick,
+            transform: [{ rotate: '42deg' }],
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            width: boxW * 0.52,
+            height: thick,
+            left: boxW * 0.3,
+            top: boxH * 0.38,
+            backgroundColor: color,
+            borderRadius: thick,
+            transform: [{ rotate: '-48deg' }],
+          }}
+        />
+      </View>
+    )
+  }
+  const { Svg, Path } = parts
   return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        left: -boxW / 2,
-        top: -boxH / 2,
-        width: boxW,
-        height: boxH,
-      }}
-    >
+    <View pointerEvents="none" style={frame}>
       <Svg width={boxW} height={boxH} viewBox="0 0 72 50">
-        <AnimatedPath
+        <Path
           d="M10 27 L26 43 L62 9"
           stroke={color}
           strokeWidth={6}
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
-          strokeDasharray="100"
-          strokeDashoffset={dash}
         />
       </Svg>
     </View>
@@ -899,7 +914,7 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
     )
   }
   if (bit.stamp) return <Stamp delay={delay} rot={bit.rot} color={on} panel={colors.panel} />
-  if (bit.tick) return <Tick delay={delay} color={on} scale={bit.scale} />
+  if (bit.tick) return <Tick color={on} scale={bit.scale} />
   if (bit.dancer) {
     return (
       <Dancer
@@ -974,8 +989,14 @@ export function CheerBurst() {
   const stageW = winW
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent presentationStyle="overFullScreen">
-      <View pointerEvents="box-none" style={styles.layer}>
+    <View pointerEvents="none" style={styles.layer}>
+      <Text
+        pointerEvents="none"
+        style={[styles.cheerName, { color: colors.on, top: stageTop + stageH * 0.36 }]}
+      >
+        {t(`cheer.${burst.kind}.name`)}
+      </Text>
+      <Slot key={burst.key}>
         <View style={[styles.stage, { top: stageTop, width: stageW, height: stageH }]}>
           {screenPop
             ? screenPop.bits
@@ -1003,21 +1024,31 @@ export function CheerBurst() {
             />
           ))}
         </View>
-      </View>
-    </Modal>
+      </Slot>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   layer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 9999,
-    elevation: 24,
+    zIndex: 120,
+    elevation: 30,
   },
   stage: {
     position: 'absolute',
     left: 0,
     overflow: 'visible',
+  },
+  cheerName: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontFamily: fonts.display,
+    fontSize: 42,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   pop: {
     position: 'absolute',

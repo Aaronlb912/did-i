@@ -9,6 +9,8 @@ import {
   usePrefs,
   writePrefs,
 } from '../../src/lib/prefs.js'
+import { ownedLookIds, readWidgetSettings, widgetTagChoices } from '../../src/lib/widget-config.js'
+import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -104,6 +106,21 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
+  const widget = readWidgetSettings()
+  const widgetShelf = readShelf()
+  const widgetTags = widgetTagChoices(widgetShelf)
+  const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
+
+  function widgetTagWords() {
+    if (widget.tagMode === 'active') return t('widget.settings.tagActive')
+    const hit = widgetTags.find((row) => row.id === widget.tagId)
+    return hit?.title || t('widget.settings.tagMissing')
+  }
+
+  function widgetLookWords() {
+    if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
+    return t(`look.${widget.lookId}.name`)
+  }
 
   async function pickFile() {
     try {
@@ -196,6 +213,33 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.lessMotion')}
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+        />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('widget.settings.cap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          label={t('widget.settings.tag')}
+          sub={t('widget.settings.tagSub')}
+          value={widgetTagWords()}
+          chevron
+          onPress={() => setSheet('widgetTag')}
+        />
+        <SetRow
+          colors={colors}
+          label={t('widget.settings.look')}
+          sub={t('widget.settings.lookSub')}
+          value={widgetLookWords()}
+          chevron
+          onPress={() => setSheet('widgetLook')}
+        />
+        <SetSwitch
+          colors={colors}
+          label={t('widget.settings.openOnly')}
+          sub={t('widget.settings.openOnlySub')}
+          on={widget.openOnly}
+          onPress={() => applyWidgetPrefs({ widgetOpenOnly: !widget.openOnly })}
         />
       </SetCard>
 
@@ -339,6 +383,59 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
               on={prefs.locale === id}
               onPress={() => {
                 writePrefs({ locale: id })
+                setSheet(null)
+              }}
+            />
+          ))}
+        </SetSheet>
+      ) : null}
+
+      {sheet === 'widgetTag' ? (
+        <SetSheet colors={colors} title={t('widget.settings.tag')} onClose={() => setSheet(null)}>
+          <SetPick
+            colors={colors}
+            label={t('widget.settings.tagActive')}
+            on={widget.tagMode === 'active'}
+            onPress={() => {
+              applyWidgetPrefs({ widgetTagMode: 'active', widgetTagId: '' })
+              setSheet(null)
+            }}
+          />
+          {widgetTags.map((row) => (
+            <SetPick
+              key={row.id}
+              colors={colors}
+              label={row.title}
+              on={widget.tagMode === 'pick' && widget.tagId === row.id}
+              onPress={() => {
+                applyWidgetPrefs({ widgetTagMode: 'pick', widgetTagId: row.id })
+                setSheet(null)
+              }}
+            />
+          ))}
+          {!widgetTags.length ? <SetNote colors={colors}>{t('widget.settings.noTags')}</SetNote> : null}
+        </SetSheet>
+      ) : null}
+
+      {sheet === 'widgetLook' ? (
+        <SetSheet colors={colors} title={t('widget.settings.look')} onClose={() => setSheet(null)}>
+          <SetPick
+            colors={colors}
+            label={t('widget.settings.lookTag')}
+            on={widget.lookMode === 'tag'}
+            onPress={() => {
+              applyWidgetPrefs({ widgetLookMode: 'tag' })
+              setSheet(null)
+            }}
+          />
+          {widgetLooks.map((id) => (
+            <SetPick
+              key={id}
+              colors={colors}
+              label={t(`look.${id}.name`)}
+              on={widget.lookMode === 'pick' && widget.lookId === id}
+              onPress={() => {
+                applyWidgetPrefs({ widgetLookMode: 'pick', widgetLookId: id })
                 setSheet(null)
               }}
             />

@@ -2272,6 +2272,307 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   outline-offset: 2px;
 }
 
+.di-stamp-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 0;
+}
+
+.di-stamp-mark.di-cal-pip,
+.di-stamp-mark.di-weekbar-pip {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.di-weekbar-days .di-stamp-mark.di-weekbar-pip {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.di-stamp-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--di-on);
+  filter: drop-shadow(0 0.5px 0 color-mix(in srgb, var(--di-on-deep) 65%, transparent));
+}
+
+.di-stamp-ring,
+.di-stamp-dot-ring {
+  stroke: color-mix(in srgb, var(--di-on-deep) 75%, var(--di-on));
+  opacity: 0.9;
+}
+
+.di-stamp-mark[data-stamp='dot'] .di-stamp-dot-fill {
+  fill: var(--di-on);
+}
+
+.di-stamp-dot-shine,
+.di-stamp-gloss {
+  fill: color-mix(in srgb, var(--di-plate) 50%, var(--di-on));
+  opacity: 0.5;
+}
+
+.di-stamp-shade {
+  fill: color-mix(in srgb, var(--di-on-deep) 40%, var(--di-plate));
+  opacity: 0.35;
+}
+
+.di-stamp-crater {
+  fill: color-mix(in srgb, var(--di-on-deep) 45%, var(--di-plate));
+  opacity: 0.5;
+}
+
+.di-stamp-check {
+  color: var(--di-on);
+  filter: drop-shadow(0 0 0.25px var(--di-on-deep));
+}
+
+.di-stamp-mark[data-stamp='star'] .di-stamp-glyph,
+.di-stamp-chip[data-stamp='star'] .di-stamp-glyph {
+  color: color-mix(in srgb, var(--di-on) 82%, var(--di-plate));
+}
+
+.di-stamp-mark[data-stamp='moon'] .di-stamp-glyph,
+.di-stamp-chip[data-stamp='moon'] .di-stamp-glyph {
+  color: color-mix(in srgb, var(--di-on) 62%, var(--di-ink-soft));
+}
+
+.di-stamp-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--di-line) 80%, var(--di-on-deep));
+  background:
+    radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--di-plate) 90%, transparent), transparent 55%),
+    linear-gradient(165deg, var(--di-plate), color-mix(in srgb, var(--di-panel) 65%, var(--di-plate)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--di-plate) 85%, transparent),
+    0 1px 2px color-mix(in srgb, var(--di-ink) 12%, transparent);
+}
+
+.di-stamp-chip[data-stamp='dot'] {
+  border-radius: 0.55rem;
+}
+
+.di-stamp-chip .di-stamp-glyph {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.di-tag-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.38rem;
+  background: linear-gradient(155deg, var(--di-ink-soft), color-mix(in srgb, var(--di-ink) 50%, var(--di-ink-soft)));
+  border: 1px solid color-mix(in srgb, var(--di-line) 70%, var(--di-ink));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--di-plate) 28%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--di-ink) 35%, transparent),
+    0 1px 1px color-mix(in srgb, var(--di-ink) 20%, transparent);
+}
+
+.di-tagpick .di-tag-badge {
+  margin-right: 0.2rem;
+}
+
+.di-tagmenu-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.di-badge-glyph {
+  display: block;
+  width: 0.82rem;
+  height: 0.82rem;
+  color: var(--di-plate);
+}
+
+.di-badge-cut,
+.di-badge-edge {
+  opacity: 0.5;
+}
+
+.di-badge-pocket {
+  opacity: 0.32;
+}
+
+.di-badge-door {
+  fill: color-mix(in srgb, var(--di-ink) 55%, var(--di-ink-soft));
+}
+
+.di-badge-knob {
+  fill: color-mix(in srgb, var(--di-plate) 80%, var(--di-on));
+}
+
+.di-badge-gloss {
+  fill: color-mix(in srgb, var(--di-plate) 70%, transparent);
+  opacity: 0.45;
+}
+
+.di-tag-badge[data-badge='briefcase'] {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--di-ink) 35%, var(--di-ink-soft)), var(--di-ink-soft));
+}
+
+.di-tag-badge[data-badge='leaf'] {
+  border-radius: 0.45rem 0.15rem 0.45rem 0.15rem;
+  transform: rotate(-6deg);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--di-on) 28%, var(--di-ink-soft)), var(--di-ink-soft));
+}
+
+.di-tag-badge[data-badge='home'] {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--di-on-deep) 18%, var(--di-ink-soft)), var(--di-ink-soft));
+}
+
+.di-tag-badge[data-badge='bolt'] {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--di-on) 42%, var(--di-ink-soft)), var(--di-ink-soft));
+  border-color: color-mix(in srgb, var(--di-on) 35%, var(--di-ink));
+}
+
+.di-tag-badge[data-badge='heart'] {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--di-on) 38%, var(--di-ink-soft)), var(--di-ink-soft));
+  border-color: color-mix(in srgb, var(--di-on) 30%, var(--di-ink));
+}
+
+.di-tag-badge[data-badge='heart'] .di-badge-glyph {
+  color: color-mix(in srgb, var(--di-plate) 75%, var(--di-on));
+}
+
+.di-tag-badge-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  max-width: 11rem;
+}
+
+.di-tag-badge-demo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: var(--di-pill);
+  border: 1px solid var(--di-line);
+  background: var(--di-panel-2);
+  color: var(--di-ink);
+  font-family: var(--di-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.di-tag-badge-demo.is-on .di-tag-badge-demo-chip {
+  border-color: var(--di-on-deep);
+  color: var(--di-on);
+}
+
+.di-tag-badge-demo-cap {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--di-ink-soft);
+}
+
+.di-badge-pick-live {
+  margin: 0.45rem 0 0.55rem;
+  align-items: flex-start;
+}
+
+.di-badge-pick-label {
+  margin-top: 0.15rem;
+}
+
+.di-badge-pick {
+  margin-top: 0.65rem;
+}
+
+.di-badge-pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.di-badge-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  min-width: 3.4rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--di-line);
+  background: var(--di-plate);
+  color: var(--di-ink);
+  font: inherit;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.di-badge-btn span {
+  font-size: 0.65rem;
+  color: var(--di-ink-soft);
+  letter-spacing: 0.02em;
+}
+
+.di-badge-btn.is-on span {
+  color: var(--di-on);
+}
+
+.di-shop-row-badge {
+  grid-template-columns: minmax(6.8rem, auto) minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.di-badge-fit {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--di-on) 35%, var(--di-ink-soft));
+}
+
+.di-badge-btn.is-on {
+  border-color: var(--di-on-deep);
+  box-shadow: inset 0 0 0 1px var(--di-on-deep);
+}
+
+.di-shop .di-preview .di-tag-badge {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.di-shop .di-preview .di-badge-glyph {
+  width: 1rem;
+  height: 1rem;
+}
+
+.di-badge-btn .di-tag-badge {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.di-badge-btn .di-badge-glyph {
+  width: 0.92rem;
+  height: 0.92rem;
+}
+
 .di-cal-pop {
   max-height: min(70dvh, 28rem);
   overflow: auto;
@@ -6738,6 +7039,36 @@ html[data-reduce-motion] .di-hall:is(
 .di-auth-card-actions .di-key {
   width: 100%;
   justify-content: center;
+}
+
+.di-auth-apple {
+  margin-top: 0.85rem;
+}
+
+.di-auth-apple-or {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  color: var(--di-ink-soft);
+  text-align: center;
+}
+
+.di-auth-apple-btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: var(--di-r);
+  background: #000;
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.di-auth-apple-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .di-auth-lock {

@@ -23,6 +23,7 @@ import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
 import { formatPhone, readMine, savePhone } from './people.js'
+import { AuthAppleSignIn } from './AuthAppleSignIn.jsx'
 import { useAuthSignIn } from './useAuthSignIn.js'
 import { clearPin, hasPin, setPin } from './session.js'
 import { SavableSetField } from './SavableSetField.jsx'
@@ -205,6 +206,8 @@ function SignedOut({ on }) {
             {auth.miss}
           </p>
         ) : null}
+
+        <AuthAppleSignIn auth={auth} />
 
         <div className="di-hang-actions di-auth-card-actions">
           {auth.step === 'start' ? (

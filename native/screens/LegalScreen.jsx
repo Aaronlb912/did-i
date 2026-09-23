@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { PRIVACY_SECTIONS, TERMS_SECTIONS } from '../../src/lib/LegalArticle.jsx'
+import { PRIVACY_SECTIONS, TERMS_SECTIONS } from '../../src/lib/legal-sections.js'
 import { legalVars } from '../../src/lib/legal.js'
 import { t } from '../../src/lib/i18n.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'

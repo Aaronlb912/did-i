@@ -33,9 +33,10 @@ export function nativeApp() {
 
 export function needsAuth(account) {
   if (!cloudSetUp() || !nativeApp()) return false
-  if (!account?.ready) return false
   if (account?.user) return false
   if (authSkipped()) return false
+  // A fresh install has no session yet. Waiting on `ready` used to open
+  // Tonight first, and a hung session check left no way to sign in.
   return true
 }
 

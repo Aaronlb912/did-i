@@ -289,7 +289,8 @@ export function gemPanelStyle(look, theme = 'dark') {
   if (!tone) return undefined
   return {
     backgroundColor: tone.panelTint,
-    borderColor: 'transparent',
+    borderColor: tone.ring,
+    borderWidth: 1,
   }
 }
 

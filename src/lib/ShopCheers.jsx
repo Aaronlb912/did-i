@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { CheerChip } from './Cosmetic.jsx'
+import { buyCheerStageWithCoins } from './coin-shop.js'
 import {
   CHEERS,
   CHEER_GEMS,
@@ -16,7 +17,8 @@ import {
   normalizePurse,
 } from './purse.js'
 import { activeLook } from './dit-board.js'
-import { BuyConfirm, ShopPurse, coinLine, gemLine, shopMiss } from './shop-bits.jsx'
+import { goHash } from '../site/hash.js'
+import { BuyConfirm, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -30,6 +32,11 @@ export function ShopCheers({ book, onChange, now }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (isGemShort(next)) {
+      setMiss('')
+      setConfirm(shortGemConfirm())
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setConfirm(null)
@@ -75,7 +82,7 @@ export function ShopCheers({ book, onChange, now }) {
                         setConfirm({
                           title: t(cheerText(item.id, 'name')),
                           body: t('shop.buyStageBody', { n: next, cost: coinLine(stageCost) }),
-                          go: () => take(buyCheerStage(book, item.id)),
+                          go: async () => take(await buyCheerStageWithCoins(book, item.id)),
                         })
                       }}
                     >
@@ -91,6 +98,10 @@ export function ShopCheers({ book, onChange, now }) {
                     className="di-key"
                     type="button"
                     onClick={() => {
+                      if (purse.gems < item.gems) {
+                        setConfirm(shortGemConfirm())
+                        return
+                      }
                       setMiss('')
                       setConfirm({
                         title: t(cheerText(item.id, 'name')),
@@ -117,6 +128,11 @@ export function ShopCheers({ book, onChange, now }) {
         confirm={confirm}
         onClose={() => setConfirm(null)}
         onGo={() => {
+          if (confirm?.short) {
+            setConfirm(null)
+            goHash('/gems')
+            return
+          }
           const go = confirm?.go
           setConfirm(null)
           if (typeof go === 'function') go()

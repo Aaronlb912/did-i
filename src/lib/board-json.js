@@ -144,6 +144,7 @@ export function blankBook() {
     lookOn: 'lime',
     buddies: [],
     buddyOn: '',
+    friendCheers: 0,
   }
 }
 
@@ -241,6 +242,7 @@ export function normalizeBook(raw) {
     lookOn: purse.lookOn,
     buddies: purse.buddies,
     buddyOn: purse.buddyOn,
+    friendCheers: purse.friendCheers,
   }
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
+import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
 
 const FAMILY_LAMP_FIELDS =
@@ -310,6 +311,104 @@ export async function sendCheer(toId, note, cheerId = '') {
     return bad(error)
   }
   return { miss: '' }
+}
+
+function stockFromRpc(data) {
+  const bag = data && typeof data === 'object' ? data : {}
+  const cheers = bag.cheers == null ? null : Math.max(0, Math.floor(Number(bag.cheers) || 0))
+  return {
+    gems: Math.max(0, Math.floor(Number(bag.gems) || 0)),
+    cheers,
+  }
+}
+
+export async function readFriendCheers() {
+  const db = cloud()
+  if (!db) return null
+  const user = await me()
+  if (!user) return null
+  const { data, error } = await db.rpc('read_friend_cheers')
+  if (error) return null
+  const n = Math.floor(Number(data))
+  return Number.isFinite(n) ? Math.max(0, n) : null
+}
+
+export async function sendFriendCheer(toId, note, cheerId = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const { data, error } = await db.rpc('send_friend_cheer', {
+    other: toId,
+    note: String(note || '').trim(),
+    want: String(cheerId || '').trim().slice(0, 20),
+  })
+  if (!error) return { miss: '', ...stockFromRpc(data) }
+  const message = error.message || ''
+  if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return { miss: 'setup' }
+  if (/need cheers/i.test(message)) return { miss: 'cheers' }
+  if (/not friends|not signed in/i.test(message)) return { miss: 'notFriend' }
+  return bad(error)
+}
+
+export async function buyCheers(book) {
+  const db = cloud()
+  if (!db) return { ...buyFriendCheers(book) }
+  const user = await me()
+  if (!user) return { miss: 'out', book }
+  const { data, error } = await db.rpc('buy_friend_cheers')
+  if (!error) {
+    const stock = stockFromRpc(data)
+    return { miss: '', book: applyFriendCheerStock(book, stock.gems, stock.cheers), cheers: stock.cheers }
+  }
+  const message = error.message || ''
+  if (error.code === 'PGRST202' || /buy_friend_cheers/i.test(message)) return { ...buyFriendCheers(book) }
+  if (/need gems/i.test(message)) return { miss: 'gems', book }
+  if (/cheer cap/i.test(message)) return { miss: 'cap', book }
+  return { ...bad(error), book }
+}
+
+/** Spends one stored cheer. The gem was spent when the cheers were bought. */
+export async function cheerFriend(book, otherId, cheerId = '') {
+  const sent = await sendFriendCheer(otherId, '', cheerId)
+  if (sent.miss === 'setup') {
+    if (takeFriendCheer(book).miss) return { miss: 'cheers', book }
+    const { miss } = await sendCheer(otherId, '', cheerId)
+    if (miss) return { miss, book }
+    return takeFriendCheer(book)
+  }
+  if (sent.miss) return { miss: sent.miss, book }
+  return { miss: '', book: applyFriendCheerStock(book, sent.gems, sent.cheers) }
+}
+
+export async function sendFamilyCheer(toId, note, cheerId = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const { data, error } = await db.rpc('send_family_cheer', {
+    other: toId,
+    note: String(note || '').trim(),
+    want: String(cheerId || '').trim().slice(0, 20),
+  })
+  if (!error) return { miss: '', ...stockFromRpc(data) }
+  const message = error.message || ''
+  if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return { miss: 'setup' }
+  if (/need cheers/i.test(message)) return { miss: 'cheers' }
+  if (/not family|not signed in/i.test(message)) return { miss: 'notFriend' }
+  return bad(error)
+}
+
+export async function cheerFamily(book, otherId, note, cheerId = '') {
+  const sent = await sendFamilyCheer(otherId, note, cheerId)
+  if (sent.miss === 'setup') {
+    if (takeFriendCheer(book).miss) return { miss: 'cheers', book }
+    const { miss } = await sendCheer(otherId, note, cheerId)
+    if (miss) return { miss, book }
+    return takeFriendCheer(book)
+  }
+  if (sent.miss) return { miss: sent.miss, book }
+  return { miss: '', book: applyFriendCheerStock(book, sent.gems, sent.cheers) }
 }
 
 export async function giftCheer(toId, cheerId) {

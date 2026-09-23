@@ -4,6 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
+import { createRequire } from 'node:module'
 import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
@@ -28,6 +29,7 @@ import {
 } from '../src/lib/board-json.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
+import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -53,7 +55,17 @@ import {
   writeShelf,
 } from '../src/lib/board-shelf.js'
 import { signedOutSync } from '../src/lib/cloud-sync.js'
-import { gemWeekKey, spendGems, weeklyGemBump } from '../src/lib/purse.js'
+import {
+  buyCheer,
+  buyFriendCheers,
+  FRIEND_CHEER_CAP,
+  FRIEND_CHEERS_PER_GEM,
+  gemWeekKey,
+  spendGems,
+  takeFriendCheer,
+  weeklyGemBump,
+} from '../src/lib/purse.js'
+import { authGated, clearAuthSkip, needsAuth, skipAuth } from '../src/lib/auth-gate.js'
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
 import { en } from '../src/locales/en.js'
@@ -67,6 +79,11 @@ import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
 import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
+import { writePrefs } from '../src/lib/prefs.js'
+import { ownedLookIds, widgetBook, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
+import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf } from '../src/lib/widget-tonight.js'
+
+const require = createRequire(import.meta.url)
 
 const shelfStore = new Map()
 globalThis.localStorage = {
@@ -607,6 +624,12 @@ test('Spanish ship locale does not copy English by mistake', () => {
   }
 })
 
+test('a gem buy with an empty purse asks for more gems', () => {
+  const next = buyCheer({ gems: 0 }, 'tape')
+  assert.equal(next.miss, 'shop.miss.needGems')
+  assert.equal(next.book.gems, 0)
+})
+
 test('a cheer cannot be sent on gems you do not have', () => {
   const broke = spendGems({ gems: 0 }, 1)
   assert.equal(broke.miss, 'gems')
@@ -617,6 +640,364 @@ test('a cheer cannot be sent on gems you do not have', () => {
   assert.equal(paid.book.gems, 2)
 })
 
+test('one gem buys five stored cheers and a cheer spends one', () => {
+  const broke = buyFriendCheers({ gems: 0, friendCheers: 0 })
+  assert.equal(broke.miss, 'gems')
+  assert.equal(broke.book.friendCheers, 0)
+
+  const bought = buyFriendCheers({ gems: 1, friendCheers: 0 })
+  assert.equal(bought.miss, '')
+  assert.equal(bought.book.gems, 0)
+  assert.equal(bought.book.friendCheers, FRIEND_CHEERS_PER_GEM)
+
+  let book = bought.book
+  for (let n = 0; n < FRIEND_CHEERS_PER_GEM; n += 1) {
+    const spent = takeFriendCheer(book)
+    assert.equal(spent.miss, '')
+    book = spent.book
+  }
+  assert.equal(book.friendCheers, 0)
+  assert.equal(takeFriendCheer(book).miss, 'cheers')
+  assert.equal(takeFriendCheer(book).book.friendCheers, 0)
+
+  const full = buyFriendCheers({ gems: 2, friendCheers: FRIEND_CHEER_CAP - 4 })
+  assert.equal(full.miss, 'cap')
+  assert.equal(full.book.gems, 2)
+  assert.equal(full.book.friendCheers, FRIEND_CHEER_CAP - 4)
+})
+
+test('widget look picker only uses owned looks', () => {
+  const book = {
+    id: 't1',
+    title: 'Home',
+    lookOn: 'brass',
+    looks: ['lime', 'brass'],
+    lamps: [{ id: 'l1', question: 'Door?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  writePrefs({ widgetLookMode: 'pick', widgetLookId: 'pulse' })
+  assert.equal(widgetLookId(shelf, book), 'brass')
+  writePrefs({ widgetLookMode: 'pick', widgetLookId: 'brass' })
+  assert.equal(widgetLookId(shelf, book), 'brass')
+  assert.ok(ownedLookIds(shelf).has('brass'))
+})
+
+test('widget snapshot leads with the highest-priority open question', () => {
+  const book = {
+    id: 't1',
+    title: 'Home',
+    lamps: [
+      { id: 'low', question: 'Low one?', cadence: 'daily', archived: false, priority: 'low' },
+      { id: 'high', question: 'High one?', cadence: 'daily', archived: false, priority: 'high' },
+    ],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  const props = buildTonightWidgetProps(shelf)
+  assert.equal(props.leadLampId, 'high')
+  assert.equal(props.question, 'High one?')
+  assert.equal(props.items[0].lampId, 'high')
+  assert.equal(props.buddyId, '')
+})
+
+test('a worn buddy rides on the tonight widget', () => {
+  const book = {
+    id: 't1',
+    title: 'Home',
+    buddyOn: 'owl',
+    buddies: ['owl'],
+    lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const worn = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }))
+  assert.equal(worn.buddyId, 'owl')
+  const bare = { ...book, buddyOn: 'owl', buddies: [] }
+  assert.equal(buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [bare] })).buddyId, '')
+})
+
+test('widget props merge answers onto the pinned tag', () => {
+  const a = {
+    id: 'tag-a',
+    title: 'A',
+    lamps: [{ id: 'l1', question: 'One?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const b = {
+    id: 'tag-b',
+    title: 'B',
+    lamps: [{ id: 'l2', question: 'Two?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 'tag-a', boards: [a, b] })
+  writePrefs({ widgetTagMode: 'pick', widgetTagId: 'tag-b' })
+  const props = buildTonightWidgetProps(shelf)
+  assert.ok(props.items.some((item) => item.lampId === 'l2'), 'tag B question should be due tonight')
+  const merged = mergeWidgetPropsIntoShelf(shelf, {
+    tagId: 'tag-b',
+    items: props.items.map((item) => (item.lampId === 'l2' ? { ...item, status: 'yes' } : item)),
+  })
+  const answered = merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]
+  assert.equal(answered?.lampId, 'l2')
+  assert.equal(answered?.status, 'yes')
+})
+
+test('the tonight widget can draw a question without the app', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const bridge = readFileSync(path.join(root, 'native/widget-bridge.js'), 'utf8')
+  assert.ok(bridge.includes("import('./widget-setup')"), 'ios setup is not the empty web stub')
+  const require = createRequire(import.meta.url)
+  const { transformFileSync } = require('@babel/core')
+  const result = transformFileSync(path.join(root, 'widgets/DidITonightWidget.tsx'), {
+    filename: path.join(root, 'widgets/DidITonightWidget.tsx'),
+    caller: { name: 'metro', platform: 'ios' },
+  })
+  const code = result?.code || ''
+  const start = code.indexOf('DidITonightWidget=`')
+  const end = code.lastIndexOf('`;var widget')
+  assert.ok(start > 0 && end > start, 'widget layout is a self-contained string')
+  const source = code.slice(start + 'DidITonightWidget=`'.length, end)
+  assert.ok(source.includes('function leadItem'), 'lead lookup stays inside the widget')
+  assert.ok(source.includes('FALLBACK='), 'colors stay inside the widget')
+  const fn = eval(`(${source})`)
+  function view(type) {
+    return (props) => ({ type, props: props || {} })
+  }
+  function Text(props) {
+    const children = props.children
+    const list = children == null ? [] : Array.isArray(children) ? children.flat(Infinity) : [children]
+    const text = list.filter((child) => typeof child === 'string' || typeof child === 'number').join('')
+    return view('TextView')({ ...props, text })
+  }
+  Object.assign(globalThis, {
+    Text,
+    VStack: view('VStackView'),
+    HStack: view('HStackView'),
+    Spacer: view('SpacerView'),
+    ZStack: view('ZStackView'),
+    Circle: view('CircleView'),
+    Ellipse: view('EllipseView'),
+    Capsule: view('CapsuleView'),
+    Button: (props) => view('Button')(props),
+    font: (params) => params,
+    foregroundStyle: (style) => style,
+    padding: (params) => params,
+    background: (style) => style,
+    containerBackground: (style) => style,
+    containerRelativeFrame: () => ({ fill: 'widget' }),
+    clipShape: (shape, radius) => ({ shape, radius }),
+    clipped: () => ({ clipped: true }),
+    buttonStyle: (style) => style,
+    buttonBorderShape: (shape, radius) => ({ shape, radius }),
+    tint: (color) => color,
+    frame: (params) => params,
+    kerning: (value) => value,
+    textCase: (value) => value,
+    multilineTextAlignment: (value) => value,
+    widgetURL: (url) => url,
+    offset: (params) => params,
+    _jsx: (type, props) => (typeof type === 'function' ? type(props) : { type, props }),
+    _jsxs: (type, props) => (typeof type === 'function' ? type(props) : { type, props }),
+  })
+  const tree = fn(
+    {
+      tagTitle: 'Home',
+      question: 'Did I lock the door?',
+      leadLampId: 'door',
+      items: [
+        { lampId: 'door', label: 'Door', status: 'open' },
+        { lampId: 'keys', label: 'Keys', status: 'open' },
+      ],
+      left: 2,
+      footer: 'One left tonight.',
+      didLabel: 'Did',
+      nopeLabel: 'Did not',
+    },
+    { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' },
+  )
+  const drawn = JSON.stringify(tree)
+  assert.ok(drawn.includes('Did I lock the door?'), drawn.slice(0, 400))
+  assert.ok(drawn.includes('Home'))
+  assert.ok(drawn.includes('widget'), 'the card fills the widget')
+  assert.ok(drawn.includes('"clipped":true'), 'the widget clips to its container')
+  assert.equal((drawn.match(/"fill":"widget"/g) || []).length, 1, 'only the outer stack uses the widget frame')
+  assert.ok(drawn.includes('center'), 'the question is centered')
+  assert.ok(drawn.includes('did:door') && drawn.includes('nope:door'), 'the widget can mark did and did not')
+  assert.ok(drawn.indexOf('nope:door') < drawn.indexOf('did:door'), 'did not sits left of did')
+  assert.ok(drawn.includes('#7d8694'), 'did not uses the skip color')
+  assert.ok(!drawn.includes('#8b6b4a'), 'a widget with no buddy stays clear')
+  const owl = JSON.stringify(
+    fn(
+      {
+        tagTitle: 'Home',
+        question: 'Did I lock the door?',
+        leadLampId: 'door',
+        items: [{ lampId: 'door', label: 'Door', status: 'open' }],
+        left: 1,
+        footer: 'One left tonight.',
+        didLabel: 'Did',
+        nopeLabel: 'Did not',
+        buddyId: 'owl',
+      },
+      { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' },
+    ),
+  )
+  assert.ok(owl.includes('topTrailing') && owl.includes('#8b6b4a'), 'a worn owl sits in the top right')
+  function findPress(node, target) {
+    if (!node || typeof node !== 'object') return null
+    if (node.props?.target === target && typeof node.props.onPress === 'function') return node.props.onPress
+    const kids = node.props?.children
+    const list = Array.isArray(kids) ? kids : kids ? [kids] : []
+    for (const child of list) {
+      const hit = findPress(child, target)
+      if (hit) return hit
+    }
+    return null
+  }
+  const marked = findPress(tree, 'did:door')()
+  assert.equal(marked.question, 'Keys')
+  assert.equal(marked.items.find((item) => item.lampId === 'door').status, 'yes')
+  const empty = JSON.stringify(fn(undefined, { widgetFamily: 'systemSmall', widgetRenderingMode: 'fullColor' }))
+  assert.ok(empty.includes('No questions yet.'))
+  const glow = JSON.stringify(
+    fn(
+      {
+        tagTitle: 'Home',
+        question: 'Did I lock the door?',
+        items: [{ lampId: 'door', label: 'Door', status: 'open' }],
+        left: 1,
+        footer: 'One left tonight.',
+        colors: { bg: '#0a0e14', panel: '#111820', ink: '#e0e4f0', on: '#5ee8ff', gem: true, look: 'glow' },
+      },
+      { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' },
+    ),
+  )
+  assert.ok(glow.includes('#5ee8ff'), 'a glow look rings the card')
+  assert.ok(glow.includes('#111820'))
+})
+
+test('widget settings pick a tag and open tonight with that tag', () => {
+  const a = { id: 'tag-a', title: 'Home', lamps: [{ id: 'l1', question: 'Door?', cadence: 'daily', archived: false }], answers: [] }
+  const b = { id: 'tag-b', title: 'Work', lamps: [{ id: 'l2', question: 'Email?', cadence: 'daily', archived: false }], answers: [] }
+  const shelf = writeShelf({ currentId: 'tag-a', boards: [a, b] })
+  writePrefs({ widgetTagMode: 'pick', widgetTagId: 'tag-b' })
+  const book = widgetBook(shelf)
+  assert.equal(book.id, 'tag-b')
+  const uri = widgetTonightUri(book)
+  assert.ok(uri.includes('tag=tag-b'))
+  const props = buildTonightWidgetProps(shelf)
+  assert.equal(props.tagId, 'tag-b')
+  assert.equal(props.tagTitle, 'Work')
+})
+
+test('native metro shims are wired and pin default exports', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const lint = spawnSync(process.execPath, [path.join(root, 'scripts/lint-store.mjs')], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+  assert.equal(lint.status, 0, lint.stderr || lint.stdout || 'store lint failed')
+  const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
+  const packages = [
+    'react-native-worklets',
+    'react-native-reanimated',
+    'react-native-gesture-handler',
+    'react-native-svg',
+    'react-native-safe-area-context',
+    'expo-constants',
+    '@react-native-community/netinfo',
+    'expo-sensors',
+    'expo-clipboard',
+    'expo-haptics',
+    'expo-linking',
+    'expo-splash-screen',
+    'expo-document-picker',
+    'expo-apple-authentication',
+    'expo-font',
+    'expo-status-bar',
+    'expo-blur',
+    'expo-widgets',
+    'expo-notifications',
+    'react-native-screens',
+    'react-native-nitro-modules',
+    'react-native-mmkv',
+    'expo-iap',
+    'react-native-android-widget',
+    '@expo/ui/swift-ui',
+    '@expo/ui/swift-ui/modifiers',
+  ]
+  for (const pkg of packages) {
+    assert.ok(metro.includes(`'${pkg}'`), `metro should shim ${pkg}`)
+  }
+  const { pinEsModule, loadPinned } = require(path.join(root, 'native/shim/pin-module.cjs'))
+  const pinned = pinEsModule({ Gesture: {} }, () => {})
+  assert.notEqual(pinned.default, undefined, 'pinEsModule should set default')
+
+  const threw = new TypeError("Cannot read property 'default' of undefined")
+  const hostile = loadPinned(
+    () => ({
+      default: function Svg() {},
+      get Path() {
+        throw threw
+      },
+      Circle() {},
+      Line() {},
+    }),
+    (mod) => Boolean(mod && mod.Path && mod.Circle && mod.Line),
+    () => ({
+      __esModule: true,
+      default: function Svg() {},
+      Path() {},
+      Circle() {},
+      Line() {},
+    }),
+    '__didIPinTest',
+  )
+  assert.equal(typeof hostile.default, 'function')
+  assert.doesNotThrow(() => hostile.Path)
+  assert.equal(typeof hostile.Path, 'function')
+
+  const missing = loadPinned(
+    () => {
+      throw threw
+    },
+    () => true,
+    () => ({ Accelerometer: { addListener() {} } }),
+    '__didIPinTest',
+  )
+  assert.notEqual(missing, undefined)
+  assert.notEqual(missing.default, undefined)
+  assert.doesNotThrow(() => missing.default)
+
+  const nativeMod = {}
+  Object.defineProperty(nativeMod, 'createWidget', {
+    enumerable: false,
+    value() {
+      return { updateSnapshot() {} }
+    },
+  })
+  const kept = pinEsModule(nativeMod)
+  const swipeCard = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
+  const swipeStub = readFileSync(path.join(root, 'native/components/SwipeCardStub.jsx'), 'utf8')
+  assert.equal(swipeCard.includes('Pressable'), false, 'the face is a swipe, not buttons')
+  assert.equal(swipeStub.includes('Pressable'), false, 'the face fallback has no answer buttons')
+  assert.ok(swipeCard.includes('PanResponder'), 'the face swipes without the gesture module')
+  assert.ok(swipeCard.includes('borderWidth: 1'), 'the face keeps its border')
+
+  assert.equal(typeof kept.createWidget, 'function', 'seal should keep createWidget')
+  const made = kept.createWidget()
+  assert.equal(typeof made.updateSnapshot, 'function')
+
+  const empty = loadPinned(
+    () => undefined,
+    () => true,
+    () => ({ Path() {} }),
+    '__didIPinTest',
+  )
+  assert.doesNotThrow(() => empty.default)
+  assert.notEqual(empty.default, undefined)
+})
+
 test('native look ids match did-i.css', () => {
   const scriptsDir = path.dirname(fileURLToPath(import.meta.url))
   const syncScript = path.join(scriptsDir, 'sync-theme-tokens.mjs')
@@ -625,6 +1006,91 @@ test('native look ids match did-i.css', () => {
     encoding: 'utf8',
   })
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
+})
+
+test('a fresh phone shows sign-in before the session check finishes', () => {
+  const prev = globalThis.__didIPlatform
+  globalThis.__didIPlatform = 'ios'
+  clearAuthSkip()
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
+  const sign = readFileSync(path.join(root, 'native/screens/SignInScreen.jsx'), 'utf8')
+  const actions = readFileSync(path.join(root, 'native/components/AuthSignInActions.jsx'), 'utf8')
+  try {
+    assert.equal(needsAuth({ ready: false, user: null }), true)
+    assert.equal(needsAuth({ ready: true, user: null }), true)
+    assert.equal(needsAuth({ ready: true, user: { id: 'u' } }), false)
+    assert.equal(authGated('/tonight', { ready: false, user: null }), true)
+    assert.equal(authGated('/privacy', { ready: false, user: null }), false)
+    assert.ok(shell.indexOf('if (gated)') < shell.indexOf('<ScreenRouter'), 'sign-in replaces the hall')
+    assert.ok(shell.includes('<SignInScreen'), 'the gate renders the sign-in screen')
+    assert.ok(sign.includes("t('auth.title')"), 'the sign-in screen has a title')
+    assert.ok(sign.includes("t('account.email')"), 'the sign-in screen has an email field')
+    assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
+    assert.ok(actions.includes("t('account.send')"), 'the sign-in screen can send a code')
+    assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
+    assert.ok(sign.includes("t('auth.local')"), 'the sign-in screen can stay on this phone')
+    assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
+    assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
+    skipAuth()
+    assert.equal(needsAuth({ ready: false, user: null }), false)
+    assert.equal(authGated('/tonight', { ready: true, user: null }), false)
+  } finally {
+    clearAuthSkip()
+    if (prev == null) delete globalThis.__didIPlatform
+    else globalThis.__didIPlatform = prev
+  }
+})
+
+test('a still phone does not undo, a shake does', () => {
+  let state = emptyShake()
+  state = shakeStep(state, { x: 0, y: 0, z: 1 }, 1000)
+  state = shakeStep(state, { x: 0.02, y: 0, z: 1 }, 1080)
+  assert.equal(state.hit, false)
+  state = shakeStep(state, { x: 0, y: 0, z: 1.7 }, 1160)
+  assert.equal(state.hit, false)
+  state = shakeStep(state, { x: 0, y: 0, z: 1 }, 1240)
+  assert.equal(state.hit, true)
+  const whip = shakeStep(shakeStep(emptyShake(), { x: 0, y: 0, z: 1 }, 3000), { x: 2, y: 0, z: 1 }, 3080)
+  assert.equal(whip.hit, true)
+})
+
+test('the menu, a buy confirm, and a cheer preview can show on the phone', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
+  const menu = readFileSync(path.join(root, 'native/components/MastMenu.jsx'), 'utf8')
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  const cheer = readFileSync(path.join(root, 'native/components/CheerBurst.jsx'), 'utf8')
+  const purse = readFileSync(path.join(root, 'src/lib/purse.js'), 'utf8')
+  const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
+  const cal = readFileSync(path.join(root, 'native/components/HangMonthCal.jsx'), 'utf8')
+  assert.ok(menu.includes('<MastMenuSheet />'), 'the menu draws on the same screen as the cog')
+  assert.ok(shell.includes('<CheerBurstHost />'), 'a cheer preview paints above the screen')
+  const swipe = readFileSync(path.join(root, 'native/components/SwipeBackShell.jsx'), 'utf8')
+  assert.ok(swipe.includes('lifted ? { transform'), 'the swipe layer stays flat until a drag')
+  assert.ok(shell.includes('<SheetHost />'), 'a buy confirm paints above the screen')
+  assert.ok(!shop.includes('<Modal'), 'a buy confirm is not an iOS modal')
+  assert.ok(shop.includes('gemNotice'), 'a gem buy says what happened')
+  assert.ok(shop.includes('offerMoreGems'), 'a short gem balance offers the gem page')
+  const gems = readFileSync(path.join(root, 'native/iap/gem-store.js'), 'utf8')
+  assert.ok(gems.includes('liveSku.get(pack.id) || pack.storeId'), 'an empty catalog still asks the store')
+  const sheet = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
+  assert.ok(sheet.includes("goHash('/gems')"), 'the short-gems popup opens the gem page')
+  assert.ok(menu.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the opening tap does not close the menu')
+  assert.ok(cheer.includes('cheerName'), 'a cheer preview shows its name')
+  assert.ok(purse.includes('__didIEmit'), 'a cheer keeps its kind')
+  assert.ok(boot.includes('win.__didIEmit = emit'), 'the phone bus keeps event detail')
+  assert.ok(!cal.includes('aspectRatio'), 'calendar days are not screen-tall')
+  assert.ok(cal.includes('onLayout'), 'calendar days use the row width')
+})
+
+test('the honest did not line sits above the bottom bar', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const mark = readFileSync(path.join(root, 'native/components/MarkToast.jsx'), 'utf8')
+  assert.ok(mark.includes('useAppInsets'), 'the line clears the bar')
+  assert.ok(mark.includes("zIndex: 90"), 'the line paints above the bar')
+  const plist = readFileSync(path.join(root, 'app.config.js'), 'utf8')
+  assert.ok(plist.includes('NSMotionUsageDescription'), 'iOS can read a shake')
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

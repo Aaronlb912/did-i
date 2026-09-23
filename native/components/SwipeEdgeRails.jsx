@@ -1,6 +1,5 @@
-import { StyleSheet, Text } from 'react-native'
-import Animated, { useAnimatedStyle } from 'react-native-reanimated'
-import { railOpacity, swipePull } from '../../src/lib/swipe-face.js'
+import { Animated, StyleSheet, Text } from 'react-native'
+import { SWIPE_THRESHOLD } from '../../src/lib/swipe-face.js'
 import { fonts } from '../theme.js'
 
 const SHELL_PAD = 16
@@ -10,22 +9,28 @@ const RAIL_DROP = 58
 const FULL_RAIL_RATIO = 0.74
 const RAIL_W = 50
 
-function EdgeRail({ x, mode, reduce, alwaysOn, way, fill, label, ink, winH }) {
+function railOpacity(x, way) {
+  const near = SWIPE_THRESHOLD * 0.04
+  const far = SWIPE_THRESHOLD * 0.78
+  if (way === 'did') {
+    return x.interpolate({
+      inputRange: [0, near, far],
+      outputRange: [0, 0.35, 1],
+      extrapolate: 'clamp',
+    })
+  }
+  return x.interpolate({
+    inputRange: [-far, -near, 0],
+    outputRange: [1, 0.35, 0],
+    extrapolate: 'clamp',
+  })
+}
+
+function EdgeRail({ x, reduce, way, fill, label, ink, winH }) {
   const fullH = Math.round(winH * FULL_RAIL_RATIO)
   const H = fullH - BOTTOM_TRIM
   const isNope = way === 'nope'
-
-  const shellStyle = useAnimatedStyle(() => {
-    if (reduce || (!alwaysOn && mode.value !== 'drag')) return { opacity: 0 }
-    const op = railOpacity(swipePull(x.value), way, true)
-    const pull = swipePull(x.value)
-    const lean = way === 'did' ? pull : -pull
-    const pop = 0.9 + Math.max(0, Math.min(1, lean)) * 0.1
-    return {
-      opacity: op,
-      transform: [{ scale: pop }],
-    }
-  })
+  const opacity = reduce ? 0 : railOpacity(x, way)
 
   return (
     <Animated.View
@@ -42,9 +47,9 @@ function EdgeRail({ x, mode, reduce, alwaysOn, way, fill, label, ink, winH }) {
           borderBottomRightRadius: isNope ? RAIL_W : 0,
           borderTopLeftRadius: isNope ? 0 : RAIL_W,
           borderBottomLeftRadius: isNope ? 0 : RAIL_W,
+          opacity,
         },
         isNope ? styles.shellNope : styles.shellDid,
-        shellStyle,
       ]}
     >
       <Text pointerEvents="none" style={[styles.label, { color: ink }]}>
@@ -56,21 +61,17 @@ function EdgeRail({ x, mode, reduce, alwaysOn, way, fill, label, ink, winH }) {
 
 export function SwipeEdgeRails({
   x,
-  mode,
   colors,
   winH,
   didLabel,
   nopeLabel,
   reduce = false,
-  alwaysOn = false,
 }) {
   return (
     <>
       <EdgeRail
         x={x}
-        mode={mode}
         reduce={reduce}
-        alwaysOn={alwaysOn}
         way="nope"
         fill={colors.skip}
         label={nopeLabel}
@@ -79,9 +80,7 @@ export function SwipeEdgeRails({
       />
       <EdgeRail
         x={x}
-        mode={mode}
         reduce={reduce}
-        alwaysOn={alwaysOn}
         way="did"
         fill={colors.on}
         label={didLabel}

@@ -13,6 +13,7 @@ import { gemFrameStyle } from '../lib/gem-look-tone.js'
 import { HallHalo } from './HallHalo.jsx'
 import { HallAmbient } from './HallAmbient.jsx'
 import { BackChevron } from './BackChevron.jsx'
+import { Slot } from './Slot.jsx'
 import { MastMenuCog, MastMenuRoot } from './MastMenu.jsx'
 import { PurseLine } from './PurseLine.jsx'
 
@@ -65,7 +66,9 @@ export function BoardShell({
       <View style={styles.mastTop}>
         {showBack ? (
           <Pressable onPress={() => goBack()} style={styles.back} accessibilityLabel={t('nav.back')}>
-            <BackChevron color={colors.inkDim} />
+            <Slot>
+              <BackChevron color={colors.inkDim} />
+            </Slot>
           </Pressable>
         ) : (
           <View style={styles.backPad} />

@@ -1,18 +1,9 @@
 import { t } from './i18n.js'
+import { nightProgress } from './night-progress.js'
 import { usePop } from './pop.js'
 import { usePrefs } from './prefs.js'
 
-function isComplete(row) {
-  const status = row?.answer?.status
-  return status === 'yes' || status === 'late'
-}
-
-export function nightProgress(due = []) {
-  const total = due.length
-  const answered = due.filter(isComplete).length
-  const ratio = total ? answered / total : 0
-  return { total, answered, ratio }
-}
+export { nightProgress } from './night-progress.js'
 
 export function NightMeter({ due = [] }) {
   usePrefs()

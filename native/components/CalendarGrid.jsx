@@ -96,7 +96,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
         )}
       </View>
 
-      <Modal visible={Boolean(picked)} transparent animationType="fade" onRequestClose={() => setPicked('')}>
+      {picked ? (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setPicked('')}>
         <Pressable style={styles.veil} onPress={() => setPicked('')}>
           <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
             <Text style={[styles.popKicker, { color: colors.on }]}>{t('cal.kicker')}</Text>
@@ -123,6 +124,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
     </View>
   )
 }

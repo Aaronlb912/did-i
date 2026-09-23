@@ -1,4 +1,5 @@
 import { emptyBoard, normalizeBook } from './board-json.js'
+import { alignShelfPurse } from './purse.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
@@ -25,7 +26,7 @@ export function normalizeShelf(raw) {
     ? source.currentId
     : boards[0].id
   const gemWeek = String(source.gemWeek || '').trim()
-  return parkEmptyTags(mergeSameTitles({ currentId, boards, gemWeek }))
+  return parkEmptyTags(mergeSameTitles(alignShelfPurse({ currentId, boards, gemWeek })))
 }
 
 export function liveLampCount(book) {

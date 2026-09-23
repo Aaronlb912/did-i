@@ -7,10 +7,12 @@ import { ACHIEVEMENTS } from '../src/lib/achievements.js'
 import { normalizeShelf } from '../src/lib/board-shelf.js'
 import { emptyBoard } from '../src/lib/board-json.js'
 import {
+  BADGES,
   BUDDIES,
   CHEERS,
   CHEER_STAGE_MAX,
   LOOKS,
+  STAMPS,
   alignShelfPurse,
   stampPurse,
 } from '../src/lib/purse.js'
@@ -51,6 +53,8 @@ export function unlockCosmeticsShelf(raw) {
   const lookIds = LOOKS.map((item) => item.id)
   const cheerIds = CHEERS.map((item) => item.id)
   const buddyIds = BUDDIES.map((item) => item.id)
+  const stampIds = STAMPS.map((item) => item.id)
+  const badgeIds = BADGES.map((item) => item.id)
   const cheerStages = Object.fromEntries(cheerIds.map((id) => [id, CHEER_STAGE_MAX]))
   const cheerPlayStages = Object.fromEntries(cheerIds.map((id) => [id, CHEER_STAGE_MAX]))
   const marks = ACHIEVEMENTS.map((item) => item.id)
@@ -60,6 +64,9 @@ export function unlockCosmeticsShelf(raw) {
     looks: lookIds,
     cheers: cheerIds,
     buddies: buddyIds,
+    stamps: stampIds,
+    stampOn: 'star',
+    badges: badgeIds,
     cheerStages,
     cheerPlayStages,
     cheerStage: CHEER_STAGE_MAX,

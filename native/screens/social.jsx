@@ -37,6 +37,9 @@ import {
   sayNo,
   sayYes,
   sendCheer,
+  buyCheers,
+  cheerFriend,
+  readFriendCheers,
   sendDidI,
   setPublicTonight,
   shareStreak,
@@ -49,8 +52,11 @@ import {
 } from '../../src/lib/people.js'
 import {
   CHEER_GEMS,
+  FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
+  FRIEND_CHEERS_PER_GEM,
   fireCheer,
+  friendCheerMissKey,
   applyInvitePayout,
   normalizePurse,
   spendGems,
@@ -59,6 +65,7 @@ import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { offerMoreGems } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
 import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
 import {
@@ -626,6 +633,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [confirm, setConfirm] = useState(null)
+  const [stock, setStock] = useState(null)
+  const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -633,9 +642,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       return
     }
     try {
-      const [friendRows, blockRows] = await Promise.all([listFriends(), listBlocks()])
+      const [friendRows, blockRows, serverCheers] = await Promise.all([
+        listFriends(),
+        listBlocks(),
+        readFriendCheers(),
+      ])
       setLinks(friendRows)
       setBlocks(blockRows)
+      if (typeof serverCheers === 'number') setStock(serverCheers)
       setMiss('')
     } catch {
       setMiss(t('people.reach'))
@@ -696,6 +710,31 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
         </>
       ) : null}
 
+      <Meta colors={colors}>{t('friends.cheerNote')}</Meta>
+      <Meta colors={colors}>{t('friends.cheerStock', { n: cheersLeft })}</Meta>
+      <KeyButton
+        colors={colors}
+        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+        label={t('friends.cheerBuy')}
+        onPress={async () => {
+          if (purse.gems < FRIEND_CHEER_GEMS) {
+            offerMoreGems(colors)
+            return
+          }
+          const bought = await buyCheers(book)
+          if (bought.miss === 'gems') {
+            offerMoreGems(colors)
+            return
+          }
+          const known = friendCheerMissKey(bought.miss)
+          if (known) return setMiss(t(known.key, known.vars))
+          if (bought.miss) return setMiss(tMiss(bought.miss))
+          setStock(normalizePurse(bought.book).friendCheers)
+          if (onChange) onChange(bought.book)
+          setMiss('')
+        }}
+      />
+
       {links.friends.length ? (
         <>
           <Cap colors={colors}>{t('people.friends')}</Cap>
@@ -713,13 +752,15 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               <KeyButton colors={colors} label={t('people.drop')} onPress={() => cut(row.person)} />
               <KeyButton
                 colors={colors}
-                label={t('friends.cheer', { n: FRIEND_CHEER_GEMS })}
+                disabled={cheersLeft < 1}
+                label={t('friends.cheerUse')}
                 onPress={async () => {
-                  const spent = spendGems(book, FRIEND_CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('friends.needGems', { n: FRIEND_CHEER_GEMS }))
-                  const { miss: why } = await sendCheer(row.person.user_id, '', purse.cheerOn)
-                  if (why) return setMiss(tMiss(why))
-                  if (onChange) onChange(spent.book)
+                  const sent = await cheerFriend(book, row.person.user_id, purse.cheerOn)
+                  const known = friendCheerMissKey(sent.miss)
+                  if (known) return setMiss(t(known.key, known.vars))
+                  if (sent.miss) return setMiss(tMiss(sent.miss))
+                  setStock(normalizePurse(sent.book).friendCheers)
+                  if (onChange) onChange(sent.book)
                   fireCheer(purse.cheerOn, 1)
                   setMiss('')
                 }}
@@ -728,9 +769,16 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                 colors={colors}
                 label={t('friends.gift', { n: CHEER_GEMS })}
                 onPress={async () => {
+                  if (purse.gems < CHEER_GEMS) {
+                    offerMoreGems(colors)
+                    return
+                  }
                   const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
                   const spent = spendGems(book, CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('friends.needGems', { n: CHEER_GEMS }))
+                  if (spent.miss) {
+                    offerMoreGems(colors)
+                    return
+                  }
                   const { miss: why } = await giftCheer(row.person.user_id, pick)
                   if (why === 'giftCap') return setMiss(t('friends.giftCap'))
                   if (why) return setMiss(tMiss(why))
@@ -1100,13 +1148,19 @@ export function EveryoneScreen({ book, boards = [], onChange, now }) {
 
   async function cheer(row) {
     setMiss('')
-    if (purse.gems < TONIGHT_CHEER_GEMS) return setMiss(t('all.needGems', { n: TONIGHT_CHEER_GEMS }))
+    if (purse.gems < TONIGHT_CHEER_GEMS) {
+      offerMoreGems(colors)
+      return
+    }
     const { miss: why, fresh } = await cheerOn(row.user_id, night)
     if (why === 'setup') return setSetup(true)
     if (why) return setMiss(tMiss(why))
     if (!fresh) return setMiss(t('all.cheeredAlready'))
     const spent = spendGems(book, TONIGHT_CHEER_GEMS)
-    if (spent.miss) return setMiss(t('all.needGems', { n: TONIGHT_CHEER_GEMS }))
+    if (spent.miss) {
+      offerMoreGems(colors)
+      return
+    }
     if (onChange) onChange(spent.book)
     fireCheer(purse.cheerOn, 1)
     setSaid(t('all.cheerSent', { name: personName(row) || t('all.someone') }))

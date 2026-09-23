@@ -1,4 +1,5 @@
-import Svg, { Path } from 'react-native-svg'
+import { View } from 'react-native'
+import { svgParts } from '../lib/svg-parts.js'
 
 const ICONS = {
   add: 'M12 5v14M5 12h14',
@@ -15,6 +16,21 @@ const ICONS = {
 }
 
 export function MenuIcon({ name, color, size = 18, stroke = false }) {
+  const parts = svgParts()
+  if (!parts) {
+    return (
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderWidth: 1.5,
+          borderColor: color,
+          borderRadius: 3,
+        }}
+      />
+    )
+  }
+  const { Svg, Path } = parts
   const path = ICONS[name] || ICONS.grid
   if (stroke) {
     return (

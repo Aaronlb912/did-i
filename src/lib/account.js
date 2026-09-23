@@ -73,6 +73,8 @@ export function accountMissText(bad) {
     signupOff: 'account.signupOff',
     sendFail: 'account.sendFail',
     cancel: '',
+    appleFail: 'auth.appleFail',
+    appleUnavailable: 'auth.appleUnavailable',
   }[bad]
   return key ? t(key) : bad
 }
@@ -136,9 +138,14 @@ export function useAccount() {
     const db = cloud()
     if (!db) return undefined
     let alive = true
-    db.auth.getSession().then(({ data }) => {
-      if (alive) setState({ ready: true, user: data?.session?.user || null })
-    })
+    db.auth.getSession().then(
+      ({ data }) => {
+        if (alive) setState({ ready: true, user: data?.session?.user || null })
+      },
+      () => {
+        if (alive) setState({ ready: true, user: null })
+      },
+    )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
       if (alive) setState({ ready: true, user: session?.user || null })
     })

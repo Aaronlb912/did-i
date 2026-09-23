@@ -25,7 +25,7 @@ import { NightStrip } from '../components/NightStrip.jsx'
 import { WaitPlate } from '../components/WaitPlate.jsx'
 import { PurseLine } from '../components/PurseLine.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
-import { SwipeCard } from '../components/SwipeCard.jsx'
+import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { goHash } from '../navigation/hash.js'
@@ -34,6 +34,7 @@ import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-
 import { hallColors, fonts } from '../theme.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
+import { Slot } from '../components/Slot.jsx'
 
 function useMinuteNow() {
   const [now, setNow] = useState(() => new Date())
@@ -87,7 +88,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   let face = null
   if (stack.bodyKind === 'finish') {
     face = (
-      <SwipeCard
+      <SwipeCardHost
         key="finish"
         cardKey="finish"
         colors={colors}
@@ -113,7 +114,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const hasHistory = stripKeys.some((key) => answerFor(faceBook, faceRow.lamp.id, key))
     const faceKey = `${stack.rowKey(faceRow)}:${faceRow.periodKey}:${faceRow.answer?.status || 'open'}`
     face = (
-      <SwipeCard
+      <SwipeCardHost
         key={`face:${faceKey}`}
         cardKey={faceKey}
         colors={colors}
@@ -136,7 +137,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             onPickHole={(lamp, key) => stack.pickHole(lamp, key, faceRow)}
           />
         ) : null}
-      </SwipeCard>
+      </SwipeCardHost>
     )
   } else if (stack.bodyKind === 'hall') {
     face = (
@@ -231,7 +232,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const isDid = status === 'yes' || status === 'late'
     const pillKey = `${stack.rowKey(pillRow)}:${status || 'open'}`
     face = (
-      <SwipeCard
+      <SwipeCardHost
         key={`pill:${pillKey}`}
         cardKey={pillKey}
         colors={colors}
@@ -252,7 +253,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             {t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })}
           </Text>
         ) : null}
-      </SwipeCard>
+      </SwipeCardHost>
     )
   } else if (stack.bodyKind === 'off') {
     face = (
@@ -279,8 +280,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      {premium ? <HallHalo look={look} /> : null}
-      <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
+      {premium ? (
+        <Slot>
+          <HallHalo look={look} />
+        </Slot>
+      ) : null}
+      <Slot>
+        <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
+      </Slot>
       <View
         pointerEvents="box-none"
         style={[
@@ -311,8 +318,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           )}
         </View>
         <View style={styles.mastActions}>
-          <PurseLine purse={purse} colors={colors} gemsLink mast />
-          <MastMenuCog />
+          <Slot>
+            <PurseLine purse={purse} colors={colors} gemsLink mast />
+          </Slot>
+          <Slot>
+            <MastMenuCog />
+          </Slot>
         </View>
       </View>
 
@@ -320,7 +331,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Text style={[styles.syncNote, { color: colors.inkSoft }]}>{t('tonight.syncMiss')}</Text>
       ) : null}
 
-      <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
+      <Slot>
+        <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
+      </Slot>
 
       {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
@@ -356,7 +369,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </ScrollView>
       ) : null}
 
-      <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
+      <Slot>
+        <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
+      </Slot>
 
       {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
         <View style={styles.holes} accessibilityLabel={t('tonight.holesAria')}>
@@ -376,11 +391,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <View style={styles.slot} pointerEvents="box-none">
-        {face}
-        <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
+        <Slot>{face}</Slot>
+        <Slot>
+          <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
+        </Slot>
       </View>
 
-      <FamilyTonight colors={colors} />
+      <Slot>
+        <FamilyTonight colors={colors} />
+      </Slot>
 
     </View>
     </View>

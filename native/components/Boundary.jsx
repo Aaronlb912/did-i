@@ -29,10 +29,19 @@ function note(error, info) {
   return line
 }
 
+export function lastBreak() {
+  try {
+    const raw = localStorage.getItem(SEEN)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export class Boundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { broke: null }
+    this.state = { broke: null, where: '' }
   }
 
   static getDerivedStateFromError(error) {
@@ -40,7 +49,8 @@ export class Boundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    note(error, info)
+    const line = note(error, info)
+    this.setState({ where: line.where || '' })
   }
 
   render() {
@@ -52,6 +62,23 @@ export class Boundary extends Component {
           <Text style={[styles.kicker, { color: colors.on }]}>{t('broke.kicker')}</Text>
           <Text style={[styles.title, { color: colors.ink }]}>{t('broke.title')}</Text>
           <Text style={[styles.body, { color: colors.inkSoft }]}>{t('broke.body')}</Text>
+          {this.state.broke?.message ? (
+            <Text style={[styles.detail, { color: colors.inkDim }]} selectable>
+              {String(this.state.broke.message)}
+            </Text>
+          ) : null}
+          {this.state.where ? (
+            <Text style={[styles.detail, { color: colors.inkDim }]} selectable>
+              {this.state.where}
+            </Text>
+          ) : null}
+          {global.__didIReanimatedError || global.__didIGestureError || global.__didISvgError ? (
+            <Text style={[styles.detail, { color: colors.inkDim }]} selectable>
+              {[global.__didIReanimatedError, global.__didIGestureError, global.__didISvgError]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          ) : null}
           <Pressable
             onPress={() => this.setState({ broke: null })}
             style={[styles.again, { backgroundColor: colors.on }]}
@@ -75,6 +102,7 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: fonts.display, fontSize: 26, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },
+  detail: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 18 },
   again: {
     alignSelf: 'flex-start',
     borderRadius: 999,

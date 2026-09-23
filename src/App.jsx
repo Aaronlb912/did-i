@@ -96,7 +96,19 @@ import {
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { DIT_ENABLED } from './lib/features.js'
 import { wallClock } from './lib/zone.js'
-import { alignShelfPurse, spreadPurseFrom, weeklyGemBump } from './lib/purse.js'
+import { cloudSetUp } from './lib/cloud.js'
+import {
+  alignShelfPurse,
+  mergePurses,
+  spreadPurseFrom,
+  weeklyGemBump,
+} from './lib/purse.js'
+import {
+  applyCoinBalanceToShelf,
+  applyGemBalanceToShelf,
+  creditNightCoins,
+  grantWeeklyGem,
+} from './lib/wallet.js'
 import './lib/did-i.css'
 import './site/site.css'
 
@@ -170,7 +182,8 @@ export default function App() {
     const now = new Date()
     const before = currentBook(shelf)
     const heatBefore = shelfHeatNow(shelf.boards, now)
-    const bumped = weeklyGemBump(nextShelf, shelf, now)
+    const coinsBefore = mergePurses(shelf.boards).coins
+    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
       next = closePastNights(next, now)
@@ -196,6 +209,24 @@ export default function App() {
     }
     setShelf(written)
     pushSoon(written)
+    const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
+    const coinsAfter = mergePurses(written.boards).coins
+    if (cloudSetUp() && coinsAfter > coinsBefore) {
+      creditNightCoins(boardDate(now, fold), coinsAfter - coinsBefore).then((bal) => {
+        if (bal == null) return
+        const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
+        setShelf(synced)
+        pushSoon(synced)
+      })
+    }
+    if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
+      grantWeeklyGem(bumped.gemWeek).then((bal) => {
+        if (bal == null) return
+        const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
+        setShelf(synced)
+        pushSoon(synced)
+      })
+    }
   }
 
   function change(next) {
@@ -582,7 +613,9 @@ export default function App() {
   } else if (path === '/week') {
     inner = <WeekGrid book={live} />
   } else if (path === '/calendar') {
-    inner = <Calendar book={live} boards={shelf.boards} tagId={tagId} />
+    inner = (
+      <Calendar book={live} boards={shelf.boards} tagId={tagId} />
+    )
   } else if (path === '/streaks') {
     inner = <Streaks book={live} />
   } else if (path === '/stats') {

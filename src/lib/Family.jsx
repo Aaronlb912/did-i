@@ -16,12 +16,22 @@ import {
   listFamilyLamps,
   personName,
   readFamily,
-  sendCheer,
+  buyCheers,
+  cheerFamily,
+  readFriendCheers,
   setRole,
 } from './people.js'
-import { FAMILY_CHEER_GEMS, fireCheer, normalizePurse, spendGems } from './purse.js'
+import {
+  FRIEND_CHEER_CAP,
+  FRIEND_CHEER_GEMS,
+  FRIEND_CHEERS_PER_GEM,
+  fireCheer,
+  friendCheerMissKey,
+  normalizePurse,
+} from './purse.js'
 import { passAlong } from './native.js'
 import { addDaysIso, boardDate, formatBoardDate } from './recurrence.js'
+import { GemShort } from './shop-bits.jsx'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 const EVERYONE = 'everyone'
@@ -43,7 +53,10 @@ export function Family({ book, onChange, now, familyId }) {
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')
+  const [gemShort, setGemShort] = useState(false)
+  const [stock, setStock] = useState(null)
   const online = useOnline()
+  const cheersLeft = stock == null ? purse.friendCheers : stock
 
   useBackDismiss(Boolean(edit), () => setEdit(null))
 
@@ -60,10 +73,12 @@ export function Family({ book, onChange, now, familyId }) {
       const back = []
       for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
       setNights(back)
-      const [tonightRows, pastRows] = await Promise.all([
+      const [tonightRows, pastRows, serverCheers] = await Promise.all([
         listFamilyLamps(familyId, key),
         familyHistory(familyId, back),
+        readFriendCheers(),
       ])
+      if (typeof serverCheers === 'number') setStock(serverCheers)
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
       setPast(pastRows)
@@ -320,6 +335,33 @@ export function Family({ book, onChange, now, familyId }) {
         })}
       </p>
 
+      <SetCap>{t('friends.cheerStock', { n: cheersLeft })}</SetCap>
+      <p className="di-set-note">{t('friends.cheerNote')}</p>
+      <button
+        className="di-key"
+        type="button"
+        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+        onClick={async () => {
+          if (purse.gems < FRIEND_CHEER_GEMS) {
+            setGemShort(true)
+            return
+          }
+          const bought = await buyCheers(book)
+          if (bought.miss === 'gems') {
+            setGemShort(true)
+            return
+          }
+          const known = friendCheerMissKey(bought.miss)
+          if (known) return setMiss(t(known.key, known.vars))
+          if (bought.miss) return setMiss(tMiss(bought.miss))
+          setStock(normalizePurse(bought.book).friendCheers)
+          if (onChange) onChange(bought.book)
+          setMiss('')
+        }}
+      >
+        {t('friends.cheerBuy')}
+      </button>
+
       <SetCap>{t('family.people')}</SetCap>
       <SetCard>
         {fam.members.map((row) => (
@@ -334,18 +376,19 @@ export function Family({ book, onChange, now, familyId }) {
               <button
                 className="di-key"
                 type="button"
-                disabled={purse.gems < FAMILY_CHEER_GEMS}
+                disabled={cheersLeft < 1}
                 onClick={async () => {
-                  const spent = spendGems(book, FAMILY_CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('family.needGems', { n: FAMILY_CHEER_GEMS }))
-                  const { miss: why } = await sendCheer(row.user_id, t('family.cheerNote'), purse.cheerOn)
-                  if (why) return setMiss(why)
-                  if (onChange) onChange(spent.book)
+                  const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                  const known = friendCheerMissKey(sent.miss)
+                  if (known) return setMiss(t(known.key, known.vars))
+                  if (sent.miss) return setMiss(tMiss(sent.miss))
+                  setStock(normalizePurse(sent.book).friendCheers)
+                  if (onChange) onChange(sent.book)
                   fireCheer(purse.cheerOn, 1)
                   setMiss(t('family.cheerSent', { name: personName(row.person) || t('family.someone') }))
                 }}
               >
-                {t('family.cheer', { n: FAMILY_CHEER_GEMS })}
+                {t('friends.cheerUse')}
               </button>
             ) : null}
             {fam.parent && !row.you ? (
@@ -445,6 +488,7 @@ export function Family({ book, onChange, now, familyId }) {
           </div>
         </div>
       ) : null}
+      <GemShort open={gemShort} onClose={() => setGemShort(false)} />
     </>,
   )
 }

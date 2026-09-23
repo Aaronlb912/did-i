@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
-import { nightProgress } from '../../src/lib/NightMeter.jsx'
+import { nightProgress } from '../../src/lib/night-progress.js'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { usePop } from '../hooks/usePop.js'

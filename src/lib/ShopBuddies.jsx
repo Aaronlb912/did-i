@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
 import { BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
-import { BuyConfirm, ShopPurse, gemLine, shopMiss } from './shop-bits.jsx'
+import { goHash } from '../site/hash.js'
+import { BuyConfirm, ShopPurse, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -16,6 +17,11 @@ export function ShopBuddies({ book, onChange, now }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
+    if (isGemShort(next)) {
+      setMiss('')
+      setConfirm(shortGemConfirm())
+      return
+    }
     setMiss(shopMiss(next))
     if (!next.miss) {
       setPeekBuddy('')
@@ -48,6 +54,10 @@ export function ShopBuddies({ book, onChange, now }) {
           onClick={() => {
             if (have) {
               take(buyBuddy(book, item.id))
+              return
+            }
+            if (purse.gems < item.gems) {
+              setConfirm(shortGemConfirm())
               return
             }
             setMiss('')
@@ -99,6 +109,11 @@ export function ShopBuddies({ book, onChange, now }) {
         confirm={confirm}
         onClose={() => setConfirm(null)}
         onGo={() => {
+          if (confirm?.short) {
+            setConfirm(null)
+            goHash('/gems')
+            return
+          }
           const go = confirm?.go
           setConfirm(null)
           if (typeof go === 'function') go()

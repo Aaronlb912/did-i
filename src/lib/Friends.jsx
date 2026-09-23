@@ -17,17 +17,23 @@ import {
   personName,
   sayNo,
   sayYes,
-  sendCheer,
   unblockPerson,
+  buyCheers,
+  cheerFriend,
+  readFriendCheers,
 } from './people.js'
 import {
   CHEER_GEMS,
+  FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
+  FRIEND_CHEERS_PER_GEM,
   fireCheer,
+  friendCheerMissKey,
   normalizePurse,
   spendGems,
 } from './purse.js'
 import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { GemShort } from './shop-bits.jsx'
 import { SetCap, SetCard } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
@@ -47,8 +53,11 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const [miss, setMiss] = useState('')
   const [blocks, setBlocks] = useState([])
   const [confirm, setConfirm] = useState(null)
+  const [gemShort, setGemShort] = useState(false)
+  const [stock, setStock] = useState(null)
   const pickRef = useRef(null)
   const online = useOnline()
+  const cheersLeft = stock == null ? purse.friendCheers : stock
 
   useBackDismiss(Boolean(confirm), () => setConfirm(null))
 
@@ -57,9 +66,14 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       setReady(true)
       return
     }
-    const [friendRows, blockRows] = await Promise.all([listFriends(), listBlocks()])
+    const [friendRows, blockRows, serverCheers] = await Promise.all([
+      listFriends(),
+      listBlocks(),
+      readFriendCheers(),
+    ])
     setLinks(friendRows)
     setBlocks(blockRows)
+    if (typeof serverCheers === 'number') setStock(serverCheers)
     setReady(true)
   }, [account.user])
 
@@ -112,6 +126,32 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   return shell(
     <>
       <h2 className="di-page-title">{t('friends.title', { n: links.friends.length })}</h2>
+      <p className="di-set-note">{t('friends.cheerNote')}</p>
+      <p className="di-set-note">{t('friends.cheerStock', { n: cheersLeft })}</p>
+      <button
+        className="di-key"
+        type="button"
+        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+        onClick={async () => {
+          if (purse.gems < FRIEND_CHEER_GEMS) {
+            setGemShort(true)
+            return
+          }
+          const bought = await buyCheers(book)
+          if (bought.miss === 'gems') {
+            setGemShort(true)
+            return
+          }
+          const known = friendCheerMissKey(bought.miss)
+          if (known) return setMiss(t(known.key, known.vars))
+          if (bought.miss) return setMiss(tMiss(bought.miss))
+          setStock(normalizePurse(bought.book).friendCheers)
+          if (onChange) onChange(bought.book)
+          setMiss('')
+        }}
+      >
+        {t('friends.cheerBuy')}
+      </button>
 
       {links.asked.length ? (
         <div className="di-people-asks">
@@ -168,27 +208,35 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
               <button
                 className="di-key"
                 type="button"
-                disabled={purse.gems < FRIEND_CHEER_GEMS}
+                disabled={cheersLeft < 1}
                 onClick={async () => {
-                  const spent = spendGems(book, FRIEND_CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('friends.needGems', { n: FRIEND_CHEER_GEMS }))
-                  const { miss: why } = await sendCheer(row.person.user_id, '', purse.cheerOn)
-                  if (why) return setMiss(why)
-                  if (onChange) onChange(spent.book)
+                  const sent = await cheerFriend(book, row.person.user_id, purse.cheerOn)
+                  const known = friendCheerMissKey(sent.miss)
+                  if (known) return setMiss(t(known.key, known.vars))
+                  if (sent.miss) return setMiss(tMiss(sent.miss))
+                  setStock(normalizePurse(sent.book).friendCheers)
+                  if (onChange) onChange(sent.book)
                   fireCheer(purse.cheerOn, 1)
                   setMiss('')
                 }}
               >
-                {t('friends.cheer', { n: FRIEND_CHEER_GEMS })}
+                {t('friends.cheerUse')}
               </button>
               <button
                 className="di-key"
                 type="button"
-                disabled={purse.gems < CHEER_GEMS || purse.cheers.length < 2}
+                disabled={purse.cheers.length < 2}
                 onClick={async () => {
+                  if (purse.gems < CHEER_GEMS) {
+                    setGemShort(true)
+                    return
+                  }
                   const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
                   const spent = spendGems(book, CHEER_GEMS)
-                  if (spent.miss) return setMiss(t('friends.needGems', { n: CHEER_GEMS }))
+                  if (spent.miss) {
+                    setGemShort(true)
+                    return
+                  }
                   const { miss: why } = await giftCheer(row.person.user_id, pick)
                   if (why === 'giftCap') return setMiss(t('friends.giftCap'))
                   if (why) return setMiss(why)
@@ -311,6 +359,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
           </div>
         </div>
       ) : null}
+
+      <GemShort open={gemShort} onClose={() => setGemShort(false)} />
 
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>

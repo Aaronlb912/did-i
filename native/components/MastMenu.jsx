@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { BackHandler, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { showMainNavInMenu } from '../../src/lib/app-nav.js'
@@ -75,6 +75,33 @@ function menuIsOn(showAdd, waiting) {
   return menuItems(showAdd, waiting).some((item) => item.on)
 }
 
+let menuListen = null
+let menuState = null
+
+function publishMenu(next) {
+  menuState = next
+  menuListen?.(next)
+}
+
+export function MenuOverlayHost() {
+  const [menu, setMenu] = useState(menuState)
+  useEffect(() => {
+    menuListen = setMenu
+    setMenu(menuState)
+    return () => {
+      menuListen = null
+    }
+  }, [])
+  if (!menu?.open) return null
+  return (
+    <View style={styles.host} pointerEvents="box-none">
+      <MastMenuCtx.Provider value={menu}>
+        <MastMenuSheet />
+      </MastMenuCtx.Provider>
+    </View>
+  )
+}
+
 export function MastMenuRoot({ colors, showAdd = true, children }) {
   const [open, setOpen] = useState(false)
 
@@ -95,20 +122,40 @@ export function MastMenuRoot({ colors, showAdd = true, children }) {
     [open, colors, showAdd, close, toggle],
   )
 
+  useEffect(() => {
+    publishMenu(open ? value : null)
+  }, [open, value])
+
+  useEffect(() => () => publishMenu(null), [])
+
   return (
     <MastMenuCtx.Provider value={value}>
-      <View style={styles.root}>{children}</View>
-      <MastMenuModal />
+      <View style={styles.root}>
+        <View style={styles.screen} collapsable={false}>
+          {children}
+        </View>
+        {open ? (
+          <View style={styles.host} pointerEvents="box-none">
+            <MastMenuSheet />
+          </View>
+        ) : null}
+      </View>
     </MastMenuCtx.Provider>
   )
 }
 
-function MastMenuModal() {
+function MastMenuSheet() {
   const insets = useSafeAreaInsets()
   const { open, colors, showAdd, close } = useMenu()
   const account = useAccount()
   const waiting = usePeopleCount(account.user)
   const items = menuItems(showAdd, waiting)
+  const [live, setLive] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLive(true), 280)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     if (!open) return undefined
@@ -119,33 +166,28 @@ function MastMenuModal() {
     return () => sub.remove()
   }, [open, close])
 
+  if (!open) return null
+
   return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="fade"
-      onRequestClose={close}
-      statusBarTranslucent
-      presentationStyle="overFullScreen"
-    >
+    <View style={styles.backdrop} pointerEvents="box-none">
       <Pressable
-        style={[styles.backdrop, { backgroundColor: colors.veil }]}
+        pointerEvents={live ? 'auto' : 'none'}
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]}
         onPress={close}
         accessibilityLabel={t('mast.menuClose')}
         accessibilityRole="button"
+      />
+      <View
+        style={[
+          styles.panel,
+          {
+            top: insets.top + 54,
+            right: Math.max(16, insets.right + 16),
+            backgroundColor: colors.panel,
+            borderColor: colors.line,
+          },
+        ]}
       >
-        <Pressable
-          style={[
-            styles.panel,
-            {
-              top: insets.top + 54,
-              right: Math.max(16, insets.right + 16),
-              backgroundColor: colors.panel,
-              borderColor: colors.line,
-            },
-          ]}
-          onPress={(event) => event.stopPropagation()}
-        >
           {items.map((item) =>
             item.divider ? (
               <View key={item.key} style={[styles.divider, { backgroundColor: colors.line }]} />
@@ -172,9 +214,8 @@ function MastMenuModal() {
               </Pressable>
             ),
           )}
-        </Pressable>
-      </Pressable>
-    </Modal>
+      </View>
+    </View>
   )
 }
 
@@ -216,7 +257,9 @@ export function MastMenuCog() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  backdrop: { flex: 1 },
+  screen: { flex: 1, zIndex: 1 },
+  host: { ...StyleSheet.absoluteFillObject, zIndex: 200, elevation: 40 },
+  backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 80, elevation: 28 },
   panel: {
     position: 'absolute',
     borderWidth: 1,

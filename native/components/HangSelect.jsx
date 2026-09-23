@@ -35,7 +35,8 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
         </Text>
         <Text style={[styles.chev, { color: colors.inkDim }]}>▾</Text>
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      {open ? (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable
             style={[
@@ -76,6 +77,7 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
     </View>
   )
 }

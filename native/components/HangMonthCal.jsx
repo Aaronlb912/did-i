@@ -48,6 +48,16 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
   }, [todayDate, monthShift, todayIso, prefs.locale])
 
   const dows = dowMarks(prefs.locale)
+  const [cell, setCell] = useState(0)
+
+  function onGrid(event) {
+    const width = event.nativeEvent.layout.width
+    const next = Math.floor(width / 7)
+    if (next > 0 && next !== cell) setCell(next)
+  }
+
+  const col = cell > 0 ? { width: cell, height: 18 } : { width: '14.28%' }
+  const dayBox = cell > 0 ? { width: cell, height: cell } : { width: '14.28%', height: 40 }
 
   function isPick(night) {
     if (mode === 'monthly') {
@@ -73,19 +83,20 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
           <Text style={[styles.shift, { color: colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={onGrid}>
         {dows.map((day, i) => (
-          <Text key={`dow-${i}`} style={[styles.dow, { color: colors.inkDim }]}>{day}</Text>
+          <Text key={`dow-${i}`} style={[styles.dow, col, { color: colors.inkDim }]}>{day}</Text>
         ))}
         {view.nights.map((night) =>
           night.pad ? (
-            <View key={night.key} style={styles.pad} />
+            <View key={night.key} style={dayBox} />
           ) : (
             <Pressable
               key={night.key}
               onPress={() => pickDay(night)}
               style={[
                 styles.day,
+                dayBox,
                 {
                   borderColor: isPick(night) ? colors.onDeep : night.isToday ? colors.on : colors.line,
                   backgroundColor: isPick(night) ? colors.panel3 : colors.panel2,
@@ -121,16 +132,12 @@ const styles = StyleSheet.create({
   shift: { fontSize: 20, paddingHorizontal: 8 },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dow: { width: '14.28%', textAlign: 'center', fontSize: 11, marginBottom: 4 },
-  pad: { width: '14.28%', aspectRatio: 1 },
+  dow: { textAlign: 'center', fontSize: 11, lineHeight: 16 },
   day: {
-    width: '14.28%',
-    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: 4,
   },
   lastBtn: {
     alignSelf: 'flex-start',

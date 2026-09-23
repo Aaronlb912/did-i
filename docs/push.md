@@ -56,36 +56,14 @@ reason, which is the fastest way to tell a dead token from a bad key.
 
 ## iPhone
 
-The sending side is already done. Firebase talks to Apple for you, and
-the function sends an `apns` block alongside the Android one, so a nudge
-would arrive with a sound and a badge rather than silently. Nothing in
-`push.js` is Android-only; the notification channel is the one bit that
-is, and it is guarded.
+The **sender** (`push` function + `apns` block) and **app** (`native/shim/push.js`,
+`expo-notifications`) are wired for iOS. What is left is **Firebase + Apple account
+setup** and a **new EAS iOS build** after `GoogleService-Info.plist` is in place.
 
-What is missing is an iOS app. There is no `ios/` folder, only
-`android/`, and three things stand in the way, none of them code:
+Step-by-step: **`docs/push-ios.md`**.
 
-**A Mac.** `npx cap add ios` needs CocoaPods, and building needs Xcode.
-Neither runs on Windows. There is no way around this one.
-
-**An Apple Developer account**, ninety nine dollars a year. Push is not
-available without one, unlike Android where a free Firebase project is
-enough.
-
-**An APNs key.** On developer.apple.com, Keys, make one with Apple Push
-Notifications enabled. It downloads a `.p8` file you only get once.
-Upload it to Firebase under Project settings, Cloud Messaging, together
-with the Key ID and your Team ID. After that Firebase routes to Apple on
-its own and the same `push_queue` feeds both phones.
-
-Worth knowing: remote push does not work in the iOS simulator the way it
-does in the Android emulator. Testing needs a real iPhone on a paid
-account.
-
-So iPhone is not a small job, but none of the remaining work is in this
-repo. When there is a Mac, the order is: `npx cap add ios`, add the iOS
-app in Firebase with the same bundle id, drop in
-`GoogleService-Info.plist`, upload the APNs key, build.
+Remote push needs a **real iPhone** and a **paid** Apple Developer account. It does
+not behave like the Android emulator.
 
 ## Two bugs this shook out
 

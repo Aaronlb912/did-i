@@ -20,7 +20,9 @@ const files = [
   'supabase/dit-board.sql',
   'supabase/gems-social.sql',
   'supabase/gem-purchases.sql',
+  'supabase/wallet.sql',
   'supabase/waitlist.sql',
+  'supabase/friend-cheers.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

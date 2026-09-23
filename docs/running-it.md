@@ -26,7 +26,9 @@ db:apply:all` uses this same list (`scripts/apply-all-sql.mjs`).
 12. `supabase/dit-board.sql` DIT board sync, no line cap
 13. `supabase/gems-social.sql` cheer sends, gifts
 14. `supabase/gem-purchases.sql` real-money gem packs
-15. `supabase/waitlist.sql` landing-page waitlist
+15. `supabase/wallet.sql` server-owned gem balance
+16. `supabase/waitlist.sql` landing-page waitlist
+17. `supabase/friend-cheers.sql` five stored cheers for one gem
 
 After any change to any of them, run `supabase/audit.sql`. It has to come
 back with no rows.
@@ -54,7 +56,8 @@ price on bigger packs. The list lives in `supabase/gem-purchases.sql` and
 `src/lib/gem-packs.js`.
 
 **In-app purchases (Expo).** Gem packs sell through the App Store and
-Google Play only. Product ids are in `src/lib/gem-packs.js` as
+Google Play only. App Store app **SKU**: `did-i` (`src/lib/store-skus.js`).
+Product ids are in `src/lib/gem-packs.js` as
 `com.aaronbryant.didi.gems_1` through `gems_50`. Create matching
 consumable products in each console.
 
