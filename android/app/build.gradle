@@ -81,6 +81,14 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Release keystore is optional. GitHub Actions sets these from secrets.
+// Without them, release stays on the debug key so a test APK still signs.
+def releaseKeystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+def hasReleaseKeystore = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     ndkVersion = rootProject.ext.ndkVersion
     buildToolsVersion = rootProject.ext.buildToolsVersion
@@ -104,14 +112,22 @@ android {
             keyPassword 'android'
         }
     }
+    if (hasReleaseKeystore) {
+        signingConfigs {
+            release {
+                storeFile file(releaseKeystoreFile)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         debug {
             signingConfig = signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig = signingConfigs.debug
+            signingConfig = hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources = enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

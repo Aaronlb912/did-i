@@ -27,12 +27,21 @@ End-to-end nudge still unconfirmed.
 secrets (`docs/native-rebuild.md`). EAS fallback (`docs/app-store-connect.md`).
 No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`.
 
-**Android internal APK.** Default path: GitHub Actions workflow **Android APK**
-(`.github/workflows/android-apk.yml`), artifact `did-i-android-release`.
-EAS `internal` profile is fallback only. WorkManager pinned to 2.8.1.
-**Phone check:** install a fresh GHA APK and confirm the Tonight widget appears
-in the picker as **Did I tonight**, menu closes (cog, backdrop, back), cheer
-previews in Shop, glow look on cards, sync after sign-in on two phones.
+**Android test APK.** GitHub Actions builds it. Actions tab, workflow
+**android-apk**, **Run workflow**. Download the **did-i-android-apk**
+artifact from that run. EAS internal was the previous install (profile
+`internal`, builds `66e023ca-4a54-4a7d-b7ba-625acf80aa7e` and
+`e20b5348-fc8e-4fcb-aedd-32e9b83612ca`). WorkManager stays pinned to 2.8.1.
+The release keystore is still on Expo (credentials `6i4VOCV-74`). Without
+the GitHub secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`, the artifact is a release
+APK signed with a debug key made for that run. A GitHub-signed or debug APK
+may need the EAS APK uninstalled first if the signature differs
+(`com.aaronbryant.didi`). A later debug-signed artifact can differ again, so
+uninstall Did I if Android says the package conflicts. Not installed on a
+phone yet. Still to confirm once it is: Tonight widget in the picker, menu
+closes, cheer previews in Shop, glow look on cards, sync after sign-in on
+two phones. iPhone TestFlight is unchanged.
 
 **Gem packs in the stores.** Code is in (`docs/iap.md`). Play products,
 `gem-iap` deploy + secrets, Paid Apps agreement, and a sandbox buy on a

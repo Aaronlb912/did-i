@@ -19,6 +19,16 @@
         "buildType": "apk"
       }
     },
+    "internal": {
+      "distribution": "internal",
+      "environment": "production",
+      "env": {
+        "EAS_INCLUDE_WIDGETS": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "environment": "production",
