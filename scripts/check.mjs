@@ -83,6 +83,8 @@ import { ko } from '../src/locales/ko.js'
 import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
+import { nightProgress } from '../src/lib/night-progress.js'
+import { taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetBook, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { advanceTonightCard, applyWidgetTapOnce, buildTonightWidgetProps, mergeWidgetPropsIntoShelf } from '../src/lib/widget-tonight.js'
 
@@ -1016,9 +1018,14 @@ test('the android tonight widget stays inside its frame', () => {
   assert.ok(registerAt > 0 && registerAt < installAt, 'the click task registers when the module loads')
   const entry = readFileSync(path.join(root, 'index.js'), 'utf8')
   assert.ok(entry.includes("require('./native/widget-setup.android.js')"))
+  assert.ok(entry.includes("require('./native/widget-setup.ios.js')"))
   assert.ok(
     entry.indexOf('widget-setup.android.js') < entry.indexOf('registerRootComponent(Boot)'),
     'the task is registered before the app mounts',
+  )
+  assert.ok(
+    entry.indexOf('widget-setup.ios.js') < entry.indexOf('registerRootComponent(Boot)'),
+    'the ios tap listener is registered before the app mounts',
   )
   const taskBody = setup.slice(setup.indexOf('async function handleDidITonightWidgetTask'))
   const pendingAt = taskBody.indexOf('await applyPendingAndroidWidgetTap')
@@ -1047,18 +1054,37 @@ test('the android tonight widget stays inside its frame', () => {
   assert.ok(open.includes('applyPendingAndroidWidgetTap'))
 })
 
-test('widget settings pick a tag and open tonight with that tag', () => {
+test('widget settings pick a tag and open tonight without changing the app filter', () => {
   const a = { id: 'tag-a', title: 'Home', lamps: [{ id: 'l1', question: 'Door?', cadence: 'daily', archived: false }], answers: [] }
   const b = { id: 'tag-b', title: 'Work', lamps: [{ id: 'l2', question: 'Email?', cadence: 'daily', archived: false }], answers: [] }
   const shelf = writeShelf({ currentId: 'tag-a', boards: [a, b] })
   writePrefs({ widgetTagMode: 'pick', widgetTagId: 'tag-b' })
   const book = widgetBook(shelf)
   assert.equal(book.id, 'tag-b')
-  const uri = widgetTonightUri(book)
-  assert.ok(uri.includes('tag=tag-b'))
+  const uri = widgetTonightUri(book, 'l2')
+  assert.ok(uri.includes('face=l2'))
+  assert.ok(!uri.includes('tag='))
   const props = buildTonightWidgetProps(shelf)
   assert.equal(props.tagId, 'tag-b')
   assert.equal(props.tagTitle, 'Work')
+  assert.ok(props.openUri.includes('face=l2'))
+})
+
+test('deadline questions before the due night do not count on the tonight meter', () => {
+  const item = lamp('tax', {
+    cadence: 'once',
+    onceWhen: 'by',
+    dueBy: '2024-01-10',
+    createdOn: '2024-01-01',
+  })
+  const book = { dayFoldHour: 0, lamps: [item], answers: [] }
+  const early = taggedDue([book], new Date('2024-01-05T12:00:00'), '')
+  assert.equal(early.length, 1)
+  const meter = nightProgress(early)
+  assert.equal(meter.total, 0)
+  assert.equal(meter.answered, 0)
+  const due = taggedDue([book], new Date('2024-01-10T12:00:00'), '')
+  assert.equal(nightProgress(due).total, 1)
 })
 
 test('native metro shims are wired and pin default exports', () => {

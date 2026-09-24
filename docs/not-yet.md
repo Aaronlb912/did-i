@@ -27,7 +27,7 @@ End-to-end nudge still unconfirmed.
 secrets (`docs/native-rebuild.md`). EAS fallback (`docs/app-store-connect.md`).
 No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`. App Store
 Connect API upload is wired (key ID **S7K3PW29JF** in GitHub secrets; verified on a
-GHA run). `app.json` **`ios.buildNumber` is 54** so the next signed upload can beat
+GHA run). `app.json` **`ios.buildNumber` is 55** so the next signed upload can beat
 TestFlight **52**; the workflow fails fast if the number is still **1** or ≤ **52**.
 
 **Android test APK.** GitHub Actions builds it. Actions tab, workflow
@@ -64,7 +64,7 @@ real phone are still open on both stores.
 - [x] **App Privacy** — all six data types configured and **Published** (nutrition labels live).
 - [ ] **Privacy Policy URL** on App Privacy page still **–**; set via **Edit** → `https://did-i.app/privacy` (Save stayed disabled in automation; also set on **1.0** if required).
 - [ ] **Version 1.0 listing** — metadata saved; **App Review** sign-in (`support@did-i.app` / `email-code`), contact name/email, notes filled in UI; add **phone**, click **Save**. Still **screenshots** and **attach six IAPs** on 1.0. Production build **51** is uploaded and waiting on Apple processing.
-- [ ] **TestFlight launch** — **Internal TestFlight 1.0.0 (52)** is installed on the phone. **52** is still the newest build on TestFlight. EAS **53** (`4b2b790d-0c55-432f-a8fc-045ffb7990f4`) hit Apple **90382** (upload limit; wait a day). The first **GHA** upload reached App Store Connect as build **(1)** and will not install over **52** (build number too low). Next **iOS IPA** run needs **`ios.buildNumber` 54+** (set in repo). Ad hoc internal install still fails without widget / Sign in with Apple on the profile. TestFlight: https://appstoreconnect.apple.com/apps/6814688066/testflight/ios
+- [ ] **TestFlight launch** — **Internal TestFlight 1.0.0 (52)** is installed on the phone. **52** is still the newest build on TestFlight. EAS **53** (`4b2b790d-0c55-432f-a8fc-045ffb7990f4`) hit Apple **90382** (upload limit; wait a day). The first **GHA** upload reached App Store Connect as build **(1)** and will not install over **52** (build number too low). Next **iOS IPA** run needs **`ios.buildNumber` 55+** (set in repo). Ad hoc internal install still fails without widget / Sign in with Apple on the profile. TestFlight: https://appstoreconnect.apple.com/apps/6814688066/testflight/ios
 - [ ] **iOS 1.0** — attach launch-clean build; screenshots; review **phone** + **Save**; attach IAPs; **manual release**. Test Tonight widget on device.
 - [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 

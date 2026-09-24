@@ -16,7 +16,9 @@ question and mark tonight from the widget. Did not is the skip gray. Did is
 the look color, with dark type, same as the Did button in the app.
 The card stays inside the widget's rounded rect: only the outer stack uses
 the widget frame, and that stack is clipped.
-A glow look uses its own ring color. Tap the question to open `didi://tonight`.
+A glow look uses its own ring color. Tap the question to open Tonight with that
+question focused. The link uses `didi://tonight?face=…` and does not change the
+Tonight tag filter in the app.
 
 ## Pre-build sweep
 

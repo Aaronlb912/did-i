@@ -126,7 +126,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     openLabel: t('widget.tonight.openApp'),
     emptyLabel: t('widget.tonight.empty'),
     clearLabel: t('widget.tonight.clear'),
-    openUri: widgetTonightUri(book),
+    openUri: widgetTonightUri(book, lead?.lamp.id || ''),
     buddyId: normalizePurse(book).buddyOn || '',
     updatedAt: now.getTime(),
   }
@@ -260,8 +260,17 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   if (!status || !lampId) return null
   const shelf = readShelf()
   const book = widgetBook(shelf)
+  const stored = readWidgetTonightProps()
+  const storedLead = stored?.items?.find(
+    (item) => item.lampId === lampId && item.status === 'open',
+  )
   const rows = faceReadyTonight(book, clock)
-  const row = rows.find((r) => r.lamp.id === lampId)
+  const row =
+    rows.find(
+      (r) =>
+        r.lamp.id === lampId &&
+        (!storedLead?.periodKey || r.periodKey === storedLead.periodKey),
+    ) || rows.find((r) => r.lamp.id === lampId)
   if (!row) return null
   const finalStatus = status === 'yes' ? didStatusForRow(row) : status
   const nextBook = putAnswer(book, row, finalStatus, clock)

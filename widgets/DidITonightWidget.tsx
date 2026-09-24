@@ -124,32 +124,62 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const belly = id === 'cat' ? '#ffe8c8' : id === 'dog' ? '#f3ddc4' : id === 'rabbit' ? '#e8e8f0' : '#d4c4a8'
     const ear = id === 'rabbit' ? '#f0b8c8' : id === 'dog' ? '#9a6538' : id === 'owl' ? '#6b5038' : body
     const eye = id === 'owl' ? '#f0e080' : '#2d241c'
+    const pupil = '#2d241c'
     const tall = id === 'rabbit'
-    const mark = compact ? 28 : 36
+    const w = compact ? 32 : 40
+    const h = compact ? 38 : 48
+    const earW = compact ? 8 : 10
+    const earH = compact ? 10 : 12
     return (
       <ZStack
         alignment="center"
-        modifiers={[padding({ top: 2, trailing: 4 }), frame({ width: mark + 10, height: mark + 14 })]}
+        modifiers={[
+          frame({ width: w, height: h }),
+          offset({ x: compact ? 2 : 4, y: compact ? -4 : -6 }),
+        ]}
       >
         {tall ? (
-          <HStack spacing={8} modifiers={[offset({ y: -12 })]}>
-            <Capsule modifiers={[frame({ width: 5, height: 14 }), foregroundStyle(body)]} />
-            <Capsule modifiers={[frame({ width: 5, height: 14 }), foregroundStyle(body)]} />
+          <HStack spacing={compact ? 10 : 12} modifiers={[offset({ y: compact ? -14 : -16 })]}>
+            <Capsule modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 16 : 20 }), foregroundStyle(body)]} />
+            <Capsule modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 16 : 20 }), foregroundStyle(body)]} />
+          </HStack>
+        ) : id === 'dog' ? (
+          <HStack spacing={compact ? 14 : 18} modifiers={[offset({ y: compact ? -6 : -8 })]}>
+            <Ellipse modifiers={[frame({ width: earW, height: earH + 4 }), foregroundStyle(ear)]} />
+            <Ellipse modifiers={[frame({ width: earW, height: earH + 4 }), foregroundStyle(ear)]} />
           </HStack>
         ) : (
-          <HStack spacing={12} modifiers={[offset({ y: -8 })]}>
-            <Circle modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(ear)]} />
-            <Circle modifiers={[frame({ width: 7, height: 7 }), foregroundStyle(ear)]} />
+          <HStack spacing={compact ? 14 : 18} modifiers={[offset({ y: compact ? -6 : -8 })]}>
+            <Circle modifiers={[frame({ width: earW, height: earH }), foregroundStyle(ear)]} />
+            <Circle modifiers={[frame({ width: earW, height: earH }), foregroundStyle(ear)]} />
           </HStack>
         )}
-        <Ellipse modifiers={[frame({ width: mark - 8, height: 18 }), foregroundStyle(body)]} />
-        <Ellipse modifiers={[frame({ width: 14, height: 10 }), foregroundStyle(belly), offset({ y: 2 })]} />
-        <HStack spacing={6} modifiers={[offset({ y: -1 })]}>
-          <Circle modifiers={[frame({ width: 4, height: 4 }), foregroundStyle(eye)]} />
-          <Circle modifiers={[frame({ width: 4, height: 4 }), foregroundStyle(eye)]} />
+        <Ellipse modifiers={[frame({ width: w - 10, height: compact ? 22 : 28 }), foregroundStyle(body)]} />
+        <Ellipse modifiers={[frame({ width: compact ? 16 : 20, height: compact ? 12 : 16 }), foregroundStyle(belly), offset({ y: 2 })]} />
+        <HStack spacing={compact ? 5 : 7} modifiers={[offset({ y: compact ? -2 : -3 })]}>
+          <Circle modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 6 : 7 }), foregroundStyle(eye)]} />
+          <Circle modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 6 : 7 }), foregroundStyle(eye)]} />
+        </HStack>
+        {id === 'owl' ? (
+          <HStack spacing={compact ? 5 : 7} modifiers={[offset({ y: compact ? -2 : -3 })]}>
+            <Circle modifiers={[frame({ width: 4, height: 5 }), foregroundStyle(pupil)]} />
+            <Circle modifiers={[frame({ width: 4, height: 5 }), foregroundStyle(pupil)]} />
+          </HStack>
+        ) : id === 'dog' ? (
+          <Ellipse modifiers={[frame({ width: compact ? 8 : 10, height: compact ? 6 : 8 }), foregroundStyle(pupil), offset({ y: 4 })]} />
+        ) : null}
+        <HStack spacing={compact ? 12 : 16} modifiers={[offset({ y: compact ? 10 : 12 })]}>
+          <Ellipse modifiers={[frame({ width: compact ? 8 : 9, height: compact ? 6 : 7 }), foregroundStyle(body)]} />
+          <Ellipse modifiers={[frame({ width: compact ? 8 : 9, height: compact ? 6 : 7 }), foregroundStyle(body)]} />
         </HStack>
       </ZStack>
     )
+  }
+
+  function openUriForLead(lampId: string) {
+    const face = String(lampId || '').trim()
+    if (face) return 'didi://tonight?face=' + encodeURIComponent(face)
+    return 'didi://tonight'
   }
 
   function afterTap(kind: 'did' | 'nope') {
@@ -162,11 +192,13 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const emptyLine = String(props?.emptyLabel || 'No questions yet.')
     const nextFooter = nextLead ? footer : nextLeft === 0 ? (nextItems.length ? clearLine : emptyLine) : footer
     return {
+      ...props,
       items: nextItems,
       leadLampId: nextLead ? nextLead.lampId : '',
       question: nextQuestion,
       left: nextLeft,
       footer: nextFooter,
+      openUri: openUriForLead(nextLead ? nextLead.lampId : ''),
     }
   }
 
@@ -275,9 +307,10 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           background(c.on),
           clipShape('roundedRectangle', 22),
           grow,
+          clipped(true),
         ]}
       >
-        <ZStack alignment="topTrailing" modifiers={[grow, padding({ top: 6 })]}>
+        <ZStack alignment="topTrailing" modifiers={[grow]}>
           <VStack
             alignment="center"
             spacing={8}

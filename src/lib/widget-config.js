@@ -72,9 +72,10 @@ export function widgetTheme() {
   return resolveTheme(readPrefs().theme)
 }
 
-export function widgetTonightUri(book) {
-  const id = book?.id ? `?tag=${encodeURIComponent(book.id)}` : ''
-  return `didi://tonight${id}`
+export function widgetTonightUri(book, leadLampId = '') {
+  const face = String(leadLampId || '').trim()
+  if (face) return `didi://tonight?face=${encodeURIComponent(face)}`
+  return 'didi://tonight'
 }
 
 export function widgetTagChoices(shelf) {
