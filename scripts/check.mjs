@@ -5,7 +5,8 @@
 
 import { strict as assert } from 'node:assert'
 import { createRequire } from 'node:module'
-import { existsSync, readFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -28,6 +29,8 @@ import {
   prepQuestionRows,
 } from '../src/lib/board-json.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
+import { devServerUrl, makeLocation } from '../native/location-shim.js'
+import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
 
@@ -1250,6 +1253,46 @@ test('the honest did not line sits above the bottom bar', () => {
   assert.ok(mark.includes("zIndex: 90"), 'the line paints above the bar')
   const plist = readFileSync(path.join(root, 'app.config.js'), 'utf8')
   assert.ok(plist.includes('NSMotionUsageDescription'), 'iOS can read a shake')
+})
+
+test('the phone location has an origin, so import() chunk urls can be built', () => {
+  // Same join Expo's buildUrlForBundle does once a global location exists.
+  const chunkUrl = (loc, bundle) =>
+    loc.origin.replace(/\/+$/, '') + '/' + bundle.replace(/^\/+/, '')
+  assert.equal(typeof makeLocation().origin, 'string')
+  assert.equal(makeLocation().hash, '#/')
+  assert.equal(makeLocation('http://192.168.1.90:8081/').origin, 'http://192.168.1.90:8081')
+  assert.equal(
+    chunkUrl(makeLocation('http://192.168.1.90:8081/'), '/ExpoApp.bundle?platform=ios'),
+    'http://192.168.1.90:8081/ExpoApp.bundle?platform=ios',
+  )
+  for (const bad of [undefined, null, 42, {}]) {
+    assert.doesNotThrow(() => chunkUrl(makeLocation(bad), '/x.bundle'), `origin survives ${bad}`)
+  }
+  assert.equal(devServerUrl(), '', 'no dev server outside a dev build')
+})
+
+test('the boot screen and phone bootstrap keep the location guard', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const problems = lintStore(root)
+  assert.deepEqual(problems, [])
+  const bad = (name, text) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'did-i-lint-'))
+    try {
+      cpSync(path.join(root, 'metro.config.cjs'), path.join(dir, 'metro.config.cjs'))
+      cpSync(path.join(root, 'native'), path.join(dir, 'native'), { recursive: true })
+      writeFileSync(path.join(dir, name), text)
+      return lintStore(dir)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+  const boot = readFileSync(path.join(root, 'native/Boot.jsx'), 'utf8')
+  const bootstrap = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
+  const lazyBoot = boot.replace("require('../ExpoApp.jsx')", "await import('../ExpoApp.jsx')")
+  assert.ok(bad('native/Boot.jsx', lazyBoot).some((p) => p.includes('Boot.jsx loads the app')))
+  const bareLoc = bootstrap.replace('makeLocation(devServerUrl())', "{ hash: '#/' }")
+  assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)
