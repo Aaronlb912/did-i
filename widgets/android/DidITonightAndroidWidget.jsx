@@ -151,9 +151,11 @@ function questionLine(p, lead) {
 function widgetSize(widgetInfo) {
   const h = widgetInfo?.height || 0
   const w = widgetInfo?.width || 0
-  const compact = h > 0 && h < 150 && (w === 0 || w < 280)
-  const large = h >= 200 || (w >= 320 && h >= 160)
-  return { compact, large, h, w }
+  const short = h > 0 && h < 170
+  const compact = short || (h > 0 && h < 150 && (w === 0 || w < 280))
+  const tight = h > 0 && h < 132
+  const large = !compact && (h >= 200 || (w >= 320 && h >= 160))
+  return { compact, tight, large, h, w }
 }
 
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
@@ -171,15 +173,30 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const p = raw
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
-  const { compact, large } = widgetSize(widgetInfo)
+  const { compact, tight, large } = widgetSize(widgetInfo)
   const gem = Boolean(C.gem)
   const lead = leadItem(p)
   const buddyId = String(p.buddyId || '')
+  const showBuddy = Boolean(buddyId) && !tight
   const question = questionLine(p, lead)
   const radius = compact ? 16 : large ? 24 : 22
-  const titleSize = lead ? (compact ? 18 : large ? 28 : 26) : compact ? 13 : 14
-  const panelPad = compact ? 10 : large ? 16 : 14
+  const titleSize = lead
+    ? tight
+      ? 15
+      : compact
+        ? 18
+        : large
+          ? 28
+          : 24
+    : compact
+      ? 13
+      : 14
+  const questionLines = lead ? (tight ? 2 : compact ? 3 : 4) : 2
+  const panelPadH = compact ? 12 : large ? 16 : 14
+  const panelPadV = tight ? 8 : compact ? 10 : large ? 14 : 12
+  const actionGap = tight ? 6 : 8
   const ringPad = 2
+  const outerPad = compact ? 8 : 10
 
   return (
     <FlexWidget
@@ -188,7 +205,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
         width: 'match_parent',
         backgroundColor: gem ? C.bg : C.panel,
         flexDirection: 'column',
-        padding: compact ? 8 : 10,
+        padding: outerPad,
         borderRadius: radius,
         overflow: 'hidden',
       }}
@@ -216,9 +233,9 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               width: 'match_parent',
               backgroundColor: C.panel,
               borderRadius: compact ? 14 : large ? 22 : 20,
-              padding: panelPad,
+              paddingHorizontal: panelPadH,
+              paddingVertical: panelPadV,
               flexDirection: 'column',
-              justifyContent: 'space-between',
               alignItems: 'center',
               overflow: 'hidden',
             }}
@@ -240,8 +257,10 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 width: 'match_parent',
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingHorizontal: 4,
-                minHeight: compact ? 36 : 48,
+                paddingHorizontal: showBuddy ? (compact ? 28 : 34) : 4,
+                marginTop: tight ? 2 : 4,
+                marginBottom: lead ? actionGap : 0,
+                overflow: 'hidden',
               }}
               clickAction="OPEN_URI"
               clickActionData={{ uri: tonightUri }}
@@ -255,7 +274,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                   textAlign: 'center',
                   width: 'match_parent',
                 }}
-                maxLines={compact ? 3 : 4}
+                maxLines={questionLines}
               />
             </FlexWidget>
             {lead ? (
@@ -263,7 +282,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 style={{
                   flexDirection: 'row',
                   width: 'match_parent',
-                  justifyContent: 'space-between',
+                  marginTop: actionGap,
                 }}
               >
                 <FlexWidget
@@ -271,7 +290,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                     flex: 1,
                     backgroundColor: C.skip,
                     borderRadius: 12,
-                    paddingVertical: compact ? 6 : 8,
+                    paddingVertical: tight ? 5 : compact ? 6 : 8,
                     marginRight: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -290,7 +309,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                     flex: 1,
                     backgroundColor: C.on,
                     borderRadius: 12,
-                    paddingVertical: compact ? 6 : 8,
+                    paddingVertical: tight ? 5 : compact ? 6 : 8,
                     marginLeft: 6,
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -308,23 +327,30 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
             ) : (
               <TextWidget
                 text={p.openLabel}
-                style={{ fontSize: 12, fontWeight: '600', color: C.on, textAlign: 'center', width: 'match_parent' }}
+                style={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: C.on,
+                  textAlign: 'center',
+                  width: 'match_parent',
+                  marginTop: actionGap,
+                }}
                 maxLines={1}
                 clickAction="OPEN_URI"
                 clickActionData={{ uri: tonightUri }}
               />
             )}
           </FlexWidget>
-          {buddyId ? (
+          {showBuddy ? (
             <FlexWidget
               style={{
                 width: 'match_parent',
-                height: 'wrap_content',
+                height: '100%',
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 alignItems: 'flex-end',
-                paddingTop: compact ? 4 : 6,
-                paddingRight: compact ? 2 : 4,
+                paddingTop: panelPadV + ringPad,
+                paddingRight: panelPadH + ringPad,
               }}
             >
               <BuddyMark id={buddyId} compact={compact} />
