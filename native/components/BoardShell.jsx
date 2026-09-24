@@ -1,21 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { activeLook } from '../../src/lib/dit-board.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
-import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
-import { canGoBack, goBack, onRoute } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { hallColors, fonts } from '../theme.js'
+import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
+import { hallColors } from '../theme.js'
 import { gemFrameStyle } from '../lib/gem-look-tone.js'
 import { HallHalo } from './HallHalo.jsx'
 import { HallAmbient } from './HallAmbient.jsx'
-import { BackChevron } from './BackChevron.jsx'
-import { Slot } from './Slot.jsx'
-import { MastMenuCog, MastMenuRoot } from './MastMenu.jsx'
-import { PurseLine } from './PurseLine.jsx'
+import { AppHeader } from './AppHeader.jsx'
+import { MastMenuRoot } from './MastMenu.jsx'
 
 export function BoardShell({
   book,
@@ -35,6 +32,7 @@ export function BoardShell({
 }) {
   const insets = useSafeAreaInsets()
   const { bottom: bottomPad } = useAppInsets()
+  const headerSpace = useHeaderSpace()
   const theme = useTheme()
   const clock = now || new Date()
   const coat = look || activeLook(book)
@@ -45,52 +43,13 @@ export function BoardShell({
   const feelSit = sit || 'ask'
   const halo = isGemLook(coat)
   const gemFrame = gemFrameStyle(coat, theme)
-  const [showBack, setShowBack] = useState(() => back !== false && canGoBack())
-  useEffect(() => {
-    if (back === false) {
-      setShowBack(false)
-      return undefined
-    }
-    const sync = () => setShowBack(back === true || canGoBack())
-    sync()
-    return onRoute(sync)
-  }, [back])
-
   const shellBg = useMemo(
     () => (halo ? { backgroundColor: 'transparent' } : { backgroundColor: colors.bg }),
     [colors.bg, halo],
   )
 
-  const mast = (
-    <View style={styles.mast}>
-      <View style={styles.mastTop}>
-        {showBack ? (
-          <Pressable onPress={() => goBack()} style={styles.back} accessibilityLabel={t('nav.back')}>
-            <Slot>
-              <BackChevron color={colors.inkDim} />
-            </Slot>
-          </Pressable>
-        ) : (
-          <View style={styles.backPad} />
-        )}
-        <View style={styles.mastCopy}>
-          <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>
-            {title || book?.title || 'Did I'}
-          </Text>
-        </View>
-        {showCogs ? (
-          <View style={styles.actions}>
-            <PurseLine purse={purse} colors={colors} gemsLink mast />
-            <MastMenuCog />
-          </View>
-        ) : null}
-      </View>
-    </View>
-  )
-
   const body = (
     <View style={[styles.page, { paddingBottom: bottomPad }]}>
-      {mast}
       {children}
     </View>
   )
@@ -103,14 +62,15 @@ export function BoardShell({
     >
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 16, flexGrow: 1 }}
+        contentContainerStyle={{ paddingTop: headerSpace, paddingHorizontal: 16, flexGrow: 1 }}
+        scrollIndicatorInsets={{ top: headerSpace - insets.top }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </ScrollView>
     </KeyboardAvoidingView>
   ) : (
-    <View style={{ flex: 1, paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
+    <View style={{ flex: 1, paddingTop: headerSpace, paddingHorizontal: 16 }}>
       <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
     </View>
   )
@@ -121,6 +81,13 @@ export function BoardShell({
       <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
       <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
         {inner}
+        <AppHeader
+          colors={colors}
+          title={title || book?.title || 'Did I'}
+          back={back ?? 'auto'}
+          purse={showCogs ? purse : undefined}
+          menu={showCogs}
+        />
       </View>
     </View>
   )
@@ -141,17 +108,4 @@ const styles = StyleSheet.create({
   shell: { flex: 1, position: 'relative' },
   sitOn: {},
   page: { gap: 12 },
-  mast: { marginBottom: 4 },
-  mastTop: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 0 },
-  back: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: -4 },
-  backPad: { width: 28 },
-  mastCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' },
-  title: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    flexShrink: 1,
-  },
-  actions: { alignItems: 'flex-end', gap: 6, zIndex: 21 },
 })

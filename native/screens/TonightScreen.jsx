@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/dit-board.js'
@@ -19,17 +18,18 @@ import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { HallHalo } from '../components/HallHalo.jsx'
 import { HolePlate } from '../components/HolePlate.jsx'
-import { MastMenuCog, MastMenuRoot } from '../components/MastMenu.jsx'
+import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
+import { MastMenuRoot } from '../components/MastMenu.jsx'
 import { NightMeter } from '../components/NightMeter.jsx'
 import { NightStrip } from '../components/NightStrip.jsx'
 import { WaitPlate } from '../components/WaitPlate.jsx'
-import { PurseLine } from '../components/PurseLine.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
+import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { hallColors, fonts } from '../theme.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -70,7 +70,6 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
 }
 
 export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId }) {
-  const insets = useSafeAreaInsets()
   const theme = useTheme()
   const look = activeLook(book)
   const colors = hallColors(look, theme)
@@ -80,6 +79,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const stack = useTonightStack({ value: book, boards, tagId, onTag, onChange, focusLampId, now })
   const purse = mergePurses(stack.shelf)
   const { bottom: bottomPad } = useAppInsets()
+  const headerSpace = useHeaderSpace()
   const mastTitle = tagId ? book.title : t('tonight.didI')
   const premium = isGemLook(look)
   const gemCard = gemPanelStyle(look, theme)
@@ -277,6 +277,24 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   }
 
+  const titleSlot = stack.titleEdit ? (
+    <TextInput
+      value={stack.titleDraft}
+      onChangeText={stack.setTitleDraft}
+      onBlur={stack.saveTitle}
+      onSubmitEditing={stack.saveTitle}
+      style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel }]}
+      accessibilityLabel={t('tonight.boardName')}
+      autoFocus
+    />
+  ) : (
+    <Pressable onPress={() => stack.setTitleEdit(true)} style={styles.titleHit}>
+      <Text style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
+        {mastTitle}
+      </Text>
+    </Pressable>
+  )
+
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
@@ -293,40 +311,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         style={[
           styles.shell,
           premium && styles.aboveHalo,
-          { paddingTop: insets.top, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
+          { paddingTop: headerSpace, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
           stack.hallOn && styles.sitOn,
         ]}
       >
-      <View style={styles.mast} collapsable={false}>
-        <View style={styles.mastMain}>
-          {stack.titleEdit ? (
-            <TextInput
-              value={stack.titleDraft}
-              onChangeText={stack.setTitleDraft}
-              onBlur={stack.saveTitle}
-              onSubmitEditing={stack.saveTitle}
-              style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel2 }]}
-              accessibilityLabel={t('tonight.boardName')}
-              autoFocus
-            />
-          ) : (
-            <Pressable onPress={() => stack.setTitleEdit(true)} style={styles.titleHit}>
-              <Text style={[styles.mastTitle, { color: colors.ink }]} numberOfLines={1}>
-                {mastTitle}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-        <View style={styles.mastActions}>
-          <Slot>
-            <PurseLine purse={purse} colors={colors} gemsLink mast />
-          </Slot>
-          <Slot>
-            <MastMenuCog />
-          </Slot>
-        </View>
-      </View>
-
       {account.user && sync.how === 'miss' ? (
         <Text style={[styles.syncNote, { color: colors.miss }]}>
           {sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')}
@@ -404,6 +392,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       </Slot>
 
     </View>
+    <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
     </View>
     </MastMenuRoot>
   )
@@ -414,37 +403,13 @@ const styles = StyleSheet.create({
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
   shell: { flex: 1, paddingHorizontal: 16, position: 'relative' },
   sitOn: {},
-  mast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 8,
-    minHeight: 36,
-    zIndex: 20,
-  },
-  mastMain: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', minWidth: 0, gap: 2 },
-  mastActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 21 },
-  titleHit: { maxWidth: '46%' },
+  titleHit: { alignSelf: 'flex-start', maxWidth: '100%' },
   titleInput: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    fontWeight: '600',
+    ...headerTitleStyle,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    minWidth: 120,
-    maxWidth: '46%',
-  },
-  mastTitle: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    fontWeight: '600',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },

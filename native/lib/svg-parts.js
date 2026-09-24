@@ -27,3 +27,20 @@ export function svgParts() {
     return null
   }
 }
+
+let gradientCached
+
+/** Gradient pieces for scrims. Null when the svg fallback is in play. */
+export function svgGradient() {
+  if (gradientCached !== undefined) return gradientCached
+  try {
+    const mod = require('react-native-svg')
+    const Svg = mod && !mod.__didISvgFallback && (mod.default || mod.Svg)
+    const { Defs, LinearGradient, Stop, Rect } = mod || {}
+    gradientCached = Svg && Defs && LinearGradient && Stop && Rect ? { Svg, Defs, LinearGradient, Stop, Rect } : null
+  } catch (error) {
+    global.__didISvgError = String((error && error.message) || error)
+    gradientCached = null
+  }
+  return gradientCached
+}
