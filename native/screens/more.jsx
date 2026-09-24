@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
-import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
 import {
   deleteAccount,
@@ -16,7 +16,13 @@ import {
   loadProfile,
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
-import { blankLamp, isOnceBy, shortFromQuestion, shortLabel } from '../../src/lib/board-json.js'
+import {
+  blankLamp,
+  didQuestion,
+  isOnceBy,
+  shortFromQuestion,
+  shortLabel,
+} from '../../src/lib/board-json.js'
 import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
@@ -48,16 +54,17 @@ import {
 } from '../../src/lib/session.js'
 import { upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { hangStarter, unusedStarters } from '../../src/lib/starters.js'
+import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { CalendarGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
-import { DidButton, Field, KeyButton, Meta, Page, Row } from '../components/ui.jsx'
+import { DidButton, Field, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -566,21 +573,17 @@ export function WelcomeScreen({ book }) {
   )
 }
 
-function asQuestion(raw) {
-  let question = String(raw || '').trim()
-  if (!question) return ''
-  if (!/^did i\b/i.test(question)) question = `Did I ${question}`
-  if (!question.endsWith('?')) question += '?'
-  return question
-}
-
+// The first question is a sentence to finish, written on the card it becomes.
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const named = firstName(book)
   const [person, setPerson] = useState(book?.keeperName || '')
-  const [own, setOwn] = useState('')
+  const [blank, setBlank] = useState('')
+  const [focused, setFocused] = useState(false)
   const starters = unusedStarters(book, clock, true)
+  const question = didQuestion(blank)
+  const picked = starters.find((starter) => starter.question === question)
 
   function withName(next) {
     const keeperName = person.trim()
@@ -594,9 +597,12 @@ export function FirstNightScreen({ book, onChange, now }) {
     goHash('/tonight', face ? { face } : '')
   }
 
-  function addOwn() {
-    const question = asQuestion(own)
+  function add() {
     if (!question) return
+    if (picked) {
+      land(hangStarter(book, picked, clock, true))
+      return
+    }
     const lamp = {
       ...blankLamp(clock),
       question,
@@ -609,30 +615,83 @@ export function FirstNightScreen({ book, onChange, now }) {
   }
 
   return (
-    <ScreenShell
-      book={book}
-      title={named ? t('first.titleNamed', { name: named }) : t('first.title')}
-      colors={colors}
-    >
+    <ScreenShell book={book} title={t('first.kicker')} colors={colors}>
+      <Title colors={colors}>
+        {named ? t('first.titleNamed', { name: named }) : t('first.title')}
+      </Title>
       <Meta colors={colors}>{t('first.body')}</Meta>
-      {!named ? (
-        <Field colors={colors} label={t('first.name')} value={person} onChangeText={setPerson} />
-      ) : null}
+      <View
+        style={[
+          ...faceCardStyle(colors),
+          styles.firstCard,
+          { borderColor: focused ? colors.onDeep : colors.line },
+        ]}
+      >
+        <Text style={[faceCardStyles.title, { color: colors.inkSoft }]}>{t('tonight.didI')}</Text>
+        <TextInput
+          value={blank}
+          onChangeText={setBlank}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onSubmitEditing={add}
+          placeholder={t('first.ownHint')}
+          placeholderTextColor={colors.inkDim}
+          selectionColor={colors.on}
+          accessibilityLabel={t('tonight.didI')}
+          autoCapitalize="none"
+          returnKeyType="done"
+          blurOnSubmit
+          multiline
+          maxLength={120}
+          style={[faceCardStyles.title, styles.firstBlank, { color: colors.ink }]}
+        />
+        <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
+          <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
+          <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
+        </View>
+      </View>
       {starters.length ? (
         <>
-          <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('first.picks')}</Text>
-          {starters.map((starter) => (
-            <KeyButton
-              key={starter.short}
-              colors={colors}
-              label={starter.short}
-              onPress={() => land(hangStarter(book, starter, clock, true))}
-            />
-          ))}
+          <Text style={[styles.slot, styles.firstPicksLabel, { color: colors.inkSoft }]}>
+            {t('first.picks')}
+          </Text>
+          <View style={styles.firstPicks}>
+            {starters.map((starter) => {
+              const on = picked === starter
+              return (
+                <Pressable
+                  key={starter.short}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setBlank(starterBlank(starter))}
+                  style={[
+                    styles.firstPick,
+                    {
+                      borderColor: on ? colors.onDeep : colors.line,
+                      backgroundColor: on ? colors.panel3 : colors.panel2,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.firstPickText, { color: on ? colors.on : colors.ink }]}>
+                    {starterBlank(starter)}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
         </>
       ) : null}
-      <Field colors={colors} label={t('first.own')} value={own} onChangeText={setOwn} />
-      <DidButton colors={colors} label={t('first.add')} onPress={addOwn} />
+      {!named ? (
+        <Field
+          colors={colors}
+          label={t('first.name')}
+          value={person}
+          onChangeText={setPerson}
+          placeholder={t('first.nameHint')}
+          autoCapitalize="words"
+        />
+      ) : null}
+      <DidButton colors={colors} label={t('first.add')} onPress={add} disabled={!question} />
     </ScreenShell>
   )
 }
@@ -976,6 +1035,27 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
+  firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
+  firstBlank: { padding: 0, paddingTop: 0, minHeight: 32 },
+  firstSwipes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
+  firstPicksLabel: { marginTop: 12 },
+  firstPicks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  firstPick: {
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  firstPickText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   markRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4, marginBottom: 8 },
   markName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   markLine: { fontFamily: fonts.ui, fontSize: 13 },
