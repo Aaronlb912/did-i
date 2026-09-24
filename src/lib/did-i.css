@@ -1516,6 +1516,94 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   overflow-y: auto;
 }
 
+/* First question: "Did I ___?" written on the card it becomes. */
+.di-first-card {
+  display: block;
+  margin-top: 1.25rem;
+  padding: 1.35rem 1.2rem 0;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  cursor: text;
+  transition: border-color var(--di-move) var(--di-ease);
+}
+
+.di-first-card:focus-within {
+  border-color: var(--di-on-deep);
+}
+
+.di-first-lead,
+.di-first-blank {
+  font-family: var(--di-display);
+  font-size: clamp(1.6rem, 6.5vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.di-first-lead {
+  display: block;
+  color: var(--di-ink-soft);
+}
+
+.di-first-blank {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: var(--di-ink);
+  background: transparent;
+  border: 0;
+  outline: none;
+  caret-color: var(--di-on);
+}
+
+.di-first-blank::placeholder {
+  color: var(--di-ink-dim);
+}
+
+.di-first-swipes {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--di-line-soft);
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.di-first-nope {
+  color: var(--di-skip);
+}
+
+.di-first-did {
+  color: var(--di-on);
+}
+
+.di-first-picks {
+  margin: 1.4rem 0 1.2rem;
+}
+
+.di-first-pick {
+  font-size: 0.9rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  color: var(--di-ink);
+}
+
+.di-first-pick[aria-pressed='true'] {
+  color: var(--di-on);
+  background: var(--di-panel-3);
+  border-color: var(--di-on-deep);
+}
+
+.di-first .di-did:disabled {
+  color: var(--di-ink-dim);
+  background: var(--di-panel-3);
+  cursor: default;
+}
+
 .di-face::-webkit-scrollbar,
 .di-empty::-webkit-scrollbar,
 .di-wait::-webkit-scrollbar,

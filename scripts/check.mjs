@@ -23,11 +23,13 @@ import { closePastNights } from '../src/lib/daily.js'
 import {
   activeDeadline,
   byPriority,
+  didQuestion,
   dueByUrgency,
   lampBuzzes,
   lampNudgesLate,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
+import { STARTERS, starterBlank } from '../src/lib/starters.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
@@ -138,6 +140,18 @@ test('an unanswered night closes as nope when the day turns', () => {
   const closed = closePastNights(book, tomorrow)
   assert.equal(answerFor(closed, 'door', today)?.status, 'skip')
   assert.equal(closePastNights(closed, tomorrow), closed)
+})
+
+test('the first question finishes "Did I ___" once', () => {
+  assert.equal(didQuestion('lock the back door'), 'Did I lock the back door?')
+  assert.equal(didQuestion('  Lock the   back door??  '), 'Did I lock the back door?')
+  assert.equal(didQuestion('did i lock the back door?'), 'Did I lock the back door?')
+  assert.equal(didQuestion('Did I'), '')
+  assert.equal(didQuestion('   '), '')
+  assert.equal(didQuestion('TV off'), 'Did I TV off?')
+  for (const starter of STARTERS) {
+    assert.equal(didQuestion(starterBlank(starter)), starter.question, starter.short)
+  }
 })
 
 test('once by deadline shows every night until due', () => {

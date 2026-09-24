@@ -55,6 +55,14 @@ export const STARTERS = [
   },
 ]
 
+// The words that fill "Did I ___": "take the evening pills".
+export function starterBlank(starter) {
+  return String(starter?.question || '')
+    .replace(/^did i\s+/i, '')
+    .replace(/\?+$/, '')
+    .trim()
+}
+
 export function unusedStarters(book, now = new Date(), dueNow = false) {
   const hung = (book.lamps || []).filter((lamp) => !lamp.archived)
   const dateIso = boardDate(now, book?.dayFoldHour)
