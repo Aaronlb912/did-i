@@ -48,6 +48,10 @@ jobs:
           IOS_WIDGET_PROVISIONING_PROFILE: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE }}
         run: bash .github/scripts/ios-signing.sh
 
+      - name: Apply manual signing to Xcode project
+        if: env.SIGNING == '1'
+        run: ruby .github/scripts/ios-apply-manual-signing.rb
+
       - name: Build unsigned archive
         if: env.SIGNING != '1'
         working-directory: ios
@@ -65,25 +69,13 @@ jobs:
         if: env.SIGNING == '1'
         working-directory: ios
         run: |
-          XCB=(
-            xcodebuild
-            -workspace DidI.xcworkspace
-            -scheme DidI
-            -configuration Release
-            -destination 'generic/platform=iOS'
-            -archivePath "$RUNNER_TEMP/DidI.xcarchive"
+          xcodebuild \
+            -workspace DidI.xcworkspace \
+            -scheme DidI \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/DidI.xcarchive" \
             archive
-            DEVELOPMENT_TEAM=2ZUKFKSSV8
-            CODE_SIGN_STYLE=Manual
-            CODE_SIGN_IDENTITY="Apple Distribution"
-            PROVISIONING_PROFILE="${IOS_MAIN_PROFILE_UUID}"
-          )
-          if [ -n "${IOS_WIDGET_PROFILE_UUID:-}" ]; then
-            XCB+=(
-              "PROVISIONING_PROFILE[sdk=iphoneos*][config=Release][target=ExpoWidgetsTarget]=${IOS_WIDGET_PROFILE_UUID}"
-            )
-          fi
-          "${XCB[@]}"
 
       - name: Export signed IPA
         if: env.SIGNING == '1'
