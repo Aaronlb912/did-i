@@ -263,6 +263,20 @@ export function shortFromQuestion(question, max = 0) {
   return max > 0 ? out.slice(0, max) : out
 }
 
+// Whatever finishes "Did I ___" becomes a whole question. A pasted
+// "Did I lock the door?" does not double up.
+export function didQuestion(raw) {
+  const text = asString(raw)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^did i\b\s*/i, '')
+    .replace(/\?+$/, '')
+    .trim()
+  if (!text) return ''
+  const rest = /^[A-Z]{2}/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1)
+  return `Did I ${rest}?`
+}
+
 export function shortLabel(lamp) {
   const short = asString(lamp?.short).trim()
   if (short) return short
