@@ -8,7 +8,9 @@ import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeopleCount } from '../../src/lib/people.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
+import { HEADER_BAR, useHeaderTop } from '../hooks/useHeaderSpace.js'
 import { fonts } from '../theme.js'
+import { HEADER_BUTTON, HeaderButton } from './HeaderButton.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
 
 const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
@@ -158,6 +160,7 @@ export function MastMenuRoot({ colors, showAdd = true, children }) {
 
 function MastMenuSheet({ colors, showAdd, close }) {
   const insets = useSafeAreaInsets()
+  const buttonTop = useHeaderTop() + (HEADER_BAR - HEADER_BUTTON) / 2
   const account = useAccount()
   const waiting = usePeopleCount(account.user)
   const items = menuItems(showAdd, waiting)
@@ -179,33 +182,26 @@ function MastMenuSheet({ colors, showAdd, close }) {
         accessibilityLabel={t('mast.menuClose')}
         accessibilityRole="button"
       />
-      <Pressable
-        onPress={() => {
-          feelTap()
-          close()
-        }}
-        hitSlop={12}
-        style={[
-          styles.cog,
-          styles.cogOverlay,
-          {
-            top: insets.top + 8,
-            right: Math.max(16, insets.right + 16),
-            borderColor: on ? colors.onDeep : colors.line,
-            backgroundColor: on ? colors.panel3 : colors.panel2,
-          },
-        ]}
-        accessibilityLabel={t('mast.menuClose')}
-        accessibilityRole="button"
-      >
-        <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
-        {waiting > 0 ? <View style={[styles.menuPip, { backgroundColor: colors.on }]} /> : null}
-      </Pressable>
+      <View style={[styles.cogOverlay, { top: buttonTop, right: Math.max(16, insets.right + 16) }]}>
+        <HeaderButton
+          colors={colors}
+          on={on}
+          onPress={() => {
+            feelTap()
+            close()
+          }}
+          label={t('mast.menuClose')}
+          expanded
+        >
+          <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+          {waiting > 0 ? <View style={[styles.menuPip, { backgroundColor: colors.on }]} /> : null}
+        </HeaderButton>
+      </View>
       <View
         style={[
           styles.panel,
           {
-            top: insets.top + 54,
+            top: buttonTop + HEADER_BUTTON + 8,
             right: Math.max(16, insets.right + 16),
             backgroundColor: colors.panel,
             borderColor: colors.line,
@@ -257,26 +253,19 @@ export function MastMenuCog() {
   const on = menuIsOn(showAdd, waiting)
 
   return (
-    <Pressable
+    <HeaderButton
+      colors={colors}
+      on={on}
       onPress={() => {
         feelTap()
         toggle()
       }}
-      hitSlop={12}
-      style={[
-        styles.cog,
-        {
-          borderColor: on ? colors.onDeep : colors.line,
-          backgroundColor: on ? colors.panel3 : colors.panel2,
-        },
-      ]}
-      accessibilityLabel={t('mast.menu')}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
+      label={t('mast.menu')}
+      expanded={open}
     >
       <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
       {waiting > 0 ? <View style={[styles.menuPip, { backgroundColor: colors.on }]} /> : null}
-    </Pressable>
+    </HeaderButton>
   )
 }
 
@@ -303,16 +292,6 @@ const styles = StyleSheet.create({
   ico: { width: 22, alignItems: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },
   pip: { width: 8, height: 8, borderRadius: 4 },
-  cog: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 30,
-    elevation: 30,
-  },
   cogOverlay: {
     position: 'absolute',
     zIndex: 90,
@@ -320,8 +299,8 @@ const styles = StyleSheet.create({
   },
   menuPip: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 8,
+    right: 8,
     width: 7,
     height: 7,
     borderRadius: 4,
