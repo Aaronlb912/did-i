@@ -86,40 +86,79 @@ Parity with the web app shell:
 | Platform | Workflow | Artifact |
 |----------|----------|----------|
 | Android internal APK | Actions → **Android APK** (`android-apk.yml`) | `assembleRelease` APK |
-| iOS store / TestFlight | Actions → **iOS IPA** (`ios-ipa.yml`) on `macos-latest` | signed `.ipa` when signing secrets are set; else unsigned `.xcarchive` |
+| iOS store / TestFlight | Actions → **iOS IPA** (`ios-ipa.yml`) on `macos-14` | signed `.ipa` when signing secrets are set; else unsigned `.xcarchive` |
 
-Repo `android/` is committed; the Android workflow runs `./gradlew assembleRelease`
-after `npm run check`. Install the APK from the workflow artifact.
+Repo `android/` is committed; the Android workflow runs
+`:app:assembleRelease` (arm64-v8a, release). Install the APK from the workflow
+artifact.
 
 ### CI speed (GitHub Actions)
 
-Both **Android APK** and **iOS IPA** use a `concurrency` group so a new run on
-the same branch cancels the previous one. Android already had a 90-minute cap;
-iOS now has a 120-minute cap.
+**check.yml** runs `npm run check` on every push to `master` / `main` and on PRs.
+**Android APK** and **iOS IPA** are `workflow_dispatch` only; they still run check
+by default, with an optional **Run npm run check** input to skip when you just
+pushed and `check` already passed.
 
-| Workflow | Caches | Typical savings (warm cache) |
-|----------|--------|------------------------------|
-| Android APK | npm (`setup-node`), Gradle (`setup-java` + `android/.gradle`), build cache via `org.gradle.caching` | ~2–5 min off Gradle on repeat runs; first run unchanged |
-| iOS IPA | npm, `.expo-export-ios` (skipped export on hit), `ios/Pods` + CocoaPods download cache | ~1–3 min export, ~3–8 min `pod install` when Pods restore cleanly |
+Both native workflows use a `concurrency` group so a new run on the same branch
+cancels the previous one (90-minute cap on Android, 120 on iOS).
 
-Gradle on CI keeps the daemon enabled (single `assembleRelease` step only) and
-does **not** turn on configuration-cache (React Native / Expo projects are still
-too brittle). WorkManager stays pinned in `android/build.gradle`; widgets stay
-on via `EAS_INCLUDE_WIDGETS=1` on iOS prebuild.
+Measured on successful runs before the arm64 / cache pass (Sep 2026):
+
+| Workflow | Step | Wall time |
+|----------|------|-----------|
+| Android APK | `:app:assembleRelease` | ~53 min of ~54 min total |
+| Android APK | `npm run check` | ~3 s |
+| iOS IPA | `xcodebuild archive` (signed) | ~14 min of ~19 min total |
+| iOS IPA | TestFlight upload | ~1.5 min |
+| iOS IPA | `pod install` | ~1 min |
+
+**Expected after optimizations** (first run after a native bump is still slow;
+second run on the same lockfile / sources is the warm case):
+
+| Workflow | Before (typical) | After (warm cache) | After (cold) |
+|----------|------------------|--------------------|--------------|
+| Android APK | ~54 min | ~12–18 min | ~25–35 min |
+| iOS IPA | ~15–19 min | ~8–12 min | ~15–19 min |
+
+Changes that drive most of the Android win:
+
+- CI builds **arm64-v8a only** (`-PreactNativeArchitectures=arm64-v8a`). Real
+  phones since ~2019; not for x86 emulators. Widget code is unchanged.
+- `:app:assembleRelease --build-cache` (no `clean`), plus caches for
+  `android/.gradle`, `android/app/.cxx`, and `~/.gradle/caches/build-cache-1`.
+- `setup-java` still caches dependency jars under `~/.gradle/caches`.
+
+iOS:
+
+- Runner pinned to **macos-14** (Apple Silicon) instead of a moving `macos-latest`.
+- **DerivedData** cache keyed after `prebuild` + `Podfile.lock`.
+- Pods cache key includes `ios/Podfile.lock`; `pod install --deployment` when
+  the restored `Pods` tree matches the lockfile.
+- `.expo-export-ios` still skips `expo export` on cache hit.
+
+Gradle on CI does **not** use configuration-cache (React Native / Expo remain
+too brittle). No remote Gradle Enterprise cache. Widget prebuild stays on
+(`EAS_INCLUDE_WIDGETS=1` on iOS; committed `android/` includes the widget).
+
+**Larger runners:** GitHub-hosted `macos-14` / `ubuntu-latest` are included in
+the free tier minutes pool; **larger** runners (more CPU/RAM) are billed per
+minute and rarely worth it until caches are warm. **macos-15** / `macos-latest`
+can be faster when GitHub moves the label, but pinning `macos-14` avoids surprise
+image changes.
 
 If a workflow looks wrong after a native or dependency bump, re-run once. If it
 still fails, bump the cache by changing the `key` suffix in the workflow (e.g.
-`-v2`) or clear caches under **Actions → Caches** in the repo. Stale
-`.expo-export-ios` or `Pods` caches usually show up as missing modules or pod
-resolution errors, not silent bad binaries.
+`-v2`) or clear caches under **Actions → Caches**. Stale `.expo-export-ios`,
+`Pods`, or DerivedData usually show up as missing modules or pod resolution
+errors, not silent bad binaries.
 
 ### GitHub Actions → TestFlight (iOS)
 
-Workflow: **Actions → iOS IPA → Run workflow** (`workflow_dispatch`). It runs
-`npm run check`, `expo export`, `expo prebuild` (widgets on), `pod install`,
-then archives **DidI**. It does **not** submit for App Store review. When App
-Store Connect API secrets are set, it uploads the IPA for TestFlight processing
-only.
+Workflow: **Actions → iOS IPA → Run workflow** (`workflow_dispatch`). By default
+it runs `npm run check`, `expo export` (skipped when export cache hits), `expo
+prebuild` (widgets on), `pod install`, then archives **DidI**. It does **not**
+submit for App Store review. When App Store Connect API secrets are set, it
+uploads the IPA for TestFlight processing only.
 
 **Where to add secrets:** GitHub repo → **Settings → Secrets and variables →
 Actions → New repository secret**. Names only (never commit values):

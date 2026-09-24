@@ -2,6 +2,11 @@ name: iOS IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      run_check:
+        description: Run npm run check before export (push/PR already run check.yml)
+        type: boolean
+        default: true
 
 concurrency:
   group: ios-ipa-${{ github.ref }}
@@ -12,7 +17,7 @@ permissions:
 
 jobs:
   ipa:
-    runs-on: macos-latest
+    runs-on: macos-14
     timeout-minutes: 120
     env:
       EAS_INCLUDE_WIDGETS: '1'
@@ -28,6 +33,7 @@ jobs:
         run: npm ci
 
       - name: Check
+        if: inputs.run_check != false
         run: npm run check
 
       - name: GoogleService-Info.plist (secret)
@@ -57,17 +63,34 @@ jobs:
 
       - name: Cache CocoaPods
         uses: actions/cache@v4
+        id: pods-cache
         with:
           path: |
             ios/Pods
             ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-pods-${{ hashFiles('package-lock.json', 'ios/Podfile') }}
+          key: ${{ runner.os }}-pods-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock') }}
           restore-keys: |
+            ${{ runner.os }}-pods-${{ hashFiles('package-lock.json') }}-
             ${{ runner.os }}-pods-
 
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install
+        run: |
+          set -euo pipefail
+          if [ -d Pods ] && [ -f Podfile.lock ] && pod install --deployment; then
+            echo "Pods installed from cache (deployment)."
+          else
+            pod install
+          fi
+
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-derived-${{ hashFiles('package-lock.json', 'app.config.js', 'ios/Podfile', 'ios/Podfile.lock') }}-${{ hashFiles('src/**', 'native/**', 'widgets/**') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-${{ hashFiles('package-lock.json', 'app.config.js') }}-
+            ${{ runner.os }}-derived-
 
       - name: Import signing certificate and profiles
         env:

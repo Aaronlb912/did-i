@@ -2,6 +2,11 @@ name: android-apk
 
 on:
   workflow_dispatch:
+    inputs:
+      run_check:
+        description: Run npm run check before assemble (push/PR already run check.yml)
+        type: boolean
+        default: true
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -36,18 +41,22 @@ jobs:
         run: npm ci
 
       - name: Check
+        if: inputs.run_check != false
         run: npm run check
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Cache Gradle project cache
+      - name: Cache Gradle (project + native + build cache)
         uses: actions/cache@v4
         with:
-          path: android/.gradle
-          key: gradle-project-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle.properties', 'android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json') }}
+          path: |
+            android/.gradle
+            android/app/.cxx
+            ~/.gradle/caches/build-cache-1
+          key: gradle-ci-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle.properties', 'android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json', 'app.config.js', 'native/**', 'widgets/**') }}
           restore-keys: |
-            gradle-project-${{ runner.os }}-
+            gradle-ci-${{ runner.os }}-
 
       - name: Prepare signing
         id: signing
@@ -91,6 +100,9 @@ jobs:
             printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n'
             printf 'org.gradle.caching=true\n'
             printf 'org.gradle.parallel=true\n'
+            printf 'org.gradle.vfs.watch=false\n'
+            printf 'org.gradle.workers.max=%s\n' "$(nproc)"
+            printf 'kotlin.incremental=true\n'
             printf 'sdk.dir=%s\n' "${ANDROID_HOME}"
           } >> android/gradle.properties
 
@@ -104,7 +116,7 @@ jobs:
           set -euo pipefail
           sed -i 's/\r$//' gradlew
           chmod +x gradlew
-          ./gradlew assembleRelease -x lint -x test
+          ./gradlew :app:assembleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=arm64-v8a
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -117,4 +129,4 @@ jobs:
         run: |
           echo "### Android APK" >> "${GITHUB_STEP_SUMMARY}"
           echo "${{ steps.signing.outputs.label }}" >> "${GITHUB_STEP_SUMMARY}"
-          echo "Download did-i-android-apk from this run." >> "${GITHUB_STEP_SUMMARY}"
+          echo "ABI: arm64-v8a only (phone installs). Download did-i-android-apk from this run." >> "${GITHUB_STEP_SUMMARY}"
