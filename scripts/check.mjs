@@ -59,7 +59,7 @@ import {
   readShelf,
   writeShelf,
 } from '../src/lib/board-shelf.js'
-import { signedOutSync } from '../src/lib/cloud-sync.js'
+import { sessionMissing, signedOutSync } from '../src/lib/cloud-sync.js'
 import {
   buyCheer,
   buyFriendCheers,
@@ -290,6 +290,26 @@ test('sign-out clears the shelf for the next person', () => {
   signedOutSync()
   assert.equal(localStorage.getItem('did-i-last-user'), null)
   assert.equal(hallEmpty(readShelf()), true)
+})
+
+test('a phone-only shelf survives a sync that finds no session', () => {
+  const book = {
+    id: 'board-local',
+    title: 'House',
+    keeperName: '',
+    lamps: [{ id: 'di-cat', question: 'Did I feed the cat?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  writeShelf({ currentId: book.id, boards: [book] })
+  localStorage.removeItem('did-i-last-user')
+  localStorage.setItem('did-i-auth-skip', '1')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), false, 'questions stay')
+  assert.equal(localStorage.getItem('did-i-auth-skip'), '1', 'phone-only choice stays')
+
+  localStorage.setItem('did-i-last-user', 'user-a')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), true, 'a signed-out account phone still starts clean')
 })
 
 test('enter lands on tonight when the shelf already has questions', () => {
