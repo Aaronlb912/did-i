@@ -153,7 +153,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   function afterTap(kind: 'did' | 'nope') {
-    const status = kind === 'did' ? 'yes' : 'skip'
+    const status: TonightItem['status'] = kind === 'did' ? 'yes' : 'skip'
     const nextItems = items.map((item) => (item.lampId === leadId ? { ...item, status } : item))
     const nextLead = leadItem(nextItems, '')
     const nextLeft = stackLeft(nextItems)

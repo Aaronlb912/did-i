@@ -6,6 +6,7 @@
 import Constants from 'expo-constants'
 import { Appearance, AppState, Platform } from 'react-native'
 import { hookErrorReport } from '../src/lib/report.js'
+import { devServerUrl, makeLocation } from './location-shim.js'
 
 // Hermes has no document. Shared web code checks typeof document, but some
 // paths still touch document.documentElement after the guard.
@@ -105,7 +106,7 @@ if (!global.window) global.window = global
 
 const win = global.window
 
-if (!win.location) win.location = { hash: '#/' }
+if (!win.location) win.location = makeLocation(devServerUrl())
 
 class NativeCustomEvent {
   constructor(type, options = {}) {

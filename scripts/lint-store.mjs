@@ -131,6 +131,21 @@ export function lintStore(repo) {
     if (!text.includes('<Slot')) problems.push(`${rel} renders a lazy screen with no Slot`)
   }
 
+  // The boot screen is the only thing that can show a crash, so it must not
+  // depend on Metro's async chunk loader, and location must carry an origin
+  // for every import() that loader serves (see native/location-shim.js).
+  const bootScreen = readFileSync(path.join(repo, 'native/Boot.jsx'), 'utf8')
+  if (/(^|[^.\w])import\(/.test(bootScreen.replace(/\/\/.*$/gm, ''))) {
+    problems.push('native/Boot.jsx loads the app with import(). Use require() inside try/catch.')
+  }
+  const bootstrap = readFileSync(path.join(repo, 'native/bootstrap.js'), 'utf8')
+  if (!/win\.location\s*=\s*makeLocation\(/.test(bootstrap)) {
+    problems.push('native/bootstrap.js must build location with makeLocation(). A location with no origin breaks every import().')
+  }
+  if (/win\.location\s*=\s*\{/.test(bootstrap)) {
+    problems.push('native/bootstrap.js assigns a bare location object. Use makeLocation() so it has an origin.')
+  }
+
   const pin = readFileSync(path.join(repo, 'native/shim/pin-module.cjs'), 'utf8')
   if (!pin.includes('catch')) problems.push('pin-module.cjs does not catch a throwing native getter')
   if (/require\(\s*id\s*\)/.test(pin)) problems.push('pin-module.cjs still calls require(id)')

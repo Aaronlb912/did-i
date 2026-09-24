@@ -7,18 +7,14 @@ export function Boot() {
   const [fail, setFail] = useState('')
 
   useEffect(() => {
-    let alive = true
-    import('../ExpoApp.jsx')
-      .then((mod) => {
-        if (alive) setApp(() => mod.ExpoApp)
-      })
-      .catch((error) => {
-        if (!alive) return
-        const detail = global.__didIFatal?.message || error?.message || String(error)
-        setFail(detail)
-      })
-    return () => {
-      alive = false
+    // Not import(): bootstrap.js defines a global location without an origin,
+    // so Metro's async chunk loader builds its URL from undefined and throws.
+    try {
+      setApp(() => require('../ExpoApp.jsx').ExpoApp)
+    } catch (error) {
+      const detail = global.__didIFatal?.message || error?.message || String(error)
+      const stack = __DEV__ ? global.__didIFatal?.stack || error?.stack || '' : ''
+      setFail(stack ? `${detail}\n\n${stack}` : detail)
     }
   }, [])
 
