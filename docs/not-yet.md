@@ -25,7 +25,10 @@ End-to-end nudge still unconfirmed.
 
 **iOS store IPA from Windows.** Default: GitHub **iOS IPA** workflow with signing
 secrets (`docs/native-rebuild.md`). EAS fallback (`docs/app-store-connect.md`).
-No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`.
+No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`. App Store
+Connect API upload is wired (key ID **S7K3PW29JF** in GitHub secrets; verified on a
+GHA run). `app.json` **`ios.buildNumber` is 54** so the next signed upload can beat
+TestFlight **52**; the workflow fails fast if the number is still **1** or ≤ **52**.
 
 **Android test APK.** GitHub Actions builds it. Actions tab, workflow
 **android-apk**, **Run workflow**. Download the **did-i-android-apk**
@@ -38,8 +41,8 @@ the GitHub secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
 APK signed with a debug key made for that run. A GitHub-signed or debug APK
 may need the EAS APK uninstalled first if the signature differs
 (`com.aaronbryant.didi`). A later debug-signed artifact can differ again, so
-uninstall Did I if Android says the package conflicts. Not installed on a
-phone yet. Still to confirm once it is: Tonight widget **picker shows 4×2 (or resize)**,
+uninstall Did I if Android says the package conflicts. Install from GHA run
+**35950788740** (widget fixes). Still to confirm on a phone: Tonight widget **picker shows 4×2 (or resize)**,
 question + look ring + buddy on home screen, menu closes, cheer previews in
 Shop, glow look on cards, sync after sign-in on two phones. iPhone TestFlight
 is unchanged.
@@ -61,7 +64,7 @@ real phone are still open on both stores.
 - [x] **App Privacy** — all six data types configured and **Published** (nutrition labels live).
 - [ ] **Privacy Policy URL** on App Privacy page still **–**; set via **Edit** → `https://did-i.app/privacy` (Save stayed disabled in automation; also set on **1.0** if required).
 - [ ] **Version 1.0 listing** — metadata saved; **App Review** sign-in (`support@did-i.app` / `email-code`), contact name/email, notes filled in UI; add **phone**, click **Save**. Still **screenshots** and **attach six IAPs** on 1.0. Production build **51** is uploaded and waiting on Apple processing.
-- [ ] **TestFlight launch** — **53** is built (`4b2b790d-0c55-432f-a8fc-045ffb7990f4`) and not on the phone. It has the menu in its own layer and the faster widget handoff. Apple rejected the upload: error **90382**, upload limit reached, wait one day. **52** is the newest build that made it to TestFlight. An internal install failed because the ad hoc profile has no widget or Sign in with Apple entitlement. TestFlight: https://appstoreconnect.apple.com/apps/6814688066/testflight/ios
+- [ ] **TestFlight launch** — **Internal TestFlight 1.0.0 (52)** is installed on the phone. **52** is still the newest build on TestFlight. EAS **53** (`4b2b790d-0c55-432f-a8fc-045ffb7990f4`) hit Apple **90382** (upload limit; wait a day). The first **GHA** upload reached App Store Connect as build **(1)** and will not install over **52** (build number too low). Next **iOS IPA** run needs **`ios.buildNumber` 54+** (set in repo). Ad hoc internal install still fails without widget / Sign in with Apple on the profile. TestFlight: https://appstoreconnect.apple.com/apps/6814688066/testflight/ios
 - [ ] **iOS 1.0** — attach launch-clean build; screenshots; review **phone** + **Save**; attach IAPs; **manual release**. Test Tonight widget on device.
 - [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 
@@ -95,9 +98,10 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
 - **One stored widget tap.** If Did or Did not is tapped twice, for two questions, before JS runs, only the last row is kept. The card can step ahead for both, then the shelf redraw snaps back to the question that is still open. A second tap of the other button for the same lamp and night keeps the first mark.
-- **iOS IPA signing on GHA.** `ios-ipa.yml` builds an unsigned archive until
-  `IOS_DIST_CERT_P12`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE`,
-  and `GOOGLE_SERVICES_PLIST` secrets are wired (see `docs/native-rebuild.md`).
+- **iOS IPA signing on GHA.** With distro cert, profiles, `GOOGLE_SERVICES_PLIST`,
+  and App Store Connect API secrets set, `ios-ipa.yml` signs, exports, and uploads
+  to TestFlight (`docs/native-rebuild.md`). Without them, the workflow still emits an
+  unsigned archive only.
 - **Widget card without a snapshot.** A tap paints the next question from the last snapshot before JS. If that snapshot has no next question text, the card waits for the headless redraw. The buddy is on that redraw, not on the tap paint.
 
 Tonight parity landed 2026-09-20: wait/hole plates, sync miss line,
