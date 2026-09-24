@@ -1544,6 +1544,74 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 .di-first-lead {
   display: block;
   color: var(--di-ink-soft);
+  white-space: pre;
+}
+
+/* Lime runs through "Did I" left to right when an idea is picked. */
+.di-first-lead[data-wave] > span {
+  animation: di-first-wave 680ms var(--di-ease) calc(var(--i) * 70ms) both;
+}
+
+@keyframes di-first-wave {
+  0%,
+  100% {
+    color: var(--di-ink-soft);
+  }
+  24% {
+    color: var(--di-on);
+  }
+}
+
+/* Nothing written yet: each idea rocks in turn, a "tap one" cue.
+   Two names so a new round restarts without remounting the buttons. */
+.di-first-picks [data-wobble='a'] .di-first-pick {
+  animation: di-first-wobble-a 400ms ease-in-out calc(var(--i) * 90ms);
+}
+
+.di-first-picks [data-wobble='b'] .di-first-pick {
+  animation: di-first-wobble-b 400ms ease-in-out calc(var(--i) * 90ms);
+}
+
+@keyframes di-first-wobble-a {
+  20% {
+    transform: rotate(-2.5deg);
+  }
+  40% {
+    transform: rotate(2.5deg);
+  }
+  60% {
+    transform: rotate(-1.5deg);
+  }
+  80% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@keyframes di-first-wobble-b {
+  20% {
+    transform: rotate(-2.5deg);
+  }
+  40% {
+    transform: rotate(2.5deg);
+  }
+  60% {
+    transform: rotate(-1.5deg);
+  }
+  80% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-first-lead[data-wave] > span,
+  .di-first-picks [data-wobble] .di-first-pick {
+    animation: none;
+  }
+}
+
+[data-reduce-motion] .di-first-lead[data-wave] > span,
+[data-reduce-motion] .di-first-picks [data-wobble] .di-first-pick {
+  animation: none;
 }
 
 .di-first-blank {
@@ -1598,7 +1666,7 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   border-color: var(--di-on-deep);
 }
 
-.di-first .di-did:disabled {
+.di-first .di-did[aria-disabled='true'] {
   color: var(--di-ink-dim);
   background: var(--di-panel-3);
   cursor: default;

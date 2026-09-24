@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
-import { Linking, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import {
+  Animated,
+  Easing,
+  Linking,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
 import {
   deleteAccount,
@@ -41,7 +51,7 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
-import { shareShelf } from '../../src/lib/native.js'
+import { playClick, shareShelf } from '../../src/lib/native.js'
 import { formatPhone, readMine, savePhone } from '../../src/lib/people.js'
 import {
   checkPin,
@@ -56,6 +66,7 @@ import { upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -573,6 +584,118 @@ export function WelcomeScreen({ book }) {
   )
 }
 
+const WAVE_STEP = 70
+const WOBBLE = [-1, 1, -0.6, 0.6, 0]
+const WOBBLE_STEP = 90
+const WOBBLE_FIRST = 1200
+const WOBBLE_EVERY = 4200
+
+// Each idea rocks in turn, left to right, as a "tap one of these" cue.
+// It repeats while `active`; `nudge` runs it right now.
+function useWobble(count, active, reduce) {
+  const rocks = useRef([]).current
+  while (rocks.length < count) rocks.push(new Animated.Value(0))
+  const run = useRef(null)
+
+  function nudge() {
+    if (reduce || !count) return
+    run.current?.stop()
+    const lit = rocks.slice(0, count)
+    lit.forEach((rock) => rock.setValue(0))
+    run.current = Animated.stagger(
+      WOBBLE_STEP,
+      lit.map((rock) =>
+        Animated.sequence(
+          WOBBLE.map((toValue) =>
+            Animated.timing(rock, {
+              toValue,
+              duration: 80,
+              easing: Easing.inOut(Easing.quad),
+              useNativeDriver: true,
+            }),
+          ),
+        ),
+      ),
+    )
+    run.current.start()
+  }
+
+  const nudgeRef = useRef(nudge)
+  nudgeRef.current = nudge
+
+  useEffect(() => {
+    if (!active || reduce) return undefined
+    let timer = setTimeout(function again() {
+      nudgeRef.current()
+      timer = setTimeout(again, WOBBLE_EVERY)
+    }, WOBBLE_FIRST)
+    return () => {
+      clearTimeout(timer)
+      run.current?.stop()
+    }
+  }, [active, reduce])
+
+  const tilt = (index) =>
+    rocks[index].interpolate({ inputRange: [-1, 1], outputRange: ['-2.5deg', '2.5deg'] })
+  return { nudge, tilt }
+}
+
+// Lime runs through "Did I" letter by letter, left to right, each time `wave` ticks.
+function WaveLead({ text, wave, colors, style }) {
+  const reduce = useReduceMotion()
+  const chars = Array.from(text)
+  const glow = useRef([]).current
+  while (glow.length < chars.length) glow.push(new Animated.Value(0))
+
+  useEffect(() => {
+    if (!wave || reduce) return undefined
+    const lit = glow.slice(0, chars.length)
+    lit.forEach((value) => value.setValue(0))
+    const run = Animated.stagger(
+      WAVE_STEP,
+      lit.map((value) =>
+        Animated.sequence([
+          Animated.timing(value, {
+            toValue: 1,
+            duration: 160,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 520,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: false,
+          }),
+        ]),
+      ),
+    )
+    run.start()
+    return () => run.stop()
+  }, [wave, reduce, chars.length, glow])
+
+  return (
+    <View style={styles.waveRow} accessible accessibilityLabel={text}>
+      {chars.map((char, index) => (
+        <Animated.Text
+          key={index}
+          style={[
+            style,
+            {
+              color: glow[index].interpolate({
+                inputRange: [0, 1],
+                outputRange: [colors.inkSoft, colors.on],
+              }),
+            },
+          ]}
+        >
+          {char}
+        </Animated.Text>
+      ))}
+    </View>
+  )
+}
+
 // The first question is a sentence to finish, written on the card it becomes.
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
@@ -581,9 +704,12 @@ export function FirstNightScreen({ book, onChange, now }) {
   const [person, setPerson] = useState(book?.keeperName || '')
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
+  const [wave, setWave] = useState(0)
+  const reduce = useReduceMotion()
   const starters = unusedStarters(book, clock, true)
   const question = didQuestion(blank)
   const picked = starters.find((starter) => starter.question === question)
+  const wobble = useWobble(starters.length, !blank.trim() && !focused, reduce)
 
   function withName(next) {
     const keeperName = person.trim()
@@ -597,8 +723,18 @@ export function FirstNightScreen({ book, onChange, now }) {
     goHash('/tonight', face ? { face } : '')
   }
 
+  function pick(starter) {
+    setBlank(starterBlank(starter))
+    setWave((count) => count + 1)
+    playClick()
+  }
+
   function add() {
-    if (!question) return
+    if (!question) {
+      playClick()
+      wobble.nudge()
+      return
+    }
     if (picked) {
       land(hangStarter(book, picked, clock, true))
       return
@@ -627,7 +763,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           { borderColor: focused ? colors.onDeep : colors.line },
         ]}
       >
-        <Text style={[faceCardStyles.title, { color: colors.inkSoft }]}>{t('tonight.didI')}</Text>
+        <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
         <TextInput
           value={blank}
           onChangeText={setBlank}
@@ -656,26 +792,30 @@ export function FirstNightScreen({ book, onChange, now }) {
             {t('first.picks')}
           </Text>
           <View style={styles.firstPicks}>
-            {starters.map((starter) => {
+            {starters.map((starter, index) => {
               const on = picked === starter
               return (
-                <Pressable
+                <Animated.View
                   key={starter.short}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => setBlank(starterBlank(starter))}
-                  style={[
-                    styles.firstPick,
-                    {
-                      borderColor: on ? colors.onDeep : colors.line,
-                      backgroundColor: on ? colors.panel3 : colors.panel2,
-                    },
-                  ]}
+                  style={{ transform: [{ rotate: wobble.tilt(index) }] }}
                 >
-                  <Text style={[styles.firstPickText, { color: on ? colors.on : colors.ink }]}>
-                    {starterBlank(starter)}
-                  </Text>
-                </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    onPress={() => pick(starter)}
+                    style={[
+                      styles.firstPick,
+                      {
+                        borderColor: on ? colors.onDeep : colors.line,
+                        backgroundColor: on ? colors.panel3 : colors.panel2,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.firstPickText, { color: on ? colors.on : colors.ink }]}>
+                      {starterBlank(starter)}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
               )
             })}
           </View>
@@ -691,7 +831,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           autoCapitalize="words"
         />
       ) : null}
-      <DidButton colors={colors} label={t('first.add')} onPress={add} disabled={!question} />
+      <DidButton colors={colors} label={t('first.add')} onPress={add} dim={!question} />
     </ScreenShell>
   )
 }
@@ -1035,6 +1175,7 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
+  waveRow: { flexDirection: 'row', flexWrap: 'wrap' },
   firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
   firstBlank: { padding: 0, paddingTop: 0, minHeight: 32 },
   firstSwipes: {

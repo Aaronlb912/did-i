@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { blankLamp, didQuestion, shortFromQuestion } from './board-json.js'
 import { hangInto } from './board-ops.js'
@@ -9,6 +9,9 @@ import { usePrefs } from './prefs.js'
 import { firstName } from './session.js'
 import { hangStarter, starterBlank, unusedStarters } from './starters.js'
 
+const WOBBLE_FIRST = 1200
+const WOBBLE_EVERY = 4200
+
 // The first question is a sentence to finish, written on the card it becomes.
 export function FirstNight({ book, onChange, now }) {
   usePrefs()
@@ -16,9 +19,23 @@ export function FirstNight({ book, onChange, now }) {
   const named = firstName(book)
   const [person, setPerson] = useState(book.keeperName || '')
   const [blank, setBlank] = useState('')
+  const [wave, setWave] = useState(0)
+  const [wobble, setWobble] = useState(0)
+  const [typing, setTyping] = useState(false)
   const starters = unusedStarters(book, clock, true)
   const question = didQuestion(blank)
   const picked = starters.find((starter) => starter.question === question)
+  const idle = !blank.trim() && !typing
+
+  // While nothing is written, the ideas rock in turn as a "tap one" cue.
+  useEffect(() => {
+    if (!idle) return undefined
+    let timer = setTimeout(function again() {
+      setWobble((count) => count + 1)
+      timer = setTimeout(again, WOBBLE_EVERY)
+    }, WOBBLE_FIRST)
+    return () => clearTimeout(timer)
+  }, [idle])
 
   function withName(next) {
     const keeperName = person.trim()
@@ -32,9 +49,17 @@ export function FirstNight({ book, onChange, now }) {
     goHash('/tonight', face ? { face } : '')
   }
 
+  function pick(starter) {
+    setBlank(starterBlank(starter))
+    setWave((count) => count + 1)
+  }
+
   function add(event) {
     event?.preventDefault()
-    if (!question) return
+    if (!question) {
+      setWobble((count) => count + 1)
+      return
+    }
     if (picked) {
       land(hangStarter(book, picked, clock, true))
       return
@@ -58,11 +83,19 @@ export function FirstNight({ book, onChange, now }) {
         </h2>
         <p className="di-detail-meta">{t('first.body')}</p>
         <label className="di-first-card">
-          <span className="di-first-lead">{t('tonight.didI')}</span>
+          <span key={wave} className="di-first-lead" data-wave={wave ? '' : undefined}>
+            {Array.from(t('tonight.didI')).map((char, index) => (
+              <span key={index} style={{ '--i': index }}>
+                {char}
+              </span>
+            ))}
+          </span>
           <input
             className="di-first-blank"
             value={blank}
             onChange={(event) => setBlank(event.target.value)}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTyping(false)}
             placeholder={t('first.ownHint')}
             maxLength={120}
             autoCapitalize="none"
@@ -76,14 +109,15 @@ export function FirstNight({ book, onChange, now }) {
         {starters.length ? (
           <div className="di-first-picks">
             <p className="di-slot-label">{t('first.picks')}</p>
-            <div className="di-tray-files">
-              {starters.map((starter) => (
+            <div className="di-tray-files" data-wobble={wobble ? (wobble % 2 ? 'a' : 'b') : undefined}>
+              {starters.map((starter, index) => (
                 <button
                   key={starter.short}
                   className="di-key di-first-pick"
                   type="button"
                   aria-pressed={picked === starter}
-                  onClick={() => setBlank(starterBlank(starter))}
+                  style={{ '--i': index }}
+                  onClick={() => pick(starter)}
                 >
                   {starterBlank(starter)}
                 </button>
@@ -103,7 +137,7 @@ export function FirstNight({ book, onChange, now }) {
           </label>
         ) : null}
         <div className="di-hang-actions">
-          <button className="di-did" type="submit" disabled={!question}>
+          <button className="di-did" type="submit" aria-disabled={!question}>
             {t('first.add')}
           </button>
         </div>
