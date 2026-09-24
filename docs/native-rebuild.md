@@ -91,6 +91,28 @@ Parity with the web app shell:
 Repo `android/` is committed; the Android workflow runs `./gradlew assembleRelease`
 after `npm run check`. Install the APK from the workflow artifact.
 
+### CI speed (GitHub Actions)
+
+Both **Android APK** and **iOS IPA** use a `concurrency` group so a new run on
+the same branch cancels the previous one. Android already had a 90-minute cap;
+iOS now has a 120-minute cap.
+
+| Workflow | Caches | Typical savings (warm cache) |
+|----------|--------|------------------------------|
+| Android APK | npm (`setup-node`), Gradle (`setup-java` + `android/.gradle`), build cache via `org.gradle.caching` | ~2–5 min off Gradle on repeat runs; first run unchanged |
+| iOS IPA | npm, `.expo-export-ios` (skipped export on hit), `ios/Pods` + CocoaPods download cache | ~1–3 min export, ~3–8 min `pod install` when Pods restore cleanly |
+
+Gradle on CI keeps the daemon enabled (single `assembleRelease` step only) and
+does **not** turn on configuration-cache (React Native / Expo projects are still
+too brittle). WorkManager stays pinned in `android/build.gradle`; widgets stay
+on via `EAS_INCLUDE_WIDGETS=1` on iOS prebuild.
+
+If a workflow looks wrong after a native or dependency bump, re-run once. If it
+still fails, bump the cache by changing the `key` suffix in the workflow (e.g.
+`-v2`) or clear caches under **Actions → Caches** in the repo. Stale
+`.expo-export-ios` or `Pods` caches usually show up as missing modules or pod
+resolution errors, not silent bad binaries.
+
 ### GitHub Actions → TestFlight (iOS)
 
 Workflow: **Actions → iOS IPA → Run workflow** (`workflow_dispatch`). It runs

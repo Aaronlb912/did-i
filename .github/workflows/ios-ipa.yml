@@ -3,9 +3,17 @@ name: iOS IPA
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   ipa:
     runs-on: macos-latest
+    timeout-minutes: 120
     env:
       EAS_INCLUDE_WIDGETS: '1'
     steps:
@@ -30,11 +38,32 @@ jobs:
             echo "$GOOGLE_SERVICES_PLIST" | base64 --decode > GoogleService-Info.plist
           fi
 
+      - name: Cache Expo iOS export
+        uses: actions/cache@v4
+        id: expo-export-cache
+        with:
+          path: .expo-export-ios
+          key: expo-ios-export-${{ hashFiles('package-lock.json', 'app.config.js') }}-${{ hashFiles('src/**', 'native/**', 'widgets/**') }}
+          restore-keys: |
+            expo-ios-export-${{ hashFiles('package-lock.json', 'app.config.js') }}-
+            expo-ios-export-
+
       - name: Export iOS bundle
+        if: steps.expo-export-cache.outputs.cache-hit != 'true'
         run: npx expo export --platform ios --output-dir .expo-export-ios
 
       - name: Prebuild iOS (widgets)
         run: npx expo prebuild --platform ios --no-install
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('package-lock.json', 'ios/Podfile') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
 
       - name: Install CocoaPods
         working-directory: ios
