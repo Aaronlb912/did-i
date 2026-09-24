@@ -65,16 +65,27 @@ jobs:
         if: env.SIGNING == '1'
         working-directory: ios
         run: |
-          xcodebuild \
-            -workspace DidI.xcworkspace \
-            -scheme DidI \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/DidI.xcarchive" \
-            archive \
-            DEVELOPMENT_TEAM=2ZUKFKSSV8 \
-            CODE_SIGN_STYLE=Manual \
+          XCB=(
+            xcodebuild
+            -workspace DidI.xcworkspace
+            -scheme DidI
+            -configuration Release
+            -destination 'generic/platform=iOS'
+            -archivePath "$RUNNER_TEMP/DidI.xcarchive"
+            archive
+            DEVELOPMENT_TEAM=2ZUKFKSSV8
+            CODE_SIGN_STYLE=Manual
             CODE_SIGN_IDENTITY="Apple Distribution"
+            PROVISIONING_PROFILE_SPECIFIER="${IOS_MAIN_PROFILE_NAME}"
+            PROVISIONING_PROFILE="${IOS_MAIN_PROFILE_UUID}"
+          )
+          if [ -n "${IOS_WIDGET_PROFILE_NAME:-}" ]; then
+            XCB+=(
+              "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*][config=Release][target=ExpoWidgetsTarget]=${IOS_WIDGET_PROFILE_NAME}"
+              "PROVISIONING_PROFILE[sdk=iphoneos*][config=Release][target=ExpoWidgetsTarget]=${IOS_WIDGET_PROFILE_UUID}"
+            )
+          fi
+          "${XCB[@]}"
 
       - name: Export signed IPA
         if: env.SIGNING == '1'

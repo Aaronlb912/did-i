@@ -40,6 +40,7 @@ EXPORT_PLIST="${RUNNER_TEMP}/ExportOptions.plist"
 
 install_profile_b64() {
   local b64="$1"
+  local env_prefix="$2"
   local tmp="${RUNNER_TEMP}/profile.mobileprovision"
   local decoded="${RUNNER_TEMP}/profile-decoded.plist"
   echo -n "${b64}" | base64 --decode > "${tmp}"
@@ -51,11 +52,14 @@ install_profile_b64() {
   bundle="${app_id#*.}"
   cp "${tmp}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${uuid}.mobileprovision"
   /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:${bundle} string ${name}" "${EXPORT_PLIST}"
+  gha_env "${env_prefix}_BUNDLE=${bundle}"
+  gha_env "${env_prefix}_NAME=${name}"
+  gha_env "${env_prefix}_UUID=${uuid}"
 }
 
-install_profile_b64 "${IOS_PROVISIONING_PROFILE}"
+install_profile_b64 "${IOS_PROVISIONING_PROFILE}" "IOS_MAIN_PROFILE"
 if [ -n "${IOS_WIDGET_PROVISIONING_PROFILE:-}" ]; then
-  install_profile_b64 "${IOS_WIDGET_PROVISIONING_PROFILE}"
+  install_profile_b64 "${IOS_WIDGET_PROVISIONING_PROFILE}" "IOS_WIDGET_PROFILE"
 fi
 
 gha_env "EXPORT_OPTIONS_PLIST=${EXPORT_PLIST}"
