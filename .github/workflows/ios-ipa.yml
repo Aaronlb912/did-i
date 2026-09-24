@@ -77,6 +77,15 @@ jobs:
           IOS_WIDGET_PROVISIONING_PROFILE: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE }}
         run: bash .github/scripts/ios-signing.sh
 
+      - name: Assert iOS build number (TestFlight)
+        if: env.SIGNING == '1'
+        run: |
+          BN="$(node -p "require('./app.json').expo.ios.buildNumber || '1'")"
+          if [ "$BN" -le 52 ] 2>/dev/null || [ "$BN" = "1" ]; then
+            echo "ios.buildNumber in app.json must be greater than the latest TestFlight build (52). Got: $BN"
+            exit 1
+          fi
+
       - name: Apply manual signing to Xcode project
         if: env.SIGNING == '1'
         run: ruby .github/scripts/ios-apply-manual-signing.rb
