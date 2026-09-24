@@ -41,10 +41,10 @@ export function DidButton({ label, onPress, colors, small, disabled, dim }) {
       style={[
         styles.did,
         small && styles.didSmall,
-        { backgroundColor: off ? colors.panel3 : colors.on, opacity: off ? 0.5 : 1 },
+        { backgroundColor: off ? colors.panel3 : colors.on },
       ]}
     >
-      <Text style={[styles.didText, { color: colors.bg }]}>{label}</Text>
+      <Text style={[styles.didText, { color: off ? colors.inkDim : colors.bg }]}>{label}</Text>
     </Pressable>
   )
 }

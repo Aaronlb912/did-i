@@ -81,6 +81,12 @@ export function useHangDraft({
     if (miss) setMiss('')
   }
 
+  // An idea brings its own schedule, time and name along with the question.
+  function applyStarter(starter) {
+    setDraft((prev) => ({ ...prev, ...starter }))
+    if (miss) setMiss('')
+  }
+
   function changeAskAfter(value) {
     setDraft((prev) => ({ ...prev, askAfter: value, slot: slotFromAskAfter(value) }))
   }
@@ -143,6 +149,7 @@ export function useHangDraft({
     notifyOn,
     change,
     changeSchedule,
+    applyStarter,
     changeAskAfter,
     toggleDay,
     buildLamp,
