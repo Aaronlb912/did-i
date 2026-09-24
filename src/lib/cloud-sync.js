@@ -120,6 +120,18 @@ export function signedOutSync() {
   }
 }
 
+// No session. A phone that was signed in lost its account (signed out
+// somewhere else), so it starts the next person from nothing. A phone-only
+// shelf never belonged to an account, and wiping it throws away the
+// questions someone just added.
+export function sessionMissing() {
+  if (readLastUser()) {
+    signedOutSync()
+    return
+  }
+  if (state.how !== 'out') setState({ how: 'out', miss: '' })
+}
+
 // Structure only. Answers go through answer-log.js, one at a time,
 // because they are the part that grows without end.
 async function putShelf(db, user, shelf, savedAt) {
@@ -188,7 +200,7 @@ export function bindAuthSync() {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
       return
     }
-    if (event === 'SIGNED_OUT') signedOutSync()
+    if (event === 'SIGNED_OUT') sessionMissing()
   })
 }
 
@@ -240,7 +252,7 @@ async function pullAndMergeOnce() {
   try {
     const user = await me()
     if (!user) {
-      signedOutSync()
+      sessionMissing()
       return null
     }
     setState({ how: 'busy', miss: '' })
@@ -330,7 +342,7 @@ export async function pushNow(shelf) {
   if (!db) return
   const user = await me()
   if (!user) {
-    signedOutSync()
+    sessionMissing()
     return
   }
   setState({ how: 'busy', miss: '' })
