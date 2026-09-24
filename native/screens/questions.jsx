@@ -1,12 +1,25 @@
-import { useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Keyboard,
+  LayoutAnimation,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { activeLook } from '../../src/lib/dit-board.js'
 import {
   activeDeadline,
+  blankLamp,
   cadenceLine,
   dueByUrgency,
+  didQuestion,
   duplicateLamp,
+  lampBuzzes,
+  lampNotifyOn,
   prepQuestionRows,
+  shortFromQuestion,
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
@@ -15,21 +28,31 @@ import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { matchLamps } from '../../src/lib/hall-pages.js'
-import { answerFor, boardDate, dueTonight, formatBoardDate, periodKeyFor, recentPeriodKeys } from '../../src/lib/recurrence.js'
-import { NightStrip } from '../components/NightStrip.jsx'
-import { STARTERS } from '../../src/lib/starters.js'
 import {
-  CADENCE_OPTIONS,
-  cadenceDropdownValue,
-  isDeadlineMode,
-  schedulePick,
-} from '../../src/lib/hang-schedule.js'
-import { HangSelect } from '../components/HangSelect.jsx'
+  answerFor,
+  boardDate,
+  dueTonight,
+  formatBoardDate,
+  isDueOn,
+  periodKeyFor,
+  recentPeriodKeys,
+} from '../../src/lib/recurrence.js'
+import { NightStrip } from '../components/NightStrip.jsx'
+import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
+import { schedulePick } from '../../src/lib/hang-schedule.js'
+import { from24 } from '../../src/lib/hang-time.js'
+import { feelTap, playClick } from '../../src/lib/native.js'
+import { fireCheer, mergePurses } from '../../src/lib/purse.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
 import { rowKey, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { Jewel } from '../components/Jewel.jsx'
+import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
+import { HangCard } from '../components/HangCard.jsx'
+import { HangFold } from '../components/HangFold.jsx'
+import { SetCard, SetSwitch } from '../components/SetBits.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import {
@@ -236,8 +259,90 @@ export function SearchScreen({ book }) {
   )
 }
 
+const SCHEDULES = [
+  { id: 'daily', labelKey: 'hang.daily' },
+  { id: 'weekly', labelKey: 'hang.weekly' },
+  { id: 'monthly', labelKey: 'hang.monthly' },
+  { id: 'every_n', labelKey: 'hang.everyN' },
+  { id: 'once_on', labelKey: 'hang.once' },
+  { id: 'deadline', labelKey: 'hang.dueByPick' },
+]
+const SCHEDULE_MISSES = new Set([
+  'hang.miss.weekday',
+  'hang.miss.monthDay',
+  'hang.miss.onceOn',
+  'hang.miss.dueBy',
+  'hang.miss.dueByBefore',
+  'hang.miss.everyN',
+  'hang.miss.everyNStart',
+  'hang.miss.askAfter',
+])
+const LAND_HOLD = 1100
+const LAND_HOLD_STILL = 450
+
+function timeLabel(value) {
+  if (!value) return ''
+  const { hour, minute, meridiem } = from24(value)
+  return `${hour}:${minute} ${t(`hang.${meridiem}`)}`
+}
+
+function whenLine(draft) {
+  if (draft.cadence === 'every_n' && !Number(draft.everyN)) return t('hang.everyN')
+  return cadenceLine(draft)
+}
+
+function reminderLine(draft) {
+  if (!lampNotifyOn(draft)) return t('hang.remindOff')
+  if (!lampBuzzes(draft)) return t('hang.remindQuiet')
+  if (draft.askAfter) return t('hang.remindAt', { time: timeLabel(draft.askAfter) })
+  return t('hang.remindAny')
+}
+
+function Pill({ label, on, onPress, colors, dim }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      style={[
+        styles.pill,
+        {
+          borderColor: on ? colors.onDeep : colors.line,
+          backgroundColor: on ? colors.panel3 : colors.panel,
+          opacity: dim && !on ? 0.85 : 1,
+        },
+      ]}
+    >
+      <Text style={[styles.pillText, { color: on ? colors.on : dim ? colors.inkDim : colors.ink }]}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
+function FoldInput({ label, colors, multiline, ...props }) {
+  return (
+    <View style={styles.foldField}>
+      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{label}</Text>
+      <TextInput
+        {...props}
+        multiline={multiline}
+        accessibilityLabel={label}
+        placeholderTextColor={colors.inkDim}
+        selectionColor={colors.on}
+        style={[
+          styles.foldInput,
+          multiline && styles.foldInputMulti,
+          { color: colors.ink, borderColor: colors.line, backgroundColor: colors.bg },
+        ]}
+      />
+    </View>
+  )
+}
+
 export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
-  const { colors, clock } = useHall(book)
+  const { colors, clock, dateIso } = useHall(book)
+  const reduce = useReduceMotion()
   const lampId = route?.id || ''
   const copyId = route?.copy || ''
   const start = route?.start || ''
@@ -256,13 +361,50 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     start,
     tagTitle: sourceBook?.title || book.title,
   })
-  const cadenceOptions = useMemo(
-    () => CADENCE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) })),
-    [],
-  )
-  const schedule = schedulePick(hang.draft)
-  const deadline = isDeadlineMode(hang.draft)
-  const [cadenceOpen, setCadenceOpen] = useState(false)
+  const { draft } = hang
+  // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
+  const [lead] = useState(() => !draft.question || /^did i\b/i.test(draft.question))
+  const [blank, setBlank] = useState(() => (lead ? starterBlank(draft) : draft.question))
+  const [open, setOpen] = useState('')
+  const [focused, setFocused] = useState(false)
+  const [wave, setWave] = useState(0)
+  const [shake, setShake] = useState(0)
+  const [stamp, setStamp] = useState('')
+  const inputRef = useRef(null)
+  const leave = useRef(null)
+  const fresh = !hang.editing && !copySource
+  const starters = fresh ? unusedStarters(book, clock) : []
+  const picked = starters.find((starter) => starter.question === draft.question) || null
+  const wobble = useWobble(starters.length, fresh && !blank.trim() && !focused && !stamp, reduce)
+  const schedule = schedulePick(draft)
+  const tagName = String(hang.tagTitle || '').trim() || book.title
+  const ready = Boolean(draft.question.trim())
+  const detailCount = [draft.short, draft.kind, draft.notes].filter((v) => String(v || '').trim()).length
+
+  useEffect(() => () => clearTimeout(leave.current), [])
+
+  function fold(id) {
+    if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+    setOpen((now) => (now === id ? '' : id))
+    Keyboard.dismiss()
+  }
+
+  function changeBlank(value) {
+    setBlank(value)
+    const question = lead ? didQuestion(value) : value
+    if (picked && question !== picked.question && draft.short === picked.short) {
+      hang.change('short', '')
+      hang.change('kind', '')
+    }
+    hang.change('question', question)
+  }
+
+  function pickIdea(starter) {
+    setBlank(starterBlank(starter))
+    hang.applyStarter(starter)
+    setWave((count) => count + 1)
+    playClick()
+  }
 
   function cancel() {
     if (existing) goHash('/lamp', { id: existing.id })
@@ -271,18 +413,49 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   }
 
   function save() {
+    if (stamp) return
     const { lamp: next, problem } = hang.buildLamp()
     if (problem) {
       hang.setMiss(problem)
+      feelTap('skip')
+      if (problem === 'hang.miss.empty') {
+        setShake((count) => count + 1)
+        wobble.nudge()
+        inputRef.current?.focus()
+      } else if (SCHEDULE_MISSES.has(problem) && open !== 'when') {
+        fold('when')
+      }
       return
     }
+    Keyboard.dismiss()
     const target = bookForTag(boards, book, hang.tagTitle)
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     if (onSaveTo) onSaveTo(target, next, sourceBook)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
-    if (hang.editing) goHash('/lamp', { id: next.id })
-    else goHash(wasEmpty ? '/tonight' : '/lamps')
+    if (hang.editing) {
+      playClick()
+      goHash('/lamp', { id: next.id })
+      return
+    }
+    // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
+    setStamp(isDueOn(next, dateIso) ? t('hang.landTonight') : t('hang.landAdded'))
+    setWave((count) => count + 1)
+    const purse = mergePurses(boards.length ? boards : [book])
+    if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
+    else feelTap('hall-on')
+    leave.current = setTimeout(
+      () => goHash(wasEmpty ? '/tonight' : '/lamps'),
+      reduce ? LAND_HOLD_STILL : LAND_HOLD,
+    )
   }
+
+  const meta = [
+    whenLine(draft),
+    timeLabel(draft.askAfter),
+    hang.priority === 'high' ? t('hang.metaHigh') : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <BoardShell
@@ -292,229 +465,254 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       colors={colors}
       showAdd
     >
-      <Field
-        label={t('hang.question')}
-        value={hang.draft.question}
-        onChangeText={(value) => hang.change('question', value)}
+      <HangCard
+        ref={inputRef}
+        tag={tagName}
+        lead={lead}
+        blank={blank}
+        onBlank={changeBlank}
+        meta={meta}
+        wave={wave}
+        stamp={stamp}
+        shake={shake}
+        focused={focused}
+        onFocus={() => {
+          setFocused(true)
+          setOpen('')
+        }}
+        onBlur={() => setFocused(false)}
+        autoFocus={fresh && !start}
         colors={colors}
-        multiline
-        autoFocus
       />
 
-      <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.tag')}</Text>
-      <View style={styles.weekdayRow}>
-        {hang.liveTags.map((item) => {
-          const on = hang.isTagSelected(item.title)
-          return (
-            <Pressable
-              key={item.id}
-              onPress={() => hang.setTagTitle(item.title)}
-              style={[
-                styles.weekdayChip,
-                { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
-              ]}
-            >
-              <Text style={{ color: on ? colors.on : colors.ink, fontSize: 12 }}>{item.title}</Text>
-            </Pressable>
-          )
-        })}
-        {hang.knownTag ? (
-          <Pressable onPress={() => hang.setTagTitle('')}>
-            <Text style={[styles.tagNewLink, { color: colors.inkDim }]}>{t('hang.tagNew')}</Text>
-          </Pressable>
-        ) : (
-          <TextInput
-            style={[styles.tagNewInput, { borderColor: colors.line, color: colors.ink, backgroundColor: colors.bg }]}
-            value={hang.tagTitle}
-            onChangeText={hang.setTagTitle}
-            placeholder={t('hang.tagPh')}
-            placeholderTextColor={colors.inkDim}
-            accessibilityLabel={t('hang.tagNew')}
-          />
-        )}
-      </View>
-      {hang.parkedTags.length ? (
-        <View style={[styles.parkedTags, { borderTopColor: colors.line }]}>
-          <Text style={[styles.parkedLabel, { color: colors.inkDim }]}>{t('hang.tagLater')}</Text>
-          {hang.parkedTags.map((item) => {
-            const on = hang.isTagSelected(item.title)
-            return (
-              <Pressable
-                key={item.id}
-                onPress={() => hang.setTagTitle(item.title)}
-                style={[
-                  styles.weekdayChip,
-                  {
-                    borderColor: on ? colors.onDeep : colors.line,
-                    backgroundColor: on ? colors.panel3 : colors.panel2,
-                    opacity: on ? 1 : 0.85,
-                  },
-                ]}
-              >
-                <Text style={{ color: on ? colors.on : colors.inkDim, fontSize: 12 }}>{item.title}</Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      ) : null}
+      <IdeaPicks
+        label={t('first.picks')}
+        starters={blank.trim() && !picked ? [] : starters}
+        picked={picked}
+        onPick={pickIdea}
+        tilt={wobble.tilt}
+        colors={colors}
+      />
 
-      {deadline ? (
-        <View>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.dueBy')}</Text>
-          <HangMonthCal
-            mode="date"
-            value={hang.draft.dueBy}
-            onChange={(iso) => hang.change('dueBy', iso)}
-            now={clock}
-            dayFoldHour={book.dayFoldHour}
+      <View style={styles.settings}>
+        <SetCard colors={colors}>
+          <HangFold
+            label={t('hang.when')}
+            value={whenLine(draft)}
+            open={open === 'when'}
+            onToggle={() => fold('when')}
             colors={colors}
-          />
-          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.dueByHint')}</Text>
-          <Pressable onPress={() => hang.change('cadence', 'daily')} hitSlop={8}>
-            <Text style={[styles.timingBack, { color: colors.inkSoft }]}>{t('hang.useOften')}</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.timingRow}>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.often')}</Text>
-          <View style={styles.timingPick}>
-            <HangSelect
-              ariaLabel={t('hang.often')}
-              value={cadenceDropdownValue(hang.draft)}
-              onChange={(value) => hang.change('cadence', value)}
-              options={cadenceOptions}
-              colors={colors}
-              open={cadenceOpen}
-              onOpenChange={setCadenceOpen}
-            />
-            <View style={styles.timingAlt}>
-              <Text style={[styles.timingOr, { color: colors.inkDim }]}>{t('hang.or')}</Text>
-              <KeyButton colors={colors} label={t('hang.deadline')} onPress={() => hang.changeSchedule('deadline')} />
+          >
+            <View style={styles.pillRow}>
+              {SCHEDULES.map((item) => (
+                <Pill
+                  key={item.id}
+                  label={t(item.labelKey)}
+                  on={schedule === item.id}
+                  onPress={() => hang.changeSchedule(item.id)}
+                  colors={colors}
+                />
+              ))}
             </View>
-          </View>
-        </View>
-      )}
 
-      {!deadline && hang.draft.cadence === 'weekly' ? (
-        <View style={styles.weekdays}>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.weekdays')}</Text>
-          <View style={styles.weekdayRow}>
-            {WEEKDAYS.map((day) => {
-              const on = (hang.draft.weekdays || []).includes(day)
-              return (
-                <Pressable
-                  key={day}
-                  onPress={() => hang.toggleDay(day)}
-                  style={[
-                    styles.weekdayChip,
-                    { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
-                  ]}
-                >
-                  <Text style={{ color: on ? colors.on : colors.ink, fontSize: 12 }}>{t(`hang.day.${day}`)}</Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        </View>
-      ) : null}
+            {schedule === 'weekly' ? (
+              <View style={styles.pillRow}>
+                {WEEKDAYS.map((day) => (
+                  <Pill
+                    key={day}
+                    label={t(`hang.day.${day}`)}
+                    on={(draft.weekdays || []).includes(day)}
+                    onPress={() => hang.toggleDay(day)}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+            ) : null}
 
-      {!deadline && hang.draft.cadence === 'monthly' ? (
-        <View>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.monthDay')}</Text>
-          <HangMonthCal
-            mode="monthly"
-            value={hang.draft.monthDay === '' ? '' : hang.draft.monthDay}
-            onChange={(day) => hang.change('monthDay', day)}
-            now={clock}
-            dayFoldHour={book.dayFoldHour}
+            {schedule === 'monthly' ? (
+              <View>
+                <HangMonthCal
+                  mode="monthly"
+                  value={draft.monthDay === '' ? '' : draft.monthDay}
+                  onChange={(day) => hang.change('monthDay', day)}
+                  now={clock}
+                  dayFoldHour={book.dayFoldHour}
+                  colors={colors}
+                />
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.monthCalHint')}</Text>
+              </View>
+            ) : null}
+
+            {schedule === 'once_on' || schedule === 'deadline' ? (
+              <View>
+                <HangMonthCal
+                  mode="date"
+                  value={schedule === 'deadline' ? draft.dueBy : draft.onceOn}
+                  onChange={(iso) => hang.change(schedule === 'deadline' ? 'dueBy' : 'onceOn', iso)}
+                  now={clock}
+                  dayFoldHour={book.dayFoldHour}
+                  colors={colors}
+                />
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>
+                  {t(schedule === 'deadline' ? 'hang.dueByHint' : 'hang.onceOnHint')}
+                </Text>
+              </View>
+            ) : null}
+
+            {schedule === 'every_n' ? (
+              <>
+                <FoldInput
+                  label={t('hang.everyNDays')}
+                  value={String(draft.everyN || '')}
+                  onChangeText={(value) => hang.change('everyN', value.replace(/\D/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="3"
+                  maxLength={3}
+                  colors={colors}
+                />
+                <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.startingOn')}</Text>
+                <HangMonthCal
+                  mode="date"
+                  value={draft.everyNAnchor}
+                  onChange={(iso) => hang.change('everyNAnchor', iso)}
+                  now={clock}
+                  dayFoldHour={book.dayFoldHour}
+                  colors={colors}
+                />
+              </>
+            ) : null}
+
+            <Text style={[styles.foldCap, styles.foldCapGap, { color: colors.inkSoft }]}>
+              {t('hang.askAfter')}
+            </Text>
+            <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
+          </HangFold>
+
+          <HangFold
+            label={t('hang.tag')}
+            value={tagName}
+            open={open === 'tag'}
+            onToggle={() => fold('tag')}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              {hang.liveTags.map((item) => (
+                <Pill
+                  key={item.id}
+                  label={item.title}
+                  on={hang.isTagSelected(item.title)}
+                  onPress={() => hang.setTagTitle(item.title)}
+                  colors={colors}
+                />
+              ))}
+              {hang.knownTag ? (
+                <Pill label={`+ ${t('hang.tagNew')}`} onPress={() => hang.setTagTitle('')} colors={colors} />
+              ) : null}
+            </View>
+            {!hang.knownTag ? (
+              <FoldInput
+                label={t('hang.tagNew')}
+                value={hang.tagTitle}
+                onChangeText={hang.setTagTitle}
+                placeholder={t('hang.tagPh')}
+                autoFocus
+                returnKeyType="done"
+                colors={colors}
+              />
+            ) : null}
+            {hang.parkedTags.length ? (
+              <>
+                <Text style={[styles.foldCap, styles.foldCapGap, { color: colors.inkDim }]}>
+                  {t('hang.tagLater')}
+                </Text>
+                <View style={styles.pillRow}>
+                  {hang.parkedTags.map((item) => (
+                    <Pill
+                      key={item.id}
+                      label={item.title}
+                      on={hang.isTagSelected(item.title)}
+                      onPress={() => hang.setTagTitle(item.title)}
+                      colors={colors}
+                      dim
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </HangFold>
+
+          <HangFold
+            label={t('hang.priority')}
+            value={t(`hang.priority.${hang.priority}`)}
+            open={open === 'priority'}
+            onToggle={() => fold('priority')}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              {PRIORITIES.map((id) => (
+                <Pill
+                  key={id}
+                  label={t(`hang.priority.${id}`)}
+                  on={hang.priority === id}
+                  onPress={() => hang.change('priority', id)}
+                  colors={colors}
+                />
+              ))}
+            </View>
+            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>
+              {t(`hang.priority.hint.${hang.priority}`)}
+            </Text>
+          </HangFold>
+
+          <SetSwitch
+            label={t('hang.reminder')}
+            sub={reminderLine(draft)}
+            on={hang.notifyOn}
+            onPress={() => {
+              playClick()
+              hang.change('notify', !hang.notifyOn)
+            }}
             colors={colors}
           />
-          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.monthCalHint')}</Text>
-        </View>
-      ) : null}
 
-      {!deadline && schedule === 'once_on' ? (
-        <View>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.onceOn')}</Text>
-          <HangMonthCal
-            mode="date"
-            value={hang.draft.onceOn}
-            onChange={(iso) => hang.change('onceOn', iso)}
-            now={clock}
-            dayFoldHour={book.dayFoldHour}
+          <HangFold
+            label={t('hang.details')}
+            value={
+              detailCount
+                ? t(detailCount === 1 ? 'hang.detailsOne' : 'hang.detailsSome', { n: detailCount })
+                : t('hang.detailsNone')
+            }
+            open={open === 'details'}
+            onToggle={() => fold('details')}
+            last
             colors={colors}
-          />
-          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.onceOnHint')}</Text>
-        </View>
-      ) : null}
-
-      {!deadline && hang.draft.cadence === 'every_n' ? (
-        <>
-          <Field
-            label={t('hang.everyNDays')}
-            value={String(hang.draft.everyN || '')}
-            onChangeText={(value) => hang.change('everyN', value)}
-            colors={colors}
-            placeholder="3"
-          />
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.startingOn')}</Text>
-          <HangMonthCal
-            mode="date"
-            value={hang.draft.everyNAnchor}
-            onChange={(iso) => hang.change('everyNAnchor', iso)}
-            now={clock}
-            dayFoldHour={book.dayFoldHour}
-            colors={colors}
-          />
-        </>
-      ) : null}
-
-      <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.priority')}</Text>
-      <ChipRow
-        items={PRIORITIES.map((id) => ({ id, label: t(`hang.priority.${id}`) }))}
-        value={hang.priority}
-        onPick={(value) => hang.change('priority', value)}
-        colors={colors}
-      />
-
-      <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('hang.notify')}</Text>
-      <View style={styles.notifyRow}>
-        <ChipRow
-          items={[
-            { id: 'on', label: t('hang.notifyOn') },
-            { id: 'off', label: t('hang.notifyOff') },
-          ]}
-          value={hang.notifyOn ? 'on' : 'off'}
-          onPick={(value) => hang.change('notify', value === 'on')}
-          colors={colors}
-        />
-        <KeyButton
-          label={hang.more ? t('hang.less') : t('hang.more')}
-          colors={colors}
-          picked={hang.more}
-          onPress={() => hang.setMore((open) => !open)}
-        />
+          >
+            <FoldInput
+              label={t('hang.short')}
+              value={draft.short}
+              onChangeText={(value) => hang.change('short', value)}
+              placeholder={shortFromQuestion(draft.question, 24) || t('hang.shortPh')}
+              maxLength={24}
+              colors={colors}
+            />
+            <FoldInput
+              label={t('hang.kind')}
+              value={draft.kind}
+              onChangeText={(value) => hang.change('kind', value)}
+              placeholder={t('hang.kindPh')}
+              colors={colors}
+            />
+            <FoldInput
+              label={t('hang.notes')}
+              value={draft.notes}
+              onChangeText={(value) => hang.change('notes', value)}
+              placeholder={t('hang.notesPh')}
+              multiline
+              colors={colors}
+            />
+          </HangFold>
+        </SetCard>
       </View>
-
-      {hang.more ? (
-        <>
-          <Field
-            label={t('hang.short')}
-            value={hang.draft.short}
-            onChangeText={(value) => hang.change('short', value)}
-            colors={colors}
-          />
-          <HangTimePick value={hang.draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
-          <Field label={t('hang.kind')} value={hang.draft.kind} onChangeText={(value) => hang.change('kind', value)} colors={colors} />
-          <Field
-            label={t('hang.notes')}
-            value={hang.draft.notes}
-            onChangeText={(value) => hang.change('notes', value)}
-            colors={colors}
-            multiline
-          />
-        </>
-      ) : null}
 
       {hang.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -522,9 +720,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </Text>
       ) : null}
 
-      <View style={styles.actions}>
-        <DidButton label={hang.editing ? t('hang.save') : t('hang.add')} onPress={save} colors={colors} small />
-        <KeyButton label={t('hang.cancel')} onPress={cancel} colors={colors} />
+      <View style={styles.hangActions}>
+        <DidButton
+          label={hang.editing ? t('hang.save') : t('hang.addIt')}
+          onPress={save}
+          colors={colors}
+          dim={!ready}
+        />
+        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
+          <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
+        </Pressable>
       </View>
     </BoardShell>
   )
@@ -680,61 +885,33 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  fieldHint: { fontFamily: fonts.ui, fontSize: 12, marginBottom: 8 },
-  timingRow: { gap: 6, marginBottom: 4 },
-  timingPick: { gap: 8 },
-  timingAlt: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  timingOr: { fontFamily: fonts.ui, fontSize: 13 },
-  timingBack: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline', marginTop: 6 },
-  weekdays: { gap: 6 },
-  weekdayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginBottom: 4 },
-  tagNewLink: {
-    fontFamily: fonts.ui,
-    fontSize: 12,
-    textDecorationLine: 'underline',
-    paddingVertical: 6,
-    paddingHorizontal: 2,
-  },
-  tagNewInput: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 100,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontFamily: fonts.ui,
-    fontSize: 14,
-  },
-  parkedTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-  },
-  parkedLabel: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginRight: 2,
-  },
-  notifyRow: {
-    gap: 12,
-    marginBottom: 4,
-    alignItems: 'flex-start',
-  },
-  weekdayChip: {
+  fieldHint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
+  settings: { marginTop: 4 },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  pill: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 40,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  pillText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
+  foldField: { gap: 6 },
+  foldCap: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  foldCapGap: { marginTop: 6 },
+  foldInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: fonts.ui,
+    fontSize: 16,
+  },
+  foldInputMulti: { minHeight: 80, textAlignVertical: 'top' },
+  hangActions: { gap: 4, marginTop: 12 },
+  cancel: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16 },
+  cancelText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   tonight: { gap: 8, marginTop: 4 },

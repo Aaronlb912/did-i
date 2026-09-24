@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
-  Animated,
-  Easing,
   Linking,
   Modal,
   Pressable,
@@ -76,6 +74,7 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
 import { DidButton, Field, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -584,118 +583,6 @@ export function WelcomeScreen({ book }) {
   )
 }
 
-const WAVE_STEP = 70
-const WOBBLE = [-1, 1, -0.6, 0.6, 0]
-const WOBBLE_STEP = 90
-const WOBBLE_FIRST = 1200
-const WOBBLE_EVERY = 4200
-
-// Each idea rocks in turn, left to right, as a "tap one of these" cue.
-// It repeats while `active`; `nudge` runs it right now.
-function useWobble(count, active, reduce) {
-  const rocks = useRef([]).current
-  while (rocks.length < count) rocks.push(new Animated.Value(0))
-  const run = useRef(null)
-
-  function nudge() {
-    if (reduce || !count) return
-    run.current?.stop()
-    const lit = rocks.slice(0, count)
-    lit.forEach((rock) => rock.setValue(0))
-    run.current = Animated.stagger(
-      WOBBLE_STEP,
-      lit.map((rock) =>
-        Animated.sequence(
-          WOBBLE.map((toValue) =>
-            Animated.timing(rock, {
-              toValue,
-              duration: 80,
-              easing: Easing.inOut(Easing.quad),
-              useNativeDriver: true,
-            }),
-          ),
-        ),
-      ),
-    )
-    run.current.start()
-  }
-
-  const nudgeRef = useRef(nudge)
-  nudgeRef.current = nudge
-
-  useEffect(() => {
-    if (!active || reduce) return undefined
-    let timer = setTimeout(function again() {
-      nudgeRef.current()
-      timer = setTimeout(again, WOBBLE_EVERY)
-    }, WOBBLE_FIRST)
-    return () => {
-      clearTimeout(timer)
-      run.current?.stop()
-    }
-  }, [active, reduce])
-
-  const tilt = (index) =>
-    rocks[index].interpolate({ inputRange: [-1, 1], outputRange: ['-2.5deg', '2.5deg'] })
-  return { nudge, tilt }
-}
-
-// Lime runs through "Did I" letter by letter, left to right, each time `wave` ticks.
-function WaveLead({ text, wave, colors, style }) {
-  const reduce = useReduceMotion()
-  const chars = Array.from(text)
-  const glow = useRef([]).current
-  while (glow.length < chars.length) glow.push(new Animated.Value(0))
-
-  useEffect(() => {
-    if (!wave || reduce) return undefined
-    const lit = glow.slice(0, chars.length)
-    lit.forEach((value) => value.setValue(0))
-    const run = Animated.stagger(
-      WAVE_STEP,
-      lit.map((value) =>
-        Animated.sequence([
-          Animated.timing(value, {
-            toValue: 1,
-            duration: 160,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: false,
-          }),
-          Animated.timing(value, {
-            toValue: 0,
-            duration: 520,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: false,
-          }),
-        ]),
-      ),
-    )
-    run.start()
-    return () => run.stop()
-  }, [wave, reduce, chars.length, glow])
-
-  return (
-    <View style={styles.waveRow} accessible accessibilityLabel={text}>
-      {chars.map((char, index) => (
-        <Animated.Text
-          key={index}
-          style={[
-            style,
-            {
-              color: glow[index].interpolate({
-                inputRange: [0, 1],
-                outputRange: [colors.inkSoft, colors.on],
-              }),
-            },
-          ]}
-        >
-          {char}
-        </Animated.Text>
-      ))}
-    </View>
-  )
-}
-
 // The first question is a sentence to finish, written on the card it becomes.
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
@@ -786,41 +673,14 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
         </View>
       </View>
-      {starters.length ? (
-        <>
-          <Text style={[styles.slot, styles.firstPicksLabel, { color: colors.inkSoft }]}>
-            {t('first.picks')}
-          </Text>
-          <View style={styles.firstPicks}>
-            {starters.map((starter, index) => {
-              const on = picked === starter
-              return (
-                <Animated.View
-                  key={starter.short}
-                  style={{ transform: [{ rotate: wobble.tilt(index) }] }}
-                >
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    onPress={() => pick(starter)}
-                    style={[
-                      styles.firstPick,
-                      {
-                        borderColor: on ? colors.onDeep : colors.line,
-                        backgroundColor: on ? colors.panel3 : colors.panel2,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.firstPickText, { color: on ? colors.on : colors.ink }]}>
-                      {starterBlank(starter)}
-                    </Text>
-                  </Pressable>
-                </Animated.View>
-              )
-            })}
-          </View>
-        </>
-      ) : null}
+      <IdeaPicks
+        label={t('first.picks')}
+        starters={starters}
+        picked={picked}
+        onPick={pick}
+        tilt={wobble.tilt}
+        colors={colors}
+      />
       {!named ? (
         <Field
           colors={colors}
@@ -1175,7 +1035,6 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
-  waveRow: { flexDirection: 'row', flexWrap: 'wrap' },
   firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
   firstBlank: { padding: 0, paddingTop: 0, minHeight: 32 },
   firstSwipes: {
@@ -1187,16 +1046,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
-  firstPicksLabel: { marginTop: 12 },
-  firstPicks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  firstPick: {
-    borderWidth: 1,
-    borderRadius: 999,
-    minHeight: 44,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-  },
-  firstPickText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   markRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4, marginBottom: 8 },
   markName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   markLine: { fontFamily: fonts.ui, fontSize: 13 },
