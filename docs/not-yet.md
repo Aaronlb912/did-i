@@ -41,8 +41,7 @@ the GitHub secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
 APK signed with a debug key made for that run. A GitHub-signed or debug APK
 may need the EAS APK uninstalled first if the signature differs
 (`com.aaronbryant.didi`). A later debug-signed artifact can differ again, so
-uninstall Did I if Android says the package conflicts. Install from GHA run
-**35950788740** (widget fixes). Still to confirm on a phone: Tonight widget **picker shows 4×2 (or resize)**,
+uninstall Did I if Android says the package conflicts. Install from GHA run **35950788740** (widget fixes); **re-run android-apk** after the shelf-sync fix lands. Still to confirm on a phone: Tonight widget **picker shows 4×2 (or resize)**,
 question + look ring + buddy on home screen, menu closes, cheer previews in
 Shop, glow look on cards, sync after sign-in on two phones. iPhone TestFlight
 is unchanged.

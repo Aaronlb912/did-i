@@ -1,6 +1,6 @@
 import { registerWidgetTaskHandler } from 'react-native-android-widget'
 import { buildTonightWidgetProps, handleAndroidWidgetClick } from '../src/lib/widget-tonight.js'
-import { readWidgetTonightProps } from '../src/lib/widget-store.js'
+import { writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
 import { onPrefs } from '../src/lib/prefs.js'
 import { enrichTonightWidgetProps, syncTonightWidget } from './widget-sync.js'
@@ -18,8 +18,8 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   const later = await androidWidgetCardStamp()
   if (stamp && later && later !== stamp) return
   const shelf = readShelf()
-  const stored = readWidgetTonightProps()
-  const props = enrichTonightWidgetProps(shelf, stored || buildTonightWidgetProps(shelf))
+  const props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
+  writeWidgetTonightProps(props)
   await saveAndroidWidgetCard(props)
   renderWidget(renderDidITonightAndroidWidget(props, widgetInfo))
   if (tappedShelf) await syncTonightWidget(tappedShelf)

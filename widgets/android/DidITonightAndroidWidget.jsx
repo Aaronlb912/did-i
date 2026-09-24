@@ -139,12 +139,12 @@ function leadItem(p) {
 }
 
 function questionLine(p, lead) {
-  const top = String(p.question || '').trim()
-  if (top) return top
   if (lead) {
     const fromLead = String(lead.question || '').trim() || String(lead.label || '').trim()
     if (fromLead) return fromLead
   }
+  const top = String(p.question || '').trim()
+  if (top) return top
   return String(p.footer || p.openLabel || '').trim()
 }
 

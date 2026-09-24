@@ -1034,6 +1034,14 @@ test('the android tonight widget stays inside its frame', () => {
   const renderAt = taskBody.indexOf('renderWidget(')
   const syncAt = taskBody.indexOf('syncTonightWidget(')
   assert.ok(renderAt > 0 && renderAt < syncAt, 'the widget task draws the question before another widget sync')
+  assert.ok(
+    taskBody.includes('buildTonightWidgetProps(shelf)'),
+    'the widget task rebuilds tonight from the shelf',
+  )
+  assert.ok(
+    !taskBody.includes('stored || buildTonightWidgetProps'),
+    'the widget task does not prefer a stale snapshot over the shelf',
+  )
   const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
   assert.ok(manifest.includes('.widget.WidgetTapReceiver'), 'the tap receiver is registered')
   const provider = readFileSync(
