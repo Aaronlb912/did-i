@@ -1034,13 +1034,20 @@ test('the android tonight widget stays inside its frame', () => {
   const renderAt = taskBody.indexOf('renderWidget(')
   const syncAt = taskBody.indexOf('syncTonightWidget(')
   assert.ok(renderAt > 0 && renderAt < syncAt, 'the widget task draws the question before another widget sync')
+  const setupAll = readFileSync(path.join(root, 'native/widget-setup.android.js'), 'utf8')
   assert.ok(
-    taskBody.includes('buildTonightWidgetProps(shelf)'),
+    setupAll.includes('buildTonightWidgetProps(shelf)'),
     'the widget task rebuilds tonight from the shelf',
   )
+  assert.ok(setupAll.includes('preferStoredTonightProps'), 'headless widget keeps open questions from the card')
+  assert.ok(setupAll.includes('loadAndroidWidgetCard'), 'headless widget reads the native card snapshot')
   assert.ok(
-    !taskBody.includes('stored || buildTonightWidgetProps'),
+    !setupAll.includes('stored || buildTonightWidgetProps'),
     'the widget task does not prefer a stale snapshot over the shelf',
+  )
+  assert.ok(
+    taskBody.indexOf('renderWidget(') < taskBody.indexOf('later !== stamp'),
+    'the widget task still draws after a native card advance',
   )
   const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
   assert.ok(manifest.includes('.widget.WidgetTapReceiver'), 'the tap receiver is registered')

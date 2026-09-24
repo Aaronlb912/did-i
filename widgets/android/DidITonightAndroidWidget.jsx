@@ -148,6 +148,14 @@ function questionLine(p, lead) {
   return String(p.footer || p.openLabel || '').trim()
 }
 
+function widgetSize(widgetInfo) {
+  const h = widgetInfo?.height || 0
+  const w = widgetInfo?.width || 0
+  const compact = h > 0 && h < 150 && (w === 0 || w < 280)
+  const large = h >= 200 || (w >= 320 && h >= 160)
+  return { compact, large, h, w }
+}
+
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const raw = props || {
     tagTitle: 'Did I',
@@ -163,15 +171,15 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const p = raw
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
-  const h = widgetInfo?.height || 0
-  const w = widgetInfo?.width || 0
-  const compact = h > 0 && h < 150 && (w === 0 || w < 280)
+  const { compact, large } = widgetSize(widgetInfo)
   const gem = Boolean(C.gem)
   const lead = leadItem(p)
   const buddyId = String(p.buddyId || '')
   const question = questionLine(p, lead)
-  const radius = compact ? 16 : 22
-  const titleSize = lead ? (compact ? 18 : 26) : 14
+  const radius = compact ? 16 : large ? 24 : 22
+  const titleSize = lead ? (compact ? 18 : large ? 28 : 26) : compact ? 13 : 14
+  const panelPad = compact ? 10 : large ? 16 : 14
+  const ringPad = 2
 
   return (
     <FlexWidget
@@ -191,25 +199,24 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
           width: 'match_parent',
           backgroundColor: C.on,
           borderRadius: radius,
-          padding: 2,
+          padding: ringPad,
           flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
         <OverlapWidget
           style={{
-            flex: 1,
             width: 'match_parent',
-            overflow: 'hidden',
+            height: '100%',
           }}
         >
           <FlexWidget
             style={{
-              flex: 1,
+              height: '100%',
               width: 'match_parent',
               backgroundColor: C.panel,
-              borderRadius: compact ? 14 : 20,
-              padding: compact ? 10 : 14,
+              borderRadius: compact ? 14 : large ? 22 : 20,
+              padding: panelPad,
               flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -234,6 +241,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 justifyContent: 'center',
                 alignItems: 'center',
                 paddingHorizontal: 4,
+                minHeight: compact ? 36 : 48,
               }}
               clickAction="OPEN_URI"
               clickActionData={{ uri: tonightUri }}
@@ -310,8 +318,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
           {buddyId ? (
             <FlexWidget
               style={{
-                flex: 1,
                 width: 'match_parent',
+                height: 'wrap_content',
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 alignItems: 'flex-end',

@@ -39,4 +39,9 @@ public class WidgetTapModule extends ReactContextBaseJavaModule {
     public void cardStamp(Promise promise) {
         promise.resolve(WidgetCardStore.stamp(getReactApplicationContext()));
     }
+
+    @ReactMethod
+    public void loadCard(Promise promise) {
+        promise.resolve(WidgetCardStore.load(getReactApplicationContext()));
+    }
 }

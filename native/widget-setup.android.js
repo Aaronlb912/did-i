@@ -1,11 +1,28 @@
 import { registerWidgetTaskHandler } from 'react-native-android-widget'
-import { buildTonightWidgetProps, handleAndroidWidgetClick } from '../src/lib/widget-tonight.js'
-import { writeWidgetTonightProps } from '../src/lib/widget-store.js'
+import {
+  buildTonightWidgetProps,
+  handleAndroidWidgetClick,
+  preferStoredTonightProps,
+} from '../src/lib/widget-tonight.js'
+import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
 import { onPrefs } from '../src/lib/prefs.js'
 import { enrichTonightWidgetProps, syncTonightWidget } from './widget-sync.js'
 import { readShelf } from '../src/lib/board-shelf.js'
-import { androidWidgetCardStamp, applyPendingAndroidWidgetTap, saveAndroidWidgetCard } from './widget-tap.android.js'
+import {
+  androidWidgetCardStamp,
+  applyPendingAndroidWidgetTap,
+  loadAndroidWidgetCard,
+  saveAndroidWidgetCard,
+} from './widget-tap.android.js'
+
+async function tonightPropsForWidget(shelf) {
+  let props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
+  props = preferStoredTonightProps(props, readWidgetTonightProps())
+  const card = await loadAndroidWidgetCard()
+  if (card) props = preferStoredTonightProps(props, card)
+  return props
+}
 
 async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickAction, clickActionData, renderWidget }) {
   const stamp = await androidWidgetCardStamp()
@@ -16,12 +33,15 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   }
   const tappedShelf = clicked || applied
   const later = await androidWidgetCardStamp()
-  if (stamp && later && later !== stamp) return
   const shelf = readShelf()
-  const props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
+  const props = await tonightPropsForWidget(shelf)
   writeWidgetTonightProps(props)
   await saveAndroidWidgetCard(props)
   renderWidget(renderDidITonightAndroidWidget(props, widgetInfo))
+  if (stamp && later && later !== stamp) {
+    if (tappedShelf) await syncTonightWidget(tappedShelf)
+    return
+  }
   if (tappedShelf) await syncTonightWidget(tappedShelf)
 }
 

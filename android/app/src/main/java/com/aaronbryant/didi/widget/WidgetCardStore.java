@@ -49,6 +49,11 @@ public final class WidgetCardStore {
         return String.valueOf(prefs(context).getLong(STAMP, 0));
     }
 
+    public static synchronized String load(Context context) {
+        String raw = prefs(context).getString(PROPS, "");
+        return raw == null ? "" : raw;
+    }
+
     /** @return true when the card moved to the next question or the empty line */
     public static synchronized boolean advance(Context context, String lampId, String kind, String night) {
         String raw = prefs(context).getString(PROPS, "");

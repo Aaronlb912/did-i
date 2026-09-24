@@ -88,6 +88,26 @@ function widgetLeadFromItems(items, leadLampId = '') {
   return list.find((item) => item.status === 'open') || list.find((item) => item.status === 'skip') || null
 }
 
+function widgetOpenCount(props) {
+  return (props?.items || []).filter((item) => item.status === 'open').length
+}
+
+/** Headless Android can rebuild before the shelf is warm; keep the fresher open stack. */
+export function preferStoredTonightProps(built, stored) {
+  if (!stored?.items?.length) return built
+  if (widgetOpenCount(stored) <= widgetOpenCount(built)) return built
+  return {
+    ...built,
+    items: stored.items,
+    leadLampId: stored.leadLampId || built.leadLampId,
+    question: stored.question || built.question,
+    left: stored.left ?? built.left,
+    footer: stored.footer || built.footer,
+    openUri: stored.openUri || built.openUri,
+    buddyId: stored.buddyId || built.buddyId,
+  }
+}
+
 export function buildTonightWidgetProps(shelf, now = new Date()) {
   const settings = readWidgetSettings()
   const book = widgetBook(shelf)

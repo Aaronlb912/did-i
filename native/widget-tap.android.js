@@ -1,6 +1,19 @@
 import { NativeModules } from 'react-native'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
 
+export async function loadAndroidWidgetCard() {
+  const mod = NativeModules.WidgetTap
+  if (!mod || typeof mod.loadCard !== 'function') return null
+  try {
+    const raw = String((await mod.loadCard()) || '').trim()
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 export async function saveAndroidWidgetCard(props) {
   if (!props) return false
   const mod = NativeModules.WidgetTap
