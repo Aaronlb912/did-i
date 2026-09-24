@@ -683,6 +683,28 @@ test('widget look picker only uses owned looks', () => {
   assert.ok(ownedLookIds(shelf).has('brass'))
 })
 
+test('a noped tonight question still counts as open on the widget', () => {
+  const clock = new Date('2026-09-23T20:00:00')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [
+      { id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+      { id: 'b', question: 'B?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    ],
+    answers: [
+      { lampId: 'a', periodKey: '2026-09-23', status: 'skip', answeredAt: '2026-09-23T12:00:00' },
+      { lampId: 'b', periodKey: '2026-09-23', status: 'skip', answeredAt: '2026-09-23T12:00:00' },
+    ],
+  }
+  const props = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+  assert.equal(props.left, 2)
+  assert.equal(props.leadLampId, 'a')
+  assert.ok(!props.footer.toLowerCase().includes('clear'))
+  assert.equal(props.question, 'A?')
+})
+
 test('widget snapshot leads with the highest-priority open question', () => {
   const book = {
     id: 't1',
@@ -929,9 +951,10 @@ test('an android widget card steps to the next question already on it', () => {
   assert.equal(back, null)
   assert.equal(next.items[0].status, 'yes')
   const done = advanceTonightCard(next, 'cat', 'nope', '2026-09-23')
-  assert.equal(done.leadLampId, '')
-  assert.equal(done.question, '')
-  assert.equal(done.footer, 'All clear for tonight.')
+  assert.equal(done.leadLampId, 'cat')
+  assert.equal(done.question, 'Feed the cat?')
+  assert.equal(done.left, 1)
+  assert.equal(done.footer, '2 left tonight.')
   assert.equal(advanceTonightCard(props, 'door', 'did', '2026-09-22'), null)
   assert.equal(
     advanceTonightCard(

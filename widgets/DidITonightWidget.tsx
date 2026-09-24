@@ -50,6 +50,8 @@ export type DidITonightWidgetProps = {
   didLabel: string
   nopeLabel: string
   openLabel: string
+  clearLabel?: string
+  emptyLabel?: string
   openUri?: string
   buddyId?: string
   colors?: WidgetColors
@@ -72,12 +74,26 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   function leadItem(items: TonightItem[], leadLampId?: string) {
+    const hasOpen = items.some((item) => item.status === 'open')
     const id = String(leadLampId || '').trim()
     if (id) {
-      const hit = items.find((item) => item.lampId === id && item.status === 'open')
+      const hit = items.find(
+        (item) =>
+          item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+      )
       if (hit) return hit
     }
-    return items.find((item) => item.status === 'open') || null
+    return (
+      items.find((item) => item.status === 'open') ||
+      items.find((item) => item.status === 'skip') ||
+      null
+    )
+  }
+
+  function stackLeft(items: TonightItem[]) {
+    const open = items.filter((item) => item.status === 'open').length
+    if (open) return open
+    return items.filter((item) => item.status === 'skip').length
   }
 
   const items = Array.isArray(props?.items) ? props.items : []
@@ -111,7 +127,10 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const tall = id === 'rabbit'
     const mark = compact ? 28 : 36
     return (
-      <ZStack alignment="center" modifiers={[padding({ top: 4, trailing: 6 }), frame({ width: mark, height: mark + 8 })]}>
+      <ZStack
+        alignment="center"
+        modifiers={[padding({ top: 2, trailing: 4 }), frame({ width: mark + 10, height: mark + 14 })]}
+      >
         {tall ? (
           <HStack spacing={8} modifiers={[offset({ y: -12 })]}>
             <Capsule modifiers={[frame({ width: 5, height: 14 }), foregroundStyle(body)]} />
@@ -136,15 +155,18 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   function afterTap(kind: 'did' | 'nope') {
     const status = kind === 'did' ? 'yes' : 'skip'
     const nextItems = items.map((item) => (item.lampId === leadId ? { ...item, status } : item))
-    const nextLead = nextItems.find((item) => item.status === 'open') || null
-    const nextLeft = nextItems.filter((item) => item.status === 'open').length
+    const nextLead = leadItem(nextItems, '')
+    const nextLeft = stackLeft(nextItems)
     const nextQuestion = nextLead ? String(nextLead.question || nextLead.label || '') : ''
+    const clearLine = String(props?.clearLabel || props?.footer || 'All clear for tonight.')
+    const emptyLine = String(props?.emptyLabel || 'No questions yet.')
+    const nextFooter = nextLead ? footer : nextLeft === 0 ? (nextItems.length ? clearLine : emptyLine) : footer
     return {
       items: nextItems,
       leadLampId: nextLead ? nextLead.lampId : '',
       question: nextQuestion,
       left: nextLeft,
-      footer: nextLeft === 0 ? 'No questions yet.' : footer,
+      footer: nextFooter,
     }
   }
 
@@ -246,7 +268,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   return (
-    <VStack modifiers={[padding({ all: compact ? 8 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill, clipped(true)]}>
+    <VStack modifiers={[padding({ all: compact ? 8 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill]}>
       <VStack
         modifiers={[
           padding({ all: 2 }),
@@ -255,7 +277,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           grow,
         ]}
       >
-        <ZStack alignment="topTrailing" modifiers={[grow]}>
+        <ZStack alignment="topTrailing" modifiers={[grow, padding({ top: 6 })]}>
           <VStack
             alignment="center"
             spacing={8}
@@ -264,6 +286,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
               background(c.panel),
               clipShape('roundedRectangle', 20),
               grow,
+              clipped(true),
             ]}
           >
             {kicker}

@@ -3,7 +3,7 @@ import { byPriority } from './board-json.js'
 import { currentBook, liveLampCount } from './board-shelf.js'
 import { normalizePurse } from './purse.js'
 import { readPrefs, resolveTheme } from './prefs.js'
-import { faceReadyTonight, unansweredTonight } from './recurrence.js'
+import { faceSwipeTonight, unansweredTonight } from './recurrence.js'
 
 const LOOK_IDS = new Set([
   'lime',
@@ -84,7 +84,7 @@ export function widgetTagChoices(shelf) {
 }
 
 export function tonightRowsForWidget(book, now, openOnly) {
-  let rows = faceReadyTonight(book, now)
+  let rows = faceSwipeTonight(book, now)
   if (openOnly) rows = rows.filter((row) => !row.answer)
   return { rows, open: unansweredTonight(book, now) }
 }
@@ -93,6 +93,8 @@ export function tonightRowsForWidget(book, now, openOnly) {
 export function leadTonightRowForWidget(book, now, openOnly) {
   const { rows } = tonightRowsForWidget(book, now, openOnly)
   const open = rows.filter((row) => !row.answer)
-  if (!open.length) return null
-  return byPriority(open)[0]
+  if (open.length) return byPriority(open)[0]
+  const noped = rows.filter((row) => row.answer?.status === 'skip')
+  if (!openOnly && noped.length) return byPriority(noped)[0]
+  return null
 }

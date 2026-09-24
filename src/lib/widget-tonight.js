@@ -10,7 +10,14 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { normalizePurse } from './purse.js'
-import { answerFor, boardDate, faceReadyTonight } from './recurrence.js'
+import {
+  allClearTonight,
+  answerFor,
+  boardDate,
+  didStatusForRow,
+  faceReadyTonight,
+  finishStackCount,
+} from './recurrence.js'
 import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
@@ -55,33 +62,56 @@ function applyItemStatus(book, item, status, clock = new Date()) {
   })
   if (!row) return book
   if (rowStatus(row) === status) return book
-  if (status === 'yes') return putAnswer(book, row, 'yes', clock)
+  if (status === 'yes') return putAnswer(book, row, didStatusForRow(row), clock)
   if (status === 'skip') return putAnswer(book, row, 'skip', clock)
   return book
+}
+
+function widgetStackLeft(items) {
+  const list = Array.isArray(items) ? items : []
+  const open = list.filter((item) => item.status === 'open').length
+  if (open) return open
+  return list.filter((item) => item.status === 'skip').length
+}
+
+function widgetLeadFromItems(items, leadLampId = '') {
+  const list = Array.isArray(items) ? items : []
+  const hasOpen = list.some((item) => item.status === 'open')
+  const id = String(leadLampId || '').trim()
+  if (id) {
+    const hit = list.find(
+      (item) =>
+        item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+    )
+    if (hit) return hit
+  }
+  return list.find((item) => item.status === 'open') || list.find((item) => item.status === 'skip') || null
 }
 
 export function buildTonightWidgetProps(shelf, now = new Date()) {
   const settings = readWidgetSettings()
   const book = widgetBook(shelf)
-  const { rows, open } = tonightRowsForWidget(book, now, settings.openOnly)
+  const { rows } = tonightRowsForWidget(book, now, settings.openOnly)
   const openRows = rows.filter((row) => !row.answer)
   const rankedOpen = byPriority(openRows)
   const doneRows = rows.filter((row) => row.answer)
   const items = [...rankedOpen, ...doneRows].map(mapRow)
-  const lead = rankedOpen[0] || leadTonightRowForWidget(book, now, settings.openOnly)
+  const lead = leadTonightRowForWidget(book, now, settings.openOnly)
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : ''
-  const left = open.length
+  const left = finishStackCount(rows)
   let footer = ''
-  if (!items.length) {
+  if (!rows.length) {
     footer = t('widget.tonight.empty')
-  } else if (left === 0) {
+  } else if (allClearTonight(book, now)) {
     footer = t('widget.tonight.clear')
   } else if (left === 1) {
     footer = t('widget.tonight.oneLeft')
-  } else {
+  } else if (left > 1) {
     footer = t('widget.tonight.left', { n: left })
+  } else {
+    footer = t('widget.tonight.empty')
   }
   return {
     tagTitle: String(book.title || '').trim() || t('widget.tonight.tagFallback'),
@@ -103,13 +133,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
 }
 
 function leadCardItem(props) {
-  const items = Array.isArray(props?.items) ? props.items : []
-  const id = String(props?.leadLampId || '').trim()
-  if (id) {
-    const hit = items.find((item) => item.lampId === id && item.status === 'open')
-    if (hit) return hit
-  }
-  return items.find((item) => item.status === 'open') || null
+  return widgetLeadFromItems(props?.items, props?.leadLampId)
 }
 
 // The Android card steps forward from the snapshot it already has.
@@ -131,8 +155,8 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
     if (!same) return item
     return { ...item, status: mark }
   })
-  const nextLead = items.find((item) => item.status === 'open') || null
-  const left = items.filter((item) => item.status === 'open').length
+  const nextLead = widgetLeadFromItems(items)
+  const left = widgetStackLeft(items)
   if (!nextLead) {
     const clear = String(props.clearLabel || '').trim()
     const empty = String(props.emptyLabel || '').trim()
@@ -239,7 +263,8 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   const rows = faceReadyTonight(book, clock)
   const row = rows.find((r) => r.lamp.id === lampId)
   if (!row) return null
-  const nextBook = putAnswer(book, row, status, clock)
+  const finalStatus = status === 'yes' ? didStatusForRow(row) : status
+  const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
   const boards = shelf.boards.map((b) => (b.id === nextBook.id ? nextBook : b))
   const nextShelf = writeShelf({ ...shelf, boards })

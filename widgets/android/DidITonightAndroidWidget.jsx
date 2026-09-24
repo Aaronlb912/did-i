@@ -51,12 +51,17 @@ function palette(props) {
 }
 
 function leadItem(p) {
+  const items = p.items || []
+  const hasOpen = items.some((item) => item.status === 'open')
   const id = String(p.leadLampId || '').trim()
   if (id) {
-    const hit = (p.items || []).find((item) => item.lampId === id && item.status === 'open')
+    const hit = items.find(
+      (item) =>
+        item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+    )
     if (hit) return hit
   }
-  return (p.items || []).find((item) => item.status === 'open') || null
+  return items.find((item) => item.status === 'open') || items.find((item) => item.status === 'skip') || null
 }
 
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
