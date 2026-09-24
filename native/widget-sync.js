@@ -21,7 +21,7 @@ function snapshotColors(colors, look) {
   }
 }
 
-function enrichProps(shelf, props) {
+export function enrichTonightWidgetProps(shelf, props) {
   const book = widgetBook(shelf)
   const look = widgetLookId(shelf, book)
   const theme = widgetTheme()
@@ -53,7 +53,7 @@ export async function syncTonightWidget(shelf) {
     queueWidgetSync(shelf)
     return
   }
-  const props = enrichProps(shelf, buildTonightWidgetProps(shelf))
+  const props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
     try {

@@ -39,9 +39,10 @@ APK signed with a debug key made for that run. A GitHub-signed or debug APK
 may need the EAS APK uninstalled first if the signature differs
 (`com.aaronbryant.didi`). A later debug-signed artifact can differ again, so
 uninstall Did I if Android says the package conflicts. Not installed on a
-phone yet. Still to confirm once it is: Tonight widget in the picker, menu
-closes, cheer previews in Shop, glow look on cards, sync after sign-in on
-two phones. iPhone TestFlight is unchanged.
+phone yet. Still to confirm once it is: Tonight widget **picker shows 4×2 (or resize)**,
+question + look ring + buddy on home screen, menu closes, cheer previews in
+Shop, glow look on cards, sync after sign-in on two phones. iPhone TestFlight
+is unchanged.
 
 **Gem packs in the stores.** Code is in (`docs/iap.md`). Play products,
 `gem-iap` deploy + secrets, Paid Apps agreement, and a sandbox buy on a

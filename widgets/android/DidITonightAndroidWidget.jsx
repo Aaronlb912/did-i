@@ -8,28 +8,102 @@ const COAT = {
   owl: { body: '#8b6b4a', belly: '#d4c4a8', ear: '#6b5038' },
 }
 
-function BuddyMark({ id }) {
+function BuddyMark({ id, compact }) {
   const coat = COAT[id]
   if (!coat) return null
   const eye = id === 'owl' ? '#f0e080' : '#2d241c'
   const tall = id === 'rabbit'
+  const mark = compact ? 28 : 36
+  const earPad = compact ? 3 : 4
+  const bodyW = mark - 8
+  const bodyH = compact ? 14 : 18
   return (
-    <OverlapWidget style={{ width: 36, height: 44 }}>
+    <OverlapWidget style={{ width: mark + 10, height: mark + 14 }}>
       {tall ? (
         <>
-          <FlexWidget style={{ width: 7, height: 16, borderRadius: 4, backgroundColor: coat.body, marginLeft: 8 }} />
-          <FlexWidget style={{ width: 7, height: 16, borderRadius: 4, backgroundColor: coat.body, marginLeft: 21 }} />
+          <FlexWidget
+            style={{
+              width: compact ? 5 : 7,
+              height: compact ? 12 : 16,
+              borderRadius: earPad,
+              backgroundColor: coat.body,
+              marginLeft: compact ? 6 : 8,
+            }}
+          />
+          <FlexWidget
+            style={{
+              width: compact ? 5 : 7,
+              height: compact ? 12 : 16,
+              borderRadius: earPad,
+              backgroundColor: coat.body,
+              marginLeft: compact ? 17 : 21,
+            }}
+          />
         </>
       ) : (
         <>
-          <FlexWidget style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: coat.ear, marginLeft: 4, marginTop: 6 }} />
-          <FlexWidget style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: coat.ear, marginLeft: 22, marginTop: 6 }} />
+          <FlexWidget
+            style={{
+              width: compact ? 7 : 10,
+              height: compact ? 7 : 10,
+              borderRadius: compact ? 4 : 5,
+              backgroundColor: coat.ear,
+              marginLeft: compact ? 2 : 4,
+              marginTop: compact ? 4 : 6,
+            }}
+          />
+          <FlexWidget
+            style={{
+              width: compact ? 7 : 10,
+              height: compact ? 7 : 10,
+              borderRadius: compact ? 4 : 5,
+              backgroundColor: coat.ear,
+              marginLeft: compact ? 18 : 22,
+              marginTop: compact ? 4 : 6,
+            }}
+          />
         </>
       )}
-      <FlexWidget style={{ width: 28, height: 22, borderRadius: 14, backgroundColor: coat.body, marginLeft: 4, marginTop: 14 }} />
-      <FlexWidget style={{ width: 16, height: 12, borderRadius: 8, backgroundColor: coat.belly, marginLeft: 10, marginTop: 20 }} />
-      <FlexWidget style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: eye, marginLeft: 11, marginTop: 20 }} />
-      <FlexWidget style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: eye, marginLeft: 20, marginTop: 20 }} />
+      <FlexWidget
+        style={{
+          width: bodyW,
+          height: bodyH,
+          borderRadius: bodyH / 2,
+          backgroundColor: coat.body,
+          marginLeft: compact ? 3 : 4,
+          marginTop: compact ? 10 : 14,
+        }}
+      />
+      <FlexWidget
+        style={{
+          width: compact ? 12 : 16,
+          height: compact ? 9 : 12,
+          borderRadius: compact ? 6 : 8,
+          backgroundColor: coat.belly,
+          marginLeft: compact ? 8 : 10,
+          marginTop: compact ? 15 : 20,
+        }}
+      />
+      <FlexWidget
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: eye,
+          marginLeft: compact ? 9 : 11,
+          marginTop: compact ? 15 : 20,
+        }}
+      />
+      <FlexWidget
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: eye,
+          marginLeft: compact ? 16 : 20,
+          marginTop: compact ? 15 : 20,
+        }}
+      />
     </OverlapWidget>
   )
 }
@@ -64,6 +138,16 @@ function leadItem(p) {
   return items.find((item) => item.status === 'open') || items.find((item) => item.status === 'skip') || null
 }
 
+function questionLine(p, lead) {
+  const top = String(p.question || '').trim()
+  if (top) return top
+  if (lead) {
+    const fromLead = String(lead.question || '').trim() || String(lead.label || '').trim()
+    if (fromLead) return fromLead
+  }
+  return String(p.footer || p.openLabel || '').trim()
+}
+
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const raw = props || {
     tagTitle: 'Did I',
@@ -79,14 +163,15 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const p = raw
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
-  const h = widgetInfo?.height || 120
-  const compact = h < 130
+  const h = widgetInfo?.height || 0
+  const w = widgetInfo?.width || 0
+  const compact = h > 0 && h < 150 && (w === 0 || w < 280)
   const gem = Boolean(C.gem)
   const lead = leadItem(p)
   const buddyId = String(p.buddyId || '')
-  const question =
-    String(p.question || '').trim() || lead?.label || p.footer || p.openLabel
+  const question = questionLine(p, lead)
   const radius = compact ? 16 : 22
+  const titleSize = lead ? (compact ? 18 : 26) : 14
 
   return (
     <FlexWidget
@@ -111,113 +196,133 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
           overflow: 'hidden',
         }}
       >
-        <FlexWidget
+        <OverlapWidget
           style={{
             flex: 1,
             width: 'match_parent',
-            backgroundColor: C.panel,
-            borderRadius: compact ? 14 : 20,
-            padding: compact ? 10 : 14,
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            alignItems: 'center',
             overflow: 'hidden',
           }}
         >
           <FlexWidget
             style={{
-              width: 'match_parent',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-            }}
-          >
-            <FlexWidget style={{ width: buddyId ? 36 : 0, height: 1 }} />
-            <TextWidget
-              text={String(p.tagTitle || 'Did I').toUpperCase()}
-              style={{ fontSize: 11, fontWeight: '700', color: C.on, textAlign: 'center', flex: 1 }}
-              maxLines={1}
-            />
-            {buddyId ? <BuddyMark id={buddyId} /> : <FlexWidget style={{ width: 0, height: 1 }} />}
-          </FlexWidget>
-          <FlexWidget
-            style={{
               flex: 1,
               width: 'match_parent',
-              justifyContent: 'center',
+              backgroundColor: C.panel,
+              borderRadius: compact ? 14 : 20,
+              padding: compact ? 10 : 14,
+              flexDirection: 'column',
+              justifyContent: 'space-between',
               alignItems: 'center',
+              overflow: 'hidden',
             }}
-            clickAction="OPEN_URI"
-            clickActionData={{ uri: tonightUri }}
           >
             <TextWidget
-              text={lead ? question : p.footer || p.openLabel}
+              text={String(p.tagTitle || 'Did I').toUpperCase()}
               style={{
-                fontSize: lead ? (compact ? 16 : 22) : 14,
-                fontWeight: lead ? '700' : '500',
-                color: lead ? C.ink : C.inkSoft,
+                fontSize: 11,
+                fontWeight: '700',
+                color: C.on,
                 textAlign: 'center',
+                width: 'match_parent',
               }}
-              maxLines={compact ? 3 : 4}
+              maxLines={1}
             />
-          </FlexWidget>
-          {lead ? (
             <FlexWidget
               style={{
-                flexDirection: 'row',
+                flex: 1,
                 width: 'match_parent',
-                justifyContent: 'space-between',
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 4,
               }}
-            >
-              <FlexWidget
-                style={{
-                  flex: 1,
-                  backgroundColor: C.skip,
-                  borderRadius: 12,
-                  paddingVertical: 8,
-                  marginRight: 6,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-                clickAction="ANSWER"
-                clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
-              >
-                <TextWidget
-                  text={p.nopeLabel || 'Did not'}
-                  style={{ fontSize: 14, fontWeight: '700', color: C.ink, textAlign: 'center' }}
-                  maxLines={1}
-                />
-              </FlexWidget>
-              <FlexWidget
-                style={{
-                  flex: 1,
-                  backgroundColor: C.on,
-                  borderRadius: 12,
-                  paddingVertical: 8,
-                  marginLeft: 6,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-                clickAction="ANSWER"
-                clickActionData={{ lampId: lead.lampId, kind: 'did', night: String(lead.periodKey || '') }}
-              >
-                <TextWidget
-                  text={p.didLabel || 'Did'}
-                  style={{ fontSize: 14, fontWeight: '700', color: C.bg, textAlign: 'center' }}
-                  maxLines={1}
-                />
-              </FlexWidget>
-            </FlexWidget>
-          ) : (
-            <TextWidget
-              text={p.openLabel}
-              style={{ fontSize: 12, fontWeight: '600', color: C.on, textAlign: 'center' }}
-              maxLines={1}
               clickAction="OPEN_URI"
               clickActionData={{ uri: tonightUri }}
-            />
-          )}
-        </FlexWidget>
+            >
+              <TextWidget
+                text={lead ? question : p.footer || p.openLabel}
+                style={{
+                  fontSize: titleSize,
+                  fontWeight: lead ? '700' : '500',
+                  color: lead ? C.ink : C.inkSoft,
+                  textAlign: 'center',
+                  width: 'match_parent',
+                }}
+                maxLines={compact ? 3 : 4}
+              />
+            </FlexWidget>
+            {lead ? (
+              <FlexWidget
+                style={{
+                  flexDirection: 'row',
+                  width: 'match_parent',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <FlexWidget
+                  style={{
+                    flex: 1,
+                    backgroundColor: C.skip,
+                    borderRadius: 12,
+                    paddingVertical: compact ? 6 : 8,
+                    marginRight: 6,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                  clickAction="ANSWER"
+                  clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
+                >
+                  <TextWidget
+                    text={p.nopeLabel || 'Did not'}
+                    style={{ fontSize: compact ? 13 : 15, fontWeight: '700', color: C.ink, textAlign: 'center' }}
+                    maxLines={1}
+                  />
+                </FlexWidget>
+                <FlexWidget
+                  style={{
+                    flex: 1,
+                    backgroundColor: C.on,
+                    borderRadius: 12,
+                    paddingVertical: compact ? 6 : 8,
+                    marginLeft: 6,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                  clickAction="ANSWER"
+                  clickActionData={{ lampId: lead.lampId, kind: 'did', night: String(lead.periodKey || '') }}
+                >
+                  <TextWidget
+                    text={p.didLabel || 'Did'}
+                    style={{ fontSize: compact ? 13 : 15, fontWeight: '700', color: C.bg, textAlign: 'center' }}
+                    maxLines={1}
+                  />
+                </FlexWidget>
+              </FlexWidget>
+            ) : (
+              <TextWidget
+                text={p.openLabel}
+                style={{ fontSize: 12, fontWeight: '600', color: C.on, textAlign: 'center', width: 'match_parent' }}
+                maxLines={1}
+                clickAction="OPEN_URI"
+                clickActionData={{ uri: tonightUri }}
+              />
+            )}
+          </FlexWidget>
+          {buddyId ? (
+            <FlexWidget
+              style={{
+                flex: 1,
+                width: 'match_parent',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-end',
+                paddingTop: compact ? 4 : 6,
+                paddingRight: compact ? 2 : 4,
+              }}
+            >
+              <BuddyMark id={buddyId} compact={compact} />
+            </FlexWidget>
+          ) : null}
+        </OverlapWidget>
       </FlexWidget>
     </FlexWidget>
   )

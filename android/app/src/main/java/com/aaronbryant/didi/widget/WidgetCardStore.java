@@ -264,14 +264,30 @@ public final class WidgetCardStore {
 
     private static JSONObject leadItem(JSONObject card, JSONArray items) {
         String id = card.optString("leadLampId").trim();
-        JSONObject firstOpen = null;
+        boolean hasOpen = false;
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
-            if (item == null || !"open".equals(item.optString("status"))) continue;
-            if (firstOpen == null) firstOpen = item;
-            if (!id.isEmpty() && id.equals(item.optString("lampId"))) return item;
+            if (item != null && "open".equals(item.optString("status"))) {
+                hasOpen = true;
+                break;
+            }
         }
-        return firstOpen;
+        JSONObject firstOpen = null;
+        JSONObject firstSkip = null;
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            String status = item.optString("status");
+            if ("open".equals(status)) {
+                if (firstOpen == null) firstOpen = item;
+                if (!id.isEmpty() && id.equals(item.optString("lampId"))) return item;
+            } else if (!hasOpen && "skip".equals(status)) {
+                if (firstSkip == null) firstSkip = item;
+                if (!id.isEmpty() && id.equals(item.optString("lampId"))) return item;
+            }
+        }
+        if (firstOpen != null) return firstOpen;
+        return firstSkip;
     }
 
     private static boolean pendingStillOpen(Context context, JSONObject incoming) {

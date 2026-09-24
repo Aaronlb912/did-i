@@ -7,7 +7,7 @@ app shelf (active tag, tonight face list).
 ## Sizes
 
 - **iOS:** small, medium, large, plus lock accessories (circle, rectangle, inline).
-- **Android:** resizable from a small tile up to a wide row (4 cells).
+- **Android:** default **4×2** on the grid (same wide row as iOS medium), resizable down to **2×2** small or up wider. `minHeight` is two rows so the question and Did / Did not fit.
 
 Home-screen sizes show **one question**, centered, on a dark card with the
 look color as a ring. The tag name sits at the top in that color. A worn

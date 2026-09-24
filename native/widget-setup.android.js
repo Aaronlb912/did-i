@@ -1,9 +1,9 @@
 import { registerWidgetTaskHandler } from 'react-native-android-widget'
-import { handleAndroidWidgetClick } from '../src/lib/widget-tonight.js'
+import { buildTonightWidgetProps, handleAndroidWidgetClick } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
 import { onPrefs } from '../src/lib/prefs.js'
-import { syncTonightWidget } from './widget-sync.js'
+import { enrichTonightWidgetProps, syncTonightWidget } from './widget-sync.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { androidWidgetCardStamp, applyPendingAndroidWidgetTap, saveAndroidWidgetCard } from './widget-tap.android.js'
 
@@ -14,13 +14,15 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   if (widgetAction === 'WIDGET_CLICK') {
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)
   }
-  const shelf = clicked || applied
+  const tappedShelf = clicked || applied
   const later = await androidWidgetCardStamp()
   if (stamp && later && later !== stamp) return
-  const props = readWidgetTonightProps()
-  if (props) await saveAndroidWidgetCard(props)
+  const shelf = readShelf()
+  const stored = readWidgetTonightProps()
+  const props = enrichTonightWidgetProps(shelf, stored || buildTonightWidgetProps(shelf))
+  await saveAndroidWidgetCard(props)
   renderWidget(renderDidITonightAndroidWidget(props, widgetInfo))
-  if (shelf) await syncTonightWidget(shelf)
+  if (tappedShelf) await syncTonightWidget(tappedShelf)
 }
 
 // Headless widget clicks evaluate the bundle and look for this task immediately.

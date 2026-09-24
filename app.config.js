@@ -50,7 +50,7 @@ const widgetPlugins = includeWidgets
               label: 'Did I tonight',
               description: 'Tonight questions for your tag. Settings → Widget.',
               minWidth: '110dp',
-              minHeight: '48dp',
+              minHeight: '110dp',
               maxResizeWidth: '400dp',
               maxResizeHeight: '280dp',
               targetCellWidth: 4,

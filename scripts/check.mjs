@@ -1000,6 +1000,16 @@ test('the android tonight widget stays inside its frame', () => {
   assert.ok(widget.includes('night:'), 'did and did not send the night with the tap')
   assert.ok(widget.indexOf("kind: 'nope'") < widget.indexOf("kind: 'did'"), 'did not sits left of did')
   assert.ok(widget.includes('question'), 'the widget shows the question')
+  assert.ok(widget.includes('questionLine'), 'the widget resolves question from the lead row')
+  assert.ok(widget.includes('OverlapWidget'), 'the buddy overlays the card like iOS')
+  const providerXml = readFileSync(
+    path.join(root, 'android/app/src/main/res/xml/widgetprovider_diditonight.xml'),
+    'utf8',
+  )
+  assert.ok(providerXml.includes('android:minHeight="110dp"'), 'android widget min height fits 2 rows')
+  assert.ok(providerXml.includes('android:targetCellWidth="4"'), 'android widget defaults to a wide row')
+  const appConfig = readFileSync(path.join(root, 'app.config.js'), 'utf8')
+  assert.ok(appConfig.includes("minHeight: '110dp'"), 'expo android widget plugin matches min height')
   const setup = readFileSync(path.join(root, 'native/widget-setup.android.js'), 'utf8')
   const registerAt = setup.indexOf('registerWidgetTaskHandler(')
   const installAt = setup.indexOf('export function installWidgetSetup')
