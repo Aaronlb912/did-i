@@ -29,15 +29,19 @@ export function Meta({ children, colors }) {
   return <Text style={[styles.meta, { color: colors.inkSoft }]}>{children}</Text>
 }
 
-export function DidButton({ label, onPress, colors, small, disabled }) {
+// `dim` looks disabled but still takes the press, so the screen can say why.
+export function DidButton({ label, onPress, colors, small, disabled, dim }) {
+  const off = disabled || dim
   return (
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(off) }}
       style={[
         styles.did,
         small && styles.didSmall,
-        { backgroundColor: disabled ? colors.panel3 : colors.on, opacity: disabled ? 0.5 : 1 },
+        { backgroundColor: off ? colors.panel3 : colors.on, opacity: off ? 0.5 : 1 },
       ]}
     >
       <Text style={[styles.didText, { color: colors.bg }]}>{label}</Text>
