@@ -25,6 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # The Play bundle builds every ABI and filled the runner disk. Drop tools this
+      # job never uses (.NET, Haskell, CodeQL, Swift, boost). The Android SDK and NDK stay.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/boost
+          df -h /
+
       - name: Checkout
         uses: actions/checkout@v4
 
