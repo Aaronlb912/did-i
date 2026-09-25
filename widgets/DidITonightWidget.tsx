@@ -8,6 +8,7 @@ import {
   clipped,
   containerBackground,
   containerRelativeFrame,
+  controlSize,
   font,
   foregroundStyle,
   frame,
@@ -269,7 +270,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         alignment="topLeading"
         modifiers={[
           frame({ width: w, height: 58 * k }),
-          offset({ x: compact ? 2 : 4, y: compact ? -4 : -6 }),
+          offset({ x: compact ? -8 : -10, y: compact ? 8 : 9 }),
         ]}
       >
         {parts.map((part) => buddyPart(part, k))}
@@ -407,7 +408,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     </VStack>
   ) : null
   const buttons = lead ? (
-    <HStack spacing={8} modifiers={[frame({ maxWidth: 10000 })]}>
+    <HStack spacing={compact ? 6 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
       <Button
         label={nopeLabel}
         target={'nope:' + leadId}
@@ -418,6 +419,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           tint(c.skip),
           font({ size: compact ? 13 : 15, weight: 'bold' }),
           foregroundStyle(ink),
+          controlSize(compact ? 'small' : 'regular'),
+          lineLimit(1),
+          minimumScaleFactor(0.7),
           frame({ maxWidth: 10000 }),
         ]}
       />
@@ -431,6 +435,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           tint(c.on),
           font({ size: compact ? 13 : 15, weight: 'bold' }),
           foregroundStyle(c.bg),
+          controlSize(compact ? 'small' : 'regular'),
+          lineLimit(1),
+          minimumScaleFactor(0.7),
           frame({ maxWidth: 10000 }),
         ]}
       />
@@ -471,7 +478,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
             alignment="center"
             spacing={8}
             modifiers={[
-              padding({ horizontal: 14, vertical: 12 }),
+              padding({ horizontal: compact ? 8 : 14, vertical: compact ? 10 : 12 }),
               background(c.panel),
               clipShape('roundedRectangle', 20),
               grow,

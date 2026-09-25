@@ -937,6 +937,7 @@ test('the tonight widget can draw a question without the app', () => {
     Rectangle: view('RectangleView'),
     lineLimit: (n) => ({ lineLimit: n }),
     minimumScaleFactor: (f) => ({ minimumScaleFactor: f }),
+    controlSize: (s) => ({ controlSize: s }),
     allowsTightening: (on) => ({ allowsTightening: on }),
     opacity: (value) => ({ opacity: value }),
     rotationEffect: (deg) => ({ rotationEffect: deg }),
