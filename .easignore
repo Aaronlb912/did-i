@@ -43,6 +43,7 @@ android/.idea
 *.apk
 *.aab
 *.keystore
+*.jks
 ios
 AuthKey_*.p8
 android/app/src/main/assets/public
