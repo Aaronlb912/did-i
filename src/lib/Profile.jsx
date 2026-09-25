@@ -6,7 +6,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { setShareDiagnostics } from './diagnostics.js'
 import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
-import { ownedLookIds, readWidgetSettings, widgetTagChoices } from './widget-config.js'
+import { ownedLookIds, readWidgetSettings } from './widget-config.js'
 import { applyWidgetPrefs } from './widget-settings.js'
 import { readShelf } from './board-shelf.js'
 import { mergeShelves } from './shelf-merge.js'
@@ -33,14 +33,7 @@ export function Profile({
   const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
-  const widgetTags = widgetTagChoices(readShelf())
   const widgetLooks = [...ownedLookIds(readShelf())].sort()
-
-  function widgetTagWords() {
-    if (widget.tagMode === 'active') return t('widget.settings.tagActive')
-    const hit = widgetTags.find((row) => row.id === widget.tagId)
-    return hit?.title || t('widget.settings.tagMissing')
-  }
 
   function widgetLookWords() {
     if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
@@ -170,13 +163,6 @@ export function Profile({
 
         <SetCap>{t('widget.settings.cap')}</SetCap>
         <SetCard>
-          <SetRow
-            label={t('widget.settings.tag')}
-            sub={t('widget.settings.tagSub')}
-            value={widgetTagWords()}
-            chevron
-            onClick={() => setSheet('widgetTag')}
-          />
           <SetRow
             label={t('widget.settings.look')}
             sub={t('widget.settings.lookSub')}
@@ -318,31 +304,6 @@ export function Profile({
                 }}
               />
             ))}
-          </SetSheet>
-        ) : null}
-
-        {sheet === 'widgetTag' ? (
-          <SetSheet title={t('widget.settings.tag')} still={still} onClose={() => setSheet(null)}>
-            <SetPick
-              label={t('widget.settings.tagActive')}
-              on={widget.tagMode === 'active'}
-              onClick={() => {
-                applyWidgetPrefs({ widgetTagMode: 'active', widgetTagId: '' })
-                setSheet(null)
-              }}
-            />
-            {widgetTags.map((row) => (
-              <SetPick
-                key={row.id}
-                label={row.title}
-                on={widget.tagMode === 'pick' && widget.tagId === row.id}
-                onClick={() => {
-                  applyWidgetPrefs({ widgetTagMode: 'pick', widgetTagId: row.id })
-                  setSheet(null)
-                }}
-              />
-            ))}
-            {!widgetTags.length ? <p className="di-set-note">{t('widget.settings.noTags')}</p> : null}
           </SetSheet>
         ) : null}
 

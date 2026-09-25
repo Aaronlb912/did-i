@@ -5,7 +5,7 @@
 
 import { strict as assert } from 'node:assert'
 import { createRequire } from 'node:module'
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
@@ -86,9 +86,18 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
-import { taggedDue } from '../src/lib/tags.js'
-import { ownedLookIds, widgetBook, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
-import { advanceTonightCard, applyWidgetTapOnce, buildTonightWidgetProps, mergeWidgetPropsIntoShelf } from '../src/lib/widget-tonight.js'
+import { leftoverOn, taggedDue } from '../src/lib/tags.js'
+import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
+import { writeAccountUserId } from '../src/lib/session-id.js'
+import { stampWhen } from '../src/lib/hall-pages.js'
+import {
+  advanceTonightCard,
+  applyWidgetTapOnce,
+  buildTonightWidgetProps,
+  mergeWidgetPropsIntoShelf,
+  peekNextTonightCard,
+  preferStoredTonightProps,
+} from '../src/lib/widget-tonight.js'
 
 const require = createRequire(import.meta.url)
 
@@ -620,12 +629,24 @@ test('gem week survives shelf writes', () => {
   assert.equal(again.boards[0].gems, 1)
 })
 
-test('bigger gem packs cost less per gem', () => {
-  const one = GEM_PACKS.find((pack) => pack.id === 'gems_1')
-  const big = GEM_PACKS.find((pack) => pack.id === 'gems_25')
-  assert.equal(one.cents, GEM_UNIT_CENTS)
-  assert.ok(big.cents / big.gems < one.cents / one.gems)
-  assert.ok(big.save >= 30)
+test('every gem pack is $1 a gem, and bigger packs add bonus gems', () => {
+  for (const pack of GEM_PACKS) {
+    assert.equal(pack.cents, pack.base * GEM_UNIT_CENTS, `${pack.id} keeps the $1 price`)
+    assert.equal(pack.gems, pack.base + pack.bonus)
+    assert.ok(pack.gems <= 100, 'fits the gem_purchases cap')
+  }
+  const bonuses = GEM_PACKS.map((pack) => pack.bonus)
+  assert.deepEqual([...bonuses].sort((a, b) => a - b), bonuses, 'bonus grows with the pack')
+  assert.ok(GEM_PACKS.find((pack) => pack.id === 'gems_50').bonus > 0)
+  // The server credits from its own table; it has to match.
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const iap = readFileSync(path.join(root, 'supabase/functions/gem-iap/index.ts'), 'utf8')
+  for (const pack of GEM_PACKS) {
+    assert.ok(
+      iap.includes(`${pack.id}: { gems: ${pack.gems}, cents: ${pack.cents} }`),
+      `gem-iap matches ${pack.id}`,
+    )
+  }
 })
 
 test('every supported locale has the same keys as English', () => {
@@ -777,7 +798,7 @@ test('a worn buddy rides on the tonight widget', () => {
   assert.equal(buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [bare] })).buddyId, '')
 })
 
-test('widget props merge answers onto the pinned tag', () => {
+test('widget props list every tag and merge answers onto the right one', () => {
   const a = {
     id: 'tag-a',
     title: 'A',
@@ -791,16 +812,16 @@ test('widget props merge answers onto the pinned tag', () => {
     answers: [],
   }
   const shelf = writeShelf({ currentId: 'tag-a', boards: [a, b] })
-  writePrefs({ widgetTagMode: 'pick', widgetTagId: 'tag-b' })
   const props = buildTonightWidgetProps(shelf)
-  assert.ok(props.items.some((item) => item.lampId === 'l2'), 'tag B question should be due tonight')
+  assert.ok(props.items.some((item) => item.lampId === 'l1'), 'tag A question is due tonight')
+  assert.ok(props.items.some((item) => item.lampId === 'l2'), 'tag B question is due tonight, no pinning needed')
   const merged = mergeWidgetPropsIntoShelf(shelf, {
-    tagId: 'tag-b',
-    items: props.items.map((item) => (item.lampId === 'l2' ? { ...item, status: 'yes' } : item)),
+    items: props.items.map((item) =>
+      item.lampId === 'l2' || item.lampId === 'l1' ? { ...item, status: 'yes' } : item,
+    ),
   })
-  const answered = merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]
-  assert.equal(answered?.lampId, 'l2')
-  assert.equal(answered?.status, 'yes')
+  assert.equal(merged.boards.find((row) => row.id === 'tag-a')?.answers?.[0]?.lampId, 'l1')
+  assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
 test('the tonight widget can draw a question without the app', () => {
@@ -938,7 +959,6 @@ test('the tonight widget can draw a question without the app', () => {
 })
 
 test('an android widget tap for one lamp and night applies once', () => {
-  writePrefs({ widgetTagMode: 'active', widgetTagId: '' })
   const book = {
     id: 'tap-1',
     title: 'Home',
@@ -1026,6 +1046,85 @@ test('an android widget card steps to the next question already on it', () => {
   assert.ok(!iosWidget.includes('WidgetCardStore') && !iosWidget.includes('advanceTonightCard'))
 })
 
+test('a saved widget card never brings back a question the shelf already answered', () => {
+  const built = {
+    leadLampId: 'b',
+    question: 'B?',
+    tagTitle: 'Work',
+    items: [
+      { lampId: 'b', periodKey: 'n', question: 'B?', status: 'open', tag: 'Work' },
+      { lampId: 'a', periodKey: 'n', question: 'A?', status: 'skip', tag: 'Home' },
+    ],
+  }
+  const stored = {
+    leadLampId: 'a',
+    question: 'A?',
+    tagTitle: 'Home',
+    items: [
+      { lampId: 'a', periodKey: 'n', question: 'A?', status: 'open', tag: 'Home' },
+      { lampId: 'b', periodKey: 'n', question: 'B?', status: 'open', tag: 'Work' },
+      { lampId: 'c', periodKey: 'n', question: 'C?', status: 'open', tag: 'Home' },
+    ],
+  }
+  const out = preferStoredTonightProps(built, stored)
+  assert.equal(out.leadLampId, 'b')
+  assert.equal(out.tagTitle, 'Work', 'the card keeps browsing to the item it moved to, tag and all')
+  assert.equal(out.items, built.items)
+})
+
+test('the android widget next button browses open questions without answering them', () => {
+  const props = {
+    leadLampId: 'door',
+    question: 'Door?',
+    items: [
+      { lampId: 'door', periodKey: 'n', question: 'Door?', label: 'Door', status: 'open' },
+      { lampId: 'cat', periodKey: 'n', question: 'Feed the cat?', label: 'Cat', status: 'open' },
+      { lampId: 'bins', periodKey: 'n', question: 'Bins out?', label: 'Bins', status: 'open' },
+      { lampId: 'stamp', periodKey: 'n', question: 'Already stamped', label: 'Old', status: 'yes' },
+    ],
+    left: 3,
+    footer: '3 left tonight.',
+  }
+  const one = peekNextTonightCard(props, 1)
+  assert.equal(one.leadLampId, 'cat')
+  assert.equal(one.question, 'Feed the cat?')
+  // Nothing about status or how many are left changes — this is a look, not an answer.
+  assert.equal(one.items, props.items)
+  assert.equal(one.left, 3)
+
+  const two = peekNextTonightCard(one, 1)
+  assert.equal(two.leadLampId, 'bins')
+
+  const wrapped = peekNextTonightCard(two, 1)
+  assert.equal(wrapped.leadLampId, 'door', 'wraps back to the first open question')
+
+  const back = peekNextTonightCard(wrapped, -1)
+  assert.equal(back.leadLampId, 'bins', 'prev direction wraps the other way')
+
+  const nopes = {
+    leadLampId: 'a',
+    items: [
+      { lampId: 'a', periodKey: 'n', question: 'A?', status: 'skip', tag: 'Home' },
+      { lampId: 'b', periodKey: 'n', question: 'B?', status: 'skip', tag: 'Work' },
+      { lampId: 'c', periodKey: 'n', question: 'C?', status: 'yes', tag: 'Work' },
+    ],
+  }
+  const nopeNext = peekNextTonightCard(nopes, 1)
+  assert.equal(nopeNext.leadLampId, 'b', 'with nothing open, Next browses the did-nots')
+  assert.equal(nopeNext.tagTitle, 'Work', 'the header follows the question shown')
+  const rebuilt = { ...nopes, tagTitle: 'Home' }
+  assert.equal(
+    preferStoredTonightProps(rebuilt, nopeNext).leadLampId,
+    'b',
+    'a redraw keeps the did-not you browsed to',
+  )
+  assert.equal(peekNextTonightCard(nopeNext, 1).leadLampId, 'a', 'and Next wraps back')
+
+  const single = { leadLampId: 'door', items: [{ lampId: 'door', periodKey: 'n', status: 'open' }] }
+  assert.equal(peekNextTonightCard(single, 1), null, 'nothing to browse to with one open question')
+  assert.equal(peekNextTonightCard(null, 1), null)
+})
+
 test('the android tonight widget stays inside its frame', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const widget = readFileSync(path.join(root, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
@@ -1103,20 +1202,98 @@ test('the android tonight widget stays inside its frame', () => {
   assert.ok(open.includes('applyPendingAndroidWidgetTap'))
 })
 
-test('widget settings pick a tag and open tonight without changing the app filter', () => {
+test('the widget lists every tag\'s tonight work, not one picked tag', () => {
   const a = { id: 'tag-a', title: 'Home', lamps: [{ id: 'l1', question: 'Door?', cadence: 'daily', archived: false }], answers: [] }
   const b = { id: 'tag-b', title: 'Work', lamps: [{ id: 'l2', question: 'Email?', cadence: 'daily', archived: false }], answers: [] }
   const shelf = writeShelf({ currentId: 'tag-a', boards: [a, b] })
-  writePrefs({ widgetTagMode: 'pick', widgetTagId: 'tag-b' })
-  const book = widgetBook(shelf)
-  assert.equal(book.id, 'tag-b')
-  const uri = widgetTonightUri(book, 'l2')
+  const props = buildTonightWidgetProps(shelf)
+  assert.equal(props.items.length, 2, 'both tags\' questions are on the card')
+  assert.ok(props.items.some((item) => item.lampId === 'l1' && item.tag === 'Home'))
+  assert.ok(props.items.some((item) => item.lampId === 'l2' && item.tag === 'Work'))
+  const uri = widgetTonightUri(null, 'l2')
   assert.ok(uri.includes('face=l2'))
   assert.ok(!uri.includes('tag='))
+})
+
+test('an empty tag does not block another tag\'s question from showing', () => {
+  const empty = { id: 'tag-empty', title: 'MapleStory', lamps: [], answers: [] }
+  const withWork = {
+    id: 'tag-work',
+    title: 'Home',
+    lamps: [{ id: 'l1', question: 'Door?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 'tag-empty', boards: [empty, withWork] })
   const props = buildTonightWidgetProps(shelf)
-  assert.equal(props.tagId, 'tag-b')
-  assert.equal(props.tagTitle, 'Work')
-  assert.ok(props.openUri.includes('face=l2'))
+  assert.equal(props.leadLampId, 'l1')
+  assert.equal(props.tagTitle, 'Home')
+})
+
+test('every component a screen draws is defined or imported', () => {
+  // "What to ask" crashed on a Kicker that lost its import. Metro only
+  // finds that when the screen opens, so check every file here.
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const require = createRequire(import.meta.url)
+  const babel = require('@babel/core')
+  const traverse = require('@babel/traverse').default
+  const files = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (statSync(full).isDirectory()) walk(full)
+      else if (/\.(jsx|tsx)$/.test(name)) files.push(full)
+    }
+  }
+  for (const dir of ['native', 'src/lib', 'src/site', 'widgets']) walk(path.join(root, dir))
+  const missing = []
+  for (const file of files) {
+    const ast = babel.parseSync(readFileSync(file, 'utf8'), {
+      filename: file,
+      babelrc: false,
+      configFile: false,
+      parserOpts: { sourceType: 'module', plugins: ['jsx', 'typescript'] },
+    })
+    traverse(ast, {
+      JSXOpeningElement(p) {
+        const name = p.node.name
+        if (name.type !== 'JSXIdentifier' || !/^[A-Z]/.test(name.name)) return
+        if (!p.scope.hasBinding(name.name)) {
+          missing.push(`${path.relative(root, file)}:${name.loc.start.line} ${name.name}`)
+        }
+      },
+    })
+  }
+  assert.deepEqual(missing, [])
+})
+
+test('adding friends needs your own phone number, one per account, and the legal text says so', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const sql = read('supabase/phone-friends.sql')
+  assert.ok(sql.includes('create unique index if not exists profiles_phone_key'), 'one number per account')
+  assert.ok(sql.includes("raise exception 'phone taken'"), 'a taken number says so')
+  assert.ok(sql.includes('create trigger need_phone_to_ask'), 'the server refuses a request without a number')
+  assert.match(sql, /find_phone[\s\S]*?raise exception 'need phone'/, 'lookup needs your number too')
+  for (const file of ['native/screens/social.jsx', 'src/lib/PeopleConnect.jsx']) {
+    const src = read(file)
+    assert.ok(src.includes("t('people.phoneFirstBody')"), `${file} explains why`)
+    assert.ok(src.includes("myPhone ? ("), `${file} shows the add field only with a number`)
+  }
+  assert.ok(/phone number, if you add one/.test(en['legal.privacy.account.body']))
+  assert.ok(/find each other by phone number/.test(en['legal.privacy.social.body']))
+  assert.ok(/Only add a number that is yours/.test(en['legal.terms.account.body']))
+  assert.ok(/teléfono/.test(es['legal.privacy.social.body']))
+})
+
+test('the last cloud save reads as a local time, not a raw timestamp', () => {
+  const saved = new Date(2026, 8, 24, 22, 8)
+  const words = stampWhen(saved.toISOString(), new Date(2026, 8, 24, 23, 0))
+  assert.ok(words.includes('10:08 PM'), words)
+  assert.ok(!/\d{4}-\d{2}-\d{2}T/.test(words), words)
+  assert.equal(stampWhen('not a date'), '')
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  assert.ok(more.includes("t('account.syncSaved', { time: stampWhen(sync.at) })"))
 })
 
 test('deadline questions before the due night do not count on the tonight meter', () => {
@@ -1134,6 +1311,20 @@ test('deadline questions before the due night do not count on the tonight meter'
   assert.equal(meter.answered, 0)
   const due = taggedDue([book], new Date('2024-01-10T12:00:00'), '')
   assert.equal(nightProgress(due).total, 1)
+
+  // Ten nightly questions and one deadline not due yet: 0 of 10, 10 left.
+  const nightly = Array.from({ length: 10 }, (_, i) => lamp(`n${i}`, { createdOn: '2024-01-01' }))
+  const mixed = { id: 'mix', title: 'Mix', dayFoldHour: 0, lamps: [item, ...nightly], answers: [] }
+  const clock = new Date('2024-01-05T12:00:00')
+  assert.equal(nightProgress(taggedDue([mixed], clock, '')).total, 10)
+  assert.equal(leftoverOn([mixed], clock, ''), 10)
+  assert.equal(leftoverOn([mixed], new Date('2024-01-10T12:00:00'), ''), 11, 'it counts on its due night')
+
+  const stack = readFileSync(
+    path.join(path.dirname(path.dirname(fileURLToPath(import.meta.url))), 'src/lib/useTonightStack.js'),
+    'utf8',
+  )
+  assert.ok(stack.includes('slotted.filter(notDueYet)'), 'deadlines not due yet sit at the end of the pills')
 })
 
 test('native metro shims are wired and pin default exports', () => {
@@ -1263,7 +1454,12 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
   const sign = readFileSync(path.join(root, 'native/screens/SignInScreen.jsx'), 'utf8')
   const actions = readFileSync(path.join(root, 'native/components/AuthSignInActions.jsx'), 'utf8')
   try {
+    writeAccountUserId('')
     assert.equal(needsAuth({ ready: false, user: null }), true)
+    writeAccountUserId('user-a')
+    assert.equal(needsAuth({ ready: false, user: null }), false, 'a signed-in phone does not flash sign-in while the session loads')
+    assert.equal(needsAuth({ ready: true, user: null }), true, 'no session after the check still gates')
+    writeAccountUserId('')
     assert.equal(needsAuth({ ready: true, user: null }), true)
     assert.equal(needsAuth({ ready: true, user: { id: 'u' } }), false)
     assert.equal(authGated('/tonight', { ready: false, user: null }), true)

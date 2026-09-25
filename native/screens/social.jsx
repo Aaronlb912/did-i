@@ -33,6 +33,7 @@ import {
   myInvite,
   personName,
   readMine,
+  savePhone,
   reportTonightLine,
   sayNo,
   sayYes,
@@ -552,16 +553,50 @@ export function PeopleConnectScreen({ book }) {
   const [codeDraft, setCodeDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
+  // Friends find each other by number, so asking needs yours first.
+  // null while loading; '' when there is none on the account.
+  const [myPhone, setMyPhone] = useState(null)
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneMiss, setPhoneMiss] = useState('')
+
+  useEffect(() => {
+    if (!account.user) return undefined
+    let alive = true
+    readMine()
+      .then((mine) => {
+        if (alive) setMyPhone(mine?.phone || '')
+      })
+      .catch(() => {
+        if (alive) setMyPhone('')
+      })
+    return () => {
+      alive = false
+    }
+  }, [account.user])
 
   function say(words) {
     setMiss('')
     setSaid(words)
   }
 
+  async function keepPhone() {
+    setPhoneMiss('')
+    const out = await savePhone(phoneDraft)
+    if (out.miss === 'short') return setPhoneMiss(t('people.phoneShort'))
+    if (out.miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
+    if (out.miss) return setPhoneMiss(tMiss(out.miss))
+    setMyPhone(out.phone)
+    setPhoneDraft('')
+    say(t('people.phoneSaved'))
+  }
+
   async function ask() {
     const { miss: why, person } = await askFriend(addDraft)
     if (why === 'short') return setMiss(t('people.phoneShort'))
-    if (why === 'nophone') return setMiss(t('people.nophone'))
+    if (why === 'nophone') {
+      setMyPhone('')
+      return setMiss(t('people.nophone'))
+    }
     if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(addDraft) }))
     if (why) return setMiss(tMiss(why))
     setAddDraft('')
@@ -602,8 +637,34 @@ export function PeopleConnectScreen({ book }) {
       />
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
-      <Field colors={colors} label={t('people.add')} value={addDraft} onChangeText={setAddDraft} />
-      <DidButton colors={colors} label={t('people.askOne')} onPress={ask} />
+      {myPhone === '' ? (
+        <>
+          <Meta colors={colors}>{t('people.phoneFirstTitle')}</Meta>
+          <Meta colors={colors}>{t('people.phoneFirstBody')}</Meta>
+          <Field
+            colors={colors}
+            label={t('account.phone')}
+            value={phoneDraft}
+            onChangeText={setPhoneDraft}
+            keyboardType="phone-pad"
+          />
+          <Miss colors={colors}>{phoneMiss}</Miss>
+          <DidButton colors={colors} label={t('people.phoneSave')} onPress={keepPhone} />
+        </>
+      ) : null}
+      {myPhone ? (
+        <>
+          <Meta colors={colors}>{t('people.phoneYours', { phone: formatPhone(myPhone) })}</Meta>
+          <Field
+            colors={colors}
+            label={t('people.add')}
+            value={addDraft}
+            onChangeText={setAddDraft}
+            keyboardType="phone-pad"
+          />
+          <DidButton colors={colors} label={t('people.askOne')} onPress={ask} />
+        </>
+      ) : null}
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
       <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />

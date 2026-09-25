@@ -93,14 +93,18 @@ export function SwipeCard({
         onPanResponderRelease: (_, gesture) => {
           const moved = gesture.dx
           const now = live.current
+          // A committed swipe leaves the card where it was let go. The next
+          // card resets x (cardKey effect); snapping to 0 here first showed
+          // the answered card in the middle for a frame. The timeout only
+          // covers a card that stays put after the answer.
           if (moved >= SWIPE_THRESHOLD && !now.blockDid) {
             now.onDid?.()
-            x.setValue(0)
+            setTimeout(() => x.setValue(0), 400)
             return
           }
           if (moved <= -SWIPE_THRESHOLD && !now.blockNope) {
             now.onNope?.()
-            x.setValue(0)
+            setTimeout(() => x.setValue(0), 400)
             return
           }
           Animated.spring(x, { ...SPRING, toValue: 0 }).start()

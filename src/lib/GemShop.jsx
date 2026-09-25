@@ -4,7 +4,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { isReactNative } from './env.js'
 import { startGemPurchase } from './gem-buy.js'
 import { initGemIap, iapReady, storePrice } from './gem-iap.js'
-import { formatUsd, GEM_PACKS, packPriceLabel } from './gem-packs.js'
+import { GEM_PACKS, packPriceLabel } from './gem-packs.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { GemIcon, PurseBits } from './PurseIcons.jsx'
@@ -78,7 +78,6 @@ export function GemShop({ book, now }) {
 
         <div className="di-set-card di-shop-card di-gem-packs">
           {GEM_PACKS.map((pack) => {
-            const each = formatUsd(Math.round(pack.cents / pack.gems))
             const price = packPriceLabel(pack, native ? storePrice(pack.id) : '')
             return (
               <div className="di-shop-row di-gem-pack" key={pack.id}>
@@ -89,10 +88,8 @@ export function GemShop({ book, now }) {
                 <span className="di-shop-copy">
                   <strong>{gemLine(pack.gems)}</strong>
                   <em>
+                    {pack.bonus ? `${t('gems.bonus', { base: pack.base, bonus: pack.bonus })} · ` : ''}
                     {price}
-                    {pack.save ? ` · ${t('gems.save', { n: pack.save })}` : ''}
-                    {' · '}
-                    {t('gems.each', { price: each })}
                   </em>
                 </span>
                 <button

@@ -122,7 +122,7 @@ export async function savePhone(value) {
   if (!looksLikePhone(phone)) return { miss: 'short' }
   const { data, error } = await db.rpc('set_my_phone', { wanted: phone })
   if (error) {
-    if (/unique|duplicate/i.test(error.message)) return { miss: 'taken' }
+    if (/taken|unique|duplicate/i.test(error.message)) return { miss: 'taken' }
     return bad(error)
   }
   return { miss: '', phone: data || phone }
@@ -232,12 +232,13 @@ export async function askFriend(phone) {
   const mine = await readMine()
   if (!mine?.phone) return { miss: 'nophone' }
   const { data, error } = await db.rpc('find_phone', { wanted: want })
-  if (error) return bad(error)
+  if (error) return /need phone/i.test(error.message) ? { miss: 'nophone' } : bad(error)
   const found = Array.isArray(data) ? data[0] : data
   if (!found) return { miss: 'nobody' }
   const { error: askErr } = await db
     .from('friend_links')
     .insert({ from_id: user.id, to_id: found.user_id, state: 'asked' })
+  if (askErr && /need phone/i.test(askErr.message)) return { miss: 'nophone' }
   if (askErr && !/duplicate|unique/i.test(askErr.message)) return bad(askErr)
   return { miss: '', person: found }
 }

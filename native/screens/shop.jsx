@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
-import { formatUsd, GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
+import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/dit-board.js'
 import { t } from '../../src/lib/i18n.js'
 import {
@@ -776,22 +776,18 @@ export function GemShopScreen({ book }) {
       ) : null}
 
       {GEM_PACKS.map((pack) => {
-        const each = formatUsd(Math.round(pack.cents / pack.gems))
-        const saveNote = pack.save ? t('gems.save', { n: pack.save }) : ''
+        const title = pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })
+        const bonusNote = pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''
         const price = packPriceLabel(pack, storePrice(pack.id))
         return (
           <View key={pack.id} style={[styles.shopRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-            <GemPackMark
-              count={pack.gems}
-              colors={colors}
-              accessibilityLabel={pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })}
-            />
+            <GemPackMark count={pack.gems} colors={colors} accessibilityLabel={title} />
             <View style={styles.shopCopy}>
-              <Text style={[styles.shopName, { color: colors.ink }]}>{price}</Text>
+              <Text style={[styles.shopName, { color: colors.ink }]}>{title}</Text>
               <Text style={[styles.shopNote, { color: colors.inkDim }]}>
-                {saveNote}
-                {saveNote ? ' · ' : ''}
-                {t('gems.each', { price: each })}
+                {bonusNote}
+                {bonusNote ? ' · ' : ''}
+                {price}
               </Text>
             </View>
             <DidButton

@@ -50,3 +50,6 @@ android/app/src/main/assets/public
 .tmp-expo-export
 .tmp-nav*.png
 supabase/.temp
+
+.claude/*.png
+.claude/*.mp4

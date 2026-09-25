@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 import { nativeBridgeReady, queueWidgetSync } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
-import { widgetBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
+import { widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
 import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, WIDGET_NAME } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
@@ -22,7 +22,7 @@ function snapshotColors(colors, look) {
 }
 
 export function enrichTonightWidgetProps(shelf, props) {
-  const book = widgetBook(shelf)
+  const book = widgetColorBook(shelf)
   const look = widgetLookId(shelf, book)
   const theme = widgetTheme()
   return { ...props, colors: snapshotColors(hallColors(look, theme), look) }

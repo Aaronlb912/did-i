@@ -241,6 +241,15 @@ export function tapWhen(answeredAt, now = new Date()) {
   return clock ? `${day}, ${clock}` : day
 }
 
+// A full timestamp (e.g. the last cloud save, stored as UTC) in the phone's
+// own time: "today at 10:08 PM", "yesterday at …", "Sep 23, …".
+export function stampWhen(stamp, now = new Date()) {
+  const date = new Date(String(stamp || ''))
+  if (Number.isNaN(date.getTime())) return ''
+  const two = (n) => String(n).padStart(2, '0')
+  return tapWhen(`${isoDate(date)}T${two(date.getHours())}:${two(date.getMinutes())}`, now)
+}
+
 export function tomorrowAsk(book, now = new Date()) {
   const next = comingDays(book, now, 2).find((night) => !night.isToday)
   if (!next || !next.due.length) return ''

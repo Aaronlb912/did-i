@@ -15,7 +15,7 @@ export const legalEn = {
   'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
-  'legal.date': 'September 20, 2026',
+  'legal.date': 'September 24, 2026',
   'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
 
@@ -33,10 +33,10 @@ export const legalEn = {
     'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
   'legal.privacy.account.title': 'When you sign in',
   'legal.privacy.account.body':
-    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
+    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
   'legal.privacy.social.title': 'Friends, family, and sends',
   'legal.privacy.social.body':
-    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
   'legal.privacy.dit.title': 'Did I tonight (public list)',
   'legal.privacy.dit.body':
     'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
@@ -92,7 +92,7 @@ export const legalEn = {
     'You own the content you enter. You grant us a license to store, sync, and display it as the app requires (including public tonight lines you opt into).\n\nYou are responsible for what you write. Do not enter illegal content or someone else\'s private information without permission.',
   'legal.terms.account.title': 'Accounts',
   'legal.terms.account.body':
-    'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.',
+    'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.\n\nTo add friends you add a phone number. Only add a number that is yours. A number can be on one account at a time. If yours is already taken, contact us.',
   'legal.terms.social.title': 'People features',
   'legal.terms.social.body':
     'Friends, families, sends, and invites are optional. You may block someone; blocking removes friendship and pending nudges on our side. You may report users or public lines.\n\nWe may suspend accounts that abuse others or the service.',
@@ -148,7 +148,7 @@ export const legalEs = {
   'legal.effective': 'Vigente desde {date}.',
   'legal.notLawyer': 'Esto es información clara, no asesoría legal.',
   'legal.backSettings': 'Ajustes',
-  'legal.date': '20 de septiembre de 2026',
+  'legal.date': '24 de septiembre de 2026',
   'legal.emailMissing': ' (configura VITE_LEGAL_EMAIL antes de publicar)',
   'legal.operatorWarn': 'Configura VITE_LEGAL_EMAIL en .env.local antes de que otros se registren.',
 
@@ -166,10 +166,10 @@ export const legalEs = {
     'Puedes usar Did I en este teléfono sin iniciar sesión. Tus preguntas, respuestas, monedas, gemas y ajustes quedan en este navegador o app hasta que actives una cuenta.\n\nNo recibimos esos datos locales a menos que sincronices o compartas una copia.',
   'legal.privacy.account.title': 'Con cuenta',
   'legal.privacy.account.body':
-    'Si creas cuenta con un código por email, guardamos:\n\nTu email (para entrar).\n\nTu nombre visible y handle.\n\nUna copia de tu estante (etiquetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
+    'Si creas cuenta con un código por email, guardamos:\n\nTu email (para entrar).\n\nTu nombre visible y handle.\n\nTu número de teléfono, si lo agregas. Lo necesitas para agregar amigos. Lo guardamos en un formato estándar, y un número solo puede estar en una cuenta.\n\nUna copia de tu estante (etiquetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
   'legal.privacy.social.title': 'Amigos, familia y envíos',
   'legal.privacy.social.body':
-    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
+    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nLos amigos se encuentran por número de teléfono. Para pedir amistad, primero agregas tu número. Cualquier persona con sesión iniciada que escriba tu número exacto puede encontrar tu cuenta y ver tu nombre visible para enviarte una solicitud. Cuando envías una solicitud, la persona a quien se la pides ve tu número y tu nombre visible. No mostramos tu número a nadie más, no dejamos que nadie explore números y no leemos tus contactos.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
   'legal.privacy.dit.title': 'Did I tonight (lista pública)',
   'legal.privacy.dit.body':
     'La lista está apagada por defecto. Si entras, guardamos que eres público esta noche, hasta tres líneas cortas de tus etiquetas DID de esa noche, rachas visibles y conteos de cheer.\n\nLas líneas se pueden reportar. Dos reportes distintos pueden quitar una línea sin esperar revisión humana. Los reportes se guardan para moderación.',
@@ -225,7 +225,7 @@ export const legalEs = {
     'Tú eres dueño del contenido que escribes. Nos concedes licencia para guardarlo, sincronizarlo y mostrarlo como requiera la app (incluidas líneas públicas si optas).\n\nEres responsable de lo que escribes. No introduzcas contenido ilegal ni datos privados de otros sin permiso.',
   'legal.terms.account.title': 'Cuentas',
   'legal.terms.account.body':
-    'El inicio de sesión usa un código único por email. Protege tu email. Puedes cerrar sesión en un dispositivo o en todos, exportar datos o borrar la cuenta en Ajustes de cuenta.',
+    'El inicio de sesión usa un código único por email. Protege tu email. Puedes cerrar sesión en un dispositivo o en todos, exportar datos o borrar la cuenta en Ajustes de cuenta.\n\nPara agregar amigos agregas un número de teléfono. Agrega solo un número que sea tuyo. Un número puede estar en una sola cuenta a la vez. Si el tuyo ya está en uso, escríbenos.',
   'legal.terms.social.title': 'Personas',
   'legal.terms.social.body':
     'Amigos, familias, envíos e invitaciones son opcionales. Puedes bloquear a alguien; el bloqueo quita amistad y avisos pendientes de nuestro lado. Puedes reportar usuarios o líneas públicas.\n\nPodemos suspender cuentas que abusen de otros o del servicio.',

@@ -31,14 +31,21 @@ Google Play has no app SKU. Use package name `com.aaronbryant.didi`.
 
 ## Gem product ids (IAP SKUs)
 
-| Pack | Store id |
-|------|----------|
-| 1 gem | `com.aaronbryant.didi.gems_1` |
-| 3 gems | `com.aaronbryant.didi.gems_3` |
-| 5 gems | `com.aaronbryant.didi.gems_5` |
-| 10 gems | `com.aaronbryant.didi.gems_10` |
-| 25 gems | `com.aaronbryant.didi.gems_25` |
-| 50 gems | `com.aaronbryant.didi.gems_50` |
+Every pack is $1 a gem. Bigger packs add bonus gems instead of a lower
+price. Set these prices in App Store Connect and Play Console; the gem
+counts live in `src/lib/gem-packs.js` and `supabase/functions/gem-iap`.
+
+| Pack | Store id | Price | Gems (base + bonus) |
+|------|----------|-------|---------------------|
+| 1 gem | `com.aaronbryant.didi.gems_1` | $1 | 1 |
+| 3 gems | `com.aaronbryant.didi.gems_3` | $3 | 3 |
+| 6 gems | `com.aaronbryant.didi.gems_5` | $5 | 5 + 1 |
+| 14 gems | `com.aaronbryant.didi.gems_10` | $10 | 10 + 4 |
+| 40 gems | `com.aaronbryant.didi.gems_25` | $25 | 25 + 15 |
+| 80 gems | `com.aaronbryant.didi.gems_50` | $50 | 50 + 30 |
+
+Store display names should say the total ("14 gems") so the store sheet
+matches the shop.
 
 All are **consumable** in-app products.
 

@@ -515,7 +515,9 @@ revoke all on function public.buy_coin_cosmetic(text, text) from public;
 revoke all on function public.buy_coin_cosmetic(text, text) from anon;
 grant execute on function public.buy_coin_cosmetic(text, text) to authenticated;
 
--- Credit purchases on the server, not in the shelf JSON.
+-- Credit purchases on the server, not in the shelf JSON. This is the only
+-- definition of claim_gem_purchases() — it must not be duplicated back into
+-- gem-purchases.sql, since this file runs after it and needs to win.
 create or replace function public.claim_gem_purchases()
 returns table (gems integer)
 language plpgsql

@@ -1,4 +1,5 @@
 import { cloudSetUp } from './cloud.js'
+import { readAccountUserId } from './session-id.js'
 
 const SKIP_KEY = 'did-i-auth-skip'
 
@@ -35,6 +36,10 @@ export function needsAuth(account) {
   if (!cloudSetUp() || !nativeApp()) return false
   if (account?.user) return false
   if (authSkipped()) return false
+  // Signed in last time: keep the app up while the session check runs, so a
+  // cold open does not flash sign-in. If the check finds no session, `ready`
+  // flips with no user and the gate shows sign-in then.
+  if (!account?.ready && readAccountUserId()) return false
   // A fresh install has no session yet. Waiting on `ready` used to open
   // Tonight first, and a hung session check left no way to sign in.
   return true

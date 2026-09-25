@@ -10,13 +10,14 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
+// $1 per gem, bonus gems on bigger packs. Same table as src/lib/gem-packs.js.
 const PACKS: Record<string, { gems: number; cents: number }> = {
   gems_1: { gems: 1, cents: 100 },
-  gems_3: { gems: 3, cents: 270 },
-  gems_5: { gems: 5, cents: 425 },
-  gems_10: { gems: 10, cents: 700 },
-  gems_25: { gems: 25, cents: 1500 },
-  gems_50: { gems: 50, cents: 3000 },
+  gems_3: { gems: 3, cents: 300 },
+  gems_5: { gems: 6, cents: 500 },
+  gems_10: { gems: 14, cents: 1000 },
+  gems_25: { gems: 40, cents: 2500 },
+  gems_50: { gems: 80, cents: 5000 },
 }
 
 const admin = createClient(

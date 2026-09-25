@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/precommit-check.js",
+            "if": "Bash(git commit*)",
+            "timeout": 120,
+            "statusMessage": "Running npm run check before commit..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/i18n-reminder.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/supabase-audit-reminder.js"
+          }
+        ]
+      }
+    ]
+  }
+}

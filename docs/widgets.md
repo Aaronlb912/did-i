@@ -2,7 +2,7 @@
 
 Did I ships a **Tonight** widget on iOS (WidgetKit via `expo-widgets`) and
 Android (`react-native-android-widget`). Both read the same snapshot as the
-app shelf (active tag, tonight face list).
+app shelf: tonight's questions from every tag.
 
 ## Sizes
 
@@ -10,7 +10,7 @@ app shelf (active tag, tonight face list).
 - **Android:** default **4×2** on the grid (same wide row as iOS medium), resizable down to **2×2** small or up wider. `minHeight` is two rows so the question and Did / Did not fit.
 
 Home-screen sizes show **one question**, centered, on a dark card with the
-look color as a ring. The tag name sits at the top in that color. A worn
+look color as a ring. The name of the tag the showing question belongs to sits at the top in that color. A worn
 buddy sits in the top right. **Did not** then **Did** sit in a row under the
 question and mark tonight from the widget. Did not is the skip gray. Did is
 the look color, with dark type, same as the Did button in the app.
@@ -101,7 +101,11 @@ Never call WidgetKit from JS before step 2. Builds without the widget extension 
 
 ### Android
 
-`index.js` registers the Did I tonight task while the bundle evaluates, before the iOS bridge delay. Did and Did not are a broadcast. The widget library addresses that click at `DidITonight`, which hands it to `WidgetTapReceiver` before returning. The receiver writes the lamp id, Did or Did not (`did` / `nope`), and the night, calls `commit()` on that row, advances the card to the next question already in the last snapshot, then starts the same headless task. The task, and the next time the app opens, read the row, write it with the shelf answer path, and clear it. The same lamp and night a second time does not write again. If that snapshot has no next question, the card waits for the task. The task redraws the bitmap, including the buddy. The first snapshot from the open app still waits until the UI is up. The card clips to the rounded rect: only the outer frame is `match_parent`, and that frame sets `overflow: 'hidden'`.
+`index.js` registers the Did I tonight task while the bundle evaluates, before the iOS bridge delay. Did and Did not are a broadcast. The widget library addresses that click at `DidITonight`, which hands it to `WidgetTapReceiver` before returning. The receiver writes the lamp id, Did or Did not (`did` / `nope`), and the night, calls `commit()` on that row, advances the card to the next question already in the last snapshot, then starts the same headless task. The task, and the next time the app opens, read the row, write it with the shelf answer path, and clear it. The same lamp and night a second time does not write again. If that snapshot has no next question, the card waits for the task. The task redraws the bitmap, including the buddy. The first snapshot from the open app still waits until the UI is up. The receiver waits about 0.7 s before painting its own plainer native layout, and skips it if JS has already saved a newer card, so a warm tap goes straight to the full card with no flash. A saved card never brings back a question the shelf has answered. The card clips to the rounded rect: only the outer frame is `match_parent`, and that frame sets `overflow: 'hidden'`.
+
+The card lists tonight's questions from every tag: ready ones first, then ones still waiting on their ask time (the app lets you answer those early too). With two or more open (or, once none are open, two or more did-nots), a Next pill in the top-left corner (opposite the buddy) shows the next one (`PEEK` click, `peekNextTonightCard`). Next only moves the card; it never answers, and it does not go through `WidgetTapReceiver`. The question text is sized to fit the card (`fitQuestion`), so it does not cut off mid-line. Answers land on the tag that holds the question (`findBookHoldingLamp`). The buddy is drawn from the same SVG as the app (`SvgWidget`).
+
+Dev client only: tapping the widget right after a force-stop can start the widget task before the dev launcher loads the app ("App react context shouldn't be created before"). Open the app first. Release builds have no dev launcher.
 
 ## Code map
 
@@ -119,7 +123,6 @@ Never call WidgetKit from JS before step 2. Builds without the widget extension 
 
 **Settings → Widget** (`did-i-prefs`):
 
-- **Tag** — active tag, or pin one tag.
 - **Look** — match the tag’s shop look, or pick any look you own on any tag.
 - **Open questions only** — drop answered rows from the widget list.
 

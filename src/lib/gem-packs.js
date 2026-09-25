@@ -1,26 +1,26 @@
 import { gemProductSku, PLAY_PACKAGE, STORE_APP_ID } from './store-skus.js'
 
-// One gem = $1. Bigger packs shave the per-gem price.
+// One gem = $1, every pack. Bigger packs add bonus gems on top instead of a
+// lower price. Keep supabase/functions/gem-iap PACKS in step with this.
 export const GEM_UNIT_CENTS = 100
 
 export { APP_STORE_SKU, PLAY_PACKAGE, STORE_APP_ID } from './store-skus.js'
 
 const RAW = [
-  { id: 'gems_1', gems: 1, cents: 100 },
-  { id: 'gems_3', gems: 3, cents: 270 },
-  { id: 'gems_5', gems: 5, cents: 425 },
-  { id: 'gems_10', gems: 10, cents: 700 },
-  { id: 'gems_25', gems: 25, cents: 1500 },
-  { id: 'gems_50', gems: 50, cents: 3000 },
+  { id: 'gems_1', base: 1, bonus: 0 },
+  { id: 'gems_3', base: 3, bonus: 0 },
+  { id: 'gems_5', base: 5, bonus: 1 },
+  { id: 'gems_10', base: 10, bonus: 4 },
+  { id: 'gems_25', base: 25, bonus: 15 },
+  { id: 'gems_50', base: 50, bonus: 30 },
 ]
 
 export const GEM_PACKS = RAW.map((pack) => {
-  const list = pack.gems * GEM_UNIT_CENTS
-  const save = list > pack.cents ? Math.round(100 - (pack.cents / list) * 100) : 0
   const storeId = gemProductSku(pack.id)
   return {
     ...pack,
-    save,
+    gems: pack.base + pack.bonus,
+    cents: pack.base * GEM_UNIT_CENTS,
     storeId,
     playId: storeId,
   }

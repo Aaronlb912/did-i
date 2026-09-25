@@ -1,11 +1,11 @@
 import { putAnswer } from './board-ops.js'
-import { byPriority, shortLabel } from './board-json.js'
-import { readShelf, writeShelf } from './board-shelf.js'
+import { shortLabel } from './board-json.js'
+import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
 import {
-  leadTonightRowForWidget,
+  rankWidgetOpen,
   readWidgetSettings,
-  tonightRowsForWidget,
-  widgetBook,
+  tonightRowsForAllBoards,
+  widgetColorBook,
   widgetTonightUri,
 } from './widget-config.js'
 import { t } from './i18n.js'
@@ -15,7 +15,7 @@ import {
   answerFor,
   boardDate,
   didStatusForRow,
-  faceReadyTonight,
+  dueTonight,
   finishStackCount,
 } from './recurrence.js'
 import { SHELF_IN } from './cloud-sync.js'
@@ -49,12 +49,13 @@ function mapRow(row) {
     label: shortLabel(row.lamp),
     question: String(row.lamp.question || '').trim() || shortLabel(row.lamp),
     status: rowStatus(row),
+    tag: String(row.book?.title || '').trim(),
   }
 }
 
 function applyItemStatus(book, item, status, clock = new Date()) {
   if (!item?.lampId || !status) return book
-  const rows = faceReadyTonight(book, clock)
+  const rows = dueTonight(book, clock)
   const row = rows.find((r) => {
     if (r.lamp.id !== item.lampId) return false
     if (item.periodKey) return r.periodKey === item.periodKey
@@ -95,12 +96,35 @@ function widgetOpenCount(props) {
 /** Headless Android can rebuild before the shelf is warm; keep the fresher open stack. */
 export function preferStoredTonightProps(built, stored) {
   if (!stored?.items?.length) return built
-  if (widgetOpenCount(stored) <= widgetOpenCount(built)) return built
+  // A saved card that still shows a question the shelf has answered is stale
+  // (answered in the app, or by an earlier tap). Never bring it back.
+  const builtStatus = new Map(
+    (built.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]),
+  )
+  const stale = stored.items.some((item) => {
+    const now = builtStatus.get(`${item.lampId}|${item.periodKey}`)
+    return item.status === 'open' && now && now !== 'open'
+  })
+  if (stale || widgetOpenCount(stored) <= widgetOpenCount(built)) {
+    // Keep the question the person browsed to with Next while it is still open.
+    const kept = String(stored.leadLampId || '').trim()
+    const hit = kept && kept !== built.leadLampId
+      ? browsableItems(built.items).find((item) => item.lampId === kept)
+      : null
+    if (!hit) return built
+    return {
+      ...built,
+      leadLampId: hit.lampId,
+      question: hit.question || hit.label || built.question,
+      tagTitle: hit.tag || built.tagTitle,
+    }
+  }
   return {
     ...built,
     items: stored.items,
     leadLampId: stored.leadLampId || built.leadLampId,
     question: stored.question || built.question,
+    tagTitle: stored.tagTitle || built.tagTitle,
     left: stored.left ?? built.left,
     footer: stored.footer || built.footer,
     openUri: stored.openUri || built.openUri,
@@ -110,21 +134,22 @@ export function preferStoredTonightProps(built, stored) {
 
 export function buildTonightWidgetProps(shelf, now = new Date()) {
   const settings = readWidgetSettings()
-  const book = widgetBook(shelf)
-  const { rows } = tonightRowsForWidget(book, now, settings.openOnly)
+  const boards = (shelf?.boards || []).filter((b) => !b.archived)
+  const rows = tonightRowsForAllBoards(boards, now, settings.openOnly)
   const openRows = rows.filter((row) => !row.answer)
-  const rankedOpen = byPriority(openRows)
+  const rankedOpen = rankWidgetOpen(openRows, now)
   const doneRows = rows.filter((row) => row.answer)
   const items = [...rankedOpen, ...doneRows].map(mapRow)
-  const lead = leadTonightRowForWidget(book, now, settings.openOnly)
+  const lead = rankedOpen[0] || rows.find((row) => row.answer?.status === 'skip') || null
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : ''
   const left = finishStackCount(rows)
+  const allClear = boards.length > 0 && boards.every((book) => allClearTonight(book, now))
   let footer = ''
   if (!rows.length) {
     footer = t('widget.tonight.empty')
-  } else if (allClearTonight(book, now)) {
+  } else if (allClear) {
     footer = t('widget.tonight.clear')
   } else if (left === 1) {
     footer = t('widget.tonight.oneLeft')
@@ -133,9 +158,9 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   } else {
     footer = t('widget.tonight.empty')
   }
+  const colorBook = widgetColorBook(shelf)
   return {
-    tagTitle: String(book.title || '').trim() || t('widget.tonight.tagFallback'),
-    tagId: book.id,
+    tagTitle: String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
     question,
     leadLampId: lead?.lamp.id || '',
     items,
@@ -143,13 +168,22 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     footer,
     didLabel: t('widget.tonight.did'),
     nopeLabel: t('widget.tonight.nope'),
+    nextLabel: t('widget.tonight.next'),
     openLabel: t('widget.tonight.openApp'),
     emptyLabel: t('widget.tonight.empty'),
     clearLabel: t('widget.tonight.clear'),
-    openUri: widgetTonightUri(book, lead?.lamp.id || ''),
-    buddyId: normalizePurse(book).buddyOn || '',
+    openUri: widgetTonightUri(null, lead?.lamp.id || ''),
+    buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     updatedAt: now.getTime(),
   }
+}
+
+// What Next steps through: open questions, or once none are open, the ones
+// marked did not (the Tonight stack asks those again too).
+export function browsableItems(items) {
+  const list = Array.isArray(items) ? items : []
+  const open = list.filter((item) => item.status === 'open')
+  return open.length ? open : list.filter((item) => item.status === 'skip')
 }
 
 function leadCardItem(props) {
@@ -199,30 +233,48 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
     items,
     leadLampId: nextLead.lampId,
     question,
+    tagTitle: nextLead.tag || props.tagTitle,
     left,
     footer: props.footer,
   }
 }
 
-function bookForWidgetProps(shelf, props) {
-  const id = String(props?.tagId || '').trim()
-  if (id) {
-    const picked = (shelf?.boards || []).find((b) => b.id === id)
-    if (picked) return picked
-  }
-  return widgetBook(shelf)
+// Manual browse through tonight's open questions from the widget's next
+// button — unlike advanceTonightCard, this never answers one, it only moves
+// which open item is shown. Wraps around. Null when there is nothing to
+// browse to (0 or 1 open questions).
+export function peekNextTonightCard(props, dir = 1) {
+  if (!props || !Array.isArray(props.items)) return null
+  const pool = browsableItems(props.items)
+  if (pool.length < 2) return null
+  const lead = leadCardItem(props)
+  const at = lead
+    ? pool.findIndex((item) => item.lampId === lead.lampId && item.periodKey === lead.periodKey)
+    : -1
+  const from = at === -1 ? 0 : at
+  const step = dir < 0 ? -1 : 1
+  const next = pool[(from + step + pool.length) % pool.length]
+  const question = String(next.question || next.label || '').trim()
+  if (!question) return null
+  return { ...props, leadLampId: next.lampId, question, tagTitle: next.tag || props.tagTitle }
 }
 
+// Each item answers on whichever tag its own lamp lives on, since the card
+// mixes questions from every tag now.
 export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
   if (!props?.items?.length) return shelf
-  const book = bookForWidgetProps(shelf, props)
-  let nextBook = book
+  let boards = shelf.boards
+  let changed = false
   for (const item of props.items) {
     if (item.status === 'open') continue
-    nextBook = applyItemStatus(nextBook, item, item.status, clock)
+    const book = findBookHoldingLamp(boards, item.lampId)
+    if (!book) continue
+    const nextBook = applyItemStatus(book, item, item.status, clock)
+    if (nextBook === book) continue
+    boards = boards.map((b) => (b.id === nextBook.id ? nextBook : b))
+    changed = true
   }
-  if (nextBook === book) return shelf
-  const boards = shelf.boards.map((b) => (b.id === nextBook.id ? nextBook : b))
+  if (!changed) return shelf
   return { ...shelf, boards }
 }
 
@@ -237,7 +289,7 @@ function rowForStoredNight(book, lampId, night, clock) {
   if (!lamp) return null
   const stored = String(night || '').trim()
   if (!stored) {
-    return faceReadyTonight(book, clock).find((row) => row.lamp.id === lampId) || null
+    return dueTonight(book, clock).find((row) => row.lamp.id === lampId) || null
   }
   const dateIso = /^\d{4}-\d{2}-\d{2}$/.test(stored) ? stored : boardDate(clock)
   return {
@@ -255,9 +307,12 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date())
   const id = String(lampId || '').trim()
   if (!status || !id) return null
   const shelf = readShelf()
-  const book = widgetBook(shelf)
+  const book = findBookHoldingLamp(shelf.boards, id)
+  if (!book) return null
   const row = rowForStoredNight(book, id, night, clock)
-  if (!row || row.answer) return null
+  if (!row) return null
+  // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
+  if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const nextBook = putAnswer(book, row, status, clock)
   if (nextBook === book) return null
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
@@ -279,12 +334,13 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   const status = kind === 'did' || kind === 'yes' ? 'yes' : kind === 'nope' || kind === 'skip' ? 'skip' : ''
   if (!status || !lampId) return null
   const shelf = readShelf()
-  const book = widgetBook(shelf)
+  const book = findBookHoldingLamp(shelf.boards, lampId)
+  if (!book) return null
   const stored = readWidgetTonightProps()
   const storedLead = stored?.items?.find(
     (item) => item.lampId === lampId && item.status === 'open',
   )
-  const rows = faceReadyTonight(book, clock)
+  const rows = dueTonight(book, clock)
   const row =
     rows.find(
       (r) =>

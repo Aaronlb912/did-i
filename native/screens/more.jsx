@@ -41,6 +41,7 @@ import {
   comingDays,
   feedRows,
   markWelcomeSeen,
+  stampWhen,
   statsCounts,
   tapWhen,
   weekCell,
@@ -73,7 +74,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
-import { DidButton, Field, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
@@ -884,7 +885,7 @@ function AccountSignedIn({ book, email, onChange }) {
       : sync.how === 'miss'
         ? t('account.syncMiss')
         : sync.how === 'saved'
-          ? t('account.syncSaved', { time: sync.at || '' })
+          ? t('account.syncSaved', { time: stampWhen(sync.at) })
           : t('account.syncIdle')
 
   const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn

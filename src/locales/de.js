@@ -274,7 +274,8 @@ export const de = {
   'first.kicker': 'Erste Nacht',
   'first.title': 'Was prüfst du immer wieder nach?',
   'first.titleNamed': '{name}, was prüfst du immer wieder nach?',
-  'first.body': 'Beende die Frage. Sie kommt einmal pro Abend, und du antwortest mit einem Wisch.',
+  'first.body':
+    'Beende die Frage. Sie kommt einmal pro Abend, und du antwortest mit einem Wisch.',
   'first.picks': 'Brauchst du eine Idee?',
   'first.write': 'Schreib deine eigene',
   'first.name': 'Wie sollen wir dich nennen?',
@@ -661,12 +662,13 @@ export const de = {
   'gems.backShop': 'Shop',
   'gems.balance': 'Du hast {gems}',
   'gems.hint':
-    'Eine Gem kostet einen Dollar. Größere Pakete sind günstiger pro Gem. Melde dich zuerst an. Nach dem Checkout zurückkommen und syncen.',
+    'Eine Gem kostet einen Dollar. Größere Pakete bringen Bonus-Gems. Melde dich zuerst an. Nach dem Checkout zurückkommen und syncen.',
   'gems.hintNative':
-    'Eine Gem kostet einen Dollar. Größere Pakete sind günstiger pro Gem. Melde dich zuerst an. Preise kommen vom App Store oder Google Play.',
+    'Eine Gem kostet einen Dollar. Größere Pakete bringen Bonus-Gems. Melde dich zuerst an. Preise kommen vom App Store oder Google Play.',
   'gems.each': '{price} pro Stück',
   'gems.save': 'Spare {n} %',
   'gems.buy': 'Kaufen',
+  'gems.bonus': '{base} + {bonus} bonus',
   'gems.return':
     'Checkout geöffnet. Wenn die Zahlung durch ist, komm zurück und deine Gems kommen beim Sync.',
   'gems.pending': 'Warten auf den Store. Gems landen hier, wenn die Zahlung durch ist.',
@@ -774,6 +776,12 @@ export const de = {
   'people.phoneShort': 'Type a full number with area code.',
   'people.phoneTaken': 'That number is already on another account.',
   'people.nophone': 'Add your phone number in Account first.',
+  'people.phoneFirstTitle': 'Your number first',
+  'people.phoneFirstBody':
+    'Friends find each other by phone number. Add yours before you ask a friend. One number per account. Anyone who has your number can find you and ask. People you ask see your number.',
+  'people.phoneSave': 'Save number',
+  'people.phoneYours': 'Friends find you at {phone}.',
+  'people.phoneSaved': 'Saved. Now ask a friend.',
   'people.wantsFromName': '{name} wants to be friends',
   'people.connect': 'Invite and add',
   'people.connectSub': 'Per Telefon hinzufügen, Familie starten oder beitreten',
@@ -781,7 +789,7 @@ export const de = {
   'people.referSub': 'Code teilen, Gems verdienen',
   'people.referBody':
     'Teile deinen Code nach der Anmeldung. Jeder Freund bringt mehr Gems, bis du 10 insgesamt hast.',
-  'people.connectBody': 'Codes and handles live here so the main People screen stays short.',
+  'people.connectBody': 'Add a friend by phone number, or start or join a family.',
   'people.nameInAccount': 'Change in Account settings',
   'people.back': 'Back to People',
   'people.yes': 'Ja',
@@ -1315,7 +1323,7 @@ export const de = {
   'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
-  'legal.date': 'September 20, 2026',
+  'legal.date': 'September 24, 2026',
   'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
   'settings.privacyChoices': 'Privacy',
@@ -1344,16 +1352,16 @@ export const de = {
     'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
   'legal.privacy.account.title': 'When you sign in',
   'legal.privacy.account.body':
-    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
+    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
   'legal.privacy.social.title': 'Friends, family, and sends',
   'legal.privacy.social.body':
-    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, did you sends you make or receive, and block/report records you file.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
   'legal.privacy.dit.title': 'Did I tonight (public list)',
   'legal.privacy.dit.body':
     'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
   'legal.privacy.push.title': 'Notifications',
   'legal.privacy.push.body':
-    'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend did you sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
+    'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
   'legal.privacy.pay.title': 'Gem purchases',
   'legal.privacy.pay.body':
     'If you buy gem packs, Apple or Google processes payment. We receive your user id, pack id, gem count, and purchase status so we can credit your shelf. We do not store your card number. The store handles payment data under its own privacy policy.',
@@ -1402,7 +1410,7 @@ export const de = {
     'You own the content you enter. You grant us a license to store, sync, and display it as the app requires (including public tonight lines you opt into).\n\nYou are responsible for what you write. Do not enter illegal content or someone else\'s private information without permission.',
   'legal.terms.account.title': 'Accounts',
   'legal.terms.account.body':
-    'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.',
+    'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.\n\nTo add friends you add a phone number. Only add a number that is yours. A number can be on one account at a time. If yours is already taken, contact us.',
   'legal.terms.social.title': 'People features',
   'legal.terms.social.body':
     'Friends, families, sends, and invites are optional. You may block someone; blocking removes friendship and pending nudges on our side. You may report users or public lines.\n\nWe may suspend accounts that abuse others or the service.',
@@ -1512,6 +1520,7 @@ export const de = {
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Open Did I',
+  'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Tag',
   'widget.settings.tagSub': 'Which tag the home screen widget follows.',

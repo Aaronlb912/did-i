@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { DIT_ENABLED } from '../../src/lib/features.js'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
@@ -44,6 +45,15 @@ import {
 import { TonightScreen } from './TonightScreen.jsx'
 
 const HALL = new Set(['/', '/home', '/tonight'])
+
+// Redirect after render; calling goHash while rendering updates AppShell
+// mid-render, which React warns about.
+function GoTo({ path }) {
+  useEffect(() => {
+    goHash(path)
+  }, [path])
+  return null
+}
 
 export function ScreenRouter({
   route,
@@ -103,10 +113,8 @@ export function ScreenRouter({
   if (path === '/inbox') return <InboxScreen book={book} onChange={change} onKeep={keepSent} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
   if (path === '/everyone') {
-    if (!DIT_ENABLED) {
-      goHash('/tonight')
-      return null
-    }
+    if (!DIT_ENABLED) return <GoTo path="/tonight" />
+
     return <EveryoneScreen book={book} boards={boards} onChange={change} />
   }
   if (path === '/add' || path === '/hang') {

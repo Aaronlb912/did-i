@@ -9,6 +9,8 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -66,15 +68,31 @@ public final class WidgetCardStore {
             editor.putString(PROPS, next.toString());
             editor.putLong(STAMP, prefs(context).getLong(STAMP, 0) + 1);
             if (!editor.commit()) return false;
-            try {
-                paint(context, next);
-            } catch (Exception ignored) {
-                // The snapshot moved. The headless redraw paints the bitmap.
-            }
+            paintIfJsIsSlow(context.getApplicationContext(), next.optLong("updatedAt"));
             return true;
         } catch (JSONException error) {
             return false;
         }
+    }
+
+    // The native layout is plainer than the JS card (no buddy, no Next), so
+    // painting it right away flashes a different look before JS redraws a
+    // moment later. Wait briefly and paint only if JS has not saved a newer
+    // card by then (a cold start, where JS can take a few seconds).
+    private static final long NATIVE_PAINT_DELAY_MS = 700;
+
+    private static void paintIfJsIsSlow(final Context context, final long advancedAt) {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                String raw = prefs(context).getString(PROPS, "");
+                if (raw == null || raw.isEmpty()) return;
+                JSONObject current = new JSONObject(raw);
+                if (current.optLong("updatedAt") != advancedAt) return;
+                paint(context, current);
+            } catch (Exception ignored) {
+                // The headless redraw paints the bitmap.
+            }
+        }, NATIVE_PAINT_DELAY_MS);
     }
 
     static JSONObject step(JSONObject card, String lampId, String kind, String night) throws JSONException {
@@ -113,6 +131,9 @@ public final class WidgetCardStore {
         String footer = card.optString("footer");
         String question = "";
         String leadId = "";
+        // Items can come from different tags now, so the header follows
+        // whichever question is showing, not one fixed tag.
+        String tagTitle = card.optString("tagTitle");
         if (nextLead == null) {
             String clear = card.optString("clearLabel").trim();
             String empty = card.optString("emptyLabel").trim();
@@ -127,12 +148,15 @@ public final class WidgetCardStore {
             if (question.isEmpty()) question = nextLead.optString("label").trim();
             if (question.isEmpty()) return null;
             leadId = nextLead.optString("lampId");
+            String nextTag = nextLead.optString("tag").trim();
+            if (!nextTag.isEmpty()) tagTitle = nextTag;
         }
 
         JSONObject next = new JSONObject(card.toString());
         next.put("items", nextItems);
         next.put("leadLampId", leadId);
         next.put("question", question);
+        next.put("tagTitle", tagTitle);
         next.put("left", left);
         next.put("footer", footer);
         return next;

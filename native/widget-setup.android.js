@@ -2,6 +2,7 @@ import { registerWidgetTaskHandler } from 'react-native-android-widget'
 import {
   buildTonightWidgetProps,
   handleAndroidWidgetClick,
+  peekNextTonightCard,
   preferStoredTonightProps,
 } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
@@ -25,6 +26,20 @@ async function tonightPropsForWidget(shelf) {
 }
 
 async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickAction, clickActionData, renderWidget }) {
+  // Browsing to another open question is display-only — it never touches
+  // the shelf, so it skips the answer-tap plumbing below and renders straight
+  // from what's already on the card.
+  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'PEEK') {
+    const current = await tonightPropsForWidget(readShelf())
+    const dir = clickActionData?.dir === 'prev' ? -1 : 1
+    const peeked = peekNextTonightCard(current, dir)
+    if (peeked) {
+      writeWidgetTonightProps(peeked)
+      await saveAndroidWidgetCard(peeked)
+      renderWidget(renderDidITonightAndroidWidget(peeked, widgetInfo))
+      return
+    }
+  }
   const stamp = await androidWidgetCardStamp()
   const applied = await applyPendingAndroidWidgetTap()
   let clicked = null

@@ -9,7 +9,7 @@ import {
   usePrefs,
   writePrefs,
 } from '../../src/lib/prefs.js'
-import { ownedLookIds, readWidgetSettings, widgetTagChoices } from '../../src/lib/widget-config.js'
+import { ownedLookIds, readWidgetSettings } from '../../src/lib/widget-config.js'
 import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -108,14 +108,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
-  const widgetTags = widgetTagChoices(widgetShelf)
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
-
-  function widgetTagWords() {
-    if (widget.tagMode === 'active') return t('widget.settings.tagActive')
-    const hit = widgetTags.find((row) => row.id === widget.tagId)
-    return hit?.title || t('widget.settings.tagMissing')
-  }
 
   function widgetLookWords() {
     if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
@@ -218,14 +211,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('widget.settings.cap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          label={t('widget.settings.tag')}
-          sub={t('widget.settings.tagSub')}
-          value={widgetTagWords()}
-          chevron
-          onPress={() => setSheet('widgetTag')}
-        />
         <SetRow
           colors={colors}
           label={t('widget.settings.look')}
@@ -387,33 +372,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
               }}
             />
           ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'widgetTag' ? (
-        <SetSheet colors={colors} title={t('widget.settings.tag')} onClose={() => setSheet(null)}>
-          <SetPick
-            colors={colors}
-            label={t('widget.settings.tagActive')}
-            on={widget.tagMode === 'active'}
-            onPress={() => {
-              applyWidgetPrefs({ widgetTagMode: 'active', widgetTagId: '' })
-              setSheet(null)
-            }}
-          />
-          {widgetTags.map((row) => (
-            <SetPick
-              key={row.id}
-              colors={colors}
-              label={row.title}
-              on={widget.tagMode === 'pick' && widget.tagId === row.id}
-              onPress={() => {
-                applyWidgetPrefs({ widgetTagMode: 'pick', widgetTagId: row.id })
-                setSheet(null)
-              }}
-            />
-          ))}
-          {!widgetTags.length ? <SetNote colors={colors}>{t('widget.settings.noTags')}</SetNote> : null}
         </SetSheet>
       ) : null}
 

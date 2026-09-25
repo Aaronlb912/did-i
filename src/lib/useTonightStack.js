@@ -346,11 +346,17 @@ export function useTonightStack({
     return false
   }
 
-  const dueWithWait = bySlot(due).map((row) => ({
-    ...row,
-    waiting: !row.answer && !askAfterPassed(row.lamp, clock),
-    optionalDeadline: !row.answer && !mustSwipeDeadline(row.lamp, row.dateIso),
-  }))
+  // Deadlines that are not due tonight go at the end of the pills, after
+  // tonight's real questions.
+  const slotted = bySlot(due)
+  const notDueYet = (row) => !mustSwipeDeadline(row.lamp, row.dateIso)
+  const dueWithWait = [...slotted.filter((row) => !notDueYet(row)), ...slotted.filter(notDueYet)].map(
+    (row) => ({
+      ...row,
+      waiting: !row.answer && !askAfterPassed(row.lamp, clock),
+      optionalDeadline: !row.answer && notDueYet(row),
+    }),
+  )
 
   const activePillPick = pillPick
     ? due.find((row) => rowKey(row) === rowKey(pillPick)) || null

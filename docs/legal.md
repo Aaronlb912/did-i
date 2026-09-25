@@ -21,6 +21,7 @@ Did I ships with in-app Privacy Policy (`#/privacy`) and Terms of Use
 
 - Local-only use vs signed-in sync (Supabase)
 - Friends, family, sends, blocks, reports
+- Phone numbers for finding friends (needed to add friends, one per account, who can see it)
 - Did I tonight opt-in public lines
 - Push tokens (Firebase)
 - Gem purchases (App Store / Google Play)

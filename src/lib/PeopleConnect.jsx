@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
@@ -8,9 +8,12 @@ import {
   askFriend,
   cleanCode,
   cleanPhone,
+  formatPhone,
   joinFamily,
   makeFamily,
   personName,
+  readMine,
+  savePhone,
 } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
@@ -26,6 +29,37 @@ export function PeopleConnect({ book, now }) {
   const [codeDraft, setCodeDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
+  // Friends find each other by number, so asking needs yours first.
+  // null while loading; '' when there is none on the account.
+  const [myPhone, setMyPhone] = useState(null)
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [phoneMiss, setPhoneMiss] = useState('')
+
+  useEffect(() => {
+    if (!account.user) return undefined
+    let alive = true
+    readMine()
+      .then((mine) => {
+        if (alive) setMyPhone(mine?.phone || '')
+      })
+      .catch(() => {
+        if (alive) setMyPhone('')
+      })
+    return () => {
+      alive = false
+    }
+  }, [account.user])
+
+  async function keepPhone() {
+    setPhoneMiss('')
+    const out = await savePhone(phoneDraft)
+    if (out.miss === 'short') return setPhoneMiss(t('people.phoneShort'))
+    if (out.miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
+    if (out.miss) return setPhoneMiss(tMiss(out.miss))
+    setMyPhone(out.phone)
+    setPhoneDraft('')
+    say(t('people.phoneSaved'))
+  }
 
   function say(words) {
     setMiss('')
@@ -35,7 +69,10 @@ export function PeopleConnect({ book, now }) {
   async function ask() {
     const { miss: why, person } = await askFriend(addDraft)
     if (why === 'short') return setMiss(t('people.phoneShort'))
-    if (why === 'nophone') return setMiss(t('people.nophone'))
+    if (why === 'nophone') {
+      setMyPhone('')
+      return setMiss(t('people.nophone'))
+    }
     if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(addDraft) }))
     if (why) return setMiss(why)
     setAddDraft('')
@@ -102,6 +139,35 @@ export function PeopleConnect({ book, now }) {
       </SetCard>
 
       <SetCap>{t('people.addOne')}</SetCap>
+      {myPhone === '' ? (
+        <>
+          <p className="di-set-note"><strong>{t('people.phoneFirstTitle')}</strong> {t('people.phoneFirstBody')}</p>
+          <SetCard>
+            <SetField
+              label={t('account.phone')}
+              value={phoneDraft}
+              inputMode="tel"
+              autoCapitalize="off"
+              autoCorrect="off"
+              onChange={(event) => setPhoneDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  keepPhone()
+                }
+              }}
+            />
+            <SetRow label={t('people.phoneSave')} onClick={keepPhone} />
+          </SetCard>
+          {phoneMiss ? (
+            <p className="di-miss" role="alert">
+              {phoneMiss}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+      {myPhone ? <p className="di-set-note">{t('people.phoneYours', { phone: formatPhone(myPhone) })}</p> : null}
+      {myPhone ? (
       <SetCard>
         <SetField
           label={t('people.add')}
@@ -120,6 +186,7 @@ export function PeopleConnect({ book, now }) {
         />
         <SetRow label={t('people.askOne')} onClick={ask} />
       </SetCard>
+      ) : null}
 
       <SetCap>{t('people.startFamily')}</SetCap>
       <SetCard>

@@ -64,6 +64,10 @@ begin
   if try is null then
     raise exception 'bad phone';
   end if;
+  -- One number per account; the unique index backs this up.
+  if exists (select 1 from public.profiles p where p.phone = try and p.user_id <> me) then
+    raise exception 'phone taken';
+  end if;
   insert into public.profiles (user_id, phone)
   values (me, try)
   on conflict (user_id) do update
@@ -75,19 +79,52 @@ $$;
 revoke all on function public.set_my_phone(text) from public;
 grant execute on function public.set_my_phone(text) to authenticated;
 
+-- Looking someone up by number needs a number of your own, so finding
+-- works both ways and nobody browses numbers without being findable.
 create or replace function public.find_phone(wanted text)
 returns table (user_id uuid, phone text, display_name text)
-language sql
+language plpgsql
 security definer
 stable
 set search_path = public
 as $$
-  select p.user_id, p.phone, p.display_name
-  from public.profiles p
-  where p.phone is not null
-    and p.phone = public.normalize_phone(wanted)
-    and p.user_id <> auth.uid();
+begin
+  if not exists (
+    select 1 from public.profiles me where me.user_id = (select auth.uid()) and me.phone is not null
+  ) then
+    raise exception 'need phone';
+  end if;
+  return query
+    select p.user_id, p.phone, p.display_name
+    from public.profiles p
+    where p.phone is not null
+      and p.phone = public.normalize_phone(wanted)
+      and p.user_id <> (select auth.uid());
+end;
 $$;
+
+-- A new friend request needs the asker's number on file. Accepting (the
+-- 'ok' row accept_friend writes back) is not gated.
+create or replace function public.need_phone_to_ask()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.state = 'asked' and not exists (
+    select 1 from public.profiles p where p.user_id = new.from_id and p.phone is not null
+  ) then
+    raise exception 'need phone';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists need_phone_to_ask on public.friend_links;
+create trigger need_phone_to_ask
+  before insert on public.friend_links
+  for each row execute function public.need_phone_to_ask();
 
 revoke all on function public.find_phone(text) from public;
 grant execute on function public.find_phone(text) to authenticated;

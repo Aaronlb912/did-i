@@ -1,3 +1,4 @@
+import { mustSwipeDeadline } from './lamp-deadline.js'
 import { catchUpRows, dueTonight } from './recurrence.js'
 
 export function tagOnRow(book, row) {
@@ -37,8 +38,11 @@ export function taggedLamps(boards, tagId) {
   )
 }
 
+// A deadline does not count as left until its due night.
 export function leftoverOn(boards, clock, tagId) {
-  return taggedDue(boards, clock, tagId).filter((row) => !row.answer).length
+  return taggedDue(boards, clock, tagId).filter(
+    (row) => !row.answer && mustSwipeDeadline(row.lamp, row.dateIso),
+  ).length
 }
 
 export function rowKey(row) {

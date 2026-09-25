@@ -1,9 +1,10 @@
 import { activeLook } from './dit-board.js'
 import { byPriority } from './board-json.js'
-import { currentBook, liveLampCount } from './board-shelf.js'
+import { currentBook } from './board-shelf.js'
 import { normalizePurse } from './purse.js'
 import { readPrefs, resolveTheme } from './prefs.js'
-import { faceSwipeTonight, unansweredTonight } from './recurrence.js'
+import { askAfterPassed, faceSwipeTonight, waitingTonight } from './recurrence.js'
+import { mustSwipeDeadline } from './lamp-deadline.js'
 
 const LOOK_IDS = new Set([
   'lime',
@@ -23,26 +24,22 @@ const LOOK_IDS = new Set([
 
 export function readWidgetSettings() {
   const raw = readPrefs()
-  const tagMode = raw.widgetTagMode === 'pick' ? 'pick' : 'active'
   const lookMode = raw.widgetLookMode === 'pick' ? 'pick' : 'tag'
   let lookId = String(raw.widgetLookId || 'lime').trim()
   if (!LOOK_IDS.has(lookId)) lookId = 'lime'
   return {
-    tagMode,
-    tagId: String(raw.widgetTagId || '').trim(),
     lookMode,
     lookId,
     openOnly: raw.widgetOpenOnly === true,
   }
 }
 
-export function widgetBook(shelf) {
-  const settings = readWidgetSettings()
+// The widget lists every tag's tonight work now, not one picked tag. This is
+// only for the ring color and the buddy's look, when "Look" is set to follow
+// a tag: the phone's current tag, or the first tag with lamps if none is
+// current.
+export function widgetColorBook(shelf) {
   const boards = (shelf?.boards || []).filter((b) => !b.archived)
-  if (settings.tagMode === 'pick' && settings.tagId) {
-    const picked = boards.find((b) => b.id === settings.tagId)
-    if (picked) return picked
-  }
   const live = currentBook(shelf)
   if (live && !live.archived) return live
   return boards[0] || currentBook(shelf)
@@ -78,24 +75,25 @@ export function widgetTonightUri(book, leadLampId = '') {
   return 'didi://tonight'
 }
 
-export function widgetTagChoices(shelf) {
-  return (shelf?.boards || [])
-    .filter((b) => !b.archived && liveLampCount(b) > 0)
-    .map((b) => ({ id: b.id, title: String(b.title || '').trim() }))
+// Every tag's tonight work, merged. Ready questions first, then ones still
+// waiting on their ask time (the app lets you answer those early too, so
+// the widget must, or it says "No questions yet" all afternoon). Each row
+// carries the tag it came from, since the card no longer belongs to one tag.
+export function tonightRowsForAllBoards(boards, now, openOnly) {
+  const rows = []
+  for (const book of boards || []) {
+    if (book.archived) continue
+    const ready = faceSwipeTonight(book, now)
+    const waiting = waitingTonight(book, now).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
+    for (const row of [...ready, ...waiting]) rows.push({ ...row, book })
+  }
+  if (openOnly) return rows.filter((row) => !row.answer)
+  return rows
 }
 
-export function tonightRowsForWidget(book, now, openOnly) {
-  let rows = faceSwipeTonight(book, now)
-  if (openOnly) rows = rows.filter((row) => !row.answer)
-  return { rows, open: unansweredTonight(book, now) }
-}
-
-/** Highest-priority open question on the widget tag, same order as Tonight swipe stack. */
-export function leadTonightRowForWidget(book, now, openOnly) {
-  const { rows } = tonightRowsForWidget(book, now, openOnly)
-  const open = rows.filter((row) => !row.answer)
-  if (open.length) return byPriority(open)[0]
-  const noped = rows.filter((row) => row.answer?.status === 'skip')
-  if (!openOnly && noped.length) return byPriority(noped)[0]
-  return null
+/** Open rows ready to ask now come before waiting ones; priority orders each group. */
+export function rankWidgetOpen(open, now) {
+  const ready = open.filter((row) => askAfterPassed(row.lamp, now))
+  const waiting = open.filter((row) => !askAfterPassed(row.lamp, now))
+  return [...byPriority(ready), ...byPriority(waiting)]
 }
