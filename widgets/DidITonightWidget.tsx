@@ -364,7 +364,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         multilineTextAlignment('center'),
         lineLimit(1),
         minimumScaleFactor(0.8),
-        padding({ horizontal: sidePad }),
+        padding({ leading: sidePad, trailing: sidePad, top: compact && showNext ? 26 : 0 }),
         frame({ maxWidth: 10000 }),
       ]}
     >
@@ -408,7 +408,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     </VStack>
   ) : null
   const buttons = lead ? (
-    <HStack spacing={compact ? 6 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
+    <HStack spacing={compact ? 4 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
       <Button
         label={nopeLabel}
         target={'nope:' + leadId}
@@ -417,7 +417,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           buttonStyle('borderedProminent'),
           buttonBorderShape('roundedRectangle', 12),
           tint(c.skip),
-          font({ size: compact ? 13 : 15, weight: 'bold' }),
+          font({ size: compact ? 12 : 15, weight: 'bold' }),
           foregroundStyle(ink),
           controlSize(compact ? 'small' : 'regular'),
           lineLimit(1),
@@ -433,7 +433,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           buttonStyle('borderedProminent'),
           buttonBorderShape('roundedRectangle', 12),
           tint(c.on),
-          font({ size: compact ? 13 : 15, weight: 'bold' }),
+          font({ size: compact ? 12 : 15, weight: 'bold' }),
           foregroundStyle(c.bg),
           controlSize(compact ? 'small' : 'regular'),
           lineLimit(1),
@@ -463,7 +463,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   return (
-    <VStack modifiers={[padding({ all: compact ? 8 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill]}>
+    <VStack modifiers={[padding({ all: compact ? 2 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill]}>
       <VStack
         modifiers={[
           padding({ all: 2 }),
@@ -478,7 +478,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
             alignment="center"
             spacing={8}
             modifiers={[
-              padding({ horizontal: compact ? 8 : 14, vertical: compact ? 10 : 12 }),
+              padding({ horizontal: compact ? 6 : 14, vertical: compact ? 8 : 12 }),
               background(c.panel),
               clipShape('roundedRectangle', 20),
               grow,

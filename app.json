@@ -7,10 +7,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "icon": "./public/icon-1024.png",
+    "icon": "./public/icon-512.png",
     "backgroundColor": "#0e1014",
     "splash": {
-      "image": "./public/icon-1024.png",
+      "image": "./public/icon-512.png",
       "backgroundColor": "#0e1014",
       "resizeMode": "contain"
     },
