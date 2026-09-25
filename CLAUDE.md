@@ -38,7 +38,7 @@ npm run expo:android         # dev client, Android
 npm run expo:ios             # dev client, iOS (needs a Mac)
 ```
 
-Locales (English + Spanish, `src/locales/en.js` / `es.js`):
+Locales (9 files in `src/locales/`, English is the fallback):
 ```
 npm run locales:refresh      # merge additions + sync
 npm run locales:report       # coverage report
@@ -51,8 +51,7 @@ npm run db:apply:all         # apply schema from supabase/*.sql
 npm run db:audit             # scripts/audit-sql.mjs — must return no rows before calling backend work done
 ```
 
-There is no single-test runner; `scripts/check.mjs` runs the full suite (61
-tests as of the last session).
+There is no single-test runner; `scripts/check.mjs` runs the full suite.
 
 ## Builds
 
@@ -63,9 +62,11 @@ is fallback only — do not start an EAS build unless asked).
   Actions → android-apk. Artifact `did-i-android-apk`. arm64-only, Gradle
   cached. Without keystore secrets it's debug-signed — may need to uninstall
   the existing `com.aaronbryant.didi` before installing a new build.
-- **iOS TestFlight/IPA**: `.github/workflows/ios-ipa.yml`, iOS IPA on
-  `master`. `app.json` → `ios.buildNumber` must be higher than the latest
-  build already on TestFlight or the workflow fails.
+- **iOS TestFlight/IPA**: `.github/workflows/ios-ipa.yml` or `npm run
+  ios:build:store` (Expo). Both run `scripts/ios-bump-build.mjs`, which takes
+  and pushes the next `ios.buildNumber` in `app.json` before building.
+- **OTA**: `npm run update:prod` for JS-only changes (`expo-updates`). Native
+  changes need a build; bump `version` in `app.json` when native code changes.
 
 Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 
@@ -108,22 +109,18 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
   (`did-i-prefs`). Applied via `data-theme`. New colors go on `--di-*` custom
   properties in `src/lib/did-i.css` — no hardcoded hex on new screens. Shop
   cosmetic "looks" (`data-look`) are a separate concern from theme.
-- **i18n**: all user-facing copy goes through `t('key')` from
-  `src/lib/i18n.js`; add the key to both `src/locales/en.js` and `es.js` in
-  the same change. English is the fallback.
+- **i18n**: `t('key')` from `src/lib/i18n.js`; every key in all 9
+  `src/locales/*.js` files (the check test requires identical keys). English
+  is the fallback.
 - **Product vocabulary** (user-facing copy only): tag, tags, add, question,
   tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not** use
   board, hall, hang, heat, or skip (skip especially — the tap button is
   "nope"). See `.cursor/rules/copy.mdc`.
-- **Reduced motion**: respect `useReduceMotion` / `prefers-reduced-motion` on
-  any new animation.
+- **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`
   asserts this; don't change it.
-- Whole-feature expectations (empty states, visible network failures, undo/
-  confirm on irreversible actions, DB-side caps on repeatable creates, new
-  routes wired into `ROUTES` with a way in and a way back, copy-to-clipboard
-  for on-screen codes) — see `.cursor/rules/whole-feature.mdc`. Keep
-  `docs/not-yet.md` current when you build or find a gap.
+- Whole-feature rules: `.cursor/rules/whole-feature.mdc`. New routes go in
+  `ROUTES`. Keep `docs/not-yet.md` and `docs/launch-checklist.md` current.
 
 ## Docs to read first (task-dependent)
 
@@ -135,11 +132,5 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - `.cursor/rules/*.mdc` — theme/i18n, scale-and-safety, whole-feature, copy,
   cheers, app-checks. These are enforced conventions, not suggestions.
 
-## Working conventions
-
-- Smallest correct diff. One job per request unless told otherwise. No new
-  dependency, second state store, or stack change without asking first.
-- Commit or push only when asked.
-- No AI attribution in commit messages/PRs unless the current session
-  instructions say otherwise.
-- PowerShell environment: no `&&` in shell commands run on Aaron's machine.
+General working rules (smallest diff, commit only when asked, no AI
+attribution) are in Aaron's global CLAUDE.md. PowerShell here: no `&&`.

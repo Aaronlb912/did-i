@@ -93,8 +93,10 @@ import { stampWhen } from '../src/lib/hall-pages.js'
 import {
   advanceTonightCard,
   applyWidgetTapOnce,
+  applyWidgetTapsOnce,
   buildTonightWidgetProps,
   mergeWidgetPropsIntoShelf,
+  parseWidgetTapQueue,
   peekNextTonightCard,
   preferStoredTonightProps,
 } from '../src/lib/widget-tonight.js'
@@ -1095,6 +1097,90 @@ test('an android widget tap for one lamp and night applies once', () => {
   assert.equal(readShelf().boards.find((row) => row.id === 'tap-1').answers.length, 2)
 })
 
+test('android widget taps made before JS runs are all applied, once each', () => {
+  const book = {
+    id: 'tap-q',
+    title: 'Home',
+    lamps: [
+      { id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+      { id: 'meds', question: 'Meds?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    ],
+    answers: [],
+  }
+  writeShelf({ currentId: 'tap-q', boards: [book] })
+  const night = '2026-09-23'
+  const raw = JSON.stringify([
+    { lampId: 'door', kind: 'did', night },
+    { lampId: 'meds', kind: 'nope', night },
+    { lampId: '', kind: 'did', night },
+    { lampId: 'door', kind: 'skip', night },
+  ])
+  const taps = parseWidgetTapQueue(raw)
+  assert.equal(taps.length, 2, 'bad rows are dropped')
+  const { shelf, failed } = applyWidgetTapsOnce(taps)
+  assert.ok(shelf)
+  assert.equal(failed.length, 0)
+  const answers = readShelf().boards.find((row) => row.id === 'tap-q').answers
+  assert.equal(answers.length, 2, 'both questions keep their tap')
+  assert.equal(answers.find((row) => row.lampId === 'door').status, 'yes')
+  assert.equal(answers.find((row) => row.lampId === 'meds').status, 'skip')
+  const again = applyWidgetTapsOnce(taps)
+  assert.equal(again.shelf, null, 'a queue seen twice writes nothing new')
+  assert.equal(readShelf().boards.find((row) => row.id === 'tap-q').answers.length, 2)
+
+  // A row left by a build before the queue is one object, not a list.
+  assert.deepEqual(parseWidgetTapQueue(JSON.stringify({ lampId: 'door', kind: 'did', night })), [
+    { lampId: 'door', kind: 'did', night },
+  ])
+  assert.deepEqual(parseWidgetTapQueue(''), [])
+  assert.deepEqual(parseWidgetTapQueue('not json'), [])
+
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const store = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/WidgetTapStore.java'),
+    'utf8',
+  )
+  assert.ok(store.includes('JSONArray') && store.includes('MAX_ROWS'), 'native keeps a capped queue')
+  const tap = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
+  assert.ok(tap.includes('applyWidgetTapsOnce') && tap.includes('JSON.stringify(failed)'))
+})
+
+test('over-the-air updates only reach a build with the same app version', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const version = JSON.parse(readFileSync(path.join(root, 'app.json'), 'utf8')).expo.version
+  const gradle = readFileSync(path.join(root, 'android/app/build.gradle'), 'utf8')
+  assert.equal(gradle.match(/versionName "([^"]+)"/)?.[1], version, 'android versionName matches app.json')
+  const strings = readFileSync(path.join(root, 'android/app/src/main/res/values/strings.xml'), 'utf8')
+  assert.equal(
+    strings.match(/name="expo_runtime_version">([^<]+)</)?.[1],
+    version,
+    'android runtime version matches app.json (committed android/ is not prebuilt)',
+  )
+  const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
+  assert.ok(manifest.includes('expo.modules.updates.ENABLED" android:value="true"'))
+  const config = readFileSync(path.join(root, 'app.config.js'), 'utf8')
+  assert.ok(config.includes('runtimeVersion: config.version'))
+  const projectId = JSON.parse(readFileSync(path.join(root, 'app.json'), 'utf8')).expo.extra.eas.projectId
+  assert.ok(config.includes(`u.expo.dev/${projectId}`) && manifest.includes(`u.expo.dev/${projectId}`))
+  const eas = JSON.parse(readFileSync(path.join(root, 'eas.json'), 'utf8'))
+  assert.equal(eas.build.production.channel, 'production')
+})
+
+test('the native widget tap paint keeps the buddy', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const card = readFileSync(
+    path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/WidgetCardStore.java'),
+    'utf8',
+  )
+  assert.ok(card.includes('buddySvg') && card.includes('widget_card_buddy'), 'the tap paint draws the buddy')
+  const layout = readFileSync(path.join(root, 'android/app/src/main/res/layout/widget_tonight_card.xml'), 'utf8')
+  assert.ok(layout.includes('@+id/widget_card_buddy'))
+  const tap = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
+  assert.ok(tap.includes('buddySvgFor(props.buddyId)'), 'the saved card carries the buddy markup')
+  const widget = readFileSync(path.join(root, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
+  assert.ok(widget.includes('export function buddySvgFor'))
+})
+
 test('an android widget card steps to the next question already on it', () => {
   const props = {
     question: 'Door?',
@@ -1457,6 +1543,7 @@ test('native metro shims are wired and pin default exports', () => {
     'expo-splash-screen',
     'expo-document-picker',
     'expo-apple-authentication',
+    '@react-native-google-signin/google-signin',
     'expo-font',
     'expo-status-bar',
     'expo-blur',

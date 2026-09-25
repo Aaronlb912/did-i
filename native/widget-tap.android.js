@@ -1,5 +1,6 @@
 import { NativeModules } from 'react-native'
-import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+import { applyWidgetTapsOnce, parseWidgetTapQueue } from '../src/lib/widget-tonight.js'
+import { buddySvgFor } from '../widgets/android/DidITonightAndroidWidget.jsx'
 
 export async function loadAndroidWidgetCard() {
   const mod = NativeModules.WidgetTap
@@ -18,8 +19,11 @@ export async function saveAndroidWidgetCard(props) {
   if (!props) return false
   const mod = NativeModules.WidgetTap
   if (!mod || typeof mod.saveCard !== 'function') return false
+  // The native tap paint cannot read the JS buddy table, so the markup rides along.
+  const buddySvg = buddySvgFor(props.buddyId)
+  const card = buddySvg ? { ...props, buddySvg } : props
   try {
-    return Boolean(await mod.saveCard(JSON.stringify(props)))
+    return Boolean(await mod.saveCard(JSON.stringify(card)))
   } catch {
     return false
   }
@@ -44,22 +48,15 @@ export async function applyPendingAndroidWidgetTap() {
   } catch {
     return null
   }
-  raw = String(raw || '').trim()
-  if (!raw) return null
-  let tap
-  try {
-    tap = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  try {
-    return applyWidgetTapOnce(tap.lampId, tap.kind, tap.night)
-  } catch {
+  const taps = parseWidgetTapQueue(raw)
+  if (!taps.length) return null
+  const { shelf, failed } = applyWidgetTapsOnce(taps)
+  if (failed.length) {
     try {
-      await mod.restorePending?.(raw)
+      await mod.restorePending?.(JSON.stringify(failed))
     } catch {
-      // The row is already off disk. The next open cannot see it.
+      // The rows are already off disk. The next open cannot see them.
     }
-    return null
   }
+  return shelf
 }

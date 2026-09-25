@@ -1,4 +1,4 @@
-// PostToolUse hook (Write|Edit): reminds about the src/locales/en.js + es.js
+// PostToolUse hook (Write|Edit): reminds about the every-locale i18n
 // rule when a screen/component under src/lib/ or native/ changes.
 let d = ''
 process.stdin.on('data', c => (d += c))
@@ -7,7 +7,7 @@ process.stdin.on('end', () => {
   const f = (j.tool_input && j.tool_input.file_path) || (j.tool_response && j.tool_response.filePath) || ''
   if (/(^|[\\/])(src\/lib|native)[\\/].*\.(jsx|js)$/.test(f)) {
     console.log(JSON.stringify({
-      systemMessage: 'Reminder: if this screen has new/changed user-facing copy, add keys to both src/locales/en.js and es.js.',
+      systemMessage: 'Reminder: if this screen has new/changed user-facing copy, add the key to all 9 files in src/locales/ (en.js is the fallback).',
     }))
   } else {
     console.log('{}')

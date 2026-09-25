@@ -8,6 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "environment": "development",
+      "channel": "development",
       "android": {
         "buildType": "apk"
       }
@@ -15,6 +16,7 @@
     "preview": {
       "distribution": "internal",
       "environment": "development",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       }
@@ -22,6 +24,7 @@
     "internal": {
       "distribution": "internal",
       "environment": "production",
+      "channel": "internal",
       "env": {
         "EAS_INCLUDE_WIDGETS": "1"
       },
@@ -31,6 +34,7 @@
     },
     "production": {
       "environment": "production",
+      "channel": "production",
       "env": {
         "EAS_INCLUDE_WIDGETS": "1"
       },
@@ -40,6 +44,7 @@
     },
     "production-safe": {
       "extends": "production",
+      "channel": "production",
       "env": {
         "EAS_INCLUDE_WIDGETS": "0"
       },

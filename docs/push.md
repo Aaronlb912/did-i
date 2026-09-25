@@ -4,8 +4,9 @@ Set up and running as of 2026-09-20.
 
 Firebase project `did-i-a235d`, Android app `com.aaronbryant.didi`,
 owned by abryantdev@gmail.com. `android/app/google-services.json` is in
-place; Expo's Android build picks it up once that file
-exists.
+place, and the committed `android/` applies the
+`com.google.gms.google-services` Gradle plugin. Both went missing when
+Capacitor was removed and came back on 25 Sep 2026.
 
 ## What runs without anybody touching it
 

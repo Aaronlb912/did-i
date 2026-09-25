@@ -1,4 +1,6 @@
 <resources>
   <string name="app_name">Did I</string>
+  <!-- Same as "version" in app.json (runtimeVersion in app.config.js). -->
+  <string name="expo_runtime_version">1.0.0</string>
   <string name="widget_diditonight_description" translatable="false">Tonight questions for your tag. Settings → Widget.</string>
 </resources>

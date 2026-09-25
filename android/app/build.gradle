@@ -1,6 +1,8 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+// FCM push tokens need Firebase initialized from google-services.json.
+apply plugin: "com.google.gms.google-services"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -99,7 +101,8 @@ android {
         applicationId 'com.aaronbryant.didi'
         minSdk = rootProject.ext.minSdkVersion
         targetSdk = rootProject.ext.targetSdkVersion
-        versionCode 1
+        // GitHub Actions passes its run number so each Play upload goes up.
+        versionCode ((System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger())
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -169,6 +172,9 @@ android {
 
 dependencies {
     implementation "io.github.hyochan.openiap:openiap-google:3.5.2"
+    // Already in the app through react-native-android-widget. The native tap
+    // paint uses it to draw the buddy.
+    implementation "com.caverock:androidsvg-aar:1.4"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "761721517775",
+    "project_id": "did-i-a235d",
+    "storage_bucket": "did-i-a235d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:761721517775:android:01d70458cfbe7c1dd369ba",
+        "android_client_info": {
+          "package_name": "com.aaronbryant.didi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTJ4RdAtDb-as0YXORmh2QKf-o7aTEQNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

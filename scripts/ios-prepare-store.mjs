@@ -16,10 +16,10 @@ const credsUrl =
 console.log('\nDid I — iOS store build (widgets on)\n')
 
 if (hasPlist) {
-  console.log('ok   GoogleService-Info.plist at repo root (local prebuild / plist:pull)')
+  console.log('ok   GoogleService-Info.plist at repo root (.easignore uploads it to EAS)')
 } else {
   console.log(
-    'note GoogleService-Info.plist not in repo (gitignored). EAS production needs GOOGLE_SERVICES_PLIST file secret.',
+    'note GoogleService-Info.plist missing at repo root. Run npm run ios:plist:pull, or set the GOOGLE_SERVICES_PLIST file env on EAS.',
   )
   console.log('     Run: npx eas env:list --environment production')
 }

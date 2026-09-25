@@ -15,6 +15,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Play refuses an upload whose versionCode is not higher than the last one.
+  ANDROID_VERSION_CODE: ${{ github.run_number }}
+
 jobs:
   apk:
     name: android-apk
@@ -125,8 +129,35 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
+      # Play only takes a bundle signed with the release (upload) key, so this
+      # runs only when the keystore secrets are set. All ABIs, unlike the APK.
+      - name: Bundle release AAB (Play)
+        if: steps.signing.outputs.mode == 'release'
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew :app:bundleRelease --build-cache --no-scan -x lint -x test
+
+      - name: Upload AAB
+        if: steps.signing.outputs.mode == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: did-i-android-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
       - name: Summarize
         run: |
           echo "### Android APK" >> "${GITHUB_STEP_SUMMARY}"
           echo "${{ steps.signing.outputs.label }}" >> "${GITHUB_STEP_SUMMARY}"
           echo "ABI: arm64-v8a only (phone installs). Download did-i-android-apk from this run." >> "${GITHUB_STEP_SUMMARY}"
+          echo "versionCode: ${ANDROID_VERSION_CODE}" >> "${GITHUB_STEP_SUMMARY}"
+          if [ "${{ steps.signing.outputs.mode }}" = "release" ]; then
+            echo "Play bundle: did-i-android-aab (all ABIs)." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "No Play bundle: add the four ANDROID_KEYSTORE / ANDROID_KEY secrets first." >> "${GITHUB_STEP_SUMMARY}"
+          fi

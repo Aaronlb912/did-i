@@ -337,6 +337,43 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date())
   return nextShelf
 }
 
+// Android queues every Did / Did not tapped before JS runs, oldest first.
+// Builds before the queue stored one object; read that as a queue of one.
+export function parseWidgetTapQueue(raw) {
+  const text = String(raw || '').trim()
+  if (!text) return []
+  let parsed
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return []
+  }
+  const rows = Array.isArray(parsed) ? parsed : [parsed]
+  return rows
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => ({
+      lampId: String(row.lampId || '').trim(),
+      kind: String(row.kind || '').trim(),
+      night: String(row.night || '').trim(),
+    }))
+    .filter((row) => row.lampId && (row.kind === 'did' || row.kind === 'nope'))
+}
+
+// Applies each queued tap once. Rows that throw come back in `failed` so the
+// caller can put them back for the next open.
+export function applyWidgetTapsOnce(taps, clock = new Date()) {
+  let shelf = null
+  const failed = []
+  for (const tap of taps || []) {
+    try {
+      shelf = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock) || shelf
+    } catch {
+      failed.push(tap)
+    }
+  }
+  return { shelf, failed }
+}
+
 export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   const status = kind === 'did' || kind === 'yes' ? 'yes' : kind === 'nope' || kind === 'skip' ? 'skip' : ''
   if (!status || !lampId) return null

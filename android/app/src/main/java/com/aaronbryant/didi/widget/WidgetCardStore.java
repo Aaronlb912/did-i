@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,6 +18,8 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import com.aaronbryant.didi.R;
+import com.caverock.androidsvg.RenderOptions;
+import com.caverock.androidsvg.SVG;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,6 +36,7 @@ public final class WidgetCardStore {
     static final String PROPS = "props";
     static final String STAMP = "stamp";
     private static final int MAX_JSON = 200000;
+    private static final int MAX_BUDDY_SVG = 20000;
 
     private WidgetCardStore() {}
 
@@ -75,7 +80,7 @@ public final class WidgetCardStore {
         }
     }
 
-    // The native layout is plainer than the JS card (no buddy, no Next), so
+    // The native layout is plainer than the JS card (no Next, simpler sizing), so
     // painting it right away flashes a different look before JS redraws a
     // moment later. Wait briefly and paint only if JS has not saved a newer
     // card by then (a cold start, where JS can take a few seconds).
@@ -197,6 +202,18 @@ public final class WidgetCardStore {
             height = 0;
         }
         boolean compact = height > 0 && height < 130;
+        // Same size rule as the JS card: no buddy on the shortest widget.
+        boolean tight = height > 0 && height < 132;
+        Bitmap buddy = tight ? null : buddyBitmap(context, card.optString("buddySvg"));
+        if (buddy != null) {
+            views.setImageViewBitmap(R.id.widget_card_buddy, buddy);
+            views.setViewVisibility(R.id.widget_card_buddy, View.VISIBLE);
+            int side = dp(context, compact ? 28 : 34);
+            views.setViewPadding(R.id.widget_card_tag, side, 0, side, 0);
+            views.setViewPadding(R.id.widget_card_question, side, 0, side, 0);
+        } else {
+            views.setViewVisibility(R.id.widget_card_buddy, View.GONE);
+        }
         views.setTextViewTextSize(
             R.id.widget_card_question,
             TypedValue.COMPLEX_UNIT_SP,
@@ -320,14 +337,12 @@ public final class WidgetCardStore {
     }
 
     private static boolean pendingStillOpen(Context context, JSONObject incoming) {
-        String raw = WidgetTapStore.peek(context);
-        if (raw.isEmpty()) return false;
-        try {
-            JSONObject tap = new JSONObject(raw);
-            return itemOpen(incoming, tap.optString("lampId"), tap.optString("night"));
-        } catch (JSONException error) {
-            return false;
+        JSONArray taps = WidgetTapStore.rows(WidgetTapStore.peek(context));
+        for (int i = 0; i < taps.length(); i++) {
+            JSONObject tap = taps.optJSONObject(i);
+            if (tap != null && itemOpen(incoming, tap.optString("lampId"), tap.optString("night"))) return true;
         }
+        return false;
     }
 
     private static boolean itemOpen(JSONObject card, String lampId, String night) {
@@ -350,6 +365,30 @@ public final class WidgetCardStore {
         if (stored.has("colors") && !stored.isNull("colors")) {
             incoming.put("colors", stored.get("colors"));
         }
+    }
+
+    // JS puts the buddy's SVG markup on the snapshot (buddySvg), so the tap
+    // paint draws the same buddy the headless redraw will.
+    private static Bitmap buddyBitmap(Context context, String markup) {
+        if (markup == null || markup.isEmpty() || markup.length() > MAX_BUDDY_SVG) return null;
+        try {
+            SVG svg = SVG.getFromString(markup);
+            int w = dp(context, 36);
+            int h = dp(context, 44);
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            svg.renderToCanvas(new Canvas(bitmap), new RenderOptions().viewPort(0, 0, w, h));
+            return bitmap;
+        } catch (Exception error) {
+            return null;
+        }
+    }
+
+    private static int dp(Context context, float value) {
+        return Math.round(TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            value,
+            context.getResources().getDisplayMetrics()
+        ));
     }
 
     private static void fill(RemoteViews views, int id, int color) {

@@ -191,6 +191,69 @@ Without the three signing secrets (`IOS_DIST_CERT_*` + `IOS_PROVISIONING_PROFILE
 the workflow still produces an **unsigned** archive artifact for smoke tests.
 EAS remains a fallback (`docs/app-store-connect.md`).
 
+### GitHub Actions → Android release signing and Play bundle
+
+The release keystore lives on Expo (credentials `6i4VOCV-74`). Until GitHub
+has a copy, **android-apk** signs with a throwaway debug key and skips the Play
+bundle.
+
+1. In the repo folder: `npx eas-cli credentials -p android` → pick
+   **production** → **Keystore** → **Download existing keystore**. It saves a
+   `.jks` file and prints the keystore password, key alias, and key password.
+   Move the `.jks` into `C:\Users\aaron\Documents\did-i-secrets\`, never the repo.
+2. Base64 it in PowerShell:
+   `[Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\Users\aaron\Documents\did-i-secrets\did-i.jks')) | Set-Clipboard`
+3. GitHub repo → **Settings → Secrets and variables → Actions → New repository
+   secret**, four times:
+
+| Secret | Value |
+|--------|-------|
+| `ANDROID_KEYSTORE_BASE64` | The clipboard from step 2 |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password from step 1 |
+| `ANDROID_KEY_ALIAS` | Key alias from step 1 |
+| `ANDROID_KEY_PASSWORD` | Key password from step 1 |
+
+With all four set, a run makes two artifacts: **did-i-android-apk** (arm64,
+for installing on a phone) and **did-i-android-aab** (all ABIs, for Play
+Console). The first AAB you upload to Play sets this key as the upload key.
+`versionCode` is the workflow run number, so each upload is higher than the
+last. An APK signed this way installs over the old EAS internal builds, which
+used the same key. It will not install over a debug-signed GitHub APK; remove
+that one first.
+
+## Over-the-air updates (expo-updates)
+
+JS-only changes (screens, copy, `src/lib` logic, locales) can go out without a
+store build:
+
+```powershell
+npm run update:prod
+```
+
+That publishes to the **production** channel. `npm run update:internal` goes to
+EAS `internal` builds only. GitHub builds (APK and IPA) are not EAS builds, so
+`app.config.js` asks for the production channel by default, and the Android
+manifest does the same.
+
+**Native changes still need a build.** Anything under `android/`, a new or
+bumped native package, `app.config.js` plugins, entitlements, or the widget
+extension. When you ship one, bump `version` in `app.json`, `versionName` in
+`android/app/build.gradle`, and `expo_runtime_version` in
+`android/app/src/main/res/values/strings.xml` to the same value
+(`npm test` fails if they differ),
+because `runtimeVersion` is the app version. An update only reaches
+builds with the same version, so an old binary never gets JS it cannot run.
+
+Why the app version and not a fingerprint: updates are published from Windows and the
+builds run on Linux and macOS runners. A fingerprint hashes native files, and
+line endings and machine differences can make the two disagree, so updates
+would quietly never apply. The version is a plain string, the same everywhere.
+Expo also refuses runtime policies in a project with a committed `android/`.
+The cost is remembering the bump above.
+
+The first build made after this change is the one that can take updates.
+Builds 55 and older ignore them.
+
 `npx expo export --platform android` bundles cleanly for smoke tests.
 Local: `npm run android:build` after a dev client install.
 

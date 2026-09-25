@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { accountMissText, checkCode, looksLikeEmail, sendCode } from './account.js'
 import { canShowAppleSignIn, signInWithApple } from './apple-sign-in'
+import { canShowGoogleSignIn, signInWithGoogle } from './google-sign-in'
 import { clearAuthSkip } from './auth-gate.js'
 import { cloud } from './cloud.js'
 import { armSyncForUser, pullAndMerge } from './cloud-sync.js'
@@ -81,6 +82,19 @@ export function useAuthSignIn({ onSignedIn }) {
     await finish()
   }
 
+  async function signInGoogle() {
+    if (busy) return
+    setBusy(true)
+    setMiss('')
+    const { miss: bad } = await signInWithGoogle()
+    setBusy(false)
+    if (bad) {
+      if (bad !== 'cancel') setMiss(accountMissText(bad))
+      return
+    }
+    await finish()
+  }
+
   return {
     email,
     setEmail,
@@ -96,5 +110,7 @@ export function useAuthSignIn({ onSignedIn }) {
     useDifferentEmail,
     signInApple,
     showApple: canShowAppleSignIn(),
+    signInGoogle,
+    showGoogle: canShowGoogleSignIn(),
   }
 }

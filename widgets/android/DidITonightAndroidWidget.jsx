@@ -79,6 +79,10 @@ const BUDDY_SVG = {
   </svg>`,
 }
 
+export function buddySvgFor(id) {
+  return BUDDY_SVG[String(id || '')] || ''
+}
+
 function BuddyMark({ id, compact }) {
   const svg = BUDDY_SVG[id]
   if (!svg) return null

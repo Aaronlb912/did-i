@@ -3,17 +3,22 @@ package com.aaronbryant.didi.widget;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * One pending Tonight tap. commit() returns only after the row is on disk.
- * The widget task and the next app open both take it; the lock keeps one of them.
+ * Tonight taps made before JS runs, oldest first. commit() returns only after
+ * the queue is on disk. The widget task and the next app open both take it;
+ * the lock keeps one of them. A second tap for the same lamp and night keeps
+ * the first mark.
  */
 public final class WidgetTapStore {
     public static final String PREFS = "did-i-widget-tap";
     static final String KEY = "pending";
     private static final int MAX = 160;
+    // A card holds far fewer questions than this. It only stops a runaway queue.
+    private static final int MAX_ROWS = 40;
 
     private WidgetTapStore() {}
 
@@ -23,42 +28,66 @@ public final class WidgetTapStore {
         if (lamp.isEmpty() || mark.isEmpty()) return false;
         String storedNight = clip(night);
         try {
-            String current = prefs(context).getString(KEY, "");
-            if (current != null && !current.isEmpty()) {
-                JSONObject existing = new JSONObject(current);
+            JSONArray rows = rows(prefs(context).getString(KEY, ""));
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject existing = rows.optJSONObject(i);
+                if (existing == null) continue;
                 if (lamp.equals(existing.optString("lampId")) && storedNight.equals(clip(existing.optString("night")))) {
                     return true;
                 }
             }
+            if (rows.length() >= MAX_ROWS) return false;
             JSONObject row = new JSONObject();
             row.put("lampId", lamp);
             row.put("kind", mark);
             row.put("night", storedNight);
-            return prefs(context).edit().putString(KEY, row.toString()).commit();
+            rows.put(row);
+            return prefs(context).edit().putString(KEY, rows.toString()).commit();
         } catch (JSONException error) {
             return false;
         }
     }
 
+    /** Every queued row as a JSON array string, or "" when none. */
     public static synchronized String peek(Context context) {
-        String raw = prefs(context).getString(KEY, "");
-        return raw == null ? "" : raw;
+        JSONArray rows = rows(prefs(context).getString(KEY, ""));
+        return rows.length() == 0 ? "" : rows.toString();
     }
 
     public static synchronized String take(Context context) {
         SharedPreferences prefs = prefs(context);
-        String raw = prefs.getString(KEY, "");
-        if (raw == null || raw.isEmpty()) return "";
+        JSONArray rows = rows(prefs.getString(KEY, ""));
+        if (rows.length() == 0) return "";
         if (!prefs.edit().remove(KEY).commit()) return "";
-        return raw;
+        return rows.toString();
     }
 
+    /** Puts rows JS could not apply back in front of any taps made since. */
     public static synchronized boolean restore(Context context, String raw) {
-        if (raw == null || raw.isEmpty()) return false;
+        JSONArray back = rows(raw);
+        if (back.length() == 0) return false;
         SharedPreferences prefs = prefs(context);
-        String current = prefs.getString(KEY, "");
-        if (current != null && !current.isEmpty()) return false;
-        return prefs.edit().putString(KEY, raw).commit();
+        JSONArray later = rows(prefs.getString(KEY, ""));
+        for (int i = 0; i < later.length() && back.length() < MAX_ROWS; i++) {
+            JSONObject row = later.optJSONObject(i);
+            if (row != null) back.put(row);
+        }
+        return prefs.edit().putString(KEY, back.toString()).commit();
+    }
+
+    // Builds before the queue stored one object. Read that as a queue of one.
+    static JSONArray rows(String raw) {
+        if (raw == null) return new JSONArray();
+        String text = raw.trim();
+        if (text.isEmpty()) return new JSONArray();
+        try {
+            if (text.startsWith("[")) return new JSONArray(text);
+            JSONArray one = new JSONArray();
+            one.put(new JSONObject(text));
+            return one;
+        } catch (JSONException error) {
+            return new JSONArray();
+        }
     }
 
     private static SharedPreferences prefs(Context context) {

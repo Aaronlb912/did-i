@@ -22,15 +22,15 @@ Project: **did-i-a235d** (same as Android).
    did-i/GoogleService-Info.plist
    ```
 
-   `app.config.js` picks it up locally when the file exists. EAS **does not**
-   upload gitignored files, so production builds also need:
+   `app.config.js` picks it up when the file exists. It stays out of git, but
+   `.easignore` (which EAS reads instead of `.gitignore`) lets EAS upload it,
+   so `npm run ios:build:store` from this folder carries it. Keep `.easignore`
+   in step with `.gitignore` when you add ignores.
 
-   ```powershell
-   npx eas env:create production --name GOOGLE_SERVICES_PLIST --type file `
-     --value ./GoogleService-Info.plist --visibility secret
-   ```
+   GitHub **iOS IPA** writes the file from the `GOOGLE_SERVICES_PLIST` secret
+   (base64 of the plist) before prebuild.
 
-   Or run `npm run ios:plist:pull` on the build machine before `ios:build:store`.
+   If the file is missing locally, run `npm run ios:plist:pull`.
 
 ## 2. Apple — APNs authentication key
 

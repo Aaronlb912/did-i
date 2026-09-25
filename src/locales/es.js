@@ -206,6 +206,9 @@ export const es = {
   'auth.appleOr': 'o',
   'auth.appleFail': 'No funcionó con Apple. Prueba el correo o inténtalo en un minuto.',
   'auth.appleUnavailable': 'Entrar con Apple no está disponible en este dispositivo.',
+  'auth.google': 'Iniciar sesión con Google',
+  'auth.googleFail': 'El inicio de sesión con Google no funcionó. Prueba con el correo o inténtalo en un minuto.',
+  'auth.googleUnavailable': 'Para iniciar sesión con Google, este teléfono necesita los servicios de Google Play.',
   'auth.demoQuestion': '¿Hice esa cosa?',
   'account.phoneHint':
     'Tus amigos te encuentran con este número. Un número por cuenta. A quien le pidas amistad lo ve.',

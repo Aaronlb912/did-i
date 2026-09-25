@@ -7227,6 +7227,15 @@ html[data-reduce-motion] .di-hall:is(
   cursor: not-allowed;
 }
 
+.di-auth-google {
+  margin-top: 0.6rem;
+}
+
+.di-auth-google-btn {
+  display: block;
+  width: 100%;
+}
+
 .di-auth-lock {
   padding: 0.95rem 1rem 0.35rem;
   background: var(--di-panel-2);

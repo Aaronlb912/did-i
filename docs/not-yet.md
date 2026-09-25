@@ -16,9 +16,13 @@ apple:auth:setup` done). Use a **launch-clean** store build on iOS 1.0 (not
 the inbox, not junk. If it does not, check SPF/DKIM on `did-i.app` in
 Resend and the Auth rate limits in the Supabase dashboard.
 
-**Push on a real phone.** Android path is live; **iOS** has
-`GoogleService-Info.plist` at repo root (gitignored) and APNs key **Did I
-Firebase Push** (`TL92CR5TVF`). Finish **Firebase → Cloud Messaging →
+**Push on a real phone.** Android: `android/app/google-services.json` was
+lost when Capacitor was removed (20 Sep 2026), so APKs built from the
+committed `android/` had no Firebase and could not get a push token. It is
+back, with the `com.google.gms.google-services` Gradle plugin, as of 25 Sep
+2026; the next android-apk run is the first to carry it. **iOS** has
+`GoogleService-Info.plist` at repo root (gitignored; `.easignore` now uploads
+it to EAS) and APNs key **Did I Firebase Push** (`TL92CR5TVF`). Finish **Firebase → Cloud Messaging →
 production APNs auth key → Upload** (Browse → `AuthKey_TL92CR5TVF.p8`, Key ID
 `TL92CR5TVF`, Team ID `2ZUKFKSSV8`). Then install a **new store build** with the plist baked in (`docs/push-ios.md`).
 End-to-end nudge still unconfirmed.
@@ -103,12 +107,10 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   matches DOM more closely.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
-- **One stored widget tap.** If Did or Did not is tapped twice, for two questions, before JS runs, only the last row is kept. The card can step ahead for both, then the shelf redraw snaps back to the question that is still open. A second tap of the other button for the same lamp and night keeps the first mark.
 - **iOS IPA signing on GHA.** With distro cert, profiles, `GOOGLE_SERVICES_PLIST`,
   and App Store Connect API secrets set, `ios-ipa.yml` signs, exports, and uploads
   to TestFlight (`docs/native-rebuild.md`). Without them, the workflow still emits an
   unsigned archive only.
-- **Widget card without a snapshot.** A tap paints the next question from the last snapshot before JS. If that snapshot has no next question text, the card waits for the headless redraw. The buddy is on that redraw, not on the tap paint.
 
 Tonight parity landed 2026-09-20: wait/hole plates, sync miss line,
 title edit, idle face, night-strip history gate, meter/purse pop,

@@ -75,6 +75,8 @@ export function accountMissText(bad) {
     cancel: '',
     appleFail: 'auth.appleFail',
     appleUnavailable: 'auth.appleUnavailable',
+    googleFail: 'auth.googleFail',
+    googleUnavailable: 'auth.googleUnavailable',
   }[bad]
   return key ? t(key) : bad
 }
