@@ -3,7 +3,7 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-23.
+Last worked through 2026-09-25.
 
 ## Waiting on an account, not on code
 
@@ -91,8 +91,13 @@ where somebody is a nuisance.
 The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 `useTonightStack.js` with the browser build. These still differ:
 
-- **Cheer burst fidelity.** Native has dancers, puddles, and stars now.
+- **Cheer burst fidelity.** All twelve cheers play on the Android emulator
+  (25 Sep 2026, Shop previews and a Did swipe). Not yet seen on an iPhone.
   Web CSS animations may still feel snappier on some cheers.
+- **iOS widget, untested.** Per-question tag header, Next pill, fit-to-card
+  question, and the buddy redrawn from the app SVG are covered by `npm test`
+  only. Needs a TestFlight build to confirm the Next button, the triangle
+  ears, and the text shrink on a real home screen.
 - **Visual diff caps.** `npm run visual` compares web vs native fixtures at
   390px. Jewel is tight (~10%); face/settings are looser until RN-web layout
   matches DOM more closely.

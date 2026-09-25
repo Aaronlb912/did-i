@@ -232,7 +232,18 @@ function BuyConfirm({ confirm, onClose, onGo, colors }) {
   return null
 }
 
-function ShopActionRow({ name, note, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
+// A row with `info` keeps its note out of the row and shows it in a sheet.
+function openInfo(name, info, colors) {
+  publishSheet({
+    title: name,
+    body: info,
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: () => publishSheet(null),
+  })
+}
+
+function ShopActionRow({ name, note, info, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
   const previewNode = preview
     ? onPreview
       ? (
@@ -251,7 +262,22 @@ function ShopActionRow({ name, note, actionLabel, onAction, colors, primary, dis
     >
       {previewNode}
       <View style={styles.shopCopy}>
-        <Text style={[styles.shopName, { color: colors.ink }]}>{name}</Text>
+        {info ? (
+          <Pressable
+            onPress={() => openInfo(name, info, colors)}
+            accessibilityRole="button"
+            accessibilityLabel={t('shop.moreAbout', { name })}
+            hitSlop={8}
+            style={styles.shopNameRow}
+          >
+            <Text style={[styles.shopName, { color: colors.ink }]}>{name}</Text>
+            <View style={[styles.infoDot, { borderColor: colors.line }]}>
+              <Text style={[styles.infoDotText, { color: colors.inkDim }]}>i</Text>
+            </View>
+          </Pressable>
+        ) : (
+          <Text style={[styles.shopName, { color: colors.ink }]}>{name}</Text>
+        )}
         {note ? <Text style={[styles.shopNote, { color: colors.inkDim }]}>{note}</Text> : null}
       </View>
       {primary ? (
@@ -591,7 +617,7 @@ export function ShopCheersScreen({ book, onChange }) {
             preview={<CheerChip id={item.id} stage={have ? stage : 1} colors={colors} />}
             onPreview={() => fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1, coat, undefined, true)}
             name={t(cheerText(item.id, 'name'))}
-            note={t(cheerText(item.id, 'line'))}
+            info={t(cheerText(item.id, 'line'))}
             actionLabel={actionLabel}
             primary={primary}
             disabled={disabled}
@@ -1130,6 +1156,9 @@ const styles = StyleSheet.create({
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   shopCopy: { gap: 4, flex: 1 },
   shopName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
+  shopNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  infoDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  infoDotText: { fontFamily: fonts.ui, fontSize: 11, fontWeight: '700', lineHeight: 13 },
   shopNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   gemSheet: {
     borderWidth: 1,

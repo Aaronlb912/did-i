@@ -56,11 +56,18 @@ function mapRow(row) {
 function applyItemStatus(book, item, status, clock = new Date()) {
   if (!item?.lampId || !status) return book
   const rows = dueTonight(book, clock)
-  const row = rows.find((r) => {
+  let row = rows.find((r) => {
     if (r.lamp.id !== item.lampId) return false
     if (item.periodKey) return r.periodKey === item.periodKey
     return true
   })
+  // A tap from an earlier night (iOS: widget answered, app not opened before
+  // midnight) is no longer due tonight. Keep it on its own night if still unset,
+  // or turn the day-turn nope into a did, same as Android's stored tap.
+  if (!row && item.periodKey) {
+    const stored = rowForStoredNight(book, item.lampId, item.periodKey, clock)
+    if (stored && (!stored.answer || (stored.answer.status === 'skip' && status === 'yes'))) row = stored
+  }
   if (!row) return book
   if (rowStatus(row) === status) return book
   if (status === 'yes') return putAnswer(book, row, didStatusForRow(row), clock)

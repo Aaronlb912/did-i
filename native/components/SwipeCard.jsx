@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   railsHost: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 8,
     overflow: 'visible',
   },

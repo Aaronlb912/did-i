@@ -13,7 +13,7 @@ export function SwipeBackPassthrough({ children, backChild, enabled, back }) {
 const styles = StyleSheet.create({
   shell: { flex: 1, overflow: 'hidden' },
   back: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   front: {

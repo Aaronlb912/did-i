@@ -67,7 +67,7 @@ function useTimed(delay, duration) {
 function Bloom({ delay, size, color }) {
   const progress = useTimed(delay, 950)
   const px = remPx(size)
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1] })
+  const scale = progress.interpolate({ inputRange: [0, 0.55, 0.75, 1], outputRange: [0.15, 1.06, 0.98, 1] })
   const opacity = progress.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.95, 0.7, 0] })
   return (
     <Animated.View
@@ -91,8 +91,9 @@ function Bloom({ delay, size, color }) {
 function Pip({ delay, color }) {
   const progress = useTimed(delay, 700)
   const px = remPx('0.85')
-  const scale = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.2, 1, 0.4] })
+  const scale = progress.interpolate({ inputRange: [0, 0.3, 0.45, 1], outputRange: [0.2, 1.3, 1, 0.4] })
   const opacity = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [1, 1, 0] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, -remPx('0.9')] })
   return (
     <Animated.View
       pointerEvents="none"
@@ -105,7 +106,7 @@ function Pip({ delay, color }) {
         borderRadius: px / 2,
         backgroundColor: color,
         opacity,
-        transform: [{ scale }],
+        transform: [{ translateY }, { scale }],
       }}
     />
   )
@@ -116,8 +117,9 @@ function SparkRay({ delay, rot, len, tone, colors }) {
   const height = remPx(len)
   const deg = Number.parseFloat(rot)
   const width = remPx('0.11')
-  const scaleY = progress.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1] })
+  const scaleY = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.15, 1.15, 0.5] })
   const opacity = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [1, 1, 0] })
+  const fly = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, height * 0.55] })
   return (
     <Animated.View
       pointerEvents="none"
@@ -130,7 +132,7 @@ function SparkRay({ delay, rot, len, tone, colors }) {
         borderRadius: 1,
         backgroundColor: toneColor(tone, colors),
         opacity,
-        transform: [{ rotate: `${deg}deg` }, { scaleY }],
+        transform: [{ rotate: `${deg}deg` }, { translateY: fly }, { scaleY }],
       }}
     />
   )
@@ -139,8 +141,8 @@ function SparkRay({ delay, rot, len, tone, colors }) {
 function SparkFlash({ delay, color }) {
   const progress = useTimed(delay, 380)
   const px = remPx('2.2')
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1.35] })
-  const opacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.95, 0] })
+  const scale = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0.2, 1.55, 1.3] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [1, 0.85, 0] })
   return (
     <Animated.View
       pointerEvents="none"
@@ -189,9 +191,14 @@ function Tape({ delay, side, y, fat, colors, stageW, reach }) {
   const reachPct = Number.parseFloat(String(reach || '46')) || 46
   const w = Math.min(stageW * (reachPct / 100), remPx('14'))
   const h = fat ? remPx('0.72') : remPx('0.5')
-  const scaleX = progress.interpolate({ inputRange: [0, 0.28, 1], outputRange: [0, 1, 1] })
-  const opacity = progress.interpolate({ inputRange: [0, 0.28, 0.78, 1], outputRange: [0, 1, 1, 0] })
-  const translateY = progress.interpolate({ inputRange: [0, 0.78, 1], outputRange: [0, 0, 12] })
+  const scaleX = progress.interpolate({ inputRange: [0, 0.2, 0.3, 0.38, 1], outputRange: [0, 1.12, 0.96, 1, 1] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.8, 1], outputRange: [0, 1, 1, 0] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, 0, 26] })
+  const tilt = side === 'left' ? -1 : 1
+  const rotate = progress.interpolate({
+    inputRange: [0, 0.2, 0.3, 0.4, 0.6, 1],
+    outputRange: ['0deg', `${-4 * tilt}deg`, `${2 * tilt}deg`, '0deg', '0deg', `${9 * tilt}deg`],
+  })
   const edge = remPx('0.2')
   return (
     <Animated.View
@@ -206,7 +213,11 @@ function Tape({ delay, side, y, fat, colors, stageW, reach }) {
         borderWidth: fat ? 0 : 2,
         borderColor: colors.on,
         opacity,
-        transform: [{ scaleX }, { translateY }],
+        // Grow from the side it comes in from, like the web
+        // (transform-origin: right/left center), so it whips across.
+        transformOrigin: side === 'left' ? 'right center' : 'left center',
+        borderRadius: 2,
+        transform: [{ translateY }, { rotate }, { scaleX }],
       }}
     />
   )
@@ -265,8 +276,12 @@ function BoomStreak({ delay, rot, len, tone, colors }) {
   const height = remPx(len)
   const deg = Number.parseFloat(rot)
   const width = remPx('0.14')
-  const scaleY = progress.interpolate({ inputRange: [0, 1], outputRange: [0, 1] })
-  const opacity = progress.interpolate({ inputRange: [0, 0.55, 1], outputRange: [1, 1, 0] })
+  const scaleY = progress.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 1] })
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.55, 0.62, 0.7, 0.78, 0.86, 1],
+    outputRange: [1, 1, 0.35, 1, 0.3, 0.8, 0],
+  })
+  const sag = progress.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, remPx('1.4')] })
   return (
     <Animated.View
       pointerEvents="none"
@@ -279,7 +294,7 @@ function BoomStreak({ delay, rot, len, tone, colors }) {
         borderRadius: 1,
         backgroundColor: toneColor(tone, colors),
         opacity,
-        transform: [{ rotate: `${deg}deg` }, { scaleY }],
+        transform: [{ translateY: sag }, { rotate: `${deg}deg` }, { scaleY }],
       }}
     />
   )
@@ -411,18 +426,22 @@ function RainDrop({ delay, x, len, fat, stageW, color, ink, fall }) {
       Animated.parallel([
         Animated.timing(fallAnim, {
           toValue: 1,
-          duration: 1050,
-          easing: Easing.linear,
+          duration: 900,
+          easing: Easing.in(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.sequence([
-          Animated.timing(opacity, { toValue: 1, duration: 105, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.15, duration: 945, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 1, duration: 90, useNativeDriver: true }),
+          Animated.delay(640),
+          Animated.timing(opacity, { toValue: 0, duration: 170, useNativeDriver: true }),
         ]),
       ]),
     ]).start()
   }, [delay, fallAnim, opacity])
   const translateY = fallAnim.interpolate({ inputRange: [0, 1], outputRange: [0, fallPx] })
+  // Stretch as it speeds up, then squash flat when it lands.
+  const scaleY = fallAnim.interpolate({ inputRange: [0, 0.8, 0.94, 1], outputRange: [0.7, 1.25, 1.25, 0.3] })
+  const scaleX = fallAnim.interpolate({ inputRange: [0, 0.94, 1], outputRange: [1, 0.85, 2.2] })
   return (
     <Animated.View
       pointerEvents="none"
@@ -433,11 +452,48 @@ function RainDrop({ delay, x, len, fat, stageW, color, ink, fall }) {
         width: fat ? 5 : 3,
         height,
         backgroundColor: fat ? ink : color,
-        borderRadius: 1,
+        borderRadius: fat ? 2.5 : 1.5,
         opacity,
-        transform: [{ translateY }],
+        transform: [{ translateY }, { scaleX }, { scaleY }],
       }}
     />
+  )
+}
+
+// The web bubble's shine is `box-shadow: inset -0.35rem -0.28rem 0` — a solid
+// crescent on the lower right. Same shape here: the bubble's circle minus that
+// circle shifted up-left, drawn even-odd; the round bubble clips the rest.
+function BubbleShine({ px, shine, color }) {
+  const parts = svgParts()
+  // Inside the 3px border like the web padding box, tucked 1px under it so
+  // no seam shows between border and shine.
+  const inner = px - 4
+  if (!parts || inner <= 0) {
+    return (
+      <View
+        style={{
+          position: 'absolute',
+          right: shine * 0.4,
+          bottom: shine * 0.3,
+          width: shine,
+          height: shine * 0.8,
+          borderRadius: shine,
+          backgroundColor: color,
+          opacity: 0.35,
+        }}
+      />
+    )
+  }
+  const { Svg, Path } = parts
+  const r = inner / 2
+  const dx = remPx('0.35')
+  const dy = remPx('0.28')
+  const ring = (cx, cy) =>
+    `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 Z`
+  return (
+    <Svg width={inner} height={inner} style={{ position: 'absolute', left: -1, top: -1 }}>
+      <Path d={`${ring(r, r)} ${ring(r - dx, r - dy)}`} fill={color} fillRule="evenodd" />
+    </Svg>
   )
 }
 
@@ -454,20 +510,27 @@ function Bubble({ delay, x, size, color, stageW, drift, rise }) {
         Animated.timing(riseAnim, {
           toValue: 1,
           duration: 1850,
-          easing: Easing.out(Easing.cubic),
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.sequence([
-          Animated.timing(opacity, { toValue: 0.9, duration: 220, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.85, duration: 1220, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0, duration: 410, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0.95, duration: 220, useNativeDriver: true }),
+          Animated.delay(1480),
+          Animated.timing(opacity, { toValue: 0, duration: 150, useNativeDriver: true }),
         ]),
       ]),
     ]).start()
   }, [delay, opacity, riseAnim])
   const translateY = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -risePx] })
-  const translateX = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0, driftX] })
-  const scale = riseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1.15] })
+  const sway = remPx('0.45')
+  const translateX = riseAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, driftX * 0.25 + sway, driftX * 0.5 - sway, driftX * 0.75 + sway * 0.6, driftX],
+  })
+  // Grows as it rises, then swells fast and pops at the top.
+  const scale = riseAnim.interpolate({ inputRange: [0, 0.85, 0.93, 1], outputRange: [0.35, 1.1, 1.1, 1.45] })
+  const wobbleX = riseAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [1, 1.08, 0.94, 1.06, 0.97, 1] })
+  const wobbleY = riseAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [1, 0.93, 1.06, 0.95, 1.03, 1] })
   const shine = px * 0.35
   return (
     <Animated.View
@@ -483,21 +546,10 @@ function Bubble({ delay, x, size, color, stageW, drift, rise }) {
         borderColor: color,
         opacity,
         overflow: 'hidden',
-        transform: [{ translateX }, { translateY }, { scale }],
+        transform: [{ translateX }, { translateY }, { scale }, { scaleX: wobbleX }, { scaleY: wobbleY }],
       }}
     >
-      <View
-        style={{
-          position: 'absolute',
-          right: shine * 0.4,
-          bottom: shine * 0.3,
-          width: shine,
-          height: shine * 0.8,
-          borderRadius: shine,
-          backgroundColor: color,
-          opacity: 0.35,
-        }}
-      />
+      <BubbleShine px={px} shine={shine} color={color} />
     </Animated.View>
   )
 }
@@ -507,7 +559,26 @@ function Stamp({ delay, rot, color, panel }) {
   const deg = Number.parseFloat(rot) || 0
   const scale = progress.interpolate({ inputRange: [0, 0.16, 0.28, 1], outputRange: [2.5, 0.9, 1.06, 1.06] })
   const opacity = progress.interpolate({ inputRange: [0, 0.16, 0.72, 1], outputRange: [0, 1, 1, 0] })
+  const shake = progress.interpolate({ inputRange: [0, 0.16, 0.19, 0.22, 0.25, 0.28, 1], outputRange: [0, 0, -4, 4, -2, 0, 0] })
+  const ring = remPx('4')
+  const ringScale = progress.interpolate({ inputRange: [0, 0.16, 0.5, 1], outputRange: [0.5, 0.5, 1.7, 1.7] })
+  const ringOpacity = progress.interpolate({ inputRange: [0, 0.15, 0.17, 0.5, 1], outputRange: [0, 0, 0.6, 0, 0] })
   return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0 }}>
+    <Animated.View
+      style={{
+        position: 'absolute',
+        left: -ring / 2,
+        top: -ring / 2,
+        width: ring,
+        height: ring,
+        borderRadius: ring / 2,
+        borderWidth: 3,
+        borderColor: color,
+        opacity: ringOpacity,
+        transform: [{ scale: ringScale }],
+      }}
+    />
     <Animated.View
       pointerEvents="none"
       style={{
@@ -522,29 +593,48 @@ function Stamp({ delay, rot, color, panel }) {
         paddingTop: remPx('0.45'),
         paddingBottom: remPx('0.38'),
         opacity,
-        transform: [{ rotate: `${deg}deg` }, { scale }],
+        transform: [{ translateX: shake }, { rotate: `${deg}deg` }, { scale }],
       }}
     >
       <Text style={[styles.stampBurst, { color }]}>{t('tonight.swipeDid')}</Text>
     </Animated.View>
+    </View>
   )
 }
 
-function Tick({ color, scale }) {
+// Length of "M10 27 L26 43 L62 9" in viewBox units, for the draw-on stroke.
+const TICK_LEN = Math.hypot(16, 16) + Math.hypot(36, 34)
+
+function Tick({ delay, color, scale }) {
   const parts = svgParts()
+  const draw = useMemo(() => new Animated.Value(0), [])
+  const AnimatedPath = useMemo(() => (parts ? Animated.createAnimatedComponent(parts.Path) : null), [parts])
+  useEffect(() => {
+    // SVG props cannot run on the native driver.
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(draw, { toValue: 1, duration: 550, easing: Easing.out(Easing.ease), useNativeDriver: false }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, draw])
   const boxW = remPx('7.2') * (scale || 1)
   const boxH = remPx('5') * (scale || 1)
+  const opacity = draw.interpolate({ inputRange: [0, 0.02, 1], outputRange: [0, 1, 1] })
+  const pop = draw.interpolate({ inputRange: [0, 0.8, 0.92, 1], outputRange: [0.92, 1, 1.14, 1] })
   const frame = {
+    transform: [{ scale: pop }],
     position: 'absolute',
     left: -boxW / 2,
     top: -boxH / 2,
     width: boxW,
     height: boxH,
+    opacity,
   }
-  if (!parts) {
+  if (!AnimatedPath) {
     const thick = Math.max(4, boxH * 0.12)
     return (
-      <View pointerEvents="none" style={frame}>
+      <Animated.View pointerEvents="none" style={frame}>
         <View
           style={{
             position: 'absolute',
@@ -569,23 +659,26 @@ function Tick({ color, scale }) {
             transform: [{ rotate: '-48deg' }],
           }}
         />
-      </View>
+      </Animated.View>
     )
   }
-  const { Svg, Path } = parts
+  const { Svg } = parts
+  const dashOffset = draw.interpolate({ inputRange: [0, 1], outputRange: [TICK_LEN, 0] })
   return (
-    <View pointerEvents="none" style={frame}>
+    <Animated.View pointerEvents="none" style={frame}>
       <Svg width={boxW} height={boxH} viewBox="0 0 72 50">
-        <Path
+        <AnimatedPath
           d="M10 27 L26 43 L62 9"
           stroke={color}
           strokeWidth={6}
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeDasharray={[TICK_LEN, TICK_LEN]}
+          strokeDashoffset={dashOffset}
           fill="none"
         />
       </Svg>
-    </View>
+    </Animated.View>
   )
 }
 
@@ -748,13 +841,16 @@ function Plane({ delay, from, hop, colors, stageW, stageH }) {
     inputRange: [0, 1],
     outputRange: left ? [stageW * 0.46, -stageW * 0.48] : [-stageW * 0.46, stageW * 0.48],
   })
+  const y0 = left ? stageH * 0.22 : stageH * 0.18
+  const y1 = left ? -stageH * 0.38 : -stageH * 0.42
+  const dip = remPx('1.2')
   const y = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: left ? [stageH * 0.22, -stageH * 0.38] : [stageH * 0.18, -stageH * 0.42],
+    inputRange: [0, 0.33, 0.66, 1],
+    outputRange: [y0, y0 + (y1 - y0) * 0.33 + dip, y0 + (y1 - y0) * 0.66 - dip, y1],
   })
   const rotate = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: left ? ['162deg', '198deg'] : ['-18deg', '12deg'],
+    inputRange: [0, 0.33, 0.66, 1],
+    outputRange: left ? ['162deg', '176deg', '190deg', '198deg'] : ['-18deg', '4deg', '-10deg', '12deg'],
   })
   const opacity = progress.interpolate({ inputRange: [0, 0.12, 1], outputRange: [0, 1, 0] })
   return (
@@ -768,17 +864,52 @@ function Plane({ delay, from, hop, colors, stageW, stageH }) {
   )
 }
 
-function Puddle({ delay, color, width }) {
+function Cloud({ delay, color, width }) {
+  const progress = useTimed(delay, 2200)
+  const w = remPx(width || '6')
+  const h = w * 0.42
+  const parts = svgParts()
+  if (!parts) return null
+  const { Svg, Circle, Path } = parts
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 0.95, 0.95, 0] })
+  const scale = progress.interpolate({ inputRange: [0, 0.12, 0.2, 1], outputRange: [0.6, 1.06, 1, 1] })
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, remPx('0.6')] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        // Bottom edge sits just over where the drops start.
+        top: -remPx('3.2') - h + remPx('0.5'),
+        width: w,
+        height: h,
+        opacity,
+        transform: [{ translateX }, { scale }],
+      }}
+    >
+      <Svg width={w} height={h}>
+        <Circle cx={w * 0.3} cy={h * 0.62} r={h * 0.34} fill={color} />
+        <Circle cx={w * 0.52} cy={h * 0.42} r={h * 0.42} fill={color} />
+        <Circle cx={w * 0.72} cy={h * 0.6} r={h * 0.32} fill={color} />
+        <Path d={`M ${w * 0.14} ${h * 0.7} Q ${w * 0.14} ${h * 0.96} ${w * 0.3} ${h * 0.96} L ${w * 0.76} ${h * 0.96} Q ${w * 0.9} ${h * 0.96} ${w * 0.88} ${h * 0.7} Z`} fill={color} />
+      </Svg>
+    </Animated.View>
+  )
+}
+
+function Puddle({ delay, color, width, fall }) {
   const scale = useMemo(() => new Animated.Value(0.15), [])
   const opacity = useMemo(() => new Animated.Value(0), [])
   useEffect(() => {
     Animated.sequence([
       Animated.delay(delay),
       Animated.parallel([
-        Animated.timing(scale, { toValue: 1, duration: 470, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 850, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.sequence([
-          Animated.timing(opacity, { toValue: 0.45, duration: 470, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0, duration: 880, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0.5, duration: 300, useNativeDriver: true }),
+          Animated.delay(550),
+          Animated.timing(opacity, { toValue: 0, duration: 600, useNativeDriver: true }),
         ]),
       ]),
     ]).start()
@@ -790,7 +921,8 @@ function Puddle({ delay, color, width }) {
       style={{
         position: 'absolute',
         left: -w / 2,
-        bottom: -remPx('0.55'),
+        // Where the drops land (they start 3.2rem up and fall `fall`).
+        top: remPx(fall || '6.5') - remPx('2'),
         width: w,
         height: remPx('0.7'),
         borderRadius: 999,
@@ -898,7 +1030,8 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
       />
     )
   }
-  if (bit.puddle) return <Puddle delay={delay} color={on} width={bit.width} />
+  if (bit.cloud) return <Cloud delay={delay} color={colors.inkSoft || on} width={bit.width} />
+  if (bit.puddle) return <Puddle delay={delay} color={on} width={bit.width} fall={bit.fall} />
   if (bit.shoot) return <Shoot delay={delay} color={on} len={bit.len} />
   if (bit.bubble) {
     return (
@@ -914,7 +1047,7 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
     )
   }
   if (bit.stamp) return <Stamp delay={delay} rot={bit.rot} color={on} panel={colors.panel} />
-  if (bit.tick) return <Tick color={on} scale={bit.scale} />
+  if (bit.tick) return <Tick delay={delay} color={on} scale={bit.scale} />
   if (bit.dancer) {
     return (
       <Dancer
@@ -992,12 +1125,6 @@ export function CheerBurst() {
 
   return (
     <View pointerEvents="none" style={layerStyle} collapsable={false}>
-      <Text
-        pointerEvents="none"
-        style={[styles.cheerName, { color: colors.on, top: stageTop + stageH * 0.36 }]}
-      >
-        {t(`cheer.${burst.kind}.name`)}
-      </Text>
       <Slot key={burst.key}>
         <View style={[styles.stage, { top: stageTop, width: stageW, height: stageH }]}>
           {screenPop
@@ -1033,7 +1160,7 @@ export function CheerBurst() {
 
 const styles = StyleSheet.create({
   layer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 120,
     elevation: 30,
   },
@@ -1045,16 +1172,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     overflow: 'visible',
-  },
-  cheerName: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontFamily: fonts.display,
-    fontSize: 42,
-    fontWeight: '700',
-    letterSpacing: 1,
   },
   pop: {
     position: 'absolute',

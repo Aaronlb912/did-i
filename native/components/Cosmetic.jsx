@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   premiumRing: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: CHIP_R + 3,
     shadowOpacity: 0.85,
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   lookInset: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 1,
     borderRadius: CHIP_R - 1,
     opacity: 0.55,

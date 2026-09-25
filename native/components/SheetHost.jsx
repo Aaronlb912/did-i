@@ -82,7 +82,7 @@ export function SheetHost() {
 
 const styles = StyleSheet.create({
   host: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 180,
     elevation: 36,
     justifyContent: 'center',

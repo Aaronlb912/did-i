@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   backdropClip: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: radius.r,
     overflow: 'hidden',
   },

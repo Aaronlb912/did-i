@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     elevation: 24,
   },
   overlayLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 200,
     elevation: 40,
   },

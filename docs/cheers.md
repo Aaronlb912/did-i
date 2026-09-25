@@ -71,6 +71,15 @@ Do not hardcode pop count or positions in Shop, Collection, or `board-ops`.
 | Preview taps | Shop, ShopCheers, Collection, native shop — always `preview: true` |
 | Tests | `scripts/check.mjs` |
 
+## Native gotchas
+
+- React Native 0.86 has no `StyleSheet.absoluteFillObject`. Spreading it
+  spreads nothing, and the cheer layer laid out 0px tall, so no cheer showed
+  on the phone. Use `StyleSheet.absoluteFill`. `npm test` fails if the old
+  name comes back under `native/` or `widgets/`.
+- SVG props (the check tick's draw-on stroke) cannot use the native driver.
+- `npm test` fails if the pop model makes a bit the native `Bit` does not draw.
+
 ## Check before done
 
 - Stage 1: one pop, centered-ish.

@@ -1,5 +1,6 @@
-import { Button, Capsule, Circle, Ellipse, HStack, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
+import { Button, Ellipse, HStack, Rectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
 import {
+  allowsTightening,
   background,
   buttonBorderShape,
   buttonStyle,
@@ -12,9 +13,14 @@ import {
   frame,
   tint,
   kerning,
+  lineLimit,
+  minimumScaleFactor,
   multilineTextAlignment,
   offset,
+  opacity,
   padding,
+  rotationEffect,
+  scaleEffect,
   textCase,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers'
@@ -24,6 +30,8 @@ type TonightItem = {
   lampId: string
   label: string
   question?: string
+  periodKey?: string
+  tag?: string
   status: 'open' | 'yes' | 'skip'
 }
 
@@ -49,6 +57,7 @@ export type DidITonightWidgetProps = {
   footer: string
   didLabel: string
   nopeLabel: string
+  nextLabel?: string
   openLabel: string
   clearLabel?: string
   emptyLabel?: string
@@ -117,61 +126,153 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const leadId = String(lead?.lampId || '')
   const buddyId = String(props?.buddyId || '')
 
-  function buddyMark(id: string) {
-    const known = id === 'cat' || id === 'dog' || id === 'rabbit' || id === 'owl'
-    if (!known) return null
-    const body = id === 'cat' ? '#f0a64a' : id === 'dog' ? '#c68b52' : id === 'rabbit' ? '#b8b8c8' : '#8b6b4a'
-    const belly = id === 'cat' ? '#ffe8c8' : id === 'dog' ? '#f3ddc4' : id === 'rabbit' ? '#e8e8f0' : '#d4c4a8'
-    const ear = id === 'rabbit' ? '#f0b8c8' : id === 'dog' ? '#9a6538' : id === 'owl' ? '#6b5038' : body
-    const eye = id === 'owl' ? '#f0e080' : '#2d241c'
-    const pupil = '#2d241c'
-    const tall = id === 'rabbit'
-    const w = compact ? 32 : 40
-    const h = compact ? 38 : 48
-    const earW = compact ? 8 : 10
-    const earH = compact ? 10 : 12
+  // The app buddy SVG (native/components/BuddyArt.jsx, same markup as the
+  // Android widget's BUDDY_SVG) on its 48x58 grid, in SVG draw order.
+  // SwiftUI here has no SVG or path, so: e = ellipse [cx, cy, rx, ry, fill,
+  // rotate, opacity], t = triangle [base center x, base y, half width,
+  // height (negative points down), fill], l = line [x1, y1, x2, y2, stroke, width].
+  const BUDDY: Record<string, (string | number)[][]> = {
+    cat: [
+      ['e', 24, 30, 15, 14, '#f0a64a'],
+      ['e', 24, 32, 11, 9, '#ffe8c8', 0, 0.85],
+      ['t', 14, 18.5, 4, 10.5, '#f0a64a'],
+      ['t', 34, 18.5, 4, 10.5, '#f0a64a'],
+      ['t', 13.5, 17.5, 2.5, 7.5, '#ffd4a8'],
+      ['t', 34.5, 17.5, 2.5, 7.5, '#ffd4a8'],
+      ['e', 18, 28, 2.2, 3, '#2d241c'],
+      ['e', 30, 28, 2.2, 3, '#2d241c'],
+      ['e', 18.8, 27, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 30.8, 27, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['t', 24, 34, 2, 3, '#e07a8a'],
+      ['l', 14, 33, 6, 31, '#5c4a3a', 0.9],
+      ['l', 14, 35, 6, 36, '#5c4a3a', 0.9],
+      ['l', 34, 33, 42, 31, '#5c4a3a', 0.9],
+      ['l', 34, 35, 42, 36, '#5c4a3a', 0.9],
+      ['e', 17, 44, 4.5, 3.2, '#f0a64a'],
+      ['e', 31, 44, 4.5, 3.2, '#f0a64a'],
+      ['e', 17, 45, 3, 2, '#ffe8c8'],
+      ['e', 31, 45, 3, 2, '#ffe8c8'],
+    ],
+    dog: [
+      ['e', 24, 30, 15, 14, '#c68b52'],
+      ['e', 24, 34, 8, 6.5, '#f3ddc4'],
+      ['e', 11, 24, 5.5, 9, '#9a6538', -18],
+      ['e', 37, 24, 5.5, 9, '#9a6538', 18],
+      ['e', 18, 27, 2.3, 3.1, '#2d241c'],
+      ['e', 30, 27, 2.3, 3.1, '#2d241c'],
+      ['e', 19, 26, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 31, 26, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 24, 33.5, 3.2, 2.4, '#2d241c'],
+      ['t', 24, 36, 2, -2, '#e07a8a'],
+      ['e', 17, 44, 4.5, 3.2, '#c68b52'],
+      ['e', 31, 44, 4.5, 3.2, '#c68b52'],
+      ['e', 17, 45, 3, 2, '#f3ddc4'],
+      ['e', 31, 45, 3, 2, '#f3ddc4'],
+    ],
+    rabbit: [
+      ['e', 17, 12, 4, 11, '#b8b8c8', -8],
+      ['e', 31, 12, 4, 11, '#b8b8c8', 8],
+      ['e', 17, 12, 2.2, 7, '#f0b8c8', -8],
+      ['e', 31, 12, 2.2, 7, '#f0b8c8', 8],
+      ['e', 24, 32, 14, 13, '#b8b8c8'],
+      ['e', 24, 34, 9, 8, '#e8e8f0'],
+      ['e', 18, 29, 2, 2.8, '#2d241c'],
+      ['e', 30, 29, 2, 2.8, '#2d241c'],
+      ['e', 18.7, 28.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['e', 30.7, 28.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['e', 24, 33, 2, 1.5, '#f0b8c8'],
+      ['e', 17, 44, 4.5, 3.2, '#b8b8c8'],
+      ['e', 31, 44, 4.5, 3.2, '#b8b8c8'],
+      ['e', 17, 45, 3, 2, '#e8e8f0'],
+      ['e', 31, 45, 3, 2, '#e8e8f0'],
+    ],
+    owl: [
+      ['t', 16, 14.5, 2, 8.5, '#6b5038'],
+      ['t', 32, 14.5, 2, 8.5, '#6b5038'],
+      ['e', 24, 32, 14, 13, '#8b6b4a'],
+      ['e', 24, 30, 11, 10, '#d4c4a8'],
+      ['e', 18, 28, 4, 4.5, '#f0e080'],
+      ['e', 30, 28, 4, 4.5, '#f0e080'],
+      ['e', 18, 28, 2, 2.5, '#2d241c'],
+      ['e', 30, 28, 2, 2.5, '#2d241c'],
+      ['e', 18.5, 27.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['e', 30.5, 27.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['t', 24, 34, 2, 3, '#d4a040'],
+      ['e', 24, 38, 7, 6, '#c4a882'],
+      ['e', 17, 44, 4.5, 3.2, '#8b6b4a'],
+      ['e', 31, 44, 4.5, 3.2, '#8b6b4a'],
+      ['e', 17, 45, 3, 2, '#c4a882'],
+      ['e', 31, 45, 3, 2, '#c4a882'],
+    ],
+  }
+
+  function buddyPart(part: (string | number)[], k: number) {
+    const kind = part[0]
+    const n = (i: number) => Number(part[i]) || 0
+    if (kind === 'e') {
+      const mods = [frame({ width: n(3) * 2 * k, height: n(4) * 2 * k }), foregroundStyle(String(part[5]))]
+      if (n(7)) mods.push(opacity(n(7)))
+      if (n(6)) mods.push(rotationEffect(n(6)))
+      mods.push(offset({ x: (n(1) - n(3)) * k, y: (n(2) - n(4)) * k }))
+      return <Ellipse modifiers={mods} />
+    }
+    if (kind === 'l') {
+      const dx = n(3) - n(1)
+      const dy = n(4) - n(2)
+      const len = Math.sqrt(dx * dx + dy * dy)
+      const w = n(6)
+      return (
+        <Rectangle
+          modifiers={[
+            frame({ width: len * k, height: w * k }),
+            foregroundStyle(String(part[5])),
+            rotationEffect((Math.atan2(dy, dx) * 180) / Math.PI),
+            offset({ x: ((n(1) + n(3)) / 2 - len / 2) * k, y: ((n(2) + n(4)) / 2 - w / 2) * k }),
+          ]}
+        />
+      )
+    }
+    // A square turned 45° and stretched is a diamond; the box clips it to
+    // the half above (or below) the base line, which is the triangle.
+    const half = n(3)
+    const tall = Math.abs(n(4))
+    const side = half * Math.SQRT2 * k
+    const up = n(4) > 0
     return (
       <ZStack
-        alignment="center"
         modifiers={[
-          frame({ width: w, height: h }),
+          frame({ width: half * 2 * k, height: tall * k }),
+          clipped(true),
+          offset({ x: (n(1) - half) * k, y: (up ? n(2) - tall : n(2)) * k }),
+        ]}
+      >
+        <Rectangle
+          modifiers={[
+            frame({ width: side, height: side }),
+            foregroundStyle(String(part[5])),
+            rotationEffect(45),
+            scaleEffect({ x: 1, y: tall / half }),
+            offset({ y: ((up ? 1 : -1) * tall * k) / 2 }),
+          ]}
+        />
+      </ZStack>
+    )
+  }
+
+  function buddyMark(id: string) {
+    const parts = BUDDY[id]
+    if (!parts) return null
+    const w = compact ? 30 : 38
+    const k = w / 48
+    return (
+      <ZStack
+        alignment="topLeading"
+        modifiers={[
+          frame({ width: w, height: 58 * k }),
           offset({ x: compact ? 2 : 4, y: compact ? -4 : -6 }),
         ]}
       >
-        {tall ? (
-          <HStack spacing={compact ? 10 : 12} modifiers={[offset({ y: compact ? -14 : -16 })]}>
-            <Capsule modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 16 : 20 }), foregroundStyle(body)]} />
-            <Capsule modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 16 : 20 }), foregroundStyle(body)]} />
-          </HStack>
-        ) : id === 'dog' ? (
-          <HStack spacing={compact ? 14 : 18} modifiers={[offset({ y: compact ? -6 : -8 })]}>
-            <Ellipse modifiers={[frame({ width: earW, height: earH + 4 }), foregroundStyle(ear)]} />
-            <Ellipse modifiers={[frame({ width: earW, height: earH + 4 }), foregroundStyle(ear)]} />
-          </HStack>
-        ) : (
-          <HStack spacing={compact ? 14 : 18} modifiers={[offset({ y: compact ? -6 : -8 })]}>
-            <Circle modifiers={[frame({ width: earW, height: earH }), foregroundStyle(ear)]} />
-            <Circle modifiers={[frame({ width: earW, height: earH }), foregroundStyle(ear)]} />
-          </HStack>
-        )}
-        <Ellipse modifiers={[frame({ width: w - 10, height: compact ? 22 : 28 }), foregroundStyle(body)]} />
-        <Ellipse modifiers={[frame({ width: compact ? 16 : 20, height: compact ? 12 : 16 }), foregroundStyle(belly), offset({ y: 2 })]} />
-        <HStack spacing={compact ? 5 : 7} modifiers={[offset({ y: compact ? -2 : -3 })]}>
-          <Circle modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 6 : 7 }), foregroundStyle(eye)]} />
-          <Circle modifiers={[frame({ width: compact ? 5 : 6, height: compact ? 6 : 7 }), foregroundStyle(eye)]} />
-        </HStack>
-        {id === 'owl' ? (
-          <HStack spacing={compact ? 5 : 7} modifiers={[offset({ y: compact ? -2 : -3 })]}>
-            <Circle modifiers={[frame({ width: 4, height: 5 }), foregroundStyle(pupil)]} />
-            <Circle modifiers={[frame({ width: 4, height: 5 }), foregroundStyle(pupil)]} />
-          </HStack>
-        ) : id === 'dog' ? (
-          <Ellipse modifiers={[frame({ width: compact ? 8 : 10, height: compact ? 6 : 8 }), foregroundStyle(pupil), offset({ y: 4 })]} />
-        ) : null}
-        <HStack spacing={compact ? 12 : 16} modifiers={[offset({ y: compact ? 10 : 12 })]}>
-          <Ellipse modifiers={[frame({ width: compact ? 8 : 9, height: compact ? 6 : 7 }), foregroundStyle(body)]} />
-          <Ellipse modifiers={[frame({ width: compact ? 8 : 9, height: compact ? 6 : 7 }), foregroundStyle(body)]} />
-        </HStack>
+        {parts.map((part) => buddyPart(part, k))}
       </ZStack>
     )
   }
@@ -196,9 +297,32 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       items: nextItems,
       leadLampId: nextLead ? nextLead.lampId : '',
       question: nextQuestion,
+      tagTitle: String(nextLead?.tag || '').trim() || tagTitle,
       left: nextLeft,
       footer: nextFooter,
       openUri: openUriForLead(nextLead ? nextLead.lampId : ''),
+    }
+  }
+
+  // Next steps through the open questions, or the did-nots once none are
+  // open. It only moves the card; it never answers (peekNextTonightCard).
+  const openItems = items.filter((item) => item.status === 'open')
+  const browsable = openItems.length ? openItems : items.filter((item) => item.status === 'skip')
+
+  function afterNext() {
+    if (browsable.length < 2) return props
+    const at = lead
+      ? browsable.findIndex(
+          (item) => item.lampId === lead.lampId && String(item.periodKey || '') === String(lead.periodKey || ''),
+        )
+      : -1
+    const next = browsable[((at === -1 ? 0 : at) + 1) % browsable.length]
+    return {
+      ...props,
+      leadLampId: next.lampId,
+      question: String(next.question || next.label || ''),
+      tagTitle: String(next.tag || '').trim() || tagTitle,
+      openUri: openUriForLead(next.lampId),
     }
   }
 
@@ -224,6 +348,11 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
 
   const compact = family === 'systemSmall' || family === 'accessoryRectangular'
   const titleSize = compact ? 18 : 26
+  const home = family !== 'accessoryRectangular'
+  const showNext = home && Boolean(lead) && browsable.length > 1
+  // The tag of the question showing, since the card mixes every tag.
+  const leadTag = String(lead?.tag || '').trim() || tagTitle
+  const sidePad = home && (showNext || BUDDY[buddyId]) ? (compact ? 38 : 52) : 0
   const kicker = (
     <Text
       modifiers={[
@@ -232,24 +361,51 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         textCase('uppercase'),
         foregroundStyle(on),
         multilineTextAlignment('center'),
+        lineLimit(1),
+        minimumScaleFactor(0.8),
+        padding({ horizontal: sidePad }),
         frame({ maxWidth: 10000 }),
       ]}
     >
-      {tagTitle}
+      {leadTag}
     </Text>
   )
+  // Shrinks to fit the card instead of cutting off mid-line (Android's fitQuestion).
   const question = (
     <Text
       modifiers={[
         font({ weight: 'bold', size: titleSize }),
         foregroundStyle(ink),
         multilineTextAlignment('center'),
+        lineLimit(compact ? 4 : 5),
+        minimumScaleFactor(0.45),
+        allowsTightening(true),
         frame({ maxWidth: 10000 }),
       ]}
     >
       {lead ? questionText : footer}
     </Text>
   )
+  const nextPill = showNext ? (
+    <VStack alignment="leading" modifiers={[grow, padding({ leading: compact ? 8 : 10, top: compact ? 8 : 9 })]}>
+      <HStack>
+        <Button
+          label={String(props?.nextLabel || 'Next') + ' ›'}
+          target={'next:' + leadId}
+          onPress={() => afterNext()}
+          modifiers={[
+            buttonStyle('bordered'),
+            buttonBorderShape('capsule'),
+            tint(c.on),
+            font({ size: compact ? 10 : 11, weight: 'bold' }),
+            foregroundStyle(on),
+          ]}
+        />
+        <Spacer />
+      </HStack>
+      <Spacer />
+    </VStack>
+  ) : null
   const buttons = lead ? (
     <HStack spacing={8} modifiers={[frame({ maxWidth: 10000 })]}>
       <Button
@@ -329,6 +485,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
             {buttons}
           </VStack>
           {buddyMark(buddyId)}
+          {nextPill}
         </ZStack>
       </VStack>
     </VStack>

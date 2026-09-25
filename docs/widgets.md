@@ -105,7 +105,11 @@ Never call WidgetKit from JS before step 2. Builds without the widget extension 
 
 The card lists tonight's questions from every tag: ready ones first, then ones still waiting on their ask time (the app lets you answer those early too). With two or more open (or, once none are open, two or more did-nots), a Next pill in the top-left corner (opposite the buddy) shows the next one (`PEEK` click, `peekNextTonightCard`). Next only moves the card; it never answers, and it does not go through `WidgetTapReceiver`. The question text is sized to fit the card (`fitQuestion`), so it does not cut off mid-line. Answers land on the tag that holds the question (`findBookHoldingLamp`). The buddy is drawn from the same SVG as the app (`SvgWidget`).
 
-Dev client only: tapping the widget right after a force-stop can start the widget task before the dev launcher loads the app ("App react context shouldn't be created before"). Open the app first. Release builds have no dev launcher.
+### iOS
+
+The iOS card matches Android. The tag name at the top follows the question showing (`items[].tag`), and after a Did or Did not it moves to the next question's tag. With two or more open questions (or did-nots once none are open), a **Next** pill sits top-left. It is an interactive button (`next:<lampId>`), like Did and Did not, and it only moves the card inside the widget. The app's interaction listener ignores it. The question text shrinks to fit (`lineLimit` + `minimumScaleFactor`) instead of cutting off. SwiftUI in the widget cannot draw SVG, so the buddy is redrawn from the app SVG's own coordinates: ellipses, whisker lines, and triangles clipped from turned squares. The layout is exact; the curved dog mouth is a small triangle. None of this has run on an iPhone yet.
+
+Dev client only: tapping the widget right after a force-stop can start the widget task before the dev launcher loads the app ("App react context shouldn't be created before"). Open the app first. Release builds have no dev launcher. On the emulator, a force-stop makes Android send `PACKAGE_UNSTOPPED` on the next launch, which wakes the widget worker first and trips this every time. Use `adb shell am kill com.aaronbryant.didi` from the home screen instead of `am force-stop`, then open the app.
 
 ## Code map
 

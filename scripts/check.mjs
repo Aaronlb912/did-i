@@ -372,6 +372,39 @@ test('native flip cheer runs at 960ms', () => {
   assert.match(src, /const FLIP_MS = 960/)
 })
 
+// RN 0.86 dropped StyleSheet.absoluteFillObject. Spreading it spread nothing,
+// so the cheer layer laid out 0px tall and never showed on the phone.
+test('native styles do not spread the removed absoluteFillObject', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const hits = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (statSync(full).isDirectory()) walk(full)
+      else if (/\.(jsx?|tsx?)$/.test(name) && readFileSync(full, 'utf8').includes('absoluteFillObject')) hits.push(full)
+    }
+  }
+  walk(path.join(root, 'native'))
+  walk(path.join(root, 'widgets'))
+  assert.deepEqual(hits, [])
+})
+
+test('native cheer draws every bit the pop model makes', () => {
+  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/components/CheerBurst.jsx'), 'utf8')
+  const meta = new Set(['id', 'delay', 'size', 'rot', 'len', 'tone', 'side', 'y', 'x', 'fat', 'reach', 'tall', 'screen', 'fall', 'width', 'drift', 'rise', 'scale', 'hop', 'hops', 'from', 'span'])
+  const flags = new Set()
+  for (const kind of cheerKinds()) {
+    for (const stage of [1, 5]) {
+      for (const pop of popsFor(kind, stage)) {
+        for (const bit of pop.bits) {
+          for (const key of Object.keys(bit)) if (!meta.has(key)) flags.add(key)
+        }
+      }
+    }
+  }
+  for (const flag of flags) assert.match(src, new RegExp(`if \\(bit\\.${flag}\\)`), flag)
+})
+
 test('every cheer adds a burst per stage', () => {
   for (const kind of cheerKinds()) {
     assert.equal(popsFor(kind, 1).length, 1)
@@ -824,6 +857,29 @@ test('widget props list every tag and merge answers onto the right one', () => {
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
+test('a widget answer from last night still lands after midnight', () => {
+  const book = {
+    id: 'tag-a',
+    title: 'A',
+    lamps: [{ id: 'l1', question: 'One?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 'tag-a', boards: [book] })
+  const lastNight = new Date(2026, 8, 20, 21, 0)
+  const props = buildTonightWidgetProps(shelf, lastNight)
+  const tapped = { items: props.items.map((item) => ({ ...item, status: 'yes' })) }
+  const nextDay = new Date(2026, 8, 21, 20, 0)
+  const merged = mergeWidgetPropsIntoShelf(shelf, tapped, nextDay)
+  const answer = merged.boards[0].answers.find((row) => row.lampId === 'l1')
+  assert.ok(answer, 'the answer is kept')
+  assert.equal(answer.periodKey || answer.dateIso, props.items[0].periodKey, 'on the night it was tapped')
+  const again = mergeWidgetPropsIntoShelf(merged, { items: tapped.items.map((item) => ({ ...item, status: 'skip' })) }, nextDay)
+  assert.equal(again, merged, 'an old tap never overwrites a set answer')
+  const closed = { ...shelf, boards: [closePastNights(book, nextDay)] }
+  const late = mergeWidgetPropsIntoShelf(closed, tapped, nextDay)
+  assert.equal(late.boards[0].answers.find((row) => row.lampId === 'l1')?.status, 'late', 'a did beats the day-turn nope')
+})
+
 test('the tonight widget can draw a question without the app', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const bridge = readFileSync(path.join(root, 'native/widget-bridge.js'), 'utf8')
@@ -878,6 +934,13 @@ test('the tonight widget can draw a question without the app', () => {
     multilineTextAlignment: (value) => value,
     widgetURL: (url) => url,
     offset: (params) => params,
+    Rectangle: view('RectangleView'),
+    lineLimit: (n) => ({ lineLimit: n }),
+    minimumScaleFactor: (f) => ({ minimumScaleFactor: f }),
+    allowsTightening: (on) => ({ allowsTightening: on }),
+    opacity: (value) => ({ opacity: value }),
+    rotationEffect: (deg) => ({ rotationEffect: deg }),
+    scaleEffect: (params) => ({ scaleEffect: params }),
     _jsx: (type, props) => (typeof type === 'function' ? type(props) : { type, props }),
     _jsxs: (type, props) => (typeof type === 'function' ? type(props) : { type, props }),
   })
@@ -956,6 +1019,49 @@ test('the tonight widget can draw a question without the app', () => {
   )
   assert.ok(glow.includes('#5ee8ff'), 'a glow look rings the card')
   assert.ok(glow.includes('#111820'))
+
+  // Every tag on one card: the header follows the question, Next browses.
+  const mixed = {
+    tagTitle: 'Home',
+    question: 'Did I lock the door?',
+    leadLampId: 'door',
+    items: [
+      { lampId: 'door', periodKey: 'n', question: 'Did I lock the door?', label: 'Door', status: 'open', tag: 'Home' },
+      { lampId: 'memo', periodKey: 'n', question: 'Did I send the memo?', label: 'Memo', status: 'open', tag: 'Work' },
+    ],
+    left: 2,
+    footer: '2 left tonight.',
+    didLabel: 'Did',
+    nopeLabel: 'Did not',
+    nextLabel: 'Next',
+  }
+  const env = { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }
+  const mixedTree = fn(mixed, env)
+  const mixedDrawn = JSON.stringify(mixedTree)
+  assert.ok(mixedDrawn.includes('"text":"Home"'), 'header is the showing question tag')
+  assert.ok(!mixedDrawn.includes('react.fragment'), 'no fragments in the widget tree')
+  assert.ok(mixedDrawn.includes('"minimumScaleFactor"'), 'the question shrinks to fit instead of clipping')
+  const peek = findPress(mixedTree, 'next:door')
+  assert.ok(peek, 'Next is an interactive button')
+  const peeked = peek()
+  assert.equal(peeked.leadLampId, 'memo')
+  assert.equal(peeked.question, 'Did I send the memo?')
+  assert.equal(peeked.tagTitle, 'Work')
+  assert.ok(peeked.items.every((item) => item.status === 'open'), 'Next never answers')
+  const peekedDrawn = JSON.stringify(fn(peeked, env))
+  assert.ok(peekedDrawn.includes('"text":"Work"') && peekedDrawn.includes('Did I send the memo?'))
+  assert.equal(findPress(fn(peeked, env), 'next:memo')().leadLampId, 'door', 'Next wraps around')
+  const answered = findPress(mixedTree, 'did:door')()
+  assert.equal(answered.tagTitle, 'Work', 'the header follows the next question after a tap')
+  assert.ok(!JSON.stringify(fn(answered, env)).includes('next:'), 'no Next with one question left')
+
+  // The buddy is drawn from the app SVG's own shapes.
+  const owlTree = JSON.stringify(fn({ ...mixed, buddyId: 'owl' }, env))
+  for (const fill of ['#6b5038', '#8b6b4a', '#d4c4a8', '#f0e080', '#2d241c', '#d4a040', '#c4a882']) {
+    assert.ok(owlTree.includes(fill), `owl ${fill}`)
+  }
+  const catTree = JSON.stringify(fn({ ...mixed, buddyId: 'cat' }, env))
+  assert.ok(catTree.includes('#5c4a3a') && catTree.includes('#ffd4a8'), 'cat whiskers and inner ears')
 })
 
 test('an android widget tap for one lamp and night applies once', () => {
@@ -1520,7 +1626,7 @@ test('the menu, a buy confirm, and a cheer preview can show on the phone', () =>
   const sheet = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
   assert.ok(sheet.includes("goHash('/gems')"), 'the short-gems popup opens the gem page')
   assert.ok(menu.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the opening tap does not close the menu')
-  assert.ok(cheer.includes('cheerName'), 'a cheer preview shows its name')
+  assert.ok(!cheer.includes('cheerName') && !cheer.includes('.name`)'), 'a cheer shows only the cheer, no name')
   assert.ok(purse.includes('__didIEmit'), 'a cheer keeps its kind')
   assert.ok(boot.includes('win.__didIEmit = emit'), 'the phone bus keeps event detail')
   assert.ok(!cal.includes('aspectRatio'), 'calendar days are not screen-tall')

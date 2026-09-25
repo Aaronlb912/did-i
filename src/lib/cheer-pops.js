@@ -106,7 +106,7 @@ const BASE_HOLD = {
   night: 1600,
   dance: 1850,
   stamp: 1150,
-  rain: 1200,
+  rain: 2300,
   check: 1250,
   bubble: 1500,
   spark: 820,
@@ -226,23 +226,28 @@ function rainBurstBits(pop, stage) {
   const level = burstLevel(pop, stage)
   const n = stageN(stage)
   const mul = stageMul(stage)
-  const count = 3 + level * 2
-  const spread = mul * (2.4 + n * 1.8)
-  const fall = `${(3.5 + n * 2.4) * mul}rem`
+  const count = Math.min(24, 8 + level * 4)
+  // Drops stay under their cloud; more stages means more clouds, not one huge one.
+  const cloud = Math.min(12, (4.5 + n * 1.4) * mul)
+  const spread = cloud / 2 - 0.9
+  const fall = `${Math.min(13, (3.5 + n * 1.3) * mul)}rem`
   const bits = Array.from({ length: count }, (_, i) => ({
     id: `drop-${i}`,
     drop: true,
     x: `${-spread + (i / Math.max(1, count - 1)) * spread * 2}rem`,
-    len: `${(0.9 + (i % 3) * 0.35 + level * 0.12) * mul}rem`,
+    len: `${(0.8 + (i % 3) * 0.3) * Math.min(mul, 1.4)}rem`,
     fall,
-    delay: `${(i * 36 + pop * 20) % 520}ms`,
+    delay: `${Math.round(((i * 8) % 29) / 29 * 760) + pop * 20}ms`,
     fat: i % 5 === 0 && level >= 3,
   }))
+  // Phone only for now: the drops fall out of this.
+  bits.push({ id: 'cloud', cloud: true, delay: '0ms', width: `${cloud}rem` })
   bits.push({
     id: 'puddle',
     puddle: true,
-    delay: '400ms',
-    width: `${(3.5 + n * 1.4) * mul}rem`,
+    delay: '850ms',
+    fall,
+    width: `${cloud * 0.85}rem`,
   })
   return bits
 }
@@ -251,7 +256,7 @@ function bubbleBurstBits(pop, stage) {
   const level = burstLevel(pop, stage)
   const n = stageN(stage)
   const mul = stageMul(stage)
-  const count = 1 + level
+  const count = 3 + level
   const spread = mul * (1.4 + n * 1.1)
   const rise = `${(5 + n * 2.8) * mul}rem`
   return Array.from({ length: count }, (_, i) => ({
@@ -260,7 +265,7 @@ function bubbleBurstBits(pop, stage) {
     x: `${-spread + (i / Math.max(1, count - 1)) * spread * 2}rem`,
     size: `${(1.3 + (i % 3) * 0.45 + level * 0.22) * mul}rem`,
     rise,
-    delay: `${i * 110 + pop * 25}ms`,
+    delay: `${(i * 90) % 600 + pop * 25}ms`,
     drift: i % 2 === 0 ? `${-1.3 * mul}rem` : `${1.5 * mul}rem`,
   }))
 }

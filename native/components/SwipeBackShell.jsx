@@ -119,7 +119,7 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
 const styles = StyleSheet.create({
   shell: { flex: 1, overflow: 'hidden', zIndex: 0 },
   back: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   backInner: { flex: 1 },
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   frontInner: { flex: 1 },
   shade: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#000',
   },
   edge: {
