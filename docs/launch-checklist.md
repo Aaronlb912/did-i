@@ -20,6 +20,8 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [x] Android widget: every Did / Did not tapped before the app runs is kept, not only the last
 - [x] Android widget: the quick tap paint shows the buddy
 - [x] Google sign-in: code, OAuth clients (web, iOS, Android debug), Supabase provider on, IDs in `env.client.js`
+- [x] iPhone follows the phone light/dark setting (`userInterfaceStyle` automatic), 1024 app icon, iOS privacy manifest
+- [x] Android: overlay and storage permissions removed
 - [x] `expo-updates` added (runtime = app version, channels per EAS profile). Build 56 is the first that takes updates
 
 **Still to do**

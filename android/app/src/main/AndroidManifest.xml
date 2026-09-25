@@ -1,11 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
   <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion"/>
-  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
   <uses-permission android:name="com.android.vending.BILLING"/>
   <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
+  <!-- expo-sensors asks for it for the pedometer; shake-to-undo only needs the accelerometer. -->
+  <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
+  <!-- WorkManager adds it for foreground jobs; the widget never runs one. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove"/>
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
