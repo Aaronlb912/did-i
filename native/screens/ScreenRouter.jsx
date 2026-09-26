@@ -89,9 +89,9 @@ export function ScreenRouter({
       />
     )
   }
-  if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
-    return <FirstNightScreen book={book} onChange={change} />
-  }
+  if (path === '/first') return <FirstNightScreen book={book} onChange={change} />
+  // Go to /first itself, not just its screen, so the tab bar stays hidden there.
+  if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" />
   if (path === '/about') return <AboutScreen book={book} />
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />

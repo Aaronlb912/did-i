@@ -968,6 +968,7 @@ export const de = {
   'marks.home': 'Start',
   'marks.stats': 'Bisher',
   'marks.ok': 'Ok',
+  'marks.new': 'Neue Marke',
   'mark.first-open.name': 'Da gewesen',
   'mark.first-open.line': 'Du hast Did I geöffnet.',
   'mark.first-did.name': 'Erstes DID',

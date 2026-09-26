@@ -39,7 +39,7 @@ export function AppShell() {
   const gated = authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
   const backRoute = useMemo(() => peekBackRoute(), [route])
-  const swipeBack = canGoBack()
+  const swipeBack = canGoBack() && route.path !== '/first'
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const askPings = useCallback(async () => {

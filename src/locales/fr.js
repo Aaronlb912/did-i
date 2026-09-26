@@ -965,6 +965,7 @@ export const fr = {
   'marks.home': 'Accueil',
   'marks.stats': 'Jusqu\'ici',
   'marks.ok': 'D\'accord',
+  'marks.new': 'Nouvelle marque',
   'mark.first-open.name': 'Présent',
   'mark.first-open.line': 'Tu as ouvert Did I.',
   'mark.first-did.name': 'Premier DID',

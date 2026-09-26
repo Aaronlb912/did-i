@@ -549,6 +549,8 @@ export default function App() {
       />
     )
   } else if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
+    // Move to /first itself so the tab bar stays hidden until the first question is in.
+    if (path !== '/first') queueMicrotask(() => goHash('/first'))
     inner = <FirstNight book={live} onChange={change} />
   } else if (path === '/about') {
     inner = <About book={live} />
