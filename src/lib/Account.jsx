@@ -201,6 +201,21 @@ function SignedOut({ on }) {
         {auth.step === 'code' ? (
           <p className="di-auth-card-note">{t('account.sent', { email: auth.email })}</p>
         ) : null}
+        {auth.step === 'reviewer' ? (
+          <SetField
+            label={t('auth.password')}
+            type="password"
+            autoComplete="current-password"
+            value={auth.password}
+            onChange={(event) => auth.setPassword(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                auth.openReviewer()
+              }
+            }}
+          />
+        ) : null}
 
         {auth.miss ? (
           <p className="di-miss" role="alert">
@@ -216,6 +231,15 @@ function SignedOut({ on }) {
             <button className="di-did di-did-small" type="button" disabled={auth.busy} onClick={auth.askEmail}>
               {t('account.send')}
             </button>
+          ) : auth.step === 'reviewer' ? (
+            <>
+              <button className="di-did di-did-small" type="button" disabled={auth.busy} onClick={auth.openReviewer}>
+                {t('account.signIn')}
+              </button>
+              <button className="di-key" type="button" onClick={auth.useDifferentEmail}>
+                {t('account.other')}
+              </button>
+            </>
           ) : (
             <>
               <button className="di-did di-did-small" type="button" disabled={auth.busy} onClick={auth.openEmail}>
@@ -235,6 +259,11 @@ function SignedOut({ on }) {
         </div>
 
         <LegalLinks leadKey="legal.signInLead" subtle />
+        {auth.step === 'start' ? (
+          <button className="di-auth-reviewer" type="button" onClick={auth.showReviewer}>
+            {t('auth.reviewer')}
+          </button>
+        ) : null}
       </div>
 
       <div className="di-auth-lock">

@@ -77,6 +77,7 @@ export function accountMissText(bad) {
     appleUnavailable: 'auth.appleUnavailable',
     googleFail: 'auth.googleFail',
     googleUnavailable: 'auth.googleUnavailable',
+    reviewerBad: 'auth.reviewerBad',
   }[bad]
   return key ? t(key) : bad
 }
@@ -103,6 +104,18 @@ export async function checkCode(email, code) {
     type: 'email',
   })
   return { miss: error ? mapAuthMiss(error) : '', user: data?.user || null }
+}
+
+// Store review accounts only: reviewers cannot receive an email code.
+// Never creates an account; the account has to exist with a password already.
+export async function signInReviewer(email, password) {
+  const db = cloud()
+  if (!db) return { miss: 'off', user: null }
+  if (!looksLikeEmail(email) || !password) return { miss: 'reviewerBad', user: null }
+  const { data, error } = await db.auth.signInWithPassword({ email: cleanEmail(email), password: String(password) })
+  if (!error) return { miss: '', user: data?.user || null }
+  const bad = mapAuthMiss(error)
+  return { miss: bad === 'often' ? bad : 'reviewerBad', user: null }
 }
 
 export async function signOutHere() {
