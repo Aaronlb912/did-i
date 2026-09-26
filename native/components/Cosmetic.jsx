@@ -45,6 +45,9 @@ const LOOK_META = {
     glow: 'rgba(255, 110, 200, 0.5)',
     dotGlow: 'rgba(255, 110, 200, 0.7)',
   },
+  jade: { on: '#4fe0a8' },
+  indigo: { on: '#7a8cff' },
+  clay: { on: '#d97a5c', bg: '#1a1310', glow: 'rgba(217, 122, 92, 0.35)' },
 }
 
 function rem(n) {
@@ -506,6 +509,57 @@ function FlipChip({ on, panel2, panel3, line }) {
   )
 }
 
+function ConfettiChip({ on, onDeep, late, ink }) {
+  const bits = [
+    { top: 0.55, left: 0.5, deg: -25, c: on },
+    { top: 0.75, left: 1.35, deg: 35, c: onDeep },
+    { top: 1.3, left: 0.75, deg: 70, c: late },
+    { top: 1.55, left: 1.4, deg: -12, c: ink },
+    { top: 0.35, left: 1.2, deg: 20, c: on, square: true },
+  ]
+  return (
+    <View style={styles.chipBox}>
+      {bits.map((bit, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            top: rem(bit.top),
+            left: rem(bit.left),
+            width: rem(bit.square ? 0.24 : 0.42),
+            height: rem(bit.square ? 0.24 : 0.2),
+            borderRadius: 1,
+            backgroundColor: bit.c,
+            transform: [{ rotate: `${bit.deg}deg` }],
+          }}
+        />
+      ))}
+    </View>
+  )
+}
+
+function HeartChip({ on }) {
+  const s = rem(0.7)
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - s / 2,
+          top: CHIP / 2 - rem(0.3),
+          width: s,
+          height: s,
+          backgroundColor: on,
+          transform: [{ rotate: '-45deg' }],
+        }}
+      >
+        <View style={{ position: 'absolute', top: -s / 2, left: 0, width: s, height: s, borderRadius: s / 2, backgroundColor: on }} />
+        <View style={{ position: 'absolute', top: 0, left: s / 2, width: s, height: s, borderRadius: s / 2, backgroundColor: on }} />
+      </View>
+    </View>
+  )
+}
+
 function DefaultChip({ n, on }) {
   const bit = rem(0.28)
   return (
@@ -563,6 +617,12 @@ export function CheerChip({ id, stage = 1, colors }) {
       break
     case 'flip':
       art = <FlipChip on={on} panel2={panel2} panel3={panel3} line={line} />
+      break
+    case 'confetti':
+      art = <ConfettiChip on={on} onDeep={onDeep} late={colors?.late || '#6fb7ff'} ink={ink} />
+      break
+    case 'heart':
+      art = <HeartChip on={on} />
       break
     default: {
       const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))

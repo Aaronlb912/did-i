@@ -28,6 +28,8 @@ const ALL_CHEERS = [
   { id: 'bubble', gems: CHEER_GEMS },
   { id: 'spark', gems: CHEER_GEMS },
   { id: 'flip', gems: CHEER_GEMS },
+  { id: 'confetti', gems: CHEER_GEMS, from: '2026-10-09' },
+  { id: 'heart', gems: CHEER_GEMS, from: '2026-10-09' },
 ]
 
 const ALL_BUDDIES = [
@@ -35,6 +37,7 @@ const ALL_BUDDIES = [
   { id: 'dog', gems: BUDDY_GEMS },
   { id: 'rabbit', gems: BUDDY_GEMS },
   { id: 'owl', gems: BUDDY_GEMS },
+  { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
 ]
 
 const ALL_LOOKS = [
@@ -51,6 +54,9 @@ const ALL_LOOKS = [
   { id: 'ember', coins: 0, gems: LOOK_GEM_PRICE },
   { id: 'frost', coins: 0, gems: LOOK_GEM_PRICE },
   { id: 'pulse', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'jade', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-09' },
+  { id: 'indigo', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-09' },
+  { id: 'clay', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-10-09' },
 ]
 
 export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
@@ -167,6 +173,8 @@ export const GEM_LOOK_IDS = [
   'rose',
   'steel',
   'wine',
+  'jade',
+  'indigo',
 ]
 
 export function isGemLook(id) {

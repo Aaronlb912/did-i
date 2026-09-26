@@ -6,6 +6,7 @@ const COAT = {
   dog: { body: '#c68b52', belly: '#f3ddc4', ear: '#9a6538' },
   rabbit: { body: '#b8b8c8', belly: '#e8e8f0', ear: '#f0b8c8' },
   owl: { body: '#8b6b4a', belly: '#d4c4a8', ear: '#6b5038' },
+  frog: { body: '#72c45e', belly: '#e4f4c4', ear: '#72c45e' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -29,6 +30,22 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
   const pupil = id === 'owl' ? '#2d241c' : '#2d241c'
   const eye = id === 'owl' ? '#f0e080' : pupil
   const tall = id === 'rabbit'
+  if (id === 'frog') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 9, 13, 14, 13, coat.body)} />
+        <View style={spot(box, 25, 13, 14, 13, coat.body)} />
+        <View style={spot(box, 8, 19, 32, 26, coat.body)} />
+        <View style={spot(box, 14, 30, 20, 14, coat.belly)} />
+        <View style={spot(box, 11.5, 14.5, 9, 9, '#fff')} />
+        <View style={spot(box, 27.5, 14.5, 9, 9, '#fff')} />
+        <View style={spot(box, 14.5, 17, 4, 5, pupil)} />
+        <View style={spot(box, 29.5, 17, 4, 5, pupil)} />
+        <View style={spot(box, 12, 42, 9, 6, coat.body)} />
+        <View style={spot(box, 27, 42, 9, 6, coat.body)} />
+      </View>
+    )
+  }
   return (
     <View style={{ width, height }}>
       {tall ? (
@@ -152,6 +169,34 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8b6b4a" />
         <Ellipse cx="17" cy="45" rx="3" ry="2" fill="#c4a882" />
         <Ellipse cx="31" cy="45" rx="3" ry="2" fill="#c4a882" />
+      </Svg>
+    )
+  }
+
+  if (id === 'frog') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="16" cy="20" rx="7" ry="6.5" fill="#72c45e" />
+        <Ellipse cx="32" cy="20" rx="7" ry="6.5" fill="#72c45e" />
+        <Ellipse cx="24" cy="32" rx="16" ry="13" fill="#72c45e" />
+        <Ellipse cx="24" cy="37" rx="10" ry="7" fill="#e4f4c4" />
+        <Ellipse cx="11" cy="35" rx="1.8" ry="1.3" fill="#4e9a42" />
+        <Ellipse cx="37" cy="34" rx="1.6" ry="1.2" fill="#4e9a42" />
+        <Ellipse cx="16" cy="19" rx="4.6" ry="4.6" fill="#fff" />
+        <Ellipse cx="32" cy="19" rx="4.6" ry="4.6" fill="#fff" />
+        <Ellipse cx="16.6" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c" />
+        <Ellipse cx="31.4" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c" />
+        <Ellipse cx="17.3" cy="18.6" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
+        <Ellipse cx="32.1" cy="18.6" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
+        <Ellipse cx="22.5" cy="27.5" rx="0.6" ry="0.45" fill="#2f5a28" />
+        <Ellipse cx="25.5" cy="27.5" rx="0.6" ry="0.45" fill="#2f5a28" />
+        <Path d="M17 30 Q24 35.5 31 30" fill="none" stroke="#2f5a28" strokeWidth="1.3" strokeLinecap="round" />
+        <Ellipse cx="12.5" cy="30.5" rx="2.4" ry="1.4" fill="#f59aa8" opacity="0.75" />
+        <Ellipse cx="35.5" cy="30.5" rx="2.4" ry="1.4" fill="#f59aa8" opacity="0.75" />
+        <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#72c45e" />
+        <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#72c45e" />
+        <Ellipse cx="17" cy="45" rx="3" ry="2" fill="#e4f4c4" />
+        <Ellipse cx="31" cy="45" rx="3" ry="2" fill="#e4f4c4" />
       </Svg>
     )
   }
