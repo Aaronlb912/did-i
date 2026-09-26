@@ -22,13 +22,14 @@ db:apply:all` uses this same list (`scripts/apply-all-sql.mjs`).
    one-document shelf
 9. `supabase/blocks.sql` blocking and reporting
 10. `supabase/push.sql` push tokens and the nudge queue
-11. `supabase/tonight.sql` Did I tonight, the public list
-12. `supabase/dit-board.sql` DIT board sync, no line cap
+11. `supabase/tonight.sql` `delete_me()`, plus tables from the removed public list
+12. `supabase/dit-board.sql` unused since the public list was removed
 13. `supabase/gems-social.sql` cheer sends, gifts
 14. `supabase/gem-purchases.sql` real-money gem packs
 15. `supabase/wallet.sql` server-owned gem balance
 16. `supabase/waitlist.sql` landing-page waitlist
 17. `supabase/friend-cheers.sql` five stored cheers for one gem
+18. `supabase/auto-add.sql` family did yous and allowed friends go straight onto tonight
 
 After any change to any of them, run `supabase/audit.sql`. It has to come
 back with no rows.

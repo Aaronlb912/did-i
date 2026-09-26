@@ -2,21 +2,20 @@ import { useEffect, useId, useState } from 'react'
 import { parseHash } from '../site/hash.js'
 import { showMainNavInMenu } from './app-nav.js'
 import { useAccount } from './account.js'
-import { DIT_ENABLED } from './features.js'
 import { t } from './i18n.js'
 import { feelTap } from './native.js'
-import { usePeopleCount } from './people.js'
+import { usePeoplePulse } from './people.js'
 import { usePrefs } from './prefs.js'
 
 const HOME_ON = ['/', '/home', '/tonight', '/later']
 const QUESTIONS_ON = ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas']
-const EVERYONE_ON = ['/everyone']
 const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
 const PEOPLE_ON = ['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent']
 const ADD_ON = ['/add', '/hang']
 
 const ICONS = {
   add: 'M12 5v14M5 12h14',
+  inbox: 'M4 13h4l1.5 3h5l1.5-3h4M5.5 5h13L20 13v6H4v-6L5.5 5Z',
   people:
     'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.33 0-7 1.67-7 4v2h14v-2c0-2.33-3.67-4-7-4Zm8.25.5c-.6 0-1.17.05-1.7.14 1.2.84 1.95 1.94 1.95 3.36V19h5v-1.75c0-2.07-3.1-3.75-5.25-3.75Z',
   shop: 'M7 8V6a5 5 0 0 1 10 0v2h3.1c.5 0 .9.45.85.95l-1.2 12A1 1 0 0 1 18.76 22H5.24a1 1 0 0 1-.99-1.05l-1.2-12A.86.86 0 0 1 3.9 8H7Zm2 0h6V6a3 3 0 0 0-6 0v2Z',
@@ -50,7 +49,7 @@ function MenuIcon({ path, stroke = false }) {
   )
 }
 
-function mastMenuItems(showAdd, waiting) {
+function mastMenuItems(showAdd, inbox, asks, signedIn) {
   const path = parseHash().path
   const items = []
   if (showMainNavInMenu(path)) {
@@ -72,15 +71,6 @@ function mastMenuItems(showAdd, waiting) {
         stroke: true,
       },
     )
-    if (DIT_ENABLED) {
-      items.push({
-        key: 'everyone',
-        href: '#/everyone',
-        label: t('nav.everyone'),
-        on: EVERYONE_ON.includes(path),
-        icon: 'people',
-      })
-    }
     items.push({ key: 'nav-divider', divider: true })
   }
   if (showAdd) {
@@ -93,14 +83,25 @@ function mastMenuItems(showAdd, waiting) {
       stroke: true,
     })
   }
+  if (signedIn) {
+    items.push({
+      key: 'inbox',
+      href: '#/inbox',
+      label: inbox ? t('didyou.menuWaiting', { n: inbox }) : t('inbox.kicker'),
+      on: path === '/inbox',
+      icon: 'inbox',
+      stroke: true,
+      count: inbox,
+    })
+  }
   items.push(
     {
       key: 'people',
       href: '#/people',
-      label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
-      on: PEOPLE_ON.includes(path),
+      label: asks ? t('people.cogWaiting', { n: asks }) : t('people.cog'),
+      on: PEOPLE_ON.includes(path) && path !== '/inbox',
       icon: 'people',
-      pip: waiting > 0,
+      pip: asks > 0,
     },
     {
       key: 'shop',
@@ -127,18 +128,19 @@ function mastMenuItems(showAdd, waiting) {
   return items
 }
 
-function menuIsOn(showAdd, waiting) {
-  return mastMenuItems(showAdd, waiting).some((item) => item.on)
+function countLabel(n) {
+  return n > 9 ? '9+' : String(n)
 }
 
 export function MastMenu({ showAdd = false }) {
   usePrefs()
   const account = useAccount()
-  const waiting = usePeopleCount(account.user)
+  const { inbox, asks } = usePeoplePulse(account.user)
+  const waiting = inbox + asks
   const menuId = useId()
   const [open, setOpen] = useState(false)
-  const items = mastMenuItems(showAdd, waiting)
-  const on = menuIsOn(showAdd, waiting)
+  const items = mastMenuItems(showAdd, inbox, asks, Boolean(account.user))
+  const on = items.some((item) => item.on)
 
   useEffect(() => {
     function sync() {
@@ -174,11 +176,17 @@ export function MastMenu({ showAdd = false }) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}
-        aria-label={t('mast.menu')}
+        aria-label={inbox ? t('didyou.menuButton', { n: inbox }) : t('mast.menu')}
         onClick={toggle}
       >
         <MenuIcon path={ICONS.grid} />
-        {waiting ? <i className="di-mast-menu-pip" aria-hidden="true" /> : null}
+        {inbox ? (
+          <b className="di-mast-menu-count" aria-hidden="true">
+            {countLabel(inbox)}
+          </b>
+        ) : waiting ? (
+          <i className="di-mast-menu-pip" aria-hidden="true" />
+        ) : null}
       </button>
       {open ? (
         <>
@@ -197,7 +205,9 @@ export function MastMenu({ showAdd = false }) {
                   key={item.key}
                   role="menuitem"
                   href={item.href}
-                  className={item.on ? 'di-mast-menu-row is-on' : 'di-mast-menu-row'}
+                  className={['di-mast-menu-row', item.on ? 'is-on' : '', item.count ? 'is-lit' : '']
+                    .filter(Boolean)
+                    .join(' ')}
                   onClick={() => {
                     feelTap()
                     close()
@@ -207,7 +217,13 @@ export function MastMenu({ showAdd = false }) {
                     <MenuIcon path={ICONS[item.icon]} stroke={item.stroke} />
                   </span>
                   <span className="di-mast-menu-text">{item.label}</span>
-                  {item.pip ? <i className="di-mast-menu-row-pip" aria-hidden="true" /> : null}
+                  {item.count ? (
+                    <b className="di-mast-menu-row-count" aria-hidden="true">
+                      {countLabel(item.count)}
+                    </b>
+                  ) : item.pip ? (
+                    <i className="di-mast-menu-row-pip" aria-hidden="true" />
+                  ) : null}
                 </a>
               ),
             )}

@@ -4,6 +4,7 @@ import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
+import { useAutoAdd } from '../src/lib/people.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
@@ -11,6 +12,7 @@ import { canGoBack, goBack, goHash, onRoute, peekBackRoute, readRoute } from './
 import { AppNavHost } from './components/AppNavHost.jsx'
 import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
+import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { MarkToast } from './components/MarkToast.jsx'
 import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
@@ -38,6 +40,7 @@ export function AppShell() {
   const [pingState, setPingState] = useState(pingSupport)
   const backRoute = useMemo(() => peekBackRoute(), [route])
   const swipeBack = canGoBack()
+  useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const askPings = useCallback(async () => {
     const next = await requestPings()
@@ -94,6 +97,7 @@ export function AppShell() {
     shelf: app.shelf,
     tagId: app.tagId,
     change: app.change,
+    changeBooks: app.changeBooks,
     setTag: app.setTag,
     saveLamp: app.saveLamp,
     keepSent: app.keepSent,
@@ -137,6 +141,7 @@ export function AppShell() {
       )}
       {SITE.has(route.path) ? null : (
         <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
+          <DidYouBanner path={route.path} colors={colors} />
           <SheetHost />
           <CheerBurstHost />
         </View>

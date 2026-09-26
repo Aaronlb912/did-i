@@ -63,7 +63,9 @@ import { Friends } from './lib/Friends.jsx'
 import { Family } from './lib/Family.jsx'
 import { Inbox } from './lib/Inbox.jsx'
 import { Sent } from './lib/Sent.jsx'
-import { Everyone } from './lib/Everyone.jsx'
+import { DidYouBanner } from './lib/DidYouBanner.jsx'
+import { useAccount } from './lib/account.js'
+import { useAutoAdd } from './lib/people.js'
 import { AppNav } from './lib/AppNav.jsx'
 import { showBottomNav } from './lib/app-nav.js'
 import { forgetAnswerMarks } from './lib/answer-log.js'
@@ -94,7 +96,6 @@ import {
   shelfHeatNow,
 } from './lib/streak-moments.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
-import { DIT_ENABLED } from './lib/features.js'
 import { wallClock } from './lib/zone.js'
 import { cloudSetUp } from './lib/cloud.js'
 import {
@@ -177,6 +178,7 @@ export default function App() {
     (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
   const showNav = !SITE.has(path) && showBottomNav(path)
+  const account = useAccount()
 
   function persist(nextShelf) {
     const now = new Date()
@@ -233,6 +235,12 @@ export default function App() {
     persist(putBook(shelf, { ...next, id: next.id || book.id }))
   }
 
+  // Several folders at once, for example a bulk edit on Questions.
+  function changeBooks(books) {
+    if (!books.length) return
+    persist(books.reduce((next, one) => putBook(next, one), shelf))
+  }
+
   function saveLamp(target, lamp, fromBook, clock) {
     const when = clock || new Date()
     const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
@@ -251,12 +259,20 @@ export default function App() {
     persist(putBook(next, commitBook(dest, when)))
   }
 
-  // A Did I a friend sent, kept. It lands on the open tag as a normal question.
-  function keepSent(question) {
-    const text = String(question || '').trim()
-    if (!text) return
-    saveLamp(live, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(new Date()) })
+  // A did you kept from the inbox, or several added on their own, land on
+  // the open folder as tonight-only questions in one write.
+  function keepSent(questions) {
+    const texts = [].concat(questions).map((text) => String(text || '').trim()).filter(Boolean)
+    if (!texts.length) return
+    const clock = new Date()
+    let dest = live
+    for (const text of texts) {
+      dest = hangInto(dest, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(clock) }, false)
+    }
+    persist(putBook(shelf, commitBook(dest, clock)))
   }
+
+  useAutoAdd(account.user, keepSent)
 
   function switchBoard(id) {
     persist(selectBook(shelf, id))
@@ -437,7 +453,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!DIT_ENABLED && path === '/everyone') goHash('/')
   }, [path])
 
   useEffect(() => {
@@ -480,7 +495,6 @@ export default function App() {
       '/gems': t('title.gems'),
       '/kit': t('title.kit'),
       '/account': t('title.account'),
-      '/everyone': t('title.everyone'),
     }
     document.title = titles[view] || t('title.home', { board })
   }, [view, book, prefs])
@@ -578,8 +592,6 @@ export default function App() {
     inner = <Inbox book={live} onKeep={keepSent} />
   } else if (path === '/sent') {
     inner = <Sent book={live} />
-  } else if (path === '/everyone' && DIT_ENABLED) {
-    inner = <Everyone book={live} boards={shelf.boards} onChange={change} />
   } else if (path === '/add' || path === '/hang') {
     inner = (
       <HangPage
@@ -602,6 +614,7 @@ export default function App() {
         tagId={tagId}
         onTag={setTag}
         onChange={change}
+        onChangeBooks={changeBooks}
         onOpen={(boardId, lampId) => {
           if (boardId && boardId !== live.id) persist(selectBook(shelf, boardId))
           goHash('/lamp', { id: lampId })
@@ -681,6 +694,7 @@ export default function App() {
       {SITE.has(path) ? null : (
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
       )}
+      {SITE.has(path) ? null : <DidYouBanner path={path} />}
       <CheerBurst />
       <DiagnosticsAsk />
       <StreakMomentHost />

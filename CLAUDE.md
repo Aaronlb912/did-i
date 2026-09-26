@@ -49,6 +49,7 @@ Supabase:
 ```
 npm run db:apply:all         # apply schema from supabase/*.sql
 npm run db:audit             # scripts/audit-sql.mjs — must return no rows before calling backend work done
+npm run db:test <file>       # scripts/test-sql.mjs — rolled-back SQL checks, e.g. supabase/tests/auto-add.test.sql
 ```
 
 There is no single-test runner; `scripts/check.mjs` runs the full suite.
@@ -96,7 +97,7 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
   stable` helper functions with pinned `search_path` for anything
   correlated, size/length checks in `hardening.sql`, caps on repeatable
   writes via triggers, no per-row queries in loops — fetch with `in (...)`
-  and match in JS, batching example: `familyTonight`).
+  and match in JS).
 - **Night math** — `answerFor` is a `WeakMap`-indexed lookup; never replace
   with `.find`. `wallClock` keeps one `Intl.DateTimeFormat` per zone, never
   built in a loop. Multi-night walks (streaks, calendar, shelf heat) are

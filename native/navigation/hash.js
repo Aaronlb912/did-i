@@ -45,7 +45,6 @@ const ROUTES = new Set([
   '/family',
   '/inbox',
   '/sent',
-  '/everyone',
 ])
 
 const STACK_KEY = 'did-i-stack'

@@ -7,16 +7,19 @@ import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
   blockPerson,
+  doneTonight,
   dropFriend,
   friendAskNote,
   friendAskTitle,
   giftCheer,
   listBlocks,
+  listAutoAdds,
   listFriends,
   formatPhone,
   personName,
   sayNo,
   sayYes,
+  setAutoAdd,
   unblockPerson,
   buyCheers,
   cheerFriend,
@@ -34,7 +37,10 @@ import {
 } from './purse.js'
 import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { GemShort } from './shop-bits.jsx'
-import { SetCap, SetCard } from './set-bits.jsx'
+import { EmptyCard, PersonCard, SectionHead } from './PersonCard.jsx'
+import { SendSheet } from './SendDidYou.jsx'
+import { SetSwitch } from './set-bits.jsx'
+import { useReduceMotion } from './useReduceMotion.js'
 import { useOnline } from './useOnline.js'
 
 function line(person) {
@@ -55,6 +61,10 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const [confirm, setConfirm] = useState(null)
   const [gemShort, setGemShort] = useState(false)
   const [stock, setStock] = useState(null)
+  const [autoAdds, setAutoAdds] = useState(() => new Set())
+  const [sheet, setSheet] = useState(null)
+  const [said, setSaid] = useState('')
+  const still = useReduceMotion()
   const pickRef = useRef(null)
   const online = useOnline()
   const cheersLeft = stock == null ? purse.friendCheers : stock
@@ -66,13 +76,15 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       setReady(true)
       return
     }
-    const [friendRows, blockRows, serverCheers] = await Promise.all([
+    const [friendRows, blockRows, serverCheers, autoRows] = await Promise.all([
       listFriends(),
       listBlocks(),
       readFriendCheers(),
+      listAutoAdds(),
     ])
     setLinks(friendRows)
     setBlocks(blockRows)
+    setAutoAdds(autoRows)
     if (typeof serverCheers === 'number') setStock(serverCheers)
     setReady(true)
   }, [account.user])
@@ -117,6 +129,73 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
 
   if (!ready) return shell(<p className="di-set-note">{t('family.loading')}</p>)
 
+  async function flipAuto(person) {
+    const id = person.user_id
+    const on = !autoAdds.has(id)
+    // Show it at once; put it back if the save does not land.
+    const flip = (want) =>
+      setAutoAdds((live) => {
+        const next = new Set(live)
+        if (want) next.add(id)
+        else next.delete(id)
+        return next
+      })
+    flip(on)
+    const { miss: why } = await setAutoAdd(id, on)
+    if (!why) return
+    flip(!on)
+    setMiss(why === 'off' || why === 'out' ? why : t('friends.autoAddMiss'))
+  }
+
+  async function buyMore() {
+    if (purse.gems < FRIEND_CHEER_GEMS) {
+      setGemShort(true)
+      return
+    }
+    const bought = await buyCheers(book)
+    if (bought.miss === 'gems') {
+      setGemShort(true)
+      return
+    }
+    const known = friendCheerMissKey(bought.miss)
+    if (known) return setMiss(t(known.key, known.vars))
+    if (bought.miss) return setMiss(tMiss(bought.miss))
+    setStock(normalizePurse(bought.book).friendCheers)
+    if (onChange) onChange(bought.book)
+    setMiss('')
+  }
+
+  async function cheer(person) {
+    const sent = await cheerFriend(book, person.user_id, purse.cheerOn)
+    const known = friendCheerMissKey(sent.miss)
+    if (known) return setMiss(t(known.key, known.vars))
+    if (sent.miss) return setMiss(tMiss(sent.miss))
+    setStock(normalizePurse(sent.book).friendCheers)
+    if (onChange) onChange(sent.book)
+    fireCheer(purse.cheerOn, 1)
+    setMiss('')
+    setSaid(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+  }
+
+  async function gift(person) {
+    if (purse.gems < CHEER_GEMS) {
+      setGemShort(true)
+      return
+    }
+    const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
+    const spent = spendGems(book, CHEER_GEMS)
+    if (spent.miss) {
+      setGemShort(true)
+      return
+    }
+    const { miss: why } = await giftCheer(person.user_id, pick)
+    if (why === 'giftCap') return setMiss(t('friends.giftCap'))
+    if (why) return setMiss(why)
+    if (onChange) onChange(spent.book)
+    setMiss('')
+    setSaid(t('friends.giftSent', { name: personName(person) || t('people.someone') }))
+  }
+
   async function answerAsk(id, yes) {
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) setMiss(why)
@@ -126,168 +205,147 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   return shell(
     <>
       <h2 className="di-page-title">{t('friends.title', { n: links.friends.length })}</h2>
-      <p className="di-set-note">{t('friends.cheerNote')}</p>
-      <p className="di-set-note">{t('friends.cheerStock', { n: cheersLeft })}</p>
-      <button
-        className="di-key"
-        type="button"
-        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
-        onClick={async () => {
-          if (purse.gems < FRIEND_CHEER_GEMS) {
-            setGemShort(true)
-            return
-          }
-          const bought = await buyCheers(book)
-          if (bought.miss === 'gems') {
-            setGemShort(true)
-            return
-          }
-          const known = friendCheerMissKey(bought.miss)
-          if (known) return setMiss(t(known.key, known.vars))
-          if (bought.miss) return setMiss(tMiss(bought.miss))
-          setStock(normalizePurse(bought.book).friendCheers)
-          if (onChange) onChange(bought.book)
-          setMiss('')
-        }}
-      >
-        {t('friends.cheerBuy')}
-      </button>
-
-      {links.asked.length ? (
-        <div className="di-people-asks">
-          <SetCap>{t('people.askBanner', { n: links.asked.length })}</SetCap>
-          <SetCard>
-            {links.asked.map((row) => (
-              <div
-                className={row.id === highlightAsk ? 'di-people-row is-pick' : 'di-people-row'}
-                key={row.id}
-                ref={row.id === highlightAsk ? pickRef : null}
-              >
-                <span className="di-people-who">
-                  <strong>{friendAskTitle(row.person) || t('people.someone')}</strong>
-                  <em>{friendAskNote(row.person)}</em>
-                </span>
-                <button
-                  className="di-did di-did-small"
-                  type="button"
-                  onClick={() => answerAsk(row.id, true)}
-                >
-                  {t('people.yes')}
-                </button>
-                <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
-                  {t('people.no')}
-                </button>
-              </div>
-            ))}
-          </SetCard>
-        </div>
+      {links.friends.length ? (
+        <p className="di-set-note">
+          {t('people.doneOf', {
+            done: links.friends.filter((row) => doneTonight(row.person, isoDate(clock))).length,
+            n: links.friends.length,
+          })}
+        </p>
       ) : null}
 
-      {links.friends.length ? (
-        <SetCard>
-          {links.friends.map((row) => (
-            <div className="di-people-row" key={row.id}>
-              <span className="di-people-who">
-                <strong>{personName(row.person) || t('people.someone')}</strong>
-                <em>
-                  {row.person?.phone ? `${formatPhone(row.person.phone)} · ` : ''}
-                  {line(row.person)}
-                </em>
-              </span>
-              <button
-                className="di-key"
-                type="button"
-                onClick={async () => {
-                  const { miss: why } = await dropFriend(row.person.user_id)
-                  if (why) setMiss(why)
-                  load()
-                }}
-              >
-                {t('people.drop')}
-              </button>
-              <button
-                className="di-key"
-                type="button"
-                disabled={cheersLeft < 1}
-                onClick={async () => {
-                  const sent = await cheerFriend(book, row.person.user_id, purse.cheerOn)
-                  const known = friendCheerMissKey(sent.miss)
-                  if (known) return setMiss(t(known.key, known.vars))
-                  if (sent.miss) return setMiss(tMiss(sent.miss))
-                  setStock(normalizePurse(sent.book).friendCheers)
-                  if (onChange) onChange(sent.book)
-                  fireCheer(purse.cheerOn, 1)
-                  setMiss('')
-                }}
-              >
-                {t('friends.cheerUse')}
-              </button>
-              <button
-                className="di-key"
-                type="button"
-                disabled={purse.cheers.length < 2}
-                onClick={async () => {
-                  if (purse.gems < CHEER_GEMS) {
-                    setGemShort(true)
-                    return
-                  }
-                  const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
-                  const spent = spendGems(book, CHEER_GEMS)
-                  if (spent.miss) {
-                    setGemShort(true)
-                    return
-                  }
-                  const { miss: why } = await giftCheer(row.person.user_id, pick)
-                  if (why === 'giftCap') return setMiss(t('friends.giftCap'))
-                  if (why) return setMiss(why)
-                  if (onChange) onChange(spent.book)
-                  setMiss(t('friends.giftSent', { name: personName(row.person) || t('people.someone') }))
-                }}
-              >
-                {t('friends.gift', { n: CHEER_GEMS })}
-              </button>
-              <button
-                className="di-key"
-                type="button"
-                onClick={() => setConfirm(row.person)}
-              >
-                {t('block.block')}
-              </button>
-            </div>
+      <div className="di-person di-person-stock">
+        <span className="di-person-who">
+          <strong>{t('friends.cheerStock', { n: cheersLeft })}</strong>
+          <em>{t('friends.cheerNote')}</em>
+        </span>
+        <button
+          className="di-key"
+          type="button"
+          disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+          onClick={buyMore}
+        >
+          {t('friends.cheerBuyShort')}
+        </button>
+      </div>
+
+      {links.asked.length ? (
+        <>
+          <SectionHead label={t('people.askBanner', { n: links.asked.length })} />
+          {links.asked.map((row) => (
+            <PersonCard
+              key={row.id}
+              highlight={highlightAsk ? row.id === highlightAsk : true}
+              cardRef={row.id === highlightAsk ? pickRef : null}
+              person={row.person}
+              name={friendAskTitle(row.person) || t('people.someone')}
+              line={friendAskNote(row.person)}
+              actions={
+                <>
+                  <button className="di-did di-did-small" type="button" onClick={() => answerAsk(row.id, true)}>
+                    {t('people.yes')}
+                  </button>
+                  <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
+                    {t('people.no')}
+                  </button>
+                </>
+              }
+            />
           ))}
-        </SetCard>
+        </>
+      ) : null}
+
+      <SectionHead label={t('people.friends')} count={links.friends.length} />
+      {links.friends.length ? (
+        links.friends.map((row) => {
+          const done = doneTonight(row.person, isoDate(clock))
+          const auto = autoAdds.has(row.person.user_id)
+          const streak = row.person?.streak > 0 ? t('people.streakN', { n: row.person.streak }) : ''
+          return (
+            <PersonCard
+              key={row.id}
+              person={row.person}
+              done={done}
+              name={personName(row.person) || t('people.someone')}
+              line={[done ? streak : line(row.person), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
+              pill={done ? t('people.doneTonightShort') : ''}
+              pillOn={done}
+              actions={
+                <>
+                  <button className="di-did di-did-small" type="button" onClick={() => setSheet({ person: row.person })}>
+                    {t('people.sendDidYou')}
+                  </button>
+                  <button className="di-key" type="button" disabled={cheersLeft < 1} onClick={() => cheer(row.person)}>
+                    {t('friends.cheerUse')}
+                  </button>
+                </>
+              }
+              more={
+                <>
+                  <SetSwitch
+                    label={t('friends.autoAdd')}
+                    sub={auto ? t('friends.autoAddOn') : t('friends.autoAddOff')}
+                    on={auto}
+                    onClick={() => flipAuto(row.person)}
+                  />
+                  {row.person?.phone ? <p className="di-set-note">{formatPhone(row.person.phone)}</p> : null}
+                  <div className="di-person-actions">
+                    <button
+                      className="di-key"
+                      type="button"
+                      disabled={purse.cheers.length < 2}
+                      onClick={() => gift(row.person)}
+                    >
+                      {t('friends.gift', { n: CHEER_GEMS })}
+                    </button>
+                    <button
+                      className="di-key"
+                      type="button"
+                      onClick={async () => {
+                        const { miss: why } = await dropFriend(row.person.user_id)
+                        if (why) setMiss(why)
+                        load()
+                      }}
+                    >
+                      {t('people.drop')}
+                    </button>
+                    <button className="di-key" type="button" onClick={() => setConfirm(row.person)}>
+                      {t('block.block')}
+                    </button>
+                  </div>
+                </>
+              }
+            />
+          )
+        })
       ) : (
-        <p className="di-set-note">{t('people.noFriends')}</p>
+        <EmptyCard title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')} />
       )}
 
       {links.sent.length ? (
         <>
-          <SetCap>{t('friends.waiting')}</SetCap>
-          <SetCard>
-            {links.sent.map((row) => (
-              <div className="di-people-row" key={row.id}>
-                <span className="di-people-who">
-                  <strong>{personName(row.person) || t('people.someone')}</strong>
-                  <em>{t('friends.notYet')}</em>
-                </span>
-              </div>
-            ))}
-          </SetCard>
+          <SectionHead label={t('friends.waiting')} count={links.sent.length} />
+          {links.sent.map((row) => (
+            <PersonCard
+              key={row.id}
+              person={row.person}
+              name={personName(row.person) || t('people.someone')}
+              line={t('friends.notYet')}
+            />
+          ))}
         </>
       ) : null}
 
       {blocks.length ? (
         <>
-          <SetCap>{t('block.list')}</SetCap>
-          <SetCard>
-            {blocks.map((row) => (
-              <div className="di-people-row" key={row.user_id}>
-                <span className="di-people-who">
-                  <strong>
-                    {row.display_name || formatPhone(row.phone) || t('people.someone')}
-                  </strong>
-                  <em>{t('block.cannotReach')}</em>
-                </span>
+          <SectionHead label={t('block.list')} count={blocks.length} />
+          {blocks.map((row) => (
+            <PersonCard
+              key={row.user_id}
+              person={row}
+              name={row.display_name || formatPhone(row.phone) || t('people.someone')}
+              line={t('block.cannotReach')}
+              actions={
                 <button
                   className="di-key"
                   type="button"
@@ -299,10 +357,23 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
                 >
                   {t('block.unblock')}
                 </button>
-              </div>
-            ))}
-          </SetCard>
+              }
+            />
+          ))}
         </>
+      ) : null}
+
+      {said ? <p className="di-set-note">{said}</p> : null}
+      {sheet ? (
+        <SendSheet
+          person={sheet.person}
+          still={still}
+          onClose={() => setSheet(null)}
+          onSent={(words) => {
+            setMiss('')
+            setSaid(words)
+          }}
+        />
       ) : null}
 
       {miss ? (

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { activeLook } from '../../src/lib/dit-board.js'
+import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'

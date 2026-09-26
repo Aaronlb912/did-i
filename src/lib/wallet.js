@@ -160,7 +160,7 @@ function coinCostFor(kind, itemId) {
 
 function validateCoinItem(kind, itemId) {
   const id = String(itemId || '')
-  if (kind === 'look' && !COIN_LOOK_IDS.has(id)) return false
+  if (kind === 'look') return COIN_LOOK_IDS.has(id)
   if (kind === 'cheer_stage') return Boolean(id)
   return false
 }

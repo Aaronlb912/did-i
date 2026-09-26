@@ -71,7 +71,7 @@ Parity with the web app shell:
   ink note, empty board, leave board, People row, legal links
 - Account: sign-in, devices, export, sync
 - People: profile, invite, send Did I, friends (cheer, gift, block, report)
-- Family, inbox, sent, everyone (when DIT on)
+- Family, inbox, sent
 - About, help, later, marks, ideas, stats, feed, calendar, streaks, tags (me)
 - Welcome, enter, first night, pings (permission wired)
 - Privacy and Terms in-app
@@ -176,7 +176,7 @@ Actions → New repository secret**. Names only (never commit values):
 
 Optional overrides (usually unnecessary; defaults live in `env.client.js` via
 `app.config.js`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
-`VITE_LEGAL_EMAIL`, `VITE_WEB_APP_URL`, `VITE_DIT_ENABLED`, `VITE_REPORT_URL`,
+`VITE_LEGAL_EMAIL`, `VITE_WEB_APP_URL`, `VITE_REPORT_URL`,
 `VITE_APPLE_AUTH` — same names as `.env.example`.
 
 **Export credentials from EAS into GitHub (no secrets in the repo):**

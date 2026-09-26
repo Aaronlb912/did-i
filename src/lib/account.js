@@ -133,8 +133,14 @@ export async function readUser() {
   return data?.user || null
 }
 
+// Last session seen by any screen. A screen that mounts later starts from
+// it instead of flashing the signed-out page while getSession resolves.
+let lastUser
+
 export function useAccount() {
-  const [state, setState] = useState({ ready: !cloudSetUp(), user: null })
+  const [state, setState] = useState(() =>
+    lastUser === undefined ? { ready: !cloudSetUp(), user: null } : { ready: true, user: lastUser },
+  )
 
   useEffect(() => {
     const db = cloud()
@@ -142,14 +148,17 @@ export function useAccount() {
     let alive = true
     db.auth.getSession().then(
       ({ data }) => {
-        if (alive) setState({ ready: true, user: data?.session?.user || null })
+        lastUser = data?.session?.user || null
+        if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
       },
       () => {
+        lastUser = null
         if (alive) setState({ ready: true, user: null })
       },
     )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
-      if (alive) setState({ ready: true, user: session?.user || null })
+      lastUser = session?.user || null
+      if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
     })
     return () => {
       alive = false

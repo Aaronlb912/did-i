@@ -2,10 +2,6 @@ export const pass = {
   'nav.boards': 'Tags',
   'mast.menu': 'Mehr',
   'mast.menuClose': 'Menü schließen',
-  'nav.everyone': 'DIT',
-  'all.kicker': 'Did I tonight',
-  'all.cheer': 'Cheer · {n}',
-  'all.cheersN': '{n} Cheers',
   'shop.cog': 'Shop',
   'lang.en': 'English',
   'lang.es': 'Español',
@@ -24,7 +20,6 @@ export const pass = {
   'title.shopBuddies': 'Buddies · Did I',
   'title.calendar': 'Streak · Did I',
   'title.door': 'Did I',
-  'title.everyone': 'Did I tonight',
   'settings.look': 'Look',
   'settings.name': 'Name',
   'settings.shop': 'Shop',
@@ -258,9 +253,6 @@ export const pass = {
   'legal.privacy.social.title': 'Freunde, Familie und Sends',
   'legal.privacy.social.body':
     'Bei Leute-Funktionen speichern wir Freundschaftsanfragen, Familienmitgliedschaften und Rollen, Einladungscodes, die du erstellst oder nutzt, Did I-Sends, die du schickst oder bekommst, und Block-/Meldungsdaten.\n\nAndere in einer Familie oder auf deiner Freundesliste sehen, was die App dafür vorgesehen hat (Namen, Streaks, die du teilst, Familienfragen und Ähnliches).',
-  'legal.privacy.dit.title': 'Did I tonight (öffentliche Liste)',
-  'legal.privacy.dit.body':
-    'Die Liste ist standardmäßig aus. Wenn du mitmachst, speichern wir, dass du heute Nacht öffentlich bist, bis zu drei kurze Zeilen aus deinen DID-Labels für diese Nacht, Streak-Zahlen, die andere schon sehen können, und Cheer-Zähler.\n\nZeilen können gemeldet werden. Zwei verschiedene Meldungen können eine Zeile entfernen, ohne auf menschliche Prüfung zu warten. Meldungen bleiben für Moderation.',
   'legal.privacy.push.title': 'Benachrichtigungen',
   'legal.privacy.push.body':
     'Auf Android speichern wir bei erlaubten Benachrichtigungen ein Push-Token, das an dein Konto und Gerät gebunden ist. Damit schicken wir Did I-Sends von Freunden, Freundschaftsanfragen und ähnliche Stupser. Du kannst Benachrichtigungen in den Handy-Einstellungen abschalten.\n\nLokale Erinnerungen für fällige Fragen bleiben auf dem Gerät und brauchen kein Konto.',
@@ -316,9 +308,6 @@ export const pass = {
   'legal.terms.social.title': 'Leute-Funktionen',
   'legal.terms.social.body':
     'Freunde, Familien, Sends und Einladungen sind optional. Du kannst jemanden blockieren; Blockieren entfernt Freundschaft und ausstehende Stupser auf unserer Seite. Du kannst Nutzer oder öffentliche Zeilen melden.\n\nWir können Konten sperren, die andere oder den Dienst missbrauchen.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'Die öffentliche Liste ist Opt-in. Zeilen sind kurze Labels von deinem Tag, keine privaten Notizen. Poste keinen Belästigungs-, illegalen oder identifizierenden Inhalt über andere. Wir können Zeilen durch Meldungen oder nach eigenem Ermessen entfernen.',
   'legal.terms.family.title': 'Familien und Kind-Rolle',
   'legal.terms.family.body':
     'Familien teilen Fragen unter Mitgliedern. Eltern- und Kind-Rollen steuern, wer Aufgaben zuweisen kann. Did I richtet sich nicht an Kinder; Eltern sind verantwortlich für Kind-Konten in einer Familie.',

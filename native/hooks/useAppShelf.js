@@ -154,6 +154,15 @@ export function useAppShelf() {
     [book, persist, shelf],
   )
 
+  // Several folders at once, for example a bulk edit on Questions.
+  const changeBooks = useCallback(
+    (books) => {
+      if (!books.length) return
+      persist(books.reduce((next, one) => putBook(next, one), shelf))
+    },
+    [persist, shelf],
+  )
+
   const saveLamp = useCallback(
     (target, lamp, fromBook, clock = new Date()) => {
       const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
@@ -174,13 +183,20 @@ export function useAppShelf() {
     [persist, shelf],
   )
 
+  // A did you kept from the inbox, or several added on their own, land on
+  // the open folder as tonight-only questions in one write.
   const keepSent = useCallback(
-    (question) => {
-      const text = String(question || '').trim()
-      if (!text) return
-      saveLamp(live, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(new Date()) })
+    (questions) => {
+      const texts = [].concat(questions).map((text) => String(text || '').trim()).filter(Boolean)
+      if (!texts.length) return
+      const clock = new Date()
+      let dest = live
+      for (const text of texts) {
+        dest = hangInto(dest, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(clock) }, false)
+      }
+      persist(putBook(shelf, commitBook(dest, clock)))
     },
-    [live, saveLamp],
+    [live, persist, shelf],
   )
 
   const setTag = useCallback(
@@ -309,6 +325,7 @@ export function useAppShelf() {
     clearMark: useCallback(() => setMarkNote(null), []),
     persist,
     change,
+    changeBooks,
     saveLamp,
     keepSent,
     setTag,

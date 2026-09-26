@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import {
@@ -8,15 +8,19 @@ import {
   prepQuestionRows,
   shortLabel,
 } from './board-json.js'
+import { commitBook } from './achievements.js'
+import { bulkLamps, undoBulkLamps } from './board-ops.js'
 import { filamentLevel } from './hall-feel.js'
 import { boardDate, dueTonight, formatBoardDate } from './recurrence.js'
 import { StarterPicks } from './StarterPicks.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { taggedLamps } from './tags.js'
+import { rowKey, taggedLamps } from './tags.js'
 import { TagRail } from './TagRail.jsx'
 
-export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpen, now }) {
+const UNDO_MS = 6000
+
+export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen, now }) {
   usePrefs()
   const clock = now || new Date()
   const dateIso = boardDate(clock, book.dayFoldHour)
@@ -32,6 +36,68 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
     dateIso,
     deadlineOnly,
   })
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState(() => new Set())
+  const [confirm, setConfirm] = useState(false)
+  const [undo, setUndo] = useState(null)
+  const shown = [...hung, ...down]
+  // Only what is on screen counts, so a filter change never acts on hidden rows.
+  const chosen = shown.filter((row) => picked.has(rowKey(row)))
+  const allOn = shown.length > 0 && chosen.length === shown.length
+  const allDown = chosen.length > 0 && chosen.every((row) => row.lamp.archived)
+
+  function stopPicking() {
+    setPicking(false)
+    setPicked(new Set())
+    setConfirm(false)
+  }
+
+  useEffect(() => {
+    if (!picking) return undefined
+    function onKey(event) {
+      if (event.key === 'Escape') stopPicking()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [picking])
+
+  useEffect(() => {
+    if (!undo) return undefined
+    const timer = window.setTimeout(() => setUndo(null), UNDO_MS)
+    return () => window.clearTimeout(timer)
+  }, [undo])
+
+  function pick(row) {
+    setPicked((live) => {
+      const next = new Set(live)
+      const key = rowKey(row)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function apply(kind) {
+    if (!chosen.length || !onChangeBooks) return
+    const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
+    const before = shelf.filter((item) => lampPicks.some((one) => one.boardId === item.id))
+    onChangeBooks(bulkLamps(shelf, lampPicks, kind).map((item) => commitBook(item, clock)))
+    const n = lampPicks.length
+    const label =
+      kind === 'delete'
+        ? t('questions.bulkDeleted', { n })
+        : kind === 'stop'
+          ? t('questions.bulkStopped', { n })
+          : t('questions.bulkAsked', { n })
+    setUndo({ id: Date.now(), label, before, picks: lampPicks })
+    stopPicking()
+  }
+
+  function takeBack() {
+    if (!undo || !onChangeBooks) return
+    onChangeBooks(undoBulkLamps(shelf, undo.before, undo.picks))
+    setUndo(null)
+  }
 
   function rowClass(row) {
     const due = dueTonight(row.book, clock)
@@ -56,12 +122,24 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
           {items.map((row) => (
             <li key={`${row.boardId}:${row.lamp.id}`}>
               <button
-                className="di-lamp-row"
+                className={picking && picked.has(rowKey(row)) ? 'di-lamp-row is-picked' : 'di-lamp-row'}
                 type="button"
-                onClick={() =>
-                  onOpen ? onOpen(row.boardId, row.lamp.id) : goHash('/lamp', { id: row.lamp.id })
-                }
+                role={picking ? 'checkbox' : undefined}
+                aria-checked={picking ? picked.has(rowKey(row)) : undefined}
+                onClick={() => {
+                  if (picking) {
+                    pick(row)
+                    return
+                  }
+                  if (onOpen) onOpen(row.boardId, row.lamp.id)
+                  else goHash('/lamp', { id: row.lamp.id })
+                }}
               >
+                {picking ? (
+                  <span className={picked.has(rowKey(row)) ? 'di-pick-box is-on' : 'di-pick-box'} aria-hidden="true">
+                    {picked.has(rowKey(row)) ? '✓' : ''}
+                  </span>
+                ) : null}
                 <span
                   className={rowClass(row)}
                   data-filament={filamentLevel(row.book, row.lamp.id)}
@@ -113,11 +191,52 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
             </div>
           </div>
         ) : null}
-        <div className="di-page-keys">
-          <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
-            {t('tonight.add')}
-          </button>
-        </div>
+        {picking ? (
+          <div className="di-pick-bar">
+            <div className="di-pick-head">
+              <strong>{t('questions.pickedN', { n: chosen.length })}</strong>
+              <button
+                className="di-key"
+                type="button"
+                onClick={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+              >
+                {allOn ? t('questions.pickNone') : t('questions.pickAll')}
+              </button>
+              <button className="di-key" type="button" onClick={stopPicking}>
+                {t('questions.pickDone')}
+              </button>
+            </div>
+            <div className="di-pick-head">
+              <button
+                className="di-key"
+                type="button"
+                disabled={!chosen.length}
+                onClick={() => apply(allDown ? 'ask' : 'stop')}
+              >
+                {allDown ? t('lamp.askAgain') : t('lamp.stop')}
+              </button>
+              <button
+                className="di-key di-key-danger"
+                type="button"
+                disabled={!chosen.length}
+                onClick={() => setConfirm(true)}
+              >
+                {t('lamp.delete')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="di-page-keys">
+            <button className="di-did di-did-small" type="button" onClick={() => goHash('/add')}>
+              {t('tonight.add')}
+            </button>
+            {shown.length && onChangeBooks ? (
+              <button className="di-key" type="button" onClick={() => setPicking(true)}>
+                {t('questions.pick')}
+              </button>
+            ) : null}
+          </div>
+        )}
         {hung.length ? (
           list(hung, t('questions.list'))
         ) : deadlineOnly ? (
@@ -130,6 +249,38 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onOpe
         )}
         {list(down, t('questions.down'))}
       </section>
+      {confirm ? (
+        <div className="di-buy-veil" role="presentation" onClick={() => setConfirm(false)}>
+          <div
+            className="di-buy-pop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="di-bulk-drop"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="di-bulk-drop" className="di-buy-title">
+              {t('questions.bulkDeleteTitle')}
+            </h2>
+            <p className="di-detail-meta">{t('questions.bulkDeleteBody', { n: chosen.length })}</p>
+            <div className="di-hang-actions">
+              <button className="di-did di-did-small" type="button" onClick={() => apply('delete')}>
+                {t('lamp.delete')}
+              </button>
+              <button className="di-key" type="button" onClick={() => setConfirm(false)}>
+                {t('lamp.keep')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {undo ? (
+        <p className="di-undo di-screws-print-hide" role="status">
+          <span>{undo.label}</span>
+          <button className="di-key" type="button" onClick={takeBack}>
+            {t('tonight.undo')}
+          </button>
+        </p>
+      ) : null}
     </BoardShell>
   )
 }

@@ -11,11 +11,10 @@ export const legalEn = {
   'legal.linksAnd': ' and ',
   'legal.signInLead': 'By signing in you agree to the',
   'legal.gemLead': 'Purchases follow the',
-  'legal.ditLead': 'Public lines are visible to signed-in people. See the',
   'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
-  'legal.date': 'September 25, 2026',
+  'legal.date': 'September 26, 2026',
   'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
 
@@ -36,10 +35,7 @@ export const legalEn = {
     'If you create an account with an email code, Sign in with Apple, or Sign in with Google, we store:\n\nYour email address (for sign-in). With Apple or Google it is the address they share with us, which can be a private relay address. We do not get your Apple or Google password.\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (folders, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
   'legal.privacy.social.title': 'Friends, family, and sends',
   'legal.privacy.social.body':
-    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nInvite links. If you open someone\'s invite link (did-i.app/i/CODE), the page keeps the code in your browser and, when you tap a store button, copies it to your clipboard. The first time the app opens on a new iPhone install, it reads the clipboard once to look for that code; iOS asks before it pastes. On Android the app reads the Google Play install referrer instead. We keep only an invite code and ignore anything else. When you sign in, the code links your account to the person who invited you, and their invite count goes up.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
-  'legal.privacy.dit.title': 'Did I tonight (public list)',
-  'legal.privacy.dit.body':
-    'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nInvite links. If you open someone\'s invite link (did-i.app/i/CODE), the page keeps the code in your browser and, when you tap a store button, copies it to your clipboard. The first time the app opens on a new iPhone install, it reads the clipboard once to look for that code; iOS asks before it pastes. On Android the app reads the Google Play install referrer instead. We keep only an invite code and ignore anything else. When you sign in, the code links your account to the person who invited you, and their invite count goes up.\n\nA Did I send from someone in your family goes straight onto your tonight. One from a friend does the same only if you turn on "Can add to my tonight" for that friend. We store that setting on your account. Only you can see or change it, and the friend is not told.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
   'legal.privacy.push.title': 'Notifications',
   'legal.privacy.push.body':
     'On Android and iPhone, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
@@ -51,16 +47,16 @@ export const legalEn = {
     'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android and iPhone), Sign in with Apple and Google Sign-In (if you choose them), Expo (delivers app updates; it sees your device type, app version, and IP address), and Apple App Store / Google Play (in-app purchases, install referrer). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
   'legal.privacy.use.title': 'How we use data',
   'legal.privacy.use.body':
-    'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
+    'We use your data to run the app: sync your shelf, deliver social features, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
   'legal.privacy.share.title': 'When we share',
   'legal.privacy.share.body':
-    'We share data with service providers listed above, when you direct us to (for example showing your public lines), when required by law, or to protect safety and rights.\n\nOther users see only what the product shows them (friend names, family boards, public tonight lines, and the like).',
+    'We share data with service providers listed above, when you direct us to (for example sending a Did I to a friend), when required by law, or to protect safety and rights.\n\nOther users see only what the product shows them (friend names, family questions, streaks you share, and the like).',
   'legal.privacy.retain.title': 'How long we keep it',
   'legal.privacy.retain.body':
-    'Local data stays until you clear it or uninstall. Account data stays while your account exists.\n\nPublic tonight lines and cheers roll off after about fourteen nights. Push queue rows clear after sending.\n\nWhen you delete your account we remove your shelf, profile, devices, and auth user through the in-app delete flow.',
+    'Local data stays until you clear it or uninstall. Account data stays while your account exists.\n\nPush queue rows clear after sending.\n\nWhen you delete your account we remove your shelf, profile, devices, and auth user through the in-app delete flow.',
   'legal.privacy.rights.title': 'Your choices and rights',
   'legal.privacy.rights.body':
-    'Export: Settings can download a JSON copy of this phone. Account has Download my data.\n\nDelete: Account can delete this account, which removes cloud data tied to you.\n\nOpt out: Stay signed out, turn off public tonight, block people, sign out devices, or disable notifications.\n\nDepending on where you live you may have rights to access, correct, or delete personal data. Email {email} and we will respond within a reasonable time.',
+    'Export: Settings can download a JSON copy of this phone. Account has Download my data.\n\nDelete: Account can delete this account, which removes cloud data tied to you.\n\nOpt out: Stay signed out, block people, sign out devices, or disable notifications.\n\nDepending on where you live you may have rights to access, correct, or delete personal data. Email {email} and we will respond within a reasonable time.',
   'legal.privacy.kids.title': 'Children',
   'legal.privacy.kids.body':
     'Did I is a general reminder app, not a children\'s product. We do not knowingly collect personal information from children under 13. If you believe a child under 13 signed up, email {email} and we will delete the account.\n\nFamilies can include a kid role for shared chores. A parent should create and supervise kid use.',
@@ -89,16 +85,13 @@ export const legalEn = {
     'Did I is a personal reminder tool. It helps you track habits and questions you choose. It is not a medical device, emergency service, or professional advice. Do not rely on Did I for medication timing, safety-critical checks, or anything where a missed tap could cause harm.\n\nUse your own judgment. Verify important tasks yourself.',
   'legal.terms.content.title': 'Your questions and answers',
   'legal.terms.content.body':
-    'You own the content you enter. You grant us a license to store, sync, and display it as the app requires (including public tonight lines you opt into).\n\nYou are responsible for what you write. Do not enter illegal content or someone else\'s private information without permission.',
+    'You own the content you enter. You grant us a license to store, sync, and display it as the app requires.\n\nYou are responsible for what you write. Do not enter illegal content or someone else\'s private information without permission.',
   'legal.terms.account.title': 'Accounts',
   'legal.terms.account.body':
     'Sign-in uses a one-time email code. Keep your email access secure. You may sign out one device or everywhere, export data, or delete your account in Account settings.\n\nTo add friends you add a phone number. Only add a number that is yours. A number can be on one account at a time. If yours is already taken, contact us.',
   'legal.terms.social.title': 'People features',
   'legal.terms.social.body':
-    'Friends, families, sends, and invites are optional. You may block someone; blocking removes friendship and pending nudges on our side. You may report users or public lines.\n\nWe may suspend accounts that abuse others or the service.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'The public list is opt in. Lines are short labels from your board, not private notes. Do not post harassing, illegal, or identifying information about others. We may remove lines through reports or at our discretion.',
+    'Friends, families, sends, and invites are optional. You may block someone; blocking removes friendship and pending nudges on our side. You may report users.\n\nWe may suspend accounts that abuse others or the service.',
   'legal.terms.family.title': 'Families and kid role',
   'legal.terms.family.body':
     'Families share questions among members. Parent and kid roles control who can assign tasks. Did I is not directed at children; parents are responsible for kid accounts they allow on a family.',
@@ -131,7 +124,7 @@ export const legalEn = {
 
   'help.legal': 'Legal',
   'help.legalP':
-    'Privacy Policy and Terms of Use live in Settings under Legal. Read them before you sign in, buy gems, or join Did I tonight.',
+    'Privacy Policy and Terms of Use live in Settings under Legal. Read them before you sign in or buy gems.',
 }
 
 export const legalEs = {
@@ -144,11 +137,10 @@ export const legalEs = {
   'legal.linksAnd': ' y la ',
   'legal.signInLead': 'Al iniciar sesión aceptas los',
   'legal.gemLead': 'Las compras siguen los',
-  'legal.ditLead': 'Las líneas públicas las ven personas con cuenta. Lee la',
   'legal.effective': 'Vigente desde {date}.',
   'legal.notLawyer': 'Esto es información clara, no asesoría legal.',
   'legal.backSettings': 'Ajustes',
-  'legal.date': '25 de septiembre de 2026',
+  'legal.date': '26 de septiembre de 2026',
   'legal.emailMissing': ' (configura VITE_LEGAL_EMAIL antes de publicar)',
   'legal.operatorWarn': 'Configura VITE_LEGAL_EMAIL en .env.local antes de que otros se registren.',
 
@@ -169,10 +161,7 @@ export const legalEs = {
     'Si creas cuenta con un código por email, Iniciar sesión con Apple o Iniciar sesión con Google, guardamos:\n\nTu email (para entrar). Con Apple o Google es la dirección que nos comparten, que puede ser una dirección de reenvío privada. No recibimos tu contraseña de Apple o Google.\n\nTu nombre visible y handle.\n\nTu número de teléfono, si lo agregas. Lo necesitas para agregar amigos. Lo guardamos en un formato estándar, y un número solo puede estar en una cuenta.\n\nUna copia de tu estante (carpetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
   'legal.privacy.social.title': 'Amigos, familia y envíos',
   'legal.privacy.social.body':
-    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nLos amigos se encuentran por número de teléfono. Para pedir amistad, primero agregas tu número. Cualquier persona con sesión iniciada que escriba tu número exacto puede encontrar tu cuenta y ver tu nombre visible para enviarte una solicitud. Cuando envías una solicitud, la persona a quien se la pides ve tu número y tu nombre visible. No mostramos tu número a nadie más, no dejamos que nadie explore números y no leemos tus contactos.\n\nEnlaces de invitación. Si abres el enlace de invitación de alguien (did-i.app/i/CÓDIGO), la página guarda el código en tu navegador y, al tocar un botón de tienda, lo copia al portapapeles. La primera vez que la app se abre en una instalación nueva de iPhone, lee el portapapeles una vez para buscar ese código; iOS pregunta antes de pegar. En Android la app lee el referente de instalación de Google Play. Solo guardamos un código de invitación e ignoramos todo lo demás. Al iniciar sesión, el código vincula tu cuenta con quien te invitó, y su conteo de invitaciones sube.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
-  'legal.privacy.dit.title': 'Did I tonight (lista pública)',
-  'legal.privacy.dit.body':
-    'La lista está apagada por defecto. Si entras, guardamos que eres público esta noche, hasta tres líneas cortas de tus etiquetas DID de esa noche, rachas visibles y conteos de cheer.\n\nLas líneas se pueden reportar. Dos reportes distintos pueden quitar una línea sin esperar revisión humana. Los reportes se guardan para moderación.',
+    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nLos amigos se encuentran por número de teléfono. Para pedir amistad, primero agregas tu número. Cualquier persona con sesión iniciada que escriba tu número exacto puede encontrar tu cuenta y ver tu nombre visible para enviarte una solicitud. Cuando envías una solicitud, la persona a quien se la pides ve tu número y tu nombre visible. No mostramos tu número a nadie más, no dejamos que nadie explore números y no leemos tus contactos.\n\nEnlaces de invitación. Si abres el enlace de invitación de alguien (did-i.app/i/CÓDIGO), la página guarda el código en tu navegador y, al tocar un botón de tienda, lo copia al portapapeles. La primera vez que la app se abre en una instalación nueva de iPhone, lee el portapapeles una vez para buscar ese código; iOS pregunta antes de pegar. En Android la app lee el referente de instalación de Google Play. Solo guardamos un código de invitación e ignoramos todo lo demás. Al iniciar sesión, el código vincula tu cuenta con quien te invitó, y su conteo de invitaciones sube.\n\nUn Did I que te manda alguien de tu familia va directo a tu noche. Uno de un amigo hace lo mismo solo si activas "Puede añadir a mi noche" para ese amigo. Guardamos ese ajuste en tu cuenta. Solo tú puedes verlo o cambiarlo, y al amigo no se le avisa.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
   'legal.privacy.push.title': 'Notificaciones',
   'legal.privacy.push.body':
     'En Android y iPhone, si permites avisos, guardamos un token push ligado a tu cuenta y dispositivo para envíos de amigos, solicitudes y similares. Puedes apagarlos en ajustes del teléfono.\n\nLos recordatorios locales de preguntas due quedan en el dispositivo y no requieren cuenta.',
@@ -184,16 +173,16 @@ export const legalEs = {
     'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android y iPhone), Iniciar sesión con Apple y Google Sign-In (si los eliges), Expo (entrega actualizaciones de la app; ve el tipo de dispositivo, la versión de la app y tu dirección IP) y Apple App Store / Google Play (compras in-app, referente de instalación). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
   'legal.privacy.use.title': 'Uso de datos',
   'legal.privacy.use.body':
-    'Usamos tus datos para operar la app: sincronizar tu estante, funciones sociales, lista pública si optas, pushes que pidas, compras, prevenir abuso y corregir errores.\n\nNo vendemos tu información personal.',
+    'Usamos tus datos para operar la app: sincronizar tu estante, funciones sociales, pushes que pidas, compras, prevenir abuso y corregir errores.\n\nNo vendemos tu información personal.',
   'legal.privacy.share.title': 'Cuándo compartimos',
   'legal.privacy.share.body':
-    'Compartimos con proveedores listados arriba, cuando tú lo indicas (p. ej. líneas públicas), cuando la ley lo exige, o para proteger seguridad y derechos.\n\nOtros usuarios solo ven lo que el producto muestra (nombres de amigos, tableros familiares, líneas públicas, etc.).',
+    'Compartimos con proveedores listados arriba, cuando tú lo indicas (p. ej. al mandar un Did I a un amigo), cuando la ley lo exige, o para proteger seguridad y derechos.\n\nOtros usuarios solo ven lo que el producto muestra (nombres de amigos, preguntas familiares, rachas que compartes, etc.).',
   'legal.privacy.retain.title': 'Cuánto tiempo',
   'legal.privacy.retain.body':
-    'Datos locales quedan hasta que los borres o desinstales. Datos de cuenta mientras exista la cuenta.\n\nLíneas y cheers públicos caducan tras unas catorce noches. Filas de push se limpian al enviar.\n\nAl borrar tu cuenta quitamos estante, perfil, dispositivos y usuario de auth con el flujo en la app.',
+    'Datos locales quedan hasta que los borres o desinstales. Datos de cuenta mientras exista la cuenta.\n\nFilas de push se limpian al enviar.\n\nAl borrar tu cuenta quitamos estante, perfil, dispositivos y usuario de auth con el flujo en la app.',
   'legal.privacy.rights.title': 'Tus derechos',
   'legal.privacy.rights.body':
-    'Exportar: Ajustes puede descargar JSON de este teléfono. Cuenta tiene Descargar mis datos.\n\nBorrar: Cuenta puede eliminar la cuenta y datos en la nube.\n\nOptar fuera: quédate sin sesión, apaga lista pública, bloquea personas, cierra sesión en dispositivos o desactiva avisos.\n\nSegún tu país puedes tener derechos de acceso, corrección o borrado. Escribe a {email} y responderemos en un plazo razonable.',
+    'Exportar: Ajustes puede descargar JSON de este teléfono. Cuenta tiene Descargar mis datos.\n\nBorrar: Cuenta puede eliminar la cuenta y datos en la nube.\n\nOptar fuera: quédate sin sesión, bloquea personas, cierra sesión en dispositivos o desactiva avisos.\n\nSegún tu país puedes tener derechos de acceso, corrección o borrado. Escribe a {email} y responderemos en un plazo razonable.',
   'legal.privacy.kids.title': 'Menores',
   'legal.privacy.kids.body':
     'Did I es una app general de recordatorios, no un producto infantil. No recopilamos a sabiendas datos de menores de 13 años. Si crees que un menor se registró, escribe a {email} y borraremos la cuenta.\n\nLas familias pueden incluir rol kid para tareas compartidas. Un padre debe crear y supervisar ese uso.',
@@ -222,16 +211,13 @@ export const legalEs = {
     'Did I es una herramienta personal de recordatorios. No es un dispositivo médico, servicio de emergencia ni asesoría profesional. No confíes en Did I para horarios de medicación, comprobaciones críticas de seguridad ni nada donde un toque perdido cause daño.\n\nUsa tu criterio. Verifica tareas importantes tú mismo.',
   'legal.terms.content.title': 'Tus preguntas y respuestas',
   'legal.terms.content.body':
-    'Tú eres dueño del contenido que escribes. Nos concedes licencia para guardarlo, sincronizarlo y mostrarlo como requiera la app (incluidas líneas públicas si optas).\n\nEres responsable de lo que escribes. No introduzcas contenido ilegal ni datos privados de otros sin permiso.',
+    'Tú eres dueño del contenido que escribes. Nos concedes licencia para guardarlo, sincronizarlo y mostrarlo como requiera la app.\n\nEres responsable de lo que escribes. No introduzcas contenido ilegal ni datos privados de otros sin permiso.',
   'legal.terms.account.title': 'Cuentas',
   'legal.terms.account.body':
     'El inicio de sesión usa un código único por email. Protege tu email. Puedes cerrar sesión en un dispositivo o en todos, exportar datos o borrar la cuenta en Ajustes de cuenta.\n\nPara agregar amigos agregas un número de teléfono. Agrega solo un número que sea tuyo. Un número puede estar en una sola cuenta a la vez. Si el tuyo ya está en uso, escríbenos.',
   'legal.terms.social.title': 'Personas',
   'legal.terms.social.body':
-    'Amigos, familias, envíos e invitaciones son opcionales. Puedes bloquear a alguien; el bloqueo quita amistad y avisos pendientes de nuestro lado. Puedes reportar usuarios o líneas públicas.\n\nPodemos suspender cuentas que abusen de otros o del servicio.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'La lista pública es opt-in. Las líneas son etiquetas cortas de tu tablero, no notas privadas. No publiques acoso, ilegalidad ni datos identificativos de otros. Podemos quitar líneas por reportes o a nuestra discreción.',
+    'Amigos, familias, envíos e invitaciones son opcionales. Puedes bloquear a alguien; el bloqueo quita amistad y avisos pendientes de nuestro lado. Puedes reportar usuarios.\n\nPodemos suspender cuentas que abusen de otros o del servicio.',
   'legal.terms.family.title': 'Familias y rol kid',
   'legal.terms.family.body':
     'Las familias comparten preguntas entre miembros. Los roles parent y kid controlan quién asigna tareas. Did I no está dirigida a niños; los padres son responsables de cuentas kid en una familia.',
@@ -264,5 +250,5 @@ export const legalEs = {
 
   'help.legal': 'Legal',
   'help.legalP':
-    'Política de privacidad y Términos de uso están en Ajustes, Legal. Léelos antes de iniciar sesión, comprar gemas o unirte a Did I tonight.',
+    'Política de privacidad y Términos de uso están en Ajustes, Legal. Léelos antes de iniciar sesión o comprar gemas.',
 }

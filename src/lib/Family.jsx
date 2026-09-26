@@ -18,9 +18,13 @@ import {
   readFamily,
   buyCheers,
   cheerFamily,
+  doneTonight,
   readFriendCheers,
   setRole,
 } from './people.js'
+import { EmptyCard, PersonCard, SectionHead } from './PersonCard.jsx'
+import { SendSheet } from './SendDidYou.jsx'
+import { useReduceMotion } from './useReduceMotion.js'
 import {
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
@@ -55,6 +59,9 @@ export function Family({ book, onChange, now, familyId }) {
   const [miss, setMiss] = useState('')
   const [gemShort, setGemShort] = useState(false)
   const [stock, setStock] = useState(null)
+  const [sheet, setSheet] = useState(null)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const still = useReduceMotion()
   const online = useOnline()
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
@@ -167,20 +174,135 @@ export function Family({ book, onChange, now, familyId }) {
 
   return shell(
     <>
-      <h2 className="di-page-title">{fam.name}</h2>
-      <SetCard>
-        <SetRow
-          label={t('family.codeLine', { code: fam.code })}
-          sub={t('people.tapToSend')}
-          onClick={async () => {
-            const how = await passAlong(
-              t('family.codeInvite', { name: fam.name, code: fam.code }),
-              fam.name,
-            )
-            if (how) setMiss('')
-          }}
+      <div className="di-fam-title-row">
+        <h2 className="di-page-title">{fam.name}</h2>
+        <button
+          type="button"
+          className="di-person-head-add"
+          aria-label={t('people.joinCode')}
+          title={t('people.joinCode')}
+          onClick={() => setCodeOpen(true)}
+        >
+          +
+        </button>
+      </div>
+
+      <SectionHead label={t('family.people')} count={fam.members.length} />
+      <p className="di-set-note">
+        {t('people.doneOf', {
+          done: fam.members.filter((row) => doneTonight(row.person, night)).length,
+          n: fam.members.length,
+        })}
+      </p>
+      {fam.members.map((row) => {
+        const name = row.you ? t('family.youAre') : personName(row.person) || t('family.someone')
+        const done = doneTonight(row.person, night)
+        const week = nights.map((one) =>
+          past.some(
+            (item) => item.user_id === row.user_id && item.period_key === one && item.status !== 'skip',
+          ),
+        )
+        return (
+          <PersonCard
+            key={row.user_id}
+            person={row.you ? { display_name: personName(row.person) || name } : row.person}
+            done={done}
+            name={name}
+            line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
+            pill={done ? t('people.doneTonightShort') : ''}
+            pillOn={done}
+            extra={
+              <div className="di-person-week">
+                <span className="di-week-dots" aria-hidden="true">
+                  {nights.map((one, at) => (
+                    <i key={one} className={week[at] ? 'is-on' : undefined} />
+                  ))}
+                </span>
+                <em>{t('family.weekCount', { n: week.filter(Boolean).length })}</em>
+              </div>
+            }
+            actions={
+              row.you ? null : (
+                <>
+                  <button className="di-did di-did-small" type="button" onClick={() => setSheet({ person: row.person })}>
+                    {t('people.sendDidYou')}
+                  </button>
+                  {done ? (
+                    <button
+                      className="di-key"
+                      type="button"
+                      disabled={cheersLeft < 1}
+                      onClick={async () => {
+                        const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                        const known = friendCheerMissKey(sent.miss)
+                        if (known) return setMiss(t(known.key, known.vars))
+                        if (sent.miss) return setMiss(tMiss(sent.miss))
+                        setStock(normalizePurse(sent.book).friendCheers)
+                        if (onChange) onChange(sent.book)
+                        fireCheer(purse.cheerOn, 1)
+                        setMiss(t('family.cheerSent', { name }))
+                      }}
+                    >
+                      {t('friends.cheerUse')}
+                    </button>
+                  ) : null}
+                </>
+              )
+            }
+            more={
+              fam.parent && !row.you ? (
+                <div className="di-person-actions">
+                  <button
+                    className="di-key"
+                    type="button"
+                    onClick={async () => {
+                      const { miss: why } = await setRole(
+                        fam.id,
+                        row.user_id,
+                        row.role === 'parent' ? 'kid' : 'parent',
+                      )
+                      if (why === 'lastparent') setMiss(t('family.lastParent'))
+                      else if (why) setMiss(why)
+                      load()
+                    }}
+                  >
+                    {row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
+                  </button>
+                  <button
+                    className="di-key"
+                    type="button"
+                    onClick={async () => {
+                      const { miss: why } = await dropMember(fam.id, row.user_id)
+                      if (why === 'lastparent') setMiss(t('family.lastParent'))
+                      else if (why) setMiss(why)
+                      load()
+                    }}
+                  >
+                    {t('family.remove')}
+                  </button>
+                </div>
+              ) : null
+            }
+          />
+        )
+      })}
+      <p className="di-set-note">
+        {t('family.week')}:{' '}
+        {t('family.weekFrom', {
+          from: formatBoardDate(nights[0] || night),
+          to: formatBoardDate(night),
+        })}
+      </p>
+      {fam.members.length < 2 ? <EmptyCard title={t('family.aloneTitle')} body={t('family.inviteHint', { code: fam.code })} /> : null}
+      {sheet ? (
+        <SendSheet
+          family
+          person={sheet.person}
+          still={still}
+          onClose={() => setSheet(null)}
+          onSent={(words) => setMiss(words)}
         />
-      </SetCard>
+      ) : null}
 
       <SetCap>{t('family.tonight')}</SetCap>
       {lamps.length ? (
@@ -302,39 +424,6 @@ export function Family({ book, onChange, now, familyId }) {
         </p>
       </div>
 
-      <SetCap>{t('family.week')}</SetCap>
-      <SetCard>
-        {fam.members.map((row) => {
-          const done = nights.map((one) =>
-            past.some(
-              (item) =>
-                item.user_id === row.user_id && item.period_key === one && item.status !== 'skip',
-            ),
-          )
-          return (
-            <div className="di-people-row" key={`week-${row.user_id}`}>
-              <span className="di-people-who">
-                <strong>
-                  {row.you ? t('family.youAre') : personName(row.person) || t('family.someone')}
-                </strong>
-                <em>{t('family.weekCount', { n: done.filter(Boolean).length })}</em>
-              </span>
-              <span className="di-week-dots" aria-hidden="true">
-                {nights.map((one, at) => (
-                  <i key={one} className={done[at] ? 'is-on' : undefined} />
-                ))}
-              </span>
-            </div>
-          )
-        })}
-      </SetCard>
-      <p className="di-set-note">
-        {t('family.weekFrom', {
-          from: formatBoardDate(nights[0] || night),
-          to: formatBoardDate(night),
-        })}
-      </p>
-
       <SetCap>{t('friends.cheerStock', { n: cheersLeft })}</SetCap>
       <p className="di-set-note">{t('friends.cheerNote')}</p>
       <button
@@ -362,71 +451,37 @@ export function Family({ book, onChange, now, familyId }) {
         {t('friends.cheerBuy')}
       </button>
 
-      <SetCap>{t('family.people')}</SetCap>
-      <SetCard>
-        {fam.members.map((row) => (
-          <div className="di-people-row" key={row.user_id}>
-            <span className="di-people-who">
-              <strong>
-                {row.you ? t('family.youAre') : personName(row.person) || t('family.someone')}
-              </strong>
-              <em>{row.role === 'parent' ? t('people.parent') : t('people.kid')}</em>
-            </span>
-            {!row.you && row.person?.done_on === night ? (
+      {codeOpen ? (
+        <div className="di-buy-veil" role="presentation" onClick={() => setCodeOpen(false)}>
+          <div
+            className="di-buy-pop"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('people.joinCode')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="di-face-plate">{t('people.joinCode')}</p>
+            <p className="di-fam-code">{fam.code}</p>
+            <p className="di-set-note">{t('family.inviteHint', { code: fam.code })}</p>
+            <div className="di-hang-actions">
               <button
-                className="di-key"
+                className="di-did di-did-small"
                 type="button"
-                disabled={cheersLeft < 1}
                 onClick={async () => {
-                  const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
-                  const known = friendCheerMissKey(sent.miss)
-                  if (known) return setMiss(t(known.key, known.vars))
-                  if (sent.miss) return setMiss(tMiss(sent.miss))
-                  setStock(normalizePurse(sent.book).friendCheers)
-                  if (onChange) onChange(sent.book)
-                  fireCheer(purse.cheerOn, 1)
-                  setMiss(t('family.cheerSent', { name: personName(row.person) || t('family.someone') }))
+                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
+                  if (how) setMiss('')
+                  setCodeOpen(false)
                 }}
               >
-                {t('friends.cheerUse')}
+                {t('people.send')}
               </button>
-            ) : null}
-            {fam.parent && !row.you ? (
-              <>
-                <button
-                  className="di-key"
-                  type="button"
-                  onClick={async () => {
-                    const { miss: why } = await setRole(
-                      fam.id,
-                      row.user_id,
-                      row.role === 'parent' ? 'kid' : 'parent',
-                    )
-                    if (why === 'lastparent') setMiss(t('family.lastParent'))
-                    else if (why) setMiss(why)
-                    load()
-                  }}
-                >
-                  {row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
-                </button>
-                <button
-                  className="di-key"
-                  type="button"
-                  onClick={async () => {
-                    const { miss: why } = await dropMember(fam.id, row.user_id)
-                    if (why === 'lastparent') setMiss(t('family.lastParent'))
-                    else if (why) setMiss(why)
-                    load()
-                  }}
-                >
-                  {t('family.remove')}
-                </button>
-              </>
-            ) : null}
+              <button className="di-key" type="button" onClick={() => setCodeOpen(false)}>
+                {t('settings.close')}
+              </button>
+            </div>
           </div>
-        ))}
-      </SetCard>
-      <p className="di-set-note">{t('family.inviteHint', { code: fam.code })}</p>
+        </div>
+      ) : null}
 
       <SetCard>
         <SetRow

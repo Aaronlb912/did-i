@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
-import { activeBuddy, activeLook } from '../../src/lib/dit-board.js'
+import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -25,7 +25,6 @@ import { WaitPlate } from '../components/WaitPlate.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
-import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
@@ -34,6 +33,7 @@ import { hallColors, fonts } from '../theme.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { Slot } from '../components/Slot.jsx'
+import { FamilyTonight } from '../components/FamilyTonight.jsx'
 
 function useMinuteNow() {
   const [now, setNow] = useState(() => new Date())
@@ -391,12 +391,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Slot>
           <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
         </Slot>
+        <Slot>
+          <FamilyTonight colors={colors} />
+        </Slot>
       </View>
-
-      <Slot>
-        <FamilyTonight colors={colors} />
-      </Slot>
-
     </View>
     <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
     </View>
