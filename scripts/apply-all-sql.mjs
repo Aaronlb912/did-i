@@ -24,6 +24,7 @@ const files = [
   'supabase/wallet.sql',
   'supabase/waitlist.sql',
   'supabase/friend-cheers.sql',
+  'supabase/auto-add.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

@@ -35,6 +35,7 @@ import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
+import { bulkLamps, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -42,7 +43,6 @@ import {
   INVITE_GEMS_CAP,
   cleanCode,
   cleanInvite,
-  cleanLine,
   inviteGemsDue,
 } from '../src/lib/people.js'
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
@@ -133,6 +133,23 @@ function test(name, fn) {
 function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
+
+test('a bulk delete across folders comes back whole on undo', () => {
+  const home = { id: 'home', lamps: [{ id: 'a' }, { id: 'b' }], answers: [{ lampId: 'b', periodKey: '2026-09-25', status: 'yes' }] }
+  const work = { id: 'work', lamps: [{ id: 'c' }], answers: [] }
+  const picks = [{ boardId: 'home', lampId: 'b' }, { boardId: 'work', lampId: 'c' }]
+  const gone = bulkLamps([home, work], picks, 'delete')
+  assert.deepEqual(gone.map((book) => book.lamps.map((item) => item.id)), [['a'], []])
+  assert.equal(gone[0].answers.length, 0)
+  // Something added in between stays after the undo.
+  const later = gone.map((book) => (book.id === 'home' ? { ...book, lamps: [...book.lamps, { id: 'new' }] } : book))
+  const back = undoBulkLamps(later, [home, work], picks)
+  assert.deepEqual(back.map((book) => book.lamps.map((item) => item.id)), [['a', 'b', 'new'], ['c']])
+  assert.equal(back[0].answers.length, 1)
+  const stopped = bulkLamps([home, work], picks, 'stop')
+  assert.equal(stopped[0].lamps.find((item) => item.id === 'b').archived, true)
+  assert.equal(stopped[0].lamps.find((item) => item.id === 'a').archived, undefined)
+})
 
 test('the night turns over at midnight, not at four', () => {
   assert.equal(DAY_FOLD, 0)
@@ -589,12 +606,6 @@ test('a phone number folds to e164 the same way the database folds it', () => {
   assert.equal(cleanPhone('1 555 123 4567'), '+15551234567')
   assert.equal(cleanPhone('123'), '')
   assert.ok(looksLikePhone('5551234567'))
-})
-
-test('a line on Did I tonight is trimmed to what the column allows', () => {
-  assert.equal(cleanLine('  lock   the back door  '), 'lock the back door')
-  assert.equal(cleanLine('x'.repeat(200)).length, 60)
-  assert.equal(cleanLine(''), '')
 })
 
 test('a gem lands once per week when a night clears', () => {

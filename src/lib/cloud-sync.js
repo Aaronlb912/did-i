@@ -18,9 +18,7 @@ import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
 import { shelfHeat } from './hall-feel.js'
 import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
-import { didTonightLabels } from './dit-board.js'
-import { DIT_ENABLED } from './features.js'
-import { claimCheerGifts, claimInvites, readMine, syncTonightBoard } from './people.js'
+import { claimCheerGifts, claimInvites, readMine } from './people.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
 import { applyInvitePayout, mergeGiftCheers } from './purse.js'
@@ -174,12 +172,7 @@ async function putPrefs(db, user, shelf) {
     },
     { onConflict: 'user_id' },
   )
-  if (error) return error
-  if (!DIT_ENABLED || !mark.doneOn) return null
-  const mine = await readMine()
-  if (!mine?.public_tonight) return null
-  const synced = await syncTonightBoard(didTonightLabels(doc, mark.doneOn), mark.doneOn)
-  return synced.miss && synced.miss !== 'setup' ? new Error(synced.miss) : null
+  return error || null
 }
 
 /** Lets push run while a session exists but sync UI still says signed out. */

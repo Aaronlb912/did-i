@@ -3,10 +3,6 @@ export const pass = {
   'nav.boards': 'Tags',
   'mast.menu': 'Plus',
   'mast.menuClose': 'Fermer le menu',
-  'nav.everyone': 'DIT',
-  'all.kicker': 'Did I tonight',
-  'all.cheer': 'Cheer · {n}',
-  'all.cheersN': '{n} cheers',
   'kit.cog': 'Ma collection',
   'lang.en': 'English',
   'lang.es': 'Español',
@@ -27,7 +23,6 @@ export const pass = {
   'title.lamp': 'La question · Did I',
   'title.calendar': 'Streak · Did I',
   'title.door': 'Did I',
-  'title.everyone': 'Did I tonight',
   'settings.questionOne': 'question',
   'settings.questionMany': 'questions',
   'settings.look': 'Look',
@@ -266,9 +261,6 @@ export const pass = {
   'legal.privacy.social.title': 'Amis, famille et envois',
   'legal.privacy.social.body':
     'Quand tu utilises Gens, on stocke les demandes d\'amitié, les membres et rôles de famille, les codes d\'invitation que tu crées ou utilises, les Did I que tu envoies ou reçois, et les blocages ou signalements que tu fais.\n\nLes autres dans ta famille ou ta liste d\'amis voient ce que l\'app est faite pour montrer (noms, streaks partagés, questions familiales, et similaire).',
-  'legal.privacy.dit.title': 'Did I tonight (liste publique)',
-  'legal.privacy.dit.body':
-    'Cette liste est désactivée par défaut. Si tu t\'inscris, on stocke que tu es public ce soir, jusqu\'à trois courtes lignes de tes labels DID de cette nuit, les streaks que les autres peuvent déjà voir, et les compteurs de cheer.\n\nLes lignes peuvent être signalées. Deux personnes différentes peuvent enlever une ligne sans attendre une revue humaine. Les signalements sont gardés pour la modération.',
   'legal.privacy.push.title': 'Notifications',
   'legal.privacy.push.body':
     'Sur Android, si tu autorises les notifications, on stocke un jeton push lié à ton compte et ton appareil. On l\'utilise pour les Did I d\'amis, les demandes d\'amitié et des rappels similaires. Tu peux couper les notifications dans les réglages du téléphone.\n\nLes rappels locaux pour les questions dues restent sur l\'appareil et ne demandent pas de compte.',
@@ -324,9 +316,6 @@ export const pass = {
   'legal.terms.social.title': 'Fonctions Gens',
   'legal.terms.social.body':
     'Amis, familles, envois et invitations sont optionnels. Tu peux bloquer quelqu\'un ; le blocage enlève l\'amitié et les rappels en attente de notre côté. Tu peux signaler des utilisateurs ou des lignes publiques.\n\nOn peut suspendre des comptes qui abusent des autres ou du service.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'La liste publique est sur inscription. Les lignes sont de courts labels de ton tag, pas des notes privées. Ne publie pas de harcèlement, d\'illégalité ni d\'informations identifiantes sur d\'autres. On peut enlever des lignes via des signalements ou à notre discrétion.',
   'legal.terms.family.title': 'Familles et rôle enfant',
   'legal.terms.family.body':
     'Les familles partagent des questions entre membres. Les rôles parent et enfant contrôlent qui peut assigner des tâches. Did I n\'est pas destinée aux enfants ; les parents sont responsables des comptes enfant qu\'ils autorisent dans une famille.',

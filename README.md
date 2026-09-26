@@ -14,7 +14,6 @@ https://github.com/Aaronlb912/did-i
 - Tonight is the tap. Home says what is left.
 - Shop: coin looks, gem cheers, streak, marks.
 - People: friends, families, Did I sends, inbox.
-- Did I tonight: opt-in public list, three lines a night.
 - Eight languages in Settings.
 - PWA: install from Chrome or Settings. Works offline on the web.
 - Android app: same UI, local reminders, push when signed in.

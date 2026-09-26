@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { activeLook } from '../../src/lib/dit-board.js'
+import { activeLook } from '../../src/lib/active-look.js'
 import {
   activeDeadline,
   blankLamp,
@@ -28,7 +28,7 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
-import { hangInto, putAnswer, takeDown, toggleArchive } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -60,6 +60,8 @@ import { HangFold } from '../components/HangFold.jsx'
 import { SetCard, SetSwitch } from '../components/SetBits.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { publishSheet } from '../components/SheetHost.jsx'
+import { UndoToast } from '../components/UndoToast.jsx'
 import {
   ChipRow,
   DidButton,
@@ -108,21 +110,46 @@ function openStarters(book) {
   )
 }
 
-function LampBlock({ label, items, shelf, clock, dateIso, colors, onOpen }) {
+function PickBox({ on, colors }) {
+  return (
+    <View
+      style={[
+        styles.pickBox,
+        { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.on : colors.panel2 },
+      ]}
+    >
+      {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>✓</Text> : null}
+    </View>
+  )
+}
+
+function LampBlock({ label, items, shelf, clock, dateIso, colors, onOpen, picking, picked, onPick }) {
   if (!items.length) return null
   return (
     <View style={styles.block}>
       <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{label}</Text>
       {items.map((row) => {
         const jewel = rowJewelState(row, clock, dateIso)
+        const on = Boolean(picking && picked?.has(rowKey(row)))
         return (
           <Pressable
             key={rowKey(row)}
-            onPress={() =>
-              onOpen ? onOpen(row.boardId, row.lamp.id) : goHash('/lamp', { id: row.lamp.id })
-            }
-            style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
+            accessibilityRole={picking ? 'checkbox' : 'button'}
+            accessibilityState={picking ? { checked: on } : undefined}
+            onPress={() => {
+              if (picking) {
+                onPick(row)
+                return
+              }
+              if (onOpen) onOpen(row.boardId, row.lamp.id)
+              else goHash('/lamp', { id: row.lamp.id })
+            }}
+            style={[
+              styles.lampRow,
+              { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.panel3 : colors.panel },
+            ]}
           >
+            {picking ? <PickBox on={on} colors={colors} /> : null}
             <Jewel
               label={shortLabel(row.lamp)}
               tag={shelf.length > 1 ? row.tag : ''}
@@ -149,12 +176,17 @@ function LampBlock({ label, items, shelf, clock, dateIso, colors, onOpen }) {
   )
 }
 
-export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onOpen }) {
+const UNDO_MS = 6000
+
+export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
   const rows = taggedLamps(shelf, tagId)
   const [deadlineOnly, setDeadlineOnly] = useState(false)
   const [topicPicks, setTopicPicks] = useState([])
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState(() => new Set())
+  const [undo, setUndo] = useState(null)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = rows.some((row) => activeDeadline(row.lamp, dateIso))
@@ -167,84 +199,212 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     deadlineOnly,
   })
   const starters = openStarters(book)
+  const shown = [...hung, ...down]
+  // Only what is on screen counts, so a filter change never acts on hidden rows.
+  const chosen = shown.filter((row) => picked.has(rowKey(row)))
+  const allOn = shown.length > 0 && chosen.length === shown.length
+  const allDown = chosen.length > 0 && chosen.every((row) => row.lamp.archived)
+
+  function stopPicking() {
+    setPicking(false)
+    setPicked(new Set())
+  }
+
+  useEffect(() => {
+    if (!picking) return undefined
+    function onBack(event) {
+      stopPicking()
+      event?.preventDefault?.()
+    }
+    window.addEventListener('did-i-back', onBack)
+    return () => window.removeEventListener('did-i-back', onBack)
+  }, [picking])
+
+  useEffect(() => {
+    if (!undo) return undefined
+    const timer = setTimeout(() => setUndo(null), UNDO_MS)
+    return () => clearTimeout(timer)
+  }, [undo])
+
+  function pick(row) {
+    feelTap()
+    setPicked((live) => {
+      const next = new Set(live)
+      const key = rowKey(row)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function apply(kind) {
+    if (!chosen.length || !onChangeBooks) return
+    const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
+    const before = shelf.filter((item) => lampPicks.some((one) => one.boardId === item.id))
+    onChangeBooks(bulkLamps(shelf, lampPicks, kind).map((item) => commitBook(item, clock)))
+    const n = lampPicks.length
+    const label =
+      kind === 'delete'
+        ? t('questions.bulkDeleted', { n })
+        : kind === 'stop'
+          ? t('questions.bulkStopped', { n })
+          : t('questions.bulkAsked', { n })
+    setUndo({ id: Date.now(), label, before, picks: lampPicks })
+    stopPicking()
+  }
+
+  function askDelete() {
+    if (!chosen.length) return
+    publishSheet({
+      title: t('questions.bulkDeleteTitle'),
+      body: t('questions.bulkDeleteBody', { n: chosen.length }),
+      goLabel: t('lamp.delete'),
+      closeLabel: t('lamp.keep'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        apply('delete')
+      },
+    })
+  }
+
+  function takeBack() {
+    if (!undo || !onChangeBooks) return
+    onChangeBooks(undoBulkLamps(shelf, undo.before, undo.picks))
+    setUndo(null)
+  }
 
   return (
-    <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
-      <TagFilter
-        boards={shelf}
-        tagId={tagId}
-        onTag={onTag}
-        now={clock}
-        colors={colors}
-        topics={topics}
-        topicPicks={picks}
-        onTopics={setTopicPicks}
-      />
+    <View style={styles.fill}>
+      <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
+        <TagFilter
+          boards={shelf}
+          tagId={tagId}
+          onTag={onTag}
+          now={clock}
+          colors={colors}
+          topics={topics}
+          topicPicks={picks}
+          onTopics={setTopicPicks}
+        />
 
-      {hasDeadlines ? (
-        <>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('questions.filter')}</Text>
-          <ChipRow
-            items={[
-              { id: 'all', label: t('questions.filterAll') },
-              { id: 'deadline', label: t('questions.filterDeadline') },
-            ]}
-            value={deadlineOnly ? 'deadline' : 'all'}
-            onPick={(value) => setDeadlineOnly(value === 'deadline')}
+        {hasDeadlines ? (
+          <>
+            <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('questions.filter')}</Text>
+            <ChipRow
+              items={[
+                { id: 'all', label: t('questions.filterAll') },
+                { id: 'deadline', label: t('questions.filterDeadline') },
+              ]}
+              value={deadlineOnly ? 'deadline' : 'all'}
+              onPick={(value) => setDeadlineOnly(value === 'deadline')}
+              colors={colors}
+            />
+          </>
+        ) : null}
+
+        {picking ? (
+          <View style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+            <View style={styles.pickHead}>
+              <Text style={[styles.pickCount, { color: colors.ink }]}>
+                {t('questions.pickedN', { n: chosen.length })}
+              </Text>
+              <KeyButton
+                colors={colors}
+                label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
+                onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+              />
+              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
+            </View>
+            <View style={styles.pickActions}>
+              <KeyButton
+                colors={colors}
+                disabled={!chosen.length}
+                label={allDown ? t('lamp.askAgain') : t('lamp.stop')}
+                onPress={() => apply(allDown ? 'ask' : 'stop')}
+              />
+              <Pressable
+                accessibilityRole="button"
+                disabled={!chosen.length}
+                onPress={askDelete}
+                style={({ pressed }) => [
+                  styles.dropBtn,
+                  {
+                    borderColor: colors.miss,
+                    backgroundColor: pressed ? colors.panel2 : 'transparent',
+                    opacity: chosen.length ? 1 : 0.4,
+                  },
+                ]}
+              >
+                <Text style={[styles.dropText, { color: colors.miss }]}>{t('lamp.delete')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.topKeys}>
+            <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
+            {shown.length && onChangeBooks ? (
+              <KeyButton colors={colors} label={t('questions.pick')} onPress={() => setPicking(true)} />
+            ) : null}
+          </View>
+        )}
+
+        {hung.length ? (
+          <LampBlock
+            label={t('questions.list')}
+            items={hung}
+            shelf={shelf}
+            clock={clock}
+            dateIso={dateIso}
             colors={colors}
+            onOpen={onOpen}
+            picking={picking}
+            picked={picked}
+            onPick={pick}
           />
-        </>
-      ) : null}
+        ) : picks.length ? (
+          <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
+        ) : deadlineOnly ? (
+          <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
+        ) : (
+          <>
+            <Meta colors={colors}>{t('questions.hint')}</Meta>
+            {starters.length && onChange ? (
+              <View style={styles.starters}>
+                <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{t('first.picks')}</Text>
+                <View style={styles.starterRow}>
+                  {starters.map((starter) => (
+                    <KeyButton
+                      key={starter.short}
+                      label={starter.short}
+                      colors={colors}
+                      onPress={() =>
+                        onChange(commitBook(hangInto(book, { ...blankLamp(clock), ...starter }), clock))
+                      }
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+          </>
+        )}
 
-      <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
-
-      {hung.length ? (
         <LampBlock
-          label={t('questions.list')}
-          items={hung}
+          label={t('questions.down')}
+          items={down}
           shelf={shelf}
           clock={clock}
           dateIso={dateIso}
           colors={colors}
           onOpen={onOpen}
+          picking={picking}
+          picked={picked}
+          onPick={pick}
         />
-      ) : picks.length ? (
-        <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
-      ) : deadlineOnly ? (
-        <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
-      ) : (
-        <>
-          <Meta colors={colors}>{t('questions.hint')}</Meta>
-          {starters.length && onChange ? (
-            <View style={styles.starters}>
-              <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{t('first.picks')}</Text>
-              <View style={styles.starterRow}>
-                {starters.map((starter) => (
-                  <KeyButton
-                    key={starter.short}
-                    label={starter.short}
-                    colors={colors}
-                    onPress={() =>
-                      onChange(commitBook(hangInto(book, { ...blankLamp(clock), ...starter }), clock))
-                    }
-                  />
-                ))}
-              </View>
-            </View>
-          ) : null}
-        </>
-      )}
-
-      <LampBlock
-        label={t('questions.down')}
-        items={down}
-        shelf={shelf}
-        clock={clock}
-        dateIso={dateIso}
-        colors={colors}
-        onOpen={onOpen}
-      />
-    </BoardShell>
+      </BoardShell>
+      <UndoToast undo={undo} onUndo={takeBack} colors={colors} />
+    </View>
   )
 }
 
@@ -934,6 +1094,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   block: { gap: 8, marginTop: 4 },
+  fill: { flex: 1 },
+  topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
+  pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  pickCount: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700', flexGrow: 1 },
+  pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pickBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickTick: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '800', lineHeight: 16 },
+  dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 40, paddingHorizontal: 16, justifyContent: 'center' },
+  dropText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
   blockLabel: {
     fontFamily: fonts.mono,
     fontSize: 11,

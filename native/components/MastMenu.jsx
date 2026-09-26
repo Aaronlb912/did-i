@@ -13,10 +13,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
 import { showMainNavInMenu } from '../../src/lib/app-nav.js'
-import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
-import { usePeopleCount } from '../../src/lib/people.js'
+import { usePeoplePulse } from '../../src/lib/people.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
@@ -28,14 +27,17 @@ import { MenuIcon } from './MenuIcon.jsx'
 
 const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
 const QUESTIONS_ON = new Set(['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'])
-const EVERYONE_ON = new Set(['/everyone'])
 const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
 const ADD_ON = new Set(['/add', '/hang'])
 const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 const MastMenuCtx = createContext(null)
 
-function menuItems(showAdd, waiting) {
+function countLabel(n) {
+  return n > 9 ? '9+' : String(n)
+}
+
+function menuItems(showAdd, inbox, asks, signedIn) {
   const path = readRoute().path
   const items = []
   if (showMainNavInMenu(path)) {
@@ -50,27 +52,29 @@ function menuItems(showAdd, waiting) {
         stroke: true,
       },
     )
-    if (DIT_ENABLED) {
-      items.push({
-        key: 'everyone',
-        path: '/everyone',
-        label: t('nav.everyone'),
-        on: EVERYONE_ON.has(path),
-        icon: 'people',
-      })
-    }
     items.push({ key: 'nav-divider', divider: true })
   }
   if (showAdd) {
     items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
   }
+  if (signedIn) {
+    items.push({
+      key: 'inbox',
+      path: '/inbox',
+      label: inbox ? t('didyou.menuWaiting', { n: inbox }) : t('inbox.kicker'),
+      on: path === '/inbox',
+      count: inbox,
+      icon: 'inbox',
+      stroke: true,
+    })
+  }
   items.push(
     {
       key: 'people',
       path: '/people',
-      label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
-      on: PEOPLE_ON.has(path),
-      pip: waiting > 0,
+      label: asks ? t('people.cogWaiting', { n: asks }) : t('people.cog'),
+      on: PEOPLE_ON.has(path) && path !== '/inbox',
+      pip: asks > 0,
       icon: 'people',
     },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
@@ -86,8 +90,14 @@ function menuItems(showAdd, waiting) {
   return items
 }
 
-function menuIsOn(showAdd, waiting) {
-  return menuItems(showAdd, waiting).some((item) => item.on)
+function menuIsOn(items) {
+  return items.some((item) => item.on)
+}
+
+function useMenuPeople() {
+  const account = useAccount()
+  const { inbox, asks } = usePeoplePulse(account.user)
+  return { inbox, asks, signedIn: Boolean(account.user) }
 }
 
 // The grid button grows into the menu card and shrinks back into it.
@@ -207,10 +217,9 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   const { width: winW } = useWindowDimensions()
   const fallback = useFallbackAnchor()
   const anchor = measured || fallback
-  const account = useAccount()
-  const waiting = usePeopleCount(account.user)
-  const items = menuItems(showAdd, waiting)
-  const on = menuIsOn(showAdd, waiting)
+  const people = useMenuPeople()
+  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn)
+  const on = menuIsOn(items)
   const reduce = useReduceMotion()
   const theme = useTheme()
   const BlurMorph = loadBlurMorph()
@@ -323,6 +332,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   style={({ pressed }) => [
                     styles.row,
                     item.on && { backgroundColor: colors.panel3 },
+                    item.count > 0 && [styles.rowLit, { backgroundColor: colors.panel3, borderColor: colors.on }],
                     pressed && { backgroundColor: colors.panel2 },
                   ]}
                 >
@@ -335,7 +345,13 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                     />
                   </View>
                   <Text style={[styles.label, { color: item.on ? colors.on : colors.ink }]}>{item.label}</Text>
-                  {item.pip ? <View style={[styles.pip, { backgroundColor: colors.on }]} /> : null}
+                  {item.count > 0 ? (
+                    <View style={[styles.count, { backgroundColor: colors.on }]}>
+                      <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(item.count)}</Text>
+                    </View>
+                  ) : item.pip ? (
+                    <View style={[styles.pip, { backgroundColor: colors.on }]} />
+                  ) : null}
                 </Pressable>
               ),
             )}
@@ -357,9 +373,9 @@ function useMenu() {
 
 export function MastMenuCog() {
   const { open, colors, showAdd, toggle } = useMenu()
-  const account = useAccount()
-  const waiting = usePeopleCount(account.user)
-  const on = menuIsOn(showAdd, waiting)
+  const people = useMenuPeople()
+  const waiting = people.inbox + people.asks
+  const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn))
   const button = useRef(null)
 
   return (
@@ -376,11 +392,17 @@ export function MastMenuCog() {
         }
         node.measureInWindow((x, y, w, h) => toggle(w > 0 && h > 0 ? { x, y, w, h } : null))
       }}
-      label={t('mast.menu')}
+      label={people.inbox ? t('didyou.menuButton', { n: people.inbox }) : t('mast.menu')}
       expanded={open}
     >
       <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
-      {waiting > 0 ? <View style={[styles.menuPip, { backgroundColor: colors.on }]} /> : null}
+      {people.inbox > 0 ? (
+        <View pointerEvents="none" style={[styles.menuCount, { backgroundColor: colors.on, borderColor: colors.bg }]}>
+          <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(people.inbox)}</Text>
+        </View>
+      ) : waiting > 0 ? (
+        <View style={[styles.menuPip, { backgroundColor: colors.on }]} />
+      ) : null}
     </HeaderButton>
   )
 }
@@ -425,6 +447,28 @@ const styles = StyleSheet.create({
   ico: { width: 22, alignItems: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },
   pip: { width: 8, height: 8, borderRadius: 4 },
+  rowLit: { borderWidth: 1 },
+  count: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { fontFamily: fonts.mono, fontSize: 11, fontWeight: '700' },
+  menuCount: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   menuPip: {
     position: 'absolute',
     top: 8,

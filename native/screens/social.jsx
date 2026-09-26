@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
-import { didTonightLabels } from '../../src/lib/dit-board.js'
-import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { passAlong } from '../../src/lib/native.js'
 import {
@@ -16,6 +14,7 @@ import {
   claimInvites,
   cleanCode,
   cleanPhone,
+  doneTonight,
   formatPhone,
   dropFriend,
   friendAskNote,
@@ -26,6 +25,7 @@ import {
   listBlocks,
   listFamilies,
   listFriends,
+  listAutoAdds,
   listInbox,
   listSent,
   makeFamily,
@@ -33,22 +33,17 @@ import {
   myInvite,
   personName,
   readMine,
+  refreshPeople,
   savePhone,
-  reportTonightLine,
   sayNo,
   sayYes,
   sendCheer,
   buyCheers,
   cheerFriend,
   readFriendCheers,
-  sendDidI,
-  setPublicTonight,
+  setAutoAdd,
   shareStreak,
-  syncTonightBoard,
   takeBack,
-  tonightWall,
-  TONIGHT_CHEER_GEMS,
-  cheerOn,
   unblockPerson,
 } from '../../src/lib/people.js'
 import {
@@ -62,6 +57,7 @@ import {
   normalizePurse,
   spendGems,
 } from '../../src/lib/purse.js'
+import { useKept } from '../hooks/useKept.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
@@ -69,6 +65,9 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { offerMoreGems } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
 import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
+import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
+import { SendSheet } from '../components/SendDidYou.jsx'
+import { SetSwitch } from '../components/SetBits.jsx'
 import {
   DidButton,
   Field,
@@ -105,48 +104,6 @@ function OfflineLine({ colors }) {
   const online = useOnline()
   if (online) return null
   return <Meta colors={colors}>{t('people.offline')}</Meta>
-}
-
-function SendSheet({ person, colors, onClose, onSent }) {
-  const [question, setQuestion] = useState('')
-  const [note, setNote] = useState('')
-  const [miss, setMiss] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  async function send() {
-    if (!question.trim()) {
-      setMiss(t('people.sendBlank'))
-      return
-    }
-    setBusy(true)
-    const { miss: why } = await sendDidI(person.user_id, question, note)
-    setBusy(false)
-    if (why === 'already') return setMiss(t('people.sendAlready'))
-    if (why) return setMiss(tMiss(why))
-    onSent(t('people.sentTo', { name: personName(person) }))
-    onClose()
-  }
-
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
-        <Pressable
-          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <Text style={[styles.popKicker, { color: colors.on }]}>{t('people.sendTitle')}</Text>
-          <Meta colors={colors}>{t('people.sendHint', { name: personName(person) })}</Meta>
-          <Field colors={colors} label={t('people.sendWhat')} value={question} onChangeText={setQuestion} />
-          <Field colors={colors} label={t('people.sendNote')} value={note} onChangeText={setNote} />
-          <Miss colors={colors}>{miss}</Miss>
-          <View style={styles.personActions}>
-            <DidButton colors={colors} small label={t('people.send')} disabled={busy} onPress={send} />
-            <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  )
 }
 
 function BlockModal({ person, colors, onClose, onDone }) {
@@ -232,6 +189,11 @@ function friendLine(person) {
   return t('people.noStreak')
 }
 
+// The pill already says done tonight; the line under the name adds the streak.
+function streakOnly(person) {
+  return person?.streak > 0 ? t('people.streakN', { n: person.streak }) : ''
+}
+
 function sentState(state) {
   if (state === 'kept') return t('sent.kept')
   if (state === 'passed') return t('sent.passed')
@@ -243,15 +205,126 @@ function streakLine(row) {
   return t('all.noStreak')
 }
 
+function Tile({ label, value, note, lit, onPress, colors }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tile,
+        {
+          backgroundColor: pressed ? colors.panel2 : lit ? colors.panel3 : colors.panel,
+          borderColor: lit ? colors.on : colors.line,
+        },
+      ]}
+    >
+      <Text style={[styles.tileLabel, { color: lit ? colors.on : colors.inkDim }]}>{label}</Text>
+      <Text style={[styles.tileValue, { color: colors.ink }]} numberOfLines={2}>
+        {value}
+      </Text>
+      {note ? (
+        <Text style={[styles.tileNote, { color: colors.inkDim }]} numberOfLines={2}>
+          {note}
+        </Text>
+      ) : null}
+    </Pressable>
+  )
+}
+
+// A join code box that sits right under the family list, so joining a
+// second or third family does not mean hunting through Connect.
+function JoinFamilyCard({ colors, bare = false }) {
+  const [code, setCode] = useState('')
+  const [miss, setMiss] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function join() {
+    setBusy(true)
+    const { miss: why, id } = await joinFamily(code)
+    setBusy(false)
+    if (why === 'code') return setMiss(t('people.codeShort'))
+    if (why === 'nofamily') return setMiss(t('people.noFamily'))
+    if (why) return setMiss(tMiss(why))
+    setCode('')
+    setMiss('')
+    return goHash('/family', { id })
+  }
+  return (
+    <View style={bare ? styles.joinBare : [styles.famCard, styles.joinCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View style={bare ? null : styles.joinField}>
+        <Field
+          colors={colors}
+          label={t('people.joinCode')}
+          value={code}
+          onChangeText={(value) => setCode(cleanCode(value))}
+          autoCapitalize="characters"
+        />
+        <Miss colors={colors}>{miss}</Miss>
+      </View>
+      <DidButton colors={colors} small label={t('people.join')} disabled={busy} onPress={join} />
+    </View>
+  )
+}
+
+// A small popup for the plus next to a section title.
+function AddPop({ kicker, colors, onClose, children }) {
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable
+          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
+          onPress={(event) => event.stopPropagation()}
+        >
+          <Text style={[styles.popKicker, { color: colors.on }]}>{kicker}</Text>
+          {children}
+          <KeyButton colors={colors} label={t('settings.close')} onPress={onClose} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
+function AddFriendPop({ phone, colors, onClose, onAsked }) {
+  const [draft, setDraft] = useState('')
+  const [miss, setMiss] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function ask() {
+    setBusy(true)
+    const { miss: why, person } = await askFriend(draft)
+    setBusy(false)
+    if (why === 'short') return setMiss(t('people.phoneShort'))
+    if (why === 'nophone') return setMiss(t('people.nophone'))
+    if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(draft) }))
+    if (why) return setMiss(tMiss(why))
+    onClose()
+    return onAsked(t('people.asked', { name: personName(person) }))
+  }
+  return (
+    <AddPop kicker={t('people.addOne')} colors={colors} onClose={onClose}>
+      {phone ? (
+        <>
+          <Field colors={colors} label={t('people.add')} value={draft} onChangeText={setDraft} keyboardType="phone-pad" />
+          <Miss colors={colors}>{miss}</Miss>
+          <DidButton colors={colors} label={t('people.askOne')} disabled={busy} onPress={ask} />
+        </>
+      ) : (
+        <>
+          <Meta colors={colors}>{t('people.nophone')}</Meta>
+          <DidButton colors={colors} small label={t('people.phoneSave')} onPress={() => { onClose(); goHash('/people/connect') }} />
+        </>
+      )}
+    </AddPop>
+  )
+}
+
 export function PeopleScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [mine, setMine] = useState(null)
-  const [links, setLinks] = useState({ friends: [], asked: [], sent: [] })
-  const [families, setFamilies] = useState([])
-  const [waiting, setWaiting] = useState(0)
-  const [phone, setPhone] = useState('')
-  const [ready, setReady] = useState(false)
+  const [mine, setMine] = useKept(`people.mine:${account.user?.id}`, null)
+  const [links, setLinks] = useKept(`people.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
+  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
+  const [waiting, setWaiting] = useKept(`people.waiting:${account.user?.id}`, 0)
+  const [phone, setPhone] = useKept(`people.phone:${account.user?.id}`, '')
+  const [ready, setReady] = useKept(`people.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
@@ -308,80 +381,134 @@ export function PeopleScreen({ book, onChange }) {
     )
   }
 
+  const today = isoDate(new Date())
+  const doneCount = links.friends.filter((row) => doneTonight(row.person, today)).length
+
   return (
     <ScreenShell title={t('people.title')} colors={colors}>
       <OfflineLine colors={colors} />
 
+      <View style={styles.tiles}>
+        <Tile
+          colors={colors}
+          lit={waiting > 0}
+          label={t('inbox.kicker')}
+          value={waiting ? t('people.waiting', { n: waiting }) : t('people.inboxQuiet')}
+          note={waiting ? t('people.waitingSub') : ''}
+          onPress={() => goHash('/inbox')}
+        />
+        <Tile
+          colors={colors}
+          label={t('sent.kicker')}
+          value={t('sent.tileValue')}
+          note={t('sent.rowSub')}
+          onPress={() => goHash('/sent')}
+        />
+      </View>
+
       {links.asked.length ? (
         <>
-          <Cap colors={colors}>{t('people.askBanner', { n: links.asked.length })}</Cap>
+          <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
           {links.asked.map((row) => (
-            <PersonRow
+            <PersonCard
               key={row.id}
               colors={colors}
-              title={friendAskTitle(row.person) || t('people.someone')}
-              note={friendAskNote(row.person)}
               highlight
-            >
-              <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
-              <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
-            </PersonRow>
+              person={row.person}
+              name={friendAskTitle(row.person) || t('people.someone')}
+              line={friendAskNote(row.person)}
+              actions={
+                <>
+                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
+                </>
+              }
+            />
           ))}
         </>
       ) : null}
 
-      <Cap colors={colors}>{t('inbox.kicker')}</Cap>
-      <Row
+      <SectionHead
         colors={colors}
-        label={waiting ? t('people.waiting', { n: waiting }) : t('inbox.kicker')}
-        note={waiting ? t('people.waitingSub') : t('people.inboxQuiet')}
-        onPress={() => goHash('/inbox')}
+        label={t('people.friends')}
+        count={links.friends.length || null}
+        link={t('people.seeAll')}
+        onLink={() => goHash('/friends')}
+        onAdd={links.friends.length ? () => setSheet({ kind: 'friend' }) : undefined}
+        addLabel={t('people.addOne')}
       />
-      <Row colors={colors} label={t('sent.kicker')} note={t('sent.rowSub')} onPress={() => goHash('/sent')} />
-
-      <Cap colors={colors}>{t('people.friends')}</Cap>
       {links.friends.length ? (
-        links.friends.slice(0, 6).map((row) => (
-          <PersonRow
-            key={row.id}
-            colors={colors}
-            title={personName(row.person) || t('people.someone')}
-            note={friendLine(row.person)}
-          >
-            <DidButton
-              colors={colors}
-              small
-              label={t('people.sendShort')}
-              onPress={() => setSheet({ kind: 'send', person: row.person })}
-            />
-          </PersonRow>
-        ))
+        <>
+          <Text style={[styles.glance, { color: colors.inkSoft }]}>
+            {t('people.doneOf', { done: doneCount, n: links.friends.length })} {t('people.stripHint')}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+            {links.friends.map((row) => {
+              const done = doneTonight(row.person, today)
+              return (
+                <Pressable
+                  key={row.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${personName(row.person) || t('people.someone')}, ${friendLine(row.person)}`}
+                  onPress={() => setSheet({ kind: 'send', person: row.person })}
+                  style={styles.stripItem}
+                >
+                  <Avatar person={row.person} done={done} colors={colors} size={52} />
+                  <Text style={[styles.stripName, { color: colors.ink }]} numberOfLines={1}>
+                    {personName(row.person) || t('people.someone')}
+                  </Text>
+                  <Text style={[styles.stripLine, { color: done ? colors.on : colors.inkDim }]} numberOfLines={1}>
+                    {done ? t('people.doneTonightShort') : t('people.notYet')}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        </>
       ) : (
-        <Meta colors={colors}>{t('people.noFriends')}</Meta>
+        <EmptyCard colors={colors} title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
+          <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+        </EmptyCard>
       )}
-      <Row
-        colors={colors}
-        label={t('friends.title', { n: links.friends.length })}
-        note={t('friends.seeSub')}
-        onPress={() => goHash('/friends')}
-      />
 
-      <Cap colors={colors}>{t('people.families')}</Cap>
+      <SectionHead
+        colors={colors}
+        label={t('people.families')}
+        count={families.length || null}
+        onAdd={families.length ? () => setSheet({ kind: 'family' }) : undefined}
+        addLabel={t('people.join')}
+      />
       {families.length ? (
         families.map((fam) => (
-          <Row
+          <Pressable
             key={fam.id}
-            colors={colors}
-            label={fam.name}
-            note={fam.role === 'parent' ? t('people.parent') : t('people.kid')}
+            accessibilityRole="button"
             onPress={() => goHash('/family', { id: fam.id })}
-          />
+            style={({ pressed }) => [
+              styles.famCard,
+              { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel },
+            ]}
+          >
+            <Avatar person={{ display_name: fam.name }} colors={colors} />
+            <View style={styles.famCopy}>
+              <Text style={[styles.famName, { color: colors.ink }]} numberOfLines={1}>
+                {fam.name}
+              </Text>
+              <Text style={[styles.famLine, { color: colors.inkDim }]}>
+                {fam.role === 'parent' ? t('people.parent') : t('people.kid')}
+              </Text>
+            </View>
+            <Text style={[styles.chev, { color: colors.inkDim }]}>›</Text>
+          </Pressable>
         ))
       ) : (
-        <Meta colors={colors}>{t('people.noFamilies')}</Meta>
+        <EmptyCard colors={colors} title={t('people.noFamiliesTitle')} body={t('people.noFamiliesBody')}>
+          <DidButton colors={colors} small label={t('people.startFamily')} onPress={() => goHash('/people/connect')} />
+        </EmptyCard>
       )}
+      {families.length ? null : <JoinFamilyCard colors={colors} />}
 
-      <Cap colors={colors}>{t('people.you')}</Cap>
+      <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}
         label={t('people.name')}
@@ -394,29 +521,6 @@ export function PeopleScreen({ book, onChange }) {
         note={phone ? formatPhone(phone) : t('people.phoneMissing')}
         onPress={() => goHash('/account')}
       />
-      {DIT_ENABLED ? (
-        <>
-          <Row
-            colors={colors}
-            label={t('people.shareStreak')}
-            note={t('people.shareStreakSub')}
-            onPress={async () => {
-              await shareStreak(!mine?.share_streak)
-              load()
-            }}
-          />
-          <Row
-            colors={colors}
-            label={t('all.showing')}
-            note={t('all.joinBody')}
-            onPress={async () => {
-              await setPublicTonight(!mine?.public_tonight)
-              load()
-            }}
-          />
-          <Row colors={colors} label={t('all.kicker')} note={t('all.listCap')} onPress={() => goHash('/everyone')} />
-        </>
-      ) : null}
       <Row
         colors={colors}
         label={t('people.connect')}
@@ -436,12 +540,15 @@ export function PeopleScreen({ book, onChange }) {
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
       {sheet?.kind === 'send' ? (
-        <SendSheet
-          person={sheet.person}
-          colors={colors}
-          onClose={() => setSheet(null)}
-          onSent={say}
-        />
+        <SendSheet person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
+      ) : null}
+      {sheet?.kind === 'friend' ? (
+        <AddFriendPop phone={phone} colors={colors} onClose={() => setSheet(null)} onAsked={(words) => { say(words); load() }} />
+      ) : null}
+      {sheet?.kind === 'family' ? (
+        <AddPop kicker={t('people.join')} colors={colors} onClose={() => setSheet(null)}>
+          <JoinFamilyCard colors={colors} bare />
+        </AddPop>
       ) : null}
     </ScreenShell>
   )
@@ -450,10 +557,10 @@ export function PeopleScreen({ book, onChange }) {
 export function PeopleReferScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [invite, setInvite] = useState('')
-  const [joined, setJoined] = useState(0)
-  const [gemsPaid, setGemsPaid] = useState(0)
-  const [ready, setReady] = useState(false)
+  const [invite, setInvite] = useKept(`refer.invite:${account.user?.id}`, '')
+  const [joined, setJoined] = useKept(`refer.joined:${account.user?.id}`, 0)
+  const [gemsPaid, setGemsPaid] = useKept(`refer.gems:${account.user?.id}`, 0)
+  const [ready, setReady] = useKept(`refer.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
 
@@ -689,12 +796,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   const colors = useHallColors()
   const account = useAccount()
   const purse = normalizePurse(book)
-  const [links, setLinks] = useState({ friends: [], asked: [], sent: [] })
-  const [blocks, setBlocks] = useState([])
-  const [ready, setReady] = useState(false)
+  const [links, setLinks] = useKept(`friends.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
+  const [blocks, setBlocks] = useKept(`friends.blocks:${account.user?.id}`, [])
+  const [autoAdds, setAutoAdds] = useKept(`friends.auto:${account.user?.id}`, () => new Set())
+  const [ready, setReady] = useKept(`friends.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [confirm, setConfirm] = useState(null)
+  const [sheet, setSheet] = useState(null)
   const [stock, setStock] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
@@ -704,13 +813,15 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       return
     }
     try {
-      const [friendRows, blockRows, serverCheers] = await Promise.all([
+      const [friendRows, blockRows, serverCheers, autoRows] = await Promise.all([
         listFriends(),
         listBlocks(),
         readFriendCheers(),
+        listAutoAdds(),
       ])
       setLinks(friendRows)
       setBlocks(blockRows)
+      setAutoAdds(autoRows)
       if (typeof serverCheers === 'number') setStock(serverCheers)
       setMiss('')
     } catch {
@@ -722,6 +833,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   useEffect(() => {
     load()
   }, [load])
+
+  function say(words) {
+    setMiss('')
+    setSaid(words)
+  }
 
   async function answerAsk(id, yes) {
     setMiss('')
@@ -738,6 +854,74 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     return load()
   }
 
+  async function flipAuto(person) {
+    const id = person.user_id
+    const on = !autoAdds.has(id)
+    // Show it at once; put it back if the save does not land.
+    setAutoAdds((live) => {
+      const next = new Set(live)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+    const { miss: why } = await setAutoAdd(id, on)
+    if (!why) return
+    setAutoAdds((live) => {
+      const next = new Set(live)
+      if (on) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    setMiss(why === 'off' || why === 'out' ? tMiss(why) : t('friends.autoAddMiss'))
+  }
+
+  async function cheer(person) {
+    const sent = await cheerFriend(book, person.user_id, purse.cheerOn)
+    const known = friendCheerMissKey(sent.miss)
+    if (known) return setMiss(t(known.key, known.vars))
+    if (sent.miss) return setMiss(tMiss(sent.miss))
+    setStock(normalizePurse(sent.book).friendCheers)
+    if (onChange) onChange(sent.book)
+    fireCheer(purse.cheerOn, 1)
+    return say(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+  }
+
+  async function gift(person) {
+    if (purse.gems < CHEER_GEMS) {
+      offerMoreGems(colors)
+      return
+    }
+    const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
+    const spent = spendGems(book, CHEER_GEMS)
+    if (spent.miss) {
+      offerMoreGems(colors)
+      return
+    }
+    const { miss: why } = await giftCheer(person.user_id, pick)
+    if (why === 'giftCap') return setMiss(t('friends.giftCap'))
+    if (why) return setMiss(tMiss(why))
+    if (onChange) onChange(spent.book)
+    say(t('friends.giftSent', { name: personName(person) || t('people.someone') }))
+  }
+
+  async function buyMore() {
+    if (purse.gems < FRIEND_CHEER_GEMS) {
+      offerMoreGems(colors)
+      return
+    }
+    const bought = await buyCheers(book)
+    if (bought.miss === 'gems') {
+      offerMoreGems(colors)
+      return
+    }
+    const known = friendCheerMissKey(bought.miss)
+    if (known) return setMiss(t(known.key, known.vars))
+    if (bought.miss) return setMiss(tMiss(bought.miss))
+    setStock(normalizePurse(bought.book).friendCheers)
+    if (onChange) onChange(bought.book)
+    setMiss('')
+  }
+
   if (!cloudSetUp()) return <CloudOff colors={colors} />
   if (!account.user) {
     return <NeedAccount kicker={t('people.friends')} title={t('people.outTitle')} colors={colors} />
@@ -750,148 +934,161 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     )
   }
 
+  const today = isoDate(new Date())
+  const doneCount = links.friends.filter((row) => doneTonight(row.person, today)).length
+
   return (
     <ScreenShell title={t('friends.title', { n: links.friends.length })} colors={colors}>
       <OfflineLine colors={colors} />
 
-      {links.asked.length ? (
-        <>
-          <Cap colors={colors}>{t('people.askBanner', { n: links.asked.length })}</Cap>
-          {links.asked.map((row) => (
-            <PersonRow
-              key={row.id}
-              colors={colors}
-              title={friendAskTitle(row.person) || t('people.someone')}
-              note={friendAskNote(row.person)}
-              highlight={highlightAsk ? row.id === highlightAsk : true}
-            >
-              <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
-              <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
-            </PersonRow>
-          ))}
-        </>
+      {links.friends.length ? (
+        <Text style={[styles.glance, { color: colors.inkSoft }]}>
+          {t('people.doneOf', { done: doneCount, n: links.friends.length })}
+        </Text>
       ) : null}
 
-      <Meta colors={colors}>{t('friends.cheerNote')}</Meta>
-      <Meta colors={colors}>{t('friends.cheerStock', { n: cheersLeft })}</Meta>
-      <KeyButton
-        colors={colors}
-        disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
-        label={t('friends.cheerBuy')}
-        onPress={async () => {
-          if (purse.gems < FRIEND_CHEER_GEMS) {
-            offerMoreGems(colors)
-            return
-          }
-          const bought = await buyCheers(book)
-          if (bought.miss === 'gems') {
-            offerMoreGems(colors)
-            return
-          }
-          const known = friendCheerMissKey(bought.miss)
-          if (known) return setMiss(t(known.key, known.vars))
-          if (bought.miss) return setMiss(tMiss(bought.miss))
-          setStock(normalizePurse(bought.book).friendCheers)
-          if (onChange) onChange(bought.book)
-          setMiss('')
-        }}
-      />
+      <View style={[styles.stockBar, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <View style={styles.stockCopy}>
+          <Text style={[styles.stockValue, { color: colors.ink }]}>{t('friends.cheerStock', { n: cheersLeft })}</Text>
+          <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friends.cheerNote')}</Text>
+        </View>
+        <KeyButton
+          colors={colors}
+          disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+          label={t('friends.cheerBuyShort')}
+          onPress={buyMore}
+        />
+      </View>
 
-      {links.friends.length ? (
+      {links.asked.length ? (
         <>
-          <Cap colors={colors}>{t('people.friends')}</Cap>
-          {links.friends.map((row) => (
-            <PersonRow
+          <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
+          {links.asked.map((row) => (
+            <PersonCard
               key={row.id}
               colors={colors}
-              title={personName(row.person) || t('people.someone')}
-              note={
-                row.person?.phone
-                  ? `${formatPhone(row.person.phone)} · ${friendLine(row.person)}`
-                  : friendLine(row.person)
+              highlight={highlightAsk ? row.id === highlightAsk : true}
+              person={row.person}
+              name={friendAskTitle(row.person) || t('people.someone')}
+              line={friendAskNote(row.person)}
+              actions={
+                <>
+                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
+                </>
               }
-            >
-              <KeyButton colors={colors} label={t('people.drop')} onPress={() => cut(row.person)} />
-              <KeyButton
-                colors={colors}
-                disabled={cheersLeft < 1}
-                label={t('friends.cheerUse')}
-                onPress={async () => {
-                  const sent = await cheerFriend(book, row.person.user_id, purse.cheerOn)
-                  const known = friendCheerMissKey(sent.miss)
-                  if (known) return setMiss(t(known.key, known.vars))
-                  if (sent.miss) return setMiss(tMiss(sent.miss))
-                  setStock(normalizePurse(sent.book).friendCheers)
-                  if (onChange) onChange(sent.book)
-                  fireCheer(purse.cheerOn, 1)
-                  setMiss('')
-                }}
-              />
-              <KeyButton
-                colors={colors}
-                label={t('friends.gift', { n: CHEER_GEMS })}
-                onPress={async () => {
-                  if (purse.gems < CHEER_GEMS) {
-                    offerMoreGems(colors)
-                    return
-                  }
-                  const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
-                  const spent = spendGems(book, CHEER_GEMS)
-                  if (spent.miss) {
-                    offerMoreGems(colors)
-                    return
-                  }
-                  const { miss: why } = await giftCheer(row.person.user_id, pick)
-                  if (why === 'giftCap') return setMiss(t('friends.giftCap'))
-                  if (why) return setMiss(tMiss(why))
-                  if (onChange) onChange(spent.book)
-                  setSaid(t('friends.giftSent', { name: personName(row.person) || t('people.someone') }))
-                }}
-              />
-              <KeyButton colors={colors} label={t('block.block')} onPress={() => setConfirm(row.person)} />
-            </PersonRow>
-          ))}
-        </>
-      ) : (
-        <Meta colors={colors}>{t('people.noFriends')}</Meta>
-      )}
-
-      {links.sent.length ? (
-        <>
-          <Cap colors={colors}>{t('friends.waiting')}</Cap>
-          {links.sent.map((row) => (
-            <PersonRow
-              key={row.id}
-              colors={colors}
-              title={personName(row.person) || t('people.someone')}
-              note={t('friends.notYet')}
             />
           ))}
         </>
       ) : null}
 
-      <DidButton colors={colors} label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+      <SectionHead colors={colors} label={t('people.friends')} count={links.friends.length || null} />
+      {links.friends.length ? (
+        links.friends.map((row) => {
+          const done = doneTonight(row.person, today)
+          const auto = autoAdds.has(row.person.user_id)
+          return (
+            <PersonCard
+              key={row.id}
+              colors={colors}
+              person={row.person}
+              done={done}
+              name={personName(row.person) || t('people.someone')}
+              line={[done ? streakOnly(row.person) : friendLine(row.person), auto ? t('people.autoOnChip') : '']
+                .filter(Boolean)
+                .join(' · ')}
+              pill={done ? t('people.doneTonightShort') : ''}
+              pillOn={done}
+              actions={
+                <>
+                  <DidButton
+                    colors={colors}
+                    small
+                    label={t('people.sendDidYou')}
+                    onPress={() => setSheet({ person: row.person })}
+                  />
+                  <KeyButton
+                    colors={colors}
+                    disabled={cheersLeft < 1}
+                    label={t('friends.cheerUse')}
+                    onPress={() => cheer(row.person)}
+                  />
+                </>
+              }
+              more={
+                <>
+                  <SetSwitch
+                    colors={colors}
+                    label={t('friends.autoAdd')}
+                    sub={auto ? t('friends.autoAddOn') : t('friends.autoAddOff')}
+                    on={auto}
+                    onPress={() => flipAuto(row.person)}
+                  />
+                  {row.person?.phone ? (
+                    <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatPhone(row.person.phone)}</Text>
+                  ) : null}
+                  <View style={styles.personActions}>
+                    <KeyButton
+                      colors={colors}
+                      label={t('friends.gift', { n: CHEER_GEMS })}
+                      onPress={() => gift(row.person)}
+                    />
+                    <KeyButton colors={colors} label={t('people.drop')} onPress={() => cut(row.person)} />
+                    <KeyButton colors={colors} label={t('block.block')} onPress={() => setConfirm(row.person)} />
+                  </View>
+                </>
+              }
+            />
+          )
+        })
+      ) : (
+        <EmptyCard colors={colors} title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
+          <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+        </EmptyCard>
+      )}
+
+      {links.sent.length ? (
+        <>
+          <SectionHead colors={colors} label={t('friends.waiting')} count={links.sent.length} />
+          {links.sent.map((row) => (
+            <PersonCard
+              key={row.id}
+              colors={colors}
+              person={row.person}
+              name={personName(row.person) || t('people.someone')}
+              line={t('friends.notYet')}
+            />
+          ))}
+        </>
+      ) : null}
+
+      {links.friends.length ? (
+        <DidButton colors={colors} label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+      ) : null}
       <KeyButton colors={colors} label={t('people.back')} onPress={() => goHash('/people')} />
+
       {blocks.length ? (
         <>
-          <Cap colors={colors}>{t('block.list')}</Cap>
+          <SectionHead colors={colors} label={t('block.list')} count={blocks.length} />
           {blocks.map((row) => (
-            <PersonRow
+            <PersonCard
               key={row.user_id}
               colors={colors}
-              title={row.display_name || formatPhone(row.phone) || t('people.someone')}
-              note={t('block.cannotReach')}
-            >
-              <KeyButton
-                colors={colors}
-                label={t('block.unblock')}
-                onPress={async () => {
-                  const { miss: why } = await unblockPerson(row.user_id)
-                  if (why) setMiss(tMiss(why))
-                  load()
-                }}
-              />
-            </PersonRow>
+              person={row}
+              name={row.display_name || formatPhone(row.phone) || t('people.someone')}
+              line={t('block.cannotReach')}
+              actions={
+                <KeyButton
+                  colors={colors}
+                  label={t('block.unblock')}
+                  onPress={async () => {
+                    const { miss: why } = await unblockPerson(row.user_id)
+                    if (why) setMiss(tMiss(why))
+                    load()
+                  }}
+                />
+              }
+            />
           ))}
         </>
       ) : null}
@@ -899,6 +1096,9 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
+      {sheet ? (
+        <SendSheet person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
+      ) : null}
       {confirm ? (
         <BlockModal
           person={confirm}
@@ -916,8 +1116,9 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
 function FamilyListScreen({ colors }) {
   const account = useAccount()
-  const [families, setFamilies] = useState([])
-  const [ready, setReady] = useState(false)
+  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
+  const [pop, setPop] = useState(false)
+  const [ready, setReady] = useKept(`families.ready:${account.user?.id}`, false)
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -947,29 +1148,47 @@ function FamilyListScreen({ colors }) {
   return (
     <ScreenShell title={t('people.families')} colors={colors}>
       <OfflineLine colors={colors} />
-      {families.length ? (
-        <>
-          <Cap colors={colors}>{t('people.families')}</Cap>
-          {families.map((fam) => (
-            <Row
-              key={fam.id}
-              colors={colors}
-              label={fam.name}
-              note={fam.role === 'parent' ? t('people.parent') : t('people.kid')}
-              onPress={() => goHash('/family', { id: fam.id })}
-            />
-          ))}
-        </>
-      ) : (
-        <Meta colors={colors}>{t('people.noFamilies')}</Meta>
-      )}
-
-      <Row
+      <SectionHead
         colors={colors}
-        label={t('people.connect')}
-        note={t('people.connectSub')}
-        onPress={() => goHash('/people/connect')}
+        label={t('people.families')}
+        count={families.length || null}
+        onAdd={families.length ? () => setPop(true) : undefined}
+        addLabel={t('people.join')}
       />
+      {families.length ? (
+        families.map((fam) => (
+          <Pressable
+            key={fam.id}
+            accessibilityRole="button"
+            onPress={() => goHash('/family', { id: fam.id })}
+            style={({ pressed }) => [
+              styles.famCard,
+              { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel },
+            ]}
+          >
+            <Avatar person={{ display_name: fam.name }} colors={colors} />
+            <View style={styles.famCopy}>
+              <Text style={[styles.famName, { color: colors.ink }]} numberOfLines={1}>
+                {fam.name}
+              </Text>
+              <Text style={[styles.famLine, { color: colors.inkDim }]}>
+                {fam.role === 'parent' ? t('people.parent') : t('people.kid')}
+              </Text>
+            </View>
+            <Text style={[styles.chev, { color: colors.inkDim }]}>›</Text>
+          </Pressable>
+        ))
+      ) : (
+        <EmptyCard colors={colors} title={t('people.noFamiliesTitle')} body={t('people.noFamiliesBody')}>
+          <DidButton colors={colors} small label={t('people.startFamily')} onPress={() => goHash('/people/connect')} />
+        </EmptyCard>
+      )}
+      {families.length ? null : <JoinFamilyCard colors={colors} />}
+      {pop ? (
+        <AddPop kicker={t('people.join')} colors={colors} onClose={() => setPop(false)}>
+          <JoinFamilyCard colors={colors} bare />
+        </AddPop>
+      ) : null}
       <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/people')} />
     </ScreenShell>
   )
@@ -991,8 +1210,8 @@ export function FamilyScreen({ book, onChange, route }) {
 export function InboxScreen({ book, onChange, onKeep }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [rows, setRows] = useState([])
-  const [ready, setReady] = useState(false)
+  const [rows, setRows] = useKept(`inbox.rows:${account.user?.id}`, [])
+  const [ready, setReady] = useKept(`inbox.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
 
   const load = useCallback(async () => {
@@ -1001,6 +1220,8 @@ export function InboxScreen({ book, onChange, onKeep }) {
       return
     }
     try {
+      // Family did yous and allowed friends go onto tonight first.
+      await refreshPeople()
       setRows(await listInbox())
       setMiss('')
     } catch {
@@ -1037,6 +1258,7 @@ export function InboxScreen({ book, onChange, onKeep }) {
     return (
       <ScreenShell title={t('inbox.emptyTitle')} colors={colors}>
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
+        <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
         <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
       </ScreenShell>
     )
@@ -1046,6 +1268,7 @@ export function InboxScreen({ book, onChange, onKeep }) {
     <ScreenShell title={t('inbox.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('inbox.hint')}</Meta>
+      <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
       {rows.map((row) => (
         <PersonRow
           key={row.id}
@@ -1072,8 +1295,8 @@ export function InboxScreen({ book, onChange, onKeep }) {
 export function SentScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [rows, setRows] = useState([])
-  const [ready, setReady] = useState(false)
+  const [rows, setRows] = useKept(`sent.rows:${account.user?.id}`, [])
+  const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
 
   const load = useCallback(async () => {
@@ -1144,212 +1367,10 @@ export function SentScreen({ book, onChange }) {
   )
 }
 
-export function EveryoneScreen({ book, boards = [], onChange, now }) {
-  const colors = useHallColors()
-  const account = useAccount()
-  const clock = now || new Date()
-  const night = boardDate(clock)
-  const purse = normalizePurse(book)
-  const shelf = { boards: boards.length ? boards : book ? [book] : [], currentId: book?.id }
-
-  const [mine, setMine] = useState(null)
-  const [rows, setRows] = useState([])
-  const [tally, setTally] = useState(0)
-  const [ready, setReady] = useState(false)
-  const [setup, setSetup] = useState(false)
-  const [miss, setMiss] = useState('')
-  const [said, setSaid] = useState('')
-
-  const sorted = useMemo(() => [...rows].sort((a, b) => Number(b.you) - Number(a.you)), [rows])
-
-  const load = useCallback(async () => {
-    if (!DIT_ENABLED || !cloudSetUp() || !account.user) {
-      setReady(true)
-      return
-    }
-    const [who, wall] = await Promise.all([readMine(), tonightWall(night)])
-    setMine(who)
-    setRows(wall.rows)
-    setTally(wall.tally)
-    setSetup(wall.miss === 'setup')
-    if (wall.miss && wall.miss !== 'off' && wall.miss !== 'setup') setMiss(tMiss(wall.miss))
-    setReady(true)
-  }, [account.user, night])
-
-  useEffect(() => {
-    load()
-    const timer = setInterval(load, 300000)
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') load()
-    })
-    return () => {
-      clearInterval(timer)
-      sub.remove()
-    }
-  }, [load])
-
-  async function flip(on) {
-    setMiss('')
-    const { miss: why } = await setPublicTonight(on)
-    if (why === 'setup') return setSetup(true)
-    if (why) return setMiss(tMiss(why))
-    if (on && mine?.done_on === night) {
-      await syncTonightBoard(didTonightLabels(shelf, night), night)
-    }
-    setSaid(on ? t('all.nowOn') : t('all.nowOff'))
-    return load()
-  }
-
-  async function flag(line) {
-    setMiss('')
-    const { miss: why } = await reportTonightLine(line.id)
-    if (why) return setMiss(tMiss(why))
-    setSaid(t('all.reported'))
-    return load()
-  }
-
-  async function cheer(row) {
-    setMiss('')
-    if (purse.gems < TONIGHT_CHEER_GEMS) {
-      offerMoreGems(colors)
-      return
-    }
-    const { miss: why, fresh } = await cheerOn(row.user_id, night)
-    if (why === 'setup') return setSetup(true)
-    if (why) return setMiss(tMiss(why))
-    if (!fresh) return setMiss(t('all.cheeredAlready'))
-    const spent = spendGems(book, TONIGHT_CHEER_GEMS)
-    if (spent.miss) {
-      offerMoreGems(colors)
-      return
-    }
-    if (onChange) onChange(spent.book)
-    fireCheer(purse.cheerOn, 1)
-    setSaid(t('all.cheerSent', { name: personName(row) || t('all.someone') }))
-    return load()
-  }
-
-  if (!DIT_ENABLED) {
-    return (
-      <ScreenShell title={t('nav.everyone')} colors={colors}>
-        <Meta colors={colors}>{t('people.offTitle')}</Meta>
-        <Meta colors={colors}>{t('all.offBody')}</Meta>
-        <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
-      </ScreenShell>
-    )
-  }
-
-  if (!cloudSetUp()) {
-    return (
-      <ScreenShell title={t('all.offTitle')} colors={colors}>
-        <Meta colors={colors}>{t('all.offBody')}</Meta>
-      </ScreenShell>
-    )
-  }
-
-  if (!account.user) {
-    return <NeedAccount kicker={t('all.kicker')} title={t('all.outTitle')} colors={colors} />
-  }
-
-  if (!ready) {
-    return (
-      <ScreenShell title={t('all.kicker')} colors={colors}>
-        <Meta colors={colors}>{t('all.loading')}</Meta>
-      </ScreenShell>
-    )
-  }
-
-  if (setup) {
-    const sqlUrl = supabaseSqlUrl()
-    return (
-      <ScreenShell title={t('all.setupTitle')} colors={colors}>
-        <Meta colors={colors}>{t('all.setupBody')}</Meta>
-        {sqlUrl ? (
-          <DidButton colors={colors} label={t('all.setupOpen')} onPress={() => Linking.openURL(sqlUrl)} />
-        ) : null}
-        <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/people')} />
-      </ScreenShell>
-    )
-  }
-
-  const showing = Boolean(mine?.public_tonight)
-
-  return (
-    <ScreenShell
-      book={book}
-      title={tally === 1 ? t('all.tallyOne') : t('all.tally', { n: tally })}
-      colors={colors}
-    >
-      <OfflineLine colors={colors} />
-      {!showing ? (
-        <>
-          <Meta colors={colors}>{t('all.joinTitle')}</Meta>
-          <Meta colors={colors}>{t('all.joinBody')}</Meta>
-          <DidButton colors={colors} label={t('all.join')} onPress={() => flip(true)} />
-        </>
-      ) : (
-        <Meta colors={colors}>{t('all.boardHint')}</Meta>
-      )}
-
-      <Cap colors={colors}>{t('all.listCap')}</Cap>
-      {sorted.length ? (
-        sorted.map((row) => (
-          <View
-            key={row.user_id}
-            style={[
-              styles.wallRow,
-              { borderColor: colors.line, backgroundColor: row.you ? colors.panel2 : colors.panel },
-            ]}
-          >
-            <View style={styles.wallCopy}>
-              <Text style={[styles.personTitle, { color: colors.ink }]}>
-                {row.you ? t('all.you') : personName(row) || t('all.someone')}
-              </Text>
-              <Text style={[styles.personNote, { color: colors.inkDim }]}>{streakLine(row)}</Text>
-              {(row.lines || []).map((line) => (
-                <View key={line.id} style={styles.lineRow}>
-                  <Text style={[styles.lineLabel, { color: colors.inkSoft }]}>{line.label}</Text>
-                  {row.you ? null : (
-                    <Pressable onPress={() => flag(line)} style={styles.flagBtn}>
-                      <Text style={{ color: colors.inkDim }}>!</Text>
-                    </Pressable>
-                  )}
-                </View>
-              ))}
-            </View>
-            {row.you ? (
-              <Text style={[styles.cheerTally, { color: colors.inkSoft }]}>
-                {row.cheers ? t('all.cheersN', { n: row.cheers }) : ''}
-              </Text>
-            ) : (
-              <KeyButton
-                colors={colors}
-                label={row.cheered ? t('all.cheered', { n: row.cheers }) : t('all.cheer', { n: TONIGHT_CHEER_GEMS })}
-                onPress={() => cheer(row)}
-              />
-            )}
-          </View>
-        ))
-      ) : (
-        <Meta colors={colors}>{t('all.nobody')}</Meta>
-      )}
-
-      {showing ? (
-        <>
-          <Cap colors={colors}>{t('all.youCap')}</Cap>
-          <Row colors={colors} label={t('all.showing')} note={t('all.showingSub')} onPress={() => flip(false)} />
-          <Meta colors={colors}>{t('all.privacy')}</Meta>
-        </>
-      ) : null}
-
-      <Miss colors={colors}>{miss}</Miss>
-      {said ? <Meta colors={colors}>{said}</Meta> : null}
-      <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/people')} />
-    </ScreenShell>
-  )
-}
-
 const styles = StyleSheet.create({
+  joinCard: { alignItems: 'flex-end' },
+  joinBare: { gap: 4 },
+  joinField: { flex: 1 },
   cap: {
     fontFamily: fonts.mono,
     fontSize: 11,
@@ -1389,5 +1410,38 @@ const styles = StyleSheet.create({
   veil: { flex: 1, justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
+  tiles: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  tile: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 14, gap: 4, minHeight: 96 },
+  tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+  tileValue: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700', lineHeight: 21 },
+  tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
+  glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
+  stripItem: { width: 64, alignItems: 'center', gap: 4 },
+  stripName: { fontFamily: fonts.ui, fontSize: 12, fontWeight: '600', maxWidth: 64 },
+  stripLine: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', maxWidth: 64 },
+  famCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+  },
+  famCopy: { flex: 1, minWidth: 0, gap: 3 },
+  famName: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700' },
+  famLine: { fontFamily: fonts.ui, fontSize: 13 },
+  chev: { fontFamily: fonts.ui, fontSize: 22 },
+  stockBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  stockCopy: { flex: 1, minWidth: 0, gap: 3 },
+  stockValue: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700' },
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
 })

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
-import { activeLook } from '../../src/lib/dit-board.js'
+import { activeLook } from '../../src/lib/active-look.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { hallColors } from '../theme.js'
 

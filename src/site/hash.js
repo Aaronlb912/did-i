@@ -45,7 +45,6 @@ const ROUTES = new Set([
   '/family',
   '/inbox',
   '/sent',
-  '/everyone',
 ])
 
 export function parseHash() {

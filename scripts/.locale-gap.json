@@ -5,46 +5,6 @@
     "es": "Atrás"
   },
   {
-    "k": "nav.everyone",
-    "en": "DIT",
-    "es": "DIT"
-  },
-  {
-    "k": "all.kicker",
-    "en": "Did I tonight",
-    "es": "Did I esta noche"
-  },
-  {
-    "k": "all.loading",
-    "en": "Looking.",
-    "es": "Buscando."
-  },
-  {
-    "k": "all.tally",
-    "en": "{n} people showed up tonight.",
-    "es": "{n} personas aparecieron esta noche."
-  },
-  {
-    "k": "all.tallyOne",
-    "en": "One person showed up tonight.",
-    "es": "Una persona apareció esta noche."
-  },
-  {
-    "k": "all.listCap",
-    "en": "Who is on it",
-    "es": "Quién está aquí"
-  },
-  {
-    "k": "all.you",
-    "en": "You",
-    "es": "Tú"
-  },
-  {
-    "k": "all.someone",
-    "en": "Someone",
-    "es": "Alguien"
-  },
-  {
     "k": "all.streakN",
     "en": "{n} nights running",
     "es": "{n} noches seguidas"
@@ -53,176 +13,6 @@
     "k": "all.noStreak",
     "en": "Done tonight",
     "es": "Hecho esta noche"
-  },
-  {
-    "k": "all.nobody",
-    "en": "Nobody yet tonight.",
-    "es": "Nadie todavía esta noche."
-  },
-  {
-    "k": "all.nobodySub",
-    "en": "Finish your questions and you are the first one on it.",
-    "es": "Termina tus preguntas y serás el primero."
-  },
-  {
-    "k": "all.joinTitle",
-    "en": "You are not on this list.",
-    "es": "No estás en esta lista."
-  },
-  {
-    "k": "all.joinBody",
-    "en": "Turn this on and people see your name, your streak, and what you DID tonight. Never your full question list.",
-    "es": "Actívalo y la gente verá tu nombre, tu racha y lo que DID esta noche. Nunca la lista completa de preguntas."
-  },
-  {
-    "k": "all.join",
-    "en": "Put me on it",
-    "es": "Ponme en la lista"
-  },
-  {
-    "k": "all.youCap",
-    "en": "You",
-    "es": "Tú"
-  },
-  {
-    "k": "all.showing",
-    "en": "Show me on Did I tonight",
-    "es": "Mostrarme en Did I esta noche"
-  },
-  {
-    "k": "all.showingSub",
-    "en": "Turning this off takes you off the board.",
-    "es": "Si lo apagas, desapareces del tablero."
-  },
-  {
-    "k": "all.privacy",
-    "en": "Your questions stay on your phone. The board shows short labels from what you DID tonight.",
-    "es": "Tus preguntas quedan en tu teléfono. El tablero muestra etiquetas cortas de lo que DID esta noche."
-  },
-  {
-    "k": "all.boardHint",
-    "en": "Everything you DID tonight goes on the board when you finish.",
-    "es": "Todo lo que DID esta noche sube al tablero cuando terminas."
-  },
-  {
-    "k": "all.nowOn",
-    "en": "You are on it. Finish a night and you show up.",
-    "es": "Ya estás. Termina una noche y apareces."
-  },
-  {
-    "k": "all.nowOff",
-    "en": "You are off it.",
-    "es": "Ya no estás."
-  },
-  {
-    "k": "all.shareCap",
-    "en": "Say what you did",
-    "es": "Di lo que hiciste"
-  },
-  {
-    "k": "all.shareHint",
-    "en": "Tap one to put it up. {n} a night.",
-    "es": "Toca una para subirla. {n} por noche."
-  },
-  {
-    "k": "all.shareFull",
-    "en": "That is {n} for tonight. Take one down first.",
-    "es": "Ya van {n} esta noche. Quita una primero."
-  },
-  {
-    "k": "all.shareAlready",
-    "en": "That one is already up.",
-    "es": "Esa ya está arriba."
-  },
-  {
-    "k": "all.shared",
-    "en": "Up on the list.",
-    "es": "Subida a la lista."
-  },
-  {
-    "k": "all.took",
-    "en": "Took it down.",
-    "es": "Quitada."
-  },
-  {
-    "k": "all.takeDown",
-    "en": "Take it down",
-    "es": "Quitarla"
-  },
-  {
-    "k": "all.cheer",
-    "en": "Cheer · {n}",
-    "es": "Ánimo · {n}"
-  },
-  {
-    "k": "all.cheered",
-    "en": "Cheered · {n}",
-    "es": "Con ánimo · {n}"
-  },
-  {
-    "k": "all.cheersN",
-    "en": "{n} cheers",
-    "es": "{n} ánimos"
-  },
-  {
-    "k": "all.cheerSent",
-    "en": "Cheered {name}.",
-    "es": "Le diste ánimo a {name}."
-  },
-  {
-    "k": "all.cheeredAlready",
-    "en": "You already cheered them tonight.",
-    "es": "Ya le diste ánimo esta noche."
-  },
-  {
-    "k": "all.needGems",
-    "en": "A cheer costs {n} gem. You earn one gem a week when you clear a night.",
-    "es": "Un ánimo cuesta {n} gema. Ganas una gema a la semana al terminar una noche."
-  },
-  {
-    "k": "all.offTitle",
-    "en": "No account set up.",
-    "es": "No hay cuenta configurada."
-  },
-  {
-    "k": "all.offBody",
-    "en": "Did I tonight needs the account keys. Everything else on this phone still works.",
-    "es": "Did I esta noche necesita las claves de la cuenta. Todo lo demás sigue funcionando."
-  },
-  {
-    "k": "all.outTitle",
-    "en": "Sign in to see it.",
-    "es": "Entra para verlo."
-  },
-  {
-    "k": "all.outBody",
-    "en": "Did I tonight is other people. That needs an account.",
-    "es": "Did I esta noche son otras personas. Eso necesita una cuenta."
-  },
-  {
-    "k": "all.setupTitle",
-    "en": "Not set up on the account yet.",
-    "es": "Todavía no está en la cuenta."
-  },
-  {
-    "k": "all.setupBody",
-    "en": "Run supabase/tonight.sql, dit-board.sql, and gems-social.sql in the SQL editor. Then come back here.",
-    "es": "Ejecuta tonight.sql, dit-board.sql y gems-social.sql en el editor SQL. Luego vuelve aquí."
-  },
-  {
-    "k": "all.setupOpen",
-    "en": "Open SQL editor",
-    "es": "Abrir editor SQL"
-  },
-  {
-    "k": "all.report",
-    "en": "Report this line",
-    "es": "Reportar esta línea"
-  },
-  {
-    "k": "all.reported",
-    "en": "Reported. Two people is enough to take a line down.",
-    "es": "Reportada. Con dos personas se quita."
   },
   {
     "k": "kit.cog",
@@ -253,11 +43,6 @@
     "k": "title.account",
     "en": "Account · Did I",
     "es": "Cuenta · Did I"
-  },
-  {
-    "k": "title.everyone",
-    "en": "Did I tonight",
-    "es": "Did I esta noche"
   },
   {
     "k": "settings.foldAt",
@@ -1338,16 +1123,6 @@
     "k": "people.handleShort",
     "en": "Type the whole handle, like @maple4417.",
     "es": "Escribe el usuario completo, como @maple4417."
-  },
-  {
-    "k": "people.shareStreak",
-    "en": "Show my streak to friends",
-    "es": "Mostrar mi racha a mis amigos"
-  },
-  {
-    "k": "people.shareStreakSub",
-    "en": "They see the number, never your questions.",
-    "es": "Ven el número, nunca tus preguntas."
   },
   {
     "k": "people.asks",

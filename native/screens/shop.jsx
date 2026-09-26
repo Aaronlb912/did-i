@@ -5,7 +5,7 @@ import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
 import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
-import { activeLook } from '../../src/lib/dit-board.js'
+import { activeLook } from '../../src/lib/active-look.js'
 import { t } from '../../src/lib/i18n.js'
 import {
   BUDDIES,

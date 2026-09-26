@@ -1345,6 +1345,454 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   background: var(--di-on);
 }
 
+/* Did you waiting: a number on the menu button and a lit menu row */
+.di-mast-menu-count,
+.di-mast-menu-row-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  box-sizing: border-box;
+  border-radius: var(--di-pill);
+  background: var(--di-on);
+  color: var(--di-bg);
+  font-family: var(--di-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.di-mast-menu-count {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  box-shadow: 0 0 0 2px var(--di-bg);
+}
+
+.di-mast-menu-row-count {
+  flex: 0 0 auto;
+}
+
+.di-mast-menu-row.is-lit {
+  background: var(--di-panel-3);
+  box-shadow: inset 0 0 0 1px var(--di-on);
+}
+
+/* A did you that lands while the app is open */
+.di-didyou-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(4.2rem + env(safe-area-inset-top));
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: min(26rem, calc(100% - 2rem));
+  box-sizing: border-box;
+  padding: 0.35rem;
+  background: var(--di-panel-3);
+  border: 1px solid var(--di-on);
+  border-radius: var(--di-r);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  animation: di-didyou-in var(--di-move-3) var(--di-ease-out);
+}
+
+.di-didyou-banner-go {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  color: var(--di-ink);
+  background: transparent;
+  border: 0;
+  border-radius: var(--di-r-sm);
+  font: inherit;
+  cursor: pointer;
+}
+
+.di-didyou-banner-go:hover {
+  background: var(--di-panel-2);
+}
+
+.di-didyou-banner-go strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.di-didyou-banner-go span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.85rem;
+  color: var(--di-ink-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-didyou-banner-go em {
+  font-family: var(--di-mono);
+  font-size: 0.66rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--di-on);
+}
+
+.di-didyou-banner-x {
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 2.2rem;
+}
+
+@keyframes di-didyou-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.8rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+[data-reduce-motion] .di-didyou-banner {
+  animation: none;
+}
+
+/* Friends and family: cards with a face, a line, and quick actions */
+.di-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 0.8rem;
+  background: var(--di-panel-2);
+  border: 1px solid var(--di-line);
+  color: var(--di-ink);
+  font-family: var(--di-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.di-avatar.is-big {
+  width: 3.3rem;
+  height: 3.3rem;
+  font-size: 1.2rem;
+}
+
+.di-avatar.is-done {
+  background: var(--di-on);
+  border-color: var(--di-on-deep);
+  color: var(--di-bg);
+}
+
+.di-person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 0.65rem;
+  padding: 0.9rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.di-person.is-lit {
+  border: 2px solid var(--di-on);
+}
+
+.di-person-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.di-person-who {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  text-align: left;
+}
+
+.di-person-who strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--di-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-person-who em {
+  font-size: 0.82rem;
+  font-style: normal;
+  color: var(--di-ink-dim);
+}
+
+.di-person-pill {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-pill);
+  background: var(--di-panel-2);
+  color: var(--di-ink-soft);
+  font-family: var(--di-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.di-person-pill.is-on {
+  border-color: var(--di-on-deep);
+  background: var(--di-panel-3);
+  color: var(--di-on);
+}
+
+.di-person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.di-person-actions .di-did-small {
+  flex: 0 0 auto;
+}
+
+.di-person-more {
+  margin-left: auto;
+}
+
+.di-person-fold {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--di-line-soft);
+}
+
+.di-person-week {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.di-person-week em {
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+  font-style: normal;
+  color: var(--di-ink-dim);
+}
+
+.di-person-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.1rem 0 0.55rem;
+  font-family: var(--di-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--di-ink-dim);
+}
+
+.di-person-head-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.di-person-head-add {
+  padding: 0 0.2rem;
+  background: none;
+  border: 0;
+  color: var(--di-on);
+  font-family: var(--di-ui);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.di-fam-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.di-fam-code {
+  margin: 0.4rem 0;
+  font-family: var(--di-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+  user-select: all;
+}
+
+.di-person-head-link {
+  padding: 0.2rem 0;
+  background: none;
+  border: 0;
+  color: var(--di-on);
+  font-family: var(--di-ui);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.di-person-empty strong {
+  font-size: 1rem;
+  color: var(--di-ink);
+}
+
+.di-person-empty .di-set-note {
+  margin: 0;
+}
+
+.di-person-link {
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--di-move) var(--di-ease);
+}
+
+.di-person-link:hover {
+  background: var(--di-panel-2);
+}
+
+.di-person-chev {
+  flex: 0 0 auto;
+  font-size: 1.4rem;
+  color: var(--di-ink-dim);
+}
+
+.di-person-stock {
+  flex-direction: row;
+  align-items: center;
+}
+
+.di-people-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 0.3rem;
+}
+
+.di-people-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-height: 6rem;
+  padding: 0.9rem;
+  text-align: left;
+  font: inherit;
+  color: var(--di-ink);
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  cursor: pointer;
+  transition: background var(--di-move) var(--di-ease);
+}
+
+.di-people-tile:hover {
+  background: var(--di-panel-2);
+}
+
+.di-people-tile.is-lit {
+  background: var(--di-panel-3);
+  border-color: var(--di-on);
+}
+
+.di-people-tile span {
+  font-family: var(--di-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--di-ink-dim);
+}
+
+.di-people-tile.is-lit span {
+  color: var(--di-on);
+}
+
+.di-people-tile strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.di-people-tile em {
+  font-size: 0.78rem;
+  font-style: normal;
+  color: var(--di-ink-dim);
+}
+
+.di-people-strip {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: none;
+}
+
+.di-people-strip-one {
+  display: flex;
+  flex: 0 0 4.2rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: var(--di-ink);
+  cursor: pointer;
+}
+
+.di-people-strip-one strong {
+  max-width: 4.2rem;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-people-strip-one em {
+  font-family: var(--di-mono);
+  font-size: 0.58rem;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--di-ink-dim);
+}
+
+.di-people-strip-one em.is-on {
+  color: var(--di-on);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-didyou-banner {
+    animation: none;
+  }
+}
+
 /* Tonight's progress meter */
 
 .di-meter {
@@ -3474,6 +3922,60 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 .di-feed-row:hover {
   background: var(--di-panel-3);
   border-color: var(--di-line);
+}
+
+/* Select mode on Questions */
+.di-lamp-row.is-picked {
+  background: var(--di-panel-3);
+  border-color: var(--di-on);
+}
+
+.di-pick-box {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid var(--di-line);
+  border-radius: 0.45rem;
+  background: var(--di-panel);
+  color: var(--di-bg);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.di-pick-box.is-on {
+  background: var(--di-on);
+  border-color: var(--di-on-deep);
+}
+
+.di-pick-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-on);
+  border-radius: var(--di-r);
+}
+
+.di-pick-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.di-pick-head strong {
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+}
+
+.di-key.di-key-danger {
+  color: var(--di-miss);
+  border-color: var(--di-miss);
 }
 
 .di-lamp-row .di-jewel {
