@@ -35,6 +35,8 @@ jobs:
       - name: Skip native changes
         id: native
         run: |
+          # A manual run means "publish what is on master"; only pushes are checked.
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then exit 0; fi
           changed="$(git diff --name-only HEAD~1 HEAD || true)"
           # The iOS widget file is not listed: drops add buddy art there, the rest of
           # the update is safe, and the widget picks it up at the next store build.
