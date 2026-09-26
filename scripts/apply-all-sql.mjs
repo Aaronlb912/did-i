@@ -20,6 +20,7 @@ const files = [
   'supabase/dit-board.sql',
   'supabase/gems-social.sql',
   'supabase/gem-purchases.sql',
+  'supabase/shop-catalog.sql',
   'supabase/wallet.sql',
   'supabase/waitlist.sql',
   'supabase/friend-cheers.sql',

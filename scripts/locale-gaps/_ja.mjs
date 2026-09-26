@@ -175,7 +175,7 @@ export const ja = {
   'shop.stageNext': '段階 {next} まで DID あと {taps} 回、または {cost} gems。',
   'shop.stageTop': 'これが最大。',
   'shop.buy': '買う',
-  'shop.nextStage': '次の段階を買う',
+  'shop.nextStage': 'アップグレード',
   'shop.owned': '所持',
   'shop.buyKicker': 'Shop',
   'shop.buyLookBody': '{cost}。買うとこの look がオン。',

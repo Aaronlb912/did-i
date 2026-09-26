@@ -175,7 +175,7 @@ export const de = {
   'shop.stageNext': '{taps} DID mehr für Stufe {next}, oder {cost} Gems.',
   'shop.stageTop': 'Das ist das Maximum.',
   'shop.buy': 'Kaufen',
-  'shop.nextStage': 'Nächste Stufe kaufen',
+  'shop.nextStage': 'Upgrade',
   'shop.owned': 'Im Besitz',
   'shop.buyKicker': 'Shop',
   'shop.buyLookBody': '{cost}. Dieser Look geht nach dem Kauf an.',

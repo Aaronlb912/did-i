@@ -31,6 +31,7 @@ import {
   isGemLook,
   nextCheerStage,
   normalizePurse,
+  comingDrop,
   recentBuddies,
   recentCheers,
   recentLooks,
@@ -149,9 +150,11 @@ function ShopPromoShelf({ cap, allLabel, onAll, colors, children }) {
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Cap colors={colors}>{cap}</Cap>
-        <Pressable onPress={onAll} hitSlop={8}>
-          <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
-        </Pressable>
+        {onAll ? (
+          <Pressable onPress={onAll} hitSlop={8}>
+            <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
+          </Pressable>
+        ) : null}
       </View>
       <View style={[styles.promoGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>{children}</View>
     </View>
@@ -164,6 +167,49 @@ function ShopPromoTile({ chip, name, onPress, colors }) {
       <View style={styles.promoChip}>{chip}</View>
       <Text style={[styles.promoName, { color: colors.ink }]} numberOfLines={2}>{name}</Text>
     </Pressable>
+  )
+}
+
+// Next drop, the week before it goes on sale. Tiles preview; nothing to buy yet.
+function ComingShelf({ colors, previewLook, onPeekLook, onPeekBuddy }) {
+  const drop = comingDrop()
+  if (!drop) return null
+  return (
+    <ShopPromoShelf cap={t('shop.coming', { date: formatBoardDate(drop.date) })} colors={colors}>
+      {drop.looks.map((item) => (
+        <ShopPromoTile
+          key={`look-${item.id}`}
+          colors={colors}
+          chip={<LookChip id={item.id} colors={colors} />}
+          name={t(lookText(item.id, 'name'))}
+          onPress={() => {
+            onPeekBuddy('')
+            onPeekLook((prev) => (prev === item.id ? '' : item.id))
+          }}
+        />
+      ))}
+      {drop.cheers.map((item) => (
+        <ShopPromoTile
+          key={`cheer-${item.id}`}
+          colors={colors}
+          chip={<CheerChip id={item.id} stage={1} colors={colors} />}
+          name={t(cheerText(item.id, 'name'))}
+          onPress={() => fireCheer(item.id, 1, previewLook, undefined, true)}
+        />
+      ))}
+      {drop.buddies.map((item) => (
+        <ShopPromoTile
+          key={`buddy-${item.id}`}
+          colors={colors}
+          chip={<BuddyChip id={item.id} />}
+          name={t(buddyText(item.id, 'name'))}
+          onPress={() => {
+            onPeekLook('')
+            onPeekBuddy(item.id)
+          }}
+        />
+      ))}
+    </ShopPromoShelf>
   )
 }
 
@@ -346,6 +392,8 @@ export function ShopScreen({ book, onChange }) {
         <PurseLine purse={purse} colors={colors} gemsLink />
       </View>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
+
+      <ComingShelf colors={colors} previewLook={previewLook} onPeekLook={setPeekLook} onPeekBuddy={setPeekBuddy} />
 
       <ShopPromoShelf
         cap={t('shop.promoLooks')}
@@ -615,7 +663,7 @@ export function ShopCheersScreen({ book, onChange }) {
             key={item.id}
             colors={colors}
             preview={<CheerChip id={item.id} stage={have ? stage : 1} colors={colors} />}
-            onPreview={() => fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1, coat, undefined, true)}
+            onPreview={() => fireCheer(item.id, 1, coat, undefined, true)}
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
             actionLabel={actionLabel}

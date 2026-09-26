@@ -47,6 +47,8 @@ import {
 } from '../src/lib/people.js'
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
+import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
+import { SHOP_CALENDAR, isLive, isTeased } from '../src/lib/purse.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -859,6 +861,42 @@ test('widget props list every tag and merge answers onto the right one', () => {
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
+test('shop drops wait for their day and the server sells the same coin items', () => {
+  assert.ok(isLive({ id: 'a' }), 'no date means always in')
+  assert.ok(!isLive({ id: 'a', from: '2026-10-09' }, '2026-10-08'), 'a future drop stays out')
+  assert.ok(isLive({ id: 'a', from: '2026-10-09' }, '2026-10-09'), 'it opens on its day')
+  const drop = { id: 'a', from: '2026-10-09' }
+  assert.ok(!isTeased(drop, '2026-10-01'), 'eight days out it is hidden')
+  assert.ok(isTeased(drop, '2026-10-02'), 'a week out it shows as coming')
+  assert.ok(isTeased(drop, '2026-10-08'), 'still coming the day before')
+  assert.ok(!isTeased(drop, '2026-10-09'), 'on the day it is for sale, not coming')
+  assert.ok(!isTeased({ id: 'b' }, '2026-10-05'), 'undated items are never coming')
+  const sql = readFileSync(new URL('../supabase/shop-catalog.sql', import.meta.url), 'utf8')
+  for (const look of SHOP_CALENDAR.looks.filter((item) => item.coins > 0)) {
+    assert.ok(sql.includes("('look', '" + look.id + "'"), 'coin look ' + look.id + ' is in shop_catalog')
+  }
+  for (const cheer of SHOP_CALENDAR.cheers) {
+    assert.ok(sql.includes("('cheer_stage', '" + cheer.id + "'"), 'cheer ' + cheer.id + ' stages are in shop_catalog')
+  }
+  const ids = (list) => list.map((item) => item.id)
+  for (const list of Object.values(SHOP_CALENDAR)) {
+    assert.equal(new Set(ids(list)).size, list.length, 'no repeated ids')
+    for (const item of list) {
+      if (item.from) assert.match(item.from, /^\d{4}-\d{2}-\d{2}$/)
+    }
+  }
+})
+
+test('an invite link carries its code to the app on both phones', () => {
+  assert.equal(inviteLink('abcde12345'), 'https://did-i.app/i/ABCDE12345')
+  assert.equal(inviteFromText(inviteClip('ABCDE12345')), 'ABCDE12345', 'the iPhone clipboard text')
+  assert.equal(inviteFromText('Join me: https://did-i.app/i/ABCDE12345 (code)'), 'ABCDE12345', 'a pasted share line')
+  const referrer = decodeURIComponent(playLinkFor('ABCDE12345').split('&referrer=')[1])
+  assert.equal(inviteFromText(referrer), 'ABCDE12345', 'the Play install referrer')
+  assert.equal(inviteFromText('utm_source=google-play&utm_medium=organic'), '', 'a plain install has no code')
+  assert.equal(inviteFromText('call me at 5551234567'), '', 'random clipboard text is ignored')
+})
+
 test('a widget answer from last night still lands after midnight', () => {
   const book = {
     id: 'tag-a',
@@ -1544,6 +1582,7 @@ test('native metro shims are wired and pin default exports', () => {
     'expo-document-picker',
     'expo-apple-authentication',
     '@react-native-google-signin/google-signin',
+    'expo-application',
     'expo-font',
     'expo-status-bar',
     'expo-blur',

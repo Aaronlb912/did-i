@@ -68,9 +68,11 @@ export function ShopPromoShelf({ cap, allLabel, onAll, children }) {
     <div className="di-shop-promo-shelf">
       <div className="di-shop-promo-head">
         <p className="di-set-cap">{cap}</p>
-        <button className="di-text di-shop-promo-all" type="button" onClick={onAll}>
-          {allLabel}
-        </button>
+        {onAll ? (
+          <button className="di-text di-shop-promo-all" type="button" onClick={onAll}>
+            {allLabel}
+          </button>
+        ) : null}
       </div>
       <div className="di-set-card di-shop-promo-grid">{children}</div>
     </div>

@@ -4,6 +4,16 @@ import { webAppPublic } from './web-app.js'
 
 const MARKETING = new Set(['/', '/privacy', '/terms', '/download'])
 
+// /i/CODE is an invite link page (src/site/Invite.jsx).
+function isMarketing(path) {
+  return MARKETING.has(path) || /^\/i\/[A-Za-z0-9]+$/.test(path)
+}
+
+export function inviteCodeFromPath(path) {
+  const hit = /^\/i\/([A-Za-z0-9]+)$/.exec(path)
+  return hit ? hit[1] : ''
+}
+
 export function normalizePath(pathname) {
   let raw = String(pathname || '/')
   if (!raw.startsWith('/')) raw = `/${raw}`
@@ -25,11 +35,11 @@ export function isAppPath() {
 
 export function isMarketingOnlyPath() {
   const path = readMarketingPath()
-  return MARKETING.has(path) && path !== '/'
+  return isMarketing(path) && path !== '/'
 }
 
 export function shouldShowMarketing() {
-  return MARKETING.has(readMarketingPath())
+  return isMarketing(readMarketingPath())
 }
 
 /** Production site: /app and other non-marketing paths go back to landing. */
@@ -37,7 +47,7 @@ export function redirectBlockedWebApp() {
   if (typeof window === 'undefined') return false
   if (webAppPublic()) return false
   const path = readMarketingPath()
-  if (MARKETING.has(path)) return false
+  if (isMarketing(path)) return false
   window.location.replace('/')
   return true
 }
@@ -46,7 +56,7 @@ export function redirectBlockedWebApp() {
 export function redirectLegacyAppHash() {
   if (typeof window === 'undefined') return false
   const path = readMarketingPath()
-  if (!MARKETING.has(path)) return false
+  if (!isMarketing(path)) return false
   const hash = window.location.hash.replace(/^#/, '')
   if (!hash || hash === '/') return false
   if (!webAppPublic()) {

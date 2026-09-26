@@ -24,6 +24,7 @@ const NATIVE_SHIMS = [
   ['expo-document-picker', 'document-picker-safe.cjs'],
   ['expo-apple-authentication', 'apple-auth-safe.cjs'],
   ['@react-native-google-signin/google-signin', 'google-signin-safe.cjs'],
+  ['expo-application', 'application-safe.cjs'],
   ['expo-font', 'font-safe.cjs'],
   ['expo-status-bar', 'status-bar-safe.cjs'],
   ['expo-blur', 'blur-safe.cjs'],

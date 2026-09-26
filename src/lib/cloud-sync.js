@@ -21,6 +21,7 @@ import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
 import { didTonightLabels } from './dit-board.js'
 import { DIT_ENABLED } from './features.js'
 import { claimCheerGifts, claimInvites, readMine, syncTonightBoard } from './people.js'
+import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
 import { applyInvitePayout, mergeGiftCheers } from './purse.js'
 import { applyCoinCatalogToShelf, applyGemBalanceToShelf, readCoinCatalog, readGemBalance } from './wallet.js'
@@ -286,6 +287,8 @@ async function pullAndMergeOnce() {
       written = writeShelf({ ...written, boards }, metaAt)
     }
     await claimGemPurchases()
+    // A code saved from an invite link is used here, so the claim below pays it.
+    await applyPendingInvite().catch(() => {})
     const invited = await claimInvites()
     if (invited.gems > 0 || invited.looks.length) {
       const boards = written.boards.map((item) =>

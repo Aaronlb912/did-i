@@ -100,6 +100,9 @@ function kv(prefix) {
 }
 
 if (!global.localStorage) global.localStorage = kv('ls:')
+// Nothing stored yet means a new install (native/invite-capture.js).
+global.__didIFreshInstall =
+  global.localStorage.getItem('did-i-shelf') == null && global.localStorage.getItem('did-i-prefs') == null
 if (!global.sessionStorage) global.sessionStorage = kv('ss:')
 
 if (!global.window) global.window = global

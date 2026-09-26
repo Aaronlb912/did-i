@@ -16,6 +16,7 @@ import {
   isGemLook,
   lookText,
   normalizePurse,
+  comingDrop,
   recentBuddies,
   recentCheers,
   recentLooks,
@@ -34,6 +35,7 @@ export function Shop({ book, now }) {
   const promoLooks = recentLooks(2)
   const promoCheers = recentCheers(2)
   const promoBuddies = recentBuddies(2)
+  const coming = comingDrop(boardDate(clock, book.dayFoldHour))
   const previewLook = peekLook || coat
 
   return (
@@ -50,6 +52,44 @@ export function Shop({ book, now }) {
         <p className="di-set-note">{t('shop.hubHint')}</p>
 
         <div className="di-shop-promo">
+          {coming ? (
+            <ShopPromoShelf cap={t('shop.coming', { date: formatBoardDate(coming.date) })}>
+              {coming.looks.map((item) => (
+                <ShopPromoTile
+                  key={`look-${item.id}`}
+                  chip={<LookChip id={item.id} />}
+                  name={t(lookText(item.id, 'name'))}
+                  ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
+                  onClick={() => {
+                    setPeekBuddy('')
+                    setPeekLook((prev) => (prev === item.id ? '' : item.id))
+                  }}
+                />
+              ))}
+              {coming.cheers.map((item) => (
+                <ShopPromoTile
+                  key={`cheer-${item.id}`}
+                  chip={<CheerChip id={item.id} stage={1} />}
+                  name={t(cheerText(item.id, 'name'))}
+                  ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
+                  onClick={() => fireCheer(item.id, 1, previewLook, undefined, true)}
+                />
+              ))}
+              {coming.buddies.map((item) => (
+                <ShopPromoTile
+                  key={`buddy-${item.id}`}
+                  chip={<BuddyChip id={item.id} />}
+                  name={t(buddyText(item.id, 'name'))}
+                  ariaLabel={t('shop.see', { name: t(buddyText(item.id, 'name')) })}
+                  onClick={() => {
+                    setPeekLook('')
+                    setPeekBuddy(item.id)
+                  }}
+                />
+              ))}
+            </ShopPromoShelf>
+          ) : null}
+
           <ShopPromoShelf
             cap={t('shop.promoLooks')}
             allLabel={t('shop.allLooks')}

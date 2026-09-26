@@ -8,7 +8,14 @@ export const LOOK_GEM_PRICE = 2
 export const BUDDY_GEMS = 5
 // ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
 export const LOOK_COIN_PRICE = 30
-export const CHEERS = [
+// Shop drops (docs/shop-drops.md): an item with `from: 'YYYY-MM-DD'` stays out of
+// the shop until that day, so a finished batch can ship early and appear on
+// its date. Items without `from` are always in.
+export function isLive(item, today = boardDate(new Date())) {
+  return !item?.from || item.from <= today
+}
+
+const ALL_CHEERS = [
   { id: 'lime', gems: 0 },
   { id: 'tape', gems: CHEER_GEMS },
   { id: 'paper', gems: CHEER_GEMS },
@@ -23,14 +30,14 @@ export const CHEERS = [
   { id: 'flip', gems: CHEER_GEMS },
 ]
 
-export const BUDDIES = [
+const ALL_BUDDIES = [
   { id: 'cat', gems: BUDDY_GEMS },
   { id: 'dog', gems: BUDDY_GEMS },
   { id: 'rabbit', gems: BUDDY_GEMS },
   { id: 'owl', gems: BUDDY_GEMS },
 ]
 
-export const LOOKS = [
+const ALL_LOOKS = [
   { id: 'lime', coins: 0, gems: 0 },
   { id: 'ink', coins: LOOK_COIN_PRICE, gems: 0 },
   { id: 'brass', coins: LOOK_COIN_PRICE, gems: 0 },
@@ -45,6 +52,46 @@ export const LOOKS = [
   { id: 'frost', coins: 0, gems: LOOK_GEM_PRICE },
   { id: 'pulse', coins: 0, gems: LOOK_GEM_PRICE },
 ]
+
+export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
+export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
+export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
+
+// A drop shows as "Coming" for the week before its day, then goes on sale.
+// Anything further out stays hidden.
+export const TEASE_DAYS = 7
+
+function daysBefore(iso, days) {
+  const at = new Date(`${iso}T12:00:00Z`)
+  at.setUTCDate(at.getUTCDate() - days)
+  return at.toISOString().slice(0, 10)
+}
+
+export function isTeased(item, today = boardDate(new Date())) {
+  if (!item?.from || item.from <= today) return false
+  return daysBefore(item.from, TEASE_DAYS) <= today
+}
+
+// The next drop inside its teaser week, or null.
+export function comingDrop(today = boardDate(new Date())) {
+  const pick = (list) => list.filter((item) => isTeased(item, today))
+  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(ALL_BUDDIES)]
+  if (!all.length) return null
+  const date = all.reduce((low, item) => (item.from < low ? item.from : low), all[0].from)
+  const on = (list) => pick(list).filter((item) => item.from === date)
+  return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(ALL_BUDDIES) }
+}
+
+// Everything, released or not, for checks and the drop calendar.
+export const SHOP_CALENDAR = { cheers: ALL_CHEERS, buddies: ALL_BUDDIES, looks: ALL_LOOKS }
+
+// The newest drop that is out: every item sharing the latest `from` date.
+function newestDrop(list) {
+  const dated = list.filter((item) => item.from)
+  if (!dated.length) return []
+  const latest = dated.reduce((top, item) => (item.from > top ? item.from : top), '')
+  return dated.filter((item) => item.from === latest)
+}
 
 export function cheerText(id, field) {
   return `cheer.${id}.${field}`
@@ -75,6 +122,8 @@ export function isGemLook(id) {
 }
 
 export function recentLooks(count = 2) {
+  const drop = newestDrop(LOOKS)
+  if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
   const gem = LOOKS.filter((item) => item.gems > 0)
   if (gem.length) return gem.slice(0, Math.min(n, gem.length))
@@ -82,11 +131,15 @@ export function recentLooks(count = 2) {
 }
 
 export function recentCheers(count = 2) {
+  const drop = newestDrop(CHEERS)
+  if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
   return CHEERS.slice(-n)
 }
 
 export function recentBuddies(count = 2) {
+  const drop = newestDrop(BUDDIES)
+  if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
   return BUDDIES.slice(-n)
 }

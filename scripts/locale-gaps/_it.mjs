@@ -175,7 +175,7 @@ export const it = {
   'shop.stageNext': '{taps} DID in più per la fase {next}, o {cost} gems.',
   'shop.stageTop': 'Quello è il massimo.',
   'shop.buy': 'Compra',
-  'shop.nextStage': 'Compra fase successiva',
+  'shop.nextStage': 'Migliora',
   'shop.owned': 'Tuo',
   'shop.buyKicker': 'Shop',
   'shop.buyLookBody': '{cost}. Questo look si attiva dopo l\'acquisto.',

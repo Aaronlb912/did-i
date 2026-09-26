@@ -25,6 +25,9 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [x] `expo-updates` added (runtime = app version, channels per EAS profile). Build 56 is the first that takes updates
 
 **Still to do**
+- [ ] Next build (60+) for invite links on phones: adds `expo-application` (Play install referrer) and first-launch invite pickup
+- [x] Privacy policy: invite links (clipboard once on iPhone, Play install referrer), Apple and Google sign-in, iPhone push, Expo updates. Still needs the lawyer review
+- [ ] Shop drops: merge each drop PR and run `npm run update:prod` before its Friday (`docs/shop-drops.md`)
 - [ ] Android release signing: download the keystore from Expo and add the four `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` GitHub secrets (steps in `docs/native-rebuild.md`), before the android-apk run
 - [ ] Google sign-in on Android release builds: add a "Did I Android release" OAuth client with the release key SHA-1 (`npx eas-cli credentials -p android`), and one for the Play signing key after the first upload
 - [ ] Fixes from testing build 55 (list them here as you find them)
@@ -42,6 +45,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [ ] iPhone widget answer before midnight, app opened next day: answer kept
 - [ ] All 12 cheers on iPhone (Shop previews and a real Did); stage 5 looks right; Less motion turns them off
 - [ ] Cheer "i" opens the description; Upgrade buys the next stage
+- [ ] Invite link: share from Refer, open did-i.app/i/CODE on a phone with no app, install, sign up; the inviter gets the referral
 - [ ] Friends: own number required, ask by number and accept, a taken number is refused
 - [ ] Family: assign a question, the other sees it; block works
 - [ ] Push nudge arrives on Android and iPhone

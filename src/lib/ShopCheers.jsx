@@ -9,7 +9,6 @@ import {
   CHEER_STAGE_COINS,
   buyCheer,
   buyCheerStage,
-  cheerPlayOf,
   cheerStageOf,
   cheerText,
   fireCheer,
@@ -64,7 +63,7 @@ export function ShopCheers({ book, onChange, now }) {
                   type="button"
                   aria-label={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
                   onClick={() =>
-                    fireCheer(item.id, have ? cheerPlayOf(book, item.id) : 1, coat, undefined, true)
+                    fireCheer(item.id, 1, coat, undefined, true)
                   }
                 >
                   <CheerChip id={item.id} stage={have ? stage : 1} />

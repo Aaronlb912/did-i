@@ -175,7 +175,7 @@
   "shop.stageNext": "还需 {taps} 次 DID 到第 {next} 阶段，或 {cost} gems。",
   "shop.stageTop": "已是最高。",
   "shop.buy": "购买",
-  "shop.nextStage": "购买下一阶段",
+  "shop.nextStage": "升级",
   "shop.owned": "已拥有",
   "shop.buyKicker": "Shop",
   "shop.buyLookBody": "{cost}。购买后此 look 生效。",

@@ -208,7 +208,8 @@ export const fr = {
   'auth.appleFail': 'Apple sign-in did not work. Try email, or try again in a minute.',
   'auth.appleUnavailable': 'Sign in with Apple is not available on this device.',
   'auth.google': 'Se connecter avec Google',
-  'auth.googleFail': 'La connexion avec Google n\'a pas marché. Essaie par e-mail, ou réessaie dans une minute.',
+  'auth.googleFail':
+    'La connexion avec Google n\'a pas marché. Essaie par e-mail, ou réessaie dans une minute.',
   'auth.googleUnavailable': 'La connexion Google a besoin des services Google Play sur ce téléphone.',
   'auth.demoQuestion': 'Did I do that thing?',
   'account.lockCap': 'App PIN',
@@ -595,6 +596,7 @@ export const fr = {
     'Hayes Street est un appartement inventé pour essayer Did I. Jordan Hale n’est pas un vrai locataire.',
   'shop.title': 'Boutique',
   'shop.hubHint': 'Choisis une étagère. Touche un chip en bas pour prévisualiser.',
+  'shop.coming': 'Arrive le {date}',
   'shop.promoLooks': 'Nouveaux looks',
   'shop.promoCheers': 'Nouveaux cheers',
   'shop.promoBuddies': 'Nouveaux buddies',
@@ -880,8 +882,14 @@ export const fr = {
   'people.invite': 'Ton code',
   'people.yourCode': 'Code',
   'people.tapToSend': 'Touche pour l\'envoyer à quelqu\'un',
-  'people.inviteLine':
-    'Utilise mon code {code} quand tu t\'inscris sur Did I et on gagne tous les deux des coins.',
+  'people.inviteLine': 'Rejoins-moi sur Did I : {link} (mon code est {code})',
+  'invite.title': 'Tu es invité sur Did I',
+  'invite.lead': 'Installe l\'app depuis cette page et ton ami est crédité. Ton code :',
+  'invite.ios': 'Télécharger sur l\'App Store',
+  'invite.android': 'Télécharger sur Google Play',
+  'invite.open': 'Tu as déjà Did I ? Ouvre-la',
+  'invite.copied': 'Code copié. Ouvre Did I une fois l\'app installée.',
+  'invite.bad': 'Ce lien d\'invitation n\'est pas valide. Demande-en un nouveau à ton ami.',
   'people.copied': 'Copié.',
   'people.shared': 'Envoyé.',
   'people.joinedCount': '{n} ont rejoint avec',
@@ -1324,7 +1332,7 @@ export const fr = {
   'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
-  'legal.date': 'September 24, 2026',
+  'legal.date': 'September 25, 2026',
   'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
   'settings.privacyChoices': 'Privacy',
@@ -1353,22 +1361,22 @@ export const fr = {
     'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
   'legal.privacy.account.title': 'When you sign in',
   'legal.privacy.account.body':
-    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
+    'If you create an account with an email code, Sign in with Apple, or Sign in with Google, we store:\n\nYour email address (for sign-in). With Apple or Google it is the address they share with us, which can be a private relay address. We do not get your Apple or Google password.\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
   'legal.privacy.social.title': 'Friends, family, and sends',
   'legal.privacy.social.body':
-    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nInvite links. If you open someone\'s invite link (did-i.app/i/CODE), the page keeps the code in your browser and, when you tap a store button, copies it to your clipboard. The first time the app opens on a new iPhone install, it reads the clipboard once to look for that code; iOS asks before it pastes. On Android the app reads the Google Play install referrer instead. We keep only an invite code and ignore anything else. When you sign in, the code links your account to the person who invited you, and their invite count goes up.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
   'legal.privacy.dit.title': 'Did I tonight (public list)',
   'legal.privacy.dit.body':
     'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
   'legal.privacy.push.title': 'Notifications',
   'legal.privacy.push.body':
-    'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
+    'On Android and iPhone, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
   'legal.privacy.pay.title': 'Gem purchases',
   'legal.privacy.pay.body':
     'If you buy gem packs, Apple or Google processes payment. We receive your user id, pack id, gem count, and purchase status so we can credit your shelf. We do not store your card number. The store handles payment data under its own privacy policy.',
   'legal.privacy.vendors.title': 'Service providers',
   'legal.privacy.vendors.body':
-    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Apple App Store / Google Play (in-app purchases). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
+    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android and iPhone), Sign in with Apple and Google Sign-In (if you choose them), Expo (delivers app updates; it sees your device type, app version, and IP address), and Apple App Store / Google Play (in-app purchases, install referrer). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
   'legal.privacy.use.title': 'How we use data',
   'legal.privacy.use.body':
     'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',

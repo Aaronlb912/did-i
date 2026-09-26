@@ -413,14 +413,12 @@ begin
     end if;
     cost := 20;
   elsif k = 'look' then
-    if id not in ('ink', 'brass', 'night') then
+    if not public.shop_item_live('look', id) then
       raise exception 'bad item';
     end if;
     cost := 30;
   elsif k = 'cheer_stage' then
-    if id not in (
-      'lime', 'tape', 'paper', 'boom', 'night', 'dance', 'stamp', 'rain', 'check', 'bubble', 'spark', 'flip'
-    ) then
+    if not public.shop_item_live('cheer_stage', id) then
       raise exception 'bad item';
     end if;
     cost := 15;

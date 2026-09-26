@@ -175,7 +175,7 @@
   "shop.stageNext": "단계 {next}까지 DID {taps}번 더, 또는 gem {cost}개.",
   "shop.stageTop": "여기가 최대야.",
   "shop.buy": "구매",
-  "shop.nextStage": "다음 단계 구매",
+  "shop.nextStage": "업그레이드",
   "shop.owned": "보유",
   "shop.buyKicker": "Shop",
   "shop.buyLookBody": "{cost}. 사면 이 look이 켜져.",

@@ -16,6 +16,7 @@ import { MarkToast } from './components/MarkToast.jsx'
 import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
+import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -50,6 +51,7 @@ export function AppShell() {
   useEffect(() => {
     let alive = true
     afterNativeBridgeReady(() => {
+      captureInviteOnFirstLaunch()
       checkPings()
         .then((next) => {
           if (alive) setPingState(next)

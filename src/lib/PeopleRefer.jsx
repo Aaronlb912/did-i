@@ -19,6 +19,7 @@ import { passAlong } from './native.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
+import { inviteLink } from './invite-link.js'
 
 export function PeopleRefer({ book, onChange, now }) {
   const clock = now || new Date()
@@ -104,7 +105,7 @@ export function PeopleRefer({ book, onChange, now }) {
             invite
               ? async () => {
                   const how = await passAlong(
-                    t('people.inviteLine', { code: invite }),
+                    t('people.inviteLine', { code: invite, link: inviteLink(invite) }),
                     t('people.invite'),
                   )
                   if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))

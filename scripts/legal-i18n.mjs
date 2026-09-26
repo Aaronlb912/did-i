@@ -15,7 +15,7 @@ export const legalEn = {
   'legal.effective': 'Effective {date}.',
   'legal.notLawyer': 'This is plain-language disclosure, not legal advice.',
   'legal.backSettings': 'Settings',
-  'legal.date': 'September 24, 2026',
+  'legal.date': 'September 25, 2026',
   'legal.emailMissing': ' (set VITE_LEGAL_EMAIL before you ship)',
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
 
@@ -33,22 +33,22 @@ export const legalEn = {
     'You can use Did I on this phone with no sign-in. Your questions, answers, coins, gems, and settings stay in this browser or app unless you turn on an account.\n\nWe do not receive that local data unless you choose to sync or share a copy yourself.',
   'legal.privacy.account.title': 'When you sign in',
   'legal.privacy.account.body':
-    'If you create an account with an email code, we store:\n\nYour email address (for sign-in).\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
+    'If you create an account with an email code, Sign in with Apple, or Sign in with Google, we store:\n\nYour email address (for sign-in). With Apple or Google it is the address they share with us, which can be a private relay address. We do not get your Apple or Google password.\n\nYour display name and handle.\n\nYour phone number, if you add one. You need one to add friends. We keep it in one standard format, and a number can be on only one account.\n\nA copy of your shelf (tags, questions, answers, shop progress) in our database so you can sync across phones.\n\nDevice rows (a label you choose, platform, last seen time, and a push token if you allow notifications).\n\nProfile preferences such as your equipped look and cheer.',
   'legal.privacy.social.title': 'Friends, family, and sends',
   'legal.privacy.social.body':
-    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
+    'When you use People features we store friendship requests, family memberships and roles, invite codes you create or redeem, Did I sends you make or receive, and block/report records you file.\n\nFriends find each other by phone number. To ask a friend, you add your own number first. Anyone signed in who types your exact number can find your account and see your display name, so they can send you a request. When you send a request, the person you ask sees your number and display name. We do not show your number to anyone else, we do not let anyone browse numbers, and we do not read your contacts.\n\nInvite links. If you open someone\'s invite link (did-i.app/i/CODE), the page keeps the code in your browser and, when you tap a store button, copies it to your clipboard. The first time the app opens on a new iPhone install, it reads the clipboard once to look for that code; iOS asks before it pastes. On Android the app reads the Google Play install referrer instead. We keep only an invite code and ignore anything else. When you sign in, the code links your account to the person who invited you, and their invite count goes up.\n\nOther people in a family or on your friends list can see what the app is designed to show them (names, streaks you share, family questions, and similar).',
   'legal.privacy.dit.title': 'Did I tonight (public list)',
   'legal.privacy.dit.body':
     'This list is off by default. If you opt in, we store that you are public tonight, up to three short lines from your DID labels for that night, streak counts others can already see, and cheer counts.\n\nLines can be reported. Two different reporters can remove a line without waiting for a human review. Report rows are kept for moderation.',
   'legal.privacy.push.title': 'Notifications',
   'legal.privacy.push.body':
-    'On Android, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
+    'On Android and iPhone, if you allow notifications, we store a push token tied to your account and device. We use it to deliver friend Did I sends, friend requests, and similar nudges. You can turn notifications off in phone settings.\n\nLocal reminders for due questions stay on the device and do not need an account.',
   'legal.privacy.pay.title': 'Gem purchases',
   'legal.privacy.pay.body':
     'If you buy gem packs, Apple or Google processes payment. We receive your user id, pack id, gem count, and purchase status so we can credit your shelf. We do not store your card number. The store handles payment data under its own privacy policy.',
   'legal.privacy.vendors.title': 'Service providers',
   'legal.privacy.vendors.body':
-    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android), and Apple App Store / Google Play (in-app purchases). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
+    'We use Supabase (hosting, database, auth), Google Firebase Cloud Messaging (push on Android and iPhone), Sign in with Apple and Google Sign-In (if you choose them), Expo (delivers app updates; it sees your device type, app version, and IP address), and Apple App Store / Google Play (in-app purchases, install referrer). They process data on our behalf under their terms.\n\nOptional crash reports go only to a URL you configure (VITE_REPORT_URL). We do not run third-party ad trackers in the app.',
   'legal.privacy.use.title': 'How we use data',
   'legal.privacy.use.body':
     'We use your data to run the app: sync your shelf, deliver social features, show the public list when you opt in, send pushes you asked for, process purchases, prevent abuse, and fix bugs.\n\nWe do not sell your personal information.',
@@ -148,7 +148,7 @@ export const legalEs = {
   'legal.effective': 'Vigente desde {date}.',
   'legal.notLawyer': 'Esto es información clara, no asesoría legal.',
   'legal.backSettings': 'Ajustes',
-  'legal.date': '24 de septiembre de 2026',
+  'legal.date': '25 de septiembre de 2026',
   'legal.emailMissing': ' (configura VITE_LEGAL_EMAIL antes de publicar)',
   'legal.operatorWarn': 'Configura VITE_LEGAL_EMAIL en .env.local antes de que otros se registren.',
 
@@ -166,22 +166,22 @@ export const legalEs = {
     'Puedes usar Did I en este teléfono sin iniciar sesión. Tus preguntas, respuestas, monedas, gemas y ajustes quedan en este navegador o app hasta que actives una cuenta.\n\nNo recibimos esos datos locales a menos que sincronices o compartas una copia.',
   'legal.privacy.account.title': 'Con cuenta',
   'legal.privacy.account.body':
-    'Si creas cuenta con un código por email, guardamos:\n\nTu email (para entrar).\n\nTu nombre visible y handle.\n\nTu número de teléfono, si lo agregas. Lo necesitas para agregar amigos. Lo guardamos en un formato estándar, y un número solo puede estar en una cuenta.\n\nUna copia de tu estante (etiquetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
+    'Si creas cuenta con un código por email, Iniciar sesión con Apple o Iniciar sesión con Google, guardamos:\n\nTu email (para entrar). Con Apple o Google es la dirección que nos comparten, que puede ser una dirección de reenvío privada. No recibimos tu contraseña de Apple o Google.\n\nTu nombre visible y handle.\n\nTu número de teléfono, si lo agregas. Lo necesitas para agregar amigos. Lo guardamos en un formato estándar, y un número solo puede estar en una cuenta.\n\nUna copia de tu estante (etiquetas, preguntas, respuestas, progreso de tienda) para sincronizar entre teléfonos.\n\nFilas de dispositivo (nombre que elijas, plataforma, última vez visto, token push si permites avisos).\n\nPreferencias de perfil como look y cheer equipados.',
   'legal.privacy.social.title': 'Amigos, familia y envíos',
   'legal.privacy.social.body':
-    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nLos amigos se encuentran por número de teléfono. Para pedir amistad, primero agregas tu número. Cualquier persona con sesión iniciada que escriba tu número exacto puede encontrar tu cuenta y ver tu nombre visible para enviarte una solicitud. Cuando envías una solicitud, la persona a quien se la pides ve tu número y tu nombre visible. No mostramos tu número a nadie más, no dejamos que nadie explore números y no leemos tus contactos.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
+    'Con Personas guardamos solicitudes de amistad, membresías y roles familiares, códigos de invitación, Did I que envías o recibes, y bloqueos/reportes que hagas.\n\nLos amigos se encuentran por número de teléfono. Para pedir amistad, primero agregas tu número. Cualquier persona con sesión iniciada que escriba tu número exacto puede encontrar tu cuenta y ver tu nombre visible para enviarte una solicitud. Cuando envías una solicitud, la persona a quien se la pides ve tu número y tu nombre visible. No mostramos tu número a nadie más, no dejamos que nadie explore números y no leemos tus contactos.\n\nEnlaces de invitación. Si abres el enlace de invitación de alguien (did-i.app/i/CÓDIGO), la página guarda el código en tu navegador y, al tocar un botón de tienda, lo copia al portapapeles. La primera vez que la app se abre en una instalación nueva de iPhone, lee el portapapeles una vez para buscar ese código; iOS pregunta antes de pegar. En Android la app lee el referente de instalación de Google Play. Solo guardamos un código de invitación e ignoramos todo lo demás. Al iniciar sesión, el código vincula tu cuenta con quien te invitó, y su conteo de invitaciones sube.\n\nOtras personas en tu familia o lista de amigos ven lo que la app muestra por diseño (nombres, rachas compartidas, preguntas familiares, etc.).',
   'legal.privacy.dit.title': 'Did I tonight (lista pública)',
   'legal.privacy.dit.body':
     'La lista está apagada por defecto. Si entras, guardamos que eres público esta noche, hasta tres líneas cortas de tus etiquetas DID de esa noche, rachas visibles y conteos de cheer.\n\nLas líneas se pueden reportar. Dos reportes distintos pueden quitar una línea sin esperar revisión humana. Los reportes se guardan para moderación.',
   'legal.privacy.push.title': 'Notificaciones',
   'legal.privacy.push.body':
-    'En Android, si permites avisos, guardamos un token push ligado a tu cuenta y dispositivo para envíos de amigos, solicitudes y similares. Puedes apagarlos en ajustes del teléfono.\n\nLos recordatorios locales de preguntas due quedan en el dispositivo y no requieren cuenta.',
+    'En Android y iPhone, si permites avisos, guardamos un token push ligado a tu cuenta y dispositivo para envíos de amigos, solicitudes y similares. Puedes apagarlos en ajustes del teléfono.\n\nLos recordatorios locales de preguntas due quedan en el dispositivo y no requieren cuenta.',
   'legal.privacy.pay.title': 'Compra de gemas',
   'legal.privacy.pay.body':
     'Si compras packs de gemas, Apple o Google procesa el pago. Recibimos tu id de usuario, id de pack, cantidad de gemas y estado de la compra para acreditar tu estante. No guardamos tu número de tarjeta. La tienda maneja los datos de pago con su propia política.',
   'legal.privacy.vendors.title': 'Proveedores',
   'legal.privacy.vendors.body':
-    'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android) y Apple App Store / Google Play (compras in-app). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
+    'Usamos Supabase (hosting, base de datos, auth), Google Firebase Cloud Messaging (push en Android y iPhone), Iniciar sesión con Apple y Google Sign-In (si los eliges), Expo (entrega actualizaciones de la app; ve el tipo de dispositivo, la versión de la app y tu dirección IP) y Apple App Store / Google Play (compras in-app, referente de instalación). Procesan datos por nosotros bajo sus términos.\n\nReportes de fallos opcionales van solo a una URL que configures (VITE_REPORT_URL). No usamos rastreadores de anuncios de terceros en la app.',
   'legal.privacy.use.title': 'Uso de datos',
   'legal.privacy.use.body':
     'Usamos tus datos para operar la app: sincronizar tu estante, funciones sociales, lista pública si optas, pushes que pidas, compras, prevenir abuso y corregir errores.\n\nNo vendemos tu información personal.',

@@ -79,6 +79,7 @@ import {
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
+import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
 
 function ScreenShell({ book, title, children, colors }) {
@@ -524,7 +525,7 @@ export function PeopleReferScreen({ book, onChange }) {
         onPress={
           invite
             ? async () => {
-                const how = await passAlong(t('people.inviteLine', { code: invite }), t('people.invite'))
+                const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
                 if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
               }
             : undefined
