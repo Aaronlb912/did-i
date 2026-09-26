@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, StyleSheet, UIManager, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
@@ -19,9 +19,6 @@ import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
 
 const SITE = new Set()
 

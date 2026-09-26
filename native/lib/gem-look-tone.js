@@ -118,6 +118,62 @@ const TONES = {
       panelTint: '#fdf6ff',
     },
   },
+  jade: {
+    dark: {
+      top: 'rgba(79, 224, 168, 0.11)',
+      bottom: 'rgba(31, 154, 108, 0.07)',
+      ring: 'rgba(79, 224, 168, 0.44)',
+      halo: 'rgba(79, 224, 168, 0.16)',
+      haloDeep: 'rgba(31, 154, 108, 0.08)',
+      spill: 'rgba(79, 224, 168, 0.2)',
+      accent: '#4fe0a8',
+      accentSoft: '#1f9a6c',
+      chipGlow: 'rgba(79, 224, 168, 0.66)',
+      chipBg: '#0e1613',
+      panelTint: '#13201b',
+    },
+    light: {
+      top: 'rgba(15, 122, 82, 0.09)',
+      bottom: 'rgba(15, 122, 82, 0.05)',
+      ring: 'rgba(15, 122, 82, 0.26)',
+      halo: 'rgba(15, 122, 82, 0.09)',
+      haloDeep: 'rgba(10, 90, 60, 0.04)',
+      spill: 'rgba(15, 122, 82, 0.11)',
+      accent: '#0f7a52',
+      accentSoft: '#0a5a3c',
+      chipGlow: 'rgba(15, 122, 82, 0.4)',
+      chipBg: '#f5fcf8',
+      panelTint: '#f6fdf9',
+    },
+  },
+  indigo: {
+    dark: {
+      top: 'rgba(122, 140, 255, 0.12)',
+      bottom: 'rgba(63, 79, 208, 0.08)',
+      ring: 'rgba(122, 140, 255, 0.48)',
+      halo: 'rgba(110, 125, 255, 0.18)',
+      haloDeep: 'rgba(63, 79, 208, 0.09)',
+      spill: 'rgba(122, 140, 255, 0.22)',
+      accent: '#7a8cff',
+      accentSoft: '#3f4fd0',
+      chipGlow: 'rgba(122, 140, 255, 0.7)',
+      chipBg: '#0e0e1a',
+      panelTint: '#151526',
+    },
+    light: {
+      top: 'rgba(58, 72, 192, 0.1)',
+      bottom: 'rgba(58, 72, 192, 0.06)',
+      ring: 'rgba(58, 72, 192, 0.28)',
+      halo: 'rgba(58, 72, 192, 0.1)',
+      haloDeep: 'rgba(38, 47, 138, 0.04)',
+      spill: 'rgba(58, 72, 192, 0.12)',
+      accent: '#3a48c0',
+      accentSoft: '#262f8a',
+      chipGlow: 'rgba(58, 72, 192, 0.42)',
+      chipBg: '#f8f8ff',
+      panelTint: '#fafaff',
+    },
+  },
   moss: {
     dark: {
       top: 'rgba(143, 191, 122, 0.11)',
@@ -318,31 +374,9 @@ export function gemGlowHostStyle(look, theme = 'dark') {
   }
 }
 
-export function gemFrameStyle(look, theme = 'dark') {
-  const tone = gemLookTone(look, theme)
-  if (!tone) return undefined
-  if (look === 'glow') {
-    if (Platform.OS !== 'android') return undefined
-    return {
-      borderWidth: 1,
-      borderColor: tone.ring,
-      shadowColor: tone.accent,
-      shadowOpacity: 0.28,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 0 },
-      elevation: 4,
-    }
-  }
-  return {
-    shadowColor: tone.accent,
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: Platform.OS === 'android' ? 4 : 3,
-    ...(Platform.OS === 'android'
-      ? { borderWidth: 1, borderColor: tone.ring }
-      : null),
-  }
+// Looks no longer outline or glow the screen edge; the frame stays plain.
+export function gemFrameStyle() {
+  return undefined
 }
 
 export function gemMeterStyle(look, theme = 'dark') {

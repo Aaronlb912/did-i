@@ -20,6 +20,9 @@ const LOOK_IDS = new Set([
   'ember',
   'frost',
   'pulse',
+  'jade',
+  'indigo',
+  'clay',
 ])
 
 export function readWidgetSettings() {

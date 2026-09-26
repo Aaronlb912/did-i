@@ -3,24 +3,157 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
 import { activeLook } from './dit-board.js'
-import { GemIcon } from './PurseIcons.jsx'
-import { LookPreviewCard, ShopDoor, ShopPromoShelf, ShopPromoTile, ShopPurse } from './shop-bits.jsx'
+import { CoinIcon, GemIcon } from './PurseIcons.jsx'
+import { LookPreviewCard, ShopDoor, ShopPurse } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import {
   BUDDIES,
+  CHEERS,
+  LOOKS,
   buddyText,
   cheerText,
+  dropSlides,
   fireCheer,
   isGemLook,
   lookText,
   normalizePurse,
-  comingDrop,
-  recentBuddies,
-  recentCheers,
-  recentLooks,
+  shopTag,
 } from './purse.js'
+
+function tileChip(type, id) {
+  if (type === 'look') return <LookChip id={id} />
+  if (type === 'cheer') return <CheerChip id={id} stage={1} />
+  return <BuddyChip id={id} />
+}
+
+function tileName(type, id) {
+  if (type === 'look') return t(lookText(id, 'name'))
+  if (type === 'cheer') return t(cheerText(id, 'name'))
+  return t(buddyText(id, 'name'))
+}
+
+function PriceTag({ tag }) {
+  if (tag.owned) return <em className="di-shop-tag is-owned">{t('shop.owned')}</em>
+  const n = tag.gems || tag.coins
+  if (!n) return null
+  return (
+    <em className="di-shop-tag">
+      {tag.gems ? <GemIcon /> : <CoinIcon />}
+      {n}
+    </em>
+  )
+}
+
+function ShopTile({ type, item, purse, onTile }) {
+  const name = tileName(type, item.id)
+  return (
+    <button
+      className="di-shop-tile"
+      type="button"
+      aria-label={t('shop.see', { name })}
+      onClick={() => onTile(type, item)}
+    >
+      <span className="di-shop-tile-chip">{tileChip(type, item.id)}</span>
+      <strong>{name}</strong>
+      <PriceTag tag={shopTag(purse, type, item)} />
+    </button>
+  )
+}
+
+function slideHead(slide) {
+  if (slide.kind === 'coming') {
+    return {
+      kicker: slide.days <= 1 ? t('shop.tomorrow') : t('shop.inDays', { n: slide.days }),
+      title: t('shop.coming', { date: formatBoardDate(slide.date) }),
+    }
+  }
+  if (slide.kind === 'drop') return { kicker: '', title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
+  return { kicker: '', title: t('shop.freshTitle') }
+}
+
+// The drop carousel: the Coming drop first, then recent drops. Scrolls sideways.
+function DropCarousel({ slides, purse, onTile }) {
+  const [at, setAt] = useState(0)
+  if (!slides.length) return null
+  // Slides sit a gap apart, so measure from each slide rather than the track width.
+  function slideLeft(box, i) {
+    return box.children[i].offsetLeft - box.children[0].offsetLeft
+  }
+  function onScroll(event) {
+    const box = event.currentTarget
+    let near = 0
+    for (let i = 1; i < box.children.length; i += 1) {
+      if (Math.abs(slideLeft(box, i) - box.scrollLeft) < Math.abs(slideLeft(box, near) - box.scrollLeft)) near = i
+    }
+    setAt(near)
+  }
+  function go(i) {
+    const box = document.getElementById('di-drop-track')
+    if (box) box.scrollTo({ left: slideLeft(box, i), behavior: 'smooth' })
+  }
+  return (
+    <div className="di-drop-carousel">
+      <div className="di-drop-track" id="di-drop-track" onScroll={onScroll}>
+        {slides.map((slide, i) => {
+          const head = slideHead(slide)
+          return (
+            <section
+              key={`${slide.kind}-${slide.date}`}
+              className={slide.kind === 'coming' ? 'di-drop-slide is-coming' : 'di-drop-slide'}
+              aria-label={t('shop.slideN', { n: i + 1, total: slides.length })}
+            >
+              {head.kicker ? <p className="di-drop-kicker">{head.kicker}</p> : null}
+              <h3 className="di-drop-title">{head.title}</h3>
+              <div className="di-drop-grid">
+                {slide.items.map(({ type, item }) => (
+                  <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} onTile={onTile} />
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+      {slides.length > 1 ? (
+        <div className="di-drop-dots">
+          {slides.map((slide, i) => (
+            <button
+              key={`dot-${slide.kind}-${slide.date}`}
+              type="button"
+              className={i === at ? 'di-drop-dot is-on' : 'di-drop-dot'}
+              aria-label={t('shop.slideN', { n: i + 1, total: slides.length })}
+              aria-current={i === at ? 'true' : undefined}
+              onClick={() => go(i)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+// Every item of one kind, side-scrolling, not-owned first.
+function KindRow({ type, list, cap, allLabel, onAll, purse, onTile }) {
+  const sorted = [...list].sort(
+    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
+  )
+  return (
+    <div className="di-shop-row-kind">
+      <div className="di-shop-promo-head">
+        <p className="di-set-cap">{cap}</p>
+        <button className="di-text di-shop-promo-all" type="button" onClick={onAll}>
+          {allLabel}
+        </button>
+      </div>
+      <div className="di-shop-rail">
+        {sorted.map((item) => (
+          <ShopTile key={item.id} type={type} item={item} purse={purse} onTile={onTile} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function Shop({ book, now }) {
   usePrefs()
@@ -29,21 +162,29 @@ export function Shop({ book, now }) {
   const coat = activeLook(book)
   const [peekLook, setPeekLook] = useState('')
   const [peekBuddy, setPeekBuddy] = useState('')
-  const lookCount = purse.looks.length
-  const cheerCount = purse.cheers.length
-  const buddyCount = purse.buddies.length
-  const promoLooks = recentLooks(2)
-  const promoCheers = recentCheers(2)
-  const promoBuddies = recentBuddies(2)
-  const coming = comingDrop(boardDate(clock, book.dayFoldHour))
+  const owned = purse.looks.length + purse.cheers.length + purse.buddies.length
+  const today = boardDate(clock, book.dayFoldHour)
   const previewLook = peekLook || coat
+
+  function peekAt(type, item) {
+    if (type === 'look') {
+      setPeekBuddy('')
+      setPeekLook((prev) => (prev === item.id ? '' : item.id))
+    } else if (type === 'cheer') {
+      setPeekBuddy('')
+      fireCheer(item.id, 1, previewLook, undefined, true)
+    } else {
+      setPeekLook('')
+      setPeekBuddy((prev) => (prev === item.id ? '' : item.id))
+    }
+  }
 
   return (
     <BoardShell
       book={book}
       now={clock}
       title={t('shop.title')}
-      date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
+      date={formatBoardDate(today)}
       look={peekLook || undefined}
     >
       <section className="di-page di-shop di-set">
@@ -51,102 +192,7 @@ export function Shop({ book, now }) {
         <ShopPurse purse={purse} />
         <p className="di-set-note">{t('shop.hubHint')}</p>
 
-        <div className="di-shop-promo">
-          {coming ? (
-            <ShopPromoShelf cap={t('shop.coming', { date: formatBoardDate(coming.date) })}>
-              {coming.looks.map((item) => (
-                <ShopPromoTile
-                  key={`look-${item.id}`}
-                  chip={<LookChip id={item.id} />}
-                  name={t(lookText(item.id, 'name'))}
-                  ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
-                  onClick={() => {
-                    setPeekBuddy('')
-                    setPeekLook((prev) => (prev === item.id ? '' : item.id))
-                  }}
-                />
-              ))}
-              {coming.cheers.map((item) => (
-                <ShopPromoTile
-                  key={`cheer-${item.id}`}
-                  chip={<CheerChip id={item.id} stage={1} />}
-                  name={t(cheerText(item.id, 'name'))}
-                  ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
-                  onClick={() => fireCheer(item.id, 1, previewLook, undefined, true)}
-                />
-              ))}
-              {coming.buddies.map((item) => (
-                <ShopPromoTile
-                  key={`buddy-${item.id}`}
-                  chip={<BuddyChip id={item.id} />}
-                  name={t(buddyText(item.id, 'name'))}
-                  ariaLabel={t('shop.see', { name: t(buddyText(item.id, 'name')) })}
-                  onClick={() => {
-                    setPeekLook('')
-                    setPeekBuddy(item.id)
-                  }}
-                />
-              ))}
-            </ShopPromoShelf>
-          ) : null}
-
-          <ShopPromoShelf
-            cap={t('shop.promoLooks')}
-            allLabel={t('shop.allLooks')}
-            onAll={() => goHash('/shop/looks')}
-          >
-            {promoLooks.map((item) => (
-              <ShopPromoTile
-                key={item.id}
-                chip={<LookChip id={item.id} />}
-                name={t(lookText(item.id, 'name'))}
-                ariaLabel={t('shop.see', { name: t(lookText(item.id, 'name')) })}
-                onClick={() => {
-                  setPeekBuddy('')
-                  setPeekLook((prev) => (prev === item.id ? '' : item.id))
-                }}
-              />
-            ))}
-          </ShopPromoShelf>
-
-          <ShopPromoShelf
-            cap={t('shop.promoCheers')}
-            allLabel={t('shop.allCheers')}
-            onAll={() => goHash('/shop/cheers')}
-          >
-            {promoCheers.map((item) => (
-              <ShopPromoTile
-                key={item.id}
-                chip={<CheerChip id={item.id} stage={1} />}
-                name={t(cheerText(item.id, 'name'))}
-                ariaLabel={t('shop.see', { name: t(cheerText(item.id, 'name')) })}
-                onClick={() => {
-                  setPeekBuddy('')
-                  fireCheer(item.id, 1, previewLook, undefined, true)
-                }}
-              />
-            ))}
-          </ShopPromoShelf>
-
-          <ShopPromoShelf
-            cap={t('shop.promoBuddies')}
-            allLabel={t('shop.allBuddies')}
-            onAll={() => goHash('/shop/buddies')}
-          >
-            {promoBuddies.map((item) => (
-              <ShopPromoTile
-                key={item.id}
-                chip={<BuddyChip id={item.id} />}
-                name={t(buddyText(item.id, 'name'))}
-                ariaLabel={t('shop.see', { name: t(buddyText(item.id, 'name')) })}
-                onClick={() => {
-                  setPeekLook('')
-                  setPeekBuddy(item.id)
-                }}
-              />
-            ))}
-          </ShopPromoShelf>
-        </div>
+        <DropCarousel slides={dropSlides(today)} purse={purse} onTile={peekAt} />
 
         {peekLook && isGemLook(peekLook) ? <LookPreviewCard /> : null}
 
@@ -161,28 +207,11 @@ export function Shop({ book, now }) {
           </div>
         ) : null}
 
+        <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} onTile={peekAt} />
+        <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} onTile={peekAt} />
+        <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
+
         <div className="di-set-card di-shop-doors">
-          <ShopDoor
-            preview={<LookChip id={purse.lookOn} />}
-            title={t('shop.looks')}
-            note={t('shop.looksDoor')}
-            meta={t('shop.ownedN', { n: lookCount })}
-            onClick={() => goHash('/shop/looks')}
-          />
-          <ShopDoor
-            preview={<CheerChip id={purse.cheerOn} stage={1} />}
-            title={t('shop.cheers')}
-            note={t('shop.cheersDoor')}
-            meta={t('shop.ownedN', { n: cheerCount })}
-            onClick={() => goHash('/shop/cheers')}
-          />
-          <ShopDoor
-            preview={<BuddyChip id={purse.buddyOn || BUDDIES[0].id} />}
-            title={t('shop.buddies')}
-            note={t('shop.buddiesDoor')}
-            meta={t('shop.ownedN', { n: buddyCount })}
-            onClick={() => goHash('/shop/buddies')}
-          />
           <ShopDoor
             preview={<GemIcon className="di-gem-icon di-gem-icon-door" />}
             title={t('gems.title')}
@@ -190,9 +219,10 @@ export function Shop({ book, now }) {
             onClick={() => goHash('/gems')}
           />
           <ShopDoor
-            preview={<LookChip id="ink" />}
+            preview={<LookChip id={purse.lookOn} />}
             title={t('shop.kit')}
             note={t('shop.kitDoor')}
+            meta={t('shop.ownedN', { n: owned })}
             onClick={() => goHash('/kit')}
           />
         </div>

@@ -28,13 +28,20 @@ const ALL_CHEERS = [
   { id: 'bubble', gems: CHEER_GEMS },
   { id: 'spark', gems: CHEER_GEMS },
   { id: 'flip', gems: CHEER_GEMS },
+  { id: 'confetti', gems: CHEER_GEMS, from: '2026-10-09' },
+  { id: 'heart', gems: CHEER_GEMS, from: '2026-10-09' },
 ]
 
+export const FREE_BUDDY = 'ant'
+
 const ALL_BUDDIES = [
+  { id: 'ant', gems: 0 },
   { id: 'cat', gems: BUDDY_GEMS },
   { id: 'dog', gems: BUDDY_GEMS },
   { id: 'rabbit', gems: BUDDY_GEMS },
   { id: 'owl', gems: BUDDY_GEMS },
+  { id: 'possum', gems: BUDDY_GEMS },
+  { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
 ]
 
 const ALL_LOOKS = [
@@ -51,6 +58,9 @@ const ALL_LOOKS = [
   { id: 'ember', coins: 0, gems: LOOK_GEM_PRICE },
   { id: 'frost', coins: 0, gems: LOOK_GEM_PRICE },
   { id: 'pulse', coins: 0, gems: LOOK_GEM_PRICE },
+  { id: 'jade', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-09' },
+  { id: 'indigo', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-09' },
+  { id: 'clay', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-10-09' },
 ]
 
 export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
@@ -80,6 +90,58 @@ export function comingDrop(today = boardDate(new Date())) {
   const date = all.reduce((low, item) => (item.from < low ? item.from : low), all[0].from)
   const on = (list) => pick(list).filter((item) => item.from === date)
   return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(ALL_BUDDIES) }
+}
+
+// Slides for the shop's drop carousel, first to last: the Coming drop (if in
+// its week), then released drops newest first. Before any dated drop exists,
+// one "new in the shop" slide of the newest items keeps the carousel full.
+export const DROP_SLIDES_MAX = 4
+
+function daysUntil(iso, today) {
+  const ms = Date.parse(`${iso}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)
+  return Math.round(ms / 86400000)
+}
+
+function slideItems(date) {
+  const at = (list, type) => list.filter((item) => item.from === date).map((item) => ({ type, item }))
+  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy')]
+}
+
+export function dropSlides(today = boardDate(new Date())) {
+  const slides = []
+  const coming = comingDrop(today)
+  if (coming) {
+    slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date) })
+  }
+  const dates = [...new Set([...LOOKS, ...CHEERS, ...BUDDIES].map((item) => item.from).filter(Boolean))]
+    .filter((date) => date <= today)
+    .sort()
+    .reverse()
+  for (const date of dates.slice(0, DROP_SLIDES_MAX)) {
+    slides.push({ kind: 'drop', date, items: slideItems(date) })
+  }
+  if (!dates.length) {
+    slides.push({
+      kind: 'fresh',
+      date: '',
+      items: [
+        ...recentLooks(2).map((item) => ({ type: 'look', item })),
+        ...recentCheers(2).map((item) => ({ type: 'cheer', item })),
+        ...recentBuddies(2).map((item) => ({ type: 'buddy', item })),
+      ],
+    })
+  }
+  return slides
+}
+
+// What a tile says under its name: owned, or its price.
+export function shopTag(purse, type, item) {
+  const owned =
+    (type === 'look' && purse.looks.includes(item.id)) ||
+    (type === 'cheer' && purse.cheers.includes(item.id)) ||
+    (type === 'buddy' && purse.buddies.includes(item.id))
+  if (owned) return { owned: true, gems: 0, coins: 0 }
+  return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
 }
 
 // Everything, released or not, for checks and the drop calendar.
@@ -115,6 +177,8 @@ export const GEM_LOOK_IDS = [
   'rose',
   'steel',
   'wine',
+  'jade',
+  'indigo',
 ]
 
 export function isGemLook(id) {
@@ -206,9 +270,11 @@ export function normalizePurse(book) {
     : []
   const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
   const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
-  const buddies = Array.isArray(book?.buddies)
+  const buddyList = Array.isArray(book?.buddies)
     ? book.buddies.map((id) => String(id)).filter((id) => BUDDY_IDS.has(id))
     : []
+  // Everyone has the ant, like the lime look and cheer.
+  const buddies = buddyList.includes(FREE_BUDDY) ? buddyList : [FREE_BUDDY, ...buddyList]
   const buddyOn =
     BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
   const cheerUses = asCount(book?.cheerUses)

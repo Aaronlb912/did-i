@@ -81,6 +81,8 @@ const CHEER_KINDS = [
   'bubble',
   'spark',
   'flip',
+  'confetti',
+  'heart',
 ]
 
 const GAP_MS = {
@@ -96,6 +98,8 @@ const GAP_MS = {
   bubble: 140,
   spark: 110,
   flip: 160,
+  confetti: 110,
+  heart: 150,
 }
 
 const BASE_HOLD = {
@@ -111,6 +115,8 @@ const BASE_HOLD = {
   bubble: 1500,
   spark: 820,
   flip: 700,
+  confetti: 1750,
+  heart: 1900,
 }
 
 function stageN(stage) {
@@ -317,6 +323,72 @@ function danceBits(pop, stage) {
   ]
 }
 
+// 'ink' not 'white', so the paper still shows on a light theme.
+const CONFETTI_TONES = ['on', 'gold', 'blue', 'ink']
+
+function confettiBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const mul = stageMul(stage)
+  const count = Math.min(22, 12 + level * 2)
+  const reach = Math.min(7, (3.6 + n * 0.7) * mul)
+  const peak = Math.min(5.5, (3.4 + n * 0.5) * mul)
+  const fall = Math.min(14, (5 + n * 1.4) * mul)
+  // Lean the fan toward the middle so edge pops stay on screen.
+  const ox = Number.parseFloat(ORIGINS[n - 1][pop]?.[0]) || 50
+  const lean = ((50 - ox) / 50) * reach * 0.6
+  const piece = Math.max(1, Math.min(mul, 1.5))
+  const bits = [{ id: 'puff', puff: true, delay: '0ms', size: `${1.3 * mul}rem` }]
+  for (let i = 0; i < count; i += 1) {
+    const side = count === 1 ? 0 : i / (count - 1) - 0.5
+    const angle = side * 2.4 + (((i * 7) % 5) - 2) * 0.05
+    const lift = 0.6 + ((i * 5) % 7) / 15
+    const w = (0.45 + (i % 3) * 0.1) * piece
+    bits.push({
+      id: `conf-${i}`,
+      confetti: true,
+      x: `${(Math.sin(angle) * reach + lean).toFixed(2)}rem`,
+      y: `${(-peak * lift).toFixed(2)}rem`,
+      fall: `${(fall * (0.75 + ((i * 3) % 5) * 0.08)).toFixed(2)}rem`,
+      rot: `${(i % 2 ? 1 : -1) * (320 + ((i * 53) % 280))}deg`,
+      size: `${w.toFixed(2)}rem`,
+      fat: i % 3 === 0,
+      tone: CONFETTI_TONES[(i * 3) % CONFETTI_TONES.length],
+      delay: `${70 + ((i * 29) % 90)}ms`,
+    })
+  }
+  return bits
+}
+
+function heartBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const mul = stageMul(stage)
+  // Capped so an edge pop's 1.22 overshoot stays on a 390px screen.
+  const size = Math.min(4.2, (2.8 + level * 0.15) * mul)
+  const bits = [
+    { id: 'heart', heart: true, delay: '0ms', size: `${size.toFixed(2)}rem` },
+    // One ring per beat (the heart's keyframes beat at ~46% and ~72%).
+    { id: 'beat-1', bloom: true, delay: '560ms', size: `${(size * 1.5).toFixed(2)}rem` },
+    { id: 'beat-2', bloom: true, delay: '900ms', size: `${(size * 1.9).toFixed(2)}rem` },
+  ]
+  const minis = Math.min(6, level + 1)
+  const dist = Math.min(5, (1.6 + level * 0.25) * mul)
+  for (let i = 0; i < minis; i += 1) {
+    const angle = (-150 + (i / Math.max(1, minis - 1)) * 120) * (Math.PI / 180)
+    const far = dist * (0.8 + (i % 2) * 0.3)
+    bits.push({
+      id: `heart-bit-${i}`,
+      heartBit: true,
+      x: `${(Math.cos(angle) * far).toFixed(2)}rem`,
+      y: `${(Math.sin(angle) * far).toFixed(2)}rem`,
+      size: `${((0.55 + (i % 3) * 0.12) * Math.min(mul, 1.5)).toFixed(2)}rem`,
+      tone: CONFETTI_TONES[i % 3],
+      delay: `${920 + i * 45}ms`,
+    })
+  }
+  return bits
+}
+
 const BURST_BUILDERS = {
   lime: limeBits,
   tape: tapeBurstBits,
@@ -338,6 +410,8 @@ const BURST_BUILDERS = {
   bubble: bubbleBurstBits,
   spark: sparkBurstBits,
   flip: flipBurstBits,
+  confetti: confettiBits,
+  heart: heartBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {

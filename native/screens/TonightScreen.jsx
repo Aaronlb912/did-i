@@ -13,10 +13,9 @@ import { answerFor } from '../../src/lib/recurrence.js'
 import { useTonightStack } from '../../src/lib/useTonightStack.js'
 import { UndoToast } from '../components/UndoToast.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
-import { dueByUrgency, mustSwipeDeadline } from '../../src/lib/board-json.js'
+import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
-import { HallHalo } from '../components/HallHalo.jsx'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -76,11 +75,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const account = useAccount()
   const sync = useSync()
   const now = useMinuteNow()
-  const stack = useTonightStack({ value: book, boards, tagId, onTag, onChange, focusLampId, now })
+  const [topicPicks, setTopicPicks] = useState([])
+  const topics = shelfTopics(boards && boards.length ? boards : [book])
+  const picks = topicPicks.filter((pick) => topics.includes(pick))
+  const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
   const purse = mergePurses(stack.shelf)
   const { bottom: bottomPad } = useAppInsets()
   const headerSpace = useHeaderSpace()
-  const mastTitle = tagId ? book.title : t('tonight.didI')
+  const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
   const premium = isGemLook(look)
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
@@ -298,11 +300,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      {premium ? (
-        <Slot>
-          <HallHalo look={look} />
-        </Slot>
-      ) : null}
       <Slot>
         <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       </Slot>
@@ -360,7 +357,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <Slot>
-        <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
+        <TagFilter
+          boards={stack.shelf}
+          tagId={tagId}
+          onTag={onTag}
+          now={stack.clock}
+          colors={colors}
+          topics={topics}
+          topicPicks={picks}
+          onTopics={setTopicPicks}
+        />
       </Slot>
 
       {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
