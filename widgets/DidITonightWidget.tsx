@@ -8,12 +8,14 @@ import {
   clipped,
   containerBackground,
   containerRelativeFrame,
+  containerShape,
   controlSize,
   font,
   foregroundStyle,
   frame,
   tint,
   kerning,
+  layoutPriority,
   lineLimit,
   minimumScaleFactor,
   multilineTextAlignment,
@@ -22,6 +24,7 @@ import {
   padding,
   rotationEffect,
   scaleEffect,
+  strokeBorder,
   textCase,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers'
@@ -348,23 +351,26 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   const compact = family === 'systemSmall' || family === 'accessoryRectangular'
-  const titleSize = compact ? 18 : 26
+  const titleSize = compact ? 18 : family === 'systemMedium' ? 24 : 28
   const home = family !== 'accessoryRectangular'
   const showNext = home && Boolean(lead) && browsable.length > 1
   // The tag of the question showing, since the card mixes every tag.
+  // Size follows the widget family. WidgetKit cannot scroll, so a long tag
+  // wraps on the small card and shrinks instead of turning into an ellipsis.
   const leadTag = String(lead?.tag || '').trim() || tagTitle
-  const sidePad = home && (showNext || BUDDY[buddyId]) ? (compact ? 38 : 52) : 0
+  const tagSize = family === 'systemMedium' ? 13 : compact ? 11 : 16
   const kicker = (
     <Text
       modifiers={[
-        font({ size: 11, weight: 'semibold' }),
-        kerning(1.1),
+        font({ size: tagSize, weight: 'semibold' }),
+        kerning(tagSize >= 16 ? 1.1 : tagSize >= 13 ? 0.6 : 0.2),
         textCase('uppercase'),
         foregroundStyle(on),
         multilineTextAlignment('center'),
-        lineLimit(1),
-        minimumScaleFactor(0.8),
-        padding({ leading: sidePad, trailing: sidePad, top: compact && showNext ? 26 : 0 }),
+        lineLimit(compact ? 2 : 1),
+        minimumScaleFactor(0.45),
+        allowsTightening(true),
+        layoutPriority(1),
         frame({ maxWidth: 10000 }),
       ]}
     >
@@ -378,8 +384,8 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         font({ weight: 'bold', size: titleSize }),
         foregroundStyle(ink),
         multilineTextAlignment('center'),
-        lineLimit(compact ? 4 : 5),
-        minimumScaleFactor(0.45),
+        lineLimit(compact ? 5 : 6),
+        minimumScaleFactor(0.35),
         allowsTightening(true),
         frame({ maxWidth: 10000 }),
       ]}
@@ -387,25 +393,19 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       {lead ? questionText : footer}
     </Text>
   )
-  const nextPill = showNext ? (
-    <VStack alignment="leading" modifiers={[grow, padding({ leading: compact ? 8 : 10, top: compact ? 8 : 9 })]}>
-      <HStack>
-        <Button
-          label={String(props?.nextLabel || 'Next') + ' ›'}
-          target={'next:' + leadId}
-          onPress={() => afterNext()}
-          modifiers={[
-            buttonStyle('bordered'),
-            buttonBorderShape('capsule'),
-            tint(c.on),
-            font({ size: compact ? 10 : 11, weight: 'bold' }),
-            foregroundStyle(on),
-          ]}
-        />
-        <Spacer />
-      </HStack>
-      <Spacer />
-    </VStack>
+  const nextButton = showNext ? (
+    <Button
+      label={String(props?.nextLabel || 'Next') + ' ›'}
+      target={'next:' + leadId}
+      onPress={() => afterNext()}
+      modifiers={[
+        buttonStyle('bordered'),
+        buttonBorderShape('capsule'),
+        tint(c.on),
+        font({ size: compact ? 10 : 11, weight: 'bold' }),
+        foregroundStyle(on),
+      ]}
+    />
   ) : null
   const buttons = lead ? (
     <HStack spacing={compact ? 4 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
@@ -463,38 +463,48 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   return (
-    <VStack modifiers={[padding({ all: compact ? 2 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill]}>
-      <VStack
-        modifiers={[
-          padding({ all: 2 }),
-          background(c.on),
-          clipShape('roundedRectangle', 22),
-          grow,
-          clipped(true),
-        ]}
-      >
-        <ZStack alignment="topTrailing" modifiers={[grow]}>
-          <VStack
-            alignment="center"
-            spacing={8}
+    <VStack
+      modifiers={[
+        containerBackground(gem ? c.bg : c.panel, 'widget'),
+        containerShape({ shape: 'containerRelativeShape' }),
+        widgetURL(openUri),
+        fill,
+      ]}
+    >
+      <ZStack alignment="topTrailing" modifiers={[grow]}>
+        <VStack
+          alignment="center"
+          spacing={compact ? 6 : 8}
+          modifiers={[
+            padding({ horizontal: compact ? 8 : 14, vertical: compact ? 8 : 12 }),
+            background(c.panel),
+            clipShape('containerRelativeShape'),
+            strokeBorder({
+              content: c.on,
+              style: { lineWidth: 2 },
+              shape: 'containerRelativeShape',
+            }),
+            grow,
+            clipped(true),
+          ]}
+        >
+          <HStack
+            spacing={compact ? 4 : 8}
             modifiers={[
-              padding({ horizontal: compact ? 6 : 14, vertical: compact ? 8 : 12 }),
-              background(c.panel),
-              clipShape('roundedRectangle', 20),
-              grow,
-              clipped(true),
+              frame({ maxWidth: 10000 }),
+              padding({ trailing: BUDDY[buddyId] ? (compact ? 22 : 32) : 0 }),
             ]}
           >
+            {nextButton}
             {kicker}
-            <Spacer />
-            {question}
-            <Spacer />
-            {buttons}
-          </VStack>
-          {buddyMark(buddyId)}
-          {nextPill}
-        </ZStack>
-      </VStack>
+          </HStack>
+          <Spacer />
+          {question}
+          <Spacer />
+          {buttons}
+        </VStack>
+        {buddyMark(buddyId)}
+      </ZStack>
     </VStack>
   )
 }
