@@ -19,6 +19,7 @@ export const additionsEn = {
   'marks.home': 'Home',
   'marks.stats': 'So far',
   'marks.ok': 'Ok',
+  'marks.new': 'New mark',
 
   'mark.first-open.name': 'Showed up',
   'mark.first-open.line': 'You opened Did I.',
@@ -395,6 +396,7 @@ export const additionsEs = {
   'marks.home': 'Inicio',
   'marks.stats': 'Hasta ahora',
   'marks.ok': 'Ok',
+  'marks.new': 'Nueva marca',
 
   'mark.first-open.name': 'Apareciste',
   'mark.first-open.line': 'Abriste Did I.',

@@ -8760,3 +8760,23 @@ html[data-reduce-motion] *::after,
   color: var(--di-ink-soft);
   font-size: 0.82rem;
 }
+
+.di-mark-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: left;
+}
+
+.di-mark-copy em {
+  color: var(--di-on);
+  font-family: var(--di-mono);
+  font-size: 0.68rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.di-mark-copy span {
+  color: var(--di-ink-soft);
+}

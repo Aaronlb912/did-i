@@ -963,6 +963,7 @@ export const es = {
   'marks.home': 'Inicio',
   'marks.stats': 'Hasta ahora',
   'marks.ok': 'Ok',
+  'marks.new': 'Nueva marca',
   'mark.first-open.name': 'Apareciste',
   'mark.first-open.line': 'Abriste Did I.',
   'mark.first-did.name': 'Primer DID',

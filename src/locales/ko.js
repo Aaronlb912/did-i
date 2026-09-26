@@ -926,6 +926,7 @@ export const ko = {
   'marks.home': '홈',
   'marks.stats': '지금까지',
   'marks.ok': 'Ok',
+  'marks.new': '새 마크',
   'mark.first-open.name': '왔음',
   'mark.first-open.line': 'Did I 열었어.',
   'mark.first-did.name': '첫 DID',

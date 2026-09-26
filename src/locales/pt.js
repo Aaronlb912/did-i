@@ -958,6 +958,7 @@ export const pt = {
   'marks.home': 'Início',
   'marks.stats': 'Até agora',
   'marks.ok': 'Ok',
+  'marks.new': 'Nova marca',
   'mark.first-open.name': 'Apareceste',
   'mark.first-open.line': 'Abriste o Did I.',
   'mark.first-did.name': 'Primeiro DID',

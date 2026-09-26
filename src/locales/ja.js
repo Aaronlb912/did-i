@@ -927,6 +927,7 @@ export const ja = {
   'marks.home': 'ホーム',
   'marks.stats': 'これまで',
   'marks.ok': 'Ok',
+  'marks.new': '新しいマーク',
   'mark.first-open.name': '来た',
   'mark.first-open.line': 'Did I を開いた。',
   'mark.first-did.name': '最初の DID',

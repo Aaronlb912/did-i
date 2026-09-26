@@ -76,7 +76,7 @@ export function FirstNight({ book, onChange, now }) {
   }
 
   return (
-    <BoardShell book={book} now={clock} title={book.title} nav={false}>
+    <BoardShell book={book} now={clock} title={book.title} nav={false} back={false} cog={false}>
       <form className="di-page di-first" onSubmit={add}>
         <h2 className="di-page-title">
           {named ? t('first.titleNamed', { name: named }) : t('first.title')}

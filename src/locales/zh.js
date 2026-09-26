@@ -924,6 +924,7 @@ export const zh = {
   'marks.home': '首页',
   'marks.stats': '到目前为止',
   'marks.ok': 'Ok',
+  'marks.new': '新标记',
   'mark.first-open.name': '来了',
   'mark.first-open.line': '你打开了 Did I。',
   'mark.first-did.name': '第一次 DID',

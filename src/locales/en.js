@@ -958,6 +958,7 @@ export const en = {
   'marks.home': 'Home',
   'marks.stats': 'So far',
   'marks.ok': 'Ok',
+  'marks.new': 'New mark',
   'mark.first-open.name': 'Showed up',
   'mark.first-open.line': 'You opened Did I.',
   'mark.first-did.name': 'First DID',
