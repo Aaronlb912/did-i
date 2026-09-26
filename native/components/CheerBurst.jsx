@@ -964,6 +964,193 @@ function Shoot({ delay, color, len }) {
   )
 }
 
+function confettiColor(tone, colors) {
+  return tone === 'ink' ? colors.ink : toneColor(tone, colors)
+}
+
+function Puff({ delay, size, color }) {
+  const progress = useTimed(delay, 450)
+  const px = remPx(size || '1.3')
+  // Squeeze, then pop: the paper leaves as it opens.
+  const scale = progress.interpolate({ inputRange: [0, 0.18, 0.45, 1], outputRange: [0.55, 0.4, 1.35, 1.8] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.18, 0.45, 1], outputRange: [0.5, 0.6, 0.4, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        borderRadius: px / 2,
+        backgroundColor: color,
+        opacity,
+        transform: [{ scale }],
+      }}
+    />
+  )
+}
+
+// Same arc as the web keyframes: up fast, then a slow flutter down.
+const CONFETTI_T = [0, 0.04, 0.08, 0.16, 0.25, 0.4, 0.55, 0.7, 0.78, 0.85, 1]
+
+function Confetti({ delay, x, y, fall, rot, size, fat, color }) {
+  const progress = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(progress, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, progress])
+  const cx = remPx(x)
+  const cy = remPx(y)
+  const end = remPx(fall)
+  const sway = remPx('0.3')
+  const down = (k) => cy + (end - cy) * k
+  const w = remPx(size)
+  const h = w * (fat ? 0.8 : 0.5)
+  const deg = Number.parseFloat(rot) || 0
+  const translateX = progress.interpolate({
+    inputRange: CONFETTI_T,
+    outputRange: [0, cx * 0.1, cx * 0.2, cx * 0.4, cx * 0.6, cx * 0.72, cx * 0.82 + sway, cx * 0.9, cx * 0.93, cx * 0.96 - sway, cx],
+  })
+  const translateY = progress.interpolate({
+    inputRange: CONFETTI_T,
+    outputRange: [0, cy * 0.28, cy * 0.54, cy * 0.87, cy, down(0.09), down(0.25), down(0.47), down(0.6), down(0.72), end],
+  })
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${deg}deg`] })
+  const scaleX = progress.interpolate({
+    inputRange: [0, 0.08, 0.16, 0.25, 0.4, 0.55, 0.7, 0.85, 1],
+    outputRange: [1, 0.6, 1, 0.3, 1, 0.25, 1, 0.35, 1],
+  })
+  const opacity = progress.interpolate({ inputRange: [0, 0.04, 0.78, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: -h / 2,
+        width: w,
+        height: h,
+        borderRadius: 1,
+        backgroundColor: color,
+        opacity,
+        transform: [{ translateX }, { translateY }, { rotate }, { scaleX }],
+      }}
+    />
+  )
+}
+
+// Two lobes on a turned square, like the web .di-heart. The square sits a
+// little low so the whole heart centers on the pop.
+function HeartShape({ px, color, shine = false }) {
+  const s = px * 0.585
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: px * 0.2075,
+        top: px * 0.25,
+        width: s,
+        height: s,
+        backgroundColor: color,
+        transform: [{ rotate: '-45deg' }],
+      }}
+    >
+      <View style={{ position: 'absolute', top: -s / 2, left: 0, width: s, height: s, borderRadius: s / 2, backgroundColor: color }} />
+      <View style={{ position: 'absolute', top: 0, left: s / 2, width: s, height: s, borderRadius: s / 2, backgroundColor: color }} />
+      {shine ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: -s * 0.28,
+            left: s * 0.34,
+            width: s * 0.32,
+            height: s * 0.2,
+            borderRadius: s,
+            backgroundColor: 'rgba(255, 255, 255, 0.45)',
+          }}
+        />
+      ) : null}
+    </View>
+  )
+}
+
+const HEART_T = [0, 0.08, 0.14, 0.22, 0.3, 0.38, 0.46, 0.54, 0.6, 0.64, 0.72, 0.8, 1]
+const HEART_SCALE = [0.2, 0.75, 1.22, 0.92, 1, 0.94, 1.2, 0.97, 1, 0.95, 1.16, 1, 1.02]
+
+function Heart({ delay, size, color }) {
+  const progress = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(progress, { toValue: 1, duration: 1300, easing: Easing.linear, useNativeDriver: true }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, progress])
+  const px = remPx(size || '3')
+  const scale = progress.interpolate({ inputRange: HEART_T, outputRange: HEART_SCALE })
+  const translateY = progress.interpolate({ inputRange: [0, 0.8, 1], outputRange: [0, 0, -px * 0.5] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.08, 0.8, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      // Fade the heart as one shape; per-child alpha shows the square seam.
+      needsOffscreenAlphaCompositing
+      renderToHardwareTextureAndroid
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        opacity,
+        shadowColor: color,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 7,
+        transform: [{ translateY }, { scale }],
+      }}
+    >
+      <HeartShape px={px} color={color} shine />
+    </Animated.View>
+  )
+}
+
+function HeartBit({ delay, x, y, size, color }) {
+  const progress = useTimed(delay, 900)
+  const px = remPx(size || '0.6')
+  const hx = remPx(x)
+  const hy = remPx(y)
+  const translateX = progress.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, hx, hx] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.45, 0.6, 1], outputRange: [0, hy, hy, hy - remPx('0.9')] })
+  const scale = progress.interpolate({ inputRange: [0, 0.45, 0.6, 1], outputRange: [0, 1.25, 0.95, 0.9] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.6, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      needsOffscreenAlphaCompositing
+      renderToHardwareTextureAndroid
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        opacity,
+        transform: [{ translateX }, { translateY }, { scale }],
+      }}
+    >
+      <HeartShape px={px} color={color} />
+    </Animated.View>
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -1060,6 +1247,23 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
     )
   }
   if (bit.flip) return <FlipCard delay={delay} hops={bit.hops} colors={colors} />
+  if (bit.puff) return <Puff delay={delay} size={bit.size} color={on} />
+  if (bit.confetti) {
+    return (
+      <Confetti
+        delay={delay}
+        x={bit.x}
+        y={bit.y}
+        fall={bit.fall}
+        rot={bit.rot}
+        size={bit.size}
+        fat={bit.fat}
+        color={confettiColor(bit.tone, colors)}
+      />
+    )
+  }
+  if (bit.heart) return <Heart delay={delay} size={bit.size} color={on} />
+  if (bit.heartBit) return <HeartBit delay={delay} x={bit.x} y={bit.y} size={bit.size} color={toneColor(bit.tone, colors)} />
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />
   return <Pip delay={delay} color={on} />
 }

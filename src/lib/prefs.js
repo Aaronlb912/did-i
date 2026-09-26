@@ -62,6 +62,9 @@ function cleanPrefs(raw) {
         'ember',
         'frost',
         'pulse',
+        'jade',
+        'indigo',
+        'clay',
       ].includes(id)
     ) {
       next.widgetLookId = id
