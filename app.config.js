@@ -112,6 +112,8 @@ export default ({ config }) => ({
         ios: {
           deploymentTarget: '17.0',
           newArchEnabled: true,
+          // Xcode 27 will not launch an app that still creates its window in the app delegate.
+          enableSceneSupport: true,
         },
       },
     ],

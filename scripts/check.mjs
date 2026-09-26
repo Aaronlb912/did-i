@@ -996,6 +996,9 @@ test('the tonight widget can draw a question without the app', () => {
     containerBackground: (style) => style,
     containerRelativeFrame: () => ({ fill: 'widget' }),
     clipShape: (shape, radius) => ({ shape, radius }),
+    containerShape: (shape) => shape,
+    strokeBorder: (params) => params,
+    layoutPriority: (n) => ({ layoutPriority: n }),
     clipped: () => ({ clipped: true }),
     buttonStyle: (style) => style,
     buttonBorderShape: (shape, radius) => ({ shape, radius }),
@@ -1037,6 +1040,7 @@ test('the tonight widget can draw a question without the app', () => {
   assert.ok(drawn.includes('Did I lock the door?'), drawn.slice(0, 400))
   assert.ok(drawn.includes('Home'))
   assert.ok(drawn.includes('widget'), 'the card fills the widget')
+  assert.ok(drawn.includes('containerRelativeShape'), 'the ring follows the system widget corner')
   assert.ok(drawn.includes('"clipped":true'), 'the widget clips to its container')
   assert.equal((drawn.match(/"fill":"widget"/g) || []).length, 1, 'only the outer stack uses the widget frame')
   assert.ok(drawn.includes('center'), 'the question is centered')
@@ -1112,6 +1116,10 @@ test('the tonight widget can draw a question without the app', () => {
   const mixedTree = fn(mixed, env)
   const mixedDrawn = JSON.stringify(mixedTree)
   assert.ok(mixedDrawn.includes('"text":"Home"'), 'header is the showing question tag')
+  assert.ok(mixedDrawn.includes('"size":13'), 'the tag is larger on the medium widget')
+  const smallTag = JSON.stringify(fn(mixed, { widgetFamily: 'systemSmall', widgetRenderingMode: 'fullColor' }))
+  assert.ok(smallTag.includes('"text":"Home"'), 'the tag shows on the small widget')
+  assert.ok(smallTag.includes('"size":11'), 'the tag is smaller on the small widget')
   assert.ok(!mixedDrawn.includes('react.fragment'), 'no fragments in the widget tree')
   assert.ok(mixedDrawn.includes('"minimumScaleFactor"'), 'the question shrinks to fit instead of clipping')
   const peek = findPress(mixedTree, 'next:door')
