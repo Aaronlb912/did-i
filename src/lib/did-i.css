@@ -7594,3 +7594,140 @@ html[data-reduce-motion] *::after,
   transition-duration: 1ms !important;
   scroll-behavior: auto !important;
 }
+
+/* Shop hub: drop carousel, side-scrolling rows, price tags. */
+.di-drop-carousel {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.4rem 0 1.1rem;
+}
+
+.di-drop-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  column-gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: calc(var(--di-r) + 4px);
+}
+
+.di-drop-track::-webkit-scrollbar {
+  display: none;
+}
+
+.di-drop-slide {
+  scroll-snap-align: start;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1.5px solid var(--di-line);
+  border-radius: calc(var(--di-r) + 4px);
+  background: var(--di-panel);
+}
+
+.di-drop-slide.is-coming {
+  border-color: var(--di-on);
+}
+
+.di-drop-kicker {
+  margin: 0 0 0.2rem;
+  color: var(--di-on);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.di-drop-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.di-drop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.di-drop-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.di-drop-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--di-line);
+  cursor: pointer;
+}
+
+.di-drop-dot.is-on {
+  background: var(--di-on);
+}
+
+.di-shop-row-kind {
+  margin-bottom: 1rem;
+}
+
+.di-shop-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 6.6rem;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--di-line) transparent;
+}
+
+.di-shop-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  background: var(--di-panel-2);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.di-shop-tile strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-shop-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.di-shop-tag.is-owned {
+  color: var(--di-ink-dim);
+}
+
+.di-shop-tag .di-gem-icon,
+.di-shop-tag .di-coin-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: 0 0 0.8rem;
+}

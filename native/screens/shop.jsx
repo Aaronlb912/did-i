@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
@@ -31,10 +31,8 @@ import {
   isGemLook,
   nextCheerStage,
   normalizePurse,
-  comingDrop,
-  recentBuddies,
-  recentCheers,
-  recentLooks,
+  dropSlides,
+  shopTag,
   wearBuddy,
   wearCheer,
   wearCheerStage,
@@ -57,7 +55,7 @@ import {
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
 import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
+import { CoinIcon, GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { kitTabDefault } from '../../src/lib/kit-tab.js'
 import { hallColors, fonts } from '../theme.js'
@@ -145,71 +143,142 @@ function LookPreviewCard({ look, colors, theme }) {
   )
 }
 
-function ShopPromoShelf({ cap, allLabel, onAll, colors, children }) {
+function tileChip(type, id, colors) {
+  if (type === 'look') return <LookChip id={id} colors={colors} />
+  if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
+  return <BuddyChip id={id} />
+}
+
+function tileName(type, id) {
+  if (type === 'look') return t(lookText(id, 'name'))
+  if (type === 'cheer') return t(cheerText(id, 'name'))
+  return t(buddyText(id, 'name'))
+}
+
+function PriceTag({ tag, colors }) {
+  if (tag.owned) {
+    return <Text style={[styles.tagText, { color: colors.inkDim }]}>{t('shop.owned')}</Text>
+  }
+  const n = tag.gems || tag.coins
+  if (!n) return null
   return (
-    <View style={styles.promoShelf}>
-      <View style={styles.promoHead}>
-        <Cap colors={colors}>{cap}</Cap>
-        {onAll ? (
-          <Pressable onPress={onAll} hitSlop={8}>
-            <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <View style={[styles.promoGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>{children}</View>
+    <View style={styles.tagRow}>
+      {tag.gems ? <GemIcon size={12} /> : <CoinIcon size={12} />}
+      <Text style={[styles.tagText, { color: colors.ink }]}>{n}</Text>
     </View>
   )
 }
 
-function ShopPromoTile({ chip, name, onPress, colors }) {
+function ShopTile({ type, item, purse, colors, onTile, style }) {
+  const name = tileName(type, item.id)
+  const tag = shopTag(purse, type, item)
   return (
-    <Pressable onPress={onPress} style={[styles.promoTile, { borderColor: colors.line }]}>
-      <View style={styles.promoChip}>{chip}</View>
-      <Text style={[styles.promoName, { color: colors.ink }]} numberOfLines={2}>{name}</Text>
+    <Pressable
+      onPress={() => onTile(type, item)}
+      accessibilityRole="button"
+      accessibilityLabel={t('shop.see', { name })}
+      style={[styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style]}
+    >
+      <View style={styles.tileChip}>{tileChip(type, item.id, colors)}</View>
+      <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
+        {name}
+      </Text>
+      <PriceTag tag={tag} colors={colors} />
     </Pressable>
   )
 }
 
-// Next drop, the week before it goes on sale. Tiles preview; nothing to buy yet.
-function ComingShelf({ colors, previewLook, onPeekLook, onPeekBuddy }) {
-  const drop = comingDrop()
-  if (!drop) return null
+function slideHead(slide) {
+  if (slide.kind === 'coming') {
+    return {
+      kicker: slide.days <= 1 ? t('shop.tomorrow') : t('shop.inDays', { n: slide.days }),
+      title: t('shop.coming', { date: formatBoardDate(slide.date) }),
+    }
+  }
+  if (slide.kind === 'drop') return { kicker: '', title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
+  return { kicker: '', title: t('shop.freshTitle') }
+}
+
+// The drop carousel: the Coming drop first, then recent drops. Swipe sideways.
+function DropCarousel({ slides, purse, colors, onTile }) {
+  const [width, setWidth] = useState(0)
+  const [at, setAt] = useState(0)
+  if (!slides.length) return null
   return (
-    <ShopPromoShelf cap={t('shop.coming', { date: formatBoardDate(drop.date) })} colors={colors}>
-      {drop.looks.map((item) => (
-        <ShopPromoTile
-          key={`look-${item.id}`}
-          colors={colors}
-          chip={<LookChip id={item.id} colors={colors} />}
-          name={t(lookText(item.id, 'name'))}
-          onPress={() => {
-            onPeekBuddy('')
-            onPeekLook((prev) => (prev === item.id ? '' : item.id))
-          }}
-        />
-      ))}
-      {drop.cheers.map((item) => (
-        <ShopPromoTile
-          key={`cheer-${item.id}`}
-          colors={colors}
-          chip={<CheerChip id={item.id} stage={1} colors={colors} />}
-          name={t(cheerText(item.id, 'name'))}
-          onPress={() => fireCheer(item.id, 1, previewLook, undefined, true)}
-        />
-      ))}
-      {drop.buddies.map((item) => (
-        <ShopPromoTile
-          key={`buddy-${item.id}`}
-          colors={colors}
-          chip={<BuddyChip id={item.id} />}
-          name={t(buddyText(item.id, 'name'))}
-          onPress={() => {
-            onPeekLook('')
-            onPeekBuddy(item.id)
-          }}
-        />
-      ))}
-    </ShopPromoShelf>
+    <View style={styles.carousel} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {width ? (
+        <ScrollView
+          horizontal
+          pagingEnabled
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / width))}
+        >
+          {slides.map((slide, i) => {
+            const head = slideHead(slide)
+            const coming = slide.kind === 'coming'
+            return (
+              <View
+                key={`${slide.kind}-${slide.date}`}
+                accessibilityLabel={t('shop.slideN', { n: i + 1, total: slides.length })}
+                style={[
+                  styles.slide,
+                  { width, borderColor: coming ? colors.on : colors.line, backgroundColor: colors.panel },
+                ]}
+              >
+                {head.kicker ? <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker}</Text> : null}
+                <Text style={[styles.slideTitle, { color: colors.ink }]}>{head.title}</Text>
+                <View style={styles.slideGrid}>
+                  {slide.items.map(({ type, item }) => (
+                    <ShopTile
+                      key={`${type}-${item.id}`}
+                      type={type}
+                      item={item}
+                      purse={purse}
+                      colors={colors}
+                      onTile={onTile}
+                      style={styles.slideTile}
+                    />
+                  ))}
+                </View>
+              </View>
+            )
+          })}
+        </ScrollView>
+      ) : null}
+      {slides.length > 1 ? (
+        <View style={styles.dots}>
+          {slides.map((slide, i) => (
+            <View
+              key={`dot-${slide.kind}-${slide.date}`}
+              style={[styles.dot, { backgroundColor: i === at ? colors.on : colors.line }]}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+// Every item of one kind, side-scrolling, not-owned first.
+function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
+  const sorted = [...list].sort(
+    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
+  )
+  return (
+    <View style={styles.promoShelf}>
+      <View style={styles.promoHead}>
+        <Cap colors={colors}>{cap}</Cap>
+        <Pressable onPress={onAll} hitSlop={8}>
+          <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
+        </Pressable>
+      </View>
+      <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowScroll}>
+        {sorted.map((item) => (
+          <ShopTile key={item.id} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} />
+        ))}
+      </ScrollView>
+    </View>
   )
 }
 
@@ -385,6 +454,20 @@ export function ShopScreen({ book, onChange }) {
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
+
+  function peekAt(type, item) {
+    if (type === 'look') {
+      setPeekBuddy('')
+      setPeekLook((prev) => (prev === item.id ? '' : item.id))
+    } else if (type === 'cheer') {
+      setPeekBuddy('')
+      fireCheer(item.id, 1, previewLook, undefined, true)
+    } else {
+      setPeekLook('')
+      setPeekBuddy((prev) => (prev === item.id ? '' : item.id))
+    }
+  }
+
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined}>
       <PageTitle colors={colors}>{t('shop.title')}</PageTitle>
@@ -393,96 +476,16 @@ export function ShopScreen({ book, onChange }) {
       </View>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
 
-      <ComingShelf colors={colors} previewLook={previewLook} onPeekLook={setPeekLook} onPeekBuddy={setPeekBuddy} />
-
-      <ShopPromoShelf
-        cap={t('shop.promoLooks')}
-        allLabel={t('shop.allLooks')}
-        onAll={() => goHash('/shop/looks')}
-        colors={colors}
-      >
-        {recentLooks(2).map((item) => (
-          <ShopPromoTile
-            key={item.id}
-            colors={colors}
-            chip={<LookChip id={item.id} colors={colors} />}
-            name={t(lookText(item.id, 'name'))}
-            onPress={() => {
-              setPeekBuddy('')
-              setPeekLook((prev) => (prev === item.id ? '' : item.id))
-            }}
-          />
-        ))}
-      </ShopPromoShelf>
-
-      <ShopPromoShelf
-        cap={t('shop.promoCheers')}
-        allLabel={t('shop.allCheers')}
-        onAll={() => goHash('/shop/cheers')}
-        colors={colors}
-      >
-        {recentCheers(2).map((item) => (
-          <ShopPromoTile
-            key={item.id}
-            colors={colors}
-            chip={<CheerChip id={item.id} stage={1} colors={colors} />}
-            name={t(cheerText(item.id, 'name'))}
-            onPress={() => {
-              setPeekBuddy('')
-              fireCheer(item.id, 1, previewLook, undefined, true)
-            }}
-          />
-        ))}
-      </ShopPromoShelf>
-
-      <ShopPromoShelf
-        cap={t('shop.promoBuddies')}
-        allLabel={t('shop.allBuddies')}
-        onAll={() => goHash('/shop/buddies')}
-        colors={colors}
-      >
-        {recentBuddies(2).map((item) => (
-          <ShopPromoTile
-            key={item.id}
-            colors={colors}
-            chip={<BuddyChip id={item.id} />}
-            name={t(buddyText(item.id, 'name'))}
-            onPress={() => {
-              setPeekLook('')
-              setPeekBuddy(item.id)
-            }}
-          />
-        ))}
-      </ShopPromoShelf>
+      <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={peekAt} />
 
       {peekLook && isGemLook(peekLook) ? <LookPreviewCard look={peekLook} colors={colors} theme={theme} /> : null}
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
 
+      <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={peekAt} />
+      <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={peekAt} />
+      <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={peekAt} />
+
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <ShopDoor
-          colors={colors}
-          preview={<LookChip id={purse.lookOn} colors={colors} />}
-          title={t('shop.looks')}
-          note={t('shop.looksDoor')}
-          meta={t('shop.ownedN', { n: lookCount })}
-          onPress={() => goHash('/shop/looks')}
-        />
-        <ShopDoor
-          colors={colors}
-          preview={<CheerChip id={purse.cheerOn} stage={1} colors={colors} />}
-          title={t('shop.cheers')}
-          note={t('shop.cheersDoor')}
-          meta={t('shop.ownedN', { n: cheerCount })}
-          onPress={() => goHash('/shop/cheers')}
-        />
-        <ShopDoor
-          colors={colors}
-          preview={<BuddyChip id={purse.buddyOn || BUDDIES[0].id} />}
-          title={t('shop.buddies')}
-          note={t('shop.buddiesDoor')}
-          meta={t('shop.ownedN', { n: buddyCount })}
-          onPress={() => goHash('/shop/buddies')}
-        />
         <ShopDoor
           colors={colors}
           preview={<GemDoorChip colors={colors} />}
@@ -492,9 +495,10 @@ export function ShopScreen({ book, onChange }) {
         />
         <ShopDoor
           colors={colors}
-          preview={<LookChip id="ink" colors={colors} />}
+          preview={<LookChip id={purse.lookOn} colors={colors} />}
           title={t('shop.kit')}
           note={t('shop.kitDoor')}
+          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount })}
           onPress={() => goHash('/kit')}
         />
       </View>
@@ -1305,27 +1309,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   promoShelf: { gap: 8, marginTop: 4 },
+  carousel: { gap: 8, marginTop: 4 },
+  slide: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 4 },
+  slideKicker: { fontFamily: fonts.ui, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  slideTitle: { fontFamily: fonts.ui, fontSize: 20, fontWeight: '800', marginBottom: 6 },
+  slideGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slideTile: { width: '31%', flexGrow: 1 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  rowScroll: { gap: 8, paddingRight: 4 },
+  rowTile: { width: 104 },
+  tile: { borderWidth: 1, borderRadius: 12, padding: 10, gap: 6, alignItems: 'center' },
+  tileChip: { alignSelf: 'center' },
+  tileName: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tagText: { fontFamily: fonts.ui, fontSize: 12, fontWeight: '600' },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   promoAll: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' },
-  promoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-  },
-  promoTile: {
-    width: '47%',
-    flexGrow: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-    minWidth: 120,
-  },
-  promoChip: { alignSelf: 'flex-start' },
-  promoName: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+
+
   doorCard: {
     borderWidth: 1,
     borderRadius: 12,

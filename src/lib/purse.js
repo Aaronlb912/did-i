@@ -82,6 +82,58 @@ export function comingDrop(today = boardDate(new Date())) {
   return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(ALL_BUDDIES) }
 }
 
+// Slides for the shop's drop carousel, first to last: the Coming drop (if in
+// its week), then released drops newest first. Before any dated drop exists,
+// one "new in the shop" slide of the newest items keeps the carousel full.
+export const DROP_SLIDES_MAX = 4
+
+function daysUntil(iso, today) {
+  const ms = Date.parse(`${iso}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)
+  return Math.round(ms / 86400000)
+}
+
+function slideItems(date) {
+  const at = (list, type) => list.filter((item) => item.from === date).map((item) => ({ type, item }))
+  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy')]
+}
+
+export function dropSlides(today = boardDate(new Date())) {
+  const slides = []
+  const coming = comingDrop(today)
+  if (coming) {
+    slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date) })
+  }
+  const dates = [...new Set([...LOOKS, ...CHEERS, ...BUDDIES].map((item) => item.from).filter(Boolean))]
+    .filter((date) => date <= today)
+    .sort()
+    .reverse()
+  for (const date of dates.slice(0, DROP_SLIDES_MAX)) {
+    slides.push({ kind: 'drop', date, items: slideItems(date) })
+  }
+  if (!dates.length) {
+    slides.push({
+      kind: 'fresh',
+      date: '',
+      items: [
+        ...recentLooks(2).map((item) => ({ type: 'look', item })),
+        ...recentCheers(2).map((item) => ({ type: 'cheer', item })),
+        ...recentBuddies(2).map((item) => ({ type: 'buddy', item })),
+      ],
+    })
+  }
+  return slides
+}
+
+// What a tile says under its name: owned, or its price.
+export function shopTag(purse, type, item) {
+  const owned =
+    (type === 'look' && purse.looks.includes(item.id)) ||
+    (type === 'cheer' && purse.cheers.includes(item.id)) ||
+    (type === 'buddy' && purse.buddies.includes(item.id))
+  if (owned) return { owned: true, gems: 0, coins: 0 }
+  return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
+}
+
 // Everything, released or not, for checks and the drop calendar.
 export const SHOP_CALENDAR = { cheers: ALL_CHEERS, buddies: ALL_BUDDIES, looks: ALL_LOOKS }
 

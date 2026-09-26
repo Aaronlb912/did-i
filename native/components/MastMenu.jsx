@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
+  cancelAnimation,
   interpolate,
   useAnimatedProps,
   useAnimatedStyle,
@@ -233,9 +234,16 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
       return undefined
     }
     progress.value = reduce ? 0 : withTiming(0, { duration: CLOSE_MS, easing: CLOSE_EASE })
-    const timer = setTimeout(() => shut.current(), reduce ? 0 : CLOSE_MS)
+    // Stop the animation before the Modal unmounts; a spring still running on
+    // views that are gone floods the UI thread with failed updates and freezes the app.
+    const timer = setTimeout(() => {
+      cancelAnimation(progress)
+      shut.current()
+    }, reduce ? 0 : CLOSE_MS)
     return () => clearTimeout(timer)
   }, [closing, panelH, progress, reduce])
+
+  useEffect(() => () => cancelAnimation(progress), [progress])
 
   const bw = anchor.w
   const bh = anchor.h

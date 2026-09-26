@@ -318,31 +318,9 @@ export function gemGlowHostStyle(look, theme = 'dark') {
   }
 }
 
-export function gemFrameStyle(look, theme = 'dark') {
-  const tone = gemLookTone(look, theme)
-  if (!tone) return undefined
-  if (look === 'glow') {
-    if (Platform.OS !== 'android') return undefined
-    return {
-      borderWidth: 1,
-      borderColor: tone.ring,
-      shadowColor: tone.accent,
-      shadowOpacity: 0.28,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 0 },
-      elevation: 4,
-    }
-  }
-  return {
-    shadowColor: tone.accent,
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: Platform.OS === 'android' ? 4 : 3,
-    ...(Platform.OS === 'android'
-      ? { borderWidth: 1, borderColor: tone.ring }
-      : null),
-  }
+// Looks no longer outline or glow the screen edge; the frame stays plain.
+export function gemFrameStyle() {
+  return undefined
 }
 
 export function gemMeterStyle(look, theme = 'dark') {
