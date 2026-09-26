@@ -17,8 +17,13 @@ import {
   didQuestion,
   duplicateLamp,
   lampBuzzes,
+  hasAnyTopic,
+  joinTopics,
   lampNotifyOn,
   prepQuestionRows,
+  shelfTopics,
+  topicLabel,
+  topicsOf,
   shortFromQuestion,
   shortLabel,
 } from '../../src/lib/board-json.js'
@@ -149,12 +154,15 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const shelf = boards.length ? boards : [book]
   const rows = taggedLamps(shelf, tagId)
   const [deadlineOnly, setDeadlineOnly] = useState(false)
+  const [topicPicks, setTopicPicks] = useState([])
+  const topics = shelfTopics(shelf)
+  const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = rows.some((row) => activeDeadline(row.lamp, dateIso))
-  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived), {
+  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks)), {
     dateIso,
     deadlineOnly,
   })
-  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived), {
+  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived && hasAnyTopic(row.lamp, picks)), {
     dateIso,
     deadlineOnly,
   })
@@ -162,7 +170,16 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   return (
     <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
-      <TagFilter boards={shelf} tagId={tagId} onTag={onTag} now={clock} colors={colors} />
+      <TagFilter
+        boards={shelf}
+        tagId={tagId}
+        onTag={onTag}
+        now={clock}
+        colors={colors}
+        topics={topics}
+        topicPicks={picks}
+        onTopics={setTopicPicks}
+      />
 
       {hasDeadlines ? (
         <>
@@ -191,6 +208,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           colors={colors}
           onOpen={onOpen}
         />
+      ) : picks.length ? (
+        <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
       ) : deadlineOnly ? (
         <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
       ) : (
@@ -298,12 +317,12 @@ function reminderLine(draft) {
   return t('hang.remindAny')
 }
 
-function Pill({ label, on, onPress, colors, dim }) {
+function Pill({ label, on, onPress, colors, dim, radio }) {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
+      accessibilityRole={radio ? 'radio' : 'button'}
+      accessibilityState={radio ? { checked: Boolean(on) } : { selected: on }}
       style={[
         styles.pill,
         {
@@ -317,6 +336,60 @@ function Pill({ label, on, onPress, colors, dim }) {
         {label}
       </Text>
     </Pressable>
+  )
+}
+
+// Topics: tap any you have used to add or remove it, or type a new one.
+function TopicPick({ value, known, onChange, colors }) {
+  const [draft, setDraft] = useState('')
+  const mine = topicsOf({ kind: value })
+  const lower = mine.map((topic) => topic.toLowerCase())
+  const choices = [...mine, ...known.filter((topic) => !lower.includes(topic.toLowerCase()))]
+  function flip(topic) {
+    const on = lower.includes(topic.toLowerCase())
+    onChange(joinTopics(on ? mine.filter((item) => item.toLowerCase() !== topic.toLowerCase()) : [...mine, topic]))
+  }
+  function addTyped() {
+    const topic = draft.trim()
+    if (topic) onChange(joinTopics([...mine, topic]))
+    setDraft('')
+  }
+  return (
+    <View style={styles.foldField}>
+      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kind')}</Text>
+      {choices.length ? (
+        <View style={styles.pillRow}>
+          {choices.map((topic) => (
+            <Pill
+              key={topic.toLowerCase()}
+              label={topicLabel(topic)}
+              on={lower.includes(topic.toLowerCase())}
+              onPress={() => flip(topic)}
+              colors={colors}
+            />
+          ))}
+        </View>
+      ) : null}
+      <TextInput
+        value={draft}
+        onChangeText={(text) => {
+          // A comma finishes a topic, like pressing done.
+          if (text.includes(',')) {
+            onChange(joinTopics([...mine, ...text.split(',')]))
+            setDraft('')
+            return
+          }
+          setDraft(text)
+        }}
+        onSubmitEditing={addTyped}
+        onBlur={addTyped}
+        placeholder={t('hang.topicAdd')}
+        placeholderTextColor={colors.inkDim}
+        returnKeyType="done"
+        accessibilityLabel={t('hang.topicAdd')}
+        style={[styles.foldInput, { borderColor: colors.line, backgroundColor: colors.panel, color: colors.ink }]}
+      />
+    </View>
   )
 }
 
@@ -595,7 +668,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
             onToggle={() => fold('tag')}
             colors={colors}
           >
-            <View style={styles.pillRow}>
+            <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
+            <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tag')}>
               {hang.liveTags.map((item) => (
                 <Pill
                   key={item.id}
@@ -603,6 +677,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
                   on={hang.isTagSelected(item.title)}
                   onPress={() => hang.setTagTitle(item.title)}
                   colors={colors}
+                  radio
                 />
               ))}
               {hang.knownTag ? (
@@ -625,7 +700,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
                 <Text style={[styles.foldCap, styles.foldCapGap, { color: colors.inkDim }]}>
                   {t('hang.tagLater')}
                 </Text>
-                <View style={styles.pillRow}>
+                <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tagLater')}>
                   {hang.parkedTags.map((item) => (
                     <Pill
                       key={item.id}
@@ -634,6 +709,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
                       onPress={() => hang.setTagTitle(item.title)}
                       colors={colors}
                       dim
+                      radio
                     />
                   ))}
                 </View>
@@ -695,11 +771,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
               maxLength={24}
               colors={colors}
             />
-            <FoldInput
-              label={t('hang.kind')}
+            <TopicPick
               value={draft.kind}
-              onChangeText={(value) => hang.change('kind', value)}
-              placeholder={t('hang.kindPh')}
+              known={shelfTopics(boards.length ? boards : [book])}
+              onChange={(value) => hang.change('kind', value)}
               colors={colors}
             />
             <FoldInput

@@ -119,6 +119,87 @@ export function BuddyArt({ id, className = '' }) {
     )
   }
 
+  if (id === 'ant') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <line x1="20" y1="15" x2="17" y2="8" stroke="#7a3526" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="17" y1="8" x2="12" y2="6" stroke="#7a3526" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="28" y1="15" x2="31" y2="8" stroke="#7a3526" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="31" y1="8" x2="36" y2="6" stroke="#7a3526" strokeWidth="1.4" strokeLinecap="round" />
+        <ellipse cx="12" cy="6" rx="1.4" ry="1.4" fill="#7a3526" />
+        <ellipse cx="36" cy="6" rx="1.4" ry="1.4" fill="#7a3526" />
+        <line x1="20" y1="29" x2="12" y2="25" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="12" y1="25" x2="8" y2="28" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="19.5" y1="31" x2="11" y2="32.5" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="11" y1="32.5" x2="7" y2="37" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="20" y1="33" x2="13" y2="38" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="13" y1="38" x2="10" y2="44" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="28" y1="29" x2="36" y2="25" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="36" y1="25" x2="40" y2="28" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="28.5" y1="31" x2="37" y2="32.5" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="37" y1="32.5" x2="41" y2="37" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="28" y1="33" x2="35" y2="38" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="35" y1="38" x2="38" y2="44" stroke="#7a3526" strokeWidth="1.5" strokeLinecap="round" />
+        <ellipse cx="24" cy="43" rx="9" ry="8" fill="#9c4431" />
+        <line x1="16.5" y1="41" x2="31.5" y2="41" stroke="#7a3526" strokeWidth="1.1" strokeLinecap="round" />
+        <line x1="16" y1="45" x2="32" y2="45" stroke="#7a3526" strokeWidth="1.1" strokeLinecap="round" />
+        <ellipse cx="20.5" cy="39.5" rx="2.6" ry="1.5" fill="#ffffff" opacity="0.2" />
+        <ellipse cx="24" cy="31" rx="5" ry="4.5" fill="#b5533c" />
+        <ellipse cx="24" cy="20" rx="8.5" ry="7.5" fill="#b5533c" />
+        <ellipse cx="21" cy="16.8" rx="2.2" ry="1.2" fill="#ffffff" opacity="0.25" />
+        <ellipse cx="19.6" cy="19.8" rx="2.4" ry="2.8" fill="#2d241c" />
+        <ellipse cx="28.4" cy="19.8" rx="2.4" ry="2.8" fill="#2d241c" />
+        <ellipse cx="20.2" cy="19" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="29" cy="19" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="22.2" cy="26.4" rx="1.3" ry="0.9" fill="#7a3526" />
+        <ellipse cx="25.8" cy="26.4" rx="1.3" ry="0.9" fill="#7a3526" />
+      </svg>
+    )
+  }
+
+  if (id === 'possum') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <line x1="37" y1="41" x2="43" y2="38" stroke="#f2a7b4" strokeWidth="2.2" strokeLinecap="round" />
+        <line x1="43" y1="38" x2="43.5" y2="33" stroke="#f2a7b4" strokeWidth="2.2" strokeLinecap="round" />
+        <ellipse cx="13" cy="19" rx="5" ry="5.5" fill="#3a3438" />
+        <ellipse cx="35" cy="19" rx="5" ry="5.5" fill="#3a3438" />
+        <ellipse cx="13" cy="19.5" rx="3" ry="3.4" fill="#f2a7b4" />
+        <ellipse cx="35" cy="19.5" rx="3" ry="3.4" fill="#f2a7b4" />
+        <ellipse cx="24" cy="32" rx="15" ry="13.5" fill="#9b98a3" />
+        <ellipse cx="24" cy="29" rx="10.5" ry="9" fill="#f4f1ec" />
+        <ellipse cx="24" cy="34.5" rx="5.5" ry="4.2" fill="#f4f1ec" />
+        <ellipse cx="19" cy="28" rx="3.2" ry="3.6" fill="#5b5660" />
+        <ellipse cx="29" cy="28" rx="3.2" ry="3.6" fill="#5b5660" />
+        <ellipse cx="19" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e" />
+        <ellipse cx="29" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e" />
+        <ellipse cx="19.6" cy="27.2" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="29.6" cy="27.2" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="24" cy="37.2" rx="1.9" ry="1.4" fill="#e07a8a" />
+        <ellipse cx="15" cy="33.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.6" />
+        <ellipse cx="33" cy="33.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.6" />
+        <ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#9b98a3" />
+        <ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#9b98a3" />
+        <ellipse cx="17" cy="45" rx="3" ry="2" fill="#f2a7b4" />
+        <ellipse cx="31" cy="45" rx="3" ry="2" fill="#f2a7b4" />
+      </svg>
+    )
+  }
+
   if (id === 'frog') {
     return (
       <svg

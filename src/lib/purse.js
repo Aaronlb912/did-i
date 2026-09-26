@@ -32,11 +32,15 @@ const ALL_CHEERS = [
   { id: 'heart', gems: CHEER_GEMS, from: '2026-10-09' },
 ]
 
+export const FREE_BUDDY = 'ant'
+
 const ALL_BUDDIES = [
+  { id: 'ant', gems: 0 },
   { id: 'cat', gems: BUDDY_GEMS },
   { id: 'dog', gems: BUDDY_GEMS },
   { id: 'rabbit', gems: BUDDY_GEMS },
   { id: 'owl', gems: BUDDY_GEMS },
+  { id: 'possum', gems: BUDDY_GEMS },
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
 ]
 
@@ -266,9 +270,11 @@ export function normalizePurse(book) {
     : []
   const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
   const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
-  const buddies = Array.isArray(book?.buddies)
+  const buddyList = Array.isArray(book?.buddies)
     ? book.buddies.map((id) => String(id)).filter((id) => BUDDY_IDS.has(id))
     : []
+  // Everyone has the ant, like the lime look and cheer.
+  const buddies = buddyList.includes(FREE_BUDDY) ? buddyList : [FREE_BUDDY, ...buddyList]
   const buddyOn =
     BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
   const cheerUses = asCount(book?.cheerUses)

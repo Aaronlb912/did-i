@@ -48,7 +48,8 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
-import { SHOP_CALENDAR, isLive, isTeased } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
+import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -88,7 +89,7 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
-import { leftoverOn, taggedDue } from '../src/lib/tags.js'
+import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { stampWhen } from '../src/lib/hall-pages.js'
@@ -859,6 +860,37 @@ test('widget props list every tag and merge answers onto the right one', () => {
   })
   assert.equal(merged.boards.find((row) => row.id === 'tag-a')?.answers?.[0]?.lampId, 'l1')
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
+})
+
+test('a question can have several topics and the list filters by them', () => {
+  assert.deepEqual(topicsOf({ kind: 'Pets, morning ,pets,, Pills' }), ['Pets', 'morning', 'Pills'], 'trimmed, no repeats')
+  assert.equal(joinTopics(['Pets', 'Morning', 'pets']), 'Pets, Morning')
+  const a = { kind: 'Pets, Morning' }
+  const b = { kind: 'House' }
+  assert.ok(hasAnyTopic(a, []), 'no pick shows everything')
+  assert.ok(hasAnyTopic(a, ['morning']), 'match ignores case')
+  assert.ok(!hasAnyTopic(b, ['Pets']))
+  assert.ok(hasAnyTopic(b, ['Pets', 'House']), 'any picked topic matches')
+  assert.deepEqual(shelfTopics([{ lamps: [a, b, { kind: 'pets' }] }]), ['House', 'Morning', 'Pets'])
+})
+
+test('everyone owns the ant for free and the possum costs gems', () => {
+  assert.equal(FREE_BUDDY, 'ant')
+  assert.ok(normalizePurse({}).buddies.includes('ant'), 'a new shelf has the ant')
+  assert.ok(normalizePurse({ buddies: ['cat'] }).buddies.includes('ant'), 'an old shelf gets the ant too')
+  assert.ok(!normalizePurse({}).buddies.includes('possum'), 'nobody starts with the possum')
+  assert.equal(BUDDIES.find((item) => item.id === 'ant').gems, 0)
+  assert.ok(BUDDIES.find((item) => item.id === 'possum').gems > 0, 'the possum is paid')
+  assert.equal(normalizePurse({}).buddyOn, '', 'no buddy is worn until you pick one')
+})
+
+test('the tag filter can hold several tags', () => {
+  const boards = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+  assert.deepEqual(scopedBooks(boards, '').map((b) => b.id), ['a', 'b', 'c'], 'empty is every tag')
+  assert.deepEqual(scopedBooks(boards, 'b').map((b) => b.id), ['b'], 'one tag')
+  assert.deepEqual(scopedBooks(boards, 'a,c').map((b) => b.id), ['a', 'c'], 'two tags')
+  assert.deepEqual(tagIdsOf(' a, ,b '), ['a', 'b'])
+  assert.equal(joinTagIds(['a', 'b', 'a', '']), 'a,b')
 })
 
 test('shop drops wait for their day and the server sells the same coin items', () => {

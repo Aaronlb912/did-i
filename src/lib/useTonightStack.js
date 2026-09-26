@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
-import { byPriority, mustSwipeDeadline, shortLabel } from './board-json.js'
+import { byPriority, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
 import {
@@ -27,7 +27,7 @@ import {
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
-import { rowKey, taggedCatchUp, taggedDue } from './tags.js'
+import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
 
 export const FINISH_FACE = '__finish__'
 
@@ -35,6 +35,7 @@ export function useTonightStack({
   value,
   boards = [],
   tagId = '',
+  topics = [],
   onChange,
   now,
   focusLampId,
@@ -62,51 +63,46 @@ export function useTonightStack({
   )
 
   const minute = Math.floor(clock.getTime() / 60000)
+  // Topic picks narrow tonight to questions with any of those topics.
+  const topicKey = topics.join('|')
   const night = useMemo(
-    () => ({
-      due: taggedDue(shelf, clock, tagId),
-      unanswered: tagId
-        ? unansweredTonight(liveValue, clock)
-        : shelf.flatMap((book) => unansweredTonight(book, clock)),
-      ready: byPriority(
-        tagId
-          ? faceSwipeTonight(liveValue, clock).map((row) => ({
+    () => {
+      const keep = (row) => hasAnyTopic(row.lamp, topics)
+      return {
+        due: taggedDue(shelf, clock, tagId).filter(keep),
+        unanswered: scopedBooks(shelf, tagId).flatMap((book) => unansweredTonight(book, clock)).filter(keep),
+        ready: byPriority(
+          scopedBooks(shelf, tagId).flatMap((book) =>
+            faceSwipeTonight(book, clock).map((row) => ({
               ...row,
-              boardId: liveValue.id,
-              tag: liveValue.title,
-              book: liveValue,
-            }))
-          : shelf.flatMap((book) =>
-              faceSwipeTonight(book, clock).map((row) => ({
-                ...row,
-                boardId: book.id,
-                tag: book.title,
-                book,
-              })),
-            ),
-      ),
-      waiting: tagId
-        ? waitingTonight(liveValue, clock)
-        : shelf.flatMap((book) => waitingTonight(book, clock)),
-      catchUp: taggedCatchUp(shelf, clock, tagId),
-      heat: shelfHeat(shelf, clock, tagId),
-    }),
+              boardId: book.id,
+              tag: book.title,
+              book,
+            })),
+          ),
+        ).filter(keep),
+        waiting: scopedBooks(shelf, tagId).flatMap((book) => waitingTonight(book, clock)).filter(keep),
+        catchUp: taggedCatchUp(shelf, clock, tagId).filter(keep),
+        heat: shelfHeat(shelf, clock, tagId),
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shelf, liveValue, tagId, dateIso, minute],
+    [shelf, liveValue, tagId, topicKey, dateIso, minute],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = useMemo(() => {
     const books = boards.length ? boards : [value]
-    const persistedReady = tagId
-      ? faceSwipeTonight(books.find((book) => book.id === value.id) || value, clock)
-      : books.flatMap((book) => faceSwipeTonight(book, clock))
+    const persistedReady = scopedBooks(books, tagId)
+      .flatMap((book) => faceSwipeTonight(book, clock))
+      .filter((row) => hasAnyTopic(row.lamp, topics))
     return finishStackCount(persistedReady)
-  }, [boards, value, tagId, dateIso, minute])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boards, value, tagId, topicKey, dateIso, minute])
   const onFinish = faceId === FINISH_FACE && finishCount > 0 && !hallOn
   const hour = hallHour(clock)
-  const empty = (tagId ? [liveValue] : shelf).every(
+  const empty = scopedBooks(shelf, tagId).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
   )
 

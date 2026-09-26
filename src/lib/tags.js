@@ -10,9 +10,22 @@ export function tagOnRow(book, row) {
   }
 }
 
+// A tag filter is '' (every tag) or tag ids joined with commas ("a,b").
+export function tagIdsOf(tagId) {
+  return String(tagId || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+}
+
+export function joinTagIds(ids) {
+  return [...new Set(ids)].filter(Boolean).join(',')
+}
+
 export function scopedBooks(boards, tagId) {
-  if (!tagId) return boards || []
-  return (boards || []).filter((book) => book.id === tagId)
+  const ids = tagIdsOf(tagId)
+  if (!ids.length) return boards || []
+  return (boards || []).filter((book) => ids.includes(book.id))
 }
 
 export function taggedDue(boards, clock, tagId) {

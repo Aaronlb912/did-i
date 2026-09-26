@@ -112,10 +112,11 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - **i18n**: `t('key')` from `src/lib/i18n.js`; every key in all 9
   `src/locales/*.js` files (the check test requires identical keys). English
   is the fallback.
-- **Product vocabulary** (user-facing copy only): tag, tags, add, question,
-  tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not** use
-  board, hall, hang, heat, or skip (skip especially — the tap button is
-  "nope"). See `.cursor/rules/copy.mdc`.
+- **Product vocabulary** (user-facing copy only): folder, folders, add,
+  question, tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not**
+  use tag (renamed to folder 2026-09-26; code and keys still say tag), board,
+  hall, hang, heat, or skip (skip especially — the tap button is "nope").
+  See `.cursor/rules/copy.mdc`.
 - **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`
   asserts this; don't change it.

@@ -8251,3 +8251,10 @@ html[data-reduce-motion] *::after,
   height: 0.8rem;
   flex: 0 0 0.8rem;
 }
+
+/* Tag picker: one tag per question. */
+.di-hang-tags-one {
+  margin: 0.2rem 0 0.45rem;
+  color: var(--di-ink-soft);
+  font-size: 0.82rem;
+}

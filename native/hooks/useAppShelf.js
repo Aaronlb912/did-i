@@ -48,6 +48,7 @@ import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
+import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -88,7 +89,10 @@ export function useAppShelf() {
   const live = book || emptyBoard()
   const route = readRoute()
 
-  const tagId = shelf.boards.some((item) => item.id === route.tag && !item.archived) ? route.tag : ''
+  // The filter may name several tags; keep only ones that still exist.
+  const tagId = joinTagIds(
+    tagIdsOf(route.tag).filter((id) => shelf.boards.some((item) => item.id === id && !item.archived)),
+  )
 
   const persist = useCallback((nextShelf) => {
     const now = new Date()
@@ -181,7 +185,8 @@ export function useAppShelf() {
 
   const setTag = useCallback(
     (id) => {
-      if (id) persist(selectBook(shelf, id))
+      const first = tagIdsOf(id)[0]
+      if (first) persist(selectBook(shelf, first))
       const path = route.path
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
       goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face })
@@ -202,7 +207,10 @@ export function useAppShelf() {
   const removeBoard = useCallback(
     (id) => {
       persist(dropBook(shelf, id))
-      if (tagId === id || route.tag === id) goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: 'all' })
+      if (tagIdsOf(route.tag).includes(id)) {
+        const rest = joinTagIds(tagIdsOf(route.tag).filter((other) => other !== id))
+        goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
+      }
     },
     [persist, route.path, route.tag, shelf, tagId],
   )
