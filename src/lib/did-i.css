@@ -8780,3 +8780,16 @@ html[data-reduce-motion] *::after,
 .di-mark-copy span {
   color: var(--di-ink-soft);
 }
+
+.di-auth-reviewer {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--di-ink-dim);
+  font-family: var(--di-ui);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}

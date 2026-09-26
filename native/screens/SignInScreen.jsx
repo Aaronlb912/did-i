@@ -1,4 +1,4 @@
-import { Platform, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { skipAuth } from '../../src/lib/auth-gate.js'
@@ -53,6 +53,16 @@ export function SignInScreen({ onDone }) {
       {auth.step === 'code' ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
       ) : null}
+      {auth.step === 'reviewer' ? (
+        <Field
+          colors={colors}
+          label={t('auth.password')}
+          value={auth.password}
+          onChangeText={auth.setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+      ) : null}
 
       {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
 
@@ -69,6 +79,11 @@ export function SignInScreen({ onDone }) {
         />
       </View>
       <AuthLegalNote colors={colors} />
+      {auth.step === 'start' ? (
+        <Pressable onPress={auth.showReviewer} hitSlop={8} accessibilityRole="button" style={styles.reviewer}>
+          <Text style={[styles.reviewerText, { color: colors.inkDim }]}>{t('auth.reviewer')}</Text>
+        </Pressable>
+      ) : null}
     </AuthSignInStage>
   )
 
@@ -132,5 +147,14 @@ const styles = StyleSheet.create({
   },
   foot: {
     marginTop: 8,
+  },
+  reviewer: {
+    alignSelf: 'center',
+    marginTop: 12,
+  },
+  reviewerText: {
+    fontFamily: fonts.ui,
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
 })

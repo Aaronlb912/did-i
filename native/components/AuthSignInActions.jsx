@@ -20,6 +20,15 @@ export function AuthSignInActions({ colors, auth }) {
     )
   }
 
+  if (auth.step === 'reviewer') {
+    return (
+      <View style={styles.actions}>
+        <DidButton colors={colors} label={t('account.signIn')} disabled={auth.busy} onPress={auth.openReviewer} />
+        <KeyButton colors={colors} label={t('account.other')} onPress={auth.useDifferentEmail} />
+      </View>
+    )
+  }
+
   return (
     <View style={styles.actions}>
       <DidButton colors={colors} label={t('account.signIn')} disabled={auth.busy} onPress={auth.openEmail} />

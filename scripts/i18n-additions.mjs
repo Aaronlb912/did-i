@@ -21,6 +21,12 @@ export const additionsEn = {
   'marks.ok': 'Ok',
   'marks.new': 'New mark',
 
+  'auth.reviewer': 'Reviewer sign-in',
+
+  'auth.password': 'Password',
+
+  'auth.reviewerBad': 'That email and password did not match.',
+
   'mark.first-open.name': 'Showed up',
   'mark.first-open.line': 'You opened Did I.',
   'mark.first-did.name': 'First DID',
@@ -397,6 +403,12 @@ export const additionsEs = {
   'marks.stats': 'Hasta ahora',
   'marks.ok': 'Ok',
   'marks.new': 'Nueva marca',
+
+  'auth.reviewer': 'Acceso para revisores',
+
+  'auth.password': 'Contraseña',
+
+  'auth.reviewerBad': 'El correo y la contraseña no coinciden.',
 
   'mark.first-open.name': 'Apareciste',
   'mark.first-open.line': 'Abriste Did I.',
