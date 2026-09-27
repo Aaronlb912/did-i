@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react'
 import { t } from '../lib/i18n.js'
 import { LandingPhone } from './LandingPhone.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
-import { WaitlistForm } from './WaitlistForm.jsx'
+import { StoreButtons } from './StoreButtons.jsx'
 
 const STEPS = ['web.landing.step1', 'web.landing.step2', 'web.landing.step3']
+const TOGETHER = ['one', 'two', 'three']
 
 function useReveal() {
   const root = useRef(null)
@@ -41,7 +42,7 @@ export function Landing() {
             <p className="di-face-plate">{t('web.landing.kicker')}</p>
             <h1 className="di-question di-land-title">{t('web.landing.title')}</h1>
             <p className="di-land-lead">{t('web.landing.lead')}</p>
-            <WaitlistForm />
+            <StoreButtons />
           </div>
           <LandingPhone />
         </section>
@@ -61,6 +62,20 @@ export function Landing() {
           </ol>
         </section>
 
+        <section className="di-land-together" data-reveal>
+          <p className="di-face-plate">{t('web.landing.together.kicker')}</p>
+          <h2 className="di-question di-land-together-title">{t('web.landing.together.title')}</h2>
+          <p className="di-land-lead">{t('web.landing.together.lead')}</p>
+          <ul className="di-land-together-list">
+            {TOGETHER.map((key) => (
+              <li key={key} className="di-land-together-card">
+                <h3>{t(`web.landing.together.${key}.title`)}</h3>
+                <p>{t(`web.landing.together.${key}.line`)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="di-land-band" data-reveal>
           <p className="di-land-band-line">{t('web.landing.band')}</p>
           <ul className="di-land-band-list">
@@ -74,8 +89,7 @@ export function Landing() {
         <section className="di-land-close" data-reveal>
           <h2 className="di-question di-land-close-title">{t('web.landing.closeTitle')}</h2>
           <p className="di-land-lead">{t('web.landing.closeLead')}</p>
-          <WaitlistForm compact />
-          <p className="di-set-note">{t('web.landing.note')}</p>
+          <StoreButtons compact />
         </section>
       </div>
     </MarketingShell>
