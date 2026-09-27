@@ -80,6 +80,7 @@ import { goHash } from '../navigation/hash.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
+import { KeyboardLift } from '../components/KeyboardLift.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -269,16 +270,18 @@ function JoinFamilyCard({ colors, bare = false }) {
 function AddPop({ kicker, colors, onClose, children }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
-        <Pressable
-          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <Text style={[styles.popKicker, { color: colors.on }]}>{kicker}</Text>
-          {children}
-          <KeyButton colors={colors} label={t('settings.close')} onPress={onClose} />
+      <KeyboardLift>
+        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+          <Pressable
+            style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text style={[styles.popKicker, { color: colors.on }]}>{kicker}</Text>
+            {children}
+            <KeyButton colors={colors} label={t('settings.close')} onPress={onClose} />
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardLift>
     </Modal>
   )
 }
