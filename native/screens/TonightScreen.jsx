@@ -369,7 +369,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         />
       </Slot>
 
-      {stack.pillPick ? (
+      {stack.pillPick || stack.waitPick ? (
         <Pressable
           onPress={() => stack.closePlates()}
           hitSlop={10}

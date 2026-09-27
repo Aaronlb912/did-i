@@ -8974,3 +8974,18 @@ html[data-reduce-motion] *::after,
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Not yet card: room between the question, its time, and the buttons. */
+.di-wait .di-question {
+  margin-bottom: 0;
+}
+
+.di-wait .di-detail-meta {
+  margin-top: 1rem;
+}
+
+.di-face-slot .di-wait .di-hang-actions {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--di-line-soft);
+}
