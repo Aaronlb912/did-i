@@ -118,6 +118,7 @@ export default ({ config }) => ({
       },
     ],
     './plugins/with-ios-pod-bundles.cjs',
+    './plugins/with-siri-add.cjs',
   ],
   ios: {
     ...config.ios,
