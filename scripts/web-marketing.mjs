@@ -15,15 +15,12 @@ export const webEn = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'App Store link coming soon.',
-  'web.download.soon': 'Coming soon',
   'web.footer.copy': 'Did I. The unanswered question for tonight.',
 
   'web.landing.kicker': 'Did I',
   'web.landing.title': 'Did I lock the back door?',
   'web.landing.lead':
     "I kept replaying the same checks on the walk to bed. Door, stove, pills. One question on your phone. Swipe right if you did. Swipe left if you didn't.",
-  'web.landing.note':
-    'Store links land here when the Android and iPhone builds ship.',
 
   'web.landing.phoneKicker': 'Tonight',
   'web.landing.demo1': 'Did I lock the back door?',
@@ -37,16 +34,6 @@ export const webEn = {
   'web.landing.float2': 'Pills',
   'web.landing.float3': 'Charge',
 
-  'web.waitlist.label': 'Email',
-  'web.waitlist.placeholder': 'you@example.com',
-  'web.waitlist.submit': 'Join the beta',
-  'web.waitlist.sending': 'Saving…',
-  'web.waitlist.ok': "You're in the beta. We'll email when there's a build for you.",
-  'web.waitlist.dup': "You're already in the beta.",
-  'web.waitlist.bad': 'Enter a valid email.',
-  'web.waitlist.miss': "Couldn't save. Try again in a minute.",
-  'web.waitlist.offline': "Beta sign-up needs a connection. Try again when you're back online.",
-  'web.waitlist.count': '{n} people in the beta',
 
   'web.landing.stepsTitle': 'How it goes',
   'web.landing.step1.num': '1',
@@ -90,15 +77,12 @@ export const webEs = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'Enlace de App Store pronto.',
-  'web.download.soon': 'Pronto',
   'web.footer.copy': 'Did I. La pregunta sin respuesta de esta noche.',
 
   'web.landing.kicker': 'Did I',
   'web.landing.title': '¿Cerré la puerta de atrás?',
   'web.landing.lead':
     'Seguía repitiendo las mismas comprobaciones al ir a la cama. Puerta, estufa, pastillas. Did I pone una pregunta en tu teléfono. Desliza a la derecha si lo hiciste. Desliza a la izquierda si no.',
-  'web.landing.note':
-    'Los enlaces de tienda aparecen aquí cuando salgan las apps de Android e iPhone.',
 
   'web.landing.phoneKicker': 'Esta noche',
   'web.landing.demo1': '¿Cerré la puerta de atrás?',
@@ -112,16 +96,6 @@ export const webEs = {
   'web.landing.float2': 'Pastillas',
   'web.landing.float3': 'Carga',
 
-  'web.waitlist.label': 'Correo',
-  'web.waitlist.placeholder': 'tu@ejemplo.com',
-  'web.waitlist.submit': 'Unirme a la beta',
-  'web.waitlist.sending': 'Guardando…',
-  'web.waitlist.ok': 'Estás en la beta. Te escribimos cuando haya una build para ti.',
-  'web.waitlist.dup': 'Ya estás en la beta.',
-  'web.waitlist.bad': 'Escribe un correo válido.',
-  'web.waitlist.miss': 'No se pudo guardar. Prueba en un minuto.',
-  'web.waitlist.offline': 'La beta necesita conexión. Prueba otra vez cuando vuelva la señal.',
-  'web.waitlist.count': '{n} personas en la beta',
 
   'web.landing.stepsTitle': 'Cómo va',
   'web.landing.step1.num': '1',

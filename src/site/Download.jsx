@@ -1,15 +1,18 @@
 import { t } from '../lib/i18n.js'
+import { APP_STORE_URL, PLAY_STORE_URL } from '../lib/store-skus.js'
 import { MarketingShell } from './MarketingShell.jsx'
+import { AppleIcon, PlayIcon } from './StoreButtons.jsx'
 
-function StoreCard({ kicker, title, note }) {
+function StoreCard({ kicker, title, note, href, label, icon }) {
   return (
     <article className="di-download-card">
       <p className="di-face-plate">{kicker}</p>
       <h2 className="di-question">{title}</h2>
       <p className="di-detail-meta">{note}</p>
-      <button className="di-did di-did-small" type="button" disabled aria-disabled="true">
-        {t('web.download.soon')}
-      </button>
+      <a className="di-did di-did-small di-link-did" href={href} target="_blank" rel="noopener noreferrer">
+        {icon}
+        {label}
+      </a>
     </article>
   )
 }
@@ -27,11 +30,17 @@ export function Download() {
             kicker={t('web.download.androidKicker')}
             title={t('web.download.android')}
             note={t('web.download.androidNote')}
+            href={PLAY_STORE_URL}
+            label={t('web.store.play')}
+            icon={<PlayIcon />}
           />
           <StoreCard
             kicker={t('web.download.iphoneKicker')}
             title={t('web.download.iphone')}
             note={t('web.download.iphoneNote')}
+            href={APP_STORE_URL}
+            label={t('web.store.apple')}
+            icon={<AppleIcon />}
           />
         </div>
       </div>

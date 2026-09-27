@@ -20,3 +20,7 @@ export function gemProductSku(packId) {
   if (!id) return ''
   return `${STORE_APP_ID}.${id}`
 }
+
+/** Public store pages. They only load once each store has approved the app. */
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6814688066'
+export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${PLAY_PACKAGE}`
