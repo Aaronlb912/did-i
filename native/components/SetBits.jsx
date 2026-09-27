@@ -3,6 +3,7 @@ import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts, radius } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
+import { KeyboardLift } from './KeyboardLift.jsx'
 
 export function SetCap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
@@ -130,20 +131,22 @@ export function SetSheet({ title, onClose, children, colors }) {
   const still = useReduceMotion()
   return (
     <Modal visible transparent animationType={still ? 'none' : 'slide'} onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
-        <Pressable
-          style={[styles.sheet, { backgroundColor: colors.panel, borderColor: colors.line }]}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
-            <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
-            <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
-              <Text style={[styles.sheetX, { color: colors.inkDim }]}>×</Text>
-            </Pressable>
-          </View>
-          {children}
+      <KeyboardLift>
+        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+          <Pressable
+            style={[styles.sheet, { backgroundColor: colors.panel, borderColor: colors.line }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
+              <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
+              <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
+                <Text style={[styles.sheetX, { color: colors.inkDim }]}>×</Text>
+              </Pressable>
+            </View>
+            {children}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardLift>
     </Modal>
   )
 }

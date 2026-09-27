@@ -91,8 +91,8 @@ export function SignInScreen({ onDone }) {
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={insets.top}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView
           contentContainerStyle={[

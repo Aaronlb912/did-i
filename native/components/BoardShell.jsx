@@ -56,8 +56,8 @@ export function BoardShell({
   const inner = scroll ? (
     <KeyboardAvoidingView
       style={styles.scroll}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={insets.top}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
     >
       <ScrollView
         style={styles.scroll}

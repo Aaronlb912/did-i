@@ -37,6 +37,7 @@ import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { KeyboardLift } from '../components/KeyboardLift.jsx'
 
 const EVERYONE = 'everyone'
 
@@ -430,24 +431,26 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
-        <Pressable style={styles.veil} onPress={() => setEdit(null)}>
-          <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-            <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
-            <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />
-            <DidButton
-              colors={colors}
-              label={t('family.save')}
-              onPress={async () => {
-                const { miss: why } = await editFamilyLamp(edit.id, edit.text)
-                if (why === 'blank') return setMiss(t('family.blank'))
-                if (why) setMiss(why)
-                setEdit(null)
-                load()
-              }}
-            />
-            <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+        <KeyboardLift>
+          <Pressable style={styles.veil} onPress={() => setEdit(null)}>
+            <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+              <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
+              <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />
+              <DidButton
+                colors={colors}
+                label={t('family.save')}
+                onPress={async () => {
+                  const { miss: why } = await editFamilyLamp(edit.id, edit.text)
+                  if (why === 'blank') return setMiss(t('family.blank'))
+                  if (why) setMiss(why)
+                  setEdit(null)
+                  load()
+                }}
+              />
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardLift>
       </Modal>
       ) : null}
     </ScrollView>
