@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, StyleSheet, UIManager, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
+import { useAutoAdd } from '../src/lib/people.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
@@ -11,6 +12,7 @@ import { canGoBack, goBack, goHash, onRoute, peekBackRoute, readRoute } from './
 import { AppNavHost } from './components/AppNavHost.jsx'
 import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
+import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { MarkToast } from './components/MarkToast.jsx'
 import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
@@ -20,9 +22,6 @@ import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
 
 const SITE = new Set()
 
@@ -41,7 +40,8 @@ export function AppShell() {
   const gated = authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
   const backRoute = useMemo(() => peekBackRoute(), [route])
-  const swipeBack = canGoBack()
+  const swipeBack = canGoBack() && route.path !== '/first'
+  useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const askPings = useCallback(async () => {
     const next = await requestPings()
@@ -102,6 +102,7 @@ export function AppShell() {
     shelf: app.shelf,
     tagId: app.tagId,
     change: app.change,
+    changeBooks: app.changeBooks,
     setTag: app.setTag,
     saveLamp: app.saveLamp,
     keepSent: app.keepSent,
@@ -145,6 +146,7 @@ export function AppShell() {
       )}
       {SITE.has(route.path) ? null : (
         <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
+          <DidYouBanner path={route.path} colors={colors} />
           <SheetHost />
           <CheerBurstHost />
         </View>

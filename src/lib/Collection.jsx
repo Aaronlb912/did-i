@@ -24,7 +24,7 @@ import {
 } from './purse.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { activeLook } from './dit-board.js'
+import { activeLook } from './active-look.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LookPreviewCard, NO_MISS, shopMiss } from './shop-bits.jsx'
 

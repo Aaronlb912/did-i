@@ -28,6 +28,7 @@
     "db:apply": "node scripts/apply-sql.mjs",
     "db:apply:all": "node scripts/apply-all-sql.mjs",
     "db:audit": "node scripts/audit-sql.mjs",
+    "db:test": "node scripts/test-sql.mjs",
     "smtp:setup": "node scripts/setup-smtp.mjs",
     "auth:setup": "node scripts/setup-auth.mjs",
     "apple:auth:setup": "node scripts/setup-apple-auth.mjs",

@@ -1,5 +1,4 @@
-import { InteractionManager } from 'react-native'
-import { runAfterLaunchReady } from './launch-ready.js'
+import { afterIdle, runAfterLaunchReady } from './launch-ready.js'
 
 /** iOS WidgetKit + some TurboModules fatal if touched in the first second after launch. */
 const BRIDGE_DELAY_MS = 1200
@@ -30,7 +29,7 @@ export function queueWidgetSync(shelf) {
 export function afterNativeBridgeReady(task) {
   return new Promise((resolve) => {
     runAfterLaunchReady(() => {
-      InteractionManager.runAfterInteractions(() => {
+      afterIdle(() => {
         setTimeout(() => {
           markNativeBridgeReady()
           Promise.resolve()

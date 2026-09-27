@@ -5,7 +5,7 @@ import { MastCogs } from './SettingsCog.jsx'
 import { t } from './i18n.js'
 import { useTheme } from './prefs.js'
 import { useReduceMotion } from './useReduceMotion.js'
-import { activeLook } from './dit-board.js'
+import { activeLook } from './active-look.js'
 import { PurseLine } from './PurseLine.jsx'
 import { mergePurses, normalizePurse } from './purse.js'
 

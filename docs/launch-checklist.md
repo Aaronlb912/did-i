@@ -3,7 +3,7 @@
 What has to be true before Did I goes live on the App Store and Play Store.
 Tick items as they land. Details and history live in `docs/not-yet.md`.
 
-Last updated 2026-09-25. Latest iOS build: **55** (Expo). Next build takes 56.
+Last updated 2026-09-26. Latest iOS build: **55** (Expo). Next build takes 56.
 Over-the-air updates (`expo-updates`) start with build 56. After that, JS-only
 fixes go out with `npm run update:prod`; native changes still need a build
 (`docs/native-rebuild.md`).
@@ -31,6 +31,8 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [ ] Android release signing: download the keystore from Expo and add the four `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` GitHub secrets (steps in `docs/native-rebuild.md`), before the android-apk run
 - [ ] Google sign-in on Android release builds: add a "Did I Android release" OAuth client with the release key SHA-1 (`npx eas-cli credentials -p android`), and one for the Play signing key after the first upload
 - [ ] Fixes from testing build 55 (list them here as you find them)
+- [ ] People pass (2026-09-26, branch `remove-dit`): Did you alerts, auto-add, Friends and Family cards, Questions select mode, coin look buy fix. JS only, so `npm run update:prod` once merged; no new native module. `supabase/auto-add.sql` is already applied to the live project
+- [ ] Decide on family questions and Tonight (see `docs/not-yet.md`): bring a family block back or change the "shows up on their tonight" line
 
 **Test on the new build** (two accounts where it says so)
 - [ ] Sign in with email code (lands in inbox, not junk), Sign in with Apple, and Sign in with Google (web, iPhone, release-signed Android)
@@ -48,6 +50,9 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [ ] Invite link: share from Refer, open did-i.app/i/CODE on a phone with no app, install, sign up; the inviter gets the referral
 - [ ] Friends: own number required, ask by number and accept, a taken number is refused
 - [ ] Family: assign a question, the other sees it; block works
+- [ ] Did you, two accounts: a family member's lands on tonight in the open folder with a banner; a friend's waits in the inbox until "Can add to my tonight" is on, then goes straight on; the menu shows the count on every screen
+- [ ] Questions: Select, Select all, Stop asking, Delete with confirm, Undo brings them back with their answers
+- [ ] Buy a coin look with 30+ coins (it used to fail with "That look is gone")
 - [ ] Push nudge arrives on Android and iPhone
 - [ ] Coins earn and spend; sandbox gem buy on each store adds base + bonus; cap of 100 holds
 
@@ -70,7 +75,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 
 **Backend**
 - [ ] Deploy `gem-iap` with its secrets
-- [ ] `npm run db:audit` returns no rows
+- [x] `npm run db:audit` returns no rows (2026-09-26, after `auto-add.sql`)
 
 **Website and legal**
 - [ ] `did-i.app` DNS on Vercel, env vars set (`docs/site.md`)

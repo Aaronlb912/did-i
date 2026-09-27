@@ -3,13 +3,11 @@ import { goHash } from '../site/hash.js'
 import { FinishFace } from './FinishFace.jsx'
 import { LampFace } from './LampFace.jsx'
 import { PillPlate } from './PillPlate.jsx'
-import { DIT_ENABLED } from './features.js'
-import { FamilyTonight } from './FamilyTonight.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
 import { MastCogs } from './SettingsCog.jsx'
 import { WaitPlate } from './WaitPlate.jsx'
 import { HolePlate } from './HolePlate.jsx'
-import { activeBuddy, activeLook } from './dit-board.js'
+import { activeBuddy, activeLook } from './active-look.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { NightMeter } from './NightMeter.jsx'
@@ -24,6 +22,7 @@ import { useTonightStack } from './useTonightStack.js'
 import { TagRail } from './TagRail.jsx'
 import { SwipePullSlot } from './SwipePull.jsx'
 import { EdgeScroll } from './EdgeScroll.jsx'
+import { FamilyTonight } from './FamilyTonight.jsx'
 import './did-i.css'
 
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
@@ -291,7 +290,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           </p>
         ) : null}
 
-        {DIT_ENABLED ? <FamilyTonight /> : null}
+        <FamilyTonight />
       </div>
 
       <ol className="di-print-slip">

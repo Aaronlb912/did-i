@@ -3,10 +3,6 @@ export const pass = {
   'nav.boards': 'Tags',
   'mast.menu': 'Altro',
   'mast.menuClose': 'Chiudi menu',
-  'nav.everyone': 'DIT',
-  'all.kicker': 'Did I tonight',
-  'all.cheer': 'Cheer · {n}',
-  'all.cheersN': '{n} cheers',
   'lang.en': 'English',
   'lang.es': 'Español',
   'lang.fr': 'Français',
@@ -24,7 +20,6 @@ export const pass = {
   'title.calendar': 'Streak · Did I',
   'title.door': 'Did I',
   'title.account': 'Account · Did I',
-  'title.everyone': 'Did I tonight',
   'settings.look': 'Look',
   'settings.account': 'Account',
   'account.kicker': 'Account',
@@ -258,9 +253,6 @@ export const pass = {
   'legal.privacy.social.title': 'Amici, famiglia e invii',
   'legal.privacy.social.body':
     'Con Persone conserviamo richieste di amicizia, iscrizioni e ruoli familiari, codici invito che crei o usi, Did I che invii o ricevi, e blocchi/segnalazioni che fai.\n\nAltre persone in una famiglia o nella tua lista amici vedono ciò che l\'app è progettata per mostrare (nomi, streak che condividi, domande familiari e simili).',
-  'legal.privacy.dit.title': 'Did I tonight (lista pubblica)',
-  'legal.privacy.dit.body':
-    'La lista è spenta di default. Se entri, conserviamo che sei pubblico stasera, fino a tre righe brevi dalle tue etichette DID di quella notte, conteggi streak che altri possono già vedere, e conteggi cheer.\n\nLe righe si possono segnalare. Due segnalazioni diverse possono rimuovere una riga senza attendere una revisione umana. Le segnalazioni restano per moderazione.',
   'legal.privacy.push.title': 'Notifiche',
   'legal.privacy.push.body':
     'Su Android, se permetti le notifiche, conserviamo un token push legato al tuo account e dispositivo. Lo usiamo per invii Did I da amici, richieste di amicizia e simili. Puoi spegnere le notifiche nelle impostazioni del telefono.\n\nI promemoria locali per domande in scadenza restano sul dispositivo e non richiedono un account.',
@@ -316,9 +308,6 @@ export const pass = {
   'legal.terms.social.title': 'Funzioni Persone',
   'legal.terms.social.body':
     'Amici, famiglie, invii e inviti sono opzionali. Puoi bloccare qualcuno; il blocco rimuove amicizia e solleciti in sospeso dal nostro lato. Puoi segnalare utenti o righe pubbliche.\n\nPossiamo sospendere account che abusano di altri o del servizio.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'La lista pubblica è opt-in. Le righe sono etichette brevi dal tuo tag, non note private. Non pubblicare molestie, contenuti illegali o informazioni identificative su altri. Possiamo rimuovere righe tramite segnalazioni o a nostra discrezione.',
   'legal.terms.family.title': 'Famiglie e ruolo figlio',
   'legal.terms.family.body':
     'Le famiglie condividono domande tra i membri. I ruoli genitore e figlio controllano chi può assegnare compiti. Did I non è rivolta ai bambini; i genitori sono responsabili degli account figlio che permettono in una famiglia.',

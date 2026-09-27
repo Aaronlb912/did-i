@@ -16,7 +16,11 @@ export function makeLocation(serverUrl) {
 export function devServerUrl() {
   if (typeof __DEV__ === 'undefined' || !__DEV__) return ''
   try {
-    return require('react-native/Libraries/Core/Devtools/getDevServer').default().url
+    // The bundle URL points at the dev server; no deprecated deep import needed.
+    const source = require('react-native').NativeModules?.SourceCode
+    const script = String(source?.getConstants?.().scriptURL || source?.scriptURL || '')
+    const hit = /^(https?:\/\/[^/]+)/.exec(script)
+    return hit ? `${hit[1]}/` : ''
   } catch {
     return ''
   }

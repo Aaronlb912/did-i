@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
-import { DIT_ENABLED } from '../../src/lib/features.js'
 import { t } from '../../src/lib/i18n.js'
 import { answerFamilyLamp, familyLampMeta, useFamilyTonight } from '../../src/lib/people.js'
 import { goHash } from '../navigation/hash.js'
@@ -14,7 +13,7 @@ export function FamilyTonight({ colors }) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
 
-  if (!DIT_ENABLED || !rows.length) return null
+  if (!rows.length) return null
 
   const open = rows.filter((row) => !row.answer)
   const families = [...new Map(rows.map((row) => [row.family.id, row.family])).values()]

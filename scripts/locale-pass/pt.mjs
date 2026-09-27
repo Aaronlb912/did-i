@@ -2,10 +2,6 @@ export const pass = {
   'nav.boards': 'Tags',
   'mast.menu': 'Mais',
   'mast.menuClose': 'Fechar menu',
-  'nav.everyone': 'DIT',
-  'all.kicker': 'Did I tonight',
-  'all.cheer': 'Cheer · {n}',
-  'all.cheersN': '{n} cheers',
   'lang.en': 'English',
   'lang.es': 'Español',
   'lang.fr': 'Français',
@@ -22,7 +18,6 @@ export const pass = {
   'title.shopBuddies': 'Buddies · Did I',
   'title.calendar': 'Streak · Did I',
   'title.door': 'Did I',
-  'title.everyone': 'Did I tonight',
   'settings.look': 'Look',
   'account.email': 'Email',
   'account.emailHint': 'you@example.com',
@@ -249,9 +244,6 @@ export const pass = {
   'legal.privacy.social.title': 'Amigos, família e envios',
   'legal.privacy.social.body':
     'Com Pessoas guardamos pedidos de amizade, membros e papéis familiares, códigos de convite, Did I que envias ou recebes, e bloqueios/reportes que fazes.\n\nOutras pessoas na tua família ou lista de amigos veem o que a app mostra por design (nomes, streaks partilhados, perguntas familiares, etc.).',
-  'legal.privacy.dit.title': 'Did I tonight (lista pública)',
-  'legal.privacy.dit.body':
-    'A lista está desligada por defeito. Se entrares, guardamos que és público esta noite, até três linhas curtas das tuas etiquetas DID dessa noite, streaks visíveis e contagens de cheer.\n\nAs linhas podem ser reportadas. Dois reportes distintos podem remover uma linha sem esperar revisão humana. Os reportes ficam guardados para moderação.',
   'legal.privacy.push.title': 'Notificações',
   'legal.privacy.push.body':
     'No Android, se permitires avisos, guardamos um token push ligado à tua conta e dispositivo para envios de amigos, pedidos de amizade e similares. Podes desligar nas definições do telefone.\n\nLembretes locais de perguntas devidas ficam no dispositivo e não precisam de conta.',
@@ -307,9 +299,6 @@ export const pass = {
   'legal.terms.social.title': 'Pessoas',
   'legal.terms.social.body':
     'Amigos, famílias, envios e convites são opcionais. Podes bloquear alguém; o bloqueio remove amizade e avisos pendentes do nosso lado. Podes reportar utilizadores ou linhas públicas.\n\nPodemos suspender contas que abusem de outros ou do serviço.',
-  'legal.terms.dit.title': 'Did I tonight',
-  'legal.terms.dit.body':
-    'A lista pública é opt-in. As linhas são etiquetas curtas do teu tag, não notas privadas. Não publiques assédio, ilegalidade nem dados identificativos de outros. Podemos remover linhas por reportes ou à nossa discrição.',
   'legal.terms.family.title': 'Famílias e papel de filho',
   'legal.terms.family.body':
     'Famílias partilham perguntas entre membros. Papéis de pai e filho controlam quem atribui tarefas. Did I não é dirigida a crianças; os pais são responsáveis por contas de filho numa família.',

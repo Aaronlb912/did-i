@@ -87,6 +87,47 @@ function renderBit(burst, pop, bit, screen = false) {
   if (bit.flip) {
     return <FlipCard key={key} wait={pop.wait} delay={bit.delay} hops={bit.hops} />
   }
+  if (bit.puff) {
+    return <i key={key} className="di-confetti-puff" style={{ '--sz': bit.size, animationDelay: delay }} />
+  }
+  if (bit.confetti) {
+    return (
+      <i
+        key={key}
+        className={bit.fat ? 'di-confetti is-fat' : 'di-confetti'}
+        data-tone={bit.tone}
+        style={{
+          '--cx': bit.x,
+          '--cy': bit.y,
+          '--fall': bit.fall,
+          '--rot': bit.rot,
+          '--sz': bit.size,
+          animationDelay: delay,
+        }}
+      />
+    )
+  }
+  if (bit.heart) {
+    return (
+      <b key={key} className="di-heart" style={{ '--sz': bit.size, animationDelay: delay }}>
+        <i>
+          <span />
+        </i>
+      </b>
+    )
+  }
+  if (bit.heartBit) {
+    return (
+      <b
+        key={key}
+        className="di-heart di-heart-bit"
+        data-tone={bit.tone}
+        style={{ '--hx': bit.x, '--hy': bit.y, '--sz': bit.size, animationDelay: delay }}
+      >
+        <i />
+      </b>
+    )
+  }
   if (bit.sparkFlash) {
     return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />
   }

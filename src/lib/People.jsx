@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { DIT_ENABLED } from './features.js'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
+  askFriend,
+  cleanCode,
+  cleanPhone,
+  joinFamily,
+  doneTonight,
   formatPhone,
   friendAskNote,
   friendAskTitle,
@@ -16,13 +20,12 @@ import {
   readMine,
   sayNo,
   sayYes,
-  sendDidI,
-  setPublicTonight,
-  shareStreak,
   syncDisplayName,
 } from './people.js'
+import { Avatar, EmptyCard, PersonCard, SectionHead } from './PersonCard.jsx'
 import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
-import { SetCap, SetCard, SetField, SetRow, SetSheet, SetSwitch } from './set-bits.jsx'
+import { SendSheet } from './SendDidYou.jsx'
+import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 import { useReduceMotion } from './useReduceMotion.js'
 
@@ -33,63 +36,101 @@ function friendLine(person) {
   return t('people.noStreak')
 }
 
-function SendSheet({ person, still, onClose, onSent }) {
-  const [question, setQuestion] = useState('')
-  const [note, setNote] = useState('')
+// Join code right under the family list, so a second family is easy to join.
+function JoinFamilyCard({ bare = false }) {
+  const [code, setCode] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
-
-  async function send() {
-    if (!question.trim()) {
-      setMiss(t('people.sendBlank'))
-      return
-    }
+  async function join(event) {
+    event.preventDefault()
     setBusy(true)
-    const { miss: why } = await sendDidI(person.user_id, question, note)
+    const { miss: why, id } = await joinFamily(code)
     setBusy(false)
-    if (why === 'already') {
-      setMiss(t('people.sendAlready'))
-      return
-    }
-    if (why) {
-      setMiss(why)
-      return
-    }
-    onSent(t('people.sentTo', { name: personName(person) }))
-    onClose()
+    if (why === 'code') return setMiss(t('people.codeShort'))
+    if (why === 'nofamily') return setMiss(t('people.noFamily'))
+    if (why) return setMiss(tMiss(why))
+    setCode('')
+    setMiss('')
+    return goHash('/family', { id })
   }
-
   return (
-    <SetSheet title={t('people.sendTitle')} still={still} onClose={onClose}>
-      <p className="di-set-note">{t('people.sendHint', { name: personName(person) })}</p>
-      <SetCard>
-        <SetField
-          label={t('people.sendWhat')}
-          value={question}
-          placeholder={t('people.sendPh')}
-          onChange={(event) => setQuestion(event.target.value)}
-        />
-        <SetField
-          label={t('people.sendNote')}
-          value={note}
-          placeholder={t('people.sendNotePh')}
-          onChange={(event) => setNote(event.target.value)}
-        />
-      </SetCard>
+    <form className={bare ? 'di-join-family' : 'di-person di-join-family'} onSubmit={join}>
+      <SetField
+        label={t('people.joinCode')}
+        value={code}
+        placeholder="ABC234"
+        autoCapitalize="characters"
+        autoCorrect="off"
+        onChange={(event) => setCode(cleanCode(event.target.value))}
+      />
+      <button className="di-did di-did-small" type="submit" disabled={busy}>
+        {t('people.join')}
+      </button>
       {miss ? (
         <p className="di-miss" role="alert">
-          {tMiss(miss)}
+          {miss}
         </p>
       ) : null}
-      <div className="di-hang-actions">
-        <button className="di-did di-did-small" type="button" disabled={busy} onClick={send}>
-          {t('people.send')}
-        </button>
-        <button className="di-key" type="button" onClick={onClose}>
-          {t('settings.neverMind')}
-        </button>
+    </form>
+  )
+}
+
+// A small popup for the plus next to a section title.
+function AddPop({ kicker, onClose, children }) {
+  return (
+    <div className="di-buy-veil" role="presentation" onClick={onClose}>
+      <div className="di-buy-pop" role="dialog" aria-modal="true" aria-label={kicker} onClick={(event) => event.stopPropagation()}>
+        <p className="di-face-plate">{kicker}</p>
+        {children}
+        <div className="di-hang-actions">
+          <button className="di-key" type="button" onClick={onClose}>
+            {t('settings.close')}
+          </button>
+        </div>
       </div>
-    </SetSheet>
+    </div>
+  )
+}
+
+function AddFriendPop({ phone, onClose, onAsked }) {
+  const [draft, setDraft] = useState('')
+  const [miss, setMiss] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function ask(event) {
+    event.preventDefault()
+    setBusy(true)
+    const { miss: why, person } = await askFriend(draft)
+    setBusy(false)
+    if (why === 'short') return setMiss(t('people.phoneShort'))
+    if (why === 'nophone') return setMiss(t('people.nophone'))
+    if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(draft) }))
+    if (why) return setMiss(tMiss(why))
+    onClose()
+    return onAsked(t('people.asked', { name: personName(person) }))
+  }
+  return (
+    <AddPop kicker={t('people.addOne')} onClose={onClose}>
+      {phone ? (
+        <form className="di-join-family" onSubmit={ask}>
+          <SetField label={t('people.add')} value={draft} type="tel" onChange={(event) => setDraft(event.target.value)} />
+          <button className="di-did di-did-small" type="submit" disabled={busy}>
+            {t('people.askOne')}
+          </button>
+          {miss ? (
+            <p className="di-miss" role="alert">
+              {miss}
+            </p>
+          ) : null}
+        </form>
+      ) : (
+        <>
+          <p className="di-set-note">{t('people.nophone')}</p>
+          <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>
+            {t('people.phoneSave')}
+          </button>
+        </>
+      )}
+    </AddPop>
   )
 }
 
@@ -110,18 +151,23 @@ export function People({ book, onChange, now }) {
 
   const load = useCallback(async () => {
     if (!account.user) return
-    const [who, friendRows, famRows, count] = await Promise.all([
-      readMine(),
-      listFriends(),
-      listFamilies(),
-      inboxCount(),
-    ])
-    setMine(who)
-    setPhone(who?.phone || '')
-    await syncDisplayName(book.keeperName)
-    setLinks(friendRows)
-    setFamilies(famRows)
-    setWaiting(count)
+    try {
+      const [who, friendRows, famRows, count] = await Promise.all([
+        readMine(),
+        listFriends(),
+        listFamilies(),
+        inboxCount(),
+      ])
+      setMine(who)
+      setPhone(who?.phone || '')
+      await syncDisplayName(book.keeperName)
+      setLinks(friendRows)
+      setFamilies(famRows)
+      setWaiting(count)
+      setMiss('')
+    } catch {
+      setMiss('people.reach')
+    }
   }, [account.user, book.keeperName])
 
   useEffect(() => {
@@ -181,103 +227,134 @@ export function People({ book, onChange, now }) {
     )
   }
 
+  const today = isoDate(clock)
+  const doneCount = links.friends.filter((row) => doneTonight(row.person, today)).length
+
   return shell(
     <>
       <h2 className="di-page-title">{t('people.title')}</h2>
 
-      {links.asked.length ? (
-        <div className="di-people-asks">
-          <SetCap>{t('people.askBanner', { n: links.asked.length })}</SetCap>
-          <SetCard>
-            {links.asked.map((row) => (
-              <div className="di-people-row" key={row.id}>
-                <span className="di-people-who">
-                  <strong>{friendAskTitle(row.person) || t('people.someone')}</strong>
-                  <em>{friendAskNote(row.person)}</em>
-                </span>
-                <button
-                  className="di-did di-did-small"
-                  type="button"
-                  onClick={() => answerAsk(row.id, true)}
-                >
-                  {t('people.yes')}
-                </button>
-                <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
-                  {t('people.no')}
-                </button>
-              </div>
-            ))}
-          </SetCard>
-        </div>
-      ) : null}
-
-      <SetCard>
-        <SetRow
-          label={waiting ? t('people.waiting', { n: waiting }) : t('inbox.kicker')}
-          sub={waiting ? t('people.waitingSub') : t('people.inboxQuiet')}
-          chevron
+      <div className="di-people-tiles">
+        <button
+          type="button"
+          className={waiting ? 'di-people-tile is-lit' : 'di-people-tile'}
           onClick={() => goHash('/inbox')}
-        />
-        <SetRow
-          label={t('sent.kicker')}
-          sub={t('sent.rowSub')}
-          chevron
-          onClick={() => goHash('/sent')}
-        />
-      </SetCard>
+        >
+          <span>{t('inbox.kicker')}</span>
+          <strong>{waiting ? t('people.waiting', { n: waiting }) : t('people.inboxQuiet')}</strong>
+          {waiting ? <em>{t('people.waitingSub')}</em> : null}
+        </button>
+        <button type="button" className="di-people-tile" onClick={() => goHash('/sent')}>
+          <span>{t('sent.kicker')}</span>
+          <strong>{t('sent.tileValue')}</strong>
+          <em>{t('sent.rowSub')}</em>
+        </button>
+      </div>
 
-      <SetCap>{t('people.friends')}</SetCap>
-      {links.friends.length ? (
-        <SetCard>
-          {links.friends.slice(0, 6).map((row) => (
-            <div className="di-people-row" key={row.id}>
-              <span className="di-people-who">
-                <strong>{personName(row.person) || t('people.someone')}</strong>
-                <em>{friendLine(row.person)}</em>
-              </span>
-              <button
-                className="di-did di-did-small"
-                type="button"
-                onClick={() => setSheet({ kind: 'send', person: row.person })}
-              >
-                {t('people.sendShort')}
-              </button>
-            </div>
-          ))}
-          <SetRow
-            label={t('friends.title', { n: links.friends.length })}
-            sub={t('friends.seeSub')}
-            chevron
-            onClick={() => goHash('/friends')}
-          />
-        </SetCard>
-      ) : (
-        <SetCard>
-          <SetRow
-            label={t('people.noFriends')}
-            sub={t('friends.seeSub')}
-            chevron
-            onClick={() => goHash('/friends')}
-          />
-        </SetCard>
-      )}
-
-      <SetCap>{t('people.families')}</SetCap>
-      {families.length ? (
-        <SetCard>
-          {families.map((fam) => (
-            <SetRow
-              key={fam.id}
-              label={fam.name}
-              sub={fam.role === 'parent' ? t('people.parent') : t('people.kid')}
-              chevron
-              onClick={() => goHash('/family', { id: fam.id })}
+      {links.asked.length ? (
+        <>
+          <SectionHead label={t('people.askBanner', { n: links.asked.length })} />
+          {links.asked.map((row) => (
+            <PersonCard
+              key={row.id}
+              highlight
+              person={row.person}
+              name={friendAskTitle(row.person) || t('people.someone')}
+              line={friendAskNote(row.person)}
+              actions={
+                <>
+                  <button className="di-did di-did-small" type="button" onClick={() => answerAsk(row.id, true)}>
+                    {t('people.yes')}
+                  </button>
+                  <button className="di-key" type="button" onClick={() => answerAsk(row.id, false)}>
+                    {t('people.no')}
+                  </button>
+                </>
+              }
             />
           ))}
-        </SetCard>
+        </>
+      ) : null}
+
+      <SectionHead
+        label={t('people.friends')}
+        count={links.friends.length}
+        link={t('people.seeAll')}
+        onLink={() => goHash('/friends')}
+        onAdd={links.friends.length ? () => setSheet({ kind: 'friend' }) : undefined}
+        addLabel={t('people.addOne')}
+      />
+      {links.friends.length ? (
+        <>
+          <p className="di-set-note">
+            {t('people.doneOf', { done: doneCount, n: links.friends.length })} {t('people.stripHint')}
+          </p>
+          <div className="di-people-strip">
+            {links.friends.map((row) => {
+              const done = doneTonight(row.person, today)
+              const name = personName(row.person) || t('people.someone')
+              return (
+                <button
+                  key={row.id}
+                  type="button"
+                  className="di-people-strip-one"
+                  aria-label={`${name}, ${friendLine(row.person)}`}
+                  onClick={() => setSheet({ kind: 'send', person: row.person })}
+                >
+                  <Avatar person={row.person} done={done} big />
+                  <strong>{name}</strong>
+                  <em className={done ? 'is-on' : ''}>{done ? t('people.doneTonightShort') : t('people.notYet')}</em>
+                </button>
+              )
+            })}
+          </div>
+        </>
       ) : (
-        <p className="di-set-note">{t('people.noFamilies')}</p>
+        <EmptyCard title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>
+              {t('people.connect')}
+            </button>
+          </div>
+        </EmptyCard>
       )}
+
+      <SectionHead
+        label={t('people.families')}
+        count={families.length}
+        onAdd={families.length ? () => setSheet({ kind: 'family' }) : undefined}
+        addLabel={t('people.join')}
+      />
+      {families.length ? (
+        families.map((fam) => (
+          <button
+            key={fam.id}
+            type="button"
+            className="di-person di-person-link"
+            onClick={() => goHash('/family', { id: fam.id })}
+          >
+            <span className="di-person-top">
+              <Avatar person={{ display_name: fam.name }} />
+              <span className="di-person-who">
+                <strong>{fam.name}</strong>
+                <em>{fam.role === 'parent' ? t('people.parent') : t('people.kid')}</em>
+              </span>
+              <span className="di-person-chev" aria-hidden="true">
+                ›
+              </span>
+            </span>
+          </button>
+        ))
+      ) : (
+        <EmptyCard title={t('people.noFamiliesTitle')} body={t('people.noFamiliesBody')}>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>
+              {t('people.startFamily')}
+            </button>
+          </div>
+        </EmptyCard>
+      )}
+      {families.length ? null : <JoinFamilyCard />}
 
       <SetCap>{t('people.you')}</SetCap>
       <SetCard>
@@ -293,34 +370,6 @@ export function People({ book, onChange, now }) {
           chevron
           onClick={() => goHash('/account')}
         />
-        {DIT_ENABLED ? (
-          <>
-            <SetSwitch
-              label={t('people.shareStreak')}
-              sub={t('people.shareStreakSub')}
-              on={Boolean(mine?.share_streak)}
-              onClick={async () => {
-                await shareStreak(!mine?.share_streak)
-                load()
-              }}
-            />
-            <SetSwitch
-              label={t('all.showing')}
-              sub={t('all.joinBody')}
-              on={Boolean(mine?.public_tonight)}
-              onClick={async () => {
-                await setPublicTonight(!mine?.public_tonight)
-                load()
-              }}
-            />
-            <SetRow
-              label={t('all.kicker')}
-              sub={t('all.listCap')}
-              chevron
-              onClick={() => goHash('/everyone')}
-            />
-          </>
-        ) : null}
       </SetCard>
       <SetCard>
         <SetRow
@@ -347,12 +396,22 @@ export function People({ book, onChange, now }) {
       {said ? <p className="di-set-note">{said}</p> : null}
 
       {sheet?.kind === 'send' ? (
-        <SendSheet
-          person={sheet.person}
-          still={still}
+        <SendSheet person={sheet.person} still={still} onClose={() => setSheet(null)} onSent={say} />
+      ) : null}
+      {sheet?.kind === 'friend' ? (
+        <AddFriendPop
+          phone={phone}
           onClose={() => setSheet(null)}
-          onSent={say}
+          onAsked={(words) => {
+            say(words)
+            load()
+          }}
         />
+      ) : null}
+      {sheet?.kind === 'family' ? (
+        <AddPop kicker={t('people.join')} onClose={() => setSheet(null)}>
+          <JoinFamilyCard bare />
+        </AddPop>
       ) : null}
     </>,
   )

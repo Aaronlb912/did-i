@@ -45,7 +45,6 @@ const ROUTES = new Set([
   '/family',
   '/inbox',
   '/sent',
-  '/everyone',
 ])
 
 const STACK_KEY = 'did-i-stack'
@@ -206,10 +205,8 @@ export function goBack(opts = {}) {
     if (!opts.needsEnter) goHash('/')
     return
   }
-  if (path === '/first') {
-    goHash('/')
-    return
-  }
+  // The first question has to be added before anything else opens.
+  if (path === '/first') return
 
   const stack = readStack()
   if (stack.length > 1) {

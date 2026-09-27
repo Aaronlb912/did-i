@@ -15,7 +15,7 @@ import {
   nextCheerStage,
   normalizePurse,
 } from './purse.js'
-import { activeLook } from './dit-board.js'
+import { activeLook } from './active-look.js'
 import { goHash } from '../site/hash.js'
 import { BuyConfirm, NO_MISS, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'

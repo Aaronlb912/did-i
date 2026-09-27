@@ -13,9 +13,10 @@ export function MarkToast({ mark, onClose }) {
 
   return (
     <p className="di-undo di-mark-toast di-screws-print-hide" role="status">
-      <span>
-        {t(markText(mark.id, 'name'))}
-        {mark.id ? ` · ${t(markText(mark.id, 'line'))}` : ''}
+      <span className="di-mark-copy">
+        <em>{t('marks.new')}</em>
+        <strong>{t(markText(mark.id, 'name'))}</strong>
+        {mark.id ? <span>{t(markText(mark.id, 'line'))}</span> : null}
       </span>
       <button className="di-key" type="button" onClick={onClose}>
         {t('marks.ok')}

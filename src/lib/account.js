@@ -77,6 +77,7 @@ export function accountMissText(bad) {
     appleUnavailable: 'auth.appleUnavailable',
     googleFail: 'auth.googleFail',
     googleUnavailable: 'auth.googleUnavailable',
+    reviewerBad: 'auth.reviewerBad',
   }[bad]
   return key ? t(key) : bad
 }
@@ -103,6 +104,18 @@ export async function checkCode(email, code) {
     type: 'email',
   })
   return { miss: error ? mapAuthMiss(error) : '', user: data?.user || null }
+}
+
+// Store review accounts only: reviewers cannot receive an email code.
+// Never creates an account; the account has to exist with a password already.
+export async function signInReviewer(email, password) {
+  const db = cloud()
+  if (!db) return { miss: 'off', user: null }
+  if (!looksLikeEmail(email) || !password) return { miss: 'reviewerBad', user: null }
+  const { data, error } = await db.auth.signInWithPassword({ email: cleanEmail(email), password: String(password) })
+  if (!error) return { miss: '', user: data?.user || null }
+  const bad = mapAuthMiss(error)
+  return { miss: bad === 'often' ? bad : 'reviewerBad', user: null }
 }
 
 export async function signOutHere() {
@@ -133,8 +146,14 @@ export async function readUser() {
   return data?.user || null
 }
 
+// Last session seen by any screen. A screen that mounts later starts from
+// it instead of flashing the signed-out page while getSession resolves.
+let lastUser
+
 export function useAccount() {
-  const [state, setState] = useState({ ready: !cloudSetUp(), user: null })
+  const [state, setState] = useState(() =>
+    lastUser === undefined ? { ready: !cloudSetUp(), user: null } : { ready: true, user: lastUser },
+  )
 
   useEffect(() => {
     const db = cloud()
@@ -142,14 +161,17 @@ export function useAccount() {
     let alive = true
     db.auth.getSession().then(
       ({ data }) => {
-        if (alive) setState({ ready: true, user: data?.session?.user || null })
+        lastUser = data?.session?.user || null
+        if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
       },
       () => {
+        lastUser = null
         if (alive) setState({ ready: true, user: null })
       },
     )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
-      if (alive) setState({ ready: true, user: session?.user || null })
+      lastUser = session?.user || null
+      if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
     })
     return () => {
       alive = false

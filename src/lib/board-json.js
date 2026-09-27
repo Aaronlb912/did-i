@@ -22,7 +22,9 @@ export function newAnswerId() {
 }
 
 const LEGACY_KINDS = ['house', 'pills', 'money', 'people', 'other']
-const KIND_MAX = 40
+// Topics live in lamp.kind as one comma-separated string ("Pets, Morning").
+const KIND_MAX = 160
+const TOPICS_MAX = 8
 const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n']
 const SLOTS = ['morning', 'whenever', 'night']
 
@@ -247,11 +249,51 @@ export function normalizeBook(raw) {
 }
 
 
+export function topicLabel(topic) {
+  return LEGACY_KINDS.includes(topic) ? t(`hang.kind.${topic}`) : topic
+}
+
+// A question's topics, trimmed, no repeats (case-insensitive), at most TOPICS_MAX.
+export function topicsOf(lamp) {
+  const seen = new Set()
+  const out = []
+  for (const raw of asString(lamp?.kind).split(',')) {
+    const topic = raw.trim()
+    const key = topic.toLowerCase()
+    if (!topic || seen.has(key)) continue
+    seen.add(key)
+    out.push(topic)
+    if (out.length >= TOPICS_MAX) break
+  }
+  return out
+}
+
+export function joinTopics(list) {
+  return topicsOf({ kind: (list || []).join(',') }).join(', ').slice(0, KIND_MAX)
+}
+
+// Every topic used on the shelf, for picking and filtering.
+export function shelfTopics(boards) {
+  const seen = new Map()
+  for (const book of boards || []) {
+    for (const lamp of book.lamps || []) {
+      for (const topic of topicsOf(lamp)) {
+        const key = topic.toLowerCase()
+        if (!seen.has(key)) seen.set(key, topic)
+      }
+    }
+  }
+  return [...seen.values()].sort((a, b) => topicLabel(a).localeCompare(topicLabel(b)))
+}
+
+export function hasAnyTopic(lamp, picks) {
+  if (!picks?.length) return true
+  const mine = topicsOf(lamp).map((topic) => topic.toLowerCase())
+  return picks.some((pick) => mine.includes(pick.toLowerCase()))
+}
+
 export function kindLabel(lamp) {
-  const kind = asString(lamp?.kind).trim()
-  if (!kind) return ''
-  if (LEGACY_KINDS.includes(kind)) return t(`hang.kind.${kind}`)
-  return kind
+  return topicsOf(lamp).map(topicLabel).join(', ')
 }
 
 export function shortFromQuestion(question, max = 0) {

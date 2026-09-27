@@ -5,6 +5,33 @@ delete it from here.
 
 Last worked through 2026-09-27.
 
+## Found in the 2026-09-26 people pass
+
+- **Family questions do not reach Tonight.** `FamilyTonight` sat behind the
+  public-list flag (off in every build) and went with it on 2026-09-26, so
+  a question a parent puts in the family folder only shows on the family
+  page. The family page still says "It shows up on their tonight." Decide:
+  bring a family block back to Tonight, or change that line. Family
+  did yous (sends) are not affected; they now land on tonight.
+- **Auto-add runs while the app is open.** A family did you, or one from a
+  friend allowed to add, is claimed on the next app open or focus, not
+  the moment it is sent. The push still arrives. The widget shows it only
+  after the app has opened once.
+- **Auto-add not tried with two real accounts.** The server rules pass
+  `npm run db:test supabase/tests/auto-add.test.sql` (rolled-back fixtures:
+  family goes straight on, a friend waits until switched on, the sender
+  cannot read the switch, a stranger cannot send, signed out gets nothing,
+  blocking drops the switch). The emulator showed the badge, menu row,
+  banner, and the add to tonight with stand-in data only.
+- **Web people screens signed in.** Friends, family, and the did you banner
+  on the website were checked at 390px with fixture data, not a signed-in
+  session.
+- **Errors on Friends sit at the bottom.** A failed save on the auto-add
+  switch, a cheer, or a gift shows under the list, which can be off screen
+  on a long list.
+- **Shake to undo in dev builds** opens the Expo dev menu instead. Tapping
+  the toast works. Store builds are not affected.
+
 ## Waiting on an account, not on code
 
 **Sign in with Apple.** Portal + Supabase configured (`npm run
@@ -85,7 +112,7 @@ where somebody is a nuisance.
 2. Point `did-i.app` DNS at Vercel; import repo and set env vars (see `docs/site.md`).
 3. Set `VITE_LEGAL_EMAIL` and have a lawyer review `scripts/legal-i18n.mjs`.
 4. Privacy and terms at `/privacy` and `/terms` (and in the app). Disclosures
-   at sign-in, gem checkout, and Did I tonight opt-in are already in copy.
+   at sign-in and gem checkout are already in copy.
 5. When you are ready for paid gems: store products + `gem-iap` secrets per `docs/iap.md`.
 6. `npx expo prebuild` and install on a phone; walk social, settings, and push with a second account.
 7. Phone-first friends (24 Sep 2026): with two real accounts, save a number on each, ask by number, accept. Also try a number already on the other account ("That number is already on another account."). Server rules are proven on the live DB; the full two-account round trip is not. The legal text for phone numbers changed; include it in the lawyer review.
@@ -119,11 +146,6 @@ cheer skip under reduce-motion.
 ## Ideas parked (not built)
 
 - **More coin sinks** from the brainstorm (buddy accessories, undo token, preview gem looks, extra tag slot, streak stamps, tag badges) are still open. Signed-in **coin earns and spends** for looks and cheer stages go through `wallet.sql`; run `db:apply:all` after SQL edits.
-- **Did I tonight (DIT)** is off in the main app (`VITE_DIT_ENABLED` unset).
-  Code stays in repo for a future split. Friends, family, and account sync
-  still work; the public wall tab and opt-in are hidden.
-- Pin your row on DIT for a night (skipped on purpose).
-- A fourth line slot on DIT (board shows all DID labels now instead).
 - **Add a question by voice, the rest of it.** Built (27 Sep 2026):
   `didi://add?q=...` prefills Add; Android has an app-icon shortcut and a
   Google Assistant `CREATE_THING` capability (`android/.../res/xml/shortcuts.xml`).
@@ -137,6 +159,30 @@ cheer skip under reduce-motion.
   dropped. iOS widget answers still land on their stored night.
 - **Shake to undo** is still wired (`useShakeUndo`) but no longer promised on
   screen; it was unreliable on test phones. Fix or remove.
+- **Did I tonight (the public list)** was removed from the app code on
+  2026-09-26. If it comes back it will be its own product. The database
+  still has its tables and functions (`supabase/tonight.sql`,
+  `supabase/dit-board.sql`); dropping them needs a migration that keeps
+  `delete_me()`, which lives in `tonight.sql`.
+
+## Done (2026-09-26 people pass)
+
+- Did you alerts: a count on the menu button on every screen, a lit Did you
+  row in the menu, and a banner when one lands while the app is open (tap
+  opens the inbox, close button, still under Less motion). One shared poll
+  for all badges; coming back to the app refreshes it on the phone too
+  (the phone's stand-in `document` had been swallowing that listener).
+- Auto-add: family did yous go straight onto tonight in the open folder.
+  A friend's do the same only with "Can add to my tonight" on for that
+  friend (`supabase/auto-add.sql`: `auto_adds`, `claim_auto_sends()`, family
+  can send a did you, cap of 200, switch dropped with the friendship).
+- Friends and family restyled on phone and web: cards with initials, done
+  tonight at a glance, Did you and Cheer on each card, the rest under More.
+  Family members can be sent a did you.
+- Questions: Select mode with Select all, Stop asking / Ask again, and
+  Delete with a confirm and Undo.
+- Buying a coin look said "That look is gone" every time; fixed.
+- Privacy and terms no longer mention public tonight lines.
 
 ## Done (2026-09-23 phone pass)
 

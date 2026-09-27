@@ -91,9 +91,12 @@ If the emulator is not available, open the PR as a **draft** titled
    `npm run ios:prepare:store`, applies `supabase/shop-catalog.sql` (safe
    early: the server only sells an item from its date), pushes the branch and
    opens a PR.
-2. Aaron reviews the PR and merges it.
-3. Aaron runs `npm run update:prod` before the drop day. Because items are
-   dated, one update can carry several future drops.
+2. If every point of the quality gate passed on a device, the task waits for
+   CI and merges the PR itself. A draft ("needs device check") waits for Aaron.
+3. The `ota update` workflow (.github/workflows/ota-update.yml) publishes the
+   update to phones on every push to master (needs the `EXPO_TOKEN` secret).
+   Pushes that change native files are skipped; those need a store build.
+   Items are dated, so shipping early is safe.
 
 Widget buddy art is native on iPhone, so a new buddy shows on the iPhone
 home-screen widget from the next store build; everywhere else it comes with

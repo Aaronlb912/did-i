@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
@@ -76,6 +76,23 @@ export function personName(row) {
   return row.display_name || formatPhone(row.phone) || ''
 }
 
+// Up to two letters for an avatar. A number with no name gets its last two digits.
+export function personInitials(person) {
+  const name = String(person?.display_name || '').trim()
+  if (name) {
+    const words = name.split(/\s+/).filter(Boolean)
+    const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]]
+    return letters.map((word) => Array.from(word)[0] || '').join('').toUpperCase()
+  }
+  const digits = String(person?.phone || '').replace(/\D/g, '')
+  return digits ? digits.slice(-2) : '?'
+}
+
+// Did they clear their own tonight? Only when they share it.
+export function doneTonight(person, dateIso = isoDate(new Date())) {
+  return Boolean(person?.share_streak !== false && person?.done_on && person.done_on === dateIso)
+}
+
 export function friendAskTitle(person) {
   const name = person?.display_name?.trim()
   if (name) return name
@@ -106,7 +123,7 @@ export async function readMine() {
   const { data } = await db
     .from('profiles')
     .select(
-      'user_id, phone, display_name, share_streak, public_tonight, streak, done_on, invite_code, invited_by, invite_gems_paid',
+      'user_id, phone, display_name, share_streak, streak, done_on, invite_code, invited_by, invite_gems_paid',
     )
     .eq('user_id', user.id)
     .maybeSingle()
@@ -794,7 +811,6 @@ export async function answerFamilyLamp(familyId, lampId, periodKey, status) {
   return error ? bad(error) : { miss: '' }
 }
 
-// Tonight, across every family you are in -----------------------------
 
 function dueOnFamilyNight(lamp, night) {
   if (lamp.cadence === 'once') {
@@ -868,7 +884,11 @@ export async function familyTonight() {
   return out
 }
 
+// The phone shell hands over an app-state hook. Check it first: the phone
+// also has a stand-in document whose listeners never fire.
 function onVisible(fn) {
+  const hook = globalThis.__didIOnVisible
+  if (typeof hook === 'function') return hook(fn)
   if (typeof document !== 'undefined') {
     function onShow() {
       if (!document.hidden) fn()
@@ -876,9 +896,235 @@ function onVisible(fn) {
     document.addEventListener('visibilitychange', onShow)
     return () => document.removeEventListener('visibilitychange', onShow)
   }
-  const hook = globalThis.__didIOnVisible
-  if (typeof hook === 'function') return hook(fn)
   return () => {}
+}
+
+// PostgREST says this when a function is not in the schema cache, which
+// in practice means its SQL file has not been run yet.
+function notRunYet(error) {
+  return error?.code === 'PGRST202' || /schema cache/i.test(error?.message || '')
+}
+
+// Friends who can add to your tonight ------------------------------------
+//
+// Off by default. Only you can read or change your own list; the friend is
+// never told. Family did yous always go straight on and need no switch.
+
+export async function listAutoAdds() {
+  const db = cloud()
+  if (!db) return new Set()
+  const user = await me()
+  if (!user) return new Set()
+  const { data, error } = await db.from('auto_adds').select('friend_id').eq('owner_id', user.id)
+  if (error) return new Set()
+  return new Set((data || []).map((row) => row.friend_id))
+}
+
+export async function setAutoAdd(friendId, on) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const { error } = on
+    ? await db.from('auto_adds').insert({ owner_id: user.id, friend_id: friendId })
+    : await db.from('auto_adds').delete().eq('owner_id', user.id).eq('friend_id', friendId)
+  if (error && !(on && /duplicate|unique/i.test(error.message || ''))) {
+    return notRunYet(error) || error.code === '42P01' ? { miss: 'setup' } : bad(error)
+  }
+  // Anything they already sent can come through now.
+  if (on) refreshPeople()
+  return { miss: '' }
+}
+
+// The did you pulse -------------------------------------------------------
+//
+// One poll for the whole app, however many badges are on screen. Each look
+// claims anything allowed straight onto tonight, counts what still waits,
+// and notices a did you that arrived since the last look so the app can
+// show a banner. Nothing polls faster than five minutes; coming back to
+// the app is what keeps it fresh.
+
+const PULSE_MS = 300000
+const PULSE_STALE_MS = 60000
+const PULSE_ZERO = { inbox: 0, asks: 0, news: null }
+
+const pulse = {
+  userId: '',
+  state: PULSE_ZERO,
+  seen: null,
+  at: 0,
+  subs: new Set(),
+  adder: null,
+  busy: null,
+  stop: null,
+}
+
+function pulseEmit(next) {
+  pulse.state = next
+  for (const fn of pulse.subs) fn(next)
+}
+
+async function claimAutoSends(db) {
+  const { data, error } = await db.rpc('claim_auto_sends')
+  if (error) return []
+  return (data || []).filter((row) => String(row.question || '').trim())
+}
+
+async function pulseLook() {
+  if (pulse.busy) return pulse.busy
+  pulse.busy = (async () => {
+    const db = cloud()
+    const user = db ? await me() : null
+    if (!db || !user || user.id !== pulse.userId) return
+    pulse.at = Date.now()
+    // Only claim while something is there to put the questions on tonight.
+    const adder = pulse.adder
+    const claimed = adder ? await claimAutoSends(db) : []
+    // Straight onto tonight before anything else can fail; the server has
+    // already marked these kept.
+    if (claimed.length) adder(claimed.map((row) => row.question))
+    const [waiting, asks] = await Promise.all([
+      db
+        .from('sends')
+        .select('id, from_id, kind, question', { count: 'exact' })
+        .eq('to_id', user.id)
+        .eq('state', 'sent')
+        .order('made_at', { ascending: false })
+        .limit(20),
+      friendAskCount(),
+    ])
+    if (user.id !== pulse.userId) return
+    const rows = waiting.data || []
+    const fresh = pulse.seen ? rows.filter((row) => !pulse.seen.has(row.id)) : []
+    pulse.seen = new Set([...(pulse.seen || []), ...rows.map((row) => row.id)])
+
+    let news = pulse.state.news
+    if (claimed.length || fresh.length) {
+      const who = await peopleByIds(db)
+      const nameOf = (id) => personName(who.get(id)) || ''
+      if (claimed.length) {
+        news = {
+          id: `added-${claimed[0].send_id}`,
+          kind: 'added',
+          n: claimed.length,
+          name: nameOf(claimed[0].sender_id),
+          question: claimed[0].question,
+        }
+      } else {
+        news = {
+          id: fresh[0].id,
+          kind: fresh[0].kind === 'cheer' ? 'cheer' : 'todo',
+          n: fresh.length,
+          name: nameOf(fresh[0].from_id),
+          question: fresh[0].question,
+        }
+      }
+    }
+    pulseEmit({ inbox: waiting.count ?? rows.length, asks, news })
+  })()
+    .catch(() => {})
+    .finally(() => {
+      pulse.busy = null
+    })
+  return pulse.busy
+}
+
+function pulseWatch(user, fn) {
+  if (pulse.userId !== user.id) {
+    pulse.userId = user.id
+    pulse.seen = null
+    pulse.at = 0
+    pulse.state = PULSE_ZERO
+  }
+  pulse.subs.add(fn)
+  fn(pulse.state)
+  if (!pulse.stop) {
+    const timer = setInterval(pulseLook, PULSE_MS)
+    const stopVisible = onVisible(pulseLook)
+    pulse.stop = () => {
+      clearInterval(timer)
+      stopVisible()
+    }
+  }
+  if (Date.now() - pulse.at > PULSE_STALE_MS) pulseLook()
+  return () => {
+    pulse.subs.delete(fn)
+    if (!pulse.subs.size && pulse.stop) {
+      pulse.stop()
+      pulse.stop = null
+    }
+  }
+}
+
+/** Look again now, for example after answering something in the inbox. */
+export function refreshPeople() {
+  if (!pulse.userId) return Promise.resolve()
+  return pulseLook()
+}
+
+/** What the banner says for a piece of news, and where a tap goes. */
+export function didYouNewsLines(news) {
+  const name = news.name || t('people.someone')
+  if (news.kind === 'added') {
+    return {
+      title: news.n > 1 ? t('didyou.addedSome', { n: news.n }) : t('didyou.added', { name }),
+      body: news.n > 1 ? '' : news.question,
+      go: '/tonight',
+    }
+  }
+  if (news.kind === 'cheer') return { title: t('didyou.newCheer', { name }), body: '', go: '/inbox' }
+  return {
+    title: news.n > 1 ? t('didyou.newSome', { n: news.n }) : t('didyou.newOne', { name }),
+    body: news.n > 1 ? '' : news.question,
+    go: '/inbox',
+  }
+}
+
+/** The banner was seen or closed. */
+export function dismissPeopleNews() {
+  if (pulse.state.news) pulseEmit({ ...pulse.state, news: null })
+}
+
+/** { inbox, asks, news } for the signed-in person. */
+export function usePeoplePulse(user) {
+  const [state, setState] = useState(pulse.state)
+
+  useEffect(() => {
+    if (!cloudSetUp() || !user?.id) {
+      setState(PULSE_ZERO)
+      return undefined
+    }
+    return pulseWatch(user, setState)
+  }, [user?.id])
+
+  return state
+}
+
+export function usePeopleCount(user) {
+  const { inbox, asks } = usePeoplePulse(user)
+  return inbox + asks
+}
+
+/**
+ * The app shell hands over how to put did yous on tonight. Without it the
+ * pulse only counts, so a did you is never marked kept and then lost.
+ */
+export function useAutoAdd(user, add) {
+  const live = useRef(add)
+  live.current = add
+
+  useEffect(() => {
+    if (!cloudSetUp() || !user?.id) return undefined
+    const adder = (questions) => live.current(questions)
+    pulse.adder = adder
+    // A look that started before this could not claim anything; run one more.
+    Promise.resolve(pulse.busy).then(() => {
+      if (pulse.adder === adder && pulse.userId === user.id) pulseLook()
+    })
+    return () => {
+      if (pulse.adder === adder) pulse.adder = null
+    }
+  }, [user?.id])
 }
 
 export function useFamilyTonight(user) {
@@ -898,102 +1144,4 @@ export function useFamilyTonight(user) {
   }, [look])
 
   return { rows, reload: look }
-}
-
-// Did I tonight ---------------------------------------------------------
-//
-// The one place in the app where somebody who is not a friend can see
-// anything about you, and only after the switch is on. Reads go through
-// tonight_wall(), which is one call whatever the size of the list.
-
-export const TONIGHT_CHEER_GEMS = 1
-
-export async function setPublicTonight(on) {
-  const db = cloud()
-  if (!db) return { miss: 'off' }
-  const { error } = await db.rpc('set_public_tonight', { on_it: Boolean(on) })
-  if (!error) return { miss: '' }
-  return notRunYet(error) ? { miss: 'setup' } : bad(error)
-}
-
-// PostgREST says this when the function is not in the schema cache,
-// which in practice means supabase/tonight.sql has not been run yet.
-function notRunYet(error) {
-  return error?.code === 'PGRST202' || /schema cache/i.test(error?.message || '')
-}
-
-export async function tonightWall(night) {
-  const db = cloud()
-  if (!db) return { rows: [], tally: 0, miss: 'off' }
-  const [wall, tally] = await Promise.all([
-    db.rpc('tonight_wall', { wanted: night }),
-    db.rpc('tonight_tally', { wanted: night }),
-  ])
-  if (wall.error) {
-    if (notRunYet(wall.error)) return { rows: [], tally: 0, miss: 'setup' }
-    return { rows: [], tally: 0, ...bad(wall.error) }
-  }
-  return { rows: wall.data || [], tally: tally.data || 0, miss: '' }
-}
-
-export async function reportTonightLine(id, why = '') {
-  const db = cloud()
-  if (!db) return { miss: 'off' }
-  const { error } = await db.rpc('report_tonight', { line: id, why })
-  return error ? bad(error) : { miss: '' }
-}
-
-export function cleanLine(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 60)
-}
-
-// Push every DID label for tonight up to the board. No picking lines.
-export async function syncTonightBoard(labels, night) {
-  const db = cloud()
-  if (!db) return { miss: 'off' }
-  const user = await me()
-  if (!user) return { miss: 'out' }
-  const clean = (labels || []).map(cleanLine).filter(Boolean)
-  const { error } = await db.rpc('sync_tonight', { wanted: night, labels: clean })
-  if (!error) return { miss: '' }
-  if (notRunYet(error)) return { miss: 'setup' }
-  return bad(error)
-}
-
-export async function cheerOn(otherId, night) {
-  const db = cloud()
-  if (!db) return { miss: 'off' }
-  const { data, error } = await db.rpc('cheer_on', { other: otherId, wanted: night })
-  if (error) return notRunYet(error) ? { miss: 'setup' } : bad(error)
-  return { miss: '', fresh: Boolean(data) }
-}
-
-// A small poll so a badge can show up without a socket.
-
-export function usePeopleCount(user) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (!cloudSetUp() || !user) {
-      setCount(0)
-      return undefined
-    }
-    let alive = true
-    async function look() {
-      const n = await peopleBadgeCount()
-      if (alive) setCount(n)
-    }
-    look()
-    // Every minute per person is a lot of traffic for a badge. The check on
-    // coming back to the tab is what actually keeps it fresh.
-    const timer = window.setInterval(look, 300000)
-    const stopVisible = onVisible(look)
-    return () => {
-      alive = false
-      window.clearInterval(timer)
-      stopVisible()
-    }
-  }, [user])
-
-  return count
 }

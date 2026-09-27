@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { activeLook } from '../../src/lib/dit-board.js'
+import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
@@ -9,7 +9,6 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
 import { hallColors } from '../theme.js'
 import { gemFrameStyle } from '../lib/gem-look-tone.js'
-import { HallHalo } from './HallHalo.jsx'
 import { HallAmbient } from './HallAmbient.jsx'
 import { AppHeader } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
@@ -77,7 +76,6 @@ export function BoardShell({
 
   const frame = (
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      {halo ? <HallHalo look={coat} /> : null}
       <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
       <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
         {inner}

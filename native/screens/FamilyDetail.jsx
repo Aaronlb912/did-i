@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useKept } from '../hooks/useKept.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -17,6 +18,7 @@ import {
   readFamily,
   buyCheers,
   cheerFamily,
+  doneTonight,
   readFriendCheers,
   setRole,
 } from '../../src/lib/people.js'
@@ -30,6 +32,8 @@ import {
 } from '../../src/lib/purse.js'
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { offerMoreGems } from '../components/SheetHost.jsx'
+import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
+import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -44,19 +48,21 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const account = useAccount()
   const purse = normalizePurse(book)
   const clock = new Date()
-  const [fam, setFam] = useState(null)
-  const [lamps, setLamps] = useState([])
-  const [answers, setAnswers] = useState([])
+  const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null)
+  const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [])
+  const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [])
   const [night, setNight] = useState(() => boardDate(clock, book.dayFoldHour))
   const [nights, setNights] = useState([])
   const [past, setPast] = useState([])
   const [edit, setEdit] = useState(null)
-  const [ready, setReady] = useState(false)
+  const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false)
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [stock, setStock] = useState(null)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const [sheet, setSheet] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -148,22 +154,125 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
-      <Text style={[styles.title, { color: colors.ink }]}>{fam.name}</Text>
-      <Pressable
-        onPress={async () => {
-          setMiss('')
-          setSaid('')
-          const how = await passAlong(
-            t('family.codeInvite', { name: fam.name, code: fam.code }),
-            fam.name,
-          )
-          if (how === 'shared') setSaid(t('people.shared'))
-        }}
-        style={[styles.codeRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
-      >
-        <Text style={{ color: colors.ink }}>{t('family.codeLine', { code: fam.code })}</Text>
-        <Text style={{ color: colors.inkDim, fontSize: 12 }}>{t('people.tapToSend')}</Text>
-      </Pressable>
+      <View style={styles.titleRow}>
+        <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
+        <Pressable
+          onPress={() => setCodeOpen(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('people.joinCode')}
+        >
+          {({ pressed }) => <Text style={[styles.plus, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>}
+        </Pressable>
+      </View>
+
+      <SectionHead
+        colors={colors}
+        label={t('family.people')}
+        count={fam.members.length}
+      />
+      <Text style={[styles.glance, { color: colors.inkSoft }]}>
+        {t('people.doneOf', {
+          done: fam.members.filter((row) => doneTonight(row.person, night)).length,
+          n: fam.members.length,
+        })}
+      </Text>
+      {fam.members.map((row) => {
+        const name = row.you ? t('family.youAre') : personName(row.person) || t('family.someone')
+        const done = doneTonight(row.person, night)
+        const week = nights.map((one) =>
+          past.some(
+            (item) => item.user_id === row.user_id && item.period_key === one && item.status !== 'skip',
+          ),
+        )
+        return (
+          <PersonCard
+            key={row.user_id}
+            colors={colors}
+            person={row.you ? { display_name: personName(row.person) || name } : row.person}
+            done={done}
+            name={name}
+            line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
+            pill={done ? t('people.doneTonightShort') : ''}
+            pillOn={done}
+            extra={
+              <View style={styles.weekRow}>
+                <View style={styles.dots}>
+                  {week.map((on, at) => (
+                    <View key={nights[at]} style={[styles.dot, { backgroundColor: on ? colors.on : colors.open }]} />
+                  ))}
+                </View>
+                <Text style={[styles.weekCount, { color: colors.inkDim }]}>
+                  {t('family.weekCount', { n: week.filter(Boolean).length })}
+                </Text>
+              </View>
+            }
+            actions={
+              row.you ? null : (
+                <>
+                  <DidButton
+                    colors={colors}
+                    small
+                    label={t('people.sendDidYou')}
+                    onPress={() => setSheet({ person: row.person })}
+                  />
+                  {done ? (
+                    <KeyButton
+                      colors={colors}
+                      disabled={cheersLeft < 1}
+                      label={t('friends.cheerUse')}
+                      onPress={async () => {
+                        setMiss('')
+                        setSaid('')
+                        const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                        const known = friendCheerMissKey(sent.miss)
+                        if (known) return setMiss(t(known.key, known.vars))
+                        if (sent.miss) return setMiss(tMiss(sent.miss))
+                        setStock(normalizePurse(sent.book).friendCheers)
+                        if (onChange) onChange(sent.book)
+                        fireCheer(purse.cheerOn, 1)
+                        return setSaid(t('family.cheerSent', { name }))
+                      }}
+                    />
+                  ) : null}
+                </>
+              )
+            }
+            more={
+              fam.parent && !row.you ? (
+                <View style={styles.rowActions}>
+                  <KeyButton
+                    colors={colors}
+                    label={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
+                    onPress={async () => {
+                      const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
+                      if (why === 'lastparent') setMiss(t('family.lastParent'))
+                      else if (why) setMiss(why)
+                      load()
+                    }}
+                  />
+                  <KeyButton
+                    colors={colors}
+                    label={t('family.remove')}
+                    onPress={async () => {
+                      const { miss: why } = await dropMember(fam.id, row.user_id)
+                      if (why === 'lastparent') setMiss(t('family.lastParent'))
+                      else if (why) setMiss(why)
+                      load()
+                    }}
+                  />
+                </View>
+              ) : null
+            }
+          />
+        )
+      })}
+      <Meta colors={colors}>
+        {t('family.week')}: {t('family.weekFrom', { from: formatBoardDate(nights[0] || night), to: formatBoardDate(night) })}
+      </Meta>
+      {fam.members.length < 2 ? (
+        <EmptyCard colors={colors} title={t('family.aloneTitle')} body={t('family.inviteHint', { code: fam.code })} />
+      ) : null}
 
       <Cap colors={colors}>{t('family.tonight')}</Cap>
       {lamps.length ? (
@@ -240,31 +349,6 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       <DidButton colors={colors} label={t('family.put')} onPress={add} />
       <Meta colors={colors}>{fam.parent ? t('family.assignHint') : t('family.kidHint')}</Meta>
 
-      <Cap colors={colors}>{t('family.week')}</Cap>
-      {fam.members.map((row) => {
-        const done = nights.map((one) =>
-          past.some(
-            (item) => item.user_id === row.user_id && item.period_key === one && item.status !== 'skip',
-          ),
-        )
-        return (
-          <View key={row.user_id} style={[styles.row, { borderColor: colors.line }]}>
-            <Text style={{ color: colors.ink, fontWeight: '600' }}>
-              {row.you ? t('family.youAre') : personName(row.person) || t('family.someone')}
-            </Text>
-            <Text style={{ color: colors.inkDim }}>{t('family.weekCount', { n: done.filter(Boolean).length })}</Text>
-            <View style={styles.dots}>
-              {done.map((on, at) => (
-                <View key={nights[at]} style={[styles.dot, { backgroundColor: on ? colors.on : colors.open }]} />
-              ))}
-            </View>
-          </View>
-        )
-      })}
-      <Meta colors={colors}>
-        {t('family.weekFrom', { from: formatBoardDate(nights[0] || night), to: formatBoardDate(night) })}
-      </Meta>
-
       <Cap colors={colors}>{t('friends.cheerStock', { n: cheersLeft })}</Cap>
       <Meta colors={colors}>{t('friends.cheerNote')}</Meta>
       <KeyButton
@@ -290,63 +374,6 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         }}
       />
 
-      <Cap colors={colors}>{t('family.people')}</Cap>
-      {fam.members.map((row) => (
-        <View key={row.user_id} style={[styles.row, { borderColor: colors.line }]}>
-          <Text style={{ color: colors.ink, fontWeight: '600' }}>
-            {row.you ? t('family.youAre') : personName(row.person) || t('family.someone')}
-          </Text>
-          <Text style={{ color: colors.inkDim }}>{row.role === 'parent' ? t('people.parent') : t('people.kid')}</Text>
-          <View style={styles.rowActions}>
-            {!row.you && row.person?.done_on === night ? (
-              <KeyButton
-                colors={colors}
-                disabled={cheersLeft < 1}
-                label={t('friends.cheerUse')}
-                onPress={async () => {
-                  setMiss('')
-                  setSaid('')
-                  const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
-                  const known = friendCheerMissKey(sent.miss)
-                  if (known) return setMiss(t(known.key, known.vars))
-                  if (sent.miss) return setMiss(tMiss(sent.miss))
-                  setStock(normalizePurse(sent.book).friendCheers)
-                  if (onChange) onChange(sent.book)
-                  fireCheer(purse.cheerOn, 1)
-                  return setSaid(
-                    t('family.cheerSent', { name: personName(row.person) || t('family.someone') }),
-                  )
-                }}
-              />
-            ) : null}
-            {fam.parent && !row.you ? (
-              <>
-                <KeyButton
-                  colors={colors}
-                  label={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
-                  onPress={async () => {
-                    const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
-                    if (why === 'lastparent') setMiss(t('family.lastParent'))
-                    else if (why) setMiss(why)
-                    load()
-                  }}
-                />
-                <KeyButton
-                  colors={colors}
-                  label={t('family.remove')}
-                  onPress={async () => {
-                    const { miss: why } = await dropMember(fam.id, row.user_id)
-                    if (why === 'lastparent') setMiss(t('family.lastParent'))
-                    else if (why) setMiss(why)
-                    load()
-                  }}
-                />
-              </>
-            ) : null}
-          </View>
-        </View>
-      ))}
-
       <KeyButton
         colors={colors}
         label={t('family.leave')}
@@ -360,8 +387,46 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {said ? <Meta colors={colors}>{said}</Meta> : null}
       {miss ? <Text style={{ color: colors.miss }}>{tMiss(miss)}</Text> : null}
-      <Meta colors={colors}>{t('family.inviteHint', { code: fam.code })}</Meta>
       <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/family')} />
+
+      {codeOpen ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
+          <Pressable style={styles.veil} onPress={() => setCodeOpen(false)}>
+            <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+              <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
+              <Text style={[styles.code, { color: colors.ink }]} selectable>
+                {fam.code}
+              </Text>
+              <Meta colors={colors}>{t('family.inviteHint', { code: fam.code })}</Meta>
+              <DidButton
+                colors={colors}
+                label={t('people.send')}
+                onPress={async () => {
+                  setMiss('')
+                  setSaid('')
+                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
+                  setCodeOpen(false)
+                  if (how === 'shared') setSaid(t('people.shared'))
+                }}
+              />
+              <KeyButton colors={colors} label={t('settings.close')} onPress={() => setCodeOpen(false)} />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
+
+      {sheet ? (
+        <SendSheet
+          family
+          person={sheet.person}
+          colors={colors}
+          onClose={() => setSheet(null)}
+          onSent={(words) => {
+            setMiss('')
+            setSaid(words)
+          }}
+        />
+      ) : null}
 
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
@@ -392,12 +457,18 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 const styles = StyleSheet.create({
   cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 8 },
   title: { fontFamily: fonts.display, fontSize: 24, fontWeight: '700' },
-  codeRow: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 4 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  titleText: { flex: 1 },
+  plus: { fontFamily: fonts.ui, fontSize: 28, lineHeight: 30, fontWeight: '500' },
+  code: { fontFamily: fonts.mono, fontSize: 32, fontWeight: '700', letterSpacing: 4, textAlign: 'center', paddingVertical: 6 },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   rowTitle: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   rowActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dots: { flexDirection: 'row', gap: 6 },
+  glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 2 },
+  weekRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  weekCount: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   veil: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },

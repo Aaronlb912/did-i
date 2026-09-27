@@ -112,6 +112,8 @@ export default ({ config }) => ({
         ios: {
           deploymentTarget: '17.0',
           newArchEnabled: true,
+          // Xcode 27 will not launch an app that still creates its window in the app delegate.
+          enableSceneSupport: true,
         },
       },
     ],
@@ -159,7 +161,6 @@ export default ({ config }) => ({
     VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || clientEnv('VITE_SUPABASE_ANON_KEY'),
     VITE_LEGAL_EMAIL: process.env.VITE_LEGAL_EMAIL || clientEnv('VITE_LEGAL_EMAIL'),
     VITE_WEB_APP_URL: process.env.VITE_WEB_APP_URL || clientEnv('VITE_WEB_APP_URL'),
-    VITE_DIT_ENABLED: process.env.VITE_DIT_ENABLED || '',
     VITE_REPORT_URL: process.env.VITE_REPORT_URL || '',
     VITE_APPLE_AUTH: process.env.VITE_APPLE_AUTH || clientEnv('VITE_APPLE_AUTH'),
     VITE_GOOGLE_AUTH: process.env.VITE_GOOGLE_AUTH || clientEnv('VITE_GOOGLE_AUTH'),

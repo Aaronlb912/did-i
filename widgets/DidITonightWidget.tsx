@@ -8,12 +8,14 @@ import {
   clipped,
   containerBackground,
   containerRelativeFrame,
+  containerShape,
   controlSize,
   font,
   foregroundStyle,
   frame,
   tint,
   kerning,
+  layoutPriority,
   lineLimit,
   minimumScaleFactor,
   multilineTextAlignment,
@@ -22,6 +24,7 @@ import {
   padding,
   rotationEffect,
   scaleEffect,
+  strokeBorder,
   textCase,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers'
@@ -205,6 +208,88 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       ['e', 17, 45, 3, 2, '#c4a882'],
       ['e', 31, 45, 3, 2, '#c4a882'],
     ],
+    ant: [
+      ['l', 20, 15, 17, 8, '#7a3526', 1.4],
+      ['l', 17, 8, 12, 6, '#7a3526', 1.4],
+      ['l', 28, 15, 31, 8, '#7a3526', 1.4],
+      ['l', 31, 8, 36, 6, '#7a3526', 1.4],
+      ['e', 12, 6, 1.4, 1.4, '#7a3526'],
+      ['e', 36, 6, 1.4, 1.4, '#7a3526'],
+      ['l', 20, 29, 12, 25, '#7a3526', 1.5],
+      ['l', 12, 25, 8, 28, '#7a3526', 1.5],
+      ['l', 19.5, 31, 11, 32.5, '#7a3526', 1.5],
+      ['l', 11, 32.5, 7, 37, '#7a3526', 1.5],
+      ['l', 20, 33, 13, 38, '#7a3526', 1.5],
+      ['l', 13, 38, 10, 44, '#7a3526', 1.5],
+      ['l', 28, 29, 36, 25, '#7a3526', 1.5],
+      ['l', 36, 25, 40, 28, '#7a3526', 1.5],
+      ['l', 28.5, 31, 37, 32.5, '#7a3526', 1.5],
+      ['l', 37, 32.5, 41, 37, '#7a3526', 1.5],
+      ['l', 28, 33, 35, 38, '#7a3526', 1.5],
+      ['l', 35, 38, 38, 44, '#7a3526', 1.5],
+      ['e', 24, 43, 9, 8, '#9c4431'],
+      ['l', 16.5, 41, 31.5, 41, '#7a3526', 1.1],
+      ['l', 16, 45, 32, 45, '#7a3526', 1.1],
+      ['e', 20.5, 39.5, 2.6, 1.5, '#ffffff', 0, 0.2],
+      ['e', 24, 31, 5, 4.5, '#b5533c'],
+      ['e', 24, 20, 8.5, 7.5, '#b5533c'],
+      ['e', 21, 16.8, 2.2, 1.2, '#ffffff', 0, 0.25],
+      ['e', 19.6, 19.8, 2.4, 2.8, '#2d241c'],
+      ['e', 28.4, 19.8, 2.4, 2.8, '#2d241c'],
+      ['e', 20.2, 19, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 29, 19, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 22.2, 26.4, 1.3, 0.9, '#7a3526'],
+      ['e', 25.8, 26.4, 1.3, 0.9, '#7a3526'],
+    ],
+    possum: [
+      ['l', 37, 41, 43, 38, '#f2a7b4', 2.2],
+      ['l', 43, 38, 43.5, 33, '#f2a7b4', 2.2],
+      ['e', 13, 19, 5, 5.5, '#3a3438'],
+      ['e', 35, 19, 5, 5.5, '#3a3438'],
+      ['e', 13, 19.5, 3, 3.4, '#f2a7b4'],
+      ['e', 35, 19.5, 3, 3.4, '#f2a7b4'],
+      ['e', 24, 32, 15, 13.5, '#9b98a3'],
+      ['e', 24, 29, 10.5, 9, '#f4f1ec'],
+      ['e', 24, 34.5, 5.5, 4.2, '#f4f1ec'],
+      ['e', 19, 28, 3.2, 3.6, '#5b5660'],
+      ['e', 29, 28, 3.2, 3.6, '#5b5660'],
+      ['e', 19, 28, 1.9, 2.3, '#1f1a1e'],
+      ['e', 29, 28, 1.9, 2.3, '#1f1a1e'],
+      ['e', 19.6, 27.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['e', 29.6, 27.2, 0.6, 0.8, '#ffffff', 0, 0.9],
+      ['e', 24, 37.2, 1.9, 1.4, '#e07a8a'],
+      ['e', 15, 33.5, 2.2, 1.3, '#f59aa8', 0, 0.6],
+      ['e', 33, 33.5, 2.2, 1.3, '#f59aa8', 0, 0.6],
+      ['e', 17, 44, 4.5, 3.2, '#9b98a3'],
+      ['e', 31, 44, 4.5, 3.2, '#9b98a3'],
+      ['e', 17, 45, 3, 2, '#f2a7b4'],
+      ['e', 31, 45, 3, 2, '#f2a7b4'],
+    ],
+    // The smile is a curve in the SVG; two short lines here.
+    frog: [
+      ['e', 16, 20, 7, 6.5, '#72c45e'],
+      ['e', 32, 20, 7, 6.5, '#72c45e'],
+      ['e', 24, 32, 16, 13, '#72c45e'],
+      ['e', 24, 37, 10, 7, '#e4f4c4'],
+      ['e', 11, 35, 1.8, 1.3, '#4e9a42'],
+      ['e', 37, 34, 1.6, 1.2, '#4e9a42'],
+      ['e', 16, 19, 4.6, 4.6, '#ffffff'],
+      ['e', 32, 19, 4.6, 4.6, '#ffffff'],
+      ['e', 16.6, 19.6, 2.2, 2.8, '#2d241c'],
+      ['e', 31.4, 19.6, 2.2, 2.8, '#2d241c'],
+      ['e', 17.3, 18.6, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 32.1, 18.6, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 22.5, 27.5, 0.6, 0.45, '#2f5a28'],
+      ['e', 25.5, 27.5, 0.6, 0.45, '#2f5a28'],
+      ['l', 17, 30, 24, 32.8, '#2f5a28', 1.3],
+      ['l', 24, 32.8, 31, 30, '#2f5a28', 1.3],
+      ['e', 12.5, 30.5, 2.4, 1.4, '#f59aa8', 0, 0.75],
+      ['e', 35.5, 30.5, 2.4, 1.4, '#f59aa8', 0, 0.75],
+      ['e', 17, 44, 4.5, 3.2, '#72c45e'],
+      ['e', 31, 44, 4.5, 3.2, '#72c45e'],
+      ['e', 17, 45, 3, 2, '#e4f4c4'],
+      ['e', 31, 45, 3, 2, '#e4f4c4'],
+    ],
   }
 
   function buddyPart(part: (string | number)[], k: number) {
@@ -348,23 +433,26 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   const compact = family === 'systemSmall' || family === 'accessoryRectangular'
-  const titleSize = compact ? 18 : 26
+  const titleSize = compact ? 18 : family === 'systemMedium' ? 24 : 28
   const home = family !== 'accessoryRectangular'
   const showNext = home && Boolean(lead) && browsable.length > 1
   // The tag of the question showing, since the card mixes every tag.
+  // Size follows the widget family. WidgetKit cannot scroll, so a long tag
+  // wraps on the small card and shrinks instead of turning into an ellipsis.
   const leadTag = String(lead?.tag || '').trim() || tagTitle
-  const sidePad = home && (showNext || BUDDY[buddyId]) ? (compact ? 38 : 52) : 0
+  const tagSize = family === 'systemMedium' ? 13 : compact ? 11 : 16
   const kicker = (
     <Text
       modifiers={[
-        font({ size: 11, weight: 'semibold' }),
-        kerning(1.1),
+        font({ size: tagSize, weight: 'semibold' }),
+        kerning(tagSize >= 16 ? 1.1 : tagSize >= 13 ? 0.6 : 0.2),
         textCase('uppercase'),
         foregroundStyle(on),
         multilineTextAlignment('center'),
-        lineLimit(1),
-        minimumScaleFactor(0.8),
-        padding({ leading: sidePad, trailing: sidePad, top: compact && showNext ? 26 : 0 }),
+        lineLimit(compact ? 2 : 1),
+        minimumScaleFactor(0.45),
+        allowsTightening(true),
+        layoutPriority(1),
         frame({ maxWidth: 10000 }),
       ]}
     >
@@ -378,8 +466,8 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         font({ weight: 'bold', size: titleSize }),
         foregroundStyle(ink),
         multilineTextAlignment('center'),
-        lineLimit(compact ? 4 : 5),
-        minimumScaleFactor(0.45),
+        lineLimit(compact ? 5 : 6),
+        minimumScaleFactor(0.35),
         allowsTightening(true),
         frame({ maxWidth: 10000 }),
       ]}
@@ -387,25 +475,19 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       {lead ? questionText : footer}
     </Text>
   )
-  const nextPill = showNext ? (
-    <VStack alignment="leading" modifiers={[grow, padding({ leading: compact ? 8 : 10, top: compact ? 8 : 9 })]}>
-      <HStack>
-        <Button
-          label={String(props?.nextLabel || 'Next') + ' ›'}
-          target={'next:' + leadId}
-          onPress={() => afterNext()}
-          modifiers={[
-            buttonStyle('bordered'),
-            buttonBorderShape('capsule'),
-            tint(c.on),
-            font({ size: compact ? 10 : 11, weight: 'bold' }),
-            foregroundStyle(on),
-          ]}
-        />
-        <Spacer />
-      </HStack>
-      <Spacer />
-    </VStack>
+  const nextButton = showNext ? (
+    <Button
+      label={String(props?.nextLabel || 'Next') + ' ›'}
+      target={'next:' + leadId}
+      onPress={() => afterNext()}
+      modifiers={[
+        buttonStyle('bordered'),
+        buttonBorderShape('capsule'),
+        tint(c.on),
+        font({ size: compact ? 10 : 11, weight: 'bold' }),
+        foregroundStyle(on),
+      ]}
+    />
   ) : null
   const buttons = lead ? (
     <HStack spacing={compact ? 4 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
@@ -463,38 +545,48 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   return (
-    <VStack modifiers={[padding({ all: compact ? 2 : 10 }), containerBackground(gem ? c.bg : c.panel, 'widget'), widgetURL(openUri), fill]}>
-      <VStack
-        modifiers={[
-          padding({ all: 2 }),
-          background(c.on),
-          clipShape('roundedRectangle', 22),
-          grow,
-          clipped(true),
-        ]}
-      >
-        <ZStack alignment="topTrailing" modifiers={[grow]}>
-          <VStack
-            alignment="center"
-            spacing={8}
+    <VStack
+      modifiers={[
+        containerBackground(gem ? c.bg : c.panel, 'widget'),
+        containerShape({ shape: 'containerRelativeShape' }),
+        widgetURL(openUri),
+        fill,
+      ]}
+    >
+      <ZStack alignment="topTrailing" modifiers={[grow]}>
+        <VStack
+          alignment="center"
+          spacing={compact ? 6 : 8}
+          modifiers={[
+            padding({ horizontal: compact ? 8 : 14, vertical: compact ? 8 : 12 }),
+            background(c.panel),
+            clipShape('containerRelativeShape'),
+            strokeBorder({
+              content: c.on,
+              style: { lineWidth: 2 },
+              shape: 'containerRelativeShape',
+            }),
+            grow,
+            clipped(true),
+          ]}
+        >
+          <HStack
+            spacing={compact ? 4 : 8}
             modifiers={[
-              padding({ horizontal: compact ? 6 : 14, vertical: compact ? 8 : 12 }),
-              background(c.panel),
-              clipShape('roundedRectangle', 20),
-              grow,
-              clipped(true),
+              frame({ maxWidth: 10000 }),
+              padding({ trailing: BUDDY[buddyId] ? (compact ? 22 : 32) : 0 }),
             ]}
           >
+            {nextButton}
             {kicker}
-            <Spacer />
-            {question}
-            <Spacer />
-            {buttons}
-          </VStack>
-          {buddyMark(buddyId)}
-          {nextPill}
-        </ZStack>
-      </VStack>
+          </HStack>
+          <Spacer />
+          {question}
+          <Spacer />
+          {buttons}
+        </VStack>
+        {buddyMark(buddyId)}
+      </ZStack>
     </VStack>
   )
 }

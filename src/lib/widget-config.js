@@ -1,4 +1,4 @@
-import { activeLook } from './dit-board.js'
+import { activeLook } from './active-look.js'
 import { byPriority } from './board-json.js'
 import { currentBook } from './board-shelf.js'
 import { normalizePurse } from './purse.js'
@@ -20,6 +20,9 @@ const LOOK_IDS = new Set([
   'ember',
   'frost',
   'pulse',
+  'jade',
+  'indigo',
+  'clay',
 ])
 
 export function readWidgetSettings() {

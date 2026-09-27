@@ -4,7 +4,7 @@ import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
-import { answerSend, listInbox, personName } from './people.js'
+import { answerSend, listInbox, personName, refreshPeople } from './people.js'
 import { fireCheer } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCard } from './set-bits.jsx'
@@ -23,6 +23,8 @@ export function Inbox({ book, now, onKeep }) {
       setReady(true)
       return
     }
+    // Family did yous and allowed friends go onto tonight first.
+    await refreshPeople()
     setRows(await listInbox())
     setReady(true)
   }, [account.user])
@@ -75,6 +77,7 @@ export function Inbox({ book, now, onKeep }) {
       <>
         <h2 className="di-page-title">{t('inbox.emptyTitle')}</h2>
         <p className="di-set-note">{t('inbox.emptyBody')}</p>
+        <p className="di-set-note">{t('inbox.autoNote')}</p>
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/people')}>
             {t('inbox.goPeople')}
@@ -88,6 +91,7 @@ export function Inbox({ book, now, onKeep }) {
     <>
       <h2 className="di-page-title">{t('inbox.title')}</h2>
       <p className="di-set-note">{t('inbox.hint')}</p>
+      <p className="di-set-note">{t('inbox.autoNote')}</p>
       <SetCard>
         {rows.map((row) => (
           <div className="di-people-row di-family-row" key={row.id}>

@@ -37,6 +37,7 @@ import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
+import { bulkLamps, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -44,14 +45,14 @@ import {
   INVITE_GEMS_CAP,
   cleanCode,
   cleanInvite,
-  cleanLine,
   inviteGemsDue,
 } from '../src/lib/people.js'
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
-import { LOOKS, SHOP_CALENDAR, isLive, isTeased } from '../src/lib/purse.js'
 import { validateCoinItem } from '../src/lib/wallet.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
+import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -91,7 +92,7 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
-import { leftoverOn, taggedDue } from '../src/lib/tags.js'
+import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
@@ -138,6 +139,23 @@ function test(name, fn) {
 function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
+
+test('a bulk delete across folders comes back whole on undo', () => {
+  const home = { id: 'home', lamps: [{ id: 'a' }, { id: 'b' }], answers: [{ lampId: 'b', periodKey: '2026-09-25', status: 'yes' }] }
+  const work = { id: 'work', lamps: [{ id: 'c' }], answers: [] }
+  const picks = [{ boardId: 'home', lampId: 'b' }, { boardId: 'work', lampId: 'c' }]
+  const gone = bulkLamps([home, work], picks, 'delete')
+  assert.deepEqual(gone.map((book) => book.lamps.map((item) => item.id)), [['a'], []])
+  assert.equal(gone[0].answers.length, 0)
+  // Something added in between stays after the undo.
+  const later = gone.map((book) => (book.id === 'home' ? { ...book, lamps: [...book.lamps, { id: 'new' }] } : book))
+  const back = undoBulkLamps(later, [home, work], picks)
+  assert.deepEqual(back.map((book) => book.lamps.map((item) => item.id)), [['a', 'b', 'new'], ['c']])
+  assert.equal(back[0].answers.length, 1)
+  const stopped = bulkLamps([home, work], picks, 'stop')
+  assert.equal(stopped[0].lamps.find((item) => item.id === 'b').archived, true)
+  assert.equal(stopped[0].lamps.find((item) => item.id === 'a').archived, undefined)
+})
 
 test('the night turns over at midnight, not at four', () => {
   assert.equal(DAY_FOLD, 0)
@@ -646,12 +664,6 @@ test('a phone number folds to e164 the same way the database folds it', () => {
   assert.ok(looksLikePhone('5551234567'))
 })
 
-test('a line on Did I tonight is trimmed to what the column allows', () => {
-  assert.equal(cleanLine('  lock   the back door  '), 'lock the back door')
-  assert.equal(cleanLine('x'.repeat(200)).length, 60)
-  assert.equal(cleanLine(''), '')
-})
-
 test('a gem lands once per week when a night clears', () => {
   const clock = new Date('2026-09-20T12:00:00')
   const week = gemWeekKey(clock)
@@ -928,6 +940,37 @@ test('every coin look on sale passes the client check before the buy is sent', (
   assert.ok(validateCoinItem('cheer_stage', 'tape'), 'a cheer stage passes')
 })
 
+test('a question can have several topics and the list filters by them', () => {
+  assert.deepEqual(topicsOf({ kind: 'Pets, morning ,pets,, Pills' }), ['Pets', 'morning', 'Pills'], 'trimmed, no repeats')
+  assert.equal(joinTopics(['Pets', 'Morning', 'pets']), 'Pets, Morning')
+  const a = { kind: 'Pets, Morning' }
+  const b = { kind: 'House' }
+  assert.ok(hasAnyTopic(a, []), 'no pick shows everything')
+  assert.ok(hasAnyTopic(a, ['morning']), 'match ignores case')
+  assert.ok(!hasAnyTopic(b, ['Pets']))
+  assert.ok(hasAnyTopic(b, ['Pets', 'House']), 'any picked topic matches')
+  assert.deepEqual(shelfTopics([{ lamps: [a, b, { kind: 'pets' }] }]), ['House', 'Morning', 'Pets'])
+})
+
+test('everyone owns the ant for free and the possum costs gems', () => {
+  assert.equal(FREE_BUDDY, 'ant')
+  assert.ok(normalizePurse({}).buddies.includes('ant'), 'a new shelf has the ant')
+  assert.ok(normalizePurse({ buddies: ['cat'] }).buddies.includes('ant'), 'an old shelf gets the ant too')
+  assert.ok(!normalizePurse({}).buddies.includes('possum'), 'nobody starts with the possum')
+  assert.equal(BUDDIES.find((item) => item.id === 'ant').gems, 0)
+  assert.ok(BUDDIES.find((item) => item.id === 'possum').gems > 0, 'the possum is paid')
+  assert.equal(normalizePurse({}).buddyOn, '', 'no buddy is worn until you pick one')
+})
+
+test('the tag filter can hold several tags', () => {
+  const boards = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+  assert.deepEqual(scopedBooks(boards, '').map((b) => b.id), ['a', 'b', 'c'], 'empty is every tag')
+  assert.deepEqual(scopedBooks(boards, 'b').map((b) => b.id), ['b'], 'one tag')
+  assert.deepEqual(scopedBooks(boards, 'a,c').map((b) => b.id), ['a', 'c'], 'two tags')
+  assert.deepEqual(tagIdsOf(' a, ,b '), ['a', 'b'])
+  assert.equal(joinTagIds(['a', 'b', 'a', '']), 'a,b')
+})
+
 test('shop drops wait for their day and the server sells the same coin items', () => {
   assert.ok(isLive({ id: 'a' }), 'no date means always in')
   assert.ok(!isLive({ id: 'a', from: '2026-10-09' }, '2026-10-08'), 'a future drop stays out')
@@ -1050,6 +1093,9 @@ test('the tonight widget can draw a question without the app', () => {
     containerBackground: (style) => style,
     containerRelativeFrame: () => ({ fill: 'widget' }),
     clipShape: (shape, radius) => ({ shape, radius }),
+    containerShape: (shape) => shape,
+    strokeBorder: (params) => params,
+    layoutPriority: (n) => ({ layoutPriority: n }),
     clipped: () => ({ clipped: true }),
     buttonStyle: (style) => style,
     buttonBorderShape: (shape, radius) => ({ shape, radius }),
@@ -1091,6 +1137,7 @@ test('the tonight widget can draw a question without the app', () => {
   assert.ok(drawn.includes('Did I lock the door?'), drawn.slice(0, 400))
   assert.ok(drawn.includes('Home'))
   assert.ok(drawn.includes('widget'), 'the card fills the widget')
+  assert.ok(drawn.includes('containerRelativeShape'), 'the ring follows the system widget corner')
   assert.ok(drawn.includes('"clipped":true'), 'the widget clips to its container')
   assert.equal((drawn.match(/"fill":"widget"/g) || []).length, 1, 'only the outer stack uses the widget frame')
   assert.ok(drawn.includes('center'), 'the question is centered')
@@ -1166,6 +1213,10 @@ test('the tonight widget can draw a question without the app', () => {
   const mixedTree = fn(mixed, env)
   const mixedDrawn = JSON.stringify(mixedTree)
   assert.ok(mixedDrawn.includes('"text":"Home"'), 'header is the showing question tag')
+  assert.ok(mixedDrawn.includes('"size":13'), 'the tag is larger on the medium widget')
+  const smallTag = JSON.stringify(fn(mixed, { widgetFamily: 'systemSmall', widgetRenderingMode: 'fullColor' }))
+  assert.ok(smallTag.includes('"text":"Home"'), 'the tag shows on the small widget')
+  assert.ok(smallTag.includes('"size":11'), 'the tag is smaller on the small widget')
   assert.ok(!mixedDrawn.includes('react.fragment'), 'no fragments in the widget tree')
   assert.ok(mixedDrawn.includes('"minimumScaleFactor"'), 'the question shrinks to fit instead of clipping')
   const peek = findPress(mixedTree, 'next:door')

@@ -49,6 +49,7 @@ Supabase:
 ```
 npm run db:apply:all         # apply schema from supabase/*.sql
 npm run db:audit             # scripts/audit-sql.mjs — must return no rows before calling backend work done
+npm run db:test <file>       # scripts/test-sql.mjs — rolled-back SQL checks, e.g. supabase/tests/auto-add.test.sql
 ```
 
 There is no single-test runner; `scripts/check.mjs` runs the full suite.
@@ -96,7 +97,7 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
   stable` helper functions with pinned `search_path` for anything
   correlated, size/length checks in `hardening.sql`, caps on repeatable
   writes via triggers, no per-row queries in loops — fetch with `in (...)`
-  and match in JS, batching example: `familyTonight`).
+  and match in JS).
 - **Night math** — `answerFor` is a `WeakMap`-indexed lookup; never replace
   with `.find`. `wallClock` keeps one `Intl.DateTimeFormat` per zone, never
   built in a loop. Multi-night walks (streaks, calendar, shelf heat) are
@@ -112,10 +113,11 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - **i18n**: `t('key')` from `src/lib/i18n.js`; every key in all 9
   `src/locales/*.js` files (the check test requires identical keys). English
   is the fallback.
-- **Product vocabulary** (user-facing copy only): tag, tags, add, question,
-  tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not** use
-  board, hall, hang, heat, or skip (skip especially — the tap button is
-  "nope"). See `.cursor/rules/copy.mdc`.
+- **Product vocabulary** (user-facing copy only): folder, folders, add,
+  question, tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not**
+  use tag (renamed to folder 2026-09-26; code and keys still say tag), board,
+  hall, hang, heat, or skip (skip especially — the tap button is "nope").
+  See `.cursor/rules/copy.mdc`.
 - **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`
   asserts this; don't change it.

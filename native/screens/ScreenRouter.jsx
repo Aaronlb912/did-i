@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { DIT_ENABLED } from '../../src/lib/features.js'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
 import { goHash } from '../navigation/hash.js'
@@ -33,7 +32,6 @@ import {
   ShopScreen,
 } from './shop.jsx'
 import {
-  EveryoneScreen,
   FamilyScreen,
   FriendsScreen,
   InboxScreen,
@@ -61,6 +59,7 @@ export function ScreenRouter({
   shelf,
   tagId,
   change,
+  changeBooks,
   setTag,
   saveLamp,
   keepSent,
@@ -90,9 +89,9 @@ export function ScreenRouter({
       />
     )
   }
-  if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
-    return <FirstNightScreen book={book} onChange={change} />
-  }
+  if (path === '/first') return <FirstNightScreen book={book} onChange={change} />
+  // Go to /first itself, not just its screen, so the tab bar stays hidden there.
+  if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" />
   if (path === '/about') return <AboutScreen book={book} />
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />
@@ -112,11 +111,6 @@ export function ScreenRouter({
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />
   if (path === '/inbox') return <InboxScreen book={book} onChange={change} onKeep={keepSent} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
-  if (path === '/everyone') {
-    if (!DIT_ENABLED) return <GoTo path="/tonight" />
-
-    return <EveryoneScreen book={book} boards={boards} onChange={change} />
-  }
   if (path === '/add' || path === '/hang') {
     return (
       <HangScreen
@@ -139,6 +133,7 @@ export function ScreenRouter({
         tagId={tagId}
         onTag={setTag}
         onChange={change}
+        onChangeBooks={changeBooks}
         onOpen={(boardId, lampId) => {
           if (boardId && boardId !== book.id) switchBoard(boardId)
           goHash('/lamp', { id: lampId })

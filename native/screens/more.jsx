@@ -105,10 +105,18 @@ function SureModal({ sure, colors, onClose, onGo }) {
   )
 }
 
-export function ScreenShell({ book, title, children, colors, showAdd = true }) {
+// locked: no back, menu or purse, so the screen can only be left by finishing it.
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false }) {
   const live = book || currentBook(readShelf())
   return (
-    <BoardShell book={live} title={title} colors={colors} showAdd={showAdd}>
+    <BoardShell
+      book={live}
+      title={title}
+      colors={colors}
+      showAdd={showAdd}
+      back={locked ? false : undefined}
+      showCogs={!locked}
+    >
       {children}
     </BoardShell>
   )
@@ -650,7 +658,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   }
 
   return (
-    <ScreenShell book={book} title={t('first.kicker')} colors={colors}>
+    <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
       <Title colors={colors}>
         {named ? t('first.titleNamed', { name: named }) : t('first.title')}
       </Title>

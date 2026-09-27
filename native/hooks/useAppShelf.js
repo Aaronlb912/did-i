@@ -48,6 +48,7 @@ import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
+import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -88,7 +89,10 @@ export function useAppShelf() {
   const live = book || emptyBoard()
   const route = readRoute()
 
-  const tagId = shelf.boards.some((item) => item.id === route.tag && !item.archived) ? route.tag : ''
+  // The filter may name several tags; keep only ones that still exist.
+  const tagId = joinTagIds(
+    tagIdsOf(route.tag).filter((id) => shelf.boards.some((item) => item.id === id && !item.archived)),
+  )
 
   const persist = useCallback((nextShelf) => {
     const now = new Date()
@@ -150,6 +154,15 @@ export function useAppShelf() {
     [book, persist, shelf],
   )
 
+  // Several folders at once, for example a bulk edit on Questions.
+  const changeBooks = useCallback(
+    (books) => {
+      if (!books.length) return
+      persist(books.reduce((next, one) => putBook(next, one), shelf))
+    },
+    [persist, shelf],
+  )
+
   const saveLamp = useCallback(
     (target, lamp, fromBook, clock = new Date()) => {
       const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
@@ -170,18 +183,26 @@ export function useAppShelf() {
     [persist, shelf],
   )
 
+  // A did you kept from the inbox, or several added on their own, land on
+  // the open folder as tonight-only questions in one write.
   const keepSent = useCallback(
-    (question) => {
-      const text = String(question || '').trim()
-      if (!text) return
-      saveLamp(live, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(new Date()) })
+    (questions) => {
+      const texts = [].concat(questions).map((text) => String(text || '').trim()).filter(Boolean)
+      if (!texts.length) return
+      const clock = new Date()
+      let dest = live
+      for (const text of texts) {
+        dest = hangInto(dest, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(clock) }, false)
+      }
+      persist(putBook(shelf, commitBook(dest, clock)))
     },
-    [live, saveLamp],
+    [live, persist, shelf],
   )
 
   const setTag = useCallback(
     (id) => {
-      if (id) persist(selectBook(shelf, id))
+      const first = tagIdsOf(id)[0]
+      if (first) persist(selectBook(shelf, first))
       const path = route.path
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
       goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face })
@@ -202,7 +223,10 @@ export function useAppShelf() {
   const removeBoard = useCallback(
     (id) => {
       persist(dropBook(shelf, id))
-      if (tagId === id || route.tag === id) goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: 'all' })
+      if (tagIdsOf(route.tag).includes(id)) {
+        const rest = joinTagIds(tagIdsOf(route.tag).filter((other) => other !== id))
+        goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
+      }
     },
     [persist, route.path, route.tag, shelf, tagId],
   )
@@ -301,6 +325,7 @@ export function useAppShelf() {
     clearMark: useCallback(() => setMarkNote(null), []),
     persist,
     change,
+    changeBooks,
     saveLamp,
     keepSent,
     setTag,

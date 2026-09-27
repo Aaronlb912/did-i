@@ -227,7 +227,8 @@ export function HangLamp({
       {onTagTitle ? (
         <div className="di-field di-field-tag">
           <span id="di-hang-tag">{t('hang.tag')}</span>
-          <div className="di-hang-tags" role="group" aria-labelledby="di-hang-tag">
+          <p className="di-hang-tags-one">{t('hang.tagOne')}</p>
+          <div className="di-hang-tags" role="radiogroup" aria-labelledby="di-hang-tag">
             {hang.liveTags.map((item) => {
               const on = hang.isTagSelected(item.title)
               return (
@@ -235,6 +236,8 @@ export function HangLamp({
                   key={item.id}
                   className={on ? 'di-key is-pick' : 'di-key'}
                   type="button"
+                  role="radio"
+                  aria-checked={on}
                   onClick={() => onTagTitle(item.title)}
                 >
                   {item.title}
@@ -262,7 +265,7 @@ export function HangLamp({
           {hang.parkedTags.length ? (
             <div
               className="di-hang-tags-parked"
-              role="group"
+              role="radiogroup"
               aria-label={`${t('hang.tagLater')}. ${t('hang.tagLaterHint')}`}
             >
               <span className="di-hang-tags-parked-label">{t('hang.tagLater')}</span>
@@ -273,6 +276,8 @@ export function HangLamp({
                     key={item.id}
                     className={on ? 'di-key is-pick' : 'di-key di-hang-tags-muted'}
                     type="button"
+                    role="radio"
+                    aria-checked={on}
                     onClick={() => onTagTitle(item.title)}
                   >
                     {item.title}
