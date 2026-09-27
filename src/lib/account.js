@@ -121,7 +121,8 @@ export async function signInReviewer(email, password) {
 export async function signOutHere() {
   const db = cloud()
   if (!db) return
-  await db.auth.signOut()
+  // signOut() defaults to global, which would end the session on every other device.
+  await db.auth.signOut({ scope: 'local' })
 }
 
 export async function signOutEverywhere() {

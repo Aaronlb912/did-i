@@ -55,6 +55,16 @@ globalThis.__didIOnVisible = (fn) => {
   return () => sub.remove()
 }
 
+// Supabase's refresh timer stalls while the app is in the background. Stop it
+// there and restart on return so the session renews right away.
+// cloud.js is required lazily: it reads the Expo extra set above.
+AppState.addEventListener('change', (state) => {
+  const db = require('../src/lib/cloud.js').cloud()
+  if (!db) return
+  if (state === 'active') db.auth.startAutoRefresh()
+  else db.auth.stopAutoRefresh()
+})
+
 function kv(prefix) {
   return {
     getItem: (key) => {
