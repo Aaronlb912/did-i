@@ -158,7 +158,7 @@ function coinCostFor(kind, itemId) {
   return 0
 }
 
-function validateCoinItem(kind, itemId) {
+export function validateCoinItem(kind, itemId) {
   const id = String(itemId || '')
   if (kind === 'look') return COIN_LOOK_IDS.has(id)
   if (kind === 'cheer_stage') return Boolean(id)
@@ -166,22 +166,21 @@ function validateCoinItem(kind, itemId) {
 }
 
 export async function purchaseWithCoins(kind, itemId) {
-  if (!accountSessionOn()) return { miss: 'off' }
+  if (!accountSessionOn()) return { miss: 'shop.miss.buyFail' }
   const db = cloud()
-  if (!db) return { miss: 'off' }
+  if (!db) return { miss: 'shop.miss.buyFail' }
   const user = await readUser()
-  if (!user) return { miss: 'out' }
+  if (!user) return { miss: 'shop.miss.buyFail' }
   const k = String(kind || '').trim()
   const id = String(itemId || '').trim()
-  if (!validateCoinItem(k, id)) {
-    if (k === 'look') return { miss: 'shop.miss.lookGone' }
-    return { miss: 'shop.miss.cheerGone' }
-  }
+  const gone = k === 'look' ? 'shop.miss.lookGone' : 'shop.miss.cheerGone'
+  if (!validateCoinItem(k, id)) return { miss: gone }
   const { data, error } = await db.rpc('buy_with_coins', { p_kind: k, p_item_id: id })
   if (error) {
-    const cost = coinCostFor(k, id)
-    if (/need coins/i.test(error.message || '')) return { miss: 'shop.miss.needCoins', missN: cost }
-    return { miss: 'shop.miss.needCoins', missN: cost }
+    const text = error.message || ''
+    if (/need coins/i.test(text)) return { miss: 'shop.miss.needCoins', missN: coinCostFor(k, id) }
+    if (/bad item/i.test(text)) return { miss: gone }
+    return { miss: 'shop.miss.buyFail' }
   }
   const cat = normalizeCoinCatalog(data)
   return { miss: '', ...cat, catalog: cat }

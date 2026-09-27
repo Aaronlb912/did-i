@@ -74,6 +74,9 @@ function shopMiss(next) {
   return t(next.miss)
 }
 
+// A miss stays on the row that was tapped, not below the whole list.
+const NO_MISS = { id: '', text: '' }
+
 function shortOnGems(next, colors) {
   if (next?.miss !== 'shop.miss.needGems' && next?.miss !== 'gems') return false
   offerMoreGems(colors)
@@ -358,7 +361,7 @@ function openInfo(name, info, colors) {
   })
 }
 
-function ShopActionRow({ name, note, info, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
+function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
   const previewNode = preview
     ? onPreview
       ? (
@@ -394,6 +397,11 @@ function ShopActionRow({ name, note, info, actionLabel, onAction, colors, primar
           <Text style={[styles.shopName, { color: colors.ink }]}>{name}</Text>
         )}
         {note ? <Text style={[styles.shopNote, { color: colors.inkDim }]}>{note}</Text> : null}
+        {miss ? (
+          <Text style={[styles.shopNote, { color: colors.miss }]} accessibilityRole="alert">
+            {miss}
+          </Text>
+        ) : null}
       </View>
       {primary ? (
         <DidButton small label={actionLabel} onPress={onAction} colors={colors} disabled={disabled} />
@@ -511,16 +519,16 @@ export function ShopLooksScreen({ book, onChange }) {
   const [peekLook, setPeekLook] = useState('')
   const colors = useShopColors(book, peekLook)
   const purse = normalizePurse(book)
-  const [miss, setMiss] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next) {
+  function take(next, id) {
     if (shortOnGems(next, colors)) {
-      setMiss('')
+      setMiss(NO_MISS)
       setConfirm(null)
       return
     }
-    setMiss(shopMiss(next))
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setPeekLook('')
       setConfirm(null)
@@ -542,25 +550,26 @@ export function ShopLooksScreen({ book, onChange }) {
         onPreview={() => setPeekLook((prev) => (prev === item.id ? '' : item.id))}
         name={t(lookText(item.id, 'name'))}
         note={t(lookText(item.id, 'line'))}
+        miss={miss.id === item.id ? miss.text : ''}
         actionLabel={label}
         primary={on}
         disabled={on}
         onAction={() => {
           if (have) {
-            take(buyLook(book, item.id))
+            take(buyLook(book, item.id), item.id)
             return
           }
           if (item.gems > 0 && purse.gems < item.gems) {
             offerMoreGems(colors)
             return
           }
-          setMiss('')
+          setMiss(NO_MISS)
           setConfirm({
             title: t(lookText(item.id, 'name')),
             body: t('shop.buyLookBody', { cost }),
             go: async () => {
               const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
-              take(next)
+              take(next, item.id)
             },
           })
         }}
@@ -586,7 +595,6 @@ export function ShopLooksScreen({ book, onChange }) {
       <Cap colors={colors}>{t('shop.looksGems')}</Cap>
       {GEM_LOOKS.map(lookRow)}
 
-      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       <BuyConfirm
         confirm={confirm}
         colors={colors}
@@ -605,16 +613,16 @@ export function ShopCheersScreen({ book, onChange }) {
   const colors = useShopColors(book)
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const [miss, setMiss] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next) {
+  function take(next, id) {
     if (shortOnGems(next, colors)) {
-      setMiss('')
+      setMiss(NO_MISS)
       setConfirm(null)
       return
     }
-    setMiss(shopMiss(next))
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setConfirm(null)
       onChange(next.book)
@@ -635,11 +643,11 @@ export function ShopCheersScreen({ book, onChange }) {
             offerMoreGems(colors)
             return
           }
-          setMiss('')
+          setMiss(NO_MISS)
           setConfirm({
             title: t(cheerText(item.id, 'name')),
             body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
-            go: () => take(buyCheer(book, item.id)),
+            go: () => take(buyCheer(book, item.id), item.id),
           })
         }
         let disabled = false
@@ -649,11 +657,11 @@ export function ShopCheersScreen({ book, onChange }) {
           if (next) {
             actionLabel = t('shop.nextStage')
             onAction = () => {
-              setMiss('')
+              setMiss(NO_MISS)
               setConfirm({
                 title: t(cheerText(item.id, 'name')),
                 body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
-                go: async () => take(await buyCheerStageWithCoins(book, item.id)),
+                go: async () => take(await buyCheerStageWithCoins(book, item.id), item.id),
               })
             }
           } else {
@@ -670,6 +678,7 @@ export function ShopCheersScreen({ book, onChange }) {
             onPreview={() => fireCheer(item.id, 1, coat, undefined, true)}
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
+            miss={miss.id === item.id ? miss.text : ''}
             actionLabel={actionLabel}
             primary={primary}
             disabled={disabled}
@@ -678,7 +687,6 @@ export function ShopCheersScreen({ book, onChange }) {
         )
       })}
 
-      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       <BuyConfirm
         confirm={confirm}
         colors={colors}
@@ -697,16 +705,16 @@ export function ShopBuddiesScreen({ book, onChange }) {
   const [peekBuddy, setPeekBuddy] = useState('')
   const colors = useShopColors(book)
   const purse = normalizePurse(book)
-  const [miss, setMiss] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next) {
+  function take(next, id) {
     if (shortOnGems(next, colors)) {
-      setMiss('')
+      setMiss(NO_MISS)
       setConfirm(null)
       return
     }
-    setMiss(shopMiss(next))
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setPeekBuddy('')
       setConfirm(null)
@@ -733,30 +741,30 @@ export function ShopBuddiesScreen({ book, onChange }) {
             onPreview={() => setPeekBuddy(item.id)}
             name={t(buddyText(item.id, 'name'))}
             note={t(buddyText(item.id, 'line'))}
+            miss={miss.id === item.id ? miss.text : ''}
             actionLabel={label}
             primary={on}
             disabled={on}
             onAction={() => {
               if (have) {
-                take(wearBuddy(book, item.id))
+                take(wearBuddy(book, item.id), item.id)
                 return
               }
               if (purse.gems < item.gems) {
                 offerMoreGems(colors)
                 return
               }
-              setMiss('')
+              setMiss(NO_MISS)
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
                 body: t('shop.buyBuddyBody', { cost: gemLine(item.gems) }),
-                go: () => take(buyBuddy(book, item.id)),
+                go: () => take(buyBuddy(book, item.id), item.id),
               })
             }}
           />
         )
       })}
 
-      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       <BuyConfirm
         confirm={confirm}
         colors={colors}
@@ -775,25 +783,26 @@ export function GemShopScreen({ book }) {
   const colors = useShopColors(book)
   const purse = normalizePurse(book)
   const [banner, setBanner] = useState('')
-  const [storeReady, setStoreReady] = useState(false)
-  const [storeLoading, setStoreLoading] = useState(isReactNative())
+  // The packs and Buy buttons show at once with list prices. The store
+  // connection (usually already warm from app start) fills in local prices;
+  // a tap before it finishes just waits for it inside the purchase.
+  const [storeReady, setStoreReady] = useState(() => iapReady())
+  const [storeChecked, setStoreChecked] = useState(() => iapReady())
+  const [, setPriced] = useState(0)
 
   useEffect(() => {
     if (!isReactNative()) return undefined
     let alive = true
-    const timer = setTimeout(() => {
-      if (alive) setStoreLoading(false)
-    }, 8000)
     initGemIap()
       .catch(() => {})
       .finally(() => {
         if (!alive) return
         setStoreReady(iapReady())
-        setStoreLoading(false)
+        setStoreChecked(true)
+        setPriced((n) => n + 1)
       })
     return () => {
       alive = false
-      clearTimeout(timer)
     }
   }, [])
 
@@ -832,13 +841,7 @@ export function GemShopScreen({ book }) {
   }
 
   const expoGo = Constants.appOwnership === 'expo'
-  const storeNote = expoGo
-    ? t('gems.appOnly')
-    : storeLoading
-      ? t('gems.loadingStore')
-      : !storeReady
-        ? t('gems.setup')
-        : ''
+  const storeNote = expoGo ? t('gems.appOnly') : storeChecked && !storeReady ? t('gems.setup') : ''
 
   return (
     <BoardShell book={book} title={t('gems.title')} date={shellDate(book)} colors={colors}>
@@ -873,7 +876,6 @@ export function GemShopScreen({ book }) {
               label={t('gems.buy')}
               onPress={() => buy(pack.id)}
               colors={colors}
-              disabled={storeLoading}
             />
           </View>
         )

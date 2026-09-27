@@ -1074,6 +1074,28 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   cursor: pointer;
 }
 
+.di-tagclear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: 0.35rem;
+  vertical-align: top;
+  border-radius: 50%;
+  border: 1px solid var(--di-line);
+  background: var(--di-panel-2);
+  color: var(--di-ink);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.di-tonight-back {
+  align-self: flex-start;
+  margin-bottom: 0.4rem;
+}
+
 .di-tagpick.is-on {
   border-color: var(--di-on-deep);
   color: var(--di-on);
@@ -5627,6 +5649,10 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   color: var(--di-ink-soft);
 }
 
+.di-shop-copy em.di-shop-miss {
+  color: var(--di-miss);
+}
+
 .di-shop-actions {
   display: flex;
   flex-direction: column;
@@ -8617,6 +8643,107 @@ html[data-reduce-motion] *::after,
   scroll-behavior: auto !important;
 }
 
+/* Edit question: a preview of the Tonight card, then grouped settings. */
+.di-hang-preview {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
+}
+
+.di-hang-preview .di-face-plate {
+  margin: 0 0 0.45rem;
+}
+
+.di-hang-preview-q {
+  margin: 0;
+  font-family: var(--di-display);
+  font-size: clamp(1.3rem, 5vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--di-ink);
+  overflow-wrap: anywhere;
+}
+
+.di-hang-preview-meta {
+  margin: 0.55rem 0 0;
+  font-size: 0.86rem;
+  color: var(--di-ink-soft);
+}
+
+.di-hang-group {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.95rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
+}
+
+.di-hang-group .di-field {
+  margin: 0;
+}
+
+.di-hang-group .di-hang-more {
+  justify-self: start;
+}
+
+/* Question page: its card, then two small numbers. */
+.di-hang-preview.is-paused {
+  opacity: 0.75;
+}
+
+.di-hang-preview .di-strip {
+  margin-top: 0.8rem;
+}
+
+.di-lamp-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+}
+
+.di-lamp-tile {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
+}
+
+.di-lamp-tile strong {
+  font-family: var(--di-mono);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--di-ink);
+}
+
+.di-lamp-tile strong.is-on {
+  color: var(--di-on);
+}
+
+.di-lamp-tile em {
+  font-style: normal;
+  font-size: 1rem;
+  color: var(--di-ink-dim);
+}
+
+.di-lamp-tile span {
+  font-size: 0.78rem;
+  color: var(--di-ink-dim);
+}
+/* Questions list: one line each for name, question and schedule, clipped. */
+.di-lamp-name,
+.di-lamp-q {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Shop hub: drop carousel, side-scrolling rows, price tags. */
 .di-drop-carousel {
   display: grid;
@@ -8732,6 +8859,60 @@ html[data-reduce-motion] *::after,
   font-size: 0.85rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.di-lamp-q {
+  font-size: 0.86rem;
+  color: var(--di-ink-soft);
+}
+
+.di-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0.8rem;
+  padding: 0 0.9rem;
+  min-height: 2.6rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-pill);
+}
+
+.di-search:focus-within {
+  border-color: var(--di-on-deep);
+}
+
+.di-search input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--di-ink);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.di-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.di-search-glyph,
+.di-search-clear {
+  color: var(--di-ink-dim);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.di-search-clear {
+  padding: 0.2rem;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--di-ink);
+}
+
+.di-lamp-row .di-lamp-copy {
+  flex: 1;
 }
 
 .di-shop-tag {

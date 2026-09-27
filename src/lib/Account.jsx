@@ -19,6 +19,7 @@ import {
   useSync,
 } from './cloud-sync.js'
 import { t, tMiss } from './i18n.js'
+import { uses24h } from './prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
@@ -39,6 +40,7 @@ function clockWords(iso) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    hour12: !uses24h(),
   })
 }
 

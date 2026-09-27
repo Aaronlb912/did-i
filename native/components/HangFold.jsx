@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts } from '../theme.js'
+import { MenuIcon } from './MenuIcon.jsx'
 
 // A settings row that shows its current value and opens in place.
 // Lives inside a SetCard; the last row drops its bottom rule.
-export function HangFold({ label, value, open, onToggle, last, colors, children }) {
+export function HangFold({ label, value, icon, open, onToggle, last, colors, children }) {
   const reduce = useReduceMotion()
   const turn = useRef(new Animated.Value(open ? 1 : 0)).current
 
@@ -39,7 +40,14 @@ export function HangFold({ label, value, open, onToggle, last, colors, children 
           { backgroundColor: pressed && !open ? colors.panel2 : 'transparent' },
         ]}
       >
-        <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
+        <View style={styles.start}>
+          {icon ? (
+            <View style={[styles.tile, { backgroundColor: open ? colors.panel3 : colors.panel2 }]}>
+              <MenuIcon name={icon} color={open ? colors.on : colors.inkSoft} size={17} stroke />
+            </View>
+          ) : null}
+          <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
+        </View>
         <View style={styles.end}>
           <Text style={[styles.value, { color: open ? colors.on : colors.inkDim }]} numberOfLines={1}>
             {value}
@@ -64,6 +72,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
   },
+  start: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 0 },
+  tile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 16, lineHeight: 20 },
   end: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
   value: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1, textAlign: 'right' },

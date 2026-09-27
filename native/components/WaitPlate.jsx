@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { goHash } from '../navigation/hash.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
 export function WaitPlate({ row, colors, onClose }) {
   if (!row) return null
-  const after = row.lamp.askAfter || t('wait.later')
+  const after = row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('wait.later')
   return (
     <View style={faceCardStyle(colors)}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('wait.kicker')}</Text>

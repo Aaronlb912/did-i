@@ -62,6 +62,18 @@ export function periodKeyFor(lamp, dateIso) {
   return dateIso
 }
 
+// Once the night turns, its answers are final. Unanswered ones close as nope
+// (closePastNights) and nothing can mark them later.
+export function periodPassed(lamp, periodKey, todayIso) {
+  if (!lamp || !periodKey || !todayIso) return false
+  if (lamp.cadence === 'once') {
+    const day = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || lamp.createdOn || '').trim()
+    return /^\d{4}-\d{2}-\d{2}$/.test(day) && day < todayIso
+  }
+  if (lamp.cadence === 'monthly') return periodKey < todayIso.slice(0, 7)
+  return periodKey < todayIso
+}
+
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)

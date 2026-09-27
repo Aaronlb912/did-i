@@ -26,7 +26,7 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { activeLook } from './active-look.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { LookPreviewCard } from './shop-bits.jsx'
+import { LookPreviewCard, NO_MISS, shopMiss } from './shop-bits.jsx'
 
 const STAGES = [1, 2, 3, 4, 5]
 
@@ -36,6 +36,7 @@ export function Collection({ book, onChange, now }) {
   const [tab, setTab] = useState('looks')
   const [pick, setPick] = useState('')
   const [peekLook, setPeekLook] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
@@ -46,6 +47,7 @@ export function Collection({ book, onChange, now }) {
   useEffect(() => {
     setPick('')
     setPeekLook('')
+    setMiss(NO_MISS)
   }, [tab])
 
   async function wearLook(id) {
@@ -54,6 +56,7 @@ export function Collection({ book, onChange, now }) {
       item && item.coins > 0 && !isGemLook(id)
         ? await buyLookWithCoins(book, id)
         : buyLook(book, id)
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) onChange(next.book)
   }
 
@@ -79,6 +82,11 @@ export function Collection({ book, onChange, now }) {
         <span className="di-shop-copy">
           <strong>{t(lookText(item.id, 'name'))}</strong>
           <em>{t(lookText(item.id, 'line'))}</em>
+          {miss.id === item.id && miss.text ? (
+            <em className="di-shop-miss" role="alert">
+              {miss.text}
+            </em>
+          ) : null}
         </span>
         <button
           className={on ? 'di-did di-did-small' : 'di-key'}

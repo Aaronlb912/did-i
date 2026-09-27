@@ -17,7 +17,7 @@ import {
 } from './purse.js'
 import { activeLook } from './active-look.js'
 import { goHash } from '../site/hash.js'
-import { BuyConfirm, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
+import { BuyConfirm, NO_MISS, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -27,16 +27,16 @@ export function ShopCheers({ book, onChange, now }) {
   const clock = now || new Date()
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const [miss, setMiss] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next) {
+  function take(next, id) {
     if (isGemShort(next)) {
-      setMiss('')
+      setMiss(NO_MISS)
       setConfirm(shortGemConfirm())
       return
     }
-    setMiss(shopMiss(next))
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setConfirm(null)
       onChange(next.book)
@@ -70,6 +70,11 @@ export function ShopCheers({ book, onChange, now }) {
                 </button>
                 <span className="di-shop-copy">
                   <strong>{t(cheerText(item.id, 'name'))}</strong>
+                  {miss.id === item.id && miss.text ? (
+                    <em className="di-shop-miss" role="alert">
+                      {miss.text}
+                    </em>
+                  ) : null}
                 </span>
                 {have ? (
                   next ? (
@@ -77,11 +82,11 @@ export function ShopCheers({ book, onChange, now }) {
                       className="di-key"
                       type="button"
                       onClick={() => {
-                        setMiss('')
+                        setMiss(NO_MISS)
                         setConfirm({
                           title: t(cheerText(item.id, 'name')),
                           body: t('shop.buyStageBody', { n: next, cost: coinLine(stageCost) }),
-                          go: async () => take(await buyCheerStageWithCoins(book, item.id)),
+                          go: async () => take(await buyCheerStageWithCoins(book, item.id), item.id),
                         })
                       }}
                     >
@@ -101,11 +106,11 @@ export function ShopCheers({ book, onChange, now }) {
                         setConfirm(shortGemConfirm())
                         return
                       }
-                      setMiss('')
+                      setMiss(NO_MISS)
                       setConfirm({
                         title: t(cheerText(item.id, 'name')),
                         body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
-                        go: () => take(buyCheer(book, item.id)),
+                        go: () => take(buyCheer(book, item.id), item.id),
                       })
                     }}
                   >
@@ -117,11 +122,6 @@ export function ShopCheers({ book, onChange, now }) {
           })}
         </div>
 
-        {miss ? (
-          <p className="di-miss" role="alert">
-            {miss}
-          </p>
-        ) : null}
       </section>
       <BuyConfirm
         confirm={confirm}

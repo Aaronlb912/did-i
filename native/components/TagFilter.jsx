@@ -79,6 +79,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.line}>
       <Pressable
         ref={button}
         onPress={toggle}
@@ -92,6 +93,21 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         </Text>
         {count && showFolders && !topicPicks.length ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
       </Pressable>
+      {filtering ? (
+        <Pressable
+          onPress={() => {
+            onTag('')
+            if (onTopics && topicPicks.length) onTopics([])
+          }}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('tags.clear')}
+          style={[styles.clear, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+        >
+          <Text style={[styles.clearText, { color: colors.ink }]}>×</Text>
+        </Pressable>
+      ) : null}
+      </View>
       <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel={t('settings.close')}>
           <Pressable
@@ -145,6 +161,16 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 8, alignSelf: 'flex-start' },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  clear: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearText: { fontFamily: fonts.ui, fontSize: 18, lineHeight: 20 },
   pick: {
     flexDirection: 'row',
     alignItems: 'center',

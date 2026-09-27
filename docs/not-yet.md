@@ -3,7 +3,7 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-26.
+Last worked through 2026-09-27.
 
 ## Found in the 2026-09-26 people pass
 
@@ -146,6 +146,19 @@ cheer skip under reduce-motion.
 ## Ideas parked (not built)
 
 - **More coin sinks** from the brainstorm (buddy accessories, undo token, preview gem looks, extra tag slot, streak stamps, tag badges) are still open. Signed-in **coin earns and spends** for looks and cheer stages go through `wallet.sql`; run `db:apply:all` after SQL edits.
+- **Add a question by voice, the rest of it.** Built (27 Sep 2026):
+  `didi://add?q=...` prefills Add; Android has an app-icon shortcut and a
+  Google Assistant `CREATE_THING` capability (`android/.../res/xml/shortcuts.xml`).
+  Still open: the Assistant phrase only works once the build is on Play and
+  checked in the App Actions test tool; iPhone has no native Siri intent (needs
+  a Swift App Intent through a config plugin). Until then, on iPhone: Shortcuts
+  app, new shortcut, "Dictate text", then "Open URLs" with
+  `didi://add?q=` + Dictated Text, and name it "Add a Did I".
+- **iOS widget taps have no tap time.** Android now stamps each queued tap
+  (`WidgetTapStore`, 27 Sep 2026) so a stale card tapped the next morning is
+  dropped. iOS widget answers still land on their stored night.
+- **Shake to undo** is still wired (`useShakeUndo`) but no longer promised on
+  screen; it was unreliable on test phones. Fix or remove.
 - **Did I tonight (the public list)** was removed from the app code on
   2026-09-26. If it comes back it will be its own product. The database
   still has its tables and functions (`supabase/tonight.sql`,

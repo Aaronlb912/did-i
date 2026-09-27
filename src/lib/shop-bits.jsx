@@ -13,6 +13,9 @@ export function gemLine(n) {
   return n === 1 ? t('shop.gemOne') : t('shop.gems', { n })
 }
 
+// A miss stays on the row that was tapped, not below the whole list.
+export const NO_MISS = { id: '', text: '' }
+
 export function shopMiss(next) {
   if (!next?.miss) return ''
   if (next.missN != null) return t(next.miss, { n: next.missN })

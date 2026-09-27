@@ -8,6 +8,15 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { firstName } from './session.js'
 import { hangStarter, starterBlank, unusedStarters } from './starters.js'
+import { HangTimeSelect } from './HangTimeSelect.jsx'
+import { SetCap, SetCard, SetRow } from './set-bits.jsx'
+
+// The first question comes up every day; the only choice here is from when.
+function timed(next, question, askAfter) {
+  if (!askAfter) return next
+  const lamps = (next.lamps || []).map((lamp) => (lamp.question === question ? { ...lamp, askAfter } : lamp))
+  return { ...next, lamps }
+}
 
 const WOBBLE_FIRST = 1200
 const WOBBLE_EVERY = 4200
@@ -18,6 +27,7 @@ export function FirstNight({ book, onChange, now }) {
   const clock = now || new Date()
   const named = firstName(book)
   const [person, setPerson] = useState(book.keeperName || '')
+  const [askAfter, setAskAfter] = useState('')
   const [blank, setBlank] = useState('')
   const [wave, setWave] = useState(0)
   const [wobble, setWobble] = useState(0)
@@ -61,7 +71,7 @@ export function FirstNight({ book, onChange, now }) {
       return
     }
     if (picked) {
-      land(hangStarter(book, picked, clock, true))
+      land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
       return
     }
     const lamp = {
@@ -69,7 +79,7 @@ export function FirstNight({ book, onChange, now }) {
       question,
       short: shortFromQuestion(question, 24),
       cadence: 'daily',
-      askAfter: '',
+      askAfter,
       slot: 'whenever',
     }
     land(hangInto(book, lamp), lamp.id)
@@ -125,6 +135,14 @@ export function FirstNight({ book, onChange, now }) {
             </div>
           </div>
         ) : null}
+        <SetCap>{t('hang.secSchedule')}</SetCap>
+        <SetCard>
+          <SetRow label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
+        </SetCard>
+        <div className="di-field">
+          <span>{t('hang.timeRow')}</span>
+          <HangTimeSelect ariaLabel={t('hang.timeRow')} value={askAfter} onChange={setAskAfter} />
+        </div>
         {!named ? (
           <label className="di-field">
             <span>{t('first.name')}</span>

@@ -32,20 +32,16 @@ import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps 
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
-import { matchLamps } from '../../src/lib/hall-pages.js'
+import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import {
-  answerFor,
   boardDate,
-  dueTonight,
   formatBoardDate,
   isDueOn,
-  periodKeyFor,
   recentPeriodKeys,
 } from '../../src/lib/recurrence.js'
 import { NightStrip } from '../components/NightStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
-import { from24 } from '../../src/lib/hang-time.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -53,11 +49,16 @@ import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
 import { rowKey, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { Jewel } from '../components/Jewel.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
-import { SetCard, SetSwitch } from '../components/SetBits.jsx'
+import { SetCap, SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
+import { LampManage } from '../components/LampManage.jsx'
+import { takeSpoken } from '../../src/lib/voice-add.js'
+import { questionAddsToName, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
+import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
+import { lampRecord } from '../../src/lib/lamp-record.js'
+import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
@@ -88,26 +89,21 @@ function shellDate(book, clock = new Date()) {
   return formatBoardDate(boardDate(clock, book.dayFoldHour))
 }
 
-function rowJewelState(row, clock, dateIso) {
-  const due = dueTonight(row.book, clock)
-  const hit = due.find((item) => item.lamp.id === row.lamp.id)
-  if (!hit) return {}
-  if (hit.answer && (hit.answer.status === 'yes' || hit.answer.status === 'late')) {
-    return { on: true, late: hit.answer.status === 'late' }
-  }
-  if (hit.answer?.status === 'skip') return { skip: true }
-  const urgency = dueByUrgency(row.lamp, dateIso)
-  if (urgency === 'today') return { dueToday: true }
-  if (urgency === 'soon') return { dueSoon: true }
-  return {}
-}
-
 function openStarters(book) {
   const hung = (book.lamps || []).filter((lamp) => !lamp.archived)
   return STARTERS.filter(
     (starter) =>
       !hung.some((lamp) => lamp.short === starter.short || lamp.question === starter.question),
   )
+}
+
+function stateDot(state, urgency, colors) {
+  if (state === 'did') return { backgroundColor: colors.on, borderColor: colors.on }
+  if (state === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
+  if (state === 'nope') return { backgroundColor: colors.miss, borderColor: colors.miss }
+  if (urgency === 'today' || urgency === 'soon') return { backgroundColor: 'transparent', borderColor: colors.miss }
+  if (state === 'open') return { backgroundColor: 'transparent', borderColor: colors.on }
+  return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 
 function PickBox({ on, colors }) {
@@ -123,55 +119,99 @@ function PickBox({ on, colors }) {
   )
 }
 
-function LampBlock({ label, items, shelf, clock, dateIso, colors, onOpen, picking, picked, onPick }) {
+// One question per row: its short name, the question on one line, then
+// tag, schedule and time. Every line clips, so long words never crowd the list.
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick }) {
   if (!items.length) return null
   return (
     <View style={styles.block}>
-      <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{label}</Text>
-      {items.map((row) => {
-        const jewel = rowJewelState(row, clock, dateIso)
-        const on = Boolean(picking && picked?.has(rowKey(row)))
-        return (
-          <Pressable
-            key={rowKey(row)}
-            accessibilityRole={picking ? 'checkbox' : 'button'}
-            accessibilityState={picking ? { checked: on } : undefined}
-            onPress={() => {
-              if (picking) {
-                onPick(row)
-                return
-              }
-              if (onOpen) onOpen(row.boardId, row.lamp.id)
-              else goHash('/lamp', { id: row.lamp.id })
-            }}
-            style={[
-              styles.lampRow,
-              { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.panel3 : colors.panel },
-            ]}
-          >
-            {picking ? <PickBox on={on} colors={colors} /> : null}
-            <Jewel
-              label={shortLabel(row.lamp)}
-              tag={shelf.length > 1 ? row.tag : ''}
-              on={jewel.on}
-              skip={jewel.skip}
-              late={jewel.late}
-              dueToday={jewel.dueToday}
-              dueSoon={jewel.dueSoon}
-              colors={colors}
-            />
-            <View style={styles.lampCopy}>
-              <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={2}>
-                {row.lamp.question}
-              </Text>
-              <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
-                {shelf.length > 1 ? `${row.tag} · ` : ''}
-                {cadenceLine(row.lamp)}
-              </Text>
-            </View>
-          </Pressable>
-        )
-      })}
+      <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
+        {label} · {items.length}
+      </Text>
+      <View style={[styles.lampList, { borderColor: colors.lineSoft, backgroundColor: colors.panel }]}>
+        {items.map((row, index) => {
+          const urgency = dueByUrgency(row.lamp, dateIso)
+          const on = Boolean(picking && picked?.has(rowKey(row)))
+          const meta = [
+            shelf.length > 1 ? row.tag : '',
+            cadenceLine(row.lamp),
+            row.lamp.askAfter ? timeLabel(row.lamp.askAfter) : '',
+          ]
+            .filter(Boolean)
+            .join(' · ')
+          return (
+            <Pressable
+              key={rowId(row)}
+              accessibilityRole={picking ? 'checkbox' : 'button'}
+              accessibilityState={picking ? { checked: on } : undefined}
+              accessibilityLabel={row.lamp.question}
+              onPress={() => {
+                if (picking) {
+                  onPick(row)
+                  return
+                }
+                if (onOpen) onOpen(row.boardId, row.lamp.id)
+                else goHash('/lamp', { id: row.lamp.id })
+              }}
+              style={({ pressed }) => [
+                styles.lampItem,
+                index > 0 && { borderTopWidth: 1, borderTopColor: colors.lineSoft },
+                (pressed || on) && { backgroundColor: on ? colors.panel3 : colors.panel2 },
+              ]}
+            >
+              {picking ? (
+                <PickBox on={on} colors={colors} />
+              ) : (
+                <View style={[styles.lampDot, stateDot(states.get(rowId(row)) || '', urgency, colors)]} />
+              )}
+              <View style={styles.lampCopy}>
+                <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
+                  {shortLabel(row.lamp)}
+                </Text>
+                {questionAddsToName(row.lamp) ? (
+                  <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
+                    {row.lamp.question}
+                  </Text>
+                ) : null}
+                <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
+                  {meta}
+                </Text>
+              </View>
+              {picking ? null : <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>}
+            </Pressable>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+function SearchBox({ value, onChange, colors }) {
+  return (
+    <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
+      <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={t('questions.searchPh')}
+        placeholderTextColor={colors.inkDim}
+        selectionColor={colors.on}
+        accessibilityLabel={t('questions.searchPh')}
+        autoCorrect={false}
+        returnKeyType="search"
+        style={[styles.searchInput, { color: colors.ink }]}
+      />
+      {value ? (
+        <Pressable
+          onPress={() => onChange('')}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('questions.searchClear')}
+          style={styles.searchClear}
+        >
+          <Text style={[styles.searchGlyph, { color: colors.ink }]}>×</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -181,15 +221,18 @@ const UNDO_MS = 6000
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
-  const rows = taggedLamps(shelf, tagId)
+  const allRows = taggedLamps(shelf, tagId)
   const [deadlineOnly, setDeadlineOnly] = useState(false)
+  const [query, setQuery] = useState('')
+  const rows = searchRows(allRows, query)
+  const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
-  const hasDeadlines = rows.some((row) => activeDeadline(row.lamp, dateIso))
+  const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
   const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks)), {
     dateIso,
     deadlineOnly,
@@ -288,6 +331,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           topicPicks={picks}
           onTopics={setTopicPicks}
         />
+        {allRows.length ? <SearchBox value={query} onChange={setQuery} colors={colors} /> : null}
 
         {hasDeadlines ? (
           <>
@@ -355,7 +399,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             label={t('questions.list')}
             items={hung}
             shelf={shelf}
-            clock={clock}
+            states={states}
             dateIso={dateIso}
             colors={colors}
             onOpen={onOpen}
@@ -363,6 +407,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             picked={picked}
             onPick={pick}
           />
+        ) : query.trim() && allRows.length ? (
+          <Meta colors={colors}>{t('questions.noMatch')}</Meta>
         ) : picks.length ? (
           <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
         ) : deadlineOnly ? (
@@ -394,7 +440,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           label={t('questions.down')}
           items={down}
           shelf={shelf}
-          clock={clock}
+          states={states}
           dateIso={dateIso}
           colors={colors}
           onOpen={onOpen}
@@ -407,6 +453,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     </View>
   )
 }
+
 
 const PRIORITIES = ['high', 'normal', 'low']
 export function SearchScreen({ book }) {
@@ -454,15 +501,13 @@ const SCHEDULE_MISSES = new Set([
   'hang.miss.dueByBefore',
   'hang.miss.everyN',
   'hang.miss.everyNStart',
-  'hang.miss.askAfter',
 ])
 const LAND_HOLD = 1100
+let foldNext = ''
 const LAND_HOLD_STILL = 450
 
 function timeLabel(value) {
-  if (!value) return ''
-  const { hour, minute, meridiem } = from24(value)
-  return `${hour}:${minute} ${t(`hang.${meridiem}`)}`
+  return value ? clockWords(value) : ''
 }
 
 function whenLine(draft) {
@@ -579,6 +624,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   const lampId = route?.id || ''
   const copyId = route?.copy || ''
   const start = route?.start || ''
+  // Words said to a voice assistant, handed over once by the deep link.
+  const [spoken] = useState(() => (lampId || copyId ? '' : takeSpoken()))
   const sourceBook = findBookHoldingLamp(boards, lampId || copyId)
   const existing = lampId ? (sourceBook?.lamps || []).find((lamp) => lamp.id === lampId) || null : null
   const copySource =
@@ -590,7 +637,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     boards,
     now: clock,
     lamp: existing,
-    seed: copySource ? duplicateLamp(copySource, clock) : null,
+    seed: copySource
+      ? duplicateLamp(copySource, clock)
+      : spoken
+        ? { ...blankLamp(clock), question: didQuestion(spoken) }
+        : null,
     start,
     tagTitle: sourceBook?.title || book.title,
   })
@@ -598,7 +649,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
   const [lead] = useState(() => !draft.question || /^did i\b/i.test(draft.question))
   const [blank, setBlank] = useState(() => (lead ? starterBlank(draft) : draft.question))
-  const [open, setOpen] = useState('')
+  const [open, setOpen] = useState(() => {
+    const first = foldNext
+    foldNext = ''
+    return first
+  })
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
   const [shake, setShake] = useState(0)
@@ -657,6 +712,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         inputRef.current?.focus()
       } else if (SCHEDULE_MISSES.has(problem) && open !== 'when') {
         fold('when')
+      } else if (problem === 'hang.miss.askAfter' && open !== 'time') {
+        fold('time')
       }
       return
     }
@@ -682,8 +739,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     )
   }
 
+  // The rows below already say when it repeats, so the card keeps to the extras.
   const meta = [
-    whenLine(draft),
     timeLabel(draft.askAfter),
     hang.priority === 'high' ? t('hang.metaHigh') : '',
   ]
@@ -714,7 +771,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           setOpen('')
         }}
         onBlur={() => setFocused(false)}
-        autoFocus={fresh && !start}
+        autoFocus={fresh && !start && !spoken}
         colors={colors}
       />
 
@@ -728,10 +785,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       />
 
       <View style={styles.settings}>
+        <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
         <SetCard colors={colors}>
           <HangFold
             label={t('hang.when')}
             value={whenLine(draft)}
+            icon="calendar"
             open={open === 'when'}
             onToggle={() => fold('when')}
             colors={colors}
@@ -815,15 +874,40 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
               </>
             ) : null}
 
-            <Text style={[styles.foldCap, styles.foldCapGap, { color: colors.inkSoft }]}>
-              {t('hang.askAfter')}
-            </Text>
-            <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
           </HangFold>
 
           <HangFold
+            label={t('hang.timeRow')}
+            value={draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')}
+            icon="clock"
+            open={open === 'time'}
+            onToggle={() => fold('time')}
+            colors={colors}
+          >
+            <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
+            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.timeHint')}</Text>
+          </HangFold>
+
+          <SetSwitch
+            label={t('hang.reminder')}
+            sub={reminderLine(draft)}
+            icon="bell"
+            last
+            on={hang.notifyOn}
+            onPress={() => {
+              playClick()
+              hang.change('notify', !hang.notifyOn)
+            }}
+            colors={colors}
+          />
+        </SetCard>
+
+        <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
+        <SetCard colors={colors}>
+          <HangFold
             label={t('hang.tag')}
             value={tagName}
+            icon="tag"
             open={open === 'tag'}
             onToggle={() => fold('tag')}
             colors={colors}
@@ -880,6 +964,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           <HangFold
             label={t('hang.priority')}
             value={t(`hang.priority.${hang.priority}`)}
+            icon="flag"
             open={open === 'priority'}
             onToggle={() => fold('priority')}
             colors={colors}
@@ -900,24 +985,15 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
             </Text>
           </HangFold>
 
-          <SetSwitch
-            label={t('hang.reminder')}
-            sub={reminderLine(draft)}
-            on={hang.notifyOn}
-            onPress={() => {
-              playClick()
-              hang.change('notify', !hang.notifyOn)
-            }}
-            colors={colors}
-          />
-
           <HangFold
             label={t('hang.details')}
             value={
-              detailCount
+              String(draft.short || '').trim() ||
+              (detailCount
                 ? t(detailCount === 1 ? 'hang.detailsOne' : 'hang.detailsSome', { n: detailCount })
-                : t('hang.detailsNone')
+                : t('hang.detailsNone'))
             }
+            icon="note"
             open={open === 'details'}
             onToggle={() => fold('details')}
             last
@@ -966,6 +1042,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
         </Pressable>
       </View>
+
+      {existing && sourceBook && !stamp ? (
+        <LampManage
+          book={sourceBook}
+          lamp={existing}
+          colors={colors}
+          onChange={(next) => onChange(commitBook(next, clock))}
+          onPaused={(paused) => hang.change('archived', paused)}
+        />
+      ) : null}
     </BoardShell>
   )
 }
@@ -976,12 +1062,19 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const [confirmGone, setConfirmGone] = useState(false)
-  const [holePick, setHolePick] = useState(null)
-  const stripKeys = lamp ? recentPeriodKeys(lamp, dateIso, 7) : []
+  const stripKeys = useMemo(
+    () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
+    [lamp, dateIso],
+  )
+  const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
 
   function change(next) {
     onChange(commitBook(next, clock))
+  }
+
+  function editAt(section) {
+    foldNext = section
+    goHash('/hang', { id: lamp.id })
   }
 
   if (!lamp) {
@@ -992,95 +1085,83 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     )
   }
 
-  if (holePick) {
-    const wasSkip = answerFor(lampBook, holePick.id, holePick.key)?.status === 'skip'
-    return (
-      <BoardShell book={lampBook} title={holePick.question} date={shellDate(lampBook, clock)} colors={colors}>
-        <View style={styles.actions}>
-          <DidButton
-            label={t('hole.late')}
-            colors={colors}
-            small
-            onPress={() => {
-              change(putAnswer(lampBook, { lamp: holePick, periodKey: holePick.key }, 'late', clock))
-              setHolePick(null)
-            }}
-          />
-          {!wasSkip ? (
-            <KeyButton
-              label={t('tonight.swipeNope')}
-              colors={colors}
-              onPress={() => {
-                change(putAnswer(lampBook, { lamp: holePick, periodKey: holePick.key }, 'skip', clock))
-                setHolePick(null)
-              }}
-            />
-          ) : null}
-          <KeyButton label={t('hole.leave')} colors={colors} onPress={() => setHolePick(null)} />
-        </View>
-      </BoardShell>
-    )
-  }
-
-  if (confirmGone) {
-    const taps = (lampBook.answers || []).filter((item) => item.lampId === lamp.id).length
-    const note =
-      taps === 0
-        ? t('lamp.deleteNone')
-        : taps === 1
-          ? t('lamp.deleteOne')
-          : t('lamp.deleteSome', { n: taps })
-    return (
-      <BoardShell book={lampBook} title={t('lamp.deleteTitle')} date={shellDate(lampBook, clock)} colors={colors}>
-        <Meta colors={colors}>{note}</Meta>
-        <View style={styles.actions}>
-          <DidButton
-            label={t('lamp.delete')}
-            onPress={() => {
-              change(takeDown(lampBook, lamp))
-              goHash('/lamps')
-            }}
-            colors={colors}
-            small
-          />
-          <KeyButton label={t('lamp.keep')} onPress={() => setConfirmGone(false)} colors={colors} />
-        </View>
-      </BoardShell>
-    )
-  }
+  const status = lamp.archived
+    ? t('lamp.pausedLine')
+    : record.due
+      ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
+      : t('lamp.notTonight')
+  const priority = lamp.priority || 'normal'
+  const extras = [lamp.kind, lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
 
   return (
-    <BoardShell book={lampBook} title={lamp.question} date={shellDate(lampBook, clock)} colors={colors}>
-      <Meta colors={colors}>
-        {[cadenceLine(lamp), lamp.archived ? t('lamp.paused') : ''].filter(Boolean).join(' · ')}
-      </Meta>
-      {lamp.notes ? <Meta colors={colors}>{lamp.notes}</Meta> : null}
+    <BoardShell book={lampBook} title={t('lamp.kicker')} date={shellDate(lampBook, clock)} colors={colors}>
+      <View style={[...faceCardStyle(colors), styles.lampCard, lamp.archived && { opacity: 0.75 }]}>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]} numberOfLines={1}>
+          {lampBook.title}
+        </Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
+        <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
+        <NightStrip book={lampBook} lamp={lamp} keys={stripKeys} colors={colors} />
+      </View>
 
-      <NightStrip
-        book={lampBook}
-        lamp={lamp}
-        keys={stripKeys}
-        colors={colors}
-        noPickKeys={[periodKeyFor(lamp, dateIso)]}
-        onPickHole={(picked, key) => setHolePick({ ...picked, key, question: picked.question })}
-      />
+      <View style={styles.tiles}>
+        <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+          <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
+          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
+        </View>
+        <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+          <Text style={[styles.tileNum, { color: colors.ink }]}>
+            {record.did}
+            <Text style={[styles.tileOf, { color: colors.inkDim }]}> / {record.asked}</Text>
+          </Text>
+          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
+        </View>
+      </View>
 
+      <DidButton label={t('lamp.edit')} onPress={() => editAt('')} colors={colors} />
       <View style={styles.actions}>
-        <DidButton label={t('lamp.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} small />
         <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
         <KeyButton label={t('lamp.done')} onPress={() => goHash('/lamps')} colors={colors} />
       </View>
 
-      <View style={styles.more}>
-        <Pressable onPress={() => change(toggleArchive(lampBook, lamp))}>
-          <Text style={[styles.textBtn, { color: colors.inkSoft }]}>
-            {lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
-          </Text>
-        </Pressable>
-        <Pressable onPress={() => setConfirmGone(true)}>
-          <Text style={[styles.textBtn, { color: colors.miss }]}>{t('lamp.delete')}</Text>
-        </Pressable>
-      </View>
+      <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={cadenceLine(lamp)} chevron onPress={() => editAt('when')} />
+        <SetRow
+          colors={colors}
+          icon="clock"
+          label={t('hang.timeRow')}
+          value={lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny')}
+          chevron
+          onPress={() => editAt('time')}
+        />
+        <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={reminderLine(lamp)} last />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="tag" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
+        <SetRow
+          colors={colors}
+          icon="flag"
+          label={t('hang.priority')}
+          value={t(`hang.priority.${priority}`)}
+          chevron
+          onPress={() => editAt('priority')}
+        />
+        <SetRow
+          colors={colors}
+          icon="note"
+          label={t('hang.details')}
+          sub={extras.join(' · ') || ''}
+          value={extras.length ? '' : t('hang.detailsNone')}
+          chevron
+          last
+          onPress={() => editAt('details')}
+        />
+      </SetCard>
+
+      <LampManage book={lampBook} lamp={lamp} colors={colors} onChange={change} />
     </BoardShell>
   )
 }
@@ -1125,9 +1206,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
+  lampList: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
+  lampItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 },
+  lampDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   lampCopy: { flex: 1, minWidth: 0, gap: 2 },
   lampName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', lineHeight: 20 },
-  lampMeta: { fontFamily: fonts.ui, fontSize: 12 },
+  lampQ: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  lampMeta: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.3 },
+  lampChev: { fontFamily: fonts.ui, fontSize: 22 },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    minHeight: 44,
+    marginBottom: 10,
+  },
+  searchGlyph: { fontFamily: fonts.ui, fontSize: 18 },
+  searchInput: { flex: 1, fontFamily: fonts.ui, fontSize: 15, paddingVertical: 8 },
+  searchClear: { paddingHorizontal: 4 },
   starters: { gap: 8 },
   starterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   fieldCap: {
@@ -1166,6 +1265,13 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  lampCard: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
+  lampStatus: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 10 },
+  tiles: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 12 },
+  tile: { flex: 1, borderWidth: 1, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 2 },
+  tileNum: { fontFamily: fonts.mono, fontSize: 26, fontWeight: '700' },
+  tileOf: { fontSize: 16, fontWeight: '400' },
+  tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   tonight: { gap: 8, marginTop: 4 },
   tonightRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   more: { gap: 12, marginTop: 8 },

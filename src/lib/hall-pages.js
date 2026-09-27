@@ -13,6 +13,7 @@ import {
 } from './recurrence.js'
 import { shortLabel } from './board-json.js'
 import { t } from './i18n.js'
+import { uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
 export { streakLength } from './achievements.js'
@@ -339,6 +340,7 @@ export function homeLine(book, now = new Date()) {
 export function clockWords(timePart) {
   const match = String(timePart).match(/^(\d{1,2}):(\d{2})/)
   if (!match) return ''
+  if (uses24h()) return `${match[1].padStart(2, '0')}:${match[2]}`
   let hour = Number(match[1])
   const suffix = hour >= 12 ? 'PM' : 'AM'
   hour = hour % 12

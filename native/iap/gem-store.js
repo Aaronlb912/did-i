@@ -8,8 +8,11 @@ import { submitGemPurchase } from '../../src/lib/gem-verify.js'
 import { addGemsShelf } from '../../src/lib/purse.js'
 
 let connected = false
-let starting = false
 let linked = false
+// One store connection per app run. Everyone who asks shares it, and the
+// answer (even "no products yet") is kept so the gem page never waits twice.
+let pending = null
+let settled = ''
 const prices = new Map()
 const liveSku = new Map()
 let purchaseSub = null
@@ -101,10 +104,20 @@ async function creditPurchase(purchase) {
   return out
 }
 
-export async function initGemIap() {
-  if (!iapPossible() || starting) return linked ? 'ok' : 'skip'
-  if (linked && liveSku.size) return 'ok'
-  starting = true
+export function initGemIap() {
+  if (!iapPossible()) return Promise.resolve('skip')
+  if (settled && settled !== 'fail') return Promise.resolve(settled)
+  if (!pending) {
+    pending = connectStore().then((out) => {
+      settled = out
+      pending = null
+      return out
+    })
+  }
+  return pending
+}
+
+async function connectStore() {
   try {
     const mod = await loadIap()
     if (!mod) return 'fail'
@@ -139,8 +152,6 @@ export async function initGemIap() {
   } catch (error) {
     console.warn('gem iap init', error?.message || error)
     return linked ? 'empty' : 'fail'
-  } finally {
-    starting = false
   }
 }
 

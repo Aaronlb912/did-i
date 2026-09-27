@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { answerFor } from '../../src/lib/recurrence.js'
+import { answerFor, boardDate, periodPassed } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
 
 function jewelColor(state, colors) {
@@ -13,6 +13,7 @@ function jewelColor(state, colors) {
 
 export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = [] }) {
   if (!lamp || !keys.length) return null
+  const today = boardDate(new Date())
 
   return (
     <View style={styles.wrap} accessibilityLabel={t('strip.recent', { name: shortLabel(lamp) })}>
@@ -25,7 +26,10 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = 
           else if (answer?.status === 'late') state = 'late'
           else if (answer?.status === 'skip') state = 'skip'
           const canPick =
-            onPickHole && !noPickKeys.includes(key) && (!answer || answer.status === 'skip')
+            onPickHole &&
+            !noPickKeys.includes(key) &&
+            !periodPassed(lamp, key, today) &&
+            (!answer || answer.status === 'skip')
           const dot = (
             <View
               style={[

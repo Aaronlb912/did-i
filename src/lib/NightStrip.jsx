@@ -1,9 +1,10 @@
-import { answerFor } from './recurrence.js'
+import { answerFor, boardDate, periodPassed } from './recurrence.js'
 import { shortLabel } from './board-json.js'
 import { t } from './i18n.js'
 
 export function NightStrip({ book, lamp, keys, onPickHole, noPickKeys = [] }) {
   if (!lamp || !keys.length) return null
+  const today = boardDate(new Date())
   return (
     <ol className="di-strip" aria-label={t('strip.recent', { name: shortLabel(lamp) })}>
       {keys.map((key) => {
@@ -13,7 +14,10 @@ export function NightStrip({ book, lamp, keys, onPickHole, noPickKeys = [] }) {
         else if (answer?.status === 'late') state = 'late'
         else if (answer?.status === 'skip') state = 'skip'
         const canPick =
-          onPickHole && !noPickKeys.includes(key) && (!answer || answer.status === 'skip')
+          onPickHole &&
+          !noPickKeys.includes(key) &&
+          !periodPassed(lamp, key, today) &&
+          (!answer || answer.status === 'skip')
         const inner = (
           <>
             <span className={`di-strip-jewel is-${state}`} />

@@ -41,6 +41,8 @@ public final class WidgetTapStore {
             row.put("lampId", lamp);
             row.put("kind", mark);
             row.put("night", storedNight);
+            // When it was tapped, so JS can drop a tap on a card whose night already turned.
+            row.put("at", System.currentTimeMillis());
             rows.put(row);
             return prefs(context).edit().putString(KEY, rows.toString()).commit();
         } catch (JSONException error) {

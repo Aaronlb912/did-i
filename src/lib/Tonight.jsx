@@ -273,26 +273,10 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
         <TagRail boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} />
 
-        {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
-          <div className="di-holes" aria-label={t('tonight.holesAria')}>
-            <p className="di-slot-label">{t('tonight.lastNight')}</p>
-            <EdgeScroll>
-              {stack.catchUp.map((row) => (
-                <li key={stack.rowKey(row)}>
-                  <button
-                    type="button"
-                    className="di-jewel is-hole"
-                    onClick={() => stack.pickHole(row.lamp, row.periodKey, row)}
-                  >
-                    <span className="di-jewel-ring">
-                      <span className="di-jewel-glass" />
-                    </span>
-                    <span className="di-jewel-label">{stack.shortLabel(row.lamp)}</span>
-                  </button>
-                </li>
-              ))}
-            </EdgeScroll>
-          </div>
+        {stack.pillPick ? (
+          <button className="di-key di-tonight-back" type="button" onClick={() => stack.closePlates()}>
+            <span aria-hidden="true">‹</span> {t('tonight.backToStack')}
+          </button>
         ) : null}
 
         <SwipePullSlot>{body}</SwipePullSlot>

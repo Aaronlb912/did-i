@@ -18,8 +18,10 @@ import {
   faceSwipeTonight,
   isDueOn,
   isoDate,
+  periodPassed,
 } from '../src/lib/recurrence.js'
 import { closePastNights } from '../src/lib/daily.js'
+import { putAnswer } from '../src/lib/board-ops.js'
 import {
   activeDeadline,
   byPriority,
@@ -48,7 +50,8 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
-import { BUDDIES, FREE_BUDDY, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
+import { validateCoinItem } from '../src/lib/wallet.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
@@ -92,7 +95,10 @@ import { nightProgress } from '../src/lib/night-progress.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { stampWhen } from '../src/lib/hall-pages.js'
+import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
+import { joinTime, timeParts } from '../src/lib/hang-time.js'
+import { searchRows, tonightStates } from '../src/lib/question-list.js'
+import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
 import {
   advanceTonightCard,
   applyWidgetTapOnce,
@@ -171,6 +177,56 @@ test('an unanswered night closes as nope when the day turns', () => {
   const closed = closePastNights(book, tomorrow)
   assert.equal(answerFor(closed, 'door', today)?.status, 'skip')
   assert.equal(closePastNights(closed, tomorrow), closed)
+})
+
+test('question search matches every word, and tonight states come from one pass per tag', () => {
+  const lamp = (id, question, extra = {}) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2020-01-01', ...extra })
+  const book = {
+    id: 'b1',
+    title: 'Home',
+    lamps: [lamp('door', 'Did I lock the back door?', { notes: 'the one by the garage' }), lamp('pills', 'Did I take the pills?')],
+    answers: [],
+  }
+  const rows = book.lamps.map((item) => ({ boardId: 'b1', book, tag: 'Home', lamp: item }))
+  assert.equal(searchRows(rows, '').length, 2, 'no query keeps every row')
+  assert.deepEqual(searchRows(rows, 'back door').map((row) => row.lamp.id), ['door'])
+  assert.deepEqual(searchRows(rows, 'GARAGE').map((row) => row.lamp.id), ['door'], 'notes count, any case')
+  assert.deepEqual(searchRows(rows, 'home pills').map((row) => row.lamp.id), ['pills'], 'tag counts')
+  assert.equal(searchRows(rows, 'door pills').length, 0, 'every word has to match')
+  const clock = new Date(2026, 8, 21, 20, 0)
+  const night = boardDate(clock)
+  book.answers = [{ id: 'a', lampId: 'door', periodKey: night, status: 'yes', answeredAt: clock.toISOString() }]
+  const states = tonightStates(rows, clock)
+  assert.equal(states.get('b1:door'), 'did')
+  assert.equal(states.get('b1:pills'), 'open')
+})
+
+test('words from a voice assistant become the blank after "Did I", once', () => {
+  assert.equal(spokenQuestion('lock the back door'), 'lock the back door')
+  assert.equal(spokenQuestion('Did I lock the back door?'), 'lock the back door')
+  assert.equal(spokenQuestion('add a question did I take my pills'), 'take my pills')
+  assert.equal(spokenQuestion('Please create feed the cat.'), 'feed the cat')
+  assert.equal(spokenQuestion('   '), '')
+  assert.ok(spokenQuestion('x'.repeat(300)).length <= 110, 'long speech is cut to fit a question')
+  holdSpoken('water the plants')
+  assert.equal(takeSpoken(), 'water the plants')
+  assert.equal(takeSpoken(), '', 'handed over only once')
+})
+
+test('times follow the clock setting, 12 or 24 hour', () => {
+  try {
+    writePrefs({ clock: '12' })
+    assert.equal(clockWords('20:05'), '8:05 PM')
+    assert.equal(clockWords('00:30'), '12:30 AM')
+    writePrefs({ clock: '24' })
+    assert.equal(clockWords('20:05'), '20:05')
+    assert.equal(clockWords('7:30'), '07:30')
+    assert.deepEqual(timeParts('07:05', true).hour, '07', '24 hour picker keeps the stored hour')
+    assert.equal(joinTime({ hour: '21', minute: '15' }, true), '21:15')
+    assert.equal(joinTime({ hour: '9', minute: '15', meridiem: 'pm' }, false), '21:15')
+  } finally {
+    writePrefs({ clock: 'phone' })
+  }
 })
 
 test('the first question finishes "Did I ___" once', () => {
@@ -873,6 +929,17 @@ test('widget props list every tag and merge answers onto the right one', () => {
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
+test('every coin look on sale passes the client check before the buy is sent', () => {
+  const coinLooks = LOOKS.filter((item) => item.coins > 0)
+  assert.ok(coinLooks.length > 0, 'there are coin looks to buy')
+  for (const look of coinLooks) {
+    assert.ok(validateCoinItem('look', look.id), 'coin look ' + look.id + ' can be bought')
+  }
+  assert.ok(!validateCoinItem('look', 'moss'), 'a gem look is not sold for coins')
+  assert.ok(!validateCoinItem('look', 'nope-look'), 'an unknown look is refused')
+  assert.ok(validateCoinItem('cheer_stage', 'tape'), 'a cheer stage passes')
+})
+
 test('a question can have several topics and the list filters by them', () => {
   assert.deepEqual(topicsOf({ kind: 'Pets, morning ,pets,, Pills' }), ['Pets', 'morning', 'Pills'], 'trimmed, no repeats')
   assert.equal(joinTopics(['Pets', 'Morning', 'pets']), 'Pets, Morning')
@@ -938,6 +1005,25 @@ test('an invite link carries its code to the app on both phones', () => {
   assert.equal(inviteFromText(referrer), 'ABCDE12345', 'the Play install referrer')
   assert.equal(inviteFromText('utm_source=google-play&utm_medium=organic'), '', 'a plain install has no code')
   assert.equal(inviteFromText('call me at 5551234567'), '', 'random clipboard text is ignored')
+})
+
+test('a past night is final: it closes as nope and cannot be marked later', () => {
+  const lamp = { id: 'l1', question: 'One?', cadence: 'daily', archived: false }
+  const book = { id: 'tag-a', title: 'A', lamps: [lamp], answers: [] }
+  const today = new Date(2026, 8, 21, 20, 0)
+  const todayIso = boardDate(today)
+  const pastKey = addDaysIso(todayIso, -1)
+  assert.ok(periodPassed(lamp, pastKey, todayIso), 'yesterday has passed')
+  assert.ok(!periodPassed(lamp, todayIso, todayIso), 'tonight has not')
+  assert.ok(!periodPassed({ ...lamp, cadence: 'monthly' }, todayIso.slice(0, 7), todayIso), 'this month is still open')
+  const row = { lamp, periodKey: pastKey }
+  assert.equal(putAnswer(book, row, 'late', today), book, 'no late did on a past night')
+  assert.equal(putAnswer(book, row, 'yes', today), book, 'no did on a past night')
+  const closed = putAnswer(book, row, 'skip', today)
+  assert.equal(answerFor(closed, 'l1', pastKey)?.status, 'skip', 'an empty past night closes as nope')
+  assert.equal(putAnswer(closed, row, 'late', today), closed, 'the nope stays')
+  const tonight = putAnswer(putAnswer(book, { lamp, periodKey: todayIso }, 'skip', today), { lamp, periodKey: todayIso }, 'late', today)
+  assert.equal(answerFor(tonight, 'l1', todayIso)?.status, 'late', 'a nope tonight can still become a late did tonight')
 })
 
 test('a widget answer from last night still lands after midnight', () => {
@@ -1154,6 +1240,25 @@ test('the tonight widget can draw a question without the app', () => {
   }
   const catTree = JSON.stringify(fn({ ...mixed, buddyId: 'cat' }, env))
   assert.ok(catTree.includes('#5c4a3a') && catTree.includes('#ffd4a8'), 'cat whiskers and inner ears')
+})
+
+test('a widget tap made after its night turned is dropped, one made on the night lands', () => {
+  const book = {
+    id: 'tap-late',
+    title: 'Home',
+    lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  }
+  writeShelf({ currentId: 'tap-late', boards: [book] })
+  const night = '2026-09-23'
+  const morning = new Date(2026, 8, 24, 9, 0).getTime()
+  assert.equal(applyWidgetTapOnce('door', 'did', night, new Date(morning), morning), null, 'stale card tapped next morning')
+  const onTime = new Date(2026, 8, 23, 22, 30).getTime()
+  const landed = applyWidgetTapOnce('door', 'did', night, new Date(morning), onTime)
+  assert.ok(landed, 'tapped that night, applied the next morning')
+  const answer = landed.boards.find((row) => row.id === 'tap-late').answers[0]
+  assert.equal(answer.periodKey, night)
+  assert.equal(new Date(answer.answeredAt).getTime(), onTime, 'stamped with the tap time')
 })
 
 test('an android widget tap for one lamp and night applies once', () => {

@@ -61,6 +61,11 @@ export function TagRail({ boards, tagId, onTag, now }) {
         <span className="di-tagpick-name">{label}</span>
         {count ? <em>{count}</em> : null}
       </button>
+      {tagId ? (
+        <button className="di-tagclear" type="button" aria-label={t('tags.clear')} onClick={() => pick('')}>
+          <span aria-hidden="true">×</span>
+        </button>
+      ) : null}
 
       {open ? (
         <div className="di-tagmenu" role="menu" aria-label={t('tags.aria')}>

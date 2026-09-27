@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { SWIPE_THRESHOLD, SWIPE_WAKE } from '../../src/lib/swipe-face.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { playClick } from '../../src/lib/native.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { BuddyHang } from './Cosmetic.jsx'
 import { gemGlowHostStyle, gemLookTone } from '../lib/gem-look-tone.js'
@@ -41,6 +42,9 @@ export function SwipeCard({
   const x = useRef(new Animated.Value(0)).current
   const live = useRef({ onDid, onNope, blockDid, blockNope, demo })
   live.current = { onDid, onNope, blockDid, blockNope, demo }
+  // Which answer edge the drag is past (1 DID, -1 nope, 0 neither), so the
+  // phone ticks once when you cross into it.
+  const edge = useRef(0)
 
   useEffect(() => {
     x.stopAnimation()
@@ -89,8 +93,20 @@ export function SwipeCard({
         },
         onPanResponderMove: (_, gesture) => {
           x.setValue(gesture.dx)
+          const now = live.current
+          const zone =
+            gesture.dx >= SWIPE_THRESHOLD && !now.blockDid
+              ? 1
+              : gesture.dx <= -SWIPE_THRESHOLD && !now.blockNope
+                ? -1
+                : 0
+          if (zone !== edge.current) {
+            if (zone !== 0) playClick()
+            edge.current = zone
+          }
         },
         onPanResponderRelease: (_, gesture) => {
+          edge.current = 0
           const moved = gesture.dx
           const now = live.current
           // A committed swipe leaves the card where it was let go. The next
@@ -110,6 +126,7 @@ export function SwipeCard({
           Animated.spring(x, { ...SPRING, toValue: 0 }).start()
         },
         onPanResponderTerminate: () => {
+          edge.current = 0
           Animated.spring(x, { ...SPRING, toValue: 0 }).start()
         },
       }),

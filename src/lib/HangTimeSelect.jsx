@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
-import { DEFAULT_TIME, from24, HOUR_OPTIONS, minuteOptions, to24 } from './hang-time.js'
+import { DEFAULT_TIME, HOUR_OPTIONS, HOUR_OPTIONS_24, joinTime, minuteOptions, timeParts } from './hang-time.js'
 import { HangSelect } from './HangSelect.jsx'
 import { t } from './i18n.js'
+import { usePrefs, uses24h } from './prefs.js'
 
 export function HangTimeSelect({ value, onChange, ariaLabel }) {
+  usePrefs()
+  const h24 = uses24h()
   const timed = Boolean(value)
-  const { hour, minute, meridiem } = from24(value)
+  const { hour, minute, meridiem } = timeParts(value, h24)
   const minutes = useMemo(() => minuteOptions(minute), [minute])
   const meridiemOptions = useMemo(
     () => [
@@ -16,9 +19,9 @@ export function HangTimeSelect({ value, onChange, ariaLabel }) {
   )
 
   function setPart(part, next) {
-    const bits = from24(value || DEFAULT_TIME)
+    const bits = timeParts(value || DEFAULT_TIME, h24)
     bits[part] = next
-    onChange(to24(bits.hour, bits.minute, bits.meridiem))
+    onChange(joinTime(bits, h24))
   }
 
   return (
@@ -47,7 +50,7 @@ export function HangTimeSelect({ value, onChange, ariaLabel }) {
               ariaLabel={t('hang.timeHour')}
               value={hour}
               onChange={(next) => setPart('hour', next)}
-              options={HOUR_OPTIONS}
+              options={h24 ? HOUR_OPTIONS_24 : HOUR_OPTIONS}
             />
           </div>
           <div className="di-field">
@@ -59,15 +62,17 @@ export function HangTimeSelect({ value, onChange, ariaLabel }) {
               options={minutes}
             />
           </div>
-          <div className="di-field">
-            <span>{t('hang.timeDaypart')}</span>
-            <HangSelect
-              ariaLabel={t('hang.timeDaypart')}
-              value={meridiem}
-              onChange={(next) => setPart('meridiem', next)}
-              options={meridiemOptions}
-            />
-          </div>
+          {h24 ? null : (
+            <div className="di-field">
+              <span>{t('hang.timeDaypart')}</span>
+              <HangSelect
+                ariaLabel={t('hang.timeDaypart')}
+                value={meridiem}
+                onChange={(next) => setPart('meridiem', next)}
+                options={meridiemOptions}
+              />
+            </div>
+          )}
         </div>
       ) : null}
     </div>

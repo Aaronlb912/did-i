@@ -27,7 +27,8 @@ function UndoToastInner({ undo, onUndo, colors }) {
   const slide = useRef(new Animated.Value(8)).current
   const live = Boolean(undo)
 
-  const shakeOk = useShakeUndo(live, onUndo)
+  // Shake still undoes where the sensor works, but it was not reliable enough to promise.
+  useShakeUndo(live, onUndo)
 
   useEffect(() => {
     if (!live) {
@@ -50,7 +51,7 @@ function UndoToastInner({ undo, onUndo, colors }) {
 
   if (!live) return null
 
-  const hint = reduce || !shakeOk ? t('tonight.undoTap') : t('tonight.undoShake')
+  const hint = t('tonight.undoTap')
 
   return (
     <Animated.View
