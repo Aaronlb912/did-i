@@ -120,8 +120,8 @@ export const additionsEn = {
   'wait.kicker': 'Not yet',
   'wait.after': 'After {time}.',
   'wait.later': 'later',
-  'wait.thisQuestion': 'This question',
-  'wait.sit': 'Sit',
+  'wait.thisQuestion': 'Open question',
+  'wait.sit': 'Back',
 
   'tonight.holesAria': 'Last time',
   'tonight.printDone': 'Nothing left unanswered tonight.',
@@ -503,8 +503,8 @@ export const additionsEs = {
   'wait.kicker': 'Todavía no',
   'wait.after': 'Después de {time}.',
   'wait.later': 'luego',
-  'wait.thisQuestion': 'Esta pregunta',
-  'wait.sit': 'Esperar',
+  'wait.thisQuestion': 'Abrir pregunta',
+  'wait.sit': 'Volver',
 
   'tonight.holesAria': 'La última vez',
   'tonight.printDone': 'Nada queda sin responder esta noche.',

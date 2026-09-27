@@ -12,8 +12,8 @@ export function WaitPlate({ row, colors, onClose }) {
     <View style={faceCardStyle(colors)}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('wait.kicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>{row.lamp.question}</Text>
-      <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('wait.after', { time: after })}</Text>
-      <View style={styles.actions}>
+      <Text style={[faceCardStyles.meta, styles.meta, { color: colors.inkSoft }]}>{t('wait.after', { time: after })}</Text>
+      <View style={[styles.actions, { borderTopColor: colors.lineSoft }]}>
         <DidButton
           label={t('wait.thisQuestion')}
           colors={colors}
@@ -27,5 +27,6 @@ export function WaitPlate({ row, colors, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  meta: { marginTop: 14 },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 20, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, flexWrap: 'wrap' },
 })

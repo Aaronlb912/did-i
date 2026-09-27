@@ -273,7 +273,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
         <TagRail boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} />
 
-        {stack.pillPick ? (
+        {stack.pillPick || stack.waitPick ? (
           <button className="di-key di-tonight-back" type="button" onClick={() => stack.closePlates()}>
             <span aria-hidden="true">‹</span> {t('tonight.backToStack')}
           </button>
