@@ -363,21 +363,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <TagFilter boards={stack.shelf} tagId={tagId} onTag={onTag} now={stack.clock} colors={colors} />
       </Slot>
 
-      {stack.catchUp.length > 0 && !stack.holePick && !stack.waitPick ? (
-        <View style={styles.holes} accessibilityLabel={t('tonight.holesAria')}>
-          <Text style={[styles.holesLabel, { color: colors.inkSoft }]}>{t('tonight.lastNight')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.jewelsIn}>
-            {stack.catchUp.map((row) => (
-              <Jewel
-                key={stack.rowKey(row)}
-                label={stack.shortLabel(row.lamp)}
-                hole
-                colors={colors}
-                onPress={() => stack.pickHole(row.lamp, row.periodKey, row)}
-              />
-            ))}
-          </ScrollView>
-        </View>
+      {stack.pillPick ? (
+        <Pressable
+          onPress={() => stack.closePlates()}
+          hitSlop={10}
+          accessibilityRole="button"
+          style={[styles.back, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
+        >
+          <Text style={[styles.backText, { color: colors.ink }]}>‹  {t('tonight.backToStack')}</Text>
+        </Pressable>
       ) : null}
 
       <View style={styles.slot} pointerEvents="box-none">
@@ -414,13 +408,17 @@ const styles = StyleSheet.create({
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   jewels: { maxHeight: 52, marginBottom: 10 },
-  holes: { marginBottom: 10, gap: 6 },
-  holesLabel: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
   jewelsIn: { gap: 8, paddingRight: 8 },
+  back: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: 999,
+    marginBottom: 6,
+  },
+  backText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
 })

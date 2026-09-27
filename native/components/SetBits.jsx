@@ -2,6 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts, radius } from '../theme.js'
+import { MenuIcon } from './MenuIcon.jsx'
 
 export function SetCap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
@@ -19,10 +20,15 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, onPress, chevron, danger, colors, on }) {
+export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger, colors, on }) {
   const flat = !onPress
   const body = (
     <>
+      {icon ? (
+        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
+          <MenuIcon name={icon} color={danger ? colors.miss : colors.inkSoft} size={17} stroke />
+        </View>
+      ) : null}
       <View style={styles.copy}>
         <Text style={[styles.label, { color: danger ? colors.miss : colors.ink }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
@@ -39,7 +45,11 @@ export function SetRow({ label, sub, value, onPress, chevron, danger, colors, on
     </>
   )
   if (flat) {
-    return <View style={[styles.row, styles.rowFlat, { borderBottomColor: colors.lineSoft }]}>{body}</View>
+    return (
+      <View style={[styles.row, styles.rowFlat, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}>
+        {body}
+      </View>
+    )
   }
   return (
     <Pressable
@@ -47,6 +57,7 @@ export function SetRow({ label, sub, value, onPress, chevron, danger, colors, on
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
+        last && { borderBottomWidth: 0 },
       ]}
     >
       {body}
@@ -54,7 +65,7 @@ export function SetRow({ label, sub, value, onPress, chevron, danger, colors, on
   )
 }
 
-export function SetSwitch({ label, sub, on, onPress, colors }) {
+export function SetSwitch({ label, sub, icon, last, on, onPress, colors }) {
   return (
     <Pressable
       onPress={onPress}
@@ -63,8 +74,14 @@ export function SetSwitch({ label, sub, on, onPress, colors }) {
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
+        last && { borderBottomWidth: 0 },
       ]}
     >
+      {icon ? (
+        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
+          <MenuIcon name={icon} color={on ? colors.on : colors.inkSoft} size={17} stroke />
+        </View>
+      ) : null}
       <View style={styles.copy}>
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
@@ -136,6 +153,7 @@ export function PageTitle({ children, colors }) {
 }
 
 const styles = StyleSheet.create({
+  iconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cap: {
     fontFamily: fonts.ui,
     fontSize: 12,

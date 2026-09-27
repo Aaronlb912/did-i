@@ -10,7 +10,7 @@ import {
 
 const CLOSE_CAP = 400
 
-function nightEnd(dateIso) {
+export function nightEnd(dateIso) {
   const date = parseIsoDate(dateIso)
   if (!date) return new Date()
   date.setHours(23, 59, 59, 0)

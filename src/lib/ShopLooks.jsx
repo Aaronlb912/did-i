@@ -4,7 +4,7 @@ import { LookChip } from './Cosmetic.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
 import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, LOOKS, buyLook, isGemLook, lookText, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
-import { BuyConfirm, LookPreviewCard, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
+import { BuyConfirm, LookPreviewCard, NO_MISS, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -16,17 +16,17 @@ export function ShopLooks({ book, onChange, now }) {
   usePrefs()
   const clock = now || new Date()
   const purse = normalizePurse(book)
-  const [miss, setMiss] = useState('')
+  const [miss, setMiss] = useState(NO_MISS)
   const [peekLook, setPeekLook] = useState('')
   const [confirm, setConfirm] = useState(null)
 
-  function take(next) {
+  function take(next, id) {
     if (isGemShort(next)) {
-      setMiss('')
+      setMiss(NO_MISS)
       setConfirm(shortGemConfirm())
       return
     }
-    setMiss(shopMiss(next))
+    setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setPeekLook('')
       setConfirm(null)
@@ -36,7 +36,7 @@ export function ShopLooks({ book, onChange, now }) {
 
   async function buyRow(item) {
     const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
-    take(next)
+    take(next, item.id)
   }
 
   function lookRow(item) {
@@ -55,6 +55,11 @@ export function ShopLooks({ book, onChange, now }) {
         </button>
         <span className="di-shop-copy">
           <strong>{t(lookText(item.id, 'name'))}</strong>
+          {miss.id === item.id && miss.text ? (
+            <em className="di-shop-miss" role="alert">
+              {miss.text}
+            </em>
+          ) : null}
         </span>
         <button
           className={on ? 'di-did di-did-small' : 'di-key'}
@@ -62,14 +67,14 @@ export function ShopLooks({ book, onChange, now }) {
           disabled={on}
           onClick={() => {
             if (have) {
-              take(buyLook(book, item.id))
+              take(buyLook(book, item.id), item.id)
               return
             }
             if (item.gems > 0 && purse.gems < item.gems) {
               setConfirm(shortGemConfirm())
               return
             }
-            setMiss('')
+            setMiss(NO_MISS)
             setConfirm({
               title: t(lookText(item.id, 'name')),
               body: t('shop.buyLookBody', { cost }),
@@ -104,11 +109,6 @@ export function ShopLooks({ book, onChange, now }) {
         <p className="di-set-cap">{t('shop.looksGems')}</p>
         <div className="di-set-card di-shop-card">{GEM_LOOKS.map(lookRow)}</div>
 
-        {miss ? (
-          <p className="di-miss" role="alert">
-            {miss}
-          </p>
-        ) : null}
       </section>
       <BuyConfirm
         confirm={confirm}

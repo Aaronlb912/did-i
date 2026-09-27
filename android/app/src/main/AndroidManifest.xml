@@ -37,6 +37,7 @@
         <data android:scheme="didi"/>
         <data android:scheme="exp+did-i"/>
       </intent-filter>
+      <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>
     </activity>
     <receiver android:name=".widget.DidITonight" android:exported="true" android:label="Did I tonight">
       <intent-filter>

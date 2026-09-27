@@ -3,4 +3,6 @@
   <!-- Same as "version" in app.json (runtimeVersion in app.config.js). -->
   <string name="expo_runtime_version">1.0.0</string>
   <string name="widget_diditonight_description" translatable="false">Tonight questions for your tag. Settings → Widget.</string>
+  <string name="shortcut_add_short">Add a question</string>
+  <string name="shortcut_add_long">Add a Did I question</string>
 </resources>

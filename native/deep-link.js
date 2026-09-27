@@ -1,6 +1,7 @@
 import * as Linking from 'expo-linking'
 import { savePendingInvite } from '../src/lib/invite-link.js'
 import { goHash } from './navigation/hash.js'
+import { holdSpoken } from '../src/lib/voice-add.js'
 
 export const TONIGHT_WIDGET_URI = 'didi://tonight'
 
@@ -14,6 +15,10 @@ export function routeFromDeepLink(url) {
     // didi://invite/CODE from the invite page when the app is already installed.
     const invite = /^invite\/?([a-z0-9]{10})$/i.exec(host === 'invite' ? `invite/${path}` : path)
     if (invite) return { invite: invite[1] }
+    // didi://add?q=lock+the+back+door from Google Assistant, a Siri Shortcut or the app shortcut.
+    if (path === 'add') {
+      return { path: '/add', say: String(parsed.queryParams?.q || parsed.queryParams?.text || '') }
+    }
     if (path === 'tonight') {
       const face = String(parsed.queryParams?.face || parsed.queryParams?.id || '')
       const tag = String(parsed.queryParams?.tag || '')
@@ -34,6 +39,7 @@ export function goFromDeepLink(url) {
     savePendingInvite(route.invite)
     return true
   }
+  if (route.say) holdSpoken(route.say)
   const extra = {}
   if (route.face) extra.face = route.face
   if (route.tag) extra.tag = route.tag

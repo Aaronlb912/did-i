@@ -130,7 +130,11 @@ export const HangCard = forwardRef(function HangCard(
         submitBehavior="blurAndSubmit"
         multiline
         maxLength={120}
-        style={[faceCardStyles.title, styles.blank, { color: colors.ink }]}
+        style={[
+          faceCardStyles.title,
+          styles.blank,
+          { color: colors.ink, borderBottomColor: landed ? 'transparent' : focused ? colors.on : colors.line },
+        ]}
       />
       {meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
@@ -143,7 +147,8 @@ export const HangCard = forwardRef(function HangCard(
 
 const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
-  blank: { padding: 0, paddingTop: 0, minHeight: 32 },
+  // The underline says "you can type here"; it lights up while typing.
+  blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },
   stamp: {
     left: undefined,
     right: 16,

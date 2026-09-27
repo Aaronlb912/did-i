@@ -5,7 +5,7 @@ import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { setShareDiagnostics } from './diagnostics.js'
-import { LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
+import { CLOCK_IDS, LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.js'
 import { ownedLookIds, readWidgetSettings } from './widget-config.js'
 import { applyWidgetPrefs } from './widget-settings.js'
 import { readShelf } from './board-shelf.js'
@@ -149,6 +149,12 @@ export function Profile({
             onClick={() => setSheet('theme')}
           />
           <SetRow
+            label={t('settings.clock')}
+            value={t(`clock.${prefs.clock}`)}
+            chevron
+            onClick={() => setSheet('clock')}
+          />
+          <SetRow
             label={t('settings.language')}
             value={t(`lang.${prefs.locale}`)}
             chevron
@@ -284,6 +290,22 @@ export function Profile({
                 on={prefs.theme === id}
                 onClick={() => {
                   writePrefs({ theme: id })
+                  setSheet(null)
+                }}
+              />
+            ))}
+          </SetSheet>
+        ) : null}
+
+        {sheet === 'clock' ? (
+          <SetSheet title={t('settings.clock')} still={still} onClose={() => setSheet(null)}>
+            {CLOCK_IDS.map((id) => (
+              <SetPick
+                key={id}
+                label={t(`clock.${id}`)}
+                on={prefs.clock === id}
+                onClick={() => {
+                  writePrefs({ clock: id })
                   setSheet(null)
                 }}
               />

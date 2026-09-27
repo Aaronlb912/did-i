@@ -3,16 +3,19 @@ import { stampSavedAt } from './saved-at.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
+const CLOCKS = new Set(['phone', '12', '24'])
 const LOCALES = new Set(['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko'])
 const listeners = new Set()
 
 export const THEME_IDS = ['dark', 'light', 'phone']
+export const CLOCK_IDS = ['phone', '12', '24']
 export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 
 function blankPrefs() {
   return {
     theme: 'dark',
     locale: 'en',
+    clock: 'phone',
     lessMotion: false,
     diagnosticsAsked: false,
     shareDiagnostics: false,
@@ -41,6 +44,7 @@ function cleanPrefs(raw) {
   const next = blankPrefs()
   if (THEMES.has(raw?.theme)) next.theme = raw.theme
   if (LOCALES.has(raw?.locale)) next.locale = raw.locale
+  if (CLOCKS.has(raw?.clock)) next.clock = raw.clock
   if (raw?.lessMotion === true) next.lessMotion = true
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
@@ -89,9 +93,31 @@ export function writePrefs(patch, fromCloud = false) {
   const next = cleanPrefs({ ...readPrefs(), ...patch })
   localStorage.setItem(KEY, JSON.stringify(next))
   if (!fromCloud) stampSavedAt()
+  clockCache = null
   listeners.forEach((fn) => fn(next))
   applyPrefsToDocument(next)
   return next
+}
+
+function phoneUses24h() {
+  try {
+    const opts = new Intl.DateTimeFormat([], { hour: 'numeric' }).resolvedOptions()
+    if (opts.hourCycle) return opts.hourCycle === 'h23' || opts.hourCycle === 'h24'
+    return opts.hour12 === false
+  } catch {
+    return false
+  }
+}
+
+let clockCache = null
+
+// 12 or 24 hour, from the clock setting. "Phone" follows the device.
+export function uses24h() {
+  if (clockCache == null) {
+    const clock = readPrefs().clock
+    clockCache = clock === '24' || (clock === 'phone' && phoneUses24h())
+  }
+  return clockCache
 }
 
 export function onPrefs(fn) {

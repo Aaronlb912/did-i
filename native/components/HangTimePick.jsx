@@ -2,20 +2,24 @@ import { useMemo, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import {
   DEFAULT_TIME,
-  from24,
   HOUR_OPTIONS,
+  HOUR_OPTIONS_24,
+  joinTime,
   minuteOptions,
-  to24,
+  timeParts,
 } from '../../src/lib/hang-time.js'
 import { t } from '../../src/lib/i18n.js'
+import { usePrefs, uses24h } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
 import { HangSelect } from './HangSelect.jsx'
 import { KeyButton } from './ui.jsx'
 
 export function HangTimePick({ value, onChange, colors }) {
   const [openMenu, setOpenMenu] = useState(null)
+  usePrefs()
+  const h24 = uses24h()
   const timed = Boolean(value)
-  const { hour, minute, meridiem } = from24(value)
+  const { hour, minute, meridiem } = timeParts(value, h24)
   const minutes = useMemo(() => minuteOptions(minute), [minute])
   const meridiemOptions = useMemo(
     () => [
@@ -26,9 +30,9 @@ export function HangTimePick({ value, onChange, colors }) {
   )
 
   function setPart(part, next) {
-    const bits = from24(value || DEFAULT_TIME)
+    const bits = timeParts(value || DEFAULT_TIME, h24)
     bits[part] = next
-    onChange(to24(bits.hour, bits.minute, bits.meridiem))
+    onChange(joinTime(bits, h24))
   }
 
   return (
@@ -50,7 +54,7 @@ export function HangTimePick({ value, onChange, colors }) {
               ariaLabel={t('hang.timeHour')}
               value={hour}
               onChange={(next) => setPart('hour', next)}
-              options={HOUR_OPTIONS}
+              options={h24 ? HOUR_OPTIONS_24 : HOUR_OPTIONS}
               colors={colors}
               open={openMenu === 'hour'}
               onOpenChange={(next) => setOpenMenu(next ? 'hour' : null)}
@@ -68,6 +72,7 @@ export function HangTimePick({ value, onChange, colors }) {
               onOpenChange={(next) => setOpenMenu(next ? 'minute' : null)}
             />
           </View>
+          {h24 ? null : (
           <View style={[styles.col, styles.colDay]}>
             <Text style={[styles.cap, { color: colors.inkDim }]}>{t('hang.timeDaypart')}</Text>
             <HangSelect
@@ -80,6 +85,7 @@ export function HangTimePick({ value, onChange, colors }) {
               onOpenChange={(next) => setOpenMenu(next ? 'meridiem' : null)}
             />
           </View>
+          )}
         </View>
       ) : null}
     </View>

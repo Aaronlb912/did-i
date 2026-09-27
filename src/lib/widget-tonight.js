@@ -17,7 +17,9 @@ import {
   didStatusForRow,
   dueTonight,
   finishStackCount,
+  periodPassed,
 } from './recurrence.js'
+import { nightEnd } from './daily.js'
 import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
@@ -70,9 +72,16 @@ function applyItemStatus(book, item, status, clock = new Date()) {
   }
   if (!row) return book
   if (rowStatus(row) === status) return book
-  if (status === 'yes') return putAnswer(book, row, didStatusForRow(row), clock)
-  if (status === 'skip') return putAnswer(book, row, 'skip', clock)
+  if (status === 'yes') return putAnswer(book, row, didStatusForRow(row), tapClock(row, clock))
+  if (status === 'skip') return putAnswer(book, row, 'skip', tapClock(row, clock))
   return book
+}
+
+// The widget only ever shows the current night, so a tap stored for an
+// earlier night was made on that night. It lands there, not as a late edit.
+function tapClock(row, clock) {
+  if (!row?.dateIso || !periodPassed(row.lamp, row.periodKey, boardDate(clock))) return clock
+  return nightEnd(row.dateIso)
 }
 
 function widgetStackLeft(items) {
@@ -309,7 +318,10 @@ function rowForStoredNight(book, lampId, night, clock) {
 
 // Android only. The receiver and the widget task can both see one tap.
 // A second apply for the same lamp and night does not write again.
-export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date()) {
+// `tapAt` is when the tap happened (ms). A tap made after its night turned
+// came from a stale card and is dropped; taps queued by older builds carry
+// no time and land on their night as before.
+export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(), tapAt = 0) {
   const status = widgetStatus(kind)
   const id = String(lampId || '').trim()
   if (!status || !id) return null
@@ -320,7 +332,9 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date())
   if (!row) return null
   // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
   if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
-  const nextBook = putAnswer(book, row, status, clock)
+  const tappedAt = tapAt > 0 ? new Date(tapAt) : null
+  if (tappedAt && periodPassed(row.lamp, row.periodKey, boardDate(tappedAt))) return null
+  const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
   const nextShelf = writeShelf({ ...shelf, boards })
@@ -351,11 +365,15 @@ export function parseWidgetTapQueue(raw) {
   const rows = Array.isArray(parsed) ? parsed : [parsed]
   return rows
     .filter((row) => row && typeof row === 'object')
-    .map((row) => ({
-      lampId: String(row.lampId || '').trim(),
-      kind: String(row.kind || '').trim(),
-      night: String(row.night || '').trim(),
-    }))
+    .map((row) => {
+      const tap = {
+        lampId: String(row.lampId || '').trim(),
+        kind: String(row.kind || '').trim(),
+        night: String(row.night || '').trim(),
+      }
+      const at = Math.floor(Number(row.at) || 0)
+      return at > 0 ? { ...tap, at } : tap
+    })
     .filter((row) => row.lampId && (row.kind === 'did' || row.kind === 'nope'))
 }
 
@@ -366,7 +384,7 @@ export function applyWidgetTapsOnce(taps, clock = new Date()) {
   const failed = []
   for (const tap of taps || []) {
     try {
-      shelf = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock) || shelf
+      shelf = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at) || shelf
     } catch {
       failed.push(tap)
     }
@@ -419,5 +437,5 @@ export function handleAndroidWidgetClick(clickAction, clickActionData) {
   const kind = String(clickActionData?.kind || '').trim()
   const night = String(clickActionData?.night || '').trim()
   if (!lampId || (kind !== 'did' && kind !== 'nope')) return null
-  return applyWidgetTapOnce(lampId, kind, night)
+  return applyWidgetTapOnce(lampId, kind, night, new Date(), Date.now())
 }

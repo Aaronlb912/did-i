@@ -25,6 +25,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.line}>
       <Pressable
         onPress={() => setOpen((live) => !live)}
         style={[styles.pick, { backgroundColor: colors.panel2, borderColor: tagId ? colors.onDeep : colors.line }]}
@@ -35,6 +36,18 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
         </Text>
         {count ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
       </Pressable>
+      {tagId ? (
+        <Pressable
+          onPress={() => pick('')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('tags.clear')}
+          style={[styles.clear, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+        >
+          <Text style={[styles.clearText, { color: colors.ink }]}>×</Text>
+        </Pressable>
+      ) : null}
+      </View>
       {open ? (
           <View style={[styles.menu, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
             <Pressable style={styles.row} onPress={() => pick('')}>
@@ -61,6 +74,16 @@ export function TagFilter({ boards, tagId, onTag, now, colors }) {
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 8, alignSelf: 'flex-start', zIndex: 12 },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  clear: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearText: { fontFamily: fonts.ui, fontSize: 18, lineHeight: 20 },
   pick: {
     flexDirection: 'row',
     alignItems: 'center',

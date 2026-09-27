@@ -8,9 +8,12 @@ import {
   isDeadlineMode,
   schedulePick,
 } from './hang-schedule.js'
+import { cadenceLine } from './board-json.js'
+import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { useHangDraft } from './useHangDraft.js'
+import { LampManage } from './LampManage.jsx'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 const PRIORITIES = ['high', 'normal', 'low']
@@ -27,6 +30,8 @@ export function HangLamp({
   book,
   tagTitle = '',
   onTagTitle,
+  onPause,
+  onRemove,
 }) {
   usePrefs()
   const questionRef = useRef(null)
@@ -43,6 +48,12 @@ export function HangLamp({
   const miss = missOut || hang.miss
 
   const schedule = schedulePick(hang.draft)
+  const previewMeta = [
+    hang.draft.cadence === 'every_n' && !Number(hang.draft.everyN) ? '' : cadenceLine(hang.draft),
+    hang.draft.askAfter ? clockWords(hang.draft.askAfter) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const deadline = isDeadlineMode(hang.draft)
   const cadenceOptions = useMemo(
     () => CADENCE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) })),
@@ -67,6 +78,11 @@ export function HangLamp({
   return (
     <form className="di-hang di-plate-loose" onSubmit={submit}>
       <p className="di-hang-kicker">{hang.editing ? t('hang.edit') : t('hang.new')}</p>
+      <div className="di-hang-preview" aria-hidden="true">
+        <p className="di-face-plate">{String(hang.tagTitle || '').trim() || book?.title || ''}</p>
+        <p className="di-hang-preview-q">{hang.draft.question.trim() || t('hang.questionPh')}</p>
+        {previewMeta ? <p className="di-hang-preview-meta">{previewMeta}</p> : null}
+      </div>
       <label className="di-field">
         <span>{t('hang.question')}</span>
         <input
@@ -77,65 +93,8 @@ export function HangLamp({
           placeholder={t('hang.questionPh')}
         />
       </label>
-      {onTagTitle ? (
-        <div className="di-field di-field-tag">
-          <span id="di-hang-tag">{t('hang.tag')}</span>
-          <div className="di-hang-tags" role="group" aria-labelledby="di-hang-tag">
-            {hang.liveTags.map((item) => {
-              const on = hang.isTagSelected(item.title)
-              return (
-                <button
-                  key={item.id}
-                  className={on ? 'di-key is-pick' : 'di-key'}
-                  type="button"
-                  onClick={() => onTagTitle(item.title)}
-                >
-                  {item.title}
-                </button>
-              )
-            })}
-            {hang.knownTag ? (
-              <button
-                className="di-hang-tags-new"
-                type="button"
-                onClick={() => onTagTitle('')}
-              >
-                {t('hang.tagNew')}
-              </button>
-            ) : (
-              <input
-                className="di-hang-tags-input"
-                value={hang.tagTitle}
-                onChange={(event) => hang.setTagTitle(event.target.value)}
-                placeholder={t('hang.tagPh')}
-                aria-label={t('hang.tagNew')}
-              />
-            )}
-          </div>
-          {hang.parkedTags.length ? (
-            <div
-              className="di-hang-tags-parked"
-              role="group"
-              aria-label={`${t('hang.tagLater')}. ${t('hang.tagLaterHint')}`}
-            >
-              <span className="di-hang-tags-parked-label">{t('hang.tagLater')}</span>
-              {hang.parkedTags.map((item) => {
-                const on = hang.isTagSelected(item.title)
-                return (
-                  <button
-                    key={item.id}
-                    className={on ? 'di-key is-pick' : 'di-key di-hang-tags-muted'}
-                    type="button"
-                    onClick={() => onTagTitle(item.title)}
-                  >
-                    {item.title}
-                  </button>
-                )
-              })}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <p className="di-set-cap">{t('hang.secSchedule')}</p>
+      <div className="di-hang-group">
       {deadline ? (
         <div className="di-field">
           <span id="di-hang-due">{t('hang.dueBy')}</span>
@@ -234,20 +193,13 @@ export function HangLamp({
         </>
       ) : null}
       <div className="di-field">
-        <span id="di-hang-priority">{t('hang.priority')}</span>
-        <div className="di-hang-chips" role="group" aria-labelledby="di-hang-priority">
-          {PRIORITIES.map((id) => (
-            <button
-              key={id}
-              className={hang.priority === id ? 'di-key is-pick' : 'di-key'}
-              type="button"
-              onClick={() => hang.change('priority', id)}
-            >
-              {t(`hang.priority.${id}`)}
-            </button>
-          ))}
-        </div>
-        <small className="di-field-hint">{t(`hang.priority.hint.${hang.priority}`)}</small>
+        <span id="di-hang-after">{t('hang.timeRow')}</span>
+        <HangTimeSelect
+          ariaLabel={t('hang.timeRow')}
+          value={hang.draft.askAfter}
+          onChange={hang.changeAskAfter}
+        />
+        <small className="di-field-hint">{t('hang.timeHint')}</small>
       </div>
       <div className="di-field di-field-notify">
         <span id="di-hang-notify">{t('hang.notify')}</span>
@@ -267,15 +219,94 @@ export function HangLamp({
             {t('hang.notifyOff')}
           </button>
         </div>
-        <button
-          className={hang.more ? 'di-key is-pick di-hang-more' : 'di-key di-hang-more'}
-          type="button"
-          aria-expanded={hang.more}
-          onClick={() => hang.setMore((open) => !open)}
-        >
-          {hang.more ? t('hang.less') : t('hang.more')}
-        </button>
       </div>
+      </div>
+
+      <p className="di-set-cap">{t('hang.secOrganize')}</p>
+      <div className="di-hang-group">
+      {onTagTitle ? (
+        <div className="di-field di-field-tag">
+          <span id="di-hang-tag">{t('hang.tag')}</span>
+          <div className="di-hang-tags" role="group" aria-labelledby="di-hang-tag">
+            {hang.liveTags.map((item) => {
+              const on = hang.isTagSelected(item.title)
+              return (
+                <button
+                  key={item.id}
+                  className={on ? 'di-key is-pick' : 'di-key'}
+                  type="button"
+                  onClick={() => onTagTitle(item.title)}
+                >
+                  {item.title}
+                </button>
+              )
+            })}
+            {hang.knownTag ? (
+              <button
+                className="di-hang-tags-new"
+                type="button"
+                onClick={() => onTagTitle('')}
+              >
+                {t('hang.tagNew')}
+              </button>
+            ) : (
+              <input
+                className="di-hang-tags-input"
+                value={hang.tagTitle}
+                onChange={(event) => hang.setTagTitle(event.target.value)}
+                placeholder={t('hang.tagPh')}
+                aria-label={t('hang.tagNew')}
+              />
+            )}
+          </div>
+          {hang.parkedTags.length ? (
+            <div
+              className="di-hang-tags-parked"
+              role="group"
+              aria-label={`${t('hang.tagLater')}. ${t('hang.tagLaterHint')}`}
+            >
+              <span className="di-hang-tags-parked-label">{t('hang.tagLater')}</span>
+              {hang.parkedTags.map((item) => {
+                const on = hang.isTagSelected(item.title)
+                return (
+                  <button
+                    key={item.id}
+                    className={on ? 'di-key is-pick' : 'di-key di-hang-tags-muted'}
+                    type="button"
+                    onClick={() => onTagTitle(item.title)}
+                  >
+                    {item.title}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="di-field">
+        <span id="di-hang-priority">{t('hang.priority')}</span>
+        <div className="di-hang-chips" role="group" aria-labelledby="di-hang-priority">
+          {PRIORITIES.map((id) => (
+            <button
+              key={id}
+              className={hang.priority === id ? 'di-key is-pick' : 'di-key'}
+              type="button"
+              onClick={() => hang.change('priority', id)}
+            >
+              {t(`hang.priority.${id}`)}
+            </button>
+          ))}
+        </div>
+        <small className="di-field-hint">{t(`hang.priority.hint.${hang.priority}`)}</small>
+      </div>
+      <button
+        className={hang.more ? 'di-key is-pick di-hang-more' : 'di-key di-hang-more'}
+        type="button"
+        aria-expanded={hang.more}
+        onClick={() => hang.setMore((open) => !open)}
+      >
+        {hang.more ? t('hang.less') : t('hang.details')}
+      </button>
       {hang.more ? (
         <>
           <label className="di-field">
@@ -287,14 +318,6 @@ export function HangLamp({
               placeholder={t('hang.shortPh')}
             />
           </label>
-          <div className="di-field">
-            <span id="di-hang-after">{t('hang.askAfter')}</span>
-            <HangTimeSelect
-              ariaLabel={t('hang.askAfter')}
-              value={hang.draft.askAfter}
-              onChange={hang.changeAskAfter}
-            />
-          </div>
           <label className="di-field">
             <span>{t('hang.kind')}</span>
             <input
@@ -315,6 +338,7 @@ export function HangLamp({
           </label>
         </>
       ) : null}
+      </div>
       {miss ? (
         <p className="di-miss" role="alert">
           {t(miss)}
@@ -328,6 +352,17 @@ export function HangLamp({
           {t('hang.cancel')}
         </button>
       </div>
+      {lamp && onPause ? (
+        <LampManage
+          lamp={{ ...lamp, archived: Boolean(hang.draft.archived) }}
+          onArchive={() => {
+            // Pause now, and keep the unsaved draft in step so Save does not undo it.
+            onPause()
+            hang.change('archived', !hang.draft.archived)
+          }}
+          onRemove={onRemove}
+        />
+      ) : null}
     </form>
   )
 }

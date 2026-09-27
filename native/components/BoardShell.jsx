@@ -25,7 +25,7 @@ export function BoardShell({
   heat,
   hour,
   showCogs = true,
-  showAdd = false,
+  showAdd = true,
   colors: colorsIn,
   children,
   scroll = true,

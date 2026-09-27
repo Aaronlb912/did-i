@@ -83,16 +83,15 @@ function mastMenuItems(showAdd, waiting) {
     }
     items.push({ key: 'nav-divider', divider: true })
   }
-  if (showAdd) {
-    items.push({
-      key: 'add',
-      href: '#/add',
-      label: t('tonight.add'),
-      on: ADD_ON.includes(path),
-      icon: 'add',
-      stroke: true,
-    })
-  }
+  // Add is always in the menu, whatever screen opened it.
+  items.push({
+    key: 'add',
+    href: '#/add',
+    label: t('tonight.add'),
+    on: ADD_ON.includes(path),
+    icon: 'add',
+    stroke: true,
+  })
   items.push(
     {
       key: 'people',
@@ -131,7 +130,7 @@ function menuIsOn(showAdd, waiting) {
   return mastMenuItems(showAdd, waiting).some((item) => item.on)
 }
 
-export function MastMenu({ showAdd = false }) {
+export function MastMenu({ showAdd = true }) {
   usePrefs()
   const account = useAccount()
   const waiting = usePeopleCount(account.user)
@@ -218,7 +217,7 @@ export function MastMenu({ showAdd = false }) {
   )
 }
 
-export function MastCogs({ showAdd = false }) {
+export function MastCogs({ showAdd = true }) {
   return <MastMenu showAdd={showAdd} />
 }
 

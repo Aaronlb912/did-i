@@ -1,8 +1,9 @@
 import { t } from './i18n.js'
+import { clockWords } from './hall-pages.js'
 
 export function WaitPlate({ row, onClose, onOpenLamp }) {
   if (!row) return null
-  const after = row.lamp.askAfter || t('wait.later')
+  const after = row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('wait.later')
   return (
     <section className="di-wait">
       <p className="di-face-plate">{t('wait.kicker')}</p>

@@ -17,6 +17,7 @@ import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
+import { initGemIap } from '../src/lib/gem-iap.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -50,7 +51,10 @@ export function AppShell() {
 
   useEffect(() => {
     let alive = true
+    let warm = null
     afterNativeBridgeReady(() => {
+      // Connect the gem store in the background so the gem page has prices ready.
+      warm = setTimeout(() => initGemIap().catch(() => {}), 3000)
       captureInviteOnFirstLaunch()
       checkPings()
         .then((next) => {
@@ -60,6 +64,7 @@ export function AppShell() {
     })
     return () => {
       alive = false
+      if (warm) clearTimeout(warm)
     }
   }, [])
 

@@ -60,9 +60,8 @@ function menuItems(showAdd, waiting) {
     }
     items.push({ key: 'nav-divider', divider: true })
   }
-  if (showAdd) {
-    items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
-  }
+  // Add is always in the menu, whatever screen opened it.
+  items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
   items.push(
     {
       key: 'people',

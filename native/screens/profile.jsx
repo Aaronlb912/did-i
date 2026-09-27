@@ -4,6 +4,7 @@ import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
+  CLOCK_IDS,
   LOCALE_IDS,
   THEME_IDS,
   usePrefs,
@@ -196,6 +197,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          label={t('settings.clock')}
+          value={t(`clock.${prefs.clock}`)}
+          chevron
+          onPress={() => setSheet('clock')}
+        />
+        <SetRow
+          colors={colors}
           label={t('settings.language')}
           value={t(`lang.${prefs.locale}`)}
           chevron
@@ -351,6 +359,23 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
               on={prefs.theme === id}
               onPress={() => {
                 writePrefs({ theme: id })
+                setSheet(null)
+              }}
+            />
+          ))}
+        </SetSheet>
+      ) : null}
+
+      {sheet === 'clock' ? (
+        <SetSheet colors={colors} title={t('settings.clock')} onClose={() => setSheet(null)}>
+          {CLOCK_IDS.map((id) => (
+            <SetPick
+              key={id}
+              colors={colors}
+              label={t(`clock.${id}`)}
+              on={prefs.clock === id}
+              onPress={() => {
+                writePrefs({ clock: id })
                 setSheet(null)
               }}
             />

@@ -49,6 +49,7 @@ import {
   weekNights,
 } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { uses24h } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { playClick, shareShelf } from '../../src/lib/native.js'
 import { formatPhone, readMine, savePhone } from '../../src/lib/people.js'
@@ -75,6 +76,8 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
 import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { SetCap, SetCard, SetRow } from '../components/SetBits.jsx'
+import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
@@ -102,7 +105,7 @@ function SureModal({ sure, colors, onClose, onGo }) {
   )
 }
 
-export function ScreenShell({ book, title, children, colors, showAdd = false }) {
+export function ScreenShell({ book, title, children, colors, showAdd = true }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell book={live} title={title} colors={colors} showAdd={showAdd}>
@@ -585,6 +588,13 @@ export function WelcomeScreen({ book }) {
 }
 
 // The first question is a sentence to finish, written on the card it becomes.
+// The first question comes up every day; the only choice here is from when.
+function timed(next, question, askAfter) {
+  if (!askAfter) return next
+  const lamps = (next.lamps || []).map((lamp) => (lamp.question === question ? { ...lamp, askAfter } : lamp))
+  return { ...next, lamps }
+}
+
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -593,6 +603,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
+  const [askAfter, setAskAfter] = useState('')
   const reduce = useReduceMotion()
   const starters = unusedStarters(book, clock, true)
   const question = didQuestion(blank)
@@ -624,7 +635,7 @@ export function FirstNightScreen({ book, onChange, now }) {
       return
     }
     if (picked) {
-      land(hangStarter(book, picked, clock, true))
+      land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
       return
     }
     const lamp = {
@@ -632,7 +643,7 @@ export function FirstNightScreen({ book, onChange, now }) {
       question,
       short: shortFromQuestion(question, 24),
       cadence: 'daily',
-      askAfter: '',
+      askAfter,
       slot: 'whenever',
     }
     land(hangInto(book, lamp), lamp.id)
@@ -682,6 +693,13 @@ export function FirstNightScreen({ book, onChange, now }) {
         tilt={wobble.tilt}
         colors={colors}
       />
+      <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
+        <View style={styles.firstTime}>
+          <HangTimePick value={askAfter} onChange={setAskAfter} colors={colors} />
+        </View>
+      </SetCard>
       {!named ? (
         <Field
           colors={colors}
@@ -819,7 +837,13 @@ function deviceSeen(iso) {
   if (!iso) return ''
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: !uses24h(),
+  })
 }
 
 function AccountSignedIn({ book, email, onChange }) {
@@ -1047,6 +1071,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
+  firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
   markRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4, marginBottom: 8 },
   markName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   markLine: { fontFamily: fonts.ui, fontSize: 13 },
