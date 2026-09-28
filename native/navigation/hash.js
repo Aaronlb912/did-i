@@ -1,9 +1,10 @@
 // Same routes as src/site/hash.js, backed by React Navigation on native.
 // Every route is its own native-stack screen named by its path, pushed over
-// the hall ('/', '/home', '/tonight', '/lamps'). goHash stays the one call
+// the hall: the system tab bar with Tonight ('/', '/home', '/tonight') and
+// Questions ('/lamps'). goHash stays the one call
 // the screens make, so they read the same as the web.
 
-import { createNavigationContainerRef, StackActions } from '@react-navigation/native'
+import { CommonActions, createNavigationContainerRef, StackActions } from '@react-navigation/native'
 import { markWelcomeSeen } from '../../src/lib/hall-pages.js'
 
 const ROUTES = new Set([
@@ -54,6 +55,7 @@ const ROUTES = new Set([
 /** The root screen every other route is pushed over. */
 export const HALL = 'hall'
 export const HALL_PATHS = new Set(['/', '/home', '/tonight', '/lamps'])
+const TAB_OF = { '/': '/tonight', '/home': '/tonight', '/tonight': '/tonight', '/lamps': '/lamps' }
 /** One native-stack screen per route that is not the hall. */
 export const STACK_PATHS = [...ROUTES].filter((path) => !HALL_PATHS.has(path))
 /** Screens with their own way out; the edge swipe would skip it. */
@@ -80,7 +82,8 @@ function routeKey(route = current) {
 /** The hash route a navigation route stands for. */
 export function routeFromScreen(screen) {
   const params = screen?.params || {}
-  const name = screen?.name === HALL ? params.path || '/tonight' : screen?.name
+  // The hall before its tabs mount is Tonight.
+  const name = screen?.name === HALL ? '/tonight' : screen?.name
   return {
     path: cleanPath(name),
     face: params.face || '',
@@ -112,12 +115,12 @@ function go(route) {
   }
   if (HALL_PATHS.has(route.path)) {
     if (routes.length > 1) navigationRef.dispatch(StackActions.popToTop())
-    navigationRef.dispatch({
-      type: 'SET_PARAMS',
-      payload: { params: { path: route.path, ...paramsOf(route) } },
-      source: routes[0].key,
-      target: state.key,
-    })
+    navigationRef.dispatch(
+      CommonActions.navigate({
+        name: HALL,
+        params: { screen: TAB_OF[route.path], params: paramsOf(route) },
+      }),
+    )
     return
   }
   // Already in the stack: go back to it, the same as the web trims its history.
@@ -148,8 +151,9 @@ export function syncFromNavigation() {
   notify()
 }
 
+/** A screen is pushed over the hall. Switching tabs is not history to go back through. */
 export function canGoBack() {
-  return ready() && navigationRef.canGoBack()
+  return ready() && (navigationRef.getRootState()?.routes?.length || 0) > 1
 }
 
 /** Back from the current screen. False when there is nowhere to go, so Android can leave the app. */
@@ -182,7 +186,8 @@ export function goBack(opts = {}) {
   // The first question has to be added before anything else opens.
   if (path === '/first') return true
 
-  if (canGoBack()) {
+  // Includes Questions back to Tonight, the Material way.
+  if (ready() && navigationRef.canGoBack()) {
     navigationRef.goBack()
     return true
   }

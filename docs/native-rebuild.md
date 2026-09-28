@@ -29,7 +29,9 @@ through `app.config.js` into `src/lib/env.js` (override with `.env.local`).
 Metro aliases `site/hash.js` and `lib/native.js` on iOS/Android.
 
 Every route is its own `@react-navigation/native-stack` screen, named by its
-path and pushed over the hall. `goHash` stays the one call screens make: a
+path and pushed over the hall, which holds Tonight and Questions in the
+system tab bar (`@react-navigation/bottom-tabs/unstable`: a UITabBar on iOS,
+the Material 3 navigation bar on Android). `goHash` stays the one call screens make: a
 route already in the stack is popped back to, anything else is pushed. Back
 is the platform's own (iOS edge swipe, Android system back with predictive
 back on), so there is no custom swipe layer.

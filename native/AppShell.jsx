@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
+import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useAutoAdd } from '../src/lib/people.js'
+import { t } from '../src/lib/i18n.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
@@ -20,7 +22,6 @@ import {
   STACK_PATHS,
 } from './navigation/hash.js'
 import { ScreenRoute } from './navigation/screen-route.js'
-import { AppNavHost } from './components/AppNavHost.jsx'
 import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
@@ -31,8 +32,10 @@ import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
+import { fonts } from './theme.js'
 
 const Stack = createNativeStackNavigator()
+const Tab = createNativeBottomTabNavigator()
 const ScreenProps = createContext(null)
 
 function useNativeRoute() {
@@ -51,21 +54,61 @@ function RouteBody({ route }) {
   )
 }
 
-/** The root screen: Tonight or Questions, with the tab bar. */
-function HallScreen({ route }) {
+function TabScreen({ route }) {
+  return <RouteBody route={routeFromScreen(route)} />
+}
+
+// SF Symbols on iOS; on Android, Material-style glyphs tinted by the bar,
+// filled when the tab is on.
+const TONIGHT_ICON =
+  Platform.OS === 'ios'
+    ? ({ focused }) => ({ type: 'sfSymbol', name: focused ? 'moon.stars.fill' : 'moon.stars' })
+    : ({ focused }) => ({
+        type: 'image',
+        source: focused ? require('./assets/tabs/tonight-on.png') : require('./assets/tabs/tonight.png'),
+      })
+const QUESTIONS_ICON =
+  Platform.OS === 'ios'
+    ? { type: 'sfSymbol', name: 'checklist' }
+    : { type: 'image', source: require('./assets/tabs/questions.png') }
+
+/** The root screen: Tonight and Questions in the system tab bar. */
+function HallScreen() {
   const colors = useContext(ScreenProps).colors
-  const here = routeFromScreen(route)
   // The hall mounts first, so a goHash from before the stack existed lands now.
   useEffect(() => {
     flushNavigation()
   }, [])
+  const options = useMemo(
+    () => ({
+      headerShown: false,
+      // The lime accent carries over as the tint; Android wears it on the active pill.
+      tabBarActiveTintColor: colors.on,
+      tabBarInactiveTintColor: colors.inkSoft,
+      tabBarActiveIndicatorColor: `${colors.on}33`,
+      tabBarMinimizeBehavior: 'onScrollDown',
+      ...(Platform.OS === 'android'
+        ? {
+            tabBarStyle: { backgroundColor: colors.panel },
+            tabBarLabelStyle: { fontFamily: fonts.uiSemi },
+          }
+        : null),
+    }),
+    [colors],
+  )
   return (
-    <View style={styles.fill}>
-      <RouteBody route={here} />
-      <View pointerEvents="box-none" style={styles.navLayer}>
-        <AppNavHost path={here.path} colors={colors} />
-      </View>
-    </View>
+    <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
+      <Tab.Screen
+        name="/tonight"
+        component={TabScreen}
+        options={{ title: t('nav.home'), tabBarIcon: TONIGHT_ICON }}
+      />
+      <Tab.Screen
+        name="/lamps"
+        component={TabScreen}
+        options={{ title: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
+      />
+    </Tab.Navigator>
   )
 }
 
@@ -194,7 +237,7 @@ export function AppShell() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>
-          <Stack.Screen name={HALL} component={HallScreen} initialParams={{ path: '/tonight' }} />
+          <Stack.Screen name={HALL} component={HallScreen} />
           {STACK_PATHS.map((path) => (
             <Stack.Screen
               key={path}
@@ -218,17 +261,6 @@ export function AppShell() {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  // Only the bar. A full-screen layer here sat on top of the menu and the
-  // shop chips, so those taps never landed.
-  navLayer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 80,
-    elevation: 24,
-  },
   overlayLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 200,
