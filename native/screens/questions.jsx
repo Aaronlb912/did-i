@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
@@ -64,6 +63,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { UndoToast } from '../components/UndoToast.jsx'
 import {
+  AppTextInput,
   ChipRow,
   DidButton,
   Field,
@@ -190,12 +190,11 @@ function SearchBox({ value, onChange, colors }) {
   return (
     <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
       <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={value}
         onChangeText={onChange}
         placeholder={t('questions.searchPh')}
-        placeholderTextColor={colors.inkDim}
-        selectionColor={colors.on}
         accessibilityLabel={t('questions.searchPh')}
         autoCorrect={false}
         returnKeyType="search"
@@ -575,7 +574,8 @@ function TopicPick({ value, known, onChange, colors }) {
           ))}
         </View>
       ) : null}
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={draft}
         onChangeText={(text) => {
           // A comma finishes a topic, like pressing done.
@@ -589,7 +589,6 @@ function TopicPick({ value, known, onChange, colors }) {
         onSubmitEditing={addTyped}
         onBlur={addTyped}
         placeholder={t('hang.topicAdd')}
-        placeholderTextColor={colors.inkDim}
         returnKeyType="done"
         accessibilityLabel={t('hang.topicAdd')}
         style={[styles.foldInput, { borderColor: colors.line, backgroundColor: colors.panel, color: colors.ink }]}
@@ -602,12 +601,11 @@ function FoldInput({ label, colors, multiline, ...props }) {
   return (
     <View style={styles.foldField}>
       <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         {...props}
         multiline={multiline}
         accessibilityLabel={label}
-        placeholderTextColor={colors.inkDim}
-        selectionColor={colors.on}
         style={[
           styles.foldInput,
           multiline && styles.foldInputMulti,

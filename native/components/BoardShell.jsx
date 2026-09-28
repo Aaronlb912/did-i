@@ -1,5 +1,5 @@
-import { useMemo, useRef } from 'react'
-import { Animated, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -31,6 +31,18 @@ export function BoardShell({
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
   const scrollY = useRef(new Animated.Value(0)).current
+  // KeyboardAvoidingView repositions the page, but a form shorter than the
+  // full screen has no content to scroll past the keyboard on its own. This
+  // guarantees scroll room so the last field and its buttons clear it.
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const onShow = (event) => setKeyboardHeight(event?.endCoordinates?.height || 0)
+    const onHide = () => setKeyboardHeight(0)
+    const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
+    return () => subs.forEach((sub) => sub.remove())
+  }, [])
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY],
@@ -52,7 +64,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad }]}>
+    <View style={[styles.page, { paddingBottom: bottomPad + keyboardHeight }]}>
       {children}
     </View>
   )

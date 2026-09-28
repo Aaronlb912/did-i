@@ -1,10 +1,11 @@
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts, radius } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
+import { AppTextInput } from './ui.jsx'
 
 export function SetCap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
@@ -104,10 +105,10 @@ export function SetField({ label, colors, ...inputProps }) {
   return (
     <View style={[styles.fieldRow, { borderBottomColor: colors.lineSoft }]}>
       <Text style={[styles.fieldLabel, { color: colors.ink }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         {...inputProps}
         style={[styles.fieldInput, { color: colors.ink }]}
-        placeholderTextColor={colors.inkDim}
       />
     </View>
   )

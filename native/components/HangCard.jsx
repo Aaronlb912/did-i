@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, Text, TextInput } from 'react-native'
+import { Animated, Easing, StyleSheet, Text } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { fonts } from '../theme.js'
 import { WaveLead } from './DidLead.jsx'
+import { AppTextInput } from './ui.jsx'
 
 const SHAKE = [-8, 8, -5, 5, -2, 0]
 
@@ -113,7 +114,8 @@ export const HangCard = forwardRef(function HangCard(
       {lead ? (
         <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
       ) : null}
-      <TextInput
+      <AppTextInput
+        colors={colors}
         ref={inputRef}
         value={blank}
         onChangeText={onBlank}
@@ -122,8 +124,6 @@ export const HangCard = forwardRef(function HangCard(
         editable={!landed}
         autoFocus={autoFocus}
         placeholder={lead ? t('first.ownHint') : t('hang.questionPh')}
-        placeholderTextColor={colors.inkDim}
-        selectionColor={colors.on}
         accessibilityLabel={lead ? t('tonight.didI') : t('hang.question')}
         autoCapitalize={lead ? 'none' : 'sentences'}
         returnKeyType="done"

@@ -1,6 +1,26 @@
+import { forwardRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
+
+// The one text input every screen renders through: a light keyboard and a
+// blue system cursor read as unfinished on a dark app. keyboardAppearance
+// follows the resolved theme, selectionColor/cursorColor follow the hall's
+// accent, and returnKeyType stays per field since each caller knows its own.
+export const AppTextInput = forwardRef(function AppTextInput({ colors, ...props }, ref) {
+  const theme = useTheme()
+  return (
+    <TextInput
+      ref={ref}
+      keyboardAppearance={theme}
+      selectionColor={colors.on}
+      cursorColor={colors.on}
+      placeholderTextColor={colors.inkDim}
+      {...props}
+    />
+  )
+})
 
 export function Page({ colors, children, scroll = true }) {
   const insets = useSafeAreaInsets()
@@ -97,7 +117,8 @@ export function Field({
   return (
     <View style={styles.field}>
       <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={value}
         onChangeText={onChangeText}
         multiline={multiline}
@@ -111,7 +132,6 @@ export function Field({
         autoFocus={autoFocus}
         blurOnSubmit={blurOnSubmit}
         returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
-        placeholderTextColor={colors.inkDim}
         style={[
           styles.input,
           multiline && styles.inputMulti,

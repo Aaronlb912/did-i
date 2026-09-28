@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
@@ -12,7 +12,7 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { useTonightStack } from '../../src/lib/useTonightStack.js'
 import { UndoToast } from '../components/UndoToast.jsx'
-import { DidButton, KeyButton } from '../components/ui.jsx'
+import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
@@ -282,11 +282,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   }
 
   const titleSlot = stack.titleEdit ? (
-    <TextInput
+    <AppTextInput
+      colors={colors}
       value={stack.titleDraft}
       onChangeText={stack.setTitleDraft}
       onBlur={stack.saveTitle}
       onSubmitEditing={stack.saveTitle}
+      returnKeyType="done"
       style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel }]}
       accessibilityLabel={t('tonight.boardName')}
       autoFocus

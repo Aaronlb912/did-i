@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
@@ -75,7 +74,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
-import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetRow } from '../components/SetBits.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
@@ -692,15 +691,14 @@ export function FirstNightScreen({ book, onChange, now }) {
         ]}
       >
         <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
-        <TextInput
+        <AppTextInput
+          colors={colors}
           value={blank}
           onChangeText={setBlank}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onSubmitEditing={add}
           placeholder={t('first.ownHint')}
-          placeholderTextColor={colors.inkDim}
-          selectionColor={colors.on}
           accessibilityLabel={t('tonight.didI')}
           autoCapitalize="none"
           returnKeyType="done"
