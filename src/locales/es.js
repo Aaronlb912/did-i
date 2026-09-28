@@ -754,6 +754,10 @@ export const es = {
   'people.outBody':
     'Gente necesita una cuenta para que un amigo tenga a dónde mandarte un did you.',
   'people.goAccount': 'Ir a la cuenta',
+  'people.previewCheerTitle': 'Un amigo te anima',
+  'people.previewCheerBody': 'Cuando un amigo anima tu racha, aparece justo en tu tarjeta de esta noche.',
+  'people.previewFamilyTitle': 'Las preguntas de familia llegan a esta noche',
+  'people.previewFamilyBody': 'Una pregunta que tu familia comparte aparece en esta noche sin que tú la agregues.',
   'people.you': 'Tú',
   'people.name': 'Nombre',
   'people.namePh': 'Jordan',

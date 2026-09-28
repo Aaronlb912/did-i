@@ -757,6 +757,12 @@ export const de = {
   'people.outTitle': 'Melde dich zuerst an',
   'people.outBody': 'Leute braucht ein Konto, damit ein Freund dir ein did you schicken kann.',
   'people.goAccount': 'Zum Konto',
+  'people.previewCheerTitle': 'Ein Freund feuert dich an',
+  'people.previewCheerBody':
+    'Wenn ein Freund deine Serie anfeuert, siehst du es direkt auf deiner Heute-Abend-Karte.',
+  'people.previewFamilyTitle': 'Familienfragen landen auf Heute Abend',
+  'people.previewFamilyBody':
+    'Eine Frage, die deine Familie teilt, taucht auf deiner Heute-Abend-Karte auf, ohne dass du sie selbst hinzufügst.',
   'people.you': 'Du',
   'people.name': 'Name',
   'people.namePh': 'Aaron',
