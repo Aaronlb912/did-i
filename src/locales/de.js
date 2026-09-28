@@ -687,6 +687,7 @@ export const de = {
   'gems.each': '{price} pro Stück',
   'gems.save': 'Spare {n} %',
   'gems.buy': 'Kaufen',
+  'gems.bestValue': 'Bestes Angebot',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return':
     'Checkout geöffnet. Wenn die Zahlung durch ist, komm zurück und deine Gems kommen beim Sync.',

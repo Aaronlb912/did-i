@@ -53,7 +53,7 @@ import {
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
 import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { CoinIcon, GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
+import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { kitTabDefault } from '../../src/lib/kit-tab.js'
 import { fonts } from '../theme.js'
@@ -62,6 +62,12 @@ import { useLookColors } from '../hooks/useHallColors.js'
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
 const STAGES = [1, 2, 3, 4, 5]
+
+// The three packs worth a tall card; the rest stay a compact list.
+const FEATURED_GEM_IDS = ['gems_10', 'gems_25', 'gems_50']
+const BEST_VALUE_GEM_ID = 'gems_25'
+const FEATURED_GEM_PACKS = FEATURED_GEM_IDS.map((id) => GEM_PACKS.find((pack) => pack.id === id)).filter(Boolean)
+const COMPACT_GEM_PACKS = GEM_PACKS.filter((pack) => !FEATURED_GEM_IDS.includes(pack.id))
 
 function shellDate(book) {
   return formatBoardDate(boardDate(new Date(), book.dayFoldHour))
@@ -446,6 +452,54 @@ function gemMiss(code) {
   if (code === 'store') return t('gems.storeError')
   if (code === 'setup') return t('gems.setup')
   return t('gems.setup')
+}
+
+function gemPackTitle(pack) {
+  return pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })
+}
+
+function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors }) {
+  const title = gemPackTitle(pack)
+  return (
+    <Pressable
+      onPress={onBuy}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${price}`}
+      style={[styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}
+    >
+      {best ? (
+        <View style={[styles.gemBestBadge, { backgroundColor: colors.on }]}>
+          <Text style={[styles.gemBestBadgeText, { color: colors.bg }]}>{t('gems.bestValue')}</Text>
+        </View>
+      ) : null}
+      <View style={styles.gemFeaturedArt}>
+        <GemFaceMark count={pack.gems} big colors={colors} />
+      </View>
+      <Text style={[styles.gemFeaturedTitle, { color: colors.ink }]}>{title}</Text>
+      {bonusNote ? <Text style={[styles.gemFeaturedNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
+      <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
+        <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price}</Text>
+      </View>
+    </Pressable>
+  )
+}
+
+function CompactGemRow({ pack, price, bonusNote, onBuy, colors }) {
+  const title = gemPackTitle(pack)
+  return (
+    <View style={[styles.shopRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <GemFaceMark count={pack.gems} colors={colors} accessibilityLabel={title} />
+      <View style={styles.shopCopy}>
+        <Text style={[styles.shopName, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.shopNote, { color: colors.inkDim }]}>
+          {bonusNote}
+          {bonusNote ? ' · ' : ''}
+          {price}
+        </Text>
+      </View>
+      <DidButton small label={t('gems.buy')} onPress={onBuy} colors={colors} />
+    </View>
+  )
 }
 
 export function ShopScreen({ book, onChange }) {
@@ -850,30 +904,30 @@ export function GemShopScreen({ book }) {
         </View>
       ) : null}
 
-      {GEM_PACKS.map((pack) => {
-        const title = pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })
-        const bonusNote = pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''
-        const price = packPriceLabel(pack, storePrice(pack.id))
-        return (
-          <View key={pack.id} style={[styles.shopRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-            <GemPackMark count={pack.gems} colors={colors} accessibilityLabel={title} />
-            <View style={styles.shopCopy}>
-              <Text style={[styles.shopName, { color: colors.ink }]}>{title}</Text>
-              <Text style={[styles.shopNote, { color: colors.inkDim }]}>
-                {bonusNote}
-                {bonusNote ? ' · ' : ''}
-                {price}
-              </Text>
-            </View>
-            <DidButton
-              small
-              label={t('gems.buy')}
-              onPress={() => buy(pack.id)}
-              colors={colors}
-            />
-          </View>
-        )
-      })}
+      <View style={styles.gemFeaturedRow}>
+        {FEATURED_GEM_PACKS.map((pack) => (
+          <FeaturedGemCard
+            key={pack.id}
+            pack={pack}
+            price={packPriceLabel(pack, storePrice(pack.id))}
+            bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
+            best={pack.id === BEST_VALUE_GEM_ID}
+            onBuy={() => buy(pack.id)}
+            colors={colors}
+          />
+        ))}
+      </View>
+
+      {COMPACT_GEM_PACKS.map((pack) => (
+        <CompactGemRow
+          key={pack.id}
+          pack={pack}
+          price={packPriceLabel(pack, storePrice(pack.id))}
+          bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
+          onBuy={() => buy(pack.id)}
+          colors={colors}
+        />
+      ))}
 
       <Meta colors={colors}>{t('gems.earn')}</Meta>
       <Meta colors={colors}>
@@ -1242,6 +1296,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  gemFeaturedRow: { gap: 10, marginBottom: 4 },
+  gemFeatured: {
+    borderWidth: 1.5,
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 8,
+    position: 'relative',
+  },
+  gemBestBadge: {
+    position: 'absolute',
+    top: -10,
+    alignSelf: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  gemBestBadgeText: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  gemFeaturedArt: { marginTop: 6, alignItems: 'center', justifyContent: 'center' },
+  gemFeaturedTitle: { fontFamily: fonts.display, fontSize: 20, fontWeight: '800' },
+  gemFeaturedNote: { fontFamily: fonts.ui, fontSize: 13 },
+  gemFeaturedButton: {
+    marginTop: 4,
+    minWidth: 120,
+    borderRadius: 999,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  gemFeaturedButtonText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   keyOff: {
     borderRadius: 999,
     minHeight: 40,

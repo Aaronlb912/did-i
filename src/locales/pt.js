@@ -679,6 +679,7 @@ export const pt = {
   'gems.each': '{price} cada',
   'gems.save': 'Poupa {n} %',
   'gems.buy': 'Comprar',
+  'gems.bestValue': 'Melhor oferta',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return': 'Pagamento aberto. Quando confirmar, volta e as gems chegam no sync.',
   'gems.pending': 'À espera da loja. As gems chegam aqui quando o pagamento confirma.',
