@@ -41,7 +41,7 @@ android/.idea
 *.aab
 *.keystore
 *.jks
-ios
+/ios
 GoogleService-Info.plist
 AuthKey_*.p8
 *.p8
