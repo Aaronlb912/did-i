@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 
@@ -32,6 +33,7 @@ export function HangFold({ label, value, icon, open, onToggle, last, colors, chi
     <View style={[open && { backgroundColor: colors.panel2 }, last && open ? null : rule]}>
       <Pressable
         onPress={onToggle}
+        android_ripple={ripple(colors.panel3)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${label}, ${value}`}

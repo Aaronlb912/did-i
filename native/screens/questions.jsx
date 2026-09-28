@@ -38,6 +38,7 @@ import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
+import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
@@ -148,6 +149,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 if (onOpen) onOpen(row.boardId, row.lamp.id)
                 else goHash('/lamp', { id: row.lamp.id })
               }}
+              android_ripple={ripple(colors.panel3)}
               style={({ pressed }) => [
                 styles.lampItem,
                 index > 0 && { borderTopWidth: 1, borderTopColor: colors.lineSoft },
@@ -466,6 +468,7 @@ export function SearchScreen({ book }) {
           <Pressable
             key={lamp.id}
             onPress={() => goHash('/lamp', { id: lamp.id })}
+            android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
           >
             <View style={styles.lampCopy}>

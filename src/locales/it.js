@@ -82,6 +82,8 @@ export const it = {
   'settings.motion': 'Movimento',
   'settings.motionHint': 'Niente cheer che vola. Spento vuol dire seguire il telefono.',
   'settings.lessMotion': 'Meno movimento',
+  'settings.matchWallpaper': 'Abbina lo sfondo',
+  'settings.matchWallpaperSub': 'Usa i colori che Android ricava dallo sfondo, invece del look abituale.',
   'settings.language': 'Lingua',
   'settings.languageHint': 'Le schermate nuove usano questo. L’inglese copre i buchi.',
   'settings.follow': 'Questo ti segue su questo telefono.',

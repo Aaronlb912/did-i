@@ -83,6 +83,8 @@ export const es = {
   'settings.motion': 'Movimiento',
   'settings.motionHint': 'Sin el estallido al marcar. Si está apagado, sigue el teléfono.',
   'settings.lessMotion': 'Menos movimiento',
+  'settings.matchWallpaper': 'Igualar el fondo de pantalla',
+  'settings.matchWallpaperSub': 'Usa los colores que Android saca de tu fondo de pantalla, en vez del look habitual.',
   'settings.language': 'Idioma',
   'settings.languageHint': 'Las pantallas nuevas usan esto. Si falta una frase, sale en inglés.',
   'settings.follow': 'Estos te siguen en este teléfono.',

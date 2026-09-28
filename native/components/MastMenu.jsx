@@ -20,6 +20,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
 import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
+import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
@@ -302,6 +303,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                     close()
                     goHash(item.path)
                   }}
+                  android_ripple={ripple(colors.panel3)}
                   style={({ pressed }) => [
                     styles.row,
                     item.on && { backgroundColor: colors.panel3 },

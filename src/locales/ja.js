@@ -82,6 +82,8 @@ export const ja = {
   'settings.motion': '動き',
   'settings.motionHint': '飛ぶ cheer は出さない。オフなら端末に合わせる。',
   'settings.lessMotion': '動きを減らす',
+  'settings.matchWallpaper': '壁紙に合わせる',
+  'settings.matchWallpaperSub': 'いつものルックの代わりに、Androidが壁紙から取る色を使う。',
   'settings.language': '言語',
   'settings.languageHint': '新しい画面はこれを使う。足りない文は英語になる。',
   'settings.follow': 'これはこの端末であなたについてくる。',

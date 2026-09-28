@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet } from 'react-native'
+import { ripple } from '../lib/ripple.js'
 
 export const HEADER_BUTTON = 40
 
@@ -29,6 +30,7 @@ export function HeaderButton({ ref, colors, onPress, label, expanded, on = false
       onPress={onPress}
       hitSlop={6}
       collapsable={false}
+      android_ripple={ripple(colors.panel3, true)}
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={expanded == null ? undefined : { expanded }}

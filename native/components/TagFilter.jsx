@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensio
 import { topicLabel } from '../../src/lib/board-json.js'
 import { joinTagIds, leftoverOn, tagIdsOf } from '../../src/lib/tags.js'
 import { t } from '../../src/lib/i18n.js'
+import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 
 // One filter popup for folders and, where the screen passes them, topics.
@@ -62,7 +63,13 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
 
   function Row({ on, name, left, onPress }) {
     return (
-      <Pressable style={styles.row} onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+      <Pressable
+        style={styles.row}
+        onPress={onPress}
+        android_ripple={ripple(colors.panel3)}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: on }}
+      >
         <View style={styles.rowName}>
           <Check on={on} />
           <Text style={{ color: on ? colors.on : colors.ink, flexShrink: 1 }} numberOfLines={1}>
@@ -83,6 +90,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       <Pressable
         ref={button}
         onPress={toggle}
+        android_ripple={ripple(colors.panel3)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         style={[styles.pick, { backgroundColor: colors.panel2, borderColor: filtering ? colors.onDeep : colors.line }]}
@@ -153,7 +161,11 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
                 </>
               ) : null}
             </ScrollView>
-            <Pressable style={[styles.done, { borderTopColor: colors.line }]} onPress={() => setOpen(false)}>
+            <Pressable
+              style={[styles.done, { borderTopColor: colors.line }]}
+              onPress={() => setOpen(false)}
+              android_ripple={ripple(colors.panel3)}
+            >
               <Text style={[styles.doneText, { color: colors.on }]}>{t('tags.done')}</Text>
             </Pressable>
           </Pressable>

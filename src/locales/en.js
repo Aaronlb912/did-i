@@ -82,6 +82,8 @@ export const en = {
   'settings.motion': 'Motion',
   'settings.motionHint': 'No flying cheer. Off means follow the phone.',
   'settings.lessMotion': 'Less motion',
+  'settings.matchWallpaper': 'Match wallpaper',
+  'settings.matchWallpaperSub': 'Colors this phone’s wallpaper gives Android, instead of the usual look.',
   'settings.language': 'Language',
   'settings.languageHint': 'New screens use this. English is the fallback.',
   'settings.follow': 'These follow you on this phone.',

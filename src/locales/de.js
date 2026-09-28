@@ -82,6 +82,8 @@ export const de = {
   'settings.motion': 'Bewegung',
   'settings.motionHint': 'Kein fliegender Cheer. Aus heißt, dem Telefon folgen.',
   'settings.lessMotion': 'Weniger Bewegung',
+  'settings.matchWallpaper': 'An Hintergrundbild anpassen',
+  'settings.matchWallpaperSub': 'Nutzt die Farben, die Android aus deinem Hintergrundbild zieht, statt des üblichen Looks.',
   'settings.language': 'Sprache',
   'settings.languageHint': 'Neue Screens nutzen das. Englisch ist der Fallback.',
   'settings.follow': 'Das folgt dir auf diesem Telefon.',

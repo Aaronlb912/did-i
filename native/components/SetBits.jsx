@@ -2,6 +2,7 @@ import { Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { ripple } from '../lib/ripple.js'
 import { fonts, radius } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
@@ -58,6 +59,7 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={ripple(colors.panel3)}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
@@ -112,6 +114,7 @@ export function SetPick({ label, on, onPress, colors }) {
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={ripple(colors.panel3)}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },

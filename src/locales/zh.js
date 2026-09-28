@@ -82,6 +82,8 @@ export const zh = {
   'settings.motion': '动效',
   'settings.motionHint': '不要飞起来的 cheer。关掉就跟着手机。',
   'settings.lessMotion': '减少动效',
+  'settings.matchWallpaper': '匹配壁纸',
+  'settings.matchWallpaperSub': '使用 Android 从壁纸提取的颜色，代替平常的外观。',
   'settings.language': '语言',
   'settings.languageHint': '新画面用这个。缺的句子用英语。',
   'settings.follow': '这些跟着你，只在这部手机上。',

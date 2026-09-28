@@ -82,6 +82,8 @@ export const pt = {
   'settings.motion': 'Movimento',
   'settings.motionHint': 'Sem cheer voando. Desligado quer dizer seguir o telefone.',
   'settings.lessMotion': 'Menos movimento',
+  'settings.matchWallpaper': 'Combinar com o papel de parede',
+  'settings.matchWallpaperSub': 'Usa as cores que o Android tira do teu papel de parede, em vez do look habitual.',
   'settings.language': 'Idioma',
   'settings.languageHint': 'As telas novas usam isto. O inglês entra se faltar.',
   'settings.follow': 'Isto te segue neste telefone.',

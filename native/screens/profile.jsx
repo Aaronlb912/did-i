@@ -21,6 +21,7 @@ import { mergeShelves } from '../../src/lib/shelf-merge.js'
 import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { useWallpaperPalette } from '../lib/dynamic-color.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -105,6 +106,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const colors = useHallColors(book)
   const prefs = usePrefs()
   const account = useAccount()
+  const wallpaper = useWallpaperPalette()
   const [confirm, setConfirm] = useState(null)
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
@@ -219,6 +221,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
         />
+        {Platform.OS === 'android' && wallpaper ? (
+          <SetSwitch
+            colors={colors}
+            icon="moon"
+            tint={colors.late}
+            last
+            label={t('settings.matchWallpaper')}
+            sub={t('settings.matchWallpaperSub')}
+            on={prefs.matchWallpaper}
+            onPress={() => writePrefs({ matchWallpaper: !prefs.matchWallpaper })}
+          />
+        ) : null}
       </SetCard>
 
       <SetCap colors={colors}>{t('widget.settings.cap')}</SetCap>

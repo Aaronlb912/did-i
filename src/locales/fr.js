@@ -83,6 +83,8 @@ export const fr = {
   'settings.motion': 'Mouvement',
   'settings.motionHint': 'Pas de cheer qui vole. Désactivé veut dire suivre le téléphone.',
   'settings.lessMotion': 'Moins de mouvement',
+  'settings.matchWallpaper': 'Assortir au fond d’écran',
+  'settings.matchWallpaperSub': 'Utilise les couleurs qu’Android tire de votre fond d’écran, au lieu du look habituel.',
   'settings.language': 'Langue',
   'settings.languageHint': 'Les écrans nouveaux utilisent ça. L’anglais prend le relais.',
   'settings.follow': 'Ça te suit sur ce téléphone.',

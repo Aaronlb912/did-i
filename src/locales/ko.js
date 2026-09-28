@@ -82,6 +82,8 @@ export const ko = {
   'settings.motion': '모션',
   'settings.motionHint': '날아다니는 cheer 없음. 끄면 폰을 따라.',
   'settings.lessMotion': '모션 줄이기',
+  'settings.matchWallpaper': '배경화면에 맞추기',
+  'settings.matchWallpaperSub': '평소 룩 대신 Android가 배경화면에서 뽑은 색을 사용해요.',
   'settings.language': '언어',
   'settings.languageHint': '새 화면은 이걸 써. 빠진 문장은 영어.',
   'settings.follow': '이 폰에서 따라와.',

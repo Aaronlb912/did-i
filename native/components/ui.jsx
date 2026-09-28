@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 
 export function Page({ colors, children, scroll = true }) {
@@ -36,6 +37,7 @@ export function DidButton({ label, onPress, colors, small, disabled, dim }) {
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      android_ripple={ripple(`${colors.bg}40`)}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(off) }}
@@ -55,6 +57,7 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      android_ripple={ripple(`${colors.on}33`)}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
@@ -74,7 +77,11 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
 
 export function Row({ label, note, onPress, colors }) {
   return (
-    <Pressable onPress={onPress} style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+    <Pressable
+      onPress={onPress}
+      android_ripple={ripple(`${colors.on}33`)}
+      style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
+    >
       <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
       {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
     </Pressable>
@@ -133,6 +140,7 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
       <Pressable
         key={item.id}
         onPress={() => onPick(item.id)}
+        android_ripple={ripple(`${colors.on}33`)}
         style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
       >
         <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
