@@ -72,7 +72,7 @@ import {
   Page,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
-import { fonts, hallColors } from '../theme.js'
+import { fonts, hallColors, sectionLabel } from '../theme.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -1247,7 +1247,7 @@ const styles = StyleSheet.create({
   },
   pillText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   foldField: { gap: 6 },
-  foldCap: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  foldCap: { ...sectionLabel, lineHeight: 18 },
   foldCapGap: { marginTop: 6 },
   foldInput: {
     borderWidth: 1,

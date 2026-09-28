@@ -2,7 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { fonts, radius } from '../theme.js'
+import { fonts, radius, sectionLabel } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
 import { AppTextInput } from './ui.jsx'
@@ -162,8 +162,7 @@ export function SetSheet({ title, onClose, children, colors }) {
 const styles = StyleSheet.create({
   iconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cap: {
-    fontFamily: fonts.ui,
-    fontSize: 12,
+    ...sectionLabel,
     lineHeight: 16,
     marginTop: 14,
     marginBottom: 6,

@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
-import { fonts } from '../theme.js'
+import { fonts, sectionLabel } from '../theme.js'
 
 // The one text input every screen renders through: a light keyboard and a
 // blue system cursor read as unfinished on a dark app. keyboardAppearance
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   rowNote: { fontFamily: fonts.ui, fontSize: 13 },
   field: { gap: 6, marginBottom: 10 },
-  fieldLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+  fieldLabel: { ...sectionLabel },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   inputMulti: { minHeight: 88, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

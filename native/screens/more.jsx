@@ -68,7 +68,7 @@ import { leftoverOn } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
-import { fonts } from '../theme.js'
+import { fonts, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -607,6 +607,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const named = firstName(book)
+  const [step, setStep] = useState(0)
   const [person, setPerson] = useState(book?.keeperName || '')
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
@@ -617,6 +618,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   const question = didQuestion(blank)
   const picked = starters.find((starter) => starter.question === question)
   const wobble = useWobble(starters.length, !blank.trim() && !focused, reduce)
+  const totalSteps = named ? 2 : 3
 
   function withName(next) {
     const keeperName = person.trim()
@@ -656,12 +658,7 @@ export function FirstNightScreen({ book, onChange, now }) {
     playClick()
   }
 
-  function add() {
-    if (!question) {
-      playClick()
-      wobble.nudge()
-      return
-    }
+  function finish() {
     if (picked) {
       land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
       return
@@ -677,57 +674,94 @@ export function FirstNightScreen({ book, onChange, now }) {
     land(hangInto(book, lamp), lamp.id)
   }
 
+  function next() {
+    if (step === 0) {
+      if (!question) {
+        playClick()
+        wobble.nudge()
+        return
+      }
+      playClick()
+      setStep(1)
+      return
+    }
+    if (step === 1 && !named) {
+      playClick()
+      setStep(2)
+      return
+    }
+    finish()
+  }
+
+  function back() {
+    playClick()
+    setStep((current) => Math.max(0, current - 1))
+  }
+
   return (
     <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
-      <Title colors={colors}>
-        {named ? t('first.titleNamed', { name: named }) : t('first.title')}
-      </Title>
-      <Meta colors={colors}>{t('first.body')}</Meta>
-      <View
-        style={[
-          ...faceCardStyle(colors),
-          styles.firstCard,
-          { borderColor: focused ? colors.onDeep : colors.line },
-        ]}
-      >
-        <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
-        <AppTextInput
-          colors={colors}
-          value={blank}
-          onChangeText={setBlank}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onSubmitEditing={add}
-          placeholder={t('first.ownHint')}
-          accessibilityLabel={t('tonight.didI')}
-          autoCapitalize="none"
-          returnKeyType="done"
-          blurOnSubmit
-          multiline
-          maxLength={120}
-          style={[faceCardStyles.title, styles.firstBlank, { color: colors.ink }]}
-        />
-        <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
-          <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
-          <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
-        </View>
-      </View>
-      <IdeaPicks
-        label={t('first.picks')}
-        starters={starters}
-        picked={picked}
-        onPick={pick}
-        tilt={wobble.tilt}
-        colors={colors}
-      />
-      <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
-        <View style={styles.firstTime}>
-          <HangTimePick value={askAfter} onChange={setAskAfter} colors={colors} />
-        </View>
-      </SetCard>
-      {!named ? (
+      <Text style={[styles.stepCap, { color: colors.inkDim }]}>
+        {t('first.stepOf', { n: step + 1, total: totalSteps })}
+      </Text>
+      {step === 0 ? (
+        <>
+          <Title colors={colors}>
+            {named ? t('first.titleNamed', { name: named }) : t('first.title')}
+          </Title>
+          <Meta colors={colors}>{t('first.body')}</Meta>
+          <View
+            style={[
+              ...faceCardStyle(colors),
+              styles.firstCard,
+              { borderColor: focused ? colors.onDeep : colors.line },
+            ]}
+          >
+            <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
+            <AppTextInput
+              colors={colors}
+              value={blank}
+              onChangeText={setBlank}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onSubmitEditing={next}
+              placeholder={t('first.ownHint')}
+              placeholderTextColor={withAlpha(colors.ink, 0.45)}
+              accessibilityLabel={t('tonight.didI')}
+              autoCapitalize="none"
+              returnKeyType="done"
+              blurOnSubmit
+              multiline
+              maxLength={120}
+              style={[faceCardStyles.title, styles.firstBlank, { color: colors.ink }]}
+            />
+            <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
+              <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
+              <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
+            </View>
+          </View>
+          <IdeaPicks
+            label={t('first.picks')}
+            starters={starters}
+            picked={picked}
+            onPick={pick}
+            tilt={wobble.tilt}
+            colors={colors}
+          />
+        </>
+      ) : null}
+      {step === 1 ? (
+        <>
+          <Title colors={colors}>{t('first.timeTitle')}</Title>
+          <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
+          <SetCard colors={colors}>
+            <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
+            <View style={styles.firstTime}>
+              <HangTimePick value={askAfter} onChange={setAskAfter} colors={colors} />
+            </View>
+          </SetCard>
+        </>
+      ) : null}
+      {step === 2 && !named ? (
         <Field
           colors={colors}
           label={t('first.name')}
@@ -735,9 +769,20 @@ export function FirstNightScreen({ book, onChange, now }) {
           onChangeText={setPerson}
           placeholder={t('first.nameHint')}
           autoCapitalize="words"
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={next}
         />
       ) : null}
-      <DidButton colors={colors} label={t('first.add')} onPress={add} dim={!question} />
+      <View style={styles.stepNav}>
+        {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        <DidButton
+          colors={colors}
+          label={step === totalSteps - 1 ? t('first.add') : t('first.next')}
+          onPress={next}
+          dim={step === 0 && !question}
+        />
+      </View>
     </ScreenShell>
   )
 }
@@ -1099,6 +1144,8 @@ const styles = StyleSheet.create({
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
+  stepCap: { ...sectionLabel, marginBottom: 6 },
+  stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   markRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4, marginBottom: 8 },
   markName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   markLine: { fontFamily: fonts.ui, fontSize: 13 },
