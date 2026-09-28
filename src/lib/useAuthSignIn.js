@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { accountMissText, checkCode, looksLikeEmail, sendCode, signInReviewer } from './account.js'
 import { canShowAppleSignIn, signInWithApple } from './apple-sign-in'
 import { canShowGoogleSignIn, signInWithGoogle } from './google-sign-in'
@@ -14,13 +14,15 @@ export function useAuthSignIn({ onSignedIn }) {
   const [step, setStep] = useState('start')
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  const signedIn = useRef(onSignedIn)
+  signedIn.current = onSignedIn
 
   const finish = useCallback(async () => {
     clearAuthSkip()
     armSyncForUser()
     await pullAndMerge()
-    onSignedIn?.()
-  }, [onSignedIn])
+    signedIn.current?.()
+  }, [])
 
   useEffect(() => {
     const db = cloud()

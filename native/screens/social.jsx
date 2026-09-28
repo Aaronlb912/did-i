@@ -170,7 +170,7 @@ function PreviewRow({ icon, title, body, colors }) {
 // Signed out, People was a dead end. A preview of what it does, then Apple
 // and Google sign-in right here instead of only a link to /account.
 function NeedAccount({ kicker, title, colors }) {
-  const auth = useAuthSignIn({ onSignedIn: () => {} })
+  const auth = useAuthSignIn({})
   return (
     <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
@@ -194,6 +194,7 @@ function NeedAccount({ kicker, title, colors }) {
       <Slot fallback={null}>
         <AuthGoogleSignIn colors={colors} auth={auth} />
       </Slot>
+      {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
       <View style={styles.previewOther}>
         <KeyButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
       </View>
