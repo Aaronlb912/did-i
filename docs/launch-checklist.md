@@ -59,10 +59,11 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 ## No build needed
 
 **Apple / App Store Connect**
-- [ ] Firebase → Cloud Messaging → upload APNs key `TL92CR5TVF`
+- [x] iPhone push: the push function sends Apple tokens straight to APNs with key `TL92CR5TVF` (secrets APNS_KEY_ID / APNS_TEAM_ID / APNS_PRIVATE_KEY). Firebase is only used for Android
 - [ ] Reprice IAPs: `gems_3` $2.99, `gems_10` $9.99, `gems_25` $24.99, `gems_50` $49.99; display names 6 / 14 / 40 / 80 gems
 - [ ] `gems_1`: verify price, countries, review screenshot
-- [ ] Paid Apps agreement signed
+- [ ] Paid Apps agreement: add a bank account (status is Pending User Info)
+- [ ] EU trader status (Business → Complete Compliance Requirements) and the new age rating questions
 - [ ] App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET`
 - [ ] Privacy Policy URL `https://did-i.app/privacy` on App Privacy
 - [ ] Version 1.0: screenshots, review contact phone, Save
@@ -74,7 +75,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [ ] Internal testing track, then production
 
 **Backend**
-- [ ] Deploy `gem-iap` with its secrets
+- [x] Deploy `gem-iap` with its secrets (Apple key set; Play service account invited, waiting on Google to take effect)
 - [x] `npm run db:audit` returns no rows (2026-09-26, after `auto-add.sql`)
 
 **Website and legal**

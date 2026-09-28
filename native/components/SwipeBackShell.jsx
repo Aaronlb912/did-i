@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Animated, PanResponder, StyleSheet, View } from 'react-native'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
@@ -15,7 +15,7 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
   const props = useRef({ enabled, onBack, reduce })
   props.current = { enabled, onBack, reduce }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     x.stopAnimation()
     x.setValue(0)
     live.current = false
@@ -47,10 +47,17 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
             Animated.spring(x, { ...SPRING, toValue: 0 }).start(() => setLifted(false))
             return
           }
+          // Leave the old screen slid out. Snapping it back here flashed it for a frame
+          // before the route changed; the reset effect puts x back once the new screen is in.
           const done = () => {
-            props.current.onBack?.()
-            x.setValue(0)
             live.current = false
+            props.current.onBack?.()
+            setTimeout(() => {
+              if (!live.current) {
+                x.setValue(0)
+                setLifted(false)
+              }
+            }, 400)
           }
           if (props.current.reduce) {
             done()

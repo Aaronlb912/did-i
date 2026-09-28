@@ -46,8 +46,8 @@ export function AppShell() {
   const askPings = useCallback(async () => {
     const next = await requestPings()
     setPingState(next)
-    if (next === 'granted' && app.book) armLampPings(app.book)
-  }, [app.book])
+    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book)
+  }, [app.book, app.shelf])
 
   useEffect(() => {
     let alive = true
@@ -72,12 +72,12 @@ export function AppShell() {
     if (!app.book) return undefined
     let alive = true
     afterNativeBridgeReady(() => {
-      if (alive) armLampPings(app.book)
+      if (alive) armLampPings(app.shelf?.boards || app.book)
     })
     return () => {
       alive = false
     }
-  }, [app.book])
+  }, [app.book, app.shelf])
 
   const pingLabel = pingButtonLabel(pingState)
 

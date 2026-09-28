@@ -4,6 +4,7 @@ import { GEM_PACKS, gemPack } from '../../src/lib/gem-packs.js'
 import { readShelf, writeShelf } from '../../src/lib/board-shelf.js'
 import { claimGemPurchases } from '../../src/lib/gem-claim.js'
 import { SHELF_IN } from '../../src/lib/cloud-sync.js'
+import { readUser } from '../../src/lib/account.js'
 import { submitGemPurchase } from '../../src/lib/gem-verify.js'
 import { addGemsShelf } from '../../src/lib/purse.js'
 
@@ -104,6 +105,21 @@ async function creditPurchase(purchase) {
   return out
 }
 
+// A buy that was paid but never credited (no signal, app closed) stays unfinished
+// with the store. Credit it on the next connect; the server ignores repeats.
+async function retryUnfinished(api) {
+  if (!api?.getAvailablePurchases || !(await readUser())) return
+  try {
+    const open = await api.getAvailablePurchases()
+    for (const purchase of open || []) {
+      const id = String(purchase?.productId || purchase?.id || '')
+      if (GEM_PACKS.some((row) => row.storeId === id)) await creditPurchase(purchase)
+    }
+  } catch {
+    // Next connect tries again.
+  }
+}
+
 export function initGemIap() {
   if (!iapPossible()) return Promise.resolve('skip')
   if (settled && settled !== 'fail') return Promise.resolve(settled)
@@ -148,6 +164,7 @@ async function connectStore() {
     prices.clear()
     liveSku.clear()
     for (const item of list) rememberProduct(item)
+    retryUnfinished(api)
     return liveSku.size ? 'ok' : 'empty'
   } catch (error) {
     console.warn('gem iap init', error?.message || error)

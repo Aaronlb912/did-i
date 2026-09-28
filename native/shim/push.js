@@ -30,6 +30,8 @@ async function ensureNotificationHandler() {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: Platform.OS === 'ios',
         shouldSetBadge: Platform.OS === 'ios',
       }),
