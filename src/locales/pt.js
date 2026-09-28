@@ -598,7 +598,8 @@ export const pt = {
   'about.p5':
     'Hayes Street é um apartamento inventado para você testar Did I. Jordan Hale não é um inquilino de verdade.',
   'shop.title': 'Loja',
-  'shop.hubHint': 'Escolhe uma prateleira. Toca num chip em baixo para ver.',
+  'shop.hubHint': 'Toca num look, cheer ou buddy para o veres de perto.',
+  'shop.earnCoins': 'Ganha {coins} coins ao terminares {nights} noites.',
   'shop.coming': 'Chega a {date}',
   'shop.dropOn': 'Novidades de {date}',
   'shop.freshTitle': 'Novo na loja',

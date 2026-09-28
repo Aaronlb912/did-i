@@ -62,6 +62,7 @@ export function SheetHost() {
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
       <View style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+        {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
         {sheet.kicker ? <Text style={[styles.kicker, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, { color: colors.ink }]}>{sheet.title}</Text>
         {sheet.body ? <Text style={[styles.body, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
@@ -100,6 +101,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
+  preview: { alignItems: 'center', marginBottom: 2 },
   title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },

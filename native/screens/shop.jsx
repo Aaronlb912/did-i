@@ -1,11 +1,13 @@
 import Constants from 'expo-constants'
 import { useEffect, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
 import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
+import { holdFor } from '../../src/lib/cheer-pops.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t } from '../../src/lib/i18n.js'
 import {
   BUDDIES,
@@ -127,12 +129,16 @@ function BuddyPreviewCard({ id, colors }) {
   )
 }
 
-function LookPreviewCard({ look, colors, theme }) {
-  const gemCard = gemPanelStyle(look, theme)
+// A look shown in its own colours, not the page's ambient ones, so it reads
+// true whether the page is peeking a coin look or a gem look.
+function LookPreviewCard({ id }) {
+  const theme = useTheme()
+  const colors = useLookColors(id, false)
+  const gemCard = gemPanelStyle(id, theme)
   return (
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
-      <View style={[styles.buddyPreviewGlow, gemGlowHostStyle(look, theme)]}>
+      <View style={[styles.buddyPreviewGlow, gemGlowHostStyle(id, theme)]}>
         <View
           style={[
             styles.buddyPreviewCard,
@@ -149,10 +155,67 @@ function LookPreviewCard({ look, colors, theme }) {
   )
 }
 
-function tileChip(type, id, colors) {
-  if (type === 'look') return <LookChip id={id} colors={colors} />
-  if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
-  return <BuddyChip id={id} />
+// A looping Animated.Value, off (and reset) when `active` is false or the
+// person asked for less motion.
+function useLoopValue(active, duration) {
+  const val = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    if (!active) {
+      val.setValue(0)
+      return undefined
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(val, { toValue: 1, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(val, { toValue: 0, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [active, duration, val])
+  return val
+}
+
+function usePulseStyle(active) {
+  const reduce = useReduceMotion()
+  const val = useLoopValue(active && !reduce, 620)
+  return { transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }) }] }
+}
+
+function useBobStyle(active) {
+  const reduce = useReduceMotion()
+  const val = useLoopValue(active && !reduce, 900)
+  return { transform: [{ translateY: val.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }
+}
+
+// A look shown as a mini Tonight card in its own colours, not a bare swatch.
+function LookMiniCard({ id }) {
+  const look = useLookColors(id, false)
+  return (
+    <View style={[styles.lookMini, { backgroundColor: look.panel, borderColor: look.line }]}>
+      <View style={[styles.lookMiniDot, { backgroundColor: look.on }]} />
+    </View>
+  )
+}
+
+// The real thing, not a tiny glyph: a look reads as its own card, a cheer
+// loops, a buddy idles.
+function TileArt({ type, id, colors }) {
+  const pulse = usePulseStyle(type === 'cheer')
+  const bob = useBobStyle(type === 'buddy')
+  if (type === 'look') return <LookMiniCard id={id} />
+  if (type === 'cheer') {
+    return (
+      <Animated.View style={pulse}>
+        <CheerChip id={id} stage={1} colors={colors} />
+      </Animated.View>
+    )
+  }
+  return (
+    <Animated.View style={bob}>
+      <BuddyChip id={id} />
+    </Animated.View>
+  )
 }
 
 function tileName(type, id) {
@@ -175,6 +238,8 @@ function PriceTag({ tag, colors }) {
   )
 }
 
+// The label always sits on the tile's bottom edge: the art area above it is a
+// fixed height, so a short chip (Spark) and a tall one line up the same way.
 function ShopTile({ type, item, purse, colors, onTile, style }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
@@ -185,11 +250,15 @@ function ShopTile({ type, item, purse, colors, onTile, style }) {
       accessibilityLabel={t('shop.see', { name })}
       style={[styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style]}
     >
-      <View style={styles.tileChip}>{tileChip(type, item.id, colors)}</View>
-      <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
-        {name}
-      </Text>
-      <PriceTag tag={tag} colors={colors} />
+      <View style={styles.tileArt}>
+        <TileArt type={type} id={item.id} colors={colors} />
+      </View>
+      <View style={styles.tileLabel}>
+        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
+          {name}
+        </Text>
+        <PriceTag tag={tag} colors={colors} />
+      </View>
     </Pressable>
   )
 }
@@ -502,43 +571,71 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors }) {
   )
 }
 
+// coinsFor(): up to two paid taps of up to two coins each.
+const COINS_PER_NIGHT_CAP = 4
+
+function previewBody(type, item, purse) {
+  const tag = shopTag(purse, type, item)
+  if (tag.owned) return t('shop.owned')
+  const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
+  if (tag.coins && purse.coins < tag.coins) {
+    const short = tag.coins - purse.coins
+    const nights = Math.ceil(short / COINS_PER_NIGHT_CAP)
+    return `${base}\n${t('shop.earnCoins', { coins: short, nights })}`
+  }
+  return base
+}
+
+// Tapping any item opens the real thing at full size: the look's own card,
+// the buddy in its hang, or the cheer playing on a loop while the sheet is
+// open, plus its price and, when short on coins, how to earn the rest.
+function openTilePreview(type, item, purse, colors, coat) {
+  const name = tileName(type, item.id)
+  const body = previewBody(type, item, purse)
+  let timer = null
+  function close() {
+    if (timer) clearInterval(timer)
+    publishSheet(null)
+  }
+  if (type === 'cheer') {
+    const play = () => fireCheer(item.id, 1, coat, undefined, true)
+    play()
+    timer = setInterval(play, holdFor(item.id, 1) + 260)
+  }
+  let preview = null
+  if (type === 'look') preview = <LookPreviewCard id={item.id} />
+  else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
+  publishSheet({
+    preview,
+    title: name,
+    body,
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: close,
+  })
+}
+
 export function ShopScreen({ book, onChange }) {
-  const theme = useTheme()
-  const [peekLook, setPeekLook] = useState('')
-  const [peekBuddy, setPeekBuddy] = useState('')
-  const colors = useShopColors(book, peekLook)
+  const colors = useShopColors(book)
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const previewLook = peekLook || coat
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
 
-  function peekAt(type, item) {
-    if (type === 'look') {
-      setPeekBuddy('')
-      setPeekLook((prev) => (prev === item.id ? '' : item.id))
-    } else if (type === 'cheer') {
-      setPeekBuddy('')
-      fireCheer(item.id, 1, previewLook, undefined, true)
-    } else {
-      setPeekLook('')
-      setPeekBuddy((prev) => (prev === item.id ? '' : item.id))
-    }
+  function onTile(type, item) {
+    openTilePreview(type, item, purse, colors, coat)
   }
 
   return (
-    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined} showPurse>
+    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
 
-      <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={peekAt} />
+      <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={onTile} />
 
-      {peekLook && isGemLook(peekLook) ? <LookPreviewCard look={peekLook} colors={colors} theme={theme} /> : null}
-      {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
-
-      <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={peekAt} />
-      <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={peekAt} />
-      <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={peekAt} />
+      <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
+      <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />
+      <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={onTile} />
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
@@ -562,7 +659,6 @@ export function ShopScreen({ book, onChange }) {
 }
 
 export function ShopLooksScreen({ book, onChange }) {
-  const theme = useTheme()
   const [peekLook, setPeekLook] = useState('')
   const colors = useShopColors(book, peekLook)
   const purse = normalizePurse(book)
@@ -635,7 +731,7 @@ export function ShopLooksScreen({ book, onChange }) {
     >
       <Meta colors={colors}>{t('shop.looksHint', { coins: LOOK_COIN_PRICE, gems: LOOK_GEM_PRICE })}</Meta>
 
-      {peekLook && isGemLook(peekLook) ? <LookPreviewCard look={peekLook} colors={colors} theme={theme} /> : null}
+      {peekLook && isGemLook(peekLook) ? <LookPreviewCard id={peekLook} /> : null}
 
       <Cap colors={colors}>{t('shop.looksCoins')}</Cap>
       {COIN_LOOKS.map(lookRow)}
@@ -1007,7 +1103,6 @@ function KitTile({ label, on, worn, onPress, colors, children }) {
 }
 
 export function CollectionScreen({ book, onChange }) {
-  const theme = useTheme()
   const [tab, setTab] = useState('looks')
   const [pick, setPick] = useState('')
   const [peekLook, setPeekLook] = useState('')
@@ -1138,7 +1233,7 @@ export function CollectionScreen({ book, onChange }) {
     >
       <Meta colors={colors}>{t('kit.hint')}</Meta>
 
-      {peekLook && isGemLook(peekLook) ? <LookPreviewCard look={peekLook} colors={colors} theme={theme} /> : null}
+      {peekLook && isGemLook(peekLook) ? <LookPreviewCard id={peekLook} /> : null}
 
       <KitTabs
         tab={tab}
@@ -1414,9 +1509,19 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4 },
   rowScroll: { gap: 8, paddingRight: 4 },
   rowTile: { width: 104 },
-  tile: { borderWidth: 1, borderRadius: 12, padding: 10, gap: 6, alignItems: 'center' },
-  tileChip: { alignSelf: 'center' },
+  tile: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    minHeight: 132,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tileArt: { height: 56, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  tileLabel: { width: '100%', alignItems: 'center', gap: 4 },
   tileName: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  lookMini: { width: 40, height: 52, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  lookMiniDot: { width: 14, height: 14, borderRadius: 7 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.ui, fontSize: 12, fontWeight: '600' },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

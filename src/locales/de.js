@@ -605,7 +605,8 @@ export const de = {
   'about.p5':
     'Hayes Street ist eine erfundene Wohnung, damit du Did I ausprobieren kannst. Jordan Hale ist kein echter Mieter.',
   'shop.title': 'Shop',
-  'shop.hubHint': 'Wähle ein Regal. Tippe unten einen Chip zur Vorschau.',
+  'shop.hubHint': 'Tippe einen Look, Cheer oder Buddy an, um ihn genau anzusehen.',
+  'shop.earnCoins': 'Verdiene {coins} Coins, indem du {nights} Nächte schaffst.',
   'shop.coming': 'Ab {date}',
   'shop.dropOn': 'Neu am {date}',
   'shop.freshTitle': 'Neu im Shop',
