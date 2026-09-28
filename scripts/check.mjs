@@ -1892,6 +1892,7 @@ registerHooks({
     next(specifier === '@react-navigation/native' ? '@react-navigation/core' : specifier, context),
 })
 const nav = await import('../native/navigation/hash.js')
+const mastMenuItems = await import('../native/components/mast-menu-items.js')
 
 // A stand-in for the mounted stack: the hall with its two tabs, screens pushed over it.
 // Like the real container it reports a change once the stack has settled, not per action.
@@ -1946,6 +1947,29 @@ test('every route is its own native-stack screen pushed over the hall', () => {
   nav.goHash('/nowhere')
   assert.equal(stack.top(), '/tonight', 'an unknown route lands in the hall')
   assert.equal(stack.depth(), 1)
+})
+
+test("the menu's Friends and family badge always totals what its label says", () => {
+  const { menuItems } = mastMenuItems
+  nav.goHash('/tonight')
+  for (const [inbox, asks, signedIn] of [
+    [0, 0, true],
+    [0, 0, false],
+    [3, 0, true],
+    [0, 2, true],
+    [0, 2, false],
+    [4, 5, true],
+    [9, 9, false],
+  ]) {
+    const people = menuItems(true, inbox, asks, signedIn).find((item) => item.key === 'people')
+    const expected = signedIn ? inbox + asks : asks
+    assert.equal(people.count, expected, `count for inbox=${inbox} asks=${asks} signedIn=${signedIn}`)
+    if (expected > 0) {
+      assert.equal(people.label, `Friends and family, ${expected} waiting`, 'label carries the same total as the badge')
+    } else {
+      assert.equal(people.label, 'Friends and family', 'no waiting total when there is nothing to show')
+    }
+  }
 })
 
 test('goHash pushes, pops back to a screen it has, and switches the hall tab', () => {

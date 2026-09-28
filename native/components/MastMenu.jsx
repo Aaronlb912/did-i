@@ -23,49 +23,13 @@ import { blurNativeReady } from '../lib/blur-ready.js'
 import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
+import { menuIsOn, menuItems } from './mast-menu-items.js'
 import { MenuIcon } from './MenuIcon.jsx'
-
-const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
-const ADD_ON = new Set(['/add', '/hang'])
-const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 const MastMenuCtx = createContext(null)
 
 function countLabel(n) {
   return n > 9 ? '9+' : String(n)
-}
-
-// Home and Questions already live in the system tab bar; the menu holds only
-// what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
-// Inbox has no row of its own, its count folds into Friends and family's
-// badge. A badge never highlights a row; only where you are does.
-function menuItems(showAdd, inbox, asks, signedIn) {
-  const path = readRoute().path
-  const waiting = signedIn ? inbox + asks : asks
-  return [
-    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
-    {
-      key: 'people',
-      path: '/people',
-      label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
-      on: PEOPLE_ON.has(path),
-      count: waiting,
-      icon: 'people',
-    },
-    { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
-    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
-    {
-      key: 'settings',
-      path: '/settings',
-      label: t('settings.cog'),
-      on: SETTINGS_ON.has(path),
-      icon: 'settings',
-    },
-  ]
-}
-
-function menuIsOn(items) {
-  return items.some((item) => item.on)
 }
 
 function useMenuPeople() {
