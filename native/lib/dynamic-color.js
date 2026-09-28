@@ -48,11 +48,18 @@ export function useWallpaperPalette() {
   return palette
 }
 
+// Halfway between two #rrggbb stops, for a tone native does not hand over.
+function mix(a, b) {
+  const channel = (i) => Math.round((parseInt(a.slice(i, i + 2), 16) + parseInt(b.slice(i, i + 2), 16)) / 2)
+  return `#${[1, 3, 5].map((i) => channel(i).toString(16).padStart(2, '0')).join('')}`
+}
+
 // The stops native hands over, turned into the same shape every other
 // look in native/palette.js uses. Material You gives a tonal palette,
 // not status colors, so open comes from the neutrals (kept apart from
-// panel3 so an open dot still shows on a pill) and late/miss/skip stay
-// the lime look's own.
+// panel3 so an open dot still shows on a pill, and panel3 kept apart from
+// inkDim so a disabled button's label still shows) and late/miss/skip
+// stay the lime look's own.
 export function wallpaperLooks(palette) {
   if (!palette) return null
   return {
@@ -60,12 +67,12 @@ export function wallpaperLooks(palette) {
       bg: palette.neutral1_900,
       panel: palette.neutral1_800,
       panel2: palette.neutral1_700,
-      panel3: palette.neutral2_500,
+      panel3: palette.neutral1_700,
       line: palette.neutral2_500,
       lineSoft: palette.neutral1_700,
       ink: palette.neutral1_50,
       inkSoft: palette.neutral1_200,
-      open: palette.neutral1_700,
+      open: mix(palette.neutral1_700, palette.neutral2_500),
       inkDim: palette.neutral2_500,
       on: palette.accent1_200,
       onDeep: palette.accent1_600,
