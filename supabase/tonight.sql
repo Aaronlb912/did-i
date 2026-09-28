@@ -313,6 +313,9 @@ as $$
 declare
   who text;
 begin
+  if not public.push_wanted(new.to_id, 'cheers') then
+    return new;
+  end if;
   select coalesce(nullif(p.display_name, ''), '@' || coalesce(p.handle, ''), 'Someone')
   into who
   from public.profiles p where p.user_id = new.from_id;

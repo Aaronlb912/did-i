@@ -49,7 +49,7 @@ import {
   weekNights,
 } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { uses24h } from '../../src/lib/prefs.js'
+import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { playClick, shareShelf } from '../../src/lib/native.js'
 import { formatPhone, readMine, savePhone } from '../../src/lib/people.js'
@@ -76,7 +76,7 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
 import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
-import { SetCap, SetCard, SetRow } from '../components/SetBits.jsx'
+import { SetCap, SetCard, SetNote, SetRow, SetSwitch } from '../components/SetBits.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
@@ -729,6 +729,52 @@ export function FirstNightScreen({ book, onChange, now }) {
   )
 }
 
+// Pushes come from the server, which reads these switches from the synced prefs.
+const PUSH_KINDS = new Set(['sends', 'cheers', 'friends'])
+
+function PingKinds({ colors }) {
+  const prefs = usePrefs()
+  const [miss, setMiss] = useState('')
+
+  async function flip(kind) {
+    const was = readPrefs().pingsOff
+    const off = was.includes(kind) ? was.filter((k) => k !== kind) : [...was, kind]
+    writePrefs({ pingsOff: off })
+    setMiss('')
+    if (!PUSH_KINDS.has(kind)) {
+      armLampPings(readShelf().boards).catch(() => {})
+      return
+    }
+    const saved = await saveProfile({ prefs: readPrefs() })
+    // Signed out there are no pushes, so the switch only has to hold here.
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ pingsOff: was })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
+  return (
+    <>
+      <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
+      <SetCard colors={colors}>
+        {PING_KINDS.map((kind, i) => (
+          <SetSwitch
+            key={kind}
+            colors={colors}
+            label={t(`pings.kind.${kind}`)}
+            sub={t(`pings.kind.${kind}Sub`)}
+            on={!prefs.pingsOff.includes(kind)}
+            last={i === PING_KINDS.length - 1}
+            onPress={() => flip(kind)}
+          />
+        ))}
+      </SetCard>
+      <SetNote colors={colors}>{t('pings.kindsNote')}</SetNote>
+      {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+    </>
+  )
+}
+
 export function PingScreen({ book, now, onAskPings, pingLabel }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -744,6 +790,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
       ) : (
         <Meta colors={colors}>{t('pings.noBrowser')}</Meta>
       )}
+      <PingKinds colors={colors} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>

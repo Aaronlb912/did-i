@@ -39,6 +39,27 @@ alter table public.push_queue drop constraint if exists push_queue_len;
 alter table public.push_queue add constraint push_queue_len
   check (length(title) <= 80 and length(body) <= 200 and length(go) <= 80);
 
+-- The person's own notification switches (prefs.pingsOff, set in the app's
+-- Reminders screen). Kinds: sends, cheers, friends. Same names as
+-- PING_KINDS in src/lib/prefs.js.
+create or replace function public.push_wanted(who uuid, kind text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select not coalesce(
+    (select jsonb_typeof(p.prefs -> 'pingsOff') = 'array' and (p.prefs -> 'pingsOff') ? kind
+     from public.profiles p where p.user_id = who),
+    false
+  );
+$$;
+
+revoke all on function public.push_wanted(uuid, text) from public;
+revoke all on function public.push_wanted(uuid, text) from anon;
+revoke all on function public.push_wanted(uuid, text) from authenticated;
+
 -- What the person sees on the lock screen. Never the question itself
 -- for a cheer, and never anything about who else is involved.
 create or replace function public.queue_send_push()
@@ -50,6 +71,9 @@ as $$
 declare
   who text;
 begin
+  if not public.push_wanted(new.to_id, case when new.kind = 'cheer' then 'cheers' else 'sends' end) then
+    return new;
+  end if;
   select coalesce(nullif(p.display_name, ''), '@' || coalesce(p.handle, ''), 'A friend')
   into who
   from public.profiles p where p.user_id = new.from_id;
@@ -84,7 +108,7 @@ declare
   ph text;
   body text;
 begin
-  if new.state <> 'asked' then
+  if new.state <> 'asked' or not public.push_wanted(new.to_id, 'friends') then
     return new;
   end if;
   select coalesce(nullif(trim(p.display_name), ''), ''),

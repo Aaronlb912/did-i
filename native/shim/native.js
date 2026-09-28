@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
+import { pingOn } from '../../src/lib/prefs.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
@@ -41,7 +42,7 @@ async function notifications() {
 }
 
 export async function pingStreakHit(hit, dateIso) {
-  if (!hit) return false
+  if (!hit || !pingOn('streakHit')) return false
   const allowed = await checkNativePings()
   if (allowed !== 'granted') return false
   try {
@@ -132,6 +133,7 @@ export async function scheduleNativePings(books, now = new Date()) {
       channelId: CHANNEL_ID,
     })
     const notes = []
+    const reminders = pingOn('reminders')
     for (const book of list) {
       for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
         // Midday of that calendar day sits inside the right board night.
@@ -139,7 +141,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         const rows = ahead === 0 ? waitingTonight(book, now) : dueTonight(book, day).filter((row) => !row.answer)
         const [year, month, date] = boardDate(day).split('-').map(Number)
         for (const row of rows) {
-          if (!lampNotifyOn(row.lamp)) continue
+          if (!reminders || !lampNotifyOn(row.lamp)) continue
           const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
           if (!match) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
@@ -159,7 +161,7 @@ export async function scheduleNativePings(books, now = new Date()) {
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
     const book = list[0]
-    const risk = streakRiskFire(book, now)
+    const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
