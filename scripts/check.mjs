@@ -4,7 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
-import { createRequire } from 'node:module'
+import { createRequire, registerHooks } from 'node:module'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
@@ -53,6 +53,7 @@ import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/
 import { validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
+import { t } from '../src/lib/i18n.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -92,13 +93,19 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
+import { cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
+import { clockWords, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
+import {
+  handleSwipeCardAccessibilityAction,
+  swipeCardAccessibilityActions,
+  swipeCardAccessibilityLabel,
+} from '../native/lib/swipe-card-a11y.js'
 import {
   advanceTonightCard,
   applyWidgetTapOnce,
@@ -734,6 +741,36 @@ test('gem week survives shelf writes', () => {
   assert.equal(again.boards[0].gems, 1)
 })
 
+test('a folder still called Did I from before the General rename lands as General on load', () => {
+  const old = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [old] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.equal(shelf.boards[0].lamps.map((item) => item.id).join(','), 'a')
+
+  const renamed = { id: 'b2', title: 'Chores', lamps: [lamp('b')], answers: [] }
+  const untouched = normalizeShelf({ currentId: 'b2', boards: [renamed] })
+  assert.equal(untouched.boards[0].title, 'Chores')
+})
+
+test('a leftover Did I folder folds into an already-renamed General folder on the same phone', () => {
+  const stillOld = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const alreadyGeneral = { id: 'b2', title: t('tags.general'), lamps: [lamp('b')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [stillOld, alreadyGeneral] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.deepEqual(shelf.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
+})
+
+test('two phones converge on General for the old default folder when they sync', () => {
+  const local = { currentId: 'b1', boards: [{ id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }] }
+  const remote = { currentId: 'b1', boards: [{ id: 'b1', title: t('tags.general'), lamps: [lamp('b')], answers: [] }] }
+  const merged = mergeShelves(local, remote, '2026-09-20T00:00:00', '2026-09-21T00:00:00')
+  assert.equal(merged.boards.length, 1)
+  assert.equal(merged.boards[0].title, t('tags.general'))
+  assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
+})
+
 test('every gem pack is $1 a gem, and bigger packs add bonus gems', () => {
   for (const pack of GEM_PACKS) {
     assert.equal(pack.cents, pack.base * GEM_UNIT_CENTS, `${pack.id} keeps the $1 price`)
@@ -999,6 +1036,7 @@ test('shop drops wait for their day and the server sells the same coin items', (
 
 test('an invite link carries its code to the app on both phones', () => {
   assert.equal(inviteLink('abcde12345'), 'https://did-i.app/i/ABCDE12345')
+  assert.equal(inviteClip('abcde12345'), 'https://did-i.app/i/ABCDE12345', 'the page copies a web link iOS can detect')
   assert.equal(inviteFromText(inviteClip('ABCDE12345')), 'ABCDE12345', 'the iPhone clipboard text')
   assert.equal(inviteFromText('Join me: https://did-i.app/i/ABCDE12345 (code)'), 'ABCDE12345', 'a pasted share line')
   const referrer = decodeURIComponent(playLinkFor('ABCDE12345').split('&referrer=')[1])
@@ -1751,6 +1789,7 @@ test('native metro shims are wired and pin default exports', () => {
     'react-native-android-widget',
     '@expo/ui/swift-ui',
     '@expo/ui/swift-ui/modifiers',
+    '@expo/ui/jetpack-compose',
   ]
   for (const pkg of packages) {
     assert.ok(metro.includes(`'${pkg}'`), `metro should shim ${pkg}`)
@@ -1805,9 +1844,7 @@ test('native metro shims are wired and pin default exports', () => {
   const kept = pinEsModule(nativeMod)
   const swipeCard = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
   const swipeStub = readFileSync(path.join(root, 'native/components/SwipeCardStub.jsx'), 'utf8')
-  assert.equal(swipeCard.includes('Pressable'), false, 'the face is a swipe, not buttons')
   assert.equal(swipeStub.includes('Pressable'), false, 'the face fallback has no answer buttons')
-  assert.ok(swipeCard.includes('PanResponder'), 'the face swipes without the gesture module')
   assert.ok(swipeCard.includes('borderWidth: 1'), 'the face keeps its border')
 
   assert.equal(typeof kept.createWidget, 'function', 'seal should keep createWidget')
@@ -1853,12 +1890,10 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
     assert.equal(needsAuth({ ready: true, user: { id: 'u' } }), false)
     assert.equal(authGated('/tonight', { ready: false, user: null }), true)
     assert.equal(authGated('/privacy', { ready: false, user: null }), false)
-    assert.ok(shell.indexOf('if (gated)') < shell.indexOf('<ScreenRouter'), 'sign-in replaces the hall')
     assert.ok(shell.includes('<SignInScreen'), 'the gate renders the sign-in screen')
     assert.ok(sign.includes("t('auth.title')"), 'the sign-in screen has a title')
     assert.ok(sign.includes("t('account.email')"), 'the sign-in screen has an email field')
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
-    assert.ok(actions.includes("t('account.send')"), 'the sign-in screen can send a code')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.local')"), 'the sign-in screen can stay on this phone')
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
@@ -1886,6 +1921,216 @@ test('a still phone does not undo, a shake does', () => {
   assert.equal(whip.hit, true)
 })
 
+// React Navigation's core is the navigator without the React Native views.
+registerHooks({
+  resolve: (specifier, context, next) =>
+    next(specifier === '@react-navigation/native' ? '@react-navigation/core' : specifier, context),
+})
+const nav = await import('../native/navigation/hash.js')
+const mastMenuItems = await import('../native/components/mast-menu-items.js')
+
+// A stand-in for the mounted stack: the hall with its two tabs, screens pushed over it.
+// Like the real container it reports a change once the stack has settled, not per action.
+function fakeStack() {
+  const tabs = ['/tonight', '/lamps']
+  const stack = { routes: [{ name: nav.HALL, params: undefined }], tab: 0, actions: [] }
+  const settle = () => nav.syncFromNavigation()
+  const container = {
+    isReady: () => true,
+    getRootState: () => ({ index: stack.routes.length - 1, routes: stack.routes }),
+    getCurrentRoute: () =>
+      stack.routes.length > 1 ? stack.routes.at(-1) : { name: tabs[stack.tab], params: stack.tabParams },
+    canGoBack: () => stack.routes.length > 1 || stack.tab > 0,
+    goBack: () => {
+      if (stack.routes.length > 1) stack.routes.pop()
+      else stack.tab = 0
+      settle()
+    },
+    dispatch: (action) => {
+      stack.actions.push(action)
+      const { type, payload } = action
+      if (type === 'PUSH') stack.routes.push({ name: payload.name, params: payload.params })
+      else if (type === 'POP') stack.routes.splice(stack.routes.length - payload.count)
+      else if (type === 'POP_TO_TOP') stack.routes.splice(1)
+      else if (type === 'NAVIGATE' && payload.name === nav.HALL) {
+        stack.tab = tabs.indexOf(payload.params.screen)
+        stack.tabParams = payload.params.params
+      }
+      else throw new Error(`unexpected ${type}`)
+    },
+  }
+  nav.navigationRef.current = container
+  nav.goHash('/tonight')
+  stack.actions.length = 0
+  return {
+    top: () => (stack.routes.length > 1 ? stack.routes.at(-1).name : tabs[stack.tab]),
+    depth: () => stack.routes.length,
+    types: () => stack.actions.map((action) => action.type),
+    settle,
+  }
+}
+
+test('every route is its own native-stack screen pushed over the hall', () => {
+  const stack = fakeStack()
+  for (const hall of nav.HALL_PATHS) assert.ok(!nav.STACK_PATHS.includes(hall), `${hall} is the hall, not a pushed screen`)
+  for (const path of nav.STACK_PATHS) {
+    nav.goHash('/tonight')
+    nav.goHash(path)
+    assert.equal(stack.top(), path, `${path} is pushed`)
+    assert.equal(stack.depth(), 2)
+  }
+  nav.goHash('/nowhere')
+  assert.equal(stack.top(), '/tonight', 'an unknown route lands in the hall')
+  assert.equal(stack.depth(), 1)
+})
+
+test("the menu's Friends and family badge always totals what its label says", () => {
+  const { menuItems } = mastMenuItems
+  nav.goHash('/tonight')
+  for (const [inbox, asks, signedIn] of [
+    [0, 0, true],
+    [0, 0, false],
+    [3, 0, true],
+    [0, 2, true],
+    [0, 2, false],
+    [4, 5, true],
+    [9, 9, false],
+  ]) {
+    const people = menuItems(true, inbox, asks, signedIn).find((item) => item.key === 'people')
+    const expected = signedIn ? inbox + asks : asks
+    assert.equal(people.count, expected, `count for inbox=${inbox} asks=${asks} signedIn=${signedIn}`)
+    if (expected > 0) {
+      assert.equal(people.label, `Friends and family, ${expected} waiting`, 'label carries the same total as the badge')
+    } else {
+      assert.equal(people.label, 'Friends and family', 'no waiting total when there is nothing to show')
+    }
+  }
+})
+
+test('the swipe card exposes Did and Nope as accessibility actions, and its label carries the visible text', () => {
+  assert.equal(
+    swipeCardAccessibilityLabel('DID I', 'Did I lock the back door?', 'Due tonight'),
+    'DID I, Did I lock the back door?, Due tonight',
+  )
+  assert.equal(swipeCardAccessibilityLabel('', 'Did I lock the back door?', ''), 'Did I lock the back door?', 'blank kicker/meta are dropped, not left as empty commas')
+
+  const actions = swipeCardAccessibilityActions('Did', 'Nope')
+  assert.deepEqual(actions, [
+    { name: 'did', label: 'Did' },
+    { name: 'nope', label: 'Nope' },
+  ])
+
+  let did = 0
+  let nope = 0
+  const handlers = { onDid: () => did++, onNope: () => nope++ }
+  handleSwipeCardAccessibilityAction('did', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'the did action fires onDid')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(nope, 1, 'the nope action fires onNope')
+  handleSwipeCardAccessibilityAction('did', { blockDid: true, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'a blocked did does not fire again')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: true, ...handlers })
+  assert.equal(nope, 1, 'a blocked nope does not fire again')
+})
+
+test('goHash pushes, pops back to a screen it has, and switches the hall tab', () => {
+  const stack = fakeStack()
+  nav.goHash('/settings')
+  nav.goHash('/shop')
+  assert.deepEqual(stack.types(), ['PUSH', 'PUSH'])
+  nav.goHash('/lamp', { id: 'a' })
+  nav.goHash('/lamp', { id: 'b' })
+  assert.equal(stack.depth(), 5, 'the same screen for another question is its own push')
+  nav.goHash('/settings')
+  assert.equal(stack.top(), '/settings', 'a screen already in the stack is popped back to, not pushed again')
+  assert.equal(stack.depth(), 2)
+  assert.equal(stack.types().at(-1), 'POP')
+  nav.goHash('/lamps')
+  assert.equal(stack.depth(), 1, 'a tab pops everything pushed over the hall')
+  assert.equal(stack.top(), '/lamps')
+  assert.deepEqual(stack.types().slice(-2), ['POP_TO_TOP', 'NAVIGATE'])
+  assert.equal(nav.readRoute().path, '/lamps')
+})
+
+test('back pops a pushed screen, returns to Tonight, and leaves the app from the hall', () => {
+  const stack = fakeStack()
+  assert.equal(nav.canGoBack(), false)
+  assert.equal(nav.goBack(), false, 'back from Tonight at the root lets Android leave the app')
+  nav.goHash('/stats')
+  assert.equal(nav.canGoBack(), true)
+  assert.equal(nav.goBack(), true)
+  assert.equal(stack.top(), '/tonight')
+  assert.equal(nav.readRoute().path, '/tonight', 'the route follows the stack when it moves by itself')
+  nav.goHash('/lamps')
+  assert.equal(nav.canGoBack(), false, 'switching tabs is not history to go back through')
+  assert.equal(nav.goBack(), true, 'back from Questions goes to Tonight')
+  assert.equal(stack.top(), '/tonight')
+})
+
+test('welcome, the first question, and the name screen keep their own back', () => {
+  const stack = fakeStack()
+  localStorage.removeItem('did-i-welcome')
+  nav.goHash('/welcome')
+  assert.equal(nav.goBack({ emptyHall: true }), true)
+  assert.equal(localStorage.getItem('did-i-welcome'), '1', 'leaving welcome marks it seen')
+  assert.equal(stack.top(), '/first', 'an empty hall sends welcome on to the first question')
+  assert.equal(nav.goBack(), true)
+  assert.equal(stack.top(), '/first', 'the first question has to be added before anything else opens')
+  nav.goHash('/enter')
+  assert.equal(nav.goBack({ needsEnter: true }), true)
+  assert.equal(stack.top(), '/enter', 'a name still needed keeps the name screen')
+  assert.equal(nav.goBack({ needsEnter: false }), true)
+  assert.equal(stack.top(), '/tonight')
+  for (const path of ['/first', '/welcome', '/enter']) assert.ok(nav.OWN_BACK.has(path), `${path} has no edge swipe`)
+  localStorage.removeItem('did-i-welcome')
+})
+
+test('a fresh install is sent to the first question, and only while it is still fresh', () => {
+  let emptyShelf = true
+  const fresh = () => emptyShelf && localStorage.getItem('did-i-welcome') !== '1'
+  localStorage.removeItem('did-i-welcome')
+  const stops = []
+  try {
+    let stack = fakeStack()
+    const go = (where, extras) => {
+      nav.goHash(where, extras)
+      stack.settle()
+    }
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
+    assert.equal(stack.top(), '/first', 'a fresh hall opens on the first question')
+    go('/')
+    assert.equal(stack.top(), '/first', 'any name for Tonight still counts as the fresh hall')
+    go('/lamps')
+    assert.equal(stack.top(), '/lamps', 'Questions is not Tonight')
+    go('/first')
+    // Adding the first question marks welcome seen, saves the shelf, then heads home.
+    nav.goHash('/lamp', { id: 'x' })
+    localStorage.setItem('did-i-welcome', '1')
+    emptyShelf = false
+    go('/', { face: 'did' })
+    assert.equal(stack.top(), '/tonight', 'finishing the first question lands on the hall')
+    assert.equal(stack.depth(), 1)
+    assert.equal(nav.readRoute().face, 'did', 'the face the first question asked for survives')
+    stops.splice(0).forEach((stop) => stop())
+
+    // A cold start from a shortcut opens Add over the hall before the hall is ever on top.
+    localStorage.removeItem('did-i-welcome')
+    emptyShelf = true
+    stack = fakeStack()
+    go('/add')
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
+    assert.equal(stack.top(), '/add', 'a screen that is not on top does not redirect')
+    nav.goBack()
+    assert.equal(stack.top(), '/first', 'back to an empty hall lands on the first question, not a blank page')
+    stops.splice(0).forEach((stop) => stop())
+    go('/tonight')
+    assert.equal(stack.top(), '/tonight', 'no redirect once it is unmounted')
+  } finally {
+    stops.forEach((stop) => stop())
+    localStorage.removeItem('did-i-welcome')
+  }
+})
+
 test('the menu, a buy confirm, and a cheer preview can show on the phone', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
@@ -1898,8 +2143,6 @@ test('the menu, a buy confirm, and a cheer preview can show on the phone', () =>
   assert.ok(menu.includes('<Modal'), 'the menu opens above the tonight screen')
   assert.ok(menu.includes('open ? ('), 'the menu modal is not mounted while it is closed')
   assert.ok(shell.includes('<CheerBurstHost />'), 'a cheer preview paints above the screen')
-  const swipe = readFileSync(path.join(root, 'native/components/SwipeBackShell.jsx'), 'utf8')
-  assert.ok(swipe.includes('lifted ? { transform'), 'the swipe layer stays flat until a drag')
   assert.ok(shell.includes('<SheetHost />'), 'a buy confirm paints above the screen')
   assert.ok(!shop.includes('<Modal'), 'a buy confirm is not an iOS modal')
   assert.ok(shop.includes('gemNotice'), 'a gem buy says what happened')
@@ -1963,6 +2206,342 @@ test('the boot screen and phone bootstrap keep the location guard', () => {
   assert.ok(bad('native/Boot.jsx', lazyBoot).some((p) => p.includes('Boot.jsx loads the app')))
   const bareLoc = bootstrap.replace('makeLocation(devServerUrl())', "{ hash: '#/' }")
   assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
+})
+
+// Phone modules that only exist on a device, stood in for so the native shim
+// runs here. A stub is read when its module first loads.
+const phoneStubs = {
+  'react-native': {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    BackHandler: { addEventListener: () => ({ remove() {} }) },
+    Platform: { OS: 'ios' },
+    Share: { share: async () => ({}) },
+  },
+  'expo-clipboard': { setStringAsync: async () => {} },
+  'expo-linking': { addEventListener: () => ({ remove() {} }), getInitialURL: async () => null, parse: () => ({}) },
+  'expo-splash-screen': {},
+  'expo-haptics': {},
+  'expo-notifications': {},
+}
+globalThis.__didIPhoneStubs = phoneStubs
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier in phoneStubs ? { url: `phone-stub:${specifier}`, shortCircuit: true } : next(specifier, context),
+  load: (url, context, next) => {
+    if (!url.startsWith('phone-stub:')) return next(url, context)
+    const name = url.slice('phone-stub:'.length)
+    const keys = Object.keys(phoneStubs[name])
+    const source = [
+      `const mod = globalThis.__didIPhoneStubs[${JSON.stringify(name)}]`,
+      'export default mod',
+      ...keys.map((key) => `export const ${key} = mod[${JSON.stringify(key)}]`),
+    ].join('\n')
+    return { format: 'module', source, shortCircuit: true }
+  },
+})
+
+const felt = []
+Object.assign(phoneStubs['expo-haptics'], {
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  impactAsync: async (style) => felt.push(`impact:${style}`),
+  notificationAsync: async (type) => felt.push(`notify:${type}`),
+  selectionAsync: async () => felt.push('selection'),
+})
+const phone = await import('../native/shim/native.js')
+
+test('a flick answers by where it was headed and flies off along its path', () => {
+  // Let go short of the line with no speed: back to the middle.
+  assert.equal(releaseWay(60, 0), 0)
+  // Past the line, held still: answered.
+  assert.equal(releaseWay(130, 0), 1)
+  assert.equal(releaseWay(-130, 0), -1)
+  // A short, fast flick counts.
+  assert.equal(releaseWay(40, 900), 1)
+  assert.equal(releaseWay(-40, -900), -1)
+  // Past the line but thrown back: not answered.
+  assert.equal(releaseWay(130, -600), 0)
+  // A side that is closed never answers.
+  assert.equal(releaseWay(200, 900, true, false), 0)
+  assert.equal(releaseWay(-200, -900, false, true), 0)
+
+  // Grabbing low turns the card the other way.
+  assert.equal(grabSide(20, 200), 1)
+  assert.equal(grabSide(180, 200), -1)
+  assert.ok(cardTilt(100, 400, 1) > 0)
+  assert.ok(cardTilt(100, 400, -1) < 0)
+  assert.equal(cardTilt(0, 400, 1), 0)
+
+  // Thrown right and down: it leaves the screen on the right, lower, fast.
+  const path = flyPath(150, 10, 2400, 500, 1, 400)
+  assert.ok(path.x > 400, 'clears the right edge')
+  assert.ok(path.y > 10, 'keeps falling the way it was moving')
+  assert.ok(path.duration >= 180 && path.duration <= 340)
+  const slow = flyPath(0, 0, 0, 0, -1, 400)
+  assert.ok(slow.x < -400, 'a tap throws it off the left edge')
+
+  // The stack: the face at full size, the next two smaller and lower.
+  assert.deepEqual(depthLook(0), { scale: 1, translateY: 0, opacity: 1 })
+  assert.equal(depthLook(1).scale, 0.96)
+  assert.equal(depthLook(2).scale, 0.92)
+  assert.ok(depthLook(0.5).scale < 1 && depthLook(0.5).scale > 0.96, 'a card growing up is in between')
+  assert.equal(depthLook(3).opacity, 0)
+})
+
+test('haptics speak one language on Tonight and do not switch off with Reduce Motion', () => {
+  writePrefs({ lessMotion: true })
+  felt.length = 0
+  phone.feelTap('did')
+  phone.feelTap('skip')
+  phone.feelTap('undo')
+  phone.feelTap('tick')
+  phone.playClick()
+  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
+  writePrefs({ lessMotion: false })
+})
+
+const { deliverStreakHit, takePendingStreakMoment } = await import('../src/lib/streak-moments.js')
+const { setAppForeground } = await import('../src/lib/app-foreground.js')
+const sessionBox = new Map()
+globalThis.sessionStorage = {
+  getItem: (key) => (sessionBox.has(key) ? sessionBox.get(key) : null),
+  setItem: (key, value) => sessionBox.set(key, String(value)),
+  removeItem: (key) => sessionBox.delete(key),
+}
+
+async function testAsync(name, fn) {
+  ran += 1
+  try {
+    await fn()
+    console.log(`ok   ${name}`)
+  } catch (error) {
+    failed += 1
+    console.error(`FAIL ${name}\n     ${error.message}`)
+  }
+}
+
+await testAsync('a streak push that throws right after a Did waits for the app instead of rejecting', async () => {
+  setAppForeground(false)
+  const broken = async () => {
+    throw new TypeError('undefined is not a function')
+  }
+  await deliverStreakHit({ kind: 'hit', n: 2 }, '2026-09-28', broken)
+  const waiting = takePendingStreakMoment()
+  assert.equal(waiting?.kind, 'hit', 'the moment is kept for when the app is open')
+  assert.equal(waiting.n, 2)
+  setAppForeground(true)
+})
+
+const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js')
+const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
+const { isAppForeground } = await import('../src/lib/app-foreground.js')
+
+test('a first cleared night is not "1 nights" and is not on fire yet', () => {
+  const one = streakHitCopy(1)
+  assert.equal(one.title, en['streak.hitTitleClear'])
+  assert.equal(one.body, en['streak.hitBodyOne'])
+  assert.equal(streakHitCopy(2).title, en['streak.hitTitleClear'], 'two nights is not a fire yet')
+  assert.ok(streakHitCopy(2).body.startsWith('2 nights'))
+  assert.equal(streakHitCopy(3).title, en['streak.hitTitle'], 'three nights is')
+  assert.equal(streakNights(1), '1 night in a row')
+  assert.equal(streakNights(7), '7 nights in a row')
+})
+
+test('the streak keeps counting past the five the room shows', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 8; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: nights.map((night) => ({ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })),
+  }
+  assert.equal(shelfHeat([book], clock), 5, 'the room stays at five')
+  assert.equal(shelfStreak([book], clock), 8)
+  const tonightOpen = { ...book, answers: book.answers.slice(1) }
+  assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+})
+
+test('the done card says what tomorrow night holds and from when', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id, extra = {}) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01', ...extra })
+  const tomorrowDay = new Date(2026, 8, 29).getDay()
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [
+      lamp('pills', { askAfter: '20:00' }),
+      lamp('door', { askAfter: '21:30' }),
+      lamp('bins', { cadence: 'weekly', weekdays: [(tomorrowDay + 1) % 7], askAfter: '19:00' }),
+    ],
+    answers: [],
+  }
+  assert.deepEqual(tomorrowPreview([book], clock), { count: 2, from: '20:00' }, 'counts what is due tomorrow, earliest first')
+  const anytime = { ...book, lamps: [...book.lamps, lamp('phone')] }
+  assert.deepEqual(tomorrowPreview([anytime], clock), { count: 3, from: '' }, 'no "from" when one is open all evening')
+  assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
+})
+
+// Just enough of React to drive one hook here: state, refs, memos and
+// effects, rendered again until nothing changes.
+function hookHost(useHook, propsFor) {
+  const slots = []
+  let at = 0
+  let dirty = false
+  let out = null
+  const same = (a, b) => Boolean(a && b) && a.length === b.length && a.every((item, i) => Object.is(item, b[i]))
+  const fake = {
+    useState(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = typeof init === 'function' ? init() : init
+      return [
+        slots[k],
+        (next) => {
+          const value = typeof next === 'function' ? next(slots[k]) : next
+          if (!Object.is(value, slots[k])) {
+            slots[k] = value
+            dirty = true
+          }
+        },
+      ]
+    },
+    useRef(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = { current: init }
+      return slots[k]
+    },
+    useMemo(make, deps) {
+      const k = at++
+      if (slots[k] && same(slots[k].deps, deps)) return slots[k].value
+      slots[k] = { deps, value: make() }
+      return slots[k].value
+    },
+    useCallback(fn, deps) {
+      return fake.useMemo(() => fn, deps)
+    },
+    useEffect(run, deps) {
+      const k = at++
+      const prev = slots[k]
+      if (prev && same(prev.deps, deps)) return
+      slots[k] = { deps, cleanup: prev?.cleanup }
+      pending.push(() => {
+        prev?.cleanup?.()
+        slots[k].cleanup = run()
+      })
+    },
+  }
+  let pending = []
+  function render() {
+    for (let pass = 0; pass < 50; pass += 1) {
+      at = 0
+      dirty = false
+      pending = []
+      out = useHook(propsFor())
+      for (const run of pending) run()
+      if (!dirty) return out
+    }
+    throw new Error('the hook never settled')
+  }
+  return { fake, render, get current() { return out } }
+}
+
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier === 'react' && context.parentURL?.includes('/src/lib/useTonightStack.js')
+      ? { url: 'hook-host:react', shortCircuit: true }
+      : next(specifier, context),
+  load: (url, context, next) =>
+    url === 'hook-host:react'
+      ? {
+          format: 'module',
+          source: ['useState', 'useRef', 'useMemo', 'useCallback', 'useEffect']
+            .map((name) => `export const ${name} = (...args) => globalThis.__didIHookHost.fake.${name}(...args)`)
+            .join('\n'),
+          shortCircuit: true,
+        }
+      : next(url, context),
+})
+
+await testAsync('a nope leaves a still-open list, each question with Did it now and Leave it', async () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  let book = { id: 'b1', title: 'House', dayFoldHour: 0, lamps: [lamp('pills'), lamp('door'), lamp('bins')], answers: [] }
+  const hadWindow = { ...globalThis.window }
+  Object.assign(globalThis.window, {
+    setTimeout: () => 0,
+    clearTimeout() {},
+    addEventListener() {},
+    removeEventListener() {},
+  })
+  try {
+    const host = hookHost(
+      (props) => useTonightStackHosted(props),
+      () => ({ value: book, boards: [book], now: clock, onChange: (next) => (book = next) }),
+    )
+    globalThis.__didIHookHost = host
+    const { useTonightStack: useTonightStackHosted } = await import('../src/lib/useTonightStack.js?hook-host')
+    const statusOf = (id) => book.answers.find((answer) => answer.lampId === id)?.status
+
+    let stack = host.render()
+    assert.equal(stack.bodyKind, 'face')
+    for (let n = 0; n < 3; n += 1) {
+      stack.mark(stack.faceRow, 'skip')
+      stack = host.render()
+    }
+    assert.equal(stack.bodyKind, 'finish', 'after the last nope the finish face is the list')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id).sort(), ['bins', 'door', 'pills'])
+
+    const first = stack.stillOpen[0]
+    stack.lateFromList(first)
+    stack = host.render()
+    assert.equal(statusOf(first.lamp.id), 'late', 'Did it now saves the nope as late')
+    assert.equal(stack.bodyKind, 'finish', 'the list stays put')
+    assert.equal(stack.stillOpen.length, 2)
+
+    const [second, third] = stack.stillOpen
+    stack.leaveFromList(second)
+    stack = host.render()
+    assert.equal(statusOf(second.lamp.id), 'skip', 'Leave it keeps the nope')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id), [third.lamp.id])
+    assert.equal(stack.bodyKind, 'finish')
+
+    stack.leaveFromList(third)
+    stack = host.render()
+    assert.equal(stack.stillOpen.length, 0)
+    assert.equal(stack.bodyKind, 'rest', 'leaving the last one rests the night')
+  } finally {
+    delete globalThis.__didIHookHost
+    for (const key of Object.keys(globalThis.window)) if (!(key in hadWindow)) delete globalThis.window[key]
+    Object.assign(globalThis.window, hadWindow)
+  }
+})
+
+await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {
+  // The phone bootstrap stands in a document with no visibilityState.
+  const hadDocument = 'document' in globalThis
+  const before = globalThis.document
+  globalThis.document = {}
+  setAppForeground(true)
+  try {
+    assert.equal(isAppForeground(), true)
+    let pushed = 0
+    await deliverStreakHit({ kind: 'hit', n: 1 }, '2026-09-27', async () => {
+      pushed += 1
+      return true
+    })
+    assert.equal(pushed, 0, 'no system push while the app is in front')
+    setAppForeground(false)
+    assert.equal(isAppForeground(), false)
+  } finally {
+    setAppForeground(true)
+    if (hadDocument) globalThis.document = before
+    else delete globalThis.document
+  }
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

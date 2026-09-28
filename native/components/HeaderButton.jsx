@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet } from 'react-native'
+import { ripple } from '../lib/ripple.js'
 
 export const HEADER_BUTTON = 40
 
@@ -17,23 +18,27 @@ export const headerLift = {
   elevation: 3,
 }
 
-/** Round floating control for the header. Pass `ref` to measure it. */
-export function HeaderButton({ ref, colors, onPress, label, expanded, on = false, children }) {
+/**
+ * Round control for the header. Pass `ref` to measure it. `bare` drops the
+ * app's own surface: the iOS bar puts items on glass, and a Material top app
+ * bar uses plain icon buttons.
+ */
+export function HeaderButton({ ref, colors, onPress, label, expanded, on = false, bare = false, children }) {
   return (
     <Pressable
       ref={ref}
       onPress={onPress}
       hitSlop={6}
       collapsable={false}
+      android_ripple={ripple(colors.panel3, true)}
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={expanded == null ? undefined : { expanded }}
-      style={({ pressed }) => [
-        styles.button,
-        headerSurface(colors),
-        on && { borderColor: colors.onDeep },
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) =>
+        bare
+          ? [styles.bare, pressed && { backgroundColor: colors.panel3 }]
+          : [styles.button, headerSurface(colors), on && { borderColor: colors.onDeep }, pressed && styles.pressed]
+      }
     >
       {children}
     </Pressable>
@@ -43,6 +48,13 @@ export function HeaderButton({ ref, colors, onPress, label, expanded, on = false
 const styles = StyleSheet.create({
   button: {
     ...headerLift,
+    width: HEADER_BUTTON,
+    height: HEADER_BUTTON,
+    borderRadius: HEADER_BUTTON / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bare: {
     width: HEADER_BUTTON,
     height: HEADER_BUTTON,
     borderRadius: HEADER_BUTTON / 2,

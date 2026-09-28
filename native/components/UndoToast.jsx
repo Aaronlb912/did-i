@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
+import { useHoldMarks } from '../lib/mark-hold.js'
 import { fonts } from '../theme.js'
 
 class ToastBoundary extends Component {
@@ -29,6 +30,8 @@ function UndoToastInner({ undo, onUndo, colors }) {
 
   // Shake still undoes where the sensor works, but it was not reliable enough to promise.
   useShakeUndo(live, onUndo)
+  // A new mark waits until the pill is gone, so the two never stack up.
+  useHoldMarks(live)
 
   useEffect(() => {
     if (!live) {
@@ -80,11 +83,13 @@ export function UndoToast(props) {
 }
 
 const styles = StyleSheet.create({
+  // At the foot of Tonight, clear of the card and its buttons above and of
+  // the tab bar below (the page already stops above it).
   wrap: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 76,
+    bottom: 4,
     alignItems: 'center',
     zIndex: 12,
     elevation: 12,

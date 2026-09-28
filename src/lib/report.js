@@ -18,6 +18,19 @@ export function sendError(detail) {
   send(payload(detail))
 }
 
+// For work nobody awaits: the failure reaches the report (when diagnostics
+// are on) instead of rejecting unhandled or vanishing.
+export function reportRejection(where) {
+  return (error) => {
+    sendError({
+      at: new Date().toISOString(),
+      what: String(error?.message || error || 'rejection'),
+      where,
+      page: globalThis.window?.location?.hash || '',
+    })
+  }
+}
+
 function send(detail) {
   if (!URL) return
   try {

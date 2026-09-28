@@ -5,7 +5,7 @@ import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { didYouNewsLines, dismissPeopleNews, usePeoplePulse } from '../../src/lib/people.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { HEADER_BAR, useHeaderTop } from '../hooks/useHeaderSpace.js'
+import { useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { headerLift } from './HeaderButton.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -18,7 +18,7 @@ export function DidYouBanner({ path, colors }) {
   const account = useAccount()
   const { news } = usePeoplePulse(account.user)
   const reduce = useReduceMotion()
-  const top = useHeaderTop() + HEADER_BAR + 8
+  const top = useHeaderBottom() + 8
   const fade = useRef(new Animated.Value(0)).current
   const slide = useRef(new Animated.Value(-10)).current
   const lines = news ? didYouNewsLines(news) : null

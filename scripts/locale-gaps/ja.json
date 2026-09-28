@@ -789,5 +789,15 @@
   "web.landing.b3": "スマホにインストール。圏外でも使えます。",
   "web.landing.b4": "コイン、ジェム、cheer、ストリークはこの端末に残ります。",
   "web.landing.closeTitle": "同じ心配をぐるぐるしない",
-  "web.landing.closeLead": "ウェイトリストに参加すると、公開が近づいたらメールします。"
+  "web.landing.closeLead": "ウェイトリストに参加すると、公開が近づいたらメールします。",
+  "auth.tagline": "一晩に一つの質問。",
+  "first.next": "続ける",
+  "first.back": "戻る",
+  "first.stepOf": "{n} / {total}",
+  "first.timeTitle": "いつ聞けばいい？",
+  "notify.primerKicker": "リマインダー",
+  "notify.primerTitle": "{time} に聞きます",
+  "notify.primerBody": "リマインダーをオンにすると、この質問が開いたときにこの端末が知らせる。",
+  "notify.primerGo": "オンにする",
+  "notify.primerSkip": "今はしない"
 }

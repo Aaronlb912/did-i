@@ -12,6 +12,7 @@ import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 
 import com.aaronbryant.didi.widget.WidgetTapPackage
+import com.aaronbryant.didi.color.DynamicColorPackage
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
@@ -26,6 +27,7 @@ class MainApplication : Application(), ReactApplication {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
           add(WidgetTapPackage())
+          add(DynamicColorPackage())
         }
     )
   }

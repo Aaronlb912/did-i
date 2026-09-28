@@ -1,5 +1,10 @@
 // Same routes as src/site/hash.js, backed by React Navigation on native.
+// Every route is its own native-stack screen named by its path, pushed over
+// the hall: the system tab bar with Tonight ('/', '/home', '/tonight') and
+// Questions ('/lamps'). goHash stays the one call
+// the screens make, so they read the same as the web.
 
+import { CommonActions, createNavigationContainerRef, StackActions } from '@react-navigation/native'
 import { markWelcomeSeen } from '../../src/lib/hall-pages.js'
 
 const ROUTES = new Set([
@@ -47,65 +52,22 @@ const ROUTES = new Set([
   '/sent',
 ])
 
-const STACK_KEY = 'did-i-stack'
-const ROOT_ROUTES = new Set(['/', '/home', '/tonight', '/lamps', '/later'])
-const FALLBACK = {
-  '/friends': '/people',
-  '/people/connect': '/people',
-  '/people/refer': '/people/connect',
-  '/family': '/people',
-  '/inbox': '/people',
-  '/sent': '/people',
-  '/account': '/settings',
-  '/kit': '/shop',
-  '/gems': '/shop',
-  '/shop/looks': '/shop',
-  '/shop/cheers': '/shop',
-  '/shop/buddies': '/shop',
-  '/settings/phone': '/settings',
-  '/pings': '/settings',
-  '/me': '/settings',
-  '/help': '/settings',
-  '/ideas': '/settings',
-  '/about': '/settings',
-  '/privacy': '/settings',
-  '/terms': '/settings',
-  '/add': '/lamps',
-  '/hang': '/lamps',
-  '/lamp': '/lamps',
-  '/search': '/lamps',
-  '/week': '/',
-  '/calendar': '/',
-  '/streaks': '/',
-  '/stats': '/',
-  '/feed': '/',
-  '/marks': '/',
-  '/shop': '/',
-  '/settings': '/',
-  '/people': '/',
-}
+/** The root screen every other route is pushed over. */
+export const HALL = 'hall'
+export const HALL_PATHS = new Set(['/', '/home', '/tonight', '/lamps'])
+const TAB_OF = { '/': '/tonight', '/home': '/tonight', '/tonight': '/tonight', '/lamps': '/lamps' }
+/** One native-stack screen per route that is not the hall. */
+export const STACK_PATHS = [...ROUTES].filter((path) => !HALL_PATHS.has(path))
+/** Screens with their own way out; the edge swipe would skip it. */
+export const OWN_BACK = new Set(['/first', '/welcome', '/enter'])
 
-let navigate = null
+export const navigationRef = createNavigationContainerRef()
+
+// The tag filter follows you from screen to screen, like the web's ?tag=.
+let tag = ''
 let current = { path: '/tonight', face: '', id: '', start: '', tag: '', copy: '' }
-let muteStack = false
+let pending = null
 const listeners = new Set()
-
-function readStack() {
-  try {
-    const raw = sessionStorage.getItem(STACK_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function writeStack(stack) {
-  try {
-    sessionStorage.setItem(STACK_KEY, JSON.stringify(stack.slice(-50)))
-  } catch {
-    // ok
-  }
-}
 
 function routeKey(route = current) {
   const params = new URLSearchParams()
@@ -117,68 +79,83 @@ function routeKey(route = current) {
   return qs ? `${route.path}?${qs}` : route.path
 }
 
-function routeFromKey(key) {
-  const [pathPart, query = ''] = key.split('?')
-  const path = cleanPath(pathPart)
-  const params = new URLSearchParams(query)
+/** The hash route a navigation route stands for. */
+export function routeFromScreen(screen) {
+  const params = screen?.params || {}
+  // The hall before its tabs mount is Tonight.
+  const name = screen?.name === HALL ? '/tonight' : screen?.name
   return {
-    path,
-    face: params.get('face') || '',
-    id: params.get('id') || '',
-    start: params.get('start') || '',
-    tag: params.get('tag') || '',
-    copy: params.get('copy') || '',
+    path: cleanPath(name),
+    face: params.face || '',
+    id: params.id || '',
+    start: params.start || '',
+    tag,
+    copy: params.copy || '',
   }
 }
 
-function applyRouteKey(key) {
-  current = routeFromKey(key)
-  navigate?.(current)
-  notify()
+function paramsOf(route) {
+  return { face: route.face, id: route.id, start: route.start, copy: route.copy }
 }
 
-export function peekBackRoute() {
-  const stack = readStack()
-  if (stack.length > 1) return routeFromKey(stack[stack.length - 2])
-  const parent = FALLBACK[current.path]
-  if (parent) {
-    return {
-      ...current,
-      path: parent,
-      face: '',
-      id: '',
-      start: '',
-      copy: '',
-    }
-  }
-  return null
+function ready() {
+  return navigationRef.isReady()
 }
 
-export function syncNav() {
-  if (muteStack) return
-  const key = routeKey()
-  let stack = readStack()
-  if (!stack.length) {
-    writeStack([key])
+function go(route) {
+  if (!ready()) {
+    pending = route
     return
   }
-  if (stack[stack.length - 1] === key) return
-  const hit = stack.lastIndexOf(key)
-  if (hit >= 0) {
-    writeStack(stack.slice(0, hit + 1))
+  const state = navigationRef.getRootState()
+  const routes = state?.routes || []
+  if (!routes.length) {
+    pending = route
     return
   }
-  stack.push(key)
-  writeStack(stack)
+  if (HALL_PATHS.has(route.path)) {
+    if (routes.length > 1) navigationRef.dispatch(StackActions.popToTop())
+    navigationRef.dispatch(
+      CommonActions.navigate(HALL, { screen: TAB_OF[route.path], params: paramsOf(route) }),
+    )
+    return
+  }
+  // Already in the stack: go back to it, the same as the web trims its history.
+  const key = routeKey(route)
+  const at = routes.findIndex((screen) => routeKey(routeFromScreen(screen)) === key)
+  if (at >= 0) {
+    if (at < routes.length - 1) navigationRef.dispatch(StackActions.pop(routes.length - 1 - at))
+    return
+  }
+  navigationRef.dispatch(StackActions.push(route.path, paramsOf(route)))
 }
 
+/** A goHash that came before the stack was mounted runs once it is. */
+export function flushNavigation() {
+  const next = pending
+  pending = null
+  if (next) go(next)
+}
+
+/** The stack moved by itself (edge swipe, header back, system back). */
+export function syncFromNavigation() {
+  if (!ready()) return
+  const screen = navigationRef.getCurrentRoute()
+  if (!screen) return
+  const next = routeFromScreen(screen)
+  if (routeKey(next) !== routeKey(current)) {
+    current = next
+    notify()
+  }
+  for (const entry of [...redirects]) redirectIfAt(entry)
+}
+
+/** A screen is pushed over the hall. Switching tabs is not history to go back through. */
 export function canGoBack() {
-  const { path } = current
-  if (ROOT_ROUTES.has(path)) return false
-  if (readStack().length > 1) return true
-  return Boolean(FALLBACK[path])
+  return ready() && (navigationRef.getRootState()?.routes?.length || 0) > 1
 }
 
+/** Back from the current screen. False when there is nowhere to go, so Android can leave the app. */
 export function goBack(opts = {}) {
   // A plate or sheet gets first refusal on back, the same as the web.
   const event = {
@@ -193,42 +170,51 @@ export function goBack(opts = {}) {
   } catch {
     // ok
   }
-  if (event.defaultPrevented) return
+  if (event.defaultPrevented) return true
 
   const { path } = current
   if (path === '/welcome') {
     markWelcomeSeen()
     goHash(opts.emptyHall ? '/first' : '/')
-    return
+    return true
   }
   if (path === '/enter') {
     if (!opts.needsEnter) goHash('/')
-    return
+    return true
   }
   // The first question has to be added before anything else opens.
-  if (path === '/first') return
+  if (path === '/first') return true
 
-  const stack = readStack()
-  if (stack.length > 1) {
-    stack.pop()
-    const prev = stack[stack.length - 1]
-    writeStack(stack)
-    muteStack = true
-    applyRouteKey(prev)
-    muteStack = false
-    return
+  // Includes Questions back to Tonight, the Material way.
+  if (ready() && navigationRef.canGoBack()) {
+    navigationRef.goBack()
+    return true
   }
-
-  const parent = FALLBACK[path]
-  if (parent) {
-    goHash(parent)
-    return
+  if (!HALL_PATHS.has(path)) {
+    goHash('/')
+    return true
   }
-  if (!ROOT_ROUTES.has(path)) goHash('/')
+  return false
 }
 
-export function bindNavigation(fn) {
-  navigate = fn
+function samePlace(a, b) {
+  return a === b || (HALL_PATHS.has(a) && TAB_OF[a] === TAB_OF[b])
+}
+
+const redirects = new Set()
+
+function redirectIfAt({ from, to, when }) {
+  if (samePlace(current.path, from) && when()) goHash(to)
+}
+
+/** While mounted, sends `from` on to `to` each time the stack settles on it and `when()` still holds. */
+export function redirectFrom(from, to, when = () => true) {
+  const entry = { from, to, when }
+  redirects.add(entry)
+  redirectIfAt(entry)
+  return () => {
+    redirects.delete(entry)
+  }
 }
 
 export function onRoute(fn) {
@@ -292,23 +278,21 @@ export function goFromPush(where) {
 export function goHash(path, extras = '') {
   const extra = extrasToParams(extras)
   const nextPath = cleanPath(path)
-  if (extra.tag === undefined && current.tag) extra.tag = current.tag
-  if (extra.tag === 'all') extra.tag = ''
+  if (extra.tag !== undefined) tag = extra.tag === 'all' ? '' : extra.tag
   current = {
     path: nextPath,
     face: extra.face || '',
     id: extra.id || '',
     start: extra.start || '',
-    tag: extra.tag || '',
+    tag,
     copy: extra.copy || '',
   }
   const hash = nextPath === '/' ? '#/' : `#${nextPath}`
   if (global.window?.location) global.window.location.hash = hash
   notify()
   try {
-    navigate?.(current)
+    go(current)
   } catch {
     // The screen already moved. A navigator reject must not freeze the tap.
   }
-  syncNav()
 }

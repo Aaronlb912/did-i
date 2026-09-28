@@ -834,5 +834,15 @@
   "web.landing.b3": "Instale no telefone. Funciona sem sinal.",
   "web.landing.b4": "Moedas, gemas, cheer e sequência ficam neste telefone.",
   "web.landing.closeTitle": "Pare de rodar a mesma dúvida",
-  "web.landing.closeLead": "Entre na lista e avisamos quando o lançamento estiver perto."
+  "web.landing.closeLead": "Entre na lista e avisamos quando o lançamento estiver perto.",
+  "auth.tagline": "Uma pergunta, uma vez por noite.",
+  "first.next": "Continuar",
+  "first.back": "Voltar",
+  "first.stepOf": "{n} de {total}",
+  "first.timeTitle": "Quando devemos perguntar?",
+  "notify.primerKicker": "Lembretes",
+  "notify.primerTitle": "Vamos perguntar-te às {time}",
+  "notify.primerBody": "Liga os lembretes e este telefone pode avisar-te quando esta pergunta abrir.",
+  "notify.primerGo": "Ligar",
+  "notify.primerSkip": "Agora não"
 }

@@ -1,16 +1,21 @@
+import { useContext } from 'react'
+import { Platform } from 'react-native'
+import { HeaderHeightContext } from '@react-navigation/elements'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-export const HEADER_BAR = 44
-export const HEADER_FADE = 30
-const HEADER_DROP = 4
-const CONTENT_GAP = 12
+/** The bar row: the iOS navigation bar, or the Material 3 top app bar. */
+export const HEADER_BAR = Platform.OS === 'ios' ? 44 : 64
 
-/** Top of the floating header row, measured from the top of the screen. */
-export function useHeaderTop() {
-  return useSafeAreaInsets().top + HEADER_DROP
+/** Bottom edge of the header row, measured from the top of the screen. */
+export function useHeaderBottom() {
+  return useSafeAreaInsets().top + HEADER_BAR
 }
 
-/** How far screen content starts below the top so it clears the floating header. */
-export function useHeaderSpace() {
-  return useHeaderTop() + HEADER_BAR + CONTENT_GAP
+/**
+ * How far a page that does not scroll sits below the iOS navigation bar, which
+ * floats over it. Android's top app bar is in the page flow, so it is 0 there.
+ */
+export function useHeaderInset() {
+  const height = useContext(HeaderHeightContext)
+  return Platform.OS === 'ios' ? height || 0 : 0
 }

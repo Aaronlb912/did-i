@@ -23,6 +23,7 @@ function blankPrefs() {
     lessMotion: false,
     diagnosticsAsked: false,
     shareDiagnostics: false,
+    matchWallpaper: false,
     widgetLookMode: 'tag',
     widgetLookId: 'lime',
     widgetOpenOnly: false,
@@ -53,6 +54,7 @@ function cleanPrefs(raw) {
   if (raw?.lessMotion === true) next.lessMotion = true
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
+  if (raw?.matchWallpaper === true) next.matchWallpaper = true
   if (raw?.widgetLookMode === 'pick') next.widgetLookMode = 'pick'
   if (typeof raw?.widgetLookId === 'string') {
     const id = raw.widgetLookId.trim()

@@ -21,20 +21,19 @@ import { mergeShelves } from '../../src/lib/shelf-merge.js'
 import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { useWallpaperPalette } from '../lib/dynamic-color.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import {
-  PageTitle,
   SetCap,
   SetCard,
   SetNote,
-  SetPick,
   SetRow,
-  SetSheet,
   SetSwitch,
 } from '../components/SetBits.jsx'
 
@@ -50,7 +49,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
 
   return (
     <BoardShell book={book} title={t('settings.title')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.title')}</PageTitle>
       <SetNote colors={colors}>{t('settings.phoneBody')}</SetNote>
 
       <SetCap colors={colors}>{t('settings.title')}</SetCap>
@@ -85,6 +83,7 @@ export function PhoneSettingsScreen({ book, onChange }) {
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="logout"
           label={t('settings.signOut')}
           note={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
           danger
@@ -100,21 +99,19 @@ export function PhoneSettingsScreen({ book, onChange }) {
   )
 }
 
+// The widget's "same as folder" choice, next to look ids in one list.
+const WIDGET_LOOK_TAG = ':folder'
+
 export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCopy }) {
   const colors = useHallColors(book)
   const prefs = usePrefs()
   const account = useAccount()
+  const wallpaper = useWallpaperPalette()
   const [confirm, setConfirm] = useState(null)
-  const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
-
-  function widgetLookWords() {
-    if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
-    return t(`look.${widget.lookId}.name`)
-  }
 
   async function pickFile() {
     try {
@@ -165,12 +162,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.kicker')}</PageTitle>
 
       <SetCap colors={colors}>{t('account.kicker')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="person"
+          tint={colors.on}
           label={t('settings.account')}
           sub={account.email ? t('settings.accountSub') : t('settings.accountOffSub')}
           value={account.email || t('settings.accountOff')}
@@ -179,6 +177,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="people"
+          tint={colors.late}
           label={t('people.kicker')}
           sub={t('people.rowSub')}
           chevron
@@ -188,47 +188,79 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('settings.look')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
+        <SetChoice
           colors={colors}
+          icon="moon"
+          tint={colors.late}
           label={t('settings.theme')}
-          value={t(`theme.${prefs.theme}`)}
-          chevron
-          onPress={() => setSheet('theme')}
+          options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
+          selected={prefs.theme}
+          onSelect={(id) => writePrefs({ theme: id })}
         />
-        <SetRow
+        <SetChoice
           colors={colors}
+          icon="clock"
+          tint={colors.on}
           label={t('settings.clock')}
-          value={t(`clock.${prefs.clock}`)}
-          chevron
-          onPress={() => setSheet('clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
         />
-        <SetRow
+        <SetChoice
           colors={colors}
+          icon="globe"
+          tint={colors.late}
           label={t('settings.language')}
-          value={t(`lang.${prefs.locale}`)}
-          chevron
-          onPress={() => setSheet('lang')}
+          options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
+          selected={prefs.locale}
+          onSelect={(id) => writePrefs({ locale: id })}
         />
         <SetSwitch
           colors={colors}
+          icon="motion"
+          tint={colors.on}
+          last={!(Platform.OS === 'android' && wallpaper)}
           label={t('settings.lessMotion')}
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
         />
+        {Platform.OS === 'android' && wallpaper ? (
+          <SetSwitch
+            colors={colors}
+            icon="wallpaper"
+            tint={colors.late}
+            last
+            label={t('settings.matchWallpaper')}
+            sub={t('settings.matchWallpaperSub')}
+            on={prefs.matchWallpaper}
+            onPress={() => writePrefs({ matchWallpaper: !prefs.matchWallpaper })}
+          />
+        ) : null}
       </SetCard>
 
       <SetCap colors={colors}>{t('widget.settings.cap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
+        <SetChoice
           colors={colors}
+          icon="grid"
+          tint={colors.on}
           label={t('widget.settings.look')}
           sub={t('widget.settings.lookSub')}
-          value={widgetLookWords()}
-          chevron
-          onPress={() => setSheet('widgetLook')}
+          options={[
+            { id: WIDGET_LOOK_TAG, label: t('widget.settings.lookTag') },
+            ...widgetLooks.map((id) => ({ id, label: t(`look.${id}.name`) })),
+          ]}
+          selected={widget.lookMode === 'tag' ? WIDGET_LOOK_TAG : widget.lookId}
+          onSelect={(id) =>
+            applyWidgetPrefs(
+              id === WIDGET_LOOK_TAG ? { widgetLookMode: 'tag' } : { widgetLookMode: 'pick', widgetLookId: id },
+            )
+          }
         />
         <SetSwitch
           colors={colors}
+          icon="filter"
+          tint={colors.late}
           label={t('widget.settings.openOnly')}
           sub={t('widget.settings.openOnlySub')}
           on={widget.openOnly}
@@ -240,19 +272,32 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="clock"
+          tint={colors.on}
           label={t('settings.fold')}
           sub={t('settings.foldSub', { zone: zoneWords() })}
           value={t('settings.foldAt')}
         />
-        <SetRow colors={colors} label={t('settings.reminders')} chevron onPress={() => goHash('/pings')} />
+        <SetRow
+          colors={colors}
+          icon="bell"
+          tint={colors.late}
+          label={t('settings.reminders')}
+          chevron
+          onPress={() => goHash('/pings')}
+        />
         <SetSwitch
           colors={colors}
+          icon="volume"
+          tint={colors.on}
           label={t('settings.soundOn')}
           on={Boolean(book?.clickSound)}
           onPress={() => onChange?.({ ...book, clickSound: !book.clickSound })}
         />
         <SetSwitch
           colors={colors}
+          icon="eye"
+          tint={colors.late}
           label={t('settings.hideMarks')}
           on={Boolean(book?.quietMode)}
           onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
@@ -261,13 +306,30 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('tags.aria')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} label={t('tags.aria')} sub={t('tags.openHint')} chevron onPress={() => goHash('/me')} />
-        <SetRow colors={colors} label={t('marks.kicker')} chevron onPress={() => goHash('/marks')} />
+        <SetRow
+          colors={colors}
+          icon="folder"
+          tint={colors.on}
+          label={t('tags.aria')}
+          sub={t('tags.openHint')}
+          chevron
+          onPress={() => goHash('/me')}
+        />
+        <SetRow
+          colors={colors}
+          icon="collection"
+          tint={colors.late}
+          label={t('marks.kicker')}
+          chevron
+          onPress={() => goHash('/marks')}
+        />
       </SetCard>
 
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="settings"
+          tint={colors.inkSoft}
           label={t('settings.title')}
           sub={t('settings.phoneSub')}
           chevron
@@ -278,19 +340,44 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCap colors={colors}>{t('settings.help')}</SetCap>
       <SetCard colors={colors}>
         {onSendCopy ? (
-          <SetRow colors={colors} label={t('settings.sendCopy')} sub={t('settings.sendCopySub')} onPress={onSendCopy} />
+          <SetRow
+            colors={colors}
+            icon="note"
+            tint={colors.inkSoft}
+            label={t('settings.sendCopy')}
+            sub={t('settings.sendCopySub')}
+            onPress={onSendCopy}
+          />
         ) : (
           <SetRow
             colors={colors}
+            icon="note"
+            tint={colors.inkSoft}
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
             onPress={() => shareShelf(readShelf())}
           />
         )}
-        <SetRow colors={colors} label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onPress={pickFile} />
-        <SetRow colors={colors} label={t('settings.how')} chevron onPress={() => goHash('/help')} />
         <SetRow
           colors={colors}
+          icon="note"
+          tint={colors.late}
+          label={t('settings.loadCopy')}
+          sub={t('settings.loadCopySub')}
+          onPress={pickFile}
+        />
+        <SetRow
+          colors={colors}
+          icon="help"
+          tint={colors.on}
+          label={t('settings.howDidIWorks')}
+          chevron
+          onPress={() => goHash('/help')}
+        />
+        <SetRow
+          colors={colors}
+          icon="note"
+          tint={colors.late}
           label={t('feedback.send')}
           sub={t('feedback.sub')}
           onPress={() => {
@@ -298,9 +385,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             if (url) Linking.openURL(url)
           }}
         />
-        <SetRow colors={colors} label={t('settings.ideas')} chevron onPress={() => goHash('/ideas')} />
-        <SetRow colors={colors} label={t('settings.what')} chevron onPress={() => goHash('/about')} />
-        <SetRow colors={colors} label={t('settings.intro')} chevron onPress={() => goHash('/welcome')} />
+        <SetRow
+          colors={colors}
+          icon="play"
+          tint={colors.on}
+          label={t('settings.replayIntro')}
+          chevron
+          last
+          onPress={() => goHash('/welcome')}
+        />
       </SetCard>
       {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
 
@@ -308,6 +401,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetSwitch
           colors={colors}
+          icon="shield"
+          tint={colors.late}
           label={t('settings.diagnostics')}
           sub={t('settings.diagnosticsSub')}
           on={Boolean(prefs.shareDiagnostics)}
@@ -315,17 +410,20 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="shield"
+          tint={colors.inkSoft}
           label={t('settings.phonePrivacy')}
           sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
           chevron
+          last
           onPress={() => Linking.openSettings()}
         />
       </SetCard>
 
       <SetCap colors={colors}>{t('settings.legal')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} label={t('settings.privacy')} chevron onPress={() => goHash('/privacy')} />
-        <SetRow colors={colors} label={t('settings.terms')} chevron onPress={() => goHash('/terms')} />
+        <SetRow colors={colors} icon="note" tint={colors.inkSoft} label={t('settings.privacy')} chevron onPress={() => goHash('/privacy')} />
+        <SetRow colors={colors} icon="note" tint={colors.inkSoft} label={t('settings.terms')} chevron last onPress={() => goHash('/terms')} />
       </SetCard>
       {!legalEmail() ? <Text style={[styles.miss, { color: colors.miss }]}>{t('legal.operatorWarn')}</Text> : null}
 
@@ -334,6 +432,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         {onStartEmpty ? (
           <SetRow
             colors={colors}
+            icon="warning"
             label={t('settings.emptyBoard')}
             danger
             onPress={() =>
@@ -349,82 +448,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         ) : null}
       </SetCard>
 
-      {sheet === 'theme' ? (
-        <SetSheet colors={colors} title={t('settings.theme')} onClose={() => setSheet(null)}>
-          {THEME_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`theme.${id}`)}
-              on={prefs.theme === id}
-              onPress={() => {
-                writePrefs({ theme: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'clock' ? (
-        <SetSheet colors={colors} title={t('settings.clock')} onClose={() => setSheet(null)}>
-          {CLOCK_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`clock.${id}`)}
-              on={prefs.clock === id}
-              onPress={() => {
-                writePrefs({ clock: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'lang' ? (
-        <SetSheet colors={colors} title={t('settings.language')} onClose={() => setSheet(null)}>
-          {LOCALE_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`lang.${id}`)}
-              on={prefs.locale === id}
-              onPress={() => {
-                writePrefs({ locale: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'widgetLook' ? (
-        <SetSheet colors={colors} title={t('widget.settings.look')} onClose={() => setSheet(null)}>
-          <SetPick
-            colors={colors}
-            label={t('widget.settings.lookTag')}
-            on={widget.lookMode === 'tag'}
-            onPress={() => {
-              applyWidgetPrefs({ widgetLookMode: 'tag' })
-              setSheet(null)
-            }}
-          />
-          {widgetLooks.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`look.${id}.name`)}
-              on={widget.lookMode === 'pick' && widget.lookId === id}
-              onPress={() => {
-                applyWidgetPrefs({ widgetLookMode: 'pick', widgetLookId: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
     </BoardShell>
   )
 }

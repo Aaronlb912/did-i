@@ -37,6 +37,7 @@ const NATIVE_SHIMS = [
   ['react-native-android-widget', 'android-widget-safe.cjs'],
   ['@expo/ui/swift-ui', 'ui-swift-safe.cjs'],
   ['@expo/ui/swift-ui/modifiers', 'ui-swift-modifiers-safe.cjs'],
+  ['@expo/ui/jetpack-compose', 'ui-compose-safe.cjs'],
 ]
 
 function shimPath(file) {

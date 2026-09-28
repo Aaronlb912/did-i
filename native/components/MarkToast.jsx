@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { markText } from '../../src/lib/achievements.js'
 import { t } from '../../src/lib/i18n.js'
@@ -6,8 +6,20 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { KeyButton } from './ui.jsx'
 import { fonts } from '../theme.js'
 
-export function MarkToast({ mark, onClose, colors }) {
-  const { bottom } = useAppInsets()
+// A beat before a mark shows, so whatever just happened (an answer, the
+// night's celebration) can claim the moment first.
+const SETTLE_MS = 350
+
+export function MarkToast({ mark: next, onClose, colors }) {
+  const { overlayBottom: bottom } = useAppInsets()
+  const [mark, setMark] = useState(null)
+
+  useEffect(() => {
+    setMark(null)
+    if (!next) return undefined
+    const timer = setTimeout(() => setMark(next), SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [next])
 
   useEffect(() => {
     if (!mark) return undefined
@@ -19,11 +31,8 @@ export function MarkToast({ mark, onClose, colors }) {
 
   return (
     <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
-      <View
-        style={[styles.toast, { backgroundColor: colors.panel2, borderColor: colors.line }]}
-        accessibilityLiveRegion="polite"
-      >
-        <View style={styles.copy}>
+      <View style={[styles.toast, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <View style={styles.copy} accessibilityLiveRegion="polite">
           <Text style={[styles.kicker, { color: colors.on }]}>{t('marks.new')}</Text>
           <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
             {t(markText(mark.id, 'name'))}

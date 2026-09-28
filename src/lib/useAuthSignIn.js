@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { accountMissText, checkCode, looksLikeEmail, sendCode, signInReviewer } from './account.js'
 import { canShowAppleSignIn, signInWithApple } from './apple-sign-in'
 import { canShowGoogleSignIn, signInWithGoogle } from './google-sign-in'
@@ -14,13 +14,18 @@ export function useAuthSignIn({ onSignedIn }) {
   const [step, setStep] = useState('start')
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // Which control the last error belongs to, so it prints next to that
+  // button instead of always reading as the email field's problem.
+  const [missSource, setMissSource] = useState('')
+  const signedIn = useRef(onSignedIn)
+  signedIn.current = onSignedIn
 
   const finish = useCallback(async () => {
     clearAuthSkip()
     armSyncForUser()
     await pullAndMerge()
-    onSignedIn?.()
-  }, [onSignedIn])
+    signedIn.current?.()
+  }, [])
 
   useEffect(() => {
     const db = cloud()
@@ -38,6 +43,7 @@ export function useAuthSignIn({ onSignedIn }) {
   async function askEmail() {
     if (!looksLikeEmail(email)) {
       setMiss(t('account.missEmail'))
+      setMissSource('email')
       return
     }
     setBusy(true)
@@ -45,6 +51,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setBusy(false)
     if (bad) {
       setMiss(accountMissText(bad))
+      setMissSource('email')
       return
     }
     setMiss('')
@@ -57,6 +64,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setBusy(false)
     if (bad) {
       setMiss(accountMissText(bad))
+      setMissSource('email')
       return
     }
     setMiss('')
@@ -69,6 +77,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setBusy(false)
     if (bad) {
       setMiss(accountMissText(bad))
+      setMissSource('email')
       return
     }
     setMiss('')
@@ -80,6 +89,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setStep('reviewer')
     setCode('')
     setMiss('')
+    setMissSource('')
   }
 
   function useDifferentEmail() {
@@ -88,16 +98,21 @@ export function useAuthSignIn({ onSignedIn }) {
     setCode('')
     setPassword('')
     setMiss('')
+    setMissSource('')
   }
 
   async function signInApple() {
     if (busy) return
     setBusy(true)
     setMiss('')
+    setMissSource('')
     const { miss: bad } = await signInWithApple()
     setBusy(false)
     if (bad) {
-      if (bad !== 'cancel') setMiss(accountMissText(bad))
+      if (bad !== 'cancel') {
+        setMiss(accountMissText(bad))
+        setMissSource('apple')
+      }
       return
     }
     await finish()
@@ -107,10 +122,14 @@ export function useAuthSignIn({ onSignedIn }) {
     if (busy) return
     setBusy(true)
     setMiss('')
+    setMissSource('')
     const { miss: bad } = await signInWithGoogle()
     setBusy(false)
     if (bad) {
-      if (bad !== 'cancel') setMiss(accountMissText(bad))
+      if (bad !== 'cancel') {
+        setMiss(accountMissText(bad))
+        setMissSource('google')
+      }
       return
     }
     await finish()
@@ -130,6 +149,7 @@ export function useAuthSignIn({ onSignedIn }) {
     busy,
     miss,
     setMiss,
+    missSource,
     askEmail,
     openEmail,
     useDifferentEmail,

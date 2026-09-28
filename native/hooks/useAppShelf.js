@@ -27,6 +27,7 @@ import {
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
   mergePurses,
@@ -84,7 +85,8 @@ function firstShelf() {
 
 export function useAppShelf() {
   const [shelf, setShelf] = useState(firstShelf)
-  const [markNote, setMarkNote] = useState(null)
+  // Marks unlocked together wait their turn instead of only the first showing.
+  const [marks, setMarks] = useState([])
   const book = useMemo(() => currentBook(shelf), [shelf])
   const live = book || emptyBoard()
   const route = readRoute()
@@ -126,7 +128,7 @@ export function useAppShelf() {
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      })
+      }).catch(reportRejection('night-coins'))
     }
     if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
@@ -134,15 +136,15 @@ export function useAppShelf() {
         const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      })
+      }).catch(reportRejection('weekly-gem'))
     }
     const after = currentBook(written)
-    if (after) scheduleNativePings(after)
+    if (after) scheduleNativePings(after).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
-      if (news[0]) setMarkNote({ id: news[0] })
+      if (news.length) setMarks((queue) => [...queue, ...news.filter((id) => !queue.some((mark) => mark.id === id)).map((id) => ({ id }))])
     }
     return { written, before, after }
   }, [shelf])
@@ -321,8 +323,8 @@ export function useAppShelf() {
     book: live,
     tagId,
     route,
-    markNote,
-    clearMark: useCallback(() => setMarkNote(null), []),
+    markNote: marks[0] || null,
+    clearMark: useCallback(() => setMarks((queue) => queue.slice(1)), []),
     persist,
     change,
     changeBooks,

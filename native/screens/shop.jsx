@@ -1,5 +1,5 @@
 import Constants from 'expo-constants'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -46,8 +46,6 @@ import {
 } from '../components/Cosmetic.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
-import { PageTitle } from '../components/SetBits.jsx'
-import { PurseLine } from '../components/PurseLine.jsx'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import {
   buyCheerStageWithCoins,
@@ -58,7 +56,8 @@ import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { CoinIcon, GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { kitTabDefault } from '../../src/lib/kit-tab.js'
-import { hallColors, fonts } from '../theme.js'
+import { fonts } from '../theme.js'
+import { useLookColors } from '../hooks/useHallColors.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -88,9 +87,7 @@ function wearLook(book, id) {
 }
 
 function useShopColors(book, peekLook = '') {
-  const theme = useTheme()
-  const coat = peekLook || activeLook(book)
-  return useMemo(() => hallColors(coat, theme), [coat, theme])
+  return useLookColors(peekLook || activeLook(book), !peekLook)
 }
 
 function PreviewButton({ onPress, selected, colors, children }) {
@@ -477,11 +474,7 @@ export function ShopScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined}>
-      <PageTitle colors={colors}>{t('shop.title')}</PageTitle>
-      <View style={styles.purseRow}>
-        <PurseLine purse={purse} colors={colors} gemsLink />
-      </View>
+    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
 
       <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={peekAt} />
@@ -584,6 +577,7 @@ export function ShopLooksScreen({ book, onChange }) {
       date={shellDate(book)}
       colors={colors}
       look={peekLook || undefined}
+      showPurse
     >
       <Meta colors={colors}>{t('shop.looksHint', { coins: LOOK_COIN_PRICE, gems: LOOK_GEM_PRICE })}</Meta>
 
@@ -630,7 +624,7 @@ export function ShopCheersScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</Meta>
 
       {CHEERS.map((item) => {
@@ -723,7 +717,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.buddies')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('shop.buddies')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.buddiesHint', { n: BUDDY_GEMS })}</Meta>
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
@@ -920,8 +914,16 @@ function KitTabs({ tab, onTab, counts, colors }) {
               },
             ]}
           >
-            <Text style={[styles.kitTabText, { color: on ? colors.on : colors.inkSoft }]}>{t(item.key)}</Text>
-            <Text style={[styles.kitTabN, { color: on ? colors.on : colors.inkDim }]}>{counts[item.id]}</Text>
+            <Text
+              style={[styles.kitTabText, { color: on ? colors.on : colors.inkSoft }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.4}
+            >
+              {t(item.key)}
+            </Text>
+            <Text style={[styles.kitTabN, { color: on ? colors.on : colors.inkDim }]} maxFontSizeMultiplier={1.4}>
+              {counts[item.id]}
+            </Text>
           </Pressable>
         )
       })}
@@ -1184,7 +1186,6 @@ export function CollectionScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
-  purseRow: { marginBottom: 4 },
   cap: {
     fontFamily: fonts.mono,
     fontSize: 11,

@@ -6,7 +6,7 @@ function fallback() {
     impactAsync: call,
     notificationAsync: call,
     selectionAsync: call,
-    ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+    ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
     NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
   })
 }

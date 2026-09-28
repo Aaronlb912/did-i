@@ -1289,7 +1289,7 @@ export function CheerBurst() {
   const reduce = useReduceMotion()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
-  const { bottom: navBottom } = useAppInsets()
+  const { overlayBottom: navBottom } = useAppInsets()
   const [burst, setBurst] = useState(null)
   const { width: winW, height: winH } = Dimensions.get('window')
   useEffect(() => {

@@ -81,6 +81,11 @@ import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
+import { MenuIcon } from '../components/MenuIcon.jsx'
+import { Slot } from '../components/Slot.jsx'
+import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
+import { AuthAppleSignIn } from '../components/AuthAppleSignIn.jsx'
+import { AuthGoogleSignIn } from '../components/AuthGoogleSignIn.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -110,8 +115,9 @@ function OfflineLine({ colors }) {
 function BlockModal({ person, colors, onClose, onDone }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
+          accessible={false}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
@@ -148,11 +154,51 @@ function BlockModal({ person, colors, onClose, onDone }) {
   )
 }
 
+function PreviewRow({ icon, title, body, colors }) {
+  return (
+    <View style={[styles.previewRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View style={[styles.previewIcon, { backgroundColor: colors.panel2 }]}>
+        <MenuIcon name={icon} color={colors.on} size={18} stroke />
+      </View>
+      <View style={styles.previewCopy}>
+        <Text style={[styles.previewTitle, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.previewBody, { color: colors.inkDim }]}>{body}</Text>
+      </View>
+    </View>
+  )
+}
+
+// Signed out, People was a dead end. A preview of what it does, then Apple
+// and Google sign-in right here instead of only a link to /account.
 function NeedAccount({ kicker, title, colors }) {
+  const auth = useAuthSignIn({})
   return (
     <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
-      <DidButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
+      <View style={styles.previewList}>
+        <PreviewRow
+          icon="people"
+          title={t('people.previewCheerTitle')}
+          body={t('people.previewCheerBody')}
+          colors={colors}
+        />
+        <PreviewRow
+          icon="home"
+          title={t('people.previewFamilyTitle')}
+          body={t('people.previewFamilyBody')}
+          colors={colors}
+        />
+      </View>
+      <Slot fallback={null}>
+        <AuthAppleSignIn colors={colors} auth={auth} or={false} />
+      </Slot>
+      <Slot fallback={null}>
+        <AuthGoogleSignIn colors={colors} auth={auth} or={false} />
+      </Slot>
+      {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
+      <View style={styles.previewOther}>
+        <KeyButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
+      </View>
     </ScreenShell>
   )
 }
@@ -271,8 +317,9 @@ function AddPop({ kicker, colors, onClose, children }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
+            accessible={false}
             style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
             onPress={(event) => event.stopPropagation()}
           >
@@ -1371,6 +1418,13 @@ export function SentScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  previewList: { gap: 8, marginTop: 12, marginBottom: 4 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },
+  previewIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  previewCopy: { flex: 1, minWidth: 0, gap: 2 },
+  previewTitle: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  previewBody: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  previewOther: { marginTop: 14 },
   joinCard: { alignItems: 'flex-end' },
   joinBare: { gap: 4 },
   joinField: { flex: 1 },

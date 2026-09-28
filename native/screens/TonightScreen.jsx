@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords } from '../../src/lib/hall-pages.js'
+import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { isGemLook, mergePurses } from '../../src/lib/purse.js'
@@ -12,11 +12,13 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { useTonightStack } from '../../src/lib/useTonightStack.js'
 import { UndoToast } from '../components/UndoToast.jsx'
-import { DidButton, KeyButton } from '../components/ui.jsx'
+import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
-import { JewelKey, jewelKeySeen } from '../components/JewelKey.jsx'
+import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
+import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
+import { useHoldMarks } from '../lib/mark-hold.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -25,12 +27,15 @@ import { NightStrip } from '../components/NightStrip.jsx'
 import { WaitPlate } from '../components/WaitPlate.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
+import { SwipeFlyHost } from '../components/SwipeFly.jsx'
+import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
+import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
-import { hallColors, fonts } from '../theme.js'
+import { fonts } from '../theme.js'
+import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { Slot } from '../components/Slot.jsx'
@@ -72,7 +77,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
 export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId }) {
   const theme = useTheme()
   const look = activeLook(book)
-  const colors = hallColors(look, theme)
+  const colors = useHallColors(book)
   const account = useAccount()
   const sync = useSync()
   const now = useMinuteNow()
@@ -83,51 +88,73 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
   const purse = mergePurses(stack.shelf)
   const { bottom: bottomPad } = useAppInsets()
-  const headerSpace = useHeaderSpace()
+  const headerInset = useHeaderInset()
   const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
   const premium = isGemLook(look)
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
+  // Folders and topics are the first chip of the question row, not a row of their own.
+  const showChips = stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick
+  // The dot legend waits for a later night, and never shows over the payoff.
+  const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
+  const showKey = !keySeen && keyNight && showChips && !stack.hallOn
+  // The done card's night summary: the week behind and the night ahead.
+  const summary = useMemo(
+    () =>
+      stack.hallOn
+        ? { week: weekStripNights(stack.shelf, stack.clock, tagId), tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stack.shelf, stack.dateIso, tagId, stack.hallOn],
+  )
+  // Marks wait while the night's celebration plays, then come one at a time.
+  useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
+  useEffect(() => {
+    if (!stack.cheer) return undefined
+    const timer = setTimeout(stack.cheered, CELEBRATE_MS)
+    return () => clearTimeout(timer)
+  }, [stack.cheer, stack.cheered])
   let face = null
-  if (stack.bodyKind === 'finish') {
+  if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (
-      <SwipeCardHost
-        key="finish"
-        cardKey="finish"
-        colors={colors}
-        panelStyle={gemCard}
-        gemLook={premium ? look : ''}
-        kicker={t('tonight.finishKicker')}
-        title={
-          stack.finishCount === 1
-            ? t('tonight.finishOne')
-            : t('tonight.finishTitle', { n: stack.finishCount })
-        }
-        stampDid={t('tonight.finishKeep')}
-        stampNope={t('tonight.finishLeave')}
-        onDid={stack.continueStack}
-        onNope={stack.restStack}
-        buddy={activeBuddy(book)}
-      />
+      <GemFaceShell look={premium ? look : ''}
+        theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
+        <StillOpen
+          rows={stack.stillOpen}
+          rowKey={stack.rowKey}
+          colors={colors}
+          onLate={stack.lateFromList}
+          onLeave={stack.leaveFromList}
+        />
+      </GemFaceShell>
     )
   } else if (stack.bodyKind === 'face' && stack.faceRow) {
     const faceRow = stack.faceRow
     const faceBook = stack.bookOf(faceRow)
     const stripKeys = stack.recentPeriodKeys(faceRow.lamp, stack.dateIso, 7)
     const hasHistory = stripKeys.some((key) => answerFor(faceBook, faceRow.lamp.id, key))
-    const faceKey = `${stack.rowKey(faceRow)}:${faceRow.periodKey}:${faceRow.answer?.status || 'open'}`
+    // One stack for the night: cards keep their identity by row, so the card
+    // behind is the one that grows into the face.
+    const cardKeyOf = (row) => `${stack.rowKey(row)}:${row.periodKey}`
     face = (
       <SwipeCardHost
-        key={`face:${faceKey}`}
-        cardKey={faceKey}
+        key="face"
+        cardKey={cardKeyOf(faceRow)}
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={faceRow.tag || t('tonight.didI')}
+        kicker={faceRow.tag || ''}
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
+        didLabel={t('tonight.answerDid')}
+        nopeLabel={t('tonight.answerNope')}
+        behind={stack.upNext.map((row) => ({
+          key: cardKeyOf(row),
+          kicker: row.tag || t('tonight.didI'),
+          title: row.lamp.question,
+        }))}
         onDid={() => stack.mark(faceRow, 'yes')}
         onNope={() => stack.mark(faceRow, 'skip')}
         buddy={activeBuddy(faceBook)}
@@ -145,13 +172,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   } else if (stack.bodyKind === 'hall') {
     face = (
-      <GemFaceShell look={premium ? look : ''}
-        theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
-        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
-      </GemFaceShell>
+      <CardSettle play={Boolean(stack.cheer)}>
+        <GemFaceShell look={premium ? look : ''}
+          theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
+          <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
+          <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
+          {stack.streak > 0 ? (
+            <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
+          ) : null}
+          {summary ? <NightWeek nights={summary.week} colors={colors} /> : null}
+          {summary ? (
+            <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
+          ) : null}
+        </GemFaceShell>
+      </CardSettle>
     )
-  } else if (stack.bodyKind === 'rest') {
+  } else if (stack.bodyKind === 'rest' || stack.bodyKind === 'finish') {
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
@@ -161,7 +197,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
         <View style={styles.actions}>
-          <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.continueStack} />
+          <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.reopenStillOpen} />
         </View>
       </GemFaceShell>
     )
@@ -221,20 +257,26 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = <WaitPlate row={stack.waitPick} colors={colors} onClose={() => stack.closePlates()} />
   } else if (stack.bodyKind === 'pillView' && stack.pillPick) {
     const pillRow = stack.pillPick
+    const pillBook = stack.bookOf(pillRow)
     const status = pillRow.answer?.status || ''
     face = (
       <GemFaceShell look={premium ? look : ''}
-        theme={theme} style={staticCardStyle} buddy={activeBuddy(stack.bookOf(pillRow))}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag || t('tonight.didI')}</Text>
+        theme={theme} style={staticCardStyle} buddy={activeBuddy(pillBook)}>
+        {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
       </GemFaceShell>
     )
   } else if (stack.bodyKind === 'pill' && stack.pillPick) {
     const pillRow = stack.pillPick
+    const pillBook = stack.bookOf(pillRow)
     const status = pillRow.answer?.status || ''
     const isDid = status === 'yes' || status === 'late'
     const pillKey = `${stack.rowKey(pillRow)}:${status || 'open'}`
+    const pillMeta =
+      pillRow.dateIso && !mustSwipeDeadline(pillRow.lamp, pillRow.dateIso)
+        ? t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })
+        : ''
     face = (
       <SwipeCardHost
         key={`pill:${pillKey}`}
@@ -242,21 +284,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={pillRow.tag || t('tonight.didI')}
+        kicker={pillRow.tag || ''}
         title={pillRow.lamp.question}
+        meta={pillMeta}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
+        didLabel={t('tonight.answerDid')}
+        nopeLabel={t('tonight.answerNope')}
         blockDid={isDid}
         blockNope={status === 'skip' || isDid}
         onDid={() => stack.mark(pillRow, 'yes')}
         onNope={() => stack.mark(pillRow, 'skip')}
-        buddy={activeBuddy(stack.bookOf(pillRow))}
+        buddy={activeBuddy(pillBook)}
       >
-        {pillRow.dateIso && !mustSwipeDeadline(pillRow.lamp, pillRow.dateIso) ? (
-          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-            {t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })}
-          </Text>
-        ) : null}
+        {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
       </SwipeCardHost>
     )
   } else if (stack.bodyKind === 'off') {
@@ -275,18 +316,33 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.didI')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
       </GemFaceShell>
     )
   }
 
+  const tagFilter = (
+    <TagFilter
+      boards={stack.shelf}
+      tagId={tagId}
+      onTag={onTag}
+      now={stack.clock}
+      colors={colors}
+      topics={topics}
+      topicPicks={picks}
+      onTopics={setTopicPicks}
+      inline={showChips}
+    />
+  )
+
   const titleSlot = stack.titleEdit ? (
-    <TextInput
+    <AppTextInput
+      colors={colors}
       value={stack.titleDraft}
       onChangeText={stack.setTitleDraft}
       onBlur={stack.saveTitle}
       onSubmitEditing={stack.saveTitle}
+      returnKeyType="done"
       style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel }]}
       accessibilityLabel={t('tonight.boardName')}
       autoFocus
@@ -302,6 +358,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
+      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
       <Slot>
         <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       </Slot>
@@ -310,7 +367,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         style={[
           styles.shell,
           premium && styles.aboveHalo,
-          { paddingTop: headerSpace, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
+          { paddingTop: headerInset, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
           stack.hallOn && styles.sitOn,
         ]}
       >
@@ -324,8 +381,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
       </Slot>
 
-      {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
+      {showChips ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
+          <Slot>{tagFilter}</Slot>
           {stack.dueWithWait.map((row) => {
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
             const skip = row.answer?.status === 'skip'
@@ -358,22 +416,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </ScrollView>
       ) : null}
 
-      {!keySeen && stack.dueWithWait.some((row) => row.answer) && !stack.holePick && !stack.waitPick ? (
+      {showKey ? (
         <JewelKey colors={colors} onDone={() => setKeySeen(true)} />
       ) : null}
 
-      <Slot>
-        <TagFilter
-          boards={stack.shelf}
-          tagId={tagId}
-          onTag={onTag}
-          now={stack.clock}
-          colors={colors}
-          topics={topics}
-          topicPicks={picks}
-          onTopics={setTopicPicks}
-        />
-      </Slot>
+      {showChips ? null : <Slot>{tagFilter}</Slot>}
 
       {stack.pillPick || stack.waitPick ? (
         <Pressable
@@ -386,7 +433,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      <View style={styles.slot} pointerEvents="box-none">
+      <SwipeFlyHost style={styles.slot}>
         <Slot>{face}</Slot>
         <Slot>
           <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
@@ -394,9 +441,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Slot>
           <FamilyTonight colors={colors} />
         </Slot>
-      </View>
+      </SwipeFlyHost>
     </View>
-    <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
     </View>
     </MastMenuRoot>
   )
@@ -417,8 +463,9 @@ const styles = StyleSheet.create({
   },
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
-  jewels: { maxHeight: 52, marginBottom: 10 },
-  jewelsIn: { gap: 8, paddingRight: 8 },
+  tomorrow: { marginTop: 16 },
+  jewels: { flexGrow: 0, marginBottom: 12 },
+  jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
   back: {
     alignSelf: 'flex-start',
     flexDirection: 'row',

@@ -1,9 +1,13 @@
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { fonts, radius } from '../theme.js'
+import { ripple } from '../lib/ripple.js'
+import { fonts, radius, sectionLabel } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
+import { AppTextInput } from './ui.jsx'
 
 export function SetCap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
@@ -21,13 +25,15 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger, colors, on }) {
+export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on }) {
   const flat = !onPress
+  const tileColor = danger ? colors.miss : tint || colors.inkSoft
+  const tileBg = danger ? `${colors.miss}1f` : tint ? `${tint}1f` : colors.panel2
   const body = (
     <>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
-          <MenuIcon name={icon} color={danger ? colors.miss : colors.inkSoft} size={17} stroke />
+        <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
+          <MenuIcon name={icon} color={tileColor} size={17} stroke />
         </View>
       ) : null}
       <View style={styles.copy}>
@@ -55,6 +61,9 @@ export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={ripple(colors.panel3)}
+      accessibilityRole="button"
+      accessibilityLabel={[label, value, sub].filter(Boolean).join(', ')}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
@@ -66,35 +75,71 @@ export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger
   )
 }
 
-export function SetSwitch({ label, sub, icon, last, on, onPress, colors }) {
+export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors }) {
+  const tileColor = tint || (on ? colors.on : colors.inkSoft)
+  const tileBg = tint ? `${tint}1f` : colors.panel2
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
-      style={({ pressed }) => [
-        styles.row,
-        { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
-        last && { borderBottomWidth: 0 },
-      ]}
-    >
+    <View style={[styles.row, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
-          <MenuIcon name={icon} color={on ? colors.on : colors.inkSoft} size={17} stroke />
+        <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
+          <MenuIcon name={icon} color={tileColor} size={17} stroke />
         </View>
       ) : null}
       <View style={styles.copy}>
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
       </View>
-      <View style={[styles.switch, { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.on : colors.open }]}>
-        <View
-          style={[
-            styles.switchKnob,
-            { backgroundColor: on ? colors.bg : colors.panel, alignSelf: on ? 'flex-end' : 'flex-start' },
-          ]}
+      {Platform.OS === 'android' ? (
+        <M3Switch on={on} onPress={onPress} label={label} colors={colors} />
+      ) : (
+        <Switch
+          value={on}
+          onValueChange={onPress}
+          accessibilityLabel={label}
+          trackColor={{ false: colors.open, true: colors.on }}
+          ios_backgroundColor={colors.open}
         />
-      </View>
+      )}
+    </View>
+  )
+}
+
+// Android's native Switch is still AppCompat's thin translucent track, so off
+// read as dark grey on dark grey. Material 3's off state has an outlined
+// track and an outline-colored thumb; on fills the track and grows the thumb.
+function M3Switch({ on, onPress, label, colors }) {
+  const reduce = useReduceMotion()
+  const move = useRef(new Animated.Value(on ? 1 : 0)).current
+  useEffect(() => {
+    if (reduce) {
+      move.setValue(on ? 1 : 0)
+      return
+    }
+    Animated.timing(move, { toValue: on ? 1 : 0, duration: 150, useNativeDriver: false }).start()
+  }, [on, reduce, move])
+  const size = move.interpolate({ inputRange: [0, 1], outputRange: [16, 24] })
+  const left = move.interpolate({ inputRange: [0, 1], outputRange: [6, 22] })
+  const top = move.interpolate({ inputRange: [0, 1], outputRange: [6, 2] })
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: Boolean(on) }}
+      onPress={() => onPress?.(!on)}
+      hitSlop={8}
+      style={[
+        styles.m3Track,
+        on
+          ? { backgroundColor: colors.on, borderColor: colors.on }
+          : { backgroundColor: colors.open, borderColor: colors.inkSoft },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.m3Thumb,
+          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.inkSoft },
+        ]}
+      />
     </Pressable>
   )
 }
@@ -103,10 +148,10 @@ export function SetField({ label, colors, ...inputProps }) {
   return (
     <View style={[styles.fieldRow, { borderBottomColor: colors.lineSoft }]}>
       <Text style={[styles.fieldLabel, { color: colors.ink }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         {...inputProps}
         style={[styles.fieldInput, { color: colors.ink }]}
-        placeholderTextColor={colors.inkDim}
       />
     </View>
   )
@@ -116,6 +161,7 @@ export function SetPick({ label, on, onPress, colors }) {
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={ripple(colors.panel3)}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
@@ -127,16 +173,23 @@ export function SetPick({ label, on, onPress, colors }) {
   )
 }
 
+/** The React Native sheet, for when the native one is missing from the binary. SetChoice uses it. */
 export function SetSheet({ title, onClose, children, colors }) {
   const still = useReduceMotion()
+  const insets = useSafeAreaInsets()
   return (
     <Modal visible transparent animationType={still ? 'none' : 'slide'} onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
-            style={[styles.sheet, { backgroundColor: colors.panel, borderColor: colors.line }]}
+            accessible={false}
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.panel, borderColor: colors.line, paddingBottom: insets.bottom },
+            ]}
             onPress={(event) => event.stopPropagation()}
           >
+            <View style={[styles.grabber, { backgroundColor: colors.line }]} />
             <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
               <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
               <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
@@ -151,15 +204,12 @@ export function SetSheet({ title, onClose, children, colors }) {
   )
 }
 
-export function PageTitle({ children, colors }) {
-  return <Text style={[styles.pageTitle, { color: colors.ink }]}>{children}</Text>
-}
-
 const styles = StyleSheet.create({
+  m3Track: { width: 52, height: 32, borderRadius: 16, borderWidth: 2 },
+  m3Thumb: { position: 'absolute', borderRadius: 12 },
   iconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cap: {
-    fontFamily: fonts.ui,
-    fontSize: 12,
+    ...sectionLabel,
     lineHeight: 16,
     marginTop: 14,
     marginBottom: 6,
@@ -171,13 +221,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginHorizontal: 3,
     marginBottom: 6,
-  },
-  pageTitle: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 34,
-    marginBottom: 2,
   },
   card: {
     borderWidth: 1,
@@ -217,19 +260,6 @@ const styles = StyleSheet.create({
     padding: 0,
     minHeight: 24,
   },
-  switch: {
-    width: 44,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  switchKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
   veil: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -241,6 +271,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     maxHeight: '70%',
   },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, marginTop: 6 },
   sheetBar: {
     flexDirection: 'row',
     alignItems: 'center',

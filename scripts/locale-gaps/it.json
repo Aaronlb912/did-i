@@ -835,5 +835,15 @@
   "web.landing.b3": "Installalo sul telefono. Funziona senza segnale.",
   "web.landing.b4": "Monete, gemme, cheer e streak restano su questo telefono.",
   "web.landing.closeTitle": "Smetti di girare intorno",
-  "web.landing.closeLead": "Entra in lista e ti scriviamo quando il lancio è vicino."
+  "web.landing.closeLead": "Entra in lista e ti scriviamo quando il lancio è vicino.",
+  "auth.tagline": "Una domanda, una volta a sera.",
+  "first.next": "Continua",
+  "first.back": "Indietro",
+  "first.stepOf": "{n} di {total}",
+  "first.timeTitle": "Quando dobbiamo chiedertelo?",
+  "notify.primerKicker": "Promemoria",
+  "notify.primerTitle": "Te lo chiederemo alle {time}",
+  "notify.primerBody": "Attiva i promemoria e questo telefono potrà avvisarti quando si apre questa domanda.",
+  "notify.primerGo": "Attiva",
+  "notify.primerSkip": "Non ora"
 }

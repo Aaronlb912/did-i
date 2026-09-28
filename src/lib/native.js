@@ -1,5 +1,5 @@
 import { isAppForeground } from './app-foreground.js'
-import { t } from './i18n.js'
+import { streakHitCopy } from './streak-copy.js'
 import { pingOn } from './prefs.js'
 import { boardDate } from './recurrence.js'
 import { readReduceMotion } from './useReduceMotion.js'
@@ -32,8 +32,9 @@ export async function pingStreakHit(hit, dateIso) {
   if (!hit || !pingOn('streakHit') || typeof window === 'undefined' || !('Notification' in window)) return false
   if (Notification.permission !== 'granted') return false
   try {
-    new Notification(t('streak.hitTitle'), {
-      body: t('streak.hitBody', { n: hit.n }),
+    const copy = streakHitCopy(hit.n)
+    new Notification(copy.title, {
+      body: copy.body,
       tag: `streak-hit:${dateIso}`,
       icon: './icon-192.png',
     })
