@@ -98,8 +98,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
 
       {picked ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setPicked('')}>
-        <Pressable style={styles.veil} onPress={() => setPicked('')}>
-          <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={styles.veil} onPress={() => setPicked('')}>
+          <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
             <Text style={[styles.popKicker, { color: colors.on }]}>{t('cal.kicker')}</Text>
             <Text style={[styles.popTitle, { color: colors.ink }]}>{pickedLabel}</Text>
             <ScrollView style={{ maxHeight: 240 }}>

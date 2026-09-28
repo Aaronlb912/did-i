@@ -31,8 +31,9 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
+            accessible={false}
             style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
             onPress={(event) => event.stopPropagation()}
           >

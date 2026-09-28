@@ -177,8 +177,9 @@ export function SetSheet({ title, onClose, children, colors }) {
   return (
     <Modal visible transparent animationType={still ? 'none' : 'slide'} onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
+            accessible={false}
             style={[
               styles.sheet,
               { backgroundColor: colors.panel, borderColor: colors.line, paddingBottom: insets.bottom },

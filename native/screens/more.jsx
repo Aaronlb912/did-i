@@ -87,8 +87,9 @@ function SureModal({ sure, colors, onClose, onGo }) {
   if (!sure) return null
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
+          accessible={false}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >

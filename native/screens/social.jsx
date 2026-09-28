@@ -115,8 +115,9 @@ function OfflineLine({ colors }) {
 function BlockModal({ person, colors, onClose, onDone }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
+          accessible={false}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
@@ -316,8 +317,9 @@ function AddPop({ kicker, colors, onClose, children }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
+            accessible={false}
             style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
             onPress={(event) => event.stopPropagation()}
           >
