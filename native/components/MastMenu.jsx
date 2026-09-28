@@ -189,8 +189,12 @@ function MorphBlur({ BlurView, progress, tint }) {
 
 function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onClosed }) {
   const { width: winW } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const fallback = useFallbackAnchor()
-  const anchor = measured || fallback
+  // A cold launch can hand back a measurement from before layout has
+  // settled, placing the button above the safe area (over the status bar).
+  // The safe-area anchor is a better guess than trusting that number.
+  const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
   const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn)
   const on = menuIsOn(items)
