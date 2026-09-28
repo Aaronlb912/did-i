@@ -80,7 +80,8 @@ function RouteBody({ route }) {
   )
 }
 
-function TabScreen({ route }) {
+/** A tab or a pushed screen: the route its navigator gave it. */
+function RouteScreen({ route }) {
   return <RouteBody route={routeFromScreen(route)} />
 }
 
@@ -126,12 +127,12 @@ function HallScreen() {
     <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
       <Tab.Screen
         name="/tonight"
-        component={TabScreen}
+        component={RouteScreen}
         options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON, headerLargeTitleEnabled: false }}
       />
       <Tab.Screen
         name="/lamps"
-        component={TabScreen}
+        component={RouteScreen}
         options={{ tabBarLabel: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
       />
     </Tab.Navigator>
@@ -140,10 +141,6 @@ function HallScreen() {
 
 // The tabs carry their own bars.
 const HALL_OPTIONS = { headerShown: false }
-
-function RouteScreen({ route }) {
-  return <RouteBody route={routeFromScreen(route)} />
-}
 
 export function AppShell() {
   usePrefs()
