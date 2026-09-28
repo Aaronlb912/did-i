@@ -7,9 +7,13 @@ on:
         description: Run npm run check before export (push/PR already run check.yml)
         type: boolean
         default: true
+      dev_app:
+        description: Build "Did I Dev" (com.aaronbryant.didi.dev), a dev client for npm run expo:dev
+        type: boolean
+        default: false
 
 concurrency:
-  group: ios-ipa-${{ github.ref }}
+  group: ios-ipa-${{ github.ref }}-${{ inputs.dev_app }}
   cancel-in-progress: true
 
 permissions:
@@ -21,6 +25,9 @@ jobs:
     timeout-minutes: 120
     env:
       EAS_INCLUDE_WIDGETS: '1'
+      DIDI_DEV: ${{ inputs.dev_app && '1' || '0' }}
+      # The dev client loads JS from Metro, so it builds Debug (Release strips the dev launcher).
+      XCODE_CONFIG: ${{ inputs.dev_app && 'Debug' || 'Release' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +76,7 @@ jobs:
             expo-ios-export-
 
       - name: Export iOS bundle
-        if: steps.expo-export-cache.outputs.cache-hit != 'true'
+        if: steps.expo-export-cache.outputs.cache-hit != 'true' && env.DIDI_DEV != '1'
         run: npx expo export --platform ios --output-dir .expo-export-ios
 
       - name: Prebuild iOS (widgets)
@@ -110,8 +117,8 @@ jobs:
         env:
           IOS_DIST_CERT_P12: ${{ secrets.IOS_DIST_CERT_P12 }}
           IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
-          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
-          IOS_WIDGET_PROVISIONING_PROFILE: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE }}
+          IOS_PROVISIONING_PROFILE: ${{ inputs.dev_app && secrets.IOS_DEV_PROVISIONING_PROFILE || secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_WIDGET_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WIDGET_PROVISIONING_PROFILE || '' }}
         run: bash .github/scripts/ios-signing.sh
 
       - name: Assert iOS build number (TestFlight)
@@ -134,7 +141,7 @@ jobs:
           xcodebuild \
             -workspace DidI.xcworkspace \
             -scheme DidI \
-            -configuration Release \
+            -configuration "$XCODE_CONFIG" \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/DidI.xcarchive" \
             archive \
@@ -147,7 +154,7 @@ jobs:
           xcodebuild \
             -workspace DidI.xcworkspace \
             -scheme DidI \
-            -configuration Release \
+            -configuration "$XCODE_CONFIG" \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/DidI.xcarchive" \
             archive

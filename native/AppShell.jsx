@@ -122,6 +122,7 @@ export function AppShell() {
         enabled={swipeBack}
         back={backRoute}
         onBack={goBack}
+        routeKey={route.path}
         backChild={
           backRoute ? (
             <View style={{ flex: 1 }}>

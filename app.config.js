@@ -16,9 +16,13 @@ const googleIosUrlScheme = googleIosClientId
   : ''
 
 const buildProfile = process.env.EAS_BUILD_PROFILE || ''
-const devClientBuild = buildProfile === 'development' || buildProfile === 'preview'
+// DIDI_DEV=1: a separate "Did I Dev" app (its own bundle id) that sits next to
+// the store app and loads code from npm run expo:dev. No widgets, Apple sign-in
+// or Firebase there; those are tied to the store bundle id.
+const devApp = process.env.DIDI_DEV === '1'
+const devClientBuild = devApp || buildProfile === 'development' || buildProfile === 'preview'
 // Widgets on by default. Set EAS_INCLUDE_WIDGETS=0 on a profile to skip the extension.
-const includeWidgets = process.env.EAS_INCLUDE_WIDGETS !== '0'
+const includeWidgets = !devApp && process.env.EAS_INCLUDE_WIDGETS !== '0'
 
 const widgetPlugins = includeWidgets
   ? [
@@ -71,6 +75,7 @@ const widgetPlugins = includeWidgets
 
 export default ({ config }) => ({
   ...config,
+  ...(devApp ? { scheme: 'didi-dev' } : {}),
   // Over-the-air JS updates. The runtime is the app version, not a fingerprint:
   // updates are published from Windows and built on Linux / macOS runners, and
   // a fingerprint can hash differently across those machines, so updates would
@@ -88,7 +93,7 @@ export default ({ config }) => ({
   plugins: [
     ...(config.plugins || []),
     ...(devClientBuild ? ['expo-dev-client'] : []),
-    'expo-apple-authentication',
+    ...(devApp ? [] : ['expo-apple-authentication']),
     // iOS needs the reversed iOS client ID as a URL scheme; skipped until it exists.
     ...(googleIosUrlScheme
       ? [['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }]]
@@ -122,8 +127,9 @@ export default ({ config }) => ({
   ],
   ios: {
     ...config.ios,
+    ...(devApp ? { bundleIdentifier: 'com.aaronbryant.didi.dev' } : {}),
     appleTeamId: '2ZUKFKSSV8',
-    usesAppleSignIn: true,
+    usesAppleSignIn: !devApp,
     deploymentTarget: '17.0',
     entitlements: {
       ...(config.ios?.entitlements || {}),
@@ -131,7 +137,7 @@ export default ({ config }) => ({
         ? { 'com.apple.security.application-groups': ['group.com.aaronbryant.didi'] }
         : {}),
     },
-    ...(hasGoogleServicesIos ? { googleServicesFile: googleServicesIos } : {}),
+    ...(hasGoogleServicesIos && !devApp ? { googleServicesFile: googleServicesIos } : {}),
     // Apple's required-reason APIs used by React Native, Expo and MMKV. No tracking.
     privacyManifests: {
       NSPrivacyTracking: false,
@@ -146,6 +152,7 @@ export default ({ config }) => ({
       ...(config.ios?.infoPlist || {}),
       UIBackgroundModes: ['remote-notification'],
       NSMotionUsageDescription: 'Did I uses a shake to undo the last tap.',
+      ...(devApp ? { CFBundleDisplayName: 'Did I Dev' } : {}),
     },
   },
   android: {

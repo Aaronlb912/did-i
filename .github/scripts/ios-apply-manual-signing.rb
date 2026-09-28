@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# Apply manual signing to Release configs after expo prebuild (GHA has no Xcode UI).
+# Apply manual signing to the build configs after expo prebuild (GHA has no Xcode UI).
 require 'English'
 abort 'IOS_MAIN_PROFILE_UUID missing' if ENV['IOS_MAIN_PROFILE_UUID'].to_s.empty?
 
@@ -7,7 +7,8 @@ project_path = File.join(__dir__, '..', '..', 'ios', 'DidI.xcodeproj', 'project.
 abort "missing #{project_path}" unless File.file?(project_path)
 
 bundles = {
-  'com.aaronbryant.didi' => ENV['IOS_MAIN_PROFILE_UUID'],
+  # The store app, or com.aaronbryant.didi.dev when building the dev app.
+  (ENV['IOS_MAIN_PROFILE_BUNDLE'] || 'com.aaronbryant.didi') => ENV['IOS_MAIN_PROFILE_UUID'],
   'com.aaronbryant.didi.widgets' => ENV['IOS_WIDGET_PROFILE_UUID'],
 }.compact
 
