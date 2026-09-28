@@ -46,8 +46,6 @@ import {
 } from '../components/Cosmetic.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
-import { PageTitle } from '../components/SetBits.jsx'
-import { PurseLine } from '../components/PurseLine.jsx'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import {
   buyCheerStageWithCoins,
@@ -477,11 +475,7 @@ export function ShopScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined}>
-      <PageTitle colors={colors}>{t('shop.title')}</PageTitle>
-      <View style={styles.purseRow}>
-        <PurseLine purse={purse} colors={colors} gemsLink />
-      </View>
+    <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} look={peekLook || undefined} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
 
       <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={peekAt} />
@@ -584,6 +578,7 @@ export function ShopLooksScreen({ book, onChange }) {
       date={shellDate(book)}
       colors={colors}
       look={peekLook || undefined}
+      showPurse
     >
       <Meta colors={colors}>{t('shop.looksHint', { coins: LOOK_COIN_PRICE, gems: LOOK_GEM_PRICE })}</Meta>
 
@@ -630,7 +625,7 @@ export function ShopCheersScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</Meta>
 
       {CHEERS.map((item) => {
@@ -723,7 +718,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
   }
 
   return (
-    <BoardShell book={book} title={t('shop.buddies')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('shop.buddies')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.buddiesHint', { n: BUDDY_GEMS })}</Meta>
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
@@ -1184,7 +1179,6 @@ export function CollectionScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
-  purseRow: { marginBottom: 4 },
   cap: {
     fontFamily: fonts.mono,
     fontSize: 11,

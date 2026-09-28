@@ -28,7 +28,6 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import {
-  PageTitle,
   SetCap,
   SetCard,
   SetNote,
@@ -50,7 +49,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
 
   return (
     <BoardShell book={book} title={t('settings.title')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.title')}</PageTitle>
       <SetNote colors={colors}>{t('settings.phoneBody')}</SetNote>
 
       <SetCap colors={colors}>{t('settings.title')}</SetCap>
@@ -165,7 +163,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.kicker')}</PageTitle>
 
       <SetCap colors={colors}>{t('account.kicker')}</SetCap>
       <SetCard colors={colors}>

@@ -57,6 +57,12 @@ function HeaderActions({ colors, purse, menu }) {
  * Android: a Material 3 top app bar in the page flow. It is the page color at
  * rest and tints to the surface container once `scrollY` leaves the top.
  *
+ * large: the title starts large and shrinks into the bar as the page scrolls.
+ * On Android that is Material 3's medium top app bar, whose expanded title
+ * (HeaderLargeTitle) sits at the top of the page. On iOS it is the large
+ * title, set per screen in AppShell: UIKit only collapses it when it is on
+ * before the screen is pushed.
+ *
  * back: 'auto' shows back when a screen is pushed, true forces it, false hides it.
  * titleSlot replaces the title text (Tonight uses it for rename-in-place).
  * menu renders the grid button and needs a MastMenuRoot above it.
@@ -130,12 +136,22 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
   return null
 }
 
-function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = false, scrollY }) {
+// The expanded title of Material's medium bar is 48dp under the bar row.
+const LARGE_TITLE = 48
+
+function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = false, large = false, scrollY }) {
   const insets = useSafeAreaInsets()
   const showBack = useShowBack(back)
+  // Clear at rest; the surface container once content (or the expanded title) goes under it.
+  const under = large ? LARGE_TITLE : 0
   const tint = scrollY
-    ? scrollY.interpolate({ inputRange: [0, 8], outputRange: [0, 1], extrapolate: 'clamp' })
+    ? scrollY.interpolate({ inputRange: [under, under + 8], outputRange: [0, 1], extrapolate: 'clamp' })
     : 0
+  // The small title comes in as the expanded one scrolls away.
+  const titleIn =
+    large && scrollY
+      ? scrollY.interpolate({ inputRange: [LARGE_TITLE - 20, LARGE_TITLE], outputRange: [0, 1], extrapolate: 'clamp' })
+      : 1
 
   return (
     <View style={[styles.appBar, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
@@ -153,15 +169,32 @@ function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
         ) : (
           <View style={styles.edge} />
         )}
-        <View style={styles.titleBox}>
+        <Animated.View style={[styles.titleBox, { opacity: titleIn }]}>
           {titleSlot || (
-            <Text style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
+            <Text
+              style={[headerTitleStyle, { color: colors.ink }]}
+              numberOfLines={1}
+              accessibilityRole="header"
+              importantForAccessibility={large ? 'no-hide-descendants' : 'auto'}
+            >
               {title}
             </Text>
           )}
-        </View>
+        </Animated.View>
         {purse || menu ? <HeaderActions colors={colors} purse={purse} menu={menu} /> : null}
       </View>
+    </View>
+  )
+}
+
+/** Android's expanded title, the first thing in a `large` page. iOS draws its own. */
+export function HeaderLargeTitle({ colors, title }) {
+  if (Platform.OS === 'ios') return null
+  return (
+    <View style={styles.largeBox}>
+      <Text style={[styles.largeTitle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
+        {title}
+      </Text>
     </View>
   )
 }
@@ -177,6 +210,8 @@ const styles = StyleSheet.create({
   appBarRow: { height: HEADER_BAR, flexDirection: 'row', alignItems: 'center', gap: 4 },
   edge: { width: 12 },
   titleBox: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  largeBox: { height: LARGE_TITLE, justifyContent: 'flex-end', paddingBottom: 10 },
+  largeTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   purse: { paddingHorizontal: 8, justifyContent: 'center' },
 })

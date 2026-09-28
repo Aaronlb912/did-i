@@ -54,6 +54,9 @@ function barOptions(colors) {
     headerLargeTitleShadowVisible: false,
     headerTintColor: colors.on,
     headerTitleStyle: { fontFamily: fonts.uiSemi, color: colors.ink },
+    // Every pushed page scrolls, so its title starts large and shrinks into the bar.
+    headerLargeTitleEnabled: true,
+    headerLargeTitleStyle: { fontFamily: fonts.display, color: colors.ink },
     headerBackButtonDisplayMode: 'minimal',
     title: '',
   }
@@ -124,7 +127,7 @@ function HallScreen() {
       <Tab.Screen
         name="/tonight"
         component={TabScreen}
-        options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON }}
+        options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON, headerLargeTitleEnabled: false }}
       />
       <Tab.Screen
         name="/lamps"

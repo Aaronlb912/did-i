@@ -151,10 +151,6 @@ export function SetSheet({ title, onClose, children, colors }) {
   )
 }
 
-export function PageTitle({ children, colors }) {
-  return <Text style={[styles.pageTitle, { color: colors.ink }]}>{children}</Text>
-}
-
 const styles = StyleSheet.create({
   iconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cap: {
@@ -171,13 +167,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginHorizontal: 3,
     marginBottom: 6,
-  },
-  pageTitle: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 34,
-    marginBottom: 2,
   },
   card: {
     borderWidth: 1,

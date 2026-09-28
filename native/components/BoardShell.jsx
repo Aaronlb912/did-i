@@ -7,9 +7,8 @@ import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { hallColors } from '../theme.js'
-import { gemFrameStyle } from '../lib/gem-look-tone.js'
 import { HallAmbient } from './HallAmbient.jsx'
-import { AppHeader } from './AppHeader.jsx'
+import { AppHeader, HeaderLargeTitle } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 
 export function BoardShell({
@@ -23,6 +22,7 @@ export function BoardShell({
   heat,
   hour,
   showCogs = true,
+  showPurse = false,
   showAdd = true,
   colors: colorsIn,
   children,
@@ -41,10 +41,11 @@ export function BoardShell({
   const colors = colorsIn || hallColors(coat, theme)
   const shelf = boards.length ? boards : book ? [book] : []
   const purse = shelf.length ? mergePurses(shelf) : normalizePurse(book)
+  const barTitle = title || book?.title || 'Did I'
   const feelHour = hour ?? hallHour(clock)
   const feelSit = sit || 'ask'
   const halo = isGemLook(coat)
-  const gemFrame = gemFrameStyle(coat, theme)
+  const pageBg = useMemo(() => ({ backgroundColor: colors.bg }), [colors.bg])
   const shellBg = useMemo(
     () => (halo ? { backgroundColor: 'transparent' } : { backgroundColor: colors.bg }),
     [colors.bg, halo],
@@ -56,8 +57,16 @@ export function BoardShell({
     </View>
   )
 
+  // Gem looks show the hall's mood through the page. It is a flat wash, so it
+  // can ride inside the scroll view and reach past both ends of the page.
+  const ambient = halo ? (
+    <View pointerEvents="none" style={scroll ? styles.ambientScroll : StyleSheet.absoluteFill}>
+      <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
+    </View>
+  ) : null
+
   // iOS lays the page out under the navigation bar and insets it itself, so the
-  // bar can go from clear to material as the page scrolls under it.
+  // bar can go from clear to material, and the large title can shrink into it.
   const inner = scroll ? (
     <KeyboardAvoidingView
       style={styles.scroll}
@@ -65,18 +74,21 @@ export function BoardShell({
       keyboardVerticalOffset={headerInset}
     >
       <Animated.ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
+        {ambient}
+        <HeaderLargeTitle colors={colors} title={barTitle} />
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
   ) : (
-    <View style={[styles.content, styles.scroll, { paddingTop: headerInset }]}>
+    <View style={[styles.content, styles.scroll, pageBg, { paddingTop: headerInset }]}>
+      {ambient}
       <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
     </View>
   )
@@ -84,23 +96,22 @@ export function BoardShell({
   const header = (
     <AppHeader
       colors={colors}
-      title={title || book?.title || 'Did I'}
+      title={barTitle}
       back={back ?? 'auto'}
-      purse={showCogs ? purse : undefined}
+      purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
+      large={scroll}
       scrollY={scrollY}
     />
   )
 
-  // The scroll view comes first in the tree: that is the one iOS watches.
+  // UIKit only finds the scroll view it tracks a few views down a chain of
+  // first subviews. So on iOS the scroll view leads, and this wrapper paints
+  // nothing and sets no zIndex, which lets Fabric flatten it away.
   const frame = (
-    <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
-        {Platform.OS === 'ios' ? inner : null}
-        {header}
-        {Platform.OS === 'ios' ? null : inner}
-      </View>
-      <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
+    <View style={styles.frame}>
+      {Platform.OS === 'ios' ? inner : header}
+      {Platform.OS === 'ios' ? header : inner}
     </View>
   )
 
@@ -114,8 +125,8 @@ export function BoardShell({
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, position: 'relative' },
-  aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
+  frame: { flex: 1 },
+  ambientScroll: { position: 'absolute', top: -2000, bottom: -2000, left: 0, right: 0 },
   scroll: { flex: 1 },
   shell: { flex: 1, position: 'relative' },
   sitOn: {},
