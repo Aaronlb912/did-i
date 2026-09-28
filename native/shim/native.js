@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share, StatusBar } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { boardDate, waitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -99,8 +99,16 @@ export async function requestNativePings() {
   }
 }
 
-export async function scheduleNativePings(book, now = new Date()) {
-  if (!book) return
+// A week ahead, so reminders still come on nights the app is never opened.
+const PING_DAYS = 7
+// iOS keeps at most 64 pending; leave room for the streak and cheer pings.
+const PING_CAP = 60
+const CHANNEL_ID = 'did-i'
+
+// Takes one board or every board on the shelf; each tag's questions ping.
+export async function scheduleNativePings(books, now = new Date()) {
+  const list = (Array.isArray(books) ? books : [books]).filter(Boolean)
+  if (!list.length) return
   try {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return
@@ -110,25 +118,47 @@ export async function scheduleNativePings(book, now = new Date()) {
     } catch {
       // ok
     }
-    const dateIso = boardDate(now)
-    const [year, month, day] = dateIso.split('-').map(Number)
-    const notes = []
-    for (const row of waitingTonight(book, now)) {
-      if (!lampNotifyOn(row.lamp)) continue
-      const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      if (!match) continue
-      const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
-      if (at.getTime() <= now.getTime()) continue
-      notes.push({
-        identifier: String(notifyId(row.lamp.id, row.periodKey)),
-        content: {
-          title: 'Did I',
-          body: row.lamp.question,
-          data: { lampId: row.lamp.id, go: '/tonight' },
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
-      })
+    if (Platform.OS === 'android') {
+      // A ping sent to a channel that does not exist yet never shows.
+      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+        name: t('push.channelName'),
+        description: t('push.channelDesc'),
+        importance: Notifications.AndroidImportance.HIGH,
+      }).catch(() => {})
     }
+    const when = (at) => ({
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: at,
+      channelId: CHANNEL_ID,
+    })
+    const notes = []
+    for (const book of list) {
+      for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
+        // Midday of that calendar day sits inside the right board night.
+        const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
+        const rows = ahead === 0 ? waitingTonight(book, now) : dueTonight(book, day).filter((row) => !row.answer)
+        const [year, month, date] = boardDate(day).split('-').map(Number)
+        for (const row of rows) {
+          if (!lampNotifyOn(row.lamp)) continue
+          const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+          if (!match) continue
+          const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
+          if (at.getTime() <= now.getTime()) continue
+          notes.push({
+            identifier: String(notifyId(row.lamp.id, row.periodKey)),
+            content: {
+              title: 'Did I',
+              body: row.lamp.question,
+              data: { lampId: row.lamp.id, go: '/tonight' },
+            },
+            trigger: when(at),
+          })
+        }
+      }
+    }
+    notes.sort((a, b) => a.trigger.date - b.trigger.date)
+    notes.length = Math.min(notes.length, PING_CAP)
+    const book = list[0]
     const risk = streakRiskFire(book, now)
     if (risk) {
       notes.push({
@@ -138,7 +168,7 @@ export async function scheduleNativePings(book, now = new Date()) {
           body: t('streak.riskBody'),
           data: { go: '/tonight', streakRisk: true },
         },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(risk.at) },
+        trigger: when(new Date(risk.at)),
       })
     }
     for (const note of notes) {

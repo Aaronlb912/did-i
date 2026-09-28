@@ -68,6 +68,60 @@ async function accessToken() {
   return (await res.json()).access_token as string
 }
 
+// iPhones hand the app a raw Apple token (64 hex), not a Firebase one, so
+// those go straight to Apple with the APNs auth key.
+// Secrets: APNS_KEY_ID, APNS_TEAM_ID, APNS_PRIVATE_KEY (the .p8 text).
+const APP_ID = 'com.aaronbryant.didi'
+const apnsKeyId = Deno.env.get('APNS_KEY_ID') ?? ''
+const apnsTeam = Deno.env.get('APNS_TEAM_ID') ?? ''
+const apnsPem = (Deno.env.get('APNS_PRIVATE_KEY') ?? '').replace(/\\n/g, '\n')
+
+function isAppleToken(token: string) {
+  return /^[0-9a-f]{64}$/i.test(token)
+}
+
+async function apnsJwt() {
+  const body = apnsPem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '')
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    Uint8Array.from(atob(body), (c) => c.charCodeAt(0)),
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign'],
+  )
+  const head = base64url(JSON.stringify({ alg: 'ES256', kid: apnsKeyId }))
+  const claim = base64url(JSON.stringify({ iss: apnsTeam, iat: Math.floor(Date.now() / 1000) }))
+  const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(`${head}.${claim}`))
+  return `${head}.${claim}.${base64url(new Uint8Array(sig))}`
+}
+
+async function sendApple(token: string, row: Record<string, unknown>, jwt: string) {
+  const payload = JSON.stringify({
+    aps: { alert: { title: row.title, body: row.body }, sound: 'default', badge: 1 },
+    go: String(row.go ?? '/inbox'),
+    // expo-notifications reads a raw APNs push's data from "body".
+    body: { go: String(row.go ?? '/inbox') },
+  })
+  // Store and TestFlight builds use production; dev builds use the sandbox.
+  let why = ''
+  for (const host of ['api.push.apple.com', 'api.sandbox.push.apple.com']) {
+    const res = await fetch(`https://${host}/3/device/${token}`, {
+      method: 'POST',
+      headers: {
+        authorization: `bearer ${jwt}`,
+        'apns-topic': APP_ID,
+        'apns-push-type': 'alert',
+        'apns-priority': '10',
+      },
+      body: payload,
+    })
+    if (res.ok) return ''
+    why = `${res.status} ${(await res.text()).slice(0, 200)}`
+    if (!/BadDeviceToken/.test(why)) break
+  }
+  return why
+}
+
 async function send(token: string, row: Record<string, unknown>, bearer: string) {
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${project}/messages:send`, {
     method: 'POST',
@@ -107,6 +161,7 @@ Deno.serve(async () => {
   if (!batch?.length) return Response.json({ sent: 0 })
 
   const bearer = await accessToken()
+  const appleJwt = apnsKeyId && apnsTeam && apnsPem ? await apnsJwt() : ''
   let sent = 0
   const dead: string[] = []
   // Why sends failed, without the tokens themselves. A push that quietly
@@ -115,18 +170,24 @@ Deno.serve(async () => {
 
   for (const row of batch) {
     for (const token of row.tokens ?? []) {
-      const why = await send(token, row, bearer)
+      const apple = isAppleToken(token)
+      // No Apple key yet: skip rather than let Firebase reject and drop the token.
+      if (apple && !appleJwt) {
+        trouble.apns_setup = (trouble.apns_setup ?? 0) + 1
+        continue
+      }
+      const why = apple ? await sendApple(token, row, appleJwt) : await send(token, row, bearer)
       if (!why) {
         sent += 1
         continue
       }
-      // A token Firebase will never accept again: the app was removed,
+      // A token the store will never accept again: the app was removed,
       // reinstalled, or the token was never real.
-      if (/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SenderId mismatch/i.test(why)) {
+      if (/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SenderId mismatch|BadDeviceToken|Unregistered/i.test(why)) {
         dead.push(token)
       }
       const kind =
-        why.match(/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SENDER_ID_MISMATCH|QUOTA_EXCEEDED|UNAVAILABLE|THIRD_PARTY_AUTH_ERROR/i)?.[0] ??
+        why.match(/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SENDER_ID_MISMATCH|QUOTA_EXCEEDED|UNAVAILABLE|THIRD_PARTY_AUTH_ERROR|BadDeviceToken|InvalidProviderToken|TopicDisallowed/i)?.[0] ??
         why.slice(0, 40)
       trouble[kind] = (trouble[kind] ?? 0) + 1
     }

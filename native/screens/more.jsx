@@ -62,7 +62,7 @@ import {
   openSession,
   setPin,
 } from '../../src/lib/session.js'
-import { upcomingPings } from '../../src/lib/notify.js'
+import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
@@ -628,6 +628,12 @@ export function FirstNightScreen({ book, onChange, now }) {
     markWelcomeSeen()
     onChange?.(withName(next))
     goHash('/tonight', face ? { face } : '')
+    // Reminders are the point of a timed question. Ask once the first one exists.
+    requestPings()
+      .then((state) => {
+        if (state === 'granted') armLampPings(readShelf().boards)
+      })
+      .catch(() => {})
   }
 
   function pick(starter) {

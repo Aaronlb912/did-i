@@ -16,6 +16,7 @@ import { DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
+import { JewelKey, jewelKeySeen } from '../components/JewelKey.jsx'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -76,6 +77,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const sync = useSync()
   const now = useMinuteNow()
   const [topicPicks, setTopicPicks] = useState([])
+  const [keySeen, setKeySeen] = useState(jewelKeySeen)
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
@@ -354,6 +356,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             )
           })}
         </ScrollView>
+      ) : null}
+
+      {!keySeen && stack.dueWithWait.some((row) => row.answer) && !stack.holePick && !stack.waitPick ? (
+        <JewelKey colors={colors} onDone={() => setKeySeen(true)} />
       ) : null}
 
       <Slot>
