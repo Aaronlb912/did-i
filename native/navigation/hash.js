@@ -198,6 +198,19 @@ export function goBack(opts = {}) {
   return false
 }
 
+function samePlace(a, b) {
+  return a === b || (HALL_PATHS.has(a) && TAB_OF[a] === TAB_OF[b])
+}
+
+/** Sends the screen at `from` on to `to`, now and each time it is back on top. */
+export function redirectFrom(from, to) {
+  const check = (route) => {
+    if (samePlace(route.path, from)) goHash(to)
+  }
+  check(current)
+  return onRoute(check)
+}
+
 export function onRoute(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)

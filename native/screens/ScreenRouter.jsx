@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
-import { goHash, readRoute } from '../navigation/hash.js'
+import { goHash, redirectFrom } from '../navigation/hash.js'
 import { LegalScreen } from './LegalScreen.jsx'
 import {
   AboutScreen,
@@ -48,9 +48,7 @@ const HALL = new Set(['/', '/home', '/tonight'])
 // mid-render, which React warns about. The hall stays mounted under every
 // pushed screen, so only the screen on top may redirect.
 function GoTo({ path, from }) {
-  useEffect(() => {
-    if (readRoute().path === from) goHash(path)
-  }, [from, path])
+  useEffect(() => redirectFrom(from, path), [from, path])
   return null
 }
 
