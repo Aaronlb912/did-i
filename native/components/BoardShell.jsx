@@ -1,12 +1,11 @@
-import { useMemo } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useMemo, useRef } from 'react'
+import { Animated, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
+import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { hallColors } from '../theme.js'
 import { gemFrameStyle } from '../lib/gem-look-tone.js'
 import { HallAmbient } from './HallAmbient.jsx'
@@ -29,9 +28,13 @@ export function BoardShell({
   children,
   scroll = true,
 }) {
-  const insets = useSafeAreaInsets()
   const { bottom: bottomPad } = useAppInsets()
-  const headerSpace = useHeaderSpace()
+  const headerInset = useHeaderInset()
+  const scrollY = useRef(new Animated.Value(0)).current
+  const onScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY],
+  )
   const theme = useTheme()
   const clock = now || new Date()
   const coat = look || activeLook(book)
@@ -53,40 +56,51 @@ export function BoardShell({
     </View>
   )
 
+  // iOS lays the page out under the navigation bar and insets it itself, so the
+  // bar can go from clear to material as the page scrolls under it.
   const inner = scroll ? (
     <KeyboardAvoidingView
       style={styles.scroll}
       behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+      keyboardVerticalOffset={headerInset}
     >
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingTop: headerSpace, paddingHorizontal: 16, flexGrow: 1 }}
-        scrollIndicatorInsets={{ top: headerSpace - insets.top }}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
-      </ScrollView>
+      </Animated.ScrollView>
     </KeyboardAvoidingView>
   ) : (
-    <View style={{ flex: 1, paddingTop: headerSpace, paddingHorizontal: 16 }}>
+    <View style={[styles.content, styles.scroll, { paddingTop: headerInset }]}>
       <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
     </View>
   )
 
+  const header = (
+    <AppHeader
+      colors={colors}
+      title={title || book?.title || 'Did I'}
+      back={back ?? 'auto'}
+      purse={showCogs ? purse : undefined}
+      menu={showCogs}
+      scrollY={scrollY}
+    />
+  )
+
+  // The scroll view comes first in the tree: that is the one iOS watches.
   const frame = (
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
       <View pointerEvents="box-none" style={[styles.aboveHalo, { backgroundColor: halo ? 'transparent' : colors.bg }]}>
-        {inner}
-        <AppHeader
-          colors={colors}
-          title={title || book?.title || 'Did I'}
-          back={back ?? 'auto'}
-          purse={showCogs ? purse : undefined}
-          menu={showCogs}
-        />
+        {Platform.OS === 'ios' ? inner : null}
+        {header}
+        {Platform.OS === 'ios' ? null : inner}
       </View>
+      <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
     </View>
   )
 
@@ -106,4 +120,5 @@ const styles = StyleSheet.create({
   shell: { flex: 1, position: 'relative' },
   sitOn: {},
   page: { gap: 12 },
+  content: { paddingHorizontal: 16, flexGrow: 1 },
 })

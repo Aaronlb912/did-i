@@ -28,7 +28,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { useHeaderSpace } from '../hooks/useHeaderSpace.js'
+import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { hallColors, fonts } from '../theme.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -83,7 +83,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
   const purse = mergePurses(stack.shelf)
   const { bottom: bottomPad } = useAppInsets()
-  const headerSpace = useHeaderSpace()
+  const headerInset = useHeaderInset()
   const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
   const premium = isGemLook(look)
   const gemCard = gemPanelStyle(look, theme)
@@ -302,6 +302,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
+      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
       <Slot>
         <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       </Slot>
@@ -310,7 +311,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         style={[
           styles.shell,
           premium && styles.aboveHalo,
-          { paddingTop: headerSpace, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
+          { paddingTop: headerInset, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
           stack.hallOn && styles.sitOn,
         ]}
       >
@@ -396,7 +397,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Slot>
       </View>
     </View>
-    <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
     </View>
     </MastMenuRoot>
   )

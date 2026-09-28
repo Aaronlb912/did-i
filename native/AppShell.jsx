@@ -35,6 +35,29 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { fonts } from './theme.js'
 
 const Stack = createNativeStackNavigator()
+
+/**
+ * The iOS navigation bar every screen wears. It floats over the page: clear
+ * while the page sits at the top, the system material with a hairline once
+ * content scrolls under it. Android draws its top app bar in the page instead.
+ */
+function barOptions(colors) {
+  if (Platform.OS !== 'ios') return { headerShown: false }
+  return {
+    headerShown: true,
+    headerTransparent: true,
+    headerBlurEffect: 'systemChromeMaterial',
+    // The material does the job of iOS 26's top edge blur; both at once overlap.
+    scrollEdgeEffects: { top: 'hidden' },
+    headerShadowVisible: true,
+    headerLargeStyle: { backgroundColor: 'transparent' },
+    headerLargeTitleShadowVisible: false,
+    headerTintColor: colors.on,
+    headerTitleStyle: { fontFamily: fonts.uiSemi, color: colors.ink },
+    headerBackButtonDisplayMode: 'minimal',
+    title: '',
+  }
+}
 const Tab = createNativeBottomTabNavigator()
 const ScreenProps = createContext(null)
 
@@ -81,7 +104,7 @@ function HallScreen() {
   }, [])
   const options = useMemo(
     () => ({
-      headerShown: false,
+      ...barOptions(colors),
       // The lime accent carries over as the tint; Android wears it on the active pill.
       tabBarActiveTintColor: colors.on,
       tabBarInactiveTintColor: colors.inkSoft,
@@ -101,16 +124,19 @@ function HallScreen() {
       <Tab.Screen
         name="/tonight"
         component={TabScreen}
-        options={{ title: t('nav.home'), tabBarIcon: TONIGHT_ICON }}
+        options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON }}
       />
       <Tab.Screen
         name="/lamps"
         component={TabScreen}
-        options={{ title: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
+        options={{ tabBarLabel: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
       />
     </Tab.Navigator>
   )
 }
+
+// The tabs carry their own bars.
+const HALL_OPTIONS = { headerShown: false }
 
 function RouteScreen({ route }) {
   return <RouteBody route={routeFromScreen(route)} />
@@ -207,14 +233,14 @@ export function AppShell() {
 
   const screenOptions = useMemo(
     () => ({
-      headerShown: false,
+      ...barOptions(colors),
       // The platform push: iOS slides with parallax and follows the edge swipe,
       // Android runs the Material shared-axis transition.
       animation: 'default',
       freezeOnBlur: true,
       contentStyle: { backgroundColor: colors.bg },
     }),
-    [colors.bg],
+    [colors],
   )
 
   if (gated) {
@@ -237,7 +263,7 @@ export function AppShell() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>
-          <Stack.Screen name={HALL} component={HallScreen} />
+          <Stack.Screen name={HALL} component={HallScreen} options={HALL_OPTIONS} />
           {STACK_PATHS.map((path) => (
             <Stack.Screen
               key={path}
