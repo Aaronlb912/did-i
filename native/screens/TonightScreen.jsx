@@ -25,6 +25,7 @@ import { NightStrip } from '../components/NightStrip.jsx'
 import { WaitPlate } from '../components/WaitPlate.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
+import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
@@ -120,11 +121,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const faceBook = stack.bookOf(faceRow)
     const stripKeys = stack.recentPeriodKeys(faceRow.lamp, stack.dateIso, 7)
     const hasHistory = stripKeys.some((key) => answerFor(faceBook, faceRow.lamp.id, key))
-    const faceKey = `${stack.rowKey(faceRow)}:${faceRow.periodKey}:${faceRow.answer?.status || 'open'}`
+    // One stack for the night: cards keep their identity by row, so the card
+    // behind is the one that grows into the face.
+    const cardKeyOf = (row) => `${stack.rowKey(row)}:${row.periodKey}`
     face = (
       <SwipeCardHost
-        key={`face:${faceKey}`}
-        cardKey={faceKey}
+        key="face"
+        cardKey={cardKeyOf(faceRow)}
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
@@ -135,7 +138,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         didLabel={t('tonight.answerDid')}
         nopeLabel={t('tonight.answerNope')}
         behind={stack.upNext.map((row) => ({
-          key: stack.rowKey(row),
+          key: cardKeyOf(row),
           kicker: row.tag || t('tonight.didI'),
           title: row.lamp.question,
         }))}
@@ -404,7 +407,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      <View style={styles.slot} pointerEvents="box-none">
+      <SwipeFlyHost style={styles.slot}>
         <Slot>{face}</Slot>
         <Slot>
           <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
@@ -412,7 +415,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Slot>
           <FamilyTonight colors={colors} />
         </Slot>
-      </View>
+      </SwipeFlyHost>
     </View>
     </View>
     </MastMenuRoot>

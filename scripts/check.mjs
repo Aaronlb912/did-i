@@ -92,6 +92,7 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
+import { cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -1809,7 +1810,9 @@ test('native metro shims are wired and pin default exports', () => {
   assert.ok(swipeCard.includes('accessibilityActions'), 'Did and nope are actions a screen reader can take')
   assert.ok(swipeCard.includes('nopeLabel') && swipeCard.includes('didLabel'), 'the face swipes and has Nope and Did buttons')
   assert.equal(swipeStub.includes('Pressable'), false, 'the face fallback has no answer buttons')
-  assert.ok(swipeCard.includes('PanResponder'), 'the face swipes without the gesture module')
+  assert.equal(swipeCard.includes('PanResponder'), false, 'the face drags on the UI thread, not the JS thread')
+  assert.ok(swipeCard.includes('usePanGesture') && swipeCard.includes('useAnimatedStyle'), 'the face swipes with Gesture Handler and Reanimated')
+  assert.ok(swipeCard.includes('releaseWay'), 'a flick answers by where it was headed')
   assert.ok(swipeCard.includes('borderWidth: 1'), 'the face keeps its border')
 
   assert.equal(typeof kept.createWidget, 'function', 'seal should keep createWidget')
@@ -2165,6 +2168,44 @@ Object.assign(phoneStubs['expo-haptics'], {
   selectionAsync: async () => felt.push('selection'),
 })
 const phone = await import('../native/shim/native.js')
+
+test('a flick answers by where it was headed and flies off along its path', () => {
+  // Let go short of the line with no speed: back to the middle.
+  assert.equal(releaseWay(60, 0), 0)
+  // Past the line, held still: answered.
+  assert.equal(releaseWay(130, 0), 1)
+  assert.equal(releaseWay(-130, 0), -1)
+  // A short, fast flick counts.
+  assert.equal(releaseWay(40, 900), 1)
+  assert.equal(releaseWay(-40, -900), -1)
+  // Past the line but thrown back: not answered.
+  assert.equal(releaseWay(130, -600), 0)
+  // A side that is closed never answers.
+  assert.equal(releaseWay(200, 900, true, false), 0)
+  assert.equal(releaseWay(-200, -900, false, true), 0)
+
+  // Grabbing low turns the card the other way.
+  assert.equal(grabSide(20, 200), 1)
+  assert.equal(grabSide(180, 200), -1)
+  assert.ok(cardTilt(100, 400, 1) > 0)
+  assert.ok(cardTilt(100, 400, -1) < 0)
+  assert.equal(cardTilt(0, 400, 1), 0)
+
+  // Thrown right and down: it leaves the screen on the right, lower, fast.
+  const path = flyPath(150, 10, 2400, 500, 1, 400)
+  assert.ok(path.x > 400, 'clears the right edge')
+  assert.ok(path.y > 10, 'keeps falling the way it was moving')
+  assert.ok(path.duration >= 180 && path.duration <= 340)
+  const slow = flyPath(0, 0, 0, 0, -1, 400)
+  assert.ok(slow.x < -400, 'a tap throws it off the left edge')
+
+  // The stack: the face at full size, the next two smaller and lower.
+  assert.deepEqual(depthLook(0), { scale: 1, translateY: 0, opacity: 1 })
+  assert.equal(depthLook(1).scale, 0.96)
+  assert.equal(depthLook(2).scale, 0.92)
+  assert.ok(depthLook(0.5).scale < 1 && depthLook(0.5).scale > 0.96, 'a card growing up is in between')
+  assert.equal(depthLook(3).opacity, 0)
+})
 
 test('haptics speak one language on Tonight and do not switch off with Reduce Motion', () => {
   writePrefs({ lessMotion: true })

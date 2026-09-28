@@ -1,4 +1,4 @@
-// SwipeCard default-imports Gesture from RNGH.
+// SwipeCard uses usePanGesture and GestureDetector from RNGH.
 // initialize() and the Gesture getter can throw on `.default`.
 
 const React = require('react')
@@ -37,6 +37,12 @@ const Gesture = {
   },
 }
 
+// Without the native module the card stays put; the Nope and Did buttons
+// still answer.
+function usePanGesture() {
+  return { fallback: true }
+}
+
 function GestureDetector({ children }) {
   return children
 }
@@ -52,6 +58,7 @@ function fallback() {
     Gesture,
     GestureDetector,
     GestureHandlerRootView,
+    usePanGesture,
   }
 }
 
@@ -60,6 +67,7 @@ function isOk(mod) {
     mod &&
       mod.Gesture &&
       typeof mod.Gesture.Pan === 'function' &&
+      typeof mod.usePanGesture === 'function' &&
       mod.GestureDetector &&
       mod.GestureHandlerRootView,
   )
