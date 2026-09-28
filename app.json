@@ -16,7 +16,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.aaronbryant.didi",
-      "buildNumber": "63",
+      "buildNumber": "64",
       "supportsTablet": false,
       "deploymentTarget": "17.0",
       "infoPlist": {
