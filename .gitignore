@@ -56,3 +56,7 @@ supabase/.temp
 
 .claude/*.png
 .claude/*.mp4
+
+# Android build output
+android/build
+android/app/.cxx
