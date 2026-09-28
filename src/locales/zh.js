@@ -139,6 +139,8 @@ export const zh = {
   'settings.ideas': '问什么',
   'settings.what': '这是什么',
   'settings.intro': '再看一遍介绍',
+  'settings.howDidIWorks': 'Did I 怎么用',
+  'settings.replayIntro': '重新看介绍',
   'settings.leave': '离开',
   'settings.leaveHintOn': '你的问题还在这里。下次打开会问你和数字。',
   'settings.leaveHintOff': '你的问题还在这里。下次打开会再问你。',

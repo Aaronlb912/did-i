@@ -142,6 +142,8 @@ export const it = {
   'settings.ideas': 'Cosa chiedere',
   'settings.what': 'Che cos’è',
   'settings.intro': 'L’intro di nuovo',
+  'settings.howDidIWorks': 'Come funziona Did I',
+  'settings.replayIntro': 'Rivedi l’intro',
   'settings.leave': 'Esci',
   'settings.leaveHintOn':
     'Le tue domande restano qui. Alla prossima apertura chiede te e il numero.',

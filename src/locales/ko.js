@@ -139,6 +139,8 @@ export const ko = {
   'settings.ideas': '뭘 물을까',
   'settings.what': '이게 뭐야',
   'settings.intro': '처음 안내 다시',
+  'settings.howDidIWorks': 'Did I 사용법',
+  'settings.replayIntro': '안내 다시 보기',
   'settings.leave': '나가기',
   'settings.leaveHintOn': 'questions는 여기 남아. 다음에 열면 이름과 숫자를 물어봐.',
   'settings.leaveHintOff': 'questions는 여기 남아. 다음에 열면 다시 이름을 물어봐.',

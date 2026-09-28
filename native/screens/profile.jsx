@@ -82,6 +82,7 @@ export function PhoneSettingsScreen({ book, onChange }) {
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="logout"
           label={t('settings.signOut')}
           note={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
           danger
@@ -164,6 +165,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="person"
+          tint={colors.on}
           label={t('settings.account')}
           sub={account.email ? t('settings.accountSub') : t('settings.accountOffSub')}
           value={account.email || t('settings.accountOff')}
@@ -172,6 +175,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="people"
+          tint={colors.late}
           label={t('people.kicker')}
           sub={t('people.rowSub')}
           chevron
@@ -183,6 +188,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
+          icon="moon"
+          tint={colors.late}
           label={t('settings.theme')}
           options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
           selected={prefs.theme}
@@ -190,6 +197,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetChoice
           colors={colors}
+          icon="clock"
+          tint={colors.on}
           label={t('settings.clock')}
           options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
           selected={prefs.clock}
@@ -197,6 +206,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetChoice
           colors={colors}
+          icon="globe"
+          tint={colors.late}
           label={t('settings.language')}
           options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
           selected={prefs.locale}
@@ -214,6 +225,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
+          icon="grid"
+          tint={colors.on}
           label={t('widget.settings.look')}
           sub={t('widget.settings.lookSub')}
           options={[
@@ -240,19 +253,32 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="clock"
+          tint={colors.on}
           label={t('settings.fold')}
           sub={t('settings.foldSub', { zone: zoneWords() })}
           value={t('settings.foldAt')}
         />
-        <SetRow colors={colors} label={t('settings.reminders')} chevron onPress={() => goHash('/pings')} />
+        <SetRow
+          colors={colors}
+          icon="bell"
+          tint={colors.late}
+          label={t('settings.reminders')}
+          chevron
+          onPress={() => goHash('/pings')}
+        />
         <SetSwitch
           colors={colors}
+          icon="volume"
+          tint={colors.on}
           label={t('settings.soundOn')}
           on={Boolean(book?.clickSound)}
           onPress={() => onChange?.({ ...book, clickSound: !book.clickSound })}
         />
         <SetSwitch
           colors={colors}
+          icon="eye"
+          tint={colors.late}
           label={t('settings.hideMarks')}
           on={Boolean(book?.quietMode)}
           onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
@@ -261,13 +287,30 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('tags.aria')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} label={t('tags.aria')} sub={t('tags.openHint')} chevron onPress={() => goHash('/me')} />
-        <SetRow colors={colors} label={t('marks.kicker')} chevron onPress={() => goHash('/marks')} />
+        <SetRow
+          colors={colors}
+          icon="folder"
+          tint={colors.on}
+          label={t('tags.aria')}
+          sub={t('tags.openHint')}
+          chevron
+          onPress={() => goHash('/me')}
+        />
+        <SetRow
+          colors={colors}
+          icon="collection"
+          tint={colors.late}
+          label={t('marks.kicker')}
+          chevron
+          onPress={() => goHash('/marks')}
+        />
       </SetCard>
 
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
+          icon="settings"
+          tint={colors.inkSoft}
           label={t('settings.title')}
           sub={t('settings.phoneSub')}
           chevron
@@ -278,19 +321,44 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCap colors={colors}>{t('settings.help')}</SetCap>
       <SetCard colors={colors}>
         {onSendCopy ? (
-          <SetRow colors={colors} label={t('settings.sendCopy')} sub={t('settings.sendCopySub')} onPress={onSendCopy} />
+          <SetRow
+            colors={colors}
+            icon="note"
+            tint={colors.inkSoft}
+            label={t('settings.sendCopy')}
+            sub={t('settings.sendCopySub')}
+            onPress={onSendCopy}
+          />
         ) : (
           <SetRow
             colors={colors}
+            icon="note"
+            tint={colors.inkSoft}
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
             onPress={() => shareShelf(readShelf())}
           />
         )}
-        <SetRow colors={colors} label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onPress={pickFile} />
-        <SetRow colors={colors} label={t('settings.how')} chevron onPress={() => goHash('/help')} />
         <SetRow
           colors={colors}
+          icon="note"
+          tint={colors.late}
+          label={t('settings.loadCopy')}
+          sub={t('settings.loadCopySub')}
+          onPress={pickFile}
+        />
+        <SetRow
+          colors={colors}
+          icon="help"
+          tint={colors.on}
+          label={t('settings.howDidIWorks')}
+          chevron
+          onPress={() => goHash('/help')}
+        />
+        <SetRow
+          colors={colors}
+          icon="note"
+          tint={colors.late}
           label={t('feedback.send')}
           sub={t('feedback.sub')}
           onPress={() => {
@@ -298,9 +366,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             if (url) Linking.openURL(url)
           }}
         />
-        <SetRow colors={colors} label={t('settings.ideas')} chevron onPress={() => goHash('/ideas')} />
-        <SetRow colors={colors} label={t('settings.what')} chevron onPress={() => goHash('/about')} />
-        <SetRow colors={colors} label={t('settings.intro')} chevron onPress={() => goHash('/welcome')} />
+        <SetRow
+          colors={colors}
+          icon="play"
+          tint={colors.on}
+          label={t('settings.replayIntro')}
+          chevron
+          last
+          onPress={() => goHash('/welcome')}
+        />
       </SetCard>
       {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
 
@@ -308,6 +382,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetSwitch
           colors={colors}
+          icon="shield"
+          tint={colors.late}
           label={t('settings.diagnostics')}
           sub={t('settings.diagnosticsSub')}
           on={Boolean(prefs.shareDiagnostics)}
@@ -315,17 +391,20 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="shield"
+          tint={colors.inkSoft}
           label={t('settings.phonePrivacy')}
           sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
           chevron
+          last
           onPress={() => Linking.openSettings()}
         />
       </SetCard>
 
       <SetCap colors={colors}>{t('settings.legal')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} label={t('settings.privacy')} chevron onPress={() => goHash('/privacy')} />
-        <SetRow colors={colors} label={t('settings.terms')} chevron onPress={() => goHash('/terms')} />
+        <SetRow colors={colors} icon="note" tint={colors.inkSoft} label={t('settings.privacy')} chevron onPress={() => goHash('/privacy')} />
+        <SetRow colors={colors} icon="note" tint={colors.inkSoft} label={t('settings.terms')} chevron last onPress={() => goHash('/terms')} />
       </SetCard>
       {!legalEmail() ? <Text style={[styles.miss, { color: colors.miss }]}>{t('legal.operatorWarn')}</Text> : null}
 
@@ -334,6 +413,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         {onStartEmpty ? (
           <SetRow
             colors={colors}
+            icon="warning"
             label={t('settings.emptyBoard')}
             danger
             onPress={() =>

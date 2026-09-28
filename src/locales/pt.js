@@ -141,6 +141,8 @@ export const pt = {
   'settings.ideas': 'O que perguntar',
   'settings.what': 'O que é isto',
   'settings.intro': 'A intro de novo',
+  'settings.howDidIWorks': 'Como funciona o Did I',
+  'settings.replayIntro': 'Rever a intro',
   'settings.leave': 'Sair',
   'settings.leaveHintOn': 'Suas perguntas ficam aqui. A próxima abertura pede você e o número.',
   'settings.leaveHintOff': 'Suas perguntas ficam aqui. A próxima abertura pede você de novo.',

@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -22,13 +22,15 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger, colors, on }) {
+export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on }) {
   const flat = !onPress
+  const tileColor = danger ? colors.miss : tint || colors.inkSoft
+  const tileBg = danger ? `${colors.miss}1f` : tint ? `${tint}1f` : colors.panel2
   const body = (
     <>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
-          <MenuIcon name={icon} color={danger ? colors.miss : colors.inkSoft} size={17} stroke />
+        <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
+          <MenuIcon name={icon} color={tileColor} size={17} stroke />
         </View>
       ) : null}
       <View style={styles.copy}>
@@ -67,36 +69,29 @@ export function SetRow({ label, sub, value, icon, last, onPress, chevron, danger
   )
 }
 
-export function SetSwitch({ label, sub, icon, last, on, onPress, colors }) {
+export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors }) {
+  const tileColor = tint || (on ? colors.on : colors.inkSoft)
+  const tileBg = tint ? `${tint}1f` : colors.panel2
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
-      style={({ pressed }) => [
-        styles.row,
-        { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
-        last && { borderBottomWidth: 0 },
-      ]}
-    >
+    <View style={[styles.row, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}>
       {icon ? (
-        <View style={[styles.iconTile, { backgroundColor: colors.panel2 }]}>
-          <MenuIcon name={icon} color={on ? colors.on : colors.inkSoft} size={17} stroke />
+        <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
+          <MenuIcon name={icon} color={tileColor} size={17} stroke />
         </View>
       ) : null}
       <View style={styles.copy}>
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
       </View>
-      <View style={[styles.switch, { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.on : colors.open }]}>
-        <View
-          style={[
-            styles.switchKnob,
-            { backgroundColor: on ? colors.bg : colors.panel, alignSelf: on ? 'flex-end' : 'flex-start' },
-          ]}
-        />
-      </View>
-    </Pressable>
+      <Switch
+        value={on}
+        onValueChange={onPress}
+        accessibilityLabel={label}
+        trackColor={{ false: colors.open, true: colors.on }}
+        thumbColor={Platform.OS === 'android' ? (on ? colors.onDeep : colors.panel3) : undefined}
+        ios_backgroundColor={colors.open}
+      />
+    </View>
   )
 }
 
@@ -212,19 +207,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 0,
     minHeight: 24,
-  },
-  switch: {
-    width: 44,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  switchKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
   },
   veil: {
     flex: 1,

@@ -143,6 +143,8 @@ export const en = {
   'settings.ideas': 'What to ask',
   'settings.what': 'What this is',
   'settings.intro': 'The intro again',
+  'settings.howDidIWorks': 'How Did I works',
+  'settings.replayIntro': 'Replay the intro',
   'settings.leave': 'Leave',
   'settings.leaveHintOn': 'Your questions stay here. Next open asks for your name and PIN.',
   'settings.leaveHintOff': 'Your questions stay here. Next open asks for you again.',

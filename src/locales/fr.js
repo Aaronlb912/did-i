@@ -143,6 +143,8 @@ export const fr = {
   'settings.ideas': 'Quoi demander',
   'settings.what': 'Ce que c’est',
   'settings.intro': 'L’intro encore',
+  'settings.howDidIWorks': 'Comment marche Did I',
+  'settings.replayIntro': 'Revoir l’intro',
   'settings.leave': 'Partir',
   'settings.leaveHintOn':
     'Tes questions restent ici. La prochaine ouverture demande toi et le numéro.',

@@ -143,6 +143,8 @@ export const de = {
   'settings.ideas': 'Was fragen',
   'settings.what': 'Was das ist',
   'settings.intro': 'Die Intro nochmal',
+  'settings.howDidIWorks': 'So funktioniert Did I',
+  'settings.replayIntro': 'Intro erneut ansehen',
   'settings.leave': 'Gehen',
   'settings.leaveHintOn':
     'Deine Fragen bleiben hier. Beim nächsten Öffnen fragt es nach dir und der Nummer.',

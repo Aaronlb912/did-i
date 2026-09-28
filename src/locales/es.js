@@ -144,6 +144,8 @@ export const es = {
   'settings.ideas': 'Qué preguntar',
   'settings.what': 'Qué es esto',
   'settings.intro': 'La intro otra vez',
+  'settings.howDidIWorks': 'Cómo funciona Did I',
+  'settings.replayIntro': 'Repetir la intro',
   'settings.leave': 'Salir',
   'settings.leaveHintOn': 'Tus preguntas se quedan. La próxima vez pide tu nombre y el PIN.',
   'settings.leaveHintOff': 'Tus preguntas se quedan. La próxima vez pide tu nombre otra vez.',

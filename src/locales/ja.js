@@ -139,6 +139,8 @@ export const ja = {
   'settings.ideas': '何を聞くか',
   'settings.what': 'これは何か',
   'settings.intro': '最初の案内をもう一度',
+  'settings.howDidIWorks': 'Did Iの使い方',
+  'settings.replayIntro': '案内をもう一度見る',
   'settings.leave': '出る',
   'settings.leaveHintOn': '質問はここに残る。次に開くとあなたと数字を聞く。',
   'settings.leaveHintOff': '質問はここに残る。次に開くとまたあなたを聞く。',
