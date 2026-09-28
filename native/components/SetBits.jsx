@@ -1,4 +1,5 @@
-import { Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -85,15 +86,58 @@ export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors })
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
       </View>
-      <Switch
-        value={on}
-        onValueChange={onPress}
-        accessibilityLabel={label}
-        trackColor={{ false: colors.open, true: colors.on }}
-        thumbColor={Platform.OS === 'android' ? (on ? colors.onDeep : colors.panel3) : undefined}
-        ios_backgroundColor={colors.open}
-      />
+      {Platform.OS === 'android' ? (
+        <M3Switch on={on} onPress={onPress} label={label} colors={colors} />
+      ) : (
+        <Switch
+          value={on}
+          onValueChange={onPress}
+          accessibilityLabel={label}
+          trackColor={{ false: colors.open, true: colors.on }}
+          ios_backgroundColor={colors.open}
+        />
+      )}
     </View>
+  )
+}
+
+// Android's native Switch is still AppCompat's thin translucent track, so off
+// read as dark grey on dark grey. Material 3's off state has an outlined
+// track and an outline-colored thumb; on fills the track and grows the thumb.
+function M3Switch({ on, onPress, label, colors }) {
+  const reduce = useReduceMotion()
+  const move = useRef(new Animated.Value(on ? 1 : 0)).current
+  useEffect(() => {
+    if (reduce) {
+      move.setValue(on ? 1 : 0)
+      return
+    }
+    Animated.timing(move, { toValue: on ? 1 : 0, duration: 150, useNativeDriver: false }).start()
+  }, [on, reduce, move])
+  const size = move.interpolate({ inputRange: [0, 1], outputRange: [16, 24] })
+  const left = move.interpolate({ inputRange: [0, 1], outputRange: [6, 22] })
+  const top = move.interpolate({ inputRange: [0, 1], outputRange: [6, 2] })
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: Boolean(on) }}
+      onPress={() => onPress?.(!on)}
+      hitSlop={8}
+      style={[
+        styles.m3Track,
+        on
+          ? { backgroundColor: colors.on, borderColor: colors.on }
+          : { backgroundColor: colors.open, borderColor: colors.inkSoft },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.m3Thumb,
+          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.inkSoft },
+        ]}
+      />
+    </Pressable>
   )
 }
 
@@ -157,6 +201,8 @@ export function SetSheet({ title, onClose, children, colors }) {
 }
 
 const styles = StyleSheet.create({
+  m3Track: { width: 52, height: 32, borderRadius: 16, borderWidth: 2 },
+  m3Thumb: { position: 'absolute', borderRadius: 12 },
   iconTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cap: {
     fontFamily: fonts.ui,
