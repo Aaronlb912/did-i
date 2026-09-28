@@ -57,7 +57,7 @@ import { goHash } from '../navigation/hash.js'
 import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
-import { kitTabDefault } from '../../src/lib/kit-tab.js'
+import { KitSegment } from '../components/KitSegment.jsx'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 
@@ -1042,58 +1042,28 @@ export function GemShopScreen({ book }) {
   )
 }
 
-function KitTabs({ tab, onTab, counts, colors }) {
-  const tabs = [
-    { id: 'looks', key: 'shop.looks' },
-    { id: 'cheers', key: 'shop.cheers' },
-    { id: 'buddies', key: 'shop.buddies' },
-  ]
+const KIT_TABS = [
+  { id: 'looks', key: 'shop.looks' },
+  { id: 'cheers', key: 'shop.cheers' },
+  { id: 'buddies', key: 'shop.buddies' },
+]
+
+function WornBadge({ colors }) {
   return (
-    <View style={styles.kitTabs}>
-      {tabs.map((item) => {
-        const on = tab === item.id
-        return (
-          <Pressable
-            key={item.id}
-            onPress={() => onTab(item.id)}
-            style={[
-              styles.kitTab,
-              {
-                borderColor: on ? colors.onDeep : colors.line,
-                backgroundColor: on ? colors.panel : colors.panel2,
-              },
-            ]}
-          >
-            <Text
-              style={[styles.kitTabText, { color: on ? colors.on : colors.inkSoft }]}
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.4}
-            >
-              {t(item.key)}
-            </Text>
-            <Text style={[styles.kitTabN, { color: on ? colors.on : colors.inkDim }]} maxFontSizeMultiplier={1.4}>
-              {counts[item.id]}
-            </Text>
-          </Pressable>
-        )
-      })}
+    <View style={[styles.wornBadge, { backgroundColor: colors.on, borderColor: colors.panel }]}>
+      <Text style={[styles.wornBadgeText, { color: colors.bg }]}>✓</Text>
     </View>
   )
 }
 
-function KitTile({ label, on, worn, onPress, colors, children }) {
+// One grid: the worn item carries a check badge instead of living twice, once
+// as a big card and again as a tile. A tap wears it.
+function KitTile({ label, worn, onPress, colors, children }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.kitTile,
-        { borderColor: colors.lineSoft },
-        on && { backgroundColor: colors.panel2, borderColor: colors.onDeep },
-      ]}
-    >
+    <Pressable onPress={onPress} style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
       <View style={styles.kitTileChip}>
         {children}
-        {worn && !on ? <View style={[styles.kitTileDot, { backgroundColor: colors.on }]} /> : null}
+        {worn ? <WornBadge colors={colors} /> : null}
       </View>
       <Text style={[styles.kitTileName, { color: colors.ink }]} numberOfLines={1}>
         {label}
@@ -1104,22 +1074,15 @@ function KitTile({ label, on, worn, onPress, colors, children }) {
 
 export function CollectionScreen({ book, onChange }) {
   const [tab, setTab] = useState('looks')
-  const [pick, setPick] = useState('')
-  const [peekLook, setPeekLook] = useState('')
-  const colors = useShopColors(book, peekLook)
+  const colors = useShopColors(book)
   const coat = activeLook(book)
   const purse = normalizePurse(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
   const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
-  const focusId = pick || kitTabDefault(tab, purse)
+  const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
 
-  useEffect(() => {
-    setPick('')
-    setPeekLook('')
-  }, [tab])
-
-  function pickCheer(id) {
+  function wearCheerId(id) {
     onChange(wearCheer(book, id).book)
   }
 
@@ -1131,120 +1094,13 @@ export function CollectionScreen({ book, onChange }) {
     }
   }
 
-  function focusPanel() {
-    if (tab === 'looks') {
-      const item = looks.find((row) => row.id === focusId)
-      if (!item) return null
-      const on = purse.lookOn === item.id
-      return (
-        <ShopActionRow
-          colors={colors}
-          preview={<LookChip id={item.id} colors={colors} />}
-          previewOn={peekLook === item.id}
-          onPreview={() => setPeekLook((prev) => (prev === item.id ? '' : item.id))}
-          name={t(lookText(item.id, 'name'))}
-          note={t(lookText(item.id, 'line'))}
-          actionLabel={on ? t('shop.on') : t('shop.use')}
-          primary={on}
-          disabled={on}
-          onAction={() => onChange(buyLook(book, item.id).book)}
-        />
-      )
-    }
-    if (tab === 'buddies') {
-      if (focusId === 'off') {
-        const on = !purse.buddyOn
-        return (
-          <ShopActionRow
-            colors={colors}
-            name={t('kit.buddyOff')}
-            note={t('kit.buddyOffLine')}
-            actionLabel={on ? t('shop.on') : t('shop.use')}
-            primary={on}
-            disabled={on}
-            onAction={() => onChange(wearBuddy(book, '').book)}
-          />
-        )
-      }
-      const item = buddies.find((row) => row.id === focusId)
-      if (!item) return null
-      const on = purse.buddyOn === item.id
-      return (
-        <ShopActionRow
-          colors={colors}
-          name={t(buddyText(item.id, 'name'))}
-          note={t(buddyText(item.id, 'line'))}
-          actionLabel={on ? t('shop.on') : t('shop.use')}
-          primary={on}
-          disabled={on}
-          onAction={() => onChange(wearBuddy(book, item.id).book)}
-        />
-      )
-    }
-    if (focusId === 'off') {
-      const on = !purse.cheerOn
-      return (
-        <ShopActionRow
-          colors={colors}
-          name={t('kit.cheerOff')}
-          note={t('kit.cheerOffLine')}
-          actionLabel={on ? t('shop.on') : t('shop.use')}
-          primary={on}
-          disabled={on}
-          onAction={() => pickCheer('')}
-        />
-      )
-    }
-    const item = cheers.find((row) => row.id === focusId)
-    if (!item) return null
-    const on = purse.cheerOn === item.id
-    const owned = cheerStageOf(book, item.id)
-    const play = cheerPlayOf(book, item.id)
-    return (
-      <View style={[styles.cheerPick, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <ShopActionRow
-          nested
-          colors={colors}
-          preview={<CheerChip id={item.id} stage={play} colors={colors} />}
-          onPreview={() => fireCheer(item.id, play, coat, undefined, true)}
-          name={t(cheerText(item.id, 'name'))}
-          note={t('shop.cheerStageLine', {
-            n: play,
-            max: CHEER_STAGE_MAX,
-            line: t(cheerText(item.id, 'line')),
-          })}
-          actionLabel={on ? t('shop.on') : t('shop.use')}
-          primary={on}
-          disabled={on}
-          onAction={() => pickCheer(item.id)}
-        />
-        <StagePicks owned={owned} play={play} on={on} onPick={(n) => pickStage(item.id, n)} colors={colors} />
-      </View>
-    )
-  }
+  const segItems = KIT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))
 
   return (
-    <BoardShell
-      book={book}
-      title={t('kit.title')}
-      date={shellDate(book)}
-      colors={colors}
-      look={peekLook || undefined}
-    >
+    <BoardShell book={book} title={t('kit.title')} date={shellDate(book)} colors={colors}>
       <Meta colors={colors}>{t('kit.hint')}</Meta>
 
-      {peekLook && isGemLook(peekLook) ? <LookPreviewCard id={peekLook} /> : null}
-
-      <KitTabs
-        tab={tab}
-        onTab={setTab}
-        counts={{ looks: looks.length, cheers: cheers.length, buddies: buddies.length }}
-        colors={colors}
-      />
-
-      <View style={[styles.kitFocus, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        {focusPanel()}
-      </View>
+      <KitSegment items={segItems} selected={tab} onSelect={setTab} colors={colors} />
 
       {tab === 'looks' ? (
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -1252,13 +1108,9 @@ export function CollectionScreen({ book, onChange }) {
             <KitTile
               key={item.id}
               label={t(lookText(item.id, 'name'))}
-              on={focusId === item.id}
               worn={purse.lookOn === item.id}
               colors={colors}
-              onPress={() => {
-                setPick(item.id)
-                setPeekLook(item.id)
-              }}
+              onPress={() => onChange(buyLook(book, item.id).book)}
             >
               <LookChip id={item.id} colors={colors} />
             </KitTile>
@@ -1277,20 +1129,18 @@ export function CollectionScreen({ book, onChange }) {
             <KitTile
               key={item.id}
               label={t(buddyText(item.id, 'name'))}
-              on={focusId === item.id}
               worn={purse.buddyOn === item.id}
               colors={colors}
-              onPress={() => setPick(item.id)}
+              onPress={() => onChange(wearBuddy(book, item.id).book)}
             >
               <BuddyChip id={item.id} colors={colors} />
             </KitTile>
           ))}
           <KitTile
             label={t('kit.buddyOff')}
-            on={focusId === 'off'}
             worn={!purse.buddyOn}
             colors={colors}
-            onPress={() => setPick('off')}
+            onPress={() => onChange(wearBuddy(book, '').book)}
           >
             <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
           </KitTile>
@@ -1298,35 +1148,54 @@ export function CollectionScreen({ book, onChange }) {
       ) : null}
 
       {tab === 'cheers' ? (
-        <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-          {cheers.map((item) => {
-            const play = cheerPlayOf(book, item.id)
-            return (
-              <KitTile
-                key={item.id}
-                label={t(cheerText(item.id, 'name'))}
-                on={focusId === item.id}
-                worn={purse.cheerOn === item.id}
+        <>
+          <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+            {cheers.map((item) => {
+              const play = cheerPlayOf(book, item.id)
+              return (
+                <KitTile
+                  key={item.id}
+                  label={t(cheerText(item.id, 'name'))}
+                  worn={purse.cheerOn === item.id}
+                  colors={colors}
+                  onPress={() => {
+                    wearCheerId(item.id)
+                    fireCheer(item.id, play, coat, undefined, true)
+                  }}
+                >
+                  <CheerChip id={item.id} stage={play} colors={colors} />
+                </KitTile>
+              )
+            })}
+            <KitTile
+              label={t('kit.cheerOff')}
+              worn={!purse.cheerOn}
+              colors={colors}
+              onPress={() => wearCheerId('')}
+            >
+              <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
+            </KitTile>
+          </View>
+
+          {wornCheer ? (
+            <View style={[styles.cheerPick, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+              <Text style={[styles.shopName, { color: colors.ink }]}>
+                {t('shop.cheerStageLine', {
+                  n: cheerPlayOf(book, wornCheer.id),
+                  max: CHEER_STAGE_MAX,
+                  line: t(cheerText(wornCheer.id, 'line')),
+                })}
+              </Text>
+              <StagePicks
+                owned={cheerStageOf(book, wornCheer.id)}
+                play={cheerPlayOf(book, wornCheer.id)}
+                on
+                onPick={(n) => pickStage(wornCheer.id, n)}
                 colors={colors}
-                onPress={() => {
-                  setPick(item.id)
-                  fireCheer(item.id, play, coat, undefined, true)
-                }}
-              >
-                <CheerChip id={item.id} stage={play} colors={colors} />
-              </KitTile>
-            )
-          })}
-          <KitTile
-            label={t('kit.cheerOff')}
-            on={focusId === 'off'}
-            worn={!purse.cheerOn}
-            colors={colors}
-            onPress={() => setPick('off')}
-          >
-            <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
-          </KitTile>
-        </View>
+              />
+            </View>
+          ) : null}
+        </>
       ) : null}
 
       <KeyButton label={t('shop.title')} onPress={() => goHash('/shop')} colors={colors} />
@@ -1544,37 +1413,13 @@ const styles = StyleSheet.create({
   shopDoorChip: { width: 36, alignItems: 'center' },
   shopDoorMeta: { fontFamily: fonts.ui, fontSize: 12 },
   shopDoorChev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24 },
-  kitTabs: { flexDirection: 'row', gap: 6, marginTop: 4, marginBottom: 10 },
-  kitTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 38,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-  },
-  kitTabText: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  kitTabN: { fontFamily: fonts.mono, fontSize: 10 },
-  kitFocus: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-  },
   kitGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     borderWidth: 1,
     borderRadius: 12,
     overflow: 'hidden',
+    marginTop: 10,
     marginBottom: 8,
   },
   kitTile: {
@@ -1589,14 +1434,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  kitTileDot: {
+  wornBadge: {
     position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 7,
-    height: 7,
-    borderRadius: 999,
+    right: -4,
+    top: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  wornBadgeText: { fontSize: 10, fontWeight: '700', lineHeight: 12 },
   kitTileName: { fontFamily: fonts.ui, fontSize: 11, fontWeight: '600', maxWidth: '100%' },
   kitOffChip: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
   kitEmpty: { width: '100%', padding: 14 },
