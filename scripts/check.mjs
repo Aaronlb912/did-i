@@ -53,6 +53,7 @@ import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/
 import { validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
+import { t } from '../src/lib/i18n.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -737,6 +738,36 @@ test('gem week survives shelf writes', () => {
 
   const again = weeklyGemBump(normalized, normalized, clock)
   assert.equal(again.boards[0].gems, 1)
+})
+
+test('a folder still called Did I from before the General rename lands as General on load', () => {
+  const old = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [old] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.equal(shelf.boards[0].lamps.map((item) => item.id).join(','), 'a')
+
+  const renamed = { id: 'b2', title: 'Chores', lamps: [lamp('b')], answers: [] }
+  const untouched = normalizeShelf({ currentId: 'b2', boards: [renamed] })
+  assert.equal(untouched.boards[0].title, 'Chores')
+})
+
+test('a leftover Did I folder folds into an already-renamed General folder on the same phone', () => {
+  const stillOld = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const alreadyGeneral = { id: 'b2', title: t('tags.general'), lamps: [lamp('b')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [stillOld, alreadyGeneral] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.deepEqual(shelf.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
+})
+
+test('two phones converge on General for the old default folder when they sync', () => {
+  const local = { currentId: 'b1', boards: [{ id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }] }
+  const remote = { currentId: 'b1', boards: [{ id: 'b1', title: t('tags.general'), lamps: [lamp('b')], answers: [] }] }
+  const merged = mergeShelves(local, remote, '2026-09-20T00:00:00', '2026-09-21T00:00:00')
+  assert.equal(merged.boards.length, 1)
+  assert.equal(merged.boards[0].title, t('tags.general'))
+  assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
 })
 
 test('every gem pack is $1 a gem, and bigger packs add bonus gems', () => {

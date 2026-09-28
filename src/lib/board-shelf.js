@@ -10,6 +10,16 @@ export { readSavedAt, stampSavedAt }
 const SHELF_KEY = 'did-i-shelf'
 const OLD_KEY = 'did-i-board'
 
+// normalizeBook's empty-title fallback used to be the literal 'Did I' before
+// it became the localized General folder. A folder still carrying that old
+// default (typed then, or landed there via the old fallback) converges to
+// General so it folds into today's General folder on next mergeSameTitles.
+const OLD_DEFAULT_TITLE = 'Did I'
+
+function migrateDefaultTitle(book) {
+  return book.title === OLD_DEFAULT_TITLE ? { ...book, title: t('tags.general') } : book
+}
+
 export function currentBook(shelf) {
   if (!shelf || !shelf.boards || !shelf.boards.length) return emptyBoard()
   return shelf.boards.find((book) => book.id === shelf.currentId) || shelf.boards[0]
@@ -17,7 +27,9 @@ export function currentBook(shelf) {
 
 export function normalizeShelf(raw) {
   const source = raw && typeof raw === 'object' ? raw : {}
-  const boards = Array.isArray(source.boards) ? source.boards.map((book) => normalizeBook(book)) : []
+  const boards = Array.isArray(source.boards)
+    ? source.boards.map((book) => migrateDefaultTitle(normalizeBook(book)))
+    : []
   if (!boards.length) {
     const book = emptyBoard()
     return { currentId: book.id, boards: [book] }
