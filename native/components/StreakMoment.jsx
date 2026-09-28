@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { markStreakSeen, takePendingStreakMoment } from '../../src/lib/streak-moments.js'
 import { t } from '../../src/lib/i18n.js'
+import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { fonts } from '../theme.js'
 import { DidButton } from './ui.jsx'
@@ -11,8 +12,7 @@ function copy(moment) {
   if (moment.kind === 'hit') {
     return {
       kicker: t('streak.hitKicker'),
-      title: t('streak.hitTitle', { n: moment.n }),
-      body: t('streak.hitBody', { n: moment.n }),
+      ...streakHitCopy(moment.n),
       yes: t('streak.hitOk'),
     }
   }
@@ -39,6 +39,12 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
     function onStreak(event) {
       const detail = event?.detail
       if (!detail?.kind) return
+      // A night cleared with the app open is celebrated on Tonight's done
+      // card; a second card on top of it would only crowd the moment.
+      if (detail.kind === 'hit') {
+        markStreakSeen('hit', detail.dateIso || boardDate(new Date()))
+        return
+      }
       setMoment(detail)
     }
     globalThis.window?.addEventListener?.('did-i-streak', onStreak)

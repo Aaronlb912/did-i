@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { markText } from '../../src/lib/achievements.js'
 import { t } from '../../src/lib/i18n.js'
@@ -6,8 +6,20 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { KeyButton } from './ui.jsx'
 import { fonts } from '../theme.js'
 
-export function MarkToast({ mark, onClose, colors }) {
+// A beat before a mark shows, so whatever just happened (an answer, the
+// night's celebration) can claim the moment first.
+const SETTLE_MS = 350
+
+export function MarkToast({ mark: next, onClose, colors }) {
   const { overlayBottom: bottom } = useAppInsets()
+  const [mark, setMark] = useState(null)
+
+  useEffect(() => {
+    setMark(null)
+    if (!next) return undefined
+    const timer = setTimeout(() => setMark(next), SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [next])
 
   useEffect(() => {
     if (!mark) return undefined

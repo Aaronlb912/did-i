@@ -9,6 +9,8 @@ const PRODUCT_SAME = new Set([
   'tonight.didI',
   'tonight.swipeDid',
   'tonight.swipeNope',
+  'tonight.answerDid',
+  'tonight.answerNope',
   'stats.did',
   'stats.nope',
   'later.did',

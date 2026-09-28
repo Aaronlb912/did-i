@@ -93,10 +93,11 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
+import { cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
+import { clockWords, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -1843,9 +1844,7 @@ test('native metro shims are wired and pin default exports', () => {
   const kept = pinEsModule(nativeMod)
   const swipeCard = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
   const swipeStub = readFileSync(path.join(root, 'native/components/SwipeCardStub.jsx'), 'utf8')
-  assert.equal(swipeCard.includes('Pressable'), false, 'the face is a swipe, not buttons')
   assert.equal(swipeStub.includes('Pressable'), false, 'the face fallback has no answer buttons')
-  assert.ok(swipeCard.includes('PanResponder'), 'the face swipes without the gesture module')
   assert.ok(swipeCard.includes('borderWidth: 1'), 'the face keeps its border')
 
   assert.equal(typeof kept.createWidget, 'function', 'seal should keep createWidget')
@@ -2207,6 +2206,342 @@ test('the boot screen and phone bootstrap keep the location guard', () => {
   assert.ok(bad('native/Boot.jsx', lazyBoot).some((p) => p.includes('Boot.jsx loads the app')))
   const bareLoc = bootstrap.replace('makeLocation(devServerUrl())', "{ hash: '#/' }")
   assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
+})
+
+// Phone modules that only exist on a device, stood in for so the native shim
+// runs here. A stub is read when its module first loads.
+const phoneStubs = {
+  'react-native': {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    BackHandler: { addEventListener: () => ({ remove() {} }) },
+    Platform: { OS: 'ios' },
+    Share: { share: async () => ({}) },
+  },
+  'expo-clipboard': { setStringAsync: async () => {} },
+  'expo-linking': { addEventListener: () => ({ remove() {} }), getInitialURL: async () => null, parse: () => ({}) },
+  'expo-splash-screen': {},
+  'expo-haptics': {},
+  'expo-notifications': {},
+}
+globalThis.__didIPhoneStubs = phoneStubs
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier in phoneStubs ? { url: `phone-stub:${specifier}`, shortCircuit: true } : next(specifier, context),
+  load: (url, context, next) => {
+    if (!url.startsWith('phone-stub:')) return next(url, context)
+    const name = url.slice('phone-stub:'.length)
+    const keys = Object.keys(phoneStubs[name])
+    const source = [
+      `const mod = globalThis.__didIPhoneStubs[${JSON.stringify(name)}]`,
+      'export default mod',
+      ...keys.map((key) => `export const ${key} = mod[${JSON.stringify(key)}]`),
+    ].join('\n')
+    return { format: 'module', source, shortCircuit: true }
+  },
+})
+
+const felt = []
+Object.assign(phoneStubs['expo-haptics'], {
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  impactAsync: async (style) => felt.push(`impact:${style}`),
+  notificationAsync: async (type) => felt.push(`notify:${type}`),
+  selectionAsync: async () => felt.push('selection'),
+})
+const phone = await import('../native/shim/native.js')
+
+test('a flick answers by where it was headed and flies off along its path', () => {
+  // Let go short of the line with no speed: back to the middle.
+  assert.equal(releaseWay(60, 0), 0)
+  // Past the line, held still: answered.
+  assert.equal(releaseWay(130, 0), 1)
+  assert.equal(releaseWay(-130, 0), -1)
+  // A short, fast flick counts.
+  assert.equal(releaseWay(40, 900), 1)
+  assert.equal(releaseWay(-40, -900), -1)
+  // Past the line but thrown back: not answered.
+  assert.equal(releaseWay(130, -600), 0)
+  // A side that is closed never answers.
+  assert.equal(releaseWay(200, 900, true, false), 0)
+  assert.equal(releaseWay(-200, -900, false, true), 0)
+
+  // Grabbing low turns the card the other way.
+  assert.equal(grabSide(20, 200), 1)
+  assert.equal(grabSide(180, 200), -1)
+  assert.ok(cardTilt(100, 400, 1) > 0)
+  assert.ok(cardTilt(100, 400, -1) < 0)
+  assert.equal(cardTilt(0, 400, 1), 0)
+
+  // Thrown right and down: it leaves the screen on the right, lower, fast.
+  const path = flyPath(150, 10, 2400, 500, 1, 400)
+  assert.ok(path.x > 400, 'clears the right edge')
+  assert.ok(path.y > 10, 'keeps falling the way it was moving')
+  assert.ok(path.duration >= 180 && path.duration <= 340)
+  const slow = flyPath(0, 0, 0, 0, -1, 400)
+  assert.ok(slow.x < -400, 'a tap throws it off the left edge')
+
+  // The stack: the face at full size, the next two smaller and lower.
+  assert.deepEqual(depthLook(0), { scale: 1, translateY: 0, opacity: 1 })
+  assert.equal(depthLook(1).scale, 0.96)
+  assert.equal(depthLook(2).scale, 0.92)
+  assert.ok(depthLook(0.5).scale < 1 && depthLook(0.5).scale > 0.96, 'a card growing up is in between')
+  assert.equal(depthLook(3).opacity, 0)
+})
+
+test('haptics speak one language on Tonight and do not switch off with Reduce Motion', () => {
+  writePrefs({ lessMotion: true })
+  felt.length = 0
+  phone.feelTap('did')
+  phone.feelTap('skip')
+  phone.feelTap('undo')
+  phone.feelTap('tick')
+  phone.playClick()
+  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
+  writePrefs({ lessMotion: false })
+})
+
+const { deliverStreakHit, takePendingStreakMoment } = await import('../src/lib/streak-moments.js')
+const { setAppForeground } = await import('../src/lib/app-foreground.js')
+const sessionBox = new Map()
+globalThis.sessionStorage = {
+  getItem: (key) => (sessionBox.has(key) ? sessionBox.get(key) : null),
+  setItem: (key, value) => sessionBox.set(key, String(value)),
+  removeItem: (key) => sessionBox.delete(key),
+}
+
+async function testAsync(name, fn) {
+  ran += 1
+  try {
+    await fn()
+    console.log(`ok   ${name}`)
+  } catch (error) {
+    failed += 1
+    console.error(`FAIL ${name}\n     ${error.message}`)
+  }
+}
+
+await testAsync('a streak push that throws right after a Did waits for the app instead of rejecting', async () => {
+  setAppForeground(false)
+  const broken = async () => {
+    throw new TypeError('undefined is not a function')
+  }
+  await deliverStreakHit({ kind: 'hit', n: 2 }, '2026-09-28', broken)
+  const waiting = takePendingStreakMoment()
+  assert.equal(waiting?.kind, 'hit', 'the moment is kept for when the app is open')
+  assert.equal(waiting.n, 2)
+  setAppForeground(true)
+})
+
+const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js')
+const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
+const { isAppForeground } = await import('../src/lib/app-foreground.js')
+
+test('a first cleared night is not "1 nights" and is not on fire yet', () => {
+  const one = streakHitCopy(1)
+  assert.equal(one.title, en['streak.hitTitleClear'])
+  assert.equal(one.body, en['streak.hitBodyOne'])
+  assert.equal(streakHitCopy(2).title, en['streak.hitTitleClear'], 'two nights is not a fire yet')
+  assert.ok(streakHitCopy(2).body.startsWith('2 nights'))
+  assert.equal(streakHitCopy(3).title, en['streak.hitTitle'], 'three nights is')
+  assert.equal(streakNights(1), '1 night in a row')
+  assert.equal(streakNights(7), '7 nights in a row')
+})
+
+test('the streak keeps counting past the five the room shows', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 8; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: nights.map((night) => ({ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })),
+  }
+  assert.equal(shelfHeat([book], clock), 5, 'the room stays at five')
+  assert.equal(shelfStreak([book], clock), 8)
+  const tonightOpen = { ...book, answers: book.answers.slice(1) }
+  assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+})
+
+test('the done card says what tomorrow night holds and from when', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id, extra = {}) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01', ...extra })
+  const tomorrowDay = new Date(2026, 8, 29).getDay()
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [
+      lamp('pills', { askAfter: '20:00' }),
+      lamp('door', { askAfter: '21:30' }),
+      lamp('bins', { cadence: 'weekly', weekdays: [(tomorrowDay + 1) % 7], askAfter: '19:00' }),
+    ],
+    answers: [],
+  }
+  assert.deepEqual(tomorrowPreview([book], clock), { count: 2, from: '20:00' }, 'counts what is due tomorrow, earliest first')
+  const anytime = { ...book, lamps: [...book.lamps, lamp('phone')] }
+  assert.deepEqual(tomorrowPreview([anytime], clock), { count: 3, from: '' }, 'no "from" when one is open all evening')
+  assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
+})
+
+// Just enough of React to drive one hook here: state, refs, memos and
+// effects, rendered again until nothing changes.
+function hookHost(useHook, propsFor) {
+  const slots = []
+  let at = 0
+  let dirty = false
+  let out = null
+  const same = (a, b) => Boolean(a && b) && a.length === b.length && a.every((item, i) => Object.is(item, b[i]))
+  const fake = {
+    useState(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = typeof init === 'function' ? init() : init
+      return [
+        slots[k],
+        (next) => {
+          const value = typeof next === 'function' ? next(slots[k]) : next
+          if (!Object.is(value, slots[k])) {
+            slots[k] = value
+            dirty = true
+          }
+        },
+      ]
+    },
+    useRef(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = { current: init }
+      return slots[k]
+    },
+    useMemo(make, deps) {
+      const k = at++
+      if (slots[k] && same(slots[k].deps, deps)) return slots[k].value
+      slots[k] = { deps, value: make() }
+      return slots[k].value
+    },
+    useCallback(fn, deps) {
+      return fake.useMemo(() => fn, deps)
+    },
+    useEffect(run, deps) {
+      const k = at++
+      const prev = slots[k]
+      if (prev && same(prev.deps, deps)) return
+      slots[k] = { deps, cleanup: prev?.cleanup }
+      pending.push(() => {
+        prev?.cleanup?.()
+        slots[k].cleanup = run()
+      })
+    },
+  }
+  let pending = []
+  function render() {
+    for (let pass = 0; pass < 50; pass += 1) {
+      at = 0
+      dirty = false
+      pending = []
+      out = useHook(propsFor())
+      for (const run of pending) run()
+      if (!dirty) return out
+    }
+    throw new Error('the hook never settled')
+  }
+  return { fake, render, get current() { return out } }
+}
+
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier === 'react' && context.parentURL?.includes('/src/lib/useTonightStack.js')
+      ? { url: 'hook-host:react', shortCircuit: true }
+      : next(specifier, context),
+  load: (url, context, next) =>
+    url === 'hook-host:react'
+      ? {
+          format: 'module',
+          source: ['useState', 'useRef', 'useMemo', 'useCallback', 'useEffect']
+            .map((name) => `export const ${name} = (...args) => globalThis.__didIHookHost.fake.${name}(...args)`)
+            .join('\n'),
+          shortCircuit: true,
+        }
+      : next(url, context),
+})
+
+await testAsync('a nope leaves a still-open list, each question with Did it now and Leave it', async () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  let book = { id: 'b1', title: 'House', dayFoldHour: 0, lamps: [lamp('pills'), lamp('door'), lamp('bins')], answers: [] }
+  const hadWindow = { ...globalThis.window }
+  Object.assign(globalThis.window, {
+    setTimeout: () => 0,
+    clearTimeout() {},
+    addEventListener() {},
+    removeEventListener() {},
+  })
+  try {
+    const host = hookHost(
+      (props) => useTonightStackHosted(props),
+      () => ({ value: book, boards: [book], now: clock, onChange: (next) => (book = next) }),
+    )
+    globalThis.__didIHookHost = host
+    const { useTonightStack: useTonightStackHosted } = await import('../src/lib/useTonightStack.js?hook-host')
+    const statusOf = (id) => book.answers.find((answer) => answer.lampId === id)?.status
+
+    let stack = host.render()
+    assert.equal(stack.bodyKind, 'face')
+    for (let n = 0; n < 3; n += 1) {
+      stack.mark(stack.faceRow, 'skip')
+      stack = host.render()
+    }
+    assert.equal(stack.bodyKind, 'finish', 'after the last nope the finish face is the list')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id).sort(), ['bins', 'door', 'pills'])
+
+    const first = stack.stillOpen[0]
+    stack.lateFromList(first)
+    stack = host.render()
+    assert.equal(statusOf(first.lamp.id), 'late', 'Did it now saves the nope as late')
+    assert.equal(stack.bodyKind, 'finish', 'the list stays put')
+    assert.equal(stack.stillOpen.length, 2)
+
+    const [second, third] = stack.stillOpen
+    stack.leaveFromList(second)
+    stack = host.render()
+    assert.equal(statusOf(second.lamp.id), 'skip', 'Leave it keeps the nope')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id), [third.lamp.id])
+    assert.equal(stack.bodyKind, 'finish')
+
+    stack.leaveFromList(third)
+    stack = host.render()
+    assert.equal(stack.stillOpen.length, 0)
+    assert.equal(stack.bodyKind, 'rest', 'leaving the last one rests the night')
+  } finally {
+    delete globalThis.__didIHookHost
+    for (const key of Object.keys(globalThis.window)) if (!(key in hadWindow)) delete globalThis.window[key]
+    Object.assign(globalThis.window, hadWindow)
+  }
+})
+
+await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {
+  // The phone bootstrap stands in a document with no visibilityState.
+  const hadDocument = 'document' in globalThis
+  const before = globalThis.document
+  globalThis.document = {}
+  setAppForeground(true)
+  try {
+    assert.equal(isAppForeground(), true)
+    let pushed = 0
+    await deliverStreakHit({ kind: 'hit', n: 1 }, '2026-09-27', async () => {
+      pushed += 1
+      return true
+    })
+    assert.equal(pushed, 0, 'no system push while the app is in front')
+    setAppForeground(false)
+    assert.equal(isAppForeground(), false)
+  } finally {
+    setAppForeground(true)
+    if (hadDocument) globalThis.document = before
+    else delete globalThis.document
+  }
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

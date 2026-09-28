@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { t } from './i18n.js'
+import { streakHitCopy } from './streak-copy.js'
 import { markStreakSeen, takePendingStreakMoment } from './streak-moments.js'
 import { boardDate } from './recurrence.js'
 
@@ -7,8 +8,7 @@ function copy(moment) {
   if (moment.kind === 'hit') {
     return {
       kicker: t('streak.hitKicker'),
-      title: t('streak.hitTitle', { n: moment.n }),
-      body: t('streak.hitBody', { n: moment.n }),
+      ...streakHitCopy(moment.n),
       yes: t('streak.hitOk'),
     }
   }

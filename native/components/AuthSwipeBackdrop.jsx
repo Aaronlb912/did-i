@@ -61,7 +61,7 @@ export function AuthSwipeBackdrop({ colors, onMarkLongPress }) {
         <View style={styles.slot}>
           <Slot>
           <SwipeCardHost
-            demoOnce
+            demo
             cardKey="auth-demo"
             colors={colors}
             kicker={t('ideas.pills.kind')}

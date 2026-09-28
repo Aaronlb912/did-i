@@ -1,14 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byPriority, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
-import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
-import {
-  deliverStreakHit,
-  maybeStreakHit,
-  shelfHeatNow,
-} from './streak-moments.js'
+import { reportRejection } from './report.js'
+import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
+import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
@@ -52,6 +49,12 @@ export function useTonightStack({
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
   const [overlay, setOverlay] = useState(null)
+  // Set when a Did clears the night right here, so the done card can play
+  // the moment once instead of every time Tonight opens on a clear night.
+  const [cheer, setCheer] = useState(null)
+  const cheered = useCallback(() => setCheer(null), [])
+  // Noped questions set aside one by one from the still-open list tonight.
+  const [leftKeys, setLeftKeys] = useState([])
   const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
   const shelf = useMemo(
@@ -91,6 +94,12 @@ export function useTonightStack({
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
+  // A walk back through the nights, so only once tonight is clear.
+  const streak = useMemo(
+    () => (hallOn ? shelfStreak(shelf, clock, tagId) : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, tagId, dateIso, hallOn],
+  )
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = useMemo(() => {
     const books = boards.length ? boards : [value]
@@ -152,6 +161,10 @@ export function useTonightStack({
   }, [dateIso, hallOn, openReady.length > 0])
 
   useEffect(() => {
+    setLeftKeys([])
+  }, [dateIso])
+
+  useEffect(() => {
     if (!overlay) return
     const incoming = (boards.length ? boards : [value]).find((book) => book.id === overlay.id)
     if (!incoming) {
@@ -196,6 +209,7 @@ export function useTonightStack({
     change(undo.book)
     setUndo(null)
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    feelTap('undo')
   }
 
   function mark(row, status) {
@@ -244,21 +258,23 @@ export function useTonightStack({
     setWaitPick(null)
     setPillPick(null)
     armUndo({ book, label: t('tonight.saved') })
+    const clears = !wasClear && allClearTonight(next, clock)
+    // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
-    else feelTap('did')
+    else if (!clears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
-    if (!wasClear && allClearTonight(next, clock)) {
+    if (clears) {
       feelTap('hall-on')
-      const beforeHeat = shelfHeatNow(shelf, clock, tagId)
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
-      const afterHeat = shelfHeatNow(afterBooks, clock, tagId)
+      const afterStreak = shelfStreak(afterBooks, clock, tagId)
+      if (afterStreak > 0) setCheer({ dateIso, from: afterStreak - 1, to: afterStreak })
       const hit = maybeStreakHit({
-        beforeHeat,
-        afterHeat,
+        beforeHeat: shelfStreak(shelf, clock, tagId),
+        afterHeat: afterStreak,
         clearedTonight: true,
         dateIso,
       })
-      if (hit) void deliverStreakHit(hit, dateIso)
+      if (hit) deliverStreakHit(hit, dateIso).catch(reportRejection('streak-hit'))
     }
   }
 
@@ -267,14 +283,14 @@ export function useTonightStack({
     if (openReady.length > 0) {
       setSkipReview(false)
       setFaceId(openReady[0].lamp.id)
-      feelTap('did')
+      feelTap('tick')
       return
     }
     const skipped = ready.find((row) => row.answer?.status === 'skip')
     if (skipped) {
       setSkipReview(true)
       setFaceId(skipped.lamp.id)
-      feelTap('did')
+      feelTap('tick')
       return
     }
     setFaceId('')
@@ -284,7 +300,39 @@ export function useTonightStack({
     setRestNight(true)
     setSkipReview(false)
     setFaceId('')
-    feelTap('skip')
+    feelTap('tick')
+  }
+
+  // The still-open list: each noped question with its own way out.
+  const stillOpen = ready.filter((row) => row.answer?.status === 'skip' && !leftKeys.includes(rowKey(row)))
+
+  // Did it after all: saved as late (the blue dot), and the list stays put
+  // instead of turning the next nope back into a card.
+  function lateFromList(row) {
+    mark(row, 'yes')
+    setSkipReview(false)
+    setFaceId(FINISH_FACE)
+  }
+
+  // The nope stands for this one; the list lets it go.
+  function leaveFromList(row) {
+    const key = rowKey(row)
+    setLeftKeys((keys) => (keys.includes(key) ? keys : [...keys, key]))
+    if (stillOpen.every((item) => rowKey(item) === key)) restStack()
+    else feelTap('tick')
+  }
+
+  // Back from resting: new open questions first, else the list again.
+  function reopenStillOpen() {
+    if (openReady.length > 0) {
+      continueStack()
+      return
+    }
+    setRestNight(false)
+    setLeftKeys([])
+    setSkipReview(false)
+    setFaceId(FINISH_FACE)
+    feelTap('tick')
   }
 
   function moveFace(step) {
@@ -354,6 +402,9 @@ export function useTonightStack({
     }),
   )
 
+  // The open questions waiting behind the face card, in the order they come up.
+  const upNext = faceRow ? openReady.filter((row) => rowKey(row) !== rowKey(faceRow)) : []
+
   const activePillPick = pillPick
     ? due.find((row) => rowKey(row) === rowKey(pillPick)) || null
     : null
@@ -390,12 +441,16 @@ export function useTonightStack({
     ready,
     catchUp,
     heat,
+    streak,
+    cheer: cheer && cheer.dateIso === dateIso && hallOn ? cheer : null,
+    cheered,
     hour,
     hallOn,
     empty,
     finishCount,
     onFinish,
     faceRow,
+    upNext,
     dueWithWait,
     bodyKind,
     holePick,
@@ -411,6 +466,10 @@ export function useTonightStack({
     mark,
     continueStack,
     restStack,
+    stillOpen,
+    lateFromList,
+    leaveFromList,
+    reopenStillOpen,
     jewelClick,
     pickHole,
     saveTitle,
