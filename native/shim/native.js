@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
-import { AppState, BackHandler, Platform, Share, StatusBar } from 'react-native'
+import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
@@ -24,12 +24,6 @@ function reduceMotion() {
 }
 
 export async function bootNative() {
-  try {
-    StatusBar.setBarStyle('light-content')
-    if (Platform.OS === 'android') StatusBar.setBackgroundColor('#0e1014')
-  } catch {
-    // ok
-  }
   setAppForeground(AppState.currentState === 'active')
   AppState.addEventListener('change', (next) => {
     setAppForeground(next === 'active')
@@ -242,10 +236,8 @@ function lampFromUrl(url) {
 }
 
 export function listenNativeShell({ onBack, onOpenLamp }) {
-  const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
-    onBack?.()
-    return true
-  })
+  // False at the root lets Android leave the app, the system back everywhere else.
+  const backSub = BackHandler.addEventListener('hardwareBackPress', () => Boolean(onBack?.()))
   const linkSub = Linking.addEventListener('url', ({ url }) => {
     if (goFromDeepLink(url)) return
     const lampId = lampFromUrl(url)

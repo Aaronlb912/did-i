@@ -25,16 +25,14 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import {
-  PageTitle,
   SetCap,
   SetCard,
   SetNote,
-  SetPick,
   SetRow,
-  SetSheet,
   SetSwitch,
 } from '../components/SetBits.jsx'
 
@@ -50,7 +48,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
 
   return (
     <BoardShell book={book} title={t('settings.title')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.title')}</PageTitle>
       <SetNote colors={colors}>{t('settings.phoneBody')}</SetNote>
 
       <SetCap colors={colors}>{t('settings.title')}</SetCap>
@@ -100,21 +97,18 @@ export function PhoneSettingsScreen({ book, onChange }) {
   )
 }
 
+// The widget's "same as folder" choice, next to look ids in one list.
+const WIDGET_LOOK_TAG = ':folder'
+
 export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCopy }) {
   const colors = useHallColors(book)
   const prefs = usePrefs()
   const account = useAccount()
   const [confirm, setConfirm] = useState(null)
-  const [sheet, setSheet] = useState(null)
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
-
-  function widgetLookWords() {
-    if (widget.lookMode === 'tag') return t('widget.settings.lookTag')
-    return t(`look.${widget.lookId}.name`)
-  }
 
   async function pickFile() {
     try {
@@ -165,7 +159,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-      <PageTitle colors={colors}>{t('settings.kicker')}</PageTitle>
 
       <SetCap colors={colors}>{t('account.kicker')}</SetCap>
       <SetCard colors={colors}>
@@ -188,26 +181,26 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('settings.look')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
+        <SetChoice
           colors={colors}
           label={t('settings.theme')}
-          value={t(`theme.${prefs.theme}`)}
-          chevron
-          onPress={() => setSheet('theme')}
+          options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
+          selected={prefs.theme}
+          onSelect={(id) => writePrefs({ theme: id })}
         />
-        <SetRow
+        <SetChoice
           colors={colors}
           label={t('settings.clock')}
-          value={t(`clock.${prefs.clock}`)}
-          chevron
-          onPress={() => setSheet('clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
         />
-        <SetRow
+        <SetChoice
           colors={colors}
           label={t('settings.language')}
-          value={t(`lang.${prefs.locale}`)}
-          chevron
-          onPress={() => setSheet('lang')}
+          options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
+          selected={prefs.locale}
+          onSelect={(id) => writePrefs({ locale: id })}
         />
         <SetSwitch
           colors={colors}
@@ -219,13 +212,20 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('widget.settings.cap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
+        <SetChoice
           colors={colors}
           label={t('widget.settings.look')}
           sub={t('widget.settings.lookSub')}
-          value={widgetLookWords()}
-          chevron
-          onPress={() => setSheet('widgetLook')}
+          options={[
+            { id: WIDGET_LOOK_TAG, label: t('widget.settings.lookTag') },
+            ...widgetLooks.map((id) => ({ id, label: t(`look.${id}.name`) })),
+          ]}
+          selected={widget.lookMode === 'tag' ? WIDGET_LOOK_TAG : widget.lookId}
+          onSelect={(id) =>
+            applyWidgetPrefs(
+              id === WIDGET_LOOK_TAG ? { widgetLookMode: 'tag' } : { widgetLookMode: 'pick', widgetLookId: id },
+            )
+          }
         />
         <SetSwitch
           colors={colors}
@@ -349,82 +349,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         ) : null}
       </SetCard>
 
-      {sheet === 'theme' ? (
-        <SetSheet colors={colors} title={t('settings.theme')} onClose={() => setSheet(null)}>
-          {THEME_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`theme.${id}`)}
-              on={prefs.theme === id}
-              onPress={() => {
-                writePrefs({ theme: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'clock' ? (
-        <SetSheet colors={colors} title={t('settings.clock')} onClose={() => setSheet(null)}>
-          {CLOCK_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`clock.${id}`)}
-              on={prefs.clock === id}
-              onPress={() => {
-                writePrefs({ clock: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'lang' ? (
-        <SetSheet colors={colors} title={t('settings.language')} onClose={() => setSheet(null)}>
-          {LOCALE_IDS.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`lang.${id}`)}
-              on={prefs.locale === id}
-              onPress={() => {
-                writePrefs({ locale: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
-
-      {sheet === 'widgetLook' ? (
-        <SetSheet colors={colors} title={t('widget.settings.look')} onClose={() => setSheet(null)}>
-          <SetPick
-            colors={colors}
-            label={t('widget.settings.lookTag')}
-            on={widget.lookMode === 'tag'}
-            onPress={() => {
-              applyWidgetPrefs({ widgetLookMode: 'tag' })
-              setSheet(null)
-            }}
-          />
-          {widgetLooks.map((id) => (
-            <SetPick
-              key={id}
-              colors={colors}
-              label={t(`look.${id}.name`)}
-              on={widget.lookMode === 'pick' && widget.lookId === id}
-              onPress={() => {
-                applyWidgetPrefs({ widgetLookMode: 'pick', widgetLookId: id })
-                setSheet(null)
-              }}
-            />
-          ))}
-        </SetSheet>
-      ) : null}
     </BoardShell>
   )
 }

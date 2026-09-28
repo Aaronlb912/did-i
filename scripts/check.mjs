@@ -4,7 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
-import { createRequire } from 'node:module'
+import { createRequire, registerHooks } from 'node:module'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
@@ -1751,6 +1751,7 @@ test('native metro shims are wired and pin default exports', () => {
     'react-native-android-widget',
     '@expo/ui/swift-ui',
     '@expo/ui/swift-ui/modifiers',
+    '@expo/ui/jetpack-compose',
   ]
   for (const pkg of packages) {
     assert.ok(metro.includes(`'${pkg}'`), `metro should shim ${pkg}`)
@@ -1853,7 +1854,6 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
     assert.equal(needsAuth({ ready: true, user: { id: 'u' } }), false)
     assert.equal(authGated('/tonight', { ready: false, user: null }), true)
     assert.equal(authGated('/privacy', { ready: false, user: null }), false)
-    assert.ok(shell.indexOf('if (gated)') < shell.indexOf('<ScreenRouter'), 'sign-in replaces the hall')
     assert.ok(shell.includes('<SignInScreen'), 'the gate renders the sign-in screen')
     assert.ok(sign.includes("t('auth.title')"), 'the sign-in screen has a title')
     assert.ok(sign.includes("t('account.email')"), 'the sign-in screen has an email field')
@@ -1886,6 +1886,166 @@ test('a still phone does not undo, a shake does', () => {
   assert.equal(whip.hit, true)
 })
 
+// React Navigation's core is the navigator without the React Native views.
+registerHooks({
+  resolve: (specifier, context, next) =>
+    next(specifier === '@react-navigation/native' ? '@react-navigation/core' : specifier, context),
+})
+const nav = await import('../native/navigation/hash.js')
+
+// A stand-in for the mounted stack: the hall with its two tabs, screens pushed over it.
+// Like the real container it reports a change once the stack has settled, not per action.
+function fakeStack() {
+  const tabs = ['/tonight', '/lamps']
+  const stack = { routes: [{ name: nav.HALL, params: undefined }], tab: 0, actions: [] }
+  const settle = () => nav.syncFromNavigation()
+  const container = {
+    isReady: () => true,
+    getRootState: () => ({ index: stack.routes.length - 1, routes: stack.routes }),
+    getCurrentRoute: () =>
+      stack.routes.length > 1 ? stack.routes.at(-1) : { name: tabs[stack.tab], params: stack.tabParams },
+    canGoBack: () => stack.routes.length > 1 || stack.tab > 0,
+    goBack: () => {
+      if (stack.routes.length > 1) stack.routes.pop()
+      else stack.tab = 0
+      settle()
+    },
+    dispatch: (action) => {
+      stack.actions.push(action)
+      const { type, payload } = action
+      if (type === 'PUSH') stack.routes.push({ name: payload.name, params: payload.params })
+      else if (type === 'POP') stack.routes.splice(stack.routes.length - payload.count)
+      else if (type === 'POP_TO_TOP') stack.routes.splice(1)
+      else if (type === 'NAVIGATE' && payload.name === nav.HALL) {
+        stack.tab = tabs.indexOf(payload.params.screen)
+        stack.tabParams = payload.params.params
+      }
+      else throw new Error(`unexpected ${type}`)
+    },
+  }
+  nav.navigationRef.current = container
+  nav.goHash('/tonight')
+  stack.actions.length = 0
+  return {
+    top: () => (stack.routes.length > 1 ? stack.routes.at(-1).name : tabs[stack.tab]),
+    depth: () => stack.routes.length,
+    types: () => stack.actions.map((action) => action.type),
+    settle,
+  }
+}
+
+test('every route is its own native-stack screen pushed over the hall', () => {
+  const stack = fakeStack()
+  for (const hall of nav.HALL_PATHS) assert.ok(!nav.STACK_PATHS.includes(hall), `${hall} is the hall, not a pushed screen`)
+  for (const path of nav.STACK_PATHS) {
+    nav.goHash('/tonight')
+    nav.goHash(path)
+    assert.equal(stack.top(), path, `${path} is pushed`)
+    assert.equal(stack.depth(), 2)
+  }
+  nav.goHash('/nowhere')
+  assert.equal(stack.top(), '/tonight', 'an unknown route lands in the hall')
+  assert.equal(stack.depth(), 1)
+})
+
+test('goHash pushes, pops back to a screen it has, and switches the hall tab', () => {
+  const stack = fakeStack()
+  nav.goHash('/settings')
+  nav.goHash('/shop')
+  assert.deepEqual(stack.types(), ['PUSH', 'PUSH'])
+  nav.goHash('/lamp', { id: 'a' })
+  nav.goHash('/lamp', { id: 'b' })
+  assert.equal(stack.depth(), 5, 'the same screen for another question is its own push')
+  nav.goHash('/settings')
+  assert.equal(stack.top(), '/settings', 'a screen already in the stack is popped back to, not pushed again')
+  assert.equal(stack.depth(), 2)
+  assert.equal(stack.types().at(-1), 'POP')
+  nav.goHash('/lamps')
+  assert.equal(stack.depth(), 1, 'a tab pops everything pushed over the hall')
+  assert.equal(stack.top(), '/lamps')
+  assert.deepEqual(stack.types().slice(-2), ['POP_TO_TOP', 'NAVIGATE'])
+  assert.equal(nav.readRoute().path, '/lamps')
+})
+
+test('back pops a pushed screen, returns to Tonight, and leaves the app from the hall', () => {
+  const stack = fakeStack()
+  assert.equal(nav.canGoBack(), false)
+  assert.equal(nav.goBack(), false, 'back from Tonight at the root lets Android leave the app')
+  nav.goHash('/stats')
+  assert.equal(nav.canGoBack(), true)
+  assert.equal(nav.goBack(), true)
+  assert.equal(stack.top(), '/tonight')
+  assert.equal(nav.readRoute().path, '/tonight', 'the route follows the stack when it moves by itself')
+  nav.goHash('/lamps')
+  assert.equal(nav.canGoBack(), false, 'switching tabs is not history to go back through')
+  assert.equal(nav.goBack(), true, 'back from Questions goes to Tonight')
+  assert.equal(stack.top(), '/tonight')
+})
+
+test('welcome, the first question, and the name screen keep their own back', () => {
+  const stack = fakeStack()
+  localStorage.removeItem('did-i-welcome')
+  nav.goHash('/welcome')
+  assert.equal(nav.goBack({ emptyHall: true }), true)
+  assert.equal(localStorage.getItem('did-i-welcome'), '1', 'leaving welcome marks it seen')
+  assert.equal(stack.top(), '/first', 'an empty hall sends welcome on to the first question')
+  assert.equal(nav.goBack(), true)
+  assert.equal(stack.top(), '/first', 'the first question has to be added before anything else opens')
+  nav.goHash('/enter')
+  assert.equal(nav.goBack({ needsEnter: true }), true)
+  assert.equal(stack.top(), '/enter', 'a name still needed keeps the name screen')
+  assert.equal(nav.goBack({ needsEnter: false }), true)
+  assert.equal(stack.top(), '/tonight')
+  for (const path of ['/first', '/welcome', '/enter']) assert.ok(nav.OWN_BACK.has(path), `${path} has no edge swipe`)
+  localStorage.removeItem('did-i-welcome')
+})
+
+test('a fresh install is sent to the first question, and only while it is still fresh', () => {
+  let emptyShelf = true
+  const fresh = () => emptyShelf && localStorage.getItem('did-i-welcome') !== '1'
+  localStorage.removeItem('did-i-welcome')
+  const stops = []
+  try {
+    let stack = fakeStack()
+    const go = (where, extras) => {
+      nav.goHash(where, extras)
+      stack.settle()
+    }
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
+    assert.equal(stack.top(), '/first', 'a fresh hall opens on the first question')
+    go('/')
+    assert.equal(stack.top(), '/first', 'any name for Tonight still counts as the fresh hall')
+    go('/lamps')
+    assert.equal(stack.top(), '/lamps', 'Questions is not Tonight')
+    go('/first')
+    // Adding the first question marks welcome seen, saves the shelf, then heads home.
+    nav.goHash('/lamp', { id: 'x' })
+    localStorage.setItem('did-i-welcome', '1')
+    emptyShelf = false
+    go('/', { face: 'did' })
+    assert.equal(stack.top(), '/tonight', 'finishing the first question lands on the hall')
+    assert.equal(stack.depth(), 1)
+    assert.equal(nav.readRoute().face, 'did', 'the face the first question asked for survives')
+    stops.splice(0).forEach((stop) => stop())
+
+    // A cold start from a shortcut opens Add over the hall before the hall is ever on top.
+    localStorage.removeItem('did-i-welcome')
+    emptyShelf = true
+    stack = fakeStack()
+    go('/add')
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
+    assert.equal(stack.top(), '/add', 'a screen that is not on top does not redirect')
+    nav.goBack()
+    assert.equal(stack.top(), '/first', 'back to an empty hall lands on the first question, not a blank page')
+    stops.splice(0).forEach((stop) => stop())
+    go('/tonight')
+    assert.equal(stack.top(), '/tonight', 'no redirect once it is unmounted')
+  } finally {
+    stops.forEach((stop) => stop())
+    localStorage.removeItem('did-i-welcome')
+  }
+})
+
 test('the menu, a buy confirm, and a cheer preview can show on the phone', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
@@ -1898,8 +2058,6 @@ test('the menu, a buy confirm, and a cheer preview can show on the phone', () =>
   assert.ok(menu.includes('<Modal'), 'the menu opens above the tonight screen')
   assert.ok(menu.includes('open ? ('), 'the menu modal is not mounted while it is closed')
   assert.ok(shell.includes('<CheerBurstHost />'), 'a cheer preview paints above the screen')
-  const swipe = readFileSync(path.join(root, 'native/components/SwipeBackShell.jsx'), 'utf8')
-  assert.ok(swipe.includes('lifted ? { transform'), 'the swipe layer stays flat until a drag')
   assert.ok(shell.includes('<SheetHost />'), 'a buy confirm paints above the screen')
   assert.ok(!shop.includes('<Modal'), 'a buy confirm is not an iOS modal')
   assert.ok(shop.includes('gemNotice'), 'a gem buy says what happened')

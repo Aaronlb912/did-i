@@ -19,7 +19,7 @@ import { usePeoplePulse } from '../../src/lib/people.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
-import { HEADER_BAR, useHeaderTop } from '../hooks/useHeaderSpace.js'
+import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
 import { fonts } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
@@ -198,7 +198,7 @@ export function MastMenuRoot({ colors, showAdd = true, children }) {
 function useFallbackAnchor() {
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
-  const top = useHeaderTop() + (HEADER_BAR - HEADER_BUTTON) / 2
+  const top = useHeaderBottom() - HEADER_BAR + (HEADER_BAR - HEADER_BUTTON) / 2
   const right = Math.max(16, insets.right + 16)
   return { x: width - right - HEADER_BUTTON, y: top, w: HEADER_BUTTON, h: HEADER_BUTTON }
 }
@@ -364,6 +364,16 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   )
 }
 
+/** The menu a screen's MastMenuRoot provides, for header items rendered outside it. */
+export function useMastMenu() {
+  return useContext(MastMenuCtx)
+}
+
+/** Re-provides a screen's menu to a header item the native header renders elsewhere. */
+export function MastMenuBridge({ value, children }) {
+  return <MastMenuCtx.Provider value={value}>{children}</MastMenuCtx.Provider>
+}
+
 function useMenu() {
   const ctx = useContext(MastMenuCtx)
   if (!ctx) throw new Error('MastMenuCog outside MastMenuRoot')
@@ -380,6 +390,7 @@ export function MastMenuCog() {
   return (
     <HeaderButton
       ref={button}
+      bare
       colors={colors}
       on={on}
       onPress={() => {

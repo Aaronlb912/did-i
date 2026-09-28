@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
 import { bootNative, listenNativeShell } from '../src/lib/native.js'
 import { preparePush } from '../src/lib/push.js'
+import { useTheme } from '../src/lib/prefs.js'
 import { needsEnter } from '../src/lib/session.js'
 import { runAfterLaunchReady } from './lib/launch-ready.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
@@ -20,6 +21,13 @@ import { goBack, goFromPush, goHash } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
+
+// Dark icons on Light, light icons on Dark; Phone resolves to whichever the
+// phone is using. The app draws edge to edge, so there is no bar color.
+function ThemedStatusBar() {
+  const theme = useTheme()
+  return <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
+}
 
 export function NativeApp() {
   const fontsLoaded = useAppFonts()
@@ -45,7 +53,7 @@ export function NativeApp() {
         const shelf = readShelf()
         const book = currentBook(shelf)
         const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
-        goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
+        return goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {
         goHash('/tonight', lampId ? { face: lampId } : '')
@@ -67,7 +75,7 @@ export function NativeApp() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }}>
       {!fontsLoaded || !launchReady ? null : (
         <SafeAreaProvider>
-          <StatusBar style="light" />
+          <ThemedStatusBar />
           <Boundary>
             <RootNavigator />
             <Slot>

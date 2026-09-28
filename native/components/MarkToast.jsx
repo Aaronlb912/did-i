@@ -7,7 +7,7 @@ import { KeyButton } from './ui.jsx'
 import { fonts } from '../theme.js'
 
 export function MarkToast({ mark, onClose, colors }) {
-  const { bottom } = useAppInsets()
+  const { overlayBottom: bottom } = useAppInsets()
 
   useEffect(() => {
     if (!mark) return undefined
