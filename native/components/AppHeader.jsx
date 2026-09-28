@@ -174,8 +174,9 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
   return null
 }
 
-// The expanded title of Material's medium bar is 48dp under the bar row.
-const LARGE_TITLE = 48
+// The expanded title of Material's medium bar is 48dp under the bar row,
+// taller when a big text size wraps it onto a second line.
+export const LARGE_TITLE = 48
 
 function TopAppBar({
   colors,
@@ -185,6 +186,7 @@ function TopAppBar({
   purse,
   menu = false,
   large = false,
+  largeHeight = LARGE_TITLE,
   scrollY,
   leftAction,
   rightAction,
@@ -192,14 +194,14 @@ function TopAppBar({
   const insets = useSafeAreaInsets()
   const showBack = useShowBack(leftAction ? false : back)
   // Clear at rest; the surface container once content (or the expanded title) goes under it.
-  const under = large ? LARGE_TITLE : 0
+  const under = large ? largeHeight : 0
   const tint = scrollY
     ? scrollY.interpolate({ inputRange: [under, under + 8], outputRange: [0, 1], extrapolate: 'clamp' })
     : 0
   // The small title comes in as the expanded one scrolls away.
   const titleIn =
     large && scrollY
-      ? scrollY.interpolate({ inputRange: [LARGE_TITLE - 20, LARGE_TITLE], outputRange: [0, 1], extrapolate: 'clamp' })
+      ? scrollY.interpolate({ inputRange: [largeHeight - 20, largeHeight], outputRange: [0, 1], extrapolate: 'clamp' })
       : 1
 
   return (
@@ -249,10 +251,10 @@ function TopAppBar({
 }
 
 /** Android's expanded title, the first thing in a `large` page. iOS draws its own. */
-export function HeaderLargeTitle({ colors, title }) {
+export function HeaderLargeTitle({ colors, title, onHeight }) {
   if (Platform.OS === 'ios') return null
   return (
-    <View style={styles.largeBox}>
+    <View style={styles.largeBox} onLayout={onHeight ? (e) => onHeight(Math.round(e.nativeEvent.layout.height)) : undefined}>
       <Text style={[styles.largeTitle, { color: colors.ink }]} numberOfLines={2} accessibilityRole="header">
         {title}
       </Text>
@@ -271,7 +273,7 @@ const styles = StyleSheet.create({
   appBarRow: { height: HEADER_BAR, flexDirection: 'row', alignItems: 'center', gap: 4 },
   edge: { width: 12 },
   titleBox: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  largeBox: { height: LARGE_TITLE, justifyContent: 'flex-end', paddingBottom: 10 },
+  largeBox: { minHeight: LARGE_TITLE, justifyContent: 'flex-end', paddingBottom: 10 },
   largeTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   purse: { paddingHorizontal: 8, justifyContent: 'center' },

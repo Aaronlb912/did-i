@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Animated, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -7,7 +7,7 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
-import { AppHeader, HeaderLargeTitle } from './AppHeader.jsx'
+import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 
 export function BoardShell({
@@ -32,6 +32,7 @@ export function BoardShell({
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
   const scrollY = useRef(new Animated.Value(0)).current
+  const [largeHeight, setLargeHeight] = useState(LARGE_TITLE)
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY],
@@ -83,7 +84,7 @@ export function BoardShell({
         scrollEventThrottle={16}
       >
         {ambient}
-        <HeaderLargeTitle colors={colors} title={barTitle} />
+        <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -104,6 +105,7 @@ export function BoardShell({
       purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
       large={scroll}
+      largeHeight={largeHeight}
       scrollY={scrollY}
     />
   )
