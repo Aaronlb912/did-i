@@ -4,10 +4,10 @@ import { HALL_PATHS } from '../navigation/hash.js'
 import { useScreenRoute } from '../navigation/screen-route.js'
 
 const GAP = 6
-// The system tab bar on the hall. iOS floats it over the page; Android lays
-// the Material navigation bar out below the page and pads it for the gesture bar.
+// The system tab bar on the hall. Both platforms draw it over the page: iOS
+// floats it, and the Material navigation bar sits over the bottom of the
+// page with the gesture bar under it, so the page has to clear both.
 const TAB_BAR = Platform.OS === 'ios' ? 62 : 80
-const TAB_BAR_OVER_PAGE = Platform.OS === 'ios' ? TAB_BAR : 0
 
 /**
  * bottom: how far page content keeps clear of the bottom edge.
@@ -18,7 +18,6 @@ export function useAppInsets() {
   const insets = useSafeAreaInsets()
   // The tab bar lives on the hall only; pushed screens cover it.
   const tabbed = HALL_PATHS.has(useScreenRoute().path)
-  const bottom = tabbed ? TAB_BAR_OVER_PAGE + (Platform.OS === 'ios' ? insets.bottom : 0) + GAP : insets.bottom + GAP
-  const overlayBottom = tabbed ? TAB_BAR + insets.bottom + GAP : insets.bottom + GAP
-  return { insets, bottom, overlayBottom }
+  const bottom = tabbed ? TAB_BAR + insets.bottom + GAP : insets.bottom + GAP
+  return { insets, bottom, overlayBottom: bottom }
 }
