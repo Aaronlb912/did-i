@@ -61,7 +61,7 @@ import {
   openSession,
   setPin,
 } from '../../src/lib/session.js'
-import { upcomingPings } from '../../src/lib/notify.js'
+import { armLampPings, upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
