@@ -36,6 +36,14 @@ route already in the stack is popped back to, anything else is pushed. Back
 is the platform's own (iOS edge swipe, Android system back with predictive
 back on), so there is no custom swipe layer.
 
+Headers are the platform's too (`native/components/AppHeader.jsx`): on iOS
+the native-stack navigation bar with a large title that shrinks into it, on
+Android a Material 3 medium top app bar drawn in the page. UIKit only tracks
+a scroll view a few first subviews down, and Fabric orders subviews by
+zIndex, so keep `BoardShell`'s scroll view first and its wrappers unpainted
+and without a zIndex, or the large title stops collapsing. Settings pickers
+(`native/components/SetChoice.jsx`) are `@expo/ui` menus and sheets.
+
 ## Visual parity
 
 Native chrome is kept in step with the web hall:

@@ -139,6 +139,10 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   screen transition, so the previous screen does not slide into view while
   the finger is down; it pops on release. Only its experimental stack does.
   Revisit when the stable stack supports it.
+- **Ask-at time picker is still a hand-made popup.** The hour, minute and
+  AM/PM selects on Add (`HangSelect`) open a centered React Native list.
+  Settings pickers are native menus and sheets now; this one should become
+  the platform's time picker.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
 - **iOS IPA signing on GHA.** With distro cert, profiles, `GOOGLE_SERVICES_PLIST`,
