@@ -100,6 +100,11 @@ import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
 import {
+  handleSwipeCardAccessibilityAction,
+  swipeCardAccessibilityActions,
+  swipeCardAccessibilityLabel,
+} from '../native/lib/swipe-card-a11y.js'
+import {
   advanceTonightCard,
   applyWidgetTapOnce,
   applyWidgetTapsOnce,
@@ -1970,6 +1975,32 @@ test("the menu's Friends and family badge always totals what its label says", ()
       assert.equal(people.label, 'Friends and family', 'no waiting total when there is nothing to show')
     }
   }
+})
+
+test('the swipe card exposes Did and Nope as accessibility actions, and its label carries the visible text', () => {
+  assert.equal(
+    swipeCardAccessibilityLabel('DID I', 'Did I lock the back door?', 'Due tonight'),
+    'DID I, Did I lock the back door?, Due tonight',
+  )
+  assert.equal(swipeCardAccessibilityLabel('', 'Did I lock the back door?', ''), 'Did I lock the back door?', 'blank kicker/meta are dropped, not left as empty commas')
+
+  const actions = swipeCardAccessibilityActions('Did', 'Nope')
+  assert.deepEqual(actions, [
+    { name: 'did', label: 'Did' },
+    { name: 'nope', label: 'Nope' },
+  ])
+
+  let did = 0
+  let nope = 0
+  const handlers = { onDid: () => did++, onNope: () => nope++ }
+  handleSwipeCardAccessibilityAction('did', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'the did action fires onDid')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(nope, 1, 'the nope action fires onNope')
+  handleSwipeCardAccessibilityAction('did', { blockDid: true, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'a blocked did does not fire again')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: true, ...handlers })
+  assert.equal(nope, 1, 'a blocked nope does not fire again')
 })
 
 test('goHash pushes, pops back to a screen it has, and switches the hall tab', () => {

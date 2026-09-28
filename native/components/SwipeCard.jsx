@@ -16,6 +16,11 @@ import { BuddyHang } from './Cosmetic.jsx'
 import { gemGlowHostStyle, gemLookTone } from '../lib/gem-look-tone.js'
 import { SwipeEdgeRails } from './SwipeEdgeRails.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
+import {
+  handleSwipeCardAccessibilityAction,
+  swipeCardAccessibilityActions,
+  swipeCardAccessibilityLabel,
+} from '../lib/swipe-card-a11y.js'
 
 const SPRING = { damping: 20, stiffness: 260, useNativeDriver: true }
 
@@ -174,22 +179,13 @@ export function SwipeCard({
         style={[styles.glowHost, gemLook ? gemGlowHostStyle(gemLook, theme) : null]}
         {...(demo ? {} : pan.panHandlers)}
         accessible={!demo}
-        accessibilityLabel={[kicker, title, meta].filter(Boolean).join(', ')}
-        accessibilityActions={
-          demo
-            ? undefined
-            : [
-                { name: 'did', label: stampDid },
-                { name: 'nope', label: stampNope },
-              ]
-        }
+        accessibilityLabel={swipeCardAccessibilityLabel(kicker, title, meta)}
+        accessibilityActions={demo ? undefined : swipeCardAccessibilityActions(stampDid, stampNope)}
         onAccessibilityAction={
           demo
             ? undefined
-            : (event) => {
-                if (event.nativeEvent.actionName === 'did' && !blockDid) onDid?.()
-                else if (event.nativeEvent.actionName === 'nope' && !blockNope) onNope?.()
-              }
+            : (event) =>
+                handleSwipeCardAccessibilityAction(event.nativeEvent.actionName, { blockDid, blockNope, onDid, onNope })
         }
       >
         <Animated.View
