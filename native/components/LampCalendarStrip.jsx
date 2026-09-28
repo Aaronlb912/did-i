@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { addDaysIso, answerFor, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
 
 const WEEKS = 5
@@ -14,17 +14,22 @@ function jewelColor(state, colors) {
   return colors.open
 }
 
-// Once questions have a single period, not one per day: only the due date
-// (or the day it was answered) lights up, everything else stays off.
-function onceDueOn(lamp, iso) {
-  const target = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || '').trim()
-  return /^\d{4}-\d{2}-\d{2}$/.test(target) ? target === iso : false
+// Once questions have a single period, not one per day: only the day it was
+// answered (or, until then, its due date) lights up, everything else stays off.
+function onceDay(book, lamp, dateIso) {
+  const answer = answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))
+  const at = answer?.answeredAt ? new Date(answer.answeredAt) : null
+  if (at && !Number.isNaN(at.getTime())) return boardDate(at)
+  const target = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || lamp.createdOn || '').trim()
+  return /^\d{4}-\d{2}-\d{2}$/.test(target) ? target : ''
 }
 
 /** A single lamp's last five weeks, dot-colored by answer, oldest week first. */
 export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
   if (!lamp || !dateIso) return null
-  const due = lamp.cadence === 'once' ? onceDueOn : isDueOn
+  const shown = { ...lamp, archived: false }
+  const once = lamp.cadence === 'once' ? onceDay(book, lamp, dateIso) : null
+  const due = (iso) => (once === null ? isDueOn(shown, iso) : once === iso)
 
   const weeks = []
   for (let w = WEEKS - 1; w >= 0; w -= 1) {
@@ -41,7 +46,7 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
       {weeks.map((week) => (
         <View key={week[0]} style={styles.row}>
           {week.map((iso) => {
-            const isDue = due(lamp, iso)
+            const isDue = due(iso)
             let state = 'hole'
             if (isDue) {
               const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
