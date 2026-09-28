@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { readShelf } from '../../src/lib/board-shelf.js'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
 import { goHash, redirectFrom } from '../navigation/hash.js'
@@ -47,8 +48,15 @@ const HALL = new Set(['/', '/home', '/tonight'])
 // Redirect after render; calling goHash while rendering updates AppShell
 // mid-render, which React warns about. The hall stays mounted under every
 // pushed screen, so only the screen on top may redirect.
+function freshHall() {
+  const empty = readShelf().boards.every(
+    (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,
+  )
+  return empty && !welcomeSeen()
+}
+
 function GoTo({ path, from }) {
-  useEffect(() => redirectFrom(from, path), [from, path])
+  useEffect(() => redirectFrom(from, path, freshHall), [from, path])
   return null
 }
 

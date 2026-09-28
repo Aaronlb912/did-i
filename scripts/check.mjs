@@ -1903,7 +1903,7 @@ function fakeStack() {
     isReady: () => true,
     getRootState: () => ({ index: stack.routes.length - 1, routes: stack.routes }),
     getCurrentRoute: () =>
-      stack.routes.length > 1 ? stack.routes.at(-1) : { name: tabs[stack.tab], params: undefined },
+      stack.routes.length > 1 ? stack.routes.at(-1) : { name: tabs[stack.tab], params: stack.tabParams },
     canGoBack: () => stack.routes.length > 1 || stack.tab > 0,
     goBack: () => {
       if (stack.routes.length > 1) stack.routes.pop()
@@ -1916,7 +1916,10 @@ function fakeStack() {
       if (type === 'PUSH') stack.routes.push({ name: payload.name, params: payload.params })
       else if (type === 'POP') stack.routes.splice(stack.routes.length - payload.count)
       else if (type === 'POP_TO_TOP') stack.routes.splice(1)
-      else if (type === 'NAVIGATE' && payload.name === nav.HALL) stack.tab = tabs.indexOf(payload.params.screen)
+      else if (type === 'NAVIGATE' && payload.name === nav.HALL) {
+        stack.tab = tabs.indexOf(payload.params.screen)
+        stack.tabParams = payload.params.params
+      }
       else throw new Error(`unexpected ${type}`)
     },
   }
@@ -1927,6 +1930,7 @@ function fakeStack() {
     top: () => (stack.routes.length > 1 ? stack.routes.at(-1).name : tabs[stack.tab]),
     depth: () => stack.routes.length,
     types: () => stack.actions.map((action) => action.type),
+    settle,
   }
 }
 
@@ -1996,24 +2000,50 @@ test('welcome, the first question, and the name screen keep their own back', () 
   localStorage.removeItem('did-i-welcome')
 })
 
-test('an empty hall sends you to the first question each time you come back to it', () => {
-  const stack = fakeStack()
-  // A cold start from a shortcut opens Add over the hall before the hall is ever on top.
-  nav.goHash('/add')
-  const stop = nav.redirectFrom('/tonight', '/first')
+test('a fresh install is sent to the first question, and only while it is still fresh', () => {
+  let emptyShelf = true
+  const fresh = () => emptyShelf && localStorage.getItem('did-i-welcome') !== '1'
+  localStorage.removeItem('did-i-welcome')
+  const stops = []
   try {
+    let stack = fakeStack()
+    const go = (where, extras) => {
+      nav.goHash(where, extras)
+      stack.settle()
+    }
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
+    assert.equal(stack.top(), '/first', 'a fresh hall opens on the first question')
+    go('/')
+    assert.equal(stack.top(), '/first', 'any name for Tonight still counts as the fresh hall')
+    go('/lamps')
+    assert.equal(stack.top(), '/lamps', 'Questions is not Tonight')
+    go('/first')
+    // Adding the first question marks welcome seen, saves the shelf, then heads home.
+    nav.goHash('/lamp', { id: 'x' })
+    localStorage.setItem('did-i-welcome', '1')
+    emptyShelf = false
+    go('/', { face: 'did' })
+    assert.equal(stack.top(), '/tonight', 'finishing the first question lands on the hall')
+    assert.equal(stack.depth(), 1)
+    assert.equal(nav.readRoute().face, 'did', 'the face the first question asked for survives')
+    stops.splice(0).forEach((stop) => stop())
+
+    // A cold start from a shortcut opens Add over the hall before the hall is ever on top.
+    localStorage.removeItem('did-i-welcome')
+    emptyShelf = true
+    stack = fakeStack()
+    go('/add')
+    stops.push(nav.redirectFrom('/tonight', '/first', fresh))
     assert.equal(stack.top(), '/add', 'a screen that is not on top does not redirect')
     nav.goBack()
     assert.equal(stack.top(), '/first', 'back to an empty hall lands on the first question, not a blank page')
-    nav.goHash('/')
-    assert.equal(stack.top(), '/first', 'any name for Tonight counts as the hall')
-    nav.goHash('/lamps')
-    assert.equal(stack.top(), '/lamps', 'Questions is not Tonight')
+    stops.splice(0).forEach((stop) => stop())
+    go('/tonight')
+    assert.equal(stack.top(), '/tonight', 'no redirect once it is unmounted')
   } finally {
-    stop()
+    stops.forEach((stop) => stop())
+    localStorage.removeItem('did-i-welcome')
   }
-  nav.goHash('/tonight')
-  assert.equal(stack.top(), '/tonight', 'no redirect once it is unmounted')
 })
 
 test('the menu, a buy confirm, and a cheer preview can show on the phone', () => {

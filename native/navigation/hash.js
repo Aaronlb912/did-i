@@ -143,9 +143,11 @@ export function syncFromNavigation() {
   const screen = navigationRef.getCurrentRoute()
   if (!screen) return
   const next = routeFromScreen(screen)
-  if (routeKey(next) === routeKey(current)) return
-  current = next
-  notify()
+  if (routeKey(next) !== routeKey(current)) {
+    current = next
+    notify()
+  }
+  for (const entry of [...redirects]) redirectIfAt(entry)
 }
 
 /** A screen is pushed over the hall. Switching tabs is not history to go back through. */
@@ -199,13 +201,20 @@ function samePlace(a, b) {
   return a === b || (HALL_PATHS.has(a) && TAB_OF[a] === TAB_OF[b])
 }
 
-/** Sends the screen at `from` on to `to`, now and each time it is back on top. */
-export function redirectFrom(from, to) {
-  const check = (route) => {
-    if (samePlace(route.path, from)) goHash(to)
+const redirects = new Set()
+
+function redirectIfAt({ from, to, when }) {
+  if (samePlace(current.path, from) && when()) goHash(to)
+}
+
+/** While mounted, sends `from` on to `to` each time the stack settles on it and `when()` still holds. */
+export function redirectFrom(from, to, when = () => true) {
+  const entry = { from, to, when }
+  redirects.add(entry)
+  redirectIfAt(entry)
+  return () => {
+    redirects.delete(entry)
   }
-  check(current)
-  return onRoute(check)
 }
 
 export function onRoute(fn) {
