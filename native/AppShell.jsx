@@ -155,7 +155,7 @@ export function AppShell() {
   const askPings = useCallback(async () => {
     const next = await requestPings()
     setPingState(next)
-    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book)
+    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(() => {})
   }, [app.book, app.shelf])
 
   useEffect(() => {
@@ -181,7 +181,7 @@ export function AppShell() {
     if (!app.book) return undefined
     let alive = true
     afterNativeBridgeReady(() => {
-      if (alive) armLampPings(app.shelf?.boards || app.book)
+      if (alive) armLampPings(app.shelf?.boards || app.book).catch(() => {})
     })
     return () => {
       alive = false

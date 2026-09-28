@@ -2177,5 +2177,37 @@ test('haptics speak one language on Tonight and do not switch off with Reduce Mo
   writePrefs({ lessMotion: false })
 })
 
+const { deliverStreakHit, takePendingStreakMoment } = await import('../src/lib/streak-moments.js')
+const { setAppForeground } = await import('../src/lib/app-foreground.js')
+const sessionBox = new Map()
+globalThis.sessionStorage = {
+  getItem: (key) => (sessionBox.has(key) ? sessionBox.get(key) : null),
+  setItem: (key, value) => sessionBox.set(key, String(value)),
+  removeItem: (key) => sessionBox.delete(key),
+}
+
+async function testAsync(name, fn) {
+  ran += 1
+  try {
+    await fn()
+    console.log(`ok   ${name}`)
+  } catch (error) {
+    failed += 1
+    console.error(`FAIL ${name}\n     ${error.message}`)
+  }
+}
+
+await testAsync('a streak push that throws right after a Did waits for the app instead of rejecting', async () => {
+  setAppForeground(false)
+  const broken = async () => {
+    throw new TypeError('undefined is not a function')
+  }
+  await deliverStreakHit({ kind: 'hit', n: 2 }, '2026-09-28', broken)
+  const waiting = takePendingStreakMoment()
+  assert.equal(waiting?.kind, 'hit', 'the moment is kept for when the app is open')
+  assert.equal(waiting.n, 2)
+  setAppForeground(true)
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

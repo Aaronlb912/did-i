@@ -126,7 +126,7 @@ export function useAppShelf() {
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      })
+      }).catch(() => {})
     }
     if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
@@ -134,10 +134,10 @@ export function useAppShelf() {
         const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      })
+      }).catch(() => {})
     }
     const after = currentBook(written)
-    if (after) scheduleNativePings(after)
+    if (after) scheduleNativePings(after).catch(() => {})
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {

@@ -261,7 +261,7 @@ export function useTonightStack({
         clearedTonight: true,
         dateIso,
       })
-      if (hit) void deliverStreakHit(hit, dateIso)
+      if (hit) deliverStreakHit(hit, dateIso).catch(() => {})
     }
   }
 
