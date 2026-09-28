@@ -33,13 +33,8 @@ import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import {
-  boardDate,
-  formatBoardDate,
-  isDueOn,
-  recentPeriodKeys,
-} from '../../src/lib/recurrence.js'
-import { NightStrip } from '../components/NightStrip.jsx'
+import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
+import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
@@ -1062,10 +1057,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const stripKeys = useMemo(
-    () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
-    [lamp, dateIso],
-  )
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
 
   function change(next) {
@@ -1101,7 +1092,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
         <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
-        <NightStrip book={lampBook} lamp={lamp} keys={stripKeys} colors={colors} />
+        <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
 
       <View style={styles.tiles}>
@@ -1118,11 +1109,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       </View>
 
-      <DidButton label={t('lamp.edit')} onPress={() => editAt('')} colors={colors} />
-      <View style={styles.actions}>
-        <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
-        <KeyButton label={t('lamp.done')} onPress={() => goHash('/lamps')} colors={colors} />
-      </View>
+      <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
 
       <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
       <SetCard colors={colors}>
@@ -1264,7 +1251,6 @@ const styles = StyleSheet.create({
   cancel: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16 },
   cancelText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   lampCard: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
   lampStatus: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 10 },
   tiles: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 12 },
