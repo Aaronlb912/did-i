@@ -277,7 +277,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{book.title}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
       </GemFaceShell>
     )
