@@ -357,6 +357,9 @@ export function useTonightStack({
     }),
   )
 
+  // The open questions waiting behind the face card, in the order they come up.
+  const upNext = faceRow ? openReady.filter((row) => rowKey(row) !== rowKey(faceRow)) : []
+
   const activePillPick = pillPick
     ? due.find((row) => rowKey(row) === rowKey(pillPick)) || null
     : null
@@ -399,6 +402,7 @@ export function useTonightStack({
     finishCount,
     onFinish,
     faceRow,
+    upNext,
     dueWithWait,
     bodyKind,
     holePick,

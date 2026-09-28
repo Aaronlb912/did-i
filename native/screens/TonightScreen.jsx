@@ -89,6 +89,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
+  // Folders and topics are the first chip of the question row, not a row of their own.
+  const showChips = stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick
   let face = null
   if (stack.bodyKind === 'finish') {
     face = (
@@ -106,6 +108,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         }
         stampDid={t('tonight.finishKeep')}
         stampNope={t('tonight.finishLeave')}
+        didLabel={t('tonight.finishKeep')}
+        nopeLabel={t('tonight.finishLeave')}
         onDid={stack.continueStack}
         onNope={stack.restStack}
         buddy={activeBuddy(book)}
@@ -128,6 +132,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
+        didLabel={t('tonight.answerDid')}
+        nopeLabel={t('tonight.answerNope')}
+        behind={stack.upNext.map((row) => ({
+          key: stack.rowKey(row),
+          kicker: row.tag || t('tonight.didI'),
+          title: row.lamp.question,
+        }))}
         onDid={() => stack.mark(faceRow, 'yes')}
         onNope={() => stack.mark(faceRow, 'skip')}
         buddy={activeBuddy(faceBook)}
@@ -246,6 +257,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         title={pillRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
+        didLabel={t('tonight.answerDid')}
+        nopeLabel={t('tonight.answerNope')}
         blockDid={isDid}
         blockNope={status === 'skip' || isDid}
         onDid={() => stack.mark(pillRow, 'yes')}
@@ -280,6 +293,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       </GemFaceShell>
     )
   }
+
+  const tagFilter = (
+    <TagFilter
+      boards={stack.shelf}
+      tagId={tagId}
+      onTag={onTag}
+      now={stack.clock}
+      colors={colors}
+      topics={topics}
+      topicPicks={picks}
+      onTopics={setTopicPicks}
+      inline={showChips}
+    />
+  )
 
   const titleSlot = stack.titleEdit ? (
     <TextInput
@@ -325,8 +352,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
       </Slot>
 
-      {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
+      {showChips ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
+          <Slot>{tagFilter}</Slot>
           {stack.dueWithWait.map((row) => {
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
             const skip = row.answer?.status === 'skip'
@@ -363,18 +391,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <JewelKey colors={colors} onDone={() => setKeySeen(true)} />
       ) : null}
 
-      <Slot>
-        <TagFilter
-          boards={stack.shelf}
-          tagId={tagId}
-          onTag={onTag}
-          now={stack.clock}
-          colors={colors}
-          topics={topics}
-          topicPicks={picks}
-          onTopics={setTopicPicks}
-        />
-      </Slot>
+      {showChips ? null : <Slot>{tagFilter}</Slot>}
 
       {stack.pillPick || stack.waitPick ? (
         <Pressable
@@ -417,8 +434,8 @@ const styles = StyleSheet.create({
   },
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
-  jewels: { maxHeight: 52, marginBottom: 10 },
-  jewelsIn: { gap: 8, paddingRight: 8 },
+  jewels: { flexGrow: 0, marginBottom: 12 },
+  jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
   back: {
     alignSelf: 'flex-start',
     flexDirection: 'row',

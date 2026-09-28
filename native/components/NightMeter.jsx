@@ -28,9 +28,14 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '' }) {
   if (!total) return null
   const pct = Math.round(ratio * 1000) / 10
   const done = ratio >= 1
+  const left = total - answered
+  // Counts answers, so it reads as done and left, not as a card position.
+  const label = left
+    ? `${t('tonight.meterDone')} · ${t('tonight.meterLeft', { n: left })}`
+    : t('tonight.meterDone')
 
   return (
-    <View style={styles.wrap} accessibilityLabel={t('tonight.meterAria', { n: answered, total })}>
+    <View style={styles.wrap} accessible accessibilityLabel={t('tonight.meterDoneAria', { n: answered, left })}>
       <View style={styles.top}>
         <Animated.Text
           style={[
@@ -40,7 +45,7 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '' }) {
         >
           {answered}
         </Animated.Text>
-        <Text style={[styles.label, { color: colors.inkDim }]}>{t('tonight.meter', { n: total })}</Text>
+        <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
       </View>
       <View
         style={[

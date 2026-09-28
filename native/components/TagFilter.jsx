@@ -9,7 +9,7 @@ import { fonts } from '../theme.js'
 // It floats over the page, so nothing below moves, and scrolls when the list
 // is long. Tap to add or remove; "All" clears a section. Done or a tap
 // outside closes it.
-export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics }) {
+export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false }) {
   const [open, setOpen] = useState(false)
   const [at, setAt] = useState(null)
   const button = useRef(null)
@@ -78,14 +78,18 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const maxList = Math.max(160, height - (at?.y || 0) - 90)
 
   return (
-    <View style={styles.wrap}>
+    <View style={inline ? null : styles.wrap}>
       <View style={styles.line}>
       <Pressable
         ref={button}
         onPress={toggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        style={[styles.pick, { backgroundColor: colors.panel2, borderColor: filtering ? colors.onDeep : colors.line }]}
+        style={[
+          styles.pick,
+          inline && styles.pickInline,
+          { backgroundColor: colors.panel2, borderColor: filtering ? colors.onDeep : colors.line },
+        ]}
       >
         <Text style={[styles.bars, { color: filtering ? colors.on : colors.ink }]}>≡</Text>
         <Text style={[styles.name, { color: filtering ? colors.on : colors.ink }]} numberOfLines={1}>
@@ -102,7 +106,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t('tags.clear')}
-          style={[styles.clear, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+          style={[styles.clear, inline && styles.clearInline, { backgroundColor: colors.panel2, borderColor: colors.line }]}
         >
           <Text style={[styles.clearText, { color: colors.ink }]}>×</Text>
         </Pressable>
@@ -170,6 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  clearInline: { width: 40, height: 40, borderRadius: 20 },
   clearText: { fontFamily: fonts.ui, fontSize: 18, lineHeight: 20 },
   pick: {
     flexDirection: 'row',
@@ -181,6 +186,8 @@ const styles = StyleSheet.create({
     minHeight: 32,
     maxWidth: '100%',
   },
+  // Same height as the question chips it sits in front of.
+  pickInline: { minHeight: 40, paddingHorizontal: 14 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
   count: { fontFamily: fonts.mono, fontSize: 11 },
