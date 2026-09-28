@@ -1153,6 +1153,7 @@ export const zh = {
   'device.browserWindows': 'Windows 浏览器',
   'device.browser': '浏览器',
   'tags.default': '文件夹',
+  'tags.general': '常规',
   'tags.defaultN': '文件夹 {n}',
   'lamp.unnamed': '问题',
   'strip.recent': '{name} 最近几晚',

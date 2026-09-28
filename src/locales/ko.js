@@ -1160,6 +1160,7 @@ export const ko = {
   'device.browserWindows': 'Windows 브라우저',
   'device.browser': '브라우저',
   'tags.default': '폴더',
+  'tags.general': '일반',
   'tags.defaultN': '폴더 {n}',
   'lamp.unnamed': '질문',
   'strip.recent': '{name} 최근 밤',

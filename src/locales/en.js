@@ -1197,6 +1197,7 @@ export const en = {
   'device.browserWindows': 'Browser on Windows',
   'device.browser': 'Browser',
   'tags.default': 'Folder',
+  'tags.general': 'General',
   'tags.defaultN': 'Folder {n}',
   'lamp.unnamed': 'Lamp',
   'strip.recent': '{name} recent nights',

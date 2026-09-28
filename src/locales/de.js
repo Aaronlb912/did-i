@@ -1209,6 +1209,7 @@ export const de = {
   'device.browserWindows': 'Browser unter Windows',
   'device.browser': 'Browser',
   'tags.default': 'Ordner',
+  'tags.general': 'Allgemein',
   'tags.defaultN': 'Ordner {n}',
   'lamp.unnamed': 'Frage',
   'strip.recent': '{name} letzte Nächte',

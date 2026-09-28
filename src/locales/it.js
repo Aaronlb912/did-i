@@ -1199,6 +1199,7 @@ export const it = {
   'device.browserWindows': 'Browser su Windows',
   'device.browser': 'Browser',
   'tags.default': 'Cartella',
+  'tags.general': 'Generale',
   'tags.defaultN': 'Cartella {n}',
   'lamp.unnamed': 'Domanda',
   'strip.recent': '{name} notti recenti',

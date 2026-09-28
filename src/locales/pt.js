@@ -1197,6 +1197,7 @@ export const pt = {
   'device.browserWindows': 'Browser no Windows',
   'device.browser': 'Browser',
   'tags.default': 'Pasta',
+  'tags.general': 'Geral',
   'tags.defaultN': 'Pasta {n}',
   'lamp.unnamed': 'Pergunta',
   'strip.recent': '{name} noites recentes',

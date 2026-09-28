@@ -1202,6 +1202,7 @@ export const es = {
   'device.browserWindows': 'Navegador en Windows',
   'device.browser': 'Navegador',
   'tags.default': 'Carpeta',
+  'tags.general': 'General',
   'tags.defaultN': 'Carpeta {n}',
   'lamp.unnamed': 'Lámpara',
   'strip.recent': '{name} noches recientes',

@@ -1160,6 +1160,7 @@ export const ja = {
   'device.browserWindows': 'Windows のブラウザ',
   'device.browser': 'ブラウザ',
   'tags.default': 'フォルダ',
+  'tags.general': '一般',
   'tags.defaultN': 'フォルダ {n}',
   'lamp.unnamed': '質問',
   'strip.recent': '{name} の最近の夜',

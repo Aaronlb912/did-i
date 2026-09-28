@@ -1204,6 +1204,7 @@ export const fr = {
   'device.browserWindows': 'Navigateur sur Windows',
   'device.browser': 'Navigateur',
   'tags.default': 'Dossier',
+  'tags.general': 'Général',
   'tags.defaultN': 'Dossier {n}',
   'lamp.unnamed': 'Question',
   'strip.recent': '{name} nuits récentes',
