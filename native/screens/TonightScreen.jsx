@@ -124,7 +124,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={faceRow.tag || t('tonight.didI')}
+        kicker={faceRow.tag || book.title}
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
@@ -225,7 +225,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(stack.bookOf(pillRow))}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag || t('tonight.didI')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag || book.title}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
       </GemFaceShell>
@@ -242,7 +242,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={pillRow.tag || t('tonight.didI')}
+        kicker={pillRow.tag || book.title}
         title={pillRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
@@ -275,7 +275,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.didI')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{book.title}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
       </GemFaceShell>
     )

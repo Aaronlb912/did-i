@@ -16,6 +16,8 @@ const PRODUCT_SAME = new Set([
   'hole.nopeKicker',
   'feed.status.did',
   'feed.status.nope',
+  'jewelKey.nope',
+  'widget.tonight.nope',
   'famNight.do',
   'famNight.nope',
   'family.doIt',

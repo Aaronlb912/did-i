@@ -231,7 +231,7 @@ export const de = {
   'welcome.plate': 'Did I',
   'welcome.title': 'Eine Frage nach der anderen.',
   'welcome.body':
-    'DID, wenn du es getan hast. Did not, wenn heute Nacht nicht die Nacht ist.',
+    'DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist.',
   'welcome.start': 'Start',
   'first.kicker': 'Erste Nacht',
   'first.title': 'Was prüfst du immer wieder nach?',
@@ -247,7 +247,7 @@ export const de = {
   'first.whenLater': 'Kannst du danach ändern.',
   'first.add': 'Meine erste Frage hinzufügen',
   'first.demo': 'Demo ausprobieren',
-  'first.swipeNope': 'Nach links wischen: did not',
+  'first.swipeNope': 'Nach links wischen: nope',
   'first.swipeDid': 'Nach rechts wischen: DID',
   'enter.locked': 'Gesperrt',
   'enter.thisPhone': 'Dieses Telefon',
@@ -306,12 +306,12 @@ export const de = {
   'pill.open': 'Noch nicht beantwortet',
   'pill.done': 'Als DID markiert',
   'pill.late': 'Als spät markiert',
-  'pill.nope': 'Als did not markiert',
+  'pill.nope': 'Als nope markiert',
   'pill.edit': 'Frage bearbeiten',
   'jewelKey.title': 'Was die Punkte bedeuten',
   'jewelKey.did': 'Erledigt',
   'jewelKey.late': 'Spät erledigt',
-  'jewelKey.nope': 'Nicht erledigt (nope)',
+  'jewelKey.nope': 'Nope',
   'jewelKey.open': 'Noch offen',
   'jewelKey.due': 'Heute fällig',
   'jewelKey.wait': 'Noch nicht dran',
@@ -426,15 +426,15 @@ export const de = {
   'help.kicker': 'Hilfe',
   'help.title': 'So funktioniert das',
   'help.lead':
-    'Heute Nacht ist DID oder did not. Start hält den Streak und den Rückblick. Der Shop ist die Tasche.',
+    'Heute Nacht ist DID oder nope. Start hält den Streak und den Rückblick. Der Shop ist die Tasche.',
   'help.tonight': 'Heute Nacht',
   'help.tonightP1':
-    'DID, wenn du es getan hast. Did not, wenn heute Nacht nicht die Nacht ist. Did not bricht den Rest nicht.',
+    'DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist. Nope bricht den Rest nicht.',
   'help.tonightP2':
     'Eine Frage kann auf eine Uhrzeit warten. Letztes Mal verpasst zählt noch, wenn du es spät markierst.',
   'help.streak': 'Streak',
   'help.streakP':
-    'Mach heute Nacht fertig und der Streak steigt, eine pro Nacht, bis fünf. Verpass eine fällige Nacht und er fällt auf null. Did not zählt trotzdem als fertig.',
+    'Mach heute Nacht fertig und der Streak steigt, eine pro Nacht, bis fünf. Verpass eine fällige Nacht und er fällt auf null. Nope zählt trotzdem als fertig.',
   'help.marks': 'Marken',
   'help.phone': 'Dieses Telefon',
   'help.phoneP':
@@ -742,7 +742,7 @@ export const de = {
   'lamp.didCap': 'DID, letzte {n} Tage',
   'hole.kicker': 'Diese Nacht',
   'hole.nopeKicker': 'Nope',
-  'hole.nopeBody': 'Du hast did not gesagt. Markiere spät, wenn du es doch gemacht hast.',
+  'hole.nopeBody': 'Du hast nope gesagt. Markiere spät, wenn du es doch gemacht hast.',
   'hole.late': 'spät',
   'hole.leave': 'Lassen',
   'people.kicker': 'Leute',
@@ -982,7 +982,7 @@ export const de = {
   'about.kicker': 'Über',
   'about.title': 'Was das ist',
   'about.p1':
-    'Did I ist die offene Frage für heute Nacht. Eine nach der anderen. DID, wenn du es getan hast. Did not, wenn heute Nacht nicht die Nacht ist.',
+    'Did I ist die offene Frage für heute Nacht. Eine nach der anderen. DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist.',
   'about.p4':
     'Der Tag klappt um, zur Stunde die du eingestellt hast. Ein Tap um 1 Uhr gehört noch zur letzten Nacht, wenn die Wende um 4 ist. Erinnerungen kommen auf diesem Gerät, wenn eine Frage fällig ist, wenn du sie angeschaltet hast.',
   'about.home': 'Start',
@@ -1006,7 +1006,7 @@ export const de = {
   'mark.first-open.line': 'Du hast Did I geöffnet.',
   'mark.first-did.name': 'Erstes DID',
   'mark.first-did.line': 'Du hast DID getippt.',
-  'mark.honest-skip.name': 'Ehrliches Did not',
+  'mark.honest-skip.name': 'Ehrliches Nope',
   'mark.honest-skip.line': 'Heute Nacht war nicht die Nacht.',
   'mark.late-ok.name': 'Spät zählt trotzdem',
   'mark.late-ok.line': 'Du hast ein Verpassen spät markiert.',
@@ -1077,7 +1077,7 @@ export const de = {
   'ideas.keys.start': 'Schlüssel',
   'ideas.bins.kind': 'Das Haus',
   'ideas.bins.question': 'Habe ich die Mülltonnen rausgestellt?',
-  'ideas.bins.body': 'Eine wöchentliche Nacht. Did not, wenn es nicht die Nacht ist.',
+  'ideas.bins.body': 'Eine wöchentliche Nacht. Nope, wenn es nicht die Nacht ist.',
   'ideas.bins.start': 'Tonnen',
   'ideas.water.kind': 'Geld',
   'ideas.water.question': 'Habe ich die Wasserrechnung bezahlt?',
@@ -1106,7 +1106,7 @@ export const de = {
   'lamp.copySuffix': 'Kopie',
   'map.tonight.kicker': 'Heute Nacht',
   'map.tonight.title': 'Der Tap',
-  'map.tonight.body': 'Eine Frage. DID oder did not.',
+  'map.tonight.body': 'Eine Frage. DID oder nope.',
   'map.later.kicker': 'Demnächst',
   'map.later.title': 'Die nächsten Nächte',
   'map.later.body': 'Was nach heute Nacht gefragt wird.',
@@ -1152,9 +1152,9 @@ export const de = {
   'site.door.kicker': 'An der Tür',
   'site.door.title': 'Habe ich die Hintertür abgeschlossen?',
   'site.door.p1':
-    'Did I ist die offene Frage für heute Nacht. Eine auf der Platte. DID, wenn du es getan hast. Did not, wenn heute Nacht nicht die Nacht ist.',
+    'Did I ist die offene Frage für heute Nacht. Eine auf der Platte. DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist.',
   'site.door.p2':
-    'Start sagt, was übrig ist. Heute Nacht ist, wo du DID oder did not tippst. Ordner gruppieren Fragen. Das Zahnrad ist Einstellungen.',
+    'Start sagt, was übrig ist. Heute Nacht ist, wo du DID oder nope tippst. Ordner gruppieren Fragen. Das Zahnrad ist Einstellungen.',
   'site.door.p3':
     'Kein Konto. Dieser Browser behält deine Fragen. Hayes Street ist eine erfundene Wohnung, wenn du ein volles Set zum Ausprobieren willst.',
   'site.door.openBoard': '{board} öffnen',
@@ -1172,7 +1172,7 @@ export const de = {
   'site.read.kicker': 'So',
   'site.read.title': 'So benutzt du es.',
   'site.read.p1':
-    'Start ist die Front. Es sagt dir, was heute Nacht übrig ist. Heute Nacht ist der Tap. Eine Frage. DID oder did not. Mach heute Nacht fertig und der Streak steigt. Komm morgen wieder.',
+    'Start ist die Front. Es sagt dir, was heute Nacht übrig ist. Heute Nacht ist der Tap. Eine Frage. DID oder nope. Mach heute Nacht fertig und der Streak steigt. Komm morgen wieder.',
   'site.read.p2':
     'Eine Frage kann bis zu einer Uhrzeit warten. Demnächst zeigt die nächsten Nächte, damit eine wartende Frage kein leerer Screen ist. Letztes Mal ist gestern Nacht, oder der letzte fällige Tag, wenn du verpasst hast. Spät zählt trotzdem.',
   'site.read.p3':
@@ -1180,7 +1180,7 @@ export const de = {
   'site.read.p4':
     'Dieses Telefon behält deine Fragen. Keine E-Mail. Einstellungen hat eine Kopie der Datei, eine optionale Zahlensperre und Erinnerungen. Chrome und Android können zur Frage-Stunde pingen. Ein iPhone kann die Seite installieren. Pings dort sind schwach, bis ein Mac die native App baut.',
   'site.read.p5':
-    'y oder Leertaste ist DID. s ist did not. n fügt eine Frage hinzu. Escape schließt eine Platte. u macht den letzten Tap ein paar Sekunden rückgängig.',
+    'y oder Leertaste ist DID. s ist nope. n fügt eine Frage hinzu. Escape schließt eine Platte. u macht den letzten Tap ein paar Sekunden rückgängig.',
   'site.read.openHome': 'Startbildschirm öffnen',
   'site.read.helpInApp': 'Hilfe in der App',
   'site.into.kicker': 'Einbinden',
@@ -1566,7 +1566,7 @@ export const de = {
   'widget.settings.lookSub': 'Colors on the widget. Only looks you own.',
   'widget.settings.lookTag': 'Same as folder',
   'widget.settings.openOnly': 'Open questions only',
-  'widget.settings.openOnlySub': 'Hide Did and did not rows after you answer.',
+  'widget.settings.openOnlySub': 'Hide Did and nope rows after you answer.',
   'didyou.menuWaiting': 'An dich gesendet, {n} warten',
   'didyou.menuButton': 'Mehr, {n} gesendete warten',
   'didyou.newOne': '{name} hat dir eine Frage geschickt',
