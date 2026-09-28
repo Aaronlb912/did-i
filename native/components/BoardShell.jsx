@@ -93,12 +93,10 @@ export function BoardShell({
 
   // iOS lays the page out under the navigation bar and insets it itself, so the
   // bar can go from clear to material, and the large title can shrink into it.
+  // That also means the page's frame already starts at the top of the screen,
+  // so the avoiding view needs no header offset; one would pad the header twice.
   const inner = scroll ? (
-    <KeyboardAvoidingView
-      style={styles.scroll}
-      behavior="padding"
-      keyboardVerticalOffset={headerInset}
-    >
+    <KeyboardAvoidingView style={styles.scroll} behavior="padding">
       <Animated.ScrollView
         ref={scrollRef}
         onLayout={onScrollLayout}
