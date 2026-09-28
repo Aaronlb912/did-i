@@ -1,8 +1,12 @@
 let foreground = true
 const listeners = new Set()
 
+// The phone's bootstrap gives the app a stand-in document with no
+// visibilityState; there AppState (through setAppForeground) is the answer.
 export function isAppForeground() {
-  if (typeof document !== 'undefined') return document.visibilityState === 'visible'
+  if (typeof document !== 'undefined' && typeof document.visibilityState === 'string') {
+    return document.visibilityState === 'visible'
+  }
   return foreground
 }
 

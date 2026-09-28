@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
+import Reanimated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -25,8 +26,14 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '' }) {
     ]).start()
   }, [pop, reduce, scale])
 
+  // The bar fills to each answer instead of jumping; the last one fills it.
+  const fill = useSharedValue(ratio)
+  useEffect(() => {
+    fill.value = reduce ? ratio : withTiming(ratio, { duration: 420, easing: Easing.out(Easing.cubic) })
+  }, [fill, ratio, reduce])
+  const fillStyle = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, fill.value)) * 100}%` }))
+
   if (!total) return null
-  const pct = Math.round(ratio * 1000) / 10
   const done = ratio >= 1
   const left = total - answered
   // Counts answers, so it reads as done and left, not as a card position.
@@ -56,10 +63,11 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '' }) {
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: total, now: answered }}
       >
-        <View
+        <Reanimated.View
           style={[
             styles.fill,
-            { backgroundColor: colors.on, width: `${pct}%` },
+            { backgroundColor: colors.on },
+            fillStyle,
             gemMeter
               ? {
                   shadowColor: gemMeter.fillShadowColor,

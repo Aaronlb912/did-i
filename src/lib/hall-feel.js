@@ -29,11 +29,22 @@ export function hallHeat(book, now = new Date()) {
 }
 
 export function shelfHeat(boards, now = new Date(), tagId = '') {
+  return clearNightsInARow(boards, now, tagId, 5, 40)
+}
+
+// Cleared nights in a row, counting tonight only once it is clear: what the
+// streak says out loud, so it keeps counting past the five the room shows.
+// Stops at the first night left open, or after three years of nights.
+export function shelfStreak(boards, now = new Date(), tagId = '') {
+  return clearNightsInARow(boards, now, tagId, 1100, 1100)
+}
+
+function clearNightsInARow(boards, now, tagId, cap, lookBack) {
   const books = scopedBooks(boards, tagId)
   if (!books.length) return 0
   let cursor = boardDate(now, books[0].dayFoldHour)
   let heat = 0
-  for (let step = 0; step < 40 && heat < 5; step += 1) {
+  for (let step = 0; step < lookBack && heat < cap; step += 1) {
     const at = noonOn(cursor)
     if (!at) break
     let dueCount = 0

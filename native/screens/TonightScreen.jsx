@@ -16,7 +16,9 @@ import { DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
-import { JewelKey, jewelKeySeen } from '../components/JewelKey.jsx'
+import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
+import { CELEBRATE_MS, CardSettle, StreakCount } from '../components/DoneCard.jsx'
+import { useHoldMarks } from '../lib/mark-hold.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -92,6 +94,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
   // Folders and topics are the first chip of the question row, not a row of their own.
   const showChips = stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick
+  // The dot legend waits for a later night, and never shows over the payoff.
+  const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
+  const showKey = !keySeen && keyNight && showChips && !stack.hallOn
+  // Marks wait while the night's celebration plays, then come one at a time.
+  useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
+  useEffect(() => {
+    if (!stack.cheer) return undefined
+    const timer = setTimeout(stack.cheered, CELEBRATE_MS)
+    return () => clearTimeout(timer)
+  }, [stack.cheer, stack.cheered])
   let face = null
   if (stack.bodyKind === 'finish') {
     face = (
@@ -159,11 +171,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   } else if (stack.bodyKind === 'hall') {
     face = (
-      <GemFaceShell look={premium ? look : ''}
-        theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
-        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
-      </GemFaceShell>
+      <CardSettle play={Boolean(stack.cheer)}>
+        <GemFaceShell look={premium ? look : ''}
+          theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
+          <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
+          <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
+          {stack.streak > 0 ? (
+            <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
+          ) : null}
+        </GemFaceShell>
+      </CardSettle>
     )
   } else if (stack.bodyKind === 'rest') {
     face = (
@@ -390,7 +407,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </ScrollView>
       ) : null}
 
-      {!keySeen && stack.dueWithWait.some((row) => row.answer) && !stack.holePick && !stack.waitPick ? (
+      {showKey ? (
         <JewelKey colors={colors} onDone={() => setKeySeen(true)} />
       ) : null}
 

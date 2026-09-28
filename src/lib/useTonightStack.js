@@ -1,14 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byPriority, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
-import { filamentLevel, hallHour, shelfHeat } from './hall-feel.js'
-import {
-  deliverStreakHit,
-  maybeStreakHit,
-  shelfHeatNow,
-} from './streak-moments.js'
+import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
+import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { bySlot, clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
@@ -52,6 +48,10 @@ export function useTonightStack({
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
   const [overlay, setOverlay] = useState(null)
+  // Set when a Did clears the night right here, so the done card can play
+  // the moment once instead of every time Tonight opens on a clear night.
+  const [cheer, setCheer] = useState(null)
+  const cheered = useCallback(() => setCheer(null), [])
   const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
   const shelf = useMemo(
@@ -91,6 +91,12 @@ export function useTonightStack({
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
+  // A walk back through the nights, so only once tonight is clear.
+  const streak = useMemo(
+    () => (hallOn ? shelfStreak(shelf, clock, tagId) : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, tagId, dateIso, hallOn],
+  )
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = useMemo(() => {
     const books = boards.length ? boards : [value]
@@ -252,12 +258,12 @@ export function useTonightStack({
     if (book.clickSound && finalStatus === 'yes') playClick()
     if (clears) {
       feelTap('hall-on')
-      const beforeHeat = shelfHeatNow(shelf, clock, tagId)
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
-      const afterHeat = shelfHeatNow(afterBooks, clock, tagId)
+      const afterStreak = shelfStreak(afterBooks, clock, tagId)
+      if (afterStreak > 0) setCheer({ dateIso, from: afterStreak - 1, to: afterStreak })
       const hit = maybeStreakHit({
-        beforeHeat,
-        afterHeat,
+        beforeHeat: shelfStreak(shelf, clock, tagId),
+        afterHeat: afterStreak,
         clearedTonight: true,
         dateIso,
       })
@@ -396,6 +402,9 @@ export function useTonightStack({
     ready,
     catchUp,
     heat,
+    streak,
+    cheer: cheer && cheer.dateIso === dateIso && hallOn ? cheer : null,
+    cheered,
     hour,
     hallOn,
     empty,

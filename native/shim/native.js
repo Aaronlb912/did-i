@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
+import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
@@ -38,8 +39,7 @@ export async function pingStreakHit(hit, dateIso) {
     await Notifications.scheduleNotificationAsync({
       identifier: String(notifyId('streak-hit', dateIso)),
       content: {
-        title: t('streak.hitTitle'),
-        body: t('streak.hitBody', { n: hit.n }),
+        ...streakHitCopy(hit.n),
         data: { go: '/tonight', streakHit: true },
       },
       trigger: null,

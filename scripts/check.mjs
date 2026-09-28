@@ -2251,5 +2251,63 @@ await testAsync('a streak push that throws right after a Did waits for the app i
   setAppForeground(true)
 })
 
+const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js')
+const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
+const { isAppForeground } = await import('../src/lib/app-foreground.js')
+
+test('a first cleared night is not "1 nights" and is not on fire yet', () => {
+  const one = streakHitCopy(1)
+  assert.equal(one.title, en['streak.hitTitleClear'])
+  assert.equal(one.body, en['streak.hitBodyOne'])
+  assert.equal(streakHitCopy(2).title, en['streak.hitTitleClear'], 'two nights is not a fire yet')
+  assert.ok(streakHitCopy(2).body.startsWith('2 nights'))
+  assert.equal(streakHitCopy(3).title, en['streak.hitTitle'], 'three nights is')
+  assert.equal(streakNights(1), '1 night in a row')
+  assert.equal(streakNights(7), '7 nights in a row')
+})
+
+test('the streak keeps counting past the five the room shows', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 8; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: nights.map((night) => ({ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })),
+  }
+  assert.equal(shelfHeat([book], clock), 5, 'the room stays at five')
+  assert.equal(shelfStreak([book], clock), 8)
+  const tonightOpen = { ...book, answers: book.answers.slice(1) }
+  assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+})
+
+await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {
+  // The phone bootstrap stands in a document with no visibilityState.
+  const hadDocument = 'document' in globalThis
+  const before = globalThis.document
+  globalThis.document = {}
+  setAppForeground(true)
+  try {
+    assert.equal(isAppForeground(), true)
+    let pushed = 0
+    await deliverStreakHit({ kind: 'hit', n: 1 }, '2026-09-27', async () => {
+      pushed += 1
+      return true
+    })
+    assert.equal(pushed, 0, 'no system push while the app is in front')
+    setAppForeground(false)
+    assert.equal(isAppForeground(), false)
+  } finally {
+    setAppForeground(true)
+    if (hadDocument) globalThis.document = before
+    else delete globalThis.document
+  }
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
