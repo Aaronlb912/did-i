@@ -915,8 +915,16 @@ function KitTabs({ tab, onTab, counts, colors }) {
               },
             ]}
           >
-            <Text style={[styles.kitTabText, { color: on ? colors.on : colors.inkSoft }]}>{t(item.key)}</Text>
-            <Text style={[styles.kitTabN, { color: on ? colors.on : colors.inkDim }]}>{counts[item.id]}</Text>
+            <Text
+              style={[styles.kitTabText, { color: on ? colors.on : colors.inkSoft }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.4}
+            >
+              {t(item.key)}
+            </Text>
+            <Text style={[styles.kitTabN, { color: on ? colors.on : colors.inkDim }]} maxFontSizeMultiplier={1.4}>
+              {counts[item.id]}
+            </Text>
           </Pressable>
         )
       })}

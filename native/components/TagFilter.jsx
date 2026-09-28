@@ -88,7 +88,11 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         style={[styles.pick, { backgroundColor: colors.panel2, borderColor: filtering ? colors.onDeep : colors.line }]}
       >
         <Text style={[styles.bars, { color: filtering ? colors.on : colors.ink }]}>≡</Text>
-        <Text style={[styles.name, { color: filtering ? colors.on : colors.ink }]} numberOfLines={1}>
+        <Text
+          style={[styles.name, { color: filtering ? colors.on : colors.ink }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.4}
+        >
           {label}
         </Text>
         {count && showFolders && !topicPicks.length ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}

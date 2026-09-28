@@ -192,7 +192,7 @@ export function HeaderLargeTitle({ colors, title }) {
   if (Platform.OS === 'ios') return null
   return (
     <View style={styles.largeBox}>
-      <Text style={[styles.largeTitle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
+      <Text style={[styles.largeTitle, { color: colors.ink }]} numberOfLines={2} accessibilityRole="header">
         {title}
       </Text>
     </View>
