@@ -269,7 +269,13 @@ export function AppShell() {
               key={path}
               name={path}
               component={RouteScreen}
-              options={OWN_BACK.has(path) ? { gestureEnabled: false } : undefined}
+              options={
+                path === '/add'
+                  ? { presentation: 'formSheet', sheetGrabberVisible: true }
+                  : OWN_BACK.has(path)
+                    ? { gestureEnabled: false }
+                    : undefined
+              }
             />
           ))}
         </Stack.Navigator>

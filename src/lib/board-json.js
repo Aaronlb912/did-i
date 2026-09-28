@@ -127,7 +127,7 @@ export function blankLamp(now = new Date()) {
 export function blankBook() {
   return {
     version: 1,
-    title: 'Did I',
+    title: t('tags.default'),
     keeperName: '',
     dayFoldHour: 0,
     quietMode: false,
@@ -217,7 +217,7 @@ export function normalizeBook(raw) {
   return {
     version: 1,
     id: asString(book.id).trim() || newBoardId(),
-    title: asString(book.title).trim() || 'Did I',
+    title: asString(book.title).trim() || t('tags.default'),
     keeperName: asString(book.keeperName).trim(),
     dayFoldHour: 0,
     quietMode: asBool(book.quietMode),

@@ -749,6 +749,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       date={shellDate(book, clock)}
       colors={colors}
       showAdd
+      back={hang.editing ? undefined : false}
+      leftAction={hang.editing ? undefined : { label: t('hang.cancel'), onPress: cancel }}
+      rightAction={hang.editing ? undefined : { label: t('hang.addIt'), onPress: save, disabled: !ready }}
     >
       <HangCard
         ref={inputRef}
@@ -902,7 +905,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           <HangFold
             label={t('hang.tag')}
             value={tagName}
-            icon="tag"
+            icon="folder"
             open={open === 'tag'}
             onToggle={() => fold('tag')}
             colors={colors}
@@ -1026,17 +1029,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </Text>
       ) : null}
 
-      <View style={styles.hangActions}>
-        <DidButton
-          label={hang.editing ? t('hang.save') : t('hang.addIt')}
-          onPress={save}
-          colors={colors}
-          dim={!ready}
-        />
-        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
-          <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
-        </Pressable>
-      </View>
+      {hang.editing ? (
+        <View style={styles.hangActions}>
+          <DidButton label={t('hang.save')} onPress={save} colors={colors} dim={!ready} />
+          <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
+            <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {existing && sourceBook && !stamp ? (
         <LampManage
@@ -1127,7 +1127,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="tag" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
+        <SetRow colors={colors} icon="folder" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
         <SetRow
           colors={colors}
           icon="flag"

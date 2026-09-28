@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { Animated, Platform, StyleSheet, Text, View } from 'react-native'
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
@@ -25,6 +25,31 @@ function useShowBack(back) {
     return onRoute(sync)
   }, [back])
   return show
+}
+
+/** A plain text nav-bar button: a sheet's Cancel or its primary action. */
+function HeaderTextButton({ colors, label, onPress, disabled, accent }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(disabled) }}
+      style={styles.textAction}
+    >
+      <Text
+        style={[
+          styles.textActionLabel,
+          { color: accent ? colors.on : colors.ink },
+          disabled && { color: colors.inkDim },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  )
 }
 
 /** Purse and menu, the right side of every header. */
@@ -96,18 +121,30 @@ function SlotPart({ slot, part }) {
     part === 'title' ? (
       value.titleSlot
     ) : part === 'left' ? (
-      <HeaderButton bare colors={value.colors} onPress={() => goBack()} label={t('nav.back')}>
-        <Slot>
-          <BackChevron color={value.colors.on} size={28} />
-        </Slot>
-      </HeaderButton>
+      value.leftAction ? (
+        <HeaderTextButton colors={value.colors} label={value.leftAction.label} onPress={value.leftAction.onPress} />
+      ) : (
+        <HeaderButton bare colors={value.colors} onPress={() => goBack()} label={t('nav.back')}>
+          <Slot>
+            <BackChevron color={value.colors.on} size={28} />
+          </Slot>
+        </HeaderButton>
+      )
+    ) : value.rightAction ? (
+      <HeaderTextButton
+        colors={value.colors}
+        label={value.rightAction.label}
+        onPress={value.rightAction.onPress}
+        disabled={value.rightAction.disabled}
+        accent
+      />
     ) : (
       <HeaderActions colors={value.colors} purse={value.purse} menu={value.menu} />
     )
   return <MastMenuBridge value={value.menuCtx}>{node}</MastMenuBridge>
 }
 
-function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = false }) {
+function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = false, leftAction, rightAction }) {
   const navigation = useNavigation()
   const menuCtx = useMastMenu()
   const path = useScreenRoute().path
@@ -115,11 +152,12 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
   if (!slot.current) slot.current = createSlot()
 
   useLayoutEffect(() => {
-    slot.current.set({ colors, titleSlot, purse, menu, menuCtx })
+    slot.current.set({ colors, titleSlot, purse, menu, menuCtx, leftAction, rightAction })
   })
 
   const hasTitleSlot = Boolean(titleSlot)
-  const hasRight = Boolean(purse || menu)
+  const hasLeftAction = Boolean(leftAction)
+  const hasRight = Boolean(purse || menu || rightAction)
   // /welcome and /enter decide where back goes, so they get their own button.
   const ownBack = OWN_BACK.has(path) && back !== false
   useLayoutEffect(() => {
@@ -127,11 +165,11 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
     navigation.setOptions({
       title: title || '',
       headerTitle: hasTitleSlot ? () => <SlotPart slot={current} part="title" /> : undefined,
-      headerBackVisible: back !== false && !ownBack,
-      headerLeft: ownBack ? () => <SlotPart slot={current} part="left" /> : undefined,
+      headerBackVisible: back !== false && !ownBack && !hasLeftAction,
+      headerLeft: ownBack || hasLeftAction ? () => <SlotPart slot={current} part="left" /> : undefined,
       headerRight: hasRight ? () => <SlotPart slot={current} part="right" /> : undefined,
     })
-  }, [back, hasRight, hasTitleSlot, navigation, ownBack, title])
+  }, [back, hasLeftAction, hasRight, hasTitleSlot, navigation, ownBack, title])
 
   return null
 }
@@ -139,9 +177,20 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
 // The expanded title of Material's medium bar is 48dp under the bar row.
 const LARGE_TITLE = 48
 
-function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = false, large = false, scrollY }) {
+function TopAppBar({
+  colors,
+  title,
+  titleSlot,
+  back = 'auto',
+  purse,
+  menu = false,
+  large = false,
+  scrollY,
+  leftAction,
+  rightAction,
+}) {
   const insets = useSafeAreaInsets()
-  const showBack = useShowBack(back)
+  const showBack = useShowBack(leftAction ? false : back)
   // Clear at rest; the surface container once content (or the expanded title) goes under it.
   const under = large ? LARGE_TITLE : 0
   const tint = scrollY
@@ -160,7 +209,9 @@ function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.panel, opacity: tint }]}
       />
       <View style={[styles.appBarRow, { paddingLeft: Math.max(4, insets.left + 4), paddingRight: Math.max(4, insets.right + 4) }]}>
-        {showBack ? (
+        {leftAction ? (
+          <HeaderTextButton colors={colors} label={leftAction.label} onPress={leftAction.onPress} />
+        ) : showBack ? (
           <HeaderButton bare colors={colors} onPress={() => goBack()} label={t('nav.back')}>
             <Slot>
               <BackArrow color={colors.ink} />
@@ -181,7 +232,17 @@ function TopAppBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
             </Text>
           )}
         </Animated.View>
-        {purse || menu ? <HeaderActions colors={colors} purse={purse} menu={menu} /> : null}
+        {rightAction ? (
+          <HeaderTextButton
+            colors={colors}
+            label={rightAction.label}
+            onPress={rightAction.onPress}
+            disabled={rightAction.disabled}
+            accent
+          />
+        ) : purse || menu ? (
+          <HeaderActions colors={colors} purse={purse} menu={menu} />
+        ) : null}
       </View>
     </View>
   )
@@ -214,4 +275,6 @@ const styles = StyleSheet.create({
   largeTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   purse: { paddingHorizontal: 8, justifyContent: 'center' },
+  textAction: { paddingHorizontal: 8, paddingVertical: 6, justifyContent: 'center' },
+  textActionLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
 })

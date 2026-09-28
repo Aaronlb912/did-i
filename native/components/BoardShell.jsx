@@ -18,6 +18,8 @@ export function BoardShell({
   title,
   look,
   back,
+  leftAction,
+  rightAction,
   sit,
   heat,
   hour,
@@ -98,6 +100,8 @@ export function BoardShell({
       colors={colors}
       title={barTitle}
       back={back ?? 'auto'}
+      leftAction={leftAction}
+      rightAction={rightAction}
       purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
       large={scroll}
