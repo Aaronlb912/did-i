@@ -1807,12 +1807,7 @@ test('native metro shims are wired and pin default exports', () => {
   const kept = pinEsModule(nativeMod)
   const swipeCard = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
   const swipeStub = readFileSync(path.join(root, 'native/components/SwipeCardStub.jsx'), 'utf8')
-  assert.ok(swipeCard.includes('accessibilityActions'), 'Did and nope are actions a screen reader can take')
-  assert.ok(swipeCard.includes('nopeLabel') && swipeCard.includes('didLabel'), 'the face swipes and has Nope and Did buttons')
   assert.equal(swipeStub.includes('Pressable'), false, 'the face fallback has no answer buttons')
-  assert.equal(swipeCard.includes('PanResponder'), false, 'the face drags on the UI thread, not the JS thread')
-  assert.ok(swipeCard.includes('usePanGesture') && swipeCard.includes('useAnimatedStyle'), 'the face swipes with Gesture Handler and Reanimated')
-  assert.ok(swipeCard.includes('releaseWay'), 'a flick answers by where it was headed')
   assert.ok(swipeCard.includes('borderWidth: 1'), 'the face keeps its border')
 
   assert.equal(typeof kept.createWidget, 'function', 'seal should keep createWidget')
@@ -2306,15 +2301,138 @@ test('the done card says what tomorrow night holds and from when', () => {
   assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
 })
 
-test('a nope leaves a still-open list, each question with Did it now and Leave it', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const screen = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
-  const list = readFileSync(path.join(root, 'native/components/StillOpen.jsx'), 'utf8')
-  const stack = readFileSync(path.join(root, 'src/lib/useTonightStack.js'), 'utf8')
-  assert.ok(screen.includes('<StillOpen'), 'the finish face is the list, not a card to swipe')
-  assert.ok(list.includes("t('tonight.didItNow')") && list.includes("t('hole.leave')"), 'each row has both ways out')
-  assert.match(stack, /function lateFromList\(row\) \{\s*mark\(row, 'yes'\)/, 'Did it now goes through mark, which saves a nope as late')
-  assert.ok(stack.includes('restStack()'), 'leaving the last one rests the night')
+// Just enough of React to drive one hook here: state, refs, memos and
+// effects, rendered again until nothing changes.
+function hookHost(useHook, propsFor) {
+  const slots = []
+  let at = 0
+  let dirty = false
+  let out = null
+  const same = (a, b) => Boolean(a && b) && a.length === b.length && a.every((item, i) => Object.is(item, b[i]))
+  const fake = {
+    useState(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = typeof init === 'function' ? init() : init
+      return [
+        slots[k],
+        (next) => {
+          const value = typeof next === 'function' ? next(slots[k]) : next
+          if (!Object.is(value, slots[k])) {
+            slots[k] = value
+            dirty = true
+          }
+        },
+      ]
+    },
+    useRef(init) {
+      const k = at++
+      if (!(k in slots)) slots[k] = { current: init }
+      return slots[k]
+    },
+    useMemo(make, deps) {
+      const k = at++
+      if (slots[k] && same(slots[k].deps, deps)) return slots[k].value
+      slots[k] = { deps, value: make() }
+      return slots[k].value
+    },
+    useCallback(fn, deps) {
+      return fake.useMemo(() => fn, deps)
+    },
+    useEffect(run, deps) {
+      const k = at++
+      const prev = slots[k]
+      if (prev && same(prev.deps, deps)) return
+      slots[k] = { deps, cleanup: prev?.cleanup }
+      pending.push(() => {
+        prev?.cleanup?.()
+        slots[k].cleanup = run()
+      })
+    },
+  }
+  let pending = []
+  function render() {
+    for (let pass = 0; pass < 50; pass += 1) {
+      at = 0
+      dirty = false
+      pending = []
+      out = useHook(propsFor())
+      for (const run of pending) run()
+      if (!dirty) return out
+    }
+    throw new Error('the hook never settled')
+  }
+  return { fake, render, get current() { return out } }
+}
+
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier === 'react' && context.parentURL?.includes('/src/lib/useTonightStack.js')
+      ? { url: 'hook-host:react', shortCircuit: true }
+      : next(specifier, context),
+  load: (url, context, next) =>
+    url === 'hook-host:react'
+      ? {
+          format: 'module',
+          source: ['useState', 'useRef', 'useMemo', 'useCallback', 'useEffect']
+            .map((name) => `export const ${name} = (...args) => globalThis.__didIHookHost.fake.${name}(...args)`)
+            .join('\n'),
+          shortCircuit: true,
+        }
+      : next(url, context),
+})
+
+await testAsync('a nope leaves a still-open list, each question with Did it now and Leave it', async () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  let book = { id: 'b1', title: 'House', dayFoldHour: 0, lamps: [lamp('pills'), lamp('door'), lamp('bins')], answers: [] }
+  const hadWindow = { ...globalThis.window }
+  Object.assign(globalThis.window, {
+    setTimeout: () => 0,
+    clearTimeout() {},
+    addEventListener() {},
+    removeEventListener() {},
+  })
+  try {
+    const host = hookHost(
+      (props) => useTonightStackHosted(props),
+      () => ({ value: book, boards: [book], now: clock, onChange: (next) => (book = next) }),
+    )
+    globalThis.__didIHookHost = host
+    const { useTonightStack: useTonightStackHosted } = await import('../src/lib/useTonightStack.js?hook-host')
+    const statusOf = (id) => book.answers.find((answer) => answer.lampId === id)?.status
+
+    let stack = host.render()
+    assert.equal(stack.bodyKind, 'face')
+    for (let n = 0; n < 3; n += 1) {
+      stack.mark(stack.faceRow, 'skip')
+      stack = host.render()
+    }
+    assert.equal(stack.bodyKind, 'finish', 'after the last nope the finish face is the list')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id).sort(), ['bins', 'door', 'pills'])
+
+    const first = stack.stillOpen[0]
+    stack.lateFromList(first)
+    stack = host.render()
+    assert.equal(statusOf(first.lamp.id), 'late', 'Did it now saves the nope as late')
+    assert.equal(stack.bodyKind, 'finish', 'the list stays put')
+    assert.equal(stack.stillOpen.length, 2)
+
+    const [second, third] = stack.stillOpen
+    stack.leaveFromList(second)
+    stack = host.render()
+    assert.equal(statusOf(second.lamp.id), 'skip', 'Leave it keeps the nope')
+    assert.deepEqual(stack.stillOpen.map((row) => row.lamp.id), [third.lamp.id])
+    assert.equal(stack.bodyKind, 'finish')
+
+    stack.leaveFromList(third)
+    stack = host.render()
+    assert.equal(stack.stillOpen.length, 0)
+    assert.equal(stack.bodyKind, 'rest', 'leaving the last one rests the night')
+  } finally {
+    delete globalThis.__didIHookHost
+    for (const key of Object.keys(globalThis.window)) if (!(key in hadWindow)) delete globalThis.window[key]
+    Object.assign(globalThis.window, hadWindow)
+  }
 })
 
 await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {

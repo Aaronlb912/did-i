@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byPriority, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
+import { reportRejection } from './report.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
 import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { bySlot, clockWords } from './hall-pages.js'
@@ -273,7 +274,7 @@ export function useTonightStack({
         clearedTonight: true,
         dateIso,
       })
-      if (hit) deliverStreakHit(hit, dateIso).catch(() => {})
+      if (hit) deliverStreakHit(hit, dateIso).catch(reportRejection('streak-hit'))
     }
   }
 

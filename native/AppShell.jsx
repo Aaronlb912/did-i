@@ -32,6 +32,7 @@ import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
+import { reportRejection } from '../src/lib/report.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { fonts } from './theme.js'
 
@@ -157,7 +158,7 @@ export function AppShell() {
   const askPings = useCallback(async () => {
     const next = await requestPings()
     setPingState(next)
-    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(() => {})
+    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
   }, [app.book, app.shelf])
 
   useEffect(() => {
@@ -183,7 +184,7 @@ export function AppShell() {
     if (!app.book) return undefined
     let alive = true
     afterNativeBridgeReady(() => {
-      if (alive) armLampPings(app.shelf?.boards || app.book).catch(() => {})
+      if (alive) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
     })
     return () => {
       alive = false

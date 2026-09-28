@@ -27,6 +27,7 @@ import {
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
   mergePurses,
@@ -127,7 +128,7 @@ export function useAppShelf() {
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      }).catch(() => {})
+      }).catch(reportRejection('night-coins'))
     }
     if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
@@ -135,10 +136,10 @@ export function useAppShelf() {
         const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      }).catch(() => {})
+      }).catch(reportRejection('weekly-gem'))
     }
     const after = currentBook(written)
-    if (after) scheduleNativePings(after).catch(() => {})
+    if (after) scheduleNativePings(after).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {

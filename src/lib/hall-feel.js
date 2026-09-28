@@ -34,17 +34,33 @@ export function shelfHeat(boards, now = new Date(), tagId = '') {
 
 // Cleared nights in a row, counting tonight only once it is clear: what the
 // streak says out loud, so it keeps counting past the five the room shows.
-// Stops at the first night left open, or after three years of nights.
+// Stops at the first night left open, before the first question was made,
+// or after three years of nights.
 export function shelfStreak(boards, now = new Date(), tagId = '') {
   return clearNightsInARow(boards, now, tagId, 1100, 1100)
+}
+
+// The night the oldest question was made, or '' when one has no date.
+function firstNight(books) {
+  let first = ''
+  for (const book of books) {
+    for (const lamp of book.lamps || []) {
+      const made = String(lamp.createdOn || '').trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(made)) return ''
+      if (!first || made < first) first = made
+    }
+  }
+  return first
 }
 
 function clearNightsInARow(boards, now, tagId, cap, lookBack) {
   const books = scopedBooks(boards, tagId)
   if (!books.length) return 0
+  const floor = firstNight(books)
   let cursor = boardDate(now, books[0].dayFoldHour)
   let heat = 0
   for (let step = 0; step < lookBack && heat < cap; step += 1) {
+    if (floor && cursor < floor) break
     const at = noonOn(cursor)
     if (!at) break
     let dueCount = 0

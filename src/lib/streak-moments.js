@@ -1,5 +1,6 @@
 import { shelfHeat } from './hall-feel.js'
 import { isAppForeground } from './app-foreground.js'
+import { reportRejection } from './report.js'
 
 const PENDING = 'did-i-streak-pending'
 const SEEN = 'did-i-streak-seen'
@@ -31,8 +32,8 @@ export async function deliverStreakHit(hit, dateIso, ping = pingFromPhone) {
       markStreakSeen('hit', dateIso)
       return
     }
-  } catch {
-    // Shown in the app next time instead.
+  } catch (error) {
+    reportRejection('streak-push')(error)
   }
   queueStreakMoment(hit, dateIso)
 }
