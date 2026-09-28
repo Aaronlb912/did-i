@@ -838,5 +838,15 @@
   "web.landing.b3": "Installiere es auf dein Handy. Funktioniert ohne Netz.",
   "web.landing.b4": "Münzen, Gems, Cheer und Streak bleiben auf diesem Handy.",
   "web.landing.closeTitle": "Hör auf, im Kreis zu laufen",
-  "web.landing.closeLead": "Trag dich ein und wir mailen, wenn der Start nah ist."
+  "web.landing.closeLead": "Trag dich ein und wir mailen, wenn der Start nah ist.",
+  "auth.tagline": "Eine Frage, einmal pro Nacht.",
+  "first.next": "Weiter",
+  "first.back": "Zurück",
+  "first.stepOf": "{n} von {total}",
+  "first.timeTitle": "Wann sollen wir fragen?",
+  "notify.primerKicker": "Erinnerungen",
+  "notify.primerTitle": "Wir fragen dich um {time}",
+  "notify.primerBody": "Schalte Erinnerungen ein, dann kann dich dieses Telefon antippen, wenn diese Frage aufgeht.",
+  "notify.primerGo": "Einschalten",
+  "notify.primerSkip": "Nicht jetzt"
 }

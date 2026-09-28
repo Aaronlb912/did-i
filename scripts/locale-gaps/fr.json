@@ -844,5 +844,15 @@
   "web.landing.b3": "Installe sur ton téléphone. Ça marche sans réseau.",
   "web.landing.b4": "Pièces, gemmes, cheer et streak restent sur ce téléphone.",
   "web.landing.closeTitle": "Arrête de tourner en rond",
-  "web.landing.closeLead": "Rejoins la liste et on t'écrira quand le lancement approche."
+  "web.landing.closeLead": "Rejoins la liste et on t'écrira quand le lancement approche.",
+  "auth.tagline": "Une question, une fois par soir.",
+  "first.next": "Continuer",
+  "first.back": "Retour",
+  "first.stepOf": "{n} sur {total}",
+  "first.timeTitle": "Quand doit-on te demander ?",
+  "notify.primerKicker": "Rappels",
+  "notify.primerTitle": "On te demandera à {time}",
+  "notify.primerBody": "Active les rappels et ce téléphone pourra te prévenir quand cette question s'ouvre.",
+  "notify.primerGo": "Activer",
+  "notify.primerSkip": "Pas maintenant"
 }
