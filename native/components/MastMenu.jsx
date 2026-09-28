@@ -12,7 +12,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
-import { showMainNavInMenu } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
@@ -25,8 +24,6 @@ import { fonts } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
 
-const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
-const QUESTIONS_ON = new Set(['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'])
 const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
 const ADD_ON = new Set(['/add', '/hang'])
 const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
@@ -37,43 +34,21 @@ function countLabel(n) {
   return n > 9 ? '9+' : String(n)
 }
 
+// Home and Questions already live in the system tab bar; the menu holds only
+// what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
+// Inbox has no row of its own, its badge folds into Friends and family.
 function menuItems(showAdd, inbox, asks, signedIn) {
   const path = readRoute().path
-  const items = []
-  if (showMainNavInMenu(path)) {
-    items.push(
-      { key: 'home', path: '/tonight', label: t('nav.home'), on: HOME_ON.has(path), icon: 'home', stroke: true },
-      {
-        key: 'questions',
-        path: '/lamps',
-        label: t('nav.questions'),
-        on: QUESTIONS_ON.has(path),
-        icon: 'boards',
-        stroke: true,
-      },
-    )
-    items.push({ key: 'nav-divider', divider: true })
-  }
-  // Add is always in the menu, whatever screen opened it.
-  items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
-  if (signedIn) {
-    items.push({
-      key: 'inbox',
-      path: '/inbox',
-      label: inbox ? t('didyou.menuWaiting', { n: inbox }) : t('inbox.kicker'),
-      on: path === '/inbox',
-      count: inbox,
-      icon: 'inbox',
-      stroke: true,
-    })
-  }
-  items.push(
+  const waiting = signedIn ? inbox + asks : asks
+  return [
+    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
     {
       key: 'people',
       path: '/people',
-      label: asks ? t('people.cogWaiting', { n: asks }) : t('people.cog'),
-      on: PEOPLE_ON.has(path) && path !== '/inbox',
-      pip: asks > 0,
+      label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
+      on: PEOPLE_ON.has(path),
+      count: signedIn ? inbox : 0,
+      pip: !inbox && asks > 0,
       icon: 'people',
     },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
@@ -85,8 +60,7 @@ function menuItems(showAdd, inbox, asks, signedIn) {
       on: SETTINGS_ON.has(path),
       icon: 'settings',
     },
-  )
-  return items
+  ]
 }
 
 function menuIsOn(items) {
