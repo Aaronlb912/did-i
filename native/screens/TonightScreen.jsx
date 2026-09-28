@@ -28,6 +28,7 @@ import { WaitPlate } from '../components/WaitPlate.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
+import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
@@ -114,28 +115,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     return () => clearTimeout(timer)
   }, [stack.cheer, stack.cheered])
   let face = null
-  if (stack.bodyKind === 'finish') {
+  if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (
-      <SwipeCardHost
-        key="finish"
-        cardKey="finish"
-        colors={colors}
-        panelStyle={gemCard}
-        gemLook={premium ? look : ''}
-        kicker={t('tonight.finishKicker')}
-        title={
-          stack.finishCount === 1
-            ? t('tonight.finishOne')
-            : t('tonight.finishTitle', { n: stack.finishCount })
-        }
-        stampDid={t('tonight.finishKeep')}
-        stampNope={t('tonight.finishLeave')}
-        didLabel={t('tonight.finishKeep')}
-        nopeLabel={t('tonight.finishLeave')}
-        onDid={stack.continueStack}
-        onNope={stack.restStack}
-        buddy={activeBuddy(book)}
-      />
+      <GemFaceShell look={premium ? look : ''}
+        theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
+        <StillOpen
+          rows={stack.stillOpen}
+          rowKey={stack.rowKey}
+          colors={colors}
+          onLate={stack.lateFromList}
+          onLeave={stack.leaveFromList}
+        />
+      </GemFaceShell>
     )
   } else if (stack.bodyKind === 'face' && stack.faceRow) {
     const faceRow = stack.faceRow
@@ -195,7 +186,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </GemFaceShell>
       </CardSettle>
     )
-  } else if (stack.bodyKind === 'rest') {
+  } else if (stack.bodyKind === 'rest' || stack.bodyKind === 'finish') {
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
@@ -205,7 +196,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
         <View style={styles.actions}>
-          <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.continueStack} />
+          <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.reopenStillOpen} />
         </View>
       </GemFaceShell>
     )

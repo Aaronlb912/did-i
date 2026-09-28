@@ -349,6 +349,7 @@ export const es = {
   'tonight.finishTitle': 'Quedan {n} preguntas esta noche.',
   'tonight.finishKeep': 'Seguir',
   'tonight.finishLeave': 'Dejarlas',
+  'tonight.didItNow': 'Ya lo hice',
   'tonight.restKicker': 'Sin responder',
   'tonight.restOne': 'Queda una pregunta sin responder.',
   'tonight.restTitle': 'Quedan {n} preguntas sin responder.',

@@ -334,6 +334,7 @@ export const ja = {
   'tonight.finishTitle': '今夜はあと{n}問。',
   'tonight.finishKeep': 'Keep going',
   'tonight.finishLeave': 'Leave them',
+  'tonight.didItNow': '今やった',
   'tonight.restKicker': 'Left open',
   'tonight.restOne': 'One question is still open.',
   'tonight.restTitle': '{n} questions are still open.',

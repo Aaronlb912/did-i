@@ -344,6 +344,7 @@ export const pt = {
   'tonight.finishTitle': 'Faltam {n} perguntas esta noite.',
   'tonight.finishKeep': 'Continuar',
   'tonight.finishLeave': 'Deixar assim',
+  'tonight.didItNow': 'Fiz agora',
   'tonight.restKicker': 'Ficou aberto',
   'tonight.restOne': 'Uma pergunta ainda está aberta.',
   'tonight.restTitle': '{n} perguntas ainda estão abertas.',

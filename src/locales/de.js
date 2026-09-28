@@ -348,6 +348,7 @@ export const de = {
   'tonight.finishTitle': '{n} Fragen bleiben heute Nacht.',
   'tonight.finishKeep': 'Weitermachen',
   'tonight.finishLeave': 'So lassen',
+  'tonight.didItNow': 'Jetzt erledigt',
   'tonight.restKicker': 'Offen gelassen',
   'tonight.restOne': 'Eine Frage ist noch offen.',
   'tonight.restTitle': '{n} Fragen sind noch offen.',

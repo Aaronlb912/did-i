@@ -334,6 +334,7 @@ export const zh = {
   'tonight.finishTitle': '今晚还剩{n}个问题。',
   'tonight.finishKeep': 'Keep going',
   'tonight.finishLeave': 'Leave them',
+  'tonight.didItNow': '现在做了',
   'tonight.restKicker': 'Left open',
   'tonight.restOne': 'One question is still open.',
   'tonight.restTitle': '{n} questions are still open.',

@@ -52,6 +52,8 @@ export function useTonightStack({
   // the moment once instead of every time Tonight opens on a clear night.
   const [cheer, setCheer] = useState(null)
   const cheered = useCallback(() => setCheer(null), [])
+  // Noped questions set aside one by one from the still-open list tonight.
+  const [leftKeys, setLeftKeys] = useState([])
   const dateIso = boardDate(clock)
   const liveValue = overlay && overlay.id === value.id ? overlay : value
   const shelf = useMemo(
@@ -156,6 +158,10 @@ export function useTonightStack({
   useEffect(() => {
     setRestNight(false)
   }, [dateIso, hallOn, openReady.length > 0])
+
+  useEffect(() => {
+    setLeftKeys([])
+  }, [dateIso])
 
   useEffect(() => {
     if (!overlay) return
@@ -296,6 +302,38 @@ export function useTonightStack({
     feelTap('tick')
   }
 
+  // The still-open list: each noped question with its own way out.
+  const stillOpen = ready.filter((row) => row.answer?.status === 'skip' && !leftKeys.includes(rowKey(row)))
+
+  // Did it after all: saved as late (the blue dot), and the list stays put
+  // instead of turning the next nope back into a card.
+  function lateFromList(row) {
+    mark(row, 'yes')
+    setSkipReview(false)
+    setFaceId(FINISH_FACE)
+  }
+
+  // The nope stands for this one; the list lets it go.
+  function leaveFromList(row) {
+    const key = rowKey(row)
+    setLeftKeys((keys) => (keys.includes(key) ? keys : [...keys, key]))
+    if (stillOpen.every((item) => rowKey(item) === key)) restStack()
+    else feelTap('tick')
+  }
+
+  // Back from resting: new open questions first, else the list again.
+  function reopenStillOpen() {
+    if (openReady.length > 0) {
+      continueStack()
+      return
+    }
+    setRestNight(false)
+    setLeftKeys([])
+    setSkipReview(false)
+    setFaceId(FINISH_FACE)
+    feelTap('tick')
+  }
+
   function moveFace(step) {
     if (!ready.length) return
     const ids = ready.map((row) => row.lamp.id)
@@ -427,6 +465,10 @@ export function useTonightStack({
     mark,
     continueStack,
     restStack,
+    stillOpen,
+    lateFromList,
+    leaveFromList,
+    reopenStillOpen,
     jewelClick,
     pickHole,
     saveTitle,

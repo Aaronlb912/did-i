@@ -349,6 +349,7 @@ export const fr = {
   'tonight.finishTitle': '{n} questions restent ce soir.',
   'tonight.finishKeep': 'Continuer',
   'tonight.finishLeave': 'Les laisser',
+  'tonight.didItNow': 'Fait maintenant',
   'tonight.restKicker': 'Encore ouvert',
   'tonight.restOne': 'Une question est encore ouverte.',
   'tonight.restTitle': '{n} questions sont encore ouvertes.',

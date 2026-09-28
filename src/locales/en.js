@@ -347,6 +347,7 @@ export const en = {
   'tonight.finishTitle': '{n} questions left tonight.',
   'tonight.finishKeep': 'Keep going',
   'tonight.finishLeave': 'Leave them',
+  'tonight.didItNow': 'Did it now',
   'tonight.restKicker': 'Left open',
   'tonight.restOne': 'One question is still open.',
   'tonight.restTitle': '{n} questions are still open.',

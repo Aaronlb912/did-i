@@ -2306,6 +2306,17 @@ test('the done card says what tomorrow night holds and from when', () => {
   assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
 })
 
+test('a nope leaves a still-open list, each question with Did it now and Leave it', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const screen = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  const list = readFileSync(path.join(root, 'native/components/StillOpen.jsx'), 'utf8')
+  const stack = readFileSync(path.join(root, 'src/lib/useTonightStack.js'), 'utf8')
+  assert.ok(screen.includes('<StillOpen'), 'the finish face is the list, not a card to swipe')
+  assert.ok(list.includes("t('tonight.didItNow')") && list.includes("t('hole.leave')"), 'each row has both ways out')
+  assert.match(stack, /function lateFromList\(row\) \{\s*mark\(row, 'yes'\)/, 'Did it now goes through mark, which saves a nope as late')
+  assert.ok(stack.includes('restStack()'), 'leaving the last one rests the night')
+})
+
 await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {
   // The phone bootstrap stands in a document with no visibilityState.
   const hadDocument = 'document' in globalThis

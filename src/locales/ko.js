@@ -334,6 +334,7 @@ export const ko = {
   'tonight.finishTitle': '오늘 밤 질문이 {n}개 남았어.',
   'tonight.finishKeep': 'Keep going',
   'tonight.finishLeave': 'Leave them',
+  'tonight.didItNow': '지금 했어요',
   'tonight.restKicker': 'Left open',
   'tonight.restOne': 'One question is still open.',
   'tonight.restTitle': '{n} questions are still open.',

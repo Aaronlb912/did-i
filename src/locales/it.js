@@ -345,6 +345,7 @@ export const it = {
   'tonight.finishTitle': 'Restano {n} domande stasera.',
   'tonight.finishKeep': 'Continua',
   'tonight.finishLeave': 'Lasciale',
+  'tonight.didItNow': 'Fatto ora',
   'tonight.restKicker': 'Aperte',
   'tonight.restOne': 'Una domanda è ancora aperta.',
   'tonight.restTitle': '{n} domande sono ancora aperte.',
