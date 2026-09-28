@@ -116,10 +116,7 @@ function go(route) {
   if (HALL_PATHS.has(route.path)) {
     if (routes.length > 1) navigationRef.dispatch(StackActions.popToTop())
     navigationRef.dispatch(
-      CommonActions.navigate({
-        name: HALL,
-        params: { screen: TAB_OF[route.path], params: paramsOf(route) },
-      }),
+      CommonActions.navigate(HALL, { screen: TAB_OF[route.path], params: paramsOf(route) }),
     )
     return
   }
