@@ -217,6 +217,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetSwitch
           colors={colors}
+          icon="motion"
+          tint={colors.on}
+          last={!(Platform.OS === 'android' && wallpaper)}
           label={t('settings.lessMotion')}
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
@@ -224,7 +227,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         {Platform.OS === 'android' && wallpaper ? (
           <SetSwitch
             colors={colors}
-            icon="moon"
+            icon="wallpaper"
             tint={colors.late}
             last
             label={t('settings.matchWallpaper')}
