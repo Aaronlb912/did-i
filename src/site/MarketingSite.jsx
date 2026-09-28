@@ -4,6 +4,7 @@ import { usePrefs } from '../lib/prefs.js'
 import { Download } from './Download.jsx'
 import { Invite } from './Invite.jsx'
 import { Landing } from './Landing.jsx'
+import { Press } from './Press.jsx'
 import { MarketingPrivacy, MarketingTerms } from './MarketingLegal.jsx'
 import { inviteCodeFromPath, readMarketingPath, shouldShowMarketing } from './path.js'
 import { webAppPublic } from './web-app.js'
@@ -30,6 +31,7 @@ function MarketingPage() {
   if (path === '/privacy') return <MarketingPrivacy />
   if (path === '/terms') return <MarketingTerms />
   if (path === '/download') return <Download />
+  if (path === '/press') return <Press />
   const invite = inviteCodeFromPath(path)
   if (invite) return <Invite code={invite} />
   return <Landing />

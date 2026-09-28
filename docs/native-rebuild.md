@@ -221,6 +221,17 @@ last. An APK signed this way installs over the old EAS internal builds, which
 used the same key. It will not install over a debug-signed GitHub APK; remove
 that one first.
 
+## Dev app on an iPhone (no Mac)
+
+"Did I Dev" (com.aaronbryant.didi.dev) is a dev client that installs next to the store app.
+
+1. Actions, iOS IPA, run with **dev_app** checked. It builds Debug and uploads to the "Did I Dev" app in TestFlight.
+   Signing profile secret: IOS_DEV_PROVISIONING_PROFILE.
+2. Install it from TestFlight. Rebuild only when native code, packages or app config change.
+3. On the PC: npm run expo:dev, then open Did I Dev and scan the QR code. Saves reload on the phone.
+
+Not in the dev app: widgets, Apple and Google sign-in, Firebase, gem purchases. Test those on the store build.
+
 ## Over-the-air updates (expo-updates)
 
 JS-only changes (screens, copy, `src/lib` logic, locales) can go out without a

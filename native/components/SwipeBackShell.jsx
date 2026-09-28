@@ -1,26 +1,28 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Animated, PanResponder, StyleSheet, View } from 'react-native'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 const EDGE = 28
 const SPRING = { damping: 22, stiffness: 280, useNativeDriver: true }
 
-export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
+// Each route gets its own slide value and its own front view (keyed by routeKey).
+// Resetting one shared value on iPhone moved the old screen back into place a
+// frame before the new screen was drawn, so the question flashed.
+export function SwipeBackShell({ enabled, back, onBack, children, backChild, routeKey = '' }) {
   const reduce = useReduceMotion()
-  const x = useRef(new Animated.Value(0)).current
+  const slide = useRef(null)
+  if (!slide.current || slide.current.key !== routeKey) {
+    slide.current = { key: routeKey, x: new Animated.Value(0) }
+  }
+  const x = slide.current.x
   const width = useRef(1)
   const live = useRef(false)
   const [span, setSpan] = useState(1)
-  const [lifted, setLifted] = useState(false)
-  const props = useRef({ enabled, onBack, reduce })
-  props.current = { enabled, onBack, reduce }
-
-  useLayoutEffect(() => {
-    x.stopAnimation()
-    x.setValue(0)
-    live.current = false
-    setLifted(false)
-  }, [children, backChild, x])
+  const [liftedFor, setLiftedFor] = useState(null)
+  const lifted = liftedFor === routeKey
+  const props = useRef({ enabled, onBack, reduce, routeKey })
+  props.current = { enabled, onBack, reduce, routeKey }
+  const setLifted = (on) => setLiftedFor(on ? props.current.routeKey : null)
 
   const pan = useMemo(
     () =>
@@ -36,10 +38,11 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
         onPanResponderMove: (_, gesture) => {
           if (!live.current) return
           const next = Math.max(0, Math.min(width.current, gesture.dx))
-          x.setValue(next)
+          slide.current.x.setValue(next)
         },
         onPanResponderRelease: (_, gesture) => {
           if (!live.current) return
+          const x = slide.current.x
           const w = width.current || 1
           const go = gesture.dx > w * 0.28 || gesture.vx > 0.7
           if (!go) {
@@ -47,17 +50,18 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
             Animated.spring(x, { ...SPRING, toValue: 0 }).start(() => setLifted(false))
             return
           }
-          // Leave the old screen slid out. Snapping it back here flashed it for a frame
-          // before the route changed; the reset effect puts x back once the new screen is in.
+          // The old screen stays slid out; the new route brings a fresh front view.
+          const from = props.current.routeKey
           const done = () => {
             live.current = false
             props.current.onBack?.()
+            // Back went nowhere: slide the same screen home instead of leaving it off-screen.
             setTimeout(() => {
-              if (!live.current) {
+              if (props.current.routeKey === from && !live.current) {
                 x.setValue(0)
                 setLifted(false)
               }
-            }, 400)
+            }, 500)
           }
           if (props.current.reduce) {
             done()
@@ -69,10 +73,11 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
         },
         onPanResponderTerminate: () => {
           live.current = false
+          const x = slide.current.x
           Animated.spring(x, { ...SPRING, toValue: 0 }).start(() => setLifted(false))
         },
       }),
-    [x],
+    [],
   )
 
   const backMotion = {
@@ -107,7 +112,7 @@ export function SwipeBackShell({ enabled, back, onBack, children, backChild }) {
           <View style={styles.backInner}>{backChild}</View>
         </Animated.View>
       ) : null}
-      <Animated.View style={[styles.front, frontStyle]}>
+      <Animated.View key={routeKey} style={[styles.front, frontStyle]}>
         <View style={styles.frontInner}>{children}</View>
         {enabled ? <Animated.View pointerEvents="none" style={[styles.shade, shadeStyle]} /> : null}
       </Animated.View>

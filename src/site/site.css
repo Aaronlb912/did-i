@@ -1136,3 +1136,178 @@ html[data-reduce-motion] .di-land-together {
   transform: none;
   transition: none;
 }
+
+/* /press: brand kit. Swatches and wordmark cards show fixed brand colors on purpose. */
+.di-press {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+}
+
+.di-press-head {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.di-press-head .di-land-lead {
+  margin-inline: auto;
+}
+
+.di-press-head .di-land-lead a {
+  color: var(--di-ink);
+}
+
+.di-press-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2rem);
+  min-height: clamp(180px, 28vw, 300px);
+  color: var(--di-ink);
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+}
+
+.di-press-icons img {
+  border-radius: 22.5%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.di-press-mark.is-light {
+  background: #f4f6fa;
+  color: #0e1014;
+}
+
+.di-press-mark.is-dark {
+  background: #0e1014;
+  color: #f4f6fa;
+}
+
+.di-press-marks {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .di-press-marks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.di-press-word {
+  font-family: var(--di-display);
+  font-weight: 700;
+  font-size: clamp(3rem, 7vw, 5rem);
+  letter-spacing: -0.02em;
+}
+
+.di-press-save {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: inherit;
+  opacity: 0.6;
+  border-radius: var(--di-r-sm);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  transition: opacity var(--di-move) var(--di-ease);
+}
+
+.di-press-save:hover,
+.di-press-save:focus-visible {
+  opacity: 1;
+}
+
+.di-press-label {
+  margin: 1.25rem 0 0;
+  font-family: var(--di-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--di-ink-soft);
+}
+
+.di-press-colors {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 720px) {
+  .di-press-colors {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.di-press-swatch {
+  display: flex;
+  align-items: flex-end;
+  min-height: 150px;
+  padding: 0.6rem;
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+  cursor: pointer;
+  font: inherit;
+}
+
+.di-press-chip {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font-family: var(--di-mono);
+  font-size: 0.75rem;
+  color: var(--di-ink);
+  background: var(--di-bg);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r-sm);
+}
+
+.di-press-swatch:focus-visible {
+  outline: 2px solid var(--di-on);
+  outline-offset: 2px;
+}
+
+.di-press-shots {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 720px) {
+  .di-press-shots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.di-press-shot {
+  position: relative;
+  margin: 0;
+}
+
+.di-press-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--di-r);
+  border: 1px solid var(--di-line);
+}
+
+.di-press-shot .di-press-save {
+  color: #f4f6fa;
+  background: rgba(14, 16, 20, 0.6);
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-press-save {
+    transition: none;
+  }
+}
