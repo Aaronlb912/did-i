@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Did I — a nightly habit app. One question at a time, tap Did or Did not (nope),
+Did I — a nightly habit app. One question at a time, tap Did or Nope,
 streaks, tags, family, shop (coins/gems), cheers, home-screen widgets. Two
 programs share one repo:
 

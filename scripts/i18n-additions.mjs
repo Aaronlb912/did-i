@@ -27,6 +27,18 @@ export const additionsEn = {
 
   'auth.reviewerBad': 'That email and password did not match.',
 
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': "We'll ask you at {time}",
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
+
+  'auth.tagline': 'One question, once a night.',
+  'first.next': 'Continue',
+  'first.back': 'Back',
+  'first.stepOf': '{n} of {total}',
+  'first.timeTitle': 'When should we ask?',
+
   'mark.first-open.name': 'Showed up',
   'mark.first-open.line': 'You opened Did I.',
   'mark.first-did.name': 'First DID',
@@ -409,6 +421,18 @@ export const additionsEs = {
   'auth.password': 'Contraseña',
 
   'auth.reviewerBad': 'El correo y la contraseña no coinciden.',
+
+  'notify.primerKicker': 'Avisos',
+  'notify.primerTitle': 'Te avisaremos a las {time}',
+  'notify.primerBody': 'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
+  'notify.primerGo': 'Activar',
+  'notify.primerSkip': 'Ahora no',
+
+  'auth.tagline': 'Una pregunta, una vez cada noche.',
+  'first.next': 'Continuar',
+  'first.back': 'Atrás',
+  'first.stepOf': '{n} de {total}',
+  'first.timeTitle': '¿Cuándo te preguntamos?',
 
   'mark.first-open.name': 'Apareciste',
   'mark.first-open.line': 'Abriste Did I.',

@@ -5,10 +5,10 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
+import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
-import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 export function isNativeHall() {
@@ -17,10 +17,6 @@ export function isNativeHall() {
 
 export function isAppForeground() {
   return AppState.currentState === 'active'
-}
-
-function reduceMotion() {
-  return readReduceMotion()
 }
 
 export async function bootNative() {
@@ -43,8 +39,7 @@ export async function pingStreakHit(hit, dateIso) {
     await Notifications.scheduleNotificationAsync({
       identifier: String(notifyId('streak-hit', dateIso)),
       content: {
-        title: t('streak.hitTitle'),
-        body: t('streak.hitBody', { n: hit.n }),
+        ...streakHitCopy(hit.n),
         data: { go: '/tonight', streakHit: true },
       },
       trigger: null,
@@ -177,21 +172,31 @@ export async function scheduleNativePings(books, now = new Date()) {
   }
 }
 
+// Haptics follow the phone's own haptics setting, not Reduce Motion: that
+// setting is about movement on screen, and a tap you feel is not movement.
+// Did is a success, nope a soft bump, undo a rigid one, and crossing the Did
+// or nope edge of a swipe a selection tick.
 export function feelTap(kind) {
-  if (reduceMotion()) return
-  if (kind === 'skip') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+  if (kind === 'did' || kind === 'hall-on') {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     return
   }
-  if (kind === 'hall-on') {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+  if (kind === 'skip') {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {})
+    return
+  }
+  if (kind === 'undo') {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {})
+    return
+  }
+  if (kind === 'tick') {
+    Haptics.selectionAsync().catch(() => {})
     return
   }
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {})
 }
 
 export function playClick() {
-  if (reduceMotion()) return
   Haptics.selectionAsync().catch(() => {})
 }
 

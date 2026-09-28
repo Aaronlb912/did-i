@@ -1075,5 +1075,15 @@
   "web.landing.b3": "폰에 설치하세요. 신호 없어도 됩니다.",
   "web.landing.b4": "coins, gems, cheer, streak은 이 폰에 남아요.",
   "web.landing.closeTitle": "같은 걱정을 빙빙 돌지 마세요",
-  "web.landing.closeLead": "대기 목록에 참여하면 출시가 가까워질 때 이메일 드립니다."
+  "web.landing.closeLead": "대기 목록에 참여하면 출시가 가까워질 때 이메일 드립니다.",
+  "auth.tagline": "질문 하나, 하룻밤에 한 번.",
+  "first.next": "계속",
+  "first.back": "뒤로",
+  "first.stepOf": "{n} / {total}",
+  "first.timeTitle": "언제 물어볼까?",
+  "notify.primerKicker": "리마인더",
+  "notify.primerTitle": "{time}에 물어볼게",
+  "notify.primerBody": "리마인더를 켜면 이 질문이 열릴 때 이 기기가 알려줘.",
+  "notify.primerGo": "켜기",
+  "notify.primerSkip": "나중에"
 }

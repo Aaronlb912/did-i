@@ -1,6 +1,27 @@
+import { forwardRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { fonts } from '../theme.js'
+import { useTheme } from '../../src/lib/prefs.js'
+import { ripple } from '../lib/ripple.js'
+import { fonts, sectionLabel } from '../theme.js'
+
+// The one text input every screen renders through: a light keyboard and a
+// blue system cursor read as unfinished on a dark app. keyboardAppearance
+// follows the resolved theme, selectionColor/cursorColor follow the hall's
+// accent, and returnKeyType stays per field since each caller knows its own.
+export const AppTextInput = forwardRef(function AppTextInput({ colors, ...props }, ref) {
+  const theme = useTheme()
+  return (
+    <TextInput
+      ref={ref}
+      keyboardAppearance={theme}
+      selectionColor={colors.on}
+      cursorColor={colors.on}
+      placeholderTextColor={colors.inkDim}
+      {...props}
+    />
+  )
+})
 
 export function Page({ colors, children, scroll = true }) {
   const insets = useSafeAreaInsets()
@@ -36,7 +57,9 @@ export function DidButton({ label, onPress, colors, small, disabled, dim }) {
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      android_ripple={ripple(`${colors.bg}40`)}
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(off) }}
       style={[
         styles.did,
@@ -54,6 +77,10 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      android_ripple={ripple(`${colors.on}33`)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
       style={[
         styles.key,
         {
@@ -70,7 +97,11 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
 
 export function Row({ label, note, onPress, colors }) {
   return (
-    <Pressable onPress={onPress} style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+    <Pressable
+      onPress={onPress}
+      android_ripple={ripple(`${colors.on}33`)}
+      style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
+    >
       <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
       {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
     </Pressable>
@@ -97,7 +128,8 @@ export function Field({
   return (
     <View style={styles.field}>
       <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={value}
         onChangeText={onChangeText}
         multiline={multiline}
@@ -111,7 +143,6 @@ export function Field({
         autoFocus={autoFocus}
         blurOnSubmit={blurOnSubmit}
         returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
-        placeholderTextColor={colors.inkDim}
         style={[
           styles.input,
           multiline && styles.inputMulti,
@@ -129,6 +160,7 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
       <Pressable
         key={item.id}
         onPress={() => onPick(item.id)}
+        android_ripple={ripple(`${colors.on}33`)}
         style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
       >
         <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
@@ -159,7 +191,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
   rowNote: { fontFamily: fonts.ui, fontSize: 13 },
   field: { gap: 6, marginBottom: 10 },
-  fieldLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+  fieldLabel: { ...sectionLabel },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   inputMulti: { minHeight: 88, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

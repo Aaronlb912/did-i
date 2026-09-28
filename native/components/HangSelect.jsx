@@ -37,8 +37,9 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
       </Pressable>
       {open ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+        <Pressable accessible={false} style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable
+            accessible={false}
             style={[
               styles.menu,
               {

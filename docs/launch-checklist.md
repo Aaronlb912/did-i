@@ -17,7 +17,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [x] iPhone push: `.easignore` uploads `GoogleService-Info.plist` to Expo (GitHub iOS still writes it from the `GOOGLE_SERVICES_PLIST` secret)
 - [x] Android push: `google-services.json` and the Firebase Gradle plugin are back in `android/` (lost with Capacitor, so GitHub APKs had no push token)
 - [x] Android AAB for Play: android-apk uploads `did-i-android-aab` when the signing secrets are set; `versionCode` = run number
-- [x] Android widget: every Did / Did not tapped before the app runs is kept, not only the last
+- [x] Android widget: every Did / Nope tapped before the app runs is kept, not only the last
 - [x] Android widget: the quick tap paint shows the buddy
 - [x] Google sign-in: code, OAuth clients (web, iOS, Android debug), Supabase provider on, IDs in `env.client.js`
 - [x] iPhone follows the phone light/dark setting (`userInterfaceStyle` automatic), iOS privacy manifest
@@ -26,7 +26,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 
 **Still to do**
 - [ ] Next build (60+) for invite links on phones: adds `expo-application` (Play install referrer) and first-launch invite pickup
-- [x] Privacy policy: invite links (clipboard once on iPhone, Play install referrer), Apple and Google sign-in, iPhone push, Expo updates. Still needs the lawyer review
+- [x] Privacy policy: invite links (clipboard read on iPhone only when iOS reports a web link, Play install referrer), Apple and Google sign-in, iPhone push, Expo updates. Still needs the lawyer review
 - [ ] Shop drops: merge each drop PR and run `npm run update:prod` before its Friday (`docs/shop-drops.md`)
 - [ ] Android release signing: download the keystore from Expo and add the four `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` GitHub secrets (steps in `docs/native-rebuild.md`), before the android-apk run
 - [ ] Google sign-in on Android release builds: add a "Did I Android release" OAuth client with the release key SHA-1 (`npx eas-cli credentials -p android`), and one for the Play signing key after the first upload
@@ -36,14 +36,14 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 
 **Test on the new build** (two accounts where it says so)
 - [ ] Sign in with email code (lands in inbox, not junk), Sign in with Apple, and Sign in with Google (web, iPhone, release-signed Android)
-- [ ] Add a question, Did / Did not, undo, streaks right
+- [ ] Add a question, Did / Nope, undo, streaks right
 - [ ] Deadlines sit at the end and are not counted in "0 of N"
 - [ ] Reopen the app: no flash of the sign-in screen
 - [ ] Midnight: the night turns over, unanswered closes as nope
 - [ ] Same account on two phones stays in sync; phone-only use survives a restart
 - [ ] Android widget: tap Did on two questions fast with the app closed; both keep their answer, buddy stays on the card
 - [ ] `npm run update:internal` or `update:prod` with a small copy change reaches the build on the next two opens
-- [ ] Widget, small and medium, both phones: every tag shows, Did / Did not saves with the app closed, Next steps without answering, buddy and look match the app, nothing spills past the edge
+- [ ] Widget, small and medium, both phones: every tag shows, Did / Nope saves with the app closed, Next steps without answering, buddy and look match the app, nothing spills past the edge
 - [ ] iPhone widget answer before midnight, app opened next day: answer kept
 - [ ] All 12 cheers on iPhone (Shop previews and a real Did); stage 5 looks right; Less motion turns them off
 - [ ] Cheer "i" opens the description; Upgrade buys the next stage

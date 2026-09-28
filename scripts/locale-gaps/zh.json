@@ -789,5 +789,15 @@
   "web.landing.b3": "装到手机上。没信号也能用。",
   "web.landing.b4": "硬币、宝石、cheer 和连续记录留在这台手机上。",
   "web.landing.closeTitle": "别再绕同一个担心打转",
-  "web.landing.closeLead": "加入等候名单，临近发布时我们会发邮件。"
+  "web.landing.closeLead": "加入等候名单，临近发布时我们会发邮件。",
+  "auth.tagline": "一个问题，每晚一次。",
+  "first.next": "继续",
+  "first.back": "返回",
+  "first.stepOf": "{n} / {total}",
+  "first.timeTitle": "我们什么时候问你？",
+  "notify.primerKicker": "提醒",
+  "notify.primerTitle": "我们会在 {time} 问你",
+  "notify.primerBody": "开启提醒后，这个问题打开时此手机可以通知你。",
+  "notify.primerGo": "开启",
+  "notify.primerSkip": "暂不"
 }

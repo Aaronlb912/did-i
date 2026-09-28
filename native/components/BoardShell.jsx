@@ -1,14 +1,14 @@
-import { useMemo, useRef } from 'react'
-import { Animated, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
-import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
-import { hallColors } from '../theme.js'
+import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
-import { AppHeader, HeaderLargeTitle } from './AppHeader.jsx'
+import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 
 export function BoardShell({
@@ -18,6 +18,8 @@ export function BoardShell({
   title,
   look,
   back,
+  leftAction,
+  rightAction,
   sit,
   heat,
   hour,
@@ -31,14 +33,40 @@ export function BoardShell({
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
   const scrollY = useRef(new Animated.Value(0)).current
+  // KeyboardAvoidingView repositions the page, but a form shorter than the
+  // full screen has no content to scroll past the keyboard on its own. This
+  // adds scroll room for whatever part of the scroll view the keyboard still
+  // covers once KeyboardAvoidingView has done its share.
+  const scrollRef = useRef(null)
+  const [keyboardTop, setKeyboardTop] = useState(null)
+  const [scrollBottom, setScrollBottom] = useState(null)
+  const focused = useIsFocused()
+  useEffect(() => {
+    if (!scroll || !focused) {
+      setKeyboardTop(null)
+      return undefined
+    }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const onShow = (event) => setKeyboardTop(event?.endCoordinates?.screenY ?? null)
+    const onHide = () => setKeyboardTop(null)
+    const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
+    return () => subs.forEach((sub) => sub.remove())
+  }, [scroll, focused])
+  const onScrollLayout = useCallback(() => {
+    scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
+  }, [])
+  const keyboardPad =
+    scroll && keyboardTop != null && scrollBottom != null ? Math.max(0, Math.round(scrollBottom - keyboardTop)) : 0
+  const [largeHeight, setLargeHeight] = useState(LARGE_TITLE)
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY],
   )
-  const theme = useTheme()
   const clock = now || new Date()
   const coat = look || activeLook(book)
-  const colors = colorsIn || hallColors(coat, theme)
+  const own = useLookColors(coat)
+  const colors = colorsIn || own
   const shelf = boards.length ? boards : book ? [book] : []
   const purse = shelf.length ? mergePurses(shelf) : normalizePurse(book)
   const barTitle = title || book?.title || 'Did I'
@@ -52,7 +80,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad }]}>
+    <View style={[styles.page, { paddingBottom: bottomPad + keyboardPad }]}>
       {children}
     </View>
   )
@@ -67,13 +95,13 @@ export function BoardShell({
 
   // iOS lays the page out under the navigation bar and insets it itself, so the
   // bar can go from clear to material, and the large title can shrink into it.
+  // That also means the page's frame already starts at the top of the screen,
+  // so the avoiding view needs no header offset; one would pad the header twice.
   const inner = scroll ? (
-    <KeyboardAvoidingView
-      style={styles.scroll}
-      behavior="padding"
-      keyboardVerticalOffset={headerInset}
-    >
+    <KeyboardAvoidingView style={styles.scroll} behavior="padding">
       <Animated.ScrollView
+        ref={scrollRef}
+        onLayout={onScrollLayout}
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -82,7 +110,7 @@ export function BoardShell({
         scrollEventThrottle={16}
       >
         {ambient}
-        <HeaderLargeTitle colors={colors} title={barTitle} />
+        <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -98,9 +126,12 @@ export function BoardShell({
       colors={colors}
       title={barTitle}
       back={back ?? 'auto'}
+      leftAction={leftAction}
+      rightAction={rightAction}
       purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
       large={scroll}
+      largeHeight={largeHeight}
       scrollY={scrollY}
     />
   )

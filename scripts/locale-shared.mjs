@@ -9,6 +9,8 @@ const PRODUCT_SAME = new Set([
   'tonight.didI',
   'tonight.swipeDid',
   'tonight.swipeNope',
+  'tonight.answerDid',
+  'tonight.answerNope',
   'stats.did',
   'stats.nope',
   'later.did',
@@ -16,6 +18,8 @@ const PRODUCT_SAME = new Set([
   'hole.nopeKicker',
   'feed.status.did',
   'feed.status.nope',
+  'jewelKey.nope',
+  'widget.tonight.nope',
   'famNight.do',
   'famNight.nope',
   'family.doIt',
@@ -54,6 +58,7 @@ const TEMPLATE_SAME = new Set([
   'cal.day',
   'tonight.purse',
   'title.home',
+  'tags.general',
 ])
 
 export function isLegalKey(key) {

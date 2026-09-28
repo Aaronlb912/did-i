@@ -44,6 +44,14 @@ zIndex, so keep `BoardShell`'s scroll view first and its wrappers unpainted
 and without a zIndex, or the large title stops collapsing. Settings pickers
 (`native/components/SetChoice.jsx`) are `@expo/ui` menus and sheets.
 
+Android keeps the brand with Material 3 chrome: rows ripple (`native/lib/ripple.js`),
+switches are native M3 switches, and the optional **Match wallpaper** look
+(Settings, `matchWallpaper` pref) reads the Material You palette through the
+`DynamicColor` native module (`native/lib/dynamic-color.js`; hidden on iOS and
+before Android 12). Both platforms share one menu list,
+`native/components/mast-menu-items.js`. `DynamicColor` is native code, so
+shipping it needs a build, not an OTA.
+
 ## Visual parity
 
 Native chrome is kept in step with the web hall:
@@ -262,7 +270,7 @@ EAS `internal` builds only. GitHub builds (APK and IPA) are not EAS builds, so
 `app.config.js` asks for the production channel by default, and the Android
 manifest does the same.
 
-**Native changes still need a build.** Anything under `android/`, a new or
+**Native changes still need a build.** Anything under `android/` or `modules/`, a new or
 bumped native package, `app.config.js` plugins, entitlements, or the widget
 extension. When you ship one, bump `version` in `app.json`, `versionName` in
 `android/app/build.gradle`, and `expo_runtime_version` in

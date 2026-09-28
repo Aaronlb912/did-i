@@ -1,4 +1,4 @@
-import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { skipAuth } from '../../src/lib/auth-gate.js'
@@ -8,83 +8,93 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
-import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
+import { AuthSwipeBackdrop } from '../components/AuthSwipeBackdrop.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
+import { Slot } from '../components/Slot.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
+
+// A quiet text link, not a button: "use on this phone only" is an escape
+// hatch, not a third sign-in option.
+function AuthTextLink({ colors, label, onPress }) {
+  return (
+    <Text
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.textLink, { color: colors.inkDim }]}
+    >
+      {label}
+    </Text>
+  )
+}
 
 export function SignInScreen({ onDone }) {
   const colors = useHallColors()
   const insets = useSafeAreaInsets()
   const auth = useAuthSignIn({ onSignedIn: onDone })
 
+  const useLocalOnly = () => {
+    skipAuth()
+    onDone?.()
+  }
+
   const body = !cloudSetUp() ? (
-    <AuthSignInStage colors={colors}>
+    <View style={styles.panel}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('account.offTitle')}</Text>
       <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.offBody')}</Text>
       <DidButton colors={colors} label={t('account.stay')} onPress={() => goHash('/tonight')} />
-      <KeyButton
-        colors={colors}
-        label={t('auth.local')}
-        onPress={() => {
-          skipAuth()
-          onDone?.()
-        }}
-      />
-    </AuthSignInStage>
+      <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
+    </View>
   ) : (
-    <AuthSignInStage colors={colors}>
-      <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
-      <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('auth.body')}</Text>
-      {auth.step === 'start' ? (
-        <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
+    <View style={styles.panel}>
+      {auth.step !== 'start' ? (
+        <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
       ) : null}
 
-      <Field
-        colors={colors}
-        label={t('account.email')}
-        value={auth.email}
-        onChangeText={auth.setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {auth.step === 'code' ? (
-        <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
-      ) : null}
-      {auth.step === 'code' ? (
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
-      ) : null}
-      {auth.step === 'reviewer' ? (
+      {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
+
+      <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
+        {auth.step === 'start' ? (
+          <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
+        ) : null}
         <Field
           colors={colors}
-          label={t('auth.password')}
-          value={auth.password}
-          onChangeText={auth.setPassword}
-          secureTextEntry
+          label={t('account.email')}
+          value={auth.email}
+          onChangeText={auth.setEmail}
+          keyboardType="email-address"
           autoCapitalize="none"
         />
-      ) : null}
+        {auth.step === 'code' ? (
+          <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
+        ) : null}
+        {auth.step === 'code' ? (
+          <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
+        ) : null}
+        {auth.step === 'reviewer' ? (
+          <Field
+            colors={colors}
+            label={t('auth.password')}
+            value={auth.password}
+            onChangeText={auth.setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        ) : null}
 
-      {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
+        {auth.miss && (auth.missSource === 'email' || !auth.missSource) ? (
+          <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
+        ) : null}
 
-      <AuthSignInActions colors={colors} auth={auth} />
-
-      <View style={styles.foot}>
-        <KeyButton
-          colors={colors}
-          label={t('auth.local')}
-          onPress={() => {
-            skipAuth()
-            onDone?.()
-          }}
-        />
+        {auth.step === 'start' ? (
+          <KeyButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
+        ) : (
+          <AuthSignInActions colors={colors} auth={auth} />
+        )}
       </View>
+
+      <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
       <AuthLegalNote colors={colors} />
-      {auth.step === 'start' ? (
-        <Pressable onPress={auth.showReviewer} hitSlop={8} accessibilityRole="button" style={styles.reviewer}>
-          <Text style={[styles.reviewerText, { color: colors.inkDim }]}>{t('auth.reviewer')}</Text>
-        </Pressable>
-      ) : null}
-    </AuthSignInStage>
+    </View>
   )
 
   return (
@@ -97,11 +107,14 @@ export function SignInScreen({ onDone }) {
         <ScrollView
           contentContainerStyle={[
             styles.scroll,
-            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <Slot fallback={null}>
+            <AuthSwipeBackdrop colors={colors} onMarkLongPress={auth.step === 'start' ? auth.showReviewer : undefined} />
+          </Slot>
           {body}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -118,8 +131,11 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  panel: {
+    gap: 4,
+    marginTop: 22,
   },
   title: {
     fontFamily: fonts.display,
@@ -134,6 +150,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 14,
   },
+  emailBlock: {
+    gap: 4,
+  },
+  emailOption: {
+    marginTop: 18,
+  },
   note: {
     fontFamily: fonts.ui,
     fontSize: 13,
@@ -145,16 +167,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 10,
   },
-  foot: {
-    marginTop: 8,
-  },
-  reviewer: {
-    alignSelf: 'center',
-    marginTop: 12,
-  },
-  reviewerText: {
+  textLink: {
     fontFamily: fonts.ui,
-    fontSize: 12,
+    fontSize: 13,
+    textAlign: 'center',
     textDecorationLine: 'underline',
+    marginTop: 14,
   },
 })

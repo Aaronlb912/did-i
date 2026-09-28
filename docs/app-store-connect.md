@@ -61,7 +61,7 @@ Local-only use (no account) does not send data to you; the label still covers si
 1. **App Information** — category Lifestyle, age ratings questionnaire, content rights if prompted.
 2. **App Privacy** — types above, publish labels.
 3. **iOS 1.0** — fields above, screenshots, build from EAS/Xcode.
-4. **App Review** — demo sign-in (email code) and notes for reviewers.
+4. **App Review** — demo sign-in and notes for reviewers. Reviewer sign-in is hidden: in the notes, tell reviewers to **long-press the "Did I" title at the top of the sign-in screen**, then enter the demo email and password and tap **Sign in**. Use the same note in Google Play Console → App access.
 5. **App-Specific Shared Secret** (App Information → Manage) → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`.
 
 ## iOS build (EAS)
