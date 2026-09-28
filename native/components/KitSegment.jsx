@@ -8,8 +8,8 @@ import { fonts } from '../theme.js'
 // Same readiness check SetChoice.jsx already trusts: Menu/BottomSheet and
 // DropdownMenu/ModalBottomSheet only exist once each bridge's native views
 // are really in the binary, and Picker/SegmentedButton ride the same bridge.
-const iosReady = Platform.OS === 'ios' && 'Menu' in SwiftUI && 'BottomSheet' in SwiftUI
-const androidReady = Platform.OS === 'android' && 'DropdownMenu' in Compose && 'ModalBottomSheet' in Compose
+const iosReady = Platform.OS === 'ios' && 'Menu' in SwiftUI && 'BottomSheet' in SwiftUI && 'Picker' in SwiftUI
+const androidReady = Platform.OS === 'android' && 'DropdownMenu' in Compose && 'ModalBottomSheet' in Compose && 'SingleChoiceSegmentedButtonRow' in Compose && 'SegmentedButton' in Compose
 
 /**
  * A native segmented control: a SwiftUI segmented Picker on iOS, a Material 3

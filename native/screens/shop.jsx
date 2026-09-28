@@ -586,24 +586,25 @@ function previewBody(type, item, purse) {
   return base
 }
 
+function CheerLoop({ id, coat }) {
+  useEffect(() => {
+    const play = () => fireCheer(id, 1, coat, undefined, true)
+    play()
+    const timer = setInterval(play, holdFor(id, 1) + 260)
+    return () => clearInterval(timer)
+  }, [id, coat])
+  return null
+}
+
 // Tapping any item opens the real thing at full size: the look's own card,
 // the buddy in its hang, or the cheer playing on a loop while the sheet is
 // open, plus its price and, when short on coins, how to earn the rest.
 function openTilePreview(type, item, purse, colors, coat) {
   const name = tileName(type, item.id)
   const body = previewBody(type, item, purse)
-  let timer = null
-  function close() {
-    if (timer) clearInterval(timer)
-    publishSheet(null)
-  }
-  if (type === 'cheer') {
-    const play = () => fireCheer(item.id, 1, coat, undefined, true)
-    play()
-    timer = setInterval(play, holdFor(item.id, 1) + 260)
-  }
   let preview = null
-  if (type === 'look') preview = <LookPreviewCard id={item.id} />
+  if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
+  else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
   publishSheet({
     preview,
@@ -611,7 +612,7 @@ function openTilePreview(type, item, purse, colors, coat) {
     body,
     closeLabel: t('settings.close'),
     colors,
-    onClose: close,
+    onClose: () => publishSheet(null),
   })
 }
 
