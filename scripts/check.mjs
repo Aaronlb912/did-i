@@ -2123,5 +2123,59 @@ test('the boot screen and phone bootstrap keep the location guard', () => {
   assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
 })
 
+// Phone modules that only exist on a device, stood in for so the native shim
+// runs here. A stub is read when its module first loads.
+const phoneStubs = {
+  'react-native': {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    BackHandler: { addEventListener: () => ({ remove() {} }) },
+    Platform: { OS: 'ios' },
+    Share: { share: async () => ({}) },
+  },
+  'expo-clipboard': { setStringAsync: async () => {} },
+  'expo-linking': { addEventListener: () => ({ remove() {} }), getInitialURL: async () => null, parse: () => ({}) },
+  'expo-splash-screen': {},
+  'expo-haptics': {},
+  'expo-notifications': {},
+}
+globalThis.__didIPhoneStubs = phoneStubs
+registerHooks({
+  resolve: (specifier, context, next) =>
+    specifier in phoneStubs ? { url: `phone-stub:${specifier}`, shortCircuit: true } : next(specifier, context),
+  load: (url, context, next) => {
+    if (!url.startsWith('phone-stub:')) return next(url, context)
+    const name = url.slice('phone-stub:'.length)
+    const keys = Object.keys(phoneStubs[name])
+    const source = [
+      `const mod = globalThis.__didIPhoneStubs[${JSON.stringify(name)}]`,
+      'export default mod',
+      ...keys.map((key) => `export const ${key} = mod[${JSON.stringify(key)}]`),
+    ].join('\n')
+    return { format: 'module', source, shortCircuit: true }
+  },
+})
+
+const felt = []
+Object.assign(phoneStubs['expo-haptics'], {
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  impactAsync: async (style) => felt.push(`impact:${style}`),
+  notificationAsync: async (type) => felt.push(`notify:${type}`),
+  selectionAsync: async () => felt.push('selection'),
+})
+const phone = await import('../native/shim/native.js')
+
+test('haptics speak one language on Tonight and do not switch off with Reduce Motion', () => {
+  writePrefs({ lessMotion: true })
+  felt.length = 0
+  phone.feelTap('did')
+  phone.feelTap('skip')
+  phone.feelTap('undo')
+  phone.feelTap('tick')
+  phone.playClick()
+  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
+  writePrefs({ lessMotion: false })
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

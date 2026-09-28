@@ -196,6 +196,7 @@ export function useTonightStack({
     change(undo.book)
     setUndo(null)
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    feelTap('undo')
   }
 
   function mark(row, status) {
@@ -244,10 +245,12 @@ export function useTonightStack({
     setWaitPick(null)
     setPillPick(null)
     armUndo({ book, label: t('tonight.saved') })
+    const clears = !wasClear && allClearTonight(next, clock)
+    // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
-    else feelTap('did')
+    else if (!clears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
-    if (!wasClear && allClearTonight(next, clock)) {
+    if (clears) {
       feelTap('hall-on')
       const beforeHeat = shelfHeatNow(shelf, clock, tagId)
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
@@ -267,14 +270,14 @@ export function useTonightStack({
     if (openReady.length > 0) {
       setSkipReview(false)
       setFaceId(openReady[0].lamp.id)
-      feelTap('did')
+      feelTap('tick')
       return
     }
     const skipped = ready.find((row) => row.answer?.status === 'skip')
     if (skipped) {
       setSkipReview(true)
       setFaceId(skipped.lamp.id)
-      feelTap('did')
+      feelTap('tick')
       return
     }
     setFaceId('')
@@ -284,7 +287,7 @@ export function useTonightStack({
     setRestNight(true)
     setSkipReview(false)
     setFaceId('')
-    feelTap('skip')
+    feelTap('tick')
   }
 
   function moveFace(step) {
