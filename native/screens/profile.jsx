@@ -259,6 +259,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetSwitch
           colors={colors}
+          icon="filter"
+          tint={colors.late}
           label={t('widget.settings.openOnly')}
           sub={t('widget.settings.openOnlySub')}
           on={widget.openOnly}
