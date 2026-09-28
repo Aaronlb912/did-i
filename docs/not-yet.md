@@ -125,6 +125,10 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 - **Cheer burst fidelity.** All twelve cheers play on the Android emulator
   (25 Sep 2026, Shop previews and a Did swipe). Not yet seen on an iPhone.
   Web CSS animations may still feel snappier on some cheers.
+- **Collection screen, no device pass.** The single grid, worn check badge,
+  tap-to-wear, and the native segmented control (`KitSegment`) are covered by
+  code review only. Check Looks, Cheers, and Buddies on iOS and Android, in
+  dark and light.
 - **iOS widget, untested.** Per-question tag header, Next pill, fit-to-card
   question, and the buddy redrawn from the app SVG are covered by `npm test`
   only. Needs a TestFlight build to confirm the Next button, the triangle
