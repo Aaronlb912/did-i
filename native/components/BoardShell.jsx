@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -38,15 +39,19 @@ export function BoardShell({
   const scrollRef = useRef(null)
   const [keyboardTop, setKeyboardTop] = useState(null)
   const [scrollBottom, setScrollBottom] = useState(null)
+  const focused = useIsFocused()
   useEffect(() => {
-    if (!scroll) return undefined
+    if (!scroll || !focused) {
+      setKeyboardTop(null)
+      return undefined
+    }
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
     const onShow = (event) => setKeyboardTop(event?.endCoordinates?.screenY ?? null)
     const onHide = () => setKeyboardTop(null)
     const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
     return () => subs.forEach((sub) => sub.remove())
-  }, [scroll])
+  }, [scroll, focused])
   const onScrollLayout = useCallback(() => {
     scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
   }, [])

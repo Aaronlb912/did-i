@@ -224,7 +224,6 @@ export function normalizeBook(raw) {
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),
     archived: asBool(book.archived),
-    isDefault: asBool(book.isDefault),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
     unlocked: Array.isArray(book.unlocked)

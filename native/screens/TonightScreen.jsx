@@ -11,7 +11,6 @@ import { isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { useTonightStack } from '../../src/lib/useTonightStack.js'
-import { folderKicker } from '../../src/lib/board-shelf.js'
 import { UndoToast } from '../components/UndoToast.jsx'
 import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
@@ -125,7 +124,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={folderKicker(faceBook, faceRow)}
+        kicker={faceRow.tag || ''}
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
@@ -223,12 +222,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   } else if (stack.bodyKind === 'pillView' && stack.pillPick) {
     const pillRow = stack.pillPick
     const pillBook = stack.bookOf(pillRow)
-    const pillKicker = folderKicker(pillBook, pillRow)
     const status = pillRow.answer?.status || ''
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(pillBook)}>
-        {pillKicker ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillKicker}</Text> : null}
+        {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
       </GemFaceShell>
@@ -246,7 +244,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={folderKicker(pillBook, pillRow)}
+        kicker={pillRow.tag || ''}
         title={pillRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
@@ -279,9 +277,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        {folderKicker(book) ? (
-          <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{folderKicker(book)}</Text>
-        ) : null}
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{book.title}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
       </GemFaceShell>
     )

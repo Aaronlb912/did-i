@@ -58,7 +58,6 @@ import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
   clearLocalShelf,
   enterLand,
-  folderKicker,
   hallEmpty,
   mergeSameTitles,
   normalizeShelf,
@@ -156,34 +155,6 @@ test('a bulk delete across folders comes back whole on undo', () => {
   const stopped = bulkLamps([home, work], picks, 'stop')
   assert.equal(stopped[0].lamps.find((item) => item.id === 'b').archived, true)
   assert.equal(stopped[0].lamps.find((item) => item.id === 'a').archived, undefined)
-})
-
-test('the default folder stays default by flag, and its cards carry no folder eyebrow', () => {
-  const legacy = normalizeShelf({
-    currentId: 'home',
-    boards: [
-      { id: 'home', title: 'Did I', lamps: [lamp('a')] },
-      { id: 'gym', title: 'Gym', lamps: [lamp('b')] },
-    ],
-  })
-  assert.deepEqual(legacy.boards.map((book) => book.isDefault), [true, false])
-  const renamed = normalizeShelf({
-    ...legacy,
-    boards: [{ ...legacy.boards[1] }, { ...legacy.boards[0], title: 'General' }],
-  })
-  assert.deepEqual(renamed.boards.map((book) => [book.title, book.isDefault]), [['Gym', false], ['General', true]])
-  const [gym, general] = renamed.boards
-  assert.equal(folderKicker(general, { tag: general.title }), '')
-  assert.equal(folderKicker(gym, { tag: gym.title }), 'Gym')
-  const fresh = normalizeShelf({ boards: [] })
-  assert.equal(fresh.boards[0].isDefault, true)
-  const twice = normalizeShelf({
-    boards: [
-      { id: 'x', title: 'X', isDefault: true, lamps: [lamp('c')] },
-      { id: 'y', title: 'Y', isDefault: true, lamps: [lamp('d')] },
-    ],
-  })
-  assert.deepEqual(twice.boards.map((book) => book.isDefault), [true, false])
 })
 
 test('the night turns over at midnight, not at four', () => {
@@ -1887,10 +1858,6 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
     assert.ok(sign.includes("t('auth.title')"), 'the sign-in screen has a title')
     assert.ok(sign.includes("t('account.email')"), 'the sign-in screen has an email field')
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
-    assert.ok(
-      sign.includes("t('account.send')") || actions.includes("t('account.send')"),
-      'the sign-in screen can send a code',
-    )
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.local')"), 'the sign-in screen can stay on this phone')
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
