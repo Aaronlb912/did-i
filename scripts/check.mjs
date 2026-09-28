@@ -1751,6 +1751,7 @@ test('native metro shims are wired and pin default exports', () => {
     'react-native-android-widget',
     '@expo/ui/swift-ui',
     '@expo/ui/swift-ui/modifiers',
+    '@expo/ui/jetpack-compose',
   ]
   for (const pkg of packages) {
     assert.ok(metro.includes(`'${pkg}'`), `metro should shim ${pkg}`)

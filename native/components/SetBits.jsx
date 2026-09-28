@@ -1,4 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts, radius } from '../theme.js'
@@ -127,16 +128,22 @@ export function SetPick({ label, on, onPress, colors }) {
   )
 }
 
+/** The React Native sheet, for when the native one is missing from the binary. SetChoice uses it. */
 export function SetSheet({ title, onClose, children, colors }) {
   const still = useReduceMotion()
+  const insets = useSafeAreaInsets()
   return (
     <Modal visible transparent animationType={still ? 'none' : 'slide'} onRequestClose={onClose}>
       <KeyboardLift>
         <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
-            style={[styles.sheet, { backgroundColor: colors.panel, borderColor: colors.line }]}
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.panel, borderColor: colors.line, paddingBottom: insets.bottom },
+            ]}
             onPress={(event) => event.stopPropagation()}
           >
+            <View style={[styles.grabber, { backgroundColor: colors.line }]} />
             <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
               <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
               <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
@@ -230,6 +237,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     maxHeight: '70%',
   },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, marginTop: 6 },
   sheetBar: {
     flexDirection: 'row',
     alignItems: 'center',
