@@ -50,7 +50,9 @@ export function useWallpaperPalette() {
 
 // The stops native hands over, turned into the same shape every other
 // look in native/palette.js uses. Material You gives a tonal palette,
-// not status colors, so late/miss/skip stay the lime look's own.
+// not status colors, so open comes from the neutrals (kept apart from
+// panel3 so an open dot still shows on a pill) and late/miss/skip stay
+// the lime look's own.
 export function wallpaperLooks(palette) {
   if (!palette) return null
   return {
@@ -63,6 +65,7 @@ export function wallpaperLooks(palette) {
       lineSoft: palette.neutral1_700,
       ink: palette.neutral1_50,
       inkSoft: palette.neutral1_200,
+      open: palette.neutral1_700,
       inkDim: palette.neutral2_500,
       on: palette.accent1_200,
       onDeep: palette.accent1_600,
@@ -78,6 +81,7 @@ export function wallpaperLooks(palette) {
       lineSoft: palette.neutral1_200,
       ink: palette.neutral1_900,
       inkSoft: palette.neutral1_700,
+      open: palette.neutral1_100,
       inkDim: palette.neutral2_500,
       on: palette.accent1_700,
       onDeep: palette.accent1_800,
