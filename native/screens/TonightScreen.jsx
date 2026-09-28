@@ -236,6 +236,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const status = pillRow.answer?.status || ''
     const isDid = status === 'yes' || status === 'late'
     const pillKey = `${stack.rowKey(pillRow)}:${status || 'open'}`
+    const pillMeta =
+      pillRow.dateIso && !mustSwipeDeadline(pillRow.lamp, pillRow.dateIso)
+        ? t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })
+        : ''
     face = (
       <SwipeCardHost
         key={`pill:${pillKey}`}
@@ -245,6 +249,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         gemLook={premium ? look : ''}
         kicker={pillRow.tag || t('tonight.didI')}
         title={pillRow.lamp.question}
+        meta={pillMeta}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
         blockDid={isDid}
@@ -253,11 +258,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onNope={() => stack.mark(pillRow, 'skip')}
         buddy={activeBuddy(stack.bookOf(pillRow))}
       >
-        {pillRow.dateIso && !mustSwipeDeadline(pillRow.lamp, pillRow.dateIso) ? (
-          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-            {t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })}
-          </Text>
-        ) : null}
+        {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
       </SwipeCardHost>
     )
   } else if (stack.bodyKind === 'off') {

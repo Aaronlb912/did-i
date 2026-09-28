@@ -23,6 +23,7 @@ export function SwipeCard({
   cardKey = '',
   kicker,
   title,
+  meta = '',
   stampDid,
   stampNope,
   onDid,
@@ -173,7 +174,7 @@ export function SwipeCard({
         style={[styles.glowHost, gemLook ? gemGlowHostStyle(gemLook, theme) : null]}
         {...(demo ? {} : pan.panHandlers)}
         accessible={!demo}
-        accessibilityLabel={title}
+        accessibilityLabel={[kicker, title, meta].filter(Boolean).join(', ')}
         accessibilityActions={
           demo
             ? undefined
