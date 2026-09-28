@@ -34,14 +34,15 @@ export function SwipeCard({
   panelStyle,
   gemLook = '',
   demo = false,
+  demoOnce = false,
   children,
 }) {
   const theme = useTheme()
   const reduce = useReduceMotion()
   const { height: winH } = useWindowDimensions()
   const x = useRef(new Animated.Value(0)).current
-  const live = useRef({ onDid, onNope, blockDid, blockNope, demo })
-  live.current = { onDid, onNope, blockDid, blockNope, demo }
+  const live = useRef({ onDid, onNope, blockDid, blockNope, demo, demoOnce })
+  live.current = { onDid, onNope, blockDid, blockNope, demo, demoOnce }
   // Which answer edge the drag is past (1 DID, -1 nope, 0 neither), so the
   // phone ticks once when you cross into it.
   const edge = useRef(0)
@@ -52,7 +53,7 @@ export function SwipeCard({
   }, [cardKey, x])
 
   useEffect(() => {
-    if (!demo || reduce) return undefined
+    if ((!demo && !demoOnce) || reduce) return undefined
     const swing = Animated.sequence([
       Animated.delay(700),
       Animated.timing(x, {
@@ -74,21 +75,23 @@ export function SwipeCard({
       Animated.timing(x, { toValue: 0, duration: 200, useNativeDriver: true }),
       Animated.delay(620),
     ])
-    const loop = Animated.loop(swing)
-    const frame = requestAnimationFrame(() => loop.start())
+    // demoOnce plays the same swing once, to show the gesture without
+    // looping forever on a screen the person is meant to read, not watch.
+    const run = demoOnce ? swing : Animated.loop(swing)
+    const frame = requestAnimationFrame(() => run.start())
     return () => {
       cancelAnimationFrame(frame)
-      loop.stop()
+      run.stop()
       x.stopAnimation()
       x.setValue(0)
     }
-  }, [cardKey, demo, reduce, x])
+  }, [cardKey, demo, demoOnce, reduce, x])
 
   const pan = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, gesture) => {
-          if (live.current.demo) return false
+          if (live.current.demo || live.current.demoOnce) return false
           return Math.abs(gesture.dx) > SWIPE_WAKE && Math.abs(gesture.dx) > Math.abs(gesture.dy)
         },
         onPanResponderMove: (_, gesture) => {
@@ -171,7 +174,7 @@ export function SwipeCard({
       </View>
       <View
         style={[styles.glowHost, gemLook ? gemGlowHostStyle(gemLook, theme) : null]}
-        {...(demo ? {} : pan.panHandlers)}
+        {...(demo || demoOnce ? {} : pan.panHandlers)}
       >
         <Animated.View
           style={[

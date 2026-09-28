@@ -160,6 +160,7 @@ export const it = {
     'Enter your email for a one-time code. Your folders, friends, and streak follow you on every phone.',
   'auth.newHere': 'New here? Same steps. Your account is created when you confirm the code.',
   'auth.local': 'Use on this phone only',
+  'auth.tagline': 'One question, once a night.',
   'auth.apple': 'Sign in with Apple',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Apple sign-in did not work. Try email, or try again in a minute.',

@@ -160,6 +160,7 @@ export const es = {
     'Escribe tu correo para un código de un solo uso. Tus carpetas, amigos y racha te siguen en cada teléfono.',
   'auth.newHere': '¿Nuevo? Mismos pasos. Tu cuenta se crea cuando confirmas el código.',
   'auth.local': 'Solo en este teléfono',
+  'auth.tagline': 'Una pregunta, una vez cada noche.',
   'auth.apple': 'Entrar con Apple',
   'auth.appleOr': 'o',
   'auth.appleFail': 'No funcionó con Apple. Prueba el correo o inténtalo en un minuto.',
