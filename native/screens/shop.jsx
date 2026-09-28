@@ -1,5 +1,5 @@
 import Constants from 'expo-constants'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -56,7 +56,8 @@ import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { CoinIcon, GemIcon, GemPackMark, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { kitTabDefault } from '../../src/lib/kit-tab.js'
-import { hallColors, fonts } from '../theme.js'
+import { fonts } from '../theme.js'
+import { useLookColors } from '../hooks/useHallColors.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -86,9 +87,7 @@ function wearLook(book, id) {
 }
 
 function useShopColors(book, peekLook = '') {
-  const theme = useTheme()
-  const coat = peekLook || activeLook(book)
-  return useMemo(() => hallColors(coat, theme), [coat, theme])
+  return useLookColors(peekLook || activeLook(book), !peekLook)
 }
 
 function PreviewButton({ onPress, selected, colors, children }) {

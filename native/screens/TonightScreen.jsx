@@ -30,7 +30,8 @@ import { goHash } from '../navigation/hash.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
-import { hallColors, fonts } from '../theme.js'
+import { fonts } from '../theme.js'
+import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { Slot } from '../components/Slot.jsx'
@@ -72,7 +73,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
 export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId }) {
   const theme = useTheme()
   const look = activeLook(book)
-  const colors = hallColors(look, theme)
+  const colors = useHallColors(book)
   const account = useAccount()
   const sync = useSync()
   const now = useMinuteNow()

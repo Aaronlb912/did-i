@@ -8,7 +8,6 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { activeLook } from '../../src/lib/active-look.js'
 import {
   activeDeadline,
   blankLamp,
@@ -31,7 +30,6 @@ import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
-import { useTheme } from '../../src/lib/prefs.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
 import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
@@ -68,14 +66,13 @@ import {
   Page,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
-import { fonts, hallColors } from '../theme.js'
+import { fonts } from '../theme.js'
+import { useHallColors } from '../hooks/useHallColors.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
-  const theme = useTheme()
-  const look = activeLook(book)
-  const colors = hallColors(look, theme)
+  const colors = useHallColors(book)
   const clock = useMemo(() => new Date(), [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
