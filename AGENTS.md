@@ -81,7 +81,8 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
   builders. Copy IAP redirects to `native/iap/`.
 - **`native/AppShell.jsx`** — the native shell: screens, the main menu
   (rendered as a `Modal` while open — do not change that to a different
-  pattern), cheer burst, swipe-back navigation.
+  pattern), cheer burst, and a native-stack screen per route (back is the
+  platform's; see `docs/native-rebuild.md`).
 - **`widgets/DidITonightWidget.tsx`** — iOS widget (WidgetKit). Content must
   stay clipped inside the rounded rect; its stack state has to stay in sync
   with Tonight (nope vs. "all clear").
