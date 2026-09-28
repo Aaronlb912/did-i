@@ -274,15 +274,19 @@ begin
   if who is null then
     raise exception 'not signed in';
   end if;
-  if iso !~ '^\d{4}-\d{2}-\d{2}$' or add < 1 then
+  -- Only tonight or the night before in any time zone, or a caller could walk
+  -- back through every past date and collect coins for each.
+  if iso !~ '^\d{4}-\d{2}-\d{2}$' or add < 1
+     or iso::date < current_date - 2 or iso::date > current_date + 1 then
     return coalesce((select coin_balance from public.profiles where user_id = who), 0);
   end if;
 
   insert into public.profiles (user_id) values (who) on conflict (user_id) do nothing;
 
-  select coalesce(coins, 0) into had
-  from public.coin_night_grants
-  where user_id = who and night_iso = iso
+  -- g.night_iso, not night_iso: the parameter has the same name as the column.
+  select coalesce(g.coins, 0) into had
+  from public.coin_night_grants g
+  where g.user_id = who and g.night_iso = iso
   for update;
 
   if had is null then
@@ -296,7 +300,7 @@ begin
     return coalesce((select coin_balance from public.profiles where user_id = who), 0);
   end if;
 
-  update public.coin_night_grants set coins = had + add where user_id = who and night_iso = iso;
+  update public.coin_night_grants g set coins = had + add where g.user_id = who and g.night_iso = iso;
   update public.profiles
   set coin_balance = least(coin_balance + add, 9999)
   where user_id = who
@@ -634,5 +638,35 @@ from public.shelves s
 where s.user_id = p.user_id
   and p.coin_balance = 0
   and public.shelf_coin_max(s.doc) > 0;
+
+-- Balances only move through the functions above (they run as the owner) or the
+-- gem-iap function (service role). A signed-in user writing their own profile row
+-- keeps the stored balances, so nobody can set gem_balance = 9999 over the API.
+create or replace function public.guard_profile_wallet()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if current_user not in ('authenticated', 'anon') then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.gem_balance := 0;
+    new.coin_balance := 0;
+    new.gem_week := '';
+  else
+    new.gem_balance := old.gem_balance;
+    new.coin_balance := old.coin_balance;
+    new.gem_week := old.gem_week;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_profile_wallet on public.profiles;
+create trigger guard_profile_wallet
+  before insert or update on public.profiles
+  for each row execute function public.guard_profile_wallet();
 
 notify pgrst, 'reload schema';
