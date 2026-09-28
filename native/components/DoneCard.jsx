@@ -9,6 +9,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
+import { clockWords } from '../../src/lib/hall-pages.js'
+import { t } from '../../src/lib/i18n.js'
 import { streakNights } from '../../src/lib/streak-copy.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { svgParts } from '../lib/svg-parts.js'
@@ -102,8 +104,51 @@ export function StreakCount({ n, from = null, colors }) {
   )
 }
 
+/** The last seven nights as dots, tonight last and ringed. */
+export function NightWeek({ nights, colors }) {
+  const done = nights.filter((night) => night.on).length
+  return (
+    <View style={styles.week} accessible accessibilityRole="text" accessibilityLabel={t('tonight.weekAria', { n: done })}>
+      {nights.map((night) => (
+        <View key={night.iso} style={styles.night}>
+          <View style={styles.dotWrap}>
+            {night.isToday ? <View style={[styles.ring, { borderColor: night.on ? colors.on : colors.line }]} /> : null}
+            <View
+              style={[
+                styles.dot,
+                // A night with nothing due is a hollow ring, so it reads as
+                // empty on the light card too, not as a missing dot.
+                night.empty
+                  ? { borderWidth: 1.5, borderColor: colors.line }
+                  : { backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open },
+              ]}
+            />
+          </View>
+          <Text style={[styles.weekday, { color: night.isToday ? colors.ink : colors.inkDim }]}>
+            {night.weekday.slice(0, 1)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+/** "Tomorrow: 4 questions from 8:00 PM", so done has a next step. */
+export function tomorrowLine({ count, from }) {
+  if (!count) return t('tonight.tomorrowNone')
+  const time = from ? clockWords(from) : ''
+  if (count === 1) return time ? t('tonight.tomorrowOne', { time }) : t('tonight.tomorrowOneAny')
+  return time ? t('tonight.tomorrowMany', { n: count, time }) : t('tonight.tomorrowManyAny', { n: count })
+}
+
 const styles = StyleSheet.create({
   settle: { width: '100%' },
+  week: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, maxWidth: 300 },
+  night: { alignItems: 'center', gap: 6, minWidth: 24 },
+  dotWrap: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  ring: { position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 1.5 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  weekday: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5 },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
   flame: { width: 24, height: 24, marginLeft: -4, marginRight: -2 },
   streakText: { fontFamily: fonts.uiBold, fontSize: 16 },

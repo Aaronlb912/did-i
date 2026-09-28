@@ -96,7 +96,7 @@ import { cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/li
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
+import { clockWords, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -2284,6 +2284,26 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfStreak([book], clock), 8)
   const tonightOpen = { ...book, answers: book.answers.slice(1) }
   assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+})
+
+test('the done card says what tomorrow night holds and from when', () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id, extra = {}) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01', ...extra })
+  const tomorrowDay = new Date(2026, 8, 29).getDay()
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [
+      lamp('pills', { askAfter: '20:00' }),
+      lamp('door', { askAfter: '21:30' }),
+      lamp('bins', { cadence: 'weekly', weekdays: [(tomorrowDay + 1) % 7], askAfter: '19:00' }),
+    ],
+    answers: [],
+  }
+  assert.deepEqual(tomorrowPreview([book], clock), { count: 2, from: '20:00' }, 'counts what is due tomorrow, earliest first')
+  const anytime = { ...book, lamps: [...book.lamps, lamp('phone')] }
+  assert.deepEqual(tomorrowPreview([anytime], clock), { count: 3, from: '' }, 'no "from" when one is open all evening')
+  assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
 })
 
 await testAsync('with the app open on the phone, a cleared night is not pushed to the phone itself', async () => {

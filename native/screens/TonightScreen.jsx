@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords } from '../../src/lib/hall-pages.js'
+import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { isGemLook, mergePurses } from '../../src/lib/purse.js'
@@ -17,7 +17,7 @@ import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/boar
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
-import { CELEBRATE_MS, CardSettle, StreakCount } from '../components/DoneCard.jsx'
+import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
@@ -97,6 +97,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   const showKey = !keySeen && keyNight && showChips && !stack.hallOn
+  // The done card's night summary: the week behind and the night ahead.
+  const summary = useMemo(
+    () =>
+      stack.hallOn
+        ? { week: weekStripNights(stack.shelf, stack.clock, tagId), tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stack.shelf, stack.dateIso, tagId, stack.hallOn],
+  )
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
   useEffect(() => {
@@ -178,6 +187,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
           {stack.streak > 0 ? (
             <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
+          ) : null}
+          {summary ? <NightWeek nights={summary.week} colors={colors} /> : null}
+          {summary ? (
+            <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
         </GemFaceShell>
       </CardSettle>
@@ -454,6 +467,7 @@ const styles = StyleSheet.create({
   },
   syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  tomorrow: { marginTop: 16 },
   jewels: { flexGrow: 0, marginBottom: 12 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
   back: {
