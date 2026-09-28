@@ -190,10 +190,10 @@ function NeedAccount({ kicker, title, colors }) {
         />
       </View>
       <Slot fallback={null}>
-        <AuthAppleSignIn colors={colors} auth={auth} />
+        <AuthAppleSignIn colors={colors} auth={auth} or={false} />
       </Slot>
       <Slot fallback={null}>
-        <AuthGoogleSignIn colors={colors} auth={auth} />
+        <AuthGoogleSignIn colors={colors} auth={auth} or={false} />
       </Slot>
       {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
       <View style={styles.previewOther}>

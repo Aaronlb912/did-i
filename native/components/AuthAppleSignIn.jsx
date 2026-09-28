@@ -3,12 +3,12 @@ import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { fonts } from '../theme.js'
 
-export function AuthAppleSignIn({ colors, auth }) {
+export function AuthAppleSignIn({ colors, auth, or = true }) {
   if (!auth.showApple || auth.step !== 'start') return null
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.appleOr')}</Text>
+      {or ? <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.appleOr')}</Text> : null}
       <AppleAuthentication.AppleAuthenticationButton
         buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
         buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}

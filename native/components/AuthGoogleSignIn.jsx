@@ -3,12 +3,12 @@ import { t } from '../../src/lib/i18n.js'
 import { fonts } from '../theme.js'
 import { KeyButton } from './ui.jsx'
 
-export function AuthGoogleSignIn({ colors, auth }) {
+export function AuthGoogleSignIn({ colors, auth, or = true }) {
   if (!auth.showGoogle || auth.step !== 'start') return null
 
   return (
     <View style={styles.wrap}>
-      {auth.showApple ? null : <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.appleOr')}</Text>}
+      {auth.showApple || !or ? null : <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.appleOr')}</Text>}
       <KeyButton colors={colors} label={t('auth.google')} disabled={auth.busy} onPress={() => auth.signInGoogle()} />
     </View>
   )
