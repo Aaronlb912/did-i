@@ -37,7 +37,8 @@ function countLabel(n) {
 
 // Home and Questions already live in the system tab bar; the menu holds only
 // what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
-// Inbox has no row of its own, its badge folds into Friends and family.
+// Inbox has no row of its own, its count folds into Friends and family's
+// badge. A badge never highlights a row; only where you are does.
 function menuItems(showAdd, inbox, asks, signedIn) {
   const path = readRoute().path
   const waiting = signedIn ? inbox + asks : asks
@@ -48,8 +49,7 @@ function menuItems(showAdd, inbox, asks, signedIn) {
       path: '/people',
       label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
       on: PEOPLE_ON.has(path),
-      count: signedIn ? inbox : 0,
-      pip: !inbox && asks > 0,
+      count: waiting,
       icon: 'people',
     },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
@@ -307,7 +307,6 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   style={({ pressed }) => [
                     styles.row,
                     item.on && { backgroundColor: colors.panel3 },
-                    item.count > 0 && [styles.rowLit, { backgroundColor: colors.panel3, borderColor: colors.on }],
                     pressed && { backgroundColor: colors.panel2 },
                   ]}
                 >
@@ -324,8 +323,6 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                     <View style={[styles.count, { backgroundColor: colors.on }]}>
                       <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(item.count)}</Text>
                     </View>
-                  ) : item.pip ? (
-                    <View style={[styles.pip, { backgroundColor: colors.on }]} />
                   ) : null}
                 </Pressable>
               ),
@@ -432,8 +429,6 @@ const styles = StyleSheet.create({
   },
   ico: { width: 22, alignItems: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },
-  pip: { width: 8, height: 8, borderRadius: 4 },
-  rowLit: { borderWidth: 1 },
   count: {
     minWidth: 20,
     height: 20,
