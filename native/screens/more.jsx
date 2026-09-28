@@ -78,6 +78,7 @@ import { SavableField } from '../components/SavableField.jsx'
 import { DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetRow } from '../components/SetBits.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
+import { publishSheet } from '../components/SheetHost.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
@@ -628,12 +629,26 @@ export function FirstNightScreen({ book, onChange, now }) {
     markWelcomeSeen()
     onChange?.(withName(next))
     goHash('/tonight', face ? { face } : '')
-    // Reminders are the point of a timed question. Ask once the first one exists.
-    requestPings()
-      .then((state) => {
-        if (state === 'granted') armLampPings(readShelf().boards)
-      })
-      .catch(() => {})
+    // A question with a reminder time is the point of asking for pings at
+    // all; a primer frames the OS prompt instead of firing it cold.
+    if (!askAfter) return
+    publishSheet({
+      kicker: t('notify.primerKicker'),
+      title: t('notify.primerTitle', { time: clockWords(askAfter) }),
+      body: t('notify.primerBody'),
+      goLabel: t('notify.primerGo'),
+      closeLabel: t('notify.primerSkip'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        requestPings()
+          .then((state) => {
+            if (state === 'granted') armLampPings(readShelf().boards)
+          })
+          .catch(() => {})
+      },
+    })
   }
 
   function pick(starter) {

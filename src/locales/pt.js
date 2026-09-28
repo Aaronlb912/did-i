@@ -1599,4 +1599,9 @@ export const pt = {
   'questions.bulkDeleted': 'Apagadas: {n}.',
   'questions.bulkStopped': 'Já não perguntadas: {n}.',
   'questions.bulkAsked': 'Perguntadas de novo: {n}.',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }

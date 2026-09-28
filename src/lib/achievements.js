@@ -96,7 +96,8 @@ export function unlockAchievements(book, now = new Date()) {
     unlocked = [...unlocked, id]
   }
 
-  if ((book.opens || []).length) add('first-open')
+  // Held until the first answer so it does not toast on a cold first launch.
+  if ((book.opens || []).length && answers.length) add('first-open')
   if ((book.opens || []).length >= 3) add('showed-3')
   if ((book.opens || []).length >= 7) add('showed-7')
   if (answers.some((answer) => answer.status === 'yes' || answer.status === 'late')) {

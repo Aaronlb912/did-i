@@ -1607,4 +1607,9 @@ export const es = {
   'questions.bulkDeleted': 'Borradas: {n}.',
   'questions.bulkStopped': 'Ya no se preguntan: {n}.',
   'questions.bulkAsked': 'Se vuelven a preguntar: {n}.',
+  'notify.primerKicker': 'Avisos',
+  'notify.primerTitle': 'Te avisaremos a las {time}',
+  'notify.primerBody': 'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
+  'notify.primerGo': 'Activar',
+  'notify.primerSkip': 'Ahora no',
 }

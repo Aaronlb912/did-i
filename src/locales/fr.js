@@ -1608,4 +1608,9 @@ export const fr = {
   'questions.bulkDeleted': 'Supprimées : {n}.',
   'questions.bulkStopped': 'Plus demandées : {n}.',
   'questions.bulkAsked': 'Demandées de nouveau : {n}.',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }

@@ -1551,4 +1551,9 @@ export const zh = {
   'questions.bulkDeleted': '已删除 {n} 个。',
   'questions.bulkStopped': '已停止询问 {n} 个。',
   'questions.bulkAsked': '重新询问 {n} 个。',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }

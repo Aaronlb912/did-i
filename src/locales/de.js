@@ -1613,4 +1613,9 @@ export const de = {
   'questions.bulkDeleted': 'Gelöscht: {n}.',
   'questions.bulkStopped': 'Nicht mehr gefragt: {n}.',
   'questions.bulkAsked': 'Wieder gefragt: {n}.',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }

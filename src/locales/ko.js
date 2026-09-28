@@ -1557,4 +1557,9 @@ export const ko = {
   'questions.bulkDeleted': '{n}개 삭제함.',
   'questions.bulkStopped': '{n}개 더 이상 묻지 않음.',
   'questions.bulkAsked': '{n}개 다시 묻기.',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }

@@ -1558,4 +1558,9 @@ export const ja = {
   'questions.bulkDeleted': '{n} 件を削除。',
   'questions.bulkStopped': '{n} 件を聞かないようにした。',
   'questions.bulkAsked': '{n} 件をまた聞く。',
+  'notify.primerKicker': 'Reminders',
+  'notify.primerTitle': 'We\'ll ask you at {time}',
+  'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
+  'notify.primerGo': 'Turn on',
+  'notify.primerSkip': 'Not now',
 }
