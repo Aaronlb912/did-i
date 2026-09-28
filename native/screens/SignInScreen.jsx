@@ -11,7 +11,7 @@ import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { AuthSwipeBackdrop } from '../components/AuthSwipeBackdrop.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { Slot } from '../components/Slot.jsx'
-import { DidButton, Field } from '../components/ui.jsx'
+import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
 // A quiet text link, not a button: "use on this phone only" is an escape
 // hatch, not a third sign-in option.
@@ -49,42 +49,48 @@ export function SignInScreen({ onDone }) {
       {auth.step !== 'start' ? (
         <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
       ) : null}
-      {auth.step === 'start' ? (
-        <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
-      ) : null}
 
       {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
 
-      <Field
-        colors={colors}
-        label={t('account.email')}
-        value={auth.email}
-        onChangeText={auth.setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {auth.step === 'code' ? (
-        <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
-      ) : null}
-      {auth.step === 'code' ? (
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
-      ) : null}
-      {auth.step === 'reviewer' ? (
+      <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
+        {auth.step === 'start' ? (
+          <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
+        ) : null}
         <Field
           colors={colors}
-          label={t('auth.password')}
-          value={auth.password}
-          onChangeText={auth.setPassword}
-          secureTextEntry
+          label={t('account.email')}
+          value={auth.email}
+          onChangeText={auth.setEmail}
+          keyboardType="email-address"
           autoCapitalize="none"
         />
-      ) : null}
+        {auth.step === 'code' ? (
+          <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
+        ) : null}
+        {auth.step === 'code' ? (
+          <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
+        ) : null}
+        {auth.step === 'reviewer' ? (
+          <Field
+            colors={colors}
+            label={t('auth.password')}
+            value={auth.password}
+            onChangeText={auth.setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        ) : null}
 
-      {auth.miss && (auth.missSource === 'email' || !auth.missSource) ? (
-        <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
-      ) : null}
+        {auth.miss && (auth.missSource === 'email' || !auth.missSource) ? (
+          <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
+        ) : null}
 
-      {auth.step !== 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
+        {auth.step === 'start' ? (
+          <KeyButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
+        ) : (
+          <AuthSignInActions colors={colors} auth={auth} />
+        )}
+      </View>
 
       <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
       <AuthLegalNote colors={colors} />
@@ -143,6 +149,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 14,
+  },
+  emailBlock: {
+    gap: 4,
+  },
+  emailOption: {
+    marginTop: 18,
   },
   note: {
     fontFamily: fonts.ui,

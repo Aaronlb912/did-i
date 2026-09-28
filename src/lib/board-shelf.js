@@ -19,14 +19,36 @@ export function normalizeShelf(raw) {
   const source = raw && typeof raw === 'object' ? raw : {}
   const boards = Array.isArray(source.boards) ? source.boards.map((book) => normalizeBook(book)) : []
   if (!boards.length) {
-    const book = emptyBoard()
+    const book = { ...emptyBoard(), isDefault: true }
     return { currentId: book.id, boards: [book] }
   }
   const currentId = boards.some((book) => book.id === source.currentId)
     ? source.currentId
     : boards[0].id
   const gemWeek = String(source.gemWeek || '').trim()
-  return parkEmptyTags(mergeSameTitles(alignShelfPurse({ currentId, boards, gemWeek })))
+  return markDefaultFolder(parkEmptyTags(mergeSameTitles(alignShelfPurse({ currentId, boards, gemWeek }))))
+}
+
+// Exactly one folder is the default one, where questions land when no folder
+// was picked. It is marked by a flag, not by its title, so it can be renamed.
+// Shelves from before the flag existed treat their first folder as default.
+export function markDefaultFolder(shelf) {
+  const boards = shelf.boards || []
+  if (!boards.length) return shelf
+  const index = Math.max(0, boards.findIndex((book) => book.isDefault))
+  if (boards.every((book, i) => Boolean(book.isDefault) === (i === index))) return shelf
+  return { ...shelf, boards: boards.map((book, i) => ({ ...book, isDefault: i === index })) }
+}
+
+export function isDefaultFolder(book) {
+  return Boolean(book?.isDefault)
+}
+
+// A card's eyebrow names the folder a question sits in. Questions in the
+// default folder get no eyebrow, since the question already opens with "Did I".
+export function folderKicker(book, row) {
+  if (isDefaultFolder(book)) return ''
+  return row?.tag || book?.title || ''
 }
 
 export function liveLampCount(book) {
@@ -156,7 +178,7 @@ function foldBook(into, extra) {
     seen.add(key)
     answers.push(answer)
   }
-  return { ...into, lamps, answers }
+  return { ...into, isDefault: Boolean(into.isDefault || extra.isDefault), lamps, answers }
 }
 
 export function mergeSameTitles(shelf) {

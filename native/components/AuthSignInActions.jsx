@@ -8,7 +8,7 @@ import { DidButton, KeyButton } from './ui.jsx'
 export function AuthSignInActions({ colors, auth }) {
   if (auth.step === 'start') {
     // Apple leads on iOS since it is the system button there; a branded
-    // Google leads on Android. Email is a quieter third either way.
+    // Google leads on Android. The sign-in screen puts email under both.
     const apple = (
       <Slot fallback={null} key="apple">
         <AuthAppleSignIn colors={colors} auth={auth} />
@@ -23,7 +23,6 @@ export function AuthSignInActions({ colors, auth }) {
       <View style={styles.actions}>
         {Platform.OS === 'ios' ? apple : google}
         {Platform.OS === 'ios' ? google : apple}
-        <KeyButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
       </View>
     )
   }

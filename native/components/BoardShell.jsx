@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -33,16 +33,25 @@ export function BoardShell({
   const scrollY = useRef(new Animated.Value(0)).current
   // KeyboardAvoidingView repositions the page, but a form shorter than the
   // full screen has no content to scroll past the keyboard on its own. This
-  // guarantees scroll room so the last field and its buttons clear it.
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  // adds scroll room for whatever part of the scroll view the keyboard still
+  // covers once KeyboardAvoidingView has done its share.
+  const scrollRef = useRef(null)
+  const [keyboardTop, setKeyboardTop] = useState(null)
+  const [scrollBottom, setScrollBottom] = useState(null)
   useEffect(() => {
+    if (!scroll) return undefined
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
-    const onShow = (event) => setKeyboardHeight(event?.endCoordinates?.height || 0)
-    const onHide = () => setKeyboardHeight(0)
+    const onShow = (event) => setKeyboardTop(event?.endCoordinates?.screenY ?? null)
+    const onHide = () => setKeyboardTop(null)
     const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
     return () => subs.forEach((sub) => sub.remove())
+  }, [scroll])
+  const onScrollLayout = useCallback(() => {
+    scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
   }, [])
+  const keyboardPad =
+    scroll && keyboardTop != null && scrollBottom != null ? Math.max(0, Math.round(scrollBottom - keyboardTop)) : 0
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY],
@@ -64,7 +73,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad + keyboardHeight }]}>
+    <View style={[styles.page, { paddingBottom: bottomPad + keyboardPad }]}>
       {children}
     </View>
   )
@@ -86,6 +95,8 @@ export function BoardShell({
       keyboardVerticalOffset={headerInset}
     >
       <Animated.ScrollView
+        ref={scrollRef}
+        onLayout={onScrollLayout}
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
