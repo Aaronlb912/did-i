@@ -7,7 +7,6 @@ import {
   Text,
   View,
 } from 'react-native'
-import { activeLook } from '../../src/lib/active-look.js'
 import {
   activeDeadline,
   blankLamp,
@@ -30,18 +29,13 @@ import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
-import { useTheme } from '../../src/lib/prefs.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import {
-  boardDate,
-  formatBoardDate,
-  isDueOn,
-  recentPeriodKeys,
-} from '../../src/lib/recurrence.js'
-import { NightStrip } from '../components/NightStrip.jsx'
+import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
+import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
+import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
@@ -73,14 +67,13 @@ import {
   Page,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
-import { fonts, hallColors, sectionLabel } from '../theme.js'
+import { fonts, sectionLabel } from '../theme.js'
+import { useHallColors } from '../hooks/useHallColors.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
-  const theme = useTheme()
-  const look = activeLook(book)
-  const colors = hallColors(look, theme)
+  const colors = useHallColors(book)
   const clock = useMemo(() => new Date(), [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
@@ -154,6 +147,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 if (onOpen) onOpen(row.boardId, row.lamp.id)
                 else goHash('/lamp', { id: row.lamp.id })
               }}
+              android_ripple={ripple(colors.panel3)}
               style={({ pressed }) => [
                 styles.lampItem,
                 index > 0 && { borderTopWidth: 1, borderTopColor: colors.lineSoft },
@@ -471,6 +465,7 @@ export function SearchScreen({ book }) {
           <Pressable
             key={lamp.id}
             onPress={() => goHash('/lamp', { id: lamp.id })}
+            android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
           >
             <View style={styles.lampCopy}>
@@ -758,6 +753,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       date={shellDate(book, clock)}
       colors={colors}
       showAdd
+      back={hang.editing ? undefined : false}
+      leftAction={hang.editing ? undefined : { label: t('hang.cancel'), onPress: cancel }}
+      rightAction={hang.editing ? undefined : { label: t('hang.addIt'), onPress: save, disabled: !ready }}
     >
       <HangCard
         ref={inputRef}
@@ -911,7 +909,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           <HangFold
             label={t('hang.tag')}
             value={tagName}
-            icon="tag"
+            icon="folder"
             open={open === 'tag'}
             onToggle={() => fold('tag')}
             colors={colors}
@@ -1035,17 +1033,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </Text>
       ) : null}
 
-      <View style={styles.hangActions}>
-        <DidButton
-          label={hang.editing ? t('hang.save') : t('hang.addIt')}
-          onPress={save}
-          colors={colors}
-          dim={!ready}
-        />
-        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
-          <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
-        </Pressable>
-      </View>
+      {hang.editing ? (
+        <View style={styles.hangActions}>
+          <DidButton label={t('hang.save')} onPress={save} colors={colors} dim={!ready} />
+          <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
+            <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {existing && sourceBook && !stamp ? (
         <LampManage
@@ -1066,10 +1061,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const stripKeys = useMemo(
-    () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
-    [lamp, dateIso],
-  )
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
 
   function change(next) {
@@ -1105,7 +1096,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
         <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
-        <NightStrip book={lampBook} lamp={lamp} keys={stripKeys} colors={colors} />
+        <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
 
       <View style={styles.tiles}>
@@ -1122,11 +1113,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       </View>
 
-      <DidButton label={t('lamp.edit')} onPress={() => editAt('')} colors={colors} />
-      <View style={styles.actions}>
-        <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
-        <KeyButton label={t('lamp.done')} onPress={() => goHash('/lamps')} colors={colors} />
-      </View>
+      <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
 
       <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
       <SetCard colors={colors}>
@@ -1144,7 +1131,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="tag" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
+        <SetRow colors={colors} icon="folder" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
         <SetRow
           colors={colors}
           icon="flag"
@@ -1268,7 +1255,6 @@ const styles = StyleSheet.create({
   cancel: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16 },
   cancelText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   lampCard: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
   lampStatus: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 10 },
   tiles: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 12 },

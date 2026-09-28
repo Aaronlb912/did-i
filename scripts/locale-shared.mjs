@@ -56,6 +56,7 @@ const TEMPLATE_SAME = new Set([
   'cal.day',
   'tonight.purse',
   'title.home',
+  'tags.general',
 ])
 
 export function isLegalKey(key) {

@@ -82,6 +82,8 @@ export const de = {
   'settings.motion': 'Bewegung',
   'settings.motionHint': 'Kein fliegender Cheer. Aus heißt, dem Telefon folgen.',
   'settings.lessMotion': 'Weniger Bewegung',
+  'settings.matchWallpaper': 'An Hintergrundbild anpassen',
+  'settings.matchWallpaperSub': 'Nutzt die Farben, die Android aus deinem Hintergrundbild zieht, statt des üblichen Looks.',
   'settings.language': 'Sprache',
   'settings.languageHint': 'Neue Screens nutzen das. Englisch ist der Fallback.',
   'settings.follow': 'Das folgt dir auf diesem Telefon.',
@@ -143,6 +145,8 @@ export const de = {
   'settings.ideas': 'Was fragen',
   'settings.what': 'Was das ist',
   'settings.intro': 'Die Intro nochmal',
+  'settings.howDidIWorks': 'So funktioniert Did I',
+  'settings.replayIntro': 'Intro erneut ansehen',
   'settings.leave': 'Gehen',
   'settings.leaveHintOn':
     'Deine Fragen bleiben hier. Beim nächsten Öffnen fragt es nach dir und der Nummer.',
@@ -760,6 +764,12 @@ export const de = {
   'people.outTitle': 'Melde dich zuerst an',
   'people.outBody': 'Leute braucht ein Konto, damit ein Freund dir ein did you schicken kann.',
   'people.goAccount': 'Zum Konto',
+  'people.previewCheerTitle': 'Ein Freund feuert dich an',
+  'people.previewCheerBody':
+    'Wenn ein Freund deine Serie anfeuert, siehst du es direkt auf deiner Heute-Abend-Karte.',
+  'people.previewFamilyTitle': 'Familienfragen landen auf Heute Abend',
+  'people.previewFamilyBody':
+    'Eine Frage, die deine Familie teilt, taucht auf deiner Heute-Abend-Karte auf, ohne dass du sie selbst hinzufügst.',
   'people.you': 'Du',
   'people.name': 'Name',
   'people.namePh': 'Aaron',
@@ -1204,6 +1214,7 @@ export const de = {
   'device.browserWindows': 'Browser unter Windows',
   'device.browser': 'Browser',
   'tags.default': 'Ordner',
+  'tags.general': 'Allgemein',
   'tags.defaultN': 'Ordner {n}',
   'lamp.unnamed': 'Frage',
   'strip.recent': '{name} letzte Nächte',

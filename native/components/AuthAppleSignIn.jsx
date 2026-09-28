@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native'
 import { fonts } from '../theme.js'
 
 // Sign in with Apple is an iOS system button; it has no Android rendering.
-export function AuthAppleSignIn({ colors, auth }) {
+export function AuthAppleSignIn({ colors, auth, or = true }) {
   if (Platform.OS !== 'ios' || !auth.showApple || auth.step !== 'start') return null
 
   return (

@@ -55,8 +55,9 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={close}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={close}>
         <Pressable
+          accessible={false}
           style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >

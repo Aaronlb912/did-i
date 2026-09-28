@@ -392,8 +392,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {codeOpen ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
-          <Pressable style={styles.veil} onPress={() => setCodeOpen(false)}>
-            <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable accessible={false} style={styles.veil} onPress={() => setCodeOpen(false)}>
+            <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
               <Text style={[styles.code, { color: colors.ink }]} selectable>
                 {fam.code}
@@ -432,8 +432,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
         <KeyboardLift>
-          <Pressable style={styles.veil} onPress={() => setEdit(null)}>
-            <Pressable style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable accessible={false} style={styles.veil} onPress={() => setEdit(null)}>
+            <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
               <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />
               <DidButton

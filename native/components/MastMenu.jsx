@@ -12,7 +12,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAccount } from '../../src/lib/account.js'
-import { showMainNavInMenu } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
@@ -21,76 +20,16 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
 import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
+import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
+import { menuIsOn, menuItems } from './mast-menu-items.js'
 import { MenuIcon } from './MenuIcon.jsx'
-
-const HOME_ON = new Set(['/', '/home', '/tonight', '/later'])
-const QUESTIONS_ON = new Set(['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas'])
-const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
-const ADD_ON = new Set(['/add', '/hang'])
-const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 const MastMenuCtx = createContext(null)
 
 function countLabel(n) {
   return n > 9 ? '9+' : String(n)
-}
-
-function menuItems(showAdd, inbox, asks, signedIn) {
-  const path = readRoute().path
-  const items = []
-  if (showMainNavInMenu(path)) {
-    items.push(
-      { key: 'home', path: '/tonight', label: t('nav.home'), on: HOME_ON.has(path), icon: 'home', stroke: true },
-      {
-        key: 'questions',
-        path: '/lamps',
-        label: t('nav.questions'),
-        on: QUESTIONS_ON.has(path),
-        icon: 'boards',
-        stroke: true,
-      },
-    )
-    items.push({ key: 'nav-divider', divider: true })
-  }
-  // Add is always in the menu, whatever screen opened it.
-  items.push({ key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true })
-  if (signedIn) {
-    items.push({
-      key: 'inbox',
-      path: '/inbox',
-      label: inbox ? t('didyou.menuWaiting', { n: inbox }) : t('inbox.kicker'),
-      on: path === '/inbox',
-      count: inbox,
-      icon: 'inbox',
-      stroke: true,
-    })
-  }
-  items.push(
-    {
-      key: 'people',
-      path: '/people',
-      label: asks ? t('people.cogWaiting', { n: asks }) : t('people.cog'),
-      on: PEOPLE_ON.has(path) && path !== '/inbox',
-      pip: asks > 0,
-      icon: 'people',
-    },
-    { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
-    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
-    {
-      key: 'settings',
-      path: '/settings',
-      label: t('settings.cog'),
-      on: SETTINGS_ON.has(path),
-      icon: 'settings',
-    },
-  )
-  return items
-}
-
-function menuIsOn(items) {
-  return items.some((item) => item.on)
 }
 
 function useMenuPeople() {
@@ -214,8 +153,12 @@ function MorphBlur({ BlurView, progress, tint }) {
 
 function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onClosed }) {
   const { width: winW } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const fallback = useFallbackAnchor()
-  const anchor = measured || fallback
+  // A cold launch can hand back a measurement from before layout has
+  // settled, placing the button above the safe area (over the status bar).
+  // The safe-area anchor is a better guess than trusting that number.
+  const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
   const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn)
   const on = menuIsOn(items)
@@ -328,10 +271,10 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                     close()
                     goHash(item.path)
                   }}
+                  android_ripple={ripple(colors.panel3)}
                   style={({ pressed }) => [
                     styles.row,
                     item.on && { backgroundColor: colors.panel3 },
-                    item.count > 0 && [styles.rowLit, { backgroundColor: colors.panel3, borderColor: colors.on }],
                     pressed && { backgroundColor: colors.panel2 },
                   ]}
                 >
@@ -348,8 +291,6 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                     <View style={[styles.count, { backgroundColor: colors.on }]}>
                       <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(item.count)}</Text>
                     </View>
-                  ) : item.pip ? (
-                    <View style={[styles.pip, { backgroundColor: colors.on }]} />
                   ) : null}
                 </Pressable>
               ),
@@ -456,8 +397,6 @@ const styles = StyleSheet.create({
   },
   ico: { width: 22, alignItems: 'center' },
   label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },
-  pip: { width: 8, height: 8, borderRadius: 4 },
-  rowLit: { borderWidth: 1 },
   count: {
     minWidth: 20,
     height: 20,

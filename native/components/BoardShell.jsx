@@ -3,13 +3,12 @@ import { useIsFocused } from '@react-navigation/native'
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
-import { useTheme } from '../../src/lib/prefs.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
-import { hallColors } from '../theme.js'
+import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
-import { AppHeader, HeaderLargeTitle } from './AppHeader.jsx'
+import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 
 export function BoardShell({
@@ -19,6 +18,8 @@ export function BoardShell({
   title,
   look,
   back,
+  leftAction,
+  rightAction,
   sit,
   heat,
   hour,
@@ -57,14 +58,15 @@ export function BoardShell({
   }, [])
   const keyboardPad =
     scroll && keyboardTop != null && scrollBottom != null ? Math.max(0, Math.round(scrollBottom - keyboardTop)) : 0
+  const [largeHeight, setLargeHeight] = useState(LARGE_TITLE)
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY],
   )
-  const theme = useTheme()
   const clock = now || new Date()
   const coat = look || activeLook(book)
-  const colors = colorsIn || hallColors(coat, theme)
+  const own = useLookColors(coat)
+  const colors = colorsIn || own
   const shelf = boards.length ? boards : book ? [book] : []
   const purse = shelf.length ? mergePurses(shelf) : normalizePurse(book)
   const barTitle = title || book?.title || 'Did I'
@@ -108,7 +110,7 @@ export function BoardShell({
         scrollEventThrottle={16}
       >
         {ambient}
-        <HeaderLargeTitle colors={colors} title={barTitle} />
+        <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -124,9 +126,12 @@ export function BoardShell({
       colors={colors}
       title={barTitle}
       back={back ?? 'auto'}
+      leftAction={leftAction}
+      rightAction={rightAction}
       purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
       large={scroll}
+      largeHeight={largeHeight}
       scrollY={scrollY}
     />
   )

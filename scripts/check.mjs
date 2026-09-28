@@ -53,6 +53,7 @@ import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/
 import { validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
+import { t } from '../src/lib/i18n.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -99,6 +100,11 @@ import { clockWords, stampWhen } from '../src/lib/hall-pages.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
+import {
+  handleSwipeCardAccessibilityAction,
+  swipeCardAccessibilityActions,
+  swipeCardAccessibilityLabel,
+} from '../native/lib/swipe-card-a11y.js'
 import {
   advanceTonightCard,
   applyWidgetTapOnce,
@@ -732,6 +738,36 @@ test('gem week survives shelf writes', () => {
 
   const again = weeklyGemBump(normalized, normalized, clock)
   assert.equal(again.boards[0].gems, 1)
+})
+
+test('a folder still called Did I from before the General rename lands as General on load', () => {
+  const old = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [old] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.equal(shelf.boards[0].lamps.map((item) => item.id).join(','), 'a')
+
+  const renamed = { id: 'b2', title: 'Chores', lamps: [lamp('b')], answers: [] }
+  const untouched = normalizeShelf({ currentId: 'b2', boards: [renamed] })
+  assert.equal(untouched.boards[0].title, 'Chores')
+})
+
+test('a leftover Did I folder folds into an already-renamed General folder on the same phone', () => {
+  const stillOld = { id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }
+  const alreadyGeneral = { id: 'b2', title: t('tags.general'), lamps: [lamp('b')], answers: [] }
+  const shelf = normalizeShelf({ currentId: 'b1', boards: [stillOld, alreadyGeneral] })
+  assert.equal(shelf.boards.length, 1)
+  assert.equal(shelf.boards[0].title, t('tags.general'))
+  assert.deepEqual(shelf.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
+})
+
+test('two phones converge on General for the old default folder when they sync', () => {
+  const local = { currentId: 'b1', boards: [{ id: 'b1', title: 'Did I', lamps: [lamp('a')], answers: [] }] }
+  const remote = { currentId: 'b1', boards: [{ id: 'b1', title: t('tags.general'), lamps: [lamp('b')], answers: [] }] }
+  const merged = mergeShelves(local, remote, '2026-09-20T00:00:00', '2026-09-21T00:00:00')
+  assert.equal(merged.boards.length, 1)
+  assert.equal(merged.boards[0].title, t('tags.general'))
+  assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['a', 'b'])
 })
 
 test('every gem pack is $1 a gem, and bigger packs add bonus gems', () => {
@@ -1892,6 +1928,7 @@ registerHooks({
     next(specifier === '@react-navigation/native' ? '@react-navigation/core' : specifier, context),
 })
 const nav = await import('../native/navigation/hash.js')
+const mastMenuItems = await import('../native/components/mast-menu-items.js')
 
 // A stand-in for the mounted stack: the hall with its two tabs, screens pushed over it.
 // Like the real container it reports a change once the stack has settled, not per action.
@@ -1946,6 +1983,55 @@ test('every route is its own native-stack screen pushed over the hall', () => {
   nav.goHash('/nowhere')
   assert.equal(stack.top(), '/tonight', 'an unknown route lands in the hall')
   assert.equal(stack.depth(), 1)
+})
+
+test("the menu's Friends and family badge always totals what its label says", () => {
+  const { menuItems } = mastMenuItems
+  nav.goHash('/tonight')
+  for (const [inbox, asks, signedIn] of [
+    [0, 0, true],
+    [0, 0, false],
+    [3, 0, true],
+    [0, 2, true],
+    [0, 2, false],
+    [4, 5, true],
+    [9, 9, false],
+  ]) {
+    const people = menuItems(true, inbox, asks, signedIn).find((item) => item.key === 'people')
+    const expected = signedIn ? inbox + asks : asks
+    assert.equal(people.count, expected, `count for inbox=${inbox} asks=${asks} signedIn=${signedIn}`)
+    if (expected > 0) {
+      assert.equal(people.label, `Friends and family, ${expected} waiting`, 'label carries the same total as the badge')
+    } else {
+      assert.equal(people.label, 'Friends and family', 'no waiting total when there is nothing to show')
+    }
+  }
+})
+
+test('the swipe card exposes Did and Nope as accessibility actions, and its label carries the visible text', () => {
+  assert.equal(
+    swipeCardAccessibilityLabel('DID I', 'Did I lock the back door?', 'Due tonight'),
+    'DID I, Did I lock the back door?, Due tonight',
+  )
+  assert.equal(swipeCardAccessibilityLabel('', 'Did I lock the back door?', ''), 'Did I lock the back door?', 'blank kicker/meta are dropped, not left as empty commas')
+
+  const actions = swipeCardAccessibilityActions('Did', 'Nope')
+  assert.deepEqual(actions, [
+    { name: 'did', label: 'Did' },
+    { name: 'nope', label: 'Nope' },
+  ])
+
+  let did = 0
+  let nope = 0
+  const handlers = { onDid: () => did++, onNope: () => nope++ }
+  handleSwipeCardAccessibilityAction('did', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'the did action fires onDid')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: false, ...handlers })
+  assert.equal(nope, 1, 'the nope action fires onNope')
+  handleSwipeCardAccessibilityAction('did', { blockDid: true, blockNope: false, ...handlers })
+  assert.equal(did, 1, 'a blocked did does not fire again')
+  handleSwipeCardAccessibilityAction('nope', { blockDid: false, blockNope: true, ...handlers })
+  assert.equal(nope, 1, 'a blocked nope does not fire again')
 })
 
 test('goHash pushes, pops back to a screen it has, and switches the hall tab', () => {

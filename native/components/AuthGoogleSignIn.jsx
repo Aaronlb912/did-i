@@ -32,7 +32,7 @@ function GoogleG() {
 
 // Google's light button: white fill, #747775 outline, #1F1F1F label,
 // whatever the app's own theme.
-export function AuthGoogleSignIn({ colors, auth }) {
+export function AuthGoogleSignIn({ colors, auth, or = true }) {
   if (!auth.showGoogle || auth.step !== 'start') return null
 
   return (
