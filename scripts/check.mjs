@@ -999,6 +999,7 @@ test('shop drops wait for their day and the server sells the same coin items', (
 
 test('an invite link carries its code to the app on both phones', () => {
   assert.equal(inviteLink('abcde12345'), 'https://did-i.app/i/ABCDE12345')
+  assert.equal(inviteClip('abcde12345'), 'https://did-i.app/i/ABCDE12345', 'the page copies a web link iOS can detect')
   assert.equal(inviteFromText(inviteClip('ABCDE12345')), 'ABCDE12345', 'the iPhone clipboard text')
   assert.equal(inviteFromText('Join me: https://did-i.app/i/ABCDE12345 (code)'), 'ABCDE12345', 'a pasted share line')
   const referrer = decodeURIComponent(playLinkFor('ABCDE12345').split('&referrer=')[1])

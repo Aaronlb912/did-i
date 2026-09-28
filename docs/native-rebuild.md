@@ -262,7 +262,7 @@ EAS `internal` builds only. GitHub builds (APK and IPA) are not EAS builds, so
 `app.config.js` asks for the production channel by default, and the Android
 manifest does the same.
 
-**Native changes still need a build.** Anything under `android/`, a new or
+**Native changes still need a build.** Anything under `android/` or `modules/`, a new or
 bumped native package, `app.config.js` plugins, entitlements, or the widget
 extension. When you ship one, bump `version` in `app.json`, `versionName` in
 `android/app/build.gradle`, and `expo_runtime_version` in

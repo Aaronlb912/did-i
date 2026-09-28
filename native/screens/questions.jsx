@@ -61,6 +61,7 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
+import { offerPingPrimer } from '../lib/ping-primer.js'
 import { UndoToast } from '../components/UndoToast.jsx'
 import {
   AppTextInput,
@@ -720,9 +721,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     if (onSaveTo) onSaveTo(target, next, sourceBook)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
       playClick()
       goHash('/lamp', { id: next.id })
+      offerPingPrimer(newTime, colors)
       return
     }
     // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
@@ -732,7 +735,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
     else feelTap('hall-on')
     leave.current = setTimeout(
-      () => goHash(wasEmpty ? '/tonight' : '/lamps'),
+      () => {
+        goHash(wasEmpty ? '/tonight' : '/lamps')
+        offerPingPrimer(newTime, colors)
+      },
       reduce ? LAND_HOLD_STILL : LAND_HOLD,
     )
   }

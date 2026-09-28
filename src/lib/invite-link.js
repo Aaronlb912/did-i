@@ -1,9 +1,9 @@
 import { INVITE_CODE_LEN, cleanInvite, useInvite } from './people.js'
 
-// Invite links: did-i.app/i/CODE. The page copies the code and opens the
+// Invite links: did-i.app/i/CODE. The page copies the link and opens the
 // store; the app picks the code up on first launch (Play install referrer on
-// Android, the clipboard on iPhone, or a didi://invite/CODE link) and uses it
-// once after sign-in.
+// Android, the copied link on iPhone, or a didi://invite/CODE link) and uses
+// it once after sign-in.
 
 const KEY = 'did-i-pending-invite'
 export const INVITE_URL = 'https://did-i.app/i/'
@@ -18,9 +18,10 @@ export function playLinkFor(code) {
   return `${PLAY_URL}&referrer=${encodeURIComponent(`invite=${cleanInvite(code)}`)}`
 }
 
-// Text the invite page puts on the clipboard, so the app can tell it apart.
+// What the invite page puts on the clipboard. It is the link itself, because
+// the iPhone app only reads the clipboard when iOS says it holds a web link.
 export function inviteClip(code) {
-  return `Did I invite ${cleanInvite(code)}`
+  return inviteLink(code)
 }
 
 export function inviteFromText(text) {

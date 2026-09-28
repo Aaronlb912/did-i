@@ -23,8 +23,9 @@ function PlayMark() {
   )
 }
 
-// did-i.app/i/CODE. The store buttons copy the code first, so the iPhone app
-// can read it on first launch; the Play link also carries it as the install referrer.
+// did-i.app/i/CODE. The store buttons copy the invite link first, so the
+// iPhone app can pick it up on first launch; the Play link also carries the
+// code as the install referrer.
 export function Invite({ code: raw }) {
   const code = cleanInvite(raw)
   const [copied, setCopied] = useState(false)

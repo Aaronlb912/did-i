@@ -61,7 +61,7 @@ import {
   openSession,
   setPin,
 } from '../../src/lib/session.js'
-import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
+import { upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { leftoverOn } from '../../src/lib/tags.js'
@@ -77,7 +77,7 @@ import { SavableField } from '../components/SavableField.jsx'
 import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetRow } from '../components/SetBits.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { publishSheet } from '../components/SheetHost.jsx'
+import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
@@ -630,26 +630,7 @@ export function FirstNightScreen({ book, onChange, now }) {
     markWelcomeSeen()
     onChange?.(withName(next))
     goHash('/tonight', face ? { face } : '')
-    // A question with a reminder time is the point of asking for pings at
-    // all; a primer frames the OS prompt instead of firing it cold.
-    if (!askAfter) return
-    publishSheet({
-      kicker: t('notify.primerKicker'),
-      title: t('notify.primerTitle', { time: clockWords(askAfter) }),
-      body: t('notify.primerBody'),
-      goLabel: t('notify.primerGo'),
-      closeLabel: t('notify.primerSkip'),
-      colors,
-      onClose: () => publishSheet(null),
-      onGo: () => {
-        publishSheet(null)
-        requestPings()
-          .then((state) => {
-            if (state === 'granted') armLampPings(readShelf().boards)
-          })
-          .catch(() => {})
-      },
-    })
+    offerPingPrimer(askAfter, colors)
   }
 
   function pick(starter) {
