@@ -655,6 +655,7 @@ export const ko = {
   'gems.each': '1개 {price}',
   'gems.save': '{n}% 절약',
   'gems.buy': '구매',
+  'gems.bestValue': '최고 혜택',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return': '결제 열었어. 통과하면 돌아와서 sync하면 gems 들어와.',
   'gems.pending': 'Waiting on the store. Gems land here when payment clears.',

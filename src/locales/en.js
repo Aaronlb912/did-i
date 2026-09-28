@@ -679,6 +679,7 @@ export const en = {
   'gems.each': '{price} each',
   'gems.save': 'Save {n}%',
   'gems.buy': 'Buy',
+  'gems.bestValue': 'Best value',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return': 'Finish in the store. Gems land here when payment clears.',
   'gems.pending': 'Waiting on the store. Gems land here when payment clears.',

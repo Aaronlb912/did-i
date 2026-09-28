@@ -1,28 +1,6 @@
 import { StyleSheet, View } from 'react-native'
 import { svgParts } from '../lib/svg-parts.js'
 
-function gemPackMarkLayout(count) {
-  const n = Math.max(1, Math.floor(Number(count) || 0))
-  const pad = 5
-
-  if (n === 1) {
-    return { boxW: 44, boxH: 44, cols: 1, rows: 1, icon: 20, gap: 0, pad, count: n }
-  }
-
-  const cols = n <= 3 ? n : 5
-  const rows = Math.ceil(n / cols)
-  const boxW = 48
-  const boxH = rows <= 2 ? 48 : rows <= 5 ? 48 : rows <= 8 ? 54 : 60
-  const innerW = boxW - pad * 2
-  const innerH = boxH - pad * 2
-  const gap = n <= 10 ? 2 : 1.5
-  const iconByW = (innerW - (cols - 1) * gap) / cols
-  const iconByH = (innerH - (rows - 1) * gap) / rows
-  const icon = Math.max(4, Math.floor(Math.min(iconByW, iconByH)))
-
-  return { boxW, boxH, cols, rows, icon, gap, pad, count: n }
-}
-
 export function CoinIcon({ size = 16 }) {
   const parts = svgParts()
   if (!parts) {
@@ -67,9 +45,23 @@ export function GemIcon({ size = 16 }) {
   )
 }
 
-export function GemPackMark({ count, colors, accessibilityLabel }) {
-  const layout = gemPackMarkLayout(count)
+// One faceted gem, sized to the pack: bigger packs read as a bigger gem
+// instead of shrinking into a grid of dots.
+export function gemFaceSize(count, big = false) {
+  const n = Math.max(1, Math.floor(Number(count) || 0))
+  if (big) {
+    if (n <= 14) return 48
+    if (n <= 40) return 60
+    return 72
+  }
+  if (n <= 1) return 22
+  if (n <= 3) return 26
+  return 30
+}
 
+export function GemFaceMark({ count, big, colors, accessibilityLabel }) {
+  const size = gemFaceSize(count, big)
+  const box = size + (big ? 24 : 16)
   return (
     <View
       accessible={Boolean(accessibilityLabel)}
@@ -77,31 +69,14 @@ export function GemPackMark({ count, colors, accessibilityLabel }) {
       style={[
         styles.packMark,
         {
-          width: layout.boxW,
-          height: layout.boxH,
-          padding: layout.pad,
+          width: box,
+          height: box,
           borderColor: colors.line,
           backgroundColor: colors.panel2,
         },
       ]}
     >
-      <View style={[styles.packGrid, { gap: layout.gap }]}>
-        {Array.from({ length: layout.rows }, (_, row) => {
-          const start = row * layout.cols
-          const slice = Array.from({ length: layout.cols }, (_, col) => start + col).filter(
-            (i) => i < layout.count,
-          )
-          return (
-            <View key={row} style={[styles.packRow, { gap: layout.gap }]}>
-              {slice.map((i) => (
-                <View key={i} style={{ width: layout.icon, height: layout.icon }}>
-                  <GemIcon size={layout.icon} />
-                </View>
-              ))}
-            </View>
-          )
-        })}
-      </View>
+      <GemIcon size={size} />
     </View>
   )
 }
@@ -136,15 +111,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
     overflow: 'hidden',
-  },
-  packGrid: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  packRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inlineStack: {
     flexDirection: 'row',

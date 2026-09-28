@@ -654,6 +654,7 @@ export const zh = {
   'gems.each': '每个 {price}',
   'gems.save': '省 {n} %',
   'gems.buy': '购买',
+  'gems.bestValue': '超值',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return': '已打开结账。付款成功后回来，gems 会在 sync 时到账。',
   'gems.pending': 'Waiting on the store. Gems land here when payment clears.',

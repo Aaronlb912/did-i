@@ -656,6 +656,7 @@ export const ja = {
   'gems.each': '1 つ {price}',
   'gems.save': '{n} % お得',
   'gems.buy': '買う',
+  'gems.bestValue': 'お得',
   'gems.bonus': '{base} + {bonus} bonus',
   'gems.return': '決済を開いた。通ったら戻って sync で gems が入る。',
   'gems.pending': 'Waiting on the store. Gems land here when payment clears.',
