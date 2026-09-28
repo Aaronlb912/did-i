@@ -469,7 +469,7 @@ test('native styles do not spread the removed absoluteFillObject', () => {
 
 test('native cheer draws every bit the pop model makes', () => {
   const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/components/CheerBurst.jsx'), 'utf8')
-  const meta = new Set(['id', 'delay', 'size', 'rot', 'len', 'tone', 'side', 'y', 'x', 'fat', 'reach', 'tall', 'screen', 'fall', 'width', 'drift', 'rise', 'scale', 'hop', 'hops', 'from', 'span'])
+  const meta = new Set(['id', 'delay', 'size', 'rot', 'len', 'tone', 'side', 'y', 'x', 'fat', 'reach', 'tall', 'screen', 'fall', 'width', 'drift', 'rise', 'scale', 'hop', 'hops', 'from', 'span', 'swing', 'rays', 'turn'])
   const flags = new Set()
   for (const kind of cheerKinds()) {
     for (const stage of [1, 5]) {

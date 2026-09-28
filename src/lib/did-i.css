@@ -129,6 +129,23 @@
   --di-veil: rgba(10, 7, 6, 0.58);
 }
 
+.di-hall[data-look='chalk'],
+.di-cheer[data-look='chalk'] {
+  --di-bg: #101010;
+  --di-panel: #181817;
+  --di-panel-2: #1f1f1e;
+  --di-panel-3: #272726;
+  --di-line: #363634;
+  --di-line-soft: #2a2a29;
+  --di-ink: #f2f0eb;
+  --di-ink-soft: #a3a09a;
+  --di-ink-dim: #71706b;
+  --di-on: #ecebe6;
+  --di-on-deep: #8e8c86;
+  --di-late: #b8b2a4;
+  --di-veil: rgba(8, 8, 8, 0.6);
+}
+
 .di-hall[data-look='glow'],
 .di-cheer[data-look='glow'] {
   --di-bg: #0a0e14;
@@ -317,6 +334,40 @@
   --di-gem-spill: rgba(122, 140, 255, 0.16);
 }
 
+.di-hall[data-look='sky'],
+.di-cheer[data-look='sky'] {
+  --di-bg: #0a0d14;
+  --di-panel: #10151f;
+  --di-panel-2: #151c28;
+  --di-panel-3: #1b2433;
+  --di-line: #253247;
+  --di-line-soft: #1c2636;
+  --di-on: #4aa8ff;
+  --di-on-deep: #1f6fd0;
+  --di-gem-bg: #0a0d14;
+  --di-gem-ring: rgba(74, 168, 255, 0.32);
+  --di-gem-halo: rgba(74, 160, 255, 0.13);
+  --di-gem-halo-deep: rgba(31, 111, 208, 0.06);
+  --di-gem-spill: rgba(74, 168, 255, 0.16);
+}
+
+.di-hall[data-look='orchid'],
+.di-cheer[data-look='orchid'] {
+  --di-bg: #0f0a12;
+  --di-panel: #18111c;
+  --di-panel-2: #201726;
+  --di-panel-3: #281d30;
+  --di-line: #3a2944;
+  --di-line-soft: #2c2034;
+  --di-on: #dd7bff;
+  --di-on-deep: #9b3fc4;
+  --di-gem-bg: #0f0a12;
+  --di-gem-ring: rgba(221, 123, 255, 0.32);
+  --di-gem-halo: rgba(214, 110, 255, 0.13);
+  --di-gem-halo-deep: rgba(155, 63, 196, 0.06);
+  --di-gem-spill: rgba(221, 123, 255, 0.16);
+}
+
 .di-hall[data-look='glow'],
 .di-hall[data-look='ember'],
 .di-hall[data-look='frost'],
@@ -327,7 +378,9 @@
 .di-hall[data-look='steel'],
 .di-hall[data-look='wine'],
 .di-hall[data-look='jade'],
-.di-hall[data-look='indigo'] {
+.di-hall[data-look='indigo'],
+.di-hall[data-look='sky'],
+.di-hall[data-look='orchid'] {
   position: relative;
   box-shadow: none;
 }
@@ -342,7 +395,9 @@
 .di-hall[data-look='steel']::after,
 .di-hall[data-look='wine']::after,
 .di-hall[data-look='jade']::after,
-.di-hall[data-look='indigo']::after {
+.di-hall[data-look='indigo']::after,
+.di-hall[data-look='sky']::after,
+.di-hall[data-look='orchid']::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -396,6 +451,20 @@ html:has(.di-hall[data-look='indigo']) body {
   background:
     radial-gradient(125% 85% at 50% -8%, rgba(122, 140, 255, 0.09), transparent 55%),
     radial-gradient(110% 75% at 50% 108%, rgba(63, 79, 208, 0.06), transparent 50%),
+    var(--di-gem-bg, #0e1014);
+}
+
+html:has(.di-hall[data-look='sky']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(74, 168, 255, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(31, 111, 208, 0.06), transparent 50%),
+    var(--di-gem-bg, #0e1014);
+}
+
+html:has(.di-hall[data-look='orchid']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(221, 123, 255, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(155, 63, 196, 0.06), transparent 50%),
     var(--di-gem-bg, #0e1014);
 }
 
@@ -456,7 +525,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   .di-face-slot
   > :is(.di-face, .di-empty, .di-wait, .di-hole-plate),
@@ -471,7 +542,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   .di-buddy-preview-card {
   position: relative;
@@ -588,6 +661,24 @@ html[data-theme='light'] .di-hall[data-look='clay'],
   --di-on-deep: #6e2a18;
   --di-late: #8a6a40;
   --di-veil: rgba(34, 22, 15, 0.38);
+}
+
+html[data-theme='light'] .di-hall[data-look='chalk'],
+.di-hall[data-theme='light'][data-look='chalk'],
+.di-cheer[data-theme='light'][data-look='chalk'] {
+  --di-bg: #ecebe7;
+  --di-panel: #fbfaf8;
+  --di-panel-2: #f3f2ee;
+  --di-panel-3: #e6e4df;
+  --di-line: #cfccc5;
+  --di-line-soft: #dddbd5;
+  --di-ink: #161614;
+  --di-ink-soft: #56544f;
+  --di-ink-dim: #7a7872;
+  --di-on: #262624;
+  --di-on-deep: #6c6a64;
+  --di-late: #8a8474;
+  --di-veil: rgba(22, 22, 20, 0.38);
 }
 
 html[data-theme='light'] .di-hall[data-look='glow'],
@@ -788,6 +879,42 @@ html[data-theme='light'] .di-hall[data-look='indigo'],
   --di-gem-spill: rgba(58, 72, 192, 0.08);
 }
 
+html[data-theme='light'] .di-hall[data-look='sky'],
+.di-hall[data-theme='light'][data-look='sky'],
+.di-cheer[data-theme='light'][data-look='sky'] {
+  --di-bg: #e7eff9;
+  --di-panel: #f6faff;
+  --di-panel-2: #eaf2fb;
+  --di-panel-3: #dbe7f5;
+  --di-line: #b7cce6;
+  --di-line-soft: #cddcee;
+  --di-on: #1766c2;
+  --di-on-deep: #0f4a8f;
+  --di-gem-bg: #e7eff9;
+  --di-gem-ring: rgba(23, 102, 194, 0.22);
+  --di-gem-halo: rgba(23, 102, 194, 0.07);
+  --di-gem-halo-deep: rgba(15, 74, 143, 0.035);
+  --di-gem-spill: rgba(23, 102, 194, 0.08);
+}
+
+html[data-theme='light'] .di-hall[data-look='orchid'],
+.di-hall[data-theme='light'][data-look='orchid'],
+.di-cheer[data-theme='light'][data-look='orchid'] {
+  --di-bg: #f2e9f6;
+  --di-panel: #fcf7ff;
+  --di-panel-2: #f4ebf9;
+  --di-panel-3: #e9dcf0;
+  --di-line: #d4bde0;
+  --di-line-soft: #e2d0ea;
+  --di-on: #9326c0;
+  --di-on-deep: #6a168e;
+  --di-gem-bg: #f2e9f6;
+  --di-gem-ring: rgba(147, 38, 192, 0.22);
+  --di-gem-halo: rgba(147, 38, 192, 0.07);
+  --di-gem-halo-deep: rgba(106, 22, 142, 0.035);
+  --di-gem-spill: rgba(147, 38, 192, 0.08);
+}
+
 html[data-theme='light'] body {
   color: #1a1d16;
   background: #eef1e6;
@@ -838,6 +965,22 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='indigo']) b
   background:
     radial-gradient(125% 85% at 50% -8%, rgba(58, 72, 192, 0.06), transparent 55%),
     radial-gradient(110% 75% at 50% 108%, rgba(58, 72, 192, 0.04), transparent 50%),
+    var(--di-gem-bg, #eef1e6);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='sky']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='sky']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(23, 102, 194, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(23, 102, 194, 0.04), transparent 50%),
+    var(--di-gem-bg, #eef1e6);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='orchid']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='orchid']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(147, 38, 192, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(147, 38, 192, 0.04), transparent 50%),
     var(--di-gem-bg, #eef1e6);
 }
 
@@ -4601,10 +4744,40 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   box-shadow: 0 0 0.25rem rgba(122, 140, 255, 0.72);
 }
 
+.di-look-chip[data-look='sky'] {
+  --chip-on: #4aa8ff;
+  --chip-bg: #0c111a;
+  box-shadow:
+    0 0 0.35rem rgba(74, 168, 255, 0.5),
+    inset 0 0 0.5rem rgba(31, 111, 208, 0.14);
+}
+
+.di-look-chip[data-look='sky'] i {
+  box-shadow: 0 0 0.25rem rgba(74, 168, 255, 0.72);
+}
+
+.di-look-chip[data-look='orchid'] {
+  --chip-on: #dd7bff;
+  --chip-bg: #130d17;
+  box-shadow:
+    0 0 0.35rem rgba(221, 123, 255, 0.5),
+    inset 0 0 0.5rem rgba(155, 63, 196, 0.14);
+}
+
+.di-look-chip[data-look='orchid'] i {
+  box-shadow: 0 0 0.25rem rgba(221, 123, 255, 0.72);
+}
+
 .di-look-chip[data-look='clay'] {
   --chip-on: #d97a5c;
   --chip-bg: #1a1310;
   box-shadow: inset 0 0 0.5rem rgba(217, 122, 92, 0.12);
+}
+
+.di-look-chip[data-look='chalk'] {
+  --chip-on: #ecebe6;
+  --chip-bg: #181817;
+  box-shadow: inset 0 0 0.5rem rgba(236, 235, 230, 0.1);
 }
 
 .di-cheer-chip[data-cheer='spark'] {
@@ -4767,6 +4940,74 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 }
 
 .di-cheer-chip[data-cheer='heart'] i:nth-child(n + 2) {
+  display: none;
+}
+
+.di-cheer-chip[data-cheer='medal'],
+.di-cheer-chip[data-cheer='sun'] {
+  position: relative;
+}
+
+.di-cheer-chip[data-cheer='medal'] i:nth-child(1),
+.di-cheer-chip[data-cheer='medal'] i:nth-child(2) {
+  position: absolute;
+  top: 0.32rem;
+  width: 0.22rem;
+  height: 0.8rem;
+  border-radius: 1px;
+}
+
+.di-cheer-chip[data-cheer='medal'] i:nth-child(1) {
+  left: calc(50% - 0.32rem);
+  background: var(--di-late);
+  transform: rotate(-16deg);
+}
+
+.di-cheer-chip[data-cheer='medal'] i:nth-child(2) {
+  left: calc(50% + 0.1rem);
+  background: var(--di-on-deep);
+  transform: rotate(16deg);
+}
+
+.di-cheer-chip[data-cheer='medal'] i:nth-child(3) {
+  position: absolute;
+  top: 0.95rem;
+  left: 50%;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-left: -0.475rem;
+  box-sizing: border-box;
+  border: 2px solid var(--di-on-deep);
+  border-radius: 50%;
+  background: var(--di-on);
+}
+
+.di-cheer-chip[data-cheer='sun'] i:nth-child(1) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin: -0.4rem 0 0 -0.4rem;
+  border-radius: 50%;
+  background: var(--di-on);
+}
+
+.di-cheer-chip[data-cheer='sun'] i:nth-child(2) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: -0.8rem 0 0 -0.8rem;
+  box-sizing: border-box;
+  border: 0.2rem dotted var(--di-on);
+  border-radius: 50%;
+  background: none;
+}
+
+.di-cheer-chip[data-cheer='medal'] i:nth-child(n + 4),
+.di-cheer-chip[data-cheer='sun'] i:nth-child(n + 3) {
   display: none;
 }
 
@@ -6302,6 +6543,298 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   background: var(--di-late);
 }
 
+/* Hangs from the top of its ribbon: drop in, swing, settle, lift off. */
+.di-medal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: calc(var(--sz) * 1.6);
+  margin: calc(var(--sz) * -1.1744) 0 0 calc(var(--sz) / -2);
+  transform-origin: 50% 0;
+  opacity: 0;
+  animation: di-medal 1.5s linear forwards;
+}
+
+.di-medal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.di-medal-strap {
+  fill: var(--di-late);
+}
+
+.di-medal-strap.is-deep {
+  fill: var(--di-on-deep);
+}
+
+.di-medal-disc {
+  fill: var(--di-on);
+  stroke: var(--di-on-deep);
+  stroke-width: 2.5;
+}
+
+.di-medal-rim {
+  fill: none;
+  stroke: var(--di-on-deep);
+  stroke-width: 1.4;
+  opacity: 0.6;
+}
+
+.di-medal-star {
+  fill: var(--di-on-deep);
+}
+
+.di-glint {
+  position: absolute;
+  top: var(--gy);
+  left: var(--gx);
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  opacity: 0;
+  --glint: var(--di-on);
+  animation: di-glint 0.65s ease-out forwards;
+}
+
+.di-glint[data-tone='gold'] {
+  --glint: var(--di-on-deep);
+}
+
+.di-glint[data-tone='blue'] {
+  --glint: var(--di-late);
+}
+
+.di-glint[data-tone='ink'] {
+  --glint: var(--di-ink);
+}
+
+.di-glint::before,
+.di-glint::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(2px, calc(var(--sz) * 0.24));
+  height: 100%;
+  border-radius: 999px;
+  background: var(--glint);
+  transform: translate(-50%, -50%);
+}
+
+.di-glint::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* Rises with a bounce while the rays grow out and turn. */
+.di-sun {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  animation: di-sun 1.5s linear forwards;
+}
+
+.di-sun-disc {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  box-sizing: border-box;
+  border: max(2px, calc(var(--sz) * 0.05)) solid var(--di-on-deep);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 30% 20% at 32% 26%, rgba(255, 255, 255, 0.4) 60%, transparent 62%),
+    var(--di-on);
+}
+
+.di-sun-rays {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: di-sun-spin 1.5s linear forwards;
+}
+
+.di-sun-ray {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: rotate(var(--a));
+}
+
+.di-sun-ray u {
+  position: absolute;
+  left: calc(max(3px, var(--sz) * 0.11) / -2);
+  top: calc(var(--sz) * -0.9);
+  width: max(3px, calc(var(--sz) * 0.11));
+  height: calc(var(--sz) * 0.28);
+  border-radius: 999px;
+  background: var(--di-on-deep);
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  animation: di-sun-ray 0.3s linear both;
+}
+
+.di-sun-ray.is-long u {
+  top: calc(var(--sz) * -1.04);
+  height: calc(var(--sz) * 0.42);
+  background: var(--di-on);
+}
+
+.di-sun-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  border-radius: 50%;
+  background: var(--di-on);
+  opacity: 0;
+  animation: di-sun-glow 1.4s ease-out forwards;
+}
+
+@keyframes di-medal {
+  0% {
+    transform: translateY(-2.4rem) rotate(calc(var(--swing) * 16deg)) scale(0.6);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  12% {
+    transform: translateY(0.25rem) rotate(calc(var(--swing) * -12deg)) scale(1.06);
+  }
+  20% {
+    transform: translateY(-0.1rem) rotate(calc(var(--swing) * 9deg)) scale(0.97);
+  }
+  30% {
+    transform: translateY(0) rotate(calc(var(--swing) * -6deg)) scale(1);
+  }
+  40% {
+    transform: translateY(0) rotate(calc(var(--swing) * 3.5deg)) scale(0.994);
+  }
+  50% {
+    transform: translateY(0) rotate(calc(var(--swing) * -1.5deg)) scale(0.989);
+  }
+  60% {
+    transform: translateY(0) rotate(calc(var(--swing) * 0.5deg)) scale(0.983);
+  }
+  70% {
+    transform: translateY(0) rotate(0deg) scale(0.977);
+  }
+  84% {
+    transform: translateY(0) rotate(0deg) scale(0.969);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-0.5rem) rotate(0deg) scale(0.96);
+    opacity: 0;
+  }
+}
+
+@keyframes di-glint {
+  0% {
+    transform: rotate(0deg) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  35% {
+    transform: rotate(31.5deg) scale(1.3);
+  }
+  55% {
+    transform: rotate(49.5deg) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(90deg) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes di-sun {
+  0% {
+    transform: translateY(1.6rem) scale(0.3);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  20% {
+    transform: translateY(-0.25rem) scale(1.12);
+  }
+  30% {
+    transform: translateY(0.06rem) scale(0.95);
+  }
+  38% {
+    transform: translateY(0) scale(1.02);
+  }
+  46% {
+    transform: translateY(0) scale(1);
+  }
+  82% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-0.3rem) scale(1.08);
+    opacity: 0;
+  }
+}
+
+@keyframes di-sun-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(calc(var(--turn) * 14deg));
+  }
+  100% {
+    transform: rotate(calc(var(--turn) * 50deg));
+  }
+}
+
+@keyframes di-sun-ray {
+  0% {
+    transform: scaleY(0);
+  }
+  60% {
+    transform: scaleY(1.25);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes di-sun-glow {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 0.26;
+  }
+  70% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+}
+
 @keyframes di-boom-rise {
   from {
     transform: translateY(4.2rem) scaleY(1);
@@ -7422,6 +7955,8 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 .di-hall[data-reduce-motion][data-look='wine']::after,
 .di-hall[data-reduce-motion][data-look='jade']::after,
 .di-hall[data-reduce-motion][data-look='indigo']::after,
+.di-hall[data-reduce-motion][data-look='sky']::after,
+.di-hall[data-reduce-motion][data-look='orchid']::after,
 html[data-reduce-motion] .di-hall[data-look='glow']::after,
 html[data-reduce-motion] .di-hall[data-look='ember']::after,
 html[data-reduce-motion] .di-hall[data-look='frost']::after,
@@ -7432,7 +7967,9 @@ html[data-reduce-motion] .di-hall[data-look='rose']::after,
 html[data-reduce-motion] .di-hall[data-look='steel']::after,
 html[data-reduce-motion] .di-hall[data-look='wine']::after,
 html[data-reduce-motion] .di-hall[data-look='jade']::after,
-html[data-reduce-motion] .di-hall[data-look='indigo']::after {
+html[data-reduce-motion] .di-hall[data-look='indigo']::after,
+html[data-reduce-motion] .di-hall[data-look='sky']::after,
+html[data-reduce-motion] .di-hall[data-look='orchid']::after {
   animation: none;
 }
 
@@ -7447,7 +7984,9 @@ html[data-reduce-motion] .di-hall[data-look='indigo']::after {
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   :is(
     .di-face,
@@ -7471,7 +8010,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   :is(
     .di-face,
@@ -7498,7 +8039,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   :is(
     .di-face,
@@ -7522,7 +8065,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='steel'],
     [data-look='wine'],
     [data-look='jade'],
-    [data-look='indigo']
+    [data-look='indigo'],
+    [data-look='sky'],
+    [data-look='orchid']
   )
   :is(
     .di-face,

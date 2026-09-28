@@ -73,6 +73,40 @@ function FlipCard({ wait, delay, hops }) {
   )
 }
 
+function Medal({ delay, size, swing }) {
+  return (
+    <b className="di-medal" style={{ '--sz': size, '--swing': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox="0 0 40 64" aria-hidden="true" focusable="false">
+        <polygon className="di-medal-strap" points="4,0 15,0 24,36 15,37" />
+        <polygon className="di-medal-strap is-deep" points="25,0 36,0 25,37 16,36" />
+        <circle className="di-medal-disc" cx="20" cy="47" r="15.5" />
+        <circle className="di-medal-rim" cx="20" cy="47" r="10.5" />
+        <path
+          className="di-medal-star"
+          d="M20 40.8 L21.53 44.9 L25.9 45.08 L22.47 47.8 L23.64 52.02 L20 49.6 L16.36 52.02 L17.53 47.8 L14.1 45.08 L18.47 44.9 Z"
+        />
+        <ellipse cx="13.5" cy="41" rx="3.2" ry="1.8" fill="#fff" opacity="0.45" transform="rotate(-35 13.5 41)" />
+      </svg>
+    </b>
+  )
+}
+
+function Sun({ delay, size, rays, turn }) {
+  const n = Math.max(8, Math.floor(Number(rays) || 8))
+  return (
+    <b className="di-sun" style={{ '--sz': size, '--turn': turn < 0 ? -1 : 1, animationDelay: delay }}>
+      <span className="di-sun-rays" style={{ animationDelay: delay }}>
+        {Array.from({ length: n }, (_, i) => (
+          <i key={i} className={i % 2 ? 'di-sun-ray' : 'di-sun-ray is-long'} style={{ '--a': `${(360 / n) * i}deg` }}>
+            <u style={{ animationDelay: `calc(${delay} + ${Math.round((0.14 + (i / n) * 0.12) * 1500)}ms)` }} />
+          </i>
+        ))}
+      </span>
+      <span className="di-sun-disc" />
+    </b>
+  )
+}
+
 function renderBit(burst, pop, bit, screen = false) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -127,6 +161,25 @@ function renderBit(burst, pop, bit, screen = false) {
         <i />
       </b>
     )
+  }
+  if (bit.medal) {
+    return <Medal key={key} delay={delay} size={bit.size} swing={bit.swing} />
+  }
+  if (bit.glint) {
+    return (
+      <i
+        key={key}
+        className="di-glint"
+        data-tone={bit.tone}
+        style={{ '--gx': bit.x, '--gy': bit.y, '--sz': bit.size, animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.sunGlow) {
+    return <i key={key} className="di-sun-glow" style={{ '--sz': bit.size, animationDelay: delay }} />
+  }
+  if (bit.sun) {
+    return <Sun key={key} delay={delay} size={bit.size} rays={bit.rays} turn={bit.turn} />
   }
   if (bit.sparkFlash) {
     return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />

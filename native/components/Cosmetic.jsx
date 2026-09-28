@@ -48,6 +48,9 @@ const LOOK_META = {
   jade: { on: '#4fe0a8' },
   indigo: { on: '#7a8cff' },
   clay: { on: '#d97a5c', bg: '#1a1310', glow: 'rgba(217, 122, 92, 0.35)' },
+  sky: { on: '#4aa8ff' },
+  orchid: { on: '#dd7bff' },
+  chalk: { on: '#ecebe6', bg: '#181817', glow: 'rgba(236, 235, 230, 0.3)' },
 }
 
 function rem(n) {
@@ -560,6 +563,60 @@ function HeartChip({ on }) {
   )
 }
 
+function MedalChip({ on, onDeep, late }) {
+  const strap = { position: 'absolute', top: rem(0.32), width: rem(0.22), height: rem(0.8), borderRadius: 1 }
+  const disc = rem(0.95)
+  return (
+    <View style={styles.chipBox}>
+      <View style={[strap, { left: CHIP / 2 - rem(0.32), backgroundColor: late, transform: [{ rotate: '-16deg' }] }]} />
+      <View style={[strap, { left: CHIP / 2 + rem(0.1), backgroundColor: onDeep, transform: [{ rotate: '16deg' }] }]} />
+      <View
+        style={{
+          position: 'absolute',
+          top: rem(0.95),
+          left: CHIP / 2 - disc / 2,
+          width: disc,
+          height: disc,
+          borderRadius: disc / 2,
+          borderWidth: 2,
+          borderColor: onDeep,
+          backgroundColor: on,
+        }}
+      />
+    </View>
+  )
+}
+
+function SunChip({ on }) {
+  const disc = rem(0.8)
+  const ray = rem(0.26)
+  return (
+    <View style={styles.chipBox}>
+      {Array.from({ length: 8 }, (_, i) => (
+        <View
+          key={i}
+          style={{ position: 'absolute', left: CHIP / 2, top: CHIP / 2, width: 0, height: 0, transform: [{ rotate: `${i * 45}deg` }] }}
+        >
+          <View
+            style={{ position: 'absolute', left: -rem(0.07), top: -disc / 2 - rem(0.1) - ray, width: rem(0.14), height: ray, borderRadius: 1, backgroundColor: on }}
+          />
+        </View>
+      ))}
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - disc / 2,
+          top: CHIP / 2 - disc / 2,
+          width: disc,
+          height: disc,
+          borderRadius: disc / 2,
+          backgroundColor: on,
+        }}
+      />
+    </View>
+  )
+}
+
 function DefaultChip({ n, on }) {
   const bit = rem(0.28)
   return (
@@ -623,6 +680,12 @@ export function CheerChip({ id, stage = 1, colors }) {
       break
     case 'heart':
       art = <HeartChip on={on} />
+      break
+    case 'medal':
+      art = <MedalChip on={on} onDeep={onDeep} late={colors?.late || '#6fb7ff'} />
+      break
+    case 'sun':
+      art = <SunChip on={on} />
       break
     default: {
       const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))

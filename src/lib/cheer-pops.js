@@ -83,6 +83,8 @@ const CHEER_KINDS = [
   'flip',
   'confetti',
   'heart',
+  'medal',
+  'sun',
 ]
 
 const GAP_MS = {
@@ -100,6 +102,8 @@ const GAP_MS = {
   flip: 160,
   confetti: 110,
   heart: 150,
+  medal: 150,
+  sun: 130,
 }
 
 const BASE_HOLD = {
@@ -117,6 +121,8 @@ const BASE_HOLD = {
   flip: 700,
   confetti: 1750,
   heart: 1900,
+  medal: 1850,
+  sun: 1800,
 }
 
 function stageN(stage) {
@@ -389,6 +395,50 @@ function heartBits(pop, stage) {
   return bits
 }
 
+// Drops in on its ribbon, swings, settles, then a few glints wink around it.
+function medalBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const mul = stageMul(stage)
+  // Width of the art. Capped so the swing of an edge pop stays on a 390px screen.
+  const size = Math.min(4, (3.3 + level * 0.12) * mul)
+  const bits = [
+    { id: 'medal', medal: true, delay: '0ms', size: `${size.toFixed(2)}rem`, swing: pop % 2 ? -1 : 1 },
+  ]
+  const glints = Math.min(6, level + 2)
+  const dist = size * 0.62
+  for (let i = 0; i < glints; i += 1) {
+    const angle = (-160 + (i / Math.max(1, glints - 1)) * 140) * (Math.PI / 180)
+    const far = dist * (0.95 + (i % 2) * 0.2)
+    bits.push({
+      id: `glint-${i}`,
+      glint: true,
+      x: `${(Math.cos(angle) * far).toFixed(2)}rem`,
+      y: `${(Math.sin(angle) * far).toFixed(2)}rem`,
+      size: `${((0.55 + (i % 3) * 0.14) * Math.min(mul, 1.5)).toFixed(2)}rem`,
+      tone: CONFETTI_TONES[i % CONFETTI_TONES.length],
+      delay: `${780 + i * 70}ms`,
+    })
+  }
+  return bits
+}
+
+// Rises with a bounce while a crown of rays grows out and turns.
+function sunBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const mul = stageMul(stage)
+  // Rays reach about 1.05x the disc; capped so edge pops stay on screen.
+  const size = Math.min(2.5, (2.1 + level * 0.1) * mul)
+  const rays = Math.min(16, 8 + level * 2)
+  const bits = [
+    { id: 'sun-glow', sunGlow: true, delay: '120ms', size: `${(size * 2).toFixed(2)}rem` },
+    { id: 'sun', sun: true, delay: '0ms', size: `${size.toFixed(2)}rem`, rays, turn: pop % 2 ? -1 : 1 },
+  ]
+  if (level >= 3) {
+    bits.push({ id: 'sun-ring', bloom: true, delay: '420ms', size: `${(size * 2.3).toFixed(2)}rem` })
+  }
+  return bits
+}
+
 const BURST_BUILDERS = {
   lime: limeBits,
   tape: tapeBurstBits,
@@ -412,6 +462,8 @@ const BURST_BUILDERS = {
   flip: flipBurstBits,
   confetti: confettiBits,
   heart: heartBits,
+  medal: medalBits,
+  sun: sunBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {
