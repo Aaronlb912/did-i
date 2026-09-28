@@ -19,11 +19,8 @@ export function MarkToast({ mark, onClose, colors }) {
 
   return (
     <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
-      <View
-        style={[styles.toast, { backgroundColor: colors.panel2, borderColor: colors.line }]}
-        accessibilityLiveRegion="polite"
-      >
-        <View style={styles.copy}>
+      <View style={[styles.toast, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <View style={styles.copy} accessibilityLiveRegion="polite">
           <Text style={[styles.kicker, { color: colors.on }]}>{t('marks.new')}</Text>
           <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
             {t(markText(mark.id, 'name'))}

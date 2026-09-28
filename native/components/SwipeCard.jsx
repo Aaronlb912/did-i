@@ -172,6 +172,24 @@ export function SwipeCard({
       <View
         style={[styles.glowHost, gemLook ? gemGlowHostStyle(gemLook, theme) : null]}
         {...(demo ? {} : pan.panHandlers)}
+        accessible={!demo}
+        accessibilityLabel={title}
+        accessibilityActions={
+          demo
+            ? undefined
+            : [
+                { name: 'did', label: stampDid },
+                { name: 'nope', label: stampNope },
+              ]
+        }
+        onAccessibilityAction={
+          demo
+            ? undefined
+            : (event) => {
+                if (event.nativeEvent.actionName === 'did' && !blockDid) onDid?.()
+                else if (event.nativeEvent.actionName === 'nope' && !blockNope) onNope?.()
+              }
+        }
       >
         <Animated.View
           style={[

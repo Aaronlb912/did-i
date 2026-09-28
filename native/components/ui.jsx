@@ -37,6 +37,7 @@ export function DidButton({ label, onPress, colors, small, disabled, dim }) {
       disabled={disabled}
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(off) }}
       style={[
         styles.did,
@@ -54,6 +55,9 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
       style={[
         styles.key,
         {

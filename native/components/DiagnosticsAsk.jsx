@@ -25,6 +25,7 @@ export function DiagnosticsAsk() {
     <Modal visible transparent animationType="fade" onRequestClose={() => answer(false)}>
       <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => answer(false)}>
         <Pressable
+          accessible={false}
           style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
