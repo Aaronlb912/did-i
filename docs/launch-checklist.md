@@ -26,7 +26,7 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 
 **Still to do**
 - [ ] Next build (60+) for invite links on phones: adds `expo-application` (Play install referrer) and first-launch invite pickup
-- [x] Privacy policy: invite links (clipboard once on iPhone, Play install referrer), Apple and Google sign-in, iPhone push, Expo updates. Still needs the lawyer review
+- [x] Privacy policy: invite links (clipboard read on iPhone only when iOS reports a web link, Play install referrer), Apple and Google sign-in, iPhone push, Expo updates. Still needs the lawyer review
 - [ ] Shop drops: merge each drop PR and run `npm run update:prod` before its Friday (`docs/shop-drops.md`)
 - [ ] Android release signing: download the keystore from Expo and add the four `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*` GitHub secrets (steps in `docs/native-rebuild.md`), before the android-apk run
 - [ ] Google sign-in on Android release builds: add a "Did I Android release" OAuth client with the release key SHA-1 (`npx eas-cli credentials -p android`), and one for the Play signing key after the first upload
