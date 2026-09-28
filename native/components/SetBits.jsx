@@ -61,6 +61,8 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
     <Pressable
       onPress={onPress}
       android_ripple={ripple(colors.panel3)}
+      accessibilityRole="button"
+      accessibilityLabel={[label, value, sub].filter(Boolean).join(', ')}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
