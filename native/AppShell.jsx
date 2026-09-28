@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform, StyleSheet, View } from 'react-native'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { StyleSheet, View } from 'react-native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { authGated } from '../src/lib/auth-gate.js'
@@ -8,27 +9,68 @@ import { useAutoAdd } from '../src/lib/people.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
-import { canGoBack, goBack, goHash, onRoute, peekBackRoute, readRoute } from './navigation/hash.js'
+import {
+  flushNavigation,
+  goHash,
+  HALL,
+  onRoute,
+  OWN_BACK,
+  readRoute,
+  routeFromScreen,
+  STACK_PATHS,
+} from './navigation/hash.js'
+import { ScreenRoute } from './navigation/screen-route.js'
 import { AppNavHost } from './components/AppNavHost.jsx'
 import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { MarkToast } from './components/MarkToast.jsx'
-import { SwipeBackShellHost } from './components/SwipeBackShellHost.jsx'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 
-
-const SITE = new Set()
+const Stack = createNativeStackNavigator()
+const ScreenProps = createContext(null)
 
 function useNativeRoute() {
   const [route, setRoute] = useState(readRoute)
   useEffect(() => onRoute(setRoute), [])
   return route
+}
+
+/** One route's page, fed the shelf the whole app shares. */
+function RouteBody({ route }) {
+  const props = useContext(ScreenProps)
+  return (
+    <ScreenRoute.Provider value={route}>
+      <ScreenRouter route={route} {...props} />
+    </ScreenRoute.Provider>
+  )
+}
+
+/** The root screen: Tonight or Questions, with the tab bar. */
+function HallScreen({ route }) {
+  const colors = useContext(ScreenProps).colors
+  const here = routeFromScreen(route)
+  // The hall mounts first, so a goHash from before the stack existed lands now.
+  useEffect(() => {
+    flushNavigation()
+  }, [])
+  return (
+    <View style={styles.fill}>
+      <RouteBody route={here} />
+      <View pointerEvents="box-none" style={styles.navLayer}>
+        <AppNavHost path={here.path} colors={colors} />
+      </View>
+    </View>
+  )
+}
+
+function RouteScreen({ route }) {
+  return <RouteBody route={routeFromScreen(route)} />
 }
 
 export function AppShell() {
@@ -39,8 +81,6 @@ export function AppShell() {
   const colors = useHallColors(app.book)
   const gated = authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
-  const backRoute = useMemo(() => peekBackRoute(), [route])
-  const swipeBack = canGoBack() && route.path !== '/first'
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const askPings = useCallback(async () => {
@@ -81,6 +121,59 @@ export function AppShell() {
 
   const pingLabel = pingButtonLabel(pingState)
 
+  const screenProps = useMemo(
+    () => ({
+      colors,
+      book: app.book,
+      shelf: app.shelf,
+      tagId: app.tagId,
+      change: app.change,
+      changeBooks: app.changeBooks,
+      setTag: app.setTag,
+      saveLamp: app.saveLamp,
+      keepSent: app.keepSent,
+      switchBoard: app.switchBoard,
+      addBoard: app.addBoard,
+      removeBoard: app.removeBoard,
+      onImport: app.importShelf,
+      onStartEmpty: app.startEmpty,
+      onSendCopy: app.sendCopy,
+      onAskPings: pingLabel ? askPings : undefined,
+      pingLabel,
+    }),
+    [
+      app.addBoard,
+      app.book,
+      app.change,
+      app.changeBooks,
+      app.importShelf,
+      app.keepSent,
+      app.removeBoard,
+      app.saveLamp,
+      app.sendCopy,
+      app.setTag,
+      app.shelf,
+      app.startEmpty,
+      app.switchBoard,
+      app.tagId,
+      askPings,
+      colors,
+      pingLabel,
+    ],
+  )
+
+  const screenOptions = useMemo(
+    () => ({
+      headerShown: false,
+      // The platform push: iOS slides with parallax and follows the edge swipe,
+      // Android runs the Material shared-axis transition.
+      animation: 'default',
+      freezeOnBlur: true,
+      contentStyle: { backgroundColor: colors.bg },
+    }),
+    [colors.bg],
+  )
+
   if (gated) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -97,66 +190,35 @@ export function AppShell() {
     )
   }
 
-  const screenProps = {
-    book: app.book,
-    shelf: app.shelf,
-    tagId: app.tagId,
-    change: app.change,
-    changeBooks: app.changeBooks,
-    setTag: app.setTag,
-    saveLamp: app.saveLamp,
-    keepSent: app.keepSent,
-    switchBoard: app.switchBoard,
-    addBoard: app.addBoard,
-    removeBoard: app.removeBoard,
-    onImport: app.importShelf,
-    onStartEmpty: app.startEmpty,
-    onSendCopy: app.sendCopy,
-    onAskPings: pingLabel ? askPings : undefined,
-    pingLabel,
-  }
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <SwipeBackShellHost
-        enabled={swipeBack}
-        back={backRoute}
-        onBack={goBack}
-        routeKey={route.path}
-        backChild={
-          backRoute ? (
-            <View style={{ flex: 1 }}>
-              <ScreenRouter route={backRoute} {...screenProps} />
-            </View>
-          ) : null
-        }
-      >
-        <View style={{ flex: 1 }}>
-          <ScreenRouter route={route} {...screenProps} />
-        </View>
-      </SwipeBackShellHost>
-      {SITE.has(route.path) ? null : (
-        <Slot>
-          <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
-        </Slot>
-      )}
-      {SITE.has(route.path) ? null : (
-        <View pointerEvents="box-none" style={styles.navLayer}>
-          <AppNavHost path={route.path} colors={colors} />
-        </View>
-      )}
-      {SITE.has(route.path) ? null : (
-        <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
-          <DidYouBanner path={route.path} colors={colors} />
-          <SheetHost />
-          <CheerBurstHost />
-        </View>
-      )}
+      <ScreenProps.Provider value={screenProps}>
+        <Stack.Navigator screenOptions={screenOptions}>
+          <Stack.Screen name={HALL} component={HallScreen} initialParams={{ path: '/tonight' }} />
+          {STACK_PATHS.map((path) => (
+            <Stack.Screen
+              key={path}
+              name={path}
+              component={RouteScreen}
+              options={OWN_BACK.has(path) ? { gestureEnabled: false } : undefined}
+            />
+          ))}
+        </Stack.Navigator>
+      </ScreenProps.Provider>
+      <Slot>
+        <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
+      </Slot>
+      <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
+        <DidYouBanner path={route.path} colors={colors} />
+        <SheetHost />
+        <CheerBurstHost />
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   // Only the bar. A full-screen layer here sat on top of the menu and the
   // shop chips, so those taps never landed.
   navLayer: {

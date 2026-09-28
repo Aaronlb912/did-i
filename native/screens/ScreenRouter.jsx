@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
-import { goHash } from '../navigation/hash.js'
+import { goHash, readRoute } from '../navigation/hash.js'
 import { LegalScreen } from './LegalScreen.jsx'
 import {
   AboutScreen,
@@ -45,11 +45,12 @@ import { TonightScreen } from './TonightScreen.jsx'
 const HALL = new Set(['/', '/home', '/tonight'])
 
 // Redirect after render; calling goHash while rendering updates AppShell
-// mid-render, which React warns about.
-function GoTo({ path }) {
+// mid-render, which React warns about. The hall stays mounted under every
+// pushed screen, so only the screen on top may redirect.
+function GoTo({ path, from }) {
   useEffect(() => {
-    goHash(path)
-  }, [path])
+    if (readRoute().path === from) goHash(path)
+  }, [from, path])
   return null
 }
 
@@ -91,7 +92,7 @@ export function ScreenRouter({
   }
   if (path === '/first') return <FirstNightScreen book={book} onChange={change} />
   // Go to /first itself, not just its screen, so the tab bar stays hidden there.
-  if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" />
+  if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" from={path} />
   if (path === '/about') return <AboutScreen book={book} />
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />

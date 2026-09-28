@@ -33,7 +33,6 @@ const ALLOW_PREFIX = ['@react-navigation/', '@supabase/', '@expo-google-fonts/',
 const HOSTS = [
   'native/components/CheerBurstHost.jsx',
   'native/components/AppNavHost.jsx',
-  'native/components/SwipeBackShellHost.jsx',
   'native/components/SwipeCardHost.jsx',
 ]
 

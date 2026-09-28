@@ -21,12 +21,18 @@ through `app.config.js` into `src/lib/env.js` (override with `.env.local`).
 | Night maths, purse, board ops, people | `src/lib/` |
 | Tonight stack | `src/lib/useTonightStack.js` |
 | Shelf + sync | `native/hooks/useAppShelf.js` |
-| Navigation | `native/navigation/hash.js` |
+| Navigation | `native/navigation/hash.js` (`goHash` over a native stack) |
 | Routing | `native/screens/ScreenRouter.jsx` |
-| Shell + tabs | `native/AppShell.jsx` |
+| Shell, stack screens | `native/AppShell.jsx` |
 | Gem IAP | `native/iap/gem-store.js` + `supabase/functions/gem-iap` |
 
 Metro aliases `site/hash.js` and `lib/native.js` on iOS/Android.
+
+Every route is its own `@react-navigation/native-stack` screen, named by its
+path and pushed over the hall. `goHash` stays the one call screens make: a
+route already in the stack is popped back to, anything else is pushed. Back
+is the platform's own (iOS edge swipe, Android system back with predictive
+back on), so there is no custom swipe layer.
 
 ## Visual parity
 

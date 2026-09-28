@@ -242,10 +242,8 @@ function lampFromUrl(url) {
 }
 
 export function listenNativeShell({ onBack, onOpenLamp }) {
-  const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
-    onBack?.()
-    return true
-  })
+  // False at the root lets Android leave the app, the system back everywhere else.
+  const backSub = BackHandler.addEventListener('hardwareBackPress', () => Boolean(onBack?.()))
   const linkSub = Linking.addEventListener('url', ({ url }) => {
     if (goFromDeepLink(url)) return
     const lampId = lampFromUrl(url)

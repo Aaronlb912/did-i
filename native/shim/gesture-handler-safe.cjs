@@ -1,4 +1,4 @@
-// SwipeBackShell and SwipeCard default-import Gesture from RNGH.
+// SwipeCard default-imports Gesture from RNGH.
 // initialize() and the Gesture getter can throw on `.default`.
 
 const React = require('react')

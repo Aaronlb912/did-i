@@ -132,6 +132,13 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 - **Visual diff caps.** `npm run visual` compares web vs native fixtures at
   390px. Jewel is tight (~10%); face/settings are looser until RN-web layout
   matches DOM more closely.
+- **Android predictive back has no in-app peek.** Predictive back is on
+  (`enableOnBackInvokedCallback`), screens push with the Material shared-axis
+  transition, and system back pops them. The stable native stack in
+  react-native-screens 4.28 does not feed the gesture's progress to the
+  screen transition, so the previous screen does not slide into view while
+  the finger is down; it pops on release. Only its experimental stack does.
+  Revisit when the stable stack supports it.
 - **Keyboard shortcuts** on Tonight (web only): y/s, j/k, u, n.
 - **Print slip** on Tonight (web only).
 - **iOS IPA signing on GHA.** With distro cert, profiles, `GOOGLE_SERVICES_PLIST`,

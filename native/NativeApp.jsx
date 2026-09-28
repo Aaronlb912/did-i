@@ -45,7 +45,7 @@ export function NativeApp() {
         const shelf = readShelf()
         const book = currentBook(shelf)
         const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
-        goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
+        return goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {
         goHash('/tonight', lampId ? { face: lampId } : '')
