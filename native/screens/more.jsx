@@ -172,6 +172,8 @@ export function HelpScreen() {
   return (
     <ScreenShell title={t('help.title')} colors={colors}>
       <Meta colors={colors}>{t('help.lead')}</Meta>
+      <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
+      <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
       <Meta colors={colors}>{t('help.tonightP1')}</Meta>
       <Meta colors={colors}>{t('help.tonightP2')}</Meta>
