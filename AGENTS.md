@@ -21,6 +21,10 @@ shell.
 
 ## Commands
 
+Note: `package.json` has `"type": "module"`, so Node scripts run directly
+(e.g. `.claude/hooks/*`) must use `.cjs` if they use `require()`, or use ESM
+`import` syntax if they stay `.js`.
+
 ```
 npm start                    # website dev server, http://127.0.0.1:48741/
 npm run check                # scripts/check.mjs (tests) + scripts/bench-night.mjs (perf, must stay < 6ms)
