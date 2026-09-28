@@ -1,5 +1,6 @@
 import { isAppForeground } from './app-foreground.js'
 import { streakHitCopy } from './streak-copy.js'
+import { pingOn } from './prefs.js'
 import { boardDate } from './recurrence.js'
 import { readReduceMotion } from './useReduceMotion.js'
 
@@ -28,7 +29,7 @@ export async function scheduleNativePings() {}
 export { isAppForeground }
 
 export async function pingStreakHit(hit, dateIso) {
-  if (!hit || typeof window === 'undefined' || !('Notification' in window)) return false
+  if (!hit || !pingOn('streakHit') || typeof window === 'undefined' || !('Notification' in window)) return false
   if (Notification.permission !== 'granted') return false
   try {
     const copy = streakHitCopy(hit.n)

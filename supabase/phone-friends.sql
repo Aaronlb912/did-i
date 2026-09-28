@@ -176,7 +176,7 @@ declare
   ph text;
   body text;
 begin
-  if new.state <> 'asked' then
+  if new.state <> 'asked' or not public.push_wanted(new.to_id, 'friends') then
     return new;
   end if;
   select coalesce(nullif(trim(p.display_name), ''), ''),
