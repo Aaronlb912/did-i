@@ -200,7 +200,7 @@ function SignedOut({ on }) {
           />
         ) : null}
 
-        {auth.step === 'code' ? (
+        {auth.step === 'code' && !auth.miss ? (
           <p className="di-auth-card-note">{t('account.sent', { email: auth.email })}</p>
         ) : null}
         {auth.step === 'reviewer' ? (
