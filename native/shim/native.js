@@ -68,7 +68,9 @@ export async function checkNativePings() {
     const check = await verifyNotificationPermission()
     if (!check.ok) return 'missing'
     if (check.status === 'granted') return 'granted'
-    if (check.status === 'denied') return 'denied'
+    // Android reports denied before it has ever asked; canAskAgain tells the two apart.
+    if (check.status === 'denied' && !check.canAskAgain) return 'denied'
+    if (check.status === 'denied') return 'default'
     return 'default'
   } catch {
     return 'missing'

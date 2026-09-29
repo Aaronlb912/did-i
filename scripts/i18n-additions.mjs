@@ -32,6 +32,10 @@ export const additionsEn = {
   'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
   'notify.primerGo': 'Turn on',
   'notify.primerSkip': 'Not now',
+  'notify.firstTitle': 'Get a nudge at night?',
+  'notify.firstBody': 'Did I can remind you when a question is due, and tell you when a friend or family member sends a Did you or a cheer. You can change this any time in Settings.',
+  'pings.offNote': 'Notifications are off on this phone, so these switches wait until you turn them on.',
+  'pings.openSettings': 'Open phone settings',
 
   'auth.tagline': 'One question, once a night.',
   'first.next': 'Continue',
@@ -426,6 +430,10 @@ export const additionsEs = {
   'notify.primerBody': 'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
   'notify.primerGo': 'Activar',
   'notify.primerSkip': 'Ahora no',
+  'notify.firstTitle': '¿Un aviso por la noche?',
+  'notify.firstBody': 'Did I puede recordarte cuando toca una pregunta y avisarte cuando un amigo o familiar te manda un Did you o un ánimo. Puedes cambiarlo cuando quieras en Ajustes.',
+  'pings.offNote': 'Los avisos están apagados en este teléfono, así que estos interruptores esperan a que los enciendas.',
+  'pings.openSettings': 'Abrir ajustes del teléfono',
 
   'auth.tagline': 'Una pregunta, una vez cada noche.',
   'first.next': 'Continuar',

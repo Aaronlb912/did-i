@@ -1657,4 +1657,10 @@ export const en = {
   'notify.primerBody': 'Turn on reminders and this phone can tap you when this question opens.',
   'notify.primerGo': 'Turn on',
   'notify.primerSkip': 'Not now',
+  'notify.firstTitle': 'Get a nudge at night?',
+  'notify.firstBody':
+    'Did I can remind you when a question is due, and tell you when a friend or family member sends a Did you or a cheer. You can change this any time in Settings.',
+  'pings.offNote':
+    'Notifications are off on this phone, so these switches wait until you turn them on.',
+  'pings.openSettings': 'Open phone settings',
 }

@@ -1676,4 +1676,10 @@ export const de = {
     'Schalte Erinnerungen ein, dann kann dich dieses Telefon antippen, wenn diese Frage aufgeht.',
   'notify.primerGo': 'Einschalten',
   'notify.primerSkip': 'Nicht jetzt',
+  'notify.firstTitle': 'Abends erinnert werden?',
+  'notify.firstBody':
+    'Did I kann dich erinnern, wenn eine Frage fällig ist, und dir sagen, wenn dir jemand aus Freunden oder Familie ein Did you oder einen Jubel schickt. Du kannst das jederzeit in den Einstellungen ändern.',
+  'pings.offNote':
+    'Mitteilungen sind auf diesem Handy aus. Diese Schalter greifen, sobald du sie einschaltest.',
+  'pings.openSettings': 'Handy-Einstellungen öffnen',
 }

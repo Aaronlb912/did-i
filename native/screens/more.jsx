@@ -774,7 +774,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 // Pushes come from the server, which reads these switches from the synced prefs.
 const PUSH_KINDS = new Set(['sends', 'cheers', 'friends'])
 
-function PingKinds({ colors }) {
+function PingKinds({ colors, on }) {
   const prefs = usePrefs()
   const [miss, setMiss] = useState('')
 
@@ -798,6 +798,7 @@ function PingKinds({ colors }) {
   return (
     <>
       <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
+      {on ? null : <SetNote colors={colors}>{t('pings.offNote')}</SetNote>}
       <SetCard colors={colors}>
         {PING_KINDS.map((kind, i) => (
           <SetSwitch
@@ -828,11 +829,15 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
     <ScreenShell title={t('pings.title')} colors={colors}>
       <Meta colors={colors}>{t('pings.body')}</Meta>
       {onAskPings ? (
-        <DidButton colors={colors} label={on ? t('pings.on') : t(labelKey)} onPress={onAskPings} />
+        <DidButton
+          colors={colors}
+          label={on ? t('pings.on') : labelKey === 'pings.state.blocked' ? t('pings.openSettings') : t(labelKey)}
+          onPress={onAskPings}
+        />
       ) : (
         <Meta colors={colors}>{t('pings.noBrowser')}</Meta>
       )}
-      <PingKinds colors={colors} />
+      <PingKinds colors={colors} on={on} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
