@@ -17,7 +17,7 @@ function Glass({ answered, style }) {
     if (!filled || reduce) return
     scale.value = withSequence(
       withTiming(1.7, { duration: 140, easing: Easing.out(Easing.quad) }),
-      withSpring(1, { damping: 10, stiffness: 260 }),
+      withSpring(1, { damping: 10, stiffness: 260, mass: 1 }),
     )
   }, [answered, reduce, scale])
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))

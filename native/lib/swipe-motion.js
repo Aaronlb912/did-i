@@ -65,7 +65,10 @@ function between(list, depth) {
 
 // The card rising into the face settles on a soft spring. It may pass its
 // place by a hair, so a depth just under 0 grows a touch past full size.
-export const RISE_SPRING = { stiffness: 170, damping: 15 }
+// Reanimated 4 gives a spring with no mass a mass of 4, which makes the same
+// damping four times as bouncy as it reads. Every spring here names mass 1,
+// as the prototypes the captain picked from did.
+export const RISE_SPRING = { stiffness: 170, damping: 15, mass: 1 }
 
 // Scale, drop and opacity for a card at a depth, fractional while it moves up.
 export function depthLook(depth) {

@@ -23,7 +23,7 @@ import { fonts } from '../theme.js'
 import { RollNumber } from './RollNumber.jsx'
 import { KeyButton } from './ui.jsx'
 
-const ENTER = { damping: 24, stiffness: 260 }
+const ENTER = { damping: 24, stiffness: 260, mass: 1 }
 const FROM_Y = 90
 const OUT_MS = 200
 // A toast goes if it is swiped this far sideways, or down by SWIPE_DOWN.
@@ -32,7 +32,7 @@ const SWIPE_DOWN = 36
 const FLING = 800
 // A beat between toasts, so the next reads as a new one.
 const GAP_MS = 140
-const POP = { damping: 9, stiffness: 320 }
+const POP = { damping: 9, stiffness: 320, mass: 1 }
 const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5

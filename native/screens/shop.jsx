@@ -1012,7 +1012,7 @@ const GEM_FLY_MS = 560
 const GEM_SIZE = 18
 // A credit this long after the tap still counts as that pack's.
 const GEM_BUY_WINDOW_MS = 10 * 60 * 1000
-const BALANCE_POP = { damping: 10, stiffness: 300 }
+const BALANCE_POP = { damping: 10, stiffness: 300, mass: 1 }
 
 /**
  * The balance shown on the gem page. When gems arrive after a pack was bought
