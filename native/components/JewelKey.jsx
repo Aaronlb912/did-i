@@ -4,6 +4,9 @@ import { t } from '../../src/lib/i18n.js'
 import { fonts } from '../theme.js'
 
 const SEEN = 'did-i-jewel-key'
+// The night of the first answer. The legend waits for a later night, so the
+// first night's payoff is not crowded by a lesson.
+const FIRST_NIGHT = 'did-i-jewel-key-first'
 
 export function jewelKeySeen() {
   try {
@@ -11,6 +14,18 @@ export function jewelKeySeen() {
   } catch {
     return true
   }
+}
+
+/** True from the night after the first answer on. */
+export function jewelKeyNight(dateIso, answeredTonight) {
+  try {
+    const first = localStorage.getItem(FIRST_NIGHT)
+    if (first) return first < dateIso
+    if (answeredTonight && dateIso) localStorage.setItem(FIRST_NIGHT, dateIso)
+  } catch {
+    // No storage, no legend. The dots still read on their own.
+  }
+  return false
 }
 
 function markSeen() {
@@ -21,7 +36,7 @@ function markSeen() {
   }
 }
 
-// What the dot on each question pill means. Shown once, after the first swipe.
+// What the dot on each question pill means. Shown once, on a night after the first.
 export function JewelKey({ colors, onDone }) {
   const rows = [
     { color: colors.on, label: t('jewelKey.did') },
@@ -62,7 +77,7 @@ export function JewelKey({ colors, onDone }) {
 
 const styles = StyleSheet.create({
   box: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 10 },
-  title: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', marginBottom: 10 },
+  title: { fontFamily: fonts.uiSemi, fontSize: 15, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '50%' },
   dot: { width: 9, height: 9, borderRadius: 5 },

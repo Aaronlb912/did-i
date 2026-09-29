@@ -2,6 +2,7 @@ import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { t } from './i18n.js'
 import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
+import { pingOn } from './prefs.js'
 import { streakRiskFire } from './streak-risk.js'
 
 const timers = []
@@ -91,8 +92,8 @@ export async function armLampPings(book, now = new Date()) {
   if (!book || !allowed) return
   if (isNativeHall()) return
   const reg = await readyWorker()
-  const fires = [...upcomingPings(book, now)]
-  const risk = streakRiskFire(book, now)
+  const fires = pingOn('reminders') ? [...upcomingPings(book, now)] : []
+  const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
   if (risk) {
     fires.push({ ...risk, question: t('streak.riskBody') })
   }

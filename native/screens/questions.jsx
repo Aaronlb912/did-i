@@ -5,10 +5,8 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
-import { activeLook } from '../../src/lib/active-look.js'
 import {
   activeDeadline,
   blankLamp,
@@ -31,18 +29,13 @@ import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
-import { useTheme } from '../../src/lib/prefs.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import {
-  boardDate,
-  formatBoardDate,
-  isDueOn,
-  recentPeriodKeys,
-} from '../../src/lib/recurrence.js'
-import { NightStrip } from '../components/NightStrip.jsx'
+import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
+import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
+import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
@@ -62,8 +55,11 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { UndoToast } from '../components/UndoToast.jsx'
+import { offerPingPrimer } from '../lib/ping-primer.js'
+import { useUndoToast } from '../lib/toast-queue.js'
+import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import {
+  AppTextInput,
   ChipRow,
   DidButton,
   Field,
@@ -72,14 +68,13 @@ import {
   Page,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
-import { fonts, hallColors } from '../theme.js'
+import { fonts, sectionLabel } from '../theme.js'
+import { useHallColors } from '../hooks/useHallColors.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
-  const theme = useTheme()
-  const look = activeLook(book)
-  const colors = hallColors(look, theme)
+  const colors = useHallColors(book)
   const clock = useMemo(() => new Date(), [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
@@ -153,6 +148,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 if (onOpen) onOpen(row.boardId, row.lamp.id)
                 else goHash('/lamp', { id: row.lamp.id })
               }}
+              android_ripple={ripple(colors.panel3)}
               style={({ pressed }) => [
                 styles.lampItem,
                 index > 0 && { borderTopWidth: 1, borderTopColor: colors.lineSoft },
@@ -190,12 +186,11 @@ function SearchBox({ value, onChange, colors }) {
   return (
     <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
       <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={value}
         onChangeText={onChange}
         placeholder={t('questions.searchPh')}
-        placeholderTextColor={colors.inkDim}
-        selectionColor={colors.on}
         accessibilityLabel={t('questions.searchPh')}
         autoCorrect={false}
         returnKeyType="search"
@@ -230,6 +225,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
+  // The undo toast joins the one line above the tab bar; shake still undoes.
+  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
+  useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
@@ -449,7 +447,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           onPick={pick}
         />
       </BoardShell>
-      <UndoToast undo={undo} onUndo={takeBack} colors={colors} />
     </View>
   )
 }
@@ -471,6 +468,7 @@ export function SearchScreen({ book }) {
           <Pressable
             key={lamp.id}
             onPress={() => goHash('/lamp', { id: lamp.id })}
+            android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
           >
             <View style={styles.lampCopy}>
@@ -575,7 +573,8 @@ function TopicPick({ value, known, onChange, colors }) {
           ))}
         </View>
       ) : null}
-      <TextInput
+      <AppTextInput
+        colors={colors}
         value={draft}
         onChangeText={(text) => {
           // A comma finishes a topic, like pressing done.
@@ -589,7 +588,6 @@ function TopicPick({ value, known, onChange, colors }) {
         onSubmitEditing={addTyped}
         onBlur={addTyped}
         placeholder={t('hang.topicAdd')}
-        placeholderTextColor={colors.inkDim}
         returnKeyType="done"
         accessibilityLabel={t('hang.topicAdd')}
         style={[styles.foldInput, { borderColor: colors.line, backgroundColor: colors.panel, color: colors.ink }]}
@@ -602,12 +600,11 @@ function FoldInput({ label, colors, multiline, ...props }) {
   return (
     <View style={styles.foldField}>
       <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{label}</Text>
-      <TextInput
+      <AppTextInput
+        colors={colors}
         {...props}
         multiline={multiline}
         accessibilityLabel={label}
-        placeholderTextColor={colors.inkDim}
-        selectionColor={colors.on}
         style={[
           styles.foldInput,
           multiline && styles.foldInputMulti,
@@ -722,9 +719,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     if (onSaveTo) onSaveTo(target, next, sourceBook)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
       playClick()
       goHash('/lamp', { id: next.id })
+      offerPingPrimer(newTime, colors)
       return
     }
     // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
@@ -734,7 +733,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
     else feelTap('hall-on')
     leave.current = setTimeout(
-      () => goHash(wasEmpty ? '/tonight' : '/lamps'),
+      () => {
+        goHash(wasEmpty ? '/tonight' : '/lamps')
+        offerPingPrimer(newTime, colors)
+      },
       reduce ? LAND_HOLD_STILL : LAND_HOLD,
     )
   }
@@ -754,6 +756,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       date={shellDate(book, clock)}
       colors={colors}
       showAdd
+      back={hang.editing ? undefined : false}
+      leftAction={hang.editing ? undefined : { label: t('hang.cancel'), onPress: cancel }}
+      rightAction={hang.editing ? undefined : { label: t('hang.addIt'), onPress: save, disabled: !ready }}
     >
       <HangCard
         ref={inputRef}
@@ -907,7 +912,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           <HangFold
             label={t('hang.tag')}
             value={tagName}
-            icon="tag"
+            icon="folder"
             open={open === 'tag'}
             onToggle={() => fold('tag')}
             colors={colors}
@@ -1031,17 +1036,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
         </Text>
       ) : null}
 
-      <View style={styles.hangActions}>
-        <DidButton
-          label={hang.editing ? t('hang.save') : t('hang.addIt')}
-          onPress={save}
-          colors={colors}
-          dim={!ready}
-        />
-        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
-          <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
-        </Pressable>
-      </View>
+      {hang.editing ? (
+        <View style={styles.hangActions}>
+          <DidButton label={t('hang.save')} onPress={save} colors={colors} dim={!ready} />
+          <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
+            <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {existing && sourceBook && !stamp ? (
         <LampManage
@@ -1062,10 +1064,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const stripKeys = useMemo(
-    () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
-    [lamp, dateIso],
-  )
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
 
   function change(next) {
@@ -1101,7 +1099,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
         <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
-        <NightStrip book={lampBook} lamp={lamp} keys={stripKeys} colors={colors} />
+        <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
 
       <View style={styles.tiles}>
@@ -1118,11 +1116,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       </View>
 
-      <DidButton label={t('lamp.edit')} onPress={() => editAt('')} colors={colors} />
-      <View style={styles.actions}>
-        <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
-        <KeyButton label={t('lamp.done')} onPress={() => goHash('/lamps')} colors={colors} />
-      </View>
+      <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
 
       <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
       <SetCard colors={colors}>
@@ -1140,7 +1134,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="tag" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
+        <SetRow colors={colors} icon="folder" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
         <SetRow
           colors={colors}
           icon="flag"
@@ -1179,7 +1173,7 @@ const styles = StyleSheet.create({
   topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  pickCount: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700', flexGrow: 1 },
+  pickCount: { fontFamily: fonts.uiBold, fontSize: 15, flexGrow: 1 },
   pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pickBox: {
     width: 24,
@@ -1189,9 +1183,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pickTick: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '800', lineHeight: 16 },
+  pickTick: { fontFamily: fonts.uiBold, fontSize: 14, lineHeight: 16 },
   dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 40, paddingHorizontal: 16, justifyContent: 'center' },
-  dropText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  dropText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   blockLabel: {
     fontFamily: fonts.mono,
     fontSize: 11,
@@ -1210,7 +1204,7 @@ const styles = StyleSheet.create({
   lampItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 },
   lampDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   lampCopy: { flex: 1, minWidth: 0, gap: 2 },
-  lampName: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', lineHeight: 20 },
+  lampName: { fontFamily: fonts.uiSemi, fontSize: 15, lineHeight: 20 },
   lampQ: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   lampMeta: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.3 },
   lampChev: { fontFamily: fonts.ui, fontSize: 22 },
@@ -1249,7 +1243,7 @@ const styles = StyleSheet.create({
   },
   pillText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   foldField: { gap: 6 },
-  foldCap: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  foldCap: { ...sectionLabel, lineHeight: 18 },
   foldCapGap: { marginTop: 6 },
   foldInput: {
     borderWidth: 1,
@@ -1264,7 +1258,6 @@ const styles = StyleSheet.create({
   cancel: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16 },
   cancelText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   lampCard: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
   lampStatus: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 10 },
   tiles: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 12 },

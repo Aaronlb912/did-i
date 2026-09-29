@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { starterBlank } from '../../src/lib/starters.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { fonts } from '../theme.js'
+import { fonts, sectionLabel } from '../theme.js'
 
 const WAVE_STEP = 70
 const WOBBLE = [-1, 1, -0.6, 0.6, 0]
@@ -107,7 +107,7 @@ export function WaveLead({ text, wave, colors, style }) {
             {
               color: glow[index].interpolate({
                 inputRange: [0, 1],
-                outputRange: [colors.inkSoft, colors.on],
+                outputRange: [colors.ink, colors.on],
               }),
             },
           ]}
@@ -157,7 +157,7 @@ export function IdeaPicks({ label, starters, picked, onPick, tilt, colors }) {
 const styles = StyleSheet.create({
   waveRow: { flexDirection: 'row', flexWrap: 'wrap' },
   wrap: { gap: 8, marginTop: 12, marginBottom: 12 },
-  label: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
+  label: { ...sectionLabel, marginBottom: 2 },
   picks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pick: {
     borderWidth: 1,

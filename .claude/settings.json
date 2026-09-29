@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/precommit-check.js",
+            "command": "node .claude/hooks/precommit-check.cjs",
             "if": "Bash(git commit*)",
             "timeout": 120,
             "statusMessage": "Running npm run check before commit..."
@@ -20,11 +20,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/i18n-reminder.js"
+            "command": "node .claude/hooks/i18n-reminder.cjs"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/supabase-audit-reminder.js"
+            "command": "node .claude/hooks/supabase-audit-reminder.cjs"
           }
         ]
       }

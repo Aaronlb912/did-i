@@ -281,7 +281,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     items: [],
     footer: '',
     didLabel: 'Did',
-    nopeLabel: 'Did not',
+    nopeLabel: 'Nope',
     openLabel: 'Tonight',
     left: 0,
     openUri: 'didi://tonight',
@@ -434,7 +434,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                       clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
                     >
                       <TextWidget
-                        text={p.nopeLabel || 'Did not'}
+                        text={p.nopeLabel || 'Nope'}
                         style={{ fontSize: compact ? 13 : 15, fontWeight: '700', color: C.ink, textAlign: 'center' }}
                         maxLines={1}
                       />

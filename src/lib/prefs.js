@@ -10,6 +10,10 @@ const listeners = new Set()
 export const THEME_IDS = ['dark', 'light', 'phone']
 export const CLOCK_IDS = ['phone', '12', '24']
 export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
+// Notification kinds a person can turn off. The first three are scheduled on
+// the phone; the rest are pushes, and the server reads prefs.pingsOff too
+// (push_wanted in supabase/push.sql), so keep the names in step.
+export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'cheers', 'friends']
 
 function blankPrefs() {
   return {
@@ -19,9 +23,11 @@ function blankPrefs() {
     lessMotion: false,
     diagnosticsAsked: false,
     shareDiagnostics: false,
+    matchWallpaper: false,
     widgetLookMode: 'tag',
     widgetLookId: 'lime',
     widgetOpenOnly: false,
+    pingsOff: [],
   }
 }
 
@@ -48,6 +54,7 @@ function cleanPrefs(raw) {
   if (raw?.lessMotion === true) next.lessMotion = true
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
+  if (raw?.matchWallpaper === true) next.matchWallpaper = true
   if (raw?.widgetLookMode === 'pick') next.widgetLookMode = 'pick'
   if (typeof raw?.widgetLookId === 'string') {
     const id = raw.widgetLookId.trim()
@@ -78,6 +85,7 @@ function cleanPrefs(raw) {
     }
   }
   if (raw?.widgetOpenOnly === true) next.widgetOpenOnly = true
+  if (Array.isArray(raw?.pingsOff)) next.pingsOff = PING_KINDS.filter((kind) => raw.pingsOff.includes(kind))
   return next
 }
 
@@ -124,6 +132,10 @@ export function uses24h() {
     clockCache = clock === '24' || (clock === 'phone' && phoneUses24h())
   }
   return clockCache
+}
+
+export function pingOn(kind) {
+  return !readPrefs().pingsOff.includes(kind)
 }
 
 export function onPrefs(fn) {

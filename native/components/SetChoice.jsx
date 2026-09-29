@@ -24,10 +24,10 @@ const androidReady = Platform.OS === 'android' && 'DropdownMenu' in Compose && '
  * bottom sheet with a drag handle. Both sheets keep clear of the home
  * indicator.
  */
-export function SetChoice({ label, sub, title, options, selected, onSelect, last, colors }) {
+export function SetChoice({ label, sub, title, icon, tint, options, selected, onSelect, last, colors }) {
   const value = options.find((option) => option.id === selected)?.label || ''
   const kind = options.length <= MENU_MAX ? 'menu' : 'sheet'
-  const props = { label, sub, title: title || label, value, options, selected, onSelect, last, colors }
+  const props = { label, sub, title: title || label, icon, tint, value, options, selected, onSelect, last, colors }
   if (iosReady) return kind === 'menu' ? <IosMenu {...props} /> : <IosSheet {...props} />
   if (androidReady) return kind === 'menu' ? <AndroidMenu {...props} /> : <AndroidSheet {...props} />
   return <PlainSheet {...props} />
@@ -37,13 +37,13 @@ function useScheme() {
   return useTheme() === 'light' ? 'light' : 'dark'
 }
 
-function IosMenu({ label, sub, value, options, selected, onSelect, last, colors }) {
+function IosMenu({ label, sub, icon, tint, value, options, selected, onSelect, last, colors }) {
   const { Host, Menu, Picker, Rectangle, Text: SwiftText } = SwiftUI
   const { contentShape, foregroundStyle, frame, pickerStyle, shapes, tag } = SwiftMods
   const scheme = useScheme()
   return (
     <View>
-      <SetRow colors={colors} label={label} sub={sub} value={value} chevron last={last} />
+      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} />
       <Host style={StyleSheet.absoluteFill} colorScheme={scheme} seedColor={colors.on}>
         <Menu
           label={
@@ -69,7 +69,7 @@ function IosMenu({ label, sub, value, options, selected, onSelect, last, colors 
   )
 }
 
-function IosSheet({ label, sub, title, value, options, selected, onSelect, last, colors }) {
+function IosSheet({ label, sub, title, icon, tint, value, options, selected, onSelect, last, colors }) {
   const { BottomSheet, Form, Host, Picker, Section, Text: SwiftText } = SwiftUI
   const {
     environment,
@@ -89,7 +89,7 @@ function IosSheet({ label, sub, title, value, options, selected, onSelect, last,
   const rowBg = scheme === 'dark' ? colors.panel2 : colors.panel
   return (
     <View>
-      <SetRow colors={colors} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
+      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
       <Host style={styles.sheetHost} colorScheme={scheme} seedColor={colors.on}>
         <BottomSheet isPresented={open} onIsPresentedChange={setOpen}>
           <Form
@@ -126,7 +126,7 @@ function IosSheet({ label, sub, title, value, options, selected, onSelect, last,
   )
 }
 
-function AndroidMenu({ label, sub, value, options, selected, onSelect, last, colors }) {
+function AndroidMenu({ label, sub, icon, tint, value, options, selected, onSelect, last, colors }) {
   const { DropdownMenu, DropdownMenuItem, Host, Text: ComposeText } = Compose
   const scheme = useScheme()
   const [open, setOpen] = useState(false)
@@ -134,7 +134,7 @@ function AndroidMenu({ label, sub, value, options, selected, onSelect, last, col
   // along its bottom edge, so it opens under the row the way Material's do.
   return (
     <View>
-      <SetRow colors={colors} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
+      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
       <Host style={styles.menuAnchor} colorScheme={scheme} pointerEvents="none">
         <DropdownMenu expanded={open} onDismissRequest={() => setOpen(false)} color={colors.panel2}>
           <DropdownMenu.Items>
@@ -170,7 +170,7 @@ function AndroidMenu({ label, sub, value, options, selected, onSelect, last, col
   )
 }
 
-function AndroidSheet({ label, sub, title, value, options, selected, onSelect, last, colors }) {
+function AndroidSheet({ label, sub, title, icon, tint, value, options, selected, onSelect, last, colors }) {
   const { Host, ModalBottomSheet, RNHostView } = Compose
   const scheme = useScheme()
   const insets = useSafeAreaInsets()
@@ -191,7 +191,7 @@ function AndroidSheet({ label, sub, title, value, options, selected, onSelect, l
 
   return (
     <View>
-      <SetRow colors={colors} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
+      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
       {open ? (
         <Host style={styles.sheetHost} colorScheme={scheme}>
           <ModalBottomSheet
@@ -223,11 +223,11 @@ function AndroidSheet({ label, sub, title, value, options, selected, onSelect, l
   )
 }
 
-function PlainSheet({ label, sub, title, value, options, selected, onSelect, last, colors }) {
+function PlainSheet({ label, sub, title, icon, tint, value, options, selected, onSelect, last, colors }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <SetRow colors={colors} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
+      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
       {open ? (
         <SetSheet colors={colors} title={title} onClose={() => setOpen(false)}>
           {options.map((option) => (

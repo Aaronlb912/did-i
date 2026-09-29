@@ -26,11 +26,15 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
-import { MarkToast } from './components/MarkToast.jsx'
+import { ToastHost } from './components/ToastHost.jsx'
+import { FlyHost } from './components/FlyHost.jsx'
+import { useMarksHeld } from './lib/mark-hold.js'
+import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
+import { reportRejection } from '../src/lib/report.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { fonts } from './theme.js'
 
@@ -146,6 +150,14 @@ export function AppShell() {
   usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
+  const marksHeld = useMarksHeld()
+  // A new mark joins the toast line once the night's celebration is over.
+  const mark = marksHeld ? null : app.markNote
+  const clearMark = app.clearMark
+  useEffect(() => {
+    if (!mark) return
+    showToast({ id: `mark:${mark.id || 'mark'}`, kind: 'mark', mark, ms: 5200, onGone: clearMark })
+  }, [clearMark, mark])
   const account = useAccount()
   const colors = useHallColors(app.book)
   const gated = authGated(route.path, account)
@@ -155,7 +167,7 @@ export function AppShell() {
   const askPings = useCallback(async () => {
     const next = await requestPings()
     setPingState(next)
-    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book)
+    if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
   }, [app.book, app.shelf])
 
   useEffect(() => {
@@ -181,7 +193,7 @@ export function AppShell() {
     if (!app.book) return undefined
     let alive = true
     afterNativeBridgeReady(() => {
-      if (alive) armLampPings(app.shelf?.boards || app.book)
+      if (alive) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
     })
     return () => {
       alive = false
@@ -269,18 +281,27 @@ export function AppShell() {
               key={path}
               name={path}
               component={RouteScreen}
-              options={OWN_BACK.has(path) ? { gestureEnabled: false } : undefined}
+              options={
+                path === '/add'
+                  ? { presentation: 'formSheet', sheetGrabberVisible: true }
+                  : OWN_BACK.has(path)
+                    ? { gestureEnabled: false }
+                    : undefined
+              }
             />
           ))}
         </Stack.Navigator>
       </ScreenProps.Provider>
       <Slot>
-        <MarkToast mark={app.markNote} onClose={app.clearMark} colors={colors} />
+        <ToastHost colors={colors} />
       </Slot>
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
         <SheetHost />
         <CheerBurstHost />
+        <Slot>
+          <FlyHost />
+        </Slot>
       </View>
     </View>
   )

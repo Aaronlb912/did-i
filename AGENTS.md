@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Did I — a nightly habit app. One question at a time, tap Did or Did not (nope),
+Did I — a nightly habit app. One question at a time, tap Did or Nope,
 streaks, tags, family, shop (coins/gems), cheers, home-screen widgets. Two
 programs share one repo:
 
@@ -20,6 +20,10 @@ theme) lives in `src/lib/` and is imported by both the website and the native
 shell.
 
 ## Commands
+
+Note: `package.json` has `"type": "module"`, so Node scripts run directly
+(e.g. `.claude/hooks/*`) must use `.cjs` if they use `require()`, or use ESM
+`import` syntax if they stay `.js`.
 
 ```
 npm start                    # website dev server, http://127.0.0.1:48741/
@@ -38,12 +42,25 @@ npm run expo:android         # dev client, Android
 npm run expo:ios             # dev client, iOS (needs a Mac)
 ```
 
+On Android dev-client builds, Expo's floating Tools button sits over the header
+menu (grid) button and takes centre taps, opening the Expo dev menu instead of
+the app menu. Drag the bubble away, tap the button off-centre, or test with a
+release build (`npx expo run:android --variant release`).
+
 Locales (9 files in `src/locales/`, English is the fallback):
 ```
 npm run locales:refresh      # merge additions + sync
 npm run locales:report       # coverage report
 npm run locales:missing      # list missing keys
 ```
+The checked-in `src/locales/*.js` files are the source of truth for existing
+translations, not `scripts/i18n-additions.mjs` / `legal-i18n.mjs` /
+`web-marketing.mjs` / `web-marketing-locales.mjs` / `scripts/locale-gaps/*.json`
+(those feed the refresh but must themselves match the checked-in files, or a
+refresh will silently rewrite translations back to stale/English copy). A
+`scripts/check.mjs` test runs the refresh and fails if it would change
+`src/locales`; if it does, fix the source/data files above, not the checked-in
+locale files.
 
 Supabase:
 ```
@@ -122,6 +139,12 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`
   asserts this; don't change it.
+- **Fonts**: `fonts.ui` is a fixed Medium face (`native/fonts.js`) — iOS renders
+  the exact face a `fontFamily` names regardless of `fontWeight`, so pairing
+  `fonts.ui` with `fontWeight` 600+ silently renders as Medium. Use
+  `fonts.uiSemi` / `fonts.uiBold` instead, with no `fontWeight`.
+  `npm run lint` (`scripts/lint-store.mjs`) fails on the `fonts.ui` + 600+
+  pairing.
 - Whole-feature rules: `.cursor/rules/whole-feature.mdc`. New routes go in
   `ROUTES`. Keep `docs/not-yet.md` and `docs/launch-checklist.md` current.
 

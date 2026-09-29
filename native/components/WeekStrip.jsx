@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   shiftBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   shift: { fontSize: 20, lineHeight: 22 },
   labelHit: { flex: 1, alignItems: 'center' },
-  open: { fontFamily: fonts.ui, fontSize: 12.5, fontWeight: '600' },
+  open: { fontFamily: fonts.uiSemi, fontSize: 12.5 },
   days: { flexDirection: 'row', justifyContent: 'space-between' },
   day: { alignItems: 'center', gap: 4, flex: 1 },
   dayLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.4 },

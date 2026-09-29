@@ -125,6 +125,10 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
 - **Cheer burst fidelity.** All twelve cheers play on the Android emulator
   (25 Sep 2026, Shop previews and a Did swipe). Not yet seen on an iPhone.
   Web CSS animations may still feel snappier on some cheers.
+- **Collection screen, no device pass.** The single grid, worn check badge,
+  tap-to-wear, and the native segmented control (`KitSegment`) are covered by
+  code review only. Check Looks, Cheers, and Buddies on iOS and Android, in
+  dark and light.
 - **iOS widget, untested.** Per-question tag header, Next pill, fit-to-card
   question, and the buddy redrawn from the app SVG are covered by `npm test`
   only. Needs a TestFlight build to confirm the Next button, the triangle
@@ -137,8 +141,19 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   transition, and system back pops them. The stable native stack in
   react-native-screens 4.28 does not feed the gesture's progress to the
   screen transition, so the previous screen does not slide into view while
-  the finger is down; it pops on release. Only its experimental stack does.
-  Revisit when the stable stack supports it.
+  the finger is down; it pops on release. Checked again 2026-09-28: the 4.29
+  nightlies still do not, and the experimental Stack v5 (5.0.0-alpha) has only
+  a skeleton transition API (its presets are open PRs #4660 and #4670) and no
+  React Navigation integration yet. Skipped for launch as an Android fast
+  follow; revisit when Stack v5 ships with React Navigation support.
+- **Three older springs still run at Reanimated 4's default mass of 4.**
+  Reanimated 4 gives a spring with no `mass` a mass of 4, so the damping they
+  were tuned with reads four times as bouncy. The motion pass names `mass: 1`
+  on its own springs; these predate it and were left as they are: the menu's
+  `OPEN_SPRING` (`native/components/MastMenu.jsx`), the swipe card's release
+  `SPRING` (`native/components/SwipeCard.jsx`), and the done card's streak pop
+  (`native/components/DoneCard.jsx`). Name their mass once someone has looked
+  at each on a phone.
 - **Ask-at time picker is still a hand-made popup.** The hour, minute and
   AM/PM selects on Add (`HangSelect`) open a centered React Native list.
   Settings pickers are native menus and sheets now; this one should become

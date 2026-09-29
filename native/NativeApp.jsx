@@ -14,7 +14,6 @@ import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
 import { initWidgetsOnLaunch } from './widget-bridge.js'
 import { Boundary } from './components/Boundary.jsx'
 import { Slot } from './components/Slot.jsx'
-import { DiagnosticsAsk } from './components/DiagnosticsAsk.jsx'
 import { StreakMomentHost } from './components/StreakMoment.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
 import { goBack, goFromPush, goHash } from './navigation/hash.js'
@@ -78,9 +77,6 @@ export function NativeApp() {
           <ThemedStatusBar />
           <Boundary>
             <RootNavigator />
-            <Slot>
-              <DiagnosticsAsk />
-            </Slot>
             <Slot>
               <StreakMomentHost />
             </Slot>

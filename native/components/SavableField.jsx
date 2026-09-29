@@ -55,10 +55,9 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   saved: {
-    fontFamily: fonts.ui,
+    fontFamily: fonts.uiSemi,
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '600',
     textAlign: 'right',
   },
 })

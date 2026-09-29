@@ -81,6 +81,9 @@ import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
+import { MenuIcon } from '../components/MenuIcon.jsx'
+import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
+import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -110,8 +113,9 @@ function OfflineLine({ colors }) {
 function BlockModal({ person, colors, onClose, onDone }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
+          accessible={false}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
@@ -148,11 +152,45 @@ function BlockModal({ person, colors, onClose, onDone }) {
   )
 }
 
+function PreviewRow({ icon, title, body, colors }) {
+  return (
+    <View style={[styles.previewRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View style={[styles.previewIcon, { backgroundColor: colors.panel2 }]}>
+        <MenuIcon name={icon} color={colors.on} size={18} stroke />
+      </View>
+      <View style={styles.previewCopy}>
+        <Text style={[styles.previewTitle, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.previewBody, { color: colors.inkDim }]}>{body}</Text>
+      </View>
+    </View>
+  )
+}
+
+// Signed out, People was a dead end. A preview of what it does, then the
+// full sign-in (Apple, Google and email) right here.
 function NeedAccount({ kicker, title, colors }) {
+  const auth = useAuthSignIn({})
   return (
     <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
-      <DidButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
+      <View style={styles.previewList}>
+        <PreviewRow
+          icon="people"
+          title={t('people.previewCheerTitle')}
+          body={t('people.previewCheerBody')}
+          colors={colors}
+        />
+        <PreviewRow
+          icon="home"
+          title={t('people.previewFamilyTitle')}
+          body={t('people.previewFamilyBody')}
+          colors={colors}
+        />
+      </View>
+      <AuthEmailCard colors={colors} auth={auth} body="" />
+      <View style={styles.previewOther}>
+        <KeyButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
+      </View>
     </ScreenShell>
   )
 }
@@ -271,8 +309,9 @@ function AddPop({ kicker, colors, onClose, children }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardLift>
-        <Pressable style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
+            accessible={false}
             style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
             onPress={(event) => event.stopPropagation()}
           >
@@ -1371,6 +1410,13 @@ export function SentScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  previewList: { gap: 8, marginTop: 12, marginBottom: 4 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },
+  previewIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  previewCopy: { flex: 1, minWidth: 0, gap: 2 },
+  previewTitle: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  previewBody: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
+  previewOther: { marginTop: 14 },
   joinCard: { alignItems: 'flex-end' },
   joinBare: { gap: 4 },
   joinField: { flex: 1 },
@@ -1393,7 +1439,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   personCopy: { gap: 4 },
-  personTitle: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
+  personTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },
   personNote: { fontFamily: fonts.ui, fontSize: 13 },
   personActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   wallRow: {
@@ -1416,12 +1462,12 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   tile: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 14, gap: 4, minHeight: 96 },
   tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
-  tileValue: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700', lineHeight: 21 },
+  tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
   glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
   stripItem: { width: 64, alignItems: 'center', gap: 4 },
-  stripName: { fontFamily: fonts.ui, fontSize: 12, fontWeight: '600', maxWidth: 64 },
+  stripName: { fontFamily: fonts.uiSemi, fontSize: 12, maxWidth: 64 },
   stripLine: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', maxWidth: 64 },
   famCard: {
     flexDirection: 'row',
@@ -1433,7 +1479,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   famCopy: { flex: 1, minWidth: 0, gap: 3 },
-  famName: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700' },
+  famName: { fontFamily: fonts.uiBold, fontSize: 16 },
   famLine: { fontFamily: fonts.ui, fontSize: 13 },
   chev: { fontFamily: fonts.ui, fontSize: 22 },
   stockBar: {
@@ -1445,6 +1491,6 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   stockCopy: { flex: 1, minWidth: 0, gap: 3 },
-  stockValue: { fontFamily: fonts.ui, fontSize: 16, fontWeight: '700' },
+  stockValue: { fontFamily: fonts.uiBold, fontSize: 16 },
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
 })

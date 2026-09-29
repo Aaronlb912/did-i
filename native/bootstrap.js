@@ -4,9 +4,10 @@
 // these the cloud sync throws before it ever pushes the shelf back.
 
 import Constants from 'expo-constants'
-import { Appearance, AppState, Platform } from 'react-native'
+import { AccessibilityInfo, Appearance, AppState, Platform } from 'react-native'
 import { hookErrorReport } from '../src/lib/report.js'
 import { devServerUrl, makeLocation } from './location-shim.js'
+import { phoneMatchMedia } from './lib/reduce-media.js'
 
 // Hermes has no document. Shared web code checks typeof document, but some
 // paths still touch document.documentElement after the guard.
@@ -168,15 +169,7 @@ win.addEventListener = addListener
 win.removeEventListener = removeListener
 win.dispatchEvent = fire
 
-if (typeof win.matchMedia !== 'function') {
-  win.matchMedia = () => ({
-    matches: false,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    addListener: () => {},
-    removeListener: () => {},
-  })
-}
+if (typeof win.matchMedia !== 'function') win.matchMedia = phoneMatchMedia(AccessibilityInfo)
 
 export function emitHashChange(hash) {
   win.location.hash = hash

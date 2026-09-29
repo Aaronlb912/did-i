@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   go: { flex: 1, minWidth: 0, gap: 3, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12 },
-  title: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
+  title: { fontFamily: fonts.uiBold, fontSize: 15 },
   body: { fontFamily: fonts.ui, fontSize: 13 },
   cta: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   x: {

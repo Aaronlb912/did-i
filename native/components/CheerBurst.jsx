@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { svgParts } from '../lib/svg-parts.js'
+import { takeCheerAim } from '../lib/cheer-origin.js'
 import { holdFor, popsFor } from '../../src/lib/cheer-pops.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -1542,8 +1543,11 @@ export function CheerBurst() {
       const stage = event.detail?.stage || 1
       const look = event.detail?.look || 'lime'
       const pops = popsFor(kind, stage)
-      setBurst({ kind, stage, look, pops, preview, key: Date.now() })
-      feelTap(preview ? 'did' : 'hall-on')
+      // A real cheer comes from a Did, which already gave its one success
+      // haptic; only a shop preview needs its own.
+      const aim = preview ? null : takeCheerAim()
+      setBurst({ kind, stage, look, pops, preview, aim, key: Date.now() })
+      if (preview) feelTap('did')
     }
     window.addEventListener('did-i-cheer', onCheer)
     return () => window.removeEventListener('did-i-cheer', onCheer)
@@ -1566,13 +1570,18 @@ export function CheerBurst() {
   const stageTop = burst.preview ? insets.top + 12 : insets.top + CHEER_TOP
   const stageH = Math.max(180, winH - stageTop - navBottom)
   const stageW = winW
+  // From the answered card: slide the stage so its first burst point
+  // (the middle, 42% down) lands on the card.
+  const shift = burst.aim
+    ? { left: burst.aim.x - stageW * 0.5, top: burst.aim.y - stageH * 0.42 }
+    : { left: 0, top: stageTop }
 
   const layerStyle = burst.preview ? [styles.layer, styles.layerPreview] : styles.layer
 
   return (
     <View pointerEvents="none" style={layerStyle} collapsable={false}>
       <Slot key={burst.key}>
-        <View style={[styles.stage, { top: stageTop, width: stageW, height: stageH }]}>
+        <View style={[styles.stage, { top: shift.top, left: shift.left, width: stageW, height: stageH }]}>
           {screenPop
             ? screenPop.bits
                 .filter((bit) => bit.screen)

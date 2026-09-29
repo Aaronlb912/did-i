@@ -11,7 +11,7 @@ import {
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
-import { shortLabel } from './board-json.js'
+import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
 import { uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
@@ -63,6 +63,23 @@ function nightMarks(books, iso, today) {
     miss: dueCount > 0 && !clear && iso < today,
     empty: dueCount === 0,
   }
+}
+
+// What tomorrow night holds, for the done card: how many questions it asks
+// and the earliest time one opens. `from` is empty when any of them is open
+// all evening, since "from 8:00 PM" would then be wrong.
+export function tomorrowPreview(boards, now = new Date(), tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  if (!books.length) return { count: 0, from: '' }
+  const iso = addDaysIso(boardDate(now, books[0].dayFoldHour), 1)
+  const at = noonOn(iso)
+  if (!at) return { count: 0, from: '' }
+  const rows = books
+    .flatMap((book) => dueOnNight(book, iso, at))
+    .filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
+  const times = rows.map((row) => String(row.lamp.askAfter || '').trim())
+  const from = rows.length && times.every((time) => /^\d{2}:\d{2}$/.test(time)) ? [...times].sort()[0] : ''
+  return { count: rows.length, from }
 }
 
 export function nightDueRows(boards, iso, tagId = '') {

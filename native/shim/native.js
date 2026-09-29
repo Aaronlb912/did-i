@@ -1,26 +1,25 @@
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
+import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
+import { pingOn } from '../../src/lib/prefs.js'
+import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
-import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
+import { makeFeelTap } from '../lib/feel-tap.js'
 export function isNativeHall() {
   return true
 }
 
 export function isAppForeground() {
   return AppState.currentState === 'active'
-}
-
-function reduceMotion() {
-  return readReduceMotion()
 }
 
 export async function bootNative() {
@@ -35,7 +34,7 @@ async function notifications() {
 }
 
 export async function pingStreakHit(hit, dateIso) {
-  if (!hit) return false
+  if (!hit || !pingOn('streakHit')) return false
   const allowed = await checkNativePings()
   if (allowed !== 'granted') return false
   try {
@@ -43,8 +42,7 @@ export async function pingStreakHit(hit, dateIso) {
     await Notifications.scheduleNotificationAsync({
       identifier: String(notifyId('streak-hit', dateIso)),
       content: {
-        title: t('streak.hitTitle'),
-        body: t('streak.hitBody', { n: hit.n }),
+        ...streakHitCopy(hit.n),
         data: { go: '/tonight', streakHit: true },
       },
       trigger: null,
@@ -126,6 +124,7 @@ export async function scheduleNativePings(books, now = new Date()) {
       channelId: CHANNEL_ID,
     })
     const notes = []
+    const reminders = pingOn('reminders')
     for (const book of list) {
       for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
         // Midday of that calendar day sits inside the right board night.
@@ -133,7 +132,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         const rows = ahead === 0 ? waitingTonight(book, now) : dueTonight(book, day).filter((row) => !row.answer)
         const [year, month, date] = boardDate(day).split('-').map(Number)
         for (const row of rows) {
-          if (!lampNotifyOn(row.lamp)) continue
+          if (!reminders || !lampNotifyOn(row.lamp)) continue
           const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
           if (!match) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
@@ -153,7 +152,7 @@ export async function scheduleNativePings(books, now = new Date()) {
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
     const book = list[0]
-    const risk = streakRiskFire(book, now)
+    const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -177,21 +176,34 @@ export async function scheduleNativePings(books, now = new Date()) {
   }
 }
 
+// Haptics follow the phone's own haptics setting, not Reduce Motion: that
+// setting is about movement on screen, and a tap you feel is not movement.
+// Did is a success, nope a soft bump, undo a rigid one, and crossing the Did
+// or nope edge of a swipe a selection tick. Android speaks its own
+// HapticFeedbackConstants (CONFIRM, REJECT, GESTURE_THRESHOLD_ACTIVATE), which
+// also honour its touch feedback switch; a phone too old for one falls back
+// to the vibrator pattern iOS's style maps to.
+const android = Platform.OS === 'android'
+
+let edgeModule
+function thresholdModule() {
+  if (edgeModule === undefined) {
+    try {
+      edgeModule = requireOptionalNativeModule('DidIHaptics')
+    } catch {
+      edgeModule = null
+    }
+  }
+  return edgeModule
+}
+
+const feel = makeFeelTap({ Haptics, android, thresholdModule })
+
 export function feelTap(kind) {
-  if (reduceMotion()) return
-  if (kind === 'skip') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-    return
-  }
-  if (kind === 'hall-on') {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-    return
-  }
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {})
+  feel(kind)
 }
 
 export function playClick() {
-  if (reduceMotion()) return
   Haptics.selectionAsync().catch(() => {})
 }
 

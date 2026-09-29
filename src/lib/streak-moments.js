@@ -1,5 +1,6 @@
 import { shelfHeat } from './hall-feel.js'
 import { isAppForeground } from './app-foreground.js'
+import { reportRejection } from './report.js'
 
 const PENDING = 'did-i-streak-pending'
 const SEEN = 'did-i-streak-seen'
@@ -13,16 +14,28 @@ export function fireStreakMoment(detail) {
   }
 }
 
-export async function deliverStreakHit(hit, dateIso) {
+async function pingFromPhone(hit, dateIso) {
+  const { pingStreakHit } = await import('./native.js')
+  return pingStreakHit(hit, dateIso)
+}
+
+// Never rejects: it runs right after a Did, and a push that fails to send
+// (or a native module that is missing on this build) waits for the app instead.
+export async function deliverStreakHit(hit, dateIso, ping = pingFromPhone) {
   if (!hit?.kind || hit.kind !== 'hit' || streakSeen('hit', dateIso)) return
   if (isAppForeground()) {
     fireStreakMoment({ ...hit, dateIso })
     return
   }
-  const { pingStreakHit } = await import('./native.js')
-  const sent = await pingStreakHit(hit, dateIso)
-  if (sent) markStreakSeen('hit', dateIso)
-  else queueStreakMoment(hit, dateIso)
+  try {
+    if (await ping(hit, dateIso)) {
+      markStreakSeen('hit', dateIso)
+      return
+    }
+  } catch (error) {
+    reportRejection('streak-push')(error)
+  }
+  queueStreakMoment(hit, dateIso)
 }
 
 function seenKey(kind, dateIso) {
