@@ -1,39 +1,39 @@
-import { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, Text, View } from 'react-native'
-import Reanimated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated'
+import { useEffect } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { usePop } from '../hooks/usePop.js'
 import { gemMeterStyle } from '../lib/gem-look-tone.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
+import { RollNumber } from './RollNumber.jsx'
 
 // Once the bar is full it glows: flaring as the night clears, then resting.
 const GLOW_REST = 0.45
+// When the bar has about reached a new width, for the glow to wait on.
 const FILL_MS = 420
+// The bar springs to each new width, passing it by a hair.
+const FILL_SPRING = { damping: 14, stiffness: 180 }
 
 export function NightMeter({ due, colors, hallOn = false, gemLook = '', celebrate = false }) {
   const theme = useTheme()
   const gemMeter = gemLook ? gemMeterStyle(gemLook, theme) : null
   const reduce = useReduceMotion()
   const { total, answered, ratio } = nightProgress(due)
-  const pop = usePop(answered)
-  const scale = useRef(new Animated.Value(1)).current
 
-  useEffect(() => {
-    if (reduce || pop !== 'is-pop') return
-    scale.setValue(1)
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 1.12, duration: 140, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 220, useNativeDriver: true }),
-    ]).start()
-  }, [pop, reduce, scale])
-
-  // The bar fills to each answer instead of jumping; the last one fills it.
+  // The bar springs to each answer instead of jumping; the last one fills it.
   const fill = useSharedValue(ratio)
   useEffect(() => {
-    fill.value = reduce ? ratio : withTiming(ratio, { duration: FILL_MS, easing: Easing.out(Easing.cubic) })
+    fill.value = reduce ? ratio : withSpring(ratio, FILL_SPRING)
   }, [fill, ratio, reduce])
   const fillStyle = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, fill.value)) * 100}%` }))
 
@@ -69,14 +69,12 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '', celebrat
   return (
     <View style={styles.wrap} accessible accessibilityLabel={t('tonight.meterDoneAria', { n: answered, left })}>
       <View style={styles.top}>
-        <Animated.Text
-          style={[
-            styles.count,
-            { color: hallOn || done ? colors.on : colors.ink, transform: [{ scale }] },
-          ]}
-        >
-          {answered}
-        </Animated.Text>
+        <RollNumber
+          value={answered}
+          reduce={reduce}
+          style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]}
+          accessibilityLabel=""
+        />
         <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
       </View>
       <View style={styles.barWrap}>
@@ -117,7 +115,9 @@ export function NightMeter({ due, colors, hallOn = false, gemLook = '', celebrat
 
 const styles = StyleSheet.create({
   wrap: { gap: 10, marginBottom: 12, width: '100%' },
-  top: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
+  // The count is a row of rolling digit columns, so the label sits on its
+  // foot instead of a shared baseline.
+  top: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   count: {
     fontFamily: fonts.display,
     fontSize: 42,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    paddingBottom: 2,
+    paddingBottom: 8,
   },
   barWrap: { position: 'relative' },
   glow: { ...StyleSheet.absoluteFill, borderRadius: 999 },
