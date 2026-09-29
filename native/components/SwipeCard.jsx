@@ -32,6 +32,7 @@ import {
 } from '../lib/swipe-motion.js'
 import { SwipeFace } from './SwipeFace.jsx'
 import { useSwipeFly } from './SwipeFly.jsx'
+import { aimCheer } from '../lib/cheer-origin.js'
 import { fonts } from '../theme.js'
 
 const SPRING = { damping: 20, stiffness: 260 }
@@ -104,6 +105,12 @@ export function SwipeCard({
       if (demo || !host || !stack) {
         done?.()
         return
+      }
+      // A Did's cheer bursts from the card that was answered.
+      if (way > 0) {
+        stack.measureInWindow((x, y, width, height) => {
+          if (width > 0) aimCheer(x + from.x + width / 2, y + from.y + height / 2)
+        })
       }
       // Hand the card to the fly layer and save in the same update, so the
       // thrown copy appears exactly where this card was let go.
