@@ -1,7 +1,28 @@
+import { useEffect, useRef } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { fonts, radius } from '../theme.js'
 
 const GLASS = 9
+
+/** The chip's dot: when it fills with an answer it pops once. */
+function Glass({ answered, style }) {
+  const reduce = useReduceMotion()
+  const scale = useSharedValue(1)
+  const was = useRef(answered)
+  useEffect(() => {
+    const filled = answered && answered !== was.current
+    was.current = answered
+    if (!filled || reduce) return
+    scale.value = withSequence(
+      withTiming(1.7, { duration: 140, easing: Easing.out(Easing.quad) }),
+      withSpring(1, { damping: 10, stiffness: 260 }),
+    )
+  }, [answered, reduce, scale])
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  return <Animated.View style={[style, popStyle]} />
+}
 
 export function Jewel({
   label,
@@ -74,7 +95,8 @@ export function Jewel({
             ]}
           />
         ) : null}
-        <View
+        <Glass
+          answered={late ? 'late' : on ? 'on' : skip ? 'skip' : ''}
           style={[
             styles.glass,
             hole && !on

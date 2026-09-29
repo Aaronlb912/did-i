@@ -2252,6 +2252,16 @@ test('the night clears in one moment: one success haptic, the cheer from the car
   assert.equal(streakParts(1), null)
 })
 
+test('the count rolls, the bar springs and the answered chip dot pops', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
+  const jewel = readFileSync(path.join(root, 'native/components/Jewel.jsx'), 'utf8')
+  assert.ok(meter.includes('<RollNumber') && meter.includes('value={answered}'), 'the answered count rolls')
+  assert.ok(meter.includes('withSpring(ratio, FILL_SPRING)'), 'the bar springs to its width')
+  assert.ok(meter.includes('reduce ? ratio :'), 'and jumps under Reduce Motion')
+  assert.ok(jewel.includes('if (!filled || reduce) return'), 'the dot pops once as it fills, not under Reduce Motion')
+})
+
 test('Android feels answers through its own HapticFeedbackConstants', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
