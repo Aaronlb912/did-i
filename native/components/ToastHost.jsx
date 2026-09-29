@@ -405,9 +405,9 @@ const styles = StyleSheet.create({
   fromRight: { marginLeft: -RING_SIZE / 2 },
   copy: { flex: 1, gap: 2 },
   saved: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
-  hint: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600', lineHeight: 18 },
+  hint: { fontFamily: fonts.uiSemi, fontSize: 14, lineHeight: 18 },
   kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
-  name: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
+  name: { fontFamily: fonts.uiBold, fontSize: 15 },
   line: { fontFamily: fonts.ui, fontSize: 13 },
   error: { fontSize: 14, lineHeight: 19 },
   kitBadge: {

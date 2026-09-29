@@ -229,5 +229,5 @@ const styles = StyleSheet.create({
   box: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   tick: { fontSize: 12, fontWeight: '800', lineHeight: 14 },
   done: { borderTopWidth: 1, marginTop: 4, paddingTop: 10, paddingBottom: 6, alignItems: 'center' },
-  doneText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '700' },
+  doneText: { fontFamily: fonts.uiBold, fontSize: 14 },
 })

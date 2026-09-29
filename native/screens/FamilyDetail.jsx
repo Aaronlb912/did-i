@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   plus: { fontFamily: fonts.ui, fontSize: 28, lineHeight: 30, fontWeight: '500' },
   code: { fontFamily: fonts.mono, fontSize: 32, fontWeight: '700', letterSpacing: 4, textAlign: 'center', paddingVertical: 6 },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
-  rowTitle: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
+  rowTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },
   rowActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dots: { flexDirection: 'row', gap: 6 },

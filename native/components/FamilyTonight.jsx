@@ -85,7 +85,7 @@ export function FamilyTonight({ colors }) {
 const styles = StyleSheet.create({
   wrap: { borderWidth: 1, borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
   head: { padding: 12, gap: 8 },
-  label: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  label: { fontFamily: fonts.uiSemi, fontSize: 14 },
   familyBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   row: {
     flexDirection: 'row',
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   copy: { flex: 1, minWidth: 120, gap: 2 },
-  question: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  question: { fontFamily: fonts.uiSemi, fontSize: 14 },
   family: { fontFamily: fonts.ui, fontSize: 12 },
   miss: { fontFamily: fonts.ui, fontSize: 13, padding: 12 },
 })

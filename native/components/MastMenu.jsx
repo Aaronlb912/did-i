@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ico: { width: 22, alignItems: 'center' },
-  label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', flex: 1 },
+  label: { fontFamily: fonts.uiSemi, fontSize: 15, flex: 1 },
   count: {
     minWidth: 20,
     height: 20,

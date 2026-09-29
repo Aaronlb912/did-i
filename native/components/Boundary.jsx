@@ -110,5 +110,5 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  againText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
+  againText: { fontFamily: fonts.uiBold, fontSize: 15 },
 })

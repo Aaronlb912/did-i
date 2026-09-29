@@ -139,6 +139,12 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`
   asserts this; don't change it.
+- **Fonts**: `fonts.ui` is a fixed Medium face (`native/fonts.js`) — iOS renders
+  the exact face a `fontFamily` names regardless of `fontWeight`, so pairing
+  `fonts.ui` with `fontWeight` 600+ silently renders as Medium. Use
+  `fonts.uiSemi` / `fonts.uiBold` instead, with no `fontWeight`.
+  `npm run lint` (`scripts/lint-store.mjs`) fails on the `fonts.ui` + 600+
+  pairing.
 - Whole-feature rules: `.cursor/rules/whole-feature.mdc`. New routes go in
   `ROUTES`. Keep `docs/not-yet.md` and `docs/launch-checklist.md` current.
 

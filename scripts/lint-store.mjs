@@ -88,6 +88,52 @@ function specsIn(text) {
   return specs
 }
 
+// `fonts.ui` is Inter_500Medium: a specific weight-baked font file. Pairing
+// it with fontWeight 600+ does nothing on iOS, which renders the face the
+// fontFamily names regardless of fontWeight - it silently draws Medium.
+// fonts.uiSemi / fonts.uiBold are the weight-baked faces for that; see
+// native/fonts.js.
+function findEnclosingObject(text, idx) {
+  let depth = 0
+  let start = -1
+  for (let i = idx; i >= 0; i--) {
+    const c = text[i]
+    if (c === '}') depth++
+    else if (c === '{') {
+      if (depth === 0) { start = i; break }
+      depth--
+    }
+  }
+  if (start === -1) return null
+  depth = 0
+  let end = -1
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) { end = i; break }
+    }
+  }
+  if (end === -1) return null
+  return text.slice(start, end + 1)
+}
+
+function findHeavyUiFontWeights(rel, text) {
+  const problems = []
+  if (!rel.startsWith('native/') && !rel.startsWith('widgets/')) return problems
+  const fontFamilyRe = /fontFamily\s*:\s*fonts\.ui\b(?!\w)/g
+  const weightRe = /fontWeight\s*:\s*['"]?(600|700|800|900|semibold|bold|Bold|SemiBold)['"]?/
+  let match
+  while ((match = fontFamilyRe.exec(text))) {
+    const obj = findEnclosingObject(text, match.index)
+    if (!obj || !weightRe.test(obj)) continue
+    const line = text.slice(0, match.index).split('\n').length
+    problems.push(`${rel}:${line} pairs fonts.ui with a 600+ fontWeight. Use fonts.uiSemi or fonts.uiBold instead.`)
+  }
+  return problems
+}
+
 export function lintStore(repo) {
   const problems = []
   const metro = readFileSync(path.join(repo, 'metro.config.cjs'), 'utf8')
@@ -103,6 +149,8 @@ export function lintStore(repo) {
     if (rel.startsWith('native/') && /from ['"](?:\.\.\/)+src\/[^'"]+\.jsx['"]/.test(text)) {
       problems.push(`${rel} imports a web JSX module. Split the helper into a .js file.`)
     }
+
+    problems.push(...findHeavyUiFontWeights(rel, text))
 
     if (
       !rel.endsWith('native/shim/reanimated-safe.cjs') &&
