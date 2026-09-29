@@ -98,6 +98,7 @@ import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
 import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
+import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2300,6 +2301,23 @@ test('undo flies the answered card back the way it left', () => {
   assert.ok(card.includes('back * winW * 1.3'), 'the card starts off that side')
   assert.ok(card.includes("const returning = back !== 0 && !reduce"), 'not under Reduce Motion')
   assert.ok(tonight.includes('flyBackNext()'), 'only an undo sends a card back')
+})
+
+test('a quiet night sky steps behind the done card, off under Reduce Motion', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  assert.ok(SKY_FPS <= 8, 'a handful of frames per second')
+  assert.ok(Math.abs(moonPhase(new Date(Date.UTC(2000, 0, 6, 18, 14)))) < 1e-9, 'a known new moon')
+  const full = moonPhase(new Date(Date.UTC(2000, 0, 21, 4, 40)))
+  assert.ok(Math.abs(full - 0.5) < 0.02, 'a known full moon')
+  assert.ok(moonPath(0.25, 20).startsWith('M 20 0 A 20 20 0 0 1 20 40'), 'a waxing moon is lit on the right')
+  const star = starAt(STARS[0], 0, 1000, 300)
+  assert.ok(star.x >= 0 && star.x < 300 && star.opacity > 0 && star.opacity <= 1, 'a star wraps inside the sky')
+  const moon = moonAt(0, 300, 40)
+  assert.ok(moon.x >= 0 && moon.x + 40 <= 300, 'the moon starts in full view')
+  const later = moonAt(100000, 300, 40)
+  assert.ok(later.x >= -40 && later.x <= 300, 'and wraps inside the sky')
+  const sky = readFileSync(path.join(root, 'native/components/NightSky.jsx'), 'utf8')
+  assert.ok(sky.includes('if (reduce) return null'), 'nothing moves under Reduce Motion')
 })
 
 test('Android feels answers through its own HapticFeedbackConstants', () => {
