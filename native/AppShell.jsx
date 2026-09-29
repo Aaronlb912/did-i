@@ -26,8 +26,9 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
-import { MarkToast } from './components/MarkToast.jsx'
+import { ToastHost } from './components/ToastHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
+import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
@@ -149,6 +150,13 @@ export function AppShell() {
   const route = useNativeRoute()
   const app = useAppShelf()
   const marksHeld = useMarksHeld()
+  // A new mark joins the toast line once the night's celebration is over.
+  const mark = marksHeld ? null : app.markNote
+  const clearMark = app.clearMark
+  useEffect(() => {
+    if (!mark) return
+    showToast({ id: `mark:${mark.id || 'mark'}`, kind: 'mark', mark, ms: 5200, onGone: clearMark })
+  }, [clearMark, mark])
   const account = useAccount()
   const colors = useHallColors(app.book)
   const gated = authGated(route.path, account)
@@ -284,7 +292,7 @@ export function AppShell() {
         </Stack.Navigator>
       </ScreenProps.Provider>
       <Slot>
-        <MarkToast mark={marksHeld ? null : app.markNote} onClose={app.clearMark} colors={colors} />
+        <ToastHost colors={colors} />
       </Slot>
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />

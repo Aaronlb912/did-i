@@ -10,8 +10,7 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
-import { useTonightStack } from '../../src/lib/useTonightStack.js'
-import { UndoToast } from '../components/UndoToast.jsx'
+import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
@@ -19,6 +18,8 @@ import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
+import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
+import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -110,6 +111,19 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   )
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
+  // Undo joins the one toast line above the tab bar. Shake still undoes where
+  // the sensor works, but it was not reliable enough to promise.
+  useUndoToast('tonight', stack.undo, stack.applyUndo, UNDO_MS, t('tonight.undoTap'))
+  useShakeUndo(Boolean(stack.undo), stack.applyUndo)
+  // A sync that cannot reach the account says so once, in the same line.
+  const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
+  useEffect(() => {
+    if (!syncMiss) {
+      dropToast('sync-miss')
+      return
+    }
+    showToast({ id: 'sync-miss', kind: 'error', text: syncMiss, ms: 5200 })
+  }, [syncMiss])
   useEffect(() => {
     if (!stack.cheer) return undefined
     const timer = setTimeout(stack.cheered, CELEBRATE_MS)
@@ -371,12 +385,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           stack.hallOn && styles.sitOn,
         ]}
       >
-      {account.user && sync.how === 'miss' ? (
-        <Text style={[styles.syncNote, { color: colors.miss }]}>
-          {sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')}
-        </Text>
-      ) : null}
-
       <Slot>
         <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
       </Slot>
@@ -436,9 +444,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       <SwipeFlyHost style={styles.slot}>
         <Slot>{face}</Slot>
         <Slot>
-          <UndoToast undo={stack.undo} onUndo={stack.applyUndo} colors={colors} />
-        </Slot>
-        <Slot>
           <FamilyTonight colors={colors} />
         </Slot>
       </SwipeFlyHost>
@@ -461,7 +466,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  syncNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
   jewels: { flexGrow: 0, marginBottom: 12 },

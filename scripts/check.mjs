@@ -97,6 +97,7 @@ import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from 
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
+import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2200,7 +2201,7 @@ test('the menu, a buy confirm, and a cheer preview can show on the phone', () =>
 
 test('the honest did not line sits above the bottom bar', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const mark = readFileSync(path.join(root, 'native/components/MarkToast.jsx'), 'utf8')
+  const mark = readFileSync(path.join(root, 'native/components/ToastHost.jsx'), 'utf8')
   assert.ok(mark.includes('useAppInsets'), 'the line clears the bar')
   assert.ok(mark.includes("zIndex: 90"), 'the line paints above the bar')
   const plist = readFileSync(path.join(root, 'app.config.js'), 'utf8')
@@ -2260,6 +2261,35 @@ test('the count rolls, the bar springs and the answered chip dot pops', () => {
   assert.ok(meter.includes('withSpring(ratio, FILL_SPRING)'), 'the bar springs to its width')
   assert.ok(meter.includes('reduce ? ratio :'), 'and jumps under Reduce Motion')
   assert.ok(jewel.includes('if (!filled || reduce) return'), 'the dot pops once as it fills, not under Reduce Motion')
+})
+
+test('undo, marks and errors wait their turn in one toast line', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const ids = () => toastQueue().map((item) => item.id)
+  showToast({ id: 'mark:a', kind: 'mark' })
+  showToast({ id: 'sync-miss', kind: 'error' })
+  assert.deepEqual(ids(), ['mark:a', 'sync-miss'], 'first come, first shown')
+  showToast({ id: 'undo:tonight', kind: 'undo', rev: 1 })
+  assert.deepEqual(ids(), ['mark:a', 'undo:tonight', 'sync-miss'], 'an undo is next in line')
+  showToast({ id: 'undo:questions', kind: 'undo', rev: 2 })
+  assert.deepEqual(ids(), ['mark:a', 'undo:questions', 'sync-miss'], 'a newer undo replaces the older')
+  showToast({ id: 'undo:questions', kind: 'undo', rev: 3 })
+  assert.equal(toastQueue()[1].rev, 3, 'the same toast updates in place')
+  dropToast('mark:a')
+  dropToast('undo:questions')
+  dropToast('sync-miss')
+  assert.deepEqual(ids(), [])
+  showToast({ id: 'mark:b', kind: 'mark' })
+  showToast({ id: 'undo:tonight', kind: 'undo' })
+  assert.deepEqual(ids(), ['mark:b', 'undo:tonight'])
+  dropToast('mark:b')
+  showToast({ id: 'undo:questions', kind: 'undo' })
+  assert.deepEqual(ids(), ['undo:questions'], 'an undo on screen is replaced on screen')
+  dropToast('undo:questions')
+  const host = readFileSync(path.join(root, 'native/components/ToastHost.jsx'), 'utf8')
+  assert.ok(host.includes('usePanGesture'), 'a toast can be swiped away')
+  assert.ok(host.includes('CountdownRing'), 'undo shows its countdown ring')
+  assert.ok(host.includes('if (reduce)'), 'Reduce Motion fades instead of sliding')
 })
 
 test('Android feels answers through its own HapticFeedbackConstants', () => {
