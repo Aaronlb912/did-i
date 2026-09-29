@@ -78,6 +78,13 @@ function buildFallback() {
       }
     },
     useSharedValue: shared,
+    useDerivedValue(fn) {
+      try {
+        return shared(typeof fn === 'function' ? fn() : undefined)
+      } catch {
+        return shared(undefined)
+      }
+    },
     withDelay(_delay, animation) {
       return animation
     },

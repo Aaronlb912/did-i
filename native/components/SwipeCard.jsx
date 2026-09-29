@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   cancelAnimation,
   useAnimatedReaction,
+  useDerivedValue,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -40,6 +41,21 @@ const SPRING = { damping: 20, stiffness: 260 }
 // The selection tick for crossing the Did or nope line.
 function feelEdge() {
   feelTap('edge')
+}
+
+// Undo sends the answered card back the way it left. The last throw is kept
+// here, outside the card, because a night that just cleared unmounts the
+// whole stack. flyBackNext() arms it for the next card with that key.
+const BACK_SPRING = { damping: 23, stiffness: 210 }
+const BACK_WITHIN_MS = 15000
+let lastThrow = null
+// It comes back a little low, as it left, and rises as it lands.
+const BACK_DROP = 40
+let comingBack = null
+
+export function flyBackNext() {
+  comingBack = lastThrow && Date.now() - lastThrow.at < BACK_WITHIN_MS ? lastThrow : null
+  lastThrow = null
 }
 // The card follows sideways fully and up and down a little, so it feels
 // held rather than slid on a rail.
@@ -100,6 +116,7 @@ export function SwipeCard({
       const now = live.current
       if (way > 0 ? now.blockDid : now.blockNope) return
       const done = way > 0 ? now.onDid : now.onNope
+      lastThrow = { key: cardKey, way, at: Date.now() }
       const host = fly?.host()
       const stack = stackRef.current
       if (demo || !host || !stack) {
@@ -157,6 +174,15 @@ export function SwipeCard({
     if (thrown && thrown !== cardKey) setThrown('')
   }, [cardKey, thrown])
 
+  // The card that was on top a moment ago keeps its place when it is pushed
+  // back down (by an undo) instead of rising again from the back.
+  const wasTop = useRef(topKey)
+  const lastTop = wasTop.current
+  useEffect(() => {
+    wasTop.current = topKey
+  }, [topKey])
+  const back = !demo && comingBack && comingBack.key === topKey ? comingBack.way : 0
+
   const depth = demo ? [] : behind.slice(0, DEPTH_SHOWN)
   const buttons = !demo && (didLabel || nopeLabel)
   const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current }
@@ -169,7 +195,7 @@ export function SwipeCard({
       <View ref={stackRef} style={styles.stack} collapsable={false}>
         {depth
           .map((card, index) => (
-            <StackCard key={card.key} depth={index + 1} {...cardProps}>
+            <StackCard key={card.key} depth={index + 1} start={card.key === lastTop ? 0 : undefined} {...cardProps}>
               {card.kicker ? (
                 <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{card.kicker}</Text>
               ) : null}
@@ -182,6 +208,7 @@ export function SwipeCard({
         <StackCard
           key={topKey}
           depth={0}
+          back={back}
           top
           demo={demo}
           pull={pull}
@@ -236,6 +263,8 @@ export function SwipeCard({
 function StackCard({
   depth,
   enter,
+  start,
+  back = 0,
   top = false,
   demo = false,
   reduce,
@@ -252,12 +281,31 @@ function StackCard({
   children,
   ...a11y
 }) {
-  const x = useSharedValue(0)
-  const y = useSharedValue(0)
+  const returning = back !== 0 && !reduce
+  const x = useSharedValue(returning ? back * winW * 1.3 : 0)
+  const y = useSharedValue(returning ? BACK_DROP : 0)
+  // While it flies home the card shows no Did or nope stamp: it is not
+  // being answered, it is coming back.
+  const homing = useSharedValue(returning ? 1 : 0)
+  const faceX = useDerivedValue(() => (homing.value ? 0 : x.value))
   const grab = useSharedValue(1)
   const height = useSharedValue(0)
   const zone = useSharedValue(0)
-  const level = useSharedValue(enter && !reduce ? depth + 1 : depth)
+  const level = useSharedValue(
+    reduce ? depth : returning ? 0 : start !== undefined ? start : enter ? depth + 1 : depth,
+  )
+
+  // An undone card flies back in from the side it left and lands on top.
+  useEffect(() => {
+    if (back === 0) return
+    comingBack = null
+    if (!returning) return
+    x.value = withSpring(0, BACK_SPRING, () => {
+      homing.value = 0
+    })
+    y.value = withSpring(0, BACK_SPRING)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     cancelAnimation(level)
@@ -380,7 +428,7 @@ function StackCard({
           { borderWidth: 1, borderColor: line },
         ]}
       >
-        {top ? <SwipeFace x={x} colors={colors} {...face} /> : children}
+        {top ? <SwipeFace x={faceX} colors={colors} {...face} /> : children}
       </View>
     </Animated.View>
   )

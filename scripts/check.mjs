@@ -2292,6 +2292,16 @@ test('undo, marks and errors wait their turn in one toast line', () => {
   assert.ok(host.includes('if (reduce)'), 'Reduce Motion fades instead of sliding')
 })
 
+test('undo flies the answered card back the way it left', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(card.includes('lastThrow = { key: cardKey, way, at: Date.now() }'), 'a throw remembers its side')
+  assert.ok(card.includes('back * winW * 1.3'), 'the card starts off that side')
+  assert.ok(card.includes("const returning = back !== 0 && !reduce"), 'not under Reduce Motion')
+  assert.ok(tonight.includes('flyBackNext()'), 'only an undo sends a card back')
+})
+
 test('Android feels answers through its own HapticFeedbackConstants', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
