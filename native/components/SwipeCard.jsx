@@ -24,6 +24,7 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import {
   DEPTH_PEEK,
   DEPTH_SHOWN,
+  RISE_SPRING,
   cardTilt,
   depthLook,
   grabSide,
@@ -34,7 +35,6 @@ import { useSwipeFly } from './SwipeFly.jsx'
 import { fonts } from '../theme.js'
 
 const SPRING = { damping: 20, stiffness: 260 }
-const RISE = { duration: 260, easing: Easing.out(Easing.cubic) }
 // The card follows sideways fully and up and down a little, so it feels
 // held rather than slid on a rail.
 const FOLLOW_Y = 0.35
@@ -249,7 +249,7 @@ function StackCard({
 
   useEffect(() => {
     cancelAnimation(level)
-    level.value = reduce ? depth : withTiming(depth, RISE)
+    level.value = reduce ? depth : withSpring(depth, RISE_SPRING)
   }, [depth, level, reduce])
 
   // The sign-in backdrop swings the card both ways on a loop.
