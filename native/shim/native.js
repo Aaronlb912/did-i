@@ -13,6 +13,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
+import { makeFeelTap } from '../lib/feel-tap.js'
 export function isNativeHall() {
   return true
 }
@@ -184,12 +185,6 @@ export async function scheduleNativePings(books, now = new Date()) {
 // to the vibrator pattern iOS's style maps to.
 const android = Platform.OS === 'android'
 
-function androidFeel(type, fallback) {
-  Haptics.performAndroidHapticsAsync(type).catch(fallback)
-}
-
-// GESTURE_THRESHOLD_ACTIVATE comes from modules/didi-haptics. A binary built
-// before that module (an over-the-air update) ticks with SEGMENT_TICK instead.
 let edgeModule
 function thresholdModule() {
   if (edgeModule === undefined) {
@@ -202,46 +197,10 @@ function thresholdModule() {
   return edgeModule
 }
 
-function edgeTick() {
-  const select = () => Haptics.selectionAsync().catch(() => {})
-  if (!android) {
-    select()
-    return
-  }
-  const threshold = thresholdModule()
-  if (threshold) {
-    threshold.gestureThresholdAsync().catch(select)
-    return
-  }
-  androidFeel(Haptics.AndroidHaptics.Segment_Tick, select)
-}
+const feel = makeFeelTap({ Haptics, android, thresholdModule })
 
 export function feelTap(kind) {
-  if (kind === 'did' || kind === 'hall-on') {
-    const success = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-    if (android) androidFeel(Haptics.AndroidHaptics.Confirm, success)
-    else success()
-    return
-  }
-  if (kind === 'skip') {
-    const soft = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {})
-    if (android) androidFeel(Haptics.AndroidHaptics.Reject, soft)
-    else soft()
-    return
-  }
-  if (kind === 'undo') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {})
-    return
-  }
-  if (kind === 'edge') {
-    edgeTick()
-    return
-  }
-  if (kind === 'tick') {
-    Haptics.selectionAsync().catch(() => {})
-    return
-  }
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {})
+  feel(kind)
 }
 
 export function playClick() {
