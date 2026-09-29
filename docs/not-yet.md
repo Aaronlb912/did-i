@@ -146,6 +146,14 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   a skeleton transition API (its presets are open PRs #4660 and #4670) and no
   React Navigation integration yet. Skipped for launch as an Android fast
   follow; revisit when Stack v5 ships with React Navigation support.
+- **Three older springs still run at Reanimated 4's default mass of 4.**
+  Reanimated 4 gives a spring with no `mass` a mass of 4, so the damping they
+  were tuned with reads four times as bouncy. The motion pass names `mass: 1`
+  on its own springs; these predate it and were left as they are: the menu's
+  `OPEN_SPRING` (`native/components/MastMenu.jsx`), the swipe card's release
+  `SPRING` (`native/components/SwipeCard.jsx`), and the done card's streak pop
+  (`native/components/DoneCard.jsx`). Name their mass once someone has looked
+  at each on a phone.
 - **Ask-at time picker is still a hand-made popup.** The hour, minute and
   AM/PM selects on Add (`HangSelect`) open a centered React Native list.
   Settings pickers are native menus and sheets now; this one should become
