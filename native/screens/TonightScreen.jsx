@@ -378,7 +378,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <Slot>
-        <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} />
+        <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
       </Slot>
 
       {showChips ? (

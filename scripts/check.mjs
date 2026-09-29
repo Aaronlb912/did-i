@@ -94,6 +94,9 @@ import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
 import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
+import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
+import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
+import { streakParts } from '../src/lib/streak-copy.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2219,6 +2222,34 @@ test('the phone location has an origin, so import() chunk urls can be built', ()
     assert.doesNotThrow(() => chunkUrl(makeLocation(bad), '/x.bundle'), `origin survives ${bad}`)
   }
   assert.equal(devServerUrl(), '', 'no dev server outside a dev build')
+})
+
+test('a rolling number rolls each digit forward going up and back going down', () => {
+  assert.deepEqual(rollColumns(9, 10), [{ from: ' ', to: '1' }, { from: '9', to: '0' }])
+  assert.deepEqual(rollColumns(10, 9), [{ from: '1', to: ' ' }, { from: '0', to: '9' }])
+  // 9 to 0 going up wraps forward to the second 0, then settles on the first.
+  assert.deepEqual(rollStops('9', '0', true), { from: 10, to: 1, wide: 12 })
+  // 0 to 9 going down starts on the second 0 and rolls back.
+  assert.deepEqual(rollStops('0', '9', false), { from: 12, to: 10, wide: 10 })
+  assert.deepEqual(rollStops('3', '4', true), { from: 4, to: 5, wide: 5 })
+  assert.deepEqual(rollStops('5', '5', true), { from: 6, to: 6, wide: 6 })
+})
+
+test('the night clears in one moment: one success haptic, the cheer from the card, 1.2 s', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  aimCheer(120, 400)
+  assert.deepEqual(takeCheerAim(), { x: 120, y: 400 })
+  assert.equal(takeCheerAim(), null, 'a spot is used once')
+  aimCheer(1, 2)
+  assert.equal(takeCheerAim(Date.now() + 5000), null, 'a stale spot is dropped')
+  const cheer = readFileSync(path.join(root, 'native/components/CheerBurst.jsx'), 'utf8')
+  assert.ok(cheer.includes("if (preview) feelTap('did')"), 'a real cheer adds no second success haptic')
+  const done = readFileSync(path.join(root, 'native/components/DoneCard.jsx'), 'utf8')
+  assert.ok(done.includes('export const CELEBRATE_MS = 1200'), 'about 1.2 seconds')
+  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
+  assert.ok(meter.includes('glowStyle') && meter.includes('reduce || !celebrate'), 'the full bar glows, still under Reduce Motion')
+  assert.deepEqual(streakParts(7), { before: '', after: ' nights in a row' })
+  assert.equal(streakParts(1), null)
 })
 
 test('Android feels answers through its own HapticFeedbackConstants', () => {

@@ -11,17 +11,21 @@ import Animated, {
 } from 'react-native-reanimated'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
-import { streakNights } from '../../src/lib/streak-copy.js'
+import { streakNights, streakParts } from '../../src/lib/streak-copy.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { svgParts } from '../lib/svg-parts.js'
+import { RollNumber } from './RollNumber.jsx'
 import { fonts } from '../theme.js'
 
-// The night-cleared moment, in order: the last card flies and the meter
-// fills (0 ms), the done card settles in, then the streak ticks up. Marks
-// wait until it is over.
-export const SETTLE_AT = 120
-export const COUNT_AT = 560
-export const CELEBRATE_MS = 1500
+// The night-cleared moment, about 1.2 s: the last card flies, the cheer
+// bursts from it and the meter fills to the end and glows (0 ms), the done
+// card slides up and settles, then the streak rolls up from yesterday's
+// number. Marks wait until it is over.
+export const SETTLE_AT = 300
+export const COUNT_AT = 640
+export const CELEBRATE_MS = 1200
+// How far below its place the done card starts.
+const SLIDE = 48
 
 /** The done card arriving: a small rise into place, once, when `play`. */
 export function CardSettle({ play, children }) {
@@ -36,7 +40,7 @@ export function CardSettle({ play, children }) {
 
   const style = useAnimatedStyle(() => ({
     opacity: 1 - Math.max(0, Math.min(1, lift.value)),
-    transform: [{ translateY: lift.value * 18 }, { scale: 1 - lift.value * 0.06 }],
+    transform: [{ translateY: lift.value * SLIDE }, { scale: 1 - lift.value * 0.05 }],
   }))
 
   return <Animated.View style={[styles.settle, style]}>{children}</Animated.View>
@@ -68,18 +72,29 @@ export function FlameIcon({ size = 18, color, core, lit = true }) {
 
 /**
  * "3 nights in a row" with a flame. When `from` is given the flame pops as
- * the card settles and the number ticks up from there to `n` (a first night
+ * the card settles and the number rolls up from there to `n` (a first night
  * just lands on 1; "0 nights" is not worth a frame).
  */
 export function StreakCount({ n, from = null, colors }) {
   const reduce = useReduceMotion()
   const counting = from !== null && from < n && !reduce
   const [shown, setShown] = useState(counting && from > 0 ? from : n)
+  // RollNumber mounts on yesterday's number, then rolls to tonight's.
+  const [rolled, setRolled] = useState(counting && from > 0 ? from : n)
   const pop = useSharedValue(1)
+
+  useEffect(() => {
+    if (shown === n && rolled !== n) {
+      const frame = requestAnimationFrame(() => setRolled(n))
+      return () => cancelAnimationFrame(frame)
+    }
+    return undefined
+  }, [n, rolled, shown])
 
   useEffect(() => {
     if (!counting) {
       setShown(n)
+      setRolled(n)
       return undefined
     }
     const timer = setTimeout(() => {
@@ -93,13 +108,25 @@ export function StreakCount({ n, from = null, colors }) {
   }, [counting, n, pop])
 
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }))
+  // Until the roll starts the line reads yesterday's count in its own words;
+  // then only the number moves.
+  const parts = counting && shown === n ? streakParts(n) : null
+  const ink = [styles.streakText, { color: colors.ink }]
 
   return (
     <View style={styles.streak} accessible accessibilityRole="text" accessibilityLabel={streakNights(n)}>
       <Animated.View style={[styles.flame, popStyle]}>
         <FlameIcon size={24} color={colors.on} core={colors.bg} lit={n > 0} />
       </Animated.View>
-      <Text style={[styles.streakText, { color: colors.ink }]}>{streakNights(shown)}</Text>
+      {parts ? (
+        <View style={styles.streakLine} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {parts.before ? <Text style={ink}>{parts.before}</Text> : null}
+          <RollNumber value={rolled} style={ink} accessibilityLabel="" />
+          {parts.after ? <Text style={ink}>{parts.after}</Text> : null}
+        </View>
+      ) : (
+        <Text style={ink}>{streakNights(shown)}</Text>
+      )}
     </View>
   )
 }
@@ -151,5 +178,6 @@ const styles = StyleSheet.create({
   weekday: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5 },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
   flame: { width: 24, height: 24, marginLeft: -4, marginRight: -2 },
-  streakText: { fontFamily: fonts.uiBold, fontSize: 16 },
+  streakText: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 22 },
+  streakLine: { flexDirection: 'row', alignItems: 'center' },
 })
