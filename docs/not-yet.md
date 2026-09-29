@@ -141,8 +141,11 @@ The Expo app in `native/` shares night maths, swipe, cheer recipes, and
   transition, and system back pops them. The stable native stack in
   react-native-screens 4.28 does not feed the gesture's progress to the
   screen transition, so the previous screen does not slide into view while
-  the finger is down; it pops on release. Only its experimental stack does.
-  Revisit when the stable stack supports it.
+  the finger is down; it pops on release. Checked again 2026-09-28: the 4.29
+  nightlies still do not, and the experimental Stack v5 (5.0.0-alpha) has only
+  a skeleton transition API (its presets are open PRs #4660 and #4670) and no
+  React Navigation integration yet. Skipped for launch as an Android fast
+  follow; revisit when Stack v5 ships with React Navigation support.
 - **Ask-at time picker is still a hand-made popup.** The hour, minute and
   AM/PM selects on Add (`HangSelect`) open a centered React Native list.
   Settings pickers are native menus and sheets now; this one should become
