@@ -52,6 +52,8 @@ export function useAuthSignIn({ onSignedIn }) {
     if (bad) {
       setMiss(accountMissText(bad))
       setMissSource('email')
+      // Too many sends still leaves an earlier code that works; show the box for it.
+      if (bad === 'often') setStep('code')
       return
     }
     setMiss('')

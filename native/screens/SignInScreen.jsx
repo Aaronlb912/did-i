@@ -67,7 +67,7 @@ export function SignInScreen({ onDone }) {
         {auth.step === 'code' ? (
           <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
         ) : null}
-        {auth.step === 'code' ? (
+        {auth.step === 'code' && !auth.miss ? (
           <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
         ) : null}
         {auth.step === 'reviewer' ? (
