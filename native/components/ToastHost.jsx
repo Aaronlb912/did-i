@@ -6,16 +6,21 @@ import Animated, {
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { t } from '../../src/lib/i18n.js'
+import { feelTap } from '../../src/lib/native.js'
 import { markText } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
+import { goHash } from '../navigation/hash.js'
 import { dropToast, useToastQueue } from '../lib/toast-queue.js'
+import { launchFlight } from './FlyHost.jsx'
 import { fonts } from '../theme.js'
+import { RollNumber } from './RollNumber.jsx'
 import { KeyButton } from './ui.jsx'
 
 const ENTER = { damping: 24, stiffness: 260 }
@@ -27,6 +32,7 @@ const SWIPE_DOWN = 36
 const FLING = 800
 // A beat between toasts, so the next reads as a new one.
 const GAP_MS = 140
+const POP = { damping: 9, stiffness: 320 }
 const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
@@ -39,6 +45,8 @@ export function ToastHost({ colors }) {
   const { overlayBottom: bottom } = useAppInsets()
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
+  const [landed, setLanded] = useState('')
+  const layerRef = useRef(null)
 
   const head = items[0] || null
   const live = shown ? items.find((item) => item.id === shown.id) || null : null
@@ -54,6 +62,25 @@ export function ToastHost({ colors }) {
     setPause(true)
   }, [])
 
+  // The kit toast found its badge, `rel` inside a toast `wrapWidth` wide. The
+  // layer never moves, so the badge's resting place is the layer's spot plus
+  // that offset, wherever the toast is in its slide up.
+  const aim = useCallback((item, rel, wrapWidth) => {
+    const fly = item.fly
+    const layer = layerRef.current
+    if (!fly || !layer?.measureInWindow) return
+    const key = `${item.id}:${item.rev || 0}`
+    layer.measureInWindow((lx, ly, lw) => {
+      launchFlight({
+        from: fly,
+        to: { x: lx + (lw - wrapWidth) / 2 + rel.x + rel.w / 2, y: ly + rel.y + rel.h / 2 },
+        art: fly.art,
+        size: rel.h,
+        onLand: () => setLanded(key),
+      })
+    })
+  }, [])
+
   useEffect(() => {
     if (!pause) return undefined
     const timer = setTimeout(() => setPause(false), GAP_MS)
@@ -62,15 +89,26 @@ export function ToastHost({ colors }) {
 
   if (!shown) return null
   const item = live || shown
+  const key = `${item.id}:${item.rev || 0}`
   return (
-    <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
-      <Toast key={`${item.id}:${item.rev || 0}`} item={item} live={Boolean(live)} colors={colors} onGone={gone} />
+    <View ref={layerRef} collapsable={false} pointerEvents="box-none" style={[styles.layer, { bottom }]}>
+      <Toast
+        key={key}
+        item={item}
+        live={Boolean(live)}
+        colors={colors}
+        onGone={gone}
+        onAim={aim}
+        landed={landed === key}
+      />
     </View>
   )
 }
 
-function Toast({ item, live, colors, onGone }) {
+function Toast({ item, live, colors, onGone, onAim, landed }) {
   const reduce = useReduceMotion()
+  const wrapRef = useRef(null)
+  const wrapWidth = useRef(0)
   const x = useSharedValue(0)
   const y = useSharedValue(reduce ? 0 : FROM_Y)
   const fade = useSharedValue(reduce ? 0 : 1)
@@ -149,19 +187,38 @@ function Toast({ item, live, colors, onGone }) {
     transform: [{ translateX: x.value }, { translateY: y.value }],
   }))
 
-  const press = item.kind === 'undo' ? () => {
-    item.onPress?.()
-    leave(0, FROM_Y)
-  } : undefined
+  let press
+  if (item.kind === 'undo') {
+    press = () => {
+      item.onPress?.()
+      leave(0, FROM_Y)
+    }
+  } else if (item.kind === 'kit') {
+    press = () => {
+      goHash('/kit')
+      leave(0, FROM_Y)
+    }
+  }
+
+  const aimAt = useCallback((rel) => onAim(item, rel, wrapWidth.current), [item, onAim])
+  let label
+  if (item.kind === 'undo') label = `${item.label} ${item.hint}`
+  else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.toastWrap, moving]}>
+      <Animated.View
+        ref={wrapRef}
+        style={[styles.toastWrap, moving]}
+        onLayout={(event) => {
+          wrapWidth.current = event.nativeEvent.layout.width
+        }}
+      >
         <Pressable
           onPress={press}
           disabled={!press}
           accessibilityRole={press ? 'button' : undefined}
-          accessibilityLabel={item.kind === 'undo' ? `${item.label} ${item.hint}` : undefined}
+          accessibilityLabel={label}
           accessibilityLiveRegion="polite"
           style={[
             styles.toast,
@@ -171,6 +228,9 @@ function Toast({ item, live, colors, onGone }) {
           {item.kind === 'undo' ? <UndoBody item={item} colors={colors} reduce={reduce} /> : null}
           {item.kind === 'mark' ? <MarkBody item={item} colors={colors} onOk={() => leave(0, FROM_Y)} /> : null}
           {item.kind === 'error' ? <ErrorBody item={item} colors={colors} /> : null}
+          {item.kind === 'kit' ? (
+            <KitBody item={item} colors={colors} reduce={reduce} wrapRef={wrapRef} onAim={aimAt} landed={landed} />
+          ) : null}
         </Pressable>
       </Animated.View>
     </GestureDetector>
@@ -254,6 +314,49 @@ function MarkBody({ item, colors, onOk }) {
   )
 }
 
+/**
+ * A buy, now in the Collection. With a flight on its way the badge still
+ * shows the old count, and rolls up with a pop when the item lands on it.
+ */
+function KitBody({ item, colors, reduce, wrapRef, onAim, landed }) {
+  const badgeRef = useRef(null)
+  const flying = Boolean(item.fly) && !reduce
+  const pop = useSharedValue(1)
+
+  useEffect(() => {
+    if (!flying || !landed) return
+    feelTap('tick')
+    pop.value = withSequence(withTiming(1.28, { duration: 110 }), withSpring(1, POP))
+  }, [flying, landed, pop])
+
+  const popping = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }))
+  const count = flying && !landed ? Math.max(0, item.count - 1) : item.count
+
+  return (
+    <>
+      <View style={styles.copy}>
+        <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={[styles.line, { color: colors.inkSoft }]} numberOfLines={1}>
+          {t('kit.added')}
+        </Text>
+      </View>
+      <Animated.View
+        ref={badgeRef}
+        collapsable={false}
+        style={[styles.kitBadge, { backgroundColor: colors.on }, popping]}
+        onLayout={() => {
+          if (!flying || !wrapRef.current) return
+          badgeRef.current?.measureLayout?.(wrapRef.current, (x, y, w, h) => onAim({ x, y, w, h }), () => {})
+        }}
+      >
+        <RollNumber value={count} reduce={reduce} style={[styles.kitCount, { color: colors.bg }]} />
+      </Animated.View>
+    </>
+  )
+}
+
 function ErrorBody({ item, colors }) {
   return (
     <View style={styles.copy}>
@@ -307,4 +410,14 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '700' },
   line: { fontFamily: fonts.ui, fontSize: 13 },
   error: { fontSize: 14, lineHeight: 19 },
+  kitBadge: {
+    minWidth: 30,
+    height: 30,
+    borderRadius: 15,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  kitCount: { fontFamily: fonts.mono, fontSize: 14, lineHeight: 18, fontWeight: '700' },
 })

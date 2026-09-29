@@ -672,6 +672,7 @@ export const ja = {
   'gems.storeSoon': 'Google Play はまだ。ブラウザの web shop を使って。',
   'gems.earn': '夜を終えると週 1 gem ももらえる。',
   'kit.title': 'コレクション',
+  'kit.added': 'コレクションに入りました',
   'kit.try': '試す',
   'kit.hint': '持っているもの。look はアプリを塗り替え cheer の色も変わる。つけているものを選ぶ。',
   'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',

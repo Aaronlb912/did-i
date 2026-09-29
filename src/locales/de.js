@@ -702,6 +702,7 @@ export const de = {
   'gems.storeSoon': 'Google Play ist noch nicht live. Nutze den Web-Shop im Browser.',
   'gems.earn': 'Du verdienst auch eine Gem pro Woche, wenn du eine Nacht schaffst.',
   'kit.title': 'Sammlung',
+  'kit.added': 'Jetzt in deiner Sammlung',
   'kit.try': 'Probieren',
   'kit.hint':
     'Was du hast. Looks färben die App und deine Cheers. Wähle, was aktiv ist.',

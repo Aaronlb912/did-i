@@ -695,6 +695,7 @@ export const en = {
   'gems.storeSoon': 'Google Play billing is not live yet. Use the web shop in a browser.',
   'gems.earn': 'You also earn one gem a week when you clear a night.',
   'kit.title': 'Collection',
+  'kit.added': 'Now in your Collection',
   'kit.try': 'Try',
   'kit.hint': 'Pick a shelf. Tap an item, then wear it.',
   'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',

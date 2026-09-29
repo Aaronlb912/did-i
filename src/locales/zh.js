@@ -670,6 +670,7 @@ export const zh = {
   'gems.storeSoon': 'Google Play 尚未上线。请在浏览器使用 web shop。',
   'gems.earn': '每完成一晚，每周还可赚一颗 gem。',
   'kit.title': '收藏',
+  'kit.added': '已放进收藏',
   'kit.try': '试用',
   'kit.hint': '你已拥有的。look 会换 app 外观并给 cheer 上色。选择正在用的。',
   'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',
