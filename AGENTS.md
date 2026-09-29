@@ -48,6 +48,14 @@ npm run locales:refresh      # merge additions + sync
 npm run locales:report       # coverage report
 npm run locales:missing      # list missing keys
 ```
+The checked-in `src/locales/*.js` files are the source of truth for existing
+translations, not `scripts/i18n-additions.mjs` / `legal-i18n.mjs` /
+`web-marketing.mjs` / `web-marketing-locales.mjs` / `scripts/locale-gaps/*.json`
+(those feed the refresh but must themselves match the checked-in files, or a
+refresh will silently rewrite translations back to stale/English copy). A
+`scripts/check.mjs` test runs the refresh and fails if it would change
+`src/locales`; if it does, fix the source/data files above, not the checked-in
+locale files.
 
 Supabase:
 ```
