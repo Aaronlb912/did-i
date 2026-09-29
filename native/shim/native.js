@@ -177,18 +177,44 @@ export async function scheduleNativePings(books, now = new Date()) {
 // Haptics follow the phone's own haptics setting, not Reduce Motion: that
 // setting is about movement on screen, and a tap you feel is not movement.
 // Did is a success, nope a soft bump, undo a rigid one, and crossing the Did
-// or nope edge of a swipe a selection tick.
+// or nope edge of a swipe a selection tick. Android speaks its own
+// HapticFeedbackConstants (CONFIRM, REJECT, GESTURE_THRESHOLD_ACTIVATE), which
+// also honour its touch feedback switch; a phone too old for one falls back
+// to the vibrator pattern iOS's style maps to.
+const android = Platform.OS === 'android'
+
+function androidFeel(type, fallback) {
+  Haptics.performAndroidHapticsAsync(type).catch(fallback)
+}
+
+function edgeTick() {
+  const select = () => Haptics.selectionAsync().catch(() => {})
+  if (!android) {
+    select()
+    return
+  }
+  androidFeel(Haptics.AndroidHaptics.Segment_Tick, select)
+}
+
 export function feelTap(kind) {
   if (kind === 'did' || kind === 'hall-on') {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    const success = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    if (android) androidFeel(Haptics.AndroidHaptics.Confirm, success)
+    else success()
     return
   }
   if (kind === 'skip') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {})
+    const soft = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {})
+    if (android) androidFeel(Haptics.AndroidHaptics.Reject, soft)
+    else soft()
     return
   }
   if (kind === 'undo') {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {})
+    return
+  }
+  if (kind === 'edge') {
+    edgeTick()
     return
   }
   if (kind === 'tick') {

@@ -2221,6 +2221,16 @@ test('the phone location has an origin, so import() chunk urls can be built', ()
   assert.equal(devServerUrl(), '', 'no dev server outside a dev build')
 })
 
+test('Android feels answers through its own HapticFeedbackConstants', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
+  const card = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
+  assert.ok(shim.includes('AndroidHaptics.Confirm'), 'Did is CONFIRM')
+  assert.ok(shim.includes('AndroidHaptics.Reject'), 'nope is REJECT')
+  assert.ok(card.includes("feelTap('edge')"), 'crossing the line is the edge tick')
+  assert.ok(!/reduceMotion|useReduceMotion/.test(shim.slice(shim.indexOf('export function feelTap'), shim.indexOf('export function playClick'))), 'haptics ignore Reduce Motion')
+})
+
 test('the phone answers prefers-reduced-motion from its own Reduce Motion', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')

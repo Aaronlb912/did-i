@@ -16,7 +16,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 import { SWIPE_THRESHOLD, SWIPE_WAKE } from '../../src/lib/swipe-face.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { playClick } from '../../src/lib/native.js'
+import { feelTap } from '../../src/lib/native.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { gemGlowHostStyle, gemLookTone } from '../lib/gem-look-tone.js'
 import { SwipeEdgeRails } from './SwipeEdgeRails.jsx'
@@ -35,6 +35,11 @@ import { useSwipeFly } from './SwipeFly.jsx'
 import { fonts } from '../theme.js'
 
 const SPRING = { damping: 20, stiffness: 260 }
+
+// The selection tick for crossing the Did or nope line.
+function feelEdge() {
+  feelTap('edge')
+}
 // The card follows sideways fully and up and down a little, so it feels
 // held rather than slid on a rail.
 const FOLLOW_Y = 0.35
@@ -308,7 +313,7 @@ function StackCard({
       pull.value = dx
       const next = dx >= SWIPE_THRESHOLD && !blockDid ? 1 : dx <= -SWIPE_THRESHOLD && !blockNope ? -1 : 0
       if (next !== zone.value) {
-        if (next !== 0) scheduleOnRN(playClick)
+        if (next !== 0) scheduleOnRN(feelEdge)
         zone.value = next
       }
     },
