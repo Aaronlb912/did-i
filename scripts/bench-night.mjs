@@ -65,9 +65,12 @@ function makeShelf(tags, perTag, nights) {
   return boards
 }
 
-// The median of several rounds, not the average of one. A laptop with a
-// dev server and a browser on it swings by a factor of two, and a check
-// that fails at random is a check people learn to ignore.
+// The fastest of several rounds, not the average of one. A laptop with a
+// dev server, a browser and an emulator on it swings by a factor of two or
+// more, and that load only ever adds time: even the median of nine rounds
+// crossed the line while an emulator booted. A lookup that went back to
+// scanning is slow in every round, the fastest too, so this still catches
+// it, and a check that fails at random is a check people learn to ignore.
 function time(label, fn, rounds = 9, runs = 20) {
   for (let i = 0; i < runs; i += 1) fn()
   const each = []
@@ -76,10 +79,9 @@ function time(label, fn, rounds = 9, runs = 20) {
     for (let i = 0; i < runs; i += 1) fn()
     each.push(Number(process.hrtime.bigint() - start) / 1e6 / runs)
   }
-  each.sort((a, b) => a - b)
-  const middle = each[Math.floor(each.length / 2)]
-  console.log(`  ${label.padEnd(26)} ${middle.toFixed(2)} ms`)
-  return middle
+  const fastest = Math.min(...each)
+  console.log(`  ${label.padEnd(26)} ${fastest.toFixed(2)} ms`)
+  return fastest
 }
 
 let worst = 0
