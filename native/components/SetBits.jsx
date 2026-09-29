@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   end: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   val: { fontFamily: fonts.ui, fontSize: 15, maxWidth: 140 },
   chev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24, marginTop: -2 },
-  check: { fontFamily: fonts.ui, fontSize: 18, fontWeight: '700' },
+  check: { fontFamily: fonts.uiBold, fontSize: 18 },
   fieldRow: {
     gap: 6,
     paddingHorizontal: 15,

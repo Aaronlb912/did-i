@@ -493,6 +493,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginBottom: 6,
   },
-  backText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
 })

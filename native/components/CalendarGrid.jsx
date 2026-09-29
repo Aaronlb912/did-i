@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   wrap: { gap: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
-  month: { fontFamily: fonts.ui, fontSize: 17, fontWeight: '600' },
+  month: { fontFamily: fonts.uiSemi, fontSize: 17 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dow: { width: '14.28%', textAlign: 'center', fontSize: 11, marginBottom: 4 },
   pad: { width: '14.28%', aspectRatio: 1 },
@@ -154,6 +154,6 @@ const styles = StyleSheet.create({
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   markRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 10 },
   markPip: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  markLabel: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '600' },
+  markLabel: { fontFamily: fonts.uiSemi, fontSize: 14 },
   markSub: { fontFamily: fonts.ui, fontSize: 13 },
 })

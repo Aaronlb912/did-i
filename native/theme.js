@@ -7,9 +7,8 @@ export { fonts }
 // sentence case, semibold, no mono/uppercase treatment. Replaces three
 // slightly different micro-label styles that used to compete on screen.
 export const sectionLabel = {
-  fontFamily: fonts.ui,
+  fontFamily: fonts.uiSemi,
   fontSize: 13,
-  fontWeight: '600',
 }
 
 // A placeholder needs to read as empty, not as another line of ink. `hex`

@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   wrap: { gap: 8, marginVertical: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
-  label: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600' },
+  label: { fontFamily: fonts.uiSemi, fontSize: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dow: { textAlign: 'center', fontSize: 11, lineHeight: 16 },
   day: {

@@ -77,7 +77,7 @@ export function JewelKey({ colors, onDone }) {
 
 const styles = StyleSheet.create({
   box: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 10 },
-  title: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '600', marginBottom: 10 },
+  title: { fontFamily: fonts.uiSemi, fontSize: 15, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '50%' },
   dot: { width: 9, height: 9, borderRadius: 5 },

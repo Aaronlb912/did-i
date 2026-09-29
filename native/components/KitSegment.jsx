@@ -100,5 +100,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plainText: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' },
+  plainText: { fontFamily: fonts.uiSemi, fontSize: 13 },
 })
