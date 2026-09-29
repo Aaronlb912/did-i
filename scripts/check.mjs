@@ -93,7 +93,7 @@ import { additionsEn, additionsEs } from './i18n-additions.mjs'
 import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
-import { cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
+import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2330,6 +2330,8 @@ test('a flick answers by where it was headed and flies off along its path', () =
   assert.equal(depthLook(2).scale, 0.92)
   assert.ok(depthLook(0.5).scale < 1 && depthLook(0.5).scale > 0.96, 'a card growing up is in between')
   assert.equal(depthLook(3).opacity, 0)
+  assert.deepEqual(RISE_SPRING, { stiffness: 170, damping: 15 }, 'the captain picked variant A')
+  assert.ok(depthLook(-0.1).scale > 1 && depthLook(-0.1).translateY === 0, 'a spring passing its place grows a hair, never lifts')
 })
 
 test('haptics speak one language on Tonight and do not switch off with Reduce Motion', () => {

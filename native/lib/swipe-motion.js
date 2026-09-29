@@ -63,11 +63,16 @@ function between(list, depth) {
   return list[low] + (list[high] - list[low]) * (d - low)
 }
 
+// The card rising into the face settles on a soft spring. It may pass its
+// place by a hair, so a depth just under 0 grows a touch past full size.
+export const RISE_SPRING = { stiffness: 170, damping: 15 }
+
 // Scale, drop and opacity for a card at a depth, fractional while it moves up.
 export function depthLook(depth) {
   'worklet'
+  const past = Math.min(0, depth)
   return {
-    scale: between(DEPTH_SCALE, depth),
+    scale: between(DEPTH_SCALE, depth) + (DEPTH_SCALE[0] - DEPTH_SCALE[1]) * -past,
     translateY: Math.max(0, depth) * DEPTH_PEEK,
     opacity: between(DEPTH_OPACITY, depth),
   }
