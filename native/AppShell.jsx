@@ -27,6 +27,7 @@ import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
+import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
@@ -298,6 +299,9 @@ export function AppShell() {
         <DidYouBanner path={route.path} colors={colors} />
         <SheetHost />
         <CheerBurstHost />
+        <Slot>
+          <FlyHost />
+        </Slot>
       </View>
     </View>
   )

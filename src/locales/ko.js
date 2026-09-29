@@ -671,6 +671,7 @@ export const ko = {
   'gems.storeSoon': 'Google Play는 아직. 브라우저 web shop 써.',
   'gems.earn': '밤을 끝내면 주에 gem 1개도 받아.',
   'kit.title': '컬렉션',
+  'kit.added': '컬렉션에 들어왔어요',
   'kit.try': '해 보기',
   'kit.hint': '가진 것. look은 앱을 바꾸고 cheer 색도 바뀝니다. 쓰는 것을 고르세요.',
   'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',

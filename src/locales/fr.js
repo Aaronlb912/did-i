@@ -700,6 +700,7 @@ export const fr = {
     'Google Play n\'est pas encore actif. Utilise le shop web dans un navigateur.',
   'gems.earn': 'Tu gagnes aussi une gem par semaine quand tu termines une nuit.',
   'kit.title': 'Ma collection',
+  'kit.added': 'Ajouté à ma collection',
   'kit.try': 'Essayer',
   'kit.hint':
     'Ce que tu possèdes. Les looks repose l\'app et teintent tes cheers. Choisis ce qui est actif.',

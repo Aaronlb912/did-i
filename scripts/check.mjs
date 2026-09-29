@@ -99,6 +99,7 @@ import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
 import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
 import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
+import { kitCount } from '../native/lib/kit-flight.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2318,6 +2319,25 @@ test('a quiet night sky steps behind the done card, off under Reduce Motion', ()
   assert.ok(later.x >= -40 && later.x <= 300, 'and wraps inside the sky')
   const sky = readFileSync(path.join(root, 'native/components/NightSky.jsx'), 'utf8')
   assert.ok(sky.includes('if (reduce) return null'), 'nothing moves under Reduce Motion')
+})
+
+test('the shop is live: looks fade in place, cheers play on press, buddies blink, buys fly to Collection', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const shop = read('native/screens/shop.jsx')
+  const cosmetic = read('native/components/Cosmetic.jsx')
+  const art = read('native/components/BuddyArt.jsx')
+  const host = read('native/components/ToastHost.jsx')
+  assert.ok(shop.includes('<LookStage id={peekLook || purse.lookOn} />'), 'the looks page always shows a card in the look')
+  assert.ok(shop.includes('onPressIn={pressIn ? early : undefined}'), 'a cheer plays as it is pressed')
+  assert.ok(shop.includes('PRESS_DEDUPE_MS'), 'and not again on the tap that follows')
+  assert.ok(cosmetic.includes('const on = alive && !reduce'), 'buddies keep still under Reduce Motion')
+  assert.ok(art.includes('<BlinkEye'), 'a buddy blinks')
+  assert.ok(!/useAnimatedProps/.test(art), 'without animating an SVG part')
+  assert.equal(shop.split('flyToKit({').length - 1, 3, 'a bought look, cheer or buddy flies to the Collection')
+  assert.ok(host.includes("const flying = Boolean(item.fly) && !reduce"), 'no flight under Reduce Motion')
+  assert.equal(kitCount({ looks: ['a', 'b'], cheers: ['c'], buddies: [] }), 3)
+  assert.equal(kitCount(null), 0)
 })
 
 test('Android feels answers through its own HapticFeedbackConstants', () => {

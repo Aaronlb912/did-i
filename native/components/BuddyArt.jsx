@@ -1,4 +1,5 @@
 import { View } from 'react-native'
+import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { svgParts } from '../lib/svg-parts.js'
 
 const COAT = {
@@ -90,7 +91,95 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
   )
 }
 
-export function BuddyArt({ id, width = 48, height = 58 }) {
+const DARK = '#2d241c'
+const SHINE = ['#ffffff', 0.9]
+
+// Each buddy's eyes, left then right, as [cx, cy, rx, ry, fill, opacity] in
+// its 48x58 drawing. They are drawn apart from the rest so a blink can shut
+// them: each eye is its own little picture that squashes flat, and the skin
+// drawn under it shows through.
+const EYES = {
+  cat: [
+    [[18, 28, 2.2, 3, DARK], [18.8, 27, 0.7, 0.9, ...SHINE]],
+    [[30, 28, 2.2, 3, DARK], [30.8, 27, 0.7, 0.9, ...SHINE]],
+  ],
+  dog: [
+    [[18, 27, 2.3, 3.1, DARK], [19, 26, 0.7, 0.9, ...SHINE]],
+    [[30, 27, 2.3, 3.1, DARK], [31, 26, 0.7, 0.9, ...SHINE]],
+  ],
+  rabbit: [
+    [[18, 29, 2, 2.8, DARK], [18.7, 28.2, 0.6, 0.8, ...SHINE]],
+    [[30, 29, 2, 2.8, DARK], [30.7, 28.2, 0.6, 0.8, ...SHINE]],
+  ],
+  owl: [
+    [[18, 28, 4, 4.5, '#f0e080'], [18, 28, 2, 2.5, DARK], [18.5, 27.2, 0.6, 0.8, ...SHINE]],
+    [[30, 28, 4, 4.5, '#f0e080'], [30, 28, 2, 2.5, DARK], [30.5, 27.2, 0.6, 0.8, ...SHINE]],
+  ],
+  ant: [
+    [[19.6, 19.8, 2.4, 2.8, DARK], [20.2, 19, 0.7, 0.9, ...SHINE]],
+    [[28.4, 19.8, 2.4, 2.8, DARK], [29, 19, 0.7, 0.9, ...SHINE]],
+  ],
+  possum: [
+    [[19, 28, 3.2, 3.6, '#5b5660'], [19, 28, 1.9, 2.3, '#1f1a1e'], [19.6, 27.2, 0.6, 0.8, ...SHINE]],
+    [[29, 28, 3.2, 3.6, '#5b5660'], [29, 28, 1.9, 2.3, '#1f1a1e'], [29.6, 27.2, 0.6, 0.8, ...SHINE]],
+  ],
+  frog: [
+    [[16, 19, 4.6, 4.6, '#ffffff'], [16.6, 19.6, 2.2, 2.8, DARK], [17.3, 18.6, 0.7, 0.9, ...SHINE]],
+    [[32, 19, 4.6, 4.6, '#ffffff'], [31.4, 19.6, 2.2, 2.8, DARK], [32.1, 18.6, 0.7, 0.9, ...SHINE]],
+  ],
+}
+
+function EyeParts({ Ellipse, eye }) {
+  return eye.map(([cx, cy, rx, ry, fill, opacity], index) => (
+    <Ellipse key={index} cx={cx} cy={cy} rx={rx} ry={ry} fill={fill} opacity={opacity} />
+  ))
+}
+
+/** Both eyes, drawn in place inside the buddy's own picture. */
+function EyesInline({ parts, id }) {
+  return EYES[id].map((eye, index) => <EyeParts key={index} Ellipse={parts.Ellipse} eye={eye} />)
+}
+
+/** One eye as its own picture over the buddy; `blink` 0 is open, 1 shut. */
+function BlinkEye({ parts, eye, width, height, blink }) {
+  const shut = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 - 0.92 * blink.value }] }))
+  // The eye's box in the drawing, a hair wider so its soft edge is not cut.
+  const left = Math.min(...eye.map(([cx, , rx]) => cx - rx)) - 0.5
+  const top = Math.min(...eye.map(([, cy, , ry]) => cy - ry)) - 0.5
+  const w = Math.max(...eye.map(([cx, , rx]) => cx + rx)) + 0.5 - left
+  const h = Math.max(...eye.map(([, cy, , ry]) => cy + ry)) + 0.5 - top
+  // The drawing fits its box by the tighter side and sits in the middle.
+  const k = Math.min(width / 48, height / 58)
+  const ox = (width - 48 * k) / 2
+  const oy = (height - 58 * k) / 2
+  const { Svg } = parts
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: 'absolute', left: ox + left * k, top: oy + top * k, width: w * k, height: h * k }, shut]}
+    >
+      <Svg width={w * k} height={h * k} viewBox={`${left} ${top} ${w} ${h}`}>
+        <EyeParts Ellipse={parts.Ellipse} eye={eye} />
+      </Svg>
+    </Animated.View>
+  )
+}
+
+/** A buddy; with `blink` (a shared value, 0 open to 1 shut) it can blink. */
+export function BuddyArt({ id, width = 48, height = 58, blink = null }) {
+  const parts = svgParts()
+  if (!blink || !parts || !EYES[id]) return <BuddyDrawing id={id} width={width} height={height} eyes />
+  return (
+    <View style={{ width, height }}>
+      <BuddyDrawing id={id} width={width} height={height} eyes={false} />
+      {EYES[id].map((eye, index) => (
+        <BlinkEye key={index} parts={parts} eye={eye} width={width} height={height} blink={blink} />
+      ))}
+    </View>
+  )
+}
+
+function BuddyDrawing({ id, width, height, eyes }) {
   const parts = svgParts()
   if (!parts) return <BuddyPlain id={id} width={width} height={height} />
   const { Svg, Ellipse, Line, Path, Polygon } = parts
@@ -103,10 +192,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Polygon points="30,19 34,8 38,18" fill="#f0a64a" />
         <Polygon points="11,17 14,10 16,18" fill="#ffd4a8" />
         <Polygon points="32,18 34,10 37,17" fill="#ffd4a8" />
-        <Ellipse cx="18" cy="28" rx="2.2" ry="3" fill="#2d241c" />
-        <Ellipse cx="30" cy="28" rx="2.2" ry="3" fill="#2d241c" />
-        <Ellipse cx="18.8" cy="27" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
-        <Ellipse cx="30.8" cy="27" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="cat" /> : null}
         <Path d="M24 31 L22 34 L26 34 Z" fill="#e07a8a" />
         <Line x1="14" y1="33" x2="6" y2="31" stroke="#5c4a3a" strokeWidth="0.9" />
         <Line x1="14" y1="35" x2="6" y2="36" stroke="#5c4a3a" strokeWidth="0.9" />
@@ -127,10 +213,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="24" cy="34" rx="8" ry="6.5" fill="#f3ddc4" />
         <Ellipse cx="11" cy="24" rx="5.5" ry="9" fill="#9a6538" transform="rotate(-18 11 24)" />
         <Ellipse cx="37" cy="24" rx="5.5" ry="9" fill="#9a6538" transform="rotate(18 37 24)" />
-        <Ellipse cx="18" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
-        <Ellipse cx="30" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
-        <Ellipse cx="19" cy="26" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
-        <Ellipse cx="31" cy="26" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="dog" /> : null}
         <Ellipse cx="24" cy="33.5" rx="3.2" ry="2.4" fill="#2d241c" />
         <Path d="M22 36 Q24 40 26 36" fill="#e07a8a" />
         <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#c68b52" />
@@ -150,10 +233,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="31" cy="12" rx="2.2" ry="7" fill="#f0b8c8" transform="rotate(8 31 12)" />
         <Ellipse cx="24" cy="32" rx="14" ry="13" fill="#b8b8c8" />
         <Ellipse cx="24" cy="34" rx="9" ry="8" fill="#e8e8f0" />
-        <Ellipse cx="18" cy="29" rx="2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="30" cy="29" rx="2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="18.7" cy="28.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
-        <Ellipse cx="30.7" cy="28.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="rabbit" /> : null}
         <Ellipse cx="24" cy="33" rx="2" ry="1.5" fill="#f0b8c8" />
         <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#b8b8c8" />
         <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#b8b8c8" />
@@ -170,12 +250,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Polygon points="30,15 32,6 34,14" fill="#6b5038" />
         <Ellipse cx="24" cy="32" rx="14" ry="13" fill="#8b6b4a" />
         <Ellipse cx="24" cy="30" rx="11" ry="10" fill="#d4c4a8" />
-        <Ellipse cx="18" cy="28" rx="4" ry="4.5" fill="#f0e080" />
-        <Ellipse cx="30" cy="28" rx="4" ry="4.5" fill="#f0e080" />
-        <Ellipse cx="18" cy="28" rx="2" ry="2.5" fill="#2d241c" />
-        <Ellipse cx="30" cy="28" rx="2" ry="2.5" fill="#2d241c" />
-        <Ellipse cx="18.5" cy="27.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
-        <Ellipse cx="30.5" cy="27.2" rx="0.6" ry="0.8" fill="#fff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="owl" /> : null}
         <Polygon points="24,31 22,34 26,34" fill="#d4a040" />
         <Ellipse cx="24" cy="38" rx="7" ry="6" fill="#c4a882" />
         <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8b6b4a" />
@@ -214,10 +289,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="24" cy="31" rx="5" ry="4.5" fill="#b5533c" />
         <Ellipse cx="24" cy="20" rx="8.5" ry="7.5" fill="#b5533c" />
         <Ellipse cx="21" cy="16.8" rx="2.2" ry="1.2" fill="#ffffff" opacity="0.25" />
-        <Ellipse cx="19.6" cy="19.8" rx="2.4" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="28.4" cy="19.8" rx="2.4" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="20.2" cy="19" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
-        <Ellipse cx="29" cy="19" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="ant" /> : null}
         <Ellipse cx="22.2" cy="26.4" rx="1.3" ry="0.9" fill="#7a3526" />
         <Ellipse cx="25.8" cy="26.4" rx="1.3" ry="0.9" fill="#7a3526" />
       </Svg>
@@ -236,12 +308,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="24" cy="32" rx="15" ry="13.5" fill="#9b98a3" />
         <Ellipse cx="24" cy="29" rx="10.5" ry="9" fill="#f4f1ec" />
         <Ellipse cx="24" cy="34.5" rx="5.5" ry="4.2" fill="#f4f1ec" />
-        <Ellipse cx="19" cy="28" rx="3.2" ry="3.6" fill="#5b5660" />
-        <Ellipse cx="29" cy="28" rx="3.2" ry="3.6" fill="#5b5660" />
-        <Ellipse cx="19" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e" />
-        <Ellipse cx="29" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e" />
-        <Ellipse cx="19.6" cy="27.2" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.9" />
-        <Ellipse cx="29.6" cy="27.2" rx="0.6" ry="0.8" fill="#ffffff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="possum" /> : null}
         <Ellipse cx="24" cy="37.2" rx="1.9" ry="1.4" fill="#e07a8a" />
         <Ellipse cx="15" cy="33.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.6" />
         <Ellipse cx="33" cy="33.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.6" />
@@ -262,12 +329,7 @@ export function BuddyArt({ id, width = 48, height = 58 }) {
         <Ellipse cx="24" cy="37" rx="10" ry="7" fill="#e4f4c4" />
         <Ellipse cx="11" cy="35" rx="1.8" ry="1.3" fill="#4e9a42" />
         <Ellipse cx="37" cy="34" rx="1.6" ry="1.2" fill="#4e9a42" />
-        <Ellipse cx="16" cy="19" rx="4.6" ry="4.6" fill="#fff" />
-        <Ellipse cx="32" cy="19" rx="4.6" ry="4.6" fill="#fff" />
-        <Ellipse cx="16.6" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="31.4" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="17.3" cy="18.6" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
-        <Ellipse cx="32.1" cy="18.6" rx="0.7" ry="0.9" fill="#fff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="frog" /> : null}
         <Ellipse cx="22.5" cy="27.5" rx="0.6" ry="0.45" fill="#2f5a28" />
         <Ellipse cx="25.5" cy="27.5" rx="0.6" ry="0.45" fill="#2f5a28" />
         <Path d="M17 30 Q24 35.5 31 30" fill="none" stroke="#2f5a28" strokeWidth="1.3" strokeLinecap="round" />

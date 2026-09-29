@@ -699,6 +699,7 @@ export const es = {
   'gems.storeSoon': 'Google Play aún no está listo. Usa la tienda web en un navegador.',
   'gems.earn': 'También ganas una gema a la semana al terminar una noche.',
   'kit.title': 'Colección',
+  'kit.added': 'Ya está en tu colección',
   'kit.try': 'Probar',
   'kit.hint': 'Elige un estante. Toca un artículo y póntelo.',
   'kit.noBuddies': 'Aún no tienes compañeros. En la tienda hay gato y perro.',

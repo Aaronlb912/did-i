@@ -695,6 +695,7 @@ export const it = {
   'gems.storeSoon': 'Google Play non è ancora attivo. Usa lo shop web nel browser.',
   'gems.earn': 'Guadagni anche una gem a settimana quando finisci una notte.',
   'kit.title': 'Collezione',
+  'kit.added': 'Ora nella tua collezione',
   'kit.try': 'Prova',
   'kit.hint':
     'Quello che hai. I look ridipingono l\'app e tingono i tuoi cheer. Scegli cosa è attivo.',

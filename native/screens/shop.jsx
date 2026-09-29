@@ -1,6 +1,7 @@
 import Constants from 'expo-constants'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import Reanimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
@@ -30,7 +31,6 @@ import {
   LOOKS,
   lookText,
   fireCheer,
-  isGemLook,
   nextCheerStage,
   normalizePurse,
   dropSlides,
@@ -60,6 +60,7 @@ import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
+import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -98,10 +99,27 @@ function useShopColors(book, peekLook = '') {
   return useLookColors(peekLook || activeLook(book), !peekLook)
 }
 
-function PreviewButton({ onPress, selected, colors, children }) {
+// A press-in preview waits this long, so a touch that starts a scroll does
+// not set it off.
+const PRESS_IN_DELAY = 90
+// Pressing in (or hovering) already played it, so the tap that follows does not.
+const PRESS_DEDUPE_MS = 900
+
+function PreviewButton({ onPress, pressIn = false, selected, colors, children }) {
+  const fired = useRef(0)
+  const early = () => {
+    fired.current = Date.now()
+    onPress?.()
+  }
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (pressIn && Date.now() - fired.current < PRESS_DEDUPE_MS) return
+        onPress?.()
+      }}
+      onPressIn={pressIn ? early : undefined}
+      onHoverIn={pressIn ? early : undefined}
+      unstable_pressDelay={pressIn ? PRESS_IN_DELAY : undefined}
       accessibilityRole="button"
       style={[
         styles.previewBtn,
@@ -121,7 +139,7 @@ function BuddyPreviewCard({ id, colors }) {
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
       <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={id} />
+        <BuddyHang id={id} alive />
         <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
         <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{t('shop.buddyPreviewQ')}</Text>
       </View>
@@ -155,6 +173,44 @@ function LookPreviewCard({ id }) {
   )
 }
 
+// The look being tried, or the one worn, as its own Tonight card. A new look
+// fades in over the last one in place, so the card never jumps.
+const LOOK_FADE_MS = 240
+
+function LookStage({ id }) {
+  const reduce = useReduceMotion()
+  const [layers, setLayers] = useState({ now: id, was: '' })
+  const fade = useSharedValue(1)
+
+  useEffect(() => {
+    if (id === layers.now) return undefined
+    if (reduce) {
+      setLayers({ now: id, was: '' })
+      return undefined
+    }
+    fade.value = 0
+    setLayers({ now: id, was: layers.now })
+    fade.value = withTiming(1, { duration: LOOK_FADE_MS })
+    const timer = setTimeout(() => setLayers((prev) => (prev.now === id ? { now: id, was: '' } : prev)), LOOK_FADE_MS + 40)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, reduce])
+
+  const fadeIn = useAnimatedStyle(() => ({ opacity: fade.value }))
+  return (
+    <View style={styles.lookStage}>
+      {layers.was ? (
+        <View style={styles.lookStageWas} pointerEvents="none">
+          <LookPreviewCard id={layers.was} />
+        </View>
+      ) : null}
+      <Reanimated.View style={layers.was ? fadeIn : null}>
+        <LookPreviewCard id={layers.now} />
+      </Reanimated.View>
+    </View>
+  )
+}
+
 // A looping Animated.Value, off (and reset) when `active` is false or the
 // person asked for less motion.
 function useLoopValue(active, duration) {
@@ -182,12 +238,6 @@ function usePulseStyle(active) {
   return { transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }) }] }
 }
 
-function useBobStyle(active) {
-  const reduce = useReduceMotion()
-  const val = useLoopValue(active && !reduce, 900)
-  return { transform: [{ translateY: val.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }
-}
-
 // A look shown as a mini Tonight card in its own colours, not a bare swatch.
 function LookMiniCard({ id }) {
   const look = useLookColors(id, false)
@@ -199,10 +249,9 @@ function LookMiniCard({ id }) {
 }
 
 // The real thing, not a tiny glyph: a look reads as its own card, a cheer
-// loops, a buddy idles.
+// loops, a buddy blinks and sways.
 function TileArt({ type, id, colors }) {
   const pulse = usePulseStyle(type === 'cheer')
-  const bob = useBobStyle(type === 'buddy')
   if (type === 'look') return <LookMiniCard id={id} />
   if (type === 'cheer') {
     return (
@@ -211,11 +260,7 @@ function TileArt({ type, id, colors }) {
       </Animated.View>
     )
   }
-  return (
-    <Animated.View style={bob}>
-      <BuddyChip id={id} />
-    </Animated.View>
-  )
+  return <BuddyChip id={id} alive />
 }
 
 function tileName(type, id) {
@@ -433,16 +478,19 @@ function openInfo(name, info, colors) {
   })
 }
 
-function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn }) {
-  const previewNode = preview
+function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn, previewPressIn, artKey }) {
+  const artRef = useMemo(() => (artKey ? kitArtRef(artKey) : undefined), [artKey])
+  const art = preview
     ? onPreview
       ? (
-        <PreviewButton onPress={onPreview} selected={previewOn} colors={colors}>
+        <PreviewButton onPress={onPreview} pressIn={previewPressIn} selected={previewOn} colors={colors}>
           {preview}
         </PreviewButton>
       )
       : preview
     : null
+  // A bought item flies to the Collection from here.
+  const previewNode = art && artRef ? <View ref={artRef} collapsable={false}>{art}</View> : art
   return (
     <View
       style={[
@@ -666,7 +714,7 @@ export function ShopLooksScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id) {
+  function take(next, id, bought = false) {
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -676,6 +724,14 @@ export function ShopLooksScreen({ book, onChange }) {
     if (!next.miss) {
       setPeekLook('')
       setConfirm(null)
+      if (bought) {
+        flyToKit({
+          key: `look:${id}`,
+          art: <LookChip id={id} colors={colors} />,
+          name: t(lookText(id, 'name')),
+          count: kitCount(normalizePurse(next.book)),
+        })
+      }
       onChange(next.book)
     }
   }
@@ -690,6 +746,7 @@ export function ShopLooksScreen({ book, onChange }) {
         key={item.id}
         colors={colors}
         preview={<LookChip id={item.id} colors={colors} />}
+        artKey={`look:${item.id}`}
         previewOn={peekLook === item.id}
         onPreview={() => setPeekLook((prev) => (prev === item.id ? '' : item.id))}
         name={t(lookText(item.id, 'name'))}
@@ -713,7 +770,7 @@ export function ShopLooksScreen({ book, onChange }) {
             body: t('shop.buyLookBody', { cost }),
             go: async () => {
               const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
-              take(next, item.id)
+              take(next, item.id, true)
             },
           })
         }}
@@ -732,7 +789,7 @@ export function ShopLooksScreen({ book, onChange }) {
     >
       <Meta colors={colors}>{t('shop.looksHint', { coins: LOOK_COIN_PRICE, gems: LOOK_GEM_PRICE })}</Meta>
 
-      {peekLook && isGemLook(peekLook) ? <LookPreviewCard id={peekLook} /> : null}
+      <LookStage id={peekLook || purse.lookOn} />
 
       <Cap colors={colors}>{t('shop.looksCoins')}</Cap>
       {COIN_LOOKS.map(lookRow)}
@@ -761,7 +818,7 @@ export function ShopCheersScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id) {
+  function take(next, id, bought = false) {
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -770,6 +827,14 @@ export function ShopCheersScreen({ book, onChange }) {
     setMiss({ id, text: shopMiss(next) })
     if (!next.miss) {
       setConfirm(null)
+      if (bought) {
+        flyToKit({
+          key: `cheer:${id}`,
+          art: <CheerChip id={id} stage={1} colors={colors} />,
+          name: t(cheerText(id, 'name')),
+          count: kitCount(normalizePurse(next.book)),
+        })
+      }
       onChange(next.book)
     }
   }
@@ -792,7 +857,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setConfirm({
             title: t(cheerText(item.id, 'name')),
             body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
-            go: () => take(buyCheer(book, item.id), item.id),
+            go: () => take(buyCheer(book, item.id), item.id, true),
           })
         }
         let disabled = false
@@ -820,7 +885,9 @@ export function ShopCheersScreen({ book, onChange }) {
             key={item.id}
             colors={colors}
             preview={<CheerChip id={item.id} stage={have ? stage : 1} colors={colors} />}
+            artKey={`cheer:${item.id}`}
             onPreview={() => fireCheer(item.id, 1, coat, undefined, true)}
+            previewPressIn
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
             miss={miss.id === item.id ? miss.text : ''}
@@ -853,7 +920,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id) {
+  function take(next, id, bought = false) {
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -863,6 +930,14 @@ export function ShopBuddiesScreen({ book, onChange }) {
     if (!next.miss) {
       setPeekBuddy('')
       setConfirm(null)
+      if (bought) {
+        flyToKit({
+          key: `buddy:${id}`,
+          art: <BuddyChip id={id} />,
+          name: t(buddyText(id, 'name')),
+          count: kitCount(normalizePurse(next.book)),
+        })
+      }
       onChange(next.book)
     }
   }
@@ -881,7 +956,8 @@ export function ShopBuddiesScreen({ book, onChange }) {
           <ShopActionRow
             key={item.id}
             colors={colors}
-            preview={<BuddyChip id={item.id} />}
+            preview={<BuddyChip id={item.id} alive />}
+            artKey={`buddy:${item.id}`}
             previewOn={peekBuddy === item.id}
             onPreview={() => setPeekBuddy(item.id)}
             name={t(buddyText(item.id, 'name'))}
@@ -903,7 +979,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
                 body: t('shop.buyBuddyBody', { cost: gemLine(item.gems) }),
-                go: () => take(buyBuddy(book, item.id), item.id),
+                go: () => take(buyBuddy(book, item.id), item.id, true),
               })
             }}
           />
@@ -1134,7 +1210,7 @@ export function CollectionScreen({ book, onChange }) {
               colors={colors}
               onPress={() => onChange(wearBuddy(book, item.id).book)}
             >
-              <BuddyChip id={item.id} colors={colors} />
+              <BuddyChip id={item.id} alive />
             </KitTile>
           ))}
           <KitTile
@@ -1390,6 +1466,8 @@ const styles = StyleSheet.create({
   tileArt: { height: 56, width: '100%', alignItems: 'center', justifyContent: 'center' },
   tileLabel: { width: '100%', alignItems: 'center', gap: 4 },
   tileName: { fontFamily: fonts.ui, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  lookStage: { position: 'relative' },
+  lookStageWas: { position: 'absolute', left: 0, right: 0, top: 0 },
   lookMini: { width: 40, height: 52, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   lookMiniDot: { width: 14, height: 14, borderRadius: 7 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

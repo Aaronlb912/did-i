@@ -1,4 +1,15 @@
+import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { isGemLook } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { gemLookChipMeta } from '../lib/gem-look-tone.js'
@@ -633,29 +644,67 @@ export function CheerChip({ id, stage = 1, colors }) {
   return <View style={[styles.cheerChip, shell]}>{art}</View>
 }
 
-export function BuddyChip({ id }) {
+// A shop buddy is alive: it blinks now and then and sways a little from
+// where it hangs. Still under Less motion and the phone's Reduce Motion.
+const SWAY_MS = 1800
+function useBuddyLife(alive) {
+  const reduce = useReduceMotion()
+  const on = alive && !reduce
+  const blink = useSharedValue(0)
+  const sway = useSharedValue(0.5)
+  useEffect(() => {
+    if (!on) return undefined
+    sway.value = 0
+    sway.value = withRepeat(withTiming(1, { duration: SWAY_MS, easing: Easing.inOut(Easing.sin) }), -1, true)
+    let timer = null
+    const later = () => {
+      timer = setTimeout(() => {
+        blink.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 120 }))
+        later()
+      }, 2200 + Math.random() * 2600)
+    }
+    later()
+    return () => {
+      clearTimeout(timer)
+      cancelAnimation(sway)
+      cancelAnimation(blink)
+      sway.value = 0.5
+      blink.value = 0
+    }
+  }, [blink, on, sway])
+  const idle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${(sway.value - 0.5) * 6}deg` }, { translateY: -Math.abs(sway.value - 0.5) * 3 }],
+  }))
+  return { blink: on ? blink : null, idle: on ? idle : null }
+}
+
+export function BuddyChip({ id, alive = false }) {
+  const life = useBuddyLife(alive)
   if (!id) return null
   return (
     <View style={styles.buddyChip}>
-      <Slot fallback={<BuddyPlain id={id} width={28} height={34} />}>
-        <BuddyArt id={id} width={28} height={34} />
-      </Slot>
+      <Animated.View style={[styles.buddySway, life.idle]}>
+        <Slot fallback={<BuddyPlain id={id} width={28} height={34} />}>
+          <BuddyArt id={id} width={28} height={34} blink={life.blink} />
+        </Slot>
+      </Animated.View>
     </View>
   )
 }
 
-export function BuddyHang({ id, inline = false }) {
+export function BuddyHang({ id, inline = false, alive = false }) {
+  const life = useBuddyLife(alive)
   if (!id) return null
   const width = inline ? 48 : 40
   const height = inline ? 58 : 48
   // The owl's face sits lower in the same box than the other three.
   const lift = id === 'owl' ? styles.buddyOwl : null
   return (
-    <View style={[inline ? styles.buddyInline : styles.buddyHang, lift]} pointerEvents="none">
+    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, styles.buddySway, life.idle]} pointerEvents="none">
       <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
-        <BuddyArt id={id} width={width} height={height} />
+        <BuddyArt id={id} width={width} height={height} blink={life.blink} />
       </Slot>
-    </View>
+    </Animated.View>
   )
 }
 
@@ -756,4 +805,6 @@ const styles = StyleSheet.create({
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
   buddyOwl: { marginTop: -6 },
+  // A hanging buddy sways from its top.
+  buddySway: { transformOrigin: 'top' },
 })
