@@ -6,6 +6,8 @@ function fallback() {
     impactAsync: call,
     notificationAsync: call,
     selectionAsync: call,
+    performAndroidHapticsAsync: call,
+    AndroidHaptics: { Confirm: 'confirm', Reject: 'reject', Segment_Tick: 'segment-tick' },
     ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
     NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
   })
