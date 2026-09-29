@@ -142,6 +142,10 @@ const EYES = {
     [[16, 19, 4.6, 4.6, '#ffffff'], [16.6, 19.6, 2.2, 2.8, DARK], [17.3, 18.6, 0.7, 0.9, ...SHINE]],
     [[32, 19, 4.6, 4.6, '#ffffff'], [31.4, 19.6, 2.2, 2.8, DARK], [32.1, 18.6, 0.7, 0.9, ...SHINE]],
   ],
+  penguin: [
+    [[19.8, 26.5, 2.2, 2.8, DARK], [20.5, 25.6, 0.7, 0.9, ...SHINE]],
+    [[28.2, 26.5, 2.2, 2.8, DARK], [28.9, 25.6, 0.7, 0.9, ...SHINE]],
+  ],
 }
 
 function EyeParts({ Ellipse, eye }) {
@@ -368,10 +372,7 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="28.5" cy="27" rx="6.2" ry="6.8" fill="#f7f5f0" />
         <Ellipse cx="24" cy="37.5" rx="9" ry="7.5" fill="#f7f5f0" />
         <Ellipse cx="20.5" cy="18.5" rx="2.6" ry="1.4" fill="#ffffff" opacity="0.2" />
-        <Ellipse cx="19.8" cy="26.5" rx="2.2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="28.2" cy="26.5" rx="2.2" ry="2.8" fill="#2d241c" />
-        <Ellipse cx="20.5" cy="25.6" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
-        <Ellipse cx="28.9" cy="25.6" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        {eyes ? <EyesInline parts={parts} id="penguin" /> : null}
         <Polygon points="21.5,30.5 26.5,30.5 24,34" fill="#f5a524" />
         <Ellipse cx="15.5" cy="31.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="32.5" cy="31.5" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />

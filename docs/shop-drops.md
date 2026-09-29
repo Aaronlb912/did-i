@@ -53,6 +53,9 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
 - Art in `src/lib/BuddyArt.jsx` and `native/components/BuddyArt.jsx`, and the
   same parts in both widgets: `widgets/DidITonightWidget.tsx` (iOS) and
   `widgets/android/DidITonightAndroidWidget.jsx`.
+- On the phone, the eyes go in the `EYES` table in
+  `native/components/BuddyArt.jsx` and the drawing uses `<EyesInline>`, so the
+  buddy blinks like the rest. The shop sway needs nothing extra.
 
 ## Coming soon
 
