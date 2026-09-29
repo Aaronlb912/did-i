@@ -40,6 +40,7 @@ import { fonts } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
+import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 
@@ -449,6 +450,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <SwipeFlyHost style={styles.slot}>
+        {stack.bodyKind === 'hall' ? (
+          <Slot>
+            <NightSky colors={colors} />
+          </Slot>
+        ) : null}
         <Slot>{face}</Slot>
         <Slot>
           <FamilyTonight colors={colors} />
