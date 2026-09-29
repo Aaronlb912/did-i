@@ -2221,6 +2221,14 @@ test('the phone location has an origin, so import() chunk urls can be built', ()
   assert.equal(devServerUrl(), '', 'no dev server outside a dev build')
 })
 
+test('the phone answers prefers-reduced-motion from its own Reduce Motion', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
+  assert.ok(boot.includes('isReduceMotionEnabled'), 'reads the setting at launch')
+  assert.ok(boot.includes("'reduceMotionChanged'"), 'follows it when it changes')
+  assert.ok(boot.includes("'(prefers-reduced-motion: reduce)'"), 'answers the query useReduceMotion asks')
+})
+
 test('the boot screen and phone bootstrap keep the location guard', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const problems = lintStore(root)
