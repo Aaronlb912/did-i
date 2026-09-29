@@ -11,7 +11,7 @@ export function SwipeFace({ x, kicker, title, stampDid, stampNope, buddy, colors
   const kickerStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.abs(swipePull(x.value)) }))
   return (
     <>
-      <BuddyHang id={buddy} />
+      <BuddyHang id={buddy} alive />
       <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
       <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
       {kicker ? (

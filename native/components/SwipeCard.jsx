@@ -189,9 +189,12 @@ export function SwipeCard({
 
   return (
     <View style={styles.host} pointerEvents="box-none">
-      <View style={styles.railsHost} pointerEvents="none">
-        <SwipeEdgeRails pull={pull} colors={colors} winH={winH} didLabel={stampDid} nopeLabel={stampNope} reduce={reduce} />
-      </View>
+      {/* The rails span the whole screen, so a demo card would draw them over the page it sits in. */}
+      {demo ? null : (
+        <View style={styles.railsHost} pointerEvents="none">
+          <SwipeEdgeRails pull={pull} colors={colors} winH={winH} didLabel={stampDid} nopeLabel={stampNope} reduce={reduce} />
+        </View>
+      )}
       <View ref={stackRef} style={styles.stack} collapsable={false}>
         {depth
           .map((card, index) => (
