@@ -60,3 +60,5 @@ supabase/.temp
 # Android build output
 android/build
 android/app/.cxx
+
+modules/*/android/build

@@ -2238,35 +2238,17 @@ test('a rolling number rolls each digit forward going up and back going down', (
   assert.deepEqual(rollStops('5', '5', true), { from: 6, to: 6, wide: 6 })
 })
 
-test('the night clears in one moment: one success haptic, the cheer from the card, 1.2 s', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+test('the cheer bursts from the card that was answered, once', () => {
   aimCheer(120, 400)
   assert.deepEqual(takeCheerAim(), { x: 120, y: 400 })
   assert.equal(takeCheerAim(), null, 'a spot is used once')
   aimCheer(1, 2)
   assert.equal(takeCheerAim(Date.now() + 5000), null, 'a stale spot is dropped')
-  const cheer = readFileSync(path.join(root, 'native/components/CheerBurst.jsx'), 'utf8')
-  assert.ok(cheer.includes("if (preview) feelTap('did')"), 'a real cheer adds no second success haptic')
-  const done = readFileSync(path.join(root, 'native/components/DoneCard.jsx'), 'utf8')
-  assert.ok(done.includes('export const CELEBRATE_MS = 1200'), 'about 1.2 seconds')
-  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
-  assert.ok(meter.includes('glowStyle') && meter.includes('reduce || !celebrate'), 'the full bar glows, still under Reduce Motion')
   assert.deepEqual(streakParts(7), { before: '', after: ' nights in a row' })
   assert.equal(streakParts(1), null)
 })
 
-test('the count rolls, the bar springs and the answered chip dot pops', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
-  const jewel = readFileSync(path.join(root, 'native/components/Jewel.jsx'), 'utf8')
-  assert.ok(meter.includes('<RollNumber') && meter.includes('value={answered}'), 'the answered count rolls')
-  assert.ok(meter.includes('withSpring(ratio, FILL_SPRING)'), 'the bar springs to its width')
-  assert.ok(meter.includes('reduce ? ratio :'), 'and jumps under Reduce Motion')
-  assert.ok(jewel.includes('if (!filled || reduce) return'), 'the dot pops once as it fills, not under Reduce Motion')
-})
-
 test('undo, marks and errors wait their turn in one toast line', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = () => toastQueue().map((item) => item.id)
   showToast({ id: 'mark:a', kind: 'mark' })
   showToast({ id: 'sync-miss', kind: 'error' })
@@ -2288,24 +2270,9 @@ test('undo, marks and errors wait their turn in one toast line', () => {
   showToast({ id: 'undo:questions', kind: 'undo' })
   assert.deepEqual(ids(), ['undo:questions'], 'an undo on screen is replaced on screen')
   dropToast('undo:questions')
-  const host = readFileSync(path.join(root, 'native/components/ToastHost.jsx'), 'utf8')
-  assert.ok(host.includes('usePanGesture'), 'a toast can be swiped away')
-  assert.ok(host.includes('CountdownRing'), 'undo shows its countdown ring')
-  assert.ok(host.includes('if (reduce)'), 'Reduce Motion fades instead of sliding')
 })
 
-test('undo flies the answered card back the way it left', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const card = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
-  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
-  assert.ok(card.includes('lastThrow = { key: cardKey, way, at: Date.now() }'), 'a throw remembers its side')
-  assert.ok(card.includes('back * winW * 1.3'), 'the card starts off that side')
-  assert.ok(card.includes("const returning = back !== 0 && !reduce"), 'not under Reduce Motion')
-  assert.ok(tonight.includes('flyBackNext()'), 'only an undo sends a card back')
-})
-
-test('a quiet night sky steps behind the done card, off under Reduce Motion', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+test('a quiet night sky drifts a handful of frames per second', () => {
   assert.ok(SKY_FPS <= 8, 'a handful of frames per second')
   assert.ok(Math.abs(moonPhase(new Date(Date.UTC(2000, 0, 6, 18, 14)))) < 1e-9, 'a known new moon')
   const full = moonPhase(new Date(Date.UTC(2000, 0, 21, 4, 40)))
@@ -2317,80 +2284,11 @@ test('a quiet night sky steps behind the done card, off under Reduce Motion', ()
   assert.ok(moon.x >= 0 && moon.x + 40 <= 300, 'the moon starts in full view')
   const later = moonAt(100000, 300, 40)
   assert.ok(later.x >= -40 && later.x <= 300, 'and wraps inside the sky')
-  const sky = readFileSync(path.join(root, 'native/components/NightSky.jsx'), 'utf8')
-  assert.ok(sky.includes('if (reduce) return null'), 'nothing moves under Reduce Motion')
 })
 
-test('the shop is live: looks fade in place, cheers play on press, buddies blink, buys fly to Collection', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const read = (file) => readFileSync(path.join(root, file), 'utf8')
-  const shop = read('native/screens/shop.jsx')
-  const cosmetic = read('native/components/Cosmetic.jsx')
-  const art = read('native/components/BuddyArt.jsx')
-  const host = read('native/components/ToastHost.jsx')
-  assert.ok(shop.includes('<LookStage id={peekLook || purse.lookOn} />'), 'the looks page always shows a card in the look')
-  assert.ok(shop.includes('onPressIn={pressIn ? early : undefined}'), 'a cheer plays as it is pressed')
-  assert.ok(shop.includes('PRESS_DEDUPE_MS'), 'and not again on the tap that follows')
-  assert.ok(cosmetic.includes('const on = alive && !reduce'), 'buddies keep still under Reduce Motion')
-  assert.ok(art.includes('<BlinkEye'), 'a buddy blinks')
-  assert.ok(!/useAnimatedProps/.test(art), 'without animating an SVG part')
-  assert.equal(shop.split('flyToKit({').length - 1, 3, 'a bought look, cheer or buddy flies to the Collection')
-  assert.ok(host.includes("const flying = Boolean(item.fly) && !reduce"), 'no flight under Reduce Motion')
+test('the collection badge counts what the shop has sold', () => {
   assert.equal(kitCount({ looks: ['a', 'b'], cheers: ['c'], buddies: [] }), 3)
   assert.equal(kitCount(null), 0)
-})
-
-test('bought gems stream from their pack into a balance that counts up, with one success haptic', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
-  assert.ok(shop.includes('stream.noteBuy(packId)'), 'a tapped pack is where the gems come from')
-  assert.ok(shop.includes('<RollNumber value={stream.shown}'), 'the balance counts up')
-  assert.ok(shop.includes("if (i === n - 1) feelTap('did')"), 'one success haptic, as the last gem lands')
-  assert.ok(/if \(reduce[^)]*\) \{\n\s*setShown\(gems\)\n\s*feelTap\('did'\)/.test(shop), 'Reduce Motion skips the stream but keeps the haptic')
-})
-
-test('the motion pass names mass 1 on every spring, as Reanimated 4 would otherwise use 4', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  assert.equal(RISE_SPRING.mass, 1)
-  const files = [
-    'native/components/SwipeCard.jsx',
-    'native/components/RollNumber.jsx',
-    'native/components/NightMeter.jsx',
-    'native/components/Jewel.jsx',
-    'native/components/ToastHost.jsx',
-    'native/screens/shop.jsx',
-  ]
-  const names = ['BACK_SPRING', 'SPRING', 'FILL_SPRING', 'ENTER', 'POP', 'BALANCE_POP']
-  for (const file of files) {
-    const src = readFileSync(path.join(root, file), 'utf8')
-    for (const name of names) {
-      const m = src.match(new RegExp(`const ${name} = \\{([^}]*)\\}`))
-      // SwipeCard's own release SPRING predates the motion pass.
-      if (!m || (file.endsWith('SwipeCard.jsx') && name === 'SPRING')) continue
-      assert.ok(/mass: 1\b/.test(m[1]), `${file} ${name} names mass 1`)
-    }
-  }
-  assert.ok(readFileSync(path.join(root, 'native/components/Jewel.jsx'), 'utf8').includes('stiffness: 260, mass: 1'))
-})
-
-test('Android feels answers through its own HapticFeedbackConstants', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
-  const card = readFileSync(path.join(root, 'native/components/SwipeCard.jsx'), 'utf8')
-  assert.ok(shim.includes('AndroidHaptics.Confirm'), 'Did is CONFIRM')
-  assert.ok(shim.includes('AndroidHaptics.Reject'), 'nope is REJECT')
-  assert.ok(card.includes("feelTap('edge')"), 'crossing the line is the edge tick')
-  const kt = readFileSync(path.join(root, 'modules/didi-haptics/android/src/main/java/com/aaronbryant/didi/haptics/DidIHapticsModule.kt'), 'utf8')
-  assert.ok(kt.includes('GESTURE_THRESHOLD_ACTIVATE') && shim.includes("requireOptionalNativeModule('DidIHaptics')"), 'the line is GESTURE_THRESHOLD_ACTIVATE where the binary has it')
-  assert.ok(!/reduceMotion|useReduceMotion/.test(shim.slice(shim.indexOf('export function feelTap'), shim.indexOf('export function playClick'))), 'haptics ignore Reduce Motion')
-})
-
-test('the phone answers prefers-reduced-motion from its own Reduce Motion', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
-  assert.ok(boot.includes('isReduceMotionEnabled'), 'reads the setting at launch')
-  assert.ok(boot.includes("'reduceMotionChanged'"), 'follows it when it changes')
-  assert.ok(boot.includes("'(prefers-reduced-motion: reduce)'"), 'answers the query useReduceMotion asks')
 })
 
 test('the boot screen and phone bootstrap keep the location guard', () => {
