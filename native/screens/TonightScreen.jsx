@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
@@ -28,6 +28,7 @@ import { NightStrip } from '../components/NightStrip.jsx'
 import { WaitPlate } from '../components/WaitPlate.jsx'
 import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
+import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
@@ -113,8 +114,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
   // Undo joins the one toast line above the tab bar. Shake still undoes where
   // the sensor works, but it was not reliable enough to promise.
-  useUndoToast('tonight', stack.undo, stack.applyUndo, UNDO_MS, t('tonight.undoTap'))
-  useShakeUndo(Boolean(stack.undo), stack.applyUndo)
+  // Undo sends the card back the way it left.
+  const applyUndo = stack.applyUndo
+  const undoAnswer = useCallback(() => {
+    flyBackNext()
+    applyUndo()
+  }, [applyUndo])
+  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'))
+  useShakeUndo(Boolean(stack.undo), undoAnswer)
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
   useEffect(() => {
