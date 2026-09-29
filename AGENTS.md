@@ -42,6 +42,11 @@ npm run expo:android         # dev client, Android
 npm run expo:ios             # dev client, iOS (needs a Mac)
 ```
 
+On Android dev-client builds, Expo's floating Tools button sits over the header
+menu (grid) button and takes centre taps, opening the Expo dev menu instead of
+the app menu. Drag the bubble away, tap the button off-centre, or test with a
+release build (`npx expo run:android --variant release`).
+
 Locales (9 files in `src/locales/`, English is the fallback):
 ```
 npm run locales:refresh      # merge additions + sync
