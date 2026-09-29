@@ -10,6 +10,7 @@ export default mergeConfig(
   defineConfig({
     resolve: {
       alias: {
+        'react-native-reanimated': path.join(__dirname, 'src/visual/mocks/reanimated.js'),
         'react-native': 'react-native-web',
         'react-native-safe-area-context': path.join(__dirname, 'src/visual/mocks/safe-area-context.js'),
         'react-native/Libraries/Utilities/codegenNativeComponent': 'react-native-web/dist/cjs/modules/codegenNativeComponent',
