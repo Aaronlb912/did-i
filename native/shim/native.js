@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
+import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
@@ -187,10 +188,29 @@ function androidFeel(type, fallback) {
   Haptics.performAndroidHapticsAsync(type).catch(fallback)
 }
 
+// GESTURE_THRESHOLD_ACTIVATE comes from modules/didi-haptics. A binary built
+// before that module (an over-the-air update) ticks with SEGMENT_TICK instead.
+let edgeModule
+function thresholdModule() {
+  if (edgeModule === undefined) {
+    try {
+      edgeModule = requireOptionalNativeModule('DidIHaptics')
+    } catch {
+      edgeModule = null
+    }
+  }
+  return edgeModule
+}
+
 function edgeTick() {
   const select = () => Haptics.selectionAsync().catch(() => {})
   if (!android) {
     select()
+    return
+  }
+  const threshold = thresholdModule()
+  if (threshold) {
+    threshold.gestureThresholdAsync().catch(select)
     return
   }
   androidFeel(Haptics.AndroidHaptics.Segment_Tick, select)

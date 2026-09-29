@@ -2228,6 +2228,8 @@ test('Android feels answers through its own HapticFeedbackConstants', () => {
   assert.ok(shim.includes('AndroidHaptics.Confirm'), 'Did is CONFIRM')
   assert.ok(shim.includes('AndroidHaptics.Reject'), 'nope is REJECT')
   assert.ok(card.includes("feelTap('edge')"), 'crossing the line is the edge tick')
+  const kt = readFileSync(path.join(root, 'modules/didi-haptics/android/src/main/java/com/aaronbryant/didi/haptics/DidIHapticsModule.kt'), 'utf8')
+  assert.ok(kt.includes('GESTURE_THRESHOLD_ACTIVATE') && shim.includes("requireOptionalNativeModule('DidIHaptics')"), 'the line is GESTURE_THRESHOLD_ACTIVATE where the binary has it')
   assert.ok(!/reduceMotion|useReduceMotion/.test(shim.slice(shim.indexOf('export function feelTap'), shim.indexOf('export function playClick'))), 'haptics ignore Reduce Motion')
 })
 
@@ -2276,6 +2278,7 @@ const phoneStubs = {
   'expo-splash-screen': {},
   'expo-haptics': {},
   'expo-notifications': {},
+  expo: { requireOptionalNativeModule: () => null },
 }
 globalThis.__didIPhoneStubs = phoneStubs
 registerHooks({
@@ -2351,8 +2354,9 @@ test('haptics speak one language on Tonight and do not switch off with Reduce Mo
   phone.feelTap('skip')
   phone.feelTap('undo')
   phone.feelTap('tick')
+  phone.feelTap('edge')
   phone.playClick()
-  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
+  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection', 'selection'])
   writePrefs({ lessMotion: false })
 })
 
