@@ -83,7 +83,8 @@ export const de = {
   'settings.motionHint': 'Kein fliegender Cheer. Aus heißt, dem Telefon folgen.',
   'settings.lessMotion': 'Weniger Bewegung',
   'settings.matchWallpaper': 'An Hintergrundbild anpassen',
-  'settings.matchWallpaperSub': 'Nutzt die Farben, die Android aus deinem Hintergrundbild zieht, statt des üblichen Looks.',
+  'settings.matchWallpaperSub':
+    'Nutzt die Farben, die Android aus deinem Hintergrundbild zieht, statt des üblichen Looks.',
   'settings.language': 'Sprache',
   'settings.languageHint': 'Neue Screens nutzen das. Englisch ist der Fallback.',
   'settings.follow': 'Das folgt dir auf diesem Telefon.',
@@ -235,8 +236,7 @@ export const de = {
   'account.deleteYes': 'Löschen',
   'welcome.plate': 'Did I',
   'welcome.title': 'Eine Frage nach der anderen.',
-  'welcome.body':
-    'DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist.',
+  'welcome.body': 'DID, wenn du es getan hast. Nope, wenn heute Nacht nicht die Nacht ist.',
   'welcome.start': 'Start',
   'first.kicker': 'Erste Nacht',
   'first.title': 'Was prüfst du immer wieder nach?',
@@ -396,8 +396,7 @@ export const de = {
   'streak.hitTitle': 'Du bist nicht zu bremsen!',
   'streak.hitTitleClear': 'Abend geschafft',
   'streak.hitBody': '{n} Abende in Folge. Heute ist alles erledigt.',
-  'streak.hitBodyOne':
-    'Der erste Abend deines Streaks. Heute ist alles erledigt.',
+  'streak.hitBodyOne': 'Der erste Abend deines Streaks. Heute ist alles erledigt.',
   'streak.hitOk': 'Weiter so',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak gerissen',
@@ -405,8 +404,7 @@ export const de = {
     'Ein fälliger Abend ist verstrichen. Du warst bei {was}. Heute Abend geht es neu los.',
   'streak.missOk': 'Verstanden',
   'streak.riskTitle': 'Did I',
-  'streak.riskBody':
-    'Schließ den Abend ab, sonst beginnt dein Streak von vorn.',
+  'streak.riskBody': 'Schließ den Abend ab, sonst beginnt dein Streak von vorn.',
   'cal.kicker': 'Streak',
   'cal.prev': 'Früherer Monat',
   'cal.next': 'Späterer Monat',
@@ -1069,8 +1067,10 @@ export const de = {
   'pings.kicker': 'Erinnerungen',
   'pings.title': 'Mitteilungen',
   'pings.kindsCap': 'Was gesendet wird',
-  'pings.kindsNote': 'Um eine Frage stumm zu schalten, öffne sie und schalte ihre Erinnerung aus.',
-  'pings.kindsMiss': 'Konnte nicht speichern. Prüfe deine Verbindung und versuche es noch einmal.',
+  'pings.kindsNote':
+    'Um eine Frage stumm zu schalten, öffne sie und schalte ihre Erinnerung aus.',
+  'pings.kindsMiss':
+    'Konnte nicht speichern. Prüfe deine Verbindung und versuche es noch einmal.',
   'pings.kind.reminders': 'Fragen-Erinnerungen',
   'pings.kind.remindersSub': 'Zur Uhrzeit, die du für jede Frage eingestellt hast.',
   'pings.kind.streakRisk': 'Serie droht zu reißen',
@@ -1083,7 +1083,8 @@ export const de = {
   'pings.kind.cheersSub': 'Wenn dich jemand anfeuert.',
   'pings.kind.friends': 'Freundschaftsanfragen',
   'pings.kind.friendsSub': 'Wenn jemand befreundet sein möchte.',
-  'pings.body': 'Did I kann dich antippen, wenn eine Frage fällig wird und wenn Freunde dir etwas schicken.',
+  'pings.body':
+    'Did I kann dich antippen, wenn eine Frage fällig wird und wenn Freunde dir etwas schicken.',
   'pings.on': 'Erinnerungen sind an',
   'pings.state.on': 'Pings an',
   'pings.state.blocked': 'Pings blockiert',
@@ -1550,13 +1551,17 @@ export const de = {
   'web.landing.b2': 'Schick Fragen an Freunde. Teile Aufgaben mit der Familie.',
   'web.landing.together.kicker': 'Freunde und Familie',
   'web.landing.together.title': 'Gemeinsam besser',
-  'web.landing.together.lead': 'Did I ist für die Menschen, mit denen du lebst, und die, um die du dir Sorgen machst.',
+  'web.landing.together.lead':
+    'Did I ist für die Menschen, mit denen du lebst, und die, um die du dir Sorgen machst.',
   'web.landing.together.one.title': 'Frag einen Freund',
-  'web.landing.together.one.line': 'Schick „Hast du Oma zurückgerufen?“. Es landet in ihrem Abend, und sie entscheiden, ob sie es behalten.',
+  'web.landing.together.one.line':
+    'Schick „Hast du Oma zurückgerufen?“. Es landet in ihrem Abend, und sie entscheiden, ob sie es behalten.',
   'web.landing.together.two.title': 'Teile eine Familie',
-  'web.landing.together.two.line': 'Gründe eine Familie und teile den Code. „Hast du die Katze gefüttert?“ erscheint bei allen.',
+  'web.landing.together.two.line':
+    'Gründe eine Familie und teile den Code. „Hast du die Katze gefüttert?“ erscheint bei allen.',
   'web.landing.together.three.title': 'Feuert euch an',
-  'web.landing.together.three.line': 'Sieh, wer heute fertig ist, und schick einen Jubel, wenn ein Freund fertig wird.',
+  'web.landing.together.three.line':
+    'Sieh, wer heute fertig ist, und schick einen Jubel, wenn ein Freund fertig wird.',
   'web.landing.b3': 'Installiere es auf dein Handy. Funktioniert ohne Netz.',
   'web.landing.b4': 'Münzen, Gems, Cheer und Streak bleiben auf diesem Handy.',
   'web.landing.phoneKicker': 'Heute Nacht',

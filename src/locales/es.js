@@ -84,7 +84,8 @@ export const es = {
   'settings.motionHint': 'Sin el estallido al marcar. Si está apagado, sigue el teléfono.',
   'settings.lessMotion': 'Menos movimiento',
   'settings.matchWallpaper': 'Igualar el fondo de pantalla',
-  'settings.matchWallpaperSub': 'Usa los colores que Android saca de tu fondo de pantalla, en vez del look habitual.',
+  'settings.matchWallpaperSub':
+    'Usa los colores que Android saca de tu fondo de pantalla, en vez del look habitual.',
   'settings.language': 'Idioma',
   'settings.languageHint': 'Las pantallas nuevas usan esto. Si falta una frase, sale en inglés.',
   'settings.follow': 'Estos te siguen en este teléfono.',
@@ -780,9 +781,11 @@ export const es = {
     'Gente necesita una cuenta para que un amigo tenga a dónde mandarte un did you.',
   'people.goAccount': 'Ir a la cuenta',
   'people.previewCheerTitle': 'Un amigo te anima',
-  'people.previewCheerBody': 'Cuando un amigo anima tu racha, aparece justo en tu tarjeta de esta noche.',
+  'people.previewCheerBody':
+    'Cuando un amigo anima tu racha, aparece justo en tu tarjeta de esta noche.',
   'people.previewFamilyTitle': 'Las preguntas de familia llegan a esta noche',
-  'people.previewFamilyBody': 'Una pregunta que tu familia comparte aparece en esta noche sin que tú la agregues.',
+  'people.previewFamilyBody':
+    'Una pregunta que tu familia comparte aparece en esta noche sin que tú la agregues.',
   'people.you': 'Tú',
   'people.name': 'Nombre',
   'people.namePh': 'Jordan',
@@ -1073,7 +1076,8 @@ export const es = {
   'pings.kind.cheersSub': 'Cuando alguien te anima.',
   'pings.kind.friends': 'Solicitudes de amistad',
   'pings.kind.friendsSub': 'Cuando alguien quiere ser tu amigo.',
-  'pings.body': 'Did I puede avisarte cuando se abre una pregunta y cuando tus amigos te envían algo.',
+  'pings.body':
+    'Did I puede avisarte cuando se abre una pregunta y cuando tus amigos te envían algo.',
   'pings.on': 'Los avisos están activos',
   'pings.state.on': 'Avisos activos',
   'pings.state.blocked': 'Avisos bloqueados',
@@ -1545,7 +1549,8 @@ export const es = {
   'web.landing.together.one.title': 'Pregunta a un amigo',
   'web.landing.together.one.line': 'Envía "¿Llamaste a la abuela?". Llega a su noche y decide si lo guarda.',
   'web.landing.together.two.title': 'Comparte una familia',
-  'web.landing.together.two.line': 'Crea una familia y comparte el código. "¿Diste de comer al gato?" aparece para todos.',
+  'web.landing.together.two.line':
+    'Crea una familia y comparte el código. "¿Diste de comer al gato?" aparece para todos.',
   'web.landing.together.three.title': 'Anímense',
   'web.landing.together.three.line': 'Mira quién ya terminó esta noche y envía un ánimo cuando un amigo acabe.',
   'web.landing.b3': 'Instálala en el teléfono. Sigue funcionando sin señal.',
@@ -1655,7 +1660,8 @@ export const es = {
   'questions.bulkAsked': 'Se vuelven a preguntar: {n}.',
   'notify.primerKicker': 'Avisos',
   'notify.primerTitle': 'Te avisaremos a las {time}',
-  'notify.primerBody': 'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
+  'notify.primerBody':
+    'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
   'notify.primerGo': 'Activar',
   'notify.primerSkip': 'Ahora no',
 }

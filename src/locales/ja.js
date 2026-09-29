@@ -1492,7 +1492,8 @@ export const ja = {
   'web.press.color.miss': 'ミス',
   'web.landing.kicker': 'Did I',
   'web.landing.title': '勝手口、施錠した？',
-  'web.landing.lead': '寝る前に同じ確認を何度も繰り返していました。ドア、コンロ、薬。Did I はスマホに質問を1つだけ出します。やったなら右スワイプ。今夜はなら左。友だちや家族とも共有できます。',
+  'web.landing.lead':
+    '寝る前に同じ確認を何度も繰り返していました。ドア、コンロ、薬。Did I はスマホに質問を1つだけ出します。やったなら右スワイプ。今夜はなら左。友だちや家族とも共有できます。',
   'web.landing.b1': '「今夜」でスワイプ。ホームにまだ開いているものが出ます。',
   'web.landing.b2': '友だちに質問を送ろう。家族と家事を共有しよう。',
   'web.landing.together.kicker': '友だちと家族',

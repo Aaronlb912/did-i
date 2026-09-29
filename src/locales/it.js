@@ -397,8 +397,7 @@ export const it = {
   'streak.hitOk': 'Andiamo',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak interrotto',
-  'streak.missBody':
-    'Una sera prevista è passata. Eri a {was}. Stasera si riparte.',
+  'streak.missBody': 'Una sera prevista è passata. Eri a {was}. Stasera si riparte.',
   'streak.missOk': 'Capito',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Finisci stasera o il tuo streak riparte da zero.',
@@ -778,9 +777,11 @@ export const it = {
   'people.outBody': 'Persone serve un account così un amico può mandarti un did you.',
   'people.goAccount': 'Vai all\'account',
   'people.previewCheerTitle': 'Un amico fa il tifo per te',
-  'people.previewCheerBody': 'Quando un amico fa il tifo per la tua serie, appare sulla tua carta di stasera.',
+  'people.previewCheerBody':
+    'Quando un amico fa il tifo per la tua serie, appare sulla tua carta di stasera.',
   'people.previewFamilyTitle': 'Le domande di famiglia arrivano a stasera',
-  'people.previewFamilyBody': 'Una domanda condivisa dalla tua famiglia appare a stasera senza che tu la aggiunga.',
+  'people.previewFamilyBody':
+    'Una domanda condivisa dalla tua famiglia appare a stasera senza che tu la aggiunga.',
   'people.you': 'Tu',
   'people.name': 'Nome',
   'people.namePh': 'Aaron',
@@ -1070,7 +1071,8 @@ export const it = {
   'pings.kind.cheersSub': 'Quando qualcuno ti incoraggia.',
   'pings.kind.friends': 'Richieste di amicizia',
   'pings.kind.friendsSub': 'Quando qualcuno vuole essere tuo amico.',
-  'pings.body': 'Did I può avvisarti quando si apre una domanda e quando gli amici ti mandano qualcosa.',
+  'pings.body':
+    'Did I può avvisarti quando si apre una domanda e quando gli amici ti mandano qualcosa.',
   'pings.on': 'I promemoria sono attivi',
   'pings.state.on': 'Ping attivi',
   'pings.state.blocked': 'Ping bloccati',
@@ -1539,11 +1541,14 @@ export const it = {
   'web.landing.together.title': 'Meglio insieme',
   'web.landing.together.lead': 'Did I è per le persone con cui vivi e per quelle a cui tieni.',
   'web.landing.together.one.title': 'Chiedi a un amico',
-  'web.landing.together.one.line': 'Invia "Hai richiamato la nonna?". Arriva nella sua sera e decide se tenerla.',
+  'web.landing.together.one.line':
+    'Invia "Hai richiamato la nonna?". Arriva nella sua sera e decide se tenerla.',
   'web.landing.together.two.title': 'Condividi una famiglia',
-  'web.landing.together.two.line': 'Crea una famiglia e condividi il codice. "Hai dato da mangiare al gatto?" appare per tutti.',
+  'web.landing.together.two.line':
+    'Crea una famiglia e condividi il codice. "Hai dato da mangiare al gatto?" appare per tutti.',
   'web.landing.together.three.title': 'Fate il tifo',
-  'web.landing.together.three.line': 'Guarda chi ha finito stasera e manda un applauso quando un amico finisce.',
+  'web.landing.together.three.line':
+    'Guarda chi ha finito stasera e manda un applauso quando un amico finisce.',
   'web.landing.b3': 'Installalo sul telefono. Funziona senza segnale.',
   'web.landing.b4': 'Monete, gemme, cheer e streak restano su questo telefono.',
   'web.landing.phoneKicker': 'Stasera',

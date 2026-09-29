@@ -778,7 +778,8 @@ export const en = {
   'people.previewCheerTitle': 'A friend cheers you on',
   'people.previewCheerBody': 'When a friend cheers your streak, it shows right on your Tonight card.',
   'people.previewFamilyTitle': 'Family questions land on Tonight',
-  'people.previewFamilyBody': 'A question your family shares shows up on your Tonight without you adding it.',
+  'people.previewFamilyBody':
+    'A question your family shares shows up on your Tonight without you adding it.',
   'people.you': 'You',
   'people.name': 'Name',
   'people.namePh': 'Jordan',
@@ -1068,7 +1069,8 @@ export const en = {
   'pings.kind.cheersSub': 'When someone cheers you on.',
   'pings.kind.friends': 'Friend requests',
   'pings.kind.friendsSub': 'When someone wants to be friends.',
-  'pings.body': 'Did I can tap you when a question opens, and when friends send you something.',
+  'pings.body':
+    'Did I can tap you when a question opens, and when friends send you something.',
   'pings.on': 'Reminders are on',
   'pings.state.on': 'Pings on',
   'pings.state.blocked': 'Pings blocked',
@@ -1537,9 +1539,11 @@ export const en = {
   'web.landing.together.title': 'Better together',
   'web.landing.together.lead': 'Did I is for the people you live with and the people you worry about.',
   'web.landing.together.one.title': 'Ask a friend',
-  'web.landing.together.one.line': 'Send "Did you call Grandma back?" It lands on their night, and they choose to keep it.',
+  'web.landing.together.one.line':
+    'Send "Did you call Grandma back?" It lands on their night, and they choose to keep it.',
   'web.landing.together.two.title': 'Share a family',
-  'web.landing.together.two.line': 'Start a family and share the code. "Did you feed the cat?" shows up for everyone in it.',
+  'web.landing.together.two.line':
+    'Start a family and share the code. "Did you feed the cat?" shows up for everyone in it.',
   'web.landing.together.three.title': 'Cheer each other on',
   'web.landing.together.three.line': 'See who is done tonight and send a cheer when a friend finishes.',
   'web.landing.b3': 'Install it on your phone. Still works with no signal.',

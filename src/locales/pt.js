@@ -83,7 +83,8 @@ export const pt = {
   'settings.motionHint': 'Sem cheer voando. Desligado quer dizer seguir o telefone.',
   'settings.lessMotion': 'Menos movimento',
   'settings.matchWallpaper': 'Combinar com o papel de parede',
-  'settings.matchWallpaperSub': 'Usa as cores que o Android tira do teu papel de parede, em vez do look habitual.',
+  'settings.matchWallpaperSub':
+    'Usa as cores que o Android tira do teu papel de parede, em vez do look habitual.',
   'settings.language': 'Idioma',
   'settings.languageHint': 'As telas novas usam isto. O inglês entra se faltar.',
   'settings.follow': 'Isto te segue neste telefone.',
@@ -392,8 +393,7 @@ export const pt = {
   'streak.hitTitle': 'Você está pegando fogo!',
   'streak.hitTitleClear': 'Noite concluída',
   'streak.hitBody': '{n} noites seguidas. Você terminou esta noite.',
-  'streak.hitBodyOne':
-    'Primeira noite do seu streak. Você terminou esta noite.',
+  'streak.hitBodyOne': 'Primeira noite do seu streak. Você terminou esta noite.',
   'streak.hitOk': 'Bora',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak quebrado',
@@ -777,9 +777,11 @@ export const pt = {
   'people.outBody': 'Pessoas precisa de uma conta para um amigo te poder enviar um did you.',
   'people.goAccount': 'Ir à conta',
   'people.previewCheerTitle': 'Um amigo te anima',
-  'people.previewCheerBody': 'Quando um amigo anima sua sequência, aparece direto no seu cartão de hoje à noite.',
+  'people.previewCheerBody':
+    'Quando um amigo anima sua sequência, aparece direto no seu cartão de hoje à noite.',
   'people.previewFamilyTitle': 'Perguntas da família chegam em hoje à noite',
-  'people.previewFamilyBody': 'Uma pergunta que sua família compartilha aparece em hoje à noite sem você adicionar.',
+  'people.previewFamilyBody':
+    'Uma pergunta que sua família compartilha aparece em hoje à noite sem você adicionar.',
   'people.you': 'Tu',
   'people.name': 'Nome',
   'people.namePh': 'Aaron',
@@ -1070,7 +1072,8 @@ export const pt = {
   'pings.kind.cheersSub': 'Quando alguém torce por você.',
   'pings.kind.friends': 'Pedidos de amizade',
   'pings.kind.friendsSub': 'Quando alguém quer ser seu amigo.',
-  'pings.body': 'O Did I pode te avisar quando uma pergunta abre e quando amigos te enviam algo.',
+  'pings.body':
+    'O Did I pode te avisar quando uma pergunta abre e quando amigos te enviam algo.',
   'pings.on': 'Os lembretes estão ligados',
   'pings.state.on': 'Pings ligados',
   'pings.state.blocked': 'Pings bloqueados',
@@ -1538,9 +1541,11 @@ export const pt = {
   'web.landing.together.title': 'Melhor juntos',
   'web.landing.together.lead': 'O Did I é para quem mora com você e para quem você se preocupa.',
   'web.landing.together.one.title': 'Pergunte a um amigo',
-  'web.landing.together.one.line': 'Envie "Você ligou de volta pra vó?". Chega na noite dele, e ele escolhe se guarda.',
+  'web.landing.together.one.line':
+    'Envie "Você ligou de volta pra vó?". Chega na noite dele, e ele escolhe se guarda.',
   'web.landing.together.two.title': 'Compartilhe uma família',
-  'web.landing.together.two.line': 'Crie uma família e compartilhe o código. "Você deu comida pro gato?" aparece para todos.',
+  'web.landing.together.two.line':
+    'Crie uma família e compartilhe o código. "Você deu comida pro gato?" aparece para todos.',
   'web.landing.together.three.title': 'Torçam um pelo outro',
   'web.landing.together.three.line': 'Veja quem já terminou hoje e mande uma torcida quando um amigo terminar.',
   'web.landing.b3': 'Instale no telefone. Funciona sem sinal.',
