@@ -7,6 +7,7 @@ import Constants from 'expo-constants'
 import { AccessibilityInfo, Appearance, AppState, Platform } from 'react-native'
 import { hookErrorReport } from '../src/lib/report.js'
 import { devServerUrl, makeLocation } from './location-shim.js'
+import { phoneMatchMedia } from './lib/reduce-media.js'
 
 // Hermes has no document. Shared web code checks typeof document, but some
 // paths still touch document.documentElement after the guard.
@@ -168,56 +169,7 @@ win.addEventListener = addListener
 win.removeEventListener = removeListener
 win.dispatchEvent = fire
 
-// The phone's Reduce Motion answers `prefers-reduced-motion`, so the shared
-// useReduceMotion honours it next to the app's own Less motion setting.
-// Every other query stays unmatched: colour scheme comes from Appearance.
-const REDUCE_QUERY = '(prefers-reduced-motion: reduce)'
-let systemReduce = false
-const reduceListeners = new Set()
-function setSystemReduce(next) {
-  const value = Boolean(next)
-  if (value === systemReduce) return
-  systemReduce = value
-  reduceListeners.forEach((fn) => {
-    try {
-      fn({ matches: value, media: REDUCE_QUERY })
-    } catch {
-      // One bad listener must not stop the rest.
-    }
-  })
-}
-try {
-  AccessibilityInfo.isReduceMotionEnabled?.().then(setSystemReduce, () => {})
-  AccessibilityInfo.addEventListener?.('reduceMotionChanged', setSystemReduce)
-} catch {
-  // No accessibility module (tests, a stripped binary): motion stays on.
-}
-
-function reduceMedia() {
-  return {
-    get matches() {
-      return systemReduce
-    },
-    media: REDUCE_QUERY,
-    addEventListener: (_type, fn) => reduceListeners.add(fn),
-    removeEventListener: (_type, fn) => reduceListeners.delete(fn),
-    addListener: (fn) => reduceListeners.add(fn),
-    removeListener: (fn) => reduceListeners.delete(fn),
-  }
-}
-
-if (typeof win.matchMedia !== 'function') {
-  win.matchMedia = (query) =>
-    String(query).replace(/\s+/g, ' ').trim() === REDUCE_QUERY
-      ? reduceMedia()
-      : {
-          matches: false,
-          addEventListener: () => {},
-          removeEventListener: () => {},
-          addListener: () => {},
-          removeListener: () => {},
-        }
-}
+if (typeof win.matchMedia !== 'function') win.matchMedia = phoneMatchMedia(AccessibilityInfo)
 
 export function emitHashChange(hash) {
   win.location.hash = hash

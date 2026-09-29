@@ -100,6 +100,9 @@ import { streakParts } from '../src/lib/streak-copy.js'
 import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
 import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { kitCount } from '../native/lib/kit-flight.js'
+import { makeFeelTap } from '../native/lib/feel-tap.js'
+import { phoneMatchMedia } from '../native/lib/reduce-media.js'
+import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
@@ -2652,6 +2655,109 @@ await testAsync('with the app open on the phone, a cleared night is not pushed t
     if (hadDocument) globalThis.document = before
     else delete globalThis.document
   }
+})
+
+// A stand-in expo-haptics that logs what it plays. `refuse` lists calls that
+// reject, the way performAndroidHapticsAsync does on a phone too old for it.
+function hapticsLog({ refuse = [] } = {}) {
+  const played = []
+  const play = (name) => (arg) => {
+    played.push(arg === undefined ? name : `${name}:${arg}`)
+    return refuse.includes(name) ? Promise.reject(new Error(`${name} unavailable`)) : Promise.resolve()
+  }
+  const Haptics = {
+    NotificationFeedbackType: { Success: 'success' },
+    ImpactFeedbackStyle: { Soft: 'soft', Rigid: 'rigid', Heavy: 'heavy' },
+    AndroidHaptics: { Confirm: 'confirm', Reject: 'reject', Segment_Tick: 'segment-tick' },
+    notificationAsync: play('notify'),
+    impactAsync: play('impact'),
+    selectionAsync: play('select'),
+    performAndroidHapticsAsync: play('android'),
+  }
+  return { Haptics, played }
+}
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+await testAsync('each answer on an iPhone feels like one thing: a Did is one success', async () => {
+  const { Haptics, played } = hapticsLog()
+  const feelTap = makeFeelTap({ Haptics, android: false, thresholdModule: () => null })
+  const felt = async (kind) => {
+    played.length = 0
+    feelTap(kind)
+    await settle()
+    return [...played]
+  }
+  assert.deepEqual(await felt('did'), ['notify:success'])
+  assert.deepEqual(await felt('skip'), ['impact:soft'])
+  assert.deepEqual(await felt('undo'), ['impact:rigid'])
+  assert.deepEqual(await felt('edge'), ['select'])
+  assert.deepEqual(await felt('tick'), ['select'])
+})
+
+await testAsync('Android answers with its own HapticFeedbackConstants, and falls back on older phones', async () => {
+  const threshold = { calls: 0, gestureThresholdAsync() { this.calls += 1; return Promise.resolve() } }
+  const modern = hapticsLog()
+  const feel = makeFeelTap({ Haptics: modern.Haptics, android: true, thresholdModule: () => threshold })
+  feel('did')
+  feel('skip')
+  feel('edge')
+  await settle()
+  assert.deepEqual(modern.played, ['android:confirm', 'android:reject'])
+  assert.equal(threshold.calls, 1, 'the swipe edge plays GESTURE_THRESHOLD_ACTIVATE from DidIHaptics')
+
+  // A phone without the constants: each answer still plays exactly one haptic.
+  const old = hapticsLog({ refuse: ['android'] })
+  const oldFeel = makeFeelTap({ Haptics: old.Haptics, android: true, thresholdModule: () => null })
+  for (const [kind, fallback] of [['did', 'notify:success'], ['skip', 'impact:soft'], ['edge', 'select']]) {
+    old.played.length = 0
+    oldFeel(kind)
+    await settle()
+    assert.equal(old.played.filter((name) => !name.startsWith('android')).length, 1, `${kind} falls back once`)
+    assert.ok(old.played.includes(fallback), `${kind} falls back to ${fallback}`)
+  }
+  old.played.length = 0
+  oldFeel('edge')
+  await settle()
+  assert.equal(old.played[0], 'android:segment-tick', 'a binary without DidIHaptics ticks with SEGMENT_TICK first')
+})
+
+await testAsync("the phone's Reduce Motion turns motion off, and back on, as it changes", async () => {
+  let changed = null
+  const a11y = {
+    isReduceMotionEnabled: () => Promise.resolve(true),
+    addEventListener: (type, fn) => {
+      if (type === 'reduceMotionChanged') changed = fn
+    },
+  }
+  const had = globalThis.window.matchMedia
+  globalThis.window.matchMedia = phoneMatchMedia(a11y)
+  try {
+    assert.equal(readReduceMotion({ lessMotion: false }), false, 'motion stays on until the phone answers')
+    await settle()
+    assert.equal(readReduceMotion({ lessMotion: false }), true, "the phone's Reduce Motion is honoured")
+
+    const heard = []
+    const media = globalThis.window.matchMedia('(prefers-reduced-motion:  reduce)')
+    media.addEventListener('change', (event) => heard.push(event.matches))
+    changed(false)
+    assert.equal(readReduceMotion({ lessMotion: false }), false)
+    assert.equal(readReduceMotion({ lessMotion: true }), true, 'Less motion still turns it off on its own')
+    changed(false)
+    changed(true)
+    assert.deepEqual(heard, [false, true], 'listeners hear each real change once')
+    assert.equal(globalThis.window.matchMedia('(prefers-color-scheme: light)').matches, false)
+  } finally {
+    if (had) globalThis.window.matchMedia = had
+    else delete globalThis.window.matchMedia
+  }
+})
+
+test('with no accessibility module, the phone keeps its motion', () => {
+  const matchMedia = phoneMatchMedia(undefined)
+  assert.equal(matchMedia('(prefers-reduced-motion: reduce)').matches, false)
+  const broken = phoneMatchMedia({ isReduceMotionEnabled: () => { throw new Error('no module') } })
+  assert.equal(broken('(prefers-reduced-motion: reduce)').matches, false)
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)
