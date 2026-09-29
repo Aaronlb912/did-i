@@ -56,7 +56,8 @@ import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
-import { UndoToast } from '../components/UndoToast.jsx'
+import { useUndoToast } from '../lib/toast-queue.js'
+import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import {
   AppTextInput,
   ChipRow,
@@ -224,6 +225,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
+  // The undo toast joins the one line above the tab bar; shake still undoes.
+  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
+  useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
@@ -443,7 +447,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           onPick={pick}
         />
       </BoardShell>
-      <UndoToast undo={undo} onUndo={takeBack} colors={colors} />
     </View>
   )
 }

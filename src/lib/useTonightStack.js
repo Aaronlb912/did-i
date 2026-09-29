@@ -26,6 +26,9 @@ import {
 } from './recurrence.js'
 import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
 
+// How long an answer can be taken back.
+export const UNDO_MS = 6000
+
 export const FINISH_FACE = '__finish__'
 
 export function useTonightStack({
@@ -200,7 +203,7 @@ export function useTonightStack({
   function armUndo(payload) {
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
     setUndo(payload)
-    undoTimer.current = window.setTimeout(() => setUndo(null), 6000)
+    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
   }
 
   function applyUndo() {
