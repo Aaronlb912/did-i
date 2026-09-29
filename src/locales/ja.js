@@ -1611,4 +1611,8 @@ export const ja = {
   'notify.primerBody': 'リマインダーをオンにすると、この質問が開いたときにこの端末が知らせる。',
   'notify.primerGo': 'オンにする',
   'notify.primerSkip': '今はしない',
+  'notify.firstTitle': '夜にお知らせしますか？',
+  'notify.firstBody': '質問の時間になったらお知らせし、友だちや家族から Did you や応援が届いたときにも知らせます。設定からいつでも変えられます。',
+  'pings.offNote': 'この端末では通知がオフです。通知をオンにすると、これらのスイッチが有効になります。',
+  'pings.openSettings': '端末の設定を開く',
 }

@@ -1609,4 +1609,8 @@ export const ko = {
   'notify.primerBody': '리마인더를 켜면 이 질문이 열릴 때 이 기기가 알려줘.',
   'notify.primerGo': '켜기',
   'notify.primerSkip': '나중에',
+  'notify.firstTitle': '밤에 알림을 받을까요?',
+  'notify.firstBody': '질문할 시간이 되면 알려 드리고, 친구나 가족이 Did you나 응원을 보내면 알려 드려요. 설정에서 언제든 바꿀 수 있어요.',
+  'pings.offNote': '이 휴대폰에서 알림이 꺼져 있어요. 알림을 켜면 이 스위치가 적용돼요.',
+  'pings.openSettings': '휴대폰 설정 열기',
 }

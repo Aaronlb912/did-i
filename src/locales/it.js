@@ -1660,4 +1660,10 @@ export const it = {
     'Attiva i promemoria e questo telefono potrà avvisarti quando si apre questa domanda.',
   'notify.primerGo': 'Attiva',
   'notify.primerSkip': 'Non ora',
+  'notify.firstTitle': 'Un promemoria la sera?',
+  'notify.firstBody':
+    'Did I può ricordarti quando arriva una domanda e avvisarti quando un amico o un familiare ti manda un Did you o un incoraggiamento. Puoi cambiarlo quando vuoi in Impostazioni.',
+  'pings.offNote':
+    'Le notifiche sono spente su questo telefono, quindi questi interruttori aspettano che tu le accenda.',
+  'pings.openSettings': 'Apri le impostazioni del telefono',
 }

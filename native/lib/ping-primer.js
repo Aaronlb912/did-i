@@ -6,6 +6,16 @@ import { publishSheet } from '../components/SheetHost.jsx'
 
 const KEY = 'did-i-ping-primer'
 
+// AppShell holds the permission state the Notifications screen shows; a
+// primer answered anywhere has to reach it.
+let listen = null
+export function onPingState(fn) {
+  listen = fn
+  return () => {
+    if (listen === fn) listen = null
+  }
+}
+
 function primerShown() {
   try {
     return localStorage.getItem(KEY) === '1'
@@ -22,17 +32,16 @@ function markPrimerShown() {
   }
 }
 
-// A question with a reminder time is the point of asking for pings at all.
-// The first time one gets a time, while the phone has not been asked yet, a
-// primer frames the OS prompt instead of firing it cold.
-export async function offerPingPrimer(askAfter, colors) {
-  if (!askAfter || primerShown()) return
+// The phone lets an app ask once, so a primer frames the OS prompt instead of
+// firing it cold. At most once per phone, and only while it has not been asked.
+async function showPrimer({ title, body, colors }) {
+  if (primerShown()) return
   if ((await checkPings().catch(() => 'missing')) !== 'default') return
   markPrimerShown()
   publishSheet({
     kicker: t('notify.primerKicker'),
-    title: t('notify.primerTitle', { time: clockWords(askAfter) }),
-    body: t('notify.primerBody'),
+    title,
+    body,
     goLabel: t('notify.primerGo'),
     closeLabel: t('notify.primerSkip'),
     colors,
@@ -41,9 +50,25 @@ export async function offerPingPrimer(askAfter, colors) {
       publishSheet(null)
       requestPings()
         .then((state) => {
+          listen?.(state)
           if (state === 'granted') armLampPings(readShelf().boards)
         })
         .catch(() => {})
     },
   })
+}
+
+// A question just got a reminder time.
+export async function offerPingPrimer(askAfter, colors) {
+  if (!askAfter) return
+  await showPrimer({
+    title: t('notify.primerTitle', { time: clockWords(askAfter) }),
+    body: t('notify.primerBody'),
+    colors,
+  })
+}
+
+// First run, just past sign-in, so nobody has to go looking for it.
+export function offerFirstPingPrimer(colors) {
+  return showPrimer({ title: t('notify.firstTitle'), body: t('notify.firstBody'), colors })
 }

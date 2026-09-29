@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { Platform, StyleSheet, View } from 'react-native'
+import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
@@ -36,6 +36,8 @@ import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { reportRejection } from '../src/lib/report.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
+import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
+import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
 
 const Stack = createNativeStackNavigator()
@@ -165,10 +167,42 @@ export function AppShell() {
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const askPings = useCallback(async () => {
+    // Once the phone has said no it will not ask again; only its settings can undo that.
+    if (pingState === 'denied') {
+      Linking.openSettings().catch(() => {})
+      return
+    }
     const next = await requestPings()
     setPingState(next)
     if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
-  }, [app.book, app.shelf])
+  }, [app.book, app.shelf, pingState])
+
+  useEffect(() => onPingState(setPingState), [])
+
+  // Back from the phone's settings: pick up whatever changed there.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return
+      checkPings()
+        .then((state) => {
+          setPingState(state)
+          if (state === 'granted') syncPushTokenIfAllowed().catch(() => {})
+        })
+        .catch(() => {})
+    })
+    return () => sub.remove()
+  }, [])
+
+  // Past sign-in and past the first-night setup (which asks on its own way
+  // out), so nobody has to go looking for it.
+  const shelfReady = Boolean(app.book)
+  const settingUp = OWN_BACK.has(route.path)
+  useEffect(() => {
+    if (gated || settingUp || !shelfReady || Platform.OS === 'web') return undefined
+    const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
+    return () => clearTimeout(timer)
+    // colors only styles the sheet; a theme change should not re-arm the ask.
+  }, [gated, settingUp, shelfReady])
 
   useEffect(() => {
     let alive = true

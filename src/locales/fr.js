@@ -1667,4 +1667,10 @@ export const fr = {
     'Active les rappels et ce téléphone pourra te prévenir quand cette question s\'ouvre.',
   'notify.primerGo': 'Activer',
   'notify.primerSkip': 'Pas maintenant',
+  'notify.firstTitle': 'Un petit rappel le soir ?',
+  'notify.firstBody':
+    'Did I peut te rappeler quand une question arrive et te prévenir quand un ami ou un proche t\'envoie un Did you ou un encouragement. Tu peux changer ça à tout moment dans Réglages.',
+  'pings.offNote':
+    'Les notifications sont coupées sur ce téléphone, donc ces interrupteurs attendent que tu les actives.',
+  'pings.openSettings': 'Ouvrir les réglages du téléphone',
 }

@@ -1604,4 +1604,8 @@ export const zh = {
   'notify.primerBody': '开启提醒后，这个问题打开时此手机可以通知你。',
   'notify.primerGo': '开启',
   'notify.primerSkip': '暂不',
+  'notify.firstTitle': '晚上提醒你一下？',
+  'notify.firstBody': '问题到时间时，Did I 会提醒你；朋友或家人发来 Did you 或加油时，也会告诉你。你可以随时在设置里更改。',
+  'pings.offNote': '这台手机的通知已关闭，打开通知后这些开关才会生效。',
+  'pings.openSettings': '打开手机设置',
 }

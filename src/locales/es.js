@@ -1665,4 +1665,10 @@ export const es = {
     'Activa los avisos y este teléfono puede avisarte cuando se abra esta pregunta.',
   'notify.primerGo': 'Activar',
   'notify.primerSkip': 'Ahora no',
+  'notify.firstTitle': '¿Un aviso por la noche?',
+  'notify.firstBody':
+    'Did I puede recordarte cuando toca una pregunta y avisarte cuando un amigo o familiar te manda un Did you o un ánimo. Puedes cambiarlo cuando quieras en Ajustes.',
+  'pings.offNote':
+    'Los avisos están apagados en este teléfono, así que estos interruptores esperan a que los enciendas.',
+  'pings.openSettings': 'Abrir ajustes del teléfono',
 }

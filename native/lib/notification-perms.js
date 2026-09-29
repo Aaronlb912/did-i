@@ -11,7 +11,7 @@ export async function verifyNotificationPermission() {
   try {
     const Notifications = await notifications()
     const result = await Notifications.getPermissionsAsync()
-    lastCheck = { ok: true, status: result.status, ios: result.ios }
+    lastCheck = { ok: true, status: result.status, canAskAgain: result.canAskAgain !== false, ios: result.ios }
     return lastCheck
   } catch (error) {
     lastCheck = { ok: false, status: 'undetermined', error: String(error?.message || error) }
