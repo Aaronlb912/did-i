@@ -2340,6 +2340,15 @@ test('the shop is live: looks fade in place, cheers play on press, buddies blink
   assert.equal(kitCount(null), 0)
 })
 
+test('bought gems stream from their pack into a balance that counts up, with one success haptic', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  assert.ok(shop.includes('stream.noteBuy(packId)'), 'a tapped pack is where the gems come from')
+  assert.ok(shop.includes('<RollNumber value={stream.shown}'), 'the balance counts up')
+  assert.ok(shop.includes("if (i === n - 1) feelTap('did')"), 'one success haptic, as the last gem lands')
+  assert.ok(/if \(reduce[^)]*\) \{\n\s*setShown\(gems\)\n\s*feelTap\('did'\)/.test(shop), 'Reduce Motion skips the stream but keeps the haptic')
+})
+
 test('Android feels answers through its own HapticFeedbackConstants', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')

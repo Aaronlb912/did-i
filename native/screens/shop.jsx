@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import Reanimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
@@ -10,6 +10,7 @@ import { activeLook } from '../../src/lib/active-look.js'
 import { holdFor } from '../../src/lib/cheer-pops.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t } from '../../src/lib/i18n.js'
+import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
   BUDDY_GEMS,
@@ -61,6 +62,8 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
+import { launchFlight } from '../components/FlyHost.jsx'
+import { RollNumber } from '../components/RollNumber.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -575,7 +578,7 @@ function gemPackTitle(pack) {
   return pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })
 }
 
-function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors }) {
+function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }) {
   const title = gemPackTitle(pack)
   return (
     <Pressable
@@ -589,7 +592,7 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors }) {
           <Text style={[styles.gemBestBadgeText, { color: colors.bg }]}>{t('gems.bestValue')}</Text>
         </View>
       ) : null}
-      <View style={styles.gemFeaturedArt}>
+      <View ref={artRef} collapsable={false} style={styles.gemFeaturedArt}>
         <GemFaceMark count={pack.gems} big colors={colors} />
       </View>
       <Text style={[styles.gemFeaturedTitle, { color: colors.ink }]}>{title}</Text>
@@ -601,11 +604,13 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors }) {
   )
 }
 
-function CompactGemRow({ pack, price, bonusNote, onBuy, colors }) {
+function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
   const title = gemPackTitle(pack)
   return (
     <View style={[styles.shopRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-      <GemFaceMark count={pack.gems} colors={colors} accessibilityLabel={title} />
+      <View ref={artRef} collapsable={false}>
+        <GemFaceMark count={pack.gems} colors={colors} accessibilityLabel={title} />
+      </View>
       <View style={styles.shopCopy}>
         <Text style={[styles.shopName, { color: colors.ink }]}>{title}</Text>
         <Text style={[styles.shopNote, { color: colors.inkDim }]}>
@@ -1000,9 +1005,91 @@ export function ShopBuddiesScreen({ book, onChange }) {
   )
 }
 
+// Bought gems stream from their pack into the balance, a few at a time.
+const GEM_STREAM_MAX = 8
+const GEM_STREAM_GAP = 70
+const GEM_FLY_MS = 560
+const GEM_SIZE = 18
+// A credit this long after the tap still counts as that pack's.
+const GEM_BUY_WINDOW_MS = 10 * 60 * 1000
+const BALANCE_POP = { damping: 10, stiffness: 300 }
+
+/**
+ * The balance shown on the gem page. When gems arrive after a pack was bought
+ * here, they fly from that pack into the balance, which counts up as each
+ * lands, and a success haptic plays with the last. Under Less motion and the
+ * phone's Reduce Motion the count just changes; the haptic still plays.
+ */
+function useGemStream(gems, balanceRef) {
+  const reduce = useReduceMotion()
+  const [shown, setShown] = useState(gems)
+  const seen = useRef(gems)
+  const bought = useRef(null)
+  const packArts = useRef(new Map())
+  const pop = useSharedValue(1)
+
+  useEffect(() => {
+    const was = seen.current
+    seen.current = gems
+    const buy = bought.current
+    const fresh = buy && Date.now() - buy.at < GEM_BUY_WINDOW_MS
+    if (gems <= was || !fresh) {
+      setShown(gems)
+      return
+    }
+    bought.current = null
+    const source = packArts.current.get(buy.packId)
+    const target = balanceRef.current
+    if (reduce || !source?.measureInWindow || !target?.measureInWindow) {
+      setShown(gems)
+      feelTap('did')
+      return
+    }
+    const n = Math.min(gems - was, GEM_STREAM_MAX)
+    source.measureInWindow((sx, sy, sw, sh) => {
+      target.measureInWindow((tx, ty, tw, th) => {
+        for (let i = 0; i < n; i += 1) {
+          const spread = ((i % 3) - 1) * 10
+          launchFlight({
+            from: { x: sx + sw / 2 - GEM_SIZE / 2 + spread, y: sy + sh / 2 - GEM_SIZE / 2, w: GEM_SIZE, h: GEM_SIZE },
+            to: { x: tx + tw / 2, y: ty + th / 2 },
+            art: <GemIcon size={GEM_SIZE} />,
+            size: GEM_SIZE * 0.7,
+            delay: i * GEM_STREAM_GAP,
+            ms: GEM_FLY_MS,
+            hop: 40 + (i % 3) * 16,
+            onLand: () => {
+              setShown(was + Math.round(((gems - was) * (i + 1)) / n))
+              pop.value = withSequence(withTiming(1.08, { duration: 70 }), withSpring(1, BALANCE_POP))
+              if (i === n - 1) feelTap('did')
+            },
+          })
+        }
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gems])
+
+  const popping = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }))
+  return {
+    shown,
+    popping,
+    noteBuy: (packId) => {
+      bought.current = { packId, at: Date.now() }
+    },
+    packRef: (packId) => (node) => {
+      if (node) packArts.current.set(packId, node)
+      else packArts.current.delete(packId)
+    },
+  }
+}
+
 export function GemShopScreen({ book }) {
   const colors = useShopColors(book)
   const purse = normalizePurse(book)
+  const reduce = useReduceMotion()
+  const balanceRef = useRef(null)
+  const stream = useGemStream(purse.gems, balanceRef)
   const [banner, setBanner] = useState('')
   // The packs and Buy buttons show at once with list prices. The store
   // connection (usually already warm from app start) fills in local prices;
@@ -1038,6 +1125,7 @@ export function GemShopScreen({ book }) {
   }
 
   async function buy(packId) {
+    stream.noteBuy(packId)
     setBanner(t('gems.loadingStore'))
     let out
     try {
@@ -1066,9 +1154,16 @@ export function GemShopScreen({ book }) {
 
   return (
     <BoardShell book={book} title={t('gems.title')} date={shellDate(book)} colors={colors}>
-      <View style={[styles.gemBalance, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
-        <GemStack count={purse.gems} max={10} accessibilityLabel={t('gems.balance', { gems: purse.gems })} />
-      </View>
+      <Reanimated.View
+        ref={balanceRef}
+        collapsable={false}
+        accessible
+        accessibilityLabel={t('gems.balance', { gems: purse.gems })}
+        style={[styles.gemBalance, { borderColor: colors.line, backgroundColor: colors.panel2 }, stream.popping]}
+      >
+        <GemStack count={stream.shown} max={10} />
+        <RollNumber value={stream.shown} reduce={reduce} style={[styles.gemBalanceN, { color: colors.ink }]} />
+      </Reanimated.View>
       <Meta colors={colors}>{t('gems.hintNative')}</Meta>
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
       {banner ? (
@@ -1087,6 +1182,7 @@ export function GemShopScreen({ book }) {
             best={pack.id === BEST_VALUE_GEM_ID}
             onBuy={() => buy(pack.id)}
             colors={colors}
+            artRef={stream.packRef(pack.id)}
           />
         ))}
       </View>
@@ -1099,6 +1195,7 @@ export function GemShopScreen({ book }) {
           bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
           onBuy={() => buy(pack.id)}
           colors={colors}
+          artRef={stream.packRef(pack.id)}
         />
       ))}
 
@@ -1327,7 +1424,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 4,
+    gap: 8,
   },
+  gemBalanceN: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, fontWeight: '700' },
   gemMark: {
     width: 44,
     height: 44,
