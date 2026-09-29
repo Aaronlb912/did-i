@@ -82,10 +82,8 @@ import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
-import { Slot } from '../components/Slot.jsx'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
-import { AuthAppleSignIn } from '../components/AuthAppleSignIn.jsx'
-import { AuthGoogleSignIn } from '../components/AuthGoogleSignIn.jsx'
+import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -168,8 +166,8 @@ function PreviewRow({ icon, title, body, colors }) {
   )
 }
 
-// Signed out, People was a dead end. A preview of what it does, then Apple
-// and Google sign-in right here instead of only a link to /account.
+// Signed out, People was a dead end. A preview of what it does, then the
+// full sign-in (Apple, Google and email) right here.
 function NeedAccount({ kicker, title, colors }) {
   const auth = useAuthSignIn({})
   return (
@@ -189,13 +187,7 @@ function NeedAccount({ kicker, title, colors }) {
           colors={colors}
         />
       </View>
-      <Slot fallback={null}>
-        <AuthAppleSignIn colors={colors} auth={auth} or={false} />
-      </Slot>
-      <Slot fallback={null}>
-        <AuthGoogleSignIn colors={colors} auth={auth} or={false} />
-      </Slot>
-      {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
+      <AuthEmailCard colors={colors} auth={auth} body="" />
       <View style={styles.previewOther}>
         <KeyButton colors={colors} label={t('people.goAccount')} onPress={() => goHash('/account')} />
       </View>

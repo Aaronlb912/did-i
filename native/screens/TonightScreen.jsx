@@ -65,7 +65,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   const glow = look ? gemGlowHostStyle(look, theme) : null
   const body = (
     <View style={style}>
-      <BuddyHang id={buddy} />
+      <BuddyHang id={buddy} alive />
       {children}
     </View>
   )
@@ -170,8 +170,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
-        didLabel={t('tonight.answerDid')}
-        nopeLabel={t('tonight.answerNope')}
         behind={stack.upNext.map((row) => ({
           key: cardKeyOf(row),
           kicker: row.tag || t('tonight.didI'),
@@ -311,8 +309,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         meta={pillMeta}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
-        didLabel={t('tonight.answerDid')}
-        nopeLabel={t('tonight.answerNope')}
         blockDid={isDid}
         blockNope={status === 'skip' || isDid}
         onDid={() => stack.mark(pillRow, 'yes')}

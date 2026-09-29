@@ -3,7 +3,7 @@ import { t } from '../../src/lib/i18n.js'
 import { fonts, radius } from '../theme.js'
 import { AuthLegalNote } from './AuthLegalNote.jsx'
 import { AuthSignInActions } from './AuthSignInActions.jsx'
-import { Field } from './ui.jsx'
+import { Field, KeyButton } from './ui.jsx'
 
 export function AuthEmailCard({
   colors,
@@ -21,6 +21,8 @@ export function AuthEmailCard({
       <Text style={[styles.kicker, { color: colors.on }]}>{t('account.kicker')}</Text>
       <Text style={[styles.title, { color: colors.ink }]}>{heading}</Text>
       {lead ? <Text style={[styles.meta, { color: colors.inkSoft }]}>{lead}</Text> : null}
+      {/* Start: Apple and Google first, then email with its own button, same as the sign-in screen. */}
+      {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
       {auth.step === 'start' ? (
         <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
       ) : null}
@@ -42,7 +44,11 @@ export function AuthEmailCard({
 
       {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
 
-      <AuthSignInActions colors={colors} auth={auth} />
+      {auth.step === 'start' ? (
+        <KeyButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
+      ) : (
+        <AuthSignInActions colors={colors} auth={auth} />
+      )}
 
       {footer ? <View style={styles.footer}>{footer}</View> : null}
 
@@ -89,6 +95,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 13,
     lineHeight: 18,
+    marginTop: 18,
     marginBottom: 14,
   },
   miss: {

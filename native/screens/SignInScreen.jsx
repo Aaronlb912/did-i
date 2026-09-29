@@ -8,9 +8,9 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
-import { AuthSwipeBackdrop } from '../components/AuthSwipeBackdrop.jsx'
+import { AuthMark } from '../components/AuthMark.jsx'
+import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
-import { Slot } from '../components/Slot.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
 // A quiet text link, not a button: "use on this phone only" is an escape
@@ -112,10 +112,8 @@ export function SignInScreen({ onDone }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Slot fallback={null}>
-            <AuthSwipeBackdrop colors={colors} onMarkLongPress={auth.step === 'start' ? auth.showReviewer : undefined} />
-          </Slot>
-          {body}
+          <AuthMark colors={colors} onMarkLongPress={auth.step === 'start' ? auth.showReviewer : undefined} />
+          <AuthSignInStage colors={colors}>{body}</AuthSignInStage>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -135,7 +133,6 @@ const styles = StyleSheet.create({
   },
   panel: {
     gap: 4,
-    marginTop: 22,
   },
   title: {
     fontFamily: fonts.display,

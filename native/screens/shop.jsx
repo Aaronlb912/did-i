@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -214,55 +214,11 @@ function LookStage({ id }) {
   )
 }
 
-// A looping Animated.Value, off (and reset) when `active` is false or the
-// person asked for less motion.
-function useLoopValue(active, duration) {
-  const val = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    if (!active) {
-      val.setValue(0)
-      return undefined
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(val, { toValue: 1, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(val, { toValue: 0, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ]),
-    )
-    loop.start()
-    return () => loop.stop()
-  }, [active, duration, val])
-  return val
-}
-
-function usePulseStyle(active) {
-  const reduce = useReduceMotion()
-  const val = useLoopValue(active && !reduce, 620)
-  return { transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }) }] }
-}
-
-// A look shown as a mini Tonight card in its own colours, not a bare swatch.
-function LookMiniCard({ id }) {
-  const look = useLookColors(id, false)
-  return (
-    <View style={[styles.lookMini, { backgroundColor: look.panel, borderColor: look.line }]}>
-      <View style={[styles.lookMiniDot, { backgroundColor: look.on }]} />
-    </View>
-  )
-}
-
-// The real thing, not a tiny glyph: a look reads as its own card, a cheer
-// loops, a buddy blinks and sways.
+// A look reads as the same chip as the Looks page, a cheer sits still, a
+// buddy blinks and sways.
 function TileArt({ type, id, colors }) {
-  const pulse = usePulseStyle(type === 'cheer')
-  if (type === 'look') return <LookMiniCard id={id} />
-  if (type === 'cheer') {
-    return (
-      <Animated.View style={pulse}>
-        <CheerChip id={id} stage={1} colors={colors} />
-      </Animated.View>
-    )
-  }
+  if (type === 'look') return <LookChip id={id} colors={colors} />
+  if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
   return <BuddyChip id={id} alive />
 }
 
@@ -652,9 +608,10 @@ function CheerLoop({ id, coat }) {
 // Tapping any item opens the real thing at full size: the look's own card,
 // the buddy in its hang, or the cheer playing on a loop while the sheet is
 // open, plus its price and, when short on coins, how to earn the rest.
-function openTilePreview(type, item, purse, colors, coat) {
+// `action` is the item's own Buy or Use, so the preview is never a dead end.
+function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
   const name = tileName(type, item.id)
-  const body = previewBody(type, item, purse)
+  const body = miss || previewBody(type, item, purse)
   let preview = null
   if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
@@ -663,6 +620,7 @@ function openTilePreview(type, item, purse, colors, coat) {
     preview,
     title: name,
     body,
+    ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
     onClose: () => publishSheet(null),
@@ -677,8 +635,78 @@ export function ShopScreen({ book, onChange }) {
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
 
+  // The preview already shows the price, so its Buy is the confirm step.
+  function done(type, item, next, bought) {
+    if (shortOnGems(next, colors)) return
+    if (next.miss) {
+      openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next))
+      return
+    }
+    publishSheet(null)
+    if (bought) {
+      flyToKit({
+        key: `${type}:${item.id}`,
+        art: <TileArt type={type} id={item.id} colors={colors} />,
+        name: tileName(type, item.id),
+        count: kitCount(normalizePurse(next.book)),
+      })
+    }
+    onChange(next.book)
+  }
+
+  function tileAction(type, item) {
+    const tag = shopTag(purse, type, item)
+    const needGems = () => {
+      if (tag.gems > 0 && purse.gems < tag.gems) {
+        publishSheet(null)
+        offerMoreGems(colors)
+        return true
+      }
+      return false
+    }
+    if (type === 'look') {
+      if (purse.lookOn === item.id) return null
+      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
+      return {
+        label: t('shop.buy'),
+        go: async () => {
+          if (needGems()) return
+          done(type, item, item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id), true)
+        },
+      }
+    }
+    if (type === 'buddy') {
+      if (purse.buddyOn === item.id) return null
+      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearBuddy(book, item.id), false) }
+      return {
+        label: t('shop.buy'),
+        go: () => {
+          if (needGems()) return
+          done(type, item, buyBuddy(book, item.id), true)
+        },
+      }
+    }
+    // Cheers bought with coins come in stages, which only the cheers page shows.
+    if (tag.owned || !(item.gems > 0)) {
+      return {
+        label: t('shop.allCheers'),
+        go: () => {
+          publishSheet(null)
+          goHash('/shop/cheers')
+        },
+      }
+    }
+    return {
+      label: t('shop.buy'),
+      go: () => {
+        if (needGems()) return
+        done(type, item, buyCheer(book, item.id), true)
+      },
+    }
+  }
+
   function onTile(type, item) {
-    openTilePreview(type, item, purse, colors, coat)
+    openTilePreview(type, item, purse, colors, coat, tileAction(type, item))
   }
 
   return (
@@ -1567,8 +1595,6 @@ const styles = StyleSheet.create({
   tileName: { fontFamily: fonts.uiBold, fontSize: 13, textAlign: 'center' },
   lookStage: { position: 'relative' },
   lookStageWas: { position: 'absolute', left: 0, right: 0, top: 0 },
-  lookMini: { width: 40, height: 52, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  lookMiniDot: { width: 14, height: 14, borderRadius: 7 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

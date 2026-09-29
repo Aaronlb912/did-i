@@ -40,15 +40,24 @@ function IosSegment({ items, selected, onSelect, colors }) {
 
 function AndroidSegment({ items, selected, onSelect, colors }) {
   const { Host, SingleChoiceSegmentedButtonRow, SegmentedButton, Text: ComposeText } = Compose
+  // Material's own palette paints the chosen segment pale lavender; use the app's.
+  const segColors = {
+    activeContainerColor: colors.panel,
+    activeContentColor: colors.on,
+    activeBorderColor: colors.onDeep,
+    inactiveContainerColor: colors.panel2,
+    inactiveContentColor: colors.inkSoft,
+    inactiveBorderColor: colors.line,
+  }
   return (
     <Host matchContents={{ vertical: true }} style={styles.host}>
       <SingleChoiceSegmentedButtonRow>
         {items.map((item) => {
           const on = selected === item.id
           return (
-            <SegmentedButton key={item.id} selected={on} onClick={() => onSelect(item.id)}>
+            <SegmentedButton key={item.id} selected={on} onClick={() => onSelect(item.id)} colors={segColors}>
               <SegmentedButton.Label>
-                <ComposeText color={on ? colors.on : colors.ink}>{item.label}</ComposeText>
+                <ComposeText color={on ? colors.on : colors.inkSoft}>{item.label}</ComposeText>
               </SegmentedButton.Label>
             </SegmentedButton>
           )
