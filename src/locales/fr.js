@@ -84,7 +84,8 @@ export const fr = {
   'settings.motionHint': 'Pas de cheer qui vole. Désactivé veut dire suivre le téléphone.',
   'settings.lessMotion': 'Moins de mouvement',
   'settings.matchWallpaper': 'Assortir au fond d’écran',
-  'settings.matchWallpaperSub': 'Utilise les couleurs qu’Android tire de votre fond d’écran, au lieu du look habituel.',
+  'settings.matchWallpaperSub':
+    'Utilise les couleurs qu’Android tire de votre fond d’écran, au lieu du look habituel.',
   'settings.language': 'Langue',
   'settings.languageHint': 'Les écrans nouveaux utilisent ça. L’anglais prend le relais.',
   'settings.follow': 'Ça te suit sur ce téléphone.',
@@ -401,8 +402,7 @@ export const fr = {
   'streak.hitOk': 'C’est parti',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak rompu',
-  'streak.missBody':
-    'Un soir prévu est passé. Tu étais à {was}. Ce soir, on repart à zéro.',
+  'streak.missBody': 'Un soir prévu est passé. Tu étais à {was}. Ce soir, on repart à zéro.',
   'streak.missOk': 'Compris',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Termine ce soir ou ton streak repart à zéro.',
@@ -784,7 +784,8 @@ export const fr = {
   'people.previewCheerTitle': 'Un ami t\'encourage',
   'people.previewCheerBody': 'Quand un ami encourage ta série, ça s\'affiche sur ta carte de ce soir.',
   'people.previewFamilyTitle': 'Les questions de famille arrivent ce soir',
-  'people.previewFamilyBody': 'Une question que ta famille partage apparaît sur ce soir sans que tu l\'ajoutes.',
+  'people.previewFamilyBody':
+    'Une question que ta famille partage apparaît sur ce soir sans que tu l\'ajoutes.',
   'people.you': 'Toi',
   'people.name': 'Nom',
   'people.namePh': 'Aaron',
@@ -1076,7 +1077,8 @@ export const fr = {
   'pings.kind.cheersSub': 'Quand quelqu\'un t\'encourage.',
   'pings.kind.friends': 'Demandes d\'amis',
   'pings.kind.friendsSub': 'Quand quelqu\'un veut être ton ami.',
-  'pings.body': 'Did I peut te prévenir quand une question s\'ouvre et quand tes amis t\'envoient quelque chose.',
+  'pings.body':
+    'Did I peut te prévenir quand une question s\'ouvre et quand tes amis t\'envoient quelque chose.',
   'pings.on': 'Les rappels sont activés',
   'pings.state.on': 'Pings activés',
   'pings.state.blocked': 'Pings bloqués',
@@ -1543,11 +1545,14 @@ export const fr = {
   'web.landing.b2': 'Envoie des questions à tes amis. Partage les tâches en famille.',
   'web.landing.together.kicker': 'Amis et famille',
   'web.landing.together.title': 'Mieux ensemble',
-  'web.landing.together.lead': 'Did I est fait pour les gens avec qui tu vis et ceux pour qui tu t\'inquiètes.',
+  'web.landing.together.lead':
+    'Did I est fait pour les gens avec qui tu vis et ceux pour qui tu t\'inquiètes.',
   'web.landing.together.one.title': 'Demande à un ami',
-  'web.landing.together.one.line': 'Envoie « Tu as rappelé Mamie ? ». Ça arrive dans sa soirée, et il choisit de le garder.',
+  'web.landing.together.one.line':
+    'Envoie « Tu as rappelé Mamie ? ». Ça arrive dans sa soirée, et il choisit de le garder.',
   'web.landing.together.two.title': 'Partage une famille',
-  'web.landing.together.two.line': 'Crée une famille et partage le code. « Tu as nourri le chat ? » apparaît pour tout le monde.',
+  'web.landing.together.two.line':
+    'Crée une famille et partage le code. « Tu as nourri le chat ? » apparaît pour tout le monde.',
   'web.landing.together.three.title': 'Encouragez-vous',
   'web.landing.together.three.line': 'Vois qui a fini ce soir et envoie un bravo quand un ami termine.',
   'web.landing.b3': 'Installe sur ton téléphone. Ça marche sans réseau.',

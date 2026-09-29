@@ -69,9 +69,8 @@ export const additionsEn = {
   'mark.quiet-week.line': 'Seven nights with no hole.',
 
   'pings.kicker': 'Reminders',
-  'pings.title': 'When it is due',
-  'pings.body':
-    'This phone can tap you when a question opens. No account. The tap stays on this device. Chrome and the Android app can do it. An iPhone page install stays weak.',
+  'pings.title': 'Notifications',
+  'pings.body': 'Did I can tap you when a question opens, and when friends send you something.',
   'pings.on': 'Reminders are on',
   'pings.state.on': 'Pings on',
   'pings.state.blocked': 'Pings blocked',
@@ -464,9 +463,9 @@ export const additionsEs = {
   'mark.quiet-week.line': 'Siete noches sin hueco.',
 
   'pings.kicker': 'Avisos',
-  'pings.title': 'Cuando toca',
+  'pings.title': 'Notificaciones',
   'pings.body':
-    'Este teléfono puede avisarte cuando abre una pregunta. Sin cuenta. El aviso se queda en este dispositivo. Chrome y la app Android pueden. Instalar la página en iPhone es más débil.',
+    'Did I puede avisarte cuando se abre una pregunta y cuando tus amigos te envían algo.',
   'pings.on': 'Los avisos están activos',
   'pings.state.on': 'Avisos activos',
   'pings.state.blocked': 'Avisos bloqueados',

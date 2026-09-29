@@ -803,6 +803,42 @@ test('every supported locale has the same keys as English', () => {
   }
 })
 
+test('locales:refresh leaves the checked-in locale files untouched', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const localeDir = path.join(root, 'src/locales')
+  const gapDir = path.join(root, 'scripts/locale-gaps')
+  const before = new Map()
+  for (const dir of [localeDir, gapDir]) {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      before.set(full, readFileSync(full, 'utf8'))
+    }
+  }
+  try {
+    const merge = spawnSync(process.execPath, [path.join(root, 'scripts/merge-i18n-additions.mjs')], {
+      cwd: root,
+      encoding: 'utf8',
+    })
+    assert.equal(merge.status, 0, merge.stderr || merge.stdout)
+    const sync = spawnSync(process.execPath, [path.join(root, 'scripts/sync-locales.mjs')], {
+      cwd: root,
+      encoding: 'utf8',
+    })
+    assert.equal(sync.status, 0, sync.stderr || sync.stdout)
+    const changed = [...before.keys()]
+      .filter((full) => full.startsWith(localeDir))
+      .filter((full) => readFileSync(full, 'utf8') !== before.get(full))
+      .map((full) => path.relative(root, full))
+    assert.deepEqual(
+      changed,
+      [],
+      `npm run locales:refresh changed ${changed.join(', ')}. Update the additions/legal/web source scripts (i18n-additions.mjs, legal-i18n.mjs, web-marketing.mjs, web-marketing-locales.mjs, locale-gaps) so a refresh reproduces the checked-in translations exactly.`,
+    )
+  } finally {
+    for (const [full, content] of before) writeFileSync(full, content)
+  }
+})
+
 test('i18n additions ship with Spanish', () => {
   for (const key of Object.keys(additionsEn)) {
     assert.ok(key in additionsEs, `additionsEs missing ${key}`)
