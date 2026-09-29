@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { rollColumns, rollStops } from '../lib/roll-digits.js'
 
-const SPRING = { damping: 20, stiffness: 220 }
+const SPRING = { damping: 20, stiffness: 220, mass: 1 }
 // The ones roll first, each column after the one to its right.
 const STAGGER = 60
 // A column that is only blank after a roll folds away once the roll is over.

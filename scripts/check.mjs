@@ -2349,6 +2349,30 @@ test('bought gems stream from their pack into a balance that counts up, with one
   assert.ok(/if \(reduce[^)]*\) \{\n\s*setShown\(gems\)\n\s*feelTap\('did'\)/.test(shop), 'Reduce Motion skips the stream but keeps the haptic')
 })
 
+test('the motion pass names mass 1 on every spring, as Reanimated 4 would otherwise use 4', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  assert.equal(RISE_SPRING.mass, 1)
+  const files = [
+    'native/components/SwipeCard.jsx',
+    'native/components/RollNumber.jsx',
+    'native/components/NightMeter.jsx',
+    'native/components/Jewel.jsx',
+    'native/components/ToastHost.jsx',
+    'native/screens/shop.jsx',
+  ]
+  const names = ['BACK_SPRING', 'SPRING', 'FILL_SPRING', 'ENTER', 'POP', 'BALANCE_POP']
+  for (const file of files) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    for (const name of names) {
+      const m = src.match(new RegExp(`const ${name} = \\{([^}]*)\\}`))
+      // SwipeCard's own release SPRING predates the motion pass.
+      if (!m || (file.endsWith('SwipeCard.jsx') && name === 'SPRING')) continue
+      assert.ok(/mass: 1\b/.test(m[1]), `${file} ${name} names mass 1`)
+    }
+  }
+  assert.ok(readFileSync(path.join(root, 'native/components/Jewel.jsx'), 'utf8').includes('stiffness: 260, mass: 1'))
+})
+
 test('Android feels answers through its own HapticFeedbackConstants', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
@@ -2471,7 +2495,7 @@ test('a flick answers by where it was headed and flies off along its path', () =
   assert.equal(depthLook(2).scale, 0.92)
   assert.ok(depthLook(0.5).scale < 1 && depthLook(0.5).scale > 0.96, 'a card growing up is in between')
   assert.equal(depthLook(3).opacity, 0)
-  assert.deepEqual(RISE_SPRING, { stiffness: 170, damping: 15 }, 'the captain picked variant A')
+  assert.deepEqual(RISE_SPRING, { stiffness: 170, damping: 15, mass: 1 }, 'the captain picked variant A')
   assert.ok(depthLook(-0.1).scale > 1 && depthLook(-0.1).translateY === 0, 'a spring passing its place grows a hair, never lifts')
 })
 

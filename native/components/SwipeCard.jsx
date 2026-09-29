@@ -46,7 +46,7 @@ function feelEdge() {
 // Undo sends the answered card back the way it left. The last throw is kept
 // here, outside the card, because a night that just cleared unmounts the
 // whole stack. flyBackNext() arms it for the next card with that key.
-const BACK_SPRING = { damping: 23, stiffness: 210 }
+const BACK_SPRING = { damping: 23, stiffness: 210, mass: 1 }
 const BACK_WITHIN_MS = 15000
 let lastThrow = null
 // It comes back a little low, as it left, and rises as it lands.

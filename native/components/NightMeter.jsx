@@ -22,7 +22,7 @@ const GLOW_REST = 0.45
 // When the bar has about reached a new width, for the glow to wait on.
 const FILL_MS = 420
 // The bar springs to each new width, passing it by a hair.
-const FILL_SPRING = { damping: 14, stiffness: 180 }
+const FILL_SPRING = { damping: 14, stiffness: 180, mass: 1 }
 
 export function NightMeter({ due, colors, hallOn = false, gemLook = '', celebrate = false }) {
   const theme = useTheme()
