@@ -94,6 +94,9 @@ export function SignInScreen({ onDone }) {
 
       <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
       <AuthLegalNote colors={colors} />
+      {auth.step === 'start' ? (
+        <AuthTextLink colors={colors} label={t('auth.reviewer')} onPress={auth.showReviewer} />
+      ) : null}
     </View>
   )
 
