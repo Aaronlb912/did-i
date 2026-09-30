@@ -97,7 +97,6 @@ import { StreakMomentHost } from './lib/StreakMoment.jsx'
 import {
   maybeStreakMiss,
   queueStreakMoment,
-  shelfHeatNow,
 } from './lib/streak-moments.js'
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { wallClock } from './lib/zone.js'
@@ -137,15 +136,9 @@ function firstShelf() {
   purgeDemoOnce()
   const now = new Date()
   const shelf = writeShelf(alignShelfPurse(readShelf()))
-  const heatBefore = shelfHeatNow(shelf.boards, now)
   const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
-  const heatAfter = shelfHeatNow(boards, now)
-  const miss = maybeStreakMiss({
-    beforeHeat: heatBefore,
-    afterHeat: heatAfter,
-    dateIso: boardDate(now),
-  })
-  if (miss) queueStreakMoment(miss, boardDate(now))
+  const miss = maybeStreakMiss(boards, now)
+  if (miss) queueStreakMoment(miss, miss.dateIso)
   return { ...shelf, boards }
 }
 
@@ -187,7 +180,6 @@ export default function App() {
   function persist(nextShelf) {
     const now = new Date()
     const before = currentBook(shelf)
-    const heatBefore = shelfHeatNow(shelf.boards, now)
     const coinsBefore = mergePurses(shelf.boards).coins
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
     const mapped = bumped.boards.map((item) => {
@@ -199,13 +191,8 @@ export default function App() {
     const drafted = parkEmptyTags(mergeSameTitles({ ...bumped, boards: mapped }))
     const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
     const written = writeShelf(spreadPurseFrom(drafted, current))
-    const heatAfter = shelfHeatNow(written.boards, now)
-    const miss = maybeStreakMiss({
-      beforeHeat: heatBefore,
-      afterHeat: heatAfter,
-      dateIso: boardDate(now),
-    })
-    if (miss) queueStreakMoment(miss, boardDate(now))
+    const miss = maybeStreakMiss(written.boards, now)
+    if (miss) queueStreakMoment(miss, miss.dateIso)
     const after = currentBook(written)
     if (after.id === before?.id) {
       const news = freshMarks(before?.unlocked, after?.unlocked)

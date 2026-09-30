@@ -24,7 +24,6 @@ import { boardDate, isoDate } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
-  shelfHeatNow,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -55,15 +54,9 @@ import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
 function withNightsClosed(shelf, now) {
-  const heatBefore = shelfHeatNow(shelf.boards, now)
   const boards = shelf.boards.map((book) => unlockAchievements(closePastNights(book, now), now))
-  const heatAfter = shelfHeatNow(boards, now)
-  const miss = maybeStreakMiss({
-    beforeHeat: heatBefore,
-    afterHeat: heatAfter,
-    dateIso: boardDate(now),
-  })
-  if (miss) queueStreakMoment(miss, boardDate(now))
+  const miss = maybeStreakMiss(boards, now)
+  if (miss) queueStreakMoment(miss, miss.dateIso)
   return { ...shelf, boards }
 }
 
@@ -100,7 +93,6 @@ export function useAppShelf() {
   const persist = useCallback((nextShelf) => {
     const now = new Date()
     const before = currentBook(shelf)
-    const heatBefore = shelfHeatNow(shelf.boards, now)
     const coinsBefore = mergePurses(shelf.boards).coins
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
     const mapped = bumped.boards.map((item) => {
@@ -112,13 +104,8 @@ export function useAppShelf() {
     const drafted = parkEmptyTags(mergeSameTitles({ ...bumped, boards: mapped }))
     const current = drafted.boards.find((item) => item.id === drafted.currentId) || drafted.boards[0]
     const written = writeShelf(spreadPurseFrom(drafted, current))
-    const heatAfter = shelfHeatNow(written.boards, now)
-    const miss = maybeStreakMiss({
-      beforeHeat: heatBefore,
-      afterHeat: heatAfter,
-      dateIso: boardDate(now),
-    })
-    if (miss) queueStreakMoment(miss, boardDate(now))
+    const miss = maybeStreakMiss(written.boards, now)
+    if (miss) queueStreakMoment(miss, miss.dateIso)
     setShelf(written)
     pushSoon(written)
     const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
