@@ -1,4 +1,4 @@
-import { shelfHeat } from './hall-feel.js'
+import { lastBrokenNight, shelfHeat } from './hall-feel.js'
 import { isAppForeground } from './app-foreground.js'
 import { reportRejection } from './report.js'
 
@@ -97,9 +97,11 @@ export function maybeStreakHit({ beforeHeat, afterHeat, clearedTonight, dateIso 
   return { kind: 'hit', n: afterHeat }
 }
 
-export function maybeStreakMiss({ beforeHeat, afterHeat, dateIso }) {
-  if (beforeHeat <= 0 || afterHeat >= beforeHeat) return null
-  if (streakSeen('miss', dateIso)) return null
-  return { kind: 'miss', was: beforeHeat }
+// A break is a past night left open, told once per night. Tonight going from
+// done back to open (a new question, an undo) is not a break.
+export function maybeStreakMiss(boards, now = new Date()) {
+  const broken = lastBrokenNight(boards || [], now)
+  if (!broken || streakSeen('miss', broken.night)) return null
+  return { kind: 'miss', was: broken.was, dateIso: broken.night }
 }
 

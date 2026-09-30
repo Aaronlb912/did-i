@@ -16,7 +16,7 @@ import {
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
-import { shelfHeat } from './hall-feel.js'
+import { shelfStreak } from './hall-feel.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
 import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
 import { queueGifts } from './gift-inbox.js'
@@ -163,7 +163,8 @@ function nightMark(shelf, now = new Date()) {
   const clear =
     hadAny &&
     boards.every((book) => countedTonightRows(dueTonight(book, now)).length === 0 || allClearTonight(book, now))
-  return { streak: shelfHeat(boards, now), doneOn: clear ? night : null }
+  // The real streak, not the room's glow that stops at five.
+  return { streak: shelfStreak(boards, now), doneOn: clear ? night : null }
 }
 
 async function putPrefs(db, user, shelf) {

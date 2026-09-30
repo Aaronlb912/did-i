@@ -2465,7 +2465,46 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfHeat([book], clock), 5, 'the room stays at five')
   assert.equal(shelfStreak([book], clock), 8)
   const tonightOpen = { ...book, answers: book.answers.slice(1) }
-  assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+  assert.equal(shelfStreak([tonightOpen], clock), 7, 'tonight counts only once it is clear, and open is not a break')
+  const lastNightOpen = { ...book, answers: book.answers.filter((a) => a.periodKey !== nights[1]) }
+  assert.equal(shelfStreak([lastNightOpen], clock), 1, 'a missed night before tonight is a break')
+})
+
+test('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
+  const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
+  localStorage.removeItem('did-i-streak-seen')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const lamp = (id, createdOn = '2026-09-27') => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn })
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const nights = ['2026-09-28', '2026-09-29', '2026-09-30']
+  const done = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a'), lamp('b')], answers: nights.flatMap((n) => [yes('a', n), yes('b', n)]) }
+  assert.equal(maybeStreakMiss([done], clock), null, 'all done')
+  const added = { ...done, lamps: [...done.lamps, lamp('c', '2026-09-30')] }
+  assert.equal(maybeStreakMiss([added], clock), null, 'a new question after finishing is not a break')
+  const undone = { ...done, answers: done.answers.slice(0, -1) }
+  assert.equal(maybeStreakMiss([undone], clock), null, 'undoing tonight is not a break')
+  const missed = { ...done, answers: done.answers.filter((a) => a.periodKey !== '2026-09-29') }
+  const miss = maybeStreakMiss([missed], clock)
+  assert.deepEqual(miss, { kind: 'miss', was: 1, dateIso: '2026-09-29' }, 'a missed night after a streak is a break')
+  markStreakSeen('miss', miss.dateIso)
+  assert.equal(maybeStreakMiss([missed], clock), null, 'told once per missed night')
+  localStorage.removeItem('did-i-streak-seen')
+})
+
+test('the 9 PM warning fires while tonight is open on a live streak, and friends see the real streak', async () => {
+  const { streakRiskFire } = await import('../src/lib/streak-risk.js')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-09-20' })
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const past = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29']
+  const open = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a')], answers: past.map((n) => yes('a', n)) }
+  const fire = streakRiskFire(open, clock)
+  assert.ok(fire, 'a streak with tonight open gets the warning')
+  assert.equal(new Date(fire.at).getHours(), 21)
+  const finished = { ...open, answers: [...open.answers, yes('a', '2026-09-30')] }
+  assert.equal(streakRiskFire(finished, clock), null, 'no warning once tonight is done')
+  assert.equal(shelfStreak([open], clock), 6, 'friends see 6 while tonight is open, not 0 and not capped at 5')
+  assert.equal(shelfStreak([finished], clock), 7)
 })
 
 test('the done card says what tomorrow night holds and from when', () => {
