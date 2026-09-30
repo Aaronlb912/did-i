@@ -38,6 +38,8 @@ const ICONS = {
   help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM9.3 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.5 2.2-2.5 4.1M12 17.2h.01',
   logout: 'M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9',
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',
+  // Did we: two rings, linked. Draw with stroke.
+  together: 'M4 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0ZM10 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z',
 }
 
 export function MenuIcon({ name, color, size = 18, stroke = false }) {

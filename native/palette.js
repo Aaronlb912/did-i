@@ -17,6 +17,9 @@ const DARK = {
   skip: '#7d8694',
   open: '#39404e',
   miss: '#ff6f61',
+  // Did we: its own accent, so a shared card reads apart from your own.
+  we: '#b69cff',
+  weDeep: '#7d63d6',
   veil: 'rgba(8, 10, 14, 0.55)',
 }
 
@@ -36,6 +39,8 @@ const LIGHT = {
   skip: '#6a7164',
   open: '#d5d9cc',
   miss: '#c44536',
+  we: '#6b4fc8',
+  weDeep: '#4f3799',
   veil: 'rgba(26, 29, 22, 0.4)',
 }
 

@@ -35,7 +35,7 @@ export function ShopLooks({ book, onChange, now }) {
   }
 
   async function buyRow(item) {
-    const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
+    const next = await buyLookWithCoins(book, item.id)
     take(next, item.id)
   }
 

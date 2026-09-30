@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
+import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
@@ -33,29 +34,6 @@ function bad(error) {
   return { miss: error?.message || 'people.reach' }
 }
 
-export function cleanPhone(value) {
-  const digits = String(value || '').replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.length === 10) return `+1${digits}`
-  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
-  if (digits.length >= 10 && digits.length <= 15) return `+${digits}`
-  return ''
-}
-
-export function looksLikePhone(value) {
-  return cleanPhone(value).length >= 11
-}
-
-export function formatPhone(value) {
-  const clean = cleanPhone(value)
-  if (!clean) return ''
-  const digits = clean.slice(1)
-  if (digits.length === 11 && digits.startsWith('1')) {
-    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 11)}`
-  }
-  return clean
-}
-
 // A family join code is six. An invite code is ten. Same alphabet.
 export const FAMILY_CODE_LEN = 6
 export const INVITE_CODE_LEN = 10
@@ -73,10 +51,10 @@ export function cleanInvite(value) {
 
 export function personName(row) {
   if (!row) return ''
-  return row.display_name || formatPhone(row.phone) || ''
+  return row.display_name || ''
 }
 
-// Up to two letters for an avatar. A number with no name gets its last two digits.
+// Up to two letters for an avatar.
 export function personInitials(person) {
   const name = String(person?.display_name || '').trim()
   if (name) {
@@ -84,8 +62,7 @@ export function personInitials(person) {
     const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]]
     return letters.map((word) => Array.from(word)[0] || '').join('').toUpperCase()
   }
-  const digits = String(person?.phone || '').replace(/\D/g, '')
-  return digits ? digits.slice(-2) : '?'
+  return '?'
 }
 
 // Did they clear their own tonight? Only when they share it.
@@ -95,16 +72,11 @@ export function doneTonight(person, dateIso = isoDate(new Date())) {
 
 export function friendAskTitle(person) {
   const name = person?.display_name?.trim()
-  if (name) return name
-  if (person?.phone) return formatPhone(person.phone)
-  return ''
+  return name || ''
 }
 
 export function friendAskNote(person) {
   const name = person?.display_name?.trim()
-  const phone = person?.phone ? formatPhone(person.phone) : ''
-  if (name && phone) return t('people.wantsFrom', { name, phone })
-  if (phone) return t('people.wantsFromPhone', { phone })
   if (name) return t('people.wantsFromName', { name })
   return t('people.wantsIn')
 }
@@ -123,26 +95,11 @@ export async function readMine() {
   const { data } = await db
     .from('profiles')
     .select(
-      'user_id, phone, display_name, share_streak, streak, done_on, invite_code, invited_by, invite_gems_paid',
+      'user_id, friend_id, display_name, share_streak, streak, done_on, invite_code, invited_by, invite_gems_paid',
     )
     .eq('user_id', user.id)
     .maybeSingle()
-  return data || { user_id: user.id, phone: '', display_name: '', share_streak: true }
-}
-
-export async function savePhone(value) {
-  const db = cloud()
-  if (!db) return { miss: 'off' }
-  const user = await me()
-  if (!user) return { miss: 'out' }
-  const phone = cleanPhone(value)
-  if (!looksLikePhone(phone)) return { miss: 'short' }
-  const { data, error } = await db.rpc('set_my_phone', { wanted: phone })
-  if (error) {
-    if (/taken|unique|duplicate/i.test(error.message)) return { miss: 'taken' }
-    return bad(error)
-  }
-  return { miss: '', phone: data || phone }
+  return data || { user_id: user.id, display_name: '', share_streak: true }
 }
 
 export async function syncDisplayName(keeperName) {
@@ -239,25 +196,39 @@ export async function listFriends() {
   return { friends, asked, sent }
 }
 
-export async function askFriend(phone) {
+// Friend IDs: 12 random digits every account has. Shown in groups of four.
+export function formatFriendId(id) {
+  const digits = String(id || '').replace(/\D/g, '')
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ')
+}
+
+export function cleanFriendId(value) {
+  return String(value || '').replace(/\D/g, '').slice(0, 12)
+}
+
+export async function myFriendId() {
+  const db = cloud()
+  if (!db) return { id: '', miss: 'off' }
+  const { data, error } = await db.rpc('my_friend_id')
+  if (error) return notRunYet(error) ? { id: '', miss: 'setup' } : { id: '', ...bad(error) }
+  return { id: String(data || ''), miss: '' }
+}
+
+export async function askByFriendId(value) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const user = await me()
-  if (!user) return { miss: 'out' }
-  const want = cleanPhone(phone)
-  if (!looksLikePhone(want)) return { miss: 'short' }
-  const mine = await readMine()
-  if (!mine?.phone) return { miss: 'nophone' }
-  const { data, error } = await db.rpc('find_phone', { wanted: want })
-  if (error) return /need phone/i.test(error.message) ? { miss: 'nophone' } : bad(error)
-  const found = Array.isArray(data) ? data[0] : data
-  if (!found) return { miss: 'nobody' }
-  const { error: askErr } = await db
-    .from('friend_links')
-    .insert({ from_id: user.id, to_id: found.user_id, state: 'asked' })
-  if (askErr && /need phone/i.test(askErr.message)) return { miss: 'nophone' }
-  if (askErr && !/duplicate|unique/i.test(askErr.message)) return bad(askErr)
-  return { miss: '', person: found }
+  const code = cleanFriendId(value)
+  if (!/^[1-9]\d{11}$/.test(code)) return { miss: 'badId' }
+  const { data, error } = await db.rpc('ask_by_friend_id', { wanted: code })
+  if (!error && data?.miss === 'nobody') return { miss: 'nobody' }
+  if (!error) return { miss: '', person: { user_id: data?.user_id, display_name: data?.display_name || '' } }
+  if (notRunYet(error)) return { miss: 'setup' }
+  const text = error.message || ''
+  if (/too many tries/i.test(text)) return { miss: 'tooMany' }
+  if (/nobody/i.test(text)) return { miss: 'nobody' }
+  if (/bad id/i.test(text)) return { miss: 'badId' }
+  if (/cap|too many/i.test(text)) return { miss: 'askCap' }
+  return bad(error)
 }
 
 export async function sayYes(linkId) {
@@ -283,7 +254,7 @@ export async function dropFriend(otherId) {
 
 // Sending a did you to a friend ---------------------------------------
 
-export async function sendDidI(toId, question, note, dueOn) {
+export async function sendDidI(toId, question, note, dueOn, repeat = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -297,8 +268,22 @@ export async function sendDidI(toId, question, note, dueOn) {
     question: text,
     note: String(note || '').trim(),
     due_on: dueOn || isoDate(new Date()),
+    ...(repeat ? { repeat } : {}),
   })
-  if (error) return { miss: /duplicate|unique/i.test(error.message) ? 'already' : error.message }
+  if (error) {
+    if (/duplicate|unique/i.test(error.message)) return { miss: 'already' }
+    if (/too many repeats/i.test(error.message)) return { miss: 'people.missRepeats' }
+    return { miss: error.message }
+  }
+  return { miss: '' }
+}
+
+// Report a Did you sent to you. It also leaves your inbox.
+export async function reportSend(id, why = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { error } = await db.rpc('report_send', { send: id, why })
+  if (error) return { miss: /too many reports/i.test(error.message) ? 'we.missReports' : 'people.reach' }
   return { miss: '' }
 }
 
@@ -440,6 +425,77 @@ export async function giftCheer(toId, cheerId) {
   return bad(error)
 }
 
+// One friend or family member, by id, for the gift screen's heading.
+export async function readKnownPerson(id) {
+  const db = cloud()
+  if (!db || !id) return null
+  return (await peopleByIds(db)).get(id) || null
+}
+
+// A look, cheer or buddy for a friend or family member. The server takes the
+// gems or coins and returns the new balances.
+export async function sendGift(toId, kind, itemId, note = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('send_gift', {
+    other: toId,
+    p_kind: kind,
+    p_item_id: itemId,
+    p_note: String(note || '').trim().slice(0, 60),
+  })
+  if (!error) return { miss: '', gems: Number(data?.gems) || 0, coins: Number(data?.coins) || 0 }
+  if (notRunYet(error)) return { miss: 'setup' }
+  const text = error.message || ''
+  if (/gift cap/i.test(text)) return { miss: 'giftCap' }
+  if (/not friends|bad person/i.test(text)) return { miss: 'notFriend' }
+  if (/need gems/i.test(text)) return { miss: 'gems' }
+  if (/need coins/i.test(text)) return { miss: 'coins' }
+  if (/bad item/i.test(text)) return { miss: 'gone' }
+  return bad(error)
+}
+
+// Gifts you sent, newest first, with who they went to and what happened.
+export async function listSentGifts() {
+  const db = cloud()
+  if (!db) return { rows: [], miss: 'off' }
+  const user = await me()
+  if (!user) return { rows: [], miss: 'out' }
+  const { data, error } = await db
+    .from('cheer_gifts')
+    .select('id, to_id, kind, cheer_id, note, gems, coins, made_at, claimed_at, returned_at')
+    .eq('from_id', user.id)
+    .order('made_at', { ascending: false })
+    .limit(50)
+  if (error) return notRunYet(error) ? { rows: [], miss: 'setup' } : { rows: [], ...bad(error) }
+  const who = await peopleByIds(db)
+  const rows = (data || []).map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id } }))
+  return { rows, miss: '' }
+}
+
+export async function claimGifts() {
+  const db = cloud()
+  if (!db) return { gifts: [], miss: 'off' }
+  const { data, error } = await db.rpc('claim_gifts')
+  if (error) return notRunYet(error) ? { gifts: [], miss: 'setup' } : { gifts: [], ...bad(error) }
+  // Opened now, so the badge drops without waiting for the next pulse.
+  if (pulse.state.gifts) pulseEmit({ ...pulse.state, gifts: 0 })
+  return { gifts: Array.isArray(data) ? data : [], miss: '' }
+}
+
+export async function returnGift(id) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { error } = await db.rpc('return_gift', { gift: id })
+  return error ? bad(error) : { miss: '' }
+}
+
+export async function reportGift(id) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { error } = await db.rpc('report_gift', { gift: id })
+  return error ? bad(error) : { miss: '' }
+}
+
 export async function claimCheerGifts() {
   const db = cloud()
   if (!db) return { ids: [], miss: 'off' }
@@ -456,7 +512,7 @@ export async function listInbox() {
   if (!user) return []
   const { data } = await db
     .from('sends')
-    .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id')
+    .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat')
     .eq('to_id', user.id)
     .eq('state', 'sent')
     .order('made_at', { ascending: false })
@@ -492,8 +548,12 @@ export async function friendAskCount() {
 }
 
 export async function peopleBadgeCount() {
-  const [inbox, asks] = await Promise.all([inboxCount(), friendAskCount()])
-  return inbox + asks
+  const [inbox, asks, weAsks] = await Promise.all([
+    inboxCount(),
+    friendAskCount(),
+    weAskCount().catch(() => 0),
+  ])
+  return inbox + asks + weAsks
 }
 
 // What you have sent other people, and how it went.
@@ -504,7 +564,7 @@ export async function listSent() {
   if (!user) return []
   const { data } = await db
     .from('sends')
-    .select('id, to_id, kind, question, note, due_on, state, made_at')
+    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(100)
@@ -946,7 +1006,15 @@ export async function setAutoAdd(friendId, on) {
 
 const PULSE_MS = 300000
 const PULSE_STALE_MS = 60000
-const PULSE_ZERO = { inbox: 0, asks: 0, news: null }
+const PULSE_ZERO = { inbox: 0, asks: 0, gifts: 0, news: null }
+
+// Cloud sync is what opens gifts (claim, collection, pop-up). The pulse only
+// notices one waiting and asks sync to run, so a gift sent while the app is
+// open still shows up.
+let giftWaker = null
+export function onGiftsWaiting(fn) {
+  giftWaker = fn
+}
 
 const pulse = {
   userId: '',
@@ -982,7 +1050,8 @@ async function pulseLook() {
     const claimed = adder ? await claimAutoSends(db) : []
     // Straight onto tonight before anything else can fail; the server has
     // already marked these kept.
-    if (claimed.length) adder(claimed.map((row) => row.question))
+    // Nobody chose these for tonight, so they are optional (see normalizeLamp).
+    if (claimed.length) adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true })))
     const [waiting, asks] = await Promise.all([
       db
         .from('sends')
@@ -993,7 +1062,14 @@ async function pulseLook() {
         .limit(20),
       friendAskCount(),
     ])
+    const giftRows = await db
+      .from('cheer_gifts')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_id', user.id)
+      .is('claimed_at', null)
+    const gifts = giftRows.count || 0
     if (user.id !== pulse.userId) return
+    if (gifts && giftWaker) giftWaker()
     const rows = waiting.data || []
     const fresh = pulse.seen ? rows.filter((row) => !pulse.seen.has(row.id)) : []
     pulse.seen = new Set([...(pulse.seen || []), ...rows.map((row) => row.id)])
@@ -1020,7 +1096,7 @@ async function pulseLook() {
         }
       }
     }
-    pulseEmit({ inbox: waiting.count ?? rows.length, asks, news })
+    pulseEmit({ inbox: waiting.count ?? rows.length, asks, gifts, news })
   })()
     .catch(() => {})
     .finally(() => {

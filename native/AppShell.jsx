@@ -26,6 +26,7 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
+import { GiftHost } from './screens/shop.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
@@ -47,6 +48,9 @@ const Stack = createNativeStackNavigator()
  * while the page sits at the top, the system material with a hairline once
  * content scrolls under it. Android draws its top app bar in the page instead.
  */
+// Add forms have no page title (BoardShell noTitle), so no large title either.
+const NO_TITLE = new Set(['/hang', '/we/new'])
+
 function barOptions(colors) {
   if (Platform.OS !== 'ios') return { headerShown: false }
   return {
@@ -317,7 +321,9 @@ export function AppShell() {
               component={RouteScreen}
               options={
                 path === '/add'
-                  ? { presentation: 'formSheet', sheetGrabberVisible: true }
+                  ? { presentation: 'formSheet', sheetGrabberVisible: true, headerLargeTitleEnabled: false }
+                  : NO_TITLE.has(path)
+                    ? { headerLargeTitleEnabled: false }
                   : OWN_BACK.has(path)
                     ? { gestureEnabled: false }
                     : undefined
@@ -331,6 +337,7 @@ export function AppShell() {
       </Slot>
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
+        {app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>

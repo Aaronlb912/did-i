@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { dueByUrgency } from './board-json.js'
 import { goHash } from '../site/hash.js'
 import { FinishFace } from './FinishFace.jsx'
@@ -15,7 +16,7 @@ import { useAccount } from './account.js'
 import { useSync } from './cloud-sync.js'
 import { usePrefs, useTheme } from './prefs.js'
 import { PurseLine } from './PurseLine.jsx'
-import { mergePurses } from './purse.js'
+import { fireCheer, mergePurses } from './purse.js'
 import { useReduceMotion } from './useReduceMotion.js'
 import { useTonightKeys } from './useTonightKeys.js'
 import { useTonightStack } from './useTonightStack.js'
@@ -23,6 +24,12 @@ import { TagRail } from './TagRail.jsx'
 import { SwipePullSlot } from './SwipePull.jsx'
 import { EdgeScroll } from './EdgeScroll.jsx'
 import { FamilyTonight } from './FamilyTonight.jsx'
+import { WeFace, useWeAnswer, weOpenForMe } from './DidWe.jsx'
+import { takeWeFinishes, useWeTonight, weInFilter, weStats } from './did-we.js'
+import { shelfMarks, weMarksFor } from './achievements.js'
+
+// Where the stack has no card of your own to answer, so a Did we can have it.
+const WE_OVER = new Set(['hall', 'rest', 'off', 'waiting'])
 import './did-i.css'
 
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
@@ -35,9 +42,33 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
   useTonightKeys(stack)
 
   const purse = mergePurses(stack.shelf)
+  const we = useWeTonight(account.user)
+  const weAns = useWeAnswer(we.reload, value)
+  // Someone else's did finished a card: play their cheer, once, with a line.
+  const [weFinish, setWeFinish] = useState(null)
+  useEffect(() => {
+    if (!account.user) return
+    // Did we achievements come from the shared cards, so they unlock here.
+    const earned = weMarksFor(shelfMarks(boards.length ? boards : [value]), weStats(we.cards))
+    if (earned.length && onChange) onChange({ ...value, unlocked: [...(value.unlocked || []), ...earned] })
+    const [first, ...more] = takeWeFinishes(we.cards)
+    if (!first) return
+    fireCheer(first.cheer, first.stage)
+    setWeFinish({ ...first, more: more.length })
+  }, [account.user, we.cards])
+  // The folder filter applies to Did we cards the same way.
+  const folderTitles = tagId
+    ? (boards || []).filter((item) => tagId.split(',').includes(item.id)).map((item) => item.title)
+    : []
+  const weCards = we.cards.filter((card) => weInFilter(card, folderTitles))
+  // Your own questions come first; then an unanswered Did we takes the card.
+  const weFirst =
+    WE_OVER.has(stack.bodyKind) && !stack.cheer && weOpenForMe(weCards).length > 0
 
   let body = null
-  if (stack.bodyKind === 'hole' && stack.holePick) {
+  if (weFirst) {
+    body = <WeFace cards={weCards} ans={weAns} />
+  } else if (stack.bodyKind === 'hole' && stack.holePick) {
     const holeBook = stack.bookOf(stack.holePick)
     body = (
       <HolePlate
@@ -219,6 +250,21 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
         {account.user && sync.how === 'miss' ? (
           <p className="di-set-note di-off-line">{t('tonight.syncMiss')}</p>
+        ) : null}
+
+        {weFinish ? (
+          <button
+            type="button"
+            className="di-key di-we-finish"
+            onClick={() => {
+              setWeFinish(null)
+              goHash('/we', { id: weFinish.card.id })
+            }}
+          >
+            {weFinish.more
+              ? t('we.finishedMany', { n: weFinish.more + 1 })
+              : t('we.finishedBy', { name: weFinish.name || t('people.someone'), question: weFinish.card.question })}
+          </button>
         ) : null}
 
         <NightMeter due={stack.due} />

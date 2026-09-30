@@ -20,9 +20,12 @@ The three FCM secrets live in Supabase secrets, not in the repo. The
 service account JSON is at `C:\Users\aaron\Documents\did-i-secrets\`
 and belongs nowhere near git.
 
-The function has `verify_jwt` on, so only the cron job holding the
-service role key can drain the queue. A stranger hitting the URL gets
-401.
+The function has `verify_jwt` on, which checks the key is real, and it
+also refuses any key whose role is not `service_role`. The public anon
+key the app ships with is a real key, so without that second check anyone
+could drain the queue. Only the cron job holds a service role key. A
+stranger hitting the URL gets 401 (checked 30 Sep 2026 with the anon key,
+a forged key and no key). Deploy with `verify_jwt` left on.
 
 ## What was proved, and how
 

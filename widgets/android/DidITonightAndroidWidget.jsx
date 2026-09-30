@@ -456,6 +456,22 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 clickActionData={{ uri: tonightUri }}
               />
             )}
+            {!compact && String(p.weLine || '').trim() ? (
+              <TextWidget
+                text={String(p.weLine).trim()}
+                style={{
+                  fontSize: 11,
+                  fontWeight: '600',
+                  color: C.on,
+                  textAlign: 'center',
+                  width: 'match_parent',
+                  marginTop: tight ? 2 : 4,
+                }}
+                maxLines={1}
+                clickAction="OPEN_URI"
+                clickActionData={{ uri: tonightUri }}
+              />
+            ) : null}
           </FlexWidget>
           {showBuddy ? (
             <FlexWidget

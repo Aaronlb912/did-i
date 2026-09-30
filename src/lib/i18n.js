@@ -9,8 +9,8 @@ import { pt } from '../locales/pt.js'
 import { zh } from '../locales/zh.js'
 import { readPrefs, usePrefs } from './prefs.js'
 
-// English fills any key a partial locale file missed. Run npm run locales:sync
-// after adding keys to en.js.
+// English fills any key a locale file missed. Every key goes in all 9 files;
+// npm test checks that (docs/locales.md).
 const packs = {
   en,
   es: { ...en, ...es },
@@ -41,6 +41,11 @@ export function t(key, vars) {
     )
   }
   return text
+}
+
+// True when the app shows English, so a translation note is not needed.
+export function inEnglish() {
+  return !packs[readPrefs().locale] || readPrefs().locale === 'en'
 }
 
 export function hasLocaleKey(key) {

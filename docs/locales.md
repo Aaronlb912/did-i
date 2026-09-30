@@ -1,26 +1,35 @@
 # Locales
 
-Ship quality is **English + Spanish**. Other languages fall back to English for missing strings.
+Nine files in `src/locales/`: en, es, fr, de, pt, it, zh, ja, ko. **They are the
+only source.** There is no merge or sync step; edit the files directly.
 
 ## Add or change copy
 
-1. Add keys to `scripts/i18n-additions.mjs` (`additionsEn` and `additionsEs` in the same edit).
-2. `npm run locales:merge` — updates `en.js`, `es.js`, and seeds `scripts/locale-gaps/*.json` for partial locales.
-3. For fr/de/pt/it/zh/ja/ko: translate only what you need in `scripts/locale-gaps/{lang}.json`, or export a batch with `npm run locales:missing -- --export fr`.
-4. `npm run locales:sync` — merges gaps into `src/locales/{lang}.js`.
+1. Add the key to `src/locales/en.js`.
+2. Add it to the other 8 files in the same change, translated.
+3. `npm test`.
 
-Optional: drop a batch file at `scripts/locale-pass/{lang}.mjs` (`export const pass = { ... }`) and run `npm run locales:apply-pass -- fr` (skips `legal.*` unless you pass `--legal`).
+Product names can stay English on purpose (Did I, Did we, Look, Cheer, Buddy
+in zh/ja/ko, and the like). Add those keys to `PRODUCT_SAME` in
+`scripts/locale-shared.mjs` so the checks allow them.
 
-## Check
+## What npm test checks
 
-- `npm run locales:report` — counts keys still identical to English.
-- `npm run locales:missing` — lists what still needs work; `--export` writes `scripts/.pass-{lang}.json`.
-- `npm test` — fails if Spanish matches English on keys that are not product terms or templates.
+- Every file has exactly the English keys, none empty.
+- Spanish has nothing left in English.
+- No **new** string is left in English in the other languages. Older ones
+  still in English are listed in `scripts/locale-english.json`. That list only
+  shrinks: after translating some, run `npm run locales:report -- --save`.
+- Each file is in its own script: no Chinese in the Japanese file, no Korean
+  or kanji in Korean, no CJK in the European files.
+
+## See what is left
+
+- `npm run locales:report` counts strings still in English per language.
+- `npm run locales:report -- -v` lists them.
 
 ## Legal
 
-`legal.*` lives in `scripts/legal-i18n.mjs` for en/es. Other locales keep English until a lawyer signs off. Use `npm run locales:apply-pass -- fr --legal` only after review.
-
-## Partial locales
-
-English fallback is fine off the main path. Prioritize nav, Tonight, Add, Settings, Shop doors, and errors.
+The Privacy Policy and Terms are translated in all 9 files, like everything
+else. When a page is not in English it shows `legal.translated`: the English
+version applies if they differ. See `docs/legal.md`.

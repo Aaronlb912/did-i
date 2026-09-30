@@ -1,7 +1,7 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, isGemLook, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
   const gems = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
@@ -68,6 +68,67 @@ export function applyCoinCatalogToBook(book, cat, opts = {}) {
     cheerStages,
     lookOn: opts.lookOn || purse.lookOn,
   }
+}
+
+// Gem looks, cheers and buddies owned on the server (read_gem_owned,
+// buy_with_gems). Free items (lime, the ant) and coin looks are not in it.
+export function normalizeGemOwned(raw) {
+  const bag = raw && typeof raw === 'object' ? raw : {}
+  return {
+    gems: Math.max(0, Math.floor(Number(bag.gems) || 0)),
+    looks: asIdList(bag.looks),
+    cheers: asIdList(bag.cheers),
+    buddies: asIdList(bag.buddies),
+  }
+}
+
+// The server list replaces the gem items on the phone; free items and coin
+// looks stay as they are.
+export function applyGemOwnedToBook(book, owned, opts = {}) {
+  const purse = normalizePurse(book)
+  const own = normalizeGemOwned(owned)
+  return {
+    ...book,
+    ...purse,
+    gems: own.gems,
+    looks: [...new Set([...purse.looks.filter((id) => !isGemLook(id)), ...own.looks])],
+    cheers: [...new Set(['lime', ...own.cheers])],
+    buddies: [...new Set([FREE_BUDDY, ...own.buddies])],
+    lookOn: opts.lookOn || purse.lookOn,
+    cheerOn: opts.cheerOn || purse.cheerOn,
+    buddyOn: opts.buddyOn || purse.buddyOn,
+  }
+}
+
+export function applyGemOwnedToShelf(shelf, owned) {
+  if (!shelf?.boards?.length) return shelf
+  return { ...shelf, boards: shelf.boards.map((book) => applyGemOwnedToBook(book, owned)) }
+}
+
+export async function readGemOwned() {
+  const db = cloud()
+  if (!db) return null
+  const user = await readUser()
+  if (!user) return null
+  const { data, error } = await db.rpc('read_gem_owned')
+  if (error) return null
+  return normalizeGemOwned(data)
+}
+
+export async function purchaseWithGems(kind, itemId) {
+  const db = cloud()
+  if (!db) return { miss: 'shop.miss.buyFail' }
+  const { data, error } = await db.rpc('buy_with_gems', { p_kind: kind, p_item_id: itemId })
+  if (error) {
+    const text = error.message || ''
+    if (/need gems/i.test(text)) return { miss: 'shop.miss.needGems' }
+    if (/bad item/i.test(text)) {
+      if (kind === 'look') return { miss: 'shop.miss.lookGone' }
+      return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
+    }
+    return { miss: 'shop.miss.buyFail' }
+  }
+  return { miss: '', owned: normalizeGemOwned(data) }
 }
 
 export async function readGemBalance() {

@@ -7,7 +7,7 @@ import { BuddyHang } from '../components/Cosmetic.jsx'
 import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
-import { isGemLook, mergePurses } from '../../src/lib/purse.js'
+import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -43,6 +43,15 @@ import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
+import { WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { saveWeReminders, saveWeWidgetLine, takeWeFinishes, useWeTonight, weInFilter, weStats } from '../../src/lib/did-we.js'
+import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
+import { armLampPings } from '../../src/lib/notify.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { syncTonightWidget } from '../widget-sync.js'
+
+// Where the stack has no card of your own to swipe, so a Did we can have it.
+const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 
 function useMinuteNow() {
   const [now, setNow] = useState(() => new Date())
@@ -89,6 +98,31 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
+  const we = useWeTonight(account.user)
+  const weAns = useWeAnswer(we.reload, book)
+  // Keep the widget's Did we line in step with what Tonight knows.
+  useEffect(() => {
+    if (!account.user) return
+    if (saveWeWidgetLine(we.cards)) syncTonightWidget(readShelf()).catch(() => {})
+    // Did we reminders ride along with your own; set them again when they change.
+    if (saveWeReminders(we.cards)) armLampPings(readShelf().boards).catch(() => {})
+    // Did we achievements come from the shared cards, so they unlock here.
+    const earned = weMarksFor(shelfMarks(boards && boards.length ? boards : [book]), weStats(we.cards))
+    if (earned.length) onChange({ ...book, unlocked: [...(book.unlocked || []), ...earned] })
+    // Someone else's did finished a card: play their cheer here, once.
+    const [first, ...more] = takeWeFinishes(we.cards)
+    if (!first) return
+    fireCheer(first.cheer, first.stage)
+    showToast({
+      id: `we-finish:${first.card.id}`,
+      kind: 'we',
+      cardId: first.card.id,
+      text: more.length
+        ? t('we.finishedMany', { n: more.length + 1 })
+        : t('we.finishedBy', { name: first.name || t('people.someone'), question: first.card.question }),
+      ms: 5200,
+    })
+  }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
@@ -137,8 +171,32 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const timer = setTimeout(stack.cheered, CELEBRATE_MS)
     return () => clearTimeout(timer)
   }, [stack.cheer, stack.cheered])
+  // The folder and topic filters apply to Did we cards the same way.
+  const folderTitles = tagId
+    ? (boards || [])
+        .filter((item) => tagId.split(',').includes(item.id))
+        .map((item) => item.title)
+    : []
+  const weCards = we.cards.filter((card) => weInFilter(card, folderTitles, picks))
+  // Your own questions come first. Once none is left to swipe, an unanswered
+  // Did we takes the card's place.
+  const weSwipe =
+    WE_SWIPE_OVER.has(stack.bodyKind) &&
+    !stack.cheer &&
+    !(stack.bodyKind === 'finish' && stack.stillOpen.length) ? (
+      <WeSwipeCard
+        cards={weCards}
+        colors={colors}
+        onAnswer={weAns.answer}
+        panelStyle={gemCard}
+        gemLook={premium ? look : ''}
+        buddy={activeBuddy(book)}
+      />
+    ) : null
   let face = null
-  if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
+  if (weSwipe && weOpenForMe(weCards).length) {
+    face = weSwipe
+  } else if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>

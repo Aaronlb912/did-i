@@ -1,5 +1,5 @@
 import { hallHeat } from './hall-feel.js'
-import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
+import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
 
 export const STREAK_RISK_HOUR = 21
 
@@ -8,7 +8,7 @@ export function streakAtRisk(book, now = new Date()) {
   const heat = hallHeat(book, now)
   if (heat <= 0) return false
   if (allClearTonight(book, now)) return false
-  return dueTonight(book, now).length > 0
+  return countedTonightRows(dueTonight(book, now)).length > 0
 }
 
 export function streakRiskFire(book, now = new Date()) {

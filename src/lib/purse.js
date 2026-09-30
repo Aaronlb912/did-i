@@ -63,7 +63,12 @@ const ALL_LOOKS = [
   { id: 'clay', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-10-09' },
 ]
 
+// Cheers that are never sold, only given out by hand as a gift (see gifts.sql).
+export const SPECIAL_CHEERS = [{ id: 'launch', gems: 0, special: true }]
+
 export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
+// Every cheer someone can own: the shop's plus the special ones.
+export const OWNABLE_CHEERS = [...CHEERS, ...SPECIAL_CHEERS]
 export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
 export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
 
@@ -216,7 +221,7 @@ export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
 export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
-const CHEER_IDS = new Set(CHEERS.map((item) => item.id))
+const CHEER_IDS = new Set(OWNABLE_CHEERS.map((item) => item.id))
 const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
 const BUDDY_IDS = new Set(BUDDIES.map((item) => item.id))
 
@@ -743,3 +748,39 @@ export function buyCheer(book, id) {
   }
 }
 
+
+// What can be sent as a gift: anything in the shop that costs something.
+// Prices match gift_catalog in supabase/gifts.sql.
+export function giftItems() {
+  return {
+    looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
+    cheers: CHEERS.filter((item) => item.gems > 0),
+    buddies: BUDDIES.filter((item) => item.gems > 0),
+  }
+}
+
+// Adds a gift to the collection. `had` means it was already owned.
+export function mergeGift(book, gift) {
+  const purse = normalizePurse(book)
+  const id = String(gift?.item_id || '')
+  if (gift?.kind === 'look') {
+    if (!LOOK_IDS.has(id)) return { book, had: false, known: false }
+    if (purse.looks.includes(id)) return { book, had: true, known: true }
+    return { book: { ...book, ...purse, looks: [...purse.looks, id] }, had: false, known: true }
+  }
+  if (gift?.kind === 'buddy') {
+    if (!BUDDY_IDS.has(id)) return { book, had: false, known: false }
+    if (purse.buddies.includes(id)) return { book, had: true, known: true }
+    return { book: { ...book, ...purse, buddies: [...purse.buddies, id] }, had: false, known: true }
+  }
+  if (!CHEER_IDS.has(id)) return { book, had: false, known: false }
+  if (purse.cheers.includes(id)) return { book, had: true, known: true }
+  return { book: mergeGiftCheers(book, [id]), had: false, known: true }
+}
+
+export function wearGift(book, kind, id) {
+  const purse = normalizePurse(book)
+  if (kind === 'look') return purse.looks.includes(id) ? { ...book, ...purse, lookOn: id } : book
+  if (kind === 'buddy') return purse.buddies.includes(id) ? { ...book, ...purse, buddyOn: id } : book
+  return purse.cheers.includes(id) ? { ...book, ...purse, cheerOn: id } : book
+}

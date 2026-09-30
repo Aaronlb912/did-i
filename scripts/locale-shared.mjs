@@ -1,10 +1,19 @@
-// Shared rules for locale report, missing export, and ship-locale checks.
+// Shared rules for the locale report and the locale checks in npm test.
 
-export const SHIP_LOCALES = ['es']
-export const PARTIAL_LOCALES = ['fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 
 const PRODUCT_SAME = new Set([
   'nav.everyone',
+  'we.title',
+  'we.new',
+  'we.did',
+  'we.nope',
+  'we.widgetMine',
+  'we.more',
+  'marks.section.we',
+  'ach.looks.name',
+  'ach.cheers.name',
+  'lead.you',
+  'help.we',
   'welcome.plate',
   'tonight.didI',
   'tonight.swipeDid',
@@ -73,7 +82,7 @@ export function isLegalKey(key) {
   )
 }
 
-/** Spanish may match English (product terms, templates, brand names). */
+/** Text that may match English on purpose (product terms, templates, brand names). */
 export function mayMatchEnglish(key) {
   if (key.startsWith('lang.')) return true
   if (/^cheer\.[a-z]+\.name$/.test(key)) return true
@@ -86,10 +95,32 @@ export function mayMatchEnglish(key) {
   return false
 }
 
-export function keysSameAsEn(pack, enPack, { skipLegal = true, shipOnly = false } = {}) {
-  return Object.keys(enPack).filter((key) => {
-    if (skipLegal && isLegalKey(key)) return false
-    if (shipOnly && mayMatchEnglish(key)) return false
-    return pack[key] === enPack[key]
-  })
+// Keys whose text is still the English text, minus ones that may match on purpose.
+export function englishLeft(pack, enPack) {
+  return Object.keys(enPack).filter((key) => !mayMatchEnglish(key) && pack[key] === enPack[key])
+}
+
+const HAN = /[一-鿿]/g
+const KANA = /[぀-ヿ]/
+const HANGUL = /[가-힯]/
+
+// Text written in the wrong language's script, like Chinese in the Japanese
+// file. Returns why, or ''.
+export function wrongScript(code, value, key = '') {
+  // Language names are written in their own script on purpose.
+  if (key.startsWith('lang.')) return ''
+  const text = String(value)
+  const han = (text.match(HAN) || []).length
+  if (['es', 'fr', 'de', 'pt', 'it'].includes(code)) {
+    return han || KANA.test(text) || HANGUL.test(text) ? 'has Chinese, Japanese or Korean text' : ''
+  }
+  if (code === 'ja') {
+    if (HANGUL.test(text)) return 'has Korean text'
+    // Short kanji-only phrases are normal Japanese; a long run with no kana is Chinese.
+    if (han >= 10 && !KANA.test(text)) return 'looks like Chinese (no kana)'
+    return ''
+  }
+  if (code === 'zh') return KANA.test(text) || HANGUL.test(text) ? 'has Japanese or Korean text' : ''
+  if (code === 'ko') return han || KANA.test(text) ? 'has Chinese or Japanese text' : ''
+  return ''
 }

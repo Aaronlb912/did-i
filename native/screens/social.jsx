@@ -3,23 +3,25 @@ import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View
 import { useAccount } from '../../src/lib/account.js'
 import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { passAlong } from '../../src/lib/native.js'
 import {
   INVITE_GEMS_CAP,
   INVITE_LOOK_AT,
   invitePayoutNote,
   answerSend,
-  askFriend,
+  reportSend,
+  askByFriendId,
+  cleanFriendId,
+  formatFriendId,
+  myFriendId,
   blockPerson,
   claimInvites,
   cleanCode,
-  cleanPhone,
   doneTonight,
-  formatPhone,
   dropFriend,
   friendAskNote,
   friendAskTitle,
-  giftCheer,
   inboxCount,
   joinFamily,
   listBlocks,
@@ -34,7 +36,6 @@ import {
   personName,
   readMine,
   refreshPeople,
-  savePhone,
   sayNo,
   sayYes,
   sendCheer,
@@ -47,7 +48,6 @@ import {
   unblockPerson,
 } from '../../src/lib/people.js'
 import {
-  CHEER_GEMS,
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
   FRIEND_CHEERS_PER_GEM,
@@ -55,15 +55,15 @@ import {
   friendCheerMissKey,
   applyInvitePayout,
   normalizePurse,
-  spendGems,
 } from '../../src/lib/purse.js'
 import { useKept } from '../hooks/useKept.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
-import { offerMoreGems } from '../components/SheetHost.jsx'
+import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
+import { WeAsks } from '../components/WeTonight.jsx'
 import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
@@ -164,6 +164,39 @@ function PreviewRow({ icon, title, body, colors }) {
       </View>
     </View>
   )
+}
+
+// A new friend is the moment a Did we makes sense: offer one, once per person.
+function offerWeWith(person, colors) {
+  const id = person?.user_id
+  if (!id) return
+  const key = 'did-i-we-offered'
+  let seen = []
+  try {
+    seen = JSON.parse(localStorage.getItem(key) || '[]')
+  } catch {
+    seen = []
+  }
+  if (seen.includes(id)) return
+  try {
+    localStorage.setItem(key, JSON.stringify([...seen, id].slice(-200)))
+  } catch {
+    // ok
+  }
+  const name = personName(person) || t('people.someone')
+  publishSheet({
+    kicker: t('we.title'),
+    title: t('we.friendTitle', { name }),
+    body: t('we.friendBody'),
+    goLabel: t('we.startWith', { name }),
+    closeLabel: t('settings.neverMind'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => {
+      publishSheet(null)
+      goHash('/we/new', { id })
+    },
+  })
 }
 
 // Signed out, People was a dead end. A preview of what it does, then the
@@ -325,35 +358,33 @@ function AddPop({ kicker, colors, onClose, children }) {
   )
 }
 
-function AddFriendPop({ phone, colors, onClose, onAsked }) {
+// Add by friend ID.
+function AddFriendPop({ colors, onClose, onAsked }) {
   const [draft, setDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
   async function ask() {
     setBusy(true)
-    const { miss: why, person } = await askFriend(draft)
+    const { miss: why, person } = await askByFriendId(draft)
     setBusy(false)
-    if (why === 'short') return setMiss(t('people.phoneShort'))
-    if (why === 'nophone') return setMiss(t('people.nophone'))
-    if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(draft) }))
+    if (why === 'badId') return setMiss(t('friendId.bad'))
+    if (why === 'nobody') return setMiss(t('friendId.nobody'))
+    if (why === 'tooMany') return setMiss(t('friendId.tooMany'))
     if (why) return setMiss(tMiss(why))
     onClose()
-    return onAsked(t('people.asked', { name: personName(person) }))
+    return onAsked(t('people.asked', { name: personName(person) || t('people.someone') }))
   }
   return (
     <AddPop kicker={t('people.addOne')} colors={colors} onClose={onClose}>
-      {phone ? (
-        <>
-          <Field colors={colors} label={t('people.add')} value={draft} onChangeText={setDraft} keyboardType="phone-pad" />
-          <Miss colors={colors}>{miss}</Miss>
-          <DidButton colors={colors} label={t('people.askOne')} disabled={busy} onPress={ask} />
-        </>
-      ) : (
-        <>
-          <Meta colors={colors}>{t('people.nophone')}</Meta>
-          <DidButton colors={colors} small label={t('people.phoneSave')} onPress={() => { onClose(); goHash('/people/connect') }} />
-        </>
-      )}
+      <Field
+        colors={colors}
+        label={t('friendId.add')}
+        value={formatFriendId(draft)}
+        onChangeText={(value) => setDraft(cleanFriendId(value))}
+        keyboardType="number-pad"
+      />
+      <Miss colors={colors}>{miss}</Miss>
+      <DidButton colors={colors} label={t('people.askOne')} disabled={busy || draft.length !== 12} onPress={ask} />
     </AddPop>
   )
 }
@@ -365,7 +396,6 @@ export function PeopleScreen({ book, onChange }) {
   const [links, setLinks] = useKept(`people.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
   const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
   const [waiting, setWaiting] = useKept(`people.waiting:${account.user?.id}`, 0)
-  const [phone, setPhone] = useKept(`people.phone:${account.user?.id}`, '')
   const [ready, setReady] = useKept(`people.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
@@ -384,7 +414,6 @@ export function PeopleScreen({ book, onChange }) {
         inboxCount(),
       ])
       setMine(who)
-      setPhone(who?.phone || '')
       await syncDisplayName(book.keeperName)
       setLinks(friendRows)
       setFamilies(famRows)
@@ -405,9 +434,10 @@ export function PeopleScreen({ book, onChange }) {
     setSaid(words)
   }
 
-  async function answerAsk(id, yes) {
+  async function answerAsk(id, yes, person) {
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(tMiss(why))
+    if (yes) offerWeWith(person, colors)
     return load()
   }
 
@@ -461,7 +491,7 @@ export function PeopleScreen({ book, onChange }) {
               line={friendAskNote(row.person)}
               actions={
                 <>
-                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
+                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
                   <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
                 </>
               }
@@ -550,6 +580,9 @@ export function PeopleScreen({ book, onChange }) {
       )}
       {families.length ? null : <JoinFamilyCard colors={colors} />}
 
+      <SectionHead colors={colors} label={t('we.title')} />
+      <Row colors={colors} label={t('we.open')} note={t('we.empty')} onPress={() => goHash('/we')} />
+
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}
@@ -559,9 +592,9 @@ export function PeopleScreen({ book, onChange }) {
       />
       <Row
         colors={colors}
-        label={t('people.phone')}
-        note={phone ? formatPhone(phone) : t('people.phoneMissing')}
-        onPress={() => goHash('/account')}
+        label={t('friendId.yours')}
+        note={mine?.friend_id ? formatFriendId(mine.friend_id) : t('friendId.shareSub')}
+        onPress={() => goHash('/people/connect')}
       />
       <Row
         colors={colors}
@@ -585,7 +618,7 @@ export function PeopleScreen({ book, onChange }) {
         <SendSheet person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
       ) : null}
       {sheet?.kind === 'friend' ? (
-        <AddFriendPop phone={phone} colors={colors} onClose={() => setSheet(null)} onAsked={(words) => { say(words); load() }} />
+        <AddFriendPop colors={colors} onClose={() => setSheet(null)} onAsked={(words) => { say(words); load() }} />
       ) : null}
       {sheet?.kind === 'family' ? (
         <AddPop kicker={t('people.join')} colors={colors} onClose={() => setSheet(null)}>
@@ -698,27 +731,21 @@ export function PeopleReferScreen({ book, onChange }) {
 export function PeopleConnectScreen({ book }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [addDraft, setAddDraft] = useState('')
   const [famDraft, setFamDraft] = useState('')
   const [codeDraft, setCodeDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
-  // Friends find each other by number, so asking needs yours first.
-  // null while loading; '' when there is none on the account.
-  const [myPhone, setMyPhone] = useState(null)
-  const [phoneDraft, setPhoneDraft] = useState('')
-  const [phoneMiss, setPhoneMiss] = useState('')
+  // Everyone has a friend ID; it is the main way to add someone.
+  const [myId, setMyId] = useState('')
+  const [idDraft, setIdDraft] = useState('')
+  const [idMiss, setIdMiss] = useState('')
 
   useEffect(() => {
     if (!account.user) return undefined
     let alive = true
-    readMine()
-      .then((mine) => {
-        if (alive) setMyPhone(mine?.phone || '')
-      })
-      .catch(() => {
-        if (alive) setMyPhone('')
-      })
+    myFriendId().then((out) => {
+      if (alive) setMyId(out.id)
+    })
     return () => {
       alive = false
     }
@@ -729,28 +756,20 @@ export function PeopleConnectScreen({ book }) {
     setSaid(words)
   }
 
-  async function keepPhone() {
-    setPhoneMiss('')
-    const out = await savePhone(phoneDraft)
-    if (out.miss === 'short') return setPhoneMiss(t('people.phoneShort'))
-    if (out.miss === 'taken') return setPhoneMiss(t('people.phoneTaken'))
-    if (out.miss) return setPhoneMiss(tMiss(out.miss))
-    setMyPhone(out.phone)
-    setPhoneDraft('')
-    say(t('people.phoneSaved'))
+  async function askById() {
+    setIdMiss('')
+    const { miss: why, person } = await askByFriendId(idDraft)
+    if (why === 'badId') return setIdMiss(t('friendId.bad'))
+    if (why === 'nobody') return setIdMiss(t('friendId.nobody'))
+    if (why === 'tooMany') return setIdMiss(t('friendId.tooMany'))
+    if (why) return setIdMiss(tMiss(why))
+    setIdDraft('')
+    say(t('people.asked', { name: personName(person) || t('people.someone') }))
   }
 
-  async function ask() {
-    const { miss: why, person } = await askFriend(addDraft)
-    if (why === 'short') return setMiss(t('people.phoneShort'))
-    if (why === 'nophone') {
-      setMyPhone('')
-      return setMiss(t('people.nophone'))
-    }
-    if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(addDraft) }))
-    if (why) return setMiss(tMiss(why))
-    setAddDraft('')
-    say(t('people.asked', { name: personName(person) }))
+  async function shareId() {
+    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId) }), t('friendId.title'))
+    if (how === 'copied') say(t('friendId.copied'))
   }
 
   async function newFamily() {
@@ -787,34 +806,22 @@ export function PeopleConnectScreen({ book }) {
       />
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
-      {myPhone === '' ? (
-        <>
-          <Meta colors={colors}>{t('people.phoneFirstTitle')}</Meta>
-          <Meta colors={colors}>{t('people.phoneFirstBody')}</Meta>
-          <Field
-            colors={colors}
-            label={t('account.phone')}
-            value={phoneDraft}
-            onChangeText={setPhoneDraft}
-            keyboardType="phone-pad"
-          />
-          <Miss colors={colors}>{phoneMiss}</Miss>
-          <DidButton colors={colors} label={t('people.phoneSave')} onPress={keepPhone} />
-        </>
-      ) : null}
-      {myPhone ? (
-        <>
-          <Meta colors={colors}>{t('people.phoneYours', { phone: formatPhone(myPhone) })}</Meta>
-          <Field
-            colors={colors}
-            label={t('people.add')}
-            value={addDraft}
-            onChangeText={setAddDraft}
-            keyboardType="phone-pad"
-          />
-          <DidButton colors={colors} label={t('people.askOne')} onPress={ask} />
-        </>
-      ) : null}
+      <View style={styles.friendIdCard}>
+        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendId.yours')}</Text>
+        <Text selectable style={[styles.friendId, { color: colors.ink }]}>
+          {myId ? formatFriendId(myId) : t('family.loading')}
+        </Text>
+        <KeyButton colors={colors} label={t('friendId.share')} disabled={!myId} onPress={shareId} />
+      </View>
+      <Field
+        colors={colors}
+        label={t('friendId.add')}
+        value={formatFriendId(idDraft)}
+        onChangeText={(value) => setIdDraft(cleanFriendId(value))}
+        keyboardType="number-pad"
+      />
+      <Miss colors={colors}>{idMiss}</Miss>
+      <DidButton colors={colors} label={t('people.askOne')} disabled={idDraft.length !== 12} onPress={askById} />
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
       <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
@@ -881,19 +888,34 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setSaid(words)
   }
 
-  async function answerAsk(id, yes) {
+  async function answerAsk(id, yes, person) {
     setMiss('')
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(tMiss(why))
+    if (yes) offerWeWith(person, colors)
     return load()
   }
 
-  async function cut(person) {
-    setMiss('')
-    const { miss: why } = await dropFriend(person.user_id)
-    if (why) return setMiss(tMiss(why))
-    setSaid(t('people.dropped', { name: personName(person) }))
-    return load()
+  // Asks back and forth are dropped with the friendship; shared Did wes
+  // stay until one of you leaves (we_on_unfriend).
+  function cut(person) {
+    const name = personName(person) || t('people.someone')
+    publishSheet({
+      title: t('people.dropTitle', { name }),
+      body: t('people.dropBody'),
+      goLabel: t('people.drop'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        setMiss('')
+        const { miss: why } = await dropFriend(person.user_id)
+        if (why) return setMiss(tMiss(why))
+        setSaid(t('people.dropped', { name }))
+        return load()
+      },
+    })
   }
 
   async function flipAuto(person) {
@@ -928,22 +950,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     return say(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
-  async function gift(person) {
-    if (purse.gems < CHEER_GEMS) {
-      offerMoreGems(colors)
-      return
-    }
-    const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
-    const spent = spendGems(book, CHEER_GEMS)
-    if (spent.miss) {
-      offerMoreGems(colors)
-      return
-    }
-    const { miss: why } = await giftCheer(person.user_id, pick)
-    if (why === 'giftCap') return setMiss(t('friends.giftCap'))
-    if (why) return setMiss(tMiss(why))
-    if (onChange) onChange(spent.book)
-    say(t('friends.giftSent', { name: personName(person) || t('people.someone') }))
+  function gift(person) {
+    goHash('/gift', { id: person.user_id })
   }
 
   async function buyMore() {
@@ -1015,7 +1023,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               line={friendAskNote(row.person)}
               actions={
                 <>
-                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true)} />
+                  <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
                   <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
                 </>
               }
@@ -1066,13 +1074,10 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                     on={auto}
                     onPress={() => flipAuto(row.person)}
                   />
-                  {row.person?.phone ? (
-                    <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatPhone(row.person.phone)}</Text>
-                  ) : null}
                   <View style={styles.personActions}>
                     <KeyButton
                       colors={colors}
-                      label={t('friends.gift', { n: CHEER_GEMS })}
+                      label={t('gift.button')}
                       onPress={() => gift(row.person)}
                     />
                     <KeyButton colors={colors} label={t('people.drop')} onPress={() => cut(row.person)} />
@@ -1117,7 +1122,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               key={row.user_id}
               colors={colors}
               person={row}
-              name={row.display_name || formatPhone(row.phone) || t('people.someone')}
+              name={row.display_name || t('people.someone')}
               line={t('block.cannotReach')}
               actions={
                 <KeyButton
@@ -1281,8 +1286,27 @@ export function InboxScreen({ book, onChange, onKeep }) {
     const { miss: why } = await answerSend(row.id, keep)
     if (why) return setMiss(tMiss(why))
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
-    if (keep && row.kind === 'todo' && onKeep) onKeep(row.question)
+    if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     return load()
+  }
+
+  // Filed with the question and taken out of the inbox. Blocking stays on
+  // the person's sheet.
+  function report(row) {
+    publishSheet({
+      title: t('we.reportTitle'),
+      body: t('we.reportBody'),
+      goLabel: t('we.report'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const { miss: why } = await reportSend(row.id)
+        setMiss(why ? tMiss(why) : t('we.reported'))
+        load()
+      },
+    })
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -1299,6 +1323,7 @@ export function InboxScreen({ book, onChange, onKeep }) {
   if (!rows.length) {
     return (
       <ScreenShell title={t('inbox.emptyTitle')} colors={colors}>
+        <WeAsks colors={colors} />
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
         <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
         <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
@@ -1309,6 +1334,7 @@ export function InboxScreen({ book, onChange, onKeep }) {
   return (
     <ScreenShell title={t('inbox.title')} colors={colors}>
       <OfflineLine colors={colors} />
+      <WeAsks colors={colors} />
       <Meta colors={colors}>{t('inbox.hint')}</Meta>
       <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
       {rows.map((row) => (
@@ -1316,7 +1342,9 @@ export function InboxScreen({ book, onChange, onKeep }) {
           key={row.id}
           colors={colors}
           title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
-          note={`${t('inbox.from', { name: personName(row.person) || t('people.someone') })}${row.note ? ` · ${row.note}` : ''}`}
+          note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), row.note]
+            .filter(Boolean)
+            .join(' · ')}
         >
           <DidButton
             colors={colors}
@@ -1325,7 +1353,10 @@ export function InboxScreen({ book, onChange, onKeep }) {
             onPress={() => answer(row, true)}
           />
           {row.kind === 'todo' ? (
-            <KeyButton colors={colors} label={t('inbox.pass')} onPress={() => answer(row, false)} />
+            <>
+              <KeyButton colors={colors} label={t('inbox.pass')} onPress={() => answer(row, false)} />
+              <KeyButton colors={colors} label={t('we.report')} onPress={() => report(row)} />
+            </>
           ) : null}
         </PersonRow>
       ))}
@@ -1388,7 +1419,9 @@ export function SentScreen({ book, onChange }) {
           key={row.id}
           colors={colors}
           title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
-          note={`${t('sent.to', { name: personName(row.person) || t('people.someone') })} · ${sentState(row.state)}`}
+          note={[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
+            .filter(Boolean)
+            .join(' · ')}
         >
           {row.state === 'sent' ? (
             <KeyButton
@@ -1464,6 +1497,8 @@ const styles = StyleSheet.create({
   tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
+  friendIdCard: { gap: 6, alignItems: 'flex-start' },
+  friendId: { fontFamily: fonts.mono, fontSize: 22, letterSpacing: 1 },
   glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
   stripItem: { width: 64, alignItems: 'center', gap: 4 },

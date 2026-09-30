@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Tonight, emptyBoard, normalizeBook } from './lib/index.js'
-import { unlockAchievements } from './lib/achievements.js'
+import { marksToToast, unlockAchievements } from './lib/achievements.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from './lib/daily.js'
 import {
   currentBook,
@@ -17,6 +17,7 @@ import {
 import { commitBook } from './lib/achievements.js'
 import { hangInto, takeDown } from './lib/board-ops.js'
 import { blankLamp } from './lib/board-json.js'
+import { keptLamp } from './lib/send-repeat.js'
 import { boardDate, isoDate } from './lib/recurrence.js'
 import {
   armLampPings,
@@ -63,6 +64,8 @@ import { Friends } from './lib/Friends.jsx'
 import { Family } from './lib/Family.jsx'
 import { Inbox } from './lib/Inbox.jsx'
 import { Sent } from './lib/Sent.jsx'
+import { WeCard, WeHome, WeNew } from './lib/DidWe.jsx'
+import { DidYou } from './lib/DidYou.jsx'
 import { DidYouBanner } from './lib/DidYouBanner.jsx'
 import { useAccount } from './lib/account.js'
 import { useAutoAdd } from './lib/people.js'
@@ -78,6 +81,7 @@ import {
 } from './lib/cloud-sync.js'
 import { stripDemoShelf } from './lib/demo-strip.js'
 import { Collection } from './lib/Collection.jsx'
+import { Gift, GiftArrived, GiftsSent } from './lib/Gift.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
 import { needsEnter } from './lib/session.js'
@@ -206,7 +210,8 @@ export default function App() {
     if (after.id === before?.id) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
       if (news.length && !after.quietMode) {
-        if (news[0]) setMarkNote({ id: news[0] })
+        const [toast] = marksToToast(news)
+        if (toast) setMarkNote(toast)
       }
     }
     setShelf(written)
@@ -260,14 +265,14 @@ export default function App() {
   }
 
   // A did you kept from the inbox, or several added on their own, land on
-  // the open folder as tonight-only questions in one write.
+  // the open folder in one write: tonight only, or on the sender's repeat.
   function keepSent(questions) {
-    const texts = [].concat(questions).map((text) => String(text || '').trim()).filter(Boolean)
-    if (!texts.length) return
     const clock = new Date()
+    const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
+    if (!lamps.length) return
     let dest = live
-    for (const text of texts) {
-      dest = hangInto(dest, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(clock) }, false)
+    for (const lamp of lamps) {
+      dest = hangInto(dest, lamp, false)
     }
     persist(putBook(shelf, commitBook(dest, clock)))
   }
@@ -495,6 +500,9 @@ export default function App() {
       '/gems': t('title.gems'),
       '/kit': t('title.kit'),
       '/account': t('title.account'),
+      '/we': t('we.title'),
+      '/we/new': t('we.newTitle'),
+      '/you': t('lead.youTitle'),
     }
     document.title = titles[view] || t('title.home', { board })
   }, [view, book, prefs])
@@ -565,7 +573,7 @@ export default function App() {
   } else if (path === '/later') {
     inner = <Later book={live} />
   } else if (path === '/marks') {
-    inner = <Marks book={live} />
+    inner = <Marks book={live} boards={shelf.boards} />
   } else if (path === '/shop') {
     inner = <Shop book={live} />
   } else if (path === '/shop/looks') {
@@ -574,10 +582,14 @@ export default function App() {
     inner = <ShopCheers book={live} onChange={change} />
   } else if (path === '/shop/buddies') {
     inner = <ShopBuddies book={live} onChange={change} />
+  } else if (path === '/gifts') {
+    inner = <GiftsSent book={live} />
+  } else if (path === '/gift') {
+    inner = <Gift key={route.id} book={live} onChange={change} toId={route.id} />
   } else if (path === '/gems') {
     inner = <GemShop book={live} />
   } else if (path === '/kit') {
-    inner = <Collection book={live} onChange={change} />
+    inner = <Collection key={route.id} book={live} onChange={change} startTab={route.id} />
   } else if (path === '/account') {
     inner = <Account book={live} onChange={change} />
   } else if (path === '/people') {
@@ -594,6 +606,16 @@ export default function App() {
     inner = <Inbox book={live} onKeep={keepSent} />
   } else if (path === '/sent') {
     inner = <Sent book={live} />
+  } else if (path === '/we/new') {
+    inner = <WeNew book={live} start={route.start} withId={route.id} />
+  } else if (path === '/you') {
+    inner = <DidYou book={live} start={route.start} withId={route.id} />
+  } else if (path === '/we') {
+    inner = route.id ? (
+      <WeCard book={live} cardId={route.id} onChange={change} />
+    ) : (
+      <WeHome book={live} onChange={change} />
+    )
   } else if (path === '/add' || path === '/hang') {
     inner = (
       <HangPage
@@ -697,6 +719,7 @@ export default function App() {
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
       )}
       {SITE.has(path) ? null : <DidYouBanner path={path} />}
+      {SITE.has(path) || !live ? null : <GiftArrived book={live} onChange={change} />}
       <CheerBurst />
       <DiagnosticsAsk />
       <StreakMomentHost />

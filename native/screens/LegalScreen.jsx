@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { PRIVACY_SECTIONS, TERMS_SECTIONS } from '../../src/lib/legal-sections.js'
 import { legalVars } from '../../src/lib/legal.js'
-import { t } from '../../src/lib/i18n.js'
+import { inEnglish, t } from '../../src/lib/i18n.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
@@ -41,6 +41,7 @@ export function LegalScreen({ kind, book }) {
     >
       <Meta colors={colors}>{t('legal.effective', vars)}</Meta>
       <Meta colors={colors}>{t('legal.notLawyer')}</Meta>
+      {inEnglish() ? null : <Meta colors={colors}>{t('legal.translated')}</Meta>}
       {sections.map((id) => (
         <Section key={id} kind={kind} id={id} vars={vars} colors={colors} />
       ))}

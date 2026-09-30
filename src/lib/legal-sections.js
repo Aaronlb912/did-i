@@ -3,6 +3,8 @@ export const PRIVACY_SECTIONS = [
   'local',
   'account',
   'social',
+  'together',
+  'gifts',
   'push',
   'pay',
   'vendors',

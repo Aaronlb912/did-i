@@ -1,7 +1,8 @@
 # Legal pages
 
 Did I ships with in-app Privacy Policy (`#/privacy`) and Terms of Use
-(`#/terms`). Copy is in `scripts/legal-i18n.mjs` (English and Spanish).
+(`#/terms`). Copy is in the `legal.*` keys of `src/locales/*.js`, in all 9
+languages. Sections are listed in `src/lib/legal-sections.js`.
 
 ## Before you open to the public
 
@@ -31,9 +32,9 @@ Did I ships with in-app Privacy Policy (`#/privacy`) and Terms of Use
 
 ## Updating copy
 
-Edit `scripts/legal-i18n.mjs`, bump `legal.date` in en and es, then:
+Edit the `legal.*` keys in `src/locales/en.js` and bump `legal.date`. Make the
+same change in the other 8 files; `npm test` fails if a new or changed key is
+left in English.
 
-    node scripts/merge-i18n-additions.mjs
-    npm run locales:sync
-
-Other locales get English placeholders until translated.
+Translated pages show `legal.translated` (the English version applies if they
+differ), so the English text is the one a lawyer needs to review.
