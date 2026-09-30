@@ -33,6 +33,8 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
       setTogether(soundsTogether(value))
     },
     onLeadPress: () => setPicking(true),
+    // Signed out, Did we and Did you only offer sign in, so give a way back.
+    onBackToI: () => setMode('i'),
   }
 
   return (

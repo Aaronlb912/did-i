@@ -1880,6 +1880,7 @@ export const fr = {
     'S\'il la garde, elle va sur son Ce soir ces nuits-là. Il peut la changer ou l\'enlever quand il veut.',
   'lead.togetherWords': ' ensemble, avec toi, avec moi, en famille, tous les deux ',
   'lead.makeWe': 'Répondre ensemble ? En faire un Did we',
+  'lead.backToI': 'Revenir à Did I',
   'we.onCard': 'Dans ce Did we',
   'we.pDid': 'A dit did ce soir',
   'we.pNope': 'A dit nope ce soir',

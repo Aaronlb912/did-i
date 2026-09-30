@@ -1795,6 +1795,7 @@ export const zh = {
   'lead.youRepeatHint': '对方收下后，会在这些晚上出现在今晚。对方随时可以修改或删除。',
   'lead.togetherWords': '一起,全家,我们俩,和你',
   'lead.makeWe': '一起回答？改成 Did we',
+  'lead.backToI': '返回 Did I',
   'we.onCard': '这个 Did we 的成员',
   'we.pDid': '今晚说了 did',
   'we.pNope': '今晚说了 nope',

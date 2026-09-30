@@ -1871,6 +1871,7 @@ export const it = {
     'Se la tiene, va sul suo Stasera in quelle notti. Può cambiarla o toglierla quando vuole.',
   'lead.togetherWords': ' insieme, con te, con me, in famiglia, tutti e due ',
   'lead.makeWe': 'Rispondere insieme? Fanne un Did we',
+  'lead.backToI': 'Torna a Did I',
   'we.onCard': 'In questo Did we',
   'we.pDid': 'Ha detto did stasera',
   'we.pNope': 'Ha detto nope stasera',

@@ -343,19 +343,20 @@ const BLANK = {
   topics: '',
 }
 
-function NeedAccount({ book, colors }) {
+function NeedAccount({ book, colors, onBackToI }) {
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
       <Meta colors={colors}>{t('we.needAccount')}</Meta>
       <DidButton colors={colors} label={t('we.signIn')} onPress={() => goHash('/account')} />
+      {onBackToI ? <Pill label={t('lead.backToI')} onPress={onBackToI} colors={colors} /> : null}
     </ScreenShell>
   )
 }
 
-export function WeNewScreen({ book, start = '', withId = '', onBlankChange, onLeadPress }) {
+export function WeNewScreen({ book, start = '', withId = '', onBlankChange, onLeadPress, onBackToI }) {
   const account = useAccount()
   const colors = useHallColors(book)
-  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
+  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} onBackToI={onBackToI} />
   return (
     <WeNewForm book={book} start={start} withId={withId} onBlankChange={onBlankChange} onLeadPress={onLeadPress} />
   )

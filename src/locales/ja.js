@@ -1805,6 +1805,7 @@ export const ja = {
   'lead.youRepeatHint': '相手が受け取ると、この曜日の今夜に出ます。相手はいつでも変更・削除できます。',
   'lead.togetherWords': '一緒,みんなで,家族で,二人で',
   'lead.makeWe': '一緒に答える？ Did we にする',
+  'lead.backToI': 'Did I に戻る',
   'we.onCard': 'この Did we のメンバー',
   'we.pDid': '今夜 did',
   'we.pNope': '今夜 nope',

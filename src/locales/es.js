@@ -1877,6 +1877,7 @@ export const es = {
     'Si la guarda, va a su Esta noche en esas noches. Puede cambiarla o quitarla cuando quiera.',
   'lead.togetherWords': ' juntos, juntas, contigo, en familia, conmigo, los dos, las dos ',
   'lead.makeWe': '¿Responderla juntos? Hazla un Did we',
+  'lead.backToI': 'Volver a Did I',
   'we.onCard': 'En este Did we',
   'we.pDid': 'Dijo did esta noche',
   'we.pNope': 'Dijo nope esta noche',

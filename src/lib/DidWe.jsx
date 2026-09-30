@@ -553,9 +553,10 @@ export function Shell({ book, title, plate = t('we.title'), children }) {
   )
 }
 
-function NeedAccount({ book }) {
+function NeedAccount({ book, lead = false }) {
   return (
     <Shell book={book} title={t('we.title')}>
+      {lead ? <LeadSwitch mode="we" question="" /> : null}
       <p className="di-set-note">{t('we.needAccount')}</p>
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={() => goHash('/account')}>
@@ -568,7 +569,7 @@ function NeedAccount({ book }) {
 
 export function WeNew({ book, start = '', withId = '' }) {
   const account = useAccount()
-  if (account.ready && !account.user) return <NeedAccount book={book} />
+  if (account.ready && !account.user) return <NeedAccount book={book} lead />
   return <WeNewForm book={book} start={start} withId={withId} />
 }
 

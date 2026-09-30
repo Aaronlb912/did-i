@@ -1869,6 +1869,7 @@ export const pt = {
     'Se guardar, vai para o Hoje da pessoa nessas noites. Ela pode mudar ou tirar quando quiser.',
   'lead.togetherWords': ' juntos, juntas, com você, comigo, em família, nós dois ',
   'lead.makeWe': 'Responder juntos? Transforme em Did we',
+  'lead.backToI': 'Voltar para Did I',
   'we.onCard': 'Neste Did we',
   'we.pDid': 'Disse did hoje',
   'we.pNope': 'Disse nope hoje',
