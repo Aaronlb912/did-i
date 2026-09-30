@@ -1,4 +1,4 @@
-import { addDaysIso, allClearTonight, boardDate, dueTonight, parseIsoDate } from './recurrence.js'
+import { addDaysIso, allClearTonight, boardDate, countedTonightRows, dueTonight, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
@@ -16,7 +16,7 @@ export function hallHeat(book, now = new Date()) {
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
     if (!at) break
-    const due = dueTonight(book, at)
+    const due = countedTonightRows(dueTonight(book, at))
     if (due.length === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
@@ -66,7 +66,7 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack) {
     let dueCount = 0
     let clear = true
     for (const book of books) {
-      const due = dueTonight(book, at)
+      const due = countedTonightRows(dueTonight(book, at))
       dueCount += due.length
       if (due.length && !allClearTonight(book, at)) clear = false
     }

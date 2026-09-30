@@ -5,7 +5,7 @@ import { MarketingShell } from './MarketingShell.jsx'
 import { StoreButtons } from './StoreButtons.jsx'
 
 const STEPS = ['web.landing.step1', 'web.landing.step2', 'web.landing.step3']
-const TOGETHER = ['one', 'two', 'three']
+const TOGETHER = ['one', 'two', 'we', 'three']
 
 function useReveal() {
   const root = useRef(null)
@@ -83,6 +83,9 @@ export function Landing() {
             <li>{t('web.landing.b2')}</li>
             <li>{t('web.landing.b3')}</li>
             <li>{t('web.landing.b4')}</li>
+            <li>{t('web.landing.b5')}</li>
+            <li>{t('web.landing.b6')}</li>
+            <li>{t('web.landing.b7')}</li>
           </ul>
         </section>
 

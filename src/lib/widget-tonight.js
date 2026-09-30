@@ -10,10 +10,12 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { normalizePurse } from './purse.js'
+import { readWeLine } from './we-widget.js'
 import {
   allClearTonight,
   answerFor,
   boardDate,
+  countedTonightRows,
   didStatusForRow,
   dueTonight,
   finishStackCount,
@@ -160,8 +162,12 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : ''
-  const left = finishStackCount(rows)
-  const allClear = boards.length > 0 && boards.every((book) => allClearTonight(book, now))
+  // Count like Tonight's meter: an optional question (put on your tonight
+  // for you) stays on the widget to answer, but is not "left" until you did it.
+  const left = finishStackCount(countedTonightRows(rows))
+  const allClear =
+    rows.length > 0 &&
+    boards.every((book) => !countedTonightRows(dueTonight(book, now)).length || allClearTonight(book, now))
   let footer = ''
   if (!rows.length) {
     footer = t('widget.tonight.empty')
@@ -190,6 +196,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     clearLabel: t('widget.tonight.clear'),
     openUri: widgetTonightUri(null, lead?.lamp.id || ''),
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
+    weLine: readWeLine(boardDate(now)),
     updatedAt: now.getTime(),
   }
 }

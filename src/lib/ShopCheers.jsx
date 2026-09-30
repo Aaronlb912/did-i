@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { CheerChip } from './Cosmetic.jsx'
-import { buyCheerStageWithCoins } from './coin-shop.js'
+import { buyCheerStageWithCoins, buyWithGems } from './coin-shop.js'
 import {
   CHEERS,
   CHEER_GEMS,
   CHEER_STAGE_COIN,
   CHEER_STAGE_COINS,
-  buyCheer,
   buyCheerStage,
   cheerStageOf,
   cheerText,
@@ -110,7 +109,7 @@ export function ShopCheers({ book, onChange, now }) {
                       setConfirm({
                         title: t(cheerText(item.id, 'name')),
                         body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
-                        go: () => take(buyCheer(book, item.id), item.id),
+                        go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id),
                       })
                     }}
                   >

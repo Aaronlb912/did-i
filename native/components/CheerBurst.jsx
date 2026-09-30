@@ -3,7 +3,16 @@ import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { svgParts } from '../lib/svg-parts.js'
 import { takeCheerAim } from '../lib/cheer-origin.js'
-import { holdFor, popsFor } from '../../src/lib/cheer-pops.js'
+import {
+  LAUNCH_FLY_MS,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+  STAR_PATH,
+  holdFor,
+  popsFor,
+} from '../../src/lib/cheer-pops.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { feelTap } from '../../src/lib/native.js'
@@ -1152,6 +1161,158 @@ function HeartBit({ delay, x, y, size, color }) {
   )
 }
 
+// Launch, like the web .di-rocket: climbs, fades out where the stars burst.
+function Rocket({ delay, rise, size, colors }) {
+  const progress = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: LAUNCH_FLY_MS + 40,
+        easing: Easing.bezier(0.45, 0, 0.75, 0.55),
+        useNativeDriver: true,
+      }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, progress])
+  const px = remPx(size || '1.6')
+  const h = px * 1.333
+  const top = remPx(rise)
+  const translateY = progress.interpolate({ inputRange: [0, 0.12, 1], outputRange: [remPx('0.6'), 0, top] })
+  const scale = progress.interpolate({ inputRange: [0, 0.12, 1], outputRange: [0.7, 1, 0.85] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.92, 1], outputRange: [0, 1, 1, 0] })
+  const parts = svgParts()
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -h / 2,
+        width: px,
+        height: h,
+        opacity,
+        transform: [{ translateY }, { scale }],
+      }}
+    >
+      {parts ? (
+        <parts.Svg width={px} height={h} viewBox={ROCKET_VIEW}>
+          <parts.Path d={ROCKET_FLAME} fill={colors.onDeep} />
+          <parts.Path d={ROCKET_FINS} fill={colors.on} />
+          <parts.Path d={ROCKET_BODY} fill={colors.ink} />
+          <parts.Circle cx={12} cy={12.5} r={2.4} fill={colors.on} />
+        </parts.Svg>
+      ) : (
+        <View style={{ flex: 1, borderRadius: px / 2, backgroundColor: colors.ink }} />
+      )}
+    </Animated.View>
+  )
+}
+
+function Smoke({ delay, x, y, size, color }) {
+  const progress = useTimed(delay, 900)
+  const px = remPx(size || '0.8')
+  const sx = remPx(x)
+  const sy = remPx(y)
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [sx, sx * 3] })
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [sy, sy + remPx('0.6')] })
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.6] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.01, 1], outputRange: [0, 0.35, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        borderRadius: px / 2,
+        backgroundColor: color,
+        opacity,
+        transform: [{ translateX }, { translateY }, { scale }],
+      }}
+    />
+  )
+}
+
+function StarBit({ delay, oy, x, y, size, rot, color }) {
+  const progress = useTimed(delay, 1100)
+  const px = remPx(size || '1')
+  const hx = remPx(x)
+  const hy = remPx(y)
+  const turn = Number.parseFloat(String(rot || '0')) || 0
+  const translateX = progress.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0, hx, hx] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0, hy, hy + remPx('0.8')] })
+  const scale = progress.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0, 1.1, 0.7] })
+  const rotate = progress.interpolate({ inputRange: [0, 0.55, 1], outputRange: ['0deg', `${turn}deg`, `${turn}deg`] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.55, 1], outputRange: [0, 1, 1, 0] })
+  const parts = svgParts()
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: remPx(oy) - px / 2,
+        width: px,
+        height: px,
+        opacity,
+        transform: [{ translateX }, { translateY }, { rotate }, { scale }],
+      }}
+    >
+      {parts ? (
+        <parts.Svg width={px} height={px} viewBox="0 0 24 24">
+          <parts.Path d={STAR_PATH} fill={color} />
+        </parts.Svg>
+      ) : (
+        <View style={{ flex: 1, borderRadius: px / 2, backgroundColor: color }} />
+      )}
+    </Animated.View>
+  )
+}
+
+function LaunchWord({ delay, oy, size, colors }) {
+  const progress = useTimed(delay, 1400)
+  const px = remPx(size || '1.5')
+  const scale = progress.interpolate({ inputRange: [0, 0.18, 0.3, 1], outputRange: [0.3, 1.15, 1, 1.02] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.78, 1], outputRange: [0, 0, -remPx('0.5')] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.18, 0.78, 1], outputRange: [0, 1, 1, 0] })
+  const w = px * 6
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: remPx(oy) - px * 0.6,
+        width: w,
+        alignItems: 'center',
+        opacity,
+        transform: [{ translateY }, { scale }],
+      }}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          fontFamily: fonts.display,
+          fontSize: px,
+          lineHeight: px * 1.2,
+          fontWeight: '800',
+          letterSpacing: px * 0.08,
+          color: colors.on,
+          textShadowColor: colors.bg,
+          textShadowRadius: 8,
+        }}
+      >
+        {t('cheer.launch.word')}
+      </Text>
+    </Animated.View>
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -1263,6 +1424,12 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
       />
     )
   }
+  if (bit.rocket) return <Rocket delay={delay} rise={bit.rise} size={bit.size} colors={colors} />
+  if (bit.smoke) return <Smoke delay={delay} x={bit.x} y={bit.y} size={bit.size} color={colors.ink} />
+  if (bit.star) {
+    return <StarBit delay={delay} oy={bit.oy} x={bit.x} y={bit.y} size={bit.size} rot={bit.rot} color={toneColor(bit.tone, colors)} />
+  }
+  if (bit.launchWord) return <LaunchWord delay={delay} oy={bit.oy} size={bit.size} colors={colors} />
   if (bit.heart) return <Heart delay={delay} size={bit.size} color={on} />
   if (bit.heartBit) return <HeartBit delay={delay} x={bit.x} y={bit.y} size={bit.size} color={toneColor(bit.tone, colors)} />
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />

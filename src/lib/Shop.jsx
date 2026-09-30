@@ -22,13 +22,13 @@ import {
   shopTag,
 } from './purse.js'
 
-function tileChip(type, id) {
+export function tileChip(type, id) {
   if (type === 'look') return <LookChip id={id} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} />
   return <BuddyChip id={id} />
 }
 
-function tileName(type, id) {
+export function tileName(type, id) {
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
   return t(buddyText(id, 'name'))
@@ -46,7 +46,7 @@ function PriceTag({ tag }) {
   )
 }
 
-function ShopTile({ type, item, purse, onTile }) {
+export function ShopTile({ type, item, purse, onTile }) {
   const name = tileName(type, item.id)
   return (
     <button

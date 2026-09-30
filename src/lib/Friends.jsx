@@ -11,11 +11,9 @@ import {
   dropFriend,
   friendAskNote,
   friendAskTitle,
-  giftCheer,
   listBlocks,
   listAutoAdds,
   listFriends,
-  formatPhone,
   personName,
   sayNo,
   sayYes,
@@ -26,14 +24,12 @@ import {
   readFriendCheers,
 } from './people.js'
 import {
-  CHEER_GEMS,
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
   FRIEND_CHEERS_PER_GEM,
   fireCheer,
   friendCheerMissKey,
   normalizePurse,
-  spendGems,
 } from './purse.js'
 import { boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { GemShort } from './shop-bits.jsx'
@@ -57,6 +53,7 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const [links, setLinks] = useState({ friends: [], asked: [], sent: [] })
   const [ready, setReady] = useState(false)
   const [miss, setMiss] = useState('')
+  const [dropId, setDropId] = useState('')
   const [blocks, setBlocks] = useState([])
   const [confirm, setConfirm] = useState(null)
   const [gemShort, setGemShort] = useState(false)
@@ -177,23 +174,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
     setSaid(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
-  async function gift(person) {
-    if (purse.gems < CHEER_GEMS) {
-      setGemShort(true)
-      return
-    }
-    const pick = purse.cheers.find((id) => id !== 'lime') || purse.cheerOn
-    const spent = spendGems(book, CHEER_GEMS)
-    if (spent.miss) {
-      setGemShort(true)
-      return
-    }
-    const { miss: why } = await giftCheer(person.user_id, pick)
-    if (why === 'giftCap') return setMiss(t('friends.giftCap'))
-    if (why) return setMiss(why)
-    if (onChange) onChange(spent.book)
-    setMiss('')
-    setSaid(t('friends.giftSent', { name: personName(person) || t('people.someone') }))
+  function gift(person) {
+    goHash('/gift', { id: person.user_id })
   }
 
   async function answerAsk(id, yes) {
@@ -288,26 +270,24 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
                     on={auto}
                     onClick={() => flipAuto(row.person)}
                   />
-                  {row.person?.phone ? <p className="di-set-note">{formatPhone(row.person.phone)}</p> : null}
                   <div className="di-person-actions">
-                    <button
-                      className="di-key"
-                      type="button"
-                      disabled={purse.cheers.length < 2}
-                      onClick={() => gift(row.person)}
-                    >
-                      {t('friends.gift', { n: CHEER_GEMS })}
+                    <button className="di-key" type="button" onClick={() => gift(row.person)}>
+                      {t('gift.button')}
                     </button>
                     <button
                       className="di-key"
                       type="button"
+                      title={t('people.dropBody')}
                       onClick={async () => {
+                        // Two taps, like Report: the first asks.
+                        if (dropId !== row.person.user_id) return setDropId(row.person.user_id)
+                        setDropId('')
                         const { miss: why } = await dropFriend(row.person.user_id)
                         if (why) setMiss(why)
-                        load()
+                        return load()
                       }}
                     >
-                      {t('people.drop')}
+                      {dropId === row.person.user_id ? t('people.dropSure') : t('people.drop')}
                     </button>
                     <button className="di-key" type="button" onClick={() => setConfirm(row.person)}>
                       {t('block.block')}
@@ -343,7 +323,7 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
             <PersonCard
               key={row.user_id}
               person={row}
-              name={row.display_name || formatPhone(row.phone) || t('people.someone')}
+              name={row.display_name || t('people.someone')}
               line={t('block.cannotReach')}
               actions={
                 <button

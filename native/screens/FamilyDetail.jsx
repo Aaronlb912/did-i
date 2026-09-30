@@ -236,6 +236,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       }}
                     />
                   ) : null}
+                  <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: row.user_id })} />
                 </>
               )
             }

@@ -146,7 +146,23 @@ async function send(token: string, row: Record<string, unknown>, bearer: string)
   return res.ok ? '' : `${res.status} ${(await res.text()).slice(0, 200)}`
 }
 
-Deno.serve(async () => {
+// verify_jwt checks the signature but lets any valid key through, including
+// the public anon key the app ships with. Only the cron job holds a
+// service_role key, so require that role.
+function fromCron(req: Request) {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const part = token.split('.')[1]
+  if (!part) return false
+  try {
+    const claims = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')))
+    return claims?.role === 'service_role'
+  } catch {
+    return false
+  }
+}
+
+Deno.serve(async (req) => {
+  if (!fromCron(req)) return new Response('not allowed', { status: 401 })
   if (!project || !clientEmail || !privateKey) {
     return new Response('firebase is not set up yet', { status: 503 })
   }

@@ -5,6 +5,17 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
+// One section per feature, each with a way to it.
+const HELP_MORE = [
+  { id: 'questions', title: 'help.questions', body: ['help.questionsP'], go: '/lamps', goLabel: 'help.questionsGo' },
+  { id: 'pings', title: 'help.pings', body: ['help.pingsP'], go: '/pings', goLabel: 'help.pingsGo' },
+  { id: 'widget', title: 'help.widget', body: ['help.widgetP'] },
+  { id: 'people', title: 'help.people', body: ['help.peopleP'], go: '/people', goLabel: 'help.peopleGo' },
+  { id: 'we', title: 'help.we', body: ['help.weP1', 'help.weP2'], go: '/we/new', goLabel: 'help.weGo' },
+  { id: 'cheers', title: 'help.cheers', body: ['help.cheersP'] },
+  { id: 'coins', title: 'help.coins', body: ['help.coinsP'], go: '/shop', goLabel: 'help.shopGo' },
+]
+
 export function Help({ book, now }) {
   usePrefs()
   const clock = now || new Date()
@@ -36,6 +47,22 @@ export function Help({ book, now }) {
             </button>
           </div>
         </section>
+
+        {HELP_MORE.map((part) => (
+          <section className="di-help-block" id={part.id} key={part.id}>
+            <h3>{t(part.title)}</h3>
+            {part.body.map((key) => (
+              <p key={key}>{t(key)}</p>
+            ))}
+            {part.go ? (
+              <div className="di-hang-actions">
+                <button className="di-key" type="button" onClick={() => goHash(part.go)}>
+                  {t(part.goLabel)}
+                </button>
+              </div>
+            ) : null}
+          </section>
+        ))}
 
         <section className="di-help-block" id="data">
           <h3>{t('help.phone')}</h3>

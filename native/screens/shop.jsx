@@ -9,16 +9,15 @@ import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
 import { holdFor } from '../../src/lib/cheer-pops.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { t } from '../../src/lib/i18n.js'
+import { t, tMiss } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
   BUDDY_GEMS,
-  buyBuddy,
-  buyCheer,
   buyCheerStage,
   buyLook,
   CHEERS,
+  OWNABLE_CHEERS,
   CHEER_GEMS,
   CHEER_STAGE_COIN,
   CHEER_STAGE_COINS,
@@ -35,7 +34,10 @@ import {
   nextCheerStage,
   normalizePurse,
   dropSlides,
+  giftItems,
   shopTag,
+  stampPurse,
+  wearGift,
   wearBuddy,
   wearCheer,
   wearCheerStage,
@@ -48,11 +50,16 @@ import {
   LookChip,
 } from '../components/Cosmetic.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
-import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
+import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
+import { useAccount } from '../../src/lib/account.js'
+import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
+import { sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
+import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import {
   buyCheerStageWithCoins,
   buyLookWithCoins,
+  buyWithGems,
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
 import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
@@ -671,7 +678,7 @@ export function ShopScreen({ book, onChange }) {
         label: t('shop.buy'),
         go: async () => {
           if (needGems()) return
-          done(type, item, item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id), true)
+          done(type, item, await buyLookWithCoins(book, item.id), true)
         },
       }
     }
@@ -680,9 +687,9 @@ export function ShopScreen({ book, onChange }) {
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearBuddy(book, item.id), false) }
       return {
         label: t('shop.buy'),
-        go: () => {
+        go: async () => {
           if (needGems()) return
-          done(type, item, buyBuddy(book, item.id), true)
+          done(type, item, await buyWithGems(book, 'buddy', item.id), true)
         },
       }
     }
@@ -698,9 +705,9 @@ export function ShopScreen({ book, onChange }) {
     }
     return {
       label: t('shop.buy'),
-      go: () => {
+      go: async () => {
         if (needGems()) return
-        done(type, item, buyCheer(book, item.id), true)
+        done(type, item, await buyWithGems(book, 'cheer', item.id), true)
       },
     }
   }
@@ -802,7 +809,7 @@ export function ShopLooksScreen({ book, onChange }) {
             title: t(lookText(item.id, 'name')),
             body: t('shop.buyLookBody', { cost }),
             go: async () => {
-              const next = item.gems > 0 ? buyLook(book, item.id) : await buyLookWithCoins(book, item.id)
+              const next = await buyLookWithCoins(book, item.id)
               take(next, item.id, true)
             },
           })
@@ -890,7 +897,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setConfirm({
             title: t(cheerText(item.id, 'name')),
             body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
-            go: () => take(buyCheer(book, item.id), item.id, true),
+            go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id, true),
           })
         }
         let disabled = false
@@ -1012,7 +1019,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
                 body: t('shop.buyBuddyBody', { cost: gemLine(item.gems) }),
-                go: () => take(buyBuddy(book, item.id), item.id, true),
+                go: async () => take(await buyWithGems(book, 'buddy', item.id), item.id, true),
               })
             }}
           />
@@ -1274,14 +1281,14 @@ function KitTile({ label, worn, onPress, colors, children }) {
   )
 }
 
-export function CollectionScreen({ book, onChange }) {
-  const [tab, setTab] = useState('looks')
+export function CollectionScreen({ book, onChange, startTab }) {
+  const [tab, setTab] = useState(KIT_TABS.some((item) => item.id === startTab) ? startTab : 'looks')
   const colors = useShopColors(book)
   const coat = activeLook(book)
   const purse = normalizePurse(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
-  const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
+  const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
 
   function wearCheerId(id) {
@@ -1654,3 +1661,310 @@ const styles = StyleSheet.create({
   kitOffChip: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
   kitEmpty: { width: '100%', padding: 14 },
 })
+
+// Gifts ------------------------------------------------------------------
+
+const NOBODY_OWNS = { looks: [], cheers: [], buddies: [] }
+const GIFT_TABS = [
+  { id: 'looks', type: 'look', key: 'shop.looks' },
+  { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
+  { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
+]
+
+function giftArt(type, id, colors, coat) {
+  if (type === 'cheer') return <CheerLoop id={id} coat={coat} />
+  if (type === 'look') return <LookPreviewCard id={id} />
+  return <BuddyPreviewCard id={id} colors={colors} />
+}
+
+function giftMiss(why) {
+  if (why === 'giftCap') return t('gift.cap')
+  if (why === 'notFriend') return t('gift.notFriend')
+  if (why === 'coins') return t('gift.needCoins')
+  if (why === 'gone') return t('gift.gone')
+  return tMiss(why)
+}
+
+// Send a look, cheer or buddy to a friend or family member (/gift?id=...).
+// The server takes the gems or coins; they get it next time they open the app.
+export function GiftScreen({ book, onChange, toId }) {
+  const account = useAccount()
+  const colors = useShopColors(book)
+  const coat = activeLook(book)
+  const purse = normalizePurse(book)
+  const [tab, setTab] = useState('looks')
+  const [note, setNote] = useState('')
+  const [person, setPerson] = useState(undefined)
+  const [sent, setSent] = useState('')
+  const [busy, setBusy] = useState(false)
+  const items = giftItems()
+  const kind = GIFT_TABS.find((item) => item.id === tab)
+  const list = items[tab] || []
+
+  useEffect(() => {
+    let alive = true
+    readKnownPerson(toId).then((row) => alive && setPerson(row))
+    return () => {
+      alive = false
+    }
+  }, [toId])
+
+  const name = person ? personName(person) || t('people.someone') : ''
+
+  async function send(type, item) {
+    if (busy) return
+    if (item.gems > 0 && purse.gems < item.gems) {
+      publishSheet(null)
+      offerMoreGems(colors)
+      return
+    }
+    if (item.coins > 0 && purse.coins < item.coins) {
+      openPick(type, item, t('gift.needCoins'))
+      return
+    }
+    setBusy(true)
+    const out = await sendGift(toId, type, item.id, note)
+    setBusy(false)
+    if (out.miss === 'gems') {
+      publishSheet(null)
+      offerMoreGems(colors)
+      return
+    }
+    if (out.miss) {
+      openPick(type, item, giftMiss(out.miss))
+      return
+    }
+    publishSheet(null)
+    onChange(stampPurse(book, { ...purse, gems: out.gems, coins: out.coins }))
+    setNote('')
+    setSent(t('gift.sent', { item: tileName(type, item.id), name }))
+  }
+
+  function openPick(type, item, miss = '') {
+    const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
+    publishSheet({
+      preview: giftArt(type, item.id, colors, coat),
+      kicker: t('gift.kicker', { name }),
+      title: tileName(type, item.id),
+      body: miss || `${cost}\n${t('gift.howItWorks')}`,
+      quote: note.trim(),
+      goLabel: t('gift.send'),
+      onGo: () => send(type, item),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
+  if (account.ready && !account.user) {
+    return (
+      <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
+        <Meta colors={colors}>{t('gift.needAccount')}</Meta>
+        <DidButton colors={colors} label={t('we.signIn')} onPress={() => goHash('/account')} />
+      </BoardShell>
+    )
+  }
+  if (person === null) {
+    return (
+      <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
+        <Meta colors={colors}>{t('gift.nobody')}</Meta>
+        <DidButton colors={colors} label={t('people.friends')} onPress={() => goHash('/friends')} />
+      </BoardShell>
+    )
+  }
+
+  return (
+    <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
+      <Meta colors={colors}>{person ? t('gift.to', { name }) : t('family.loading')}</Meta>
+      <View style={giftStyles.note}>
+        <AppTextInput
+          colors={colors}
+          value={note}
+          onChangeText={(text) => setNote(text.slice(0, 60))}
+          maxLength={60}
+          placeholder={t('gift.notePlaceholder')}
+          accessibilityLabel={t('gift.noteLabel')}
+          returnKeyType="done"
+        />
+        <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
+      </View>
+      {sent ? <Text style={[giftStyles.sent, { color: colors.on }]}>{sent}</Text> : null}
+      <KitSegment
+        items={GIFT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))}
+        selected={tab}
+        onSelect={setTab}
+        colors={colors}
+      />
+      <View style={giftStyles.grid}>
+        {list.map((item) => (
+          <ShopTile
+            key={item.id}
+            type={kind.type}
+            item={item}
+            purse={NOBODY_OWNS}
+            colors={colors}
+            onTile={(type, row) => person && openPick(type, row)}
+            style={giftStyles.tile}
+          />
+        ))}
+      </View>
+      <Meta colors={colors}>{t('gift.howItWorks')}</Meta>
+      <KeyButton colors={colors} label={t('gifts.title')} onPress={() => goHash('/gifts')} />
+    </BoardShell>
+  )
+}
+
+// The pop-up for a gift that just arrived. Tapping outside closes it; the
+// gift is already in the collection either way.
+function showGift(gift, getBook, onChange, colors) {
+  const type = gift.kind === 'look' || gift.kind === 'buddy' ? gift.kind : 'cheer'
+  const name = gift.from_name || t('people.someone')
+  const tab = type === 'look' ? 'looks' : type === 'buddy' ? 'buddies' : 'cheers'
+  const done = () => {
+    publishSheet(null)
+    doneGift(gift.id)
+  }
+  publishSheet({
+    preview: giftArt(type, gift.item_id, colors, activeLook(getBook())),
+    kicker: t('gift.gotKicker', { name }),
+    title: tileName(type, gift.item_id),
+    body: t('gift.gotBody'),
+    quote: gift.note || '',
+    goLabel: t('gift.equip'),
+    onGo: () => {
+      onChange(wearGift(getBook(), type, gift.item_id))
+      done()
+    },
+    moreLabel: t('gift.viewKit'),
+    onMore: () => {
+      done()
+      goHash(`/kit?id=${tab}`)
+    },
+    ...(gift.note
+      ? {
+          footLabel: t('gift.report'),
+          onFoot: () => {
+            publishSheet({
+              title: t('gift.reportTitle'),
+              body: t('gift.reportBody', { name }),
+              goLabel: t('gift.reportGo'),
+              closeLabel: t('settings.neverMind'),
+              colors,
+              onGo: () => {
+                reportGift(gift.id).catch(() => {})
+                done()
+              },
+              onClose: () => showGift(gift, getBook, onChange, colors),
+            })
+          },
+        }
+      : {}),
+    // No Close button: tapping outside closes it.
+    noClose: true,
+    center: true,
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: done,
+  })
+}
+
+// Mounted once in the app shell. Shows waiting gifts one at a time.
+export function GiftHost({ book, onChange }) {
+  const colors = useShopColors(book)
+  const bookRef = useRef(book)
+  bookRef.current = book
+  const changeRef = useRef(onChange)
+  changeRef.current = onChange
+  const colorsRef = useRef(colors)
+  colorsRef.current = colors
+  const [gift, setGift] = useState(() => nextGift())
+  const giftId = gift?.id || ''
+
+  useEffect(() => onGift((next) => setGift(next)), [])
+
+  useEffect(() => {
+    if (!gift) return undefined
+    const timer = setTimeout(() => {
+      showGift(gift, () => bookRef.current, (next) => changeRef.current(next), colorsRef.current)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [giftId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null
+}
+
+const giftStyles = StyleSheet.create({
+  note: { gap: 4 },
+  count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
+  sent: { fontFamily: fonts.uiBold, fontSize: 14 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tile: { width: '31%', flexGrow: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 10 },
+  rowArt: { width: 56, alignItems: 'center' },
+  rowCopy: { flex: 1, gap: 2 },
+  rowName: { fontFamily: fonts.uiBold, fontSize: 15 },
+  rowMeta: { fontFamily: fonts.ui, fontSize: 13 },
+})
+
+// /gifts: what you have sent, and whether it was opened or sent back.
+export function GiftsSentScreen({ book }) {
+  const colors = useShopColors(book)
+  const [list, setList] = useState(null)
+  const [miss, setMiss] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    listSentGifts().then((out) => {
+      if (!alive) return
+      setList(out.rows)
+      if (out.miss === 'out') setMiss(t('gift.needAccount'))
+      else if (out.miss) setMiss(tMiss(out.miss))
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  return (
+    <BoardShell book={book} title={t('gifts.title')} date={shellDate(book)} colors={colors}>
+      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
+      {list === null ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {list && !list.length && !miss ? (
+        <>
+          <Meta colors={colors}>{t('gifts.none')}</Meta>
+          <DidButton colors={colors} small label={t('people.friends')} onPress={() => goHash('/friends')} />
+        </>
+      ) : null}
+      {(list || []).map((row) => {
+        const type = sentGiftType(row)
+        const name = personName(row.person) || t('people.someone')
+        return (
+          <Pressable
+            key={row.id}
+            onPress={() => goHash('/gift', { id: row.to_id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('gifts.rowLabel', { item: tileName(type, row.cheer_id), name })}
+            style={[giftStyles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
+          >
+            <View style={giftStyles.rowArt}>
+              <TileArt type={type} id={row.cheer_id} colors={colors} />
+            </View>
+            <View style={giftStyles.rowCopy}>
+              <Text style={[giftStyles.rowName, { color: colors.ink }]} numberOfLines={1}>
+                {t('gifts.to', { item: tileName(type, row.cheer_id), name })}
+              </Text>
+              <Text style={[giftStyles.rowMeta, { color: colors.inkDim }]} numberOfLines={1}>
+                {sentGiftDate(row)} · {sentGiftStatus(row)}
+              </Text>
+              {row.note ? (
+                <Text style={[giftStyles.rowMeta, { color: colors.inkSoft }]} numberOfLines={2}>
+                  {row.note}
+                </Text>
+              ) : null}
+            </View>
+          </Pressable>
+        )
+      })}
+    </BoardShell>
+  )
+}

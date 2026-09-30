@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { markText } from './achievements.js'
+import { markLabel } from './achievements.js'
 import { t } from './i18n.js'
 
 export function MarkToast({ mark, onClose }) {
@@ -15,8 +15,9 @@ export function MarkToast({ mark, onClose }) {
     <p className="di-undo di-mark-toast di-screws-print-hide" role="status">
       <span className="di-mark-copy">
         <em>{t('marks.new')}</em>
-        <strong>{t(markText(mark.id, 'name'))}</strong>
-        {mark.id ? <span>{t(markText(mark.id, 'line'))}</span> : null}
+        <strong>{markLabel(mark.id, 'name')}</strong>
+        {mark.id ? <span>{markLabel(mark.id, 'line')}</span> : null}
+        {mark.more ? <span>{t('marks.more', { n: mark.more })}</span> : null}
       </span>
       <button className="di-key" type="button" onClick={onClose}>
         {t('marks.ok')}

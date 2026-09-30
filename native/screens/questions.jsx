@@ -27,7 +27,7 @@ import {
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
-import { findBookHoldingLamp } from '../../src/lib/board-shelf.js'
+import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
@@ -504,6 +504,43 @@ const LAND_HOLD = 1100
 let foldNext = ''
 const LAND_HOLD_STILL = 450
 
+// The Did I form's feel, shared with Did we and Did you on the Add screen:
+// folds ease open, a miss buzzes, and a save stamps the card and cheers
+// before moving on.
+export function useAddFeel(book, inputRef) {
+  const reduce = useReduceMotion()
+  const [wave, setWave] = useState(0)
+  const [stamp, setStamp] = useState('')
+  const leave = useRef(null)
+  useEffect(() => () => clearTimeout(leave.current), [])
+  // Ready to type, like Did I. Waits for the Did I / Did we / Did you
+  // picker to close, since autoFocus under a closing modal loses the keyboard.
+  useEffect(() => {
+    if (!inputRef) return undefined
+    const id = setTimeout(() => inputRef.current?.focus(), 350)
+    return () => clearTimeout(id)
+  }, [inputRef])
+  return {
+    wave,
+    stamp,
+    date: shellDate(book),
+    ease() {
+      if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+    },
+    buzz() {
+      feelTap('skip')
+    },
+    land(label, go) {
+      setStamp(label)
+      setWave((count) => count + 1)
+      const purse = mergePurses(readShelf().boards)
+      if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
+      else feelTap('hall-on')
+      leave.current = setTimeout(go, reduce ? LAND_HOLD_STILL : LAND_HOLD)
+    },
+  }
+}
+
 function timeLabel(value) {
   return value ? clockWords(value) : ''
 }
@@ -520,7 +557,7 @@ function reminderLine(draft) {
   return t('hang.remindAny')
 }
 
-function Pill({ label, on, onPress, colors, dim, radio }) {
+export function Pill({ label, on, onPress, colors, dim, radio }) {
   return (
     <Pressable
       onPress={onPress}
@@ -543,7 +580,7 @@ function Pill({ label, on, onPress, colors, dim, radio }) {
 }
 
 // Topics: tap any you have used to add or remove it, or type a new one.
-function TopicPick({ value, known, onChange, colors }) {
+export function TopicPick({ value, known, onChange, colors }) {
   const [draft, setDraft] = useState('')
   const mine = topicsOf({ kind: value })
   const lower = mine.map((topic) => topic.toLowerCase())
@@ -615,7 +652,9 @@ function FoldInput({ label, colors, multiline, ...props }) {
   )
 }
 
-export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
+// initialBlank / onBlankChange carry the words across when the Add screen
+// switches between Did I, Did we and Did you; onLeadPress opens that choice.
+export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, below = null }) {
   const { colors, clock, dateIso } = useHall(book)
   const reduce = useReduceMotion()
   const lampId = route?.id || ''
@@ -638,7 +677,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
       ? duplicateLamp(copySource, clock)
       : spoken
         ? { ...blankLamp(clock), question: didQuestion(spoken) }
-        : null,
+        : initialBlank
+          ? { ...blankLamp(clock), question: didQuestion(initialBlank) }
+          : null,
     start,
     tagTitle: sourceBook?.title || book.title,
   })
@@ -676,6 +717,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
 
   function changeBlank(value) {
     setBlank(value)
+    onBlankChange?.(value)
     const question = lead ? didQuestion(value) : value
     if (picked && question !== picked.question && draft.short === picked.short) {
       hang.change('short', '')
@@ -753,6 +795,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
     <BoardShell
       book={book}
       title={hang.editing ? t('hang.edit') : t('hang.new')}
+      noTitle={!hang.editing}
       date={shellDate(book, clock)}
       colors={colors}
       showAdd
@@ -776,9 +819,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route }) {
           setOpen('')
         }}
         onBlur={() => setFocused(false)}
-        autoFocus={fresh && !start && !spoken}
+        autoFocus={fresh && !start && !spoken && !initialBlank}
+        onLeadPress={fresh && lead ? onLeadPress : undefined}
         colors={colors}
       />
+      {below}
 
       <IdeaPicks
         label={t('first.picks')}
@@ -1101,6 +1146,21 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
         <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
+
+      {lamp.optional ? (
+        // Added for you: it only counts once you choose it.
+        <>
+          <Text style={[styles.lampStatus, { color: colors.inkSoft }]}>{t('lamp.optionalLine')}</Text>
+          <KeyButton
+            label={t('lamp.makeCount')}
+            onPress={() => {
+              const { optional: _optional, ...chosen } = lamp
+              change(hangInto(lampBook, chosen, true))
+            }}
+            colors={colors}
+          />
+        </>
+      ) : null}
 
       <View style={styles.tiles}>
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>

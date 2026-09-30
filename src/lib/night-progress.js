@@ -5,7 +5,9 @@ function isComplete(row) {
   return status === 'yes' || status === 'late'
 }
 
+// An optional question (put on your tonight for you) counts once you say did.
 function countsTonight(row) {
+  if (row?.lamp?.optional && !isComplete(row)) return false
   return row?.lamp && row?.dateIso && mustSwipeDeadline(row.lamp, row.dateIso)
 }
 

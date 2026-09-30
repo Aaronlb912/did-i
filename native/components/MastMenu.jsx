@@ -15,6 +15,8 @@ import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
+import { useWeTonight } from '../../src/lib/did-we.js'
+import { weOpenForMe } from './WeTonight.jsx'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
@@ -34,8 +36,12 @@ function countLabel(n) {
 
 function useMenuPeople() {
   const account = useAccount()
-  const { inbox, asks } = usePeoplePulse(account.user)
-  return { inbox, asks, signedIn: Boolean(account.user) }
+  const { inbox, asks, gifts = 0 } = usePeoplePulse(account.user)
+  const { cards } = useWeTonight(account.user)
+  // Did we: asks to join plus shared questions waiting on your answer.
+  const we = cards.filter((card) => card.myState === 'asked').length + weOpenForMe(cards).length
+  // A gift not opened yet counts too, until sync opens it.
+  return { inbox, asks, we: we + gifts, signedIn: Boolean(account.user) }
 }
 
 // The grid button grows into the menu card and shrinks back into it.
@@ -160,7 +166,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   // The safe-area anchor is a better guess than trusting that number.
   const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
-  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn)
+  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we)
   const on = menuIsOn(items)
   const reduce = useReduceMotion()
   const theme = useTheme()
@@ -281,14 +287,14 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   <View style={styles.ico}>
                     <MenuIcon
                       name={item.icon}
-                      color={item.on ? colors.on : colors.inkSoft}
+                      color={item.accent ? colors[item.accent] : item.on ? colors.on : colors.inkSoft}
                       stroke={item.stroke}
                       size={18}
                     />
                   </View>
                   <Text style={[styles.label, { color: item.on ? colors.on : colors.ink }]}>{item.label}</Text>
                   {item.count > 0 ? (
-                    <View style={[styles.count, { backgroundColor: colors.on }]}>
+                    <View style={[styles.count, { backgroundColor: item.accent ? colors[item.accent] : colors.on }]}>
                       <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(item.count)}</Text>
                     </View>
                   ) : null}
@@ -324,8 +330,9 @@ function useMenu() {
 export function MastMenuCog() {
   const { open, colors, showAdd, toggle } = useMenu()
   const people = useMenuPeople()
-  const waiting = people.inbox + people.asks
-  const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn))
+  const waiting = people.inbox + people.asks + people.we
+  // (Did we's count shows through Friends and family.)
+  const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we))
   const button = useRef(null)
 
   return (

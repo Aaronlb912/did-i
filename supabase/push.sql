@@ -105,22 +105,16 @@ set search_path = public
 as $$
 declare
   dname text;
-  ph text;
   body text;
 begin
   if new.state <> 'asked' or not public.push_wanted(new.to_id, 'friends') then
     return new;
   end if;
-  select coalesce(nullif(trim(p.display_name), ''), ''),
-         coalesce(p.phone, '')
-  into dname, ph
+  select coalesce(nullif(trim(p.display_name), ''), '')
+  into dname
   from public.profiles p where p.user_id = new.from_id;
 
-  if dname <> '' and ph <> '' then
-    body := dname || ' (' || ph || ') wants to be friends.';
-  elsif ph <> '' then
-    body := ph || ' wants to be friends.';
-  elsif dname <> '' then
+  if dname <> '' then
     body := dname || ' wants to be friends.';
   else
     body := 'Someone wants to be friends.';

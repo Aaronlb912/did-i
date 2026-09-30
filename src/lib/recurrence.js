@@ -266,15 +266,23 @@ function requiredTonightRows(rows) {
   return rows.filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
 }
 
+// What counts for tonight: everything you chose, and an optional question
+// (put on your tonight for you) only once you said did. A night with nothing
+// but an unanswered optional one is like a night with nothing due.
+export function countedTonightRows(rows) {
+  return (rows || []).filter((row) => !row?.lamp?.optional || rowDoneTonight(row))
+}
+
 export function allClearTonight(book, now = new Date()) {
-  const due = dueTonight(book, now)
+  const due = countedTonightRows(dueTonight(book, now))
   if (!due.length) return false
   const required = requiredTonightRows(due)
   if (!required.length) return true
   return required.every(rowDoneTonight)
 }
 
-export function dueClearTonight(due) {
+export function dueClearTonight(rows) {
+  const due = countedTonightRows(rows)
   if (!due.length) return false
   const required = requiredTonightRows(due)
   if (!required.length) return true

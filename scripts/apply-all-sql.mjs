@@ -9,7 +9,6 @@ const files = [
   'supabase/schema.sql',
   'supabase/people.sql',
   'supabase/handle-safe.sql',
-  'supabase/phone-friends.sql',
   'supabase/hardening.sql',
   'supabase/rls-subselect.sql',
   'supabase/invite-guard.sql',
@@ -25,6 +24,12 @@ const files = [
   'supabase/waitlist.sql',
   'supabase/friend-cheers.sql',
   'supabase/auto-add.sql',
+  'supabase/did-we.sql',
+  'supabase/did-you-repeat.sql',
+  'supabase/did-we-guard.sql',
+  'supabase/gifts.sql',
+  'supabase/lockdown.sql',
+  'supabase/friend-ids.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

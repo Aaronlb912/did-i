@@ -5,12 +5,12 @@ import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
-  askFriend,
+  askByFriendId,
+  cleanFriendId,
+  formatFriendId,
   cleanCode,
-  cleanPhone,
   joinFamily,
   doneTonight,
-  formatPhone,
   friendAskNote,
   friendAskTitle,
   inboxCount,
@@ -92,44 +92,45 @@ function AddPop({ kicker, onClose, children }) {
   )
 }
 
-function AddFriendPop({ phone, onClose, onAsked }) {
+// Add by friend ID. Phone lookup still lives on Connect.
+function AddFriendPop({ onClose, onAsked }) {
   const [draft, setDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
   async function ask(event) {
     event.preventDefault()
     setBusy(true)
-    const { miss: why, person } = await askFriend(draft)
+    const { miss: why, person } = await askByFriendId(draft)
     setBusy(false)
-    if (why === 'short') return setMiss(t('people.phoneShort'))
-    if (why === 'nophone') return setMiss(t('people.nophone'))
-    if (why === 'nobody') return setMiss(t('people.noOne', { phone: cleanPhone(draft) }))
+    if (why === 'badId') return setMiss(t('friendId.bad'))
+    if (why === 'nobody') return setMiss(t('friendId.nobody'))
+    if (why === 'tooMany') return setMiss(t('friendId.tooMany'))
     if (why) return setMiss(tMiss(why))
     onClose()
-    return onAsked(t('people.asked', { name: personName(person) }))
+    return onAsked(t('people.asked', { name: personName(person) || t('people.someone') }))
   }
   return (
     <AddPop kicker={t('people.addOne')} onClose={onClose}>
-      {phone ? (
-        <form className="di-join-family" onSubmit={ask}>
-          <SetField label={t('people.add')} value={draft} type="tel" onChange={(event) => setDraft(event.target.value)} />
-          <button className="di-did di-did-small" type="submit" disabled={busy}>
-            {t('people.askOne')}
-          </button>
-          {miss ? (
-            <p className="di-miss" role="alert">
-              {miss}
-            </p>
-          ) : null}
-        </form>
-      ) : (
-        <>
-          <p className="di-set-note">{t('people.nophone')}</p>
-          <button className="di-did di-did-small" type="button" onClick={() => goHash('/people/connect')}>
-            {t('people.phoneSave')}
-          </button>
-        </>
-      )}
+      <form className="di-join-family" onSubmit={ask}>
+        <SetField
+          label={t('friendId.add')}
+          value={formatFriendId(draft)}
+          inputMode="numeric"
+          autoComplete="off"
+          onChange={(event) => setDraft(cleanFriendId(event.target.value))}
+        />
+        <button className="di-did di-did-small" type="submit" disabled={busy || draft.length !== 12}>
+          {t('people.askOne')}
+        </button>
+        {miss ? (
+          <p className="di-miss" role="alert">
+            {miss}
+          </p>
+        ) : null}
+      </form>
+      <button className="di-key" type="button" onClick={() => goHash('/people/connect')}>
+        {t('friendId.orPhone')}
+      </button>
     </AddPop>
   )
 }
@@ -144,7 +145,6 @@ export function People({ book, onChange, now }) {
   const [links, setLinks] = useState({ friends: [], asked: [], sent: [] })
   const [families, setFamilies] = useState([])
   const [waiting, setWaiting] = useState(0)
-  const [phone, setPhone] = useState('')
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
@@ -159,7 +159,6 @@ export function People({ book, onChange, now }) {
         inboxCount(),
       ])
       setMine(who)
-      setPhone(who?.phone || '')
       await syncDisplayName(book.keeperName)
       setLinks(friendRows)
       setFamilies(famRows)
@@ -356,6 +355,11 @@ export function People({ book, onChange, now }) {
       )}
       {families.length ? null : <JoinFamilyCard />}
 
+      <SetCap>{t('we.title')}</SetCap>
+      <SetCard>
+        <SetRow label={t('we.open')} sub={t('we.empty')} chevron onClick={() => goHash('/we')} />
+      </SetCard>
+
       <SetCap>{t('people.you')}</SetCap>
       <SetCard>
         {mine?.display_name ? (
@@ -364,11 +368,11 @@ export function People({ book, onChange, now }) {
           <SetRow label={t('people.name')} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
         )}
         <SetRow
-          label={t('people.phone')}
-          value={phone ? formatPhone(phone) : t('people.phoneMissing')}
-          sub={phone ? '' : t('people.phoneMissingSub')}
+          label={t('friendId.yours')}
+          value={mine?.friend_id ? formatFriendId(mine.friend_id) : ''}
+          sub={t('friendId.shareSub')}
           chevron
-          onClick={() => goHash('/account')}
+          onClick={() => goHash('/people/connect')}
         />
       </SetCard>
       <SetCard>
@@ -400,7 +404,6 @@ export function People({ book, onChange, now }) {
       ) : null}
       {sheet?.kind === 'friend' ? (
         <AddFriendPop
-          phone={phone}
           onClose={() => setSheet(null)}
           onAsked={(words) => {
             say(words)

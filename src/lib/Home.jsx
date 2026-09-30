@@ -1,7 +1,7 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { StarterPicks } from './StarterPicks.jsx'
-import { markText, nextMark } from './achievements.js'
+import { markLabel, nextMark } from './achievements.js'
 import { homeLine } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -40,7 +40,7 @@ export function Home({ book, boards = [], tagId = '', onTag, onChange, now }) {
 
         {!book.quietMode && hunt ? (
           <p className="di-detail-meta">
-            {t('home.nextMark', { name: t(markText(hunt.id, 'name')) })}
+            {t('home.nextMark', { name: markLabel(hunt.id, 'name') })}
           </p>
         ) : null}
 

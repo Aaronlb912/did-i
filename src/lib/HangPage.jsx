@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { HangLamp } from './HangLamp.jsx'
+import { LeadSwitch, wordsAfterLead } from './LeadSwitch.jsx'
+import { useAccount } from './account.js'
+import { soundsTogether } from './did-we.js'
+import { t } from './i18n.js'
 import { BoardShell } from './BoardShell.jsx'
 import { duplicateLamp } from './board-json.js'
 import { commitBook } from './achievements.js'
@@ -13,6 +17,7 @@ import { bookForTag } from './useHangDraft.js'
 
 export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, copyId, start }) {
   const clock = now || new Date()
+  const account = useAccount()
   const sourceBook = findBookHoldingLamp(boards, lampId || copyId)
   const existing = sourceBook
     ? (sourceBook.lamps || []).find((lamp) => lamp.id === lampId) || null
@@ -72,6 +77,27 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
         boards={boards}
         tagTitle={tagTitle}
         onTagTitle={setTagTitle}
+        head={
+          existing || copySource
+            ? undefined
+            : (question) => (
+                <>
+                  <LeadSwitch mode="i" question={question} />
+                  {account.user && soundsTogether(wordsAfterLead(question)) ? (
+                    <button
+                      className="di-key di-lead-we-hint"
+                      type="button"
+                      onClick={() => {
+                        const words = wordsAfterLead(question)
+                        goHash('/we/new', words ? { start: words } : {})
+                      }}
+                    >
+                      {t('lead.makeWe')}
+                    </button>
+                  ) : null}
+                </>
+              )
+        }
         onSave={save}
         onCancel={() => {
           if (existing) goHash('/lamp', { id: existing.id })

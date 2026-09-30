@@ -6,7 +6,7 @@ import { KitFocus, KitTabs, KitTile, kitTabDefault } from './kit-bits.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
 import {
   BUDDIES,
-  CHEERS,
+  OWNABLE_CHEERS,
   CHEER_STAGE_MAX,
   LOOKS,
   buddyText,
@@ -30,10 +30,10 @@ import { LookPreviewCard, NO_MISS, shopMiss } from './shop-bits.jsx'
 
 const STAGES = [1, 2, 3, 4, 5]
 
-export function Collection({ book, onChange, now }) {
+export function Collection({ book, onChange, now, startTab }) {
   usePrefs()
   const clock = now || new Date()
-  const [tab, setTab] = useState('looks')
+  const [tab, setTab] = useState(['looks', 'cheers', 'buddies'].includes(startTab) ? startTab : 'looks')
   const [pick, setPick] = useState('')
   const [peekLook, setPeekLook] = useState('')
   const [miss, setMiss] = useState(NO_MISS)
@@ -41,7 +41,7 @@ export function Collection({ book, onChange, now }) {
   const coat = activeLook(book)
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
-  const cheers = CHEERS.filter((item) => purse.cheers.includes(item.id))
+  const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const focusId = pick || kitTabDefault(tab, purse)
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { t } from './i18n.js'
+import { inEnglish, t } from './i18n.js'
 import { legalVars } from './legal.js'
 export { PRIVACY_SECTIONS, TERMS_SECTIONS } from './legal-sections.js'
 
@@ -22,6 +22,7 @@ export function LegalArticle({ kind, sections }) {
       <h1 className="di-question di-legal-title">{t(`legal.${kind}.title`)}</h1>
       <p className="di-legal-updated">{t('legal.effective', vars)}</p>
       <p className="di-set-note">{t('legal.notLawyer')}</p>
+      {inEnglish() ? null : <p className="di-set-note">{t('legal.translated')}</p>}
 
       {sections.map((id) => (
         <section className="di-help-block" key={id} id={id}>

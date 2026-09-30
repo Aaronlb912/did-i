@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -49,6 +49,16 @@ export function SheetHost() {
     return () => clearTimeout(timer)
   }, [sheet])
 
+  // Android back closes the sheet, like tapping outside.
+  useEffect(() => {
+    if (!sheet?.title) return undefined
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      sheet.onClose?.()
+      return true
+    })
+    return () => sub.remove()
+  }, [sheet])
+
   if (!sheet?.title || !sheet.colors) return null
   const colors = sheet.colors
 
@@ -61,21 +71,32 @@ export function SheetHost() {
         accessibilityRole="button"
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
-      <View style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+      <View style={[styles.pop, sheet.center && styles.popCenter, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
-        {sheet.kicker ? <Text style={[styles.kicker, { color: colors.on }]}>{sheet.kicker}</Text> : null}
-        <Text style={[styles.title, { color: colors.ink }]}>{sheet.title}</Text>
-        {sheet.body ? <Text style={[styles.body, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
-        <View style={styles.row}>
+        {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
+        <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
+        {sheet.body ? <Text style={[styles.body, sheet.center && styles.mid, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
+        {sheet.quote ? (
+          <Text style={[styles.quote, sheet.center ? styles.quoteMid : { borderLeftWidth: 3, paddingLeft: 10, borderColor: colors.on }, { color: colors.ink }]}>{sheet.quote}</Text>
+        ) : null}
+        <View style={[styles.row, sheet.center && styles.rowMid]}>
           {sheet.onGo ? (
             <DidButton small label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
           ) : null}
-          <KeyButton
-            label={sheet.closeLabel || t('settings.neverMind')}
-            onPress={() => sheet.onClose?.()}
-            colors={colors}
-          />
+          {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
+          {sheet.noClose ? null : (
+            <KeyButton
+              label={sheet.closeLabel || t('settings.neverMind')}
+              onPress={() => sheet.onClose?.()}
+              colors={colors}
+            />
+          )}
         </View>
+        {sheet.onFoot ? (
+          <Pressable onPress={() => sheet.onFoot()} accessibilityRole="button" hitSlop={8} style={[styles.foot, sheet.center && styles.footMid]}>
+            <Text style={[styles.footText, { color: colors.inkDim }]}>{sheet.footLabel}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   )
@@ -105,4 +126,12 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  quote: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
+  quoteMid: { textAlign: 'center' },
+  popCenter: { alignItems: 'stretch' },
+  mid: { textAlign: 'center' },
+  rowMid: { justifyContent: 'center' },
+  footMid: { alignSelf: 'center' },
+  foot: { alignSelf: 'flex-start' },
+  footText: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline' },
 })

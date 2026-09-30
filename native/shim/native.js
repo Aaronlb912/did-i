@@ -11,6 +11,7 @@ import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { streakRiskFire } from '../../src/lib/streak-risk.js'
+import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 import { makeFeelTap } from '../lib/feel-tap.js'
@@ -146,6 +147,28 @@ export async function scheduleNativePings(books, now = new Date()) {
               body: row.lamp.question,
               data: { lampId: row.lamp.id, go: '/tonight' },
             },
+            trigger: when(at),
+          })
+        }
+      }
+    }
+    // Did we questions with a time and the reminder on, from the last list
+    // the app saved. Skipped on a night you already answered.
+    if (reminders) {
+      for (const we of readWePings()) {
+        const match = String(we.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+        if (!match) continue
+        for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
+          const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
+          const night = boardDate(day)
+          if (night < String(we.startsOn || '') || night === we.skipNight) continue
+          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(day.getDay())) continue
+          const [year, month, date] = night.split('-').map(Number)
+          const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
+          if (at.getTime() <= now.getTime()) continue
+          notes.push({
+            identifier: String(notifyId(`we:${we.id}`, night)),
+            content: { title: 'Did we', body: we.question, data: { go: '/tonight' } },
             trigger: when(at),
           })
         }

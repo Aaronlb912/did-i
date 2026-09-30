@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { holdFor, popsFor } from './cheer-pops.js'
+import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW, STAR_PATH, holdFor, popsFor } from './cheer-pops.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -105,6 +105,48 @@ function renderBit(burst, pop, bit, screen = false) {
           animationDelay: delay,
         }}
       />
+    )
+  }
+  if (bit.rocket) {
+    return (
+      <b key={key} className="di-rocket" style={{ '--sz': bit.size, '--rise': bit.rise, animationDelay: delay }}>
+        <svg viewBox={ROCKET_VIEW} aria-hidden="true">
+          <path className="di-rocket-flame" d={ROCKET_FLAME} />
+          <path className="di-rocket-fins" d={ROCKET_FINS} />
+          <path className="di-rocket-body" d={ROCKET_BODY} />
+          <circle className="di-rocket-window" cx="12" cy="12.5" r="2.4" />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.smoke) {
+    return (
+      <i
+        key={key}
+        className="di-smoke"
+        style={{ '--sx': bit.x, '--sy': bit.y, '--sz': bit.size, animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.star) {
+    return (
+      <b
+        key={key}
+        className="di-star-bit"
+        data-tone={bit.tone}
+        style={{ '--oy': bit.oy, '--hx': bit.x, '--hy': bit.y, '--sz': bit.size, '--rot': bit.rot, animationDelay: delay }}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d={STAR_PATH} />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.launchWord) {
+    return (
+      <b key={key} className="di-launch-word" style={{ '--oy': bit.oy, '--sz': bit.size, animationDelay: delay }}>
+        {t('cheer.launch.word')}
+      </b>
     )
   }
   if (bit.heart) {

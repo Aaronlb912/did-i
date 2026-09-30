@@ -39,6 +39,7 @@ Native/dev:
 ```
 npm run expo:dev             # dev client + tunnel (preferred way to run the phone app)
 npm run expo:android         # dev client, Android
+npm run phone:dev            # Metro on 8083 from a clean slate: stops an old Metro, clears cache, adb reverse
 npm run expo:ios             # dev client, iOS (needs a Mac)
 ```
 
@@ -49,18 +50,12 @@ release build (`npx expo run:android --variant release`).
 
 Locales (9 files in `src/locales/`, English is the fallback):
 ```
-npm run locales:refresh      # merge additions + sync
-npm run locales:report       # coverage report
-npm run locales:missing      # list missing keys
+npm run locales:report       # strings still in English per language (-v lists them)
 ```
-The checked-in `src/locales/*.js` files are the source of truth for existing
-translations, not `scripts/i18n-additions.mjs` / `legal-i18n.mjs` /
-`web-marketing.mjs` / `web-marketing-locales.mjs` / `scripts/locale-gaps/*.json`
-(those feed the refresh but must themselves match the checked-in files, or a
-refresh will silently rewrite translations back to stale/English copy). A
-`scripts/check.mjs` test runs the refresh and fails if it would change
-`src/locales`; if it does, fix the source/data files above, not the checked-in
-locale files.
+The `src/locales/*.js` files are the only source; edit them directly and add
+every new key to all 9 in the same change. `npm test` fails on a missing key,
+new English left in another language, or text in the wrong script. See
+`docs/locales.md`.
 
 Supabase:
 ```

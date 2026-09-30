@@ -29,6 +29,8 @@ export function BoardShell({
   colors: colorsIn,
   children,
   scroll = true,
+  // Add forms: no page title at all; the card says what it is.
+  noTitle = false,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
@@ -69,7 +71,7 @@ export function BoardShell({
   const colors = colorsIn || own
   const shelf = boards.length ? boards : book ? [book] : []
   const purse = shelf.length ? mergePurses(shelf) : normalizePurse(book)
-  const barTitle = title || book?.title || 'Did I'
+  const barTitle = noTitle ? '' : title || book?.title || 'Did I'
   const feelHour = hour ?? hallHour(clock)
   const feelSit = sit || 'ask'
   const halo = isGemLook(coat)
@@ -110,7 +112,7 @@ export function BoardShell({
         scrollEventThrottle={16}
       >
         {ambient}
-        <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />
+        {noTitle ? null : <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />}
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -130,7 +132,7 @@ export function BoardShell({
       rightAction={rightAction}
       purse={showCogs && showPurse ? purse : undefined}
       menu={showCogs}
-      large={scroll}
+      large={scroll && !noTitle}
       largeHeight={largeHeight}
       scrollY={scrollY}
     />

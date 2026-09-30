@@ -23,10 +23,14 @@ import {
   WelcomeScreen,
 } from './more.jsx'
 import { PhoneSettingsScreen, ProfileScreen } from './profile.jsx'
-import { HangScreen, LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
+import { WeCardScreen, WeHomeScreen } from './we.jsx'
+import { AddScreen } from './AddScreen.jsx'
+import { LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
 import {
   CollectionScreen,
   GemShopScreen,
+  GiftScreen,
+  GiftsSentScreen,
   ShopBuddiesScreen,
   ShopCheersScreen,
   ShopLooksScreen,
@@ -103,13 +107,15 @@ export function ScreenRouter({
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />
   if (path === '/later') return <LaterScreen book={book} />
-  if (path === '/marks') return <MarksScreen book={book} />
+  if (path === '/marks') return <MarksScreen book={book} boards={boards} />
   if (path === '/shop') return <ShopScreen book={book} onChange={change} />
   if (path === '/shop/looks') return <ShopLooksScreen book={book} onChange={change} />
   if (path === '/shop/cheers') return <ShopCheersScreen book={book} onChange={change} />
   if (path === '/shop/buddies') return <ShopBuddiesScreen book={book} onChange={change} />
   if (path === '/gems') return <GemShopScreen book={book} />
-  if (path === '/kit') return <CollectionScreen book={book} onChange={change} />
+  if (path === '/gifts') return <GiftsSentScreen book={book} />
+  if (path === '/gift') return <GiftScreen key={route.id} book={book} onChange={change} toId={route.id} />
+  if (path === '/kit') return <CollectionScreen key={route.id} book={book} onChange={change} startTab={route.id} />
   if (path === '/account') return <AccountScreen book={book} onChange={change} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
   if (path === '/people/refer') return <PeopleReferScreen book={book} onChange={change} />
@@ -118,16 +124,20 @@ export function ScreenRouter({
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />
   if (path === '/inbox') return <InboxScreen book={book} onChange={change} onKeep={keepSent} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
-  if (path === '/add' || path === '/hang') {
-    return (
-      <HangScreen
-        book={book}
-        boards={boards}
-        onChange={change}
-        onSaveTo={saveLamp}
-        route={route}
-      />
+  // /we/new: start is an idea to fill in, id a person to ask. /we: the Did we
+  // home, or one card's page with an id.
+  if (path === '/we/new') {
+    return <AddScreen mode="we" book={book} boards={boards} onChange={change} onSaveTo={saveLamp} route={route} />
+  }
+  if (path === '/we') {
+    return route.id ? (
+      <WeCardScreen book={book} cardId={route.id} onChange={change} />
+    ) : (
+      <WeHomeScreen book={book} onChange={change} />
     )
+  }
+  if (path === '/add' || path === '/hang') {
+    return <AddScreen book={book} boards={boards} onChange={change} onSaveTo={saveLamp} route={route} />
   }
   if (path === '/lamp') {
     return <LampScreen book={book} boards={boards} onChange={change} route={route} />

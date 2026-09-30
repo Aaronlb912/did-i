@@ -1,6 +1,6 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { ACHIEVEMENTS, markText } from './achievements.js'
+import { ACHIEVEMENTS, markLabel } from './achievements.js'
 import { statsCounts } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -58,7 +58,7 @@ export function StatsPage({ book, now }) {
         {book.quietMode || pips.length === 0 ? null : (
           <ul className="di-pips" aria-label={t('stats.marksAria')}>
             {pips.map((item) => (
-              <li key={item.id}>{t(markText(item.id, 'name'))}</li>
+              <li key={item.id}>{markLabel(item.id, 'name')}</li>
             ))}
           </ul>
         )}

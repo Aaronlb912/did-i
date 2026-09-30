@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Platform } from 'react-native'
-import { commitBook, unlockAchievements } from '../../src/lib/achievements.js'
+import { commitBook, marksToToast, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
 import {
   currentBook,
@@ -15,6 +15,7 @@ import {
 } from '../../src/lib/board-shelf.js'
 import { hangInto, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
+import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN } from '../../src/lib/cloud-sync.js'
@@ -144,7 +145,9 @@ export function useAppShelf() {
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
       const news = freshMarks(before?.unlocked, after?.unlocked)
-      if (news.length) setMarks((queue) => [...queue, ...news.filter((id) => !queue.some((mark) => mark.id === id)).map((id) => ({ id }))])
+      // One toast per batch, never a stack (marksToToast).
+      const toasts = news.length ? marksToToast(news) : []
+      if (toasts.length) setMarks((queue) => [...queue, ...toasts.filter((mark) => !queue.some((item) => item.id === mark.id))])
     }
     return { written, before, after }
   }, [shelf])
@@ -186,15 +189,15 @@ export function useAppShelf() {
   )
 
   // A did you kept from the inbox, or several added on their own, land on
-  // the open folder as tonight-only questions in one write.
+  // the open folder in one write: tonight only, or on the sender's repeat.
   const keepSent = useCallback(
     (questions) => {
-      const texts = [].concat(questions).map((text) => String(text || '').trim()).filter(Boolean)
-      if (!texts.length) return
       const clock = new Date()
+      const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
+      if (!lamps.length) return
       let dest = live
-      for (const text of texts) {
-        dest = hangInto(dest, { ...blankLamp(), question: text, cadence: 'once', onceOn: isoDate(clock) }, false)
+      for (const lamp of lamps) {
+        dest = hangInto(dest, lamp, false)
       }
       persist(putBook(shelf, commitBook(dest, clock)))
     },

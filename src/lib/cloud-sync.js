@@ -17,12 +17,20 @@ import {
 import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
 import { shelfHeat } from './hall-feel.js'
-import { allClearTonight, boardDate, dueTonight } from './recurrence.js'
-import { claimCheerGifts, claimInvites, readMine } from './people.js'
+import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
+import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
+import { queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGiftCheers } from './purse.js'
-import { applyCoinCatalogToShelf, applyGemBalanceToShelf, readCoinCatalog, readGemBalance } from './wallet.js'
+import { applyInvitePayout, mergeGift } from './purse.js'
+import {
+  applyCoinCatalogToShelf,
+  applyGemBalanceToShelf,
+  applyGemOwnedToShelf,
+  readCoinCatalog,
+  readGemBalance,
+  readGemOwned,
+} from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
@@ -151,10 +159,10 @@ async function putShelf(db, user, shelf, savedAt) {
 function nightMark(shelf, now = new Date()) {
   const boards = shelf?.boards || []
   const night = boardDate(now)
-  const hadAny = boards.some((book) => dueTonight(book, now).length > 0)
+  const hadAny = boards.some((book) => countedTonightRows(dueTonight(book, now)).length > 0)
   const clear =
     hadAny &&
-    boards.every((book) => dueTonight(book, now).length === 0 || allClearTonight(book, now))
+    boards.every((book) => countedTonightRows(dueTonight(book, now)).length === 0 || allClearTonight(book, now))
   return { streak: shelfHeat(boards, now), doneOn: clear ? night : null }
 }
 
@@ -216,6 +224,14 @@ export function bindForegroundSync() {
     pullAndMerge()
   }
 
+  // A gift arrived while the app is open: sync opens it. At most once a minute.
+  let giftWakeAt = 0
+  onGiftsWaiting(() => {
+    if (Date.now() - giftWakeAt < 60000) return
+    giftWakeAt = Date.now()
+    onWake()
+  })
+
   function onSleep() {
     reconcileLocalShelfFromWidget()
     flushPushSoon()
@@ -274,10 +290,22 @@ async function pullAndMergeOnce() {
     if (pulled.miss) throw new Error(pulled.miss)
 
     let written = writeShelf(closeShelfPastNights(pulled.shelf), metaAt)
-    const gifts = await claimCheerGifts()
-    if (gifts.ids?.length) {
-      const boards = written.boards.map((book) => mergeGiftCheers(book, gifts.ids))
+    // Gifts go straight into the collection. One already owned goes back to
+    // the giver; the rest wait for the pop-up.
+    const { gifts } = await claimGifts()
+    if (gifts.length) {
+      const fresh = []
+      let boards = written.boards
+      for (const gift of gifts) {
+        if (boards.some((book) => mergeGift(book, gift).had)) {
+          await returnGift(gift.id).catch(() => {})
+          continue
+        }
+        boards = boards.map((book) => mergeGift(book, gift).book)
+        fresh.push(gift)
+      }
       written = writeShelf({ ...written, boards }, metaAt)
+      queueGifts(fresh)
     }
     await claimGemPurchases()
     // A code saved from an invite link is used here, so the claim below pays it.
@@ -294,6 +322,8 @@ async function pullAndMergeOnce() {
     if (bal != null) written = applyGemBalanceToShelf(written, bal)
     const coinBag = await readCoinCatalog()
     if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
+    const gemBag = await readGemOwned()
+    if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
 
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
@@ -446,6 +476,7 @@ export async function exportAll() {
   const shelf = readShelf()
   const profile = await loadProfile()
   const devices = await listDevices()
+  const social = await exportSocial().catch(() => ({}))
   return {
     kind: 'did-i-account',
     pulledAt: new Date().toISOString(),
@@ -453,5 +484,39 @@ export async function exportAll() {
     profile,
     devices,
     shelf,
+    ...social,
+  }
+}
+
+// Your side of Did we and Did you: the cards you are on, your own rows and
+// answers, and what you sent or got. Only what the database lets you read.
+async function exportSocial() {
+  const db = cloud()
+  const user = db ? await me() : null
+  if (!db || !user) return {}
+  const [mine, answers, sends] = await Promise.all([
+    db
+      .from('we_members')
+      .select('card_id, state, turn, asked_at, joined_at, said_no_at, folder, topics')
+      .eq('user_id', user.id),
+    db.from('we_answers').select('card_id, night, status, answered_at').eq('user_id', user.id).limit(5000),
+    db
+      .from('sends')
+      .select('id, from_id, to_id, kind, question, note, due_on, state, made_at, repeat')
+      .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
+      .limit(5000),
+  ])
+  const ids = (mine.data || []).map((row) => row.card_id)
+  const cards = ids.length
+    ? (
+        await db
+          .from('we_cards')
+          .select('id, question, mode, shows, cadence, weekdays, goal_nights, starts_on, archived, made_at')
+          .in('id', ids)
+      ).data || []
+    : []
+  return {
+    didWe: { cards, memberships: mine.data || [], answers: answers.data || [] },
+    didYou: sends.data || [],
   }
 }

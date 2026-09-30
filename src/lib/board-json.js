@@ -195,6 +195,10 @@ export function normalizeLamp(raw) {
     notify: lampNotifyOn(lamp),
     archived: asBool(lamp.archived),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
+    // Put on your tonight for you (a Did you auto-added from family or a
+    // friend you allow): a did counts, a nope or no answer does not count
+    // against you. Only set when true, so other questions are unchanged.
+    ...(asBool(lamp.optional) ? { optional: true } : {}),
   }
 }
 
