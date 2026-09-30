@@ -62,3 +62,4 @@ android/build
 android/app/.cxx
 
 modules/*/android/build
+build-out/

@@ -33,6 +33,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
+import { EditPen } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
@@ -236,6 +237,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onDid={() => stack.mark(faceRow, 'yes')}
         onNope={() => stack.mark(faceRow, 'skip')}
         buddy={activeBuddy(faceBook)}
+        onEdit={() => goHash('/hang', { id: faceRow.lamp.id })}
       >
         {hasHistory ? (
           <NightStrip
@@ -340,6 +342,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(pillBook)}>
+        <EditPen
+          onPress={() => goHash('/hang', { id: pillRow.lamp.id })}
+          colors={colors}
+          beside={Boolean(activeBuddy(pillBook))}
+        />
         {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
@@ -372,6 +379,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onDid={() => stack.mark(pillRow, 'yes')}
         onNope={() => stack.mark(pillRow, 'skip')}
         buddy={activeBuddy(pillBook)}
+        onEdit={() => goHash('/hang', { id: pillRow.lamp.id })}
       >
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
       </SwipeCardHost>

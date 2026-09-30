@@ -1864,6 +1864,7 @@ export const en = {
     'If they keep it, it goes on their Tonight on these nights. They can change or remove it any time.',
   'lead.togetherWords': ' together, with you, both of us, as a family, with me ',
   'lead.makeWe': 'Answer it together? Make it a Did we',
+  'lead.backToI': 'Back to Did I',
   'we.onCard': 'On this Did we',
   'we.pDid': 'Said did tonight',
   'we.pNope': 'Said nope tonight',

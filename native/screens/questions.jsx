@@ -70,6 +70,7 @@ import {
 import { goHash } from '../navigation/hash.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { EditPen } from '../components/SwipeFace.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -1139,6 +1140,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   return (
     <BoardShell book={lampBook} title={t('lamp.kicker')} date={shellDate(lampBook, clock)} colors={colors}>
       <View style={[...faceCardStyle(colors), styles.lampCard, lamp.archived && { opacity: 0.75 }]}>
+        <EditPen onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
         <Text style={[faceCardStyles.kicker, { color: colors.on }]} numberOfLines={1}>
           {lampBook.title}
         </Text>

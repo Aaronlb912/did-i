@@ -1888,6 +1888,7 @@ export const de = {
     'Wenn sie es behalten, kommt es an diesen Nächten auf ihr Heute. Sie können es jederzeit ändern oder entfernen.',
   'lead.togetherWords': ' zusammen, gemeinsam, mit dir, mit mir, als familie ',
   'lead.makeWe': 'Gemeinsam beantworten? Mach ein Did we daraus',
+  'lead.backToI': 'Zurück zu Did I',
   'we.onCard': 'In diesem Did we',
   'we.pDid': 'Heute did gesagt',
   'we.pNope': 'Heute nope gesagt',

@@ -45,7 +45,7 @@ export function LeadPicker({ value, onPick, onClose, colors, signedIn = true }) 
                 <View style={styles.copy}>
                   <Text style={[styles.title, { color: on ? tint : colors.ink }]}>{t(lead.title)}</Text>
                   <Text style={[styles.note, { color: colors.inkSoft }]}>
-                    {needsAccount ? t('we.needAccount') : t(lead.note)}
+                    {needsAccount ? t(lead.id === 'you' ? 'lead.youNeedAccount' : 'we.needAccount') : t(lead.note)}
                   </Text>
                 </View>
                 {on ? <Text style={[styles.check, { color: tint }]}>✓</Text> : null}

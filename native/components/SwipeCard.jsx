@@ -80,6 +80,7 @@ export function SwipeCard({
   onNope,
   colors,
   buddy,
+  onEdit,
   blockDid = false,
   blockNope = false,
   panelStyle,
@@ -109,7 +110,7 @@ export function SwipeCard({
   const tone = gemLook ? gemLookTone(gemLook, theme) : null
   const line = tone?.ring || colors?.line || '#2b3140'
   const glowStyle = gemLook ? gemGlowHostStyle(gemLook, theme) : null
-  const face = { kicker, title, stampDid, stampNope, buddy, children }
+  const face = { kicker, title, stampDid, stampNope, buddy, onEdit, children }
 
   const answer = useCallback(
     (way, from) => {

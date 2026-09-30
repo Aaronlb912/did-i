@@ -18,7 +18,7 @@ import { Pill, useAddFeel } from './questions.jsx'
 
 // Did you: ask a friend or someone in your family if they did something.
 // Laid out like the Add screen, and reached from it by tapping "Did I".
-export function DidYouScreen({ book, start = '', withId = '', onBlankChange, onLeadPress }) {
+export function DidYouScreen({ book, start = '', withId = '', onBlankChange, onLeadPress, onBackToI }) {
   const account = useAccount()
   const colors = useHallColors(book)
   if (account.ready && !account.user) {
@@ -26,6 +26,7 @@ export function DidYouScreen({ book, start = '', withId = '', onBlankChange, onL
       <ScreenShell book={book} title={t('lead.you')} colors={colors}>
         <Meta colors={colors}>{t('lead.youNeedAccount')}</Meta>
         <DidButton colors={colors} label={t('we.signIn')} onPress={() => goHash('/account')} />
+        {onBackToI ? <Pill label={t('lead.backToI')} onPress={onBackToI} colors={colors} /> : null}
       </ScreenShell>
     )
   }

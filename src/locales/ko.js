@@ -1805,6 +1805,7 @@ export const ko = {
   'lead.youRepeatHint': '상대가 받으면 이 요일마다 오늘 밤에 나와요. 상대는 언제든 바꾸거나 지울 수 있어요.',
   'lead.togetherWords': '같이,함께,가족이랑,우리 둘이',
   'lead.makeWe': '함께 답할까요? Did we로 만들기',
+  'lead.backToI': 'Did I로 돌아가기',
   'we.onCard': '이 Did we 멤버',
   'we.pDid': '오늘 밤 did',
   'we.pNope': '오늘 밤 nope',
