@@ -36,6 +36,18 @@ export function putAnswer(book, row, status, clock = new Date()) {
   return cheered
 }
 
+// The gone list is how a sync knows a question was taken off this tag on
+// purpose (see shelf-merge.js). Putting one back adds a newer back entry.
+function noteGone(book, ids, back, clock = new Date()) {
+  const at = clock.toISOString()
+  const marks = [...ids].map((id) => (back ? { id, at, back: true } : { id, at }))
+  return [...marks, ...(book.gone || []).filter((item) => !ids.has(item.id))]
+}
+
+function wasGone(book, ids) {
+  return (book.gone || []).some((item) => ids.has(item.id) && !item.back)
+}
+
 export function hangInto(book, lamp, editing) {
   if (!lamp) return book
   if (editing) {
@@ -44,15 +56,21 @@ export function hangInto(book, lamp, editing) {
       lamps: (book.lamps || []).map((item) => (item.id === lamp.id ? lamp : item)),
     }
   }
-  return { ...book, lamps: [...(book.lamps || []), lamp] }
+  const ids = new Set([lamp.id])
+  return {
+    ...book,
+    lamps: [...(book.lamps || []), lamp],
+    ...(wasGone(book, ids) ? { gone: noteGone(book, ids, true) } : {}),
+  }
 }
 
-export function takeDown(book, lamp) {
+export function takeDown(book, lamp, clock = new Date()) {
   if (!lamp) return book
   return {
     ...book,
     lamps: (book.lamps || []).filter((item) => item.id !== lamp.id),
     answers: (book.answers || []).filter((item) => item.lampId !== lamp.id),
+    gone: noteGone(book, new Set([lamp.id]), false, clock),
   }
 }
 
@@ -73,6 +91,7 @@ export function bulkLamps(books, picks, kind) {
         ...book,
         lamps: (book.lamps || []).filter((item) => !ids.has(item.id)),
         answers: (book.answers || []).filter((item) => !ids.has(item.lampId)),
+        gone: noteGone(book, ids, false),
       })
     } else {
       const archived = kind === 'stop'
@@ -106,7 +125,8 @@ export function undoBulkLamps(books, before, picks) {
         (item) => picked.has(item.lampId) && !have.has(`${item.lampId}|${item.periodKey}`),
       ),
     ]
-    out.push({ ...now, lamps, answers })
+    const back = new Set(lamps.map((item) => item.id).filter((id) => picked.has(id)))
+    out.push({ ...now, lamps, answers, ...(wasGone(now, back) ? { gone: noteGone(now, back, true) } : {}) })
   }
   return out
 }
