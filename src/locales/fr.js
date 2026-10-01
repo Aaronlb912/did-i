@@ -1687,7 +1687,7 @@ export const fr = {
   'web.beta.video': 'Ce que fait Did I, en 21 secondes',
   'web.beta.step1Kicker': 'Étape 1',
   'web.beta.step1': 'Rejoindre le groupe bêta',
-  'web.beta.step1Note': 'Un groupe Google. Il indique seulement à Play que vous êtes testeur. Aucun e-mail.',
+  'web.beta.step1Note': 'Ça indique juste à Google Play que vous testez. Pas d\'inquiétude, ce n\'est pas une liste de diffusion.',
   'web.beta.step1Button': 'Rejoindre le groupe',
   'web.beta.step2Kicker': 'Étape 2',
   'web.beta.step2': 'S\'inscrire sur Google Play',

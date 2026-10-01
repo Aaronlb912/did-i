@@ -1626,7 +1626,7 @@ export const ko = {
   'web.beta.video': '21초로 보는 Did I',
   'web.beta.step1Kicker': '1단계',
   'web.beta.step1': '베타 그룹 가입',
-  'web.beta.step1Note': 'Google 그룹이에요. Play에 테스터라는 것만 알려 주고 이메일은 오지 않아요.',
+  'web.beta.step1Note': 'Google Play에 테스터라는 것만 알려 줘요. 걱정 마세요, 메일링 리스트가 아니에요.',
   'web.beta.step1Button': '그룹 가입',
   'web.beta.step2Kicker': '2단계',
   'web.beta.step2': 'Google Play에서 참여',

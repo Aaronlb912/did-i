@@ -1626,7 +1626,7 @@ export const ja = {
   'web.beta.video': '21 秒でわかる Did I',
   'web.beta.step1Kicker': 'ステップ 1',
   'web.beta.step1': 'ベータグループに参加',
-  'web.beta.step1Note': 'Google グループです。Play にテスターだと伝えるだけで、メールは届きません。',
+  'web.beta.step1Note': 'Google Play にテスターだと伝えるだけです。メーリングリストではないのでご安心ください。',
   'web.beta.step1Button': 'グループに参加',
   'web.beta.step2Kicker': 'ステップ 2',
   'web.beta.step2': 'Google Play で登録',
