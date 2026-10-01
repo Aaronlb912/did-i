@@ -1419,9 +1419,3 @@ html[data-reduce-motion] .di-land-together {
   text-align: left;
 }
 
-/* Three steps side by side on wide screens, in order. */
-@media (min-width: 860px) {
-  .di-beta-steps {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
