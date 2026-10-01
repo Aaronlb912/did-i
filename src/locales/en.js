@@ -1678,6 +1678,7 @@ export const en = {
   'web.beta.step1Kicker': 'Step 1',
   'web.beta.step1': 'Join the beta group',
   'web.beta.step1Note': 'This just lets Google Play know you\'re testing. Don\'t worry, it\'s not a mailing list.',
+  'web.beta.step1Hint': 'Google may say you can\'t see the group yet. That\'s normal, just tap Join group.',
   'web.beta.step1Button': 'Join the group',
   'web.beta.step2Kicker': 'Step 2',
   'web.beta.step2': 'Opt in on Google Play',

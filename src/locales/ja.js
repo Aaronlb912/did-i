@@ -1627,6 +1627,7 @@ export const ja = {
   'web.beta.step1Kicker': 'ステップ 1',
   'web.beta.step1': 'ベータグループに参加',
   'web.beta.step1Note': 'Google Play にテスターだと伝えるだけです。メーリングリストではないのでご安心ください。',
+  'web.beta.step1Hint': 'Google にまだグループを表示できないと出ることがありますが、問題ありません。「グループに参加」をタップしてください。',
   'web.beta.step1Button': 'グループに参加',
   'web.beta.step2Kicker': 'ステップ 2',
   'web.beta.step2': 'Google Play で登録',

@@ -1617,6 +1617,7 @@ export const zh = {
   'web.beta.step1Kicker': '第 1 步',
   'web.beta.step1': '加入测试群组',
   'web.beta.step1Note': '这只是让 Google Play 知道你在测试。放心，这不是邮件列表。',
+  'web.beta.step1Hint': 'Google 可能会提示你还看不到这个群组。这是正常的，点击“加入群组”即可。',
   'web.beta.step1Button': '加入群组',
   'web.beta.step2Kicker': '第 2 步',
   'web.beta.step2': '在 Google Play 上加入',

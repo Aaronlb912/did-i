@@ -1627,6 +1627,7 @@ export const ko = {
   'web.beta.step1Kicker': '1단계',
   'web.beta.step1': '베타 그룹 가입',
   'web.beta.step1Note': 'Google Play에 테스터라는 것만 알려 줘요. 걱정 마세요, 메일링 리스트가 아니에요.',
+  'web.beta.step1Hint': 'Google에서 아직 그룹을 볼 수 없다고 나올 수 있어요. 정상이에요. 그룹 가입을 누르면 돼요.',
   'web.beta.step1Button': '그룹 가입',
   'web.beta.step2Kicker': '2단계',
   'web.beta.step2': 'Google Play에서 참여',

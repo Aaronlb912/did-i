@@ -1680,6 +1680,7 @@ export const pt = {
   'web.beta.step1Kicker': 'Passo 1',
   'web.beta.step1': 'Entre no grupo beta',
   'web.beta.step1Note': 'Isso só avisa o Google Play que você está testando. Fique tranquilo, não é uma lista de e-mails.',
+  'web.beta.step1Hint': 'O Google pode dizer que você ainda não pode ver o grupo. É normal, é só tocar em Participar do grupo.',
   'web.beta.step1Button': 'Entrar no grupo',
   'web.beta.step2Kicker': 'Passo 2',
   'web.beta.step2': 'Inscreva-se no Google Play',
