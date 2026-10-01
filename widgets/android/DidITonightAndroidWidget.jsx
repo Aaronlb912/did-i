@@ -177,6 +177,27 @@ const BUDDY_SVG = {
     <ellipse cx="17" cy="45.6" rx="2.8" ry="1.5" fill="#ffc766"/>
     <ellipse cx="31" cy="45.6" rx="2.8" ry="1.5" fill="#ffc766"/>
   </svg>`,
+  fox: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="36.5" cy="41.5" rx="9" ry="4.6" fill="#e8743b" transform="rotate(-32 36.5 41.5)"/>
+    <ellipse cx="42.8" cy="37.2" rx="3.3" ry="2.6" fill="#fff6ea" transform="rotate(-32 42.8 37.2)"/>
+    <polygon points="10.5,21 20.5,21 15.5,9" fill="#e8743b"/>
+    <polygon points="27.5,21 37.5,21 32.5,9" fill="#e8743b"/>
+    <polygon points="13.1,20 18.3,20 15.7,13" fill="#3a2a22"/>
+    <polygon points="29.699999999999996,20 34.9,20 32.3,13" fill="#3a2a22"/>
+    <ellipse cx="24" cy="31" rx="14.5" ry="14" fill="#e8743b"/>
+    <ellipse cx="17" cy="34.5" rx="5.6" ry="4.4" fill="#fff6ea"/>
+    <ellipse cx="31" cy="34.5" rx="5.6" ry="4.4" fill="#fff6ea"/>
+    <ellipse cx="24" cy="38" rx="7.5" ry="6" fill="#fff6ea"/>
+    <ellipse cx="19.8" cy="27.5" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="28.2" cy="27.5" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="20.5" cy="26.6" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="28.9" cy="26.6" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="24" cy="32.6" rx="1.7" ry="1.2" fill="#2d241c"/>
+    <ellipse cx="14.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="33.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#3a2a22"/>
+    <ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#3a2a22"/>
+  </svg>`,
 }
 
 export function buddySvgFor(id) {

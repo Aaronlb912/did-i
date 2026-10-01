@@ -1005,12 +1005,13 @@ function Puff({ delay, size, color }) {
 // Same arc as the web keyframes: up fast, then a slow flutter down.
 const CONFETTI_T = [0, 0.04, 0.08, 0.16, 0.25, 0.4, 0.55, 0.7, 0.78, 0.85, 1]
 
-function Confetti({ delay, x, y, fall, rot, size, fat, color }) {
+// leaf: the Leaves cheer. Same flight, a leaf shape, a little slower (like web .di-leaf).
+function Confetti({ delay, x, y, fall, rot, size, fat, color, leaf = false }) {
   const progress = useMemo(() => new Animated.Value(0), [])
   useEffect(() => {
     const anim = Animated.sequence([
       Animated.delay(delay),
-      Animated.timing(progress, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(progress, { toValue: 1, duration: leaf ? 1700 : 1500, easing: Easing.linear, useNativeDriver: true }),
     ])
     anim.start()
     return () => anim.stop()
@@ -1020,8 +1021,8 @@ function Confetti({ delay, x, y, fall, rot, size, fat, color }) {
   const end = remPx(fall)
   const sway = remPx('0.3')
   const down = (k) => cy + (end - cy) * k
-  const w = remPx(size)
-  const h = w * (fat ? 0.8 : 0.5)
+  const w = remPx(size) * (leaf ? 0.7 : 1)
+  const h = leaf ? w * 1.4 : w * (fat ? 0.8 : 0.5)
   const deg = Number.parseFloat(rot) || 0
   const translateX = progress.interpolate({
     inputRange: CONFETTI_T,
@@ -1046,12 +1047,70 @@ function Confetti({ delay, x, y, fall, rot, size, fat, color }) {
         top: -h / 2,
         width: w,
         height: h,
-        borderRadius: 1,
+        ...(leaf
+          ? { borderTopLeftRadius: w, borderBottomRightRadius: w, borderTopRightRadius: w * 0.15, borderBottomLeftRadius: w * 0.15 }
+          : { borderRadius: 1 }),
         backgroundColor: color,
         opacity,
         transform: [{ translateX }, { translateY }, { rotate }, { scaleX }],
       }}
     />
+  )
+}
+
+// A paper lantern floats up and sways, like the web .di-lantern.
+const LANTERN_T = [0, 0.12, 0.4, 0.7, 1]
+
+function LanternArt({ w, h, colors }) {
+  const parts = svgParts()
+  if (!parts) {
+    return (
+      <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: w * 0.7, height: h * 0.64, borderRadius: w * 0.28, backgroundColor: colors.on }} />
+      </View>
+    )
+  }
+  // Rounded rects as paths: svgParts has no Rect.
+  const { Svg, Path } = parts
+  return (
+    <Svg width={w} height={h} viewBox="0 0 32 44">
+      <Path d="M12.5 2 H19.5 Q21 2 21 3.5 V4.5 Q21 6 19.5 6 H12.5 Q11 6 11 4.5 V3.5 Q11 2 12.5 2 Z" fill={colors.onDeep} />
+      <Path d="M14 6 H18 Q27 6 27 15 V25 Q27 34 18 34 H14 Q5 34 5 25 V15 Q5 6 14 6 Z" fill={colors.on} />
+      <Path d="M11 7 C8 15 8 25 11 33 M21 7 C24 15 24 25 21 33 M16 6 V34" stroke={colors.onDeep} strokeWidth="1.4" fill="none" opacity="0.7" />
+      <Path d="M12.5 34 H19.5 Q21 34 21 35.5 V36.5 Q21 38 19.5 38 H12.5 Q11 38 11 36.5 V35.5 Q11 34 12.5 34 Z" fill={colors.onDeep} />
+      <Path d="M16 38 V43" stroke={colors.onDeep} strokeWidth="1.4" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+function Lantern({ delay, size, rise, swing, colors }) {
+  const progress = useTimed(delay, 1900)
+  const w = remPx(size || '2.2')
+  const h = w * 1.375
+  const up = remPx(rise || '-3.5rem')
+  const dir = swing < 0 ? -1 : 1
+  const translateY = progress.interpolate({ inputRange: LANTERN_T, outputRange: [remPx('0.6'), 0, up * 0.35, up * 0.7, up] })
+  const rotate = progress.interpolate({ inputRange: LANTERN_T, outputRange: ['0deg', `${6 * dir}deg`, `${-5 * dir}deg`, `${4 * dir}deg`, '0deg'] })
+  const scale = progress.interpolate({ inputRange: LANTERN_T, outputRange: [0.7, 1, 1, 0.98, 0.92] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.7, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: -h * 0.69,
+        width: w,
+        height: h,
+        opacity,
+        shadowColor: colors.on,
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        transform: [{ translateY }, { rotate }, { scale }],
+      }}
+    >
+      <LanternArt w={w} h={h} colors={colors} />
+    </Animated.View>
   )
 }
 
@@ -1674,6 +1733,23 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   }
   if (bit.sunGlow) return <SunGlow delay={delay} size={bit.size} color={on} />
   if (bit.sun) return <Sun delay={delay} size={bit.size} rays={bit.rays} turn={bit.turn} colors={colors} />
+  if (bit.leaf) {
+    return (
+      <Confetti
+        leaf
+        delay={delay}
+        x={bit.x}
+        y={bit.y}
+        fall={bit.fall}
+        rot={bit.rot}
+        size={bit.size}
+        color={bit.tone === 'warm' ? colors.miss : toneColor(bit.tone, colors)}
+      />
+    )
+  }
+  if (bit.lantern) {
+    return <Lantern delay={delay} size={bit.size} rise={bit.rise} swing={bit.swing} colors={colors} />
+  }
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />
   return <Pip delay={delay} color={on} />
 }

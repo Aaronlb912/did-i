@@ -62,8 +62,11 @@ const LOOK_META = {
   indigo: { on: '#7a8cff' },
   clay: { on: '#d97a5c', bg: '#1a1310', glow: 'rgba(217, 122, 92, 0.35)' },
   sky: { on: '#4aa8ff' },
+  maple: { on: '#fa774f' },
+  fig: { on: '#d46ba3' },
   orchid: { on: '#dd7bff' },
   chalk: { on: '#ecebe6', bg: '#181817', glow: 'rgba(236, 235, 230, 0.3)' },
+  oat: { on: '#f0e6d8', bg: '#141311', glow: 'rgba(240, 230, 216, 0.3)' },
 }
 
 function rem(n) {
@@ -647,6 +650,51 @@ function SunChip({ on }) {
   )
 }
 
+// Two leaves, one tipped each way, like the web chip.
+function LeavesChip({ on, warm }) {
+  const leaf = { position: 'absolute', width: rem(0.7), height: rem(1), borderTopLeftRadius: rem(0.7), borderBottomRightRadius: rem(0.7) }
+  return (
+    <View style={styles.chipBox}>
+      <View style={[leaf, { left: CHIP / 2 - rem(0.7), top: CHIP / 2 - rem(0.65), backgroundColor: on, transform: [{ rotate: '-20deg' }] }]} />
+      <View style={[leaf, { left: CHIP / 2, top: CHIP / 2 - rem(0.35), backgroundColor: warm, transform: [{ rotate: '25deg' }] }]} />
+    </View>
+  )
+}
+
+// A lantern: rounded glowing body with a cap above and below.
+function LanternChip({ on, onDeep }) {
+  return (
+    <View style={styles.chipBox}>
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - rem(0.25),
+          top: CHIP / 2 - rem(0.75),
+          width: rem(0.5),
+          height: rem(1.5),
+          borderTopWidth: rem(0.2),
+          borderBottomWidth: rem(0.2),
+          borderColor: onDeep,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          left: CHIP / 2 - rem(0.475),
+          top: CHIP / 2 - rem(0.575),
+          width: rem(0.95),
+          height: rem(1.15),
+          borderRadius: rem(0.45),
+          backgroundColor: on,
+          shadowColor: on,
+          shadowOpacity: 0.55,
+          shadowRadius: 6,
+        }}
+      />
+    </View>
+  )
+}
+
 function DefaultChip({ n, on }) {
   const bit = rem(0.28)
   return (
@@ -719,6 +767,12 @@ export function CheerChip({ id, stage = 1, colors }) {
       break
     case 'sun':
       art = <SunChip on={on} />
+      break
+    case 'leaves':
+      art = <LeavesChip on={on} warm={colors?.miss || '#ff6f61'} />
+      break
+    case 'lantern':
+      art = <LanternChip on={on} onDeep={onDeep} />
       break
     default: {
       const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))

@@ -107,6 +107,23 @@ function Sun({ delay, size, rays, turn }) {
   )
 }
 
+// Shared with the phone's Leaf so both draw the same shape.
+export const LEAF_PATH = 'M12 1 C18 6 20 13 12 23 C4 13 6 6 12 1 Z'
+
+function Lantern({ delay, size, rise, swing }) {
+  return (
+    <b className="di-lantern" style={{ '--sz': size, '--rise': rise, '--swing': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox="0 0 32 44" aria-hidden="true" focusable="false">
+        <rect className="di-lantern-cap" x="11" y="2" width="10" height="4" rx="1.5" />
+        <rect className="di-lantern-body" x="5" y="6" width="22" height="28" rx="9" />
+        <path className="di-lantern-rib" d="M11 7 C8 15 8 25 11 33 M21 7 C24 15 24 25 21 33 M16 6 V34" />
+        <rect className="di-lantern-cap" x="11" y="34" width="10" height="4" rx="1.5" />
+        <path className="di-lantern-tassel" d="M16 38 V43" />
+      </svg>
+    </b>
+  )
+}
+
 function renderBit(burst, pop, bit, screen = false) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -222,6 +239,24 @@ function renderBit(burst, pop, bit, screen = false) {
   }
   if (bit.sun) {
     return <Sun key={key} delay={delay} size={bit.size} rays={bit.rays} turn={bit.turn} />
+  }
+  if (bit.leaf) {
+    return (
+      <b
+        key={key}
+        className="di-leaf"
+        data-tone={bit.tone}
+        style={{ '--cx': bit.x, '--cy': bit.y, '--fall': bit.fall, '--rot': bit.rot, '--sz': bit.size, animationDelay: delay }}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d={LEAF_PATH} />
+          <path className="di-leaf-vein" d="M12 4 V21" />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.lantern) {
+    return <Lantern key={key} delay={delay} size={bit.size} rise={bit.rise} swing={bit.swing} />
   }
   if (bit.sparkFlash) {
     return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />

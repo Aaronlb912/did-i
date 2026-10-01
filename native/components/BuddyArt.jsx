@@ -11,6 +11,7 @@ const COAT = {
   ant: { body: '#b5533c', belly: '#e39a84', ear: '#b5533c' },
   possum: { body: '#9b98a3', belly: '#f4f1ec', ear: '#f2a7b4' },
   penguin: { body: '#344157', belly: '#f7f5f0', ear: '#344157' },
+  fox: { body: '#e8743b', belly: '#fff6ea', ear: '#e8743b' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -56,6 +57,19 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
         <View style={spot(box, 21.5, 30.5, 5, 3.5, '#f5a524', 2)} />
         <View style={spot(box, 12.5, 42.2, 9, 5.6, '#f5a524')} />
         <View style={spot(box, 26.5, 42.2, 9, 5.6, '#f5a524')} />
+      </View>
+    )
+  }
+  if (id === 'fox') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 9.5, 17, 29, 28, coat.body)} />
+        <View style={spot(box, 16.5, 32, 15, 12, coat.belly)} />
+        <View style={spot(box, 17.6, 24.7, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 26, 24.7, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 22.3, 31.4, 3.4, 2.4, pupil)} />
+        <View style={spot(box, 12.5, 42.2, 9, 5.6, '#3a2a22')} />
+        <View style={spot(box, 26.5, 42.2, 9, 5.6, '#3a2a22')} />
       </View>
     )
   }
@@ -145,6 +159,10 @@ const EYES = {
   penguin: [
     [[19.8, 26.5, 2.2, 2.8, DARK], [20.5, 25.6, 0.7, 0.9, ...SHINE]],
     [[28.2, 26.5, 2.2, 2.8, DARK], [28.9, 25.6, 0.7, 0.9, ...SHINE]],
+  ],
+  fox: [
+    [[19.8, 27.5, 2.2, 2.8, DARK], [20.5, 26.6, 0.7, 0.9, ...SHINE]],
+    [[28.2, 27.5, 2.2, 2.8, DARK], [28.9, 26.6, 0.7, 0.9, ...SHINE]],
   ],
 }
 
@@ -380,6 +398,29 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#f5a524" />
         <Ellipse cx="17" cy="45.6" rx="2.8" ry="1.5" fill="#ffc766" />
         <Ellipse cx="31" cy="45.6" rx="2.8" ry="1.5" fill="#ffc766" />
+      </Svg>
+    )
+  }
+
+  if (id === 'fox') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="36.5" cy="41.5" rx="9" ry="4.6" fill="#e8743b" transform="rotate(-32 36.5 41.5)" />
+        <Ellipse cx="42.8" cy="37.2" rx="3.3" ry="2.6" fill="#fff6ea" transform="rotate(-32 42.8 37.2)" />
+        <Polygon points="10.5,21 20.5,21 15.5,9" fill="#e8743b" />
+        <Polygon points="27.5,21 37.5,21 32.5,9" fill="#e8743b" />
+        <Polygon points="13.1,20 18.3,20 15.7,13" fill="#3a2a22" />
+        <Polygon points="29.699999999999996,20 34.9,20 32.3,13" fill="#3a2a22" />
+        <Ellipse cx="24" cy="31" rx="14.5" ry="14" fill="#e8743b" />
+        <Ellipse cx="17" cy="34.5" rx="5.6" ry="4.4" fill="#fff6ea" />
+        <Ellipse cx="31" cy="34.5" rx="5.6" ry="4.4" fill="#fff6ea" />
+        <Ellipse cx="24" cy="38" rx="7.5" ry="6" fill="#fff6ea" />
+        {eyes ? <EyesInline parts={parts} id="fox" /> : null}
+        <Ellipse cx="24" cy="32.6" rx="1.7" ry="1.2" fill="#2d241c" />
+        <Ellipse cx="14.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="33.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
+        <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
       </Svg>
     )
   }
