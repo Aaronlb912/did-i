@@ -1339,3 +1339,10 @@ html[data-reduce-motion] .di-land-together {
 .di-beta-fine {
   max-width: 40rem;
 }
+
+/* Under step 1: Google shows non-members a no-access note on the group page. */
+.di-download-card .di-beta-hint {
+  margin-top: -0.6rem;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

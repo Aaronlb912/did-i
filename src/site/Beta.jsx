@@ -23,12 +23,13 @@ function usePhoneWidth() {
   return phone
 }
 
-function Step({ kicker, title, note, href, label, icon = null }) {
+function Step({ kicker, title, note, hint = '', href, label, icon = null }) {
   return (
     <article className="di-download-card">
       <p className="di-face-plate">{kicker}</p>
       <h2 className="di-question">{title}</h2>
       <p className="di-detail-meta">{note}</p>
+      {hint ? <p className="di-detail-meta di-beta-hint">{hint}</p> : null}
       <a className="di-did di-did-small di-link-did" href={href} target="_blank" rel="noopener noreferrer">
         {icon}
         {label}
@@ -66,6 +67,7 @@ export function Beta() {
             kicker={t('web.beta.step1Kicker')}
             title={t('web.beta.step1')}
             note={t('web.beta.step1Note')}
+            hint={t('web.beta.step1Hint')}
             href={GROUP_URL}
             label={t('web.beta.step1Button')}
           />
