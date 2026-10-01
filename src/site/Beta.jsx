@@ -24,7 +24,8 @@ function usePhoneWidth() {
   return phone
 }
 
-function Step({ kicker, title, note, href, label, icon = null }) {
+// note says what to tap; tip is the small "if it looks wrong" line under the button.
+function Step({ kicker, title, note, tip, href, label, icon = null }) {
   return (
     <article className="di-download-card">
       <p className="di-face-plate">{kicker}</p>
@@ -34,6 +35,7 @@ function Step({ kicker, title, note, href, label, icon = null }) {
         {icon}
         {label}
       </a>
+      <p className="di-beta-tip">{tip}</p>
     </article>
   )
 }
@@ -55,6 +57,7 @@ export function Beta() {
             kicker={t('web.beta.step1Kicker')}
             title={t('web.beta.step1')}
             note={t('web.beta.step1Note')}
+            tip={t('web.beta.step1Tip')}
             href={GROUP_URL}
             label={t('web.beta.step1Button')}
           />
@@ -62,6 +65,7 @@ export function Beta() {
             kicker={t('web.beta.step2Kicker')}
             title={t('web.beta.step2')}
             note={t('web.beta.step2Note')}
+            tip={t('web.beta.step2Tip')}
             href={OPT_IN_URL}
             label={t('web.beta.step2Button')}
             icon={<PlayIcon />}

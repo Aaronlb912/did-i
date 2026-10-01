@@ -1419,3 +1419,12 @@ html[data-reduce-motion] .di-land-together {
   text-align: left;
 }
 
+/* Small "if it looks wrong" line under each beta step, set apart from the instruction. */
+.di-beta-tip {
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--di-line-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--di-ink-soft);
+}
