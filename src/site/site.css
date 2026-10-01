@@ -1317,3 +1317,25 @@ html[data-reduce-motion] .di-land-together {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Android beta page. Phones get the vertical cut of the demo. */
+
+.di-beta-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0 0 1.5rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+}
+
+@media (max-width: 639px) {
+  .di-beta-video {
+    aspect-ratio: 9 / 16;
+  }
+}
+
+.di-beta-fine {
+  max-width: 40rem;
+}

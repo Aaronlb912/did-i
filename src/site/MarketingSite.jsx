@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { applyPrefsToDocument, readPrefs } from '../lib/prefs.js'
 import { usePrefs } from '../lib/prefs.js'
+import { Beta } from './Beta.jsx'
 import { Download } from './Download.jsx'
 import { Invite } from './Invite.jsx'
 import { Landing } from './Landing.jsx'
@@ -32,6 +33,7 @@ function MarketingPage() {
   if (path === '/terms') return <MarketingTerms />
   if (path === '/download') return <Download />
   if (path === '/press') return <Press />
+  if (path === '/beta') return <Beta />
   const invite = inviteCodeFromPath(path)
   if (invite) return <Invite code={invite} />
   return <Landing />
