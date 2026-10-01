@@ -1,4 +1,4 @@
-import { emptyBoard, normalizeBook } from './board-json.js'
+import { emptyBoard, normalizeBook, normalizeGone } from './board-json.js'
 import { alignShelfPurse } from './purse.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
@@ -38,7 +38,9 @@ export function normalizeShelf(raw) {
     ? source.currentId
     : boards[0].id
   const gemWeek = String(source.gemWeek || '').trim()
-  return parkEmptyTags(mergeSameTitles(alignShelfPurse({ currentId, boards, gemWeek })))
+  // Tags deleted on this phone, so a sync with an older phone keeps them deleted.
+  const goneTags = normalizeGone(source.goneTags)
+  return parkEmptyTags(mergeSameTitles(alignShelfPurse({ currentId, boards, gemWeek, goneTags })))
 }
 
 export function liveLampCount(book) {
@@ -219,7 +221,8 @@ export function dropBook(shelf, id) {
   if (shelf.boards.length < 2) return shelf
   const boards = shelf.boards.filter((book) => book.id !== id)
   const currentId = shelf.currentId === id ? boards[0].id : shelf.currentId
-  return { currentId, boards }
+  const goneTags = [{ id, at: new Date().toISOString() }, ...(shelf.goneTags || [])]
+  return { ...shelf, currentId, boards, goneTags }
 }
 
 export function nextBoardTitle(boards) {

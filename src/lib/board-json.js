@@ -215,6 +215,23 @@ export function normalizeAnswer(raw) {
   }
 }
 
+// Questions taken off this tag, so a sync with an older phone does not bring
+// them back. back: true means it was put back later; the newest entry wins.
+const GONE_MAX = 300
+
+export function normalizeGone(list) {
+  if (!Array.isArray(list)) return []
+  const latest = new Map()
+  for (const raw of list) {
+    const id = asString(raw?.id).trim()
+    const at = asString(raw?.at)
+    if (!id || !at) continue
+    const prev = latest.get(id)
+    if (!prev || at > prev.at) latest.set(id, { id, at, ...(raw.back ? { back: true } : {}) })
+  }
+  return [...latest.values()].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, GONE_MAX)
+}
+
 export function normalizeBook(raw) {
   const book = raw && typeof raw === 'object' ? raw : {}
   const purse = normalizePurse(book)
@@ -230,6 +247,7 @@ export function normalizeBook(raw) {
     archived: asBool(book.archived),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
+    gone: normalizeGone(book.gone),
     unlocked: Array.isArray(book.unlocked)
       ? book.unlocked.map((id) => asString(id)).filter(Boolean)
       : [],

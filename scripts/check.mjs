@@ -37,7 +37,7 @@ import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
-import { bulkLamps, undoBulkLamps } from '../src/lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -57,6 +57,7 @@ import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
   clearLocalShelf,
+  dropBook,
   enterLand,
   hallEmpty,
   mergeSameTitles,
@@ -620,6 +621,42 @@ test('two phones combine instead of overwriting', () => {
   assert.deepEqual(book.lamps.map((one) => one.id).sort(), ['x', 'y'])
   assert.equal(book.coins, 9, 'the bigger purse wins')
   assert.equal(book.gems, 7, 'and per column, not per phone')
+})
+
+test('a question deleted on one phone stays deleted when an older phone syncs', () => {
+  const older = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('x'), lamp('y')], answers: [{ lampId: 'y', periodKey: '2026-09-29', status: 'yes' }] }] }
+  // This phone deletes y, one alone and one in bulk, then syncs with the older copy, either way round.
+  const one = { ...older, boards: [takeDown(older.boards[0], lamp('y'), new Date('2026-09-30T10:00:00Z'))] }
+  const bulk = { ...older, boards: bulkLamps(older.boards, [{ boardId: 'b1', lampId: 'y' }], 'delete') }
+  for (const fresh of [one, bulk]) {
+    for (const merged of [mergeShelves(fresh, older, '2026-09-30', '2026-09-29'), mergeShelves(older, fresh, '2026-09-29', '2026-09-30')]) {
+      assert.deepEqual(merged.boards[0].lamps.map((item) => item.id), ['x'])
+      assert.equal(merged.boards[0].answers.length, 0)
+    }
+  }
+  // Putting it back later wins over the earlier delete, even against a phone that only saw the delete.
+  const back = { ...one, boards: [hangInto(one.boards[0], lamp('y'))] }
+  const merged = mergeShelves(one, back, '2026-09-30T11:00', '2026-09-30T12:00')
+  assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['x', 'y'])
+  // Moving a question to another tag only takes it off the first one.
+  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [] }] }
+  const both = mergeShelves(moved, older, '2026-09-30', '2026-09-29')
+  assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+})
+
+test('a tag deleted on one phone stays deleted when an older phone syncs', () => {
+  const older = {
+    currentId: 'b1',
+    boards: [
+      { id: 'b1', title: 'Home', lamps: [lamp('x')], answers: [] },
+      { id: 'b2', title: 'Work', lamps: [lamp('y')], answers: [] },
+    ],
+  }
+  const fresh = normalizeShelf(dropBook(older, 'b2'))
+  for (const merged of [mergeShelves(fresh, older, '2026-09-30', '2026-09-29'), mergeShelves(older, fresh, '2026-09-29', '2026-09-30')]) {
+    assert.deepEqual(merged.boards.map((book) => book.id), ['b1'])
+    assert.equal(merged.goneTags.length, 1, 'and the delete carries on to the next phone')
+  }
 })
 
 test('the document that goes up carries no answers', () => {
