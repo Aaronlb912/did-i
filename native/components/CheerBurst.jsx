@@ -1313,6 +1313,242 @@ function LaunchWord({ delay, oy, size, colors }) {
   )
 }
 
+// The medal hangs from the top of its ribbon: drop in, swing, settle, lift off.
+const MEDAL_T = [0, 0.12, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.84, 1]
+const MEDAL_SWING = [16, -12, 9, -6, 3.5, -1.5, 0.5, 0, 0, 0]
+const MEDAL_STAR =
+  'M20 40.8 L21.53 44.9 L25.9 45.08 L22.47 47.8 L23.64 52.02 L20 49.6 L16.36 52.02 L17.53 47.8 L14.1 45.08 L18.47 44.9 Z'
+
+function MedalArt({ w, h, colors }) {
+  const parts = svgParts()
+  if (!parts) {
+    const disc = w * 0.78
+    return (
+      <View style={{ width: w, height: h }}>
+        <View style={{ position: 'absolute', left: w * 0.3, top: 0, width: w * 0.4, height: h * 0.55, backgroundColor: colors.onDeep }} />
+        <View
+          style={{
+            position: 'absolute',
+            left: (w - disc) / 2,
+            top: h * 0.734 - disc / 2,
+            width: disc,
+            height: disc,
+            borderRadius: disc / 2,
+            borderWidth: 3,
+            borderColor: colors.onDeep,
+            backgroundColor: colors.on,
+          }}
+        />
+      </View>
+    )
+  }
+  const { Svg, Circle, Ellipse, Path, Polygon } = parts
+  return (
+    <Svg width={w} height={h} viewBox="0 0 40 64">
+      <Polygon points="4,0 15,0 24,36 15,37" fill={colors.late} />
+      <Polygon points="25,0 36,0 25,37 16,36" fill={colors.onDeep} />
+      <Circle cx="20" cy="47" r="15.5" fill={colors.on} stroke={colors.onDeep} strokeWidth="2.5" />
+      <Circle cx="20" cy="47" r="10.5" fill="none" stroke={colors.onDeep} strokeWidth="1.4" opacity="0.6" />
+      <Path d={MEDAL_STAR} fill={colors.onDeep} />
+      <Ellipse cx="13.5" cy="41" rx="3.2" ry="1.8" fill="#fff" opacity="0.45" transform="rotate(-35 13.5 41)" />
+    </Svg>
+  )
+}
+
+function Medal({ delay, size, swing, colors }) {
+  const progress = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(progress, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, progress])
+  const w = remPx(size || '2.4')
+  const h = w * 1.6
+  const dir = swing < 0 ? -1 : 1
+  const translateY = progress.interpolate({
+    inputRange: MEDAL_T,
+    outputRange: [-remPx('2.4'), remPx('0.25'), -remPx('0.1'), 0, 0, 0, 0, 0, 0, -remPx('0.5')],
+  })
+  const rotate = progress.interpolate({
+    inputRange: MEDAL_T,
+    outputRange: MEDAL_SWING.map((deg) => `${deg * dir}deg`),
+  })
+  const scale = progress.interpolate({ inputRange: [0, 0.12, 0.2, 0.3, 1], outputRange: [0.6, 1.06, 0.97, 1, 0.96] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.08, 0.84, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: -h * 0.734,
+        width: w,
+        height: h,
+        opacity,
+        transformOrigin: 'top center',
+        transform: [{ translateY }, { rotate }, { scale }],
+      }}
+    >
+      <MedalArt w={w} h={h} colors={colors} />
+    </Animated.View>
+  )
+}
+
+// A four-point twinkle: two crossed bars that pop, turn, and fade.
+function Glint({ delay, x, y, size, color }) {
+  const progress = useTimed(delay, 650)
+  const px = remPx(size || '0.5')
+  const bar = Math.max(2, px * 0.24)
+  const scale = progress.interpolate({ inputRange: [0, 0.35, 0.55, 1], outputRange: [0, 1.3, 1, 0] })
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.7, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: remPx(x) - px / 2,
+        top: remPx(y) - px / 2,
+        width: px,
+        height: px,
+        opacity,
+        transform: [{ rotate }, { scale }],
+      }}
+    >
+      <View style={{ position: 'absolute', left: (px - bar) / 2, top: 0, width: bar, height: px, borderRadius: bar, backgroundColor: color }} />
+      <View style={{ position: 'absolute', top: (px - bar) / 2, left: 0, width: px, height: bar, borderRadius: bar, backgroundColor: color }} />
+    </Animated.View>
+  )
+}
+
+const SUN_T = [0, 0.2, 0.3, 0.38, 0.46, 0.82, 1]
+
+function SunRay({ progress, index, rays, size, colors }) {
+  const long = index % 2 === 0
+  const len = size * (long ? 0.42 : 0.28)
+  const w = Math.max(3, size * 0.11)
+  const gap = size * 0.62
+  const t0 = 0.14 + (index / rays) * 0.12
+  const scaleY = progress.interpolate({
+    inputRange: [0, t0, t0 + 0.12, t0 + 0.2, 1],
+    outputRange: [0, 0, 1.25, 1, 1],
+    extrapolate: 'clamp',
+  })
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+        transform: [{ rotate: `${(360 / rays) * index}deg` }],
+      }}
+    >
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: -w / 2,
+          top: -gap - len,
+          width: w,
+          height: len,
+          borderRadius: w / 2,
+          backgroundColor: long ? colors.on : colors.onDeep,
+          transformOrigin: 'bottom center',
+          transform: [{ scaleY }],
+        }}
+      />
+    </View>
+  )
+}
+
+function Sun({ delay, size, rays, turn, colors }) {
+  const progress = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(progress, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, progress])
+  const px = remPx(size || '2')
+  const count = Math.max(8, Math.floor(Number(rays) || 8))
+  const translateY = progress.interpolate({
+    inputRange: SUN_T,
+    outputRange: [remPx('1.6'), -remPx('0.25'), remPx('0.06'), 0, 0, 0, -remPx('0.3')],
+  })
+  const scale = progress.interpolate({ inputRange: SUN_T, outputRange: [0.3, 1.12, 0.95, 1.02, 1, 1, 1.08] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.82, 1], outputRange: [0, 1, 1, 0] })
+  const spin = progress.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: ['0deg', `${14 * (turn < 0 ? -1 : 1)}deg`, `${50 * (turn < 0 ? -1 : 1)}deg`],
+  })
+  const shine = px * 0.36
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity, transform: [{ translateY }, { scale }] }}>
+      <Animated.View style={{ position: 'absolute', left: 0, top: 0, transform: [{ rotate: spin }] }}>
+        {Array.from({ length: count }, (_, i) => (
+          <SunRay key={i} progress={progress} index={i} rays={count} size={px} colors={colors} />
+        ))}
+      </Animated.View>
+      <View
+        style={{
+          position: 'absolute',
+          left: -px / 2,
+          top: -px / 2,
+          width: px,
+          height: px,
+          borderRadius: px / 2,
+          backgroundColor: colors.on,
+          borderWidth: Math.max(2, px * 0.05),
+          borderColor: colors.onDeep,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            position: 'absolute',
+            left: px * 0.16,
+            top: px * 0.14,
+            width: shine,
+            height: shine * 0.62,
+            borderRadius: shine,
+            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+            transform: [{ rotate: '-30deg' }],
+          }}
+        />
+      </View>
+    </Animated.View>
+  )
+}
+
+function SunGlow({ delay, size, color }) {
+  const progress = useTimed(delay, 1400)
+  const px = remPx(size || '4')
+  const scale = progress.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0.3, 1, 1.08] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.3, 0.7, 1], outputRange: [0, 0.26, 0.2, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        borderRadius: px / 2,
+        backgroundColor: color,
+        opacity,
+        transform: [{ scale }],
+      }}
+    />
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -1432,6 +1668,12 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.launchWord) return <LaunchWord delay={delay} oy={bit.oy} size={bit.size} colors={colors} />
   if (bit.heart) return <Heart delay={delay} size={bit.size} color={on} />
   if (bit.heartBit) return <HeartBit delay={delay} x={bit.x} y={bit.y} size={bit.size} color={toneColor(bit.tone, colors)} />
+  if (bit.medal) return <Medal delay={delay} size={bit.size} swing={bit.swing} colors={colors} />
+  if (bit.glint) {
+    return <Glint delay={delay} x={bit.x} y={bit.y} size={bit.size} color={confettiColor(bit.tone, colors)} />
+  }
+  if (bit.sunGlow) return <SunGlow delay={delay} size={bit.size} color={on} />
+  if (bit.sun) return <Sun delay={delay} size={bit.size} rays={bit.rays} turn={bit.turn} colors={colors} />
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />
   return <Pip delay={delay} color={on} />
 }

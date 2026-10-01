@@ -31,6 +31,12 @@ insert into public.shop_catalog (kind, item_id, live_from) values
   ('cheer_stage', 'confetti', '2026-10-09'), ('cheer_stage', 'heart', '2026-10-09')
 on conflict (kind, item_id) do update set live_from = excluded.live_from;
 
+-- Drop 2026-10-23.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'chalk', '2026-10-23'),
+  ('cheer_stage', 'medal', '2026-10-23'), ('cheer_stage', 'sun', '2026-10-23')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
 create or replace function public.shop_item_live(p_kind text, p_item_id text)
 returns boolean
 language sql
