@@ -86,6 +86,8 @@ const CHEER_KINDS = [
   'launch',
   'medal',
   'sun',
+  'leaves',
+  'lantern',
 ]
 
 const GAP_MS = {
@@ -106,6 +108,8 @@ const GAP_MS = {
   launch: 200,
   medal: 150,
   sun: 130,
+  leaves: 110,
+  lantern: 160,
 }
 
 const BASE_HOLD = {
@@ -126,6 +130,8 @@ const BASE_HOLD = {
   launch: 2300,
   medal: 1850,
   sun: 1800,
+  leaves: 1800,
+  lantern: 1900,
 }
 
 function stageN(stage) {
@@ -480,6 +486,68 @@ function medalBits(pop, stage) {
   return bits
 }
 
+// Same flight as confetti, but leaves: fewer, bigger, warm, and they rock
+// side to side as they fall.
+const LEAF_TONES = ['on', 'gold', 'warm']
+
+function leavesBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const mul = stageMul(stage)
+  const count = Math.min(14, 8 + level)
+  const reach = Math.min(6.5, (3.2 + n * 0.6) * mul)
+  const peak = Math.min(5, (3 + n * 0.45) * mul)
+  const fall = Math.min(13, (5.5 + n * 1.3) * mul)
+  const ox = Number.parseFloat(ORIGINS[n - 1][pop]?.[0]) || 50
+  const lean = ((50 - ox) / 50) * reach * 0.6
+  const piece = Math.max(1, Math.min(mul, 1.5))
+  const bits = []
+  for (let i = 0; i < count; i += 1) {
+    const side = count === 1 ? 0 : i / (count - 1) - 0.5
+    const angle = side * 2.2 + (((i * 7) % 5) - 2) * 0.05
+    const lift = 0.6 + ((i * 5) % 7) / 15
+    bits.push({
+      id: `leaf-${i}`,
+      leaf: true,
+      x: `${(Math.sin(angle) * reach + lean).toFixed(2)}rem`,
+      y: `${(-peak * lift).toFixed(2)}rem`,
+      fall: `${(fall * (0.75 + ((i * 3) % 5) * 0.08)).toFixed(2)}rem`,
+      rot: `${(i % 2 ? 1 : -1) * (160 + ((i * 53) % 160))}deg`,
+      size: `${((0.8 + (i % 3) * 0.16) * piece).toFixed(2)}rem`,
+      tone: LEAF_TONES[(i * 2) % LEAF_TONES.length],
+      delay: `${60 + ((i * 37) % 110)}ms`,
+    })
+  }
+  return bits
+}
+
+// A paper lantern floats up with a slow sway and a warm glow, then fades.
+function lanternBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const mul = stageMul(stage)
+  const size = Math.min(2.8, (2.1 + level * 0.12) * mul)
+  const rise = Math.min(6, (3.2 + level * 0.3) * mul)
+  const bits = [
+    { id: 'lantern-glow', sunGlow: true, delay: '200ms', size: `${(size * 2.2).toFixed(2)}rem` },
+    { id: 'lantern', lantern: true, delay: '0ms', size: `${size.toFixed(2)}rem`, rise: `${(-rise).toFixed(2)}rem`, swing: pop % 2 ? -1 : 1 },
+  ]
+  const sparks = Math.min(6, level + 2)
+  for (let i = 0; i < sparks; i += 1) {
+    const angle = (-150 + (i / Math.max(1, sparks - 1)) * 120) * (Math.PI / 180)
+    const far = size * (0.8 + (i % 2) * 0.25)
+    bits.push({
+      id: `spark-${i}`,
+      glint: true,
+      x: `${(Math.cos(angle) * far).toFixed(2)}rem`,
+      y: `${(Math.sin(angle) * far - rise * 0.5).toFixed(2)}rem`,
+      size: `${((0.5 + (i % 3) * 0.12) * Math.min(mul, 1.5)).toFixed(2)}rem`,
+      tone: CONFETTI_TONES[(i + 1) % CONFETTI_TONES.length],
+      delay: `${700 + i * 80}ms`,
+    })
+  }
+  return bits
+}
+
 // Rises with a bounce while a crown of rays grows out and turns.
 function sunBits(pop, stage) {
   const level = burstLevel(pop, stage)
@@ -523,6 +591,8 @@ const BURST_BUILDERS = {
   launch: launchBits,
   medal: medalBits,
   sun: sunBits,
+  leaves: leavesBits,
+  lantern: lanternBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {

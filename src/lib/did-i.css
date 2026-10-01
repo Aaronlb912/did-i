@@ -148,6 +148,23 @@
   --di-veil: rgba(8, 8, 8, 0.6);
 }
 
+.di-hall[data-look='oat'],
+.di-cheer[data-look='oat'] {
+  --di-bg: #0b0b0b;
+  --di-panel: #141311;
+  --di-panel-2: #1b1a18;
+  --di-panel-3: #232220;
+  --di-line: #33302d;
+  --di-line-soft: #262523;
+  --di-ink: #f8ecdb;
+  --di-ink-soft: #a99c8a;
+  --di-ink-dim: #726b60;
+  --di-on: #f0e6d8;
+  --di-on-deep: #928878;
+  --di-late: #cbb087;
+  --di-veil: rgba(3, 3, 3, 0.6);
+}
+
 .di-hall[data-look='glow'],
 .di-cheer[data-look='glow'] {
   --di-bg: #0a0e14;
@@ -353,6 +370,40 @@
   --di-gem-spill: rgba(74, 168, 255, 0.16);
 }
 
+.di-hall[data-look='maple'],
+.di-cheer[data-look='maple'] {
+  --di-bg: #140c0a;
+  --di-panel: #1f1410;
+  --di-panel-2: #281a15;
+  --di-panel-3: #32211c;
+  --di-line: #462d26;
+  --di-line-soft: #35221d;
+  --di-on: #fa774f;
+  --di-on-deep: #cc4b23;
+  --di-gem-bg: #140c0a;
+  --di-gem-ring: rgba(250, 119, 79, 0.32);
+  --di-gem-halo: rgba(250, 119, 79, 0.13);
+  --di-gem-halo-deep: rgba(204, 75, 35, 0.06);
+  --di-gem-spill: rgba(250, 119, 79, 0.16);
+}
+
+.di-hall[data-look='fig'],
+.di-cheer[data-look='fig'] {
+  --di-bg: #0c080a;
+  --di-panel: #160f13;
+  --di-panel-2: #1e151a;
+  --di-panel-3: #281c22;
+  --di-line: #392831;
+  --di-line-soft: #2a1e24;
+  --di-on: #d46ba3;
+  --di-on-deep: #a14476;
+  --di-gem-bg: #0c080a;
+  --di-gem-ring: rgba(212, 107, 163, 0.32);
+  --di-gem-halo: rgba(212, 107, 163, 0.13);
+  --di-gem-halo-deep: rgba(161, 68, 118, 0.06);
+  --di-gem-spill: rgba(212, 107, 163, 0.16);
+}
+
 .di-hall[data-look='orchid'],
 .di-cheer[data-look='orchid'] {
   --di-bg: #0f0a12;
@@ -382,7 +433,9 @@
 .di-hall[data-look='jade'],
 .di-hall[data-look='indigo'],
 .di-hall[data-look='sky'],
-.di-hall[data-look='orchid'] {
+.di-hall[data-look='orchid'],
+.di-hall[data-look='maple'],
+.di-hall[data-look='fig'] {
   position: relative;
   box-shadow: none;
 }
@@ -399,7 +452,9 @@
 .di-hall[data-look='jade']::after,
 .di-hall[data-look='indigo']::after,
 .di-hall[data-look='sky']::after,
-.di-hall[data-look='orchid']::after {
+.di-hall[data-look='orchid']::after,
+.di-hall[data-look='maple']::after,
+.di-hall[data-look='fig']::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -461,6 +516,20 @@ html:has(.di-hall[data-look='sky']) body {
     radial-gradient(125% 85% at 50% -8%, rgba(74, 168, 255, 0.09), transparent 55%),
     radial-gradient(110% 75% at 50% 108%, rgba(31, 111, 208, 0.06), transparent 50%),
     var(--di-gem-bg, #0e1014);
+}
+
+html:has(.di-hall[data-look='maple']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(250, 119, 79, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(204, 75, 35, 0.06), transparent 50%),
+    var(--di-gem-bg, #140f0e);
+}
+
+html:has(.di-hall[data-look='fig']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(212, 107, 163, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(161, 68, 118, 0.06), transparent 50%),
+    var(--di-gem-bg, #0d0b0c);
 }
 
 html:has(.di-hall[data-look='orchid']) body {
@@ -529,7 +598,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   .di-face-slot
   > :is(.di-face, .di-empty, .di-wait, .di-hole-plate),
@@ -546,7 +617,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   .di-buddy-preview-card {
   position: relative;
@@ -683,6 +756,24 @@ html[data-theme='light'] .di-hall[data-look='chalk'],
   --di-on-deep: #6c6a64;
   --di-late: #8a8474;
   --di-veil: rgba(22, 22, 20, 0.38);
+}
+
+html[data-theme='light'] .di-hall[data-look='oat'],
+.di-hall[data-theme='light'][data-look='oat'],
+.di-cheer[data-theme='light'][data-look='oat'] {
+  --di-bg: #eee6db;
+  --di-panel: #fef6eb;
+  --di-panel-2: #f6eee1;
+  --di-panel-3: #ebe0d0;
+  --di-line: #d6c8b3;
+  --di-line-soft: #e2d7c5;
+  --di-ink: #12100d;
+  --di-ink-soft: #585043;
+  --di-ink-dim: #7d7365;
+  --di-on: #23201d;
+  --di-on-deep: #6f6557;
+  --di-late: #9c8158;
+  --di-veil: rgba(18, 16, 13, 0.38);
 }
 
 html[data-theme='light'] .di-hall[data-look='glow'],
@@ -901,6 +992,42 @@ html[data-theme='light'] .di-hall[data-look='sky'],
   --di-gem-spill: rgba(23, 102, 194, 0.08);
 }
 
+html[data-theme='light'] .di-hall[data-look='maple'],
+.di-hall[data-theme='light'][data-look='maple'],
+.di-cheer[data-theme='light'][data-look='maple'] {
+  --di-bg: #f9ebe7;
+  --di-panel: #fff8f6;
+  --di-panel-2: #fbeeea;
+  --di-panel-3: #f4e1dc;
+  --di-line: #e5c3b8;
+  --di-line-soft: #edd5ce;
+  --di-on: #be411b;
+  --di-on-deep: #8c2f12;
+  --di-gem-bg: #f9ebe7;
+  --di-gem-ring: rgba(190, 65, 27, 0.22);
+  --di-gem-halo: rgba(190, 65, 27, 0.07);
+  --di-gem-halo-deep: rgba(140, 47, 18, 0.035);
+  --di-gem-spill: rgba(190, 65, 27, 0.08);
+}
+
+html[data-theme='light'] .di-hall[data-look='fig'],
+.di-hall[data-theme='light'][data-look='fig'],
+.di-cheer[data-theme='light'][data-look='fig'] {
+  --di-bg: #f2e4eb;
+  --di-panel: #fbf0f6;
+  --di-panel-2: #f4e7ee;
+  --di-panel-3: #ecdae3;
+  --di-line: #d8bbca;
+  --di-line-soft: #e3ced9;
+  --di-on: #943b6a;
+  --di-on-deep: #6b294c;
+  --di-gem-bg: #f2e4eb;
+  --di-gem-ring: rgba(148, 59, 106, 0.22);
+  --di-gem-halo: rgba(148, 59, 106, 0.07);
+  --di-gem-halo-deep: rgba(107, 41, 76, 0.035);
+  --di-gem-spill: rgba(148, 59, 106, 0.08);
+}
+
 html[data-theme='light'] .di-hall[data-look='orchid'],
 .di-hall[data-theme='light'][data-look='orchid'],
 .di-cheer[data-theme='light'][data-look='orchid'] {
@@ -978,6 +1105,22 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='sky']) body
     radial-gradient(125% 85% at 50% -8%, rgba(23, 102, 194, 0.06), transparent 55%),
     radial-gradient(110% 75% at 50% 108%, rgba(23, 102, 194, 0.04), transparent 50%),
     var(--di-gem-bg, #eef1e6);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='maple']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='maple']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(190, 65, 27, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(190, 65, 27, 0.04), transparent 50%),
+    var(--di-gem-bg, #f1e9e6);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='fig']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='fig']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(148, 59, 106, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(148, 59, 106, 0.04), transparent 50%),
+    var(--di-gem-bg, #eae3e7);
 }
 
 html[data-theme='light']:has(.di-hall[data-look='orchid']) body,
@@ -4756,8 +4899,32 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
     inset 0 0 0.5rem rgba(31, 111, 208, 0.14);
 }
 
+.di-look-chip[data-look='maple'] {
+  --chip-on: #fa774f;
+  --chip-bg: #1a0f0c;
+  box-shadow:
+    0 0 0.35rem rgba(250, 119, 79, 0.5),
+    inset 0 0 0.5rem rgba(204, 75, 35, 0.14);
+}
+
+.di-look-chip[data-look='fig'] {
+  --chip-on: #d46ba3;
+  --chip-bg: #110b0e;
+  box-shadow:
+    0 0 0.35rem rgba(212, 107, 163, 0.5),
+    inset 0 0 0.5rem rgba(161, 68, 118, 0.14);
+}
+
 .di-look-chip[data-look='sky'] i {
   box-shadow: 0 0 0.25rem rgba(74, 168, 255, 0.72);
+}
+
+.di-look-chip[data-look='maple'] i {
+  box-shadow: 0 0 0.25rem rgba(250, 119, 79, 0.72);
+}
+
+.di-look-chip[data-look='fig'] i {
+  box-shadow: 0 0 0.25rem rgba(212, 107, 163, 0.72);
 }
 
 .di-look-chip[data-look='orchid'] {
@@ -4782,6 +4949,12 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   --chip-on: #ecebe6;
   --chip-bg: #181817;
   box-shadow: inset 0 0 0.5rem rgba(236, 235, 230, 0.1);
+}
+
+.di-look-chip[data-look='oat'] {
+  --chip-on: #f0e6d8;
+  --chip-bg: #141311;
+  box-shadow: inset 0 0 0.5rem rgba(240, 230, 216, 0.1);
 }
 
 .di-cheer-chip[data-cheer='spark'] {
@@ -5017,6 +5190,65 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 
 .di-cheer-chip[data-cheer='medal'] i:nth-child(n + 4),
 .di-cheer-chip[data-cheer='sun'] i:nth-child(n + 3) {
+  display: none;
+}
+
+.di-cheer-chip[data-cheer='leaves'],
+.di-cheer-chip[data-cheer='lantern'] {
+  position: relative;
+}
+
+/* Two leaves, one tipped each way. */
+.di-cheer-chip[data-cheer='leaves'] i:nth-child(1),
+.di-cheer-chip[data-cheer='leaves'] i:nth-child(2) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.7rem;
+  height: 1rem;
+  border-radius: 0 100% 0 100%;
+}
+
+.di-cheer-chip[data-cheer='leaves'] i:nth-child(1) {
+  margin: -0.65rem 0 0 -0.7rem;
+  background: var(--di-on);
+  transform: rotate(-20deg);
+}
+
+.di-cheer-chip[data-cheer='leaves'] i:nth-child(2) {
+  margin: -0.35rem 0 0 0;
+  background: var(--di-miss);
+  transform: rotate(25deg);
+}
+
+/* A lantern: rounded body with a cap above and below. */
+.di-cheer-chip[data-cheer='lantern'] i:nth-child(1) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.95rem;
+  height: 1.15rem;
+  margin: -0.575rem 0 0 -0.475rem;
+  border-radius: 0.45rem;
+  background: var(--di-on);
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--di-on) 55%, transparent);
+}
+
+.di-cheer-chip[data-cheer='lantern'] i:nth-child(2) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5rem;
+  height: 1.5rem;
+  margin: -0.75rem 0 0 -0.25rem;
+  box-sizing: border-box;
+  border-top: 0.2rem solid var(--di-on-deep);
+  border-bottom: 0.2rem solid var(--di-on-deep);
+  background: none;
+}
+
+.di-cheer-chip[data-cheer='leaves'] i:nth-child(n + 3),
+.di-cheer-chip[data-cheer='lantern'] i:nth-child(n + 3) {
   display: none;
 }
 
@@ -6710,6 +6942,98 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   animation: di-sun-glow 1.4s ease-out forwards;
 }
 
+/* Leaves fly like confetti (same path) but rock as they fall. */
+.di-leaf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  color: var(--di-on);
+  opacity: 0;
+  animation: di-confetti 1.7s linear forwards;
+}
+
+.di-leaf svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.di-leaf-vein {
+  fill: none;
+  stroke: color-mix(in srgb, #000 30%, transparent);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.di-leaf[data-tone='gold'] {
+  color: var(--di-on-deep);
+}
+
+.di-leaf[data-tone='warm'] {
+  color: var(--di-miss);
+}
+
+.di-lantern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: calc(var(--sz) * 1.375);
+  margin: calc(var(--sz) * -0.69) 0 0 calc(var(--sz) / -2);
+  opacity: 0;
+  filter: drop-shadow(0 0 0.6rem color-mix(in srgb, var(--di-on) 55%, transparent));
+  animation: di-lantern 1.9s ease-out forwards;
+}
+
+.di-lantern svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.di-lantern-body {
+  fill: var(--di-on);
+}
+
+.di-lantern-cap {
+  fill: var(--di-on-deep);
+}
+
+.di-lantern-rib,
+.di-lantern-tassel {
+  fill: none;
+  stroke: var(--di-on-deep);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+@keyframes di-lantern {
+  0% {
+    transform: translateY(0.6rem) rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(0) rotate(calc(var(--swing) * 6deg)) scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(calc(var(--rise) * 0.35)) rotate(calc(var(--swing) * -5deg)) scale(1);
+  }
+  70% {
+    transform: translateY(calc(var(--rise) * 0.7)) rotate(calc(var(--swing) * 4deg)) scale(0.98);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(var(--rise)) rotate(0deg) scale(0.92);
+    opacity: 0;
+  }
+}
+
 @keyframes di-medal {
   0% {
     transform: translateY(-2.4rem) rotate(calc(var(--swing) * 16deg)) scale(0.6);
@@ -8138,6 +8462,8 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 .di-hall[data-reduce-motion][data-look='indigo']::after,
 .di-hall[data-reduce-motion][data-look='sky']::after,
 .di-hall[data-reduce-motion][data-look='orchid']::after,
+.di-hall[data-reduce-motion][data-look='maple']::after,
+.di-hall[data-reduce-motion][data-look='fig']::after,
 html[data-reduce-motion] .di-hall[data-look='glow']::after,
 html[data-reduce-motion] .di-hall[data-look='ember']::after,
 html[data-reduce-motion] .di-hall[data-look='frost']::after,
@@ -8150,7 +8476,9 @@ html[data-reduce-motion] .di-hall[data-look='wine']::after,
 html[data-reduce-motion] .di-hall[data-look='jade']::after,
 html[data-reduce-motion] .di-hall[data-look='indigo']::after,
 html[data-reduce-motion] .di-hall[data-look='sky']::after,
-html[data-reduce-motion] .di-hall[data-look='orchid']::after {
+html[data-reduce-motion] .di-hall[data-look='orchid']::after,
+html[data-reduce-motion] .di-hall[data-look='maple']::after,
+html[data-reduce-motion] .di-hall[data-look='fig']::after {
   animation: none;
 }
 
@@ -8167,7 +8495,9 @@ html[data-reduce-motion] .di-hall[data-look='orchid']::after {
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   :is(
     .di-face,
@@ -8193,7 +8523,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   :is(
     .di-face,
@@ -8222,7 +8554,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   :is(
     .di-face,
@@ -8248,7 +8582,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='jade'],
     [data-look='indigo'],
     [data-look='sky'],
-    [data-look='orchid']
+    [data-look='orchid'],
+    [data-look='maple'],
+    [data-look='fig'] 
   )
   :is(
     .di-face,

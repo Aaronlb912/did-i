@@ -63,7 +63,12 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('cheer', 'medal', 2, 0, '2026-10-23'), ('cheer', 'sun', 2, 0, '2026-10-23'),
   ('buddy', 'penguin', 5, 0, '2026-10-23'),
   ('look', 'sky', 2, 0, '2026-10-23'), ('look', 'orchid', 2, 0, '2026-10-23'),
-  ('look', 'chalk', 0, 30, '2026-10-23')
+  ('look', 'chalk', 0, 30, '2026-10-23'),
+  -- Drop 2026-11-06.
+  ('cheer', 'leaves', 2, 0, '2026-11-06'), ('cheer', 'lantern', 2, 0, '2026-11-06'),
+  ('buddy', 'fox', 5, 0, '2026-11-06'),
+  ('look', 'maple', 2, 0, '2026-11-06'), ('look', 'fig', 2, 0, '2026-11-06'),
+  ('look', 'oat', 0, 30, '2026-11-06')
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from;
 

@@ -32,6 +32,8 @@ const ALL_CHEERS = [
   { id: 'heart', gems: CHEER_GEMS, from: '2026-10-09' },
   { id: 'medal', gems: CHEER_GEMS, from: '2026-10-23' },
   { id: 'sun', gems: CHEER_GEMS, from: '2026-10-23' },
+  { id: 'leaves', gems: CHEER_GEMS, from: '2026-11-06' },
+  { id: 'lantern', gems: CHEER_GEMS, from: '2026-11-06' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -45,6 +47,7 @@ const ALL_BUDDIES = [
   { id: 'possum', gems: BUDDY_GEMS },
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
+  { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
 ]
 
 const ALL_LOOKS = [
@@ -67,6 +70,9 @@ const ALL_LOOKS = [
   { id: 'sky', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-23' },
   { id: 'orchid', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-10-23' },
   { id: 'chalk', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-10-23' },
+  { id: 'maple', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
+  { id: 'fig', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
+  { id: 'oat', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-06' },
 ]
 
 // Cheers that are never sold, only given out by hand as a gift (see gifts.sql).

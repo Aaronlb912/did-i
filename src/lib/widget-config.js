@@ -26,6 +26,9 @@ const LOOK_IDS = new Set([
   'sky',
   'orchid',
   'chalk',
+  'maple',
+  'fig',
+  'oat',
 ])
 
 export function readWidgetSettings() {
