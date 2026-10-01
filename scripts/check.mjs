@@ -659,6 +659,34 @@ test('a tag deleted on one phone stays deleted when an older phone syncs', () =>
   }
 })
 
+test('every item the shop sells is in the server gift catalog at the same price and date', () => {
+  // The server refuses a buy or gift of anything missing from gift_catalog, so a
+  // drop added to purse.js but not gifts.sql would fail on release day.
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const purse = readFileSync(path.join(root, 'src/lib/purse.js'), 'utf8')
+  const sql = readFileSync(path.join(root, 'supabase/gifts.sql'), 'utf8')
+  const price = { CHEER_GEMS: 2, BUDDY_GEMS: 5, LOOK_GEM_PRICE: 2, LOOK_COIN_PRICE: 30 }
+  for (const [name, n] of Object.entries(price)) {
+    assert.match(purse, new RegExp(`export const ${name} = ${n}\\b`), `${name} changed; update this test and gifts.sql`)
+  }
+  const value = (raw) => (raw in price ? price[raw] : Number(raw))
+  const rows = new Map()
+  for (const m of sql.matchAll(/\('(cheer|buddy|look)', '([a-z]+)', (\d+), (\d+), '([\d-]+)'\)/g)) {
+    rows.set(`${m[1]}:${m[2]}`, { gems: Number(m[3]), coins: Number(m[4]), from: m[5] })
+  }
+  for (const [list, kind] of [['ALL_CHEERS', 'cheer'], ['ALL_BUDDIES', 'buddy'], ['ALL_LOOKS', 'look']]) {
+    const block = purse.match(new RegExp(`const ${list} = \\[([\\s\\S]*?)\\n\\]`))[1]
+    for (const m of block.matchAll(/\{ id: '([a-z]+)'([^}]*)\}/g)) {
+      const gems = value((m[2].match(/gems: (\w+)/) || [0, '0'])[1])
+      const coins = value((m[2].match(/coins: (\w+)/) || [0, '0'])[1])
+      if (!gems && !coins) continue
+      const row = rows.get(`${kind}:${m[1]}`)
+      assert.ok(row, `${kind} ${m[1]} is sold but missing from gift_catalog in gifts.sql`)
+      assert.deepEqual(row, { gems, coins, from: (m[2].match(/from: '([\d-]+)'/) || [0, '2026-01-01'])[1] }, `${kind} ${m[1]}`)
+    }
+  }
+})
+
 test('the document that goes up carries no answers', () => {
   const shelf = { boards: [{ id: 'b', lamps: [], answers: [{ lampId: 'a' }] }] }
   const sent = shelfWithoutAnswers(shelf)
