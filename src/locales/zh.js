@@ -1616,7 +1616,7 @@ export const zh = {
   'web.beta.video': '21 秒了解 Did I',
   'web.beta.step1Kicker': '第 1 步',
   'web.beta.step1': '加入测试群组',
-  'web.beta.step1Note': '这是一个 Google 群组，只用来让 Play 知道你是测试者。不会发邮件。',
+  'web.beta.step1Note': '这只是让 Google Play 知道你在测试。放心，这不是邮件列表。',
   'web.beta.step1Button': '加入群组',
   'web.beta.step2Kicker': '第 2 步',
   'web.beta.step2': '在 Google Play 上加入',
