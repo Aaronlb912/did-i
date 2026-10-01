@@ -8,6 +8,12 @@ Over-the-air updates (`expo-updates`) start with build 56. After that, JS-only
 fixes go out with `npm run update:prod`; native changes still need a build
 (`docs/native-rebuild.md`).
 
+## After launch: Did we
+
+Not part of 1.1.0. Merge the `did-we` branch only after 1.1.0 is live in both
+stores. The widget line needs a new native build; the rest ships over the air.
+Before merging: a two-account run through `docs/did-we.md`.
+
 ## Needs a new build
 
 Batch these, then build both once: `npm run ios:build:store` and GitHub **android-apk**.
@@ -81,5 +87,5 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 **Website and legal**
 - [ ] `did-i.app` DNS on Vercel, env vars set (`docs/site.md`)
 - [ ] `VITE_LEGAL_EMAIL` set
-- [ ] Lawyer review of `scripts/legal-i18n.mjs`, including the phone number text
+- [ ] Lawyer review of the English `legal.*` text in `src/locales/en.js`, including the friend ID text
 - [ ] Spot-check new copy in languages other than English and Spanish

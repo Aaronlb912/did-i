@@ -67,6 +67,8 @@ export type DidITonightWidgetProps = {
   emptyLabel?: string
   openUri?: string
   buddyId?: string
+  // Did we, one line: "Did we · waiting on Sam". Medium and large only.
+  weLine?: string
   colors?: WidgetColors
 }
 
@@ -604,6 +606,20 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           {question}
           <Spacer />
           {buttons}
+          {!compact && String(props?.weLine || '').trim() ? (
+            <Text
+              modifiers={[
+                font({ size: 11, weight: 'semibold' }),
+                foregroundStyle(on),
+                multilineTextAlignment('center'),
+                lineLimit(1),
+                minimumScaleFactor(0.6),
+                frame({ maxWidth: 10000 }),
+              ]}
+            >
+              {String(props?.weLine || '').trim()}
+            </Text>
+          ) : null}
         </VStack>
         {buddyMark(buddyId)}
       </ZStack>

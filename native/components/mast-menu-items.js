@@ -2,7 +2,17 @@ import { showMainNavInMenu } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
 import { readRoute } from '../navigation/hash.js'
 
-export const PEOPLE_ON = new Set(['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent'])
+export const PEOPLE_ON = new Set([
+  '/people',
+  '/people/connect',
+  '/people/refer',
+  '/friends',
+  '/family',
+  '/inbox',
+  '/sent',
+  '/we',
+  '/we/new',
+])
 export const ADD_ON = new Set(['/add', '/hang'])
 export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
 
@@ -12,9 +22,11 @@ export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/
 // one tap back to Tonight from anywhere.
 // Inbox has no row of its own, its count folds into Friends and family's
 // badge. A badge never highlights a row; only where you are does.
-export function menuItems(showAdd, inbox, asks, signedIn) {
+// we: Did we asks plus shared questions waiting on your answer. Did we lives
+// on Friends and family, so its count folds into that row's badge.
+export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
   const path = readRoute().path
-  const waiting = signedIn ? inbox + asks : asks
+  const waiting = signedIn ? inbox + asks + we : asks
   const home = showMainNavInMenu(path)
     ? [{ key: 'home', path: '/tonight', label: t('nav.home'), on: false, icon: 'home', stroke: true }]
     : []

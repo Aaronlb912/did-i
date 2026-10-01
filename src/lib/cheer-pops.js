@@ -83,6 +83,7 @@ const CHEER_KINDS = [
   'flip',
   'confetti',
   'heart',
+  'launch',
   'medal',
   'sun',
 ]
@@ -102,6 +103,7 @@ const GAP_MS = {
   flip: 160,
   confetti: 110,
   heart: 150,
+  launch: 200,
   medal: 150,
   sun: 130,
 }
@@ -121,6 +123,7 @@ const BASE_HOLD = {
   flip: 700,
   confetti: 1750,
   heart: 1900,
+  launch: 2300,
   medal: 1850,
   sun: 1800,
 }
@@ -395,6 +398,61 @@ function heartBits(pop, stage) {
   return bits
 }
 
+// Launch (a gift, never sold): a rocket climbs on a smoke trail, then bursts
+// into stars. The first pop also shows the word "FIRST" in the middle of
+// its stars. Shapes are shared so web and phone draw the same rocket.
+export const ROCKET_VIEW = '0 0 24 32'
+export const ROCKET_BODY = 'M12 1 C16.5 5 17 11 17 18 L17 24 L7 24 L7 18 C7 11 7.5 5 12 1 Z'
+export const ROCKET_FINS = 'M7 16.5 L2.5 25 L7 24 Z M17 16.5 L21.5 25 L17 24 Z'
+export const ROCKET_FLAME = 'M9 25 L12 31 L15 25 Z'
+export const STAR_PATH = 'M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z'
+export const LAUNCH_FLY_MS = 820
+
+function launchBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const mul = stageMul(stage)
+  const rise = Math.min(6.2, (3.4 + level * 0.3) * mul)
+  const size = Math.min(2.4, 1.6 * Math.min(mul, 1.4))
+  const bits = [{ id: 'rocket', rocket: true, rise: `${(-rise).toFixed(2)}rem`, size: `${size.toFixed(2)}rem`, delay: '0ms' }]
+  for (let i = 0; i < 5; i += 1) {
+    bits.push({
+      id: `smoke-${i}`,
+      smoke: true,
+      x: `${((i % 2 ? 1 : -1) * 0.25).toFixed(2)}rem`,
+      y: `${(-rise * (i / 6)).toFixed(2)}rem`,
+      size: `${((0.7 + i * 0.12) * Math.min(mul, 1.4)).toFixed(2)}rem`,
+      delay: `${Math.round((LAUNCH_FLY_MS * i) / 6)}ms`,
+    })
+  }
+  const count = Math.min(12, 7 + level)
+  const reach = Math.min(4.2, (2.2 + level * 0.25) * mul)
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * Math.PI * 2 + (pop % 2) * 0.3
+    const far = reach * (0.8 + (i % 3) * 0.14)
+    bits.push({
+      id: `star-${i}`,
+      star: true,
+      oy: `${(-rise).toFixed(2)}rem`,
+      x: `${(Math.cos(angle) * far).toFixed(2)}rem`,
+      y: `${(Math.sin(angle) * far).toFixed(2)}rem`,
+      size: `${((0.8 + (i % 3) * 0.25) * Math.min(mul, 1.4)).toFixed(2)}rem`,
+      rot: `${(i % 2 ? 1 : -1) * (120 + ((i * 47) % 160))}deg`,
+      tone: CONFETTI_TONES[i % 3],
+      delay: `${LAUNCH_FLY_MS + (i % 4) * 30}ms`,
+    })
+  }
+  if (pop === 0) {
+    bits.push({
+      id: 'first',
+      launchWord: true,
+      oy: `${(-rise).toFixed(2)}rem`,
+      size: `${(1.5 * Math.min(mul, 1.35)).toFixed(2)}rem`,
+      delay: `${LAUNCH_FLY_MS + 40}ms`,
+    })
+  }
+  return bits
+}
+
 // Drops in on its ribbon, swings, settles, then a few glints wink around it.
 function medalBits(pop, stage) {
   const level = burstLevel(pop, stage)
@@ -462,6 +520,7 @@ const BURST_BUILDERS = {
   flip: flipBurstBits,
   confetti: confettiBits,
   heart: heartBits,
+  launch: launchBits,
   medal: medalBits,
   sun: sunBits,
 }

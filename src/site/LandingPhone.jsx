@@ -11,7 +11,7 @@ import { MastCogs } from '../lib/SettingsCog.jsx'
 import { t } from '../lib/i18n.js'
 import { usePrefs, useTheme } from '../lib/prefs.js'
 import { normalizePurse } from '../lib/purse.js'
-import { boardDate, faceReadyTonight, formatBoardDate, recentPeriodKeys } from '../lib/recurrence.js'
+import { boardDate, faceReadyTonight, recentPeriodKeys } from '../lib/recurrence.js'
 import { rowKey, taggedDue } from '../lib/tags.js'
 import { useReduceMotion } from '../lib/useReduceMotion.js'
 
@@ -33,6 +33,13 @@ const DEMO_CHIP_KEYS = [
   'web.landing.chip3',
 ]
 
+// The tag shown under each pill, like the phone app's two-line pills.
+const DEMO_TAG_KEYS = [
+  'web.landing.tag1',
+  'web.landing.tag2',
+  'web.landing.tag3',
+]
+
 function withDemoCopy(book) {
   return {
     ...book,
@@ -44,13 +51,28 @@ function withDemoCopy(book) {
   }
 }
 
+// The phone app's bottom tab bar: Home (moon and stars) and Questions (checklist).
 function LandingAppNav() {
   usePrefs()
   return (
-    <nav className="di-appnav is-live" data-at="0" data-tabs="2" aria-hidden="true">
-      <i className="di-appnav-pip" />
-      <a href="#/" className="is-on" tabIndex={-1}>{t('nav.home')}</a>
-      <a href="#/lamps" tabIndex={-1}>{t('nav.questions')}</a>
+    <nav className="di-land-tabs" aria-hidden="true">
+      <span className="di-land-tab is-on">
+        <i>
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5Z" fill="currentColor" />
+            <path d="M17 3.5v3M15.5 5h3M20.5 8.5v2M19.5 9.5h2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </i>
+        {t('nav.home')}
+      </span>
+      <span className="di-land-tab">
+        <i>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3.5 6.5l1.5 1.5 3-3M3.5 13.5l1.5 1.5 3-3M11 7h9.5M11 14h9.5M11 20h9.5M4.5 20h2" />
+          </svg>
+        </i>
+        {t('nav.questions')}
+      </span>
     </nav>
   )
 }
@@ -186,7 +208,6 @@ export function LandingPhone() {
                   <button className="di-title" type="button" tabIndex={-1}>
                     {t('tonight.didI')}
                   </button>
-                  <p className="di-date">{formatBoardDate(dateIso)}</p>
                   <div className="di-mast-actions">
                     <PurseLine purse={purse} className="di-mast-purse" gemsLink />
                     <MastCogs showAdd />
@@ -222,12 +243,18 @@ export function LandingPhone() {
                               <span className="di-jewel-ring">
                                 <span className="di-jewel-glass" />
                               </span>
-                              <span className="di-jewel-label">{shortLabel(row.lamp)}</span>
+                              <span className="di-jewel-label">
+                                {shortLabel(row.lamp)}
+                                <i className="di-lamp-tag">
+                                  {t(DEMO_TAG_KEYS[book.lamps.findIndex((lamp) => lamp.id === row.lamp.id)] || DEMO_TAG_KEYS[0])}
+                                </i>
+                              </span>
                             </button>
                           </li>
                         )
                       })}
                     </ul>
+                    <span className="di-land-all">≡ {t('tags.all')}</span>
                   </div>
                 ) : null}
 

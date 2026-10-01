@@ -243,8 +243,10 @@ const styles = StyleSheet.create({
   copy: { flex: 1, minWidth: 0, gap: 2 },
   label: { fontFamily: fonts.ui, fontSize: 16, lineHeight: 20 },
   sub: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
-  end: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
-  val: { fontFamily: fonts.ui, fontSize: 15, maxWidth: 140 },
+  // The value gives way before the label does: an email shortens with "…"
+  // instead of squeezing "Account" into two lines on a narrow phone.
+  end: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '45%' },
+  val: { fontFamily: fonts.ui, fontSize: 15, maxWidth: 140, flexShrink: 1 },
   chev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24, marginTop: -2 },
   check: { fontFamily: fonts.uiBold, fontSize: 18 },
   fieldRow: {

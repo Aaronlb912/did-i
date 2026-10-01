@@ -3,8 +3,10 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
+import { WeAsks } from './DidWe.jsx'
 import { t, tMiss } from './i18n.js'
-import { answerSend, listInbox, personName, refreshPeople } from './people.js'
+import { repeatLabel } from './send-repeat.js'
+import { answerSend, listInbox, personName, refreshPeople, reportSend } from './people.js'
 import { fireCheer } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCard } from './set-bits.jsx'
@@ -16,6 +18,7 @@ export function Inbox({ book, now, onKeep }) {
   const [rows, setRows] = useState([])
   const [ready, setReady] = useState(false)
   const [miss, setMiss] = useState('')
+  const [reportId, setReportId] = useState('')
   const online = useOnline()
 
   const load = useCallback(async () => {
@@ -37,7 +40,17 @@ export function Inbox({ book, now, onKeep }) {
     const { miss: why } = await answerSend(row.id, keep)
     if (why) return setMiss(why)
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
-    if (keep && row.kind === 'todo' && onKeep) onKeep(row.question)
+    if (keep && row.kind === 'todo' && onKeep) onKeep(row)
+    return load()
+  }
+
+  // Two taps: Report, then Report it? Filed with the question and taken out
+  // of the inbox.
+  async function report(row) {
+    if (reportId !== row.id) return setReportId(row.id)
+    setReportId('')
+    const { miss: why } = await reportSend(row.id)
+    setMiss(why || 'we.reported')
     return load()
   }
 
@@ -76,6 +89,7 @@ export function Inbox({ book, now, onKeep }) {
     return shell(
       <>
         <h2 className="di-page-title">{t('inbox.emptyTitle')}</h2>
+        <WeAsks />
         <p className="di-set-note">{t('inbox.emptyBody')}</p>
         <p className="di-set-note">{t('inbox.autoNote')}</p>
         <div className="di-hang-actions">
@@ -90,6 +104,7 @@ export function Inbox({ book, now, onKeep }) {
   return shell(
     <>
       <h2 className="di-page-title">{t('inbox.title')}</h2>
+      <WeAsks />
       <p className="di-set-note">{t('inbox.hint')}</p>
       <p className="di-set-note">{t('inbox.autoNote')}</p>
       <SetCard>
@@ -99,6 +114,7 @@ export function Inbox({ book, now, onKeep }) {
               <strong>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</strong>
               <em>
                 {t('inbox.from', { name: personName(row.person) || t('people.someone') })}
+                {repeatLabel(row.repeat) ? ` · ${repeatLabel(row.repeat)}` : ''}
                 {row.note ? ` · ${row.note}` : ''}
               </em>
             </span>
@@ -106,9 +122,14 @@ export function Inbox({ book, now, onKeep }) {
               {row.kind === 'cheer' ? t('inbox.thanks') : t('inbox.keep')}
             </button>
             {row.kind === 'todo' ? (
-              <button className="di-key" type="button" onClick={() => answer(row, false)}>
-                {t('inbox.pass')}
-              </button>
+              <>
+                <button className="di-key" type="button" onClick={() => answer(row, false)}>
+                  {t('inbox.pass')}
+                </button>
+                <button className="di-key" type="button" onClick={() => report(row)}>
+                  {reportId === row.id ? t('we.reportSure') : t('we.report')}
+                </button>
+              </>
             ) : null}
           </div>
         ))}

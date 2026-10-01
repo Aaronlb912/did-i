@@ -28,6 +28,8 @@ function blankPrefs() {
     widgetLookId: 'lime',
     widgetOpenOnly: false,
     pingsOff: [],
+    // Pushes say who, not what (push_private in supabase/did-we-guard.sql).
+    pingsPrivate: false,
   }
 }
 
@@ -86,6 +88,7 @@ function cleanPrefs(raw) {
   }
   if (raw?.widgetOpenOnly === true) next.widgetOpenOnly = true
   if (Array.isArray(raw?.pingsOff)) next.pingsOff = PING_KINDS.filter((kind) => raw.pingsOff.includes(kind))
+  if (raw?.pingsPrivate === true) next.pingsPrivate = true
   return next
 }
 

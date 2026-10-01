@@ -34,6 +34,64 @@ First IAP ships with the **1.0** app version submission. IAP review screenshot c
 
 Description: lead with `about.p1`, then landing bullets `web.landing.b1`–`b4` and `about.p4` for sync.
 
+## 1.2 listing text (App Store and Google Play)
+
+Paste when 1.2 (Did we) ships. Same text for both stores. Keep it plain; no
+em dashes. Do not paste before 1.2 is live: it describes Did we.
+
+**Promotional text (App Store, 170 max):**
+Did I lock the door? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
+
+**Short description (Google Play, 80 max):**
+One question at a time. Swipe did or nope. Share with friends and family.
+
+**Keywords (App Store, 100 max):**
+habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,together,widget,gifts
+
+**Description:**
+
+Did I lock the back door? Did I take my pills? Did I feed the cat?
+
+Did I asks you one question at a time, at night, on your phone. Swipe right if you did. Swipe left if you didn't. That's the whole answer for tonight.
+
+TONIGHT
+- One question at a time, not a whole to-do list.
+- Home shows what's still open. Everything else waits for another night.
+- Streaks stay honest: a nope is a nope.
+
+YOUR QUESTIONS
+- Every night, some nights, once, by a date, or every few days.
+- A reminder at the time you pick.
+- Folders and topics keep a long list tidy.
+- Home screen widgets on iPhone and Android.
+
+FRIENDS AND FAMILY
+- Did you: ask a friend "Did you call Grandma back?", once or every night. It waits in their inbox until they keep it.
+- Did we: answer a question together. "Did we walk the dog?" Pick friends or family, pick when it counts (everyone, anyone, most, or take turns), and keep a shared streak.
+- Share a family: one tag everyone can add to.
+- Cheer each other on when someone finishes.
+
+MAKE IT YOURS
+- Earn coins every night and from shared streaks. Get gems each week.
+- Looks, cheers and buddies in the shop.
+- Send a look, cheer or buddy to a friend or family member as a gift, with a short note.
+
+SAFE AND PRIVATE
+- Add friends by their 12-digit friend ID or an invite link. Nobody can browse for you.
+- Report and block anyone. Blocking takes you off anything you share.
+- Hide what notifications say, so questions stay off your lock screen.
+- Works without an account. Sign in to sync across phones.
+
+**What's new in 1.2:**
+Did we: questions you answer together with friends or family, with a shared streak. One Add screen: tap "Did I" to switch to Did we or Did you. A Did you can repeat every night. Tap the faces on a Did we to see everyone and their buddy. Send gifts: buy a look, cheer or buddy for a friend or family member, with a short note. They see it the next time they open the app. New privacy choices: hide what notifications say, and report and block.
+
+**App Privacy labels for 1.2:** no new data types. A buddy shown to people
+on a shared card is Other User Content (already declared). Reports stay under
+Customer Support. A gift note is also Other User Content.
+
+**Google Play Data safety for 1.2:** same types; names, buddies and answers
+shown on shared cards are data shared with other users, as before. A gift and its note go to the person it is for, the same way.
+
 ## App Privacy (nutrition labels)
 
 Privacy policy URL: `https://did-i.app/privacy` (also on iOS 1.0 listing).

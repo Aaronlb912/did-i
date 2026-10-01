@@ -1,4 +1,11 @@
-// Keys still identical to English (runtime would show English).
+// Strings still in English in each language (the app would show English).
+//   npm run locales:report            counts
+//   npm run locales:report -- -v      lists the keys
+//   npm run locales:report -- --save  rewrites scripts/locale-english.json, the
+//                                     list npm test allows to stay English
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { en } from '../src/locales/en.js'
 import { es } from '../src/locales/es.js'
 import { fr } from '../src/locales/fr.js'
@@ -8,22 +15,24 @@ import { it } from '../src/locales/it.js'
 import { zh } from '../src/locales/zh.js'
 import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
-import { keysSameAsEn, SHIP_LOCALES } from './locale-shared.mjs'
+import { englishLeft } from './locale-shared.mjs'
 
 const packs = { es, fr, de, pt, it, zh, ja, ko }
 const enKeys = Object.keys(en)
-
 const args = new Set(process.argv.slice(2))
 const verbose = args.has('--verbose') || args.has('-v')
-const legal = args.has('--legal')
+const save = args.has('--save')
+const listed = {}
 
 for (const [code, pack] of Object.entries(packs)) {
-  const ship = SHIP_LOCALES.includes(code)
-  let same = keysSameAsEn(pack, en, { skipLegal: !legal, shipOnly: ship })
-  console.log(
-    `${code}: ${same.length} / ${enKeys.length} same as English${ship ? ' (ship gaps)' : ''}`,
-  )
-  if (verbose && same.length) {
-    for (const key of same) console.log(`  ${key}`)
-  }
+  const same = englishLeft(pack, en)
+  listed[code] = same
+  console.log(`${code}: ${same.length} / ${enKeys.length} still English`)
+  if (verbose) for (const key of same) console.log(`  ${key}`)
+}
+
+if (save) {
+  const out = path.join(path.dirname(fileURLToPath(import.meta.url)), 'locale-english.json')
+  fs.writeFileSync(out, `${JSON.stringify(listed, null, 2)}\n`)
+  console.log(`wrote ${path.relative(process.cwd(), out)}`)
 }

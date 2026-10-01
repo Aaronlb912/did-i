@@ -10,7 +10,7 @@ import { usePrefs } from './prefs.js'
 const HOME_ON = ['/', '/home', '/tonight', '/later']
 const QUESTIONS_ON = ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas']
 const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
-const PEOPLE_ON = ['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent']
+const PEOPLE_ON = ['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent', '/we', '/we/new', '/you']
 const ADD_ON = ['/add', '/hang']
 
 const ICONS = {
@@ -134,7 +134,10 @@ function countLabel(n) {
 export function MastMenu({ showAdd = true }) {
   usePrefs()
   const account = useAccount()
-  const { inbox, asks } = usePeoplePulse(account.user)
+  const pulse = usePeoplePulse(account.user)
+  const inbox = pulse.inbox
+  // A gift not opened yet counts too, until sync opens it.
+  const asks = pulse.asks + (pulse.gifts || 0)
   const waiting = inbox + asks
   const menuId = useId()
   const [open, setOpen] = useState(false)

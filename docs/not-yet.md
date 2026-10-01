@@ -3,7 +3,24 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-09-27.
+Last worked through 2026-09-30.
+
+## Did we (branch `did-we`, after launch)
+
+Shared questions two or more people answer together. Built on the branch,
+database live, not merged. What is left is listed in `docs/did-we.md`
+under "Not done yet": no two-account run yet, and the web Tonight card uses
+buttons where the phone swipes.
+
+## Found in the 2026-09-30 security check
+
+- **Gem items bought while signed out stay on that phone only.** Since gem
+  items moved to the server (`buy_with_gems`, `gem_cosmetics` in `gifts.sql`),
+  signing in replaces the phone's gem items with the account's list, the same
+  way signing in already replaced signed-out gems. Nobody signed in has lost
+  anything: existing shelves were copied to the server once.
+- **TestFlight gem buys credit real gems** (the receipt check accepts Apple's
+  sandbox so App Review can buy). Fine for testers; revisit if it gets abused.
 
 ## Found in the 2026-09-26 people pass
 
@@ -110,12 +127,12 @@ where somebody is a nuisance.
 
 1. Confirm sign-in codes arrive in the inbox (SMTP is configured; see above).
 2. Point `did-i.app` DNS at Vercel; import repo and set env vars (see `docs/site.md`).
-3. Set `VITE_LEGAL_EMAIL` and have a lawyer review `scripts/legal-i18n.mjs`.
+3. Set `VITE_LEGAL_EMAIL` and have a lawyer review the English `legal.*` text in `src/locales/en.js`.
 4. Privacy and terms at `/privacy` and `/terms` (and in the app). Disclosures
    at sign-in and gem checkout are already in copy.
 5. When you are ready for paid gems: store products + `gem-iap` secrets per `docs/iap.md`.
 6. `npx expo prebuild` and install on a phone; walk social, settings, and push with a second account.
-7. Phone-first friends (24 Sep 2026): with two real accounts, save a number on each, ask by number, accept. Also try a number already on the other account ("That number is already on another account."). Server rules are proven on the live DB; the full two-account round trip is not. The legal text for phone numbers changed; include it in the lawyer review.
+7. Friend IDs (30 Sep 2026): with two real accounts, add one by the other's friend ID, accept, and check the push reads "Name wants to be friends." Server rules are proven on the live DB; the full two-account round trip is not. Phone numbers were removed from the app and the database; the legal text changed, so include it in the lawyer review.
 
 ## Native Android vs localhost web
 

@@ -37,7 +37,7 @@ import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
-import { bulkLamps, undoBulkLamps } from '../src/lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -48,9 +48,8 @@ import {
   inviteGemsDue,
 } from '../src/lib/people.js'
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
-import { cleanPhone, looksLikePhone } from '../src/lib/people.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
-import { validateCoinItem } from '../src/lib/wallet.js'
+import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { t } from '../src/lib/i18n.js'
@@ -58,6 +57,7 @@ import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
   clearLocalShelf,
+  dropBook,
   enterLand,
   hallEmpty,
   mergeSameTitles,
@@ -89,8 +89,8 @@ import { it } from '../src/locales/it.js'
 import { zh } from '../src/locales/zh.js'
 import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
-import { additionsEn, additionsEs } from './i18n-additions.mjs'
-import { isLegalKey, mayMatchEnglish } from './locale-shared.mjs'
+import { englishLeft, isLegalKey, mayMatchEnglish, wrongScript } from './locale-shared.mjs'
+import englishOk from './locale-english.json' with { type: 'json' }
 import { writePrefs } from '../src/lib/prefs.js'
 import { nightProgress } from '../src/lib/night-progress.js'
 import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
@@ -485,7 +485,7 @@ test('native styles do not spread the removed absoluteFillObject', () => {
 
 test('native cheer draws every bit the pop model makes', () => {
   const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/components/CheerBurst.jsx'), 'utf8')
-  const meta = new Set(['id', 'delay', 'size', 'rot', 'len', 'tone', 'side', 'y', 'x', 'fat', 'reach', 'tall', 'screen', 'fall', 'width', 'drift', 'rise', 'scale', 'hop', 'hops', 'from', 'span', 'swing', 'rays', 'turn'])
+  const meta = new Set(['id', 'delay', 'size', 'rot', 'len', 'tone', 'side', 'y', 'x', 'fat', 'reach', 'tall', 'screen', 'fall', 'width', 'drift', 'rise', 'scale', 'hop', 'hops', 'from', 'span', 'oy', 'swing', 'rays', 'turn'])
   const flags = new Set()
   for (const kind of cheerKinds()) {
     for (const stage of [1, 5]) {
@@ -623,6 +623,42 @@ test('two phones combine instead of overwriting', () => {
   assert.equal(book.gems, 7, 'and per column, not per phone')
 })
 
+test('a question deleted on one phone stays deleted when an older phone syncs', () => {
+  const older = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('x'), lamp('y')], answers: [{ lampId: 'y', periodKey: '2026-09-29', status: 'yes' }] }] }
+  // This phone deletes y, one alone and one in bulk, then syncs with the older copy, either way round.
+  const one = { ...older, boards: [takeDown(older.boards[0], lamp('y'), new Date('2026-09-30T10:00:00Z'))] }
+  const bulk = { ...older, boards: bulkLamps(older.boards, [{ boardId: 'b1', lampId: 'y' }], 'delete') }
+  for (const fresh of [one, bulk]) {
+    for (const merged of [mergeShelves(fresh, older, '2026-09-30', '2026-09-29'), mergeShelves(older, fresh, '2026-09-29', '2026-09-30')]) {
+      assert.deepEqual(merged.boards[0].lamps.map((item) => item.id), ['x'])
+      assert.equal(merged.boards[0].answers.length, 0)
+    }
+  }
+  // Putting it back later wins over the earlier delete, even against a phone that only saw the delete.
+  const back = { ...one, boards: [hangInto(one.boards[0], lamp('y'))] }
+  const merged = mergeShelves(one, back, '2026-09-30T11:00', '2026-09-30T12:00')
+  assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['x', 'y'])
+  // Moving a question to another tag only takes it off the first one.
+  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [] }] }
+  const both = mergeShelves(moved, older, '2026-09-30', '2026-09-29')
+  assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+})
+
+test('a tag deleted on one phone stays deleted when an older phone syncs', () => {
+  const older = {
+    currentId: 'b1',
+    boards: [
+      { id: 'b1', title: 'Home', lamps: [lamp('x')], answers: [] },
+      { id: 'b2', title: 'Work', lamps: [lamp('y')], answers: [] },
+    ],
+  }
+  const fresh = normalizeShelf(dropBook(older, 'b2'))
+  for (const merged of [mergeShelves(fresh, older, '2026-09-30', '2026-09-29'), mergeShelves(older, fresh, '2026-09-29', '2026-09-30')]) {
+    assert.deepEqual(merged.boards.map((book) => book.id), ['b1'])
+    assert.equal(merged.goneTags.length, 1, 'and the delete carries on to the next phone')
+  }
+})
+
 test('the document that goes up carries no answers', () => {
   const shelf = { boards: [{ id: 'b', lamps: [], answers: [{ lampId: 'a' }] }] }
   const sent = shelfWithoutAnswers(shelf)
@@ -673,11 +709,26 @@ test('a family code is six and an invite code is ten', () => {
   assert.equal(cleanInvite('D93AQ5LBS4').length, 10)
 })
 
-test('a phone number folds to e164 the same way the database folds it', () => {
-  assert.equal(cleanPhone('(555) 123-4567'), '+15551234567')
-  assert.equal(cleanPhone('1 555 123 4567'), '+15551234567')
-  assert.equal(cleanPhone('123'), '')
-  assert.ok(looksLikePhone('5551234567'))
+test('gem items added by editing the phone go away on sync; free and coin items stay', () => {
+  const edited = {
+    gems: 50,
+    looks: ['lime', 'ink', 'plum', 'rose'],
+    lookOn: 'rose',
+    cheers: ['lime', 'rain', 'tape'],
+    cheerOn: 'tape',
+    buddies: ['ant', 'cat'],
+    buddyOn: 'cat',
+  }
+  const book = normalizePurse(applyGemOwnedToBook(edited, { gems: 2, looks: ['plum'], cheers: ['rain'], buddies: [] }))
+  assert.equal(book.gems, 2)
+  assert.deepEqual([...book.looks].sort(), ['ink', 'lime', 'plum'])
+  assert.deepEqual([...book.cheers].sort(), ['lime', 'rain'])
+  assert.deepEqual(book.buddies, [FREE_BUDDY])
+  assert.equal(book.lookOn, 'lime', 'a look you do not own is taken off')
+  assert.equal(book.buddyOn, '')
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(sync.includes('applyGemOwnedToShelf(written, gemBag)'), 'sync copies the server list')
 })
 
 test('a gem lands once per week when a night clears', () => {
@@ -812,51 +863,24 @@ test('every supported locale has the same keys as English', () => {
   }
 })
 
-test('locales:refresh leaves the checked-in locale files untouched', () => {
-  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const localeDir = path.join(root, 'src/locales')
-  const gapDir = path.join(root, 'scripts/locale-gaps')
-  const before = new Map()
-  for (const dir of [localeDir, gapDir]) {
-    for (const name of readdirSync(dir)) {
-      const full = path.join(dir, name)
-      before.set(full, readFileSync(full, 'utf8'))
-    }
-  }
-  try {
-    const merge = spawnSync(process.execPath, [path.join(root, 'scripts/merge-i18n-additions.mjs')], {
-      cwd: root,
-      encoding: 'utf8',
-    })
-    assert.equal(merge.status, 0, merge.stderr || merge.stdout)
-    const sync = spawnSync(process.execPath, [path.join(root, 'scripts/sync-locales.mjs')], {
-      cwd: root,
-      encoding: 'utf8',
-    })
-    assert.equal(sync.status, 0, sync.stderr || sync.stdout)
-    const changed = [...before.keys()]
-      .filter((full) => full.startsWith(localeDir))
-      .filter((full) => readFileSync(full, 'utf8') !== before.get(full))
-      .map((full) => path.relative(root, full))
-    assert.deepEqual(
-      changed,
-      [],
-      `npm run locales:refresh changed ${changed.join(', ')}. Update the additions/legal/web source scripts (i18n-additions.mjs, legal-i18n.mjs, web-marketing.mjs, web-marketing-locales.mjs, locale-gaps) so a refresh reproduces the checked-in translations exactly.`,
-    )
-  } finally {
-    for (const [full, content] of before) writeFileSync(full, content)
+// A new string must be translated in every language in the same change.
+// scripts/locale-english.json lists the older ones still in English; it only
+// shrinks (npm run locales:report -- --save after translating some).
+test('no new strings are left in English in other languages', () => {
+  const packs = { fr, de, pt, it, zh, ja, ko }
+  for (const [code, pack] of Object.entries(packs)) {
+    const allowed = new Set(englishOk[code] || [])
+    const fresh = englishLeft(pack, en).filter((key) => !allowed.has(key))
+    assert.deepEqual(fresh, [], `${code} has new English text; translate it in src/locales/${code}.js`)
   }
 })
 
-test('i18n additions ship with Spanish', () => {
-  for (const key of Object.keys(additionsEn)) {
-    assert.ok(key in additionsEs, `additionsEs missing ${key}`)
-    if (mayMatchEnglish(key)) continue
-    assert.notEqual(
-      additionsEs[key],
-      additionsEn[key],
-      `additionsEs same as English: ${key}`,
-    )
+test('every locale is written in its own script', () => {
+  for (const [code, pack] of Object.entries({ es, fr, de, pt, it, zh, ja, ko })) {
+    for (const [key, value] of Object.entries(pack)) {
+      const why = wrongScript(code, value, key)
+      assert.equal(why, '', `${code} ${key} ${why}: ${String(value).slice(0, 60)}`)
+    }
   }
 })
 
@@ -1736,23 +1760,24 @@ test('every component a screen draws is defined or imported', () => {
   assert.deepEqual(missing, [])
 })
 
-test('adding friends needs your own phone number, one per account, and the legal text says so', () => {
+test('friends add you by friend ID, and the app never asks for a phone number', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const read = (file) => readFileSync(path.join(root, file), 'utf8')
-  const sql = read('supabase/phone-friends.sql')
-  assert.ok(sql.includes('create unique index if not exists profiles_phone_key'), 'one number per account')
-  assert.ok(sql.includes("raise exception 'phone taken'"), 'a taken number says so')
-  assert.ok(sql.includes('create trigger need_phone_to_ask'), 'the server refuses a request without a number')
-  assert.match(sql, /find_phone[\s\S]*?raise exception 'need phone'/, 'lookup needs your number too')
-  for (const file of ['native/screens/social.jsx', 'src/lib/PeopleConnect.jsx']) {
+  const ids = read('supabase/friend-ids.sql')
+  assert.ok(ids.includes('drop trigger if exists need_phone_to_ask'), 'a request no longer needs a number')
+  assert.ok(ids.includes('drop column if exists phone'), 'saved numbers are deleted')
+  assert.ok(ids.includes('friend_id_misses'), 'wrong IDs are capped')
+  for (const file of ['native/screens/social.jsx', 'src/lib/PeopleConnect.jsx', 'native/screens/more.jsx', 'src/lib/Account.jsx']) {
     const src = read(file)
-    assert.ok(src.includes("t('people.phoneFirstBody')"), `${file} explains why`)
-    assert.ok(src.includes("myPhone ? ("), `${file} shows the add field only with a number`)
+    assert.ok(!/savePhone|askFriend\(|phone-pad|inputMode="tel"/.test(src), `${file} has no phone number field`)
   }
-  assert.ok(/phone number, if you add one/.test(en['legal.privacy.account.body']))
-  assert.ok(/find each other by phone number/.test(en['legal.privacy.social.body']))
-  assert.ok(/Only add a number that is yours/.test(en['legal.terms.account.body']))
-  assert.ok(/teléfono/.test(es['legal.privacy.social.body']))
+  for (const file of ['native/screens/social.jsx', 'src/lib/PeopleConnect.jsx']) {
+    assert.ok(read(file).includes('askByFriendId('), `${file} adds by friend ID`)
+  }
+  assert.ok(/friend ID/.test(en['legal.privacy.account.body']))
+  assert.ok(!/phone number/.test(en['legal.privacy.account.body'] + en['legal.privacy.social.body'] + en['legal.terms.account.body']))
+  assert.ok(/Friend IDs/.test(en['legal.privacy.social.body']))
+  assert.ok(/ID de amigo/.test(es['legal.privacy.social.body']))
 })
 
 test('the last cloud save reads as a local time, not a raw timestamp', () => {
@@ -2477,7 +2502,46 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfHeat([book], clock), 5, 'the room stays at five')
   assert.equal(shelfStreak([book], clock), 8)
   const tonightOpen = { ...book, answers: book.answers.slice(1) }
-  assert.equal(shelfStreak([tonightOpen], clock), 0, 'tonight counts only once it is clear')
+  assert.equal(shelfStreak([tonightOpen], clock), 7, 'tonight counts only once it is clear, and open is not a break')
+  const lastNightOpen = { ...book, answers: book.answers.filter((a) => a.periodKey !== nights[1]) }
+  assert.equal(shelfStreak([lastNightOpen], clock), 1, 'a missed night before tonight is a break')
+})
+
+test('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
+  const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
+  localStorage.removeItem('did-i-streak-seen')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const lamp = (id, createdOn = '2026-09-27') => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn })
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const nights = ['2026-09-28', '2026-09-29', '2026-09-30']
+  const done = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a'), lamp('b')], answers: nights.flatMap((n) => [yes('a', n), yes('b', n)]) }
+  assert.equal(maybeStreakMiss([done], clock), null, 'all done')
+  const added = { ...done, lamps: [...done.lamps, lamp('c', '2026-09-30')] }
+  assert.equal(maybeStreakMiss([added], clock), null, 'a new question after finishing is not a break')
+  const undone = { ...done, answers: done.answers.slice(0, -1) }
+  assert.equal(maybeStreakMiss([undone], clock), null, 'undoing tonight is not a break')
+  const missed = { ...done, answers: done.answers.filter((a) => a.periodKey !== '2026-09-29') }
+  const miss = maybeStreakMiss([missed], clock)
+  assert.deepEqual(miss, { kind: 'miss', was: 1, dateIso: '2026-09-29' }, 'a missed night after a streak is a break')
+  markStreakSeen('miss', miss.dateIso)
+  assert.equal(maybeStreakMiss([missed], clock), null, 'told once per missed night')
+  localStorage.removeItem('did-i-streak-seen')
+})
+
+test('the 9 PM warning fires while tonight is open on a live streak, and friends see the real streak', async () => {
+  const { streakRiskFire } = await import('../src/lib/streak-risk.js')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-09-20' })
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const past = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29']
+  const open = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a')], answers: past.map((n) => yes('a', n)) }
+  const fire = streakRiskFire(open, clock)
+  assert.ok(fire, 'a streak with tonight open gets the warning')
+  assert.equal(new Date(fire.at).getHours(), 21)
+  const finished = { ...open, answers: [...open.answers, yes('a', '2026-09-30')] }
+  assert.equal(streakRiskFire(finished, clock), null, 'no warning once tonight is done')
+  assert.equal(shelfStreak([open], clock), 6, 'friends see 6 while tonight is open, not 0 and not capped at 5')
+  assert.equal(shelfStreak([finished], clock), 7)
 })
 
 test('the done card says what tomorrow night holds and from when', () => {

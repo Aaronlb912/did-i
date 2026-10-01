@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { t, tMiss } from './i18n.js'
 import { personName, sendDidI } from './people.js'
 import { SetCard, SetField, SetSheet } from './set-bits.jsx'
+import { Pick } from './DidWe.jsx'
+import { repeatFrom } from './send-repeat.js'
 
 /** Write a did you for a friend or someone in the family. */
 export function SendSheet({ person, family = false, still, onClose, onSent }) {
@@ -9,6 +11,8 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
   const [note, setNote] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
+  const [cadence, setCadence] = useState('once')
+  const [days, setDays] = useState([])
   const name = personName(person) || t('people.someone')
 
   async function send() {
@@ -16,8 +20,12 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
       setMiss(t('people.sendBlank'))
       return
     }
+    if (cadence === 'weekly' && !days.length) {
+      setMiss(t('we.missDays'))
+      return
+    }
     setBusy(true)
-    const { miss: why } = await sendDidI(person.user_id, question, note)
+    const { miss: why } = await sendDidI(person.user_id, question, note, undefined, repeatFrom(cadence, days))
     setBusy(false)
     if (why === 'already') {
       setMiss(t('people.sendAlready'))
@@ -50,6 +58,25 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
           onChange={(event) => setNote(event.target.value)}
         />
       </SetCard>
+      <Pick
+        label={t('we.when')}
+        value={cadence}
+        onPick={setCadence}
+        items={[
+          { id: 'once', label: t('hang.once') },
+          { id: 'daily', label: t('we.daily') },
+          { id: 'weekly', label: t('we.someDays') },
+        ]}
+      />
+      {cadence === 'weekly' ? (
+        <Pick
+          multi
+          label={t('we.someDays')}
+          value={days}
+          onPick={(next) => setDays([...next].sort())}
+          items={[0, 1, 2, 3, 4, 5, 6].map((day) => ({ id: day, label: t(`we.day.${day}`) }))}
+        />
+      ) : null}
       {miss ? (
         <p className="di-miss" role="alert">
           {miss}

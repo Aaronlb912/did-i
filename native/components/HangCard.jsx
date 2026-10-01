@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, Text } from 'react-native'
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -27,6 +27,12 @@ export const HangCard = forwardRef(function HangCard(
     onBlur,
     autoFocus,
     colors,
+    // A Did we card leads with "Did we" instead.
+    leadText,
+    placeholder,
+    // Tapping the first words picks Did I, Did we or Did you.
+    onLeadPress,
+    leadColor,
   },
   inputRef,
 ) {
@@ -89,21 +95,25 @@ export const HangCard = forwardRef(function HangCard(
       ]}
     >
       {landed ? (
-        <Animated.Text
-          accessibilityLiveRegion="polite"
-          style={[
-            faceCardStyles.stampDid,
-            styles.stamp,
-            {
-              color: colors.on,
-              borderColor: colors.onDeep,
-              opacity: slam,
-              transform: [{ scale: stampScale }, { rotate: '-6deg' }],
-            },
-          ]}
-        >
-          {stamp}
-        </Animated.Text>
+        // Centered over the card, so it reads as a stamp on the question.
+        <View pointerEvents="none" style={styles.stampLayer}>
+          <Animated.Text
+            accessibilityLiveRegion="polite"
+            style={[
+              faceCardStyles.stampDid,
+              styles.stamp,
+              {
+                color: colors.on,
+                borderColor: colors.onDeep,
+                backgroundColor: colors.panel,
+                opacity: slam,
+                transform: [{ scale: stampScale }, { rotate: '-6deg' }],
+              },
+            ]}
+          >
+            {stamp}
+          </Animated.Text>
+        </View>
       ) : null}
       <Animated.Text
         numberOfLines={1}
@@ -111,8 +121,25 @@ export const HangCard = forwardRef(function HangCard(
       >
         {tag}
       </Animated.Text>
-      {lead ? (
-        <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
+      {lead && onLeadPress && !landed ? (
+        // The first words are a button: Did I, Did we or Did you.
+        <Pressable
+          onPress={onLeadPress}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('lead.change', { lead: leadText || t('tonight.didI') })}
+          style={styles.leadHit}
+        >
+          <WaveLead
+            text={leadText || t('tonight.didI')}
+            wave={wave}
+            colors={leadColor ? { ...colors, on: leadColor } : colors}
+            style={faceCardStyles.title}
+          />
+          <Text style={[styles.leadChev, { color: leadColor || colors.on }]}>▾</Text>
+        </Pressable>
+      ) : lead ? (
+        <WaveLead text={leadText || t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
       ) : null}
       <AppTextInput
         colors={colors}
@@ -123,8 +150,8 @@ export const HangCard = forwardRef(function HangCard(
         onBlur={onBlur}
         editable={!landed}
         autoFocus={autoFocus}
-        placeholder={lead ? t('first.ownHint') : t('hang.questionPh')}
-        accessibilityLabel={lead ? t('tonight.didI') : t('hang.question')}
+        placeholder={placeholder || (lead ? t('first.ownHint') : t('hang.questionPh'))}
+        accessibilityLabel={lead ? leadText || t('tonight.didI') : t('hang.question')}
         autoCapitalize={lead ? 'none' : 'sentences'}
         returnKeyType="done"
         submitBehavior="blurAndSubmit"
@@ -147,15 +174,29 @@ export const HangCard = forwardRef(function HangCard(
 
 const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
+  leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
+  leadChev: { fontSize: 26, marginTop: 2 },
   // The underline says "you can type here"; it lights up while typing.
   blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },
+  stampLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
   stamp: {
+    position: 'relative',
+    top: undefined,
     left: undefined,
-    right: 16,
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    fontSize: 24,
+    borderWidth: 2.5,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     overflow: 'hidden',
   },
   meta: {

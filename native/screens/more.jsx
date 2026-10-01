@@ -8,7 +8,8 @@ import {
   Text,
   View,
 } from 'react-native'
-import { ACHIEVEMENTS, markText, streakLength } from '../../src/lib/achievements.js'
+import { shelfMarks, streakLength } from '../../src/lib/achievements.js'
+import { MarksGrid } from '../components/MarksGrid.jsx'
 import {
   deleteAccount,
   deviceKey,
@@ -51,7 +52,6 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { playClick, shareShelf } from '../../src/lib/native.js'
-import { formatPhone, readMine, savePhone } from '../../src/lib/people.js'
 import {
   checkPin,
   clearPin,
@@ -181,6 +181,26 @@ export function HelpScreen() {
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
       <Meta colors={colors}>{t('help.streakP')}</Meta>
       <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.questions')}</Text>
+      <Meta colors={colors}>{t('help.questionsP')}</Meta>
+      <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
+      <Meta colors={colors}>{t('help.pingsP')}</Meta>
+      <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
+      <Meta colors={colors}>{t('help.widgetP')}</Meta>
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.people')}</Text>
+      <Meta colors={colors}>{t('help.peopleP')}</Meta>
+      <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.we')}</Text>
+      <Meta colors={colors}>{t('help.weP1')}</Meta>
+      <Meta colors={colors}>{t('help.weP2')}</Meta>
+      <KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.cheers')}</Text>
+      <Meta colors={colors}>{t('help.cheersP')}</Meta>
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
+      <Meta colors={colors}>{t('help.coinsP')}</Meta>
+      <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
       <Meta colors={colors}>{t('help.phoneP')}</Meta>
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
@@ -243,33 +263,20 @@ export function LaterScreen({ book, now }) {
   )
 }
 
-export function MarksScreen({ book, now }) {
+export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const heat = hallHeat(book, clock)
-  const have = new Set(book?.unlocked || [])
+  const have = shelfMarks(boards.length ? boards : [book])
 
   return (
     <ScreenShell book={book} title={t('marks.title')} colors={colors}>
-      <Meta colors={colors}>{t('marks.streak', { n: heat })}</Meta>
       {book?.quietMode ? (
         <Meta colors={colors}>{t('marks.hidden')}</Meta>
       ) : (
-        ACHIEVEMENTS.map((item) => {
-          const on = have.has(item.id)
-          return (
-            <View key={item.id} style={[styles.markRow, { borderColor: colors.line }]}>
-              <Text style={[styles.markName, { color: colors.ink }]}>
-                {on ? t(markText(item.id, 'name')) : t('marks.notYet')}
-              </Text>
-              <Text style={[styles.markLine, { color: colors.inkSoft }]}>
-                {on ? t(markText(item.id, 'line')) : t(markText(item.id, 'name'))}
-              </Text>
-            </View>
-          )
-        })
+        <MarksGrid have={have} colors={colors} />
       )}
-      <DidButton colors={colors} label={t('marks.home')} onPress={() => goHash('/tonight')} />
+      <Meta colors={colors}>{t('marks.streak', { n: heat })}</Meta>
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -774,7 +781,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 // Pushes come from the server, which reads these switches from the synced prefs.
 const PUSH_KINDS = new Set(['sends', 'cheers', 'friends'])
 
-function PingKinds({ colors }) {
+function PingKinds({ colors, on }) {
   const prefs = usePrefs()
   const [miss, setMiss] = useState('')
 
@@ -795,9 +802,21 @@ function PingKinds({ colors }) {
     }
   }
 
+  async function flipPrivate() {
+    const was = readPrefs().pingsPrivate
+    writePrefs({ pingsPrivate: !was })
+    setMiss('')
+    const saved = await saveProfile({ prefs: readPrefs() })
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ pingsPrivate: was })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
   return (
     <>
       <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
+      {on ? null : <SetNote colors={colors}>{t('pings.offNote')}</SetNote>}
       <SetCard colors={colors}>
         {PING_KINDS.map((kind, i) => (
           <SetSwitch
@@ -812,6 +831,16 @@ function PingKinds({ colors }) {
         ))}
       </SetCard>
       <SetNote colors={colors}>{t('pings.kindsNote')}</SetNote>
+      <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          label={t('pings.private')}
+          sub={t('pings.privateSub')}
+          on={prefs.pingsPrivate}
+          last
+          onPress={flipPrivate}
+        />
+      </SetCard>
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
   )
@@ -828,11 +857,15 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
     <ScreenShell title={t('pings.title')} colors={colors}>
       <Meta colors={colors}>{t('pings.body')}</Meta>
       {onAskPings ? (
-        <DidButton colors={colors} label={on ? t('pings.on') : t(labelKey)} onPress={onAskPings} />
+        <DidButton
+          colors={colors}
+          label={on ? t('pings.on') : labelKey === 'pings.state.blocked' ? t('pings.openSettings') : t(labelKey)}
+          onPress={onAskPings}
+        />
       ) : (
         <Meta colors={colors}>{t('pings.noBrowser')}</Meta>
       )}
-      <PingKinds colors={colors} />
+      <PingKinds colors={colors} on={on} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
@@ -954,9 +987,6 @@ function AccountSignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
-  const [phoneDraft, setPhoneDraft] = useState('')
-  const [savedPhone, setSavedPhone] = useState('')
-  const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [sure, setSure] = useState(null)
   const here = deviceKey()
@@ -973,38 +1003,10 @@ function AccountSignedIn({ book, email, onChange }) {
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
     })
-    readMine().then((row) => {
-      if (alive && row?.phone) {
-        setPhoneDraft(row.phone)
-        setSavedPhone(row.phone)
-      }
-    })
     return () => {
       alive = false
     }
   }, [book?.keeperName, sync.at])
-
-  async function savePhoneField(phone) {
-    setPhoneMiss('')
-    const { miss, phone: kept } = await savePhone(phone)
-    if (miss === 'short') {
-      setPhoneMiss(t('people.phoneShort'))
-      return false
-    }
-    if (miss === 'taken') {
-      setPhoneMiss(t('people.phoneTaken'))
-      return false
-    }
-    if (miss) {
-      setPhoneMiss(tMiss(miss))
-      return false
-    }
-    if (kept) {
-      setPhoneDraft(kept)
-      setSavedPhone(kept)
-    }
-    return true
-  }
 
   const syncNote =
     sync.how === 'busy'
@@ -1042,21 +1044,6 @@ function AccountSignedIn({ book, email, onChange }) {
           saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
         }}
       />
-      {savedPhone ? (
-        <Row colors={colors} label={t('account.phone')} note={formatPhone(savedPhone)} />
-      ) : (
-        <SavableField
-          colors={colors}
-          label={t('account.phone')}
-          value={phoneDraft}
-          savedValue={savedPhone}
-          onChangeText={setPhoneDraft}
-          keyboardType="phone-pad"
-          onSave={savePhoneField}
-        />
-      )}
-      {phoneMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{phoneMiss}</Text> : null}
-      <Meta colors={colors}>{savedPhone ? t('account.phoneOn') : t('account.phoneHint')}</Meta>
       <Row colors={colors} label={t('account.look')} note={lookName} onPress={() => goHash('/kit')} />
       <Row colors={colors} label={t('account.cheer')} note={cheerName} onPress={() => goHash('/kit')} />
 
@@ -1177,9 +1164,6 @@ const styles = StyleSheet.create({
   firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
-  markRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4, marginBottom: 8 },
-  markName: { fontFamily: fonts.uiBold, fontSize: 15 },
-  markLine: { fontFamily: fonts.ui, fontSize: 13 },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   miss: { fontFamily: fonts.ui, fontSize: 14 },

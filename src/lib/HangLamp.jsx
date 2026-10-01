@@ -32,6 +32,7 @@ export function HangLamp({
   onTagTitle,
   onPause,
   onRemove,
+  head,
 }) {
   usePrefs()
   const questionRef = useRef(null)
@@ -42,6 +43,7 @@ export function HangLamp({
     lamp,
     seed,
     start,
+    words: head ? start : '',
     tagTitle,
     onTagTitle,
   })
@@ -77,7 +79,8 @@ export function HangLamp({
 
   return (
     <form className="di-hang di-plate-loose" onSubmit={submit}>
-      <p className="di-hang-kicker">{hang.editing ? t('hang.edit') : t('hang.new')}</p>
+      {/* head: the Did I / Did we / Did you switch, given the question so far. */}
+      {head ? head(hang.draft.question) : <p className="di-hang-kicker">{hang.editing ? t('hang.edit') : t('hang.new')}</p>}
       <div className="di-hang-preview" aria-hidden="true">
         <p className="di-face-plate">{String(hang.tagTitle || '').trim() || book?.title || ''}</p>
         <p className="di-hang-preview-q">{hang.draft.question.trim() || t('hang.questionPh')}</p>

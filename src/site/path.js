@@ -2,7 +2,7 @@
 
 import { webAppPublic } from './web-app.js'
 
-const MARKETING = new Set(['/', '/privacy', '/terms', '/download', '/press'])
+const MARKETING = new Set(['/', '/privacy', '/terms', '/download', '/press', '/beta'])
 
 // /i/CODE is an invite link page (src/site/Invite.jsx).
 function isMarketing(path) {

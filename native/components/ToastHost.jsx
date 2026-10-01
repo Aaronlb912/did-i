@@ -13,7 +13,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
-import { markText } from '../../src/lib/achievements.js'
+import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { goHash } from '../navigation/hash.js'
@@ -198,12 +198,19 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       goHash('/kit')
       leave(0, FROM_Y)
     }
+  } else if (item.kind === 'we') {
+    // A Did we someone else finished: opens its card.
+    press = () => {
+      goHash('/we', { id: item.cardId })
+      leave(0, FROM_Y)
+    }
   }
 
   const aimAt = useCallback((rel) => onAim(item, rel, wrapWidth.current), [item, onAim])
   let label
   if (item.kind === 'undo') label = `${item.label} ${item.hint}`
   else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
+  else if (item.kind === 'we') label = item.text
 
   return (
     <GestureDetector gesture={pan}>
@@ -222,12 +229,15 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
           accessibilityLiveRegion="polite"
           style={[
             styles.toast,
-            { backgroundColor: colors.panel2, borderColor: item.kind === 'error' ? colors.miss : colors.line },
+            {
+              backgroundColor: colors.panel2,
+              borderColor: item.kind === 'error' ? colors.miss : item.kind === 'we' ? colors.we || colors.line : colors.line,
+            },
           ]}
         >
           {item.kind === 'undo' ? <UndoBody item={item} colors={colors} reduce={reduce} /> : null}
           {item.kind === 'mark' ? <MarkBody item={item} colors={colors} onOk={() => leave(0, FROM_Y)} /> : null}
-          {item.kind === 'error' ? <ErrorBody item={item} colors={colors} /> : null}
+          {item.kind === 'error' || item.kind === 'we' ? <ErrorBody item={item} colors={colors} /> : null}
           {item.kind === 'kit' ? (
             <KitBody item={item} colors={colors} reduce={reduce} wrapRef={wrapRef} onAim={aimAt} landed={landed} />
           ) : null}
@@ -301,12 +311,15 @@ function MarkBody({ item, colors, onOk }) {
       <View style={styles.copy}>
         <Text style={[styles.kicker, { color: colors.on }]}>{t('marks.new')}</Text>
         <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
-          {t(markText(mark.id, 'name'))}
+          {markLabel(mark.id, 'name')}
         </Text>
         {mark.id ? (
           <Text style={[styles.line, { color: colors.inkSoft }]} numberOfLines={2}>
-            {t(markText(mark.id, 'line'))}
+            {markLabel(mark.id, 'line')}
           </Text>
+        ) : null}
+        {mark.more ? (
+          <Text style={[styles.line, { color: colors.inkDim }]}>{t('marks.more', { n: mark.more })}</Text>
         ) : null}
       </View>
       <KeyButton label={t('marks.ok')} colors={colors} onPress={onOk} />

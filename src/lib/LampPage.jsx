@@ -5,7 +5,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { LampDetail } from './LampDetail.jsx'
 import { LampDeleteConfirm } from './LampManage.jsx'
 import { commitBook } from './achievements.js'
-import { takeDown, toggleArchive } from './board-ops.js'
+import { hangInto, takeDown, toggleArchive } from './board-ops.js'
 import { findBookHoldingLamp } from './board-shelf.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -68,6 +68,24 @@ export function LampPage({ book, boards = [], onChange, now, lampId }) {
         onArchive={(item) => change(toggleArchive(lampBook, item))}
         onRemove={() => setConfirmGone(true)}
       />
+      {lamp.optional ? (
+        // Added for you: it only counts once you choose it.
+        <div className="di-page di-set">
+          <p className="di-set-note">{t('lamp.optionalLine')}</p>
+          <div className="di-hang-actions">
+            <button
+              className="di-key"
+              type="button"
+              onClick={() => {
+                const { optional: _optional, ...chosen } = lamp
+                change(hangInto(lampBook, chosen, true))
+              }}
+            >
+              {t('lamp.makeCount')}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </BoardShell>
   )
 }

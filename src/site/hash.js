@@ -37,6 +37,8 @@ const ROUTES = new Set([
   '/shop/buddies',
   '/gems',
   '/kit',
+  '/gift',
+  '/gifts',
   '/account',
   '/people',
   '/people/connect',
@@ -45,6 +47,9 @@ const ROUTES = new Set([
   '/family',
   '/inbox',
   '/sent',
+  '/we',
+  '/we/new',
+  '/you',
 ])
 
 export function parseHash() {

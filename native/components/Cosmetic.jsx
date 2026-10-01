@@ -14,6 +14,8 @@ import { isGemLook } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { gemLookChipMeta } from '../lib/gem-look-tone.js'
 import { BuddyArt, BuddyPlain } from './BuddyArt.jsx'
+import { svgParts } from '../lib/svg-parts.js'
+import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from '../../src/lib/cheer-pops.js'
 import { Slot } from './Slot.jsx'
 import { fonts } from '../theme.js'
 
@@ -574,6 +576,23 @@ function HeartChip({ on }) {
   )
 }
 
+function LaunchChip({ on, onDeep, ink }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle } = parts
+  const h = rem(1.5)
+  return (
+    <View style={styles.center}>
+      <Svg width={h * 0.75} height={h} viewBox={ROCKET_VIEW}>
+        <Path d={ROCKET_FLAME} fill={onDeep} />
+        <Path d={ROCKET_FINS} fill={on} />
+        <Path d={ROCKET_BODY} fill={ink} />
+        <Circle cx={12} cy={12.5} r={2.4} fill={on} />
+      </Svg>
+    </View>
+  )
+}
+
 function MedalChip({ on, onDeep, late }) {
   const strap = { position: 'absolute', top: rem(0.32), width: rem(0.22), height: rem(0.8), borderRadius: 1 }
   const disc = rem(0.95)
@@ -691,6 +710,9 @@ export function CheerChip({ id, stage = 1, colors }) {
       break
     case 'heart':
       art = <HeartChip on={on} />
+      break
+    case 'launch':
+      art = <LaunchChip on={on} onDeep={onDeep} ink={ink} />
       break
     case 'medal':
       art = <MedalChip on={on} onDeep={onDeep} late={colors?.late || '#6fb7ff'} />

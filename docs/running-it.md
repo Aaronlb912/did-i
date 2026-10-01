@@ -12,24 +12,23 @@ db:apply:all` uses this same list (`scripts/apply-all-sql.mjs`).
 2. `supabase/people.sql` friends, families, invites, handles
 3. `supabase/handle-safe.sql` safe handle generation (no-op if people
    already ran with it)
-4. `supabase/phone-friends.sql` phone lookup for friend requests
-5. `supabase/hardening.sql` indexes, policies, write caps
-6. `supabase/rls-subselect.sql` policy helpers without row-by-row
+4. `supabase/hardening.sql` indexes, policies, write caps
+5. `supabase/rls-subselect.sql` policy helpers without row-by-row
    subqueries
-7. `supabase/invite-guard.sql` referral codes, gem cap, one code per
+6. `supabase/invite-guard.sql` referral codes, gem cap, one code per
    person
-8. `supabase/answers.sql` the answer log, and the migration off the
+7. `supabase/answers.sql` the answer log, and the migration off the
    one-document shelf
-9. `supabase/blocks.sql` blocking and reporting
-10. `supabase/push.sql` push tokens and the nudge queue
-11. `supabase/tonight.sql` `delete_me()`, plus tables from the removed public list
-12. `supabase/dit-board.sql` unused since the public list was removed
-13. `supabase/gems-social.sql` cheer sends, gifts
-14. `supabase/gem-purchases.sql` real-money gem packs
-15. `supabase/wallet.sql` server-owned gem balance
-16. `supabase/waitlist.sql` landing-page waitlist
-17. `supabase/friend-cheers.sql` five stored cheers for one gem
-18. `supabase/auto-add.sql` family did yous and allowed friends go straight onto tonight
+8. `supabase/blocks.sql` blocking and reporting
+9. `supabase/push.sql` push tokens and the nudge queue
+10. `supabase/tonight.sql` `delete_me()`, plus tables from the removed public list
+11. `supabase/dit-board.sql` unused since the public list was removed
+12. `supabase/gems-social.sql` cheer sends, gifts
+13. `supabase/gem-purchases.sql` real-money gem packs
+14. `supabase/wallet.sql` server-owned gem balance
+15. `supabase/waitlist.sql` landing-page waitlist
+16. `supabase/friend-cheers.sql` five stored cheers for one gem
+17. `supabase/auto-add.sql` family did yous and allowed friends go straight onto tonight
 
 After any change to any of them, run `supabase/audit.sql`. It has to come
 back with no rows.

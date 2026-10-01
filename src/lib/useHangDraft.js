@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   blankLamp,
+  didQuestion,
   emptyBoard,
   lampNotifyOn,
   lampPriority,
@@ -26,13 +27,15 @@ export function bookForTag(boards, book, name) {
   return { ...emptyBoard(), title, keeperName: book.keeperName }
 }
 
-function initialDraft({ clock, lamp, seed, start, dayFoldHour }) {
+// words: typed on Did we or Did you before switching to Did I (web).
+function initialDraft({ clock, lamp, seed, start, words }) {
   if (lamp) return { ...lamp }
   if (seed) return { ...seed }
   const pick = STARTERS.find(
     (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
   )
-  return pick ? { ...blankLamp(clock), ...pick } : blankLamp(clock)
+  if (pick) return { ...blankLamp(clock), ...pick }
+  return words ? { ...blankLamp(clock), question: didQuestion(words) } : blankLamp(clock)
 }
 
 export function useHangDraft({
@@ -42,13 +45,14 @@ export function useHangDraft({
   lamp = null,
   seed = null,
   start = '',
+  words = '',
   tagTitle: controlledTag = '',
   onTagTitle,
 }) {
   const clock = now || new Date()
   const editing = Boolean(lamp)
   const [draft, setDraft] = useState(() =>
-    initialDraft({ clock, lamp, seed, start, dayFoldHour: book.dayFoldHour }),
+    initialDraft({ clock, lamp, seed, start, words }),
   )
   const [tagTitleLocal, setTagTitleLocal] = useState(controlledTag)
   const tagTitle = onTagTitle ? controlledTag : tagTitleLocal

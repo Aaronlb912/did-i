@@ -80,6 +80,7 @@ export function SwipeCard({
   onNope,
   colors,
   buddy,
+  onEdit,
   blockDid = false,
   blockNope = false,
   panelStyle,
@@ -109,7 +110,7 @@ export function SwipeCard({
   const tone = gemLook ? gemLookTone(gemLook, theme) : null
   const line = tone?.ring || colors?.line || '#2b3140'
   const glowStyle = gemLook ? gemGlowHostStyle(gemLook, theme) : null
-  const face = { kicker, title, stampDid, stampNope, buddy, children }
+  const face = { kicker, title, stampDid, stampNope, buddy, onEdit, children }
 
   const answer = useCallback(
     (way, from) => {
@@ -123,10 +124,11 @@ export function SwipeCard({
         done?.()
         return
       }
-      // A Did's cheer bursts from the card that was answered.
+      // A Did's cheer bursts from where the card sits, not where the finger
+      // let go of it, so it plays centred instead of off to the Did side.
       if (way > 0) {
         stack.measureInWindow((x, y, width, height) => {
-          if (width > 0) aimCheer(x + from.x + width / 2, y + from.y + height / 2)
+          if (width > 0) aimCheer(x + width / 2, y + height / 2)
         })
       }
       // Hand the card to the fly layer and save in the same update, so the

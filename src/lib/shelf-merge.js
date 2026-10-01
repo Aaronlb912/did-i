@@ -1,4 +1,4 @@
-import { normalizeBook } from './board-json.js'
+import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
@@ -60,10 +60,15 @@ export function mergeBooks(winner, loser) {
   const win = normalizeBook(winner)
   const lose = normalizeBook(loser)
 
+  // A question taken off on either phone stays off, unless it was put back
+  // later than that. Without this, the older phone's copy brings it back.
+  const gone = normalizeGone([...win.gone, ...lose.gone])
+  const dead = new Set(gone.filter((item) => !item.back).map((item) => item.id))
+
   const lampsWin = byId(win.lamps)
-  const lamps = [...win.lamps]
+  const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
   for (const lamp of lose.lamps) {
-    if (!lampsWin.has(lamp.id)) lamps.push(lamp)
+    if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 
   const answers = new Map()
@@ -77,7 +82,8 @@ export function mergeBooks(winner, loser) {
   return normalizeBook({
     ...win,
     lamps,
-    answers: [...answers.values()],
+    answers: [...answers.values()].filter((answer) => !dead.has(answer.lampId)),
+    gone,
     unlocked: unionList(win.unlocked, lose.unlocked),
     opens: unionList(win.opens, lose.opens).sort(),
     ...foldPurse(win, lose),
@@ -95,15 +101,19 @@ export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '
   const winner = normalizeShelf(localWins ? local : remote)
   const loser = normalizeShelf(localWins ? remote : local)
 
+  // Same rule for tags: deleted on either phone stays deleted.
+  const goneTags = normalizeGone([...(winner.goneTags || []), ...(loser.goneTags || [])])
+  const deadTags = new Set(goneTags.filter((item) => !item.back).map((item) => item.id))
+
   const loserById = byId(loser.boards)
-  const boards = winner.boards.map((book) =>
-    loserById.has(book.id) ? mergeBooks(book, loserById.get(book.id)) : book,
-  )
+  const boards = winner.boards
+    .filter((book) => !deadTags.has(book.id))
+    .map((book) => (loserById.has(book.id) ? mergeBooks(book, loserById.get(book.id)) : book))
   const winnerIds = new Set(winner.boards.map((book) => book.id))
   for (const book of loser.boards) {
-    if (!winnerIds.has(book.id)) boards.push(book)
+    if (!winnerIds.has(book.id) && !deadTags.has(book.id)) boards.push(book)
   }
 
   // normalizeShelf folds tags that ended up with the same name on both phones.
-  return normalizeShelf({ currentId: winner.currentId, boards })
+  return normalizeShelf({ ...winner, currentId: winner.currentId, boards, goneTags })
 }

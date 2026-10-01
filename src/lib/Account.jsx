@@ -23,7 +23,6 @@ import { uses24h } from './prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
-import { formatPhone, readMine, savePhone } from './people.js'
 import { AuthAppleSignIn } from './AuthAppleSignIn.jsx'
 import { AuthGoogleSignIn } from './AuthGoogleSignIn.jsx'
 import { useAuthSignIn } from './useAuthSignIn.js'
@@ -200,7 +199,7 @@ function SignedOut({ on }) {
           />
         ) : null}
 
-        {auth.step === 'code' ? (
+        {auth.step === 'code' && !auth.miss ? (
           <p className="di-auth-card-note">{t('account.sent', { email: auth.email })}</p>
         ) : null}
         {auth.step === 'reviewer' ? (
@@ -279,9 +278,6 @@ function SignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
   const [nameDraft, setNameDraft] = useState(book.keeperName || '')
-  const [phoneDraft, setPhoneDraft] = useState('')
-  const [savedPhone, setSavedPhone] = useState('')
-  const [phoneMiss, setPhoneMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [note, setNote] = useState(null)
   const here = deviceKey()
@@ -294,38 +290,10 @@ function SignedIn({ book, email, onChange }) {
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book.keeperName) setNameDraft(row.display_name)
     })
-    readMine().then((row) => {
-      if (alive && row?.phone) {
-        setPhoneDraft(row.phone)
-        setSavedPhone(row.phone)
-      }
-    })
     return () => {
       alive = false
     }
   }, [book.keeperName, sync.at])
-
-  async function savePhoneField(phone) {
-    setPhoneMiss('')
-    const { miss, phone: kept } = await savePhone(phone)
-    if (miss === 'short') {
-      setPhoneMiss(t('people.phoneShort'))
-      return false
-    }
-    if (miss === 'taken') {
-      setPhoneMiss(t('people.phoneTaken'))
-      return false
-    }
-    if (miss) {
-      setPhoneMiss(tMiss(miss))
-      return false
-    }
-    if (kept) {
-      setPhoneDraft(kept)
-      setSavedPhone(kept)
-    }
-    return true
-  }
 
   const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
   const cheerName = CHEERS.find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
@@ -370,31 +338,9 @@ function SignedIn({ book, email, onChange }) {
             saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
           }}
         />
-        {savedPhone ? (
-          <SetRow label={t('account.phone')} value={formatPhone(savedPhone)} />
-        ) : (
-          <SavableSetField
-            label={t('account.phone')}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={phoneDraft}
-            savedValue={savedPhone}
-            placeholder={t('people.addPh')}
-            onChange={(event) => setPhoneDraft(event.target.value)}
-            onSave={savePhoneField}
-          />
-        )}
         <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/kit')} />
         <SetRow label={t('account.cheer')} value={cheerName} chevron onClick={() => goHash('/kit')} />
       </SetCard>
-      {phoneMiss ? (
-        <p className="di-miss" role="alert">
-          {phoneMiss}
-        </p>
-      ) : null}
-      <p className="di-set-note">{t('account.phoneHint')}</p>
-
       <SetCap>{t('account.devices')}</SetCap>
       <SetCard>
         {devices.length ? (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
+import { buyWithGems } from './coin-shop.js'
 import { BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
 import { BuyConfirm, ShopPurse, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
@@ -64,7 +65,7 @@ export function ShopBuddies({ book, onChange, now }) {
             setConfirm({
               title: t(buddyText(item.id, 'name')),
               body: t('shop.buyBuddyBody', { cost }),
-              go: () => take(buyBuddy(book, item.id)),
+              go: async () => take(await buyWithGems(book, 'buddy', item.id)),
             })
           }}
         >

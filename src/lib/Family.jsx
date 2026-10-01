@@ -246,6 +246,9 @@ export function Family({ book, onChange, now, familyId }) {
                       {t('friends.cheerUse')}
                     </button>
                   ) : null}
+                  <button className="di-key" type="button" onClick={() => goHash('/gift', { id: row.user_id })}>
+                    {t('gift.button')}
+                  </button>
                 </>
               )
             }

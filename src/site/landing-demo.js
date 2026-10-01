@@ -21,8 +21,8 @@ export function landingDemoBook() {
   const born = addDaysIso(today, -1)
   const door = lamp({
     id: 'di-land-door',
-    question: 'Did I lock the back door?',
-    short: 'Door',
+    question: 'Did I water the plants?',
+    short: 'Plants',
     kind: 'house',
     cadence: 'daily',
     slot: 'whenever',
@@ -30,8 +30,8 @@ export function landingDemoBook() {
   })
   const pills = lamp({
     id: 'di-land-pills',
-    question: 'Did I take my pills?',
-    short: 'Pills',
+    question: 'Did I text Mom back?',
+    short: 'Mom',
     kind: 'pills',
     cadence: 'daily',
     slot: 'evening',
@@ -39,8 +39,8 @@ export function landingDemoBook() {
   })
   const cat = lamp({
     id: 'di-land-cat',
-    question: 'Did I feed the cat?',
-    short: 'Cat',
+    question: 'Did I drink some water?',
+    short: 'Water',
     kind: 'house',
     cadence: 'daily',
     slot: 'whenever',

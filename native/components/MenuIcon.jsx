@@ -23,6 +23,7 @@ const ICONS = {
   pause: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 9v6M14 9v6',
   play: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 8.5v7l5.5-3.5-5.5-3.5Z',
   trash: 'M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v5M14 11v5',
+  pen: 'M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4',
   note: 'M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM8.5 8h7M8.5 12h7M8.5 16h4',
   folder: 'M3 7a2 2 0 0 1 2-2h4.5l2 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
   person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20c0-4 3.5-6 8-6s8 2 8 6',
@@ -38,6 +39,8 @@ const ICONS = {
   help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM9.3 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.5 2.2-2.5 4.1M12 17.2h.01',
   logout: 'M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9',
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',
+  // Did we: two rings, linked. Draw with stroke.
+  together: 'M4 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0ZM10 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z',
 }
 
 export function MenuIcon({ name, color, size = 18, stroke = false }) {
