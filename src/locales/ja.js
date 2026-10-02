@@ -2103,7 +2103,7 @@ export const ja = {
   'friendId.title': 'フレンドID',
   'friendId.yours': 'あなたのフレンドID',
   'friendId.share': 'IDを共有',
-  'friendId.shareText': 'Did I で友だちになろう。私のフレンドIDは {id} です。https://did-i.app',
+  'friendId.shareText': 'Did I で友だちになろう。私のフレンドIDは {id} です。{link}',
   'friendId.shareSub': '共有すると友だちが追加できます。',
   'friendId.add': '相手のフレンドID',
   'friendId.find': '検索',

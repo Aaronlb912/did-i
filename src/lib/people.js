@@ -213,6 +213,11 @@ export async function listFriends() {
   if (error || !data) return empty
 
   const who = await peopleByIds(db)
+  // known_people only covers friends and family; people still asking come from here.
+  if (data.some((row) => row.to_id === user.id && row.state !== 'ok')) {
+    const { data: askers } = await db.rpc('friend_askers')
+    for (const row of askers || []) if (!who.has(row.user_id)) who.set(row.user_id, row)
+  }
   const friends = []
   const asked = []
   const sent = []

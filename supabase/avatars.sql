@@ -104,3 +104,26 @@ $$;
 
 revoke all on function public.known_people() from public, anon;
 grant execute on function public.known_people() to authenticated;
+
+-- Name and photo of people waiting on your yes. Only rows asked of you,
+-- and nothing else about them (no streak), until you say yes.
+create or replace function public.friend_askers()
+returns table (user_id uuid, handle text, display_name text, avatar_url text)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select p.user_id, p.handle, p.display_name, nullif(p.avatar_url, '')
+  from public.friend_links l
+  join public.profiles p on p.user_id = l.from_id
+  where l.to_id = (select auth.uid()) and l.state <> 'ok'
+    and not exists (
+      select 1 from public.blocks b
+      where (b.blocker = (select auth.uid()) and b.blocked = p.user_id)
+         or (b.blocker = p.user_id and b.blocked = (select auth.uid()))
+    );
+$$;
+
+revoke all on function public.friend_askers() from public, anon;
+grant execute on function public.friend_askers() to authenticated;

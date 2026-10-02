@@ -112,6 +112,8 @@ function ready() {
   return navigationRef.isReady()
 }
 
+let swapping = false
+
 function go(route) {
   if (!ready()) {
     pending = route
@@ -137,7 +139,8 @@ function go(route) {
     if (at < routes.length - 1) navigationRef.dispatch(StackActions.pop(routes.length - 1 - at))
     return
   }
-  navigationRef.dispatch(StackActions.push(route.path, paramsOf(route)))
+  const move = swapping && routes.length > 1 ? StackActions.replace : StackActions.push
+  navigationRef.dispatch(move(route.path, paramsOf(route)))
 }
 
 /** A goHash that came before the stack was mounted runs once it is. */
@@ -307,5 +310,15 @@ export function goHash(path, extras = '') {
     go(current)
   } catch {
     // The screen already moved. A navigator reject must not freeze the tap.
+  }
+}
+
+/** Go to path in place of this screen, so back skips it (a form that is done). */
+export function swapHash(path, extras) {
+  swapping = true
+  try {
+    goHash(path, extras)
+  } finally {
+    swapping = false
   }
 }

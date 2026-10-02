@@ -52,6 +52,7 @@ import {
   takeBack,
   unblockPerson,
   unsendAsk,
+  usePeoplePulse,
 } from '../../src/lib/people.js'
 import {
   FRIEND_CHEER_CAP,
@@ -300,7 +301,10 @@ function Tile({ label, value, note, lit, onPress, colors }) {
         },
       ]}
     >
-      <Text style={[styles.tileLabel, { color: lit ? colors.on : colors.inkDim }]}>{label}</Text>
+      <View style={styles.tileTop}>
+        <Text style={[styles.tileLabel, { color: lit ? colors.on : colors.inkDim }]}>{label}</Text>
+        <Text style={[styles.tileChev, { color: lit ? colors.on : colors.inkDim }]}>›</Text>
+      </View>
       <Text style={[styles.tileValue, { color: colors.ink }]} numberOfLines={2}>
         {value}
       </Text>
@@ -615,9 +619,11 @@ export function PeopleScreen({ book, onChange }) {
     setReady(true)
   }, [account.user, book.keeperName])
 
+  // The menu badge counts live; reload when a did you or friend ask comes or goes.
+  const pulse = usePeoplePulse(account.user)
   useEffect(() => {
     load()
-  }, [load])
+  }, [load, pulse.inbox, pulse.asks])
 
   function say(words) {
     setMiss('')
@@ -966,7 +972,7 @@ export function PeopleConnectScreen({ book, route }) {
 
 
   async function shareId() {
-    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId) }), t('friendId.title'))
+    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId), link: friendQrLink(myId) }), t('friendId.title'))
     if (how === 'copied') say(t('friendId.copied'))
   }
 
@@ -1913,6 +1919,8 @@ const styles = StyleSheet.create({
   confirmLine: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   tiles: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   tile: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 14, gap: 4, minHeight: 96 },
+  tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tileChev: { fontFamily: fonts.ui, fontSize: 20, lineHeight: 20 },
   tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },

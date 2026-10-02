@@ -2103,7 +2103,7 @@ export const ko = {
   'friendId.title': '친구 ID',
   'friendId.yours': '내 친구 ID',
   'friendId.share': '내 ID 공유',
-  'friendId.shareText': 'Did I에서 나를 추가해 줘. 내 친구 ID는 {id}야. https://did-i.app',
+  'friendId.shareText': 'Did I에서 나를 추가해 줘. 내 친구 ID는 {id}야. {link}',
   'friendId.shareSub': '공유하면 친구가 나를 추가할 수 있어요.',
   'friendId.add': '상대의 친구 ID',
   'friendId.find': '찾기',

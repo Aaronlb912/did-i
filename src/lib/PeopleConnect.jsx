@@ -17,6 +17,7 @@ import {
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 import { passAlong } from './native.js'
+import { friendQrLink } from './qr-links.js'
 import { useOnline } from './useOnline.js'
 
 export function PeopleConnect({ book, now }) {
@@ -57,7 +58,7 @@ export function PeopleConnect({ book, now }) {
   }
 
   async function shareId() {
-    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId) }), t('friendId.title'))
+    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId), link: friendQrLink(myId) }), t('friendId.title'))
     if (how === 'copied') setSaid(t('friendId.copied'))
   }
 
