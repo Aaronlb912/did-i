@@ -9,7 +9,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   addDaysIso,
   answerFor,
@@ -2150,6 +2150,44 @@ test('native metro shims are wired and pin default exports', () => {
   )
   assert.doesNotThrow(() => empty.default)
   assert.notEqual(empty.default, undefined)
+})
+
+// Signed in, the server owns coins. A did must still reach credit_night_coins:
+// for a while it never did, and no account earned night coins.
+test('a signed-in did leaves its coins for the server, signed out pays the phone', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  // cloudSetUp reads its keys when cloud.js loads, so the signed-in side runs
+  // in its own process with test keys.
+  const script = `
+    const store = new Map([['did-i-last-user', 'user-a']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { putAnswer } = await import(${JSON.stringify(url('src/lib/board-ops.js'))})
+    const { takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const book = { id: 'b', lamps: [{ id: 'a', question: 'a', cadence: 'daily', archived: false, createdOn: '2024-01-01' }], answers: [], coins: 0 }
+    const row = { lamp: book.lamps[0], periodKey: '2026-10-02' }
+    const next = putAnswer(book, row, 'yes', new Date(2026, 9, 2, 20))
+    const again = putAnswer(next, row, 'yes', new Date(2026, 9, 2, 20))
+    console.log(JSON.stringify({ local: again.coins, server: takeEarnedCoins(), after: takeEarnedCoins() }))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  // Paid once (the same night again is not paid twice), nothing on the phone.
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: 2, after: 0 })
+  // The save hands what taps earned to the server.
+  const shelfHook = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
+  assert.match(shelfHook, /takeEarnedCoins\(\)/)
+  assert.match(shelfHook, /creditNightCoins\(boardDate\(now, fold\), earned\)/)
+
+  // Signed out (this process has no cloud keys), the phone keeps the coins.
+  const book = { id: 'b', lamps: [lamp('a')], answers: [], coins: 0 }
+  const paid = putAnswer(book, { lamp: book.lamps[0], periodKey: '2026-10-02' }, 'yes', new Date(2026, 9, 2, 20))
+  assert.equal(paid.coins, 2)
 })
 
 test('native look ids match did-i.css', () => {
