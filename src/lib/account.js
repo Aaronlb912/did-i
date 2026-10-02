@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
+import { removeAvatar } from './avatar.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -159,6 +160,8 @@ export async function signOutEverywhere() {
 export async function deleteAccount() {
   const db = cloud()
   if (!db) return { miss: 'off' }
+  // Photo files live in storage, which delete_me cannot reach; take them first.
+  await removeAvatar().catch(() => {})
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: error.message }
   await db.auth.signOut()
