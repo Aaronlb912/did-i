@@ -52,6 +52,7 @@ import {
   takeBack,
   unblockPerson,
   unsendAsk,
+  usePeoplePulse,
 } from '../../src/lib/people.js'
 import {
   FRIEND_CHEER_CAP,
@@ -615,9 +616,11 @@ export function PeopleScreen({ book, onChange }) {
     setReady(true)
   }, [account.user, book.keeperName])
 
+  // The menu badge counts live; reload when a did you or friend ask comes or goes.
+  const pulse = usePeoplePulse(account.user)
   useEffect(() => {
     load()
-  }, [load])
+  }, [load, pulse.inbox, pulse.asks])
 
   function say(words) {
     setMiss('')
