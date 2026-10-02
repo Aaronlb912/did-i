@@ -813,6 +813,7 @@ export const en = {
   'later.dueTonight': 'Due tonight',
   'lamp.missing': 'Missing question',
   'lamp.gone': 'That question is not here.',
+  'lamp.sentBy': 'Sent by {name}',
   'lamp.kicker': 'This question',
   'lamp.edit': 'Edit',
   'lamp.copy': 'Duplicate',

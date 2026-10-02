@@ -790,6 +790,7 @@ export const ja = {
   'later.dueTonight': '今夜まで',
   'lamp.missing': '質問がない',
   'lamp.gone': 'その質問はここにない。',
+  'lamp.sentBy': '{name} から届きました',
   'lamp.kicker': 'この question',
   'lamp.edit': '編集',
   'lamp.copy': '複製',

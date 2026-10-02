@@ -1190,6 +1190,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
         <Text style={[styles.lampStatus, { color: lamp.archived ? colors.inkDim : colors.inkSoft }]}>{status}</Text>
+        {lamp.fromName ? (
+          <Text style={[styles.lampStatus, { color: colors.inkSoft }]}>{t('lamp.sentBy', { name: lamp.fromName })}</Text>
+        ) : null}
         <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
 

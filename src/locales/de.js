@@ -822,6 +822,7 @@ export const de = {
   'later.dueTonight': 'Heute Nacht fällig',
   'lamp.missing': 'Fehlende Frage',
   'lamp.gone': 'Diese Frage ist nicht hier.',
+  'lamp.sentBy': 'Gesendet von {name}',
   'lamp.kicker': 'Diese Frage',
   'lamp.edit': 'Bearbeiten',
   'lamp.copy': 'Duplizieren',

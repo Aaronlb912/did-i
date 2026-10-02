@@ -1243,7 +1243,10 @@ async function pulseLook() {
     // Straight onto tonight before anything else can fail; the server has
     // already marked these kept.
     // Nobody chose these for tonight, so they are optional (see normalizeLamp).
-    if (claimed.length) adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true })))
+    if (claimed.length) {
+      const senders = await peopleByIds(db)
+      adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, person: senders.get(row.sender_id) })))
+    }
     const fromDidI = adder ? await claimDidITonight(db, user) : []
     if (fromDidI.length) adder(fromDidI)
     const [waiting, asks] = await Promise.all([

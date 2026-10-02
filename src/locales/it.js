@@ -815,6 +815,7 @@ export const it = {
   'later.dueTonight': 'Per stasera',
   'lamp.missing': 'Domanda mancante',
   'lamp.gone': 'Quella domanda non è qui.',
+  'lamp.sentBy': 'Inviato da {name}',
   'lamp.kicker': 'Questa question',
   'lamp.edit': 'Modifica',
   'lamp.copy': 'Duplica',
