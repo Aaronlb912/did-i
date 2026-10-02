@@ -10,10 +10,15 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { isGemLook } from '../../src/lib/purse.js'
+import { isGemLook, normalizePurse } from '../../src/lib/purse.js'
+import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
+import { activeLook } from '../../src/lib/active-look.js'
+import { useLookColors } from '../hooks/useHallColors.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { gemLookChipMeta } from '../lib/gem-look-tone.js'
 import { BuddyArt, BuddyPlain } from './BuddyArt.jsx'
+import { AccessoryLayer } from './Accessories.jsx'
+import { accessoryById, eyeLine, wornLayers } from '../../src/lib/accessories.js'
 import { svgParts } from '../lib/svg-parts.js'
 import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from '../../src/lib/cheer-pops.js'
 import { Slot } from './Slot.jsx'
@@ -831,17 +836,70 @@ export function BuddyChip({ id, alive = false }) {
   )
 }
 
-export function BuddyHang({ id, inline = false, alive = false }) {
+// The buddy with what it has on: wings behind, the rest on top.
+function Dressed({ id, worn, tone, width, height, blink }) {
+  const { behind, front } = wornLayers(worn)
+  if (!behind.length && !front.length) return <BuddyArt id={id} width={width} height={height} blink={blink} />
+  return (
+    <View style={{ width, height }}>
+      <AccessoryLayer ids={behind} buddyId={id} tone={tone} width={width} height={height} />
+      <BuddyArt id={id} width={width} height={height} blink={blink} />
+      <AccessoryLayer ids={front} buddyId={id} tone={tone} width={width} height={height} />
+    </View>
+  )
+}
+
+// A shop tile: the buddy wearing just this one item, small enough that wings
+// fit. Eye items are too small to read on a whole buddy, so those tiles show
+// the face up close instead.
+export function AccessoryChip({ id, buddyId = 'ant', tone }) {
+  const slot = accessoryById(id)?.slot || 'head'
+  if (slot === 'eyes') {
+    const w = 72
+    const h = (w * 58) / 48
+    const k = w / 48
+    return (
+      <View style={[styles.accessoryChip, styles.accessoryChipZoom]}>
+        <View style={{ position: 'absolute', left: CHIP / 2 - 24 * k, top: CHIP / 2 - eyeLine(buddyId) * k, width: w, height: h }}>
+          <Dressed id={buddyId} worn={{ eyes: id }} tone={tone} width={w} height={h} />
+        </View>
+      </View>
+    )
+  }
+  return (
+    <View style={styles.accessoryChip}>
+      <Dressed id={buddyId} worn={{ [slot]: id }} tone={tone} width={28} height={34} />
+    </View>
+  )
+}
+
+// What your buddy has on, and the look's colour for the parts that take it.
+// Read from the shelf, so every card that hangs your buddy dresses it the same.
+function useMyOutfit() {
+  const book = currentBook(readShelf())
+  const colors = useLookColors(activeLook(book))
+  return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
+}
+
+export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)
+  const mine = useMyOutfit()
   if (!id) return null
   const width = inline ? 48 : 40
   const height = inline ? 58 : 48
   // The owl's face sits lower in the same box than the other three.
   const lift = id === 'owl' ? styles.buddyOwl : null
+  const outfit = worn || mine.worn
+  // The card clips at its top edge and the buddy hangs past it, so anything
+  // worn above the head (a hat, a cloud, antennae) would be cut off. Hang
+  // lower then, so it fits on the card.
+  const drop = !inline && (outfit.head || outfit.around || outfit.back === 'butterfly' || outfit.back === 'bee')
+    ? styles.buddyDropped
+    : null
   return (
-    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, styles.buddySway, life.idle]} pointerEvents="none">
+    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none">
       <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
-        <BuddyArt id={id} width={width} height={height} blink={life.blink} />
+        <Dressed id={id} worn={outfit} tone={tone || mine.tone} width={width} height={height} blink={life.blink} />
       </Slot>
     </Animated.View>
   )
@@ -941,9 +999,12 @@ const styles = StyleSheet.create({
     letterSpacing: rem(0.1),
   },
   buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  accessoryChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center' },
+  accessoryChipZoom: { overflow: 'hidden', borderRadius: CHIP_R },
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
   buddyOwl: { marginTop: -6 },
+  buddyDropped: { top: 6 },
   // A hanging buddy sways from its top.
   buddySway: { transformOrigin: 'top' },
 })

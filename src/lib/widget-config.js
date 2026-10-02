@@ -1,9 +1,9 @@
 import { activeLook } from './active-look.js'
-import { byPriority } from './board-json.js'
+import { byAskTime } from './board-json.js'
 import { currentBook } from './board-shelf.js'
 import { normalizePurse } from './purse.js'
 import { readPrefs, resolveTheme } from './prefs.js'
-import { askAfterPassed, faceSwipeTonight, waitingTonight } from './recurrence.js'
+import { askAfterPassed, boardDate, faceSwipeTonight, waitingTonight } from './recurrence.js'
 import { mustSwipeDeadline } from './lamp-deadline.js'
 
 const LOOK_IDS = new Set([
@@ -84,25 +84,48 @@ export function widgetTonightUri(book, leadLampId = '') {
   return 'didi://tonight'
 }
 
-// Every tag's tonight work, merged. Ready questions first, then ones still
-// waiting on their ask time (the app lets you answer those early too, so
-// the widget must, or it says "No questions yet" all afternoon). Each row
-// carries the tag it came from, since the card no longer belongs to one tag.
+// Every tag's tonight work, merged. Only questions whose ask time has come,
+// same as the stack; the widget is refreshed at each ask time instead. Each
+// row carries the tag it came from, since the card no longer belongs to one tag.
 export function tonightRowsForAllBoards(boards, now, openOnly) {
   const rows = []
   for (const book of boards || []) {
     if (book.archived) continue
     const ready = faceSwipeTonight(book, now)
-    const waiting = waitingTonight(book, now).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
-    for (const row of [...ready, ...waiting]) rows.push({ ...row, book })
+    for (const row of ready) rows.push({ ...row, book })
   }
   if (openOnly) return rows.filter((row) => !row.answer)
   return rows
+}
+
+// Tonight's open questions still waiting on their ask time, soonest first.
+export function waitingRowsForAllBoards(boards, now) {
+  const rows = []
+  for (const book of boards || []) {
+    if (book.archived) continue
+    for (const row of waitingTonight(book, now)) {
+      if (!row.answer && mustSwipeDeadline(row.lamp, row.dateIso)) rows.push({ ...row, book })
+    }
+  }
+  return rows.sort((a, b) => a.lamp.askAfter.localeCompare(b.lamp.askAfter))
+}
+
+// When the widget has to redraw tonight: each ask time still to come.
+export function widgetAskTimes(boards, now) {
+  const [year, month, day] = boardDate(now).split('-').map(Number)
+  const times = new Set()
+  for (const row of waitingRowsForAllBoards(boards, now)) {
+    const match = row.lamp.askAfter.match(/^(\d{2}):(\d{2})$/)
+    if (!match) continue
+    const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2])).getTime()
+    if (at > now.getTime()) times.add(at)
+  }
+  return [...times].sort((a, b) => a - b).map((at) => new Date(at))
 }
 
 /** Open rows ready to ask now come before waiting ones; priority orders each group. */
 export function rankWidgetOpen(open, now) {
   const ready = open.filter((row) => askAfterPassed(row.lamp, now))
   const waiting = open.filter((row) => !askAfterPassed(row.lamp, now))
-  return [...byPriority(ready), ...byPriority(waiting)]
+  return [...byAskTime(ready), ...byAskTime(waiting)]
 }

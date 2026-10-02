@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
-import { byPriority, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
+import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { reportRejection } from './report.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
 import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
-import { bySlot, clockWords } from './hall-pages.js'
+import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
 import {
@@ -39,6 +39,7 @@ export function useTonightStack({
   onChange,
   now,
   focusLampId,
+  focusKey,
 }) {
   const clock = now || new Date()
   const undoTimer = useRef(null)
@@ -77,7 +78,7 @@ export function useTonightStack({
       return {
         due: taggedDue(shelf, clock, tagId).filter(keep),
         unanswered: scopedBooks(shelf, tagId).flatMap((book) => unansweredTonight(book, clock)).filter(keep),
-        ready: byPriority(
+        ready: byAskTime(
           scopedBooks(shelf, tagId).flatMap((book) =>
             faceSwipeTonight(book, clock).map((row) => ({
               ...row,
@@ -140,7 +141,7 @@ export function useTonightStack({
 
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
-  }, [focusLampId])
+  }, [focusLampId, focusKey])
 
   useEffect(() => {
     if (skipReview || faceId === FINISH_FACE || hallOn || !openReady.length) return
@@ -395,7 +396,7 @@ export function useTonightStack({
 
   // Deadlines that are not due tonight go at the end of the pills, after
   // tonight's real questions.
-  const slotted = bySlot(due)
+  const slotted = byAskTime(due)
   const notDueYet = (row) => !mustSwipeDeadline(row.lamp, row.dateIso)
   const dueWithWait = [...slotted.filter((row) => !notDueYet(row)), ...slotted.filter(notDueYet)].map(
     (row) => ({
@@ -425,7 +426,9 @@ export function useTonightStack({
     const holeBook = holePick.book || bookOf(holePick)
     holeWasSkip = answerFor(holeBook, holePick.lamp.id, holePick.periodKey)?.status === 'skip'
   } else if (waitPick) bodyKind = 'wait'
-  else if (activePillPick?.answer) bodyKind = 'pillView'
+  // A noped question opens as a card you can still swipe Did on (late);
+  // only a did is view-only.
+  else if (activePillPick?.answer && activePillPick.answer.status !== 'skip') bodyKind = 'pillView'
   else if (activePillPick) bodyKind = 'pill'
   else if (empty) bodyKind = 'empty'
   else if (onFinish) bodyKind = 'finish'

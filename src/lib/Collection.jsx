@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
+import { AccessoryChip, BuddyChip, CheerChip, LookChip } from './Cosmetic.jsx'
+import { ACCESSORIES, ACCESSORY_SLOTS } from './accessories.js'
+import { AccessoryPreview } from './ShopAccessories.jsx'
 import { KitFocus, KitTabs, KitTile, kitTabDefault } from './kit-bits.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
 import {
@@ -21,6 +23,7 @@ import {
   wearBuddy,
   wearCheer,
   wearCheerStage,
+  wearAccessory,
 } from './purse.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -33,7 +36,7 @@ const STAGES = [1, 2, 3, 4, 5]
 export function Collection({ book, onChange, now, startTab }) {
   usePrefs()
   const clock = now || new Date()
-  const [tab, setTab] = useState(['looks', 'cheers', 'buddies'].includes(startTab) ? startTab : 'looks')
+  const [tab, setTab] = useState(['looks', 'cheers', 'buddies', 'accessories'].includes(startTab) ? startTab : 'looks')
   const [pick, setPick] = useState('')
   const [peekLook, setPeekLook] = useState('')
   const [miss, setMiss] = useState(NO_MISS)
@@ -42,6 +45,7 @@ export function Collection({ book, onChange, now, startTab }) {
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
   const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
+  const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const focusId = pick || kitTabDefault(tab, purse)
 
   useEffect(() => {
@@ -235,14 +239,17 @@ export function Collection({ book, onChange, now, startTab }) {
         <KitTabs
           tab={tab}
           onTab={setTab}
-          counts={{ looks: looks.length, cheers: cheers.length, buddies: buddies.length }}
+          counts={{ looks: looks.length, cheers: cheers.length, buddies: buddies.length, accessories: accessories.length }}
         />
 
-        <KitFocus>
-          {tab === 'looks' ? focusLook() : null}
-          {tab === 'buddies' ? focusBuddy() : null}
-          {tab === 'cheers' ? focusCheer() : null}
-        </KitFocus>
+        {/* Accessories are worn with a tap on the tile; no focus row. */}
+        {tab !== 'accessories' ? (
+          <KitFocus>
+            {tab === 'looks' ? focusLook() : null}
+            {tab === 'buddies' ? focusBuddy() : null}
+            {tab === 'cheers' ? focusCheer() : null}
+          </KitFocus>
+        ) : null}
 
         {tab === 'looks' && peekLook && isGemLook(peekLook) ? <LookPreviewCard /> : null}
 
@@ -299,6 +306,46 @@ export function Collection({ book, onChange, now, startTab }) {
               <span className="di-buddy-chip di-buddy-chip-off" aria-hidden="true" />
             </KitTile>
           </div>
+        ) : null}
+
+        {tab === 'accessories' ? (
+          <>
+            <AccessoryPreview id="" purse={purse} />
+            {!accessories.length ? (
+              <div className="di-set-card di-kit-grid" role="tabpanel">
+                <p className="di-set-note di-kit-empty">
+                  {t('kit.noAccessories')}{' '}
+                  <button className="di-text" type="button" onClick={() => goHash('/shop/accessories')}>
+                    {t('shop.allAccessories')}
+                  </button>
+                </p>
+              </div>
+            ) : null}
+            {/* One shelf per spot on the buddy, in the shop's order. */}
+            {ACCESSORY_SLOTS.map((slot) => {
+              const list = accessories.filter((item) => item.slot === slot)
+              if (!list.length) return null
+              return (
+                <div key={slot} role="tabpanel">
+                  <p className="di-set-cap">{t(`shop.slot.${slot}`)}</p>
+                  <div className="di-set-card di-kit-grid">
+                    {list.map((item) => (
+                      <KitTile
+                        key={item.id}
+                        on={false}
+                        worn={purse.worn[item.slot] === item.id}
+                        label={t(`accessory.${item.id}`)}
+                        ariaLabel={t(`accessory.${item.id}`)}
+                        onClick={() => onChange(wearAccessory(book, item.id).book)}
+                      >
+                        <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} />
+                      </KitTile>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </>
         ) : null}
 
         {tab === 'cheers' ? (

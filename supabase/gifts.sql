@@ -11,7 +11,7 @@ alter table public.cheer_gifts add column if not exists returned_at timestamptz;
 
 alter table public.cheer_gifts drop constraint if exists cheer_gifts_kind;
 alter table public.cheer_gifts add constraint cheer_gifts_kind
-  check (kind in ('cheer', 'look', 'buddy'));
+  check (kind in ('cheer', 'look', 'buddy', 'accessory'));
 
 alter table public.cheer_gifts drop constraint if exists cheer_gifts_note_len;
 alter table public.cheer_gifts add constraint cheer_gifts_note_len
@@ -24,13 +24,19 @@ alter table public.cheer_gifts add constraint cheer_gifts_paid
 -- What each item costs as a gift. Same prices as the shop (src/lib/purse.js).
 -- Free items and ones only given out by hand (like the launch cheer) are not here.
 create table if not exists public.gift_catalog (
-  kind text not null check (kind in ('cheer', 'look', 'buddy')),
+  kind text not null check (kind in ('cheer', 'look', 'buddy', 'accessory')),
   item_id text not null check (length(item_id) between 1 and 32),
   gems integer not null default 0 check (gems between 0 and 99),
   coins integer not null default 0 check (coins between 0 and 999),
   live_from date not null default '2026-01-01',
   primary key (kind, item_id)
 );
+
+alter table public.gift_catalog drop constraint if exists gift_catalog_kind_check;
+alter table public.gift_catalog add constraint gift_catalog_kind_check
+  check (kind in ('cheer', 'look', 'buddy', 'accessory'));
+-- Seasonal items stop being sold (or given) on live_until.
+alter table public.gift_catalog add column if not exists live_until date;
 
 alter table public.gift_catalog enable row level security;
 
@@ -71,6 +77,46 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('look', 'oat', 0, 30, '2026-11-06')
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from;
+
+-- Buddy accessories, paid in coins (src/lib/accessories.js).
+insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_until) values
+  ('accessory', 'beanie', 0, 15, '2026-01-01', null),
+  ('accessory', 'party', 0, 15, '2026-01-01', null),
+  ('accessory', 'flower', 0, 15, '2026-01-01', null),
+  ('accessory', 'hairbow', 0, 15, '2026-01-01', null),
+  ('accessory', 'beret', 0, 25, '2026-01-01', null),
+  ('accessory', 'cap', 0, 25, '2026-01-01', null),
+  ('accessory', 'bucket', 0, 25, '2026-01-01', null),
+  ('accessory', 'crown', 0, 40, '2026-01-01', null),
+  ('accessory', 'tophat', 0, 40, '2026-01-01', null),
+  ('accessory', 'headphones', 0, 40, '2026-01-01', null),
+  ('accessory', 'halo', 0, 40, '2026-01-01', null),
+  ('accessory', 'glasses', 0, 15, '2026-01-01', null),
+  ('accessory', 'shades', 0, 25, '2026-01-01', null),
+  ('accessory', 'heartglasses', 0, 25, '2026-01-01', null),
+  ('accessory', 'starglasses', 0, 40, '2026-01-01', null),
+  ('accessory', 'monocle', 0, 40, '2026-01-01', null),
+  ('accessory', 'butterfly', 0, 25, '2026-01-01', null),
+  ('accessory', 'bee', 0, 25, '2026-01-01', null),
+  ('accessory', 'angelwings', 0, 40, '2026-01-01', null),
+  ('accessory', 'fairy', 0, 40, '2026-01-01', null),
+  ('accessory', 'dragon', 0, 40, '2026-01-01', null),
+  ('accessory', 'balloon', 0, 15, '2026-01-01', null),
+  ('accessory', 'flag', 0, 15, '2026-01-01', null),
+  ('accessory', 'umbrella', 0, 25, '2026-01-01', null),
+  ('accessory', 'raincloud', 0, 15, '2026-01-01', null),
+  ('accessory', 'notes', 0, 15, '2026-01-01', null),
+  ('accessory', 'hearts', 0, 25, '2026-01-01', null),
+  ('accessory', 'sparkles', 0, 40, '2026-01-01', null),
+  ('accessory', 'witch', 0, 30, '2026-10-01', '2026-11-01'),
+  ('accessory', 'batwings', 0, 30, '2026-10-01', '2026-11-01'),
+  ('accessory', 'santa', 0, 30, '2026-12-01', '2027-01-01'),
+  ('accessory', 'antlers', 0, 30, '2026-12-01', '2027-01-01'),
+  ('accessory', 'cocoa', 0, 30, '2026-12-01', '2027-01-01'),
+  ('accessory', 'snow', 0, 30, '2026-12-01', '2027-01-01'),
+  ('accessory', 'sparkler', 0, 30, '2026-12-26', '2027-01-06')
+on conflict (kind, item_id) do update
+  set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 
 -- Gem looks, cheers and buddies you own, kept on the server like
 -- coin_cosmetics. The phone copies this list on every sync, so editing the
@@ -273,7 +319,8 @@ begin
 
   select * into price from public.gift_catalog c
   where c.kind = k and c.item_id = id
-    and c.live_from <= (timezone('utc', now()))::date + 1;
+    and c.live_from <= (timezone('utc', now()))::date + 1
+    and (c.live_until is null or (timezone('utc', now()))::date - 1 < c.live_until);
   if price is null then
     raise exception 'bad item';
   end if;
@@ -327,6 +374,7 @@ declare
   who uuid := (select auth.uid());
   cos jsonb;
   coin_looks text[];
+  accs text[];
 begin
   if who is null then
     raise exception 'not signed in';
@@ -346,6 +394,26 @@ begin
         (select to_jsonb(array_agg(distinct x))
          from (select jsonb_array_elements_text(cos->'looks') as x
                union select unnest(coin_looks)) u)
+      )
+      where p.user_id = who;
+    end if;
+  end if;
+
+  -- Accessories are coin items, kept on the coin catalog like coin looks.
+  select array_agg(distinct g.cheer_id) into accs
+  from public.cheer_gifts g
+  where g.to_id = who and g.claimed_at is null and g.kind = 'accessory';
+
+  if accs is not null then
+    select public.coin_catalog_normalize(p.coin_cosmetics) into cos
+    from public.profiles p where p.user_id = who for update;
+    if cos is not null then
+      update public.profiles p
+      set coin_cosmetics = jsonb_set(
+        cos, '{accessories}',
+        (select to_jsonb(array_agg(distinct x))
+         from (select jsonb_array_elements_text(cos->'accessories') as x
+               union select unnest(accs)) u)
       )
       where p.user_id = who;
     end if;
@@ -372,7 +440,8 @@ begin
   )
   where p.user_id = who
     and exists (select 1 from public.cheer_gifts g
-      where g.to_id = who and g.claimed_at is null and not (g.kind = 'look' and g.coins > 0));
+      where g.to_id = who and g.claimed_at is null
+        and not (g.kind = 'look' and g.coins > 0) and g.kind <> 'accessory');
 
   return query
     with took as (

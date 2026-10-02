@@ -11,14 +11,14 @@ import { useAccount } from './account.js'
 import { doneGift, nextGift, onGift } from './gift-inbox.js'
 import { t, tMiss } from './i18n.js'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from './people.js'
-import { sentGiftDate, sentGiftStatus, sentGiftType } from './gift-history.js'
+import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from './gift-history.js'
 import { usePrefs } from './prefs.js'
 import { fireCheer, giftItems, normalizePurse, stampPurse, wearGift } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { useReduceMotion } from './useReduceMotion.js'
 
-const NOBODY_OWNS = { looks: [], cheers: [], buddies: [] }
-const TYPE_OF = { looks: 'look', cheers: 'cheer', buddies: 'buddy' }
+const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [] }
+const TYPE_OF = { looks: 'look', cheers: 'cheer', buddies: 'buddy', accessories: 'accessory' }
 
 function giftMiss(why) {
   if (why === 'giftCap') return t('gift.cap')
@@ -173,7 +173,7 @@ export function Gift({ book, onChange, toId, now }) {
           {sent}
         </p>
       ) : null}
-      <KitTabs tab={tab} onTab={setTab} counts={{ looks: items.looks.length, cheers: items.cheers.length, buddies: items.buddies.length }} />
+      <KitTabs tab={tab} onTab={setTab} counts={{ looks: items.looks.length, cheers: items.cheers.length, buddies: items.buddies.length, accessories: items.accessories.length }} />
       <div className="di-drop-grid">
         {items[tab].map((item) => (
           <ShopTile
@@ -231,9 +231,9 @@ export function GiftArrived({ book, onChange }) {
   useEffect(() => onGift((next) => setGift(next)), [])
   if (!gift || !book) return null
 
-  const type = gift.kind === 'look' || gift.kind === 'buddy' ? gift.kind : 'cheer'
+  const type = sentGiftType(gift)
   const name = gift.from_name || t('people.someone')
-  const tab = type === 'look' ? 'looks' : type === 'buddy' ? 'buddies' : 'cheers'
+  const tab = giftTab(type)
   const done = () => {
     setReporting(false)
     doneGift(gift.id)

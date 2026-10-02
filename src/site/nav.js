@@ -20,6 +20,7 @@ const FALLBACK = {
   '/shop/looks': '/shop',
   '/shop/cheers': '/shop',
   '/shop/buddies': '/shop',
+  '/shop/accessories': '/shop',
   '/pings': '/settings',
   '/me': '/settings',
   '/help': '/settings',

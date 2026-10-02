@@ -1,4 +1,66 @@
+import { createElement } from 'react'
 import { BuddyArt } from './BuddyArt.jsx'
+import { ACCESSORY_VIEWBOX, accessoryById, accessoryNodes, eyeLine, wornLayers } from './accessories.js'
+import { currentBook, readShelf } from './board-shelf.js'
+import { normalizePurse } from './purse.js'
+
+// Accessory parts take the look's colour straight from the theme.
+const TONE = 'var(--di-on)'
+
+function AccessoryLayer({ ids, buddyId }) {
+  if (!ids.length) return null
+  let n = 0
+  const h = (tag, props, ...children) => createElement(tag, { ...(props || {}), key: (n += 1) }, ...children)
+  return (
+    <svg className="di-acc-layer" viewBox={ACCESSORY_VIEWBOX} aria-hidden="true" focusable="false">
+      {ids.flatMap((id) => accessoryNodes(h, id, buddyId, TONE))}
+    </svg>
+  )
+}
+
+// The buddy with what it has on: wings behind, the rest on top.
+function Dressed({ id, worn, className }) {
+  const { behind, front } = wornLayers(worn)
+  return (
+    <>
+      <AccessoryLayer ids={behind} buddyId={id} />
+      <BuddyArt id={id} className={className} />
+      <AccessoryLayer ids={front} buddyId={id} />
+    </>
+  )
+}
+
+// What your buddy has on, from the saved shelf.
+function myWorn() {
+  const book = currentBook(readShelf())
+  return book ? normalizePurse(book).worn : {}
+}
+
+// A shop tile: the buddy (the ant unless one is given) wearing one item.
+export function AccessoryChip({ id, buddyId = 'ant' }) {
+  const slot = accessoryById(id)?.slot || 'head'
+  // Eye items are too small to read on a whole buddy: show the face up close.
+  if (slot === 'eyes') {
+    const w = 3.6
+    return (
+      <span className="di-buddy-chip di-acc-chip di-acc-chip-zoom" data-buddy={buddyId} aria-hidden="true">
+        <span
+          className="di-acc-box"
+          style={{ position: 'absolute', width: w + 'rem', left: 'calc(50% - ' + w / 2 + 'rem)', top: 'calc(50% - ' + (eyeLine(buddyId) / 48) * w + 'rem)' }}
+        >
+          <Dressed id={buddyId} worn={{ eyes: id }} className="di-buddy-art" />
+        </span>
+      </span>
+    )
+  }
+  return (
+    <span className="di-buddy-chip di-acc-chip" data-buddy={buddyId} aria-hidden="true">
+      <span className="di-acc-box">
+        <Dressed id={buddyId} worn={{ [slot]: id }} className="di-buddy-art" />
+      </span>
+    </span>
+  )
+}
 import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from './cheer-pops.js'
 
 export function LookChip({ id }) {
@@ -45,11 +107,14 @@ export function BuddyChip({ id }) {
   )
 }
 
-export function BuddyHang({ id }) {
+export function BuddyHang({ id, worn = null }) {
   if (!id) return null
+  const outfit = worn || myWorn()
+  // The card clips at its top edge, so hang lower when something sits on top.
+  const tall = outfit.head || outfit.around || outfit.back === 'butterfly' || outfit.back === 'bee'
   return (
-    <span className="di-buddy-hang" data-buddy={id} aria-hidden="true">
-      <BuddyArt id={id} className="di-buddy-art di-buddy-art-hang" />
+    <span className={tall ? 'di-buddy-hang is-tall' : 'di-buddy-hang'} data-buddy={id} aria-hidden="true">
+      <Dressed id={id} worn={outfit} className="di-buddy-art di-buddy-art-hang" />
     </span>
   )
 }

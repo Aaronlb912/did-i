@@ -1,8 +1,8 @@
 # Shop drops
 
 Every two weeks the shop gets a batch: **2 gem looks, 1 coin look, 2 cheers,
-1 buddy**. Batches are built ahead and ship dated, so they appear on their day
-with no store build.
+1 buddy, 2 buddy accessories**. Batches are built ahead and ship dated, so
+they appear on their day with no store build.
 
 Drop days are every other **Friday**, starting **2026-10-09**
 (2026-10-09, 10-23, 11-06, 11-20, 12-04, ...). Keep at least **3 future drops**
@@ -57,6 +57,29 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
   `native/components/BuddyArt.jsx` and the drawing uses `<EyesInline>`, so the
   buddy blinks like the rest. The shop sway needs nothing extra.
 
+**Accessory** (`accessory.<id>`, a name only, no line)
+- Two per drop, in two different slots (head, eyes, back, held, around): one
+  common or standard (15 or 25 coins) and one rare (40). Balance the slots
+  over time; the shop and Collection group by slot, so a thin slot shows.
+- `src/lib/accessories.js`: the drawing in `DRAW` (shapes through `h`, placed
+  from the buddy anchors in `AT`: `onHead` for head items, `hand` for held,
+  `mid` for back) and an entry in `ALL_ACCESSORIES` with `from: 'YYYY-MM-DD'`.
+  Seasonal ones also get `until`, the first day off sale.
+- `src/lib/accessory-shapes.js`: the same item rebuilt from ovals,
+  rectangles, lines, rings and triangles for the iPhone widget, which cannot
+  draw paths. Keep it close to the real drawing.
+- `supabase/shop-catalog.sql`: `('accessory', 'id', coins)` (seasonal: with
+  `live_from` and `live_until`), and `supabase/gifts.sql` `gift_catalog` at
+  the same price and dates. check.mjs tests both.
+- Design rules (from Aaron's reviews): a rim on everything (the layer adds
+  it), no neck items, no capes or backpacks, and every item must read as what
+  it is at chip size, with a telltale detail (antennae on bee and butterfly
+  wings, a string on a balloon). Fit every buddy: the frog's head items sit
+  higher and wider (`hat`), the ant's back items lower (`back`). Back items
+  draw behind the buddy, the rest in front.
+- Seasonal sets go out ahead of their season (October, December, New Year)
+  with an `until` date; after it they leave the shop and owners keep them.
+
 ## Coming soon
 
 A drop shows in the shop as **"Coming {date}"** for the 7 days before its day
@@ -74,7 +97,11 @@ A drop is not ready until each point is true and shown in the PR:
 2. **It looks right everywhere.** Dark and light theme. Look: home, a card,
    the shop chip, the widget ring. Buddy: app card, shop chip, Android widget.
    Cheer: shop preview and a real Did swipe, stages 1, 3, and 5, plus Less
-   motion (no animation). Nothing clipped, nothing off-screen at 390px wide.
+   motion (no animation). Accessory: on all 9 buddies (a temporary browser
+   page that draws each buddy wearing it, the real drawing next to the
+   accessory-shapes version, deleted after), on the Tonight card without
+   being cut off at the top, in the shop and Collection, and on the Android
+   widget. Nothing clipped, nothing off-screen at 390px wide.
 3. **It has the same appeal.** Put it next to the current items of its kind.
    It must match their polish: motion with anticipation, overshoot, and
    settle; colors that hold contrast in both themes; a buddy drawn at the same

@@ -1,7 +1,8 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isLive, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
+import { accessoryById } from './accessories.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
   const gems = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
@@ -39,6 +40,7 @@ export function normalizeCoinCatalog(raw) {
     coins: Math.max(0, Math.floor(Number(bag.coins ?? catalog.coins) || 0)),
     looks: asIdList(catalog.looks),
     cheerStages: asStageMap(catalog.cheer_stages || catalog.cheerStages),
+    accessories: asIdList(catalog.accessories),
   }
 }
 
@@ -60,12 +62,20 @@ export function applyCoinCatalogToBook(book, cat, opts = {}) {
   for (const [id, stage] of Object.entries(catalog.cheerStages)) {
     cheerStages[id] = Math.max(cheerStages[id] || 1, stage)
   }
+  // Signed in, the server's list is the whole list, like coin looks: an
+  // accessory added by editing the phone's saved data does not stay.
+  const accessories = [...new Set(catalog.accessories || [])]
+  const slot = opts.wear ? accessoryById(opts.wear)?.slot : ''
+  const kept = Object.fromEntries(Object.entries(purse.worn).filter(([, id]) => accessories.includes(id)))
   return {
     ...book,
     ...purse,
     coins,
     looks,
     cheerStages,
+    accessories,
+    worn: slot ? { ...kept, [slot]: opts.wear } : kept,
+    buddyOn: slot ? purse.buddyOn || FREE_BUDDY : purse.buddyOn,
     lookOn: opts.lookOn || purse.lookOn,
   }
 }
@@ -216,6 +226,7 @@ const COIN_LOOK_IDS = new Set(LOOKS.filter((item) => item.coins > 0).map((item) 
 function coinCostFor(kind, itemId) {
   if (kind === 'look') return LOOK_COIN_PRICE
   if (kind === 'cheer_stage') return CHEER_STAGE_COIN
+  if (kind === 'accessory') return accessoryById(itemId)?.coins || 0
   return 0
 }
 
@@ -223,6 +234,7 @@ export function validateCoinItem(kind, itemId) {
   const id = String(itemId || '')
   if (kind === 'look') return COIN_LOOK_IDS.has(id)
   if (kind === 'cheer_stage') return Boolean(id)
+  if (kind === 'accessory') return Boolean(accessoryById(id) && isLive(accessoryById(id)))
   return false
 }
 
@@ -234,7 +246,7 @@ export async function purchaseWithCoins(kind, itemId) {
   if (!user) return { miss: 'shop.miss.buyFail' }
   const k = String(kind || '').trim()
   const id = String(itemId || '').trim()
-  const gone = k === 'look' ? 'shop.miss.lookGone' : 'shop.miss.cheerGone'
+  const gone = k === 'look' ? 'shop.miss.lookGone' : k === 'accessory' ? 'shop.miss.accessoryGone' : 'shop.miss.cheerGone'
   if (!validateCoinItem(k, id)) return { miss: gone }
   const { data, error } = await db.rpc('buy_with_coins', { p_kind: k, p_item_id: id })
   if (error) {

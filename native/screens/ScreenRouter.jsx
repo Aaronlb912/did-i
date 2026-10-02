@@ -31,6 +31,7 @@ import {
   GemShopScreen,
   GiftScreen,
   GiftsSentScreen,
+  ShopAccessoriesScreen,
   ShopBuddiesScreen,
   ShopCheersScreen,
   ShopLooksScreen,
@@ -112,6 +113,7 @@ export function ScreenRouter({
   if (path === '/shop/looks') return <ShopLooksScreen book={book} onChange={change} />
   if (path === '/shop/cheers') return <ShopCheersScreen book={book} onChange={change} />
   if (path === '/shop/buddies') return <ShopBuddiesScreen book={book} onChange={change} />
+  if (path === '/shop/accessories') return <ShopAccessoriesScreen book={book} onChange={change} />
   if (path === '/gems') return <GemShopScreen book={book} />
   if (path === '/gifts') return <GiftsSentScreen book={book} />
   if (path === '/gift') return <GiftScreen key={route.id} book={book} onChange={change} toId={route.id} />
@@ -200,6 +202,7 @@ export function ScreenRouter({
       onTag={setTag}
       onChange={change}
       focusLampId={route.face}
+      focusKey={route.focusAt}
     />
   )
 }

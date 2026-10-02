@@ -47,6 +47,8 @@ function foldPurse(winner, loser) {
     gems: Math.max(win.gems, lose.gems),
     cheers: unionList(win.cheers, lose.cheers),
     looks: unionList(win.looks, lose.looks),
+    accessories: unionList(win.accessories, lose.accessories),
+    worn: win.worn,
     cheerOn: win.cheerOn,
     lookOn: win.lookOn,
     cheerUses: Math.max(win.cheerUses, lose.cheerUses),

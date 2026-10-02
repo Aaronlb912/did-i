@@ -16,7 +16,7 @@ export function kitArtRef(key) {
 
 /** The item count a Collection shows: looks, cheers and buddies owned. */
 export function kitCount(purse) {
-  return (purse?.looks?.length || 0) + (purse?.cheers?.length || 0) + (purse?.buddies?.length || 0)
+  return (purse?.looks?.length || 0) + (purse?.cheers?.length || 0) + (purse?.buddies?.length || 0) + (purse?.accessories?.length || 0)
 }
 
 /**

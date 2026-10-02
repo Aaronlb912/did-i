@@ -1,4 +1,4 @@
-import { Button, Ellipse, HStack, Rectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
+import { Button, Ellipse, HStack, Rectangle, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
 import {
   allowsTightening,
   background,
@@ -69,6 +69,8 @@ export type DidITonightWidgetProps = {
   buddyId?: string
   // Did we, one line: "Did we · waiting on Sam". Medium and large only.
   weLine?: string
+  // What the buddy has on, as shapes (src/lib/accessory-shapes.js).
+  buddyShapes?: { behind?: (string | number)[][]; front?: (string | number)[][] } | null
   colors?: WidgetColors
 }
 
@@ -338,6 +340,24 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   function buddyPart(part: (string | number)[], k: number) {
     const kind = part[0]
     const n = (i: number) => Number(part[i]) || 0
+    if (kind === 'r') {
+      const mods = [frame({ width: n(3) * k, height: n(4) * k }), foregroundStyle(String(part[5]))]
+      if (n(7)) mods.push(rotationEffect(n(7)))
+      mods.push(offset({ x: n(1) * k, y: n(2) * k }))
+      return <RoundedRectangle cornerRadius={n(6) * k} modifiers={mods} />
+    }
+    if (kind === 'o') {
+      return (
+        <Ellipse
+          modifiers={[
+            frame({ width: n(3) * 2 * k, height: n(4) * 2 * k }),
+            foregroundStyle('transparent'),
+            strokeBorder({ content: String(part[5]), style: { lineWidth: n(6) * k }, shape: 'ellipse' }),
+            offset({ x: (n(1) - n(3)) * k, y: (n(2) - n(4)) * k }),
+          ]}
+        />
+      )
+    }
     if (kind === 'e') {
       const mods = [frame({ width: n(3) * 2 * k, height: n(4) * 2 * k }), foregroundStyle(String(part[5]))]
       if (n(7)) mods.push(opacity(n(7)))
@@ -401,7 +421,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           offset({ x: compact ? -8 : -10, y: compact ? 8 : 9 }),
         ]}
       >
+        {(props?.buddyShapes?.behind || []).map((part) => buddyPart(part, k))}
         {parts.map((part) => buddyPart(part, k))}
+        {(props?.buddyShapes?.front || []).map((part) => buddyPart(part, k))}
       </ZStack>
     )
   }

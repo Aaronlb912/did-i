@@ -197,7 +197,7 @@ export function useAppShelf() {
       if (first) persist(selectBook(shelf, first))
       const path = route.path
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
-      goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face })
+      goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face, keepFocus: true })
     },
     [persist, route.face, route.path, shelf],
   )

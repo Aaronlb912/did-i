@@ -41,9 +41,12 @@ import {
   wearBuddy,
   wearCheer,
   wearCheerStage,
+  wearAccessory,
+  NIGHT_COIN_CAP,
 } from '../../src/lib/purse.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import {
+  AccessoryChip,
   BuddyChip,
   BuddyHang,
   CheerChip,
@@ -53,15 +56,17 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
-import { sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
+import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import {
+  buyAccessoryWithCoins,
   buyCheerStageWithCoins,
   buyLookWithCoins,
   buyWithGems,
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
+import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById } from '../../src/lib/accessories.js'
 import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
@@ -223,13 +228,16 @@ function LookStage({ id }) {
 
 // A look reads as the same chip as the Looks page, a cheer sits still, a
 // buddy blinks and sways.
-function TileArt({ type, id, colors }) {
+// buddy: who models an accessory, your buddy if one is on.
+function TileArt({ type, id, colors, buddy = '' }) {
+  if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} tone={colors.on} />
   if (type === 'look') return <LookChip id={id} colors={colors} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
   return <BuddyChip id={id} alive />
 }
 
 function tileName(type, id) {
+  if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
   return t(buddyText(id, 'name'))
@@ -262,7 +270,7 @@ function ShopTile({ type, item, purse, colors, onTile, style }) {
       style={[styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style]}
     >
       <View style={styles.tileArt}>
-        <TileArt type={type} id={item.id} colors={colors} />
+        <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />
       </View>
       <View style={styles.tileLabel}>
         <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
@@ -588,7 +596,7 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
 }
 
 // coinsFor(): up to two paid taps of up to two coins each.
-const COINS_PER_NIGHT_CAP = 4
+const COINS_PER_NIGHT_CAP = NIGHT_COIN_CAP
 
 function previewBody(type, item, purse) {
   const tag = shopTag(purse, type, item)
@@ -623,6 +631,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
   if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
+  else if (type === 'accessory') preview = <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />
   publishSheet({
     preview,
     title: name,
@@ -653,7 +662,7 @@ export function ShopScreen({ book, onChange }) {
     if (bought) {
       flyToKit({
         key: `${type}:${item.id}`,
-        art: <TileArt type={type} id={item.id} colors={colors} />,
+        art: <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />,
         name: tileName(type, item.id),
         count: kitCount(normalizePurse(next.book)),
       })
@@ -693,6 +702,13 @@ export function ShopScreen({ book, onChange }) {
         },
       }
     }
+    if (type === 'accessory') {
+      if (tag.owned) {
+        const on = purse.worn[item.slot] === item.id
+        return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
+      }
+      return { label: t('shop.buy'), go: async () => done(type, item, await buyAccessoryWithCoins(book, item.id), true) }
+    }
     // Cheers bought with coins come in stages, which only the cheers page shows.
     if (tag.owned || !(item.gems > 0)) {
       return {
@@ -725,6 +741,7 @@ export function ShopScreen({ book, onChange }) {
       <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
       <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />
       <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={onTile} />
+      <KindRow type="accessory" list={accessoriesForSale(boardDate(new Date()))} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} colors={colors} onTile={onTile} />
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
@@ -739,7 +756,7 @@ export function ShopScreen({ book, onChange }) {
           preview={<LookChip id={purse.lookOn} colors={colors} />}
           title={t('shop.kit')}
           note={t('shop.kitDoor')}
-          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount })}
+          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount + purse.accessories.length })}
           onPress={() => goHash('/kit')}
         />
       </View>
@@ -1040,6 +1057,192 @@ export function ShopBuddiesScreen({ book, onChange }) {
   )
 }
 
+// Your buddy (or the ant, if none is on) with what it has on, plus the item
+// being looked at, so you see the whole outfit before buying.
+function AccessoryPreviewCard({ id, purse, colors }) {
+  const item = accessoryById(id)
+  const worn = item ? { ...purse.worn, [item.slot]: id } : purse.worn
+  return (
+    <View style={styles.buddyPreview}>
+      <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+        <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
+        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
+        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{t('shop.buddyPreviewQ')}</Text>
+      </View>
+    </View>
+  )
+}
+
+function FilterChip({ label, on, onPress, colors }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      hitSlop={4}
+      style={[
+        styles.filterChip,
+        { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
+      ]}
+    >
+      <Text style={[styles.filterChipText, { color: on ? colors.on : colors.inkSoft }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
+// A spot on the buddy to look at (with how many are for sale there), and a
+// switch that hides what you already own.
+function AccessoryFilters({ forSale, slot, onSlot, notOwned, onNotOwned, purse, colors }) {
+  const count = (s) => forSale.filter((item) => item.slot === s).length
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <FilterChip label={t('shop.accAll', { n: forSale.length })} on={!slot} onPress={() => onSlot('')} colors={colors} />
+      {ACCESSORY_SLOTS.filter((s) => count(s)).map((s) => (
+        <FilterChip
+          key={s}
+          label={`${t(`shop.slot.${s}`)} ${count(s)}`}
+          on={slot === s}
+          onPress={() => onSlot(slot === s ? '' : s)}
+          colors={colors}
+        />
+      ))}
+      {purse.accessories.length ? (
+        <FilterChip label={t('shop.accNotOwned')} on={notOwned} onPress={onNotOwned} colors={colors} />
+      ) : null}
+    </ScrollView>
+  )
+}
+
+export function ShopAccessoriesScreen({ book, onChange }) {
+  const [peek, setPeek] = useState('')
+  const colors = useShopColors(book)
+  const purse = normalizePurse(book)
+  const [miss, setMiss] = useState(NO_MISS)
+  const [confirm, setConfirm] = useState(null)
+  const buddy = purse.buddyOn || 'ant'
+  const forSale = accessoriesForSale(boardDate(new Date()))
+  // The list grows every drop: pick one spot, or hide what you own.
+  const [slotPick, setSlotPick] = useState('')
+  const [notOwned, setNotOwned] = useState(false)
+  const shown = forSale.filter(
+    (item) => (!slotPick || item.slot === slotPick) && (!notOwned || !purse.accessories.includes(item.id)),
+  )
+
+  function take(next, id, bought = false) {
+    setMiss({ id, text: shopMiss(next) })
+    if (next.miss) {
+      setConfirm(null)
+      return
+    }
+    setConfirm(null)
+    if (bought) {
+      flyToKit({
+        key: `accessory:${id}`,
+        art: <AccessoryChip id={id} buddyId={buddy} tone={colors.on} />,
+        name: t(`accessory.${id}`),
+        count: kitCount(normalizePurse(next.book)),
+      })
+    }
+    onChange(next.book)
+  }
+
+  return (
+    <BoardShell book={book} title={t('shop.accessories')} date={shellDate(book)} colors={colors} showPurse>
+      <Meta colors={colors}>{t('shop.accessoriesHint')}</Meta>
+
+      <AccessoryPreviewCard id="" purse={purse} colors={colors} />
+
+      <AccessoryFilters
+        forSale={forSale}
+        slot={slotPick}
+        onSlot={setSlotPick}
+        notOwned={notOwned}
+        onNotOwned={() => setNotOwned((v) => !v)}
+        purse={purse}
+        colors={colors}
+      />
+
+      {!shown.length ? <Meta colors={colors}>{t('shop.accNoneLeft')}</Meta> : null}
+
+      {(slotPick ? [slotPick] : ACCESSORY_SLOTS).map((slot) => shown.some((item) => item.slot === slot) ? (
+        <View key={slot}>
+          <Cap colors={colors}>{t(`shop.slot.${slot}`)}</Cap>
+          {shown.filter((item) => item.slot === slot).map((item) => {
+            const have = purse.accessories.includes(item.id)
+            const on = purse.worn[slot] === item.id
+            const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
+            const act = () => {
+              if (have) {
+                take(wearAccessory(book, item.id), item.id)
+                return
+              }
+              if (purse.coins < item.coins) {
+                const short = item.coins - purse.coins
+                setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+                return
+              }
+              setMiss(NO_MISS)
+              setConfirm({
+                title: t(`accessory.${item.id}`),
+                body: t('shop.buyAccessoryBody', { cost: coinLine(item.coins) }),
+                go: async () => take(await buyAccessoryWithCoins(book, item.id), item.id, true),
+              })
+            }
+            return (
+              <ShopActionRow
+                key={item.id}
+                colors={colors}
+                preview={<AccessoryChip id={item.id} buddyId={buddy} tone={colors.on} />}
+                artKey={`accessory:${item.id}`}
+                previewOn={peek === item.id}
+                onPreview={() => {
+                  // The list is long, so the outfit shows in a sheet where you are.
+                  setPeek(item.id)
+                  publishSheet({
+                    preview: <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />,
+                    title: t(`accessory.${item.id}`),
+                    body: have ? t('shop.owned') : coinLine(item.coins),
+                    goLabel: label,
+                    onGo: () => {
+                      publishSheet(null)
+                      act()
+                    },
+                    closeLabel: t('settings.close'),
+                    colors,
+                    onClose: () => {
+                      setPeek('')
+                      publishSheet(null)
+                    },
+                  })
+                }}
+                name={t(`accessory.${item.id}`)}
+                note={have ? (on ? t('shop.on') : t('shop.owned')) : coinLine(item.coins)}
+                miss={miss.id === item.id ? miss.text : ''}
+                actionLabel={label}
+                primary={on}
+                onAction={act}
+              />
+            )
+          })}
+        </View>
+      ) : null)}
+
+      <BuyConfirm
+        confirm={confirm}
+        colors={colors}
+        onClose={() => setConfirm(null)}
+        onGo={() => {
+          const go = confirm?.go
+          setConfirm(null)
+          if (typeof go === 'function') go()
+        }}
+      />
+    </BoardShell>
+  )
+}
+
 // Bought gems stream from their pack into the balance, a few at a time.
 const GEM_STREAM_MAX = 8
 const GEM_STREAM_GAP = 70
@@ -1255,6 +1458,7 @@ const KIT_TABS = [
   { id: 'looks', key: 'shop.looks' },
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
+  { id: 'accessories', key: 'shop.accessories' },
 ]
 
 function WornBadge({ colors }) {
@@ -1290,6 +1494,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
   const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
+  const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
 
   function wearCheerId(id) {
     onChange(wearCheer(book, id).book)
@@ -1354,6 +1559,45 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
           </KitTile>
         </View>
+      ) : null}
+
+      {tab === 'accessories' ? (
+        <>
+          <AccessoryPreviewCard id="" purse={purse} colors={colors} />
+          {!accessories.length ? (
+            <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+              <View style={styles.kitEmpty}>
+                <Meta colors={colors}>{t('kit.noAccessories')}</Meta>
+                <Pressable onPress={() => goHash('/shop/accessories')} hitSlop={8}>
+                  <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allAccessories')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+          {/* One shelf per spot on the buddy, in the shop's order. */}
+          {ACCESSORY_SLOTS.map((slot) => {
+            const list = accessories.filter((item) => item.slot === slot)
+            if (!list.length) return null
+            return (
+              <View key={slot}>
+                <Cap colors={colors}>{t(`shop.slot.${slot}`)}</Cap>
+                <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+                  {list.map((item) => (
+                    <KitTile
+                      key={item.id}
+                      label={t(`accessory.${item.id}`)}
+                      worn={purse.worn[item.slot] === item.id}
+                      colors={colors}
+                      onPress={() => onChange(wearAccessory(book, item.id).book)}
+                    >
+                      <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} />
+                    </KitTile>
+                  ))}
+                </View>
+              </View>
+            )
+          })}
+        </>
       ) : null}
 
       {tab === 'cheers' ? (
@@ -1546,6 +1790,9 @@ const styles = StyleSheet.create({
     minHeight: 46,
   },
   buddyPreview: { gap: 8, marginTop: 4 },
+  filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
+  filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
+  filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   buddyPreviewGlow: {
     position: 'relative',
     overflow: 'visible',
@@ -1664,14 +1911,19 @@ const styles = StyleSheet.create({
 
 // Gifts ------------------------------------------------------------------
 
-const NOBODY_OWNS = { looks: [], cheers: [], buddies: [] }
+const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [] }
 const GIFT_TABS = [
   { id: 'looks', type: 'look', key: 'shop.looks' },
   { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
   { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
+  { id: 'accessories', type: 'accessory', key: 'shop.accessories' },
 ]
 
-function giftArt(type, id, colors, coat) {
+// Nobody's outfit: a gift's accessory shows on the ant, alone.
+const BARE = { worn: {}, buddyOn: '' }
+
+function giftArt(type, id, colors, coat, purse = BARE) {
+  if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} />
   if (type === 'cheer') return <CheerLoop id={id} coat={coat} />
   if (type === 'look') return <LookPreviewCard id={id} />
   return <BuddyPreviewCard id={id} colors={colors} />
@@ -1817,15 +2069,15 @@ export function GiftScreen({ book, onChange, toId }) {
 // The pop-up for a gift that just arrived. Tapping outside closes it; the
 // gift is already in the collection either way.
 function showGift(gift, getBook, onChange, colors) {
-  const type = gift.kind === 'look' || gift.kind === 'buddy' ? gift.kind : 'cheer'
+  const type = sentGiftType(gift)
   const name = gift.from_name || t('people.someone')
-  const tab = type === 'look' ? 'looks' : type === 'buddy' ? 'buddies' : 'cheers'
+  const tab = giftTab(type)
   const done = () => {
     publishSheet(null)
     doneGift(gift.id)
   }
   publishSheet({
-    preview: giftArt(type, gift.item_id, colors, activeLook(getBook())),
+    preview: giftArt(type, gift.item_id, colors, activeLook(getBook()), normalizePurse(getBook())),
     kicker: t('gift.gotKicker', { name }),
     title: tileName(type, gift.item_id),
     body: t('gift.gotBody'),

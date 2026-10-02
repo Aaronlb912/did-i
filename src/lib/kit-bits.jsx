@@ -5,6 +5,7 @@ const TABS = [
   { id: 'looks', key: 'shop.looks' },
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
+  { id: 'accessories', key: 'shop.accessories' },
 ]
 
 export function KitTabs({ tab, onTab, counts }) {

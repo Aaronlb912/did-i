@@ -248,15 +248,19 @@ create table if not exists public.coin_night_grants (
   coins smallint not null default 0,
   primary key (user_id, night_iso),
   constraint coin_night_grants_iso check (night_iso ~ '^\d{4}-\d{2}-\d{2}$'),
-  constraint coin_night_grants_coins check (coins between 0 and 4)
+  constraint coin_night_grants_coins check (coins between 0 and 6)
 );
+
+-- The cap went from 4 to 6 a night (purse.js NIGHT_COIN_CAP).
+alter table public.coin_night_grants drop constraint if exists coin_night_grants_coins;
+alter table public.coin_night_grants add constraint coin_night_grants_coins check (coins between 0 and 6);
 
 alter table public.coin_night_grants enable row level security;
 
 revoke all on public.coin_night_grants from anon;
 revoke all on public.coin_night_grants from authenticated;
 
--- Earn path for signed-in accounts. Matches client cap (~4 coins/night).
+-- Earn path for signed-in accounts. Matches the client cap of 6 coins a night.
 create or replace function public.credit_night_coins(night_iso text, add_coins integer)
 returns integer
 language plpgsql
@@ -266,7 +270,7 @@ as $$
 declare
   who uuid := (select auth.uid());
   iso text := left(btrim(coalesce(night_iso, '')), 10);
-  add integer := greatest(0, least(4, coalesce(add_coins, 0)));
+  add integer := greatest(0, least(6, coalesce(add_coins, 0)));
   had integer;
   room integer;
   bal integer;
@@ -294,7 +298,7 @@ begin
     insert into public.coin_night_grants (user_id, night_iso, coins) values (who, iso, 0);
   end if;
 
-  room := greatest(0, 4 - had);
+  room := greatest(0, 6 - had);
   add := least(add, room);
   if add < 1 then
     return coalesce((select coin_balance from public.profiles where user_id = who), 0);
@@ -325,7 +329,8 @@ as $$
     'stamps', coalesce(raw->'stamps', '[]'::jsonb),
     'badges', coalesce(raw->'badges', '[]'::jsonb),
     'looks', coalesce(raw->'looks', '[]'::jsonb),
-    'cheer_stages', coalesce(raw->'cheer_stages', '{}'::jsonb)
+    'cheer_stages', coalesce(raw->'cheer_stages', '{}'::jsonb),
+    'accessories', coalesce(raw->'accessories', '[]'::jsonb)
   );
 $$;
 
@@ -343,7 +348,8 @@ as $$
         'stamps', public.coin_catalog_normalize(p.coin_cosmetics)->'stamps',
         'badges', public.coin_catalog_normalize(p.coin_cosmetics)->'badges',
         'looks', public.coin_catalog_normalize(p.coin_cosmetics)->'looks',
-        'cheer_stages', public.coin_catalog_normalize(p.coin_cosmetics)->'cheer_stages'
+        'cheer_stages', public.coin_catalog_normalize(p.coin_cosmetics)->'cheer_stages',
+        'accessories', public.coin_catalog_normalize(p.coin_cosmetics)->'accessories'
       )
       from public.profiles p
       where p.user_id = (select auth.uid())
@@ -353,7 +359,8 @@ as $$
       'stamps', '[]'::jsonb,
       'badges', '[]'::jsonb,
       'looks', '[]'::jsonb,
-      'cheer_stages', '{}'::jsonb
+      'cheer_stages', '{}'::jsonb,
+      'accessories', '[]'::jsonb
     )
   );
 $$;
@@ -398,6 +405,7 @@ declare
   badges jsonb;
   looks jsonb;
   stages jsonb;
+  accs jsonb;
   cur_stage integer;
   next_stage integer;
   bal integer;
@@ -426,6 +434,14 @@ begin
       raise exception 'bad item';
     end if;
     cost := 15;
+  elsif k = 'accessory' then
+    if not public.shop_item_live('accessory', id) then
+      raise exception 'bad item';
+    end if;
+    select c.coins into cost from public.shop_catalog c where c.kind = 'accessory' and c.item_id = id;
+    if cost is null or cost < 1 then
+      raise exception 'bad item';
+    end if;
   else
     raise exception 'bad kind';
   end if;
@@ -441,6 +457,7 @@ begin
   badges := cos->'badges';
   looks := cos->'looks';
   stages := cos->'cheer_stages';
+  accs := cos->'accessories';
 
   if k = 'stamp' and stamps @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
@@ -449,6 +466,9 @@ begin
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
   if k = 'look' and looks @> jsonb_build_array(id) then
+    return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
+  end if;
+  if k = 'accessory' and accs @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
 
@@ -465,11 +485,11 @@ begin
     update public.profiles
     set coin_balance = coin_balance - cost,
         coin_cosmetics = jsonb_build_object(
-          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages
+          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
         )
     where user_id = who
     returning coin_balance into bal;
-    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages);
+    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
     return jsonb_build_object('coins', bal, 'catalog', cos);
   end if;
 
@@ -481,6 +501,8 @@ begin
     stamps := stamps || to_jsonb(id);
   elsif k = 'badge' then
     badges := badges || to_jsonb(id);
+  elsif k = 'accessory' then
+    accs := accs || to_jsonb(id);
   else
     looks := looks || to_jsonb(id);
   end if;
@@ -489,12 +511,12 @@ begin
   set
     coin_balance = coin_balance - cost,
     coin_cosmetics = jsonb_build_object(
-      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages
+      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
     )
   where user_id = who
   returning coin_balance into bal;
 
-  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages);
+  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
   return jsonb_build_object('coins', bal, 'catalog', cos);
 end;
 $$;

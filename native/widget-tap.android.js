@@ -20,7 +20,7 @@ export async function saveAndroidWidgetCard(props) {
   const mod = NativeModules.WidgetTap
   if (!mod || typeof mod.saveCard !== 'function') return false
   // The native tap paint cannot read the JS buddy table, so the markup rides along.
-  const buddySvg = buddySvgFor(props.buddyId)
+  const buddySvg = buddySvgFor(props.buddyId, props.buddyWorn, props.colors?.on)
   const card = buddySvg ? { ...props, buddySvg } : props
   try {
     return Boolean(await mod.saveCard(JSON.stringify(card)))
@@ -59,4 +59,15 @@ export async function applyPendingAndroidWidgetTap() {
     }
   }
   return shelf
+}
+
+// Native alarms redraw the widget at each ask time still to come tonight.
+export async function armAndroidWidgetAskTimes(times) {
+  const mod = NativeModules.WidgetTap
+  if (!mod || typeof mod.armAskTimes !== 'function') return false
+  try {
+    return Boolean(await mod.armAskTimes((times || []).map((date) => date.getTime())))
+  } catch {
+    return false
+  }
 }
