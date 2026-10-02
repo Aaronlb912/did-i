@@ -2162,4 +2162,6 @@ export const ja = {
   'legal.privacy.voice.title': 'Siri、Google Assistant、ショートカット、ウィジェット',
   'legal.privacy.voice.body': 'Did I で Siri や Google Assistant を使う場合 (たとえば「Did I に答える」や「Did I に質問を追加」)、Apple や Google が各社のプライバシーポリシーに基づいて音声を処理し、その言葉をアプリに渡します。アプリはスマホ上でそれをあなたの質問と照らし合わせます。私たちは音声を受け取りません。\n\nホーム画面とロック画面のウィジェットは、今夜の質問の小さなコピーを保持します。「今夜のみんな」ウィジェットは、友だちや家族の名前、イニシャル、今夜終えたかどうかを保持します。どちらもあなたのスマホ上だけです。サインアウトすると「今夜のみんな」ウィジェットは消去されます。',
   'avatar.photosOff': 'Did I の写真へのアクセスがオフです。電話の設定でオンにしてください。',
+  'settings.namePh': 'あなたの名前',
+  'we.asksAt': 'Did we · {time}に質問',
 }

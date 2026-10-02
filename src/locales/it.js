@@ -2234,4 +2234,6 @@ export const it = {
   'legal.privacy.voice.title': 'Siri, Google Assistant, comandi rapidi e widget',
   'legal.privacy.voice.body': 'Se usi Siri o Google Assistant con Did I (per esempio "Rispondi a Did I" o "Aggiungi una domanda in Did I"), Apple o Google gestiscono la tua voce secondo le loro informative sulla privacy e passano le parole all\'app. L\'app le abbina alle tue domande sul telefono. Non riceviamo audio.\n\nI widget della schermata Home e della schermata di blocco tengono una piccola copia delle domande di stasera, e il widget Insieme tiene i nomi e le iniziali di amici e famiglia e se hanno finito stasera, solo sul tuo telefono. Uscire dall\'account svuota il widget Insieme.',
   'avatar.photosOff': 'L\'accesso alle foto è disattivato per Did I. Attivalo nelle Impostazioni del telefono.',
+  'settings.namePh': 'Il tuo nome',
+  'we.asksAt': 'Did we · chiede alle {time}',
 }

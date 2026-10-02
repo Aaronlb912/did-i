@@ -2162,4 +2162,6 @@ export const ko = {
   'legal.privacy.voice.title': 'Siri, Google Assistant, 단축어, 위젯',
   'legal.privacy.voice.body': 'Did I에서 Siri나 Google Assistant를 쓰면(예: "Did I 답하기" 또는 "Did I에 질문 추가"), Apple이나 Google이 자체 개인정보 처리방침에 따라 음성을 처리하고 그 말을 앱에 전달해요. 앱은 휴대폰에서 그것을 내 질문과 맞춰 봐요. 우리는 음성을 받지 않아요.\n\n홈 화면과 잠금 화면 위젯은 오늘 밤 질문의 작은 사본을 보관하고, "오늘 밤 함께" 위젯은 친구와 가족의 이름, 이니셜, 오늘 밤 끝냈는지 여부를 보관해요. 모두 내 휴대폰에만 있어요. 로그아웃하면 "오늘 밤 함께" 위젯이 비워져요.',
   'avatar.photosOff': 'Did I의 사진 접근이 꺼져 있어요. 휴대폰 설정에서 켜 주세요.',
+  'settings.namePh': '내 이름',
+  'we.asksAt': 'Did we · {time}에 질문',
 }

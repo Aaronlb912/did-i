@@ -56,6 +56,7 @@ export function PhoneSettingsScreen({ book, onChange }) {
         <SavableSetField
           colors={colors}
           label={t('settings.name')}
+          placeholder={t('settings.namePh')}
           value={keeperDraft}
           savedValue={book?.keeperName || ''}
           onChangeText={setKeeperDraft}

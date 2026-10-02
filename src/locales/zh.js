@@ -2146,4 +2146,6 @@ export const zh = {
   'legal.privacy.voice.title': 'Siri、Google Assistant、快捷指令和小组件',
   'legal.privacy.voice.body': '如果你在 Did I 中使用 Siri 或 Google Assistant（例如“回答 Did I”或“在 Did I 中添加问题”），Apple 或 Google 会按照各自的隐私政策处理你的语音，并把文字传给应用。应用在你的手机上把这些文字与你的问题匹配。我们不会收到音频。\n\n主屏幕和锁屏小组件会保存今晚问题的一份小副本，“今晚一起”小组件会保存你的朋友和家人的名字、首字母以及他们今晚是否完成，这些只保存在你的手机上。退出登录会清空“今晚一起”小组件。',
   'avatar.photosOff': 'Did I 的照片访问已关闭。请在手机设置中打开。',
+  'settings.namePh': '你的名字',
+  'we.asksAt': 'Did we · {time} 提问',
 }

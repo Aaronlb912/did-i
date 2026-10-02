@@ -27,6 +27,11 @@ export function SetCard({ children, colors }) {
 
 export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on }) {
   const flat = !onPress
+  // A row that does something right away (no ›) reads as a button: its words
+  // take the accent, or its trailing word ("Remove") when it has one.
+  const action = !flat && !chevron && !danger
+  const labelColor = danger ? colors.miss : action && !value ? colors.on : colors.ink
+  const valueColor = action ? colors.on : colors.inkDim
   const tileColor = danger ? colors.miss : tint || colors.inkSoft
   const tileBg = danger ? `${colors.miss}1f` : tint ? `${tint}1f` : colors.panel2
   const body = (
@@ -37,12 +42,12 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
         </View>
       ) : null}
       <View style={styles.copy}>
-        <Text style={[styles.label, { color: danger ? colors.miss : colors.ink }]}>{label}</Text>
+        <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
       </View>
       <View style={styles.end}>
         {value ? (
-          <Text style={[styles.val, { color: colors.inkDim }]} numberOfLines={1}>
+          <Text style={[styles.val, { color: valueColor }]} numberOfLines={1}>
             {value}
           </Text>
         ) : null}
@@ -144,15 +149,27 @@ function M3Switch({ on, onPress, label, colors }) {
   )
 }
 
+// A box with a pencil, so it reads as something to type in. Tapping
+// anywhere on the box, pencil included, puts the cursor in it.
 export function SetField({ label, colors, ...inputProps }) {
+  const input = useRef(null)
   return (
     <View style={[styles.fieldRow, { borderBottomColor: colors.lineSoft }]}>
       <Text style={[styles.fieldLabel, { color: colors.ink }]}>{label}</Text>
-      <AppTextInput
-        colors={colors}
-        {...inputProps}
-        style={[styles.fieldInput, { color: colors.ink }]}
-      />
+      <Pressable
+        accessible={false}
+        onPress={() => input.current?.focus()}
+        style={[styles.fieldBox, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+      >
+        <AppTextInput
+          ref={input}
+          colors={colors}
+          accessibilityLabel={label}
+          {...inputProps}
+          style={[styles.fieldInput, { color: colors.ink }]}
+        />
+        <MenuIcon name="pen" color={colors.inkSoft} size={16} stroke />
+      </Pressable>
     </View>
   )
 }
@@ -256,7 +273,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   fieldLabel: { fontFamily: fonts.ui, fontSize: 16 },
+  fieldBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   fieldInput: {
+    flex: 1,
     fontFamily: fonts.ui,
     fontSize: 16,
     padding: 0,
