@@ -83,13 +83,20 @@ async function bindResponseListener(handlers = {}) {
   const onLamp = handlers.onLamp
   try {
     const Notifications = await notifications()
-    Notifications.addNotificationResponseReceivedListener((response) => {
+    const handle = (response) => {
       const data = response?.notification?.request?.content?.data || {}
       const lampId = data.lampId ? String(data.lampId) : ''
       const go = data.go ? String(data.go) : ''
       if (lampId && typeof onLamp === 'function') onLamp(lampId)
       else if (go && typeof onGo === 'function') onGo(go)
-    })
+    }
+    Notifications.addNotificationResponseReceivedListener(handle)
+    // The tap that launched the app came before this listener existed.
+    const first = await Notifications.getLastNotificationResponseAsync?.()
+    if (first) {
+      handle(first)
+      Notifications.clearLastNotificationResponse?.()
+    }
   } catch {
     // ok
   }

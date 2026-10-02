@@ -687,6 +687,39 @@ test('every item the shop sells is in the server gift catalog at the same price 
   }
 })
 
+test('every accessory can be given, at its shop price and dates', async () => {
+  const { ACCESSORIES } = await import('../src/lib/accessories.js')
+  const sql = readFileSync(new URL('../supabase/gifts.sql', import.meta.url), 'utf8')
+  const rows = new Map(
+    [...sql.matchAll(/\('accessory', '(\w+)', (\d+), (\d+), '([\d-]+)', (null|'[\d-]+')\)/g)].map((m) => [
+      m[1],
+      { gems: Number(m[2]), coins: Number(m[3]), from: m[4], until: m[5] === 'null' ? '' : m[5].slice(1, -1) },
+    ]),
+  )
+  for (const item of ACCESSORIES) {
+    assert.deepEqual(rows.get(item.id), { gems: 0, coins: item.coins, from: item.from || '2026-01-01', until: item.until || '' }, item.id)
+  }
+})
+
+test('a seasonal accessory is sold only in its season, and kept after', async () => {
+  const { accessoryOnSale, accessoryById } = await import('../src/lib/accessories.js')
+  const { normalizePurse } = await import('../src/lib/purse.js')
+  const witch = accessoryById('witch')
+  assert.ok(accessoryOnSale(witch, '2026-10-15'))
+  assert.ok(!accessoryOnSale(witch, '2026-11-01'))
+  assert.ok(!accessoryOnSale(witch, '2026-09-30'))
+  assert.deepEqual(normalizePurse({ accessories: ['witch'], worn: { head: 'witch' } }).worn, { head: 'witch' })
+})
+
+test('signed in, the server list is the whole accessory list, like coin looks', async () => {
+  const { applyCoinCatalogToBook } = await import('../src/lib/wallet.js')
+  const { normalizePurse } = await import('../src/lib/purse.js')
+  const book = { coins: 5, accessories: ['crown', 'beanie'], worn: { head: 'crown' }, buddyOn: 'ant' }
+  const next = normalizePurse(applyCoinCatalogToBook(book, { coins: 5, looks: [], cheerStages: {}, accessories: ['beanie'] }))
+  assert.deepEqual(next.accessories, ['beanie'])
+  assert.deepEqual(next.worn, {}, 'an accessory the server does not have comes off')
+})
+
 test('the document that goes up carries no answers', () => {
   const shelf = { boards: [{ id: 'b', lamps: [], answers: [{ lampId: 'a' }] }] }
   const sent = shelfWithoutAnswers(shelf)
@@ -1002,6 +1035,71 @@ test('a noped tonight question still counts as open on the widget', () => {
   assert.equal(props.leadLampId, 'a')
   assert.ok(!props.footer.toLowerCase().includes('clear'))
   assert.equal(props.question, 'A?')
+})
+
+test('the widget holds back a question until its ask time, like the stack', async () => {
+  const { widgetAskTimes } = await import('../src/lib/widget-config.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  const early = buildTonightWidgetProps(shelf, new Date('2026-09-23T19:00:00'))
+  assert.equal(early.leadLampId, '')
+  assert.equal(early.items.length, 0)
+  assert.ok(early.footer.includes('9'), early.footer)
+  const times = widgetAskTimes([book], new Date('2026-09-23T19:00:00'))
+  assert.deepEqual(times.map((d) => d.getHours()), [21])
+  const later = buildTonightWidgetProps(shelf, new Date('2026-09-23T21:00:00'))
+  assert.equal(later.leadLampId, 'late')
+})
+
+test('tonight orders questions by ask time, untimed ones first, priority breaking ties', async () => {
+  const { byAskTime } = await import('../src/lib/board-json.js')
+  const row = (id, askAfter, priority) => ({ lamp: { id, askAfter, priority } })
+  const order = byAskTime([
+    row('nine', '21:00'),
+    row('eight', '20:00'),
+    row('anyLow', '', 'low'),
+    row('anyHigh', '', 'high'),
+  ]).map((r) => r.lamp.id)
+  assert.deepEqual(order, ['anyHigh', 'anyLow', 'eight', 'nine'])
+})
+
+test('every accessory the shop shows is sold by the server at the same price', async () => {
+  const { ACCESSORIES } = await import('../src/lib/accessories.js')
+  const sql = readFileSync(new URL('../supabase/shop-catalog.sql', import.meta.url), 'utf8')
+  const rows = new Map([...sql.matchAll(/\('accessory', '(\w+)', (\d+)[,)]/g)].map((m) => [m[1], Number(m[2])]))
+  for (const item of ACCESSORIES) assert.equal(rows.get(item.id), item.coins, item.id)
+  assert.equal(rows.size, ACCESSORIES.length)
+})
+
+test('an accessory costs coins once, goes on, and comes off with a second tap', async () => {
+  const { buyAccessory, wearAccessory, normalizePurse } = await import('../src/lib/purse.js')
+  const book = { coins: 20, accessories: [], worn: {} }
+  assert.equal(buyAccessory(book, 'crown').miss, 'shop.miss.needCoins')
+  const bought = buyAccessory(book, 'beanie').book
+  assert.equal(bought.coins, 5)
+  assert.deepEqual(normalizePurse(bought).worn, { head: 'beanie' })
+  assert.equal(buyAccessory(bought, 'beanie').book.coins, 5, 'owning it again is free')
+  assert.deepEqual(normalizePurse(wearAccessory(bought, 'beanie').book).worn, {})
+  assert.deepEqual(normalizePurse({ worn: { head: 'beanie' } }).worn, {}, 'only owned items are worn')
+})
+
+test('a night pays 2 a Did on up to 3 questions', async () => {
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const { dueTonight } = await import('../src/lib/recurrence.js')
+  const clock = new Date('2026-09-23T21:00:00')
+  const lamps = ['a', 'b', 'c', 'd'].map((id) => ({ id, question: id + '?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }))
+  let book = { id: 't1', title: 'Home', dayFoldHour: 0, lamps, answers: [], coins: 0 }
+  for (const id of ['a', 'b', 'c', 'd']) {
+    const row = dueTonight(book, clock).find((r) => r.lamp.id === id)
+    book = putAnswer(book, row, 'yes', clock)
+  }
+  assert.equal(book.coins, 6)
 })
 
 test('widget snapshot leads with the highest-priority open question', () => {
@@ -1505,7 +1603,7 @@ test('the native widget tap paint keeps the buddy', () => {
   const layout = readFileSync(path.join(root, 'android/app/src/main/res/layout/widget_tonight_card.xml'), 'utf8')
   assert.ok(layout.includes('@+id/widget_card_buddy'))
   const tap = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
-  assert.ok(tap.includes('buddySvgFor(props.buddyId)'), 'the saved card carries the buddy markup')
+  assert.ok(tap.includes('buddySvgFor(props.buddyId, props.buddyWorn'), 'the saved card carries the buddy markup, dressed')
   const widget = readFileSync(path.join(root, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
   assert.ok(widget.includes('export function buddySvgFor'))
 })

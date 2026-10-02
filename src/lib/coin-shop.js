@@ -1,5 +1,6 @@
 import { accountSessionOn } from './session-id.js'
-import { BUDDIES, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse } from './purse.js'
+import { BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
+import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
 
 export async function buyLookWithCoins(book, id) {
@@ -26,6 +27,22 @@ export async function buyCheerStageWithCoins(book, id) {
     return { book: applyPurchaseToBook(book, remote), miss: '' }
   }
   return buyCheerStage(book, id)
+}
+
+// Signed in, the server takes the coins and keeps the accessory. Buying one
+// puts it on; tapping one you own puts it on or takes it off.
+export async function buyAccessoryWithCoins(book, id) {
+  const item = accessoryById(id)
+  if (!item) return { book, miss: 'shop.miss.accessoryGone' }
+  const purse = normalizePurse(book)
+  if (purse.accessories.includes(id)) return wearAccessory(book, id)
+  if (accountSessionOn()) {
+    if (purse.coins < item.coins) return { book, miss: 'shop.miss.needCoins', missN: item.coins }
+    const remote = await purchaseWithCoins('accessory', id)
+    if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
+    return { book: applyPurchaseToBook(book, remote, { wear: id }), miss: '' }
+  }
+  return buyAccessory(book, id)
 }
 
 const GEM_KINDS = {

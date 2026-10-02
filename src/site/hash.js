@@ -35,6 +35,7 @@ const ROUTES = new Set([
   '/shop/looks',
   '/shop/cheers',
   '/shop/buddies',
+  '/shop/accessories',
   '/gems',
   '/kit',
   '/gift',

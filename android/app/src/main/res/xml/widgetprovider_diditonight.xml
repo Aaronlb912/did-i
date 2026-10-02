@@ -13,6 +13,6 @@
 
     android:initialLayout="@layout/rn_widget"
     android:previewLayout="@layout/widget_tonight_card"
-    android:updatePeriodMillis="0"
+    android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen">
 </appwidget-provider>

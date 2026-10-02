@@ -57,7 +57,9 @@ function AndroidSegment({ items, selected, onSelect, colors }) {
           return (
             <SegmentedButton key={item.id} selected={on} onClick={() => onSelect(item.id)} colors={segColors}>
               <SegmentedButton.Label>
-                <ComposeText color={on ? colors.on : colors.inkSoft}>{item.label}</ComposeText>
+                <ComposeText color={on ? colors.on : colors.inkSoft} maxLines={1} softWrap={false} overflow="ellipsis">
+                  {item.label}
+                </ComposeText>
               </SegmentedButton.Label>
             </SegmentedButton>
           )

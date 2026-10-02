@@ -55,7 +55,7 @@ export function NativeApp() {
         return goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {
-        goHash('/tonight', lampId ? { face: lampId } : '')
+        goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : '')
       },
     })
     afterNativeBridgeReady(async () => {
@@ -64,7 +64,7 @@ export function NativeApp() {
       }
       preparePush({
         onGo: (where) => goFromPush(where),
-        onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId } : ''),
+        onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : ''),
       }).catch(() => {})
     })
     return stop

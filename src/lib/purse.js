@@ -1,18 +1,22 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
+import { ACCESSORY_IDS, accessoriesForSale, accessoryById, normalizeWorn } from './accessories.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
 export const CHEER_STAGE_COIN = 15
 export const LOOK_GEM_PRICE = 2
 export const BUDDY_GEMS = 5
-// ~4 coins/night cap (2 paid taps × 2). About a week of that buys a look.
+// 6 coins/night cap (3 paid taps × 2). The server holds the same cap
+// (credit_night_coins). About 5 nights of that buys a look.
 export const LOOK_COIN_PRICE = 30
+export const PAID_TAPS = 3
+export const NIGHT_COIN_CAP = PAID_TAPS * 2
 // Shop drops (docs/shop-drops.md): an item with `from: 'YYYY-MM-DD'` stays out of
 // the shop until that day, so a finished batch can ship early and appear on
 // its date. Items without `from` are always in.
 export function isLive(item, today = boardDate(new Date())) {
-  return !item?.from || item.from <= today
+  return (!item?.from || item.from <= today) && (!item?.until || today < item.until)
 }
 
 const ALL_CHEERS = [
@@ -156,7 +160,8 @@ export function shopTag(purse, type, item) {
   const owned =
     (type === 'look' && purse.looks.includes(item.id)) ||
     (type === 'cheer' && purse.cheers.includes(item.id)) ||
-    (type === 'buddy' && purse.buddies.includes(item.id))
+    (type === 'buddy' && purse.buddies.includes(item.id)) ||
+    (type === 'accessory' && purse.accessories.includes(item.id))
   if (owned) return { owned: true, gems: 0, coins: 0 }
   return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
 }
@@ -296,6 +301,10 @@ export function normalizePurse(book) {
   const buddies = buddyList.includes(FREE_BUDDY) ? buddyList : [FREE_BUDDY, ...buddyList]
   const buddyOn =
     BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
+  const accessories = Array.isArray(book?.accessories)
+    ? [...new Set(book.accessories.map((id) => String(id)).filter((id) => ACCESSORY_IDS.has(id)))]
+    : []
+  const worn = normalizeWorn(book?.worn, accessories)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
   const cheerStage = cheerOn
@@ -312,6 +321,8 @@ export function normalizePurse(book) {
     lookOn,
     buddies,
     buddyOn,
+    accessories,
+    worn,
     cheerUses,
     cheerStage,
     cheerStages: stages,
@@ -340,6 +351,8 @@ export function mergePurses(boards) {
     lookOn: purses.find((item) => item.lookOn !== 'lime')?.lookOn || purses[0].lookOn,
     buddies: [...new Set(purses.flatMap((item) => item.buddies))],
     buddyOn: purses.find((item) => item.buddyOn)?.buddyOn || '',
+    accessories: [...new Set(purses.flatMap((item) => item.accessories))],
+    worn: purses.find((item) => Object.keys(item.worn).length)?.worn || {},
     cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
     cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
     cheerStages: Object.fromEntries(
@@ -383,10 +396,12 @@ export function spreadPurseFrom(shelf, book) {
     lookOn: from.lookOn,
     cheerOn: from.cheerOn,
     buddyOn: from.buddyOn,
+    worn: from.worn,
     friendCheers: from.friendCheers,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
     buddies: [...new Set([...merged.buddies, ...from.buddies])],
+    accessories: [...new Set([...merged.accessories, ...from.accessories])],
   }
   return {
     ...shelf,
@@ -413,7 +428,7 @@ export function coinsFor(status, book, row, clock = new Date()) {
   const today = boardDate(clock, book.dayFoldHour)
   const born = row?.lamp?.createdOn || ''
   if (born && born >= today) return 0
-  if (tapsPaidTonight(book, clock) >= 2) return 0
+  if (tapsPaidTonight(book, clock) >= PAID_TAPS) return 0
   return status === 'yes' ? 2 : 1
 }
 
@@ -669,6 +684,41 @@ export function buyLook(book, id) {
   }
 }
 
+// Signed out, an accessory is bought and kept on this phone. Signed in, the
+// server takes the coins (coin-shop.js). Buying one puts it on.
+export function buyAccessory(book, id) {
+  const item = accessoryById(id)
+  const purse = normalizePurse(book)
+  if (!item || !isLive(item)) return { book, miss: 'shop.miss.accessoryGone' }
+  if (purse.accessories.includes(id)) return wearAccessory(book, id)
+  if (purse.coins < item.coins) return { book, miss: 'shop.miss.needCoins', missN: item.coins }
+  const accessories = [...purse.accessories, id]
+  return {
+    book: {
+      ...book,
+      ...purse,
+      coins: purse.coins - item.coins,
+      accessories,
+      worn: { ...purse.worn, [item.slot]: id },
+      // Something to wear it: the free ant if no buddy is on.
+      buddyOn: purse.buddyOn || FREE_BUDDY,
+    },
+    miss: '',
+  }
+}
+
+// Puts it on, or takes it off if it is already on. One per slot.
+export function wearAccessory(book, id) {
+  const item = accessoryById(id)
+  const purse = normalizePurse(book)
+  if (!item || !purse.accessories.includes(id)) return { book, miss: 'shop.miss.buyAccessoryFirst' }
+  const worn = { ...purse.worn }
+  if (worn[item.slot] === id) delete worn[item.slot]
+  else worn[item.slot] = id
+  const buddyOn = worn[item.slot] ? purse.buddyOn || FREE_BUDDY : purse.buddyOn
+  return { book: { ...book, ...purse, worn, buddyOn }, miss: '' }
+}
+
 export function mergeGiftCheers(book, ids) {
   const purse = normalizePurse(book)
   const won = (ids || []).filter((id) => CHEER_IDS.has(id) && !purse.cheers.includes(id))
@@ -770,6 +820,7 @@ export function giftItems() {
     looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
     cheers: CHEERS.filter((item) => item.gems > 0),
     buddies: BUDDIES.filter((item) => item.gems > 0),
+    accessories: accessoriesForSale(boardDate(new Date())),
   }
 }
 
@@ -781,6 +832,11 @@ export function mergeGift(book, gift) {
     if (!LOOK_IDS.has(id)) return { book, had: false, known: false }
     if (purse.looks.includes(id)) return { book, had: true, known: true }
     return { book: { ...book, ...purse, looks: [...purse.looks, id] }, had: false, known: true }
+  }
+  if (gift?.kind === 'accessory') {
+    if (!ACCESSORY_IDS.has(id)) return { book, had: false, known: false }
+    if (purse.accessories.includes(id)) return { book, had: true, known: true }
+    return { book: { ...book, ...purse, accessories: [...purse.accessories, id] }, had: false, known: true }
   }
   if (gift?.kind === 'buddy') {
     if (!BUDDY_IDS.has(id)) return { book, had: false, known: false }
@@ -796,5 +852,10 @@ export function wearGift(book, kind, id) {
   const purse = normalizePurse(book)
   if (kind === 'look') return purse.looks.includes(id) ? { ...book, ...purse, lookOn: id } : book
   if (kind === 'buddy') return purse.buddies.includes(id) ? { ...book, ...purse, buddyOn: id } : book
+  if (kind === 'accessory') {
+    const slot = accessoryById(id)?.slot
+    if (!slot || !purse.accessories.includes(id)) return book
+    return { ...book, ...purse, worn: { ...purse.worn, [slot]: id }, buddyOn: purse.buddyOn || FREE_BUDDY }
+  }
   return purse.cheers.includes(id) ? { ...book, ...purse, cheerOn: id } : book
 }

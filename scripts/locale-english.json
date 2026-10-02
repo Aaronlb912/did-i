@@ -169,7 +169,8 @@
     "widget.settings.lookTag",
     "widget.settings.openOnly",
     "widget.settings.openOnlySub",
-    "we.question"
+    "we.question",
+    "accessory.monocle"
   ],
   "de": [
     "shop.cog",

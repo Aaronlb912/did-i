@@ -1,4 +1,5 @@
 import React from 'react'
+import { ACCESSORY_PAD, dressedSvg } from '../../src/lib/accessories.js'
 import { FlexWidget, OverlapWidget, SvgWidget, TextWidget } from 'react-native-android-widget'
 
 // The exact markup native/components/BuddyArt.jsx's `BuddyArt` renders (not
@@ -200,15 +201,20 @@ const BUDDY_SVG = {
   </svg>`,
 }
 
-export function buddySvgFor(id) {
-  return BUDDY_SVG[String(id || '')] || ''
+// The buddy wearing its accessories (worn), when it has any on.
+export function buddySvgFor(id, worn = null, tone = '') {
+  const base = BUDDY_SVG[String(id || '')] || ''
+  return worn ? dressedSvg(base, String(id || ''), worn, tone || undefined) : base
 }
 
-function BuddyMark({ id, compact }) {
-  const svg = BUDDY_SVG[id]
+function BuddyMark({ id, worn, tone, compact }) {
+  const svg = buddySvgFor(id, worn, tone)
   if (!svg) return null
+  const dressed = svg !== BUDDY_SVG[id]
+  // Same width either way, so an outfit never squeezes the question; dressed,
+  // the buddy draws a little smaller to leave room for wings and hats.
   const boxW = compact ? 28 : 36
-  const boxH = (boxW * 58) / 48
+  const boxH = dressed ? (boxW * (58 + ACCESSORY_PAD * 2)) / (48 + ACCESSORY_PAD * 2) : (boxW * 58) / 48
   return <SvgWidget svg={svg} style={{ width: boxW, height: boxH }} />
 }
 
@@ -340,12 +346,18 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const showNext = Boolean(lead) && browsable > 1 && !tight
   const { w, h } = widgetSize(widgetInfo)
   const buttonH = (tight ? 5 : compact ? 6 : 8) * 2 + (compact ? 13 : 15) * 1.35
-  const roomW = w - 2 * (outerPad + ringPad + panelPadH) - 2 * (showBuddy ? (compact ? 28 : 34) : 4)
+  // Too narrow to keep the buddy's corner clear on both sides of the question
+  // (that left it no width at all): the question goes under the buddy instead.
+  const sideGap = showBuddy ? (compact ? 28 : 34) : 4
+  const stack = showBuddy && w > 0 && w - 2 * (outerPad + ringPad + panelPadH + sideGap) < 90
+  const buddyDrop = stack ? (compact ? 24 : 30) : 0
+  const roomW = w - 2 * (outerPad + ringPad + panelPadH) - 2 * (stack ? 4 : sideGap)
   const roomH =
     h -
     2 * (outerPad + ringPad + panelPadV) -
     15 -
     (tight ? 2 : 4) -
+    buddyDrop -
     (lead ? actionGap * 2 + buttonH : actionGap + 16)
   const fit = lead ? fitQuestion(question, titleSize, roomW, roomH) : { fontSize: titleSize, lines: 2 }
   const questionSize = fit.fontSize
@@ -411,8 +423,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 width: 'match_parent',
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingHorizontal: showBuddy ? (compact ? 28 : 34) : 4,
-                marginTop: tight ? 2 : 4,
+                paddingHorizontal: stack ? 4 : sideGap,
+                marginTop: (tight ? 2 : 4) + buddyDrop,
                 marginBottom: lead ? actionGap : 0,
                 overflow: 'hidden',
               }}
@@ -526,7 +538,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 paddingRight: panelPadH + ringPad,
               }}
             >
-              <BuddyMark id={buddyId} compact={compact} />
+              <BuddyMark id={buddyId} worn={p.buddyWorn} tone={palette(p).on} compact={compact} />
             </FlexWidget>
           ) : null}
           {showNext ? (

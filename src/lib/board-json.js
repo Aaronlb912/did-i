@@ -58,6 +58,20 @@ export function byPriority(rows) {
     .map((item) => item.row)
 }
 
+function askKey(lamp) {
+  const after = asString(lamp?.askAfter).trim()
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(after) ? after : ''
+}
+
+// Tonight's order: questions with no set time first (they can be asked all
+// evening), then by ask time. Priority breaks ties.
+export function byAskTime(rows) {
+  return byPriority(rows)
+    .map((row, at) => ({ row, at }))
+    .sort((a, b) => askKey(a.row.lamp).localeCompare(askKey(b.row.lamp)) || a.at - b.at)
+    .map((item) => item.row)
+}
+
 // Low never buzzes. High gets a second nudge late if it is still open.
 export function lampBuzzes(lamp) {
   return lampNotifyOn(lamp) && lampPriority(lamp) !== 'low'
@@ -266,6 +280,8 @@ export function normalizeBook(raw) {
     lookOn: purse.lookOn,
     buddies: purse.buddies,
     buddyOn: purse.buddyOn,
+    accessories: purse.accessories,
+    worn: purse.worn,
     friendCheers: purse.friendCheers,
   }
 }

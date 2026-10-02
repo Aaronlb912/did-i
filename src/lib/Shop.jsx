@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
-import { BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
+import { AccessoryChip, BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
+import { accessoriesForSale } from './accessories.js'
+import { AccessoryPreview } from './ShopAccessories.jsx'
 import { activeLook } from './active-look.js'
 import { CoinIcon, GemIcon } from './PurseIcons.jsx'
 import { LookPreviewCard, ShopDoor, ShopPurse } from './shop-bits.jsx'
@@ -22,13 +24,16 @@ import {
   shopTag,
 } from './purse.js'
 
-export function tileChip(type, id) {
+// buddy: who models an accessory, your buddy if one is on.
+export function tileChip(type, id, buddy = '') {
+  if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} />
   if (type === 'look') return <LookChip id={id} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} />
   return <BuddyChip id={id} />
 }
 
 export function tileName(type, id) {
+  if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
   return t(buddyText(id, 'name'))
@@ -55,7 +60,7 @@ export function ShopTile({ type, item, purse, onTile }) {
       aria-label={t('shop.see', { name })}
       onClick={() => onTile(type, item)}
     >
-      <span className="di-shop-tile-chip">{tileChip(type, item.id)}</span>
+      <span className="di-shop-tile-chip">{tileChip(type, item.id, purse.buddyOn)}</span>
       <strong>{name}</strong>
       <PriceTag tag={shopTag(purse, type, item)} />
     </button>
@@ -162,12 +167,18 @@ export function Shop({ book, now }) {
   const coat = activeLook(book)
   const [peekLook, setPeekLook] = useState('')
   const [peekBuddy, setPeekBuddy] = useState('')
-  const owned = purse.looks.length + purse.cheers.length + purse.buddies.length
+  const [peekAcc, setPeekAcc] = useState('')
+  const owned = purse.looks.length + purse.cheers.length + purse.buddies.length + purse.accessories.length
   const today = boardDate(clock, book.dayFoldHour)
   const previewLook = peekLook || coat
 
   function peekAt(type, item) {
-    if (type === 'look') {
+    if (type !== 'accessory') setPeekAcc('')
+    if (type === 'accessory') {
+      setPeekLook('')
+      setPeekBuddy('')
+      setPeekAcc((prev) => (prev === item.id ? '' : item.id))
+    } else if (type === 'look') {
       setPeekBuddy('')
       setPeekLook((prev) => (prev === item.id ? '' : item.id))
     } else if (type === 'cheer') {
@@ -210,6 +221,8 @@ export function Shop({ book, now }) {
         <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} onTile={peekAt} />
         <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} onTile={peekAt} />
         <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
+        {peekAcc ? <AccessoryPreview id={peekAcc} purse={purse} /> : null}
+        <KindRow type="accessory" list={accessoriesForSale(today)} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} onTile={peekAt} />
 
         <div className="di-set-card di-shop-doors">
           <ShopDoor

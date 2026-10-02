@@ -1,0 +1,60 @@
+diff --git a/node_modules/expo-widgets/ios/Widgets/AppIntent.swift b/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
+index 972fa4f..1abae0c 100644
+--- a/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
++++ b/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
+@@ -85,6 +85,55 @@ struct WidgetUserInteraction: AppIntent {
+         return .result()
+       }
+       newTimeline[entryIndex] = newEntry
++      // Did I: later entries were drawn before this tap. Carry the answers
++      // over (by lampId + periodKey) so an answered question does not come
++      // back as open when the next entry takes over. Each later entry keeps
++      // its own questions, since those are the ones whose time has come.
++      if let newItems = newProps["items"] as? [[String: Any]], entryIndex + 1 < newTimeline.count {
++        var answered: [String: Any] = [:]
++        for item in newItems {
++          let status = item["status"] as? String ?? "open"
++          if status != "open" {
++            answered["\(item["lampId"] ?? ""):\(item["periodKey"] ?? "")"] = status
++          }
++        }
++        for index in (entryIndex + 1)..<newTimeline.count {
++          var later = newTimeline[index]
++          guard var laterProps = later["props"] as? [String: Any],
++                var laterItems = laterProps["items"] as? [[String: Any]] else { continue }
++          var closed = 0
++          for at in laterItems.indices {
++            let key = "\(laterItems[at]["lampId"] ?? ""):\(laterItems[at]["periodKey"] ?? "")"
++            if let status = answered[key], (laterItems[at]["status"] as? String ?? "open") == "open" {
++              laterItems[at]["status"] = status
++              closed += 1
++            }
++          }
++          if closed == 0 { continue }
++          laterProps["items"] = laterItems
++          laterProps["left"] = max(0, (laterProps["left"] as? Int ?? 0) - closed)
++          let lead = laterItems.first { ($0["status"] as? String) == "open" }
++          if let lead {
++            let leadId = lead["lampId"] as? String ?? ""
++            let stillOpen = laterItems.contains {
++              ($0["lampId"] as? String) == (laterProps["leadLampId"] as? String) && ($0["status"] as? String) == "open"
++            }
++            if !stillOpen {
++              laterProps["leadLampId"] = leadId
++              laterProps["question"] = lead["question"] ?? lead["label"] ?? ""
++              laterProps["tagTitle"] = lead["tag"] ?? laterProps["tagTitle"] ?? ""
++              laterProps["openUri"] = "didi://tonight?face=" + (leadId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? leadId)
++            }
++          } else {
++            laterProps["leadLampId"] = ""
++            laterProps["question"] = ""
++            laterProps["footer"] = laterProps["clearLabel"] ?? laterProps["footer"] ?? ""
++            laterProps["openUri"] = "didi://tonight"
++          }
++          later["props"] = laterProps
++          newTimeline[index] = later
++        }
++      }
+       WidgetsStorage.set(newTimeline, forKey: "__expo_widgets_\(source)_timeline")
+     }
+ 

@@ -40,6 +40,7 @@ const ROUTES = new Set([
   '/shop/looks',
   '/shop/cheers',
   '/shop/buddies',
+  '/shop/accessories',
   '/gems',
   '/kit',
   '/gift',
@@ -95,11 +96,14 @@ export function routeFromScreen(screen) {
     start: params.start || '',
     tag,
     copy: params.copy || '',
+    // When the question in face was asked for, so asking again for the same
+    // one brings it back to the top. Stable across renders.
+    focusAt: params.focusAt || 0,
   }
 }
 
 function paramsOf(route) {
-  return { face: route.face, id: route.id, start: route.start, copy: route.copy }
+  return { face: route.face, id: route.id, start: route.start, copy: route.copy, focusAt: route.focusAt }
 }
 
 function ready() {
@@ -290,6 +294,9 @@ export function goHash(path, extras = '') {
     start: extra.start || '',
     tag,
     copy: extra.copy || '',
+    // A new ask for a question (a notification, a link) refocuses it; carrying
+    // the same face along, as a tag change does, does not.
+    focusAt: extra.face ? (extra.face === current.face && extra.keepFocus ? current.focusAt : Date.now()) : 0,
   }
   const hash = nextPath === '/' ? '#/' : `#${nextPath}`
   if (global.window?.location) global.window.location.hash = hash

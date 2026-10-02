@@ -3,6 +3,7 @@ import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { armLampPings, checkPings, requestPings } from '../../src/lib/notify.js'
 import { publishSheet } from '../components/SheetHost.jsx'
+import { offerExactAlarms } from './exact-alarms.js'
 
 const KEY = 'did-i-ping-primer'
 
@@ -51,7 +52,10 @@ async function showPrimer({ title, body, colors }) {
       requestPings()
         .then((state) => {
           listen?.(state)
-          if (state === 'granted') armLampPings(readShelf().boards)
+          if (state === 'granted') {
+            armLampPings(readShelf().boards)
+            offerExactAlarms(colors).catch(() => {})
+          }
         })
         .catch(() => {})
     },

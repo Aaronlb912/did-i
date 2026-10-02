@@ -11,6 +11,8 @@ import { t } from '../src/lib/i18n.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
+import { offerExactAlarms } from './lib/exact-alarms.js'
+import { syncTonightWidget } from './widget-sync.js'
 import {
   flushNavigation,
   goHash,
@@ -179,7 +181,8 @@ export function AppShell() {
     const next = await requestPings()
     setPingState(next)
     if (next === 'granted' && app.book) armLampPings(app.shelf?.boards || app.book).catch(reportRejection('arm-pings'))
-  }, [app.book, app.shelf, pingState])
+    if (next === 'granted') offerExactAlarms(colors).catch(() => {})
+  }, [app.book, app.shelf, pingState, colors])
 
   useEffect(() => onPingState(setPingState), [])
 
@@ -191,6 +194,11 @@ export function AppShell() {
         .then((state) => {
           setPingState(state)
           if (state === 'granted') syncPushTokenIfAllowed().catch(() => {})
+          // Back from the phone's settings, maybe with Alarms & reminders now
+          // on: set the alarms again so they land on the minute.
+          const shelf = readShelf()
+          if (state === 'granted' && shelf?.boards?.length) armLampPings(shelf.boards).catch(() => {})
+          syncTonightWidget(shelf).catch(() => {})
         })
         .catch(() => {})
     })

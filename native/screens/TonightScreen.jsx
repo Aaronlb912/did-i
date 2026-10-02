@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
@@ -63,7 +63,12 @@ function useMinuteNow() {
       setNow(new Date())
       interval = setInterval(() => setNow(new Date()), 60000)
     }, wait)
+    // Timers stall in the background, so catch up when the app comes back.
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setNow(new Date())
+    })
     return () => {
+      sub.remove()
       clearTimeout(timeout)
       if (interval) clearInterval(interval)
     }
@@ -87,7 +92,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   )
 }
 
-export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId }) {
+export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId, focusKey }) {
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
@@ -98,7 +103,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const [keySeen, setKeySeen] = useState(jewelKeySeen)
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
-  const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, now })
+  const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
   // Keep the widget's Did we line in step with what Tonight knows.

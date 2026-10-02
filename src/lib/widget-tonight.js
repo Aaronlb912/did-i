@@ -5,6 +5,7 @@ import {
   rankWidgetOpen,
   readWidgetSettings,
   tonightRowsForAllBoards,
+  waitingRowsForAllBoards,
   widgetColorBook,
   widgetTonightUri,
 } from './widget-config.js'
@@ -22,6 +23,7 @@ import {
   periodPassed,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
+import { clockWords } from './hall-pages.js'
 import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
@@ -147,6 +149,7 @@ export function preferStoredTonightProps(built, stored) {
     footer: stored.footer || built.footer,
     openUri: stored.openUri || built.openUri,
     buddyId: stored.buddyId || built.buddyId,
+    buddyWorn: built.buddyWorn,
   }
 }
 
@@ -180,6 +183,10 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   } else {
     footer = t('widget.tonight.empty')
   }
+  // Nothing to answer yet, but a question comes up later tonight.
+  const next = waitingRowsForAllBoards(boards, now)[0]
+  const nextLine = next ? t('widget.tonight.nextAt', { time: clockWords(next.lamp.askAfter) }) : ''
+  if (nextLine && !openRows.length) footer = nextLine
   const colorBook = widgetColorBook(shelf)
   return {
     tagTitle: String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
@@ -192,10 +199,11 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     nopeLabel: t('widget.tonight.nope'),
     nextLabel: t('widget.tonight.next'),
     openLabel: t('widget.tonight.openApp'),
-    emptyLabel: t('widget.tonight.empty'),
-    clearLabel: t('widget.tonight.clear'),
+    emptyLabel: nextLine || t('widget.tonight.empty'),
+    clearLabel: nextLine || t('widget.tonight.clear'),
     openUri: widgetTonightUri(null, lead?.lamp.id || ''),
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
+    buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),
     updatedAt: now.getTime(),
   }

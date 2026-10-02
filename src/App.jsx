@@ -54,6 +54,7 @@ import { GemShop } from './lib/GemShop.jsx'
 import { Shop } from './lib/Shop.jsx'
 import { ShopCheers } from './lib/ShopCheers.jsx'
 import { ShopBuddies } from './lib/ShopBuddies.jsx'
+import { ShopAccessories } from './lib/ShopAccessories.jsx'
 import { ShopLooks } from './lib/ShopLooks.jsx'
 import { Account } from './lib/Account.jsx'
 import { PhoneSettings } from './lib/PhoneSettings.jsx'
@@ -484,6 +485,7 @@ export default function App() {
       '/shop/looks': t('title.shopLooks'),
       '/shop/cheers': t('title.shopCheers'),
       '/shop/buddies': t('title.shopBuddies'),
+      '/shop/accessories': t('title.shopAccessories'),
       '/gems': t('title.gems'),
       '/kit': t('title.kit'),
       '/account': t('title.account'),
@@ -569,6 +571,8 @@ export default function App() {
     inner = <ShopCheers book={live} onChange={change} />
   } else if (path === '/shop/buddies') {
     inner = <ShopBuddies book={live} onChange={change} />
+  } else if (path === '/shop/accessories') {
+    inner = <ShopAccessories book={live} onChange={change} />
   } else if (path === '/gifts') {
     inner = <GiftsSent book={live} />
   } else if (path === '/gift') {
