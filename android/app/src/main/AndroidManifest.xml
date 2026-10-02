@@ -55,6 +55,7 @@
         <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/f/"/>
         <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/j/"/>
         <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/i/"/>
+        <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/d/"/>
       </intent-filter>
       <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>
     </activity>

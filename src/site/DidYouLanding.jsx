@@ -1,0 +1,84 @@
+import { useEffect, useState } from 'react'
+import { t } from '../lib/i18n.js'
+import { APP_STORE_URL, PLAY_URL } from '../lib/invite-link.js'
+import { didYouLink, lookUpDidYouLink } from '../lib/did-you-links.js'
+import { AppleMark, PlayMark } from './Invite.jsx'
+import { MarketingShell } from './MarketingShell.jsx'
+
+// did-i.app/d/CODE: a Did you link. With Did I installed, Open asks to add
+// the question to tonight. Without it, the store buttons copy the link
+// (iPhone reads it on first launch) or carry it as the Play referrer.
+export function DidYouLanding({ code }) {
+  const link = didYouLink(code)
+  const [found, setFound] = useState(link ? undefined : null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!link) return undefined
+    let alive = true
+    lookUpDidYouLink(code).then((next) => {
+      if (alive) setFound(next)
+    })
+    return () => {
+      alive = false
+    }
+  }, [code, link])
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      // Open in Did I still works once it is installed.
+    }
+  }
+
+  const ready = found && !found.miss
+  const title =
+    found === undefined
+      ? t('family.loading')
+      : found?.miss
+        ? t('didYouLink.reach')
+        : found
+          ? t('didYouLink.asked', { name: found.name || 'Did I' })
+          : t('didYouLink.bad')
+
+  return (
+    <MarketingShell path="/download">
+      <div className="di-download">
+        <p className="di-face-plate">{t('web.download.kicker')}</p>
+        <h1 className="di-question">{title}</h1>
+        {ready ? (
+          <>
+            <p className="di-invite-code">{found.question}</p>
+            <div className="di-scan-open">
+              <a className="di-did di-did-small di-invite-store" href={`didi://d/${code.toLowerCase()}`}>
+                {t('scanPage.open')}
+              </a>
+            </div>
+            <p className="di-land-lead">{t('didYouLink.noApp')}</p>
+            <div className="di-download-grid">
+              <a className="di-did di-did-small di-invite-store" href={APP_STORE_URL} onClick={copyLink}>
+                <AppleMark />
+                {t('invite.ios')}
+              </a>
+              <a
+                className="di-did di-did-small di-invite-store"
+                href={`${PLAY_URL}&referrer=${encodeURIComponent(`did=${code.toLowerCase()}`)}`}
+                onClick={copyLink}
+              >
+                <PlayMark />
+                {t('invite.android')}
+              </a>
+            </div>
+            {copied ? (
+              <p className="di-detail-meta" role="status">
+                {t('scanPage.copied')}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    </MarketingShell>
+  )
+}

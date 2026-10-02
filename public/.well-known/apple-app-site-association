@@ -6,7 +6,8 @@
         "components": [
           { "/": "/f/*", "comment": "friend QR code" },
           { "/": "/j/*", "comment": "family QR code" },
-          { "/": "/i/*", "comment": "invite link" }
+          { "/": "/i/*", "comment": "invite link" },
+          { "/": "/d/*", "comment": "did you link" }
         ]
       }
     ]

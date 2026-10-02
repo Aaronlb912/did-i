@@ -4,6 +4,7 @@ import * as Application from 'expo-application'
 import * as Clipboard from 'expo-clipboard'
 import { inviteFromText, savePendingInvite } from '../src/lib/invite-link.js'
 import { savePendingScan, scanFromText } from '../src/lib/qr-links.js'
+import { didYouFromText, savePendingDidYou } from '../src/lib/did-you-links.js'
 
 // First launch after an invite link (did-i.app/i/CODE). Android gets the code
 // from the Play install referrer. iPhone has no referrer, so the link page
@@ -20,6 +21,7 @@ export async function captureInviteOnFirstLaunch() {
       const referrer = await Application.getInstallReferrerAsync()
       savePendingInvite(inviteFromText(referrer))
       savePendingScan(scanFromText(referrer))
+      savePendingDidYou(didYouFromText(referrer))
       return
     }
     if (Platform.OS !== 'ios') return
@@ -29,6 +31,8 @@ export async function captureInviteOnFirstLaunch() {
     if (/did-i\.app\/i\//i.test(text)) savePendingInvite(inviteFromText(text))
     // A friend or family QR page (did-i.app/f/ID, /j/CODE) copies its link the same way.
     savePendingScan(scanFromText(text))
+    // So does a Did you link (did-i.app/d/CODE); it asks right away, no sign-in.
+    savePendingDidYou(didYouFromText(text))
   } catch {
     // No invite is fine.
   }

@@ -7,7 +7,8 @@ import { Invite } from './Invite.jsx'
 import { Landing } from './Landing.jsx'
 import { Press } from './Press.jsx'
 import { MarketingPrivacy, MarketingTerms } from './MarketingLegal.jsx'
-import { inviteCodeFromPath, readMarketingPath, scanFromPath, shouldShowMarketing } from './path.js'
+import { didYouCodeFromPath, inviteCodeFromPath, readMarketingPath, scanFromPath, shouldShowMarketing } from './path.js'
+import { DidYouLanding } from './DidYouLanding.jsx'
 import { ScanLanding } from './ScanLanding.jsx'
 import { webAppPublic } from './web-app.js'
 import '../lib/did-i.css'
@@ -39,6 +40,8 @@ function MarketingPage() {
   if (invite) return <Invite code={invite} />
   const scan = scanFromPath(path)
   if (scan) return <ScanLanding kind={scan.kind} code={scan.code} />
+  const didYou = didYouCodeFromPath(path)
+  if (didYou) return <DidYouLanding code={didYou} />
   return <Landing />
 }
 

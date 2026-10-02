@@ -166,7 +166,7 @@ function BuddyPreviewCard({ id, colors }) {
 // true whether the page is peeking a coin look or a gem look.
 function LookPreviewCard({ id }) {
   const theme = useTheme()
-  const colors = useLookColors(id, false)
+  const colors = useLookColors(id)
   const gemCard = gemPanelStyle(id, theme)
   return (
     <View style={styles.buddyPreview}>
