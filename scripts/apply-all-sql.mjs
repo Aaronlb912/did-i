@@ -15,6 +15,7 @@ const files = [
   'supabase/answers.sql',
   'supabase/blocks.sql',
   'supabase/push.sql',
+  'supabase/family-summary.sql',
   'supabase/tonight.sql',
   'supabase/dit-board.sql',
   'supabase/gems-social.sql',
@@ -30,6 +31,8 @@ const files = [
   'supabase/gifts.sql',
   'supabase/lockdown.sql',
   'supabase/friend-ids.sql',
+  'supabase/family-join.sql',
+  'supabase/avatars.sql',
   'supabase/app-version.sql',
 ]
 

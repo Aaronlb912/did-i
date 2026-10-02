@@ -12,9 +12,16 @@ import { runAfterLaunchReady } from './lib/launch-ready.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
 import { initWidgetsOnLaunch } from './widget-bridge.js'
+import { syncTonightWidget } from './widget-sync.js'
+import { installQuickActions } from './quick-actions.js'
+import { refreshTogether } from '../src/lib/people.js'
+import { t, tMiss } from '../src/lib/i18n.js'
+import { showToast } from './lib/toast-queue.js'
+import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
 import { Boundary } from './components/Boundary.jsx'
 import { Slot } from './components/Slot.jsx'
 import { StreakMomentHost } from './components/StreakMoment.jsx'
+import { PendingScanHost } from './components/PendingScanHost.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
 import { goBack, goFromPush, goHash } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
@@ -59,12 +66,36 @@ export function NativeApp() {
       },
     })
     afterNativeBridgeReady(async () => {
+      installQuickActions()
       if (nativeWidgetsEnabled()) {
+        // Who is done tonight, for the Together widget, on open and on return.
+        refreshTogether().catch(() => {})
+        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
         await initWidgetsOnLaunch(readShelf()).catch(() => {})
       }
       preparePush({
         onGo: (where) => goFromPush(where),
         onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : ''),
+        // Keep or Pass on a friend's did you: the inbox answers it.
+        onSend: (sendId, keep) => goHash('/inbox', { id: `${keep ? 'keep' : 'pass'}:${sendId}` }),
+        // Did or Nope from a reminder: saved the same way as a widget tap.
+        onAnswer: (lampId, kind, night) => {
+          const shelf = applyWidgetTapOnce(lampId, kind, night)
+          if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
+          goHash('/tonight')
+        },
+        // Did or Nope on a Did we reminder: saved on the server, then Tonight
+        // shows it. A miss (offline, card left) says so there.
+        onWeAnswer: async (cardId, kind, night) => {
+          goHash('/tonight')
+          try {
+            const { weAnswer } = await import('../src/lib/did-we.js')
+            const out = await weAnswer(cardId, kind, night || undefined)
+            if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(out.miss), ms: 5200 })
+          } catch {
+            showToast({ id: 'we-answer', kind: 'error', text: t('people.reach'), ms: 5200 })
+          }
+        },
       }).catch(() => {})
     })
     return stop
@@ -77,6 +108,7 @@ export function NativeApp() {
           <ThemedStatusBar />
           <Boundary>
             <RootNavigator />
+            <PendingScanHost />
             <Slot>
               <StreakMomentHost />
             </Slot>

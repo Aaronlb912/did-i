@@ -116,6 +116,35 @@ global.__didIFreshInstall =
   global.localStorage.getItem('did-i-shelf') == null && global.localStorage.getItem('did-i-prefs') == null
 if (!global.sessionStorage) global.sessionStorage = kv('ss:')
 
+// One id per phone that survives a reinstall (and the Dev app), so Account
+// does not list the same phone again and again. Hashed: the phone's own id
+// never leaves it.
+function hashId(text) {
+  let a = 0x811c9dc5
+  let b = 0x01000193
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text.charCodeAt(i)
+    a = Math.imul(a ^ c, 0x01000193) >>> 0
+    b = Math.imul(b ^ c, 0x811c9dc5) >>> 0
+  }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')
+}
+try {
+  const app = require('expo-application')
+  if (Platform.OS === 'android' && typeof app.getAndroidId === 'function') {
+    const id = app.getAndroidId()
+    if (typeof id === 'string' && id.length > 4) globalThis.__didIStableDeviceId = `a-${hashId(String(id))}`
+  } else if (Platform.OS === 'ios' && typeof app.getIosIdForVendorAsync === 'function') {
+    Promise.resolve(app.getIosIdForVendorAsync())
+      .then((id) => {
+        if (typeof id === 'string' && id.length > 4) globalThis.__didIStableDeviceId = `i-${hashId(String(id).toLowerCase())}`
+      })
+      .catch(() => {})
+  }
+} catch {
+  // Keeps the saved random key, as before.
+}
+
 if (!global.window) global.window = global
 
 const win = global.window

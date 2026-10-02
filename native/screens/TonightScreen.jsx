@@ -8,7 +8,7 @@ import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
-import { useTheme } from '../../src/lib/prefs.js'
+import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
@@ -100,7 +100,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const sync = useSync()
   const now = useMinuteNow()
   const [topicPicks, setTopicPicks] = useState([])
-  const [keySeen, setKeySeen] = useState(jewelKeySeen)
+  const [keySeen, setKeySeen] = useState(() => jewelKeySeen())
+  // Account prefs land after a reinstall; seen there hides it too.
+  const prefsSeen = usePrefs().jewelKeySeen === true
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
@@ -141,7 +143,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const showChips = stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
-  const showKey = !keySeen && keyNight && showChips && !stack.hallOn
+  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.hallOn
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
     () =>

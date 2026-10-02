@@ -2,6 +2,8 @@
 -- a friend never needs a phone number. Run after lockdown.sql.
 
 alter table public.profiles add column if not exists friend_id text;
+-- Profile picture (public link in the avatars bucket); rules in avatars.sql.
+alter table public.profiles add column if not exists avatar_url text;
 
 alter table public.profiles drop constraint if exists profiles_friend_id_shape;
 alter table public.profiles add constraint profiles_friend_id_shape
@@ -115,6 +117,60 @@ $$;
 
 revoke all on function public.ask_by_friend_id(text) from public, anon;
 grant execute on function public.ask_by_friend_id(text) to authenticated;
+
+-- Who a friend ID belongs to, before asking, so the app can show "Send a
+-- friend request to ...?". Sends nothing. Same miss count and daily limit as
+-- ask_by_friend_id. state: 'friends', 'asked' (you already asked them),
+-- 'asksYou' (they asked you), or '' (nothing yet).
+create or replace function public.look_up_friend_id(wanted text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who uuid := (select auth.uid());
+  code text := regexp_replace(coalesce(wanted, ''), '[^0-9]', '', 'g');
+  them public.profiles;
+  mine text;
+  theirs text;
+begin
+  if who is null then
+    raise exception 'not signed in';
+  end if;
+  if (select count(*) from public.friend_id_misses m
+      where m.user_id = who and m.made_at > now() - interval '1 day') >= 20 then
+    raise exception 'too many tries';
+  end if;
+  if code !~ '^[1-9][0-9]{11}$' then
+    raise exception 'bad id';
+  end if;
+
+  select * into them from public.profiles p where p.friend_id = code;
+  if them is null or them.user_id = who or public.blocked_with(them.user_id) then
+    insert into public.friend_id_misses (user_id) values (who);
+    return jsonb_build_object('miss', 'nobody');
+  end if;
+
+  select state into mine from public.friend_links where from_id = who and to_id = them.user_id;
+  select state into theirs from public.friend_links where from_id = them.user_id and to_id = who;
+
+  return jsonb_build_object(
+    'user_id', them.user_id,
+    'display_name', coalesce(them.display_name, ''),
+    'avatar_url', coalesce(them.avatar_url, ''),
+    'state', case
+      when mine = 'ok' or theirs = 'ok' then 'friends'
+      when theirs = 'asked' then 'asksYou'
+      when mine = 'asked' then 'asked'
+      else ''
+    end
+  );
+end;
+$$;
+
+revoke all on function public.look_up_friend_id(text) from public, anon;
+grant execute on function public.look_up_friend_id(text) to authenticated;
 
 -- Your own friend ID, making one if the row is older than this file.
 create or replace function public.my_friend_id()

@@ -68,6 +68,9 @@ import {
   Page,
 } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
+import { useAccount } from '../../src/lib/account.js'
+import { usePeoplePulse } from '../../src/lib/people.js'
+import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
@@ -214,11 +217,45 @@ function SearchBox({ value, onChange, colors }) {
 
 const UNDO_MS = 6000
 
+// Did yous and Did wes, one tap from Questions. Each pill shows only when
+// there is something behind it, so the page looks the same for people who
+// never use them.
+function FromFriends({ rows, didYouOnly, onDidYou, colors }) {
+  const account = useAccount()
+  const { inbox } = usePeoplePulse(account.user)
+  const { cards } = useWeTonight(account.user)
+  if (!account.user) return null
+  const kept = rows.filter((row) => row.lamp.fromDidYou).length
+  const youN = kept + (inbox || 0)
+  const weN = (cards || []).length
+  if (!youN && !weN && !didYouOnly) return null
+  return (
+    <>
+      <View style={styles.pillRow}>
+        {youN || didYouOnly ? (
+          <Pill label={t('questions.didYouPill', { n: youN })} on={didYouOnly} onPress={onDidYou} colors={colors} />
+        ) : null}
+        {weN ? <Pill label={t('questions.didWePill', { n: weN })} onPress={() => goHash('/we')} colors={colors} /> : null}
+      </View>
+      {didYouOnly ? (
+        <View style={styles.pillRow}>
+          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>
+            {inbox ? t('questions.didYouWaiting', { n: inbox }) : t('questions.didYouKept')}
+          </Text>
+          <KeyButton colors={colors} label={t('inbox.kicker')} onPress={() => goHash('/inbox')} />
+          <KeyButton colors={colors} label={t('sent.kicker')} onPress={() => goHash('/sent')} />
+        </View>
+      ) : null}
+    </>
+  )
+}
+
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
   const allRows = taggedLamps(shelf, tagId)
   const [deadlineOnly, setDeadlineOnly] = useState(false)
+  const [didYouOnly, setDidYouOnly] = useState(false)
   const [query, setQuery] = useState('')
   const rows = searchRows(allRows, query)
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
@@ -232,11 +269,12 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
-  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks)), {
+  const fromOk = (row) => !didYouOnly || row.lamp.fromDidYou
+  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row)), {
     dateIso,
     deadlineOnly,
   })
-  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived && hasAnyTopic(row.lamp, picks)), {
+  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row)), {
     dateIso,
     deadlineOnly,
   })
@@ -331,6 +369,12 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           onTopics={setTopicPicks}
         />
         {allRows.length ? <SearchBox value={query} onChange={setQuery} colors={colors} /> : null}
+        <FromFriends
+          rows={allRows}
+          didYouOnly={didYouOnly}
+          onDidYou={() => setDidYouOnly((on) => !on)}
+          colors={colors}
+        />
 
         {hasDeadlines ? (
           <>

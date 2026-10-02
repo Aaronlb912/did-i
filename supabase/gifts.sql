@@ -350,7 +350,9 @@ begin
   from public.profiles p where p.user_id = who;
   if public.push_wanted(other, 'sends') then
     insert into public.push_queue (to_id, title, body, go)
-    values (other, coalesce(name, 'Someone') || ' sent you a gift', 'Open Did I to see it.', '/tonight');
+    values (other,
+      left(public.push_text(other, 'gift', jsonb_build_object('name', coalesce(name, public.push_text(other, 'someone')))), 80),
+      public.push_text(other, 'open'), '/tonight');
   end if;
 
   return jsonb_build_object('gems', row.gem_balance, 'coins', row.coin_balance);

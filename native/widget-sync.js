@@ -6,6 +6,9 @@ import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, WIDGET_NAME } from 
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
+import { readShelf } from '../src/lib/board-shelf.js'
+import { isoDate } from '../src/lib/recurrence.js'
+import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 
 function snapshotColors(colors, look) {
   return {
@@ -97,6 +100,76 @@ export async function syncTonightWidget(shelf) {
       })
     } catch (error) {
       console.warn('widget android update', error?.message || error)
+    }
+  }
+}
+
+// Same look and theme colours as the Tonight widget.
+export function enrichTogetherWidgetProps(shelf, props) {
+  const look = widgetLookId(shelf, widgetColorBook(shelf))
+  return { ...props, colors: snapshotColors(hallColors(look, widgetTheme()), look) }
+}
+
+let togetherApiPromise = null
+
+function togetherWidgetApi() {
+  if (!togetherApiPromise) {
+    togetherApiPromise = import('../widgets/DidITogetherWidget.tsx')
+      .then((mod) => {
+        const api = mod?.default ?? mod
+        if (!api || typeof api.updateSnapshot !== 'function') return null
+        return api
+      })
+      .catch((error) => {
+        togetherApiPromise = null
+        throw error
+      })
+  }
+  return togetherApiPromise
+}
+
+// people: the saved list (src/lib/together-widget.js). No network here.
+export async function syncTogetherWidget(people = readTogetherPeople()) {
+  if (Platform.OS === 'web') return
+  if (!nativeWidgetsEnabled()) return
+  // Nothing to queue: the next people load or prefs change redraws it.
+  if (Platform.OS === 'ios' && !nativeBridgeReady()) return
+  const props = enrichTogetherWidgetProps(readShelf(), buildTogetherWidgetProps(people))
+  if (Platform.OS === 'ios') {
+    try {
+      const api = await togetherWidgetApi()
+      if (!api) return
+      // A second entry at midnight clears the checks without the app open.
+      const midnight = new Date()
+      midnight.setHours(24, 0, 0, 0)
+      const tomorrow = enrichTogetherWidgetProps(
+        readShelf(),
+        buildTogetherWidgetProps(people, isoDate(midnight)),
+      )
+      if (api.updateTimeline) {
+        await api.updateTimeline([
+          { date: new Date(), props },
+          { date: midnight, props: tomorrow },
+        ])
+      } else await api.updateSnapshot(props)
+    } catch (error) {
+      console.warn('together widget updateSnapshot', error?.message || error)
+    }
+    return
+  }
+  if (Platform.OS === 'android') {
+    try {
+      const widgetMod = await import('react-native-android-widget')
+      const requestWidgetUpdate = widgetMod?.requestWidgetUpdate
+      if (!requestWidgetUpdate) return
+      const { renderDidITogetherAndroidWidget } = await import('../widgets/android/DidITogetherAndroidWidget.jsx')
+      await requestWidgetUpdate({
+        widgetName: TOGETHER_WIDGET_NAME,
+        renderWidget: (info) => renderDidITogetherAndroidWidget(props, info),
+        widgetNotFound: () => {},
+      })
+    } catch (error) {
+      console.warn('together widget android update', error?.message || error)
     }
   }
 }

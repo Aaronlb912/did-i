@@ -99,6 +99,7 @@ const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
+const ASK_CATEGORY = 'did-i-ask'
 
 // Takes one board or every board on the shelf; each tag's questions ping.
 export async function scheduleNativePings(books, now = new Date()) {
@@ -121,6 +122,12 @@ export async function scheduleNativePings(books, now = new Date()) {
         importance: Notifications.AndroidImportance.HIGH,
       }).catch(() => {})
     }
+    // Did and Nope buttons on a question reminder. Both open the app, which
+    // saves the answer (native/shim/push.js), so it lands even if the app was closed.
+    await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, [
+      { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: true } },
+      { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: true } },
+    ]).catch(() => {})
     const when = (at) => ({
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: at,
@@ -145,7 +152,8 @@ export async function scheduleNativePings(books, now = new Date()) {
             content: {
               title: 'Did I',
               body: row.lamp.question,
-              data: { lampId: row.lamp.id, go: '/tonight' },
+              data: { lampId: row.lamp.id, night: row.periodKey, go: '/tonight' },
+              categoryIdentifier: ASK_CATEGORY,
             },
             trigger: when(at),
           })
@@ -168,7 +176,12 @@ export async function scheduleNativePings(books, now = new Date()) {
           if (at.getTime() <= now.getTime()) continue
           notes.push({
             identifier: String(notifyId(`we:${we.id}`, night)),
-            content: { title: 'Did we', body: we.question, data: { go: '/tonight' } },
+            content: {
+              title: 'Did we',
+              body: we.question,
+              data: { go: '/tonight', weId: we.id, night },
+              categoryIdentifier: ASK_CATEGORY,
+            },
             trigger: when(at),
           })
         }

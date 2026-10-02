@@ -3,6 +3,9 @@
 
 const PRODUCT_SAME = new Set([
   'nav.everyone',
+  // "Did you · 3" and "Did we · 2": product names plus a count.
+  'questions.didYouPill',
+  'questions.didWePill',
   'we.title',
   'we.new',
   'we.did',

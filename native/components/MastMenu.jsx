@@ -15,6 +15,7 @@ import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
+import { setAppBadge } from '../../src/lib/push.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { weOpenForMe } from './WeTonight.jsx'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -271,6 +272,8 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
               ) : (
                 <Pressable
                   key={item.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.a11y || item.label}
                   onPress={() => {
                     feelTap()
                     // A new route drops the menu at once; the current one shrinks it home.
@@ -331,6 +334,10 @@ export function MastMenuCog() {
   const { open, colors, showAdd, toggle } = useMenu()
   const people = useMenuPeople()
   const waiting = people.inbox + people.asks + people.we
+  // The home screen icon shows the same number as this button, or none.
+  useEffect(() => {
+    setAppBadge(waiting)
+  }, [waiting])
   // (Did we's count shows through Friends and family.)
   const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we))
   const button = useRef(null)

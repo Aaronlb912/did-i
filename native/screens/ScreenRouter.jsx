@@ -39,6 +39,7 @@ import {
 } from './shop.jsx'
 import {
   FamilyScreen,
+  FriendScreen,
   FriendsScreen,
   InboxScreen,
   PeopleConnectScreen,
@@ -47,6 +48,7 @@ import {
   SentScreen,
 } from './social.jsx'
 import { TonightScreen } from './TonightScreen.jsx'
+import { ScanScreen } from './ScanScreen.jsx'
 
 const HALL = new Set(['/', '/home', '/tonight'])
 
@@ -120,11 +122,13 @@ export function ScreenRouter({
   if (path === '/kit') return <CollectionScreen key={route.id} book={book} onChange={change} startTab={route.id} />
   if (path === '/account') return <AccountScreen book={book} onChange={change} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
+  if (path === '/scan') return <ScanScreen />
   if (path === '/people/refer') return <PeopleReferScreen book={book} onChange={change} />
-  if (path === '/people/connect') return <PeopleConnectScreen book={book} onChange={change} />
+  if (path === '/people/connect') return <PeopleConnectScreen key={route.id} book={book} onChange={change} route={route} />
   if (path === '/friends') return <FriendsScreen book={book} onChange={change} highlightAsk={route.id} />
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />
-  if (path === '/inbox') return <InboxScreen book={book} onChange={change} onKeep={keepSent} />
+  if (path === '/friend') return <FriendScreen route={route} />
+  if (path === '/inbox') return <InboxScreen key={route.id} book={book} onChange={change} onKeep={keepSent} route={route} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
   // /we/new: start is an idea to fill in, id a person to ask. /we: the Did we
   // home, or one card's page with an id.

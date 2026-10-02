@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
+import { saveTogetherPeople } from './together-widget.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -11,15 +12,36 @@ function madeUpKey() {
   return [...bytes].map((n) => n.toString(16).padStart(2, '0')).join('')
 }
 
+const OLD_DEVICE_KEY = 'did-i-device-old'
+
+// The phone app sets a stable id from the phone itself (native/bootstrap.js),
+// so a reinstall or the Dev app is still the same phone. A random key from
+// before is handed over once, so its row can be dropped (takeOldDeviceKey).
 export function deviceKey() {
   try {
     const saved = localStorage.getItem(DEVICE_KEY)
+    const stable = globalThis.__didIStableDeviceId
+    if (stable && saved !== stable) {
+      if (saved) localStorage.setItem(OLD_DEVICE_KEY, saved)
+      localStorage.setItem(DEVICE_KEY, stable)
+      return stable
+    }
     if (saved) return saved
     const next = madeUpKey()
     localStorage.setItem(DEVICE_KEY, next)
     return next
   } catch {
     return 'this-phone'
+  }
+}
+
+export function takeOldDeviceKey() {
+  try {
+    const old = localStorage.getItem(OLD_DEVICE_KEY) || ''
+    if (old) localStorage.removeItem(OLD_DEVICE_KEY)
+    return old
+  } catch {
+    return ''
   }
 }
 
@@ -123,12 +145,15 @@ export async function signOutHere() {
   if (!db) return
   // signOut() defaults to global, which would end the session on every other device.
   await db.auth.signOut({ scope: 'local' })
+  // The home screen widget must not keep showing this account's people.
+  saveTogetherPeople([])
 }
 
 export async function signOutEverywhere() {
   const db = cloud()
   if (!db) return
   await db.auth.signOut({ scope: 'global' })
+  saveTogetherPeople([])
 }
 
 export async function deleteAccount() {
@@ -137,6 +162,7 @@ export async function deleteAccount() {
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: error.message }
   await db.auth.signOut()
+  saveTogetherPeople([])
   return { miss: '' }
 }
 

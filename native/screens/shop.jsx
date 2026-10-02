@@ -67,7 +67,7 @@ import {
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
 import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById } from '../../src/lib/accessories.js'
-import { offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
@@ -413,6 +413,13 @@ function gemLine(n) {
   return n === 1 ? t('shop.gemOne') : t('shop.gems', { n })
 }
 
+const BUY_BODY = {
+  look: 'shop.buyLookBody',
+  buddy: 'shop.buyBuddyBody',
+  accessory: 'shop.buyAccessoryBody',
+  cheer: 'shop.buyCheerBody',
+}
+
 // Coins and gems do not come back, so a tap never spends on its own.
 function BuyConfirm({ confirm, onClose, onGo, colors }) {
   const closeRef = useRef(onClose)
@@ -680,34 +687,36 @@ export function ShopScreen({ book, onChange }) {
       }
       return false
     }
+    // The preview's Buy asks "Buy this?" with the price before anything is spent.
+    const buy = (spend) => ({
+      label: t('shop.buy'),
+      go: async () => {
+        if (needGems()) return
+        // Short on coins: the buy turns itself down and the preview says why.
+        if (tag.coins > 0 && purse.coins < tag.coins) return done(type, item, await spend(), true)
+        confirmBuy(colors, {
+          title: tileName(type, item.id),
+          body: t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) }),
+          onGo: async () => done(type, item, await spend(), true),
+        })
+      },
+    })
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
-      return {
-        label: t('shop.buy'),
-        go: async () => {
-          if (needGems()) return
-          done(type, item, await buyLookWithCoins(book, item.id), true)
-        },
-      }
+      return buy(() => buyLookWithCoins(book, item.id))
     }
     if (type === 'buddy') {
       if (purse.buddyOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearBuddy(book, item.id), false) }
-      return {
-        label: t('shop.buy'),
-        go: async () => {
-          if (needGems()) return
-          done(type, item, await buyWithGems(book, 'buddy', item.id), true)
-        },
-      }
+      return buy(() => buyWithGems(book, 'buddy', item.id))
     }
     if (type === 'accessory') {
       if (tag.owned) {
         const on = purse.worn[item.slot] === item.id
         return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
       }
-      return { label: t('shop.buy'), go: async () => done(type, item, await buyAccessoryWithCoins(book, item.id), true) }
+      return buy(() => buyAccessoryWithCoins(book, item.id))
     }
     // Cheers bought with coins come in stages, which only the cheers page shows.
     if (tag.owned || !(item.gems > 0)) {
@@ -719,13 +728,7 @@ export function ShopScreen({ book, onChange }) {
         },
       }
     }
-    return {
-      label: t('shop.buy'),
-      go: async () => {
-        if (needGems()) return
-        done(type, item, await buyWithGems(book, 'cheer', item.id), true)
-      },
-    }
+    return buy(() => buyWithGems(book, 'cheer', item.id))
   }
 
   function onTile(type, item) {

@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.aaronbryant.didi",
+      "sha256_cert_fingerprints": [
+        "78:99:F9:49:F1:98:DE:C1:D8:CD:1E:23:5B:6C:D3:49:C2:84:91:B3:D6:F8:22:01:0F:01:98:8E:1B:A7:97:68",
+        "79:DE:46:2C:7A:46:80:BE:D0:19:06:E1:62:6E:EE:A3:C5:8D:BB:81:34:52:DB:D1:6E:93:58:5A:B2:1B:1A:3C"
+      ]
+    }
+  }
+]

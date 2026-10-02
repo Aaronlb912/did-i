@@ -20,6 +20,7 @@ import {
 import {
   exportAll,
   forgetDevice,
+  forgetOtherDevices,
   listDevices,
   loadProfile,
   saveProfile,
@@ -74,6 +75,10 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { SavableField } from '../components/SavableField.jsx'
+import { SavableSetField } from '../components/SavableSetField.jsx'
+import { Avatar } from '../components/PersonCard.jsx'
+import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
+import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
 import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetNote, SetRow, SetSwitch } from '../components/SetBits.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
@@ -779,7 +784,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 }
 
 // Pushes come from the server, which reads these switches from the synced prefs.
-const PUSH_KINDS = new Set(['sends', 'cheers', 'friends'])
+const PUSH_KINDS = new Set(['sends', 'cheers', 'friends', 'family'])
 
 function PingKinds({ colors, on }) {
   const prefs = usePrefs()
@@ -908,7 +913,7 @@ function PhoneLockSection({ colors }) {
 
   return (
     <>
-      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('account.lockCap')}</Text>
+      <SetCap colors={colors}>{t('account.lockCap')}</SetCap>
       <Meta colors={colors}>{locked ? t('settings.lockOn') : t('settings.lockOff')}</Meta>
       <Field
         colors={colors}
@@ -986,10 +991,14 @@ function AccountSignedIn({ book, email, onChange }) {
   const colors = useHallColors()
   const sync = useSync()
   const purse = normalizePurse(book)
+  const myAvatar = useMyAvatar()
   const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
   const [devices, setDevices] = useState([])
   const [sure, setSure] = useState(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoMiss, setPhotoMiss] = useState('')
   const here = deviceKey()
+  const canPhoto = canPickAvatar()
 
   useEffect(() => {
     setNameDraft(book?.keeperName || '')
@@ -1019,98 +1028,211 @@ function AccountSignedIn({ book, email, onChange }) {
 
   const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
   const cheerName = CHEERS.find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
+  // This phone first, then the rest by when they were last seen.
+  const phones = [...devices].sort((a, b) => (a.device_key === here ? -1 : b.device_key === here ? 1 : 0))
+  const others = phones.filter((row) => row.device_key !== here)
 
   async function download() {
     const all = await exportAll()
     await shareShelf(all)
   }
 
+  async function pickPhoto(from) {
+    setPhotoMiss('')
+    setPhotoBusy(true)
+    try {
+      const bytes = await pickAvatarBytes(from)
+      if (bytes) {
+        const out = await saveAvatar(bytes)
+        if (out.miss) setPhotoMiss(t(out.miss))
+      }
+    } catch (error) {
+      setPhotoMiss(t(error?.message === 'camera-denied' ? 'avatar.cameraOff' : 'avatar.saveFail'))
+    }
+    setPhotoBusy(false)
+  }
+
+  function forgetOne(row) {
+    setSure({
+      title: t('account.forgetTitle'),
+      body: t('account.forgetBody', { phone: row.label || t('account.aPhone') }),
+      yes: t('account.forgetYes'),
+      go: async () => {
+        await forgetDevice(row.device_key)
+        setDevices(await listDevices())
+      },
+    })
+  }
+
   return (
     <ScreenShell title={t('account.inTitle')} colors={colors}>
-      <Row colors={colors} label={t('account.who')} note={email} />
-      <Row colors={colors} label={t('account.syncNow')} note={syncNote} onPress={() => pullAndMerge()} />
+      <View style={styles.accountHead}>
+        <Avatar person={{ display_name: nameDraft || email, avatar_url: myAvatar }} colors={colors} size={72} />
+        <View style={styles.accountWho}>
+          <Text style={[styles.accountName, { color: colors.ink }]} numberOfLines={1}>
+            {nameDraft || t('account.noName')}
+          </Text>
+          <Text style={[styles.accountEmail, { color: colors.inkDim }]} numberOfLines={1}>
+            {email}
+          </Text>
+        </View>
+      </View>
+
+      <SetCap colors={colors}>{t('account.profileCap')}</SetCap>
+      <SetCard colors={colors}>
+        {canPhoto ? (
+          <SetRow
+            colors={colors}
+            icon="person"
+            tint={colors.on}
+            label={myAvatar ? t('avatar.change') : t('avatar.add')}
+            sub={photoBusy ? t('avatar.saving') : t('avatar.sub')}
+            chevron
+            onPress={photoBusy ? undefined : () => pickPhoto('library')}
+          />
+        ) : null}
+        {canPhoto && canTakePhoto() ? (
+          <SetRow
+            colors={colors}
+            icon="camera"
+            tint={colors.on}
+            label={t('avatar.takePhoto')}
+            chevron
+            onPress={photoBusy ? undefined : () => pickPhoto('camera')}
+          />
+        ) : null}
+        {canPhoto ? null : (
+          <SetRow colors={colors} icon="person" tint={colors.inkSoft} label={t('avatar.add')} sub={t('avatar.needUpdate')} />
+        )}
+        {myAvatar ? (
+          <SetRow
+            colors={colors}
+            icon="trash"
+            label={t('avatar.remove')}
+            onPress={async () => {
+              setPhotoMiss('')
+              const out = await removeAvatar()
+              if (out.miss) setPhotoMiss(t(out.miss))
+            }}
+          />
+        ) : null}
+        <SavableSetField
+          colors={colors}
+          label={t('account.name')}
+          value={nameDraft}
+          savedValue={book?.keeperName || ''}
+          onChangeText={setNameDraft}
+          onSave={(keeperName) => {
+            setNameDraft(keeperName)
+            onChange({ ...book, keeperName })
+            saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+          }}
+        />
+        <SetRow colors={colors} icon="wallpaper" label={t('account.look')} value={lookName} chevron onPress={() => goHash('/kit')} />
+        <SetRow colors={colors} icon="collection" label={t('account.cheer')} value={cheerName} chevron last onPress={() => goHash('/kit')} />
+      </SetCard>
+      {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
+
+      <SetCap colors={colors}>{t('account.syncCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} last onPress={() => pullAndMerge()} />
+      </SetCard>
       {sync.how === 'miss' && sync.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
-      <SavableField
-        colors={colors}
-        label={t('account.name')}
-        value={nameDraft}
-        savedValue={book?.keeperName || ''}
-        onChangeText={setNameDraft}
-        onSave={(keeperName) => {
-          setNameDraft(keeperName)
-          onChange({ ...book, keeperName })
-          saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
-        }}
-      />
-      <Row colors={colors} label={t('account.look')} note={lookName} onPress={() => goHash('/kit')} />
-      <Row colors={colors} label={t('account.cheer')} note={cheerName} onPress={() => goHash('/kit')} />
 
       <PhoneLockSection colors={colors} />
 
-      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('account.devices')}</Text>
-      {devices.length ? (
-        devices.map((row) => (
-          <Row
-            key={row.device_key}
-            colors={colors}
-            label={row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')}
-            note={t('account.seen', { date: deviceSeen(row.last_seen_at) })}
-            onPress={
-              row.device_key === here
-                ? undefined
-                : async () => {
-                    await forgetDevice(row.device_key)
-                    setDevices(await listDevices())
-                  }
-            }
-          />
-        ))
-      ) : (
-        <Meta colors={colors}>{t('account.noDevices')}</Meta>
-      )}
+      <SetCap colors={colors}>{t('account.devices')}</SetCap>
+      <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
+      <SetCard colors={colors}>
+        {phones.length ? (
+          phones.map((row, at) => (
+            <SetRow
+              key={row.device_key}
+              colors={colors}
+              icon={row.platform === 'web' ? 'globe' : 'person'}
+              tint={row.device_key === here ? colors.on : colors.inkSoft}
+              label={row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')}
+              sub={t('account.seen', { date: deviceSeen(row.last_seen_at) })}
+              value={row.device_key === here ? '' : t('account.forgetShort')}
+              last={at === phones.length - 1}
+              onPress={row.device_key === here ? undefined : () => forgetOne(row)}
+            />
+          ))
+        ) : (
+          <SetRow colors={colors} label={t('account.noDevices')} last />
+        )}
+      </SetCard>
+      {others.length > 1 ? (
+        <KeyButton
+          colors={colors}
+          label={t('account.forgetOthers', { n: others.length })}
+          onPress={() =>
+            setSure({
+              title: t('account.forgetOthersTitle'),
+              body: t('account.forgetOthersBody'),
+              yes: t('account.forgetYes'),
+              go: async () => {
+                await forgetOtherDevices()
+                setDevices(await listDevices())
+              },
+            })
+          }
+        />
+      ) : null}
 
-      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('account.data')}</Text>
-      <Row colors={colors} label={t('account.export')} onPress={download} />
-      <KeyButton
-        colors={colors}
-        label={t('account.out')}
-        onPress={async () => {
-          await signOutHere()
-          signedOutSync()
-        }}
-      />
-      <KeyButton
-        colors={colors}
-        label={t('account.outAll')}
-        onPress={() =>
-          setSure({
-            title: t('account.outAllTitle'),
-            body: t('account.outAllBody'),
-            yes: t('account.outAllYes'),
-            go: async () => {
-              await signOutEverywhere()
-              signedOutSync()
-            },
-          })
-        }
-      />
-      <KeyButton
-        colors={colors}
-        label={t('account.delete')}
-        onPress={() =>
-          setSure({
-            title: t('account.deleteTitle'),
-            body: t('account.deleteBody'),
-            yes: t('account.deleteYes'),
-            go: async () => {
-              await deleteAccount()
-              signedOutSync()
-            },
-          })
-        }
-      />
+      <SetCap colors={colors}>{t('account.data')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={download} />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="logout"
+          label={t('account.out')}
+          onPress={async () => {
+            await signOutHere()
+            signedOutSync()
+          }}
+        />
+        <SetRow
+          colors={colors}
+          icon="logout"
+          label={t('account.outAll')}
+          onPress={() =>
+            setSure({
+              title: t('account.outAllTitle'),
+              body: t('account.outAllBody'),
+              yes: t('account.outAllYes'),
+              go: async () => {
+                await signOutEverywhere()
+                signedOutSync()
+              },
+            })
+          }
+        />
+        <SetRow
+          colors={colors}
+          icon="trash"
+          danger
+          last
+          label={t('account.delete')}
+          onPress={() =>
+            setSure({
+              title: t('account.deleteTitle'),
+              body: t('account.deleteBody'),
+              yes: t('account.deleteYes'),
+              go: async () => {
+                await deleteAccount()
+                signedOutSync()
+              },
+            })
+          }
+        />
+      </SetCard>
       <SureModal
         sure={sure}
         colors={colors}
@@ -1134,6 +1256,10 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
+  accountWho: { flex: 1, minWidth: 0, gap: 2 },
+  accountName: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
+  accountEmail: { fontFamily: fonts.ui, fontSize: 14 },
   accountLead: {
     fontFamily: fonts.ui,
     fontSize: 15,

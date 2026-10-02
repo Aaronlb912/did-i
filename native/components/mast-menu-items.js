@@ -36,7 +36,9 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
     {
       key: 'people',
       path: '/people',
-      label: waiting ? t('people.cogWaiting', { n: waiting }) : t('people.cog'),
+      // The badge shows the count; the words stay short. Screen readers get both.
+      label: t('people.cog'),
+      a11y: waiting ? t('people.cogWaiting', { n: waiting }) : '',
       on: PEOPLE_ON.has(path),
       count: waiting,
       icon: 'people',

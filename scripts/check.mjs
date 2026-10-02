@@ -1080,6 +1080,66 @@ test('the widget says all clear when tonight is done, even with open-only on', a
   }
 })
 
+test('a kept did you stays marked with who sent it, so Questions can show it apart', async () => {
+  const { keptLamp } = await import('../src/lib/send-repeat.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const kept = normalizeLamp(keptLamp({ question: 'Did you call grandma?', person: { display_name: '  Sam  ' } }))
+  assert.equal(kept.fromDidYou, true)
+  assert.equal(kept.fromName, 'Sam')
+  const own = normalizeLamp(keptLamp('Did I stretch?'))
+  assert.equal(own.fromDidYou, undefined)
+  assert.equal(own.fromName, undefined)
+})
+
+test('a one-time question stops asking once its day is behind us', async () => {
+  const { closePastNights } = await import('../src/lib/daily.js')
+  const lamp = (id, extra) => ({ id, question: `${id}?`, archived: false, createdOn: '2026-09-20', ...extra })
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [
+      lamp('past', { cadence: 'once', onceWhen: 'on', onceOn: '2026-09-22' }),
+      lamp('today', { cadence: 'once', onceWhen: 'on', onceOn: '2026-09-23' }),
+      lamp('dueGone', { cadence: 'once', onceWhen: 'by', dueBy: '2026-09-22' }),
+      lamp('daily', { cadence: 'daily' }),
+    ],
+    answers: [],
+  }
+  const next = closePastNights(book, new Date('2026-09-23T20:00:00'))
+  const off = Object.fromEntries(next.lamps.map((item) => [item.id, item.archived]))
+  assert.deepEqual(off, { past: true, today: false, dueGone: true, daily: false })
+})
+
+test('a phone moves to its stable id once and hands back the old key', async () => {
+  const { deviceKey, takeOldDeviceKey } = await import('../src/lib/account.js')
+  const before = localStorage.getItem('did-i-device')
+  try {
+    localStorage.setItem('did-i-device', 'random-old-key')
+    globalThis.__didIStableDeviceId = 'i-0123456789abcdef'
+    assert.equal(deviceKey(), 'i-0123456789abcdef')
+    assert.equal(deviceKey(), 'i-0123456789abcdef')
+    assert.equal(takeOldDeviceKey(), 'random-old-key')
+    assert.equal(takeOldDeviceKey(), '')
+  } finally {
+    delete globalThis.__didIStableDeviceId
+    if (before) localStorage.setItem('did-i-device', before)
+    else localStorage.removeItem('did-i-device')
+  }
+})
+
+test('the dots legend seen flag rides in the synced prefs', async () => {
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  const before = readPrefs()
+  try {
+    assert.equal(writePrefs({ jewelKeySeen: true }).jewelKeySeen, true)
+    assert.equal(readPrefs().jewelKeySeen, true)
+    assert.equal(writePrefs({ jewelKeySeen: 'yes' }).jewelKeySeen, undefined)
+  } finally {
+    localStorage.setItem('did-i-prefs', JSON.stringify(before))
+  }
+})
+
 test('the update prompt compares x.y.z and never locks out on a bad row', async () => {
   const { updateState, versionBelow } = await import('../src/lib/app-update.js')
   assert.equal(versionBelow('1.2.0', '1.10.0'), true)
@@ -2230,10 +2290,12 @@ test("the menu's Friends and family badge always totals what its label says", ()
     const people = menuItems(true, inbox, asks, signedIn).find((item) => item.key === 'people')
     const expected = signedIn ? inbox + asks : asks
     assert.equal(people.count, expected, `count for inbox=${inbox} asks=${asks} signedIn=${signedIn}`)
+    // The words stay short; the badge shows the number and screen readers say both.
+    assert.equal(people.label, 'Friends and family', 'the visible label never carries the count')
     if (expected > 0) {
-      assert.equal(people.label, `Friends and family, ${expected} waiting`, 'label carries the same total as the badge')
+      assert.equal(people.a11y, `Friends and family, ${expected} waiting`, 'spoken label carries the same total as the badge')
     } else {
-      assert.equal(people.label, 'Friends and family', 'no waiting total when there is nothing to show')
+      assert.equal(people.a11y, '', 'no waiting total when there is nothing to show')
     }
   }
 })
@@ -2983,6 +3045,52 @@ test('with no accessibility module, the phone keeps its motion', () => {
   assert.equal(matchMedia('(prefers-reduced-motion: reduce)').matches, false)
   const broken = phoneMatchMedia({ isReduceMotionEnabled: () => { throw new Error('no module') } })
   assert.equal(broken('(prefers-reduced-motion: reduce)').matches, false)
+})
+
+const checkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+test('friend and family QR codes hold a didi link the scanner reads back', async () => {
+  const { friendQrLink, familyQrLink, readQrLink, scanFromText } = await import('../src/lib/qr-links.js')
+  assert.equal(friendQrLink('1234 5678 9012'), 'https://did-i.app/f/123456789012')
+  assert.equal(friendQrLink('123'), '', 'a short ID makes no code')
+  assert.equal(familyQrLink('ab-c123'), 'https://did-i.app/j/ABC123')
+  assert.deepEqual(readQrLink('https://did-i.app/f/123456789012'), { friend: '123456789012' })
+  assert.equal(scanFromText('scan=family:ABC123'), 'family:ABC123', 'the Play referrer carries it')
+  assert.equal(scanFromText('see https://did-i.app/f/123456789012'), 'friend:123456789012')
+  assert.deepEqual(readQrLink('didi://friend/123456789012'), { friend: '123456789012' })
+  assert.deepEqual(readQrLink('didi://family/abc123'), { family: 'ABC123' })
+  assert.equal(readQrLink('https://example.com/friend/123456789012'), null, 'other codes are not ours')
+  assert.equal(readQrLink('didi://family/ABC'), null)
+  const { create } = await import('qrcode/lib/core/qrcode.js')
+  assert.ok(create(friendQrLink('123456789012'), { errorCorrectionLevel: 'M' }).modules.size >= 21)
+})
+
+test('reminders carry Did and Nope buttons that save through the widget tap path', () => {
+  const pings = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
+  assert.ok(pings.includes('setNotificationCategoryAsync(ASK_CATEGORY'), 'the category is registered')
+  assert.ok(pings.includes('categoryIdentifier: ASK_CATEGORY'), 'question reminders use it')
+  assert.ok(pings.includes('night: row.periodKey'), 'the night rides along so a late tap lands on it')
+  const push = readFileSync(path.join(checkRoot, 'native/shim/push.js'), 'utf8')
+  assert.ok(push.includes("action === 'did' || action === 'nope'"))
+  const app = readFileSync(path.join(checkRoot, 'native/NativeApp.jsx'), 'utf8')
+  assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night)'))
+})
+
+test('a spoken answer finds the right open question, or none', async () => {
+  const { matchSpoken, spokenAnswer } = await import('../src/lib/voice-answer.js')
+  const rows = [
+    { lamp: { id: 'a', question: 'Did I stretch tonight?' } },
+    { lamp: { id: 'b', question: 'Did I take my vitamins?' } },
+    { lamp: { id: 'c', question: 'Did I lock the back door?' } },
+  ]
+  assert.equal(matchSpoken('stretch', rows)?.lamp.id, 'a')
+  assert.equal(matchSpoken('take vitamins', rows)?.lamp.id, 'b')
+  assert.equal(matchSpoken('locked the door', rows)?.lamp.id, 'c', 'locked still finds lock')
+  assert.equal(matchSpoken('walk the dog', rows), null, 'nothing close means no guess')
+  assert.equal(matchSpoken('', [rows[0]])?.lamp.id, 'a', 'one open question needs no words')
+  assert.equal(spokenAnswer('yes'), 'did')
+  assert.equal(spokenAnswer('nope'), 'nope')
+  assert.equal(spokenAnswer('maybe'), '')
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

@@ -4,7 +4,7 @@ import { APP_STORE_URL, inviteClip, playLinkFor, savePendingInvite } from '../li
 import { INVITE_CODE_LEN, cleanInvite } from '../lib/people.js'
 import { MarketingShell } from './MarketingShell.jsx'
 
-function AppleMark() {
+export function AppleMark() {
   return (
     <svg className="di-invite-mark" viewBox="0 0 24 24" aria-hidden="true">
       <path
@@ -15,7 +15,7 @@ function AppleMark() {
   )
 }
 
-function PlayMark() {
+export function PlayMark() {
   return (
     <svg className="di-invite-mark" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d="M4.5 2.8c-.3.3-.5.8-.5 1.4v15.6c0 .6.2 1.1.5 1.4l8.7-9.2-8.7-9.2zm9.9 10.4 2.9 2.9-11 6.2c-.4.2-.8.3-1.1.2l9.2-9.3zm0-2.4L5.2 1.5c.3-.1.7 0 1.1.2l11 6.2-2.9 2.9zm4.1-2.2 3 1.7c.9.5.9 1.3 0 1.8l-3 1.7-3.1-2.6 3.1-2.6z" />

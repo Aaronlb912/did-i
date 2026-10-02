@@ -19,6 +19,9 @@ export async function syncPushTokenIfAllowed() {
   return 'not native'
 }
 
+// The app icon number is a phone thing.
+export async function setAppBadge() {}
+
 
 export async function dropToken() {
   const db = cloud()

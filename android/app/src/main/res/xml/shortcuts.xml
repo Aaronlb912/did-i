@@ -4,7 +4,37 @@
   and the long-press app icon shortcut both open didi://add, which prefills the
   Add screen (native/deep-link.js, src/lib/voice-add.js).
 -->
-<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+<shortcuts
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto">
+  <!--
+    "Hey Google, I did stretch in Did I" / "I didn't stretch in Did I" open
+    didi://answer?a=did&q=stretch. The app matches the words to tonight's
+    open questions (src/lib/voice-answer.js). Patterns: res/values/arrays.xml.
+  -->
+  <capability
+    android:name="custom.actions.intent.ANSWER_DID"
+    app:queryPatterns="@array/answer_did_queries">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="com.aaronbryant.didi"
+      android:targetClass="com.aaronbryant.didi.MainActivity">
+      <url-template android:value="didi://answer?a=did{&amp;q}" />
+      <parameter android:name="question" android:key="q" android:mimeType="https://schema.org/Text" />
+    </intent>
+  </capability>
+  <capability
+    android:name="custom.actions.intent.ANSWER_NOPE"
+    app:queryPatterns="@array/answer_nope_queries">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="com.aaronbryant.didi"
+      android:targetClass="com.aaronbryant.didi.MainActivity">
+      <url-template android:value="didi://answer?a=nope{&amp;q}" />
+      <parameter android:name="question" android:key="q" android:mimeType="https://schema.org/Text" />
+    </intent>
+  </capability>
+
   <capability android:name="actions.intent.CREATE_THING">
     <intent
       android:action="android.intent.action.VIEW"

@@ -175,7 +175,7 @@ set search_path = public
 as $$
 begin
   if coalesce((select (p.prefs ->> 'pingsPrivate') = 'true' from public.profiles p where p.user_id = new.to_id), false) then
-    new.body := 'Open Did I to see it.';
+    new.body := public.push_text(new.to_id, 'open');
   end if;
   return new;
 end;

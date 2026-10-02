@@ -5,6 +5,7 @@ import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
+import { saveTogetherPeople } from './together-widget.js'
 
 const FAMILY_LAMP_FIELDS =
   'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
@@ -151,11 +152,50 @@ export async function postStreak(streak, doneOn) {
   )
 }
 
+function togetherRow(row) {
+  const shared = row.share_streak !== false
+  return {
+    id: row.user_id,
+    name: personName(row),
+    initials: personInitials(row),
+    shared,
+    doneOn: shared ? row.done_on || '' : '',
+  }
+}
+
 // Everyone you can see, in one call. The old way was a second query with
 // the profile policy re-checked for every row that came back.
 async function peopleByIds(db) {
-  const { data } = await db.rpc('known_people')
+  const { data, error } = await db.rpc('known_people')
+  // Every people load comes through here, so the Together widget stays
+  // current without a load of its own.
+  if (!error) saveTogetherPeople((data || []).map(togetherRow))
   return new Map((data || []).map((row) => [row.user_id, row]))
+}
+
+// Keeps the Together widget current when the app comes back to the
+// screen. One read, at most every 5 minutes; nothing is written.
+let togetherAt = 0
+export async function refreshTogether(now = Date.now()) {
+  if (now - togetherAt < 5 * 60 * 1000) return
+  const db = cloud()
+  if (!db) return
+  const user = await me()
+  if (!user) return
+  togetherAt = now
+  try {
+    await peopleByIds(db)
+  } catch {
+    togetherAt = 0
+  }
+}
+
+// One friend or family member by id, or a bare { user_id } if not known.
+export async function personById(id) {
+  const db = cloud()
+  if (!db || !id) return { user_id: id }
+  const who = await peopleByIds(db)
+  return who.get(id) || { user_id: id }
 }
 
 // Friends -------------------------------------------------------------
@@ -231,6 +271,29 @@ export async function askByFriendId(value) {
   return bad(error)
 }
 
+// Who a friend ID belongs to, without asking yet. state: 'friends', 'asked',
+// 'asksYou', or ''.
+export async function lookUpFriendId(value) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const code = cleanFriendId(value)
+  if (!/^[1-9]\d{11}$/.test(code)) return { miss: 'badId' }
+  const { data, error } = await db.rpc('look_up_friend_id', { wanted: code })
+  if (!error && data?.miss === 'nobody') return { miss: 'nobody' }
+  if (!error) {
+    return {
+      miss: '',
+      state: String(data?.state || ''),
+      person: { user_id: data?.user_id, display_name: data?.display_name || '', avatar_url: data?.avatar_url || '' },
+    }
+  }
+  if (notRunYet(error)) return { miss: 'setup' }
+  const text = error.message || ''
+  if (/too many tries/i.test(text)) return { miss: 'tooMany' }
+  if (/bad id/i.test(text)) return { miss: 'badId' }
+  return bad(error)
+}
+
 export async function sayYes(linkId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
@@ -242,6 +305,22 @@ export async function sayNo(linkId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { error } = await db.from('friend_links').delete().eq('id', linkId)
+  return error ? bad(error) : { miss: '' }
+}
+
+// Take back a request you sent that has not been answered. A yes that
+// landed first is left alone (state must still be 'asked').
+export async function unsendAsk(linkId) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'off' }
+  const { error } = await db
+    .from('friend_links')
+    .delete()
+    .eq('id', linkId)
+    .eq('from_id', user.id)
+    .eq('state', 'asked')
   return error ? bad(error) : { miss: '' }
 }
 
@@ -573,6 +652,29 @@ export async function listSent() {
   return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id } }))
 }
 
+// Did yous between you and one friend, both ways, newest first.
+export async function sendsWith(otherId) {
+  const empty = { mine: [], theirs: [], miss: '' }
+  const db = cloud()
+  if (!db || !otherId) return { ...empty, miss: 'off' }
+  const user = await me()
+  if (!user) return { ...empty, miss: 'off' }
+  const { data, error } = await db
+    .from('sends')
+    .select('id, from_id, to_id, kind, question, state, made_at, repeat')
+    .eq('kind', 'todo')
+    .or(`and(from_id.eq.${user.id},to_id.eq.${otherId}),and(from_id.eq.${otherId},to_id.eq.${user.id})`)
+    .order('made_at', { ascending: false })
+    .limit(100)
+  if (error) return { ...empty, ...bad(error) }
+  const rows = data || []
+  return {
+    mine: rows.filter((row) => row.from_id === user.id),
+    theirs: rows.filter((row) => row.from_id === otherId),
+    miss: '',
+  }
+}
+
 // Only worth doing while they have not answered it.
 export async function takeBack(id) {
   const db = cloud()
@@ -731,8 +833,34 @@ export async function joinFamily(code) {
   const want = cleanCode(code)
   if (want.length !== FAMILY_CODE_LEN) return { miss: 'code' }
   const { data, error } = await db.rpc('join_family', { want_code: want })
-  if (error) return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
+  if (error) {
+    if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
+    return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
+  }
   return { miss: '', id: data }
+}
+
+// Which family a code belongs to, before joining: { name, members, already }.
+export async function lookUpFamily(code) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const want = cleanCode(code)
+  if (want.length !== FAMILY_CODE_LEN) return { miss: 'code' }
+  const { data, error } = await db.rpc('look_up_family', { want_code: want })
+  if (error) {
+    if (notRunYet(error)) return { miss: 'setup' }
+    if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
+    return bad(error)
+  }
+  if (data?.miss === 'nofamily') return { miss: 'nofamily' }
+  return {
+    miss: '',
+    code: want,
+    id: data?.id,
+    name: String(data?.name || ''),
+    members: Number(data?.members) || 0,
+    already: Boolean(data?.already),
+  }
 }
 
 export async function leaveFamily(familyId) {

@@ -48,6 +48,15 @@ const widgetPlugins = includeWidgets
                 ],
               },
             },
+            {
+              name: 'DidITogether',
+              displayName: 'Did I together',
+              description: 'Your friends and family, and who is done tonight.',
+              ios: {
+                contentMarginsDisabled: true,
+                supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
+              },
+            },
           ],
         },
       ],
@@ -63,6 +72,18 @@ const widgetPlugins = includeWidgets
               minHeight: '110dp',
               maxResizeWidth: '400dp',
               maxResizeHeight: '280dp',
+              targetCellWidth: 4,
+              targetCellHeight: 2,
+              resizeMode: 'horizontal|vertical',
+            },
+            {
+              name: 'DidITogether',
+              label: 'Did I together',
+              description: 'Your friends and family, and who is done tonight.',
+              minWidth: '110dp',
+              minHeight: '110dp',
+              maxResizeWidth: '400dp',
+              maxResizeHeight: '400dp',
               targetCellWidth: 4,
               targetCellHeight: 2,
               resizeMode: 'horizontal|vertical',
@@ -105,6 +126,25 @@ export default ({ config }) => ({
         enableBackgroundRemoteNotifications: false,
       },
     ],
+    // Profile pictures from the library or the camera. No mic.
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Did I uses a photo you pick as your profile picture.',
+        cameraPermission: 'Did I uses the camera to take your profile picture and to scan friend and family codes.',
+        microphonePermission: false,
+      },
+    ],
+    // Scans friend and family QR codes. No mic, no video.
+    [
+      'expo-camera',
+      {
+        cameraPermission: 'Did I uses the camera to take your profile picture and to scan friend and family codes.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+        barcodeScannerEnabled: true,
+      },
+    ],
     'expo-iap',
     ...widgetPlugins,
     [
@@ -135,6 +175,11 @@ export default ({ config }) => ({
       ...(config.ios?.entitlements || {}),
       ...(includeWidgets
         ? { 'com.apple.security.application-groups': ['group.com.aaronbryant.didi'] }
+        : {}),
+      // did-i.app/f, /j and /i links open the app (public/.well-known). Off
+      // until the App ID has Associated Domains, or signing fails.
+      ...(process.env.DIDI_UNIVERSAL_LINKS === '1' && !devApp
+        ? { 'com.apple.developer.associated-domains': ['applinks:did-i.app'] }
         : {}),
     },
     ...(hasGoogleServicesIos && !devApp ? { googleServicesFile: googleServicesIos } : {}),
