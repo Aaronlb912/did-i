@@ -7,6 +7,10 @@ on:
         description: Run npm run check before assemble (push/PR already run check.yml)
         type: boolean
         default: true
+      apk:
+        description: Also build the arm64 APK for sideloading (adds ~15 min). A store build only needs the AAB.
+        type: boolean
+        default: false
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -65,7 +69,9 @@ jobs:
             android/.gradle
             android/app/.cxx
             ~/.gradle/caches/build-cache-1
-          key: gradle-ci-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle.properties', 'android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json', 'app.config.js', 'native/**', 'widgets/**') }}
+          # Only what changes the native build. native/ and widgets/ are mostly JS,
+          # and keying on them threw the cache away on almost every run.
+          key: gradle-ci-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle.properties', 'android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json', 'app.config.js') }}
           restore-keys: |
             gradle-ci-${{ runner.os }}-
 
@@ -116,20 +122,22 @@ jobs:
             printf 'kotlin.incremental=true\n'
             printf 'sdk.dir=%s\n' "${ANDROID_HOME}"
           } >> android/gradle.properties
+          sed -i 's/\r$//' android/gradlew
+          chmod +x android/gradlew
 
+      # The APK is for sideloading. A store build (release keystore) skips it
+      # unless asked; a debug-signed run has nothing else, so it always builds.
       - name: Assemble release APK
+        if: inputs.apk || steps.signing.outputs.mode != 'release'
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          sed -i 's/\r$//' gradlew
-          chmod +x gradlew
-          ./gradlew :app:assembleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=arm64-v8a
+        run: ./gradlew :app:assembleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=arm64-v8a
 
       - name: Upload APK
+        if: inputs.apk || steps.signing.outputs.mode != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: did-i-android-apk
@@ -137,7 +145,8 @@ jobs:
           if-no-files-found: error
 
       # Play only takes a bundle signed with the release (upload) key, so this
-      # runs only when the keystore secrets are set. All ABIs, unlike the APK.
+      # runs only when the keystore secrets are set. Phone chips only (32- and
+      # 64-bit ARM): x86 is for emulators and nearly doubled the compile.
       - name: Bundle release AAB (Play)
         if: steps.signing.outputs.mode == 'release'
         working-directory: android
@@ -147,7 +156,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          ./gradlew :app:bundleRelease --build-cache --no-scan -x lint -x test
+          ./gradlew :app:bundleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 
       - name: Upload AAB
         if: steps.signing.outputs.mode == 'release'
@@ -161,10 +170,10 @@ jobs:
         run: |
           echo "### Android APK" >> "${GITHUB_STEP_SUMMARY}"
           echo "${{ steps.signing.outputs.label }}" >> "${GITHUB_STEP_SUMMARY}"
-          echo "ABI: arm64-v8a only (phone installs). Download did-i-android-apk from this run." >> "${GITHUB_STEP_SUMMARY}"
+          if [ "${{ inputs.apk }}" = "true" ] || [ "${{ steps.signing.outputs.mode }}" != "release" ]; then echo "APK: arm64-v8a, did-i-android-apk." >> "${GITHUB_STEP_SUMMARY}"; fi
           echo "versionCode: ${ANDROID_VERSION_CODE}" >> "${GITHUB_STEP_SUMMARY}"
           if [ "${{ steps.signing.outputs.mode }}" = "release" ]; then
-            echo "Play bundle: did-i-android-aab (all ABIs)." >> "${GITHUB_STEP_SUMMARY}"
+            echo "Play bundle: did-i-android-aab (armeabi-v7a and arm64-v8a)." >> "${GITHUB_STEP_SUMMARY}"
           else
             echo "No Play bundle: add the four ANDROID_KEYSTORE / ANDROID_KEY secrets first." >> "${GITHUB_STEP_SUMMARY}"
           fi
