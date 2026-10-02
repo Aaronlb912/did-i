@@ -2264,4 +2264,8 @@ export const fr = {
   'pings.kind.didi': 'De Did I',
   'pings.kind.didiSub': 'De temps en temps, un Did you de l\'équipe Did I.',
   'we.earlyFor': 'Déjà fait ? Réponds pour {day}.',
+  'we.earlyKicker': 'Did we de {day}',
+  'we.earlyDid': 'Tu as dit oui pour {day}.',
+  'we.earlyNope': 'Tu as dit non pour {day}.',
+  'we.earlyUndo': 'Annuler',
 }
