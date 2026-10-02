@@ -132,6 +132,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           const urgency = dueByUrgency(row.lamp, dateIso)
           const on = Boolean(picking && picked?.has(rowKey(row)))
           const meta = [
+            row.lamp.fromName ? t('inbox.from', { name: row.lamp.fromName }) : '',
             shelf.length > 1 ? row.tag : '',
             cadenceLine(row.lamp),
             row.lamp.askAfter ? timeLabel(row.lamp.askAfter) : '',
@@ -217,6 +218,27 @@ function SearchBox({ value, onChange, colors }) {
 
 const UNDO_MS = 6000
 
+// A row that opens another screen.
+function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.goRow,
+        top && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.lineSoft },
+        pressed && { backgroundColor: colors.panel2 },
+      ]}
+    >
+      <View style={styles.goText}>
+        <Text style={[styles.goLabel, { color: lit ? colors.on : colors.ink }]}>{label}</Text>
+        <Text style={[styles.goNote, { color: colors.inkSoft }]}>{note}</Text>
+      </View>
+      <Text style={[styles.goChev, { color: colors.inkDim }]}>›</Text>
+    </Pressable>
+  )
+}
+
 // Did yous and Did wes, one tap from Questions. Each pill shows only when
 // there is something behind it, so the page looks the same for people who
 // never use them.
@@ -238,12 +260,15 @@ function FromFriends({ rows, didYouOnly, onDidYou, colors }) {
         {weN ? <Pill label={t('questions.didWePill', { n: weN })} onPress={() => goHash('/we')} colors={colors} /> : null}
       </View>
       {didYouOnly ? (
-        <View style={styles.pillRow}>
-          <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>
-            {inbox ? t('questions.didYouWaiting', { n: inbox }) : t('questions.didYouKept')}
-          </Text>
-          <KeyButton colors={colors} label={t('inbox.kicker')} onPress={() => goHash('/inbox')} />
-          <KeyButton colors={colors} label={t('sent.kicker')} onPress={() => goHash('/sent')} />
+        <View style={[styles.lampList, { borderColor: inbox ? colors.on : colors.lineSoft, backgroundColor: colors.panel }]}>
+          <GoRow
+            label={t('questions.didYouInbox')}
+            note={inbox ? t('questions.didYouToKeep', { n: inbox }) : t('questions.didYouNoneWaiting')}
+            lit={Boolean(inbox)}
+            onPress={() => goHash('/inbox')}
+            colors={colors}
+          />
+          <GoRow label={t('sent.kicker')} note={t('sent.rowSub')} onPress={() => goHash('/sent')} colors={colors} top />
         </View>
       ) : null}
     </>
@@ -428,7 +453,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </Pressable>
             </View>
           </View>
-        ) : (
+        ) : didYouOnly ? null : (
           <View style={styles.topKeys}>
             <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
             {shown.length && onChangeBooks ? (
@@ -439,7 +464,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
         {hung.length ? (
           <LampBlock
-            label={t('questions.list')}
+            label={didYouOnly ? t('questions.didYouKeptList') : t('questions.list')}
             items={hung}
             shelf={shelf}
             states={states}
@@ -1341,6 +1366,11 @@ const styles = StyleSheet.create({
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   settings: { marginTop: 4 },
+  goRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  goText: { flex: 1, gap: 2 },
+  goLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  goNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
+  goChev: { fontFamily: fonts.ui, fontSize: 22 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   pill: {
     borderWidth: 1,
