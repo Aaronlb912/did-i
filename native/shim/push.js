@@ -10,6 +10,7 @@ import {
 import { isNativeHall } from './native.js'
 
 const CHANNEL_ID = 'did-i'
+const SEND_CATEGORY = 'did-i-send'
 
 let handlerReady = false
 let responseBound = false
@@ -43,6 +44,22 @@ async function ensureNotificationHandler() {
 
 export function pushPossible() {
   return isNativeHall()
+}
+
+// Every push sets the icon to 1 and nothing cleared it, so the icon kept a
+// number after everything was read. The app sets it to what is really
+// waiting (0 clears it) whenever that count changes.
+let badgeShown = -1
+export async function setAppBadge(n) {
+  const next = Math.max(0, Math.floor(Number(n) || 0))
+  if (!pushPossible() || next === badgeShown) return
+  badgeShown = next
+  try {
+    const Notifications = await notifications()
+    await Notifications.setBadgeCountAsync(next)
+  } catch {
+    badgeShown = -1
+  }
 }
 
 async function keepToken(token) {
@@ -83,11 +100,29 @@ async function bindResponseListener(handlers = {}) {
   const onLamp = handlers.onLamp
   try {
     const Notifications = await notifications()
+    // Keep and Pass on a friend's did you (supabase/functions/push sets the
+    // category). Both open the app; the inbox answers it.
+    try {
+      await Notifications.setNotificationCategoryAsync(SEND_CATEGORY, [
+        { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
+        { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
+      ])
+    } catch {
+      // No buttons; a tap still opens the inbox.
+    }
     const handle = (response) => {
       const data = response?.notification?.request?.content?.data || {}
       const lampId = data.lampId ? String(data.lampId) : ''
       const go = data.go ? String(data.go) : ''
-      if (lampId && typeof onLamp === 'function') onLamp(lampId)
+      const sendId = data.sendId ? String(data.sendId) : ''
+      const action = String(response?.actionIdentifier || '')
+      if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
+        handlers.onSend(sendId, action === 'keep')
+      } else if (data.weId && (action === 'did' || action === 'nope') && typeof handlers.onWeAnswer === 'function') {
+        handlers.onWeAnswer(String(data.weId), action, data.night ? String(data.night) : '')
+      } else if (lampId && (action === 'did' || action === 'nope') && typeof handlers.onAnswer === 'function') {
+        handlers.onAnswer(lampId, action, data.night ? String(data.night) : '')
+      } else if (lampId && typeof onLamp === 'function') onLamp(lampId)
       else if (go && typeof onGo === 'function') onGo(go)
     }
     Notifications.addNotificationResponseReceivedListener(handle)

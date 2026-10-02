@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
@@ -11,6 +12,33 @@ let current = null
 export function publishSheet(next) {
   current = next
   listen?.(next)
+}
+
+// Every spend asks first: coins and gems do not come back.
+export function confirmBuy(colors, { title, body, onGo }) {
+  publishSheet({
+    kicker: t('shop.buyKicker'),
+    title,
+    body,
+    goLabel: t('shop.buy'),
+    closeLabel: t('settings.neverMind'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => {
+      publishSheet(null)
+      onGo()
+    },
+  })
+}
+
+// "Buy 5 friend cheers?" for the Friends and family screens.
+export function confirmFriendCheers(colors, onGo) {
+  const cost = FRIEND_CHEER_GEMS === 1 ? t('shop.gemOne') : t('shop.gems', { n: FRIEND_CHEER_GEMS })
+  confirmBuy(colors, {
+    title: t('friends.cheerBuyTitle', { n: FRIEND_CHEERS_PER_GEM }),
+    body: t('friends.cheerBuyBody', { cost }),
+    onGo,
+  })
 }
 
 export function offerMoreGems(colors) {

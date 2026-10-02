@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
   <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.CAMERA"/>
+  <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <!-- Reminders fire on the minute when the phone allows it; otherwise Android may hold them up to an hour. -->
@@ -39,6 +41,16 @@
         <data android:scheme="didi"/>
         <data android:scheme="exp+did-i"/>
       </intent-filter>
+      <!-- did-i.app friend, family and invite links open the app once
+           public/.well-known/assetlinks.json lists the Play signing key. -->
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/f/"/>
+        <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/j/"/>
+        <data android:scheme="https" android:host="did-i.app" android:pathPrefix="/i/"/>
+      </intent-filter>
       <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>
     </activity>
     <receiver android:name=".widget.DidITonight" android:exported="true" android:label="Did I tonight">
@@ -47,6 +59,13 @@
         <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_diditonight"/>
+    </receiver>
+    <receiver android:name=".widget.DidITogether" android:exported="true" android:label="Did I together">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_diditogether"/>
     </receiver>
     <receiver android:name=".widget.WidgetTapReceiver" android:exported="false">
       <intent-filter>

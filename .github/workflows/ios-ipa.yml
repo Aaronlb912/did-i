@@ -26,6 +26,9 @@ jobs:
     env:
       EAS_INCLUDE_WIDGETS: '1'
       DIDI_DEV: ${{ inputs.dev_app && '1' || '0' }}
+      # Turn on (repo variable DIDI_UNIVERSAL_LINKS=1) once the App ID has
+      # Associated Domains and the provisioning profiles are remade.
+      DIDI_UNIVERSAL_LINKS: ${{ vars.DIDI_UNIVERSAL_LINKS || '0' }}
       # The dev client loads JS from Metro, so it builds Debug (Release strips the dev launcher).
       XCODE_CONFIG: ${{ inputs.dev_app && 'Debug' || 'Release' }}
     steps:

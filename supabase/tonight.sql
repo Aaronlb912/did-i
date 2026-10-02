@@ -321,7 +321,7 @@ begin
   from public.profiles p where p.user_id = new.from_id;
 
   insert into public.push_queue (to_id, title, body, go)
-  values (new.to_id, coalesce(who, 'Someone'), 'cheered you on tonight.', '/everyone');
+  values (new.to_id, coalesce(who, public.push_text(new.to_id, 'someone')), public.push_text(new.to_id, 'cheered'), '/everyone');
   return new;
 end;
 $$;

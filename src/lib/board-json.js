@@ -213,6 +213,11 @@ export function normalizeLamp(raw) {
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
     ...(asBool(lamp.optional) ? { optional: true } : {}),
+    // Kept from a did you; fromName is who sent it, when known.
+    ...(asBool(lamp.fromDidYou) ? { fromDidYou: true } : {}),
+    ...(asBool(lamp.fromDidYou) && asString(lamp.fromName).trim()
+      ? { fromName: asString(lamp.fromName).trim().slice(0, 40) }
+      : {}),
   }
 }
 

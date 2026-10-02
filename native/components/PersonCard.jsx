@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { personInitials } from '../../src/lib/people.js'
 import { fonts } from '../theme.js'
 
-/** Initials in a rounded tile, lit when they are done tonight. */
+/** Their photo, or initials, in a rounded tile; the edge lights when they are done tonight. */
 export function Avatar({ person, done, colors, size = 46 }) {
+  const [broken, setBroken] = useState(false)
+  const url = !broken && typeof person?.avatar_url === 'string' ? person.avatar_url.trim() : ''
+  const radius = Math.round(size * 0.28)
   return (
     <View
       style={[
@@ -13,18 +16,28 @@ export function Avatar({ person, done, colors, size = 46 }) {
         {
           width: size,
           height: size,
-          borderRadius: Math.round(size * 0.28),
+          borderRadius: radius,
           backgroundColor: done ? colors.on : colors.panel2,
-          borderColor: done ? colors.onDeep : colors.line,
+          borderColor: done ? colors.on : colors.line,
+          borderWidth: url && done ? 2 : 1,
         },
       ]}
     >
-      <Text
-        style={[styles.initials, { color: done ? colors.bg : colors.ink, fontSize: Math.round(size * 0.36) }]}
-        numberOfLines={1}
-      >
-        {personInitials(person)}
-      </Text>
+      {url ? (
+        <Image
+          source={{ uri: url }}
+          style={{ width: '100%', height: '100%', borderRadius: radius - 1 }}
+          accessibilityIgnoresInvertColors
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <Text
+          style={[styles.initials, { color: done ? colors.bg : colors.ink, fontSize: Math.round(size * 0.36) }]}
+          numberOfLines={1}
+        >
+          {personInitials(person)}
+        </Text>
+      )}
     </View>
   )
 }
@@ -50,7 +63,7 @@ export function Pill({ label, on, colors }) {
  * One person: avatar, name, a line under it, quick actions, and an optional
  * fold with the rarer ones (switches, remove, block).
  */
-export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight }) {
+export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight, onOpen }) {
   const [open, setOpen] = useState(false)
   return (
     <View
@@ -63,7 +76,12 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
         },
       ]}
     >
-      <View style={styles.top}>
+      <Pressable
+        disabled={!onOpen}
+        onPress={onOpen}
+        accessibilityRole={onOpen ? 'button' : undefined}
+        style={({ pressed }) => [styles.top, pressed && onOpen ? { opacity: 0.7 } : null]}
+      >
         <Avatar person={person} done={done} colors={colors} />
         <View style={styles.copy}>
           <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
@@ -76,7 +94,8 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
           ) : null}
         </View>
         <Pill label={pill} on={pillOn} colors={colors} />
-      </View>
+        {onOpen ? <Text style={[styles.chev, { color: colors.inkDim }]}>›</Text> : null}
+      </Pressable>
       {extra}
       {actions || more ? (
         <View style={styles.actions}>
@@ -142,10 +161,11 @@ export function EmptyCard({ title, body, children, colors }) {
 }
 
 const styles = StyleSheet.create({
-  avatar: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: { borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   initials: { fontFamily: fonts.display, fontWeight: '700' },
   card: { borderRadius: 16, padding: 14, gap: 12, marginBottom: 10 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  chev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24 },
   copy: { flex: 1, minWidth: 0, gap: 3 },
   name: { fontFamily: fonts.uiBold, fontSize: 16 },
   line: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },

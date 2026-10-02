@@ -97,10 +97,16 @@ async function apnsJwt() {
 
 async function sendApple(token: string, row: Record<string, unknown>, jwt: string) {
   const payload = JSON.stringify({
-    aps: { alert: { title: row.title, body: row.body }, sound: 'default', badge: 1 },
+    // A did you gets Keep and Pass buttons (the app registers did-i-send).
+    aps: {
+      alert: { title: row.title, body: row.body },
+      sound: 'default',
+      badge: 1,
+      ...(row.send_id ? { category: 'did-i-send' } : {}),
+    },
     go: String(row.go ?? '/inbox'),
     // expo-notifications reads a raw APNs push's data from "body".
-    body: { go: String(row.go ?? '/inbox') },
+    body: { go: String(row.go ?? '/inbox'), ...(row.send_id ? { sendId: String(row.send_id) } : {}) },
   })
   // Store and TestFlight builds use production; dev builds use the sandbox.
   let why = ''
@@ -122,15 +128,42 @@ async function sendApple(token: string, row: Record<string, unknown>, jwt: strin
   return why
 }
 
+// A friend's did you goes data-only so expo-notifications draws it on Android
+// and adds the Keep and Pass buttons from categoryId. It reads title,
+// message, channelId, categoryId, and the JS data from "body" (a JSON string).
+function sendDataOnly(token: string, row: Record<string, unknown>) {
+  const go = String(row.go ?? '/inbox')
+  const sendId = String(row.send_id)
+  return {
+    token,
+    data: {
+      title: String(row.title ?? ''),
+      message: String(row.body ?? ''),
+      channelId: 'did-i',
+      categoryId: 'did-i-send',
+      body: JSON.stringify({ go, sendId }),
+      go,
+      sendId,
+    },
+    android: { priority: 'HIGH' },
+    apns: {
+      headers: { 'apns-priority': '10' },
+      payload: {
+        aps: { alert: { title: row.title, body: row.body }, sound: 'default', badge: 1, category: 'did-i-send' },
+      },
+    },
+  }
+}
+
 async function send(token: string, row: Record<string, unknown>, bearer: string) {
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${project}/messages:send`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      message: {
+      message: row.send_id ? sendDataOnly(token, row) : {
         token,
         notification: { title: row.title, body: row.body },
-        data: { go: String(row.go ?? '/inbox') },
+        data: { go: String(row.go ?? '/inbox'), ...(row.send_id ? { sendId: String(row.send_id) } : {}) },
         // The channel has to already exist on the phone or Android drops
         // the notification without a word. The app makes it on start.
         android: { priority: 'HIGH', notification: { channel_id: 'did-i' } },
@@ -138,7 +171,14 @@ async function send(token: string, row: Record<string, unknown>, bearer: string)
         // is, and without it a nudge arrives silent and unbadged.
         apns: {
           headers: { 'apns-priority': '10' },
-          payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+              'content-available': 1,
+              ...(row.send_id ? { category: 'did-i-send' } : {}),
+            },
+          },
         },
       },
     }),

@@ -1428,3 +1428,14 @@ html[data-reduce-motion] .di-land-together {
   line-height: 1.45;
   color: var(--di-ink-soft);
 }
+
+/* Friend and family QR page: Open sits centered right under the code. */
+.di-scan-open {
+  display: flex;
+  justify-content: center;
+  margin: -0.5rem 0 1.5rem;
+}
+
+.di-scan-open .di-invite-store {
+  width: min(100%, 20rem);
+}

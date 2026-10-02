@@ -31,13 +31,16 @@ import {
   normalizePurse,
 } from '../../src/lib/purse.js'
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { offerMoreGems } from '../components/SheetHost.jsx'
+import { useMyAvatar } from '../../src/lib/avatar.js'
+import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
+import { QrCode } from '../components/QrCode.jsx'
+import { familyQrLink } from '../../src/lib/qr-links.js'
 
 const EVERYONE = 'everyone'
 
@@ -47,6 +50,7 @@ function Cap({ children, colors }) {
 
 export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const account = useAccount()
+  const myAvatar = useMyAvatar()
   const purse = normalizePurse(book)
   const clock = new Date()
   const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null)
@@ -63,6 +67,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [said, setSaid] = useState('')
   const [stock, setStock] = useState(null)
   const [codeOpen, setCodeOpen] = useState(false)
+  const [showQr, setShowQr] = useState(false)
   const [sheet, setSheet] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
@@ -190,12 +195,13 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           <PersonCard
             key={row.user_id}
             colors={colors}
-            person={row.you ? { display_name: personName(row.person) || name } : row.person}
+            person={row.you ? { display_name: personName(row.person) || name, avatar_url: myAvatar } : row.person}
             done={done}
             name={name}
             line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
             pill={done ? t('people.doneTonightShort') : ''}
             pillOn={done}
+            onOpen={row.you ? undefined : () => goHash('/friend', { id: row.user_id })}
             extra={
               <View style={styles.weekRow}>
                 <View style={styles.dots}>
@@ -256,12 +262,23 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <KeyButton
                     colors={colors}
                     label={t('family.remove')}
-                    onPress={async () => {
-                      const { miss: why } = await dropMember(fam.id, row.user_id)
-                      if (why === 'lastparent') setMiss(t('family.lastParent'))
-                      else if (why) setMiss(why)
-                      load()
-                    }}
+                    onPress={() =>
+                      publishSheet({
+                        title: t('family.removeTitle', { name }),
+                        body: t('family.removeBody'),
+                        goLabel: t('family.remove'),
+                        closeLabel: t('settings.neverMind'),
+                        colors,
+                        onClose: () => publishSheet(null),
+                        onGo: async () => {
+                          publishSheet(null)
+                          const { miss: why } = await dropMember(fam.id, row.user_id)
+                          if (why === 'lastparent') setMiss(t('family.lastParent'))
+                          else if (why) setMiss(why)
+                          load()
+                        },
+                      })
+                    }
                   />
                 </View>
               ) : null
@@ -357,34 +374,47 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         colors={colors}
         disabled={cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
         label={t('friends.cheerBuy')}
-        onPress={async () => {
+        onPress={() => {
           if (purse.gems < FRIEND_CHEER_GEMS) {
             offerMoreGems(colors)
             return
           }
-          setMiss('')
-          const bought = await buyCheers(book)
-          if (bought.miss === 'gems') {
-            offerMoreGems(colors)
-            return
-          }
-          const known = friendCheerMissKey(bought.miss)
-          if (known) return setMiss(t(known.key, known.vars))
-          if (bought.miss) return setMiss(tMiss(bought.miss))
-          setStock(normalizePurse(bought.book).friendCheers)
-          if (onChange) onChange(bought.book)
+          confirmFriendCheers(colors, async () => {
+            setMiss('')
+            const bought = await buyCheers(book)
+            if (bought.miss === 'gems') {
+              offerMoreGems(colors)
+              return
+            }
+            const known = friendCheerMissKey(bought.miss)
+            if (known) return setMiss(t(known.key, known.vars))
+            if (bought.miss) return setMiss(tMiss(bought.miss))
+            setStock(normalizePurse(bought.book).friendCheers)
+            if (onChange) onChange(bought.book)
+          })
         }}
       />
 
       <KeyButton
         colors={colors}
         label={t('family.leave')}
-        onPress={async () => {
-          const { miss: why } = await leaveFamily(fam.id)
-          if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
-          if (why) return setMiss(why)
-          goHash('/people')
-        }}
+        onPress={() =>
+          publishSheet({
+            title: t('family.leaveTitle', { name: fam.name || t('people.familyOne') }),
+            body: t('family.leaveBody'),
+            goLabel: t('family.leave'),
+            closeLabel: t('settings.neverMind'),
+            colors,
+            onClose: () => publishSheet(null),
+            onGo: async () => {
+              publishSheet(null)
+              const { miss: why } = await leaveFamily(fam.id)
+              if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
+              if (why) return setMiss(why)
+              goHash('/people')
+            },
+          })
+        }
       />
 
       {said ? <Meta colors={colors}>{said}</Meta> : null}
@@ -400,6 +430,17 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                 {fam.code}
               </Text>
               <Meta colors={colors}>{t('family.inviteHint', { code: fam.code })}</Meta>
+              <KeyButton
+                colors={colors}
+                label={showQr ? t('qr.hideFamily') : t('qr.showFamily')}
+                onPress={() => setShowQr((on) => !on)}
+              />
+              {showQr ? (
+                <View style={{ alignItems: 'center', gap: 8 }}>
+                  <QrCode value={familyQrLink(fam.code)} size={180} label={t('qr.familyLabel', { name: fam.name })} />
+                  <Meta colors={colors}>{t('qr.familyHint')}</Meta>
+                </View>
+              ) : null}
               <DidButton
                 colors={colors}
                 label={t('people.send')}

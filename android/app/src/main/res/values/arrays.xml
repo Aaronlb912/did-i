@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Google Assistant phrases for answering a question (res/xml/shortcuts.xml). -->
+<resources>
+  <string-array name="answer_did_queries">
+    <item>I did $question</item>
+    <item>I did $question tonight</item>
+    <item>mark $question done</item>
+    <item>yes to $question</item>
+  </string-array>
+  <string-array name="answer_nope_queries">
+    <item>I didn\'t $question</item>
+    <item>I did not $question</item>
+    <item>nope to $question</item>
+  </string-array>
+</resources>

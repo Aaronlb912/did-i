@@ -8,7 +8,14 @@ import {
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
 import { onPrefs } from '../src/lib/prefs.js'
-import { enrichTonightWidgetProps, syncTonightWidget } from './widget-sync.js'
+import { enrichTogetherWidgetProps, enrichTonightWidgetProps, syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
+import { renderDidITogetherAndroidWidget } from '../widgets/android/DidITogetherAndroidWidget.jsx'
+import {
+  buildTogetherWidgetProps,
+  onTogetherSaved,
+  readTogetherPeople,
+  TOGETHER_WIDGET_NAME,
+} from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import {
   androidWidgetCardStamp,
@@ -26,6 +33,13 @@ async function tonightPropsForWidget(shelf) {
 }
 
 async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickAction, clickActionData, renderWidget }) {
+  // The Together widget only shows the saved list; a tap opens the app by URI.
+  if (widgetInfo?.widgetName === TOGETHER_WIDGET_NAME) {
+    if (widgetAction === 'WIDGET_DELETED') return
+    const props = enrichTogetherWidgetProps(readShelf(), buildTogetherWidgetProps(readTogetherPeople()))
+    renderWidget(renderDidITogetherAndroidWidget(props, widgetInfo))
+    return
+  }
   // Browsing to another open question is display-only — it never touches
   // the shelf, so it skips the answer-tap plumbing below and renders straight
   // from what's already on the card.
@@ -67,7 +81,12 @@ registerWidgetTaskHandler(handleDidITonightWidgetTask)
 export function installWidgetSetup() {
   onPrefs(() => {
     syncTonightWidget(readShelf()).catch(() => {})
+    syncTogetherWidget().catch(() => {})
+  })
+  onTogetherSaved(() => {
+    syncTogetherWidget().catch(() => {})
   })
 
   syncTonightWidget(readShelf()).catch(() => {})
+  syncTogetherWidget().catch(() => {})
 }

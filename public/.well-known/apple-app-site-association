@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["2ZUKFKSSV8.com.aaronbryant.didi"],
+        "components": [
+          { "/": "/f/*", "comment": "friend QR code" },
+          { "/": "/j/*", "comment": "family QR code" },
+          { "/": "/i/*", "comment": "invite link" }
+        ]
+      }
+    ]
+  }
+}

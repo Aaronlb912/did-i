@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { deviceKey, deviceLabel, devicePlatform } from './account.js'
+import { deviceKey, deviceLabel, devicePlatform, takeOldDeviceKey } from './account.js'
+import { noteAvatar } from './avatar.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
@@ -425,19 +426,39 @@ export async function touchDevice() {
     },
     { onConflict: 'user_id,device_key' },
   )
+  // This phone moved to its stable id: its old row is the same phone.
+  const old = takeOldDeviceKey()
+  if (old && old !== deviceKey()) {
+    await db.from('devices').delete().eq('user_id', user.id).eq('device_key', old)
+  }
 }
+
+// Phones seen in the last 30 days. Older rows are installs that are gone.
+export const DEVICE_FRESH_DAYS = 30
 
 export async function listDevices() {
   const db = cloud()
   if (!db) return []
   const user = await me()
   if (!user) return []
+  const since = new Date(Date.now() - DEVICE_FRESH_DAYS * 86400000).toISOString()
   const { data } = await db
     .from('devices')
     .select('device_key, label, platform, last_seen_at')
     .eq('user_id', user.id)
+    .gt('last_seen_at', since)
     .order('last_seen_at', { ascending: false })
   return data || []
+}
+
+// Every phone but this one. Their app signs in again on next open if still
+// signed in; this only clears the list (and their push token).
+export async function forgetOtherDevices() {
+  const db = cloud()
+  if (!db) return
+  const user = await me()
+  if (!user) return
+  await db.from('devices').delete().eq('user_id', user.id).neq('device_key', deviceKey())
 }
 
 export async function forgetDevice(key) {
@@ -455,9 +476,10 @@ export async function loadProfile() {
   if (!user) return null
   const { data } = await db
     .from('profiles')
-    .select('display_name, look_on, badge_cheer, prefs, gem_balance')
+    .select('display_name, look_on, badge_cheer, prefs, gem_balance, avatar_url')
     .eq('user_id', user.id)
     .maybeSingle()
+  if (data) noteAvatar(data.avatar_url)
   return data || null
 }
 

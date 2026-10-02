@@ -13,7 +13,7 @@ export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 // Notification kinds a person can turn off. The first three are scheduled on
 // the phone; the rest are pushes, and the server reads prefs.pingsOff too
 // (push_wanted in supabase/push.sql), so keep the names in step.
-export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'cheers', 'friends']
+export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'cheers', 'friends', 'family']
 
 function blankPrefs() {
   return {
@@ -92,6 +92,8 @@ function cleanPrefs(raw) {
   if (raw?.widgetOpenOnly === true) next.widgetOpenOnly = true
   if (Array.isArray(raw?.pingsOff)) next.pingsOff = PING_KINDS.filter((kind) => raw.pingsOff.includes(kind))
   if (raw?.pingsPrivate === true) next.pingsPrivate = true
+  // Synced with the account, so a reinstall does not show the dots legend again.
+  if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
   return next
 }
 

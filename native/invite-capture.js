@@ -3,6 +3,7 @@ import { requireOptionalNativeModule } from 'expo'
 import * as Application from 'expo-application'
 import * as Clipboard from 'expo-clipboard'
 import { inviteFromText, savePendingInvite } from '../src/lib/invite-link.js'
+import { savePendingScan, scanFromText } from '../src/lib/qr-links.js'
 
 // First launch after an invite link (did-i.app/i/CODE). Android gets the code
 // from the Play install referrer. iPhone has no referrer, so the link page
@@ -18,6 +19,7 @@ export async function captureInviteOnFirstLaunch() {
     if (Platform.OS === 'android') {
       const referrer = await Application.getInstallReferrerAsync()
       savePendingInvite(inviteFromText(referrer))
+      savePendingScan(scanFromText(referrer))
       return
     }
     if (Platform.OS !== 'ios') return
@@ -25,6 +27,8 @@ export async function captureInviteOnFirstLaunch() {
     if (!probe || !(await probe.hasWebUrlAsync())) return
     const text = await Clipboard.getStringAsync()
     if (/did-i\.app\/i\//i.test(text)) savePendingInvite(inviteFromText(text))
+    // A friend or family QR page (did-i.app/f/ID, /j/CODE) copies its link the same way.
+    savePendingScan(scanFromText(text))
   } catch {
     // No invite is fine.
   }

@@ -6,7 +6,13 @@ const MARKETING = new Set(['/', '/privacy', '/terms', '/download', '/press', '/b
 
 // /i/CODE is an invite link page (src/site/Invite.jsx).
 function isMarketing(path) {
-  return MARKETING.has(path) || /^\/i\/[A-Za-z0-9]+$/.test(path)
+  return MARKETING.has(path) || /^\/i\/[A-Za-z0-9]+$/.test(path) || Boolean(scanFromPath(path))
+}
+
+// /f/ID and /j/CODE are friend and family QR pages (src/site/ScanLanding.jsx).
+export function scanFromPath(path) {
+  const hit = /^\/([fj])\/([A-Za-z0-9]+)$/.exec(path)
+  return hit ? { kind: hit[1], code: hit[2] } : null
 }
 
 export function inviteCodeFromPath(path) {

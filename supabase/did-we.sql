@@ -318,7 +318,7 @@ begin
     on conflict do nothing;
     select question into q from public.we_cards where id = card;
     insert into public.push_queue (to_id, title, body, go)
-    select m.user_id, 'Did we', 'Done together: ' || left(q, 120), '/tonight'
+    select m.user_id, 'Did we', left(public.push_text(m.user_id, 'we_done', jsonb_build_object('q', left(q, 120))), 200), '/tonight'
     from public.we_members m
     where m.card_id = card and m.state = 'in' and public.push_wanted(m.user_id, 'sends');
   elsif was_done and not now_done then
@@ -675,7 +675,9 @@ begin
     from public.profiles p where p.user_id = who;
     select question into q from public.we_cards where id = card;
     insert into public.push_queue (to_id, title, body, go)
-    values (other, coalesce(name, 'Someone') || ' did it', 'Your turn: ' || left(q, 120), '/tonight');
+    values (other,
+      left(public.push_text(other, 'we_did', jsonb_build_object('name', coalesce(name, public.push_text(other, 'someone')))), 80),
+      left(public.push_text(other, 'we_turn', jsonb_build_object('q', left(q, 120))), 200), '/tonight');
   end if;
 exception when unique_violation then
   raise exception 'already nudged tonight';
@@ -876,7 +878,9 @@ begin
   from public.profiles p where p.user_id = new.asked_by;
   select question into q from public.we_cards where id = new.card_id;
   insert into public.push_queue (to_id, title, body, go)
-  values (new.user_id, coalesce(name, 'Someone') || ' asked you', 'Did we: ' || left(q, 120), '/inbox');
+  values (new.user_id,
+    left(public.push_text(new.user_id, 'we_asked', jsonb_build_object('name', coalesce(name, public.push_text(new.user_id, 'someone')))), 80),
+    left(public.push_text(new.user_id, 'we_ask', jsonb_build_object('q', left(q, 120))), 200), '/inbox');
   return new;
 end;
 $$;

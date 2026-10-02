@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { DidButton } from './ui.jsx'
 import { t } from '../../src/lib/i18n.js'
+import { readPrefs, writePrefs } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
 
 const SEEN = 'did-i-jewel-key'
@@ -8,12 +9,17 @@ const SEEN = 'did-i-jewel-key'
 // first night's payoff is not crowded by a lesson.
 const FIRST_NIGHT = 'did-i-jewel-key-first'
 
-export function jewelKeySeen() {
+// The phone flag alone was lost on a reinstall, so seen also lives in the
+// synced prefs. A phone that saw it before this keeps it and passes it on.
+export function jewelKeySeen(prefs = readPrefs()) {
+  if (prefs.jewelKeySeen) return true
   try {
-    return Boolean(localStorage.getItem(SEEN))
+    if (!localStorage.getItem(SEEN)) return false
   } catch {
     return true
   }
+  writePrefs({ jewelKeySeen: true })
+  return true
 }
 
 /** True from the night after the first answer on. */
@@ -32,8 +38,9 @@ function markSeen() {
   try {
     localStorage.setItem(SEEN, '1')
   } catch {
-    // Shows again next time. Harmless.
+    // The synced pref below still holds it.
   }
+  writePrefs({ jewelKeySeen: true })
 }
 
 // What the dot on each question pill means. Shown once, on a night after the first.

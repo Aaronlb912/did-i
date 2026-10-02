@@ -24,8 +24,56 @@ struct DidIAddQuestionIntent: AppIntent {
   }
 }
 
+enum DidIAnswerChoice: String, AppEnum {
+  case did
+  case nope
+
+  static let typeDisplayRepresentation: TypeDisplayRepresentation = "Answer"
+  static let caseDisplayRepresentations: [DidIAnswerChoice: DisplayRepresentation] = [
+    .did: "Did",
+    .nope: "Nope",
+  ]
+}
+
+// "Hey Siri, answer Did I." Siri asks which question and Did or Nope, then
+// opens didi://answer?q=...&a=did. The app matches the words to tonight's
+// open questions (src/lib/voice-answer.js) and saves it like a widget tap.
+struct DidIAnswerIntent: AppIntent {
+  static let title: LocalizedStringResource = "Answer a question"
+  static let description = IntentDescription("Answers one of tonight's questions in Did I.")
+  static let openAppWhenRun: Bool = true
+
+  @Parameter(title: "Question", requestValueDialog: "Which question?")
+  var question: String
+
+  @Parameter(title: "Answer", requestValueDialog: "Did you, or nope?")
+  var answer: DidIAnswerChoice
+
+  @MainActor
+  func perform() async throws -> some IntentResult {
+    var link = URLComponents()
+    link.scheme = "didi"
+    link.host = "answer"
+    link.queryItems = [URLQueryItem(name: "q", value: question), URLQueryItem(name: "a", value: answer.rawValue)]
+    if let url = link.url {
+      await UIApplication.shared.open(url)
+    }
+    return .result()
+  }
+}
+
 struct DidIShortcuts: AppShortcutsProvider {
   static var appShortcuts: [AppShortcut] {
+    AppShortcut(
+      intent: DidIAnswerIntent(),
+      phrases: [
+        "Answer \(.applicationName)",
+        "Answer a question in \(.applicationName)",
+        "Check in with \(.applicationName)",
+      ],
+      shortTitle: "Answer a question",
+      systemImageName: "checkmark.circle"
+    )
     AppShortcut(
       intent: DidIAddQuestionIntent(),
       phrases: [
