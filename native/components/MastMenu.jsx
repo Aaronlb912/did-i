@@ -363,7 +363,7 @@ export function MastMenuCog() {
       <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
       {people.inbox > 0 ? (
         <View pointerEvents="none" style={[styles.menuCount, { backgroundColor: colors.on, borderColor: colors.bg }]}>
-          <Text style={[styles.countText, { color: colors.bg }]}>{countLabel(people.inbox)}</Text>
+          <Text style={[styles.countText, styles.menuCountText, { color: colors.bg }]}>{countLabel(people.inbox)}</Text>
         </View>
       ) : waiting > 0 ? (
         <View style={[styles.menuPip, { backgroundColor: colors.on }]} />
@@ -424,14 +424,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    minWidth: 18,
-    height: 18,
+    minWidth: 20,
+    height: 20,
     paddingHorizontal: 4,
-    borderRadius: 9,
+    borderRadius: 10,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  menuCountText: { fontSize: 10, lineHeight: 12, includeFontPadding: false, textAlign: 'center' },
   menuPip: {
     position: 'absolute',
     top: 8,
