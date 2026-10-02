@@ -1057,6 +1057,41 @@ test('the widget holds back a question until its ask time, like the stack', asyn
   assert.equal(later.leadLampId, 'late')
 })
 
+test('the widget says all clear when tonight is done, even with open-only on', async () => {
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  const before = readPrefs()
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [{ lampId: 'a', periodKey: '2026-09-23', status: 'yes', answeredAt: '2026-09-23T20:00:00' }],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  const at = new Date('2026-09-23T21:00:00')
+  try {
+    for (const openOnly of [false, true]) {
+      writePrefs({ ...before, widgetOpenOnly: openOnly })
+      const props = buildTonightWidgetProps(shelf, at)
+      assert.equal(props.footer, t('widget.tonight.clear'), `openOnly ${openOnly}`)
+    }
+  } finally {
+    writePrefs(before)
+  }
+})
+
+test('the update prompt compares x.y.z and never locks out on a bad row', async () => {
+  const { updateState, versionBelow } = await import('../src/lib/app-update.js')
+  assert.equal(versionBelow('1.2.0', '1.10.0'), true)
+  assert.equal(versionBelow('1.10.0', '1.2.0'), false)
+  assert.equal(versionBelow('1.2.0', '1.2.0'), false)
+  assert.equal(versionBelow('1.2.0', 'soon'), false)
+  assert.equal(updateState('1.1.0', { latest: '1.2.0', minimum: '1.0.0' }), 'offer')
+  assert.equal(updateState('1.2.0', { latest: '1.2.0', minimum: '1.0.0' }), '')
+  assert.equal(updateState('0.9.0', { latest: '1.2.0', minimum: '1.0.0' }), 'must')
+  assert.equal(updateState('1.2.0', null), '')
+})
+
 test('tonight orders questions by ask time, untimed ones first, priority breaking ties', async () => {
   const { byAskTime } = await import('../src/lib/board-json.js')
   const row = (id, askAfter, priority) => ({ lamp: { id, askAfter, priority } })
@@ -1410,7 +1445,7 @@ test('the tonight widget can draw a question without the app', () => {
   assert.equal(marked.question, 'Keys')
   assert.equal(marked.items.find((item) => item.lampId === 'door').status, 'yes')
   const empty = JSON.stringify(fn(undefined, { widgetFamily: 'systemSmall', widgetRenderingMode: 'fullColor' }))
-  assert.ok(empty.includes('No questions yet.'))
+  assert.ok(empty.includes('No questions yet'))
   const glow = JSON.stringify(
     fn(
       {
@@ -1619,7 +1654,7 @@ test('an android widget card steps to the next question already on it', () => {
     left: 2,
     footer: '2 left tonight.',
     clearLabel: 'All clear for tonight.',
-    emptyLabel: 'No questions yet.',
+    emptyLabel: 'No questions yet',
     openLabel: 'Tonight',
   }
   const next = advanceTonightCard(props, 'door', 'did', '2026-09-23')

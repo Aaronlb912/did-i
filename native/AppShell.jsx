@@ -27,6 +27,7 @@ import { ScreenRoute } from './navigation/screen-route.js'
 import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
+import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { GiftHost } from './screens/shop.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
@@ -345,6 +346,7 @@ export function AppShell() {
       </Slot>
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
+        <UpdatePrompt path={route.path} colors={colors} />
         {app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         <SheetHost />
         <CheerBurstHost />

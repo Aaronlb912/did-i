@@ -20,12 +20,15 @@ function dowMarks(locale) {
   })
 }
 
+// Every mark reads the same way: Did, Late, Nope, Open.
+const upFirst = (text) => text.charAt(0).toLocaleUpperCase() + text.slice(1)
+
 function markOf(answer) {
   const status = answer?.status
-  if (status === 'yes') return { key: 'yes', label: t('tonight.swipeDid') }
-  if (status === 'late') return { key: 'late', label: t('hole.late') }
-  if (status === 'skip') return { key: 'skip', label: t('tonight.swipeNope') }
-  return { key: 'hole', label: t('cal.open') }
+  if (status === 'yes') return { key: 'yes', label: t('widget.tonight.did') }
+  if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
+  if (status === 'skip') return { key: 'skip', label: t('widget.tonight.nope') }
+  return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
 export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {

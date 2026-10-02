@@ -13,11 +13,11 @@ import { t } from './i18n.js'
 import { normalizePurse } from './purse.js'
 import { readWeLine } from './we-widget.js'
 import {
-  allClearTonight,
   answerFor,
   boardDate,
   countedTonightRows,
   didStatusForRow,
+  dueClearTonight,
   dueTonight,
   finishStackCount,
   periodPassed,
@@ -168,14 +168,15 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // Count like Tonight's meter: an optional question (put on your tonight
   // for you) stays on the widget to answer, but is not "left" until you did it.
   const left = finishStackCount(countedTonightRows(rows))
-  const allClear =
-    rows.length > 0 &&
-    boards.every((book) => !countedTonightRows(dueTonight(book, now)).length || allClearTonight(book, now))
+  // Same test as Tonight's done card, across every tag, so the widget never
+  // says "no questions" while the app says done (the open-only setting hides
+  // answered rows).
+  const allClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
   let footer = ''
-  if (!rows.length) {
-    footer = t('widget.tonight.empty')
-  } else if (allClear) {
+  if (allClear) {
     footer = t('widget.tonight.clear')
+  } else if (!rows.length) {
+    footer = t('widget.tonight.empty')
   } else if (left === 1) {
     footer = t('widget.tonight.oneLeft')
   } else if (left > 1) {

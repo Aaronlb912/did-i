@@ -323,6 +323,24 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => goHash('/marks')}
         />
+        <SetRow
+          colors={colors}
+          icon="calendar"
+          tint={colors.on}
+          label={t('boards.calendar')}
+          sub={t('settings.calendarSub')}
+          chevron
+          onPress={() => goHash('/calendar')}
+        />
+        <SetRow
+          colors={colors}
+          icon="note"
+          tint={colors.inkSoft}
+          label={t('feed.title')}
+          sub={t('settings.feedSub')}
+          chevron
+          onPress={() => goHash('/feed')}
+        />
       </SetCard>
 
       <SetCard colors={colors}>

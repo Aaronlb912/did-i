@@ -256,6 +256,16 @@ that one first.
 
 Not in the dev app: widgets, Apple and Google sign-in, Firebase, gem purchases. Test those on the store build.
 
+## Update prompt (app_versions)
+
+`supabase/app-version.sql` holds one row per platform: `latest` and `minimum`.
+After a store release is approved and live, set that platform's `latest` to
+the new version in the Supabase table editor. Phones on an older version see
+"A new version of Did I is out" on Tonight (Not now hides it for a day).
+Raise `minimum` only when an old version is really broken: phones below it
+get a full screen with just the Update button. Only builds from 1.2.0 on
+have the prompt.
+
 ## Over-the-air updates (expo-updates)
 
 JS-only changes (screens, copy, `src/lib` logic, locales) can go out without a

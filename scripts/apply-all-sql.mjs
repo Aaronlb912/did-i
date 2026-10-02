@@ -30,6 +30,7 @@ const files = [
   'supabase/gifts.sql',
   'supabase/lockdown.sql',
   'supabase/friend-ids.sql',
+  'supabase/app-version.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
