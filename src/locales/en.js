@@ -2229,4 +2229,6 @@ export const en = {
   'legal.privacy.voice.title': 'Siri, Google Assistant, shortcuts, and widgets',
   'legal.privacy.voice.body': 'If you use Siri or Google Assistant with Did I (for example "Answer Did I" or "Add a question in Did I"), Apple or Google handles your voice under their own privacy policies and passes the words to the app. The app matches them to your questions on your phone. We do not receive audio.\n\nHome screen and lock screen widgets keep a small copy of tonight\'s questions, and the Together widget keeps your friends\' and family\'s names, initials, and whether they finished tonight, on your phone only. Signing out clears the Together widget.',
   'avatar.photosOff': 'Photo access is off for Did I. Turn it on in your phone\'s Settings.',
+  'settings.namePh': 'Your name',
+  'we.asksAt': 'Did we · asks at {time}',
 }

@@ -202,7 +202,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       />
     ) : null
   let face = null
-  if (weSwipe && weOpenForMe(weCards).length) {
+  if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
     face = weSwipe
   } else if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (

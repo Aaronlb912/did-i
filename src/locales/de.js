@@ -2255,4 +2255,6 @@ export const de = {
   'legal.privacy.voice.title': 'Siri, Google Assistant, Kurzbefehle und Widgets',
   'legal.privacy.voice.body': 'Wenn du Siri oder Google Assistant mit Did I nutzt (zum Beispiel „Did I beantworten“ oder „Frage in Did I hinzufügen“), verarbeitet Apple oder Google deine Stimme nach ihren eigenen Datenschutzrichtlinien und gibt die Worte an die App weiter. Die App ordnet sie auf deinem Handy deinen Fragen zu. Wir bekommen keine Audiodaten.\n\nWidgets auf dem Home- und Sperrbildschirm behalten eine kleine Kopie der Fragen von heute Abend, und das Gemeinsam-Widget behält die Namen und Initialen deiner Freunde und Familie und ob sie heute fertig sind, nur auf deinem Handy. Beim Abmelden wird das Gemeinsam-Widget geleert.',
   'avatar.photosOff': 'Der Fotozugriff ist für Did I aus. Schalte ihn in den Einstellungen deines Telefons ein.',
+  'settings.namePh': 'Dein Name',
+  'we.asksAt': 'Did we · fragt um {time}',
 }

@@ -16,6 +16,7 @@ import {
   weWaiting,
 } from '../../src/lib/did-we.js'
 import { SwipeCardHost } from './SwipeCardHost.jsx'
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { fireCheer, normalizePurse } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
@@ -239,16 +240,25 @@ export function useWeAnswer(reload, book) {
 }
 
 // Due tonight, not done, and you have not answered: what the swipe card asks.
-export function weOpenForMe(cards, now = new Date()) {
-  return (cards || []).filter(
-    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status && weTimeReady(card, now),
+// Open Did wes for tonight. `early` also takes ones whose ask time has not
+// come yet (answering early is fine; the time only sets the reminder), with
+// the ready ones first. Only ever cards asked on this night (card.due).
+export function weOpenForMe(cards, now = new Date(), { early = false } = {}) {
+  const open = (cards || []).filter(
+    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status,
   )
+  if (!early) return open.filter((card) => weTimeReady(card, now))
+  return [...open.filter((card) => weTimeReady(card, now)), ...open.filter((card) => !weTimeReady(card, now))]
+}
+
+function weKicker(card) {
+  return weTimeReady(card) ? t('we.title') : t('we.asksAt', { time: clockWords(card.askAfter) })
 }
 
 // The Tonight card for a Did we: swipe right for did, left for nope, the
 // other open ones stacked behind.
 export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy }) {
-  const open = weOpenForMe(cards)
+  const open = weOpenForMe(cards, new Date(), { early: true })
   if (!open.length) return null
   const card = open[0]
   // Did we wears its own accent, so a shared card reads apart from your own.
@@ -260,11 +270,11 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       colors={weColors}
       panelStyle={panelStyle}
       gemLook={gemLook}
-      kicker={t('we.title')}
+      kicker={weKicker(card)}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
       stampNope={t('tonight.swipeNope')}
-      behind={open.slice(1).map((next) => ({ key: `we:${next.id}`, kicker: t('we.title'), title: next.question }))}
+      behind={open.slice(1).map((next) => ({ key: `we:${next.id}`, kicker: weKicker(next), title: next.question }))}
       onDid={() => onAnswer(card, 'did')}
       onNope={() => onAnswer(card, 'nope')}
       buddy={buddy}

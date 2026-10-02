@@ -2234,4 +2234,6 @@ export const pt = {
   'legal.privacy.voice.title': 'Siri, Google Assistant, atalhos e widgets',
   'legal.privacy.voice.body': 'Se você usar a Siri ou o Google Assistant com o Did I (por exemplo "Responder Did I" ou "Adicionar uma pergunta no Did I"), a Apple ou o Google tratam sua voz segundo as próprias políticas de privacidade e passam as palavras para o app. O app as associa às suas perguntas no seu telefone. Não recebemos áudio.\n\nOs widgets da tela inicial e da tela de bloqueio guardam uma cópia pequena das perguntas desta noite, e o widget Juntos guarda os nomes e iniciais dos seus amigos e família e se eles terminaram esta noite, só no seu telefone. Sair da conta limpa o widget Juntos.',
   'avatar.photosOff': 'O acesso às fotos está desligado para o Did I. Ligue nos Ajustes do telefone.',
+  'settings.namePh': 'Seu nome',
+  'we.asksAt': 'Did we · pergunta às {time}',
 }

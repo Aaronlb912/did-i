@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
+import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
   deleteAccount,
   deviceKey,
@@ -1067,7 +1068,20 @@ function AccountSignedIn({ book, email, onChange }) {
   return (
     <ScreenShell title={t('account.inTitle')} colors={colors}>
       <View style={styles.accountHead}>
-        <Avatar person={{ display_name: nameDraft || email, avatar_url: myAvatar }} colors={colors} size={72} />
+        {/* Tapping your own photo changes it, the way most apps work. */}
+        <Pressable
+          disabled={!canPhoto || photoBusy}
+          onPress={() => pickPhoto('library')}
+          accessibilityRole="button"
+          accessibilityLabel={myAvatar ? t('avatar.change') : t('avatar.add')}
+        >
+          <Avatar person={{ display_name: nameDraft || email, avatar_url: myAvatar }} colors={colors} size={72} />
+          {canPhoto ? (
+            <View style={[styles.avatarEdit, { backgroundColor: colors.on, borderColor: colors.bg }]}>
+              <MenuIcon name="pen" color={colors.bg} size={12} stroke />
+            </View>
+          ) : null}
+        </Pressable>
         <View style={styles.accountWho}>
           <Text style={[styles.accountName, { color: colors.ink }]} numberOfLines={1}>
             {nameDraft || t('account.noName')}
@@ -1119,6 +1133,7 @@ function AccountSignedIn({ book, email, onChange }) {
         <SavableSetField
           colors={colors}
           label={t('account.name')}
+          placeholder={t('settings.namePh')}
           value={nameDraft}
           savedValue={book?.keeperName || ''}
           onChangeText={setNameDraft}
@@ -1257,6 +1272,17 @@ export function AccountScreen({ book, onChange }) {
 
 const styles = StyleSheet.create({
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
+  avatarEdit: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   accountWho: { flex: 1, minWidth: 0, gap: 2 },
   accountName: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   accountEmail: { fontFamily: fonts.ui, fontSize: 14 },

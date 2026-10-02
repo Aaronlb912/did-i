@@ -27,7 +27,6 @@ import {
   weNextMilestone,
   weNudge,
   weStreak,
-  weTimeReady,
   weTonight,
   weWaiting,
   useWeTonight,
@@ -841,7 +840,8 @@ export function WeHomeScreen({ book, onChange }) {
 
   function row(card, withActs) {
     const me = weMine(card)
-    const open = withActs && !card.done && !me?.status && weTimeReady(card)
+    // Early is fine: the ask time only sets the reminder.
+    const open = withActs && !card.done && !me?.status && card.due
     const streak = weStreak(card)
     return (
       <Pressable
