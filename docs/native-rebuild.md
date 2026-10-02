@@ -237,9 +237,10 @@ bundle.
 | `ANDROID_KEY_ALIAS` | Key alias from step 1 |
 | `ANDROID_KEY_PASSWORD` | Key password from step 1 |
 
-With all four set, a run makes two artifacts: **did-i-android-apk** (arm64,
-for installing on a phone) and **did-i-android-aab** (all ABIs, for Play
-Console). The first AAB you upload to Play sets this key as the upload key.
+With all four set, a run makes **did-i-android-aab** (32- and 64-bit ARM, for
+Play Console). Tick the **apk** input to also get **did-i-android-apk**
+(arm64, for installing on a phone); it adds about 15 minutes, so store builds
+skip it (2026-10-02). The first AAB you upload to Play sets this key as the upload key.
 `versionCode` is the workflow run number, so each upload is higher than the
 last. An APK signed this way installs over the old EAS internal builds, which
 used the same key. It will not install over a debug-signed GitHub APK; remove
