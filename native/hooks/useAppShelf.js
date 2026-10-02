@@ -33,6 +33,7 @@ import {
   mergePurses,
   spreadPurseFrom,
   weeklyGemBump,
+  takeEarnedCoins,
 } from '../../src/lib/purse.js'
 import {
   applyCoinBalanceToShelf,
@@ -110,8 +111,9 @@ export function useAppShelf() {
     pushSoon(written)
     const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
     const coinsAfter = mergePurses(written.boards).coins
-    if (cloudSetUp() && coinsAfter > coinsBefore) {
-      creditNightCoins(boardDate(now, fold), coinsAfter - coinsBefore).then((bal) => {
+    const earned = Math.max(0, coinsAfter - coinsBefore) + takeEarnedCoins()
+    if (cloudSetUp() && earned > 0) {
+      creditNightCoins(boardDate(now, fold), earned).then((bal) => {
         if (bal == null) return
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)

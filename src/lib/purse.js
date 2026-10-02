@@ -486,6 +486,17 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
   return { ...shelf, gemWeek: week, boards }
 }
 
+// Signed in, the server owns the balance: a tap does not add coins here, it
+// leaves them for the save to credit (credit_night_coins). Without this the
+// save never saw the count go up and no account earned night coins.
+let earnedForServer = 0
+
+export function takeEarnedCoins() {
+  const n = earnedForServer
+  earnedForServer = 0
+  return n
+}
+
 export function payTap(before, after, row, status, clock = new Date()) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
@@ -493,7 +504,11 @@ export function payTap(before, after, row, status, clock = new Date()) {
   )
   const paid = prev && (prev.status === 'yes' || prev.status === 'late')
   let coins = purse.coins
-  if (!paid && !accountSessionOn()) coins += coinsFor(status, before, row, clock)
+  if (!paid) {
+    const earned = coinsFor(status, before, row, clock)
+    if (accountSessionOn()) earnedForServer += earned
+    else coins += earned
+  }
   return { ...after, ...purse, coins }
 }
 
