@@ -2175,7 +2175,7 @@ export const it = {
   'friendId.title': 'ID amico',
   'friendId.yours': 'Il tuo ID amico',
   'friendId.share': 'Condividi il mio ID',
-  'friendId.shareText': 'Aggiungimi su Did I. Il mio ID amico è {id}. https://did-i.app',
+  'friendId.shareText': 'Aggiungimi su Did I. Il mio ID amico è {id}. {link}',
   'friendId.shareSub': 'Condividilo così gli amici possono aggiungerti.',
   'friendId.add': 'Il suo ID amico',
   'friendId.find': 'Cerca',

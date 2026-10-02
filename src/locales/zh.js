@@ -2087,7 +2087,7 @@ export const zh = {
   'friendId.title': '好友 ID',
   'friendId.yours': '你的好友 ID',
   'friendId.share': '分享我的 ID',
-  'friendId.shareText': '在 Did I 上加我吧。我的好友 ID 是 {id}。https://did-i.app',
+  'friendId.shareText': '在 Did I 上加我吧。我的好友 ID 是 {id}。{link}',
   'friendId.shareSub': '分享给朋友，他们就能加你。',
   'friendId.add': '对方的好友 ID',
   'friendId.find': '查找',

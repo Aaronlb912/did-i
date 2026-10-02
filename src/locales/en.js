@@ -2170,7 +2170,7 @@ export const en = {
   'friendId.title': 'Friend ID',
   'friendId.yours': 'Your friend ID',
   'friendId.share': 'Share my ID',
-  'friendId.shareText': 'Add me on Did I. My friend ID is {id}. https://did-i.app',
+  'friendId.shareText': 'Add me on Did I. My friend ID is {id}. {link}',
   'friendId.shareSub': 'Share it so friends can add you.',
   'friendId.add': 'Their friend ID',
   'friendId.find': 'Find',

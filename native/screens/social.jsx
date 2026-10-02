@@ -966,7 +966,7 @@ export function PeopleConnectScreen({ book, route }) {
 
 
   async function shareId() {
-    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId) }), t('friendId.title'))
+    const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId), link: friendQrLink(myId) }), t('friendId.title'))
     if (how === 'copied') say(t('friendId.copied'))
   }
 
