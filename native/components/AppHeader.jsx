@@ -55,7 +55,7 @@ function HeaderTextButton({ colors, label, onPress, disabled, accent }) {
 /** Purse and menu, the right side of every header. */
 function HeaderActions({ colors, purse, menu }) {
   return (
-    <View style={styles.actions}>
+    <View style={[styles.actions, Platform.OS === 'ios' && styles.actionsIos]}>
       {purse ? (
         <Slot>
           <View style={styles.purse}>
@@ -276,6 +276,8 @@ const styles = StyleSheet.create({
   largeBox: { minHeight: LARGE_TITLE, justifyContent: 'flex-end', paddingBottom: 10 },
   largeTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  // iOS clips a bar item to its own size; the menu badge sits 4 past the button.
+  actionsIos: { paddingVertical: 4, paddingRight: 4, marginRight: -4 },
   purse: { paddingHorizontal: 8, justifyContent: 'center' },
   textAction: { paddingHorizontal: 8, paddingVertical: 6, justifyContent: 'center' },
   textActionLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
