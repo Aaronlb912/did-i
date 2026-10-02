@@ -168,6 +168,12 @@ function NativeBar({ colors, title, titleSlot, back = 'auto', purse, menu = fals
       headerBackVisible: back !== false && !ownBack && !hasLeftAction,
       headerLeft: ownBack || hasLeftAction ? () => <SlotPart slot={current} part="left" /> : undefined,
       headerRight: hasRight ? () => <SlotPart slot={current} part="right" /> : undefined,
+      // iOS 26 puts header items in a shared glass bubble that clips the menu badge.
+      // Our buttons draw their own surface, so the bubble is turned off.
+      unstable_headerRightItems:
+        hasRight && Platform.OS === 'ios'
+          ? () => [{ type: 'custom', element: <SlotPart slot={current} part="right" />, hidesSharedBackground: true }]
+          : undefined,
     })
   }, [back, hasLeftAction, hasRight, hasTitleSlot, navigation, ownBack, title])
 
