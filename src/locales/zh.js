@@ -2162,4 +2162,8 @@ export const zh = {
   'pings.kind.didi': '来自 Did I',
   'pings.kind.didiSub': '偶尔来自 Did I 团队的 Did you。',
   'we.earlyFor': '已经做了？提前回答{day}的。',
+  'we.earlyKicker': '{day}的 Did we',
+  'we.earlyDid': '你已为{day}回答做了。',
+  'we.earlyNope': '你已为{day}回答没做。',
+  'we.earlyUndo': '撤回',
 }

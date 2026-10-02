@@ -34,6 +34,8 @@ import {
 } from '../../src/lib/did-we.js'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import { readPrefs } from '../../src/lib/prefs.js'
+import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
+import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
@@ -679,27 +681,36 @@ function WeCardPage({ book, cardId, onChange }) {
         {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
       </Meta>
       {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
+      {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
       {!card.due && early && !early.card.done ? (
-        <View style={styles.acts}>
-          <Meta colors={colors}>
-            {t('we.earlyFor', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
-          </Meta>
-          <DidButton
-            colors={colors}
-            small
-            dim={weMine(early.card)?.status === 'nope'}
-            label={weMine(early.card)?.status === 'did' ? t('we.youDid') : t('we.did')}
-            disabled={ans.busy === card.id}
-            onPress={() => ans.answer(early.card, 'did', early.night)}
-          />
-          <KeyButton
-            colors={colors}
-            picked={weMine(early.card)?.status === 'nope'}
-            label={t('we.nope')}
-            disabled={ans.busy === card.id}
-            onPress={() => ans.answer(early.card, 'nope', early.night)}
-          />
-        </View>
+        weMine(early.card)?.status ? (
+          <View style={styles.acts}>
+            <Meta colors={colors}>
+              {t(weMine(early.card).status === 'did' ? 'we.earlyDid' : 'we.earlyNope', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
+            </Meta>
+            <KeyButton
+              colors={colors}
+              label={t('we.earlyUndo')}
+              disabled={ans.busy === card.id}
+              onPress={() => ans.answer(early.card, weMine(early.card).status, early.night)}
+            />
+          </View>
+        ) : (
+          <SwipeFlyHost style={styles.earlySlot}>
+            <SwipeCardHost
+              key={`we-early:${card.id}`}
+              cardKey={`we-early:${card.id}:${early.night}`}
+              colors={{ ...colors, on: colors.we || colors.on, line: colors.we || colors.line }}
+              kicker={t('we.earlyKicker', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
+              title={card.question}
+              stampDid={t('tonight.swipeDid')}
+              stampNope={t('tonight.swipeNope')}
+              behind={[]}
+              onDid={() => ans.answer(early.card, 'did', early.night)}
+              onNope={() => ans.answer(early.card, 'nope', early.night)}
+            />
+          </SwipeFlyHost>
+        )
       ) : null}
       {card.due ? (
         <View style={styles.acts}>
@@ -948,6 +959,7 @@ export function WeHomeScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  earlySlot: { height: 250, justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },
