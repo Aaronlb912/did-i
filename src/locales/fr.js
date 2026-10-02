@@ -2263,4 +2263,5 @@ export const fr = {
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s\'affiche.',
   'pings.kind.didi': 'De Did I',
   'pings.kind.didiSub': 'De temps en temps, un Did you de l\'équipe Did I.',
+  'we.earlyFor': 'Déjà fait ? Réponds pour {day}.',
 }

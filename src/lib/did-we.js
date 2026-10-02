@@ -255,6 +255,16 @@ function addDays(iso, days) {
   return isoDate(date)
 }
 
+// The card's next asked night after tonight, within a week, for answering
+// early ("done it already"). Same window as we_answer on the server.
+export function weNextNight(card, night = tonightIso()) {
+  for (let ahead = 1; ahead <= 7; ahead += 1) {
+    const day = addDays(night, ahead)
+    if (weDueOn(card, day)) return day
+  }
+  return ''
+}
+
 export function weDueOn(card, night) {
   if (night < String(card.startsOn || '')) return false
   if (card.cadence !== 'weekly') return true

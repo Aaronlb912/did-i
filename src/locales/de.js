@@ -2270,4 +2270,5 @@ export const de = {
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
   'pings.kind.didi': 'Von Did I',
   'pings.kind.didiSub': 'Ab und zu ein Did you vom Did I Team.',
+  'we.earlyFor': 'Schon erledigt? Antworte für {day}.',
 }

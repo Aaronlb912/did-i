@@ -25,6 +25,7 @@ import {
   weMine,
   weMonth,
   weNextMilestone,
+  weNextNight,
   weNudge,
   weStreak,
   weTonight,
@@ -32,6 +33,7 @@ import {
   useWeTonight,
 } from '../../src/lib/did-we.js'
 import { MenuIcon } from '../components/MenuIcon.jsx'
+import { readPrefs } from '../../src/lib/prefs.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
@@ -549,11 +551,19 @@ function WeCardPage({ book, cardId, onChange }) {
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
+  // Not asked tonight: its next asked night can be answered early.
+  const [early, setEarly] = useState(null)
 
   async function load() {
     const out = await weTonight()
     if (out.miss) setMiss(tMiss(out.miss))
-    setCard(out.cards.find((c) => c.id === cardId) || null)
+    const found = out.cards.find((c) => c.id === cardId) || null
+    setCard(found)
+    const night = found && !found.due && found.myState === 'in' ? weNextNight(found) : ''
+    if (!night) return setEarly(null)
+    const later = await weTonight(night)
+    const then = later.cards.find((c) => c.id === cardId)
+    return setEarly(then ? { night, card: then } : null)
   }
 
   useEffect(() => {
@@ -669,6 +679,28 @@ function WeCardPage({ book, cardId, onChange }) {
         {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
       </Meta>
       {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
+      {!card.due && early && !early.card.done ? (
+        <View style={styles.acts}>
+          <Meta colors={colors}>
+            {t('we.earlyFor', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
+          </Meta>
+          <DidButton
+            colors={colors}
+            small
+            dim={weMine(early.card)?.status === 'nope'}
+            label={weMine(early.card)?.status === 'did' ? t('we.youDid') : t('we.did')}
+            disabled={ans.busy === card.id}
+            onPress={() => ans.answer(early.card, 'did', early.night)}
+          />
+          <KeyButton
+            colors={colors}
+            picked={weMine(early.card)?.status === 'nope'}
+            label={t('we.nope')}
+            disabled={ans.busy === card.id}
+            onPress={() => ans.answer(early.card, 'nope', early.night)}
+          />
+        </View>
+      ) : null}
       {card.due ? (
         <View style={styles.acts}>
           <DidButton

@@ -621,7 +621,21 @@ begin
   end if;
   -- Tonight or the night before in any time zone. No reaching back to fill
   -- in a streak.
-  if on_night < current_date - 2 or on_night > current_date + 1 then
+  if on_night < current_date - 2 then
+    raise exception 'that night is closed';
+  end if;
+  -- Done early: a card's next asked night may be answered up to a week ahead,
+  -- never a night after it.
+  if on_night > current_date + 1 and not exists (
+    select 1 from public.we_cards c
+    where c.id = card
+      and on_night <= current_date + 7
+      and public.we_due(c.starts_on, c.cadence, c.weekdays, on_night)
+      and not exists (
+        select 1 from generate_series(current_date + 2, on_night - 1, interval '1 day') g(d)
+        where public.we_due(c.starts_on, c.cadence, c.weekdays, g.d::date)
+      )
+  ) then
     raise exception 'that night is closed';
   end if;
   if want_status is null then
