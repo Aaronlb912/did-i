@@ -1047,7 +1047,7 @@ function AccountSignedIn({ book, email, onChange }) {
         if (out.miss) setPhotoMiss(t(out.miss))
       }
     } catch (error) {
-      setPhotoMiss(t(error?.message === 'camera-denied' ? 'avatar.cameraOff' : 'avatar.saveFail'))
+      setPhotoMiss(t({ 'camera-denied': 'avatar.cameraOff', 'photos-denied': 'avatar.photosOff' }[error?.message] || 'avatar.saveFail'))
     }
     setPhotoBusy(false)
   }
