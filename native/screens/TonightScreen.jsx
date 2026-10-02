@@ -265,7 +265,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           {stack.streak > 0 ? (
             <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
           ) : null}
-          {summary ? <NightWeek nights={summary.week} colors={colors} /> : null}
+          {summary ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('tonight.openCalendar')}
+              onPress={() => goHash('/calendar')}
+              style={({ pressed }) => pressed && { opacity: 0.7 }}
+            >
+              <NightWeek nights={summary.week} colors={colors} />
+            </Pressable>
+          ) : null}
           {summary ? (
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
