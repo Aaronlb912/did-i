@@ -790,6 +790,7 @@ export const ko = {
   'later.dueTonight': '오늘 밤까지',
   'lamp.missing': 'question 없음',
   'lamp.gone': '그 question은 여기 없어.',
+  'lamp.sentBy': '{name}님이 보냄',
   'lamp.kicker': '이 question',
   'lamp.edit': '편집',
   'lamp.copy': '복제',

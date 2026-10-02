@@ -788,6 +788,7 @@ export const zh = {
   'later.dueTonight': '今晚截止',
   'lamp.missing': '缺少问题',
   'lamp.gone': '那个问题不在这里。',
+  'lamp.sentBy': '来自 {name}',
   'lamp.kicker': '此 question',
   'lamp.edit': '编辑',
   'lamp.copy': '复制',

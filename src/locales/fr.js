@@ -820,6 +820,7 @@ export const fr = {
   'later.dueTonight': 'Pour ce soir',
   'lamp.missing': 'Question manquante',
   'lamp.gone': 'Cette question n’est pas ici.',
+  'lamp.sentBy': 'Envoyé par {name}',
   'lamp.kicker': 'Cette question',
   'lamp.edit': 'Modifier',
   'lamp.copy': 'Dupliquer',

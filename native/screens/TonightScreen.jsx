@@ -54,6 +54,13 @@ import { syncTonightWidget } from '../widget-sync.js'
 // Where the stack has no card of your own to swipe, so a Did we can have it.
 const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 
+// A kept did you says who sent it next to its tag.
+function cardKicker(row, fallback) {
+  const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
+  const tag = row.tag || (from ? '' : fallback)
+  return [tag, from].filter(Boolean).join(' · ')
+}
+
 function useMinuteNow() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -252,13 +259,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={faceRow.tag || ''}
+        kicker={cardKicker(faceRow, '')}
         title={faceRow.lamp.question}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
         behind={stack.upNext.map((row) => ({
           key: cardKeyOf(row),
-          kicker: row.tag || t('tonight.didI'),
+          kicker: cardKicker(row, t('tonight.didI')),
           title: row.lamp.question,
         }))}
         onDid={() => stack.mark(faceRow, 'yes')}
@@ -405,7 +412,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         colors={colors}
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
-        kicker={pillRow.tag || ''}
+        kicker={cardKicker(pillRow, '')}
         title={pillRow.lamp.question}
         meta={pillMeta}
         stampDid={t('tonight.swipeDid')}

@@ -47,7 +47,7 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
   // Marked so the Questions tab can show did yous apart from your own.
   if (typeof item === 'object') {
     base.fromDidYou = true
-    const name = String(item?.person?.display_name || '').replace(/\s+/g, ' ').trim().slice(0, 40)
+    const name = String(item?.person?.display_name || item?.person?.handle || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     if (name) base.fromName = name
   }
   const { cadence, weekdays } = readRepeat(typeof item === 'string' ? '' : item.repeat)
