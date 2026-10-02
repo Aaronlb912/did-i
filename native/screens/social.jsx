@@ -301,7 +301,10 @@ function Tile({ label, value, note, lit, onPress, colors }) {
         },
       ]}
     >
-      <Text style={[styles.tileLabel, { color: lit ? colors.on : colors.inkDim }]}>{label}</Text>
+      <View style={styles.tileTop}>
+        <Text style={[styles.tileLabel, { color: lit ? colors.on : colors.inkDim }]}>{label}</Text>
+        <Text style={[styles.tileChev, { color: lit ? colors.on : colors.inkDim }]}>›</Text>
+      </View>
       <Text style={[styles.tileValue, { color: colors.ink }]} numberOfLines={2}>
         {value}
       </Text>
@@ -1916,6 +1919,8 @@ const styles = StyleSheet.create({
   confirmLine: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   tiles: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   tile: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 14, gap: 4, minHeight: 96 },
+  tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tileChev: { fontFamily: fonts.ui, fontSize: 20, lineHeight: 20 },
   tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },

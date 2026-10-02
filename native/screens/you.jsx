@@ -11,7 +11,7 @@ import { HangFold } from '../components/HangFold.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { Pill, useAddFeel } from './questions.jsx'
@@ -47,12 +47,14 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const [shake, setShake] = useState(0)
   const feel = useAddFeel(book, inputRef)
   const [busy, setBusy] = useState(false)
+  // Sent: the screen is on its way out, so Send stays off.
+  const [done, setDone] = useState(false)
   const [miss, setMiss] = useState('')
   const lead = t('lead.you')
   const question = blank.trim() ? `${lead} ${blank.trim()}` : ''
   const person = (people || []).find((p) => p.id === to)
   const repeat = repeatFrom(cadence, days)
-  const ready = Boolean(question) && Boolean(to) && !busy
+  const ready = Boolean(question) && Boolean(to) && !busy && !done
 
   useEffect(() => {
     let alive = true
@@ -98,7 +100,8 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       return setMiss(why === 'already' ? t('people.sendAlready') : tMiss(why))
     }
     noteAsked(to)
-    feel.land(t('lead.sent'), () => goHash('/sent'))
+    setDone(true)
+    feel.land(t('lead.sent'), () => swapHash('/sent'))
   }
 
   return (
