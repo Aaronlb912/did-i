@@ -2161,4 +2161,5 @@ export const zh = {
   'didYouLink.noApp': '还没有 Did I？下载并打开，这个问题就会出现。',
   'pings.kind.didi': '来自 Did I',
   'pings.kind.didiSub': '偶尔来自 Did I 团队的 Did you。',
+  'we.earlyFor': '已经做了？提前回答{day}的。',
 }

@@ -222,14 +222,15 @@ export function useWeAnswer(reload, book) {
     return out
   }
 
-  async function answer(card, status) {
+  // `night` answers a later night early; tonight when left out.
+  async function answer(card, status, night) {
     const mine = weMine(card)
     const next = mine?.status === status ? null : status
-    const out = await run(card.id, () => weAnswer(card.id, next))
+    const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     if (out.miss || !out.done || card.done) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
-    const paid = await weClaim(card.id)
+    const paid = await weClaim(card.id, night || undefined)
     if (paid.coins > 0) {
       setNote(t('we.coins', { n: paid.coins }))
       pullAndMerge().catch(() => {})

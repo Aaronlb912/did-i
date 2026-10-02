@@ -2177,4 +2177,5 @@ export const ja = {
   'didYouLink.noApp': 'Did I をまだ持っていませんか？入手して開くと、この質問が表示されます。',
   'pings.kind.didi': 'Did I から',
   'pings.kind.didiSub': 'ときどき、Did I チームから Did you が届きます。',
+  'we.earlyFor': 'もう済んだ？{day}の分を答えましょう。',
 }

@@ -2249,4 +2249,5 @@ export const it = {
   'didYouLink.noApp': 'Non hai ancora Did I? Scaricalo, aprilo e comparirà questa domanda.',
   'pings.kind.didi': 'Da Did I',
   'pings.kind.didiSub': 'Ogni tanto, un Did you dal team di Did I.',
+  'we.earlyFor': 'Già fatto? Rispondi per {day}.',
 }

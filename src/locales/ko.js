@@ -2177,4 +2177,5 @@ export const ko = {
   'didYouLink.noApp': '아직 Did I가 없나요? 설치하고 열면 이 질문이 나와요.',
   'pings.kind.didi': 'Did I에서',
   'pings.kind.didiSub': '가끔 Did I 팀이 보내는 Did you.',
+  'we.earlyFor': '벌써 했나요? {day} 답을 미리 남겨요.',
 }
