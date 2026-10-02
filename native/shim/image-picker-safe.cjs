@@ -10,6 +10,9 @@ function fallback() {
     launchCameraAsync() {
       return Promise.resolve({ canceled: true, assets: null })
     },
+    requestMediaLibraryPermissionsAsync() {
+      return Promise.resolve({ granted: false })
+    },
     requestCameraPermissionsAsync() {
       return Promise.resolve({ granted: false })
     },

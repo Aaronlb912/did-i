@@ -17,7 +17,7 @@ export function canTakePhoto() {
 
 // One photo from the library or the camera, square-cropped, shrunk to a small
 // JPEG. Returns the bytes, or null when the person backs out. Throws
-// 'camera-denied' when the camera is turned off for Did I.
+// 'camera-denied' or 'photos-denied' when that access is turned off for Did I.
 export async function pickAvatarBytes(from = 'library') {
   if (!canPickAvatar()) return null
   const ImagePicker = require('expo-image-picker')
@@ -29,6 +29,10 @@ export async function pickAvatarBytes(from = 'library') {
     if (!ask?.granted) throw new Error('camera-denied')
     picked = await ImagePicker.launchCameraAsync({ ...options, cameraType: ImagePicker.CameraType?.front })
   } else {
+    // Ask first, so the phone's own photo access prompt comes before the
+    // library opens. "Limited" access counts as yes.
+    const ask = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!ask?.granted && ask?.accessPrivileges !== 'limited') throw new Error('photos-denied')
     picked = await ImagePicker.launchImageLibraryAsync(options)
   }
   if (picked.canceled || !picked.assets?.[0]?.uri) return null
