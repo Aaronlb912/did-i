@@ -584,20 +584,53 @@ export async function claimCheerGifts() {
   return { ids, miss: '' }
 }
 
+// Sends from Did I (app_sends) this account has not answered yet, from the
+// last 30 days. Two reads for everyone, matched here.
+async function appSendsWaiting(db, user, mode = 'inbox') {
+  const since = new Date(Date.now() - 30 * 86400000).toISOString()
+  const [sent, seen] = await Promise.all([
+    db
+      .from('app_sends')
+      .select('id, question, note, made_at, night')
+      .eq('mode', mode)
+      .gte('made_at', since)
+      .order('made_at', { ascending: false })
+      .limit(8),
+    db.from('app_send_answers').select('app_send_id').eq('user_id', user.id).gte('made_at', since),
+  ])
+  if (sent.error || seen.error) return []
+  const done = new Set((seen.data || []).map((row) => row.app_send_id))
+  return (sent.data || []).filter((row) => !done.has(row.id))
+}
+
+const DID_I_PERSON = { display_name: 'Did I' }
+
 export async function listInbox() {
   const db = cloud()
   if (!db) return []
   const user = await me()
   if (!user) return []
-  const { data } = await db
-    .from('sends')
-    .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat')
-    .eq('to_id', user.id)
-    .eq('state', 'sent')
-    .order('made_at', { ascending: false })
-  if (!data?.length) return []
+  const [{ data }, fromDidI] = await Promise.all([
+    db
+      .from('sends')
+      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat')
+      .eq('to_id', user.id)
+      .eq('state', 'sent')
+      .order('made_at', { ascending: false }),
+    appSendsWaiting(db, user),
+  ])
+  const apps = fromDidI.map((row) => ({
+    id: `app:${row.id}`,
+    appSend: true,
+    kind: 'todo',
+    question: row.question,
+    note: row.note,
+    made_at: row.made_at,
+    person: DID_I_PERSON,
+  }))
+  if (!data?.length) return apps
   const who = await peopleByIds(db)
-  return data.map((row) => ({ ...row, person: who.get(row.from_id) || { user_id: row.from_id } }))
+  return [...apps, ...data.map((row) => ({ ...row, person: who.get(row.from_id) || { user_id: row.from_id } }))]
 }
 
 export async function inboxCount() {
@@ -605,12 +638,29 @@ export async function inboxCount() {
   if (!db) return 0
   const user = await me()
   if (!user) return 0
-  const { count } = await db
-    .from('sends')
-    .select('id', { count: 'exact', head: true })
-    .eq('to_id', user.id)
-    .eq('state', 'sent')
-  return count || 0
+  const [{ count }, fromDidI] = await Promise.all([
+    db
+      .from('sends')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_id', user.id)
+      .eq('state', 'sent'),
+    appSendsWaiting(db, user),
+  ])
+  return (count || 0) + fromDidI.length
+}
+
+// Sends from Did I for one night go straight onto tonight, once per account:
+// the answer row is written first, so a second phone or a resync skips it.
+async function claimDidITonight(db, user) {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const waiting = (await appSendsWaiting(db, user, 'tonight')).filter((row) => row.night >= isoDate(yesterday))
+  const added = []
+  for (const row of waiting) {
+    const { error } = await db.from('app_send_answers').insert({ app_send_id: row.id, user_id: user.id, state: 'added' })
+    if (!error) added.push({ question: row.question, night: row.night, fromDidI: true, person: DID_I_PERSON })
+  }
+  return added
 }
 
 export async function friendAskCount() {
@@ -707,6 +757,15 @@ export async function editFamilyLamp(id, question) {
 export async function answerSend(id, keep) {
   const db = cloud()
   if (!db) return { miss: 'off' }
+  if (String(id).startsWith('app:')) {
+    const user = await me()
+    if (!user) return { miss: 'off' }
+    const { error } = await db
+      .from('app_send_answers')
+      .insert({ app_send_id: String(id).slice(4), user_id: user.id, state: keep ? 'kept' : 'passed' })
+    // Already answered on another phone is fine.
+    return error && error.code !== '23505' ? bad(error) : { miss: '' }
+  }
   const { error } = await db
     .from('sends')
     .update({ state: keep ? 'kept' : 'passed' })
@@ -1180,6 +1239,8 @@ async function pulseLook() {
     // already marked these kept.
     // Nobody chose these for tonight, so they are optional (see normalizeLamp).
     if (claimed.length) adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true })))
+    const fromDidI = adder ? await claimDidITonight(db, user) : []
+    if (fromDidI.length) adder(fromDidI)
     const [waiting, asks] = await Promise.all([
       db
         .from('sends')

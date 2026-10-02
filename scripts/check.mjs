@@ -3065,6 +3065,58 @@ test('friend and family QR codes hold a didi link the scanner reads back', async
   assert.ok(create(friendQrLink('123456789012'), { errorCorrectionLevel: 'M' }).modules.size >= 21)
 })
 
+test('a Did you link reads back from the page, the Open button, a copied line and the Play referrer', async () => {
+  const { didYouLink, readDidYouLink, didYouFromText, sharedDidYouLine } = await import('../src/lib/did-you-links.js')
+  assert.equal(didYouLink('ABCDEFGH23'), 'https://did-i.app/d/abcdefgh23')
+  assert.equal(didYouLink('short'), '', 'a short code makes no link')
+  assert.equal(readDidYouLink('https://did-i.app/d/abcdefgh23'), 'abcdefgh23')
+  assert.equal(readDidYouLink('didi://d/ABCDEFGH23/'), 'abcdefgh23')
+  assert.equal(readDidYouLink('https://did-i.app/f/123456789012'), '', 'a friend link is not a Did you link')
+  assert.equal(didYouFromText('Did you go vote? did-i.app/d/abcdefgh23'), 'abcdefgh23')
+  assert.equal(didYouFromText('utm_source=x&did=abcdefgh23'), 'abcdefgh23')
+  assert.equal(didYouFromText('did=abc'), '')
+  assert.equal(sharedDidYouLine(' Did you go vote? ', 'abcdefgh23'), 'Did you go vote? did-i.app/d/abcdefgh23')
+})
+
+test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {
+  const { didYouCodeFromPath, scanFromPath } = await import('../src/site/path.js')
+  assert.equal(didYouCodeFromPath('/d/ABCDEFGH23'), 'abcdefgh23')
+  assert.equal(didYouCodeFromPath('/d/abc'), '')
+  assert.equal(scanFromPath('/d/abcdefgh23'), null, 'not a QR page')
+  const links = readFileSync(path.join(checkRoot, 'native/deep-link.js'), 'utf8')
+  assert.ok(links.includes('readDidYouLink(url)') && links.includes('savePendingDidYou(route.didYou)'))
+  const aasa = JSON.parse(readFileSync(path.join(checkRoot, 'public/.well-known/apple-app-site-association'), 'utf8'))
+  assert.ok(aasa.applinks.details[0].components.some((c) => c['/'] === '/d/*'))
+  const manifest = readFileSync(path.join(checkRoot, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
+  assert.ok(manifest.includes('android:pathPrefix="/d/"'))
+})
+
+test('a question from Did I for one night never makes or breaks a streak', async () => {
+  const { keptLamp } = await import('../src/lib/send-repeat.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 4; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const lamp = keptLamp({ question: 'Did you go vote?', night: nights[1], fromDidI: true, person: { display_name: 'Did I' } }, clock)
+  assert.equal(lamp.fromDidI, true)
+  assert.equal(lamp.onceOn, nights[1], 'on that night only')
+  assert.equal(lamp.fromName, 'Did I')
+  const door = { id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [door, { ...lamp, id: 'vote' }],
+    answers: [...nights.map((night) => yes('door', night)), { lampId: 'vote', periodKey: nights[1], status: 'skip', answeredAt: `${nights[1]}T21:00:00` }],
+  }
+  assert.equal(shelfStreak([book], clock), 4, 'a nope on it does not break the streak')
+  const only = { id: 'b2', dayFoldHour: 0, lamps: [{ ...lamp, id: 'vote', onceOn: nights[0], createdOn: nights[0] }], answers: [yes('vote', nights[0])] }
+  assert.equal(shelfStreak([only], clock), 0, 'a did on it does not make a streak')
+})
+
 test('reminders carry Did and Nope buttons that save through the widget tap path', () => {
   const pings = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
   assert.ok(pings.includes('setNotificationCategoryAsync(ASK_CATEGORY'), 'the category is registered')

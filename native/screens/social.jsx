@@ -1770,7 +1770,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           {row.kind === 'todo' ? (
             <>
               <KeyButton colors={colors} label={t('inbox.pass')} onPress={() => answer(row, false)} />
-              <KeyButton colors={colors} label={t('we.report')} onPress={() => report(row)} />
+              {row.appSend ? null : <KeyButton colors={colors} label={t('we.report')} onPress={() => report(row)} />}
             </>
           ) : null}
         </PersonRow>

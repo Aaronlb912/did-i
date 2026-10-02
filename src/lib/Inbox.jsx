@@ -126,9 +126,11 @@ export function Inbox({ book, now, onKeep }) {
                 <button className="di-key" type="button" onClick={() => answer(row, false)}>
                   {t('inbox.pass')}
                 </button>
-                <button className="di-key" type="button" onClick={() => report(row)}>
-                  {reportId === row.id ? t('we.reportSure') : t('we.report')}
-                </button>
+                {row.appSend ? null : (
+                  <button className="di-key" type="button" onClick={() => report(row)}>
+                    {reportId === row.id ? t('we.reportSure') : t('we.report')}
+                  </button>
+                )}
               </>
             ) : null}
           </div>

@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Did you links and sends from Did I (branch `did-you-links`)
+
+- **Links**: "Share as a link" on the send sheet makes did-i.app/d/CODE (20 a day). Opening it on a phone needs the next native build for the Android `/d/` App Link and the updated AASA on the site; didi://d/CODE and the page's Open button work over the air. Not tried on a phone yet.
+- **No way to end a link in the app.** `did_you_links.ended` is set by hand in SQL. People cannot see or delete links they made.
+- **No report on a link.** A link with a bad question can be passed around; the add sheet only offers Add or No thanks.
+- **Sends from Did I** (`scripts/send-from-did-i.mjs`, max 4 in 30 days) reach signed-in accounts only. Inbox ones show for 30 days. `--tonight` ones are added on the next sync for that night (or the night after, by date), while the app or web app is open.
+- **The site page shows no avatar** yet, only the name.
+
 ## Profile pictures (2026-10-02)
 
 - Picking a photo needs the 1.3.0 build (expo-image-picker and

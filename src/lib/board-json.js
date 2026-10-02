@@ -218,6 +218,9 @@ export function normalizeLamp(raw) {
     ...(asBool(lamp.fromDidYou) && asString(lamp.fromName).trim()
       ? { fromName: asString(lamp.fromName).trim().slice(0, 40) }
       : {}),
+    // Put on one night's tonight by Did I itself: answer it if you like, it
+    // never counts for or against a streak.
+    ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
   }
 }
 

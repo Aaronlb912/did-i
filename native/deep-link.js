@@ -3,6 +3,7 @@ import { savePendingInvite } from '../src/lib/invite-link.js'
 import { goHash } from './navigation/hash.js'
 import { holdSpoken } from '../src/lib/voice-add.js'
 import { readQrLink } from '../src/lib/qr-links.js'
+import { readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
 import { matchSpoken, openTonight, spokenAnswer } from '../src/lib/voice-answer.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
 import { t } from '../src/lib/i18n.js'
@@ -16,6 +17,9 @@ export function routeFromDeepLink(url) {
     // https://did-i.app/i/CODE through a universal link or App Link.
     const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim())
     if (webInvite) return { invite: webInvite[1] }
+    // A Did you link: did-i.app/d/CODE, or didi://d/CODE from its page.
+    const didYou = readDidYouLink(url)
+    if (didYou) return { didYou }
     const parsed = Linking.parse(url)
     const host = String(parsed.hostname || '').toLowerCase()
     let path = String(parsed.path || '').replace(/^\/+/, '').toLowerCase()
@@ -62,6 +66,10 @@ export function goFromDeepLink(url) {
   if (!route) return false
   if (route.invite) {
     savePendingInvite(route.invite)
+    return true
+  }
+  if (route.didYou) {
+    savePendingDidYou(route.didYou)
     return true
   }
   if (route.answer) {

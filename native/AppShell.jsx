@@ -29,6 +29,7 @@ import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
+import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { GiftHost } from './screens/shop.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
@@ -348,6 +349,7 @@ export function AppShell() {
         <DidYouBanner path={route.path} colors={colors} />
         <UpdatePrompt path={route.path} colors={colors} />
         {app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
+        {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>

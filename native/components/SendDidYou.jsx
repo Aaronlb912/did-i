@@ -3,6 +3,8 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { personName, sendDidI } from '../../src/lib/people.js'
 import { repeatFrom } from '../../src/lib/send-repeat.js'
+import { makeDidYouLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
+import { passAlong } from '../../src/lib/native.js'
 import { Pill } from '../screens/questions.jsx'
 import { fonts } from '../theme.js'
 import { DidButton, Field, KeyButton, Meta } from './ui.jsx'
@@ -15,6 +17,7 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
   const [note, setNote] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState('')
   const [cadence, setCadence] = useState('once')
   const [days, setDays] = useState([])
   const name = personName(person) || t('people.someone')
@@ -35,6 +38,23 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
     if (why) return setMiss(tMiss(why))
     onSent(t('people.sentTo', { name }))
     onClose()
+  }
+
+  // The same question as a did-i.app/d/CODE link anyone can open.
+  async function shareLink() {
+    setSaid('')
+    if (!question.trim()) {
+      setMiss(t('people.sendBlank'))
+      return
+    }
+    setMiss('')
+    setBusy(true)
+    const { code, miss: why } = await makeDidYouLink(question)
+    setBusy(false)
+    if (why === 'linkCap') return setMiss(t('didYouLink.cap'))
+    if (why || !code) return setMiss(tMiss(why || 'people.reach'))
+    const how = await passAlong(sharedDidYouLine(question, code), t('didYouLink.share'))
+    if (how === 'copied') setSaid(t('didYouLink.copied'))
   }
 
   return (
@@ -90,10 +110,12 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
               placeholder={t('people.sendNotePh')}
             />
             {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+            {said ? <Meta colors={colors}>{said}</Meta> : null}
             <View style={styles.actions}>
               <DidButton colors={colors} small label={t('people.send')} disabled={busy} onPress={send} />
               <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
             </View>
+            <KeyButton colors={colors} label={t('didYouLink.share')} disabled={busy} onPress={shareLink} />
             {person?.user_id ? (
               <KeyButton
                 colors={colors}

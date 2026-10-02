@@ -37,8 +37,11 @@ export function repeatLabel(repeat) {
 export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
   const question = String(typeof item === 'string' ? item : item?.question || '').trim()
   if (!question) return null
-  const night = boardDate(clock, dayFoldHour)
+  // A Did I for one night (app_sends mode tonight) carries that night.
+  const set = typeof item === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(item?.night || '')) ? item.night : ''
+  const night = set || boardDate(clock, dayFoldHour)
   const base = { ...blankLamp(clock), question, createdOn: night }
+  if (typeof item === 'object' && item?.fromDidI) base.fromDidI = true
   // Auto-added (not kept by you): it counts only once you say did.
   if (typeof item === 'object' && item?.optional) base.optional = true
   // Marked so the Questions tab can show did yous apart from your own.
