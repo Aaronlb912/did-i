@@ -214,8 +214,22 @@ export async function buyGemPack(packId) {
   } catch (error) {
     if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
     console.warn('gem iap buy', error?.code, error?.message || error)
-    // Play's own words (response code, debug message) say why it refused.
-    const why = String(error?.message || '').replace(/\s+/g, ' ').trim().slice(0, 160)
-    return { miss: 'store', code: [error?.code, why].filter(Boolean).join(': ') }
+    // Play's reason rides in debugMessage and subResponseCodeAndroid, not in
+    // the message, which is only "Failed to query product".
+    const why = [
+      error?.responseCode != null ? `play ${error.responseCode}` : '',
+      error?.isEmptyProductList ? 'empty list' : '',
+      error?.productType,
+      error?.debugMessage,
+      error?.subResponseCodeAndroid,
+      error?.productId || error?.productIds,
+    ]
+      .flat()
+      .filter((part) => part != null && part !== '')
+      .join(' · ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200)
+    return { miss: 'store', code: [error?.code, why || error?.message].filter(Boolean).join(': ') }
   }
 }
