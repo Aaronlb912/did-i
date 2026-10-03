@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
+import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
   deleteAccount,
@@ -170,6 +171,7 @@ export function AboutScreen({ book }) {
       <Meta colors={colors}>{t('about.p5')}</Meta>
       <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
       <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
+      <AppVersion colors={colors} />
     </ScreenShell>
   )
 }
@@ -226,6 +228,8 @@ export function HelpScreen() {
         }}
       />
       <DidButton colors={colors} label={t('help.home')} onPress={() => goHash('/tonight')} />
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.versionTitle')}</Text>
+      <AppVersion colors={colors} />
     </ScreenShell>
   )
 }
