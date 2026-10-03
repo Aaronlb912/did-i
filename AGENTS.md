@@ -156,6 +156,7 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 Before building a feature, fill in `docs/feature-checklist.md` in the plan.
 Before asking to merge, run the flows a change touches from `docs/phone-pass.md`
 on the emulator dev build (`docs/native-rebuild.md`, dev_client) and wait for CI.
+After a merge, any bug Aaron finds goes in `docs/lessons.md` with the check that now stops it.
 
 General working rules (smallest diff, commit only when asked, no AI
 attribution) are in Aaron's global CLAUDE.md. PowerShell here: no `&&`.

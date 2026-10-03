@@ -41,3 +41,8 @@ Paste this into the plan before building. Fill every row. "n/a" needs a reason.
 | Messages? | Join lands on Tonight with confirmDone. Failure: confirmMiss. once() on join. |
 
 Link format: `https://did-i.app/d/` plus a 12-letter code.
+
+## After it ships
+
+If Aaron reports a bug in it, add a line to `docs/lessons.md` and fix the
+check that missed it (test, rule, or this checklist), not only the code.
