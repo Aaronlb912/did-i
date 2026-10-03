@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL, inviteClip, playLinkFor, savePendingInvite } from '../lib/invite-link.js'
+import { APP_STORE_URL, betaLinkFor, inviteClip, savePendingInvite } from '../lib/invite-link.js'
 import { INVITE_CODE_LEN, cleanInvite } from '../lib/people.js'
 import { MarketingShell } from './MarketingShell.jsx'
 
@@ -56,9 +56,9 @@ export function Invite({ code: raw }) {
                 <AppleMark />
                 {t('invite.ios')}
               </a>
-              <a className="di-did di-did-small di-invite-store" href={playLinkFor(code)} onClick={copyCode}>
+              <a className="di-did di-did-small di-invite-store" href={betaLinkFor(`invite=${cleanInvite(code)}`)} onClick={copyCode}>
                 <PlayMark />
-                {t('invite.android')}
+                {t('web.store.androidBeta')}
               </a>
             </div>
             <p className="di-detail-meta">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL, PLAY_URL } from '../lib/invite-link.js'
+import { APP_STORE_URL, betaLinkFor } from '../lib/invite-link.js'
 import { didYouLink, lookUpDidYouLink } from '../lib/did-you-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
@@ -64,11 +64,11 @@ export function DidYouLanding({ code }) {
               </a>
               <a
                 className="di-did di-did-small di-invite-store"
-                href={`${PLAY_URL}&referrer=${encodeURIComponent(`did=${code.toLowerCase()}`)}`}
+                href={betaLinkFor(`did=${code.toLowerCase()}`)}
                 onClick={copyLink}
               >
                 <PlayMark />
-                {t('invite.android')}
+                {t('web.store.androidBeta')}
               </a>
             </div>
             {copied ? (
