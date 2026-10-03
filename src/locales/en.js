@@ -763,7 +763,7 @@ export const en = {
   'gems.loadingStore': 'Loading store prices…',
   'gems.storeError': 'The store did not finish. Try again.',
   'gems.needSignIn': 'Sign in first. Gems stay on your account.',
-  'gems.setup': 'The App Store did not list these gem packs yet.',
+  'gems.setup': 'The store did not list these gem packs yet.',
   'gems.shortTitle': 'Oops',
   'gems.shortBody': 'You don\'t have enough gems. Want to buy more?',
   'gems.shortGo': 'Buy gems',

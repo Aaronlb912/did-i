@@ -1384,7 +1384,8 @@ export function GemShopScreen({ book }) {
     }
     if (out.miss) {
       setBanner('')
-      gemNotice(gemMiss(out.miss))
+      // The store's own code, so one failed buy can be told from another.
+      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss))
       return
     }
     setBanner(out.pending ? t('gems.pending') : '')

@@ -771,7 +771,7 @@ export const de = {
   'gems.loadingStore': 'Store-Preise laden…',
   'gems.storeError': 'Der Store hat nicht fertig geladen. Versuch es nochmal.',
   'gems.needSignIn': 'Melde dich zuerst an. Gems bleiben auf deinem Konto.',
-  'gems.setup': 'Der App Store listet diese Edelstein-Pakete noch nicht.',
+  'gems.setup': 'Der Store listet diese Edelstein-Pakete noch nicht.',
   'gems.shortTitle': 'Hoppla',
   'gems.shortBody': 'Du hast nicht genug Edelsteine. Mehr kaufen?',
   'gems.shortGo': 'Edelsteine kaufen',

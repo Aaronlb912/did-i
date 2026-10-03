@@ -740,7 +740,7 @@ export const ko = {
   'gems.loadingStore': 'Loading store prices…',
   'gems.storeError': 'The store did not finish. Try again.',
   'gems.needSignIn': '먼저 로그인. gems는 계정에 남아.',
-  'gems.setup': '앱 스토어에 이 젬 팩이 아직 없습니다.',
+  'gems.setup': '스토어에 이 젬 팩이 아직 없습니다.',
   'gems.shortTitle': '이런',
   'gems.shortBody': '젬이 부족합니다. 더 살까요?',
   'gems.shortGo': '젬 사기',
