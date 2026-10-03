@@ -163,6 +163,22 @@ function BlockModal({ person, colors, onClose, onDone }) {
   )
 }
 
+// Ask before a friend action that can not be taken back with one tap.
+function askFirst(colors, title, body, goLabel, onGo) {
+  publishSheet({
+    title,
+    body,
+    goLabel,
+    closeLabel: t('settings.neverMind'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: async () => {
+      publishSheet(null)
+      await onGo()
+    },
+  })
+}
+
 function PreviewRow({ icon, title, body, colors }) {
   return (
     <View style={[styles.previewRow, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -688,7 +704,7 @@ export function PeopleScreen({ book, onChange }) {
               actions={
                 <>
                   <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
-                  <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: personName(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
                 </>
               }
             />
@@ -1250,7 +1266,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               actions={
                 <>
                   <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
-                  <KeyButton colors={colors} label={t('people.no')} onPress={() => answerAsk(row.id, false)} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: personName(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
                 </>
               }
             />
@@ -1370,11 +1386,13 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                 <KeyButton
                   colors={colors}
                   label={t('block.unblock')}
-                  onPress={async () => {
-                    const { miss: why } = await unblockPerson(row.user_id)
-                    if (why) setMiss(tMiss(why))
-                    load()
-                  }}
+                  onPress={() =>
+                    askFirst(colors, t('block.unblockTitle', { name: row.display_name || t('people.someone') }), t('block.unblockBody'), t('block.unblock'), async () => {
+                      const { miss: why } = await unblockPerson(row.user_id)
+                      if (why) setMiss(tMiss(why))
+                      load()
+                    })
+                  }
                 />
               }
             />
