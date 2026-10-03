@@ -2754,6 +2754,8 @@ await testAsync('the widget shows the open Did we once your own questions are do
     assert.equal(props.question, 'Did we do black mage')
     assert.equal(props.tagTitle, en['we.title'])
     assert.equal(props.left, 1)
+    const noped = { ...book, lamps: [...book.lamps, { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }], answers: [...book.answers, { lampId: 'gym', periodKey: night, status: 'skip', answeredAt: `${night}T20:30:00` }] }
+    assert.equal(buildTonightWidgetProps({ currentId: 'b1', boards: [noped] }, clock).question, 'Did we do black mage', 'an open Did we comes before a nope')
     setWeNightRows([{ card: 'c1', folder: '', night, status: 'did' }])
     const after = buildTonightWidgetProps({ currentId: 'b1', boards: [book] }, clock)
     assert.notEqual(after.question, 'Did we do black mage', 'gone once you said did')
