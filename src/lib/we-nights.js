@@ -31,7 +31,13 @@ export function setWeNightRows(next) {
   rows = Array.isArray(next) ? next : []
   byNight = null
   store(rows)
-  listeners.forEach((fn) => fn())
+  listeners.forEach((fn) => {
+    try {
+      fn()
+    } catch {
+      // One listener failing does not stop the rest.
+    }
+  })
 }
 
 export function clearWeNights() {

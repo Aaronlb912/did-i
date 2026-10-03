@@ -1,5 +1,5 @@
 import { putAnswer } from './board-ops.js'
-import { weNight } from './we-nights.js'
+import { weNight, weOpenOn } from './we-nights.js'
 import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
@@ -13,7 +13,7 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { normalizePurse } from './purse.js'
-import { readWeLine } from './we-widget.js'
+import { readWeLine, readWeOpen } from './we-widget.js'
 import {
   answerFor,
   boardDate,
@@ -175,9 +175,17 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const openOrdered = firstGrace ? [...graceOpen, ...rankedOpen] : [...rankedOpen, ...graceOpen]
   const items = [...openOrdered, ...doneRows].map(mapRow)
   const lead = openOrdered[0] || rows.find((row) => row.answer?.status === 'skip') || null
+  // Your own questions done and a Did we still open for you: the widget
+  // shows that Did we, so "1 left" has something to point at. A tap opens
+  // the app to answer it.
+  const tonightIso = boardDate(now)
+  const weOpenIds = weOpenOn(tonightIso)
+  const weCard = openOrdered.length ? null : readWeOpen(tonightIso).find((card) => weOpenIds.has(card.id)) || null
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
-    : ''
+    : weCard
+      ? weCard.question
+      : ''
   // Count like Tonight's meter: an optional question (put on your tonight
   // for you) stays on the widget to answer, but is not "left" until you did it.
   // A Did we due tonight counts too, until you said did on it in the app.
@@ -206,7 +214,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   if (nextLine && !openRows.length) footer = nextLine
   const colorBook = widgetColorBook(shelf)
   return {
-    tagTitle: String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
+    tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
     question,
     leadLampId: lead?.lamp.id || '',
     items,

@@ -2735,6 +2735,35 @@ const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js'
 const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
 const { isAppForeground } = await import('../src/lib/app-foreground.js')
 
+await testAsync('the widget shows the open Did we once your own questions are done', async () => {
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const { saveWeOpen } = await import('../src/lib/we-widget.js')
+  const clock = new Date(2026, 9, 3, 21, 0)
+  const night = boardDate(clock)
+  const book = {
+    id: 'b1',
+    title: 'General',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: [{ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00` }],
+  }
+  try {
+    saveWeOpen([{ id: 'c1', question: 'Did we do black mage' }], night)
+    setWeNightRows([{ card: 'c1', folder: '', night, status: '' }])
+    const props = buildTonightWidgetProps({ currentId: 'b1', boards: [book] }, clock)
+    assert.equal(props.question, 'Did we do black mage')
+    assert.equal(props.tagTitle, en['we.title'])
+    assert.equal(props.left, 1)
+    setWeNightRows([{ card: 'c1', folder: '', night, status: 'did' }])
+    const after = buildTonightWidgetProps({ currentId: 'b1', boards: [book] }, clock)
+    assert.notEqual(after.question, 'Did we do black mage', 'gone once you said did')
+    assert.equal(after.left, 0)
+  } finally {
+    clearWeNights()
+    saveWeOpen([], night)
+  }
+})
+
 await testAsync('the grace period for the previous night runs until 9am', async () => {
   const { graceNightIso, graceFirst, answerFor } = await import('../src/lib/recurrence.js')
   const { graceRowsFor } = await import('../src/lib/grace.js')
