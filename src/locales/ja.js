@@ -2220,6 +2220,8 @@ export const ja = {
   'weLink.cap': '参加できるDid weの上限です。どれかを抜けると参加できます。',
   'weLink.signIn': 'リンクのDid weに参加するにはサインインしてください。',
   'weLink.share': 'リンクで共有',
+  'weLink.makeShare': '作ってリンクで共有',
+  'weLink.shareLater': '作成しました。ページからリンクを共有できます。',
   'weLink.hint': 'リンクを持っている人は、まだ友だちでなくても7日間参加できます。',
   'weLink.off': 'リンクを止める',
   'weLink.offTitle': 'リンクを止めますか？',

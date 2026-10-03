@@ -394,7 +394,9 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     Keyboard.dismiss()
   }
 
-  async function make() {
+  // share: make it, then share a did-i.app link by text. Nobody needs to be
+  // picked, so it works for people who are not friends yet.
+  async function make(share = false) {
     if (feel.stamp) return
     if (!question) {
       feel.buzz()
@@ -403,7 +405,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       inputRef.current?.focus()
       return
     }
-    if (!picked.length) {
+    if (!picked.length && !share) {
       feel.buzz()
       setMiss(t('we.missNobody'))
       if (open !== 'who') fold('who')
@@ -417,14 +419,20 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     }
     Keyboard.dismiss()
     setBusy(true)
-    const out = await weMake({ ...draft, question, ask: picked })
-    setBusy(false)
-    if (out.miss) {
+    const out = await weMake({ ...draft, question, ask: picked, alone: share })
+    if (out.miss && !out.id) {
+      setBusy(false)
       feel.buzz()
       setMiss(tMiss(out.miss))
       return
     }
-    noteAsked(picked)
+    if (share) {
+      const link = await makeWeLink(out.id)
+      if (link.code) await passAlong(sharedDidYouLine(question, link.code), t('weLink.share'))
+      else setMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
+    }
+    setBusy(false)
+    if (picked.length) noteAsked(picked)
     feel.land(t('lead.sent'), () => goHash('/we', { id: out.id }))
   }
 
@@ -437,7 +445,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       colors={colors}
       back={false}
       leftAction={{ label: t('hang.cancel'), onPress: () => goHash('/we') }}
-      rightAction={{ label: t('we.sendShort'), onPress: make, disabled: !ready }}
+      rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !ready }}
     >
       <HangCard
         ref={inputRef}
@@ -529,6 +537,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       </View>
 
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
+      <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
+      <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
       {miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {miss}

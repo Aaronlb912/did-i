@@ -2287,6 +2287,8 @@ export const en = {
   'weLink.cap': 'You are on as many Did wes as you can be. Leave one to join this.',
   'weLink.signIn': 'Sign in to join the Did we from your link.',
   'weLink.share': 'Share a link',
+  'weLink.makeShare': 'Make it and share a link',
+  'weLink.shareLater': 'Made. Share a link from its page.',
   'weLink.hint': 'Anyone with the link can join for 7 days, even if you are not friends yet.',
   'weLink.off': 'Turn off link',
   'weLink.offTitle': 'Turn off your link?',

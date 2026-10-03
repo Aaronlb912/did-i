@@ -2292,6 +2292,8 @@ export const it = {
   'weLink.cap': 'Sei già in tutti i Did we possibili. Lasciane uno per unirti a questo.',
   'weLink.signIn': 'Accedi per unirti al Did we del tuo link.',
   'weLink.share': 'Condividi un link',
+  'weLink.makeShare': 'Crea e condividi un link',
+  'weLink.shareLater': 'Creato. Condividi un link dalla sua pagina.',
   'weLink.hint': 'Chiunque abbia il link può unirsi per 7 giorni, anche se non siete ancora amici.',
   'weLink.off': 'Disattiva link',
   'weLink.offTitle': 'Disattivare il tuo link?',

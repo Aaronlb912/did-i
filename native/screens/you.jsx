@@ -4,12 +4,14 @@ import { useAccount } from '../../src/lib/account.js'
 import { noteAsked, weKnownPeople } from '../../src/lib/did-we.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { sendDidI } from '../../src/lib/people.js'
+import { makeDidYouLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
+import { passAlong } from '../../src/lib/native.js'
 import { repeatFrom, repeatLabel } from '../../src/lib/send-repeat.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
-import { AppTextInput, DidButton, Meta } from '../components/ui.jsx'
+import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash, swapHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -47,6 +49,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const [shake, setShake] = useState(0)
   const feel = useAddFeel(book, inputRef)
   const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState('')
   // Sent: the screen is on its way out, so Send stays off.
   const [done, setDone] = useState(false)
   const [miss, setMiss] = useState('')
@@ -102,6 +105,26 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
     noteAsked(to)
     setDone(true)
     feel.land(t('lead.sent'), () => swapHash('/sent'))
+  }
+
+  // The same question as a did-i.app link to text anyone, friend or not.
+  // Nobody needs to be picked.
+  async function shareLink() {
+    setSaid('')
+    if (!question) {
+      feel.buzz()
+      setMiss(t('people.sendBlank'))
+      setShake((n) => n + 1)
+      return
+    }
+    setMiss('')
+    setBusy(true)
+    const { code, miss: why } = await makeDidYouLink(question)
+    setBusy(false)
+    if (why === 'linkCap') return setMiss(t('didYouLink.cap'))
+    if (why || !code) return setMiss(tMiss(why || 'people.reach'))
+    const how = await passAlong(sharedDidYouLine(question, code, lead), t('didYouLink.share'))
+    if (how === 'copied') setSaid(t('didYouLink.copied'))
   }
 
   return (
@@ -227,6 +250,9 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       </View>
 
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('lead.youLead')}</Text>
+      <KeyButton colors={colors} label={t('didYouLink.share')} disabled={busy || !question} onPress={shareLink} />
+      <Text style={[styles.hint, { color: colors.inkDim }]}>{t('didYouLink.textHint')}</Text>
+      {said ? <Meta colors={colors}>{said}</Meta> : null}
       {miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {miss}

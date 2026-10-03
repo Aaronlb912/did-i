@@ -2204,6 +2204,8 @@ export const zh = {
   'weLink.cap': '你加入的 Did we 已到上限。退出一个才能加入。',
   'weLink.signIn': '登录后即可加入链接里的 Did we。',
   'weLink.share': '分享链接',
+  'weLink.makeShare': '创建并分享链接',
+  'weLink.shareLater': '已创建。可在它的页面分享链接。',
   'weLink.hint': '拿到链接的人 7 天内都能加入，即使你们还不是好友。',
   'weLink.off': '关闭链接',
   'weLink.offTitle': '关闭你的链接？',

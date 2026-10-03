@@ -2306,6 +2306,8 @@ export const fr = {
   'weLink.cap': 'Tu es déjà dans autant de Did we que possible. Quittes-en un pour rejoindre celui-ci.',
   'weLink.signIn': 'Connecte-toi pour rejoindre le Did we de ton lien.',
   'weLink.share': 'Partager un lien',
+  'weLink.makeShare': 'Créer et partager un lien',
+  'weLink.shareLater': 'Créé. Partage un lien depuis sa page.',
   'weLink.hint': 'Toute personne avec le lien peut rejoindre pendant 7 jours, même si vous n’êtes pas encore amis.',
   'weLink.off': 'Désactiver le lien',
   'weLink.offTitle': 'Désactiver ton lien ?',

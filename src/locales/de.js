@@ -2313,6 +2313,8 @@ export const de = {
   'weLink.cap': 'Du bist bei so vielen Did wes wie möglich. Verlasse eins, um hier beizutreten.',
   'weLink.signIn': 'Melde dich an, um dem Did we aus deinem Link beizutreten.',
   'weLink.share': 'Link teilen',
+  'weLink.makeShare': 'Erstellen und Link teilen',
+  'weLink.shareLater': 'Erstellt. Teile einen Link von seiner Seite.',
   'weLink.hint': 'Alle mit dem Link können 7 Tage lang beitreten, auch wenn ihr noch nicht befreundet seid.',
   'weLink.off': 'Link ausschalten',
   'weLink.offTitle': 'Deinen Link ausschalten?',

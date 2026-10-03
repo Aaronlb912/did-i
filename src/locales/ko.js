@@ -2220,6 +2220,8 @@ export const ko = {
   'weLink.cap': '참여할 수 있는 Did we가 꽉 찼어요. 하나를 나가면 참여할 수 있어요.',
   'weLink.signIn': '링크의 Did we에 참여하려면 로그인하세요.',
   'weLink.share': '링크로 공유',
+  'weLink.makeShare': '만들고 링크 공유하기',
+  'weLink.shareLater': '만들었어요. 페이지에서 링크를 공유하세요.',
   'weLink.hint': '링크가 있으면 아직 친구가 아니어도 7일 동안 참여할 수 있어요.',
   'weLink.off': '링크 끄기',
   'weLink.offTitle': '링크를 끌까요?',

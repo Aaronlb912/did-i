@@ -2292,6 +2292,8 @@ export const pt = {
   'weLink.cap': 'Você já está no máximo de Did we. Saia de um para entrar neste.',
   'weLink.signIn': 'Entre na conta para entrar no Did we do seu link.',
   'weLink.share': 'Compartilhar um link',
+  'weLink.makeShare': 'Criar e compartilhar um link',
+  'weLink.shareLater': 'Criado. Compartilhe um link pela página dele.',
   'weLink.hint': 'Quem tiver o link pode entrar por 7 dias, mesmo sem serem amigos ainda.',
   'weLink.off': 'Desligar link',
   'weLink.offTitle': 'Desligar seu link?',
