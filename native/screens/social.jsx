@@ -1518,6 +1518,7 @@ export function FriendScreen({ route }) {
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
   const [bigPhoto, setBigPhoto] = useState(false)
+  const [blocking, setBlocking] = useState(false)
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
@@ -1590,6 +1591,40 @@ export function FriendScreen({ route }) {
               },
             })
           }
+        />
+      ) : null}
+      <View style={styles.personActions}>
+        <KeyButton
+          colors={colors}
+          label={t('people.drop')}
+          onPress={() =>
+            publishSheet({
+              title: t('people.dropTitle', { name }),
+              body: t('people.dropBody'),
+              goLabel: t('people.drop'),
+              closeLabel: t('settings.neverMind'),
+              colors,
+              onClose: () => publishSheet(null),
+              onGo: async () => {
+                publishSheet(null)
+                const { miss: why } = await dropFriend(otherId)
+                if (why) return setSaid(tMiss(why))
+                return goHash('/friends')
+              },
+            })
+          }
+        />
+        <KeyButton colors={colors} label={t('block.block')} onPress={() => setBlocking(true)} />
+      </View>
+      {blocking ? (
+        <BlockModal
+          person={person}
+          colors={colors}
+          onClose={() => setBlocking(false)}
+          onDone={(why) => {
+            if (why) return setSaid(tMiss(why))
+            return goHash('/friends')
+          }}
         />
       ) : null}
 
