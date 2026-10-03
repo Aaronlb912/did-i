@@ -1,28 +1,30 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { APP_STORE_URL, PLAY_URL } from '../lib/invite-link.js'
-import { didYouLink, lookUpDidYouLink } from '../lib/did-you-links.js'
+import { didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
 
 // did-i.app/d/CODE: a Did you link. With Did I installed, Open asks to add
 // the question to tonight. Without it, the store buttons copy the link
 // (iPhone reads it on first launch) or carry it as the Play referrer.
+// A 12 letter code is a Did we link: Open asks to join it.
 export function DidYouLanding({ code }) {
   const link = didYouLink(code)
+  const we = isWeLinkCode(code)
   const [found, setFound] = useState(link ? undefined : null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!link) return undefined
     let alive = true
-    lookUpDidYouLink(code).then((next) => {
+    ;(we ? lookUpWeLink(code) : lookUpDidYouLink(code)).then((next) => {
       if (alive) setFound(next)
     })
     return () => {
       alive = false
     }
-  }, [code, link])
+  }, [code, link, we])
 
   async function copyLink() {
     try {
@@ -40,7 +42,9 @@ export function DidYouLanding({ code }) {
       : found?.miss
         ? t('didYouLink.reach')
         : found
-          ? t('didYouLink.asked', { name: found.name || 'Did I' })
+          ? we
+            ? t('weLink.asked', { name: found.name || t('weLink.someone') })
+            : t('didYouLink.asked', { name: found.name || 'Did I' })
           : t('didYouLink.bad')
 
   return (
@@ -56,7 +60,7 @@ export function DidYouLanding({ code }) {
                 {t('scanPage.open')}
               </a>
             </div>
-            <p className="di-land-lead">{t('didYouLink.noApp')}</p>
+            <p className="di-land-lead">{t(we ? 'weLink.noApp' : 'didYouLink.noApp')}</p>
             <div className="di-download-grid">
               <a className="di-did di-did-small di-invite-store" href={APP_STORE_URL} onClick={copyLink}>
                 <AppleMark />

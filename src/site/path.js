@@ -11,7 +11,7 @@ function isMarketing(path) {
 
 // /d/CODE is a Did you link page (src/site/DidYouLanding.jsx).
 export function didYouCodeFromPath(path) {
-  const hit = /^\/d\/([A-Za-z0-9]{10})$/.exec(path)
+  const hit = /^\/d\/([A-Za-z0-9]{12}|[A-Za-z0-9]{10})$/.exec(path)
   return hit ? hit[1].toLowerCase() : ''
 }
 
