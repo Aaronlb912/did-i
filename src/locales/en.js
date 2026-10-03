@@ -2273,6 +2273,7 @@ export const en = {
   'didYouLink.bad': 'That link has ended or is not right. Ask whoever sent it for a new one.',
   'didYouLink.reach': 'Could not load that link. Check your connection. It comes up again next time you open Did I.',
   'didYouLink.noApp': 'No Did I yet? Get it, open it, and this question comes up.',
+  'friendId.orPhone': 'Other ways to add',
   'confirm.takenBack': 'Taken back. It is gone from their inbox.',
   'confirm.passed': 'Passed. It is out of your inbox.',
   'confirm.tagRenamed': 'Tag renamed',

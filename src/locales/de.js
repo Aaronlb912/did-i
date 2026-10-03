@@ -2299,6 +2299,7 @@ export const de = {
   'didYouLink.bad': 'Dieser Link ist abgelaufen oder stimmt nicht. Bitte die Person um einen neuen.',
   'didYouLink.reach': 'Der Link konnte nicht geladen werden. Prüfe deine Verbindung. Er kommt beim nächsten Öffnen von Did I wieder.',
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
+  'friendId.orPhone': 'Andere Wege zum Hinzufügen',
   'confirm.takenBack': 'Zurückgenommen. Es ist aus dem Posteingang verschwunden.',
   'confirm.passed': 'Abgelehnt. Es ist aus deinem Posteingang.',
   'confirm.tagRenamed': 'Tag umbenannt',

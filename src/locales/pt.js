@@ -2278,6 +2278,7 @@ export const pt = {
   'didYouLink.bad': 'Esse link acabou ou não está certo. Peça um novo para quem enviou.',
   'didYouLink.reach': 'Não foi possível carregar o link. Confira sua conexão. Ele aparece de novo na próxima vez que você abrir o Did I.',
   'didYouLink.noApp': 'Ainda sem Did I? Baixe, abra e esta pergunta aparece.',
+  'friendId.orPhone': 'Outras formas de adicionar',
   'confirm.takenBack': 'Retirado. Saiu da caixa de entrada da pessoa.',
   'confirm.passed': 'Passado. Saiu da sua caixa de entrada.',
   'confirm.tagRenamed': 'Tag renomeada',

@@ -2191,6 +2191,7 @@ export const zh = {
   'didYouLink.bad': '这个链接已失效或不正确。请让发送的人重新发一个。',
   'didYouLink.reach': '无法加载这个链接。请检查网络。下次打开 Did I 时会再次出现。',
   'didYouLink.noApp': '还没有 Did I？下载并打开，这个问题就会出现。',
+  'friendId.orPhone': '其他添加方式',
   'confirm.takenBack': '已撤回，已从对方收件箱移除。',
   'confirm.passed': '已跳过，已从收件箱移除。',
   'confirm.tagRenamed': '已重命名标签',

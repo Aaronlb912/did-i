@@ -2292,6 +2292,7 @@ export const fr = {
   'didYouLink.bad': 'Ce lien a expiré ou n’est pas bon. Demande-en un nouveau à la personne qui l’a envoyé.',
   'didYouLink.reach': 'Impossible de charger ce lien. Vérifie ta connexion. Il reviendra la prochaine fois que tu ouvres Did I.',
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s\'affiche.',
+  'friendId.orPhone': 'Autres façons d’ajouter',
   'confirm.takenBack': 'Retiré. Il n’est plus dans sa boîte.',
   'confirm.passed': 'Passé. Il n’est plus dans ta boîte.',
   'confirm.tagRenamed': 'Tag renommé',
