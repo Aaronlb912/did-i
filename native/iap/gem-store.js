@@ -202,14 +202,45 @@ export async function buyGemPack(packId) {
     if (!liveSku.has(pack.id)) return { miss: 'store', code: 'not-listed' }
   }
   const sku = liveSku.get(pack.id) || pack.storeId
-  try {
-    await api.requestPurchase({
+  const ask = () =>
+    api.requestPurchase({
       request: {
         apple: { sku },
         google: { skus: [sku] },
       },
       type: 'in-app',
     })
+  // How many products Play hands back for this one pack right now.
+  const countOne = async () => {
+    try {
+      const result = await api.fetchProducts({ skus: [sku], type: 'in-app' })
+      const list = Array.isArray(result) ? result : result?.products || result?.value || []
+      return String(list.length)
+    } catch (error) {
+      return `x ${error?.code || ''}`.trim()
+    }
+  }
+  let before = ''
+  let fresh = ''
+  try {
+    try {
+      if (Platform.OS === 'android') before = await countOne()
+      await ask()
+    } catch (error) {
+      // Play answered the buy's own lookup with nothing though the same pack
+      // loaded at start. A stale billing connection does that; reconnect once.
+      if (Platform.OS !== 'android' || error?.code === api.ErrorCode?.UserCancelled) throw error
+      try {
+        await api.endConnection?.()
+      } catch {
+        // Already closed.
+      }
+      linked = false
+      settled = ''
+      await initGemIap()
+      fresh = await countOne()
+      await ask()
+    }
     return { miss: '' }
   } catch (error) {
     if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
@@ -223,13 +254,16 @@ export async function buyGemPack(packId) {
       error?.debugMessage,
       error?.subResponseCodeAndroid,
       error?.productId || error?.productIds,
+      before ? `one ${before}` : '',
+      fresh ? `fresh ${fresh}` : '',
+      sku,
     ]
       .flat()
       .filter((part) => part != null && part !== '')
       .join(' · ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 200)
+      .slice(0, 300)
     return { miss: 'store', code: [error?.code, why || error?.message].filter(Boolean).join(': ') }
   }
 }
