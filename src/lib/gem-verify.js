@@ -28,6 +28,13 @@ export async function submitGemPurchase(purchase) {
   })
 
   if (error) {
+    // A refusal (4xx) carries its reason in the body, e.g. miss 'test'.
+    try {
+      const said = await error.context?.json?.()
+      if (said?.miss) return { miss: String(said.miss) }
+    } catch {
+      // No body; fall back to the message.
+    }
     const msg = String(error.message || '')
     if (/not configured|setup/i.test(msg)) return { miss: 'setup' }
     return { miss: msg || 'miss' }
