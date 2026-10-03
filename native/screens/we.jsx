@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
@@ -41,7 +41,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash } from '../navigation/hash.js'
+import { canGoBack, goBack, goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
@@ -449,7 +449,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       date={feel.date}
       colors={colors}
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: () => goHash('/we') }}
+      leftAction={{ label: t('hang.cancel'), onPress: () => (canGoBack() ? goBack() : goHash('/we')) }}
       rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !ready }}
     >
       <HangCard
@@ -553,6 +553,40 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
   )
 }
 
+// The rarely used and destructive actions, behind the card's ⋯ button.
+function WeMenu({ title, items, colors, onClose }) {
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable
+          accessible={false}
+          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
+          onPress={(event) => event.stopPropagation()}
+        >
+          <Text style={[styles.cap, styles.tight, { color: colors.on }]} numberOfLines={2}>{title}</Text>
+          {items.map((item) => (
+            <Pressable
+              key={item.key}
+              accessibilityRole="button"
+              onPress={() => {
+                onClose()
+                item.onPress()
+              }}
+              style={({ pressed }) => [
+                styles.menuRow,
+                { borderColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
+              ]}
+            >
+              <Text style={[styles.menuRowText, { color: item.danger ? colors.miss : colors.ink }]}>{item.label}</Text>
+            </Pressable>
+          ))}
+          <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
 export function WeCardScreen({ book, cardId, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
@@ -568,6 +602,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const [edit, setEdit] = useState(null)
   const [asking, setAsking] = useState([])
   const [busy, setBusy] = useState(false)
+  const [menu, setMenu] = useState(false)
   // Your link for this card while it works, so you can turn it off.
   const [link, setLink] = useState('')
   const [linkSaid, setLinkSaid] = useState('')
@@ -744,16 +779,48 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  function startEdit() {
+    setEdit({
+      question: card.question,
+      mode: card.mode,
+      shows: card.shows,
+      cadence: card.cadence,
+      weekdays: card.weekdays || [],
+      goal: card.goal || null,
+      askAfter: card.askAfter || '',
+      remind: card.remind !== false,
+      note: card.note || '',
+    })
+  }
+
+  const menuItems = [
+    card.mine && !edit ? { key: 'edit', label: t('we.edit'), onPress: startEdit } : null,
+    link ? { key: 'link', label: t('weLink.off'), onPress: endLink } : null,
+    { key: 'leave', label: t('we.leave'), onPress: leave, danger: true },
+    { key: 'report', label: t('we.report'), onPress: report, danger: true },
+  ].filter(Boolean)
+
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
-      <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
-      <WeFaces card={card} colors={colors} cheer={cheer} />
-      <Meta colors={colors}>{card.due ? weStatusLine(card) : t('we.notTonight')}</Meta>
-      <Meta colors={colors}>
-        {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
-        {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
-      </Meta>
-      {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
+      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <View style={styles.headTop}>
+          <View style={styles.headFaces}>
+            <WeFaces card={card} colors={colors} cheer={cheer} />
+          </View>
+          <Pressable
+            onPress={() => setMenu(true)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('we.moreActions')}
+            style={({ pressed }) => [styles.moreBtn, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+          >
+            <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
+        <Meta colors={colors}>{card.due ? weStatusLine(card) : t('we.notTonight')}</Meta>
+        {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
+      </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
       {!card.due && early && !early.card.done ? (
         weMine(early.card)?.status ? (
@@ -839,31 +906,55 @@ function WeCardPage({ book, cardId, onChange }) {
       {cheer.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{cheer.miss}</Text> : null}
       {ans.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{ans.miss}</Text> : null}
 
-      <View style={[styles.panel, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Cap colors={colors}>{t('we.together')}</Cap>
         <Text style={[styles.big, { color: colors.ink }]}>{t('we.streak', { n: streak })}</Text>
         <Meta colors={colors}>
           {t('we.best', { n: best })}
           {next ? ` · ${t('we.nextCoins', { n: next - streak })}` : ''}
         </Meta>
-        <Meta colors={colors}>{t('we.thisMonth', { n: month.done, due: month.due })}</Meta>
-        {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
-        {goal ? (
+        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
           <Meta colors={colors}>
-            {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+            {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
+            {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
           </Meta>
-        ) : null}
+          {goal ? (
+            <Meta colors={colors}>
+              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+            </Meta>
+          ) : null}
+          <Meta colors={colors}>{t('we.thisMonth', { n: month.done, due: month.due })}</Meta>
+          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
+          {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
+        </View>
+        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
+          <Cap colors={colors}>{t('we.people')}</Cap>
+          {(card.people || []).map((p) => (
+            <Meta key={p.id} colors={colors}>
+              {p.me ? t('we.you') : p.name}
+              {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
+              {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
+            </Meta>
+          ))}
+        </View>
       </View>
 
-      <Cap colors={colors}>{t('we.people')}</Cap>
-      {(card.people || []).map((p) => (
-        <Meta key={p.id} colors={colors}>
-          {p.me ? t('we.you') : p.name}
-          {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-          {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
-        </Meta>
-      ))}
-      {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
+      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <Cap colors={colors}>{t('we.askMore')}</Cap>
+        <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
+        <View style={styles.grid}>
+          {asking.length ? (
+            <View style={styles.gridCell}>
+              <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
+            </View>
+          ) : null}
+          <View style={styles.gridCell}>
+            <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
+          </View>
+        </View>
+        <Meta colors={colors}>{t('weLink.hint')}</Meta>
+        {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
+      </View>
 
       <SetCap colors={colors}>{t('we.yourFiling')}</SetCap>
       <SetCard colors={colors}>
@@ -894,45 +985,16 @@ function WeCardPage({ book, cardId, onChange }) {
         />
       ) : null}
 
-      <Cap colors={colors}>{t('we.askMore')}</Cap>
-      <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
-      {asking.length ? <KeyButton colors={colors} label={t('we.sendAsk')} disabled={busy} onPress={ask} /> : null}
-      <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
-      <Meta colors={colors}>{t('weLink.hint')}</Meta>
-      {link ? <KeyButton colors={colors} label={t('weLink.off')} disabled={busy} onPress={endLink} /> : null}
-      {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
-
-      {card.mine ? (
-        edit ? (
-          <>
-            <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
-            <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
-            <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
-          </>
-        ) : (
-          <KeyButton
-            colors={colors}
-            label={t('we.edit')}
-            onPress={() =>
-              setEdit({
-                question: card.question,
-                mode: card.mode,
-                shows: card.shows,
-                cadence: card.cadence,
-                weekdays: card.weekdays || [],
-                goal: card.goal || null,
-                askAfter: card.askAfter || '',
-                remind: card.remind !== false,
-                note: card.note || '',
-              })
-            }
-          />
-        )
+      {card.mine && edit ? (
+        <>
+          <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
+          <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
+          <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+        </>
       ) : null}
 
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
-      <KeyButton colors={colors} label={t('we.leave')} onPress={leave} />
-      <KeyButton colors={colors} label={t('we.report')} onPress={report} />
+      {menu ? <WeMenu title={card.question} items={menuItems} colors={colors} onClose={() => setMenu(false)} /> : null}
     </ScreenShell>
   )
 }
@@ -1055,6 +1117,18 @@ const styles = StyleSheet.create({
   gap: { gap: 8 },
   question: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   panel: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
+  headTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  headFaces: { flex: 1 },
+  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
+  factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  gridCell: { flexGrow: 1, flexBasis: '45%' },
+  veil: { flex: 1, justifyContent: 'center', padding: 20 },
+  pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
+  menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
+  menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },
   big: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700' },
   miss: { fontFamily: fonts.ui, fontSize: 13 },
   acts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

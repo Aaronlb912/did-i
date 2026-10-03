@@ -257,6 +257,22 @@ that one first.
 
 Not in the dev app: widgets, Apple and Google sign-in, Firebase, gem purchases. Test those on the store build.
 
+## Dev build for the Android emulator
+
+A debug APK with the dev client. It loads JS from Metro on the PC, so unmerged changes run on the emulator (AVD `did-i-play`, x86_64).
+
+1. Actions, android-apk, run with **dev_client** checked (uncheck run_check to save time). It builds only `:app:assembleDebug` for x86_64 and arm64-v8a. No release APK, no AAB, no keystore.
+2. `gh run download <run-id> -n did-i-android-dev`
+3. It keeps the store id `com.aaronbryant.didi` (google-services.json has no `.dev` client, so a suffix breaks the build). It will not install over the Play build. Uninstall first:
+   `"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" uninstall com.aaronbryant.didi`
+   then `"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" install -r app-debug.apk`
+4. `npx expo start --dev-client --port 8081`
+5. Open Did I on the emulator. Enter `http://10.0.2.2:8081` (the emulator's name for the PC). Or run `adb reverse tcp:8081 tcp:8081` and use `localhost:8081`.
+
+Reinstall from Play to get the store build back. Play sign-in and gem purchases need the Play-signed build.
+
+If Windows runs out of memory (exit code 3221225794), stop the emulator before heavy Metro or expo commands, then start it again.
+
 ## Update prompt (app_versions)
 
 `supabase/app-version.sql` holds one row per platform: `latest` and `minimum`.

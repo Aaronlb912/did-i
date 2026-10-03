@@ -3405,5 +3405,121 @@ test('a spoken answer finds the right open question, or none', async () => {
   assert.equal(spokenAnswer('maybe'), '')
 })
 
+// What the widgets draw. Mirrors leadItem in widgets/DidITonightWidget.tsx
+// and widgets/android/DidITonightAndroidWidget.jsx (the iOS extension can't
+// import app modules). The drift test below keeps the three in step.
+function widgetLeadOf(p) {
+  const items = p?.items || []
+  const hasOpen = items.some((item) => item.status === 'open')
+  const id = String(p?.leadLampId || '').trim()
+  if (id) {
+    const hit = items.find((item) => item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')))
+    if (hit) return hit
+  }
+  return items.find((item) => item.status === 'open') || items.find((item) => item.status === 'skip') || null
+}
+function widgetDraws(p) {
+  const lead = widgetLeadOf(p)
+  if (!lead) return { question: '', lampId: '', showButtons: false }
+  const ios = String(p.question || '').trim() || lead.label
+  const android = String(lead.question || '').trim() || String(lead.label || '').trim() || String(p.question || '').trim()
+  return { question: ios, android, lampId: lead.lampId, showButtons: true }
+}
+
+test('the widget lead mirror matches both widget files', () => {
+  const ios = readFileSync(path.join(checkRoot, 'widgets/DidITonightWidget.tsx'), 'utf8')
+  const android = readFileSync(path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
+  const pick = "item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip'))"
+  for (const src of [ios, android]) {
+    assert.ok(src.replace(/\s+/g, ' ').includes(pick), 'leadItem still prefers leadLampId the same way')
+    assert.ok(/items\.find\(\(item\) => item\.status === 'open'\)\s*\|\|\s*items\.find\(\(item\) => item\.status === 'skip'\)/.test(src), 'leadItem falls back open then nope')
+  }
+  assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId)'))
+  assert.ok(ios.includes("String(props?.question || '').trim() || lead?.label || footer"))
+  assert.ok(ios.includes('{lead ? questionText : footer}'), 'iOS draws a question only with a lead')
+  assert.ok(ios.includes('const buttons = lead ?'))
+  assert.ok(android.includes("const fromLead = String(lead.question || '').trim() || String(lead.label || '').trim()"))
+})
+
+await testAsync('the widget draws what Tonight would ask, with buttons only when there is a question', async () => {
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const { saveWeOpen } = await import('../src/lib/we-widget.js')
+  const clock = new Date(2026, 9, 3, 21, 0)
+  const night = boardDate(clock)
+  const lamp = (id, question) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  const ans = (lampId, status) => ({ lampId, periodKey: night, status, answeredAt: `${night}T20:00:00` })
+  const book = (answers) => ({ id: 'b1', title: 'General', dayFoldHour: 0, lamps: [lamp('door', 'Did I lock the door?'), lamp('gym', 'Did I go to the gym?')], answers })
+  const draw = (answers) => {
+    const props = buildTonightWidgetProps({ currentId: 'b1', boards: [book(answers)] }, clock)
+    const seen = widgetDraws(props)
+    if (seen.showButtons) assert.equal(seen.android, seen.question, 'iOS and Android draw the same question')
+    if (props.left > 0) assert.ok(seen.showButtons && seen.question, `"${props.left} left" needs a question drawn`)
+    return { props, seen }
+  }
+  try {
+    saveWeOpen([], night)
+    clearWeNights()
+    let { seen } = draw([])
+    assert.equal(seen.question, 'Did I lock the door?')
+    assert.equal(seen.showButtons, true)
+    ;({ seen } = draw([ans('door', 'yes'), ans('gym', 'yes')]))
+    assert.equal(seen.question, '', 'all done and no Did we draws no question')
+    assert.equal(seen.showButtons, false)
+
+    saveWeOpen([{ id: 'c1', question: 'Did we do black mage' }], night)
+    setWeNightRows([{ card: 'c1', folder: '', night, status: '' }])
+    ;({ seen } = draw([ans('door', 'yes'), ans('gym', 'yes')]))
+    assert.equal(seen.question, 'Did we do black mage')
+    assert.ok(seen.lampId.startsWith('we:'))
+    assert.equal(seen.showButtons, true)
+    ;({ seen } = draw([ans('door', 'yes'), ans('gym', 'skip')]))
+    assert.equal(seen.question, 'Did we do black mage', 'an open Did we is drawn before a nope')
+    ;({ seen } = draw([]))
+    assert.equal(seen.question, 'Did I lock the door?', 'your own open questions come first')
+
+    setWeNightRows([{ card: 'c1', folder: '', night, status: 'did' }])
+    const done = draw([ans('door', 'yes'), ans('gym', 'yes')])
+    assert.notEqual(done.seen.question, 'Did we do black mage')
+    assert.equal(done.seen.showButtons, false)
+    assert.equal(done.props.left, 0)
+  } finally {
+    clearWeNights()
+    saveWeOpen([], night)
+  }
+})
+
+await testAsync('the share text and the link preview say the same question', async () => {
+  const { sharedDidYouLine, didYouAsk } = await import('../src/lib/did-you-links.js')
+  const { linkPreviewText } = await import('../src/lib/link-preview.js')
+  for (const [q, code, we] of [['Get this test?', 'abcdefgh23', false], ['Did we walk the dog?', 'abcdefgh2345', true], ['go vote', 'abcdefgh23', false]]) {
+    const line = sharedDidYouLine(q, code)
+    assert.ok(line.includes('https://did-i.app/d/'), line)
+    assert.equal(line, `${linkPreviewText({ question: q }, we).description} https://did-i.app/d/${code}`)
+    assert.equal(didYouAsk(q), linkPreviewText({ question: q }, we).description)
+  }
+  assert.equal(sharedDidYouLine('Get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23')
+})
+
+test('every t() key the app uses is in English', () => {
+  const files = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (name === 'node_modules') continue
+      if (statSync(full).isDirectory()) walk(full)
+      else if (/\.(jsx?|tsx?)$/.test(name)) files.push(full)
+    }
+  }
+  walk(path.join(checkRoot, 'native'))
+  walk(path.join(checkRoot, 'src'))
+  const missing = new Set()
+  for (const file of files) {
+    for (const m of readFileSync(file, 'utf8').matchAll(/\bt\('([a-zA-Z0-9_.]+)'/g)) {
+      if (!(m[1] in en)) missing.add(`${path.relative(checkRoot, file)} ${m[1]}`)
+    }
+  }
+  assert.deepEqual([...missing], [])
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

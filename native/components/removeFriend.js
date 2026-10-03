@@ -54,8 +54,8 @@ export async function askRemoveFriend({ person, colors, onDone, onMiss }) {
   }
   publishSheet({
     title: t('people.dropTitle', { name }),
-    body: shared ? t('people.dropBodyWe', { n: shared, name }) : t('people.dropBody'),
-    goLabel: shared ? t('people.dropLeave', { n: shared }) : t('people.drop'),
+    body: shared === 1 ? t('people.dropBodyWeOne', { name }) : shared ? t('people.dropBodyWe', { n: shared, name }) : t('people.dropBody'),
+    goLabel: shared === 1 ? t('people.dropLeaveOne') : shared ? t('people.dropLeave', { n: shared }) : t('people.drop'),
     ...(shared ? { moreLabel: t('people.dropOnly'), onMore: () => go(false) } : {}),
     closeLabel: t('settings.neverMind'),
     colors,

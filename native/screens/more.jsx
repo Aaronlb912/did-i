@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { shelfMarks, streakLength } from '../../src/lib/achievements.js'
+import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
@@ -31,6 +31,7 @@ import {
   blankLamp,
   didQuestion,
   isOnceBy,
+  lampNotifyOn,
   shortFromQuestion,
   shortLabel,
 } from '../../src/lib/board-json.js'
@@ -166,15 +167,40 @@ export function AboutScreen({ book }) {
   const colors = useHallColors()
   return (
     <ScreenShell book={book} title={t('about.title')} colors={colors}>
-      <Meta colors={colors}>{t('about.p1')}</Meta>
-      <Meta colors={colors}>{t('about.p2')}</Meta>
-      <Meta colors={colors}>{t('about.p3')}</Meta>
-      <Meta colors={colors}>{t('about.p4')}</Meta>
-      <Meta colors={colors}>{t('about.p5')}</Meta>
-      <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
-      <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
-      <AppVersion colors={colors} />
+      <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
+        <Text style={[styles.cardBody, { color: colors.ink }]}>{t('about.p1')}</Text>
+      </View>
+      {['p2', 'p3', 'p4', 'p5'].map((id) => (
+        <View key={id} style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <Text style={[styles.cardTitle, { color: colors.ink }]}>{t(`about.${id}Title`)}</Text>
+          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`about.${id}`)}</Text>
+        </View>
+      ))}
+      <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
+        <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
+        <AppVersion colors={colors} />
+      </View>
     </ScreenShell>
+  )
+}
+
+// One topic group of the help page; folded until tapped so the page scans.
+function HelpFold({ colors, title, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((was) => !was)}
+        style={styles.foldHead}
+      >
+        <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.slotChev, { color: colors.inkDim }]}>{open ? '▴' : '▾'}</Text>
+      </Pressable>
+      {open ? children : null}
+    </View>
   )
 }
 
@@ -182,53 +208,63 @@ export function HelpScreen() {
   const colors = useHallColors()
   return (
     <ScreenShell title={t('settings.howDidIWorks')} colors={colors}>
-      <Meta colors={colors}>{t('help.lead')}</Meta>
-      <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
-      <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
-      <Meta colors={colors}>{t('help.tonightP1')}</Meta>
-      <Meta colors={colors}>{t('help.tonightP2')}</Meta>
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
-      <Meta colors={colors}>{t('help.streakP')}</Meta>
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
-      <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
-      <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.questions')}</Text>
-      <Meta colors={colors}>{t('help.questionsP')}</Meta>
-      <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
-      <Meta colors={colors}>{t('help.pingsP')}</Meta>
-      <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
-      <Meta colors={colors}>{t('help.widgetP')}</Meta>
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.people')}</Text>
-      <Meta colors={colors}>{t('help.peopleP')}</Meta>
-      <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.we')}</Text>
-      <Meta colors={colors}>{t('help.weP1')}</Meta>
-      <Meta colors={colors}>{t('help.weP2')}</Meta>
-      <KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.cheers')}</Text>
-      <Meta colors={colors}>{t('help.cheersP')}</Meta>
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
-      <Meta colors={colors}>{t('help.coinsP')}</Meta>
-      <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
-      <Meta colors={colors}>{t('help.phoneP')}</Meta>
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
-      <Meta colors={colors}>{t('help.legalP')}</Meta>
-      <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
-      <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
-      <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
-      <Meta colors={colors}>{t('help.feedbackP')}</Meta>
-      <DidButton
-        colors={colors}
-        label={t('feedback.send')}
-        onPress={() => {
-          const url = feedbackMailto()
-          if (url) Linking.openURL(url)
-        }}
-      />
+      <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+        <Meta colors={colors}>{t('help.lead')}</Meta>
+        <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
+        <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
+      </View>
+      <HelpFold colors={colors} title={t('help.groupDaily')}>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
+        <Meta colors={colors}>{t('help.tonightP1')}</Meta>
+        <Meta colors={colors}>{t('help.tonightP2')}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
+        <Meta colors={colors}>{t('help.streakP')}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
+        <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
+        <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.questions')}</Text>
+        <Meta colors={colors}>{t('help.questionsP')}</Meta>
+        <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
+        <Meta colors={colors}>{t('help.pingsP')}</Meta>
+        <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
+        <Meta colors={colors}>{t('help.widgetP')}</Meta>
+      </HelpFold>
+      <HelpFold colors={colors} title={t('help.groupSocial')}>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.people')}</Text>
+        <Meta colors={colors}>{t('help.peopleP')}</Meta>
+        <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.we')}</Text>
+        <Meta colors={colors}>{t('help.weP1')}</Meta>
+        <Meta colors={colors}>{t('help.weP2')}</Meta>
+        <KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.cheers')}</Text>
+        <Meta colors={colors}>{t('help.cheersP')}</Meta>
+      </HelpFold>
+      <HelpFold colors={colors} title={t('help.groupShop')}>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
+        <Meta colors={colors}>{t('help.coinsP')}</Meta>
+        <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
+      </HelpFold>
+      <HelpFold colors={colors} title={t('help.groupApp')}>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
+        <Meta colors={colors}>{t('help.phonePApp')}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
+        <Meta colors={colors}>{t('help.legalP')}</Meta>
+        <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
+        <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
+        <Meta colors={colors}>{t('help.feedbackP')}</Meta>
+        <DidButton
+          colors={colors}
+          label={t('feedback.send')}
+          onPress={() => {
+            const url = feedbackMailto()
+            if (url) Linking.openURL(url)
+          }}
+        />
+      </HelpFold>
       <DidButton colors={colors} label={t('help.home')} onPress={() => goHash('/tonight')} />
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.versionTitle')}</Text>
       <AppVersion colors={colors} />
@@ -319,6 +355,30 @@ export function IdeasScreen() {
   )
 }
 
+function StreakHero({ colors, n, label, line }) {
+  return (
+    <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
+      <Text style={[styles.heroCap, { color: colors.on }]}>{label}</Text>
+      <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      {line ? <Text style={[styles.heroLine, { color: colors.inkSoft }]}>{line}</Text> : null}
+    </View>
+  )
+}
+
+function NumberTile({ colors, label, n, onPress }) {
+  return (
+    <Pressable
+      disabled={!onPress}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.line }]}
+    >
+      <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
+    </Pressable>
+  )
+}
+
 export function StatsScreen({ book, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -326,11 +386,13 @@ export function StatsScreen({ book, now }) {
 
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
-      <Row colors={colors} label={t('stats.questions')} note={String(counts.hung)} />
-      <Row colors={colors} label={t('stats.did')} note={String(counts.did)} />
-      <Row colors={colors} label={t('stats.late')} note={String(counts.late)} />
-      <Row colors={colors} label={t('stats.nope')} note={String(counts.skip)} />
-      <Row colors={colors} label={t('stats.nightsOn')} note={String(counts.heat)} />
+      <StreakHero colors={colors} n={counts.heat} label={t('stats.nightsOn')} />
+      <View style={styles.tiles}>
+        <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
+        <NumberTile colors={colors} label={t('stats.did')} n={counts.did} />
+        <NumberTile colors={colors} label={t('stats.late')} n={counts.late} />
+        <NumberTile colors={colors} label={t('stats.nope')} n={counts.skip} />
+      </View>
       <KeyButton colors={colors} label={t('stats.marks')} onPress={() => goHash('/marks')} />
       <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
       <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
@@ -392,11 +454,27 @@ export function WeekGridScreen({ book, now }) {
     return colors.open
   }
 
+  // A night counts once every question on it was answered Did or late.
+  const doneNights = nights.filter((night) => {
+    const states = lamps.map((lamp) => weekCell(night, lamp).state).filter((state) => state !== 'off')
+    return states.length > 0 && states.every((state) => state === 'yes' || state === 'late')
+  }).length
+  const legend = [
+    ['yes', t('later.did')],
+    ['late', t('later.late')],
+    ['skip', t('later.nope')],
+  ]
+
   return (
     <ScreenShell title={t('streaks.seven')} colors={colors}>
       {!lamps.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
+        <>
+        <View style={styles.tiles}>
+          <NumberTile colors={colors} label={t('week.doneTile')} n={doneNights} />
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <View style={styles.week}>
           <View style={styles.weekRow}>
             <View style={styles.weekName} />
@@ -428,8 +506,20 @@ export function WeekGridScreen({ book, now }) {
             </View>
           ))}
         </View>
+          <View style={styles.legend}>
+            {legend.map(([state, label]) => (
+              <View key={state} style={styles.legendItem}>
+                <View style={[styles.weekCell, { backgroundColor: cellColor(state) }]} />
+                <Text style={[styles.legendText, { color: colors.inkDim }]}>{label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        </>
       )}
-      <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} chevron last onPress={() => goHash('/streaks')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -445,19 +535,21 @@ export function StreaksScreen({ book, now }) {
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>
-      <Meta colors={colors}>{t('streaks.line', { n: heat })}</Meta>
+      <StreakHero colors={colors} n={heat} label={t('streaks.aria')} line={t('streaks.line', { n: heat })} />
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
-        rows.map((row) => (
-          <Row
-            key={row.lamp.id}
-            colors={colors}
-            label={shortLabel(row.lamp)}
-            note={String(row.n || 0)}
-            onPress={() => goHash('/lamp', { id: row.lamp.id })}
-          />
-        ))
+        <View style={styles.tiles}>
+          {rows.map((row) => (
+            <NumberTile
+              key={row.lamp.id}
+              colors={colors}
+              label={shortLabel(row.lamp)}
+              n={row.n}
+              onPress={() => goHash('/lamp', { id: row.lamp.id })}
+            />
+          ))}
+        </View>
       )}
       <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
     </ScreenShell>
@@ -476,7 +568,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
 
   return (
     <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
-      {live.map((item) => {
+      <SetCard colors={colors}>
+      {live.map((item, at) => {
         const left = leftoverOn(boards, new Date(), item.id)
         const n = liveLampCount(item)
         const on = item.id === book?.id
@@ -486,16 +579,21 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
           left === 0 ? t('boards.leftNone') : left === 1 ? t('boards.leftOne') : t('boards.leftMany', { n: left })
         return (
           <View key={item.id}>
-            <Row
+            <SetRow
               colors={colors}
+              tint={on ? colors.on : undefined}
+              icon="tag"
               label={item.title}
-              note={`${on ? t('boards.thisOne') : t('boards.one')} · ${countNote} · ${leftNote}`}
+              sub={`${on ? t('boards.thisOne') : t('boards.one')} · ${countNote} · ${leftNote}`}
+              chevron
+              last={at === live.length - 1 && !on}
               onPress={() => {
                 onSelect?.(item.id)
                 goHash('/tonight', { tag: item.id })
               }}
             />
             {on ? (
+              <View style={styles.tagName}>
               <SavableField
                 colors={colors}
                 label={t('boards.name')}
@@ -508,16 +606,24 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
                   onChange({ ...book, title })
                 }}
               />
+              </View>
             ) : null}
           </View>
         )
       })}
-      <Row
-        colors={colors}
-        label={t('boards.add')}
-        note={t('boards.addHint')}
-        onPress={() => setAddMiss(onAdd?.() || '')}
-      />
+      </SetCard>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="add"
+          tint={colors.on}
+          label={t('boards.add')}
+          sub={t('boards.addHint')}
+          last
+          onPress={() => setAddMiss(onAdd?.() || '')}
+        />
+      </SetCard>
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
       <KeyButton colors={colors} label={t('boards.home')} onPress={() => goHash('/tonight')} />
       <KeyButton colors={colors} label={t('boards.calendar')} onPress={() => goHash('/calendar')} />
@@ -580,15 +686,21 @@ export function EnterScreen({ book, onSaveKeeper, returnTo }) {
       }
       colors={colors}
     >
-      <Meta colors={colors}>{t('enter.body')}</Meta>
-      {locked ? (
-        <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} />
-      ) : (
-        <>
-          <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} />
-          <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} />
-        </>
-      )}
+      <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+        <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t('enter.body')}</Text>
+      </View>
+      <SetCard colors={colors}>
+        <View style={styles.enterFields}>
+          {locked ? (
+            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} />
+          ) : (
+            <>
+              <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} />
+              <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} />
+            </>
+          )}
+        </View>
+      </SetCard>
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
       <DidButton
         colors={colors}
@@ -860,16 +972,31 @@ function PingKinds({ colors, on }) {
   )
 }
 
-export function PingScreen({ book, now, onAskPings, pingLabel }) {
+export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
   const on = labelKey === 'pings.state.on'
-  const fires = upcomingPings(book, clock)
+  // One row per question. Rows you switch off stay here until you leave, so
+  // you can switch them back on.
+  const [seen, setSeen] = useState(() => new Map())
+  const rows = new Map(seen)
+  for (const fire of upcomingPings(book, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  const fires = [...rows.values()].sort((a, b) => a.at - b.at)
+  const lampOf = (id) => (book?.lamps || []).find((lamp) => lamp.id === id)
+
+  function flipOne(fire) {
+    const lamp = lampOf(fire.id)
+    if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
+    const next = !lampNotifyOn(lamp)
+    setSeen((was) => new Map(was).set(fire.id, fire))
+    onChange(commitBook({ ...book, lamps: book.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
+  }
 
   return (
     <ScreenShell title={t('pings.title')} colors={colors}>
-      <Meta colors={colors}>{t('pings.body')}</Meta>
+      <Text style={[styles.subtitle, { color: colors.inkDim }]}>{t('pings.body')}</Text>
       {onAskPings ? (
         <DidButton
           colors={colors}
@@ -884,15 +1011,20 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
       ) : (
-        fires.map((fire) => (
-          <Row
-            key={fire.id}
-            colors={colors}
-            label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
-            note={foldClock(fire.at)}
-            onPress={() => goHash('/tonight', { face: fire.id })}
-          />
-        ))
+        <SetCard colors={colors}>
+          {fires.map((fire, at) => (
+            <SetSwitch
+              key={fire.id}
+              colors={colors}
+              icon="bell"
+              label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
+              sub={foldClock(fire.at)}
+              on={lampNotifyOn(lampOf(fire.id))}
+              last={at === fires.length - 1}
+              onPress={() => flipOne(fire)}
+            />
+          ))}
+        </SetCard>
       )}
       <KeyButton colors={colors} label={t('pings.comingUp')} onPress={() => goHash('/later')} />
       <KeyButton colors={colors} label={t('pings.help')} onPress={() => goHash('/help')} />
@@ -1054,6 +1186,10 @@ function AccountSignedIn({ book, email, onChange }) {
   const others = phones.filter((row) => row.device_key !== here)
 
   const [busy, setBusy] = useState('')
+  const [dataOpen, setDataOpen] = useState(false)
+  const [allPhones, setAllPhones] = useState(false)
+  const shownPhones = allPhones ? phones : phones.slice(0, 3)
+  const phonesHidden = !allPhones && phones.length > 3
 
   async function download() {
     if (busy) return
@@ -1122,7 +1258,7 @@ function AccountSignedIn({ book, email, onChange }) {
 
   return (
     <ScreenShell title={t('account.inTitle')} colors={colors}>
-      <View style={styles.accountHead}>
+      <View style={[styles.accountHead, styles.headCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         {/* Tapping your own photo changes it, the way most apps work. */}
         <Pressable
           disabled={!canPhoto || photoBusy}
@@ -1225,21 +1361,11 @@ function AccountSignedIn({ book, email, onChange }) {
       </SetCard>
       {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
 
-      <SetCap colors={colors}>{t('account.syncCap')}</SetCap>
+      <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} last onPress={() => pullAndMerge()} />
-      </SetCard>
-      {sync.how === 'miss' && sync.miss ? (
-        <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
-      ) : null}
-
-      <PhoneLockSection colors={colors} />
-
-      <SetCap colors={colors}>{t('account.devices')}</SetCap>
-      <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
-      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
         {phones.length ? (
-          phones.map((row, at) => (
+          shownPhones.map((row, at) => (
             <SetRow
               key={row.device_key}
               colors={colors}
@@ -1248,14 +1374,21 @@ function AccountSignedIn({ book, email, onChange }) {
               label={row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')}
               sub={t('account.seen', { date: deviceSeen(row.last_seen_at) })}
               value={row.device_key === here ? '' : t('account.forgetShort')}
-              last={at === phones.length - 1}
+              last={at === shownPhones.length - 1 && !phonesHidden}
               onPress={row.device_key === here ? undefined : () => forgetOne(row)}
             />
           ))
         ) : (
           <SetRow colors={colors} label={t('account.noDevices')} last />
         )}
+        {phonesHidden ? (
+          <SetRow colors={colors} label={t('people.seeAll')} value={String(phones.length)} chevron last onPress={() => setAllPhones(true)} />
+        ) : null}
       </SetCard>
+      <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
+      {sync.how === 'miss' && sync.miss ? (
+        <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
+      ) : null}
       {others.length > 1 ? (
         <KeyButton
           colors={colors}
@@ -1279,6 +1412,22 @@ function AccountSignedIn({ book, email, onChange }) {
         />
       ) : null}
 
+      <PhoneLockSection colors={colors} />
+
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('account.privacyRow')}
+          sub={t('account.privacySub')}
+          chevron={!dataOpen}
+          last
+          onPress={() => setDataOpen((open) => !open)}
+        />
+      </SetCard>
+      {dataOpen ? (
+        <>
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
@@ -1321,6 +1470,8 @@ function AccountSignedIn({ book, email, onChange }) {
           }
         />
       </SetCard>
+        </>
+      ) : null}
       <SureModal
         sure={sure}
         colors={colors}
@@ -1345,6 +1496,30 @@ export function AccountScreen({ book, onChange }) {
 
 const styles = StyleSheet.create({
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
+  headCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 20 },
+  dataGap: { height: 20 },
+  hero: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16, gap: 2 },
+  heroCap: { ...sectionLabel },
+  heroNum: { fontFamily: fonts.display, fontSize: 44, fontWeight: '700' },
+  heroLine: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+  tile: { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: 18, padding: 16, gap: 4 },
+  tileNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700' },
+  tileLabel: { fontFamily: fonts.ui, fontSize: 13 },
+  subtitle: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 16 },
+  slotCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 10 },
+  slotTime: { fontFamily: fonts.mono, fontSize: 16, minWidth: 64 },
+  slotLabel: { flex: 1, minWidth: 0, fontFamily: fonts.ui, fontSize: 15 },
+  slotChev: { fontFamily: fonts.ui, fontSize: 20 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16, gap: 8 },
+  cardTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
+  cardBody: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendText: { fontFamily: fonts.ui, fontSize: 12 },
+  foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
+  tagName: { paddingHorizontal: 14, paddingBottom: 10 },
+  enterFields: { padding: 14, gap: 8 },
   avatarEdit: {
     position: 'absolute',
     right: -2,

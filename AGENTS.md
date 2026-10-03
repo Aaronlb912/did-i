@@ -150,8 +150,13 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 - `docs/widgets.md` — widget behavior in detail.
 - `docs/build-prompt.md` — session/continuation log (routes, ports, prompt
   file locations); only relevant when continuing a multi-session build.
-- `.cursor/rules/*.mdc` — theme/i18n, scale-and-safety, whole-feature, copy,
+- `.cursor/rules/*.mdc` — theme-i18n, scale-and-safety, whole-feature, copy,
   cheers, app-checks. These are enforced conventions, not suggestions.
+
+Before building a feature, fill in `docs/feature-checklist.md` in the plan.
+Before asking to merge, run the flows a change touches from `docs/phone-pass.md`
+on the emulator dev build (`docs/native-rebuild.md`, dev_client) and wait for CI.
+After a merge, any bug Aaron finds goes in `docs/lessons.md` with the check that now stops it.
 
 General working rules (smallest diff, commit only when asked, no AI
 attribution) are in Aaron's global CLAUDE.md. PowerShell here: no `&&`.

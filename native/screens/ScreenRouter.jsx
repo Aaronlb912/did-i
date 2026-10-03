@@ -170,7 +170,7 @@ export function ScreenRouter({
   if (path === '/streaks') return <StreaksScreen book={book} />
   if (path === '/stats') return <StatsScreen book={book} />
   if (path === '/feed') return <FeedScreen book={book} />
-  if (path === '/pings') return <PingScreen book={book} onAskPings={onAskPings} pingLabel={pingLabel} />
+  if (path === '/pings') return <PingScreen book={book} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
   if (path === '/me') {
     return (
       <BoardsScreen

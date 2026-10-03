@@ -11,6 +11,10 @@ on:
         description: Also build the arm64 APK for sideloading (adds ~15 min). A store build only needs the AAB.
         type: boolean
         default: false
+      dev_client:
+        description: Only a debug APK with the dev client (x86_64 + arm64) for the emulator. Skips the release APK, AAB and keystore.
+        type: boolean
+        default: false
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -77,6 +81,7 @@ jobs:
 
       - name: Prepare signing
         id: signing
+        if: ${{ !inputs.dev_client }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -125,10 +130,29 @@ jobs:
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
+      # Dev client for the emulator: loads JS from Metro. Same app id as the
+      # store build (google-services.json has no .dev client), so uninstall the
+      # Play build first. debug.keystore is gitignored, so make one here.
+      - name: Assemble dev client APK
+        if: inputs.dev_client
+        working-directory: android
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          ./gradlew :app:assembleDebug --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=x86_64,arm64-v8a
+
+      - name: Upload dev client APK
+        if: inputs.dev_client
+        uses: actions/upload-artifact@v4
+        with:
+          name: did-i-android-dev
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
       # The APK is for sideloading. A store build (release keystore) skips it
       # unless asked; a debug-signed run has nothing else, so it always builds.
       - name: Assemble release APK
-        if: inputs.apk || steps.signing.outputs.mode != 'release'
+        if: ${{ !inputs.dev_client && (inputs.apk || steps.signing.outputs.mode != 'release') }}
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -137,7 +161,7 @@ jobs:
         run: ./gradlew :app:assembleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=arm64-v8a
 
       - name: Upload APK
-        if: inputs.apk || steps.signing.outputs.mode != 'release'
+        if: ${{ !inputs.dev_client && (inputs.apk || steps.signing.outputs.mode != 'release') }}
         uses: actions/upload-artifact@v4
         with:
           name: did-i-android-apk
@@ -148,7 +172,7 @@ jobs:
       # runs only when the keystore secrets are set. Phone chips only (32- and
       # 64-bit ARM): x86 is for emulators and nearly doubled the compile.
       - name: Bundle release AAB (Play)
-        if: steps.signing.outputs.mode == 'release'
+        if: ${{ !inputs.dev_client && steps.signing.outputs.mode == 'release' }}
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -159,7 +183,7 @@ jobs:
           ./gradlew :app:bundleRelease --build-cache --no-scan -x lint -x test -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 
       - name: Upload AAB
-        if: steps.signing.outputs.mode == 'release'
+        if: ${{ !inputs.dev_client && steps.signing.outputs.mode == 'release' }}
         uses: actions/upload-artifact@v4
         with:
           name: did-i-android-aab
@@ -167,6 +191,7 @@ jobs:
           if-no-files-found: error
 
       - name: Summarize
+        if: ${{ !inputs.dev_client }}
         run: |
           echo "### Android APK" >> "${GITHUB_STEP_SUMMARY}"
           echo "${{ steps.signing.outputs.label }}" >> "${GITHUB_STEP_SUMMARY}"
