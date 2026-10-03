@@ -2168,7 +2168,7 @@ export const ja = {
   'scanPage.familyTitle': 'Did I のファミリーに招待されています',
   'scanPage.friendLead': '友だちID:',
   'scanPage.familyLead': 'ファミリーコード:',
-  'scanPage.open': 'Did I で開く',
+  'scanPage.open': 'Did I アプリを開く',
   'scanPage.noApp': 'Did I がまだなら、入れてサインインするとすぐにここから続けられます。',
   'scanPage.copied': 'リンクをコピーしました。インストール後に Did I を開いてください。',
   'scanPage.bad': 'このコードは正しくありません。新しいコードをもらってください。',

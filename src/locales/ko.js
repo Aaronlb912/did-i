@@ -2168,7 +2168,7 @@ export const ko = {
   'scanPage.familyTitle': 'Did I 가족에 초대받았어요',
   'scanPage.friendLead': '친구 ID:',
   'scanPage.familyLead': '가족 코드:',
-  'scanPage.open': 'Did I에서 열기',
+  'scanPage.open': 'Did I 앱 열기',
   'scanPage.noApp': '아직 Did I가 없나요? 설치하고 로그인하면 바로 이어져요.',
   'scanPage.copied': '링크를 복사했어요. 설치 후 Did I를 열어 주세요.',
   'scanPage.bad': '코드가 맞지 않아요. 새 코드를 받아 주세요.',

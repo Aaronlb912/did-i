@@ -2152,7 +2152,7 @@ export const zh = {
   'scanPage.familyTitle': '你被邀请加入 Did I 上的一个家庭',
   'scanPage.friendLead': '好友 ID：',
   'scanPage.familyLead': '家庭代码：',
-  'scanPage.open': '在 Did I 中打开',
+  'scanPage.open': '打开 Did I 应用',
   'scanPage.noApp': '还没有 Did I？安装并登录后会直接回到这里。',
   'scanPage.copied': '链接已复制。安装后打开 Did I。',
   'scanPage.bad': '这个代码不对。请要一个新的。',

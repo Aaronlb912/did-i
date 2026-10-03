@@ -2254,7 +2254,7 @@ export const fr = {
   'scanPage.familyTitle': 'Tu es invité dans une famille sur Did I',
   'scanPage.friendLead': 'Son ID ami :',
   'scanPage.familyLead': 'Le code famille :',
-  'scanPage.open': 'Ouvrir dans Did I',
+  'scanPage.open': 'Ouvrir l’app Did I',
   'scanPage.noApp': 'Pas encore Did I ? Installe-le, connecte-toi, et ceci s\'affiche tout de suite.',
   'scanPage.copied': 'Lien copié. Ouvre Did I après l\'installation.',
   'scanPage.bad': 'Ce code n\'est pas bon. Demande-en un nouveau.',
