@@ -14,6 +14,23 @@ export function inviteLink(code) {
   return INVITE_URL + cleanInvite(code)
 }
 
+// Android is in testing, so store buttons go to the beta page. What Play's
+// install referrer carried (invite=…, did=…, a QR code) rides along as ?ref
+// and comes back on the beta page's install button.
+export const BETA_PATH = '/beta'
+export function betaLinkFor(referrer) {
+  const ref = String(referrer || '').trim()
+  return ref ? `${BETA_PATH}?ref=${encodeURIComponent(ref)}` : BETA_PATH
+}
+export function betaRefFrom(search) {
+  try {
+    const ref = new URLSearchParams(search || '').get('ref') || ''
+    return /^[a-z]+=[A-Za-z0-9_-]{1,64}(&[a-z]+=[A-Za-z0-9_-]{1,64})?$/.test(ref) ? ref : ''
+  } catch {
+    return ''
+  }
+}
+
 export function playLinkFor(code) {
   return `${PLAY_URL}&referrer=${encodeURIComponent(`invite=${cleanInvite(code)}`)}`
 }

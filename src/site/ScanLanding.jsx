@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL, PLAY_URL } from '../lib/invite-link.js'
+import { APP_STORE_URL, betaLinkFor } from '../lib/invite-link.js'
 import { formatFriendId } from '../lib/people.js'
 import { familyQrLink, friendQrLink, readQrLink } from '../lib/qr-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
@@ -49,11 +49,11 @@ export function ScanLanding({ kind, code }) {
               </a>
               <a
                 className="di-did di-did-small di-invite-store"
-                href={`${PLAY_URL}&referrer=${encodeURIComponent(referrer)}`}
+                href={betaLinkFor(referrer)}
                 onClick={copyLink}
               >
                 <PlayMark />
-                {t('invite.android')}
+                {t('web.store.androidBeta')}
               </a>
             </div>
             {copied ? (
