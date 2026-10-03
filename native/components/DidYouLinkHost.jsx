@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAccount } from '../../src/lib/account.js'
 import {
   befriendByLink,
+  didYouAsk,
   claimPendingDidYous,
   dropPendingDidYou,
   isWeLinkCode,
@@ -84,7 +85,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
         publishSheet({
           kicker: t('we.title'),
           title: t('weLink.asked', { name }),
-          quote: found.question,
+          quote: didYouAsk(found.question, t('people.sendWhat')),
           body: t('weLink.people', { n: found.people }),
           goLabel: found.name ? t('weLink.joinAdd', { name }) : t('weLink.joinPlain'),
           moreLabel: t('weLink.join'),
@@ -113,7 +114,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
       publishSheet({
         kicker: t('didYouLink.kicker'),
         title: t('didYouLink.asked', { name }),
-        quote: found.question,
+        quote: didYouAsk(found.question, t('people.sendWhat')),
         goLabel: found.name ? t('didYouLink.addFriend', { name }) : t('didYouLink.add'),
         moreLabel: t('didYouLink.justKeep'),
         closeLabel: t('didYouLink.no'),

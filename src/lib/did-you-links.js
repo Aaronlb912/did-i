@@ -8,6 +8,9 @@
 // share-links.sql): opening it asks to join that Did we. Either kind can
 // add the person who made it as a friend, only when the opener says so.
 import { cloud } from './cloud.js'
+import { didYouAsk } from './link-preview.js'
+
+export { didYouAsk }
 
 export const DID_YOU_URL = 'https://did-i.app/d/'
 const SHOW_KEY = 'did-i-pending-did-you'
@@ -46,8 +49,10 @@ export function didYouFromText(text) {
   return ref ? ref[1].toLowerCase() : ''
 }
 
-export function sharedDidYouLine(question, code) {
-  return `${String(question || '').trim()} ${didYouLink(code).replace(/^https:\/\//, '')}`
+// The text that goes in a message. The full https link, so Messages and
+// other apps make it tappable.
+export function sharedDidYouLine(question, code, lead = 'Did you') {
+  return `${didYouAsk(question, lead)} ${didYouLink(code)}`
 }
 
 function readList(key) {
