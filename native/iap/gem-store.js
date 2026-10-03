@@ -215,7 +215,7 @@ export async function buyGemPack(packId) {
     if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
     console.warn('gem iap buy', error?.code, error?.message || error)
     // Play's own words (response code, debug message) say why it refused.
-    const why = String(error?.message || '').replace(/s+/g, ' ').trim().slice(0, 160)
+    const why = String(error?.message || '').replace(/\s+/g, ' ').trim().slice(0, 160)
     return { miss: 'store', code: [error?.code, why].filter(Boolean).join(': ') }
   }
 }
