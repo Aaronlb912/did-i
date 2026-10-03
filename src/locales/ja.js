@@ -2207,6 +2207,8 @@ export const ja = {
   'didYouLink.bad': 'このリンクは終了したか正しくありません。送った人に新しいリンクを頼んでください。',
   'didYouLink.reach': 'リンクを読み込めませんでした。接続を確認してください。次にDid Iを開くともう一度表示されます。',
   'didYouLink.noApp': 'Did I をまだ持っていませんか？入手して開くと、この質問が表示されます。',
+  'people.dropBodyWeOne': '友達ではなくなります。二人の間で待っている Did you は削除されます。{name} と Did we を1つ共有しています。一緒に抜けるか、残るか選んでください。',
+  'people.dropLeaveOne': '削除して Did we から抜ける',
   'friendId.orPhone': 'ほかの追加方法',
   'confirm.takenBack': '取り消しました。相手の受信箱から消えました。',
   'confirm.passed': 'パスしました。受信箱から消えました。',

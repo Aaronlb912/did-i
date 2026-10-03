@@ -2207,6 +2207,8 @@ export const ko = {
   'didYouLink.bad': '이 링크는 끝났거나 올바르지 않아요. 보낸 사람에게 새 링크를 부탁하세요.',
   'didYouLink.reach': '링크를 불러올 수 없어요. 연결을 확인하세요. 다음에 Did I를 열면 다시 나와요.',
   'didYouLink.noApp': '아직 Did I가 없나요? 설치하고 열면 이 질문이 나와요.',
+  'people.dropBodyWeOne': '더 이상 친구가 아닙니다. 서로 기다리던 Did you는 삭제됩니다. {name}님과 Did we를 하나 함께하고 있어요. 같이 나가거나 남을 수 있어요.',
+  'people.dropLeaveOne': '삭제하고 Did we에서 나가기',
   'friendId.orPhone': '다른 방법으로 추가',
   'confirm.takenBack': '취소했어요. 상대 받은 함에서 빠졌어요.',
   'confirm.passed': '넘겼어요. 받은 함에서 빠졌어요.',

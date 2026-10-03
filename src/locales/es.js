@@ -2287,6 +2287,8 @@ export const es = {
   'didYouLink.bad': 'Ese enlace terminó o no es correcto. Pide uno nuevo a quien te lo envió.',
   'didYouLink.reach': 'No se pudo cargar el enlace. Revisa tu conexión. Vuelve a aparecer la próxima vez que abras Did I.',
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
+  'people.dropBodyWeOne': 'Dejan de ser amigos. Se quitan los Did you\'s pendientes entre ustedes. Compartes un Did we con {name}: sal también o quédate.',
+  'people.dropLeaveOne': 'Quitar y salir del Did we',
   'friendId.orPhone': 'Otras formas de añadir',
   'confirm.takenBack': 'Retirado. Ya no está en su bandeja.',
   'confirm.passed': 'Pasado. Ya no está en tu bandeja.',

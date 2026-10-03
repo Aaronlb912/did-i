@@ -41,7 +41,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash } from '../navigation/hash.js'
+import { canGoBack, goBack, goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
@@ -449,7 +449,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       date={feel.date}
       colors={colors}
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: () => goHash('/we') }}
+      leftAction={{ label: t('hang.cancel'), onPress: () => (canGoBack() ? goBack() : goHash('/we')) }}
       rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !ready }}
     >
       <HangCard

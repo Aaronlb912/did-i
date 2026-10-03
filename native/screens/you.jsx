@@ -13,7 +13,7 @@ import { HangFold } from '../components/HangFold.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash, swapHash } from '../navigation/hash.js'
+import { canGoBack, goBack, goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
@@ -137,7 +137,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       date={feel.date}
       colors={colors}
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: () => goHash('/people') }}
+      leftAction={{ label: t('hang.cancel'), onPress: () => (canGoBack() ? goBack() : goHash('/people')) }}
       rightAction={{ label: t('we.sendShort'), onPress: send, disabled: !ready }}
     >
       <HangCard

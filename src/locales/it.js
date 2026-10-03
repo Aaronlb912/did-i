@@ -2278,6 +2278,8 @@ export const it = {
   'didYouLink.bad': 'Il link è scaduto o non è giusto. Chiedine uno nuovo a chi te l’ha mandato.',
   'didYouLink.reach': 'Impossibile caricare il link. Controlla la connessione. Ricompare la prossima volta che apri Did I.',
   'didYouLink.noApp': 'Non hai ancora Did I? Scaricalo, aprilo e comparirà questa domanda.',
+  'people.dropBodyWeOne': 'Non siete più amici. I Did you\'s in attesa tra voi vengono rimossi. Condividi un Did we con {name}: esci anche da quello o resta.',
+  'people.dropLeaveOne': 'Rimuovi ed esci dal Did we',
   'friendId.orPhone': 'Altri modi per aggiungere',
   'confirm.takenBack': 'Ritirato. Non è più nella sua posta.',
   'confirm.passed': 'Passato. Non è più nella tua posta.',

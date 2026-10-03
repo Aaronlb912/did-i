@@ -14,3 +14,5 @@ twice, the fix is a test or a rule, not a note.
 | 2026-10-03 | Link preview trusted the host header (SSRF) | No security review on new endpoints | Review agent on every diff |
 | 2026-10-03 | Merged before the visual check finished | Did not wait for CI | Green CI before asking to merge |
 | 2026-10-03 | Web button showed raw key `friendId.orPhone` | Keys not checked against en | Every `t()` key exists in en test |
+| 2026-10-03 | Cancel on the Did we / Did you form opened a new page, so Back reopened the form | Cancel pushed a route instead of going back; never tapped through on a phone | Phone pass: Add, switch kind, Cancel, Back |
+| 2026-10-03 | Remove sheet said "1 Did we's" | Counted copy had no singular | Use the repo's `...One` key pattern for counts |
