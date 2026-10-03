@@ -302,10 +302,11 @@ function DropCarousel({ slides, purse, colors, onTile }) {
   return (
     <View style={styles.carousel} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {width ? (
-        <FadeScroll
-          fade={colors.bg}
+        <ScrollView
+          horizontal
           pagingEnabled
           nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / width))}
         >
           {slides.map((slide, i) => {
@@ -338,7 +339,7 @@ function DropCarousel({ slides, purse, colors, onTile }) {
               </View>
             )
           })}
-        </FadeScroll>
+        </ScrollView>
       ) : null}
       {slides.length > 1 ? (
         <View style={styles.dots}>

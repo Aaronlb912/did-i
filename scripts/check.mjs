@@ -2754,6 +2754,8 @@ await testAsync('the widget shows the open Did we once your own questions are do
     assert.equal(props.question, 'Did we do black mage')
     assert.equal(props.tagTitle, en['we.title'])
     assert.equal(props.left, 1)
+    const noped = { ...book, lamps: [...book.lamps, { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }], answers: [...book.answers, { lampId: 'gym', periodKey: night, status: 'skip', answeredAt: `${night}T20:30:00` }] }
+    assert.equal(buildTonightWidgetProps({ currentId: 'b1', boards: [noped] }, clock).question, 'Did we do black mage', 'an open Did we comes before a nope')
     setWeNightRows([{ card: 'c1', folder: '', night, status: 'did' }])
     const after = buildTonightWidgetProps({ currentId: 'b1', boards: [book] }, clock)
     assert.notEqual(after.question, 'Did we do black mage', 'gone once you said did')
@@ -3246,10 +3248,11 @@ test('a Did you link reads back from the page, the Open button, a copied line an
   assert.equal(readDidYouLink('https://did-i.app/d/abcdefgh23'), 'abcdefgh23')
   assert.equal(readDidYouLink('didi://d/ABCDEFGH23/'), 'abcdefgh23')
   assert.equal(readDidYouLink('https://did-i.app/f/123456789012'), '', 'a friend link is not a Did you link')
-  assert.equal(didYouFromText('Did you go vote? did-i.app/d/abcdefgh23'), 'abcdefgh23')
+  assert.equal(didYouFromText('Did you go vote? https://did-i.app/d/abcdefgh23'), 'abcdefgh23')
   assert.equal(didYouFromText('utm_source=x&did=abcdefgh23'), 'abcdefgh23')
   assert.equal(didYouFromText('did=abc'), '')
-  assert.equal(sharedDidYouLine(' Did you go vote? ', 'abcdefgh23'), 'Did you go vote? did-i.app/d/abcdefgh23')
+  assert.equal(sharedDidYouLine(' Did you go vote? ', 'abcdefgh23'), 'Did you go vote? https://did-i.app/d/abcdefgh23')
+  assert.equal(sharedDidYouLine('get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23', 'the Did you lead comes back')
 })
 
 test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {
@@ -3273,15 +3276,16 @@ test('a Did we link is the same /d/ path with a 12 letter code, and its preview 
   assert.ok(isWeLinkCode('ABCDEFGH2345'))
   assert.ok(!isWeLinkCode('abcdefgh23'), 'ten letters is a Did you')
   assert.equal(readDidYouLink('https://did-i.app/d/abcdefgh234'), '', 'eleven letters is neither')
-  assert.equal(didYouFromText('Did we walk the dog? did-i.app/d/abcdefgh2345'), 'abcdefgh2345')
+  assert.equal(didYouFromText('Did we walk the dog? https://did-i.app/d/abcdefgh2345', 'a Did we is left alone'), 'abcdefgh2345')
   assert.equal(didYouFromText('did=abcdefgh2345'), 'abcdefgh2345')
-  assert.equal(sharedDidYouLine('Did we walk the dog?', 'abcdefgh2345'), 'Did we walk the dog? did-i.app/d/abcdefgh2345')
+  assert.equal(sharedDidYouLine('Did we walk the dog?', 'abcdefgh2345'), 'Did we walk the dog? https://did-i.app/d/abcdefgh2345', 'a Did we is left alone')
   assert.equal(didYouCodeFromPath('/d/abcdefgh2345'), 'abcdefgh2345')
   assert.deepEqual(linkPreviewText({ question: 'Did we walk the dog?', name: 'Aaron' }, true), {
     title: 'Aaron asked you to join a Did we',
     description: 'Did we walk the dog?',
   })
   assert.equal(linkPreviewText({ question: 'Did you vote?', name: '' }, false).title, 'A Did you from Did I')
+  assert.equal(linkPreviewText({ question: 'Get this test?', name: 'Aaron' }, false).description, 'Did you get this test?', 'the capital from the phone keyboard drops')
   assert.equal(linkPreviewText(null, false), null)
   const page = readFileSync(path.join(checkRoot, 'index.html'), 'utf8')
   const out = withLinkPreview(page, { title: 'Ann "A" <b>', description: 'Did you drink water?', url: 'https://did-i.app/d/abcdefgh23' })

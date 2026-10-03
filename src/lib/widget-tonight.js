@@ -174,13 +174,13 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const firstGrace = graceOpen.length > 0 && graceFirst(now)
   const openOrdered = firstGrace ? [...graceOpen, ...rankedOpen] : [...rankedOpen, ...graceOpen]
   const items = [...openOrdered, ...doneRows].map(mapRow)
-  const lead = openOrdered[0] || rows.find((row) => row.answer?.status === 'skip') || null
   // Your own questions done and a Did we still open for you: the widget
   // shows that Did we, so "1 left" has something to point at. A tap opens
-  // the app to answer it.
+  // the app to answer it. It comes before a question you said nope to.
   const tonightIso = boardDate(now)
   const weOpenIds = weOpenOn(tonightIso)
   const weCard = openOrdered.length ? null : readWeOpen(tonightIso).find((card) => weOpenIds.has(card.id)) || null
+  const lead = openOrdered[0] || (weCard ? null : rows.find((row) => row.answer?.status === 'skip')) || null
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : weCard

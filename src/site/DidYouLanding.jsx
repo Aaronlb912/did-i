@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { APP_STORE_URL, betaLinkFor } from '../lib/invite-link.js'
-import { didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
+import { didYouAsk, didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
 
@@ -54,7 +54,7 @@ export function DidYouLanding({ code }) {
         <h1 className="di-question">{title}</h1>
         {ready ? (
           <>
-            <p className="di-invite-code">{found.question}</p>
+            <p className="di-invite-code">{didYouAsk(found.question, t('people.sendWhat'))}</p>
             <div className="di-scan-open">
               <a className="di-did di-did-small di-invite-store" href={`didi://d/${code.toLowerCase()}`}>
                 {t('scanPage.open')}

@@ -65,7 +65,7 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
     if (why === "linkCap") return setMiss(t("didYouLink.cap"));
     if (why || !code) return setMiss(tMiss(why || "people.reach"));
     const how = await passAlong(
-      sharedDidYouLine(question, code),
+      sharedDidYouLine(question, code, t('people.sendWhat')),
       t("didYouLink.share"),
     );
     if (how === "copied") setSaid(t("didYouLink.copied"));
