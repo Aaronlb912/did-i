@@ -14,6 +14,7 @@ import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash, swapHash } from '../navigation/hash.js'
+import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { Pill, useAddFeel } from './questions.jsx'
@@ -125,6 +126,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
     if (why || !code) return setMiss(tMiss(why || 'people.reach'))
     const how = await passAlong(sharedDidYouLine(question, code, lead), t('didYouLink.share'))
     if (how === 'copied') setSaid(t('didYouLink.copied'))
+    else if (how === 'shared') confirmDone(t('confirm.shared'))
   }
 
   return (

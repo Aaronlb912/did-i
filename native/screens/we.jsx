@@ -47,6 +47,7 @@ import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
+import { confirmDone } from '../lib/confirm.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -432,7 +433,11 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       else setMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
     }
     setBusy(false)
-    if (picked.length) noteAsked(picked)
+    if (picked.length) {
+      noteAsked(picked)
+      const who = names.length === 1 ? t('confirm.askedOne', { name: names[0] }) : t('confirm.askedMany', { n: picked.length })
+      confirmDone(`${who} ${t('confirm.weStartsOnYes')}`)
+    }
     feel.land(t('lead.sent'), () => goHash('/we', { id: out.id }))
   }
 
@@ -643,17 +648,24 @@ function WeCardPage({ book, cardId, onChange }) {
     if (out.miss) return setMiss(tMiss(out.miss))
     setEdit(null)
     setMiss('')
+    confirmDone(t('confirm.saved'))
     load()
   }
 
   async function ask() {
     setBusy(true)
+    let sent = []
     for (const id of asking) {
       const out = await weAsk(card.id, id)
       if (out.miss) {
         setMiss(tMiss(out.miss))
         break
       }
+      sent.push(id)
+    }
+    if (sent.length) {
+      const said = (people || []).filter((p) => sent.includes(p.id)).map((p) => p.name)
+      confirmDone(said.length === 1 ? t('confirm.askedOne', { name: said[0] }) : t('confirm.askedMany', { n: sent.length }))
     }
     setBusy(false)
     setAsking([])
@@ -672,6 +684,7 @@ function WeCardPage({ book, cardId, onChange }) {
     setLink(code)
     const how = await passAlong(sharedDidYouLine(card.question, code), t('weLink.share'))
     if (how === 'copied') setLinkSaid(t('didYouLink.copied'))
+    else if (how === 'shared') confirmDone(t('confirm.shared'))
   }
 
   function endLink() {
@@ -704,6 +717,7 @@ function WeCardPage({ book, cardId, onChange }) {
         publishSheet(null)
         const out = await weLeave(card.id)
         if (out.miss) return setMiss(tMiss(out.miss))
+        confirmDone(t('confirm.weLeft'))
         goHash('/tonight')
       },
     })
@@ -723,6 +737,7 @@ function WeCardPage({ book, cardId, onChange }) {
         publishSheet(null)
         const out = await reportWe(card.id)
         if (out.miss) return setMiss(tMiss(out.miss))
+        confirmDone(t('confirm.reported'))
         // Reporting blocks them, which takes you off this card.
         return goHash('/we')
       },
@@ -796,7 +811,10 @@ function WeCardPage({ book, cardId, onChange }) {
                     colors={colors}
                     label={t('we.nudge', { name: p.name })}
                     disabled={ans.busy === card.id}
-                    onPress={() => ans.run(card.id, () => weNudge(card.id, p.id))}
+                    onPress={async () => {
+                      const out = await ans.run(card.id, () => weNudge(card.id, p.id))
+                      if (!out?.miss) confirmDone(t('confirm.nudged', { name: p.name }))
+                    }}
                   />
                 ))
             : null}
@@ -870,6 +888,7 @@ function WeCardPage({ book, cardId, onChange }) {
             const out = await weFile(card.id, filing.folder, filing.topics)
             setBusy(false)
             if (out.miss) return setMiss(tMiss(out.miss))
+            confirmDone(filing.folder ? t('confirm.movedTo', { tag: filing.folder }) : t('confirm.saved'))
             load()
           }}
         />

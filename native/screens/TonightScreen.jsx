@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -35,6 +35,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
+import { confirmDone } from '../lib/confirm.js'
 import { EditPen } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
@@ -116,6 +117,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const prefsSeen = usePrefs().jewelKeySeen === true
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
+  const titleSaid = useRef('')
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
@@ -530,20 +532,34 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     />
   )
 
+  // Blur and submit both save; say it once per rename.
+  function saveTitle() {
+    const next = String(stack.titleDraft || '').trim()
+    if (next && next !== book.title && titleSaid.current !== next) {
+      titleSaid.current = next
+      confirmDone(t('confirm.tagRenamed'))
+    }
+    stack.saveTitle()
+  }
+
   const titleSlot = stack.titleEdit ? (
     <AppTextInput
       colors={colors}
       value={stack.titleDraft}
       onChangeText={stack.setTitleDraft}
-      onBlur={stack.saveTitle}
-      onSubmitEditing={stack.saveTitle}
+      onBlur={saveTitle}
+      onSubmitEditing={saveTitle}
       returnKeyType="done"
       style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel }]}
       accessibilityLabel={t('tonight.boardName')}
       autoFocus
     />
   ) : (
-    <Pressable onPress={() => stack.setTitleEdit(true)} style={styles.titleHit}>
+    <Pressable
+      onPress={() => {
+        titleSaid.current = ''
+        stack.setTitleEdit(true)
+      }} style={styles.titleHit}>
       <Text style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
         {mastTitle}
       </Text>

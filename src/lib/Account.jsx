@@ -391,8 +391,13 @@ function SignedIn({ book, email, onChange }) {
               body: t('account.outAllBody'),
               yes: t('account.outAllYes'),
               go: async () => {
-                await signOutEverywhere()
-                signedOutSync()
+                try {
+                  await signOutEverywhere()
+                  signedOutSync()
+                } catch {
+                  // Still signed in here; say so instead of looking done.
+                  setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+                }
               },
             })
           }

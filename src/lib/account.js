@@ -153,7 +153,9 @@ export async function signOutHere() {
 export async function signOutEverywhere() {
   const db = cloud()
   if (!db) return
-  await db.auth.signOut({ scope: 'global' })
+  // The server has to end the other sessions; if it could not, say so.
+  const { error } = await db.auth.signOut({ scope: 'global' })
+  if (error) throw error
   saveTogetherPeople([])
 }
 

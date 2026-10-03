@@ -55,6 +55,7 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
+import { confirmDone } from '../lib/confirm.js'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -505,9 +506,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                       key={starter.short}
                       label={starter.short}
                       colors={colors}
-                      onPress={() =>
+                      onPress={() => {
                         onChange(commitBook(hangInto(book, { ...blankLamp(clock), ...starter }), clock))
-                      }
+                        confirmDone(t('confirm.questionAdded'))
+                      }}
                     />
                   ))}
                 </View>
@@ -846,6 +848,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
       playClick()
+      confirmDone(t('confirm.questionSaved'))
       goHash('/lamp', { id: next.id })
       offerPingPrimer(newTime, colors)
       return
@@ -1242,6 +1245,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             onPress={() => {
               const { optional: _optional, ...chosen } = lamp
               change(hangInto(lampBook, chosen, true))
+              confirmDone(t('confirm.questionCounts'))
             }}
             colors={colors}
           />

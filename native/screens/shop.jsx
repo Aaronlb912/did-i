@@ -11,6 +11,7 @@ import { activeLook } from '../../src/lib/active-look.js'
 import { holdFor } from '../../src/lib/cheer-pops.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
@@ -932,7 +933,12 @@ export function ShopCheersScreen({ book, onChange }) {
               setConfirm({
                 title: t(cheerText(item.id, 'name')),
                 body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
-                go: async () => take(await buyCheerStageWithCoins(book, item.id), item.id),
+                go: async () => {
+                  const out = await buyCheerStageWithCoins(book, item.id)
+                  take(out, item.id)
+                  // A stage has no fly-in, so say it landed.
+                  if (!out.miss) confirmDone(t('confirm.stageBought', { name: t(cheerText(item.id, 'name')), n: next }))
+                },
               })
             }
           } else {
@@ -1280,6 +1286,7 @@ function useGemStream(gems, balanceRef) {
       return
     }
     bought.current = null
+    confirmDone(t('confirm.gemsAdded', { n: gems - was }))
     const source = packArts.current.get(buy.packId)
     const target = balanceRef.current
     if (reduce || !source?.measureInWindow || !target?.measureInWindow) {
@@ -1366,7 +1373,20 @@ export function GemShopScreen({ book }) {
     })
   }
 
+  const buying = useRef(false)
+
+  // One store sheet at a time: a second tap while the first is open does nothing.
   async function buy(packId) {
+    if (buying.current) return
+    buying.current = true
+    try {
+      await buyPack(packId)
+    } finally {
+      buying.current = false
+    }
+  }
+
+  async function buyPack(packId) {
     stream.noteBuy(packId)
     setBanner(t('gems.loadingStore'))
     let out
@@ -1980,7 +2000,15 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     setBusy(true)
-    const out = await sendGift(toId, type, item.id, note)
+    let out
+    try {
+      out = await sendGift(toId, type, item.id, note)
+    } catch {
+      setBusy(false)
+      publishSheet(null)
+      confirmMiss(t('confirm.miss'))
+      return
+    }
     setBusy(false)
     if (out.miss === 'gems') {
       publishSheet(null)
@@ -2110,6 +2138,7 @@ function showGift(gift, getBook, onChange, colors) {
               onGo: () => {
                 reportGift(gift.id).catch(() => {})
                 done()
+                confirmDone(t('confirm.reported'))
               },
               onClose: () => showGift(gift, getBook, onChange, colors),
             })

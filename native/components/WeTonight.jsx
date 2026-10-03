@@ -20,6 +20,7 @@ import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { fireCheer, normalizePurse } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
+import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
@@ -174,6 +175,7 @@ export function WeAsks({ colors }) {
     const out = await weReply(card.id, yes)
     setBusy('')
     setMiss(out.miss ? tMiss(out.miss) : '')
+    if (!out.miss) confirmDone(t(yes ? 'confirm.weJoined' : 'confirm.weDeclined'))
     reload()
   }
 

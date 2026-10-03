@@ -52,6 +52,8 @@ import {
   weekNights,
 } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
 import { playClick, shareShelf } from '../../src/lib/native.js'
@@ -806,7 +808,7 @@ function PingKinds({ colors, on }) {
       armLampPings(readShelf().boards).catch(() => {})
       return
     }
-    const saved = await saveProfile({ prefs: readPrefs() })
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     // Signed out there are no pushes, so the switch only has to hold here.
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
       writePrefs({ pingsOff: was })
@@ -818,7 +820,7 @@ function PingKinds({ colors, on }) {
     const was = readPrefs().pingsPrivate
     writePrefs({ pingsPrivate: !was })
     setMiss('')
-    const saved = await saveProfile({ prefs: readPrefs() })
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
       writePrefs({ pingsPrivate: was })
       setMiss(t('pings.kindsMiss'))
@@ -936,12 +938,24 @@ function PhoneLockSection({ colors }) {
         <Row
           colors={colors}
           label={t('settings.removeLock')}
-          onPress={() => {
-            clearPin()
-            setPinDraft('')
-            setPinMiss('')
-            setPinOn(false)
-          }}
+          onPress={() =>
+            publishSheet({
+              title: t('confirm.pinRemoveTitle'),
+              body: t('confirm.pinRemoveBody'),
+              goLabel: t('settings.removeLock'),
+              closeLabel: t('settings.neverMind'),
+              colors,
+              onClose: () => publishSheet(null),
+              onGo: () => {
+                publishSheet(null)
+                clearPin()
+                setPinDraft('')
+                setPinMiss('')
+                setPinOn(false)
+                confirmDone(t('confirm.pinRemoved'))
+              },
+            })
+          }
         />
       ) : null}
       {pinMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{pinMiss}</Text> : null}
@@ -1039,9 +1053,38 @@ function AccountSignedIn({ book, email, onChange }) {
   const phones = [...devices].sort((a, b) => (a.device_key === here ? -1 : b.device_key === here ? 1 : 0))
   const others = phones.filter((row) => row.device_key !== here)
 
+  const [busy, setBusy] = useState('')
+
   async function download() {
-    const all = await exportAll()
-    await shareShelf(all)
+    if (busy) return
+    setBusy('export')
+    try {
+      const all = await exportAll()
+      await shareShelf(all)
+    } catch (error) {
+      // Closing the share sheet is not a failure.
+      if (error?.name !== 'AbortError') confirmMiss(t('confirm.exportMiss'))
+    }
+    setBusy('')
+  }
+
+  // Leaving the account: say it worked, or keep them here with what went wrong.
+  async function leave(kind, run) {
+    if (busy) return
+    setBusy(kind)
+    try {
+      const out = await run()
+      if (out?.miss) {
+        confirmMiss(tMiss(out.miss))
+        setBusy('')
+        return
+      }
+      confirmDone(t(kind === 'delete' ? 'confirm.deleted' : 'confirm.signedOut'))
+      signedOutSync()
+    } catch {
+      confirmMiss(t('confirm.miss'))
+    }
+    setBusy('')
   }
 
   async function pickPhoto(from) {
@@ -1052,6 +1095,7 @@ function AccountSignedIn({ book, email, onChange }) {
       if (bytes) {
         const out = await saveAvatar(bytes)
         if (out.miss) setPhotoMiss(t(out.miss))
+        else confirmDone(t('confirm.photoSaved'))
       }
     } catch (error) {
       setPhotoMiss(t({ 'camera-denied': 'avatar.cameraOff', 'photos-denied': 'avatar.photosOff' }[error?.message] || 'avatar.saveFail'))
@@ -1065,8 +1109,13 @@ function AccountSignedIn({ book, email, onChange }) {
       body: t('account.forgetBody', { phone: row.label || t('account.aPhone') }),
       yes: t('account.forgetYes'),
       go: async () => {
-        await forgetDevice(row.device_key)
-        setDevices(await listDevices())
+        try {
+          await forgetDevice(row.device_key)
+          setDevices(await listDevices())
+          confirmDone(t('confirm.phoneForgot'))
+        } catch {
+          confirmMiss(t('confirm.miss'))
+        }
       },
     })
   }
@@ -1129,11 +1178,28 @@ function AccountSignedIn({ book, email, onChange }) {
             colors={colors}
             icon="trash"
             label={t('avatar.remove')}
-            onPress={async () => {
-              setPhotoMiss('')
-              const out = await removeAvatar()
-              if (out.miss) setPhotoMiss(t(out.miss))
-            }}
+            onPress={
+              photoBusy
+                ? undefined
+                : () =>
+                    setSure({
+                      title: t('confirm.photoRemoveTitle'),
+                      body: t('confirm.photoRemoveBody'),
+                      yes: t('avatar.remove'),
+                      go: async () => {
+                        setPhotoMiss('')
+                        setPhotoBusy(true)
+                        try {
+                          const out = await removeAvatar()
+                          if (out?.miss) setPhotoMiss(t(out.miss))
+                          else confirmDone(t('confirm.photoRemoved'))
+                        } catch {
+                          setPhotoMiss(t('confirm.miss'))
+                        }
+                        setPhotoBusy(false)
+                      },
+                    })
+            }
           />
         ) : null}
         <SavableSetField
@@ -1147,6 +1213,11 @@ function AccountSignedIn({ book, email, onChange }) {
             setNameDraft(keeperName)
             onChange({ ...book, keeperName })
             saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+              .then((out) => {
+                if (out?.miss && out.miss !== 'out' && out.miss !== 'off') confirmMiss(tMiss(out.miss))
+                else confirmDone(t('confirm.nameSaved'))
+              })
+              .catch(() => confirmMiss(t('confirm.miss')))
           }}
         />
         <SetRow colors={colors} icon="wallpaper" label={t('account.look')} value={lookName} chevron onPress={() => goHash('/kit')} />
@@ -1195,8 +1266,13 @@ function AccountSignedIn({ book, email, onChange }) {
               body: t('account.forgetOthersBody'),
               yes: t('account.forgetYes'),
               go: async () => {
-                await forgetOtherDevices()
-                setDevices(await listDevices())
+                try {
+                  await forgetOtherDevices()
+                  setDevices(await listDevices())
+                  confirmDone(t('confirm.phonesForgot'))
+                } catch {
+                  confirmMiss(t('confirm.miss'))
+                }
               },
             })
           }
@@ -1205,7 +1281,7 @@ function AccountSignedIn({ book, email, onChange }) {
 
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={download} />
+        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
@@ -1214,10 +1290,7 @@ function AccountSignedIn({ book, email, onChange }) {
           colors={colors}
           icon="logout"
           label={t('account.out')}
-          onPress={async () => {
-            await signOutHere()
-            signedOutSync()
-          }}
+          onPress={busy ? undefined : () => leave('out', signOutHere)}
         />
         <SetRow
           colors={colors}
@@ -1228,10 +1301,7 @@ function AccountSignedIn({ book, email, onChange }) {
               title: t('account.outAllTitle'),
               body: t('account.outAllBody'),
               yes: t('account.outAllYes'),
-              go: async () => {
-                await signOutEverywhere()
-                signedOutSync()
-              },
+              go: () => leave('outAll', signOutEverywhere),
             })
           }
         />
@@ -1246,10 +1316,7 @@ function AccountSignedIn({ book, email, onChange }) {
               title: t('account.deleteTitle'),
               body: t('account.deleteBody'),
               yes: t('account.deleteYes'),
-              go: async () => {
-                await deleteAccount()
-                signedOutSync()
-              },
+              go: () => leave('delete', deleteAccount),
             })
           }
         />
