@@ -54,6 +54,8 @@ begin
   out := public.we_join_link(code, false);
   if out->>'card' is distinct from card::text then raise exception 'FAIL: join did not return the card: %', out; end if;
   execute 'reset role';
+  select count(*) into n from public.push_queue where to_id = a and body like '%joined your Did we%';
+  if n <> 1 then raise exception 'FAIL: fresh join queued % pushes to the maker', n; end if;
   select count(*) into n from public.we_members where card_id = card and user_id = b and state = 'in';
   if n <> 1 then raise exception 'FAIL: Bea is not on the card'; end if;
   select count(*) into n from public.friend_links where (from_id = a and to_id = b) or (from_id = b and to_id = a);
@@ -65,6 +67,8 @@ begin
   out := public.we_join_link(code, true);
   if (out->>'already')::boolean is not true then raise exception 'FAIL: second join was not already: %', out; end if;
   execute 'reset role';
+  select count(*) into n from public.push_queue where to_id = a and body like '%joined your Did we%';
+  if n <> 1 then raise exception 'FAIL: an already join queued another push'; end if;
   select count(*) into n from public.friend_links
   where state = 'ok' and ((from_id = a and to_id = b) or (from_id = b and to_id = a));
   if n <> 2 then raise exception 'FAIL: add did not make friends both ways'; end if;
@@ -117,6 +121,12 @@ begin
   select count(*) into n from public.friend_links
   where state = 'ok' and ((from_id = a and to_id = c) or (from_id = c and to_id = a));
   if n <> 2 then raise exception 'FAIL: Did you link did not make friends both ways'; end if;
+
+  -- Cal keeps the Did you link: Ann hears. Ann keeping her own stays quiet.
+  insert into public.did_you_link_claims (code, user_id) values (dcode, c);
+  insert into public.did_you_link_claims (code, user_id) values (dcode, a);
+  select count(*) into n from public.push_queue where to_id = a and body like '%kept your Did you: Did you drink water?';
+  if n <> 1 then raise exception 'FAIL: keeping a Did you link queued % pushes to the maker', n; end if;
 
   -- Nobody calls the helper straight.
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);

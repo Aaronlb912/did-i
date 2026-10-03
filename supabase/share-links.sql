@@ -235,6 +235,17 @@ begin
   on conflict (card_id, user_id) do update
     set state = 'in', joined_at = now(), asked_by = excluded.asked_by, said_no_at = null;
   update public.we_links set uses = uses + 1 where we_links.code = link.code;
+  -- Tell the maker someone joined.
+  if link.made_by <> me and public.push_wanted(link.made_by, 'friends') then
+    insert into public.push_queue (to_id, title, body, go)
+    select link.made_by, 'Did we',
+      left(public.push_text(link.made_by, 'link_joined', jsonb_build_object(
+        'name', coalesce((select nullif(trim(p.display_name), '') from public.profiles p where p.user_id = me),
+                         public.push_text(link.made_by, 'a_friend')),
+        'q', left(c.question, 120))), 200),
+      '/tonight'
+    from public.we_cards c where c.id = link.card_id;
+  end if;
   if add_friend then perform public.link_befriend(link.made_by); end if;
   return jsonb_build_object('card', link.card_id);
 end;
@@ -242,3 +253,38 @@ $$;
 
 revoke all on function public.we_join_link(text, boolean) from public, anon;
 grant execute on function public.we_join_link(text, boolean) to authenticated;
+
+-- The maker of a Did you link hears when someone keeps it.
+create or replace function public.queue_link_kept_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  link public.did_you_links;
+begin
+  select l.* into link from public.did_you_links l where l.code = new.code;
+  if link.made_by is null or link.made_by = new.user_id
+     or not public.push_wanted(link.made_by, 'friends') then
+    return new;
+  end if;
+  insert into public.push_queue (to_id, title, body, go)
+  values (
+    link.made_by, 'Did I',
+    left(public.push_text(link.made_by, 'link_kept', jsonb_build_object(
+      'name', coalesce((select nullif(trim(p.display_name), '') from public.profiles p where p.user_id = new.user_id),
+                       public.push_text(link.made_by, 'a_friend')),
+      'q', left(link.question, 120))), 200),
+    '/friends'
+  );
+  return new;
+end;
+$$;
+
+revoke all on function public.queue_link_kept_push() from public, anon, authenticated;
+
+drop trigger if exists queue_link_kept_push on public.did_you_link_claims;
+create trigger queue_link_kept_push
+  after insert on public.did_you_link_claims
+  for each row execute function public.queue_link_kept_push();
