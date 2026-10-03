@@ -797,6 +797,12 @@ export function PeopleScreen({ book, onChange }) {
 
       <SectionHead colors={colors} label={t('we.title')} />
       <Row colors={colors} label={t('we.open')} note={t('we.empty')} onPress={() => goHash('/we')} />
+      <Row
+        colors={colors}
+        label={t('didYouLink.textTitle')}
+        note={t('didYouLink.textSub')}
+        onPress={() => setSheet({ kind: 'send', person: null })}
+      />
 
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
