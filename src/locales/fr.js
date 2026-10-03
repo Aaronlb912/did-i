@@ -2254,6 +2254,7 @@ export const fr = {
   'scanPage.copied': 'Lien copié. Ouvre Did I après l\'installation.',
   'scanPage.bad': 'Ce code n\'est pas bon. Demande-en un nouveau.',
   'friend.photoBig': 'Voir la photo de {name} en grand',
+  'friend.more': 'Plus pour {name}',
   'voice.noMatch': 'Did I n\'a pas trouvé « {said} » ce soir. Réponds ici.',
   'together.widgetTitle': 'Ensemble ce soir',
   'together.widgetCount': '{n} sur {total} ont fini',

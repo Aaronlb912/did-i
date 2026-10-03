@@ -2249,6 +2249,7 @@ export const es = {
   'scanPage.copied': 'Enlace copiado. Abre Did I cuando se instale.',
   'scanPage.bad': 'Ese código no es correcto. Pide uno nuevo.',
   'friend.photoBig': 'Ver la foto de {name} más grande',
+  'friend.more': 'Más sobre {name}',
   'voice.noMatch': 'Did I no encontró «{said}» esta noche. Respóndela aquí.',
   'together.widgetTitle': 'Juntos esta noche',
   'together.widgetCount': '{n} de {total} listos',

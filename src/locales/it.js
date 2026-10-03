@@ -2240,6 +2240,7 @@ export const it = {
   'scanPage.copied': 'Link copiato. Apri Did I dopo l\'installazione.',
   'scanPage.bad': 'Questo codice non va. Chiedine uno nuovo.',
   'friend.photoBig': 'Vedi la foto di {name} più grande',
+  'friend.more': 'Altro per {name}',
   'voice.noMatch': 'Did I non ha trovato «{said}» stasera. Rispondi qui.',
   'together.widgetTitle': 'Insieme stasera',
   'together.widgetCount': '{n} su {total} fatto',

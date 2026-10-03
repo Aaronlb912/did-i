@@ -48,3 +48,27 @@ export function readWeLine(night) {
     return ''
   }
 }
+
+// Tonight's Did we questions due for you, so the widget can show one once
+// your own questions are done. Which are still open comes from we-nights.
+const OPEN_KEY = 'did-i-we-widget-open'
+
+export function saveWeOpen(list, night) {
+  try {
+    const next = JSON.stringify({ night, list: list || [] })
+    if (localStorage.getItem(OPEN_KEY) === next) return false
+    localStorage.setItem(OPEN_KEY, next)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function readWeOpen(night) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(OPEN_KEY) || 'null')
+    return saved && saved.night === night && Array.isArray(saved.list) ? saved.list : []
+  } catch {
+    return []
+  }
+}

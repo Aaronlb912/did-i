@@ -5,7 +5,7 @@ import { saveProfile } from './cloud-sync.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
-import { saveWeLine, saveWePings } from './we-widget.js'
+import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
 
 // Did we: one question two or more people answer together. The server
@@ -361,7 +361,11 @@ export function weWidgetLine(cards) {
 
 // Returns true when the saved line changed, so the caller can redraw the widget.
 export function saveWeWidgetLine(cards, night = tonightIso()) {
-  return saveWeLine(weWidgetLine(cards), night)
+  const due = (cards || [])
+    .filter((card) => card.myState === 'in' && card.due)
+    .map((card) => ({ id: card.id, question: String(card.question || '') }))
+  const openChanged = saveWeOpen(due, night)
+  return saveWeLine(weWidgetLine(cards), night) || openChanged
 }
 
 // One load shared by every screen that shows Did we (the menu badge, Tonight,

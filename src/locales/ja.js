@@ -2168,6 +2168,7 @@ export const ja = {
   'scanPage.copied': 'リンクをコピーしました。インストール後に Did I を開いてください。',
   'scanPage.bad': 'このコードは正しくありません。新しいコードをもらってください。',
   'friend.photoBig': '{name} の写真を大きく見る',
+  'friend.more': '{name}のその他の操作',
   'voice.noMatch': '今夜の質問に「{said}」が見つかりませんでした。ここで答えてください。',
   'together.widgetTitle': '今夜のみんな',
   'together.widgetCount': '{total}人中{n}人が完了',

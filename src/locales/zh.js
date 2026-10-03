@@ -2152,6 +2152,7 @@ export const zh = {
   'scanPage.copied': '链接已复制。安装后打开 Did I。',
   'scanPage.bad': '这个代码不对。请要一个新的。',
   'friend.photoBig': '查看 {name} 的大图',
+  'friend.more': '{name}的更多操作',
   'voice.noMatch': '今晚没找到“{said}”。请在这里回答。',
   'together.widgetTitle': '今晚一起',
   'together.widgetCount': '{total} 人中 {n} 人已完成',
