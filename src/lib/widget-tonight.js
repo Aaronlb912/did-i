@@ -1,5 +1,6 @@
 import { putAnswer } from './board-ops.js'
-import { weNight, weOpenOn } from './we-nights.js'
+import { markWeNight, weNight, weNightStatus, weOpenOn } from './we-nights.js'
+import { cloud } from './cloud.js'
 import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
@@ -181,6 +182,20 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const weOpenIds = weOpenOn(tonightIso)
   const weCard = openOrdered.length ? null : readWeOpen(tonightIso).find((card) => weOpenIds.has(card.id)) || null
   const lead = openOrdered[0] || (weCard ? null : rows.find((row) => row.answer?.status === 'skip')) || null
+  // The widgets only show a question that has a card in items, so the Did we
+  // goes in first. Its Did and Nope answer the Did we (applyWeTap).
+  const weItem = weCard
+    ? {
+        lampId: `${WE_ITEM}${weCard.id}`,
+        periodKey: tonightIso,
+        dateIso: tonightIso,
+        label: weCard.question,
+        question: weCard.question,
+        status: weNightStatus(tonightIso, weCard.id) === 'nope' ? 'skip' : 'open',
+        tag: t('we.title'),
+      }
+    : null
+  if (weItem) items.unshift(weItem)
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : weCard
@@ -216,7 +231,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
     question,
-    leadLampId: lead?.lamp.id || '',
+    leadLampId: lead?.lamp.id || weItem?.lampId || '',
     items,
     left,
     footer,
@@ -361,10 +376,34 @@ function rowForStoredNight(book, lampId, night, clock) {
 // `tapAt` is when the tap happened (ms). A tap made after its night turned
 // came from a stale card and is dropped; taps queued by older builds carry
 // no time and land on their night as before.
+const WE_ITEM = 'we:'
+
+// Did or Nope on the widget's Did we card: saved here at once so the widget
+// moves on, then sent to the cloud. A failed send is fixed by the next
+// refresh of your Did we nights.
+function applyWeTap(card, status, clock) {
+  const night = boardDate(clock)
+  markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
+  const shelf = readShelf()
+  const previous = readWidgetTonightProps()
+  const props = buildTonightWidgetProps(shelf, clock)
+  if (previous?.colors) props.colors = previous.colors
+  writeWidgetTonightProps(props)
+  const db = cloud()
+  if (db) {
+    db.rpc('we_answer', { card, on_night: night, want_status: status === 'yes' ? 'did' : 'nope' }).then(
+      () => {},
+      () => {},
+    )
+  }
+  return shelf
+}
+
 export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(), tapAt = 0) {
   const status = widgetStatus(kind)
   const id = String(lampId || '').trim()
   if (!status || !id) return null
+  if (id.startsWith(WE_ITEM)) return applyWeTap(id.slice(WE_ITEM.length), status, clock)
   const shelf = readShelf()
   const book = findBookHoldingLamp(shelf.boards, id)
   if (!book) return null

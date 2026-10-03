@@ -40,6 +40,20 @@ export function setWeNightRows(next) {
   })
 }
 
+// What you said on a Did we from the widget, before the cloud answers back.
+export function markWeNight(card, night, status) {
+  const hit = rows.some((row) => row.card === card && row.night === night)
+  setWeNightRows(
+    hit
+      ? rows.map((row) => (row.card === card && row.night === night ? { ...row, status } : row))
+      : [...rows, { card, folder: '', night, status }],
+  )
+}
+
+export function weNightStatus(nightIso, card) {
+  return (index().get(nightIso) || []).find((row) => row.card === card)?.status || ''
+}
+
 export function clearWeNights() {
   setWeNightRows([])
 }
