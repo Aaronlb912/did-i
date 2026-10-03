@@ -2735,6 +2735,50 @@ const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js'
 const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
 const { isAppForeground } = await import('../src/lib/app-foreground.js')
 
+await testAsync('a Did we due for you counts in your streak and tonight bar by your own swipe', async () => {
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const night = (back) => {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    return boardDate(day)
+  }
+  // Your own question, did on each of the last four nights (tonight included).
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: [0, 1, 2, 3].map((back) => ({ lampId: 'door', periodKey: night(back), status: 'yes', answeredAt: `${night(back)}T21:00:00` })),
+  }
+  const we = (back, status) => ({ card: 'c1', folder: '', night: night(back), status })
+  try {
+    setWeNightRows([we(0, 'did'), we(1, 'did'), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 4, 'your did on the Did we keeps the nights clear')
+    setWeNightRows([we(0, 'did'), we(1, 'nope'), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 1, 'a nope on a Did we breaks the streak like your own nope')
+    setWeNightRows([we(0, 'did'), we(1, ''), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 1, 'an unanswered Did we breaks it too')
+    setWeNightRows([we(0, ''), we(1, 'did')])
+    assert.equal(shelfStreak([book], clock), 3, 'an open Did we tonight is not a break yet; the nights before still count')
+    // A nope tonight can still become late before the night turns, so it is not a break yet.
+    setWeNightRows([we(0, 'nope'), we(1, 'did')])
+    assert.equal(shelfStreak([book], clock), 3, 'a nope on the Did we tonight does not end the streak until the night is over')
+    const nopeTonight = { ...book, answers: book.answers.map((a) => (a.periodKey === night(0) ? { ...a, status: 'skip' } : a)) }
+    setWeNightRows([])
+    assert.equal(shelfStreak([nopeTonight], clock), 3, 'the same for a nope on your own question tonight')
+    // A night with only a Did we due counts once you said did.
+    const gap = { ...book, answers: book.answers.filter((a) => a.periodKey !== night(1)), lamps: [{ ...book.lamps[0], cadence: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== new Date(night(1) + 'T12:00').getDay()) }] }
+    setWeNightRows([we(1, 'did')])
+    assert.equal(shelfStreak([gap], clock), 4, 'a Did we-only night counts as a streak night')
+    // Tonight's bar: one of your own plus one Did we.
+    const due = [{ lamp: book.lamps[0], dateIso: night(0), periodKey: night(0), answer: { status: 'yes' } }]
+    assert.deepEqual(nightProgress(due, { due: 1, done: 0 }), { total: 2, answered: 1, ratio: 0.5 })
+    assert.deepEqual(nightProgress(due, { due: 1, done: 1 }), { total: 2, answered: 2, ratio: 1 })
+  } finally {
+    clearWeNights()
+  }
+})
+
 test('a first cleared night is not "1 nights" and is not on fire yet', () => {
   const one = streakHitCopy(1)
   assert.equal(one.title, en['streak.hitTitleClear'])

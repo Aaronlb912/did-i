@@ -12,10 +12,10 @@ function countsTonight(row) {
   return row?.lamp && row?.dateIso && mustSwipeDeadline(row.lamp, row.dateIso)
 }
 
-export function nightProgress(due = []) {
+export function nightProgress(due = [], we = null) {
   const rows = Array.isArray(due) ? due.filter(countsTonight) : []
-  const total = rows.length
-  const answered = total ? rows.filter(isComplete).length : 0
+  const total = rows.length + (we?.due || 0)
+  const answered = total ? rows.filter(isComplete).length + (we?.done || 0) : 0
   const ratio = total ? answered / total : 0
   return { total, answered, ratio }
 }

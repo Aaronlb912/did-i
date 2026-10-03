@@ -1,4 +1,5 @@
 import { putAnswer } from './board-ops.js'
+import { weNight } from './we-nights.js'
 import { shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
 import {
@@ -168,15 +169,18 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     : ''
   // Count like Tonight's meter: an optional question (put on your tonight
   // for you) stays on the widget to answer, but is not "left" until you did it.
-  const left = finishStackCount(countedTonightRows(rows))
+  // A Did we due tonight counts too, until you said did on it in the app.
+  const we = weNight(boardDate(now))
+  const left = finishStackCount(countedTonightRows(rows)) + (we.due - we.done)
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
   // answered rows).
-  const allClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
+  const ownClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
+  const allClear = ownClear && (!we.due || we.clear)
   let footer = ''
   if (allClear) {
     footer = t('widget.tonight.clear')
-  } else if (!rows.length) {
+  } else if (!rows.length && !left) {
     footer = t('widget.tonight.empty')
   } else if (left === 1) {
     footer = t('widget.tonight.oneLeft')
