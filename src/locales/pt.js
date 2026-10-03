@@ -404,6 +404,7 @@ export const pt = {
   'tonight.boardName': 'Folder name',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',
+  'tonight.graceKicker': 'Ontem à noite · aberta até {time}',
   'tonight.swipeNope': 'nope',
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
@@ -427,6 +428,7 @@ export const pt = {
   'streak.missOk': 'Entendi',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Termine esta noite ou seu streak recomeça.',
+  'streak.graceBody': 'Ainda há algo aberto de ontem à noite. Você tem até {time}.',
   'cal.kicker': 'Streak',
   'cal.prev': 'Mês anterior',
   'cal.next': 'Mês seguinte',
@@ -482,7 +484,7 @@ export const pt = {
     'Uma pergunta pode esperar até um horário. Perdeu da última vez ainda conta se marcar tarde.',
   'help.streak': 'Streak',
   'help.streakP':
-    'Termine esta noite e o streak sobe, um por noite, até cinco. Perca uma noite devida e cai a zero. Nope ainda conta como terminado.',
+    'Diga feito para tudo de hoje à noite e a sequência sobe um. A noite anterior fica aberta até as 9 da manhã seguinte: um feito depois da meia-noite ainda conta para ela, e um não ainda pode virar feito. Às 9, o que ficar aberto ou com não encerra a sequência. Seu próprio gesto num Did we também conta.',
   'help.marks': 'Conquistas',
   'help.phone': 'Este telefone',
   'help.phoneP':
@@ -1822,6 +1824,7 @@ export const pt = {
   'widget.tonight.clear': 'All clear for tonight',
   'widget.tonight.oneLeft': 'One left tonight',
   'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.lastNight': 'Ontem à noite',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Open Did I',

@@ -409,6 +409,7 @@ export const fr = {
   'tonight.boardName': 'Nom du dossier',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',
+  'tonight.graceKicker': 'Hier soir · ouverte jusqu’à {time}',
   'tonight.swipeNope': 'nope',
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
@@ -431,6 +432,7 @@ export const fr = {
   'streak.missOk': 'Compris',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Termine ce soir ou ton streak repart à zéro.',
+  'streak.graceBody': 'Il reste quelque chose d’hier soir. Tu as jusqu’à {time}.',
   'cal.kicker': 'Streak',
   'cal.prev': 'Mois précédent',
   'cal.next': 'Mois suivant',
@@ -485,7 +487,7 @@ export const fr = {
     'Une question peut attendre une heure. Raté la dernière fois compte encore si tu marques en retard.',
   'help.streak': 'Streak',
   'help.streakP':
-    'Finis ce soir et le streak monte, un par nuit, jusqu’à cinq. Rate une nuit due et ça retombe à zéro. Nope compte quand même comme fini.',
+    'Réponds fait à tout ce qui est prévu ce soir et la série monte d’un. La veille reste ouverte jusqu’à 9 h le lendemain : un fait après minuit compte encore pour elle, et un non peut encore devenir fait. À 9 h, ce qui reste ouvert ou en non arrête la série. Ton propre geste sur un Did we compte aussi.',
   'help.marks': 'Succès',
   'help.phone': 'Ce téléphone',
   'help.phoneP':
@@ -1830,6 +1832,7 @@ export const fr = {
   'widget.tonight.clear': 'All clear for tonight',
   'widget.tonight.oneLeft': 'One left tonight',
   'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.lastNight': 'Hier soir',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Open Did I',

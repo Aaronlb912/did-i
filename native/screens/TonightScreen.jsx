@@ -45,6 +45,8 @@ import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { weOpenOn } from '../../src/lib/we-nights.js'
+import { graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
 import { saveWeReminders, saveWeWidgetLine, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
@@ -115,6 +117,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
+  const [graceWeLeft, setGraceWeLeft] = useState([])
   // A Did we pill tapped: its card comes up to swipe, ahead of your own.
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
@@ -217,8 +220,56 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         buddy={activeBuddy(book)}
       />
     ) : null
+  // The grace period for the previous night: first until 5am, then after
+  // tonight's own cards until 9am.
+  // Your own open questions from last night, then last night's open Did wes.
+  const graceNight = graceNightIso()
+  const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
+  const graceItems = [
+    ...stack.graceOpen.map((row) => ({
+      key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
+      title: row.lamp.question,
+      onDid: () => stack.markGrace(row, 'yes'),
+      onNope: () => stack.markGrace(row, 'skip'),
+      buddy: activeBuddy(stack.bookOf(row)),
+    })),
+    ...weCards
+      .filter((card) => graceWeOpen.has(card.id) && !graceWeLeft.includes(card.id))
+      .map((card) => ({
+        key: `grace-we:${card.id}`,
+        title: card.question,
+        onDid: () => weAns.answer(card, 'did', graceNight),
+        onNope: () => {
+          setGraceWeLeft((ids) => [...ids, card.id])
+          return weAns.answer(card, 'nope', graceNight)
+        },
+        buddy: activeBuddy(book),
+      })),
+  ]
+  const graceKicker = t('tonight.graceKicker', { time: clockWords('09:00') })
+  const graceTop = graceItems[0] || null
+  const graceCard = graceTop ? (
+    <SwipeCardHost
+      key="grace"
+      cardKey={graceTop.key}
+      colors={colors}
+      panelStyle={gemCard}
+      gemLook={premium ? look : ''}
+      kicker={graceKicker}
+      title={graceTop.title}
+      stampDid={t('tonight.swipeDid')}
+      stampNope={t('tonight.swipeNope')}
+      behind={graceItems.slice(1).map((item) => ({ key: item.key, kicker: graceKicker, title: item.title }))}
+      onDid={graceTop.onDid}
+      onNope={graceTop.onNope}
+      buddy={graceTop.buddy}
+    />
+  ) : null
+  const graceFirstNow = graceItems.length > 0 && graceFirst()
   let face = null
-  if (pickedWe && !stack.cheer) {
+  if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
+    face = graceCard
+  } else if (pickedWe && !stack.cheer) {
     face = (
       <WeSwipeCard
         cards={[pickedWe]}

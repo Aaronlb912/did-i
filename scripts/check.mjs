@@ -2735,6 +2735,69 @@ const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js'
 const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
 const { isAppForeground } = await import('../src/lib/app-foreground.js')
 
+await testAsync('the grace period for the previous night runs until 9am', async () => {
+  const { graceNightIso, graceFirst, answerFor } = await import('../src/lib/recurrence.js')
+  const { graceRowsFor } = await import('../src/lib/grace.js')
+  const { lastBrokenNight } = await import('../src/lib/hall-feel.js')
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  // Friday Oct 2 is the night; Saturday morning is its grace period.
+  const fri = '2026-10-02'
+  const at = (h, m = 0) => new Date(2026, 9, 3, h, m)
+  assert.equal(graceNightIso(at(2)), fri)
+  assert.equal(graceNightIso(at(8, 59)), fri)
+  assert.equal(graceNightIso(at(9)), '', 'closes at 9am')
+  assert.equal(graceNightIso(new Date(2026, 9, 2, 23, 0)), '', 'no grace before midnight')
+  assert.equal(graceFirst(at(4, 59)), true, 'first until 5am')
+  assert.equal(graceFirst(at(5)), false, 'behind today from 5am')
+
+  const nights = ['2026-09-29', '2026-09-30', '2026-10-01']
+  const book = {
+    id: 'b1',
+    title: 'Games',
+    dayFoldHour: 0,
+    lamps: [
+      { id: 'daily', question: 'Did I do my dailies?', cadence: 'daily', archived: false, createdOn: '2026-09-01' },
+      { id: 'once', question: 'Did I book the trip?', cadence: 'once', onceOn: fri, archived: false, createdOn: '2026-09-20' },
+    ],
+    answers: nights.map((n) => ({ lampId: 'daily', periodKey: n, status: 'yes', answeredAt: `${n}T21:00:00` })),
+  }
+
+  // 2am Saturday: Friday's dailies are still open, not closed as nope.
+  const at2 = closePastNights(book, at(2))
+  assert.equal(answerFor(at2, 'daily', fri), undefined, 'not closed during the grace period')
+  assert.equal(at2.lamps.find((l) => l.id === 'once').archived, false, 'a one-time question stays until 9am')
+  assert.deepEqual(graceRowsFor([at2], fri).map((r) => r.lamp.id).sort(), ['daily', 'once'])
+  assert.equal(shelfStreak([at2], at(2)), 3, 'last night open in its grace period is not a break')
+  assert.equal(lastBrokenNight([at2], at(2)), null, 'no streak-ended message before 9am')
+
+  // A did at 2am lands on Friday as a did, and keeps the streak.
+  const row = graceRowsFor([at2], fri).find((r) => r.lamp.id === 'daily')
+  const onceRow = graceRowsFor([at2], fri).find((r) => r.lamp.id === 'once')
+  const did = putAnswer(putAnswer(at2, row, 'yes', at(2)), onceRow, 'yes', at(2))
+  assert.equal(answerFor(did, 'daily', fri)?.status, 'yes', 'a did after midnight is a did, not late')
+  assert.equal(shelfStreak([did], at(2)), 4)
+
+  // A nope in the grace period can still become a did (late) before 9am.
+  const noped = putAnswer(at2, row, 'skip', at(3))
+  assert.equal(graceRowsFor([noped], fri).some((r) => r.lamp.id === 'daily'), true, 'a nope stays open')
+  const turned = putAnswer(noped, { ...row, answer: answerFor(noped, 'daily', fri) }, 'late', at(4))
+  assert.equal(answerFor(turned, 'daily', fri)?.status, 'late')
+
+  // 9am: still open is closed as nope, and now it is a break.
+  const at9 = closePastNights(book, at(9, 1))
+  assert.equal(answerFor(at9, 'daily', fri)?.status, 'skip', 'closed at 9am')
+  assert.equal(at9.lamps.find((l) => l.id === 'once').archived, true)
+  assert.equal(putAnswer(at9, { ...row, answer: answerFor(at9, 'daily', fri) }, 'yes', at(9, 5)), at9, 'too late after 9am')
+
+  // A Did we from last night is in the same grace period.
+  try {
+    setWeNightRows([{ card: 'c1', folder: '', night: fri, status: '' }])
+    assert.equal(shelfStreak([did], at(2)), 3, 'an open Did we from last night is not a break before 9am (and not counted yet)')
+  } finally {
+    clearWeNights()
+  }
+})
+
 await testAsync('a Did we due for you counts in your streak and tonight bar by your own swipe', async () => {
   const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
   const clock = new Date(2026, 8, 28, 21, 0)

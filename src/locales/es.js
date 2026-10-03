@@ -408,6 +408,7 @@ export const es = {
   'tonight.boardName': 'Nombre de la carpeta',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',
+  'tonight.graceKicker': 'Anoche · abierta hasta las {time}',
   'tonight.swipeNope': 'nope',
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} monedas, {gems} gemas',
@@ -430,6 +431,7 @@ export const es = {
   'streak.missOk': 'Entendido',
   'streak.riskTitle': 'Racha en riesgo',
   'streak.riskBody': 'Termina esta noche o se reinicia la racha.',
+  'streak.graceBody': 'Aún queda algo abierto de anoche. Tienes hasta las {time}.',
   'cal.kicker': 'Racha',
   'cal.prev': 'Mes anterior',
   'cal.next': 'Mes siguiente',
@@ -485,7 +487,7 @@ export const es = {
     'Una pregunta puede esperar a una hora. Si se te pasó, aún cuenta si la marcas tarde.',
   'help.streak': 'Racha',
   'help.streakP':
-    'Termina esta noche y la racha sube, una por noche, hasta cinco. Si fallas una noche que tocaba, baja a cero. Nope sí cuenta como terminada.',
+    'Di hecho a todo lo de esta noche y la racha sube uno. La noche anterior sigue abierta hasta las 9 de la mañana: un hecho después de medianoche cuenta para ella y un no todavía puede cambiar a hecho. A las 9, lo que quede abierto o en no termina la racha. Tu propio deslizamiento en un Did we también cuenta.',
   'help.marks': 'Logros',
   'help.phone': 'Este teléfono',
   'help.phoneP':
@@ -1827,6 +1829,7 @@ export const es = {
   'widget.tonight.clear': 'Todo listo por esta noche',
   'widget.tonight.oneLeft': 'Queda una esta noche',
   'widget.tonight.left': 'Quedan {n} esta noche',
+  'widget.tonight.lastNight': 'Anoche',
   'widget.tonight.did': 'Sí',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Esta noche',

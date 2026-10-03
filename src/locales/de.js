@@ -407,6 +407,7 @@ export const de = {
   'tonight.boardName': 'Ordnername',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',
+  'tonight.graceKicker': 'Gestern Abend · offen bis {time}',
   'tonight.swipeNope': 'nope',
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} Coins, {gems} Gems',
@@ -430,6 +431,7 @@ export const de = {
   'streak.missOk': 'Verstanden',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Schließ den Abend ab, sonst beginnt dein Streak von vorn.',
+  'streak.graceBody': 'Von gestern Abend ist noch etwas offen. Du hast bis {time} Zeit.',
   'cal.kicker': 'Streak',
   'cal.prev': 'Früherer Monat',
   'cal.next': 'Späterer Monat',
@@ -485,7 +487,7 @@ export const de = {
     'Eine Frage kann auf eine Uhrzeit warten. Letztes Mal verpasst zählt noch, wenn du es spät markierst.',
   'help.streak': 'Streak',
   'help.streakP':
-    'Mach heute Nacht fertig und der Streak steigt, eine pro Nacht, bis fünf. Verpass eine fällige Nacht und er fällt auf null. Nope zählt trotzdem als fertig.',
+    'Sag zu allem, was heute fällig ist, „erledigt“, und die Serie steigt um eins. Der letzte Abend bleibt bis 9 Uhr am nächsten Morgen offen: Ein „erledigt“ nach Mitternacht zählt noch für ihn, und ein Nein kann noch zu „erledigt“ werden. Um 9 Uhr beendet alles, was offen oder mit Nein beantwortet ist, die Serie. Dein eigener Swipe bei einem Did we zählt auch.',
   'help.marks': 'Erfolge',
   'help.phone': 'Dieses Telefon',
   'help.phoneP':
@@ -1838,6 +1840,7 @@ export const de = {
   'widget.tonight.clear': 'All clear for tonight',
   'widget.tonight.oneLeft': 'One left tonight',
   'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.lastNight': 'Gestern Abend',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Open Did I',

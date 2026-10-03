@@ -80,3 +80,8 @@ export function onWeNights(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)
 }
+
+// Did we cards still open for you on a night (due, and no did from you yet).
+export function weOpenOn(nightIso) {
+  return new Set((index().get(nightIso) || []).filter((row) => row.status !== 'did').map((row) => row.card))
+}

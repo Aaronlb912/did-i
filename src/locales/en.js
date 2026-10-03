@@ -405,6 +405,7 @@ export const en = {
   'tonight.boardName': 'Folder name',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'DID',
+  'tonight.graceKicker': 'Last night · open until {time}',
   'tonight.swipeNope': 'nope',
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
@@ -427,6 +428,7 @@ export const en = {
   'streak.missOk': 'Got it',
   'streak.riskTitle': 'Did I',
   'streak.riskBody': 'Finish tonight or your streak resets.',
+  'streak.graceBody': 'Still open from last night. You have until {time}.',
   'cal.kicker': 'Streak',
   'cal.prev': 'Earlier month',
   'cal.next': 'Later month',
@@ -481,7 +483,7 @@ export const en = {
     'A question can wait until a clock time. Missed last time still counts if you mark it late.',
   'help.streak': 'Streak',
   'help.streakP':
-    'Finish tonight and the streak goes up, one a night, up to five. Miss a due night and it drops to zero. Nope still counts as finished.',
+    'Say did to everything due tonight and the streak goes up one. Last night stays open until 9am the next morning, so a did after midnight still counts for it, and a nope can still become a did. At 9am anything left open or noped ends the streak. Your own swipe on a Did we counts too.',
   'help.marks': 'Achievements',
   'help.phone': 'This phone',
   'help.phoneP':
@@ -1820,6 +1822,7 @@ export const en = {
   'widget.tonight.clear': 'All clear for tonight',
   'widget.tonight.oneLeft': 'One left tonight',
   'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.lastNight': 'Last night',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': 'Nope',
   'widget.tonight.openApp': 'Tonight',

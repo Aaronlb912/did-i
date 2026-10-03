@@ -1,5 +1,6 @@
 import { putAnswer } from './board-ops.js'
 import { weNight } from './we-nights.js'
+import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
 import {
@@ -23,6 +24,8 @@ import {
   finishStackCount,
   periodPassed,
   openFloorIso,
+  graceFirst,
+  graceNightIso,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -57,7 +60,7 @@ function mapRow(row) {
     label: shortLabel(row.lamp),
     question: String(row.lamp.question || '').trim() || shortLabel(row.lamp),
     status: rowStatus(row),
-    tag: String(row.book?.title || '').trim(),
+    tag: String(row.graceTag || row.book?.title || '').trim(),
   }
 }
 
@@ -162,8 +165,16 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const openRows = rows.filter((row) => !row.answer)
   const rankedOpen = rankWidgetOpen(openRows, now)
   const doneRows = rows.filter((row) => row.answer)
-  const items = [...rankedOpen, ...doneRows].map(mapRow)
-  const lead = rankedOpen[0] || rows.find((row) => row.answer?.status === 'skip') || null
+  // The grace period for the previous night: its open questions, first until
+  // 5am and after tonight's until 9am. A tap lands on last night.
+  const graceNight = graceNightIso(now)
+  const graceOpen = graceNight
+    ? graceRowsFor(boards, graceNight).map((row) => ({ ...row, graceTag: t('widget.tonight.lastNight') }))
+    : []
+  const firstGrace = graceOpen.length > 0 && graceFirst(now)
+  const openOrdered = firstGrace ? [...graceOpen, ...rankedOpen] : [...rankedOpen, ...graceOpen]
+  const items = [...openOrdered, ...doneRows].map(mapRow)
+  const lead = openOrdered[0] || rows.find((row) => row.answer?.status === 'skip') || null
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : ''
@@ -171,12 +182,12 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // for you) stays on the widget to answer, but is not "left" until you did it.
   // A Did we due tonight counts too, until you said did on it in the app.
   const we = weNight(boardDate(now))
-  const left = finishStackCount(countedTonightRows(rows)) + (we.due - we.done)
+  const left = finishStackCount(countedTonightRows(rows)) + (we.due - we.done) + graceOpen.length
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
   // answered rows).
   const ownClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
-  const allClear = ownClear && (!we.due || we.clear)
+  const allClear = ownClear && (!we.due || we.clear) && graceOpen.length === 0
   let footer = ''
   if (allClear) {
     footer = t('widget.tonight.clear')

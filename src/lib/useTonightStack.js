@@ -25,6 +25,8 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
+import { graceRowsFor } from './grace.js'
+import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
 import { onWeNights, weNight } from './we-nights.js'
 
 // How long an answer can be taken back.
@@ -98,6 +100,38 @@ export function useTonightStack({
     [shelf, liveValue, tagId, topicKey, dateIso, minute],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
+
+  // The grace period for the previous night: its open questions, one card at
+  // a time. A nope sets one aside for now; it stays answerable until 9am.
+  const graceNight = graceNightIso(clock)
+  const [graceLeft, setGraceLeft] = useState([])
+  const graceRows = useMemo(
+    () => (graceNight ? graceRowsFor(scopedBooks(shelf, tagId), graceNight).filter((row) => hasAnyTopic(row.lamp, topics)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, tagId, topicKey, graceNight],
+  )
+  const graceOpen = graceRows.filter((row) => !graceLeft.includes(`${rowKey(row)}:${row.periodKey}`))
+  useEffect(() => {
+    setGraceLeft([])
+  }, [graceNight])
+
+  function markGrace(row, status) {
+    if (!row) return
+    const book = bookOf(row)
+    const live = answerFor(book, row.lamp.id, row.periodKey)
+    const key = `${rowKey(row)}:${row.periodKey}`
+    if (status === 'skip') {
+      setGraceLeft((keys) => [...keys, key])
+      if (live) return
+    }
+    // A did after midnight is a did; a did after a nope is late, as always.
+    const finalStatus = status === 'yes' ? didStatusForRow({ ...row, answer: live || row.answer }) : status
+    const next = putAnswer(book, row, finalStatus, clock)
+    setOverlay(next)
+    change(next)
+    armUndo({ book, label: t('tonight.saved') })
+    feelTap(finalStatus === 'skip' ? 'skip' : 'did')
+  }
   const hallOn = dueClearTonight(due)
   // Did wes due for you tonight: in the bar's count and in the streak.
   const [, setWeTick] = useState(0)
@@ -457,6 +491,9 @@ export function useTonightStack({
     cheered,
     hour,
     hallOn,
+    graceOpen,
+    graceFirst: graceOpen.length > 0 && graceFirstAt(clock),
+    markGrace,
     weTonight,
     empty,
     finishCount,
