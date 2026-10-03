@@ -314,6 +314,8 @@ const LOOKS = {
       lineSoft: '#202830',
       on: '#8eb4d8',
       onDeep: '#4a7098',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#e0a24a',
     },
     light: {
       bg: '#e8ecf0',
@@ -324,6 +326,8 @@ const LOOKS = {
       lineSoft: '#d0d8e0',
       on: '#386890',
       onDeep: '#284868',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#9a6418',
     },
   },
   wine: {
@@ -358,6 +362,8 @@ const LOOKS = {
       lineSoft: '#1a2430',
       on: '#5ee8ff',
       onDeep: '#2a9db5',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#e0a24a',
     },
     light: {
       bg: '#e8f4f8',
@@ -368,6 +374,8 @@ const LOOKS = {
       lineSoft: '#cfe4ec',
       on: '#0891b2',
       onDeep: '#0e7490',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#9a6418',
     },
   },
   ember: {
@@ -402,6 +410,8 @@ const LOOKS = {
       lineSoft: '#1a242c',
       on: '#d8f0ff',
       onDeep: '#7eb8d8',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#e0a24a',
     },
     light: {
       bg: '#eef4f8',
@@ -412,6 +422,8 @@ const LOOKS = {
       lineSoft: '#d4e4ec',
       on: '#2888b0',
       onDeep: '#186888',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#9a6418',
     },
   },
   pulse: {
@@ -468,6 +480,8 @@ const LOOKS = {
       lineSoft: '#202036',
       on: '#7a8cff',
       onDeep: '#3f4fd0',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#e0a24a',
     },
     light: {
       bg: '#ebebf6',
@@ -478,6 +492,8 @@ const LOOKS = {
       lineSoft: '#d6d6ea',
       on: '#3a48c0',
       onDeep: '#262f8a',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#9a6418',
     },
   },
   sky: {
@@ -490,6 +506,8 @@ const LOOKS = {
       lineSoft: '#1c2636',
       on: '#4aa8ff',
       onDeep: '#1f6fd0',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#e0a24a',
     },
     light: {
       bg: '#e7eff9',
@@ -500,6 +518,8 @@ const LOOKS = {
       lineSoft: '#cddcee',
       on: '#1766c2',
       onDeep: '#0f4a8f',
+      // Late is blue by default; on a blue look it would read as did.
+      late: '#9a6418',
     },
   },
   maple: {
