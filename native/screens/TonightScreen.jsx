@@ -485,7 +485,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   return (
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu />
+      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu clear={premium} />
       <Slot>
         <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
       </Slot>
