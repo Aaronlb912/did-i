@@ -76,6 +76,8 @@ import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { askRemoveFriend } from '../components/removeFriend.js'
+import { KitSegment } from '../components/KitSegment.jsx'
+import { ripple } from '../lib/ripple.js'
 import { SetSwitch } from '../components/SetBits.jsx'
 import {
   DidButton,
@@ -1583,6 +1585,7 @@ export function FriendScreen({ route }) {
   const [menu, setMenu] = useState(false)
   // No longer friends or family (removed, or an old notification).
   const [gone, setGone] = useState(false)
+  const [tab, setTab] = useState('')
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
@@ -1604,6 +1607,18 @@ export function FriendScreen({ route }) {
     (card.people || []).some((p) => p.id === otherId && p.state !== 'left'),
   )
 
+  const shown =
+    tab ||
+    (sends.theirs.some((send) => send.state === 'sent')
+      ? 'theirs'
+      : sends.theirs.length
+        ? 'theirs'
+        : sends.mine.length
+          ? 'mine'
+          : together.length
+            ? 'we'
+            : 'theirs')
+
   if (gone) {
     return (
       <ScreenShell title={name} colors={colors}>
@@ -1617,7 +1632,7 @@ export function FriendScreen({ route }) {
   return (
     <ScreenShell title={name} colors={colors}>
       <OfflineLine colors={colors} />
-      <View style={styles.confirmWho}>
+      <View style={[styles.confirmWho, styles.friendCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <Pressable
           disabled={!person?.avatar_url}
           onPress={() => setBigPhoto(true)}
@@ -1653,7 +1668,22 @@ export function FriendScreen({ route }) {
           </Pressable>
         </Modal>
       ) : null}
-      <DidButton colors={colors} label={t('people.sendDidYou')} onPress={() => setSheet({ person })} />
+      <View style={styles.friendActions}>
+        <View style={styles.friendAction}>
+          <DidButton colors={colors} label={t('people.sendDidYou')} onPress={() => setSheet({ person })} />
+        </View>
+        <View style={styles.friendAction}>
+          <Pressable
+            onPress={() => goHash('/we/new', { id: otherId })}
+            android_ripple={ripple(`${colors.on}33`)}
+            accessibilityRole="button"
+            accessibilityLabel={t('we.title')}
+            style={[styles.friendWe, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
+          >
+            <Text style={[styles.friendWeText, { color: colors.ink }]}>{t('we.title')}</Text>
+          </Pressable>
+        </View>
+      </View>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
       {menu ? (
         <FriendMenu
@@ -1717,7 +1747,20 @@ export function FriendScreen({ route }) {
         />
       ) : null}
 
-      <SectionHead colors={colors} label={t('friend.theySent', { name })} count={sends.theirs.length || null} />
+      <View style={styles.friendTabs}>
+        <KitSegment
+          items={[
+            { id: 'theirs', label: t('friend.tabTheirs', { n: sends.theirs.length }) },
+            { id: 'mine', label: t('friend.tabMine', { n: sends.mine.length }) },
+            { id: 'we', label: t('friend.tabWe', { n: together.length }) },
+          ]}
+          selected={shown}
+          onSelect={setTab}
+          colors={colors}
+        />
+      </View>
+      {shown === 'theirs' ? (
+        <>
       {sends.theirs.length ? (
         sends.theirs.map((send) => (
           <PersonRow
@@ -1735,7 +1778,10 @@ export function FriendScreen({ route }) {
         <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
       )}
 
-      <SectionHead colors={colors} label={t('friend.youSent', { name })} count={sends.mine.length || null} />
+        </>
+      ) : null}
+      {shown === 'mine' ? (
+        <>
       {sends.mine.length ? (
         sends.mine.map((send) => (
           <PersonRow
@@ -1760,8 +1806,10 @@ export function FriendScreen({ route }) {
       ) : (
         <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
       )}
-
-      <SectionHead colors={colors} label={t('friend.together')} count={together.length || null} />
+        </>
+      ) : null}
+      {shown === 'we' ? (
+        <>
       {together.length ? (
         together.map((card) => (
           <Row
@@ -1775,6 +1823,8 @@ export function FriendScreen({ route }) {
       ) : (
         <Meta colors={colors}>{t('friend.togetherNone', { name })}</Meta>
       )}
+        </>
+      ) : null}
 
       {sheet?.person ? (
         <SendSheet
@@ -2073,6 +2123,12 @@ const styles = StyleSheet.create({
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   confirmWho: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  friendCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16 },
+  friendActions: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  friendAction: { flex: 1, flexBasis: 0 },
+  friendWe: { borderRadius: 999, minHeight: 48, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+  friendWeText: { fontFamily: fonts.uiBold, fontSize: 15 },
+  friendTabs: { marginBottom: 12 },
   confirmCopy: { flex: 1, minWidth: 0, gap: 2 },
   confirmName: { fontFamily: fonts.uiBold, fontSize: 18 },
   confirmLine: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },

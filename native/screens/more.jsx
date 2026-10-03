@@ -214,7 +214,7 @@ export function HelpScreen() {
       <Meta colors={colors}>{t('help.coinsP')}</Meta>
       <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
-      <Meta colors={colors}>{t('help.phoneP')}</Meta>
+      <Meta colors={colors}>{t('help.phonePApp')}</Meta>
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
       <Meta colors={colors}>{t('help.legalP')}</Meta>
       <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
