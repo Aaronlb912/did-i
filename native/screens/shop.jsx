@@ -1,4 +1,5 @@
 import Constants from 'expo-constants'
+import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
@@ -367,11 +368,11 @@ function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
           <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
         </Pressable>
       </View>
-      <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowScroll}>
+      <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
         {sorted.map((item) => (
           <ShopTile key={item.id} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} />
         ))}
-      </ScrollView>
+      </FadeScroll>
     </View>
   )
 }
@@ -1100,7 +1101,7 @@ function FilterChip({ label, on, onPress, colors }) {
 function AccessoryFilters({ forSale, slot, onSlot, notOwned, onNotOwned, purse, colors }) {
   const count = (s) => forSale.filter((item) => item.slot === s).length
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+    <FadeScroll fade={colors.bg} contentContainerStyle={styles.filterRow}>
       <FilterChip label={t('shop.accAll', { n: forSale.length })} on={!slot} onPress={() => onSlot('')} colors={colors} />
       {ACCESSORY_SLOTS.filter((s) => count(s)).map((s) => (
         <FilterChip
@@ -1114,7 +1115,7 @@ function AccessoryFilters({ forSale, slot, onSlot, notOwned, onNotOwned, purse, 
       {purse.accessories.length ? (
         <FilterChip label={t('shop.accNotOwned')} on={notOwned} onPress={onNotOwned} colors={colors} />
       ) : null}
-    </ScrollView>
+    </FadeScroll>
   )
 }
 

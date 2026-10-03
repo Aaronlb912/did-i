@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
@@ -570,7 +571,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       </Slot>
 
       {showChips ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
+        <FadeScroll fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
           <Slot>{tagFilter}</Slot>
           {stack.dueWithWait.map((row) => {
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
@@ -625,7 +626,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               />
             )
           })}
-        </ScrollView>
+        </FadeScroll>
       ) : null}
 
       {showKey ? (

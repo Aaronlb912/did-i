@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { FadeScroll } from './FadeScroll.jsx'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -169,9 +170,9 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
   })
   if (scroll) {
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <FadeScroll fade={colors.bg} contentContainerStyle={styles.chips}>
         {chips}
-      </ScrollView>
+      </FadeScroll>
     )
   }
   return <View style={styles.chips}>{chips}</View>
