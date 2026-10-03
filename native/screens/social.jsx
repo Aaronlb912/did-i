@@ -1670,18 +1670,20 @@ export function FriendScreen({ route }) {
       ) : null}
       <View style={styles.friendActions}>
         <View style={styles.friendAction}>
-          <DidButton colors={colors} label={t('people.sendDidYou')} onPress={() => setSheet({ person })} />
+          <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} />
+          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didYouHint', { name })}</Text>
         </View>
         <View style={styles.friendAction}>
           <Pressable
             onPress={() => goHash('/we/new', { id: otherId })}
             android_ripple={ripple(`${colors.on}33`)}
             accessibilityRole="button"
-            accessibilityLabel={t('we.title')}
+            accessibilityLabel={t('friend.startDidWe')}
             style={[styles.friendWe, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
           >
-            <Text style={[styles.friendWeText, { color: colors.ink }]}>{t('we.title')}</Text>
+            <Text style={[styles.friendWeText, { color: colors.ink }]}>{t('friend.startDidWe')}</Text>
           </Pressable>
+          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didWeHint')}</Text>
         </View>
       </View>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
@@ -2129,6 +2131,7 @@ const styles = StyleSheet.create({
   friendWe: { borderRadius: 999, minHeight: 48, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
   friendWeText: { fontFamily: fonts.uiBold, fontSize: 15 },
   friendTabs: { marginBottom: 12 },
+  friendHint: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 8, paddingHorizontal: 4 },
   confirmCopy: { flex: 1, minWidth: 0, gap: 2 },
   confirmName: { fontFamily: fonts.uiBold, fontSize: 18 },
   confirmLine: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
