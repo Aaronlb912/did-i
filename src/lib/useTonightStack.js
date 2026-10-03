@@ -137,6 +137,20 @@ export function useTonightStack({
   const [, setWeTick] = useState(0)
   useEffect(() => onWeNights(() => setWeTick((n) => n + 1)), [])
   const weTonight = weNight(dateIso, tagId)
+  // Tonight is done only once your Did wes due tonight are done too. Until
+  // then the done look (sky, glow, cheer) waits and the Did we card comes
+  // first. The Did we nights are kept on the phone, so this is known at once.
+  const nightDone = hallOn && weTonight.done >= weTonight.due
+  const wasDone = useRef(nightDone)
+  useEffect(() => {
+    // Your own questions were already done; a Did we just finished the night.
+    if (!wasDone.current && nightDone && weTonight.due) {
+      const to = shelfStreak(shelf, clock, tagId)
+      if (to > 0) setCheer({ dateIso, from: to - 1, to })
+    }
+    wasDone.current = nightDone
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nightDone])
   // A walk back through the nights, so only once tonight is clear.
   const streak = useMemo(
     () => (hallOn ? shelfStreak(shelf, clock, tagId) : 0),
@@ -487,7 +501,8 @@ export function useTonightStack({
     catchUp,
     heat,
     streak,
-    cheer: cheer && cheer.dateIso === dateIso && hallOn ? cheer : null,
+    cheer: cheer && cheer.dateIso === dateIso && nightDone ? cheer : null,
+    nightDone,
     cheered,
     hour,
     hallOn,

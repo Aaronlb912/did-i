@@ -156,15 +156,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
-  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.hallOn
+  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
     () =>
-      stack.hallOn
+      stack.nightDone
         ? { week: weekStripNights(stack.shelf, stack.clock, tagId), tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stack.shelf, stack.dateIso, tagId, stack.hallOn],
+    [stack.shelf, stack.dateIso, tagId, stack.nightDone],
   )
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
@@ -351,7 +351,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         ) : null}
       </SwipeCardHost>
     )
-  } else if (stack.bodyKind === 'hall') {
+  } else if (stack.bodyKind === 'hall' && stack.nightDone) {
     face = (
       <CardSettle play={Boolean(stack.cheer)}>
         <GemFaceShell look={premium ? look : ''}
@@ -554,7 +554,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
       <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu clear={premium} />
       <Slot>
-        <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
+        <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.nightDone} accent={colors.on} />
       </Slot>
       <View
         pointerEvents="box-none"
@@ -562,11 +562,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           styles.shell,
           premium && styles.aboveHalo,
           { paddingTop: headerInset, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
-          stack.hallOn && styles.sitOn,
+          stack.nightDone && styles.sitOn,
         ]}
       >
       <Slot>
-        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
+        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
       </Slot>
 
       {showChips ? (
@@ -596,7 +596,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
                 dueToday={dueUrgency === 'today'}
                 dueSoon={dueUrgency === 'soon'}
                 face={isFace}
-                sit={stack.hallOn && on}
+                sit={stack.nightDone && on}
                 filament={on ? stack.filamentLevel(bookOf, row.lamp.id) : 0}
                 colors={colors}
                 onPress={() => {
@@ -649,7 +649,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <SwipeFlyHost style={styles.slot}>
-        {stack.bodyKind === 'hall' ? (
+        {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
           </Slot>
