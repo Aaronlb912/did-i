@@ -168,6 +168,17 @@ export async function befriendByLink(code) {
   return { added: Boolean(data) }
 }
 
+// Already friends with whoever made the link: the sheet then skips "add".
+export async function linkMakerIsFriend(code) {
+  const db = cloud()
+  const clean = cleanCode(code)
+  if (!db || !clean) return false
+  const { data: session } = await db.auth.getSession()
+  if (!session?.session?.user) return false
+  const { data, error } = await db.rpc('link_maker_is_friend', { code: clean })
+  return error ? false : Boolean(data)
+}
+
 // Did we links ------------------------------------------------------------
 
 // { question, name, avatarUrl, people, full }, null when unknown, ended or

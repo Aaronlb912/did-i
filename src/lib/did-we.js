@@ -67,12 +67,13 @@ async function saveExtras(db, card, { askAfter, remind, note }) {
   return error ? bad(error) : { miss: '' }
 }
 
-export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics }) {
+// alone: make it with nobody asked yet, to share as a link.
+export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics, alone = false }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const text = String(question || '').trim()
   if (!text) return { miss: 'we.missBlank' }
-  if (!ask?.length) return { miss: 'we.missNobody' }
+  if (!ask?.length && !alone) return { miss: 'we.missNobody' }
   const { data, error } = await db.rpc('we_make', {
     want_question: text.slice(0, 200),
     want_mode: WE_MODES.includes(mode) ? mode : 'all',
@@ -80,7 +81,7 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
     want_cadence: cadence === 'weekly' ? 'weekly' : 'daily',
     want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
     want_goal: goal || null,
-    ask,
+    ask: ask || [],
   })
   if (error) return bad(error)
   const extras = await saveExtras(db, data, { askAfter, remind, note })

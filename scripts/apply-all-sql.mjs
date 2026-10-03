@@ -36,6 +36,7 @@ const files = [
   'supabase/app-version.sql',
   'supabase/did-you-links.sql',
   'supabase/share-links.sql',
+  'supabase/unfriend.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

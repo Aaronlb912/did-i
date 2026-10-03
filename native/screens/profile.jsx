@@ -28,6 +28,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
+import { appVersionLines } from '../components/AppVersion.jsx'
 import {
   SetCap,
   SetCard,
@@ -453,11 +454,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         ) : null}
       </SetCard>
 
+      <Text style={[styles.version, { color: colors.inkDim }]} accessibilityRole="text">
+        {appVersionLines().join(' · ')}
+      </Text>
     </BoardShell>
   )
 }
 
 const styles = StyleSheet.create({
+  version: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, marginBottom: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 14, marginHorizontal: 3, marginTop: 4 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700', marginBottom: 4 },

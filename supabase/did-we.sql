@@ -364,9 +364,8 @@ begin
       where c.made_by = who and c.made_at > now() - interval '1 day') >= public.we_max_new_daily() then
     raise exception 'too many new today';
   end if;
-  if coalesce(array_length(ask, 1), 0) < 1 then
-    raise exception 'ask someone';
-  end if;
+  -- Nobody asked is fine: a Did we can start with just you and a share link
+  -- (we_make_link in share-links.sql).
   if coalesce(array_length(ask, 1), 0) >= public.we_max_members() then
     raise exception 'too many people';
   end if;
