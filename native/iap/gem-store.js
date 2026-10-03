@@ -94,6 +94,15 @@ export function storePrice(packId) {
 async function creditPurchase(purchase) {
   const mod = await loadIap()
   const out = await submitGemPurchase(purchase)
+  // A test buy from an account not on the server's list never credits. Close
+  // it with the store anyway, or Play keeps it open and blocks that pack.
+  if (out.miss === 'test' && mod?.finishTransaction) {
+    try {
+      await mod.finishTransaction({ purchase, isConsumable: true })
+    } catch {
+      // Already finished.
+    }
+  }
   if (out.miss) return out
   const claimed = await claimGemPurchases()
   if (claimed.gems > 0) {
