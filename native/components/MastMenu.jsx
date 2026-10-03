@@ -17,7 +17,6 @@ import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { setAppBadge } from '../../src/lib/push.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
-import { weOpenForMe } from './WeTonight.jsx'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash, onRoute, readRoute } from '../navigation/hash.js'
@@ -39,8 +38,9 @@ function useMenuPeople() {
   const account = useAccount()
   const { inbox, asks, gifts = 0 } = usePeoplePulse(account.user)
   const { cards } = useWeTonight(account.user)
-  // Did we: asks to join plus shared questions waiting on your answer.
-  const we = cards.filter((card) => card.myState === 'asked').length + weOpenForMe(cards).length
+  // Did we: asks to join only. A shared question waiting on tonight's answer
+  // is a Tonight card, not something Friends and family has to show.
+  const we = cards.filter((card) => card.myState === 'asked').length
   // A gift not opened yet counts too, until sync opens it.
   return { inbox, asks, we: we + gifts, signedIn: Boolean(account.user) }
 }
