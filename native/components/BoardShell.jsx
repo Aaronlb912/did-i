@@ -75,7 +75,13 @@ export function BoardShell({
   const feelHour = hour ?? hallHour(clock)
   const feelSit = sit || 'ask'
   const halo = isGemLook(coat)
-  const pageBg = useMemo(() => ({ backgroundColor: colors.bg }), [colors.bg])
+  // Android draws its own bar above the page, so a gem look's wash has to sit
+  // behind both or the bar shows as a dark strip over the colour.
+  const washUnderBar = halo && Platform.OS === 'android'
+  const pageBg = useMemo(
+    () => ({ backgroundColor: washUnderBar ? 'transparent' : colors.bg }),
+    [colors.bg, washUnderBar],
+  )
   const shellBg = useMemo(
     () => (halo ? { backgroundColor: 'transparent' } : { backgroundColor: colors.bg }),
     [colors.bg, halo],
@@ -89,7 +95,7 @@ export function BoardShell({
 
   // Gem looks show the hall's mood through the page. It is a flat wash, so it
   // can ride inside the scroll view and reach past both ends of the page.
-  const ambient = halo ? (
+  const ambient = halo && !washUnderBar ? (
     <View pointerEvents="none" style={scroll ? styles.ambientScroll : StyleSheet.absoluteFill}>
       <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
     </View>
@@ -135,6 +141,7 @@ export function BoardShell({
       large={scroll && !noTitle}
       largeHeight={largeHeight}
       scrollY={scrollY}
+      clear={washUnderBar}
     />
   )
 
@@ -142,7 +149,12 @@ export function BoardShell({
   // first subviews. So on iOS the scroll view leads, and this wrapper paints
   // nothing and sets no zIndex, which lets Fabric flatten it away.
   const frame = (
-    <View style={styles.frame}>
+    <View style={[styles.frame, washUnderBar && { backgroundColor: colors.bg }]}>
+      {washUnderBar ? (
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          <HallAmbient heat={heat} hour={feelHour} hallOn={feelSit === 'on'} accent={colors.on} />
+        </View>
+      ) : null}
       {Platform.OS === 'ios' ? inner : header}
       {Platform.OS === 'ios' ? header : inner}
     </View>
