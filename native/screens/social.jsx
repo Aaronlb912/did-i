@@ -666,7 +666,9 @@ export function PeopleScreen({ book, onChange }) {
   }
 
   const today = isoDate(new Date())
-  const doneCount = links.friends.filter((row) => doneTonight(row.person, today)).length
+  // Only friends who share their streak can show done, so only they count.
+  const sharing = links.friends.filter((row) => row.person?.share_streak !== false)
+  const doneCount = sharing.filter((row) => doneTonight(row.person, today)).length
 
   return (
     <ScreenShell title={t('people.title')} colors={colors}>
@@ -724,7 +726,8 @@ export function PeopleScreen({ book, onChange }) {
       {links.friends.length ? (
         <>
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
-            {t('people.doneOf', { done: doneCount, n: links.friends.length })} {t('people.stripHint')}
+            {sharing.length ? `${t('people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
+            {t('people.stripHint')}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
             {links.friends.map((row) => {
@@ -1239,15 +1242,17 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   }
 
   const today = isoDate(new Date())
-  const doneCount = links.friends.filter((row) => doneTonight(row.person, today)).length
+  // Only friends who share their streak can show done, so only they count.
+  const sharing = links.friends.filter((row) => row.person?.share_streak !== false)
+  const doneCount = sharing.filter((row) => doneTonight(row.person, today)).length
 
   return (
     <ScreenShell title={t('friends.title', { n: links.friends.length })} colors={colors}>
       <OfflineLine colors={colors} />
 
-      {links.friends.length ? (
+      {sharing.length ? (
         <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t('people.doneOf', { done: doneCount, n: links.friends.length })}
+          {t('people.doneOf', { done: doneCount, n: sharing.length })}
         </Text>
       ) : null}
 

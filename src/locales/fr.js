@@ -1869,7 +1869,7 @@ export const fr = {
   'people.more': 'Plus',
   'people.less': 'Moins',
   'people.seeAll': 'Tout voir',
-  'people.doneOf': '{done} sur {n} ont fini ce soir.',
+  'people.doneOf': '{done} amis sur {n} ont fini leur propre soirée.',
   'people.stripHint': 'Touche quelqu’un pour voir vos did yous et Did wes.',
   'familyJoin.kicker': 'Rejoindre une famille',
   'familyJoin.members': '{n} personnes en font partie.',
