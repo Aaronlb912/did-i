@@ -60,10 +60,19 @@ function priceOf(item) {
 function rememberProduct(item) {
   const id = String(item?.id || item?.productId || item?.sku || '')
   if (!id) return
+  // Play answers an id it does not sell (the short gems_10) with a priceless
+  // "not-found" stand-in. Taking that as the pack sent every Android buy for
+  // gems_10, which Play then had no product for.
+  const status = item?.productStatusAndroid
+  if (status && status !== 'ok') return
   const label = priceOf(item)
-  if (label) prices.set(id, label)
+  if (!label) return
+  prices.set(id, label)
   const pack = GEM_PACKS.find((row) => row.storeId === id || row.id === id)
-  if (pack) liveSku.set(pack.id, id)
+  if (!pack) return
+  // The full store id wins over a short one that happens to answer too.
+  if (liveSku.get(pack.id) === pack.storeId && id !== pack.storeId) return
+  liveSku.set(pack.id, id)
 }
 
 function skusToAsk() {
