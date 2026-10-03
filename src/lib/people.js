@@ -336,6 +336,30 @@ export async function dropFriend(otherId) {
   return error ? bad(error) : { miss: '' }
 }
 
+// Still friends or family with someone (and no block). null when it could not
+// be checked, so a bad connection never says "not friends".
+export async function stillLinked(other) {
+  const db = cloud()
+  if (!db || !other) return null
+  const { data, error } = await db.rpc('we_can_ask', { other })
+  return error ? null : Boolean(data)
+}
+
+// Did we's you are on with someone, and leaving them all (on removing a friend).
+export async function weSharedCount(other) {
+  const db = cloud()
+  if (!db) return 0
+  const { data, error } = await db.rpc('we_shared_count', { other })
+  return error ? 0 : Number(data) || 0
+}
+
+export async function weLeaveShared(other) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { error } = await db.rpc('we_leave_shared', { other })
+  return error ? bad(error) : { miss: '' }
+}
+
 // Sending a did you to a friend ---------------------------------------
 
 export async function sendDidI(toId, question, note, dueOn, repeat = '') {
@@ -1198,7 +1222,7 @@ export async function setAutoAdd(friendId, on) {
 
 const PULSE_MS = 300000
 const PULSE_STALE_MS = 60000
-const PULSE_ZERO = { inbox: 0, asks: 0, gifts: 0, news: null }
+const PULSE_ZERO = { inbox: 0, asks: 0, gifts: 0, friends: 0, families: 0, news: null }
 
 // Cloud sync is what opens gifts (claim, collection, pop-up). The pulse only
 // notices one waiting and asks sync to run, so a gift sent while the app is
@@ -1265,6 +1289,18 @@ async function pulseLook() {
       .eq('to_id', user.id)
       .is('claimed_at', null)
     const gifts = giftRows.count || 0
+    // Your friend count, so lists reload when someone removes you.
+    const friendRows = await db
+      .from('friend_links')
+      .select('id', { count: 'exact', head: true })
+      .eq('from_id', user.id)
+      .eq('state', 'ok')
+    const friends = friendRows.count || 0
+    const familyRows = await db
+      .from('family_members')
+      .select('family_id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    const families = familyRows.count || 0
     if (user.id !== pulse.userId) return
     if (gifts && giftWaker) giftWaker()
     const rows = waiting.data || []
@@ -1293,7 +1329,7 @@ async function pulseLook() {
         }
       }
     }
-    pulseEmit({ inbox: waiting.count ?? rows.length, asks, gifts, news })
+    pulseEmit({ inbox: waiting.count ?? rows.length, asks, gifts, friends, families, news })
   })()
     .catch(() => {})
     .finally(() => {

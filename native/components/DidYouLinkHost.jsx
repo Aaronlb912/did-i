@@ -7,6 +7,7 @@ import {
   dropPendingDidYou,
   isWeLinkCode,
   joinWeLink,
+  linkMakerIsFriend,
   lookUpDidYouLink,
   lookUpWeLink,
   onPendingDidYou,
@@ -50,8 +51,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
       return undefined
     }
     let alive = true
-    ;(we ? lookUpWeLink(code) : lookUpDidYouLink(code)).then((found) => {
+    Promise.all([we ? lookUpWeLink(code) : lookUpDidYouLink(code), linkMakerIsFriend(code).catch(() => false)]).then(([raw, friends]) => {
       if (!alive) return
+      // Already friends: nothing to add, so the name is only for the title.
+      const found = raw && !raw.miss && friends ? { ...raw, friends: true } : raw
       if (found?.miss) {
         // Kept for the next open.
         showToast({ id: 'did-you-link', kind: 'error', text: t('didYouLink.reach'), ms: 5200 })
@@ -87,13 +90,13 @@ export function DidYouLinkHost({ colors, onKeep }) {
           title: t('weLink.asked', { name }),
           quote: didYouAsk(found.question, t('people.sendWhat')),
           body: t('weLink.people', { n: found.people }),
-          goLabel: found.name ? t('weLink.joinAdd', { name }) : t('weLink.joinPlain'),
+          goLabel: found.name && !found.friends ? t('weLink.joinAdd', { name }) : t('weLink.joinPlain'),
           moreLabel: t('weLink.join'),
           closeLabel: t('didYouLink.no'),
           colors,
           onClose: next,
-          onGo: () => join(Boolean(found.name)),
-          ...(found.name ? { onMore: () => join(false) } : {}),
+          onGo: () => join(Boolean(found.name) && !found.friends),
+          ...(found.name && !found.friends ? { onMore: () => join(false) } : {}),
         })
         return
       }
@@ -115,13 +118,13 @@ export function DidYouLinkHost({ colors, onKeep }) {
         kicker: t('didYouLink.kicker'),
         title: t('didYouLink.asked', { name }),
         quote: didYouAsk(found.question, t('people.sendWhat')),
-        goLabel: found.name ? t('didYouLink.addFriend', { name }) : t('didYouLink.add'),
+        goLabel: found.name && !found.friends ? t('didYouLink.addFriend', { name }) : t('didYouLink.add'),
         moreLabel: t('didYouLink.justKeep'),
         closeLabel: t('didYouLink.no'),
         colors,
         onClose: next,
-        onGo: () => add(Boolean(found.name)),
-        ...(found.name ? { onMore: () => add(false) } : {}),
+        onGo: () => add(Boolean(found.name) && !found.friends),
+        ...(found.name && !found.friends ? { onMore: () => add(false) } : {}),
       })
     })
     return () => {

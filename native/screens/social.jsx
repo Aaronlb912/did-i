@@ -21,7 +21,6 @@ import {
   claimInvites,
   cleanCode,
   doneTonight,
-  dropFriend,
   friendAskNote,
   friendAskTitle,
   inboxCount,
@@ -38,6 +37,7 @@ import {
   syncDisplayName,
   myInvite,
   personName,
+  stillLinked,
   readMine,
   refreshPeople,
   sayNo,
@@ -75,6 +75,7 @@ import { WeAsks } from '../components/WeTonight.jsx'
 import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
+import { askRemoveFriend } from '../components/removeFriend.js'
 import { SetSwitch } from '../components/SetBits.jsx'
 import {
   DidButton,
@@ -673,7 +674,7 @@ export function PeopleScreen({ book, onChange }) {
   const pulse = usePeoplePulse(account.user)
   useEffect(() => {
     load()
-  }, [load, pulse.inbox, pulse.asks])
+  }, [load, pulse.inbox, pulse.asks, pulse.friends, pulse.families])
 
   function say(words) {
     setMiss('')
@@ -1151,9 +1152,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setReady(true)
   }, [account.user])
 
+  // Someone removing you (or adding you) shows up without leaving the screen.
+  const pulse = usePeoplePulse(account.user)
   useEffect(() => {
     load()
-  }, [load])
+  }, [load, pulse.friends, pulse.asks])
 
   function say(words) {
     setMiss('')
@@ -1171,21 +1174,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   // Asks back and forth are dropped with the friendship; shared Did wes
   // stay until one of you leaves (we_on_unfriend).
   function cut(person) {
-    const name = personName(person) || t('people.someone')
-    publishSheet({
-      title: t('people.dropTitle', { name }),
-      body: t('people.dropBody'),
-      goLabel: t('people.drop'),
-      closeLabel: t('settings.neverMind'),
+    setMiss('')
+    askRemoveFriend({
+      person,
       colors,
-      onClose: () => publishSheet(null),
-      onGo: async () => {
-        publishSheet(null)
-        setMiss('')
-        const { miss: why } = await dropFriend(person.user_id)
-        if (why) return setMiss(tMiss(why))
-        setSaid(t('people.dropped', { name }))
-        return load()
+      onMiss: setMiss,
+      onDone: (words) => {
+        setSaid(words)
+        load()
       },
     })
   }
@@ -1560,13 +1556,16 @@ export function FriendScreen({ route }) {
   const [bigPhoto, setBigPhoto] = useState(false)
   const [blocking, setBlocking] = useState(false)
   const [menu, setMenu] = useState(false)
+  // No longer friends or family (removed, or an old notification).
+  const [gone, setGone] = useState(false)
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both] = await Promise.all([personById(otherId), sendsWith(otherId)])
+    const [who, both, linked] = await Promise.all([personById(otherId), sendsWith(otherId), stillLinked(otherId)])
     setPerson(who)
     setSends(both)
+    setGone(linked === false)
     setReady(true)
   }, [account.user, otherId])
 
@@ -1579,6 +1578,16 @@ export function FriendScreen({ route }) {
   const together = (cards || []).filter((card) =>
     (card.people || []).some((p) => p.id === otherId && p.state !== 'left'),
   )
+
+  if (gone) {
+    return (
+      <ScreenShell title={name} colors={colors}>
+        <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody')}>
+          <DidButton colors={colors} small label={t('people.seeAll')} onPress={() => goHash('/friends')} />
+        </EmptyCard>
+      </ScreenShell>
+    )
+  }
 
   return (
     <ScreenShell title={name} colors={colors}>
@@ -1631,19 +1640,11 @@ export function FriendScreen({ route }) {
               key: 'drop',
               label: t('people.drop'),
               onPress: () =>
-                publishSheet({
-                  title: t('people.dropTitle', { name }),
-                  body: t('people.dropBody'),
-                  goLabel: t('people.drop'),
-                  closeLabel: t('settings.neverMind'),
+                askRemoveFriend({
+                  person,
                   colors,
-                  onClose: () => publishSheet(null),
-                  onGo: async () => {
-                    publishSheet(null)
-                    const { miss: why } = await dropFriend(otherId)
-                    if (why) return setSaid(tMiss(why))
-                    return goHash('/friends')
-                  },
+                  onMiss: setSaid,
+                  onDone: () => goHash('/friends'),
                 }),
             },
             { key: 'block', label: t('block.block'), danger: true, onPress: () => setBlocking(true) },
