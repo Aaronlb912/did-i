@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { shelfMarks, streakLength } from '../../src/lib/achievements.js'
+import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
@@ -31,6 +31,7 @@ import {
   blankLamp,
   didQuestion,
   isOnceBy,
+  lampNotifyOn,
   shortFromQuestion,
   shortLabel,
 } from '../../src/lib/board-json.js'
@@ -971,12 +972,27 @@ function PingKinds({ colors, on }) {
   )
 }
 
-export function PingScreen({ book, now, onAskPings, pingLabel }) {
+export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
   const on = labelKey === 'pings.state.on'
-  const fires = upcomingPings(book, clock)
+  // One row per question. Rows you switch off stay here until you leave, so
+  // you can switch them back on.
+  const [seen, setSeen] = useState(() => new Map())
+  const rows = new Map(seen)
+  for (const fire of upcomingPings(book, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  const fires = [...rows.values()].sort((a, b) => a.at - b.at)
+  const lampOf = (id) => (book?.lamps || []).find((lamp) => lamp.id === id)
+
+  function flipOne(fire) {
+    const lamp = lampOf(fire.id)
+    if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
+    const next = !lampNotifyOn(lamp)
+    setSeen((was) => new Map(was).set(fire.id, fire))
+    onChange(commitBook({ ...book, lamps: book.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
+  }
 
   return (
     <ScreenShell title={t('pings.title')} colors={colors}>
@@ -995,20 +1011,20 @@ export function PingScreen({ book, now, onAskPings, pingLabel }) {
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
       ) : (
-        fires.map((fire) => (
-          <Pressable
-            key={fire.id}
-            accessibilityRole="button"
-            onPress={() => goHash('/tonight', { face: fire.id })}
-            style={[styles.slotCard, { backgroundColor: colors.panel, borderColor: colors.line }]}
-          >
-            <Text style={[styles.slotTime, { color: colors.on }]}>{foldClock(fire.at)}</Text>
-            <Text style={[styles.slotLabel, { color: colors.ink }]} numberOfLines={2}>
-              {shortFromQuestion(fire.question) || t('lamp.unnamed')}
-            </Text>
-            <Text style={[styles.slotChev, { color: colors.inkDim }]}>›</Text>
-          </Pressable>
-        ))
+        <SetCard colors={colors}>
+          {fires.map((fire, at) => (
+            <SetSwitch
+              key={fire.id}
+              colors={colors}
+              icon="bell"
+              label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
+              sub={foldClock(fire.at)}
+              on={lampNotifyOn(lampOf(fire.id))}
+              last={at === fires.length - 1}
+              onPress={() => flipOne(fire)}
+            />
+          ))}
+        </SetCard>
       )}
       <KeyButton colors={colors} label={t('pings.comingUp')} onPress={() => goHash('/later')} />
       <KeyButton colors={colors} label={t('pings.help')} onPress={() => goHash('/help')} />
