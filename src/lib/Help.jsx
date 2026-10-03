@@ -1,4 +1,5 @@
 import { goHash } from '../site/hash.js'
+import { clockWords } from './hall-pages.js'
 import { BoardShell } from './BoardShell.jsx'
 import { openFeedback } from './feedback.js'
 import { t } from './i18n.js'
@@ -41,6 +42,8 @@ export function Help({ book, now }) {
         <section className="di-help-block" id="streak">
           <h3>{t('help.streak')}</h3>
           <p>{t('help.streakP')}</p>
+          <h3>{t('help.grace')}</h3>
+          <p>{t('help.graceP', { time: clockWords('09:00') })}</p>
           <div className="di-hang-actions">
             <button className="di-key" type="button" onClick={() => goHash('/marks')}>
               {t('help.marks')}

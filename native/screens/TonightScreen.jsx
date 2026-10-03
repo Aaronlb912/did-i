@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { publishSheet } from '../components/SheetHost.jsx'
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
+import { clockWords, graceExplained, markGraceExplained, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
@@ -266,6 +267,21 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     />
   ) : null
   const graceFirstNow = graceItems.length > 0 && graceFirst()
+  const graceShowing = Boolean(
+    graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind)),
+  )
+  // The first time a grace card shows, say what the grace period is.
+  useEffect(() => {
+    if (!graceShowing || graceExplained()) return
+    markGraceExplained()
+    publishSheet({
+      title: t('grace.title'),
+      body: t('grace.body', { time: clockWords('09:00') }),
+      closeLabel: t('grace.gotIt'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }, [graceShowing, colors])
   let face = null
   if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
     face = graceCard

@@ -28,6 +28,23 @@ export function welcomeSeen() {
   }
 }
 
+// The grace period explainer shows once, the first time it means something.
+const GRACE_SEEN_KEY = 'did-i-grace-seen'
+export function graceExplained() {
+  try {
+    return localStorage.getItem(GRACE_SEEN_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+export function markGraceExplained() {
+  try {
+    localStorage.setItem(GRACE_SEEN_KEY, '1')
+  } catch {
+    // Shows again next time; harmless.
+  }
+}
+
 export function markWelcomeSeen() {
   try {
     localStorage.setItem(WELCOME_KEY, '1')

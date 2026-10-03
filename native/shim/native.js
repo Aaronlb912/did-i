@@ -197,7 +197,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         identifier: String(notifyId('streak', risk.tag)),
         content: {
           title: t('streak.riskTitle'),
-          body: t('streak.riskBody'),
+          body: t('streak.riskBody', { time: clockWords('09:00') }),
           data: { go: '/tonight', streakRisk: true },
         },
         trigger: when(new Date(risk.at)),
