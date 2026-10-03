@@ -3281,6 +3281,47 @@ test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet'
   assert.ok(manifest.includes('android:pathPrefix="/d/"'))
 })
 
+test('every action that changes data on the server says so on the phone', () => {
+  // A new server action goes here. Its call must be followed, in the same
+  // handler, by something the person sees: confirmDone, an inline line, a
+  // toast, a sheet, or the add stamp. See native/lib/confirm.js.
+  const ACTIONS = [
+    'weMake', 'weEdit', 'weAsk', 'weLeave', 'weFile', 'reportWe', 'weNudge', 'weReply', 'makeWeLink', 'endWeLinks',
+    'makeDidYouLink', 'sendDidI', 'sayYes', 'sayNo', 'unsendAsk', 'dropFriend', 'weLeaveShared', 'reportSend',
+    'cheerFriend', 'buyCheers', 'sendGift', 'answerSend', 'blockPerson', 'unblockPerson', 'makeFamily', 'joinFamily',
+    'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
+    'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
+  ]
+  const SEEN = /confirmDone|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
+  const files = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (statSync(full).isDirectory()) walk(full)
+      else if (/\.(jsx?|tsx?)$/.test(name)) files.push(full)
+    }
+  }
+  walk(path.join(checkRoot, 'native'))
+  const silent = []
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    for (const name of ACTIONS) {
+      const re = new RegExp(`\\b(?:await\\s+)?${name}\\(`, 'g')
+      let m
+      while ((m = re.exec(text))) {
+        const before = text.slice(Math.max(0, m.index - 20), m.index)
+        if (/import|export|function\s*$|\.\s*$/.test(before)) continue
+        if (!SEEN.test(text.slice(m.index, m.index + 900))) {
+          silent.push(`${path.relative(checkRoot, file)}:${text.slice(0, m.index).split('\n').length} ${name}`)
+        }
+      }
+    }
+  }
+  assert.deepEqual(silent, [], 'these actions change data and show nothing after')
+  const toast = readFileSync(path.join(checkRoot, 'native/components/ToastHost.jsx'), 'utf8')
+  assert.ok(toast.includes("item.text || t('confirm.done')"), 'a toast without text says Done, never a blank box')
+})
+
 test('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
   const { isWeLinkCode, readDidYouLink, didYouFromText, sharedDidYouLine } = await import('../src/lib/did-you-links.js')
   const { didYouCodeFromPath } = await import('../src/site/path.js')

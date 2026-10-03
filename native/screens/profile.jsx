@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
+import { confirmDone } from '../lib/confirm.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
   CLOCK_IDS,
@@ -90,6 +91,7 @@ export function PhoneSettingsScreen({ book, onChange }) {
           danger
           onPress={() => {
             closeSession()
+            confirmDone(t('confirm.signedOut'))
             goHash('/enter')
           }}
         />
@@ -113,7 +115,16 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const widgetShelf = readShelf()
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
 
+  const [loading, setLoading] = useState(false)
+
   async function pickFile() {
+    if (loading) return
+    setLoading(true)
+    await loadFile()
+    setLoading(false)
+  }
+
+  async function loadFile() {
     try {
       const picked = await DocumentPicker.getDocumentAsync({ type: 'application/json' })
       if (picked.canceled || !picked.assets?.[0]?.uri) return
@@ -370,7 +381,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.late}
           label={t('settings.loadCopy')}
           sub={t('settings.loadCopySub')}
-          onPress={pickFile}
+          onPress={loading ? undefined : pickFile}
         />
         <SetRow
           colors={colors}
@@ -447,7 +458,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
                 title: t('settings.clearTitle'),
                 body: t('settings.clearBody'),
                 yes: t('settings.clearYes'),
-                go: onStartEmpty,
+                go: () => {
+                  onStartEmpty()
+                  confirmDone(t('confirm.startedOver'))
+                },
               })
             }
           />

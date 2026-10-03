@@ -86,6 +86,7 @@ import {
 } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
+import { confirmDone, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
@@ -406,6 +407,7 @@ function JoinFamilyCard({ colors, bare = false, scanned = '' }) {
     setCode('')
     setMiss('')
     setFound(null)
+    confirmDone(t('confirm.joinedFamily', { name: found.name || t('people.familyOne') }))
     return goHash('/family', { id })
   }
   if (found) {
@@ -681,10 +683,17 @@ export function PeopleScreen({ book, onChange }) {
     setSaid(words)
   }
 
-  async function answerAsk(id, yes, person) {
+  function answerAsk(id, yes, person) {
+    return once(`ask:${id}`, () => answerAskNow(id, yes, person))
+  }
+
+  async function answerAskNow(id, yes, person) {
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(tMiss(why))
-    if (yes) offerWeWith(person, colors)
+    if (yes) {
+      say(t('confirm.nowFriends', { name: personName(person) || t('people.someone') }))
+      offerWeWith(person, colors)
+    } else say(t('confirm.askRemoved'))
     return load()
   }
 
@@ -965,6 +974,7 @@ export function PeopleReferScreen({ book, onChange }) {
             ? async () => {
                 const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
                 if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
+                else setMiss(t('confirm.shareMiss'))
               }
             : undefined
         }
@@ -1034,12 +1044,15 @@ export function PeopleConnectScreen({ book, route }) {
   async function shareId() {
     const how = await passAlong(t('friendId.shareText', { id: formatFriendId(myId), link: friendQrLink(myId) }), t('friendId.title'))
     if (how === 'copied') say(t('friendId.copied'))
+    else if (how === 'shared') say(t('people.shared'))
+    else setMiss(t('confirm.shareMiss'))
   }
 
   async function newFamily() {
     const { miss: why, id } = await makeFamily(famDraft || t('people.familyOne'))
     if (why) return setMiss(tMiss(why))
     setFamDraft('')
+    confirmDone(t('confirm.madeFamily', { name: famDraft || t('people.familyOne') }))
     return goHash('/family', { id })
   }
 
@@ -1163,11 +1176,18 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setSaid(words)
   }
 
-  async function answerAsk(id, yes, person) {
+  function answerAsk(id, yes, person) {
+    return once(`ask:${id}`, () => answerAskNow(id, yes, person))
+  }
+
+  async function answerAskNow(id, yes, person) {
     setMiss('')
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(tMiss(why))
-    if (yes) offerWeWith(person, colors)
+    if (yes) {
+      say(t('confirm.nowFriends', { name: personName(person) || t('people.someone') }))
+      offerWeWith(person, colors)
+    } else say(t('confirm.askRemoved'))
     return load()
   }
 
@@ -1251,7 +1271,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     confirmFriendCheers(colors, buyNow)
   }
 
-  async function buyNow() {
+  function buyNow() {
+    return once('buy-cheers', buyNowOnce)
+  }
+
+  async function buyNowOnce() {
     const bought = await buyCheers(book)
     if (bought.miss === 'gems') {
       offerMoreGems(colors)
@@ -1262,7 +1286,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     if (bought.miss) return setMiss(tMiss(bought.miss))
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    setMiss('')
+    say(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -1454,6 +1478,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
           onClose={() => setConfirm(null)}
           onDone={(why) => {
             if (why) setMiss(tMiss(why))
+            else say(t('confirm.blocked', { name: personName(confirm) || t('people.someone') }))
             load()
           }}
         />
@@ -1644,7 +1669,10 @@ export function FriendScreen({ route }) {
                   person,
                   colors,
                   onMiss: setSaid,
-                  onDone: () => goHash('/friends'),
+                  onDone: (words) => {
+                    confirmDone(words)
+                    goHash('/friends')
+                  },
                 }),
             },
             { key: 'block', label: t('block.block'), danger: true, onPress: () => setBlocking(true) },
@@ -1666,6 +1694,7 @@ export function FriendScreen({ route }) {
                           publishSheet(null)
                           const { miss: why } = await blockPerson(otherId, 'photo')
                           if (why) return setSaid(tMiss(why))
+                          confirmDone(t('confirm.blocked', { name }))
                           return goHash('/friends')
                         },
                       }),
@@ -1682,6 +1711,7 @@ export function FriendScreen({ route }) {
           onClose={() => setBlocking(false)}
           onDone={(why) => {
             if (why) return setSaid(tMiss(why))
+            confirmDone(t('confirm.blocked', { name }))
             return goHash('/friends')
           }}
         />
@@ -1819,12 +1849,18 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     answer(row, fromPush[1] === 'keep')
   }, [rows, ready])
 
+  // One answer at a time per row, so a double tap cannot keep it twice.
+  const answering = useRef(new Set())
   async function answer(row, keep) {
+    if (answering.current.has(row.id)) return
+    answering.current.add(row.id)
     setMiss('')
     const { miss: why } = await answerSend(row.id, keep)
+    answering.current.delete(row.id)
     if (why) return setMiss(tMiss(why))
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
+    if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
     return load()
   }
 
@@ -1841,7 +1877,8 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       onGo: async () => {
         publishSheet(null)
         const { miss: why } = await reportSend(row.id)
-        setMiss(why ? tMiss(why) : t('we.reported'))
+        if (why) setMiss(tMiss(why))
+        else confirmDone(t('we.reported'))
         load()
       },
     })
@@ -1969,6 +2006,7 @@ export function SentScreen({ book, onChange }) {
                 setMiss('')
                 const { miss: why } = await takeBack(row.id)
                 if (why) setMiss(tMiss(why))
+                else confirmDone(t('confirm.takenBack'))
                 load()
               }}
             />

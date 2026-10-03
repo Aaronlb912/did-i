@@ -43,8 +43,11 @@ export async function askRemoveFriend({ person, colors, onDone, onMiss }) {
     if (miss) return onMiss?.(tMiss(miss))
     if (leave) {
       const out = await weLeaveShared(other)
-      if (out.miss) onMiss?.(tMiss(out.miss))
       refreshWeNights().catch(() => {})
+      if (out.miss) {
+        forgetSender(personName(person))
+        return onDone?.(t('confirm.droppedWeMiss', { name }))
+      }
     }
     forgetSender(personName(person))
     return onDone?.(t('people.dropped', { name }))

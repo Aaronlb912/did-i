@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { confirmDone } from '../lib/confirm.js'
 import { hangStarter, unusedStarters } from '../../src/lib/starters.js'
 import { KeyButton } from './ui.jsx'
 import { fonts } from '../theme.js'
@@ -18,7 +19,10 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
             key={starter.short}
             label={starter.short}
             colors={colors}
-            onPress={() => onChange(hangStarter(book, starter, clock, readyNow))}
+            onPress={() => {
+              onChange(hangStarter(book, starter, clock, readyNow))
+              confirmDone(t('confirm.questionAdded'))
+            }}
           />
         ))}
       </View>

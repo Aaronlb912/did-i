@@ -3,6 +3,7 @@ import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
+import { confirmDone } from '../lib/confirm.js'
 
 function deleteNote(book, lamp) {
   const taps = (book.answers || []).filter((item) => item.lampId === lamp.id).length
@@ -20,6 +21,7 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
     const next = toggleArchive(book, lamp)
     onChange(next)
     onPaused?.(!lamp.archived)
+    confirmDone(lamp.archived ? t('confirm.questionResumed') : t('confirm.questionPaused'))
   }
 
   function askDelete() {
@@ -33,6 +35,7 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
       onGo: () => {
         publishSheet(null)
         onChange(takeDown(book, lamp))
+        confirmDone(t('confirm.questionRemoved'))
         goHash('/lamps')
       },
     })

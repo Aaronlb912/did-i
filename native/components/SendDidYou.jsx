@@ -13,6 +13,7 @@ import { fonts } from "../theme.js";
 import { DidButton, Field, KeyButton, Meta } from "./ui.jsx";
 import { KeyboardLift } from "./KeyboardLift.jsx";
 import { goHash } from "../navigation/hash.js";
+import { confirmDone } from "../lib/confirm.js";
 
 /** Write a did you for a friend or someone in the family. */
 export function SendSheet({ person, family = false, colors, onClose, onSent }) {
@@ -69,6 +70,7 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
       t("didYouLink.share"),
     );
     if (how === "copied") setSaid(t("didYouLink.copied"));
+    else if (how === "shared") confirmDone(t("confirm.shared"));
   }
 
   return (

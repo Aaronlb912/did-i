@@ -37,6 +37,7 @@ import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { goHash } from '../navigation/hash.js'
+import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { QrCode } from '../components/QrCode.jsx'
@@ -252,12 +253,16 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <KeyButton
                     colors={colors}
                     label={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
-                    onPress={async () => {
+                    onPress={() => once(`role:${row.user_id}`, async () => {
                       const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
                       if (why === 'lastparent') setMiss(t('family.lastParent'))
                       else if (why) setMiss(why)
+                      else {
+                        setMiss('')
+                        setSaid(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
+                      }
                       load()
-                    }}
+                    })}
                   />
                   <KeyButton
                     colors={colors}
@@ -272,9 +277,13 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                         onClose: () => publishSheet(null),
                         onGo: async () => {
                           publishSheet(null)
-                          const { miss: why } = await dropMember(fam.id, row.user_id)
+                          const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
                           if (why === 'lastparent') setMiss(t('family.lastParent'))
                           else if (why) setMiss(why)
+                          else {
+                            setMiss('')
+                            setSaid(t('confirm.memberRemoved', { name }))
+                          }
                           load()
                         },
                       })
@@ -381,7 +390,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           }
           confirmFriendCheers(colors, async () => {
             setMiss('')
-            const bought = await buyCheers(book)
+            const bought = await once('buy-cheers', () => buyCheers(book))
+            if (!bought) return
             if (bought.miss === 'gems') {
               offerMoreGems(colors)
               return
@@ -391,6 +401,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             if (bought.miss) return setMiss(tMiss(bought.miss))
             setStock(normalizePurse(bought.book).friendCheers)
             if (onChange) onChange(bought.book)
+            setSaid(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
           })
         }}
       />
@@ -411,6 +422,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               const { miss: why } = await leaveFamily(fam.id)
               if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
               if (why) return setMiss(why)
+              confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
               goHash('/people')
             },
           })
@@ -450,6 +462,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
                   setCodeOpen(false)
                   if (how === 'shared') setSaid(t('people.shared'))
+                  else if (how === 'copied') setSaid(t('people.copied'))
+                  else setMiss(t('confirm.shareMiss'))
                 }}
               />
               <KeyButton colors={colors} label={t('settings.close')} onPress={() => setCodeOpen(false)} />
