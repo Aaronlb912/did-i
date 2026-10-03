@@ -907,3 +907,35 @@ create trigger queue_we_ask_push
 -- An ask nobody answered in two weeks is treated as turned down wherever it
 -- is read, and can be sent again, so there is nothing to sweep.
 drop function if exists public.sweep_we();
+
+-- Every night a Did we was due for you, and what you swiped, so your own
+-- streak and tonight's count can include it. Only cards you are in and that
+-- still run; on a turns card only your turns. From the later of the card's
+-- start and the day you joined, at most 400 nights back, through tomorrow
+-- (an early answer counts on its night).
+create or replace function public.my_we_nights()
+returns table (card_id uuid, folder text, night date, status text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with me as (select auth.uid() as id),
+  mine as (
+    select c.id, c.cadence, c.weekdays, c.mode, coalesce(m.folder, '') as folder,
+      greatest(c.starts_on, coalesce(m.joined_at, m.asked_at)::date, current_date - 400) as since
+    from public.we_cards c
+    join public.we_members m on m.card_id = c.id and m.user_id = (select id from me) and m.state = 'in'
+    where not c.archived
+  )
+  select mine.id, mine.folder, n::date, a.status
+  from mine
+  cross join lateral generate_series(mine.since, current_date + 1, interval '1 day') as n
+  left join public.we_answers a
+    on a.card_id = mine.id and a.user_id = (select id from me) and a.night = n::date
+  where public.we_due(mine.since, mine.cadence, mine.weekdays, n::date)
+    and (mine.mode <> 'turns' or public.we_turn(mine.id, n::date) = (select id from me));
+$$;
+
+revoke all on function public.my_we_nights() from public, anon;
+grant execute on function public.my_we_nights() to authenticated;

@@ -25,6 +25,7 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
+import { onWeNights, weNight } from './we-nights.js'
 
 // How long an answer can be taken back.
 export const UNDO_MS = 6000
@@ -98,11 +99,15 @@ export function useTonightStack({
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
   const hallOn = dueClearTonight(due)
+  // Did wes due for you tonight: in the bar's count and in the streak.
+  const [, setWeTick] = useState(0)
+  useEffect(() => onWeNights(() => setWeTick((n) => n + 1)), [])
+  const weTonight = weNight(dateIso, tagId)
   // A walk back through the nights, so only once tonight is clear.
   const streak = useMemo(
     () => (hallOn ? shelfStreak(shelf, clock, tagId) : 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shelf, tagId, dateIso, hallOn],
+    [shelf, tagId, dateIso, hallOn, weTonight.due, weTonight.done],
   )
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = useMemo(() => {
@@ -452,6 +457,7 @@ export function useTonightStack({
     cheered,
     hour,
     hallOn,
+    weTonight,
     empty,
     finishCount,
     onFinish,
