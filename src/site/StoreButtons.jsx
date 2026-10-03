@@ -1,5 +1,6 @@
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL, PLAY_STORE_URL } from '../lib/store-skus.js'
+import { APP_STORE_URL } from '../lib/store-skus.js'
+import { BETA_PATH } from '../lib/invite-link.js'
 
 // Store marks drawn in currentColor so they follow the button's text color.
 export function AppleIcon() {
@@ -31,9 +32,9 @@ export function StoreButtons({ compact = false }) {
         <AppleIcon />
         {t('web.store.apple')}
       </a>
-      <a className="di-key di-land-store" href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+      <a className="di-key di-land-store" href={BETA_PATH}>
         <PlayIcon />
-        {t('web.store.play')}
+        {t('web.store.androidBeta')}
       </a>
     </div>
   )

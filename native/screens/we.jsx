@@ -45,6 +45,8 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
+import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
+import { passAlong } from '../../src/lib/native.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -551,6 +553,20 @@ function WeCardPage({ book, cardId, onChange }) {
   const [edit, setEdit] = useState(null)
   const [asking, setAsking] = useState([])
   const [busy, setBusy] = useState(false)
+  // Your link for this card while it works, so you can turn it off.
+  const [link, setLink] = useState('')
+  const [linkSaid, setLinkSaid] = useState('')
+  useEffect(() => {
+    let alive = true
+    myWeLink(cardId)
+      .then((code) => {
+        if (alive) setLink(code)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [cardId])
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
@@ -632,6 +648,38 @@ function WeCardPage({ book, cardId, onChange }) {
     setBusy(false)
     setAsking([])
     load()
+  }
+
+  // did-i.app/d/CODE: anyone with it can join for 7 days, friend or not.
+  async function shareLink() {
+    setLinkSaid('')
+    setBusy(true)
+    const { code, miss: why } = await makeWeLink(card.id)
+    setBusy(false)
+    if (why === 'linkCap') return setMiss(t('didYouLink.cap'))
+    if (why || !code) return setMiss(tMiss(why || 'people.reach'))
+    setMiss('')
+    setLink(code)
+    const how = await passAlong(sharedDidYouLine(card.question, code), t('weLink.share'))
+    if (how === 'copied') setLinkSaid(t('didYouLink.copied'))
+  }
+
+  function endLink() {
+    publishSheet({
+      title: t('weLink.offTitle'),
+      body: t('weLink.offBody'),
+      goLabel: t('weLink.off'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const out = await endWeLinks(card.id)
+        if (out.miss) return setMiss(tMiss(out.miss))
+        setLink('')
+        setLinkSaid(t('weLink.isOff'))
+      },
+    })
   }
 
   function leave() {
@@ -820,6 +868,10 @@ function WeCardPage({ book, cardId, onChange }) {
       <Cap colors={colors}>{t('we.askMore')}</Cap>
       <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
       {asking.length ? <KeyButton colors={colors} label={t('we.sendAsk')} disabled={busy} onPress={ask} /> : null}
+      <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
+      <Meta colors={colors}>{t('weLink.hint')}</Meta>
+      {link ? <KeyButton colors={colors} label={t('weLink.off')} disabled={busy} onPress={endLink} /> : null}
+      {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
 
       {card.mine ? (
         edit ? (

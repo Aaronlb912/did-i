@@ -3,6 +3,7 @@ import { useReduceMotion } from '../lib/useReduceMotion.js'
 import { t } from '../lib/i18n.js'
 import { MarketingShell } from './MarketingShell.jsx'
 import { PlayIcon } from './StoreButtons.jsx'
+import { PLAY_URL, betaRefFrom } from '../lib/invite-link.js'
 
 // Android beta. Play only lets members of the beta Google Group into the
 // closed test, so joining is two steps: the group, then the Play opt-in page,
@@ -42,6 +43,8 @@ function Step({ kicker, title, note, tip, href, label, icon = null }) {
 
 export function Beta() {
   const still = useReduceMotion()
+  // Came from an invite, QR code or Did you link: its referrer, for step 3.
+  const ref = typeof window === 'undefined' ? '' : betaRefFrom(window.location.search)
   const cut = usePhoneWidth() ? 'demo-vertical' : 'demo'
   return (
     <MarketingShell path="/beta">
@@ -70,6 +73,16 @@ export function Beta() {
             label={t('web.beta.step2Button')}
             icon={<PlayIcon />}
           />
+          {ref ? (
+            <Step
+              kicker={t('web.beta.step3Kicker')}
+              title={t('web.beta.step3')}
+              note={t('web.beta.step3Note')}
+              href={`${PLAY_URL}&referrer=${encodeURIComponent(ref)}`}
+              label={t('web.beta.step3Button')}
+              icon={<PlayIcon />}
+            />
+          ) : null}
         </div>
 
         <p className="di-detail-meta di-beta-fine">{t('web.beta.fine')}</p>

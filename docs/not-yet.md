@@ -12,6 +12,9 @@ Last worked through 2026-10-02.
 - **No report on a link.** A link with a bad question can be passed around; the add sheet only offers Add or No thanks.
 - **Sends from Did I** (`scripts/send-from-did-i.mjs`, max 4 in 30 days) reach signed-in accounts only. Inbox ones show for 30 days. `--tonight` ones are added on the next sync for that night (or the night after, by date), while the app or web app is open.
 - **The site page shows no avatar** yet, only the name.
+- **Did we links** (did-i.app/d/ with a 12 letter code, `supabase/share-links.sql`) last 7 days, 10 new a day per person, and can be turned off from the Did we page. Opening one offers "Join and add {name}", "Just join" or "No thanks"; a Did you link now offers "Keep it and add {name}" too. Friends are only made on that tap. Not tried on a phone yet; the sheet needs the OTA.
+- **Link previews** come from `api/link-preview.js` (a Vercel function on /d/CODE). English only, text only (no sender photo as the preview image yet).
+- **Did we links cannot be reported** from the join sheet, the same gap as Did you links.
 
 ## Profile pictures (2026-10-02)
 

@@ -3265,6 +3265,34 @@ test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet'
   assert.ok(manifest.includes('android:pathPrefix="/d/"'))
 })
 
+test('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
+  const { isWeLinkCode, readDidYouLink, didYouFromText, sharedDidYouLine } = await import('../src/lib/did-you-links.js')
+  const { didYouCodeFromPath } = await import('../src/site/path.js')
+  const { linkPreviewText, withLinkPreview } = await import('../src/lib/link-preview.js')
+  assert.equal(readDidYouLink('https://did-i.app/d/abcdefgh2345'), 'abcdefgh2345')
+  assert.ok(isWeLinkCode('ABCDEFGH2345'))
+  assert.ok(!isWeLinkCode('abcdefgh23'), 'ten letters is a Did you')
+  assert.equal(readDidYouLink('https://did-i.app/d/abcdefgh234'), '', 'eleven letters is neither')
+  assert.equal(didYouFromText('Did we walk the dog? did-i.app/d/abcdefgh2345'), 'abcdefgh2345')
+  assert.equal(didYouFromText('did=abcdefgh2345'), 'abcdefgh2345')
+  assert.equal(sharedDidYouLine('Did we walk the dog?', 'abcdefgh2345'), 'Did we walk the dog? did-i.app/d/abcdefgh2345')
+  assert.equal(didYouCodeFromPath('/d/abcdefgh2345'), 'abcdefgh2345')
+  assert.deepEqual(linkPreviewText({ question: 'Did we walk the dog?', name: 'Aaron' }, true), {
+    title: 'Aaron asked you to join a Did we',
+    description: 'Did we walk the dog?',
+  })
+  assert.equal(linkPreviewText({ question: 'Did you vote?', name: '' }, false).title, 'A Did you from Did I')
+  assert.equal(linkPreviewText(null, false), null)
+  const page = readFileSync(path.join(checkRoot, 'index.html'), 'utf8')
+  const out = withLinkPreview(page, { title: 'Ann "A" <b>', description: 'Did you drink water?', url: 'https://did-i.app/d/abcdefgh23' })
+  assert.ok(out.includes('<meta property="og:title" content="Ann &quot;A&quot; &lt;b&gt;"'), 'og title filled and escaped')
+  assert.ok(out.includes('<meta name="twitter:description" content="Did you drink water?"'))
+  assert.ok(out.includes('<meta property="og:url" content="https://did-i.app/d/abcdefgh23"'))
+  assert.ok(!out.includes("Now you don't have to wonder"), 'no generic title left')
+  const vercel = JSON.parse(readFileSync(path.join(checkRoot, 'vercel.json'), 'utf8'))
+  assert.equal(vercel.rewrites[0].source, '/d/:code', 'link pages go through the preview before the catch-all')
+})
+
 test('a question from Did I for one night never makes or breaks a streak', async () => {
   const { keptLamp } = await import('../src/lib/send-repeat.js')
   const clock = new Date(2026, 8, 28, 21, 0)
