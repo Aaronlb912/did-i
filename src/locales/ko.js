@@ -2168,6 +2168,7 @@ export const ko = {
   'scanPage.copied': '링크를 복사했어요. 설치 후 Did I를 열어 주세요.',
   'scanPage.bad': '코드가 맞지 않아요. 새 코드를 받아 주세요.',
   'friend.photoBig': '{name}의 사진 크게 보기',
+  'friend.more': '{name} 더 보기',
   'voice.noMatch': '오늘 밤 질문에서 "{said}"을(를) 찾지 못했어요. 여기서 답해 주세요.',
   'together.widgetTitle': '오늘 밤 함께',
   'together.widgetCount': '{total}명 중 {n}명 완료',

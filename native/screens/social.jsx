@@ -121,6 +121,39 @@ function OfflineLine({ colors }) {
   return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
+function FriendMenu({ name, items, colors, onClose }) {
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
+        <Pressable
+          accessible={false}
+          style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
+          onPress={(event) => event.stopPropagation()}
+        >
+          <Text style={[styles.popKicker, { color: colors.on }]}>{name}</Text>
+          {items.map((item) => (
+            <Pressable
+              key={item.key}
+              accessibilityRole="button"
+              onPress={() => {
+                onClose()
+                item.onPress()
+              }}
+              style={({ pressed }) => [
+                styles.menuRow,
+                { borderColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' },
+              ]}
+            >
+              <Text style={[styles.menuRowText, { color: item.danger ? colors.miss : colors.ink }]}>{item.label}</Text>
+            </Pressable>
+          ))}
+          <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
 function BlockModal({ person, colors, onClose, onDone }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -1519,6 +1552,7 @@ export function FriendScreen({ route }) {
   const [said, setSaid] = useState('')
   const [bigPhoto, setBigPhoto] = useState(false)
   const [blocking, setBlocking] = useState(false)
+  const [menu, setMenu] = useState(false)
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
@@ -1555,6 +1589,15 @@ export function FriendScreen({ route }) {
           <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{name}</Text>
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
         </View>
+        <Pressable
+          onPress={() => setMenu(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('friend.more', { name })}
+          style={({ pressed }) => [styles.moreBtn, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+        >
+          <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
+        </Pressable>
       </View>
       {bigPhoto && person?.avatar_url ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setBigPhoto(false)}>
@@ -1571,51 +1614,59 @@ export function FriendScreen({ route }) {
       ) : null}
       <DidButton colors={colors} label={t('people.sendDidYou')} onPress={() => setSheet({ person })} />
       {said ? <Meta colors={colors}>{said}</Meta> : null}
-      {person.avatar_url ? (
-        <KeyButton
+      {menu ? (
+        <FriendMenu
+          name={name}
           colors={colors}
-          label={t('avatar.report')}
-          onPress={() =>
-            publishSheet({
-              title: t('avatar.reportTitle', { name }),
-              body: t('avatar.reportBody'),
-              goLabel: t('avatar.report'),
-              closeLabel: t('settings.neverMind'),
-              colors,
-              onClose: () => publishSheet(null),
-              onGo: async () => {
-                publishSheet(null)
-                const { miss: why } = await blockPerson(otherId, 'photo')
-                if (why) return setSaid(tMiss(why))
-                return goHash('/friends')
-              },
-            })
-          }
+          onClose={() => setMenu(false)}
+          items={[
+            {
+              key: 'drop',
+              label: t('people.drop'),
+              onPress: () =>
+                publishSheet({
+                  title: t('people.dropTitle', { name }),
+                  body: t('people.dropBody'),
+                  goLabel: t('people.drop'),
+                  closeLabel: t('settings.neverMind'),
+                  colors,
+                  onClose: () => publishSheet(null),
+                  onGo: async () => {
+                    publishSheet(null)
+                    const { miss: why } = await dropFriend(otherId)
+                    if (why) return setSaid(tMiss(why))
+                    return goHash('/friends')
+                  },
+                }),
+            },
+            { key: 'block', label: t('block.block'), danger: true, onPress: () => setBlocking(true) },
+            ...(person.avatar_url
+              ? [
+                  {
+                    key: 'photo',
+                    label: t('avatar.report'),
+                    danger: true,
+                    onPress: () =>
+                      publishSheet({
+                        title: t('avatar.reportTitle', { name }),
+                        body: t('avatar.reportBody'),
+                        goLabel: t('avatar.report'),
+                        closeLabel: t('settings.neverMind'),
+                        colors,
+                        onClose: () => publishSheet(null),
+                        onGo: async () => {
+                          publishSheet(null)
+                          const { miss: why } = await blockPerson(otherId, 'photo')
+                          if (why) return setSaid(tMiss(why))
+                          return goHash('/friends')
+                        },
+                      }),
+                  },
+                ]
+              : []),
+          ]}
         />
       ) : null}
-      <View style={styles.personActions}>
-        <KeyButton
-          colors={colors}
-          label={t('people.drop')}
-          onPress={() =>
-            publishSheet({
-              title: t('people.dropTitle', { name }),
-              body: t('people.dropBody'),
-              goLabel: t('people.drop'),
-              closeLabel: t('settings.neverMind'),
-              colors,
-              onClose: () => publishSheet(null),
-              onGo: async () => {
-                publishSheet(null)
-                const { miss: why } = await dropFriend(otherId)
-                if (why) return setSaid(tMiss(why))
-                return goHash('/friends')
-              },
-            })
-          }
-        />
-        <KeyButton colors={colors} label={t('block.block')} onPress={() => setBlocking(true)} />
-      </View>
       {blocking ? (
         <BlockModal
           person={person}
@@ -1954,6 +2005,10 @@ const styles = StyleSheet.create({
   personTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },
   personNote: { fontFamily: fonts.ui, fontSize: 13 },
   personActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreText: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 22 },
+  menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
+  menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },
   wallRow: {
     borderWidth: 1,
     borderRadius: 12,

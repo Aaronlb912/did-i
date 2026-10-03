@@ -2235,6 +2235,7 @@ export const en = {
   'scanPage.copied': 'Link copied. Open Did I after it installs.',
   'scanPage.bad': 'That code is not right. Ask for a new one.',
   'friend.photoBig': 'See {name}\'s photo bigger',
+  'friend.more': 'More for {name}',
   'voice.noMatch': 'Did I could not find "{said}" tonight. Answer it here.',
   'together.widgetTitle': 'Together tonight',
   'together.widgetCount': '{n} of {total} done',

@@ -2240,6 +2240,7 @@ export const pt = {
   'scanPage.copied': 'Link copiado. Abra o Did I depois de instalar.',
   'scanPage.bad': 'Esse código não está certo. Peça um novo.',
   'friend.photoBig': 'Ver a foto de {name} maior',
+  'friend.more': 'Mais para {name}',
   'voice.noMatch': 'O Did I não achou "{said}" hoje à noite. Responda aqui.',
   'together.widgetTitle': 'Juntos hoje à noite',
   'together.widgetCount': '{n} de {total} concluíram',
