@@ -6,6 +6,7 @@ import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWePings } from './we-widget.js'
+import { refreshWeNights } from './we-nights.js'
 
 // Did we: one question two or more people answer together. The server
 // (supabase/did-we.sql) decides what counts as done and what each person may
@@ -451,8 +452,8 @@ function loadShared(force, userId) {
   sharedFor_(userId)
   if (inflight) return inflight
   if (!force && Date.now() - loadedAt < 3000) return Promise.resolve(shared)
-  inflight = weTonight()
-    .then((next) => {
+  inflight = Promise.all([weTonight(), refreshWeNights().catch(() => {})])
+    .then(([next]) => {
       if (sharedFor !== userId) return EMPTY
       shareMyBuddy(next.cards)
       shared = next

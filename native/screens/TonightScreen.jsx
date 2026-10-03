@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { publishSheet } from '../components/SheetHost.jsx'
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
+import { clockWords, graceExplained, markGraceExplained, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
@@ -45,6 +46,8 @@ import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { weOpenOn } from '../../src/lib/we-nights.js'
+import { graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
 import { saveWeReminders, saveWeWidgetLine, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
@@ -115,6 +118,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
+  const [graceWeLeft, setGraceWeLeft] = useState([])
   // A Did we pill tapped: its card comes up to swipe, ahead of your own.
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
@@ -152,15 +156,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
-  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.hallOn
+  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
     () =>
-      stack.hallOn
+      stack.nightDone
         ? { week: weekStripNights(stack.shelf, stack.clock, tagId), tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stack.shelf, stack.dateIso, tagId, stack.hallOn],
+    [stack.shelf, stack.dateIso, tagId, stack.nightDone],
   )
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
@@ -217,8 +221,71 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         buddy={activeBuddy(book)}
       />
     ) : null
+  // The grace period for the previous night: first until 5am, then after
+  // tonight's own cards until 9am.
+  // Your own open questions from last night, then last night's open Did wes.
+  const graceNight = graceNightIso()
+  const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
+  const graceItems = [
+    ...stack.graceOpen.map((row) => ({
+      key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
+      title: row.lamp.question,
+      onDid: () => stack.markGrace(row, 'yes'),
+      onNope: () => stack.markGrace(row, 'skip'),
+      buddy: activeBuddy(stack.bookOf(row)),
+    })),
+    ...weCards
+      .filter((card) => graceWeOpen.has(card.id) && !graceWeLeft.includes(card.id))
+      .map((card) => ({
+        key: `grace-we:${card.id}`,
+        title: card.question,
+        onDid: () => weAns.answer(card, 'did', graceNight),
+        onNope: () => {
+          setGraceWeLeft((ids) => [...ids, card.id])
+          return weAns.answer(card, 'nope', graceNight)
+        },
+        buddy: activeBuddy(book),
+      })),
+  ]
+  const graceKicker = t('tonight.graceKicker', { time: clockWords('09:00') })
+  const graceTop = graceItems[0] || null
+  const graceCard = graceTop ? (
+    <SwipeCardHost
+      key="grace"
+      cardKey={graceTop.key}
+      colors={colors}
+      panelStyle={gemCard}
+      gemLook={premium ? look : ''}
+      kicker={graceKicker}
+      title={graceTop.title}
+      stampDid={t('tonight.swipeDid')}
+      stampNope={t('tonight.swipeNope')}
+      behind={graceItems.slice(1).map((item) => ({ key: item.key, kicker: graceKicker, title: item.title }))}
+      onDid={graceTop.onDid}
+      onNope={graceTop.onNope}
+      buddy={graceTop.buddy}
+    />
+  ) : null
+  const graceFirstNow = graceItems.length > 0 && graceFirst()
+  const graceShowing = Boolean(
+    graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind)),
+  )
+  // The first time a grace card shows, say what the grace period is.
+  useEffect(() => {
+    if (!graceShowing || graceExplained()) return
+    markGraceExplained()
+    publishSheet({
+      title: t('grace.title'),
+      body: t('grace.body', { time: clockWords('09:00') }),
+      closeLabel: t('grace.gotIt'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }, [graceShowing, colors])
   let face = null
-  if (pickedWe && !stack.cheer) {
+  if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
+    face = graceCard
+  } else if (pickedWe && !stack.cheer) {
     face = (
       <WeSwipeCard
         cards={[pickedWe]}
@@ -284,7 +351,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         ) : null}
       </SwipeCardHost>
     )
-  } else if (stack.bodyKind === 'hall') {
+  } else if (stack.bodyKind === 'hall' && stack.nightDone) {
     face = (
       <CardSettle play={Boolean(stack.cheer)}>
         <GemFaceShell look={premium ? look : ''}
@@ -487,7 +554,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
       <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu clear={premium} />
       <Slot>
-        <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.hallOn} accent={colors.on} />
+        <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.nightDone} accent={colors.on} />
       </Slot>
       <View
         pointerEvents="box-none"
@@ -495,11 +562,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           styles.shell,
           premium && styles.aboveHalo,
           { paddingTop: headerInset, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
-          stack.hallOn && styles.sitOn,
+          stack.nightDone && styles.sitOn,
         ]}
       >
       <Slot>
-        <NightMeter due={stack.due} colors={colors} hallOn={stack.hallOn} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
+        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
       </Slot>
 
       {showChips ? (
@@ -529,7 +596,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
                 dueToday={dueUrgency === 'today'}
                 dueSoon={dueUrgency === 'soon'}
                 face={isFace}
-                sit={stack.hallOn && on}
+                sit={stack.nightDone && on}
                 filament={on ? stack.filamentLevel(bookOf, row.lamp.id) : 0}
                 colors={colors}
                 onPress={() => {
@@ -582,7 +649,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       <SwipeFlyHost style={styles.slot}>
-        {stack.bodyKind === 'hall' ? (
+        {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
           </Slot>

@@ -2735,6 +2735,113 @@ const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js'
 const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
 const { isAppForeground } = await import('../src/lib/app-foreground.js')
 
+await testAsync('the grace period for the previous night runs until 9am', async () => {
+  const { graceNightIso, graceFirst, answerFor } = await import('../src/lib/recurrence.js')
+  const { graceRowsFor } = await import('../src/lib/grace.js')
+  const { lastBrokenNight } = await import('../src/lib/hall-feel.js')
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  // Friday Oct 2 is the night; Saturday morning is its grace period.
+  const fri = '2026-10-02'
+  const at = (h, m = 0) => new Date(2026, 9, 3, h, m)
+  assert.equal(graceNightIso(at(2)), fri)
+  assert.equal(graceNightIso(at(8, 59)), fri)
+  assert.equal(graceNightIso(at(9)), '', 'closes at 9am')
+  assert.equal(graceNightIso(new Date(2026, 9, 2, 23, 0)), '', 'no grace before midnight')
+  assert.equal(graceFirst(at(4, 59)), true, 'first until 5am')
+  assert.equal(graceFirst(at(5)), false, 'behind today from 5am')
+
+  const nights = ['2026-09-29', '2026-09-30', '2026-10-01']
+  const book = {
+    id: 'b1',
+    title: 'Games',
+    dayFoldHour: 0,
+    lamps: [
+      { id: 'daily', question: 'Did I do my dailies?', cadence: 'daily', archived: false, createdOn: '2026-09-01' },
+      { id: 'once', question: 'Did I book the trip?', cadence: 'once', onceOn: fri, archived: false, createdOn: '2026-09-20' },
+    ],
+    answers: nights.map((n) => ({ lampId: 'daily', periodKey: n, status: 'yes', answeredAt: `${n}T21:00:00` })),
+  }
+
+  // 2am Saturday: Friday's dailies are still open, not closed as nope.
+  const at2 = closePastNights(book, at(2))
+  assert.equal(answerFor(at2, 'daily', fri), undefined, 'not closed during the grace period')
+  assert.equal(at2.lamps.find((l) => l.id === 'once').archived, false, 'a one-time question stays until 9am')
+  assert.deepEqual(graceRowsFor([at2], fri).map((r) => r.lamp.id).sort(), ['daily', 'once'])
+  assert.equal(shelfStreak([at2], at(2)), 3, 'last night open in its grace period is not a break')
+  assert.equal(lastBrokenNight([at2], at(2)), null, 'no streak-ended message before 9am')
+
+  // A did at 2am lands on Friday as a did, and keeps the streak.
+  const row = graceRowsFor([at2], fri).find((r) => r.lamp.id === 'daily')
+  const onceRow = graceRowsFor([at2], fri).find((r) => r.lamp.id === 'once')
+  const did = putAnswer(putAnswer(at2, row, 'yes', at(2)), onceRow, 'yes', at(2))
+  assert.equal(answerFor(did, 'daily', fri)?.status, 'yes', 'a did after midnight is a did, not late')
+  assert.equal(shelfStreak([did], at(2)), 4)
+
+  // A nope in the grace period can still become a did (late) before 9am.
+  const noped = putAnswer(at2, row, 'skip', at(3))
+  assert.equal(graceRowsFor([noped], fri).some((r) => r.lamp.id === 'daily'), true, 'a nope stays open')
+  const turned = putAnswer(noped, { ...row, answer: answerFor(noped, 'daily', fri) }, 'late', at(4))
+  assert.equal(answerFor(turned, 'daily', fri)?.status, 'late')
+
+  // 9am: still open is closed as nope, and now it is a break.
+  const at9 = closePastNights(book, at(9, 1))
+  assert.equal(answerFor(at9, 'daily', fri)?.status, 'skip', 'closed at 9am')
+  assert.equal(at9.lamps.find((l) => l.id === 'once').archived, true)
+  assert.equal(putAnswer(at9, { ...row, answer: answerFor(at9, 'daily', fri) }, 'yes', at(9, 5)), at9, 'too late after 9am')
+
+  // A Did we from last night is in the same grace period.
+  try {
+    setWeNightRows([{ card: 'c1', folder: '', night: fri, status: '' }])
+    assert.equal(shelfStreak([did], at(2)), 3, 'an open Did we from last night is not a break before 9am (and not counted yet)')
+  } finally {
+    clearWeNights()
+  }
+})
+
+await testAsync('a Did we due for you counts in your streak and tonight bar by your own swipe', async () => {
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const night = (back) => {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    return boardDate(day)
+  }
+  // Your own question, did on each of the last four nights (tonight included).
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: [0, 1, 2, 3].map((back) => ({ lampId: 'door', periodKey: night(back), status: 'yes', answeredAt: `${night(back)}T21:00:00` })),
+  }
+  const we = (back, status) => ({ card: 'c1', folder: '', night: night(back), status })
+  try {
+    setWeNightRows([we(0, 'did'), we(1, 'did'), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 4, 'your did on the Did we keeps the nights clear')
+    setWeNightRows([we(0, 'did'), we(1, 'nope'), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 1, 'a nope on a Did we breaks the streak like your own nope')
+    setWeNightRows([we(0, 'did'), we(1, ''), we(2, 'did')])
+    assert.equal(shelfStreak([book], clock), 1, 'an unanswered Did we breaks it too')
+    setWeNightRows([we(0, ''), we(1, 'did')])
+    assert.equal(shelfStreak([book], clock), 3, 'an open Did we tonight is not a break yet; the nights before still count')
+    // A nope tonight can still become late before the night turns, so it is not a break yet.
+    setWeNightRows([we(0, 'nope'), we(1, 'did')])
+    assert.equal(shelfStreak([book], clock), 3, 'a nope on the Did we tonight does not end the streak until the night is over')
+    const nopeTonight = { ...book, answers: book.answers.map((a) => (a.periodKey === night(0) ? { ...a, status: 'skip' } : a)) }
+    setWeNightRows([])
+    assert.equal(shelfStreak([nopeTonight], clock), 3, 'the same for a nope on your own question tonight')
+    // A night with only a Did we due counts once you said did.
+    const gap = { ...book, answers: book.answers.filter((a) => a.periodKey !== night(1)), lamps: [{ ...book.lamps[0], cadence: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== new Date(night(1) + 'T12:00').getDay()) }] }
+    setWeNightRows([we(1, 'did')])
+    assert.equal(shelfStreak([gap], clock), 4, 'a Did we-only night counts as a streak night')
+    // Tonight's bar: one of your own plus one Did we.
+    const due = [{ lamp: book.lamps[0], dateIso: night(0), periodKey: night(0), answer: { status: 'yes' } }]
+    assert.deepEqual(nightProgress(due, { due: 1, done: 0 }), { total: 2, answered: 1, ratio: 0.5 })
+    assert.deepEqual(nightProgress(due, { due: 1, done: 1 }), { total: 2, answered: 2, ratio: 1 })
+  } finally {
+    clearWeNights()
+  }
+})
+
 test('a first cleared night is not "1 nights" and is not on fire yet', () => {
   const one = streakHitCopy(1)
   assert.equal(one.title, en['streak.hitTitleClear'])

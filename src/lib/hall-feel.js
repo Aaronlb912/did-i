@@ -1,4 +1,5 @@
-import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, parseIsoDate } from './recurrence.js'
+import { weNight } from './we-nights.js'
+import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
@@ -64,12 +65,14 @@ function firstNight(books) {
 export function lastBrokenNight(boards, now = new Date()) {
   const books = scopedBooks(boards, '')
   if (!books.length) return null
+  // Last night is still in its grace period: nothing is judged yet.
+  if (graceNightIso(now)) return null
   let night = addDaysIso(boardDate(now, books[0].dayFoldHour), -1)
   let found = false
   for (let step = 0; step < 40 && !found; step += 1) {
     const at = noonOn(night)
     if (!at) return null
-    if (books.some((book) => countedTonightRows(dueTonight(book, at)).length)) found = true
+    if (weNight(night).due || books.some((book) => countedTonightRows(dueTonight(book, at)).length)) found = true
     else night = addDaysIso(night, -1)
   }
   if (!found) return null
@@ -106,6 +109,7 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
   if (!books.length) return 0
   const floor = firstNight(books)
   let cursor = boardDate(now, books[0].dayFoldHour)
+  const grace = waitTonight ? graceNightIso(now) : ''
   let heat = 0
   for (let step = 0; step < lookBack && heat < cap; step += 1) {
     if (floor && cursor < floor) break
@@ -118,12 +122,16 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
       dueCount += night.counted
       if (night.counted && !night.clear) clear = false
     }
+    // Did wes due for you that night: only your own did counts.
+    const we = weNight(cursor, tagId)
+    dueCount += we.due
+    if (we.due && !we.clear) clear = false
     if (dueCount === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
     }
     if (!clear) {
-      if (step > 0 || !waitTonight) break
+      if ((step > 0 && cursor !== grace) || !waitTonight) break
       cursor = addDaysIso(cursor, -1)
       continue
     }

@@ -18,6 +18,7 @@ import {
 import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
 import { shelfStreak } from './hall-feel.js'
+import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
 import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
 import { queueGifts } from './gift-inbox.js'
@@ -119,6 +120,7 @@ function writeLastUser(id) {
 export function signedOutSync() {
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
+  clearWeNights()
   const shelf = clearLocalShelf()
   writeLastUser('')
   clearAuthSkip()
@@ -160,9 +162,11 @@ async function putShelf(db, user, shelf, savedAt) {
 function nightMark(shelf, now = new Date()) {
   const boards = shelf?.boards || []
   const night = boardDate(now)
-  const hadAny = boards.some((book) => countedTonightRows(dueTonight(book, now)).length > 0)
+  const we = weNight(night)
+  const hadAny = we.due > 0 || boards.some((book) => countedTonightRows(dueTonight(book, now)).length > 0)
   const clear =
     hadAny &&
+    (!we.due || we.clear) &&
     boards.every((book) => countedTonightRows(dueTonight(book, now)).length === 0 || allClearTonight(book, now))
   // The real streak, not the room's glow that stops at five.
   return { streak: shelfStreak(boards, now), doneOn: clear ? night : null }
@@ -389,6 +393,16 @@ export async function pushNow(shelf) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
   }
 }
+
+let weMark = ''
+onWeNights(() => {
+  const now = weNight(boardDate(new Date()))
+  const mark = `${boardDate(new Date())}:${now.due}:${now.done}`
+  if (mark === weMark) return
+  const first = !weMark
+  weMark = mark
+  if (!first) pushSoon(readShelf())
+})
 
 export function pushSoon(shelf) {
   if (!cloudSetUp()) return

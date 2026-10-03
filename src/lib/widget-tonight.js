@@ -1,4 +1,6 @@
 import { putAnswer } from './board-ops.js'
+import { weNight } from './we-nights.js'
+import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
 import {
@@ -21,6 +23,9 @@ import {
   dueTonight,
   finishStackCount,
   periodPassed,
+  openFloorIso,
+  graceFirst,
+  graceNightIso,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -55,7 +60,7 @@ function mapRow(row) {
     label: shortLabel(row.lamp),
     question: String(row.lamp.question || '').trim() || shortLabel(row.lamp),
     status: rowStatus(row),
-    tag: String(row.book?.title || '').trim(),
+    tag: String(row.graceTag || row.book?.title || '').trim(),
   }
 }
 
@@ -84,7 +89,7 @@ function applyItemStatus(book, item, status, clock = new Date()) {
 // The widget only ever shows the current night, so a tap stored for an
 // earlier night was made on that night. It lands there, not as a late edit.
 function tapClock(row, clock) {
-  if (!row?.dateIso || !periodPassed(row.lamp, row.periodKey, boardDate(clock))) return clock
+  if (!row?.dateIso || !periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) return clock
   return nightEnd(row.dateIso)
 }
 
@@ -160,22 +165,33 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const openRows = rows.filter((row) => !row.answer)
   const rankedOpen = rankWidgetOpen(openRows, now)
   const doneRows = rows.filter((row) => row.answer)
-  const items = [...rankedOpen, ...doneRows].map(mapRow)
-  const lead = rankedOpen[0] || rows.find((row) => row.answer?.status === 'skip') || null
+  // The grace period for the previous night: its open questions, first until
+  // 5am and after tonight's until 9am. A tap lands on last night.
+  const graceNight = graceNightIso(now)
+  const graceOpen = graceNight
+    ? graceRowsFor(boards, graceNight).map((row) => ({ ...row, graceTag: t('widget.tonight.lastNight') }))
+    : []
+  const firstGrace = graceOpen.length > 0 && graceFirst(now)
+  const openOrdered = firstGrace ? [...graceOpen, ...rankedOpen] : [...rankedOpen, ...graceOpen]
+  const items = [...openOrdered, ...doneRows].map(mapRow)
+  const lead = openOrdered[0] || rows.find((row) => row.answer?.status === 'skip') || null
   const question = lead
     ? String(lead.lamp.question || '').trim() || shortLabel(lead.lamp)
     : ''
   // Count like Tonight's meter: an optional question (put on your tonight
   // for you) stays on the widget to answer, but is not "left" until you did it.
-  const left = finishStackCount(countedTonightRows(rows))
+  // A Did we due tonight counts too, until you said did on it in the app.
+  const we = weNight(boardDate(now))
+  const left = finishStackCount(countedTonightRows(rows)) + (we.due - we.done) + graceOpen.length
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
   // answered rows).
-  const allClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
+  const ownClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
+  const allClear = ownClear && (!we.due || we.clear) && graceOpen.length === 0
   let footer = ''
   if (allClear) {
     footer = t('widget.tonight.clear')
-  } else if (!rows.length) {
+  } else if (!rows.length && !left) {
     footer = t('widget.tonight.empty')
   } else if (left === 1) {
     footer = t('widget.tonight.oneLeft')
@@ -349,7 +365,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
   if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const tappedAt = tapAt > 0 ? new Date(tapAt) : null
-  if (tappedAt && periodPassed(row.lamp, row.periodKey, boardDate(tappedAt))) return null
+  if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
   const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))

@@ -25,6 +25,9 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
+import { graceRowsFor } from './grace.js'
+import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
+import { onWeNights, weNight } from './we-nights.js'
 
 // How long an answer can be taken back.
 export const UNDO_MS = 6000
@@ -97,12 +100,62 @@ export function useTonightStack({
     [shelf, liveValue, tagId, topicKey, dateIso, minute],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
+
+  // The grace period for the previous night: its open questions, one card at
+  // a time. A nope sets one aside for now; it stays answerable until 9am.
+  const graceNight = graceNightIso(clock)
+  const [graceLeft, setGraceLeft] = useState([])
+  const graceRows = useMemo(
+    () => (graceNight ? graceRowsFor(scopedBooks(shelf, tagId), graceNight).filter((row) => hasAnyTopic(row.lamp, topics)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, tagId, topicKey, graceNight],
+  )
+  const graceOpen = graceRows.filter((row) => !graceLeft.includes(`${rowKey(row)}:${row.periodKey}`))
+  useEffect(() => {
+    setGraceLeft([])
+  }, [graceNight])
+
+  function markGrace(row, status) {
+    if (!row) return
+    const book = bookOf(row)
+    const live = answerFor(book, row.lamp.id, row.periodKey)
+    const key = `${rowKey(row)}:${row.periodKey}`
+    if (status === 'skip') {
+      setGraceLeft((keys) => [...keys, key])
+      if (live) return
+    }
+    // A did after midnight is a did; a did after a nope is late, as always.
+    const finalStatus = status === 'yes' ? didStatusForRow({ ...row, answer: live || row.answer }) : status
+    const next = putAnswer(book, row, finalStatus, clock)
+    setOverlay(next)
+    change(next)
+    armUndo({ book, label: t('tonight.saved') })
+    feelTap(finalStatus === 'skip' ? 'skip' : 'did')
+  }
   const hallOn = dueClearTonight(due)
+  // Did wes due for you tonight: in the bar's count and in the streak.
+  const [, setWeTick] = useState(0)
+  useEffect(() => onWeNights(() => setWeTick((n) => n + 1)), [])
+  const weTonight = weNight(dateIso, tagId)
+  // Tonight is done only once your Did wes due tonight are done too. Until
+  // then the done look (sky, glow, cheer) waits and the Did we card comes
+  // first. The Did we nights are kept on the phone, so this is known at once.
+  const nightDone = hallOn && weTonight.done >= weTonight.due
+  const wasDone = useRef(nightDone)
+  useEffect(() => {
+    // Your own questions were already done; a Did we just finished the night.
+    if (!wasDone.current && nightDone && weTonight.due) {
+      const to = shelfStreak(shelf, clock, tagId)
+      if (to > 0) setCheer({ dateIso, from: to - 1, to })
+    }
+    wasDone.current = nightDone
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nightDone])
   // A walk back through the nights, so only once tonight is clear.
   const streak = useMemo(
     () => (hallOn ? shelfStreak(shelf, clock, tagId) : 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shelf, tagId, dateIso, hallOn],
+    [shelf, tagId, dateIso, hallOn, weTonight.due, weTonight.done],
   )
   const openReady = ready.filter((row) => !row.answer)
   const finishCount = useMemo(() => {
@@ -448,10 +501,15 @@ export function useTonightStack({
     catchUp,
     heat,
     streak,
-    cheer: cheer && cheer.dateIso === dateIso && hallOn ? cheer : null,
+    cheer: cheer && cheer.dateIso === dateIso && nightDone ? cheer : null,
+    nightDone,
     cheered,
     hour,
     hallOn,
+    graceOpen,
+    graceFirst: graceOpen.length > 0 && graceFirstAt(clock),
+    markGrace,
+    weTonight,
     empty,
     finishCount,
     onFinish,

@@ -10,7 +10,8 @@ import { pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
-import { streakRiskFire } from '../../src/lib/streak-risk.js'
+import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
@@ -196,10 +197,22 @@ export async function scheduleNativePings(books, now = new Date()) {
         identifier: String(notifyId('streak', risk.tag)),
         content: {
           title: t('streak.riskTitle'),
-          body: t('streak.riskBody'),
+          body: t('streak.riskBody', { time: clockWords('09:00') }),
           data: { go: '/tonight', streakRisk: true },
         },
         trigger: when(new Date(risk.at)),
+      })
+    }
+    const grace = pingOn('streakRisk') ? graceRiskFire(book, now) : null
+    if (grace) {
+      notes.push({
+        identifier: String(notifyId('streak', grace.tag)),
+        content: {
+          title: t('streak.riskTitle'),
+          body: t('streak.graceBody', { time: clockWords('09:00') }),
+          data: { go: '/tonight', streakRisk: true },
+        },
+        trigger: when(new Date(grace.at)),
       })
     }
     for (const note of notes) {

@@ -7,6 +7,8 @@ import {
   parseIsoDate,
   periodKeyFor,
   periodPassed,
+  graceNightIso,
+  openFloorIso,
 } from './recurrence.js'
 
 const CLOSE_CAP = 400
@@ -55,7 +57,8 @@ export function closePastNights(book, now = new Date()) {
   let next = book
   let changed = false
   for (let step = 0; step < CLOSE_CAP; step += 1) {
-    const rows = catchUpRows(next, now)
+    const grace = graceNightIso(now)
+    const rows = catchUpRows(next, now).filter((row) => row.dateIso !== grace)
     if (!rows.length) break
     for (const row of rows) {
       next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
@@ -63,6 +66,7 @@ export function closePastNights(book, now = new Date()) {
     }
   }
   for (const row of closeOnceRows(next, now)) {
+    if (row.dateIso === graceNightIso(now)) continue
     if (answerFor(next, row.lamp.id, row.periodKey)) continue
     next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
     changed = true
@@ -70,8 +74,9 @@ export function closePastNights(book, now = new Date()) {
   // A one-time question whose day (or due date) is behind us is done
   // asking: it moves to "no longer asking" instead of sitting in the list.
   const today = boardDate(now, next.dayFoldHour)
+  const floor = openFloorIso(now)
   const spent = (next.lamps || []).filter(
-    (lamp) => !lamp.archived && lamp.cadence === 'once' && periodPassed(lamp, periodKeyFor(lamp, today), today),
+    (lamp) => !lamp.archived && lamp.cadence === 'once' && periodPassed(lamp, periodKeyFor(lamp, today), floor),
   )
   if (spent.length) {
     const ids = new Set(spent.map((lamp) => lamp.id))

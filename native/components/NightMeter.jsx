@@ -24,11 +24,11 @@ const FILL_MS = 420
 // The bar springs to each new width, passing it by a hair.
 const FILL_SPRING = { damping: 14, stiffness: 180, mass: 1 }
 
-export function NightMeter({ due, colors, hallOn = false, gemLook = '', celebrate = false }) {
+export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '', celebrate = false }) {
   const theme = useTheme()
   const gemMeter = gemLook ? gemMeterStyle(gemLook, theme) : null
   const reduce = useReduceMotion()
-  const { total, answered, ratio } = nightProgress(due)
+  const { total, answered, ratio } = nightProgress(due, we)
 
   // The bar springs to each answer instead of jumping; the last one fills it.
   const fill = useSharedValue(ratio)

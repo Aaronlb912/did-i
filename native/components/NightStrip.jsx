@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
-import { answerFor, boardDate, periodPassed } from '../../src/lib/recurrence.js'
+import { answerFor, boardDate, openFloorIso, periodPassed } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
 
 function jewelColor(state, colors) {
@@ -43,7 +43,7 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = 
         const canPick =
           onPickHole &&
           !noPickKeys.includes(key) &&
-          !periodPassed(lamp, key, today) &&
+          !periodPassed(lamp, key, openFloorIso()) &&
           (!answer || answer.status === 'skip')
         const dot = (
           <View
