@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
+import { svgGradient } from '../lib/svg-parts.js'
 
 const FADE = 28
 
+// No svg (the fallback, or the web visual check): no fade, the row still scrolls.
 function Fade({ side, color }) {
+  const parts = svgGradient()
+  if (!parts) return null
+  const { Svg, Defs, LinearGradient, Stop, Rect } = parts
   const id = `fade-${side}`
   return (
     <View pointerEvents="none" style={[styles.fade, side === 'left' ? styles.left : styles.right]}>
