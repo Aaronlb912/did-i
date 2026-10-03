@@ -2760,6 +2760,12 @@ await testAsync('a Did we due for you counts in your streak and tonight bar by y
     assert.equal(shelfStreak([book], clock), 1, 'an unanswered Did we breaks it too')
     setWeNightRows([we(0, ''), we(1, 'did')])
     assert.equal(shelfStreak([book], clock), 3, 'an open Did we tonight is not a break yet; the nights before still count')
+    // A nope tonight can still become late before the night turns, so it is not a break yet.
+    setWeNightRows([we(0, 'nope'), we(1, 'did')])
+    assert.equal(shelfStreak([book], clock), 3, 'a nope on the Did we tonight does not end the streak until the night is over')
+    const nopeTonight = { ...book, answers: book.answers.map((a) => (a.periodKey === night(0) ? { ...a, status: 'skip' } : a)) }
+    setWeNightRows([])
+    assert.equal(shelfStreak([nopeTonight], clock), 3, 'the same for a nope on your own question tonight')
     // A night with only a Did we due counts once you said did.
     const gap = { ...book, answers: book.answers.filter((a) => a.periodKey !== night(1)), lamps: [{ ...book.lamps[0], cadence: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== new Date(night(1) + 'T12:00').getDay()) }] }
     setWeNightRows([we(1, 'did')])
