@@ -1877,7 +1877,7 @@ export const de = {
   'people.more': 'Mehr',
   'people.less': 'Weniger',
   'people.seeAll': 'Alle ansehen',
-  'people.doneOf': '{done} von {n} heute fertig.',
+  'people.doneOf': '{done} von {n} Freunden haben ihren Abend erledigt.',
   'people.stripHint': 'Tipp jemanden an für eure did yous und Did wes.',
   'familyJoin.kicker': 'Einer Familie beitreten',
   'familyJoin.members': '{n} Personen sind dabei.',

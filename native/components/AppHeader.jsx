@@ -196,6 +196,7 @@ function TopAppBar({
   scrollY,
   leftAction,
   rightAction,
+  clear = false,
 }) {
   const insets = useSafeAreaInsets()
   const showBack = useShowBack(leftAction ? false : back)
@@ -211,7 +212,7 @@ function TopAppBar({
       : 1
 
   return (
-    <View style={[styles.appBar, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
+    <View style={[styles.appBar, { paddingTop: insets.top, backgroundColor: clear ? 'transparent' : colors.bg }]}>
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.panel, opacity: tint }]}

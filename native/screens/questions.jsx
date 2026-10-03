@@ -242,14 +242,25 @@ function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
 // Did yous and Did wes, one tap from Questions. Each pill shows only when
 // there is something behind it, so the page looks the same for people who
 // never use them.
-function FromFriends({ rows, didYouOnly, onDidYou, colors }) {
+function FromFriends({ rows, didYouOnly, onDidYou, dateIso, colors }) {
   const account = useAccount()
   const { inbox } = usePeoplePulse(account.user)
   const { cards } = useWeTonight(account.user)
   if (!account.user) return null
-  const kept = rows.filter((row) => row.lamp.fromDidYou).length
+  // Count only what is still being asked, tonight or on a later night: not
+  // stopped, and not a one-night did you whose night has gone.
+  const kept = rows.filter(
+    (row) =>
+      row.lamp.fromDidYou &&
+      !row.lamp.archived &&
+      !(row.lamp.cadence === 'once' && row.lamp.onceOn && row.lamp.onceOn < dateIso),
+  ).length
   const youN = kept + (inbox || 0)
-  const weN = (cards || []).length
+  const weN = (cards || []).filter(
+    (card) =>
+      (card.myState === 'asked' || card.myState === 'in') &&
+      !(card.cadence === 'once' && card.startsOn && card.startsOn < dateIso),
+  ).length
   if (!youN && !weN && !didYouOnly) return null
   return (
     <>
@@ -398,6 +409,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           rows={allRows}
           didYouOnly={didYouOnly}
           onDidYou={() => setDidYouOnly((on) => !on)}
+          dateIso={dateIso}
           colors={colors}
         />
 

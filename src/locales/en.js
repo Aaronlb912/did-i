@@ -1859,7 +1859,7 @@ export const en = {
   'people.more': 'More',
   'people.less': 'Less',
   'people.seeAll': 'See all',
-  'people.doneOf': '{done} of {n} done tonight.',
+  'people.doneOf': '{done} of {n} friends finished their own night.',
   'people.stripHint': 'Tap one to see your did yous and the Did wes you share.',
   'familyJoin.kicker': 'Join a family',
   'familyJoin.members': '{n} people are in it.',

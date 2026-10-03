@@ -22,7 +22,7 @@ export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/
 // one tap back to Tonight from anywhere.
 // Inbox has no row of its own, its count folds into Friends and family's
 // badge. A badge never highlights a row; only where you are does.
-// we: Did we asks plus shared questions waiting on your answer. Did we lives
+// we: Did we asks to join (and unopened gifts). Did we lives
 // on Friends and family, so its count folds into that row's badge.
 export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
   const path = readRoute().path

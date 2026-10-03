@@ -1797,7 +1797,7 @@ export const zh = {
   'people.more': '更多',
   'people.less': '收起',
   'people.seeAll': '查看全部',
-  'people.doneOf': '今晚 {n} 人中 {done} 人已完成。',
+  'people.doneOf': '{n} 位好友中有 {done} 位完成了自己的今晚。',
   'people.stripHint': '点一个人，查看你们的 did you 和 Did we。',
   'familyJoin.kicker': '加入家庭',
   'familyJoin.members': '里面有 {n} 个人。',
