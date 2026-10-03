@@ -133,6 +133,15 @@ export function initGemIap() {
   return pending
 }
 
+async function loadProducts(fetchProducts) {
+  const result = await fetchProducts({ skus: skusToAsk(), type: 'in-app' })
+  const list = Array.isArray(result) ? result : result?.products || result?.value || []
+  if (!list.length) return
+  prices.clear()
+  liveSku.clear()
+  for (const item of list) rememberProduct(item)
+}
+
 async function connectStore() {
   try {
     const mod = await loadIap()
@@ -159,11 +168,7 @@ async function connectStore() {
       if (error?.code === ErrorCode.UserCancelled) return
       console.warn('gem iap', error?.message || error)
     })
-    const result = await fetchProducts({ skus: skusToAsk(), type: 'in-app' })
-    const list = Array.isArray(result) ? result : result?.products || result?.value || []
-    prices.clear()
-    liveSku.clear()
-    for (const item of list) rememberProduct(item)
+    await loadProducts(fetchProducts)
     retryUnfinished(api)
     return liveSku.size ? 'ok' : 'empty'
   } catch (error) {
@@ -185,8 +190,18 @@ export async function buyGemPack(packId) {
     if (!linked) return { miss: 'setup' }
   }
 
-  const sku = liveSku.get(pack.id) || pack.storeId
   const api = iapApi(mod)
+  // Google Play only sells a pack it handed over earlier in this session. A
+  // load that came back empty at start would fail every buy, so ask again.
+  if (Platform.OS === 'android' && !liveSku.has(pack.id)) {
+    try {
+      await loadProducts(api.fetchProducts)
+    } catch {
+      // The buy below says what the store did.
+    }
+    if (!liveSku.has(pack.id)) return { miss: 'store', code: 'not-listed' }
+  }
+  const sku = liveSku.get(pack.id) || pack.storeId
   try {
     await api.requestPurchase({
       request: {
@@ -198,6 +213,7 @@ export async function buyGemPack(packId) {
     return { miss: '' }
   } catch (error) {
     if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
-    return { miss: 'store' }
+    console.warn('gem iap buy', error?.code, error?.message || error)
+    return { miss: 'store', code: String(error?.code || '') }
   }
 }

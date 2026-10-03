@@ -768,7 +768,7 @@ export const fr = {
   'gems.loadingStore': 'Chargement des prix du store…',
   'gems.storeError': 'Le store n\'a pas fini. Réessaie.',
   'gems.needSignIn': 'Connecte-toi d\'abord. Les gems restent sur ton compte.',
-  'gems.setup': 'L\'App Store n\'affiche pas encore ces paquets de gemmes.',
+  'gems.setup': 'La boutique n\'affiche pas encore ces paquets de gemmes.',
   'gems.shortTitle': 'Oups',
   'gems.shortBody': 'Tu n\'as pas assez de gemmes. Tu veux en acheter ?',
   'gems.shortGo': 'Acheter des gemmes',

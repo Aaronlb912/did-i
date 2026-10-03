@@ -739,7 +739,7 @@ export const zh = {
   'gems.loadingStore': 'Loading store prices…',
   'gems.storeError': 'The store did not finish. Try again.',
   'gems.needSignIn': '先登录。Gems 留在账户上。',
-  'gems.setup': 'App Store 还没有列出这些宝石包。',
+  'gems.setup': '商店还没有列出这些宝石包。',
   'gems.shortTitle': '哎呀',
   'gems.shortBody': '宝石不够。要去买一些吗？',
   'gems.shortGo': '购买宝石',

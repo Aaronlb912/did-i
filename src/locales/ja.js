@@ -741,7 +741,7 @@ export const ja = {
   'gems.loadingStore': 'Loading store prices…',
   'gems.storeError': 'The store did not finish. Try again.',
   'gems.needSignIn': '先にログイン。gems はアカウントに残る。',
-  'gems.setup': 'App Store にこれらのジェムパックはまだ出ていません。',
+  'gems.setup': 'ストアにこれらのジェムパックはまだ出ていません。',
   'gems.shortTitle': 'おっと',
   'gems.shortBody': 'ジェムが足りません。追加で買いますか？',
   'gems.shortGo': 'ジェムを買う',
