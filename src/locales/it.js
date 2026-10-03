@@ -494,6 +494,10 @@ export const it = {
   'help.phoneP':
     'Niente account. Le tue domande restano qui. Impostazioni ha una copia, un blocco a numeri e i promemoria.',
   'help.home': 'Home',
+  'help.versionTitle': 'La tua versione',
+  'help.version': 'Versione {v} (build {build})',
+  'help.versionUpdate': 'Aggiornamento {id}, {when}',
+  'help.versionNoUpdate': 'Nessun aggiornamento dall’installazione',
   'help.feedback': 'Feedback',
   'help.feedbackP': 'Qualcosa rotto o mancante? Dicci cosa ti aspettavi e cosa è successo.',
   'feedback.send': 'Invia feedback',

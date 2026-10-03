@@ -173,6 +173,8 @@ as $$
   join public.we_cards c on c.id = l.card_id and not c.archived
   left join public.profiles p on p.user_id = l.made_by
   where l.code = lower(btrim(look_up_we_link.code)) and not l.ended and l.ends_at > now()
+    -- A link stops when the person who made it is no longer on the card.
+    and exists (select 1 from public.we_members mm where mm.card_id = l.card_id and mm.user_id = l.made_by and mm.state = 'in')
   limit 1;
 $$;
 
@@ -196,7 +198,8 @@ begin
   if me is null then raise exception 'sign in first'; end if;
   select l.* into link from public.we_links l
   join public.we_cards c on c.id = l.card_id and not c.archived
-  where l.code = lower(btrim(coalesce(we_join_link.code, ''))) and not l.ended and l.ends_at > now();
+  where l.code = lower(btrim(coalesce(we_join_link.code, ''))) and not l.ended and l.ends_at > now()
+    and exists (select 1 from public.we_members mm where mm.card_id = l.card_id and mm.user_id = l.made_by and mm.state = 'in');
   if link.code is null then
     return jsonb_build_object('miss', 'gone');
   end if;

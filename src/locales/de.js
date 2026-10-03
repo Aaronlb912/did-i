@@ -498,6 +498,10 @@ export const de = {
   'help.phoneP':
     'Kein Konto. Deine Fragen bleiben hier. Einstellungen hat eine Kopie, eine Zahlen-Sperre und Erinnerungen.',
   'help.home': 'Start',
+  'help.versionTitle': 'Deine Version',
+  'help.version': 'Version {v} (Build {build})',
+  'help.versionUpdate': 'Aktualisierung {id}, {when}',
+  'help.versionNoUpdate': 'Seit der Installation keine Updates',
   'help.feedback': 'Feedback',
   'help.feedbackP':
     'Etwas kaputt oder fehlt? Schreib, was du erwartet hast und was passiert ist.',

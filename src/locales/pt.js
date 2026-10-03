@@ -495,6 +495,10 @@ export const pt = {
   'help.phoneP':
     'Sem conta. Suas perguntas ficam aqui. Ajustes tem uma cópia, uma trava de números e lembretes.',
   'help.home': 'Início',
+  'help.versionTitle': 'Sua versão',
+  'help.version': 'Versão {v} (build {build})',
+  'help.versionUpdate': 'Atualização {id}, {when}',
+  'help.versionNoUpdate': 'Nenhuma atualização desde a instalação',
   'help.feedback': 'Feedback',
   'help.feedbackP': 'Algo quebrado ou faltando? Diga o que esperava e o que aconteceu.',
   'feedback.send': 'Enviar feedback',

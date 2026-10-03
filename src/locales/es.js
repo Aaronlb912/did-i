@@ -498,6 +498,10 @@ export const es = {
   'help.phoneP':
     'Inicia sesión en Cuenta con tu correo. Tus preguntas, respuestas, racha, monedas y gemas siguen la cuenta entre este navegador y la app del teléfono. Toca Sincronizar ahora en Cuenta si dos pantallas no coinciden. Ajustes también tiene copia, candado y avisos.',
   'help.home': 'Inicio',
+  'help.versionTitle': 'Tu versión',
+  'help.version': 'Versión {v} (compilación {build})',
+  'help.versionUpdate': 'Actualización {id}, {when}',
+  'help.versionNoUpdate': 'Sin actualizaciones desde que la instalaste',
   'help.feedback': 'Comentarios',
   'help.feedbackP': '¿Algo falló o falta? Dinos qué esperabas y qué pasó.',
   'feedback.send': 'Enviar comentarios',

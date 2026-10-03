@@ -494,6 +494,10 @@ export const en = {
   'help.phoneP':
     'Sign in under Account with email. Your questions, answers, streak, coins, and gems follow the account between this browser and the phone app. Tap Sync now on Account if two screens disagree. Settings also has a copy, a number lock, and reminders.',
   'help.home': 'Home',
+  'help.versionTitle': 'Your version',
+  'help.version': 'Version {v} (build {build})',
+  'help.versionUpdate': 'Update {id}, {when}',
+  'help.versionNoUpdate': 'No updates since you installed',
   'help.feedback': 'Feedback',
   'help.feedbackP':
     'Something broken or missing? Tell us what you expected and what happened.',

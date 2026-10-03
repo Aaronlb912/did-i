@@ -19,9 +19,25 @@ async function lookUp(code, we) {
 
 export default async function handler(req, res) {
   const code = String(req.query.code || '').toLowerCase()
-  const host = req.headers['x-forwarded-host'] || req.headers.host || 'did-i.app'
-  const page = await fetch(`https://${host}/index.html`)
-  let html = await page.text()
+  // Never the request's own Host header: anyone can set it. Production reads
+  // did-i.app; a preview deployment reads its own Vercel address.
+  const origin =
+    process.env.VERCEL_ENV === 'production' || !process.env.VERCEL_URL
+      ? 'https://did-i.app'
+      : `https://${process.env.VERCEL_URL}`
+  let html = ''
+  try {
+    const page = await fetch(`${origin}/index.html`)
+    if (page.ok) html = await page.text()
+  } catch {
+    // Handled below.
+  }
+  if (!html) {
+    // No page to fill in. Not cached, so the next try gets the real page.
+    res.setHeader('Cache-Control', 'no-store')
+    res.status(502).send('Could not load this link. Try again in a moment.')
+    return
+  }
   if (/^(?:[a-z0-9]{10}|[a-z0-9]{12})$/.test(code)) {
     try {
       const text = linkPreviewText(await lookUp(code, code.length === 12), code.length === 12)

@@ -93,6 +93,16 @@ begin
   if out->>'miss' is distinct from 'gone' then raise exception 'FAIL: an ended link let someone in: %', out; end if;
   execute 'reset role';
 
+  -- A link stops working once its maker has left the card.
+  update public.we_links set ended = false where card_id = card;
+  update public.we_members set state = 'left' where card_id = card and user_id = a;
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  out := public.we_join_link(code, false);
+  if out->>'miss' is distinct from 'gone' then raise exception 'FAIL: a link worked after its maker left: %', out; end if;
+  execute 'reset role';
+  update public.we_members set state = 'in' where card_id = card and user_id = a;
+
   -- An expired link is gone too.
   insert into public.we_links (code, card_id, made_by, ends_at) values ('zzzzzzzzzzzz', card, a, now() - interval '1 minute');
   select count(*) into n from public.look_up_we_link('zzzzzzzzzzzz');

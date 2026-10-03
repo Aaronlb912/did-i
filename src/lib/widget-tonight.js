@@ -1,5 +1,5 @@
 import { putAnswer } from './board-ops.js'
-import { markWeNight, weNight, weNightStatus, weOpenOn } from './we-nights.js'
+import { markWeNight, refreshWeNights, weNight, weNightStatus, weOpenOn } from './we-nights.js'
 import { cloud } from './cloud.js'
 import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
@@ -381,8 +381,12 @@ const WE_ITEM = 'we:'
 // Did or Nope on the widget's Did we card: saved here at once so the widget
 // moves on, then sent to the cloud. A failed send is fixed by the next
 // refresh of your Did we nights.
-function applyWeTap(card, status, clock) {
-  const night = boardDate(clock)
+function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
+  // The night the card was showing. A tap made after that night ended (a
+  // card left up past midnight) is dropped, the same as your own questions.
+  const tappedAt = tapAt > 0 ? new Date(tapAt) : clock
+  const night = cardNight || boardDate(tappedAt)
+  if (night !== boardDate(tappedAt)) return null
   markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
   const shelf = readShelf()
   const previous = readWidgetTonightProps()
@@ -391,9 +395,12 @@ function applyWeTap(card, status, clock) {
   writeWidgetTonightProps(props)
   const db = cloud()
   if (db) {
+    // Not saved: put the real answers back so nothing shows as done that is not.
     db.rpc('we_answer', { card, on_night: night, want_status: status === 'yes' ? 'did' : 'nope' }).then(
-      () => {},
-      () => {},
+      ({ error }) => {
+        if (error) refreshWeNights().catch(() => {})
+      },
+      () => refreshWeNights().catch(() => {}),
     )
   }
   return shelf
@@ -403,7 +410,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   const status = widgetStatus(kind)
   const id = String(lampId || '').trim()
   if (!status || !id) return null
-  if (id.startsWith(WE_ITEM)) return applyWeTap(id.slice(WE_ITEM.length), status, clock)
+  if (id.startsWith(WE_ITEM)) return applyWeTap(id.slice(WE_ITEM.length), status, clock, night, tapAt)
   const shelf = readShelf()
   const book = findBookHoldingLamp(shelf.boards, id)
   if (!book) return null

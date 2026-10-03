@@ -498,6 +498,10 @@ export const fr = {
   'help.phoneP':
     'Pas de compte. Tes questions restent ici. Réglages a une copie, un verrou à chiffres, et des rappels.',
   'help.home': 'Accueil',
+  'help.versionTitle': 'Ta version',
+  'help.version': 'Version {v} (compilation {build})',
+  'help.versionUpdate': 'Mise à jour {id}, {when}',
+  'help.versionNoUpdate': 'Aucune mise à jour depuis l’installation',
   'help.feedback': 'Retour',
   'help.feedbackP': 'Un bug ou un trou ? Dis-nous ce que tu attendais et ce qui s\'est passé.',
   'feedback.send': 'Envoyer un retour',
