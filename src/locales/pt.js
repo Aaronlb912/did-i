@@ -1861,7 +1861,7 @@ export const pt = {
   'people.more': 'Mais',
   'people.less': 'Menos',
   'people.seeAll': 'Ver todos',
-  'people.doneOf': '{done} de {n} já acabaram esta noite.',
+  'people.doneOf': '{done} de {n} amigos terminaram a própria noite.',
   'people.stripHint': 'Toca em alguém para ver os did yous e Did wes de vocês.',
   'familyJoin.kicker': 'Entrar numa família',
   'familyJoin.members': '{n} pessoas estão nela.',

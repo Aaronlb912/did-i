@@ -1807,7 +1807,7 @@ export const ko = {
   'people.more': '더 보기',
   'people.less': '접기',
   'people.seeAll': '모두 보기',
-  'people.doneOf': '오늘 밤 {n}명 중 {done}명 완료.',
+  'people.doneOf': '친구 {n}명 중 {done}명이 자기 오늘 밤을 마쳤어요.',
   'people.stripHint': '누르면 함께한 did you와 Did we를 볼 수 있어요.',
   'familyJoin.kicker': '가족에 참여',
   'familyJoin.members': '{n}명이 있어요.',

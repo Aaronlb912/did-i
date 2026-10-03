@@ -1807,7 +1807,7 @@ export const ja = {
   'people.more': 'もっと',
   'people.less': '閉じる',
   'people.seeAll': 'すべて見る',
-  'people.doneOf': '今夜 {n} 人中 {done} 人が完了。',
+  'people.doneOf': '友だち {n} 人中 {done} 人が自分の今夜を終えました。',
   'people.stripHint': 'タップすると、その人との did you と Did we が見られます。',
   'familyJoin.kicker': '家族に参加',
   'familyJoin.members': '{n}人が参加しています。',
