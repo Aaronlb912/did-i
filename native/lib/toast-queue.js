@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 //                                                  next in line
 //   kind 'mark'  { mark, ms, onGone }
 //   kind 'error' { text, ms }
+//   kind 'done'  { text, ms }                    an action worked (lib/confirm.js)
 //   kind 'kit'   { name, count, ms, fly }        a buy landing in the
 //                                                  Collection; `fly` is where
 //                                                  the item starts, in window

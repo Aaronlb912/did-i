@@ -2207,6 +2207,8 @@ export const ko = {
   'didYouLink.bad': '이 링크는 끝났거나 올바르지 않아요. 보낸 사람에게 새 링크를 부탁하세요.',
   'didYouLink.reach': '링크를 불러올 수 없어요. 연결을 확인하세요. 다음에 Did I를 열면 다시 나와요.',
   'didYouLink.noApp': '아직 Did I가 없나요? 설치하고 열면 이 질문이 나와요.',
+  'confirm.miss': '처리되지 않았어요. 연결을 확인하고 다시 시도하세요.',
+  'confirm.done': '완료',
   'linkGuide.ok': '알겠어요',
   'weGuide.body': '이제 오늘 밤에 있어요. 모두 매일 밤 답하고, 누가 끝냈는지 볼 수 있어요. 했으면 오른쪽으로 밀어요.',
   'weGuide.title': '이 Did we에 참여했어요',

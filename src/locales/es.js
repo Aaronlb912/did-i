@@ -2287,6 +2287,8 @@ export const es = {
   'didYouLink.bad': 'Ese enlace terminó o no es correcto. Pide uno nuevo a quien te lo envió.',
   'didYouLink.reach': 'No se pudo cargar el enlace. Revisa tu conexión. Vuelve a aparecer la próxima vez que abras Did I.',
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
+  'confirm.miss': 'No se pudo. Revisa tu conexión e inténtalo de nuevo.',
+  'confirm.done': 'Listo',
   'linkGuide.ok': 'Entendido',
   'weGuide.body': 'Ya está en tu esta noche. Todos responden cada noche y puedes ver quién terminó. Desliza a la derecha cuando lo hayas hecho.',
   'weGuide.title': 'Estás en este Did we',

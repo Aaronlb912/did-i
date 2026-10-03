@@ -2273,6 +2273,8 @@ export const en = {
   'didYouLink.bad': 'That link has ended or is not right. Ask whoever sent it for a new one.',
   'didYouLink.reach': 'Could not load that link. Check your connection. It comes up again next time you open Did I.',
   'didYouLink.noApp': 'No Did I yet? Get it, open it, and this question comes up.',
+  'confirm.miss': 'That did not go through. Check your connection and try again.',
+  'confirm.done': 'Done',
   'linkGuide.ok': 'Got it',
   'weGuide.body': 'It is on your tonight now. Everyone on it answers each night, and you can see who is done. Swipe right when you did it.',
   'weGuide.title': 'You\'re on this Did we',

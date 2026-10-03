@@ -2299,6 +2299,8 @@ export const de = {
   'didYouLink.bad': 'Dieser Link ist abgelaufen oder stimmt nicht. Bitte die Person um einen neuen.',
   'didYouLink.reach': 'Der Link konnte nicht geladen werden. Prüfe deine Verbindung. Er kommt beim nächsten Öffnen von Did I wieder.',
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
+  'confirm.miss': 'Das hat nicht geklappt. Prüfe deine Verbindung und versuch es noch einmal.',
+  'confirm.done': 'Erledigt',
   'linkGuide.ok': 'Verstanden',
   'weGuide.body': 'Es steht jetzt auf deinem Heute Abend. Alle antworten jeden Abend, und du siehst, wer fertig ist. Wische nach rechts, wenn du es getan hast.',
   'weGuide.title': 'Du bist bei diesem Did we dabei',

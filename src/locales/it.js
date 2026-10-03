@@ -2278,6 +2278,8 @@ export const it = {
   'didYouLink.bad': 'Il link è scaduto o non è giusto. Chiedine uno nuovo a chi te l’ha mandato.',
   'didYouLink.reach': 'Impossibile caricare il link. Controlla la connessione. Ricompare la prossima volta che apri Did I.',
   'didYouLink.noApp': 'Non hai ancora Did I? Scaricalo, aprilo e comparirà questa domanda.',
+  'confirm.miss': 'Non è andato a buon fine. Controlla la connessione e riprova.',
+  'confirm.done': 'Fatto',
   'linkGuide.ok': 'Capito',
   'weGuide.body': 'Ora è nella tua stasera. Tutti rispondono ogni sera e puoi vedere chi ha finito. Scorri a destra quando l’hai fatto.',
   'weGuide.title': 'Sei in questo Did we',

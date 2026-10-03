@@ -210,7 +210,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   let label
   if (item.kind === 'undo') label = `${item.label} ${item.hint}`
   else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
-  else if (item.kind === 'we' || !item.kind) label = item.text
+  else if (item.kind === 'we' || item.kind === 'done' || !item.kind) label = item.text || t('confirm.done')
 
   return (
     <GestureDetector gesture={pan}>
@@ -238,7 +238,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
           {item.kind === 'undo' ? <UndoBody item={item} colors={colors} reduce={reduce} /> : null}
           {item.kind === 'mark' ? <MarkBody item={item} colors={colors} onOk={() => leave(0, FROM_Y)} /> : null}
           {/* A plain toast (no kind) is just its text. */}
-          {item.kind === 'error' || item.kind === 'we' || (!item.kind && item.text) ? <ErrorBody item={item} colors={colors} /> : null}
+          {item.kind === 'error' || item.kind === 'we' || item.kind === 'done' || !item.kind ? <ErrorBody item={item} colors={colors} /> : null}
           {item.kind === 'kit' ? (
             <KitBody item={item} colors={colors} reduce={reduce} wrapRef={wrapRef} onAim={aimAt} landed={landed} />
           ) : null}
@@ -375,7 +375,7 @@ function ErrorBody({ item, colors }) {
   return (
     <View style={styles.copy}>
       <Text style={[styles.line, styles.error, { color: colors.ink }]} numberOfLines={3}>
-        {item.text}
+        {item.text || t('confirm.done')}
       </Text>
     </View>
   )

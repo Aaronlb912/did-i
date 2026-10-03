@@ -2191,6 +2191,8 @@ export const zh = {
   'didYouLink.bad': '这个链接已失效或不正确。请让发送的人重新发一个。',
   'didYouLink.reach': '无法加载这个链接。请检查网络。下次打开 Did I 时会再次出现。',
   'didYouLink.noApp': '还没有 Did I？下载并打开，这个问题就会出现。',
+  'confirm.miss': '没有成功。请检查网络后重试。',
+  'confirm.done': '已完成',
   'linkGuide.ok': '知道了',
   'weGuide.body': '它现在在今晚中。大家每晚都会回答，你能看到谁已完成。做到了就向右滑。',
   'weGuide.title': '你已加入这个 Did we',

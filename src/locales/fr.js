@@ -2292,6 +2292,8 @@ export const fr = {
   'didYouLink.bad': 'Ce lien a expiré ou n’est pas bon. Demande-en un nouveau à la personne qui l’a envoyé.',
   'didYouLink.reach': 'Impossible de charger ce lien. Vérifie ta connexion. Il reviendra la prochaine fois que tu ouvres Did I.',
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s\'affiche.',
+  'confirm.miss': 'Ça n’a pas marché. Vérifie ta connexion et réessaie.',
+  'confirm.done': 'C’est fait',
   'linkGuide.ok': 'Compris',
   'weGuide.body': 'Il est maintenant sur ton ce soir. Tout le monde répond chaque soir et tu vois qui a fini. Glisse à droite quand c’est fait.',
   'weGuide.title': 'Tu fais partie de ce Did we',

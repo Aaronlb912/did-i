@@ -2207,6 +2207,8 @@ export const ja = {
   'didYouLink.bad': 'このリンクは終了したか正しくありません。送った人に新しいリンクを頼んでください。',
   'didYouLink.reach': 'リンクを読み込めませんでした。接続を確認してください。次にDid Iを開くともう一度表示されます。',
   'didYouLink.noApp': 'Did I をまだ持っていませんか？入手して開くと、この質問が表示されます。',
+  'confirm.miss': 'うまくいきませんでした。接続を確認して、もう一度お試しください。',
+  'confirm.done': '完了',
   'linkGuide.ok': 'わかった',
   'weGuide.body': '今夜に入りました。みんな毎晩答えて、だれが終わったか見えます。やったら右にスワイプ。',
   'weGuide.title': 'このDid weに参加しました',

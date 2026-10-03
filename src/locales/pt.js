@@ -2278,6 +2278,8 @@ export const pt = {
   'didYouLink.bad': 'Esse link acabou ou não está certo. Peça um novo para quem enviou.',
   'didYouLink.reach': 'Não foi possível carregar o link. Confira sua conexão. Ele aparece de novo na próxima vez que você abrir o Did I.',
   'didYouLink.noApp': 'Ainda sem Did I? Baixe, abra e esta pergunta aparece.',
+  'confirm.miss': 'Não deu certo. Confira sua conexão e tente de novo.',
+  'confirm.done': 'Pronto',
   'linkGuide.ok': 'Entendi',
   'weGuide.body': 'Agora está no seu hoje à noite. Todos respondem toda noite e você vê quem terminou. Deslize para a direita quando fizer.',
   'weGuide.title': 'Você está neste Did we',
