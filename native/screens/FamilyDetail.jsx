@@ -70,6 +70,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [codeOpen, setCodeOpen] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const [sheet, setSheet] = useState(null)
+  const [menu, setMenu] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -159,31 +160,82 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     )
   }
 
+  // Every member's nights this week, added up, for the header.
+  const weekTotal = past.filter(
+    (item) => item.status !== 'skip' && nights.includes(item.period_key) && fam.members.some((row) => row.user_id === item.user_id),
+  ).length
+
+  function memberItems(row, name) {
+    const items = [{ key: 'gift', label: t('gift.button'), onPress: () => goHash('/gift', { id: row.user_id }) }]
+    if (!fam.parent) return items
+    items.push({
+      key: 'role',
+      label: row.role === 'parent' ? t('family.makeKid') : t('family.makeParent'),
+      onPress: () => once(`role:${row.user_id}`, async () => {
+        const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
+        if (why === 'lastparent') setMiss(t('family.lastParent'))
+        else if (why) setMiss(why)
+        else {
+          setMiss('')
+          setSaid(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
+        }
+        load()
+      }),
+    })
+    items.push({
+      key: 'remove',
+      label: t('family.remove'),
+      danger: true,
+      onPress: () =>
+        publishSheet({
+          title: t('family.removeTitle', { name }),
+          body: t('family.removeBody'),
+          goLabel: t('family.remove'),
+          closeLabel: t('settings.neverMind'),
+          colors,
+          onClose: () => publishSheet(null),
+          onGo: async () => {
+            publishSheet(null)
+            const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
+            if (why === 'lastparent') setMiss(t('family.lastParent'))
+            else if (why) setMiss(why)
+            else {
+              setMiss('')
+              setSaid(t('confirm.memberRemoved', { name }))
+            }
+            load()
+          },
+        }),
+    })
+    return items
+  }
+
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
-      <View style={styles.titleRow}>
-        <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
-        <Pressable
-          onPress={() => setCodeOpen(true)}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={t('people.joinCode')}
-        >
-          {({ pressed }) => <Text style={[styles.plus, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>}
-        </Pressable>
+      <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
+          <Pressable
+            onPress={() => setCodeOpen(true)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('people.joinCode')}
+          >
+            {({ pressed }) => <Text style={[styles.plus, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>}
+          </Pressable>
+        </View>
+        <Text style={[styles.weekCount, { color: colors.inkDim }]}>
+          {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
+        </Text>
+        <Text style={[styles.glance, { color: colors.inkSoft }]}>
+          {t('family.doneOf', {
+            done: fam.members.filter((row) => doneTonight(row.person, night)).length,
+            n: fam.members.length,
+          })}
+        </Text>
       </View>
 
-      <SectionHead
-        colors={colors}
-        label={t('family.people')}
-        count={fam.members.length}
-      />
-      <Text style={[styles.glance, { color: colors.inkSoft }]}>
-        {t('people.doneOf', {
-          done: fam.members.filter((row) => doneTonight(row.person, night)).length,
-          n: fam.members.length,
-        })}
-      </Text>
+      <SectionHead colors={colors} label={t('family.people')} />
       {fam.members.map((row) => {
         const name = row.you ? t('family.youAre') : personName(row.person) || t('family.someone')
         const done = doneTonight(row.person, night)
@@ -243,54 +295,17 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       }}
                     />
                   ) : null}
-                  <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: row.user_id })} />
+                  <Pressable
+                    onPress={() => setMenu({ name, items: memberItems(row, name) })}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('friend.more', { name })}
+                    style={({ pressed }) => [styles.moreBtn, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+                  >
+                    <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
+                  </Pressable>
                 </>
               )
-            }
-            more={
-              fam.parent && !row.you ? (
-                <View style={styles.rowActions}>
-                  <KeyButton
-                    colors={colors}
-                    label={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
-                    onPress={() => once(`role:${row.user_id}`, async () => {
-                      const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
-                      if (why === 'lastparent') setMiss(t('family.lastParent'))
-                      else if (why) setMiss(why)
-                      else {
-                        setMiss('')
-                        setSaid(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
-                      }
-                      load()
-                    })}
-                  />
-                  <KeyButton
-                    colors={colors}
-                    label={t('family.remove')}
-                    onPress={() =>
-                      publishSheet({
-                        title: t('family.removeTitle', { name }),
-                        body: t('family.removeBody'),
-                        goLabel: t('family.remove'),
-                        closeLabel: t('settings.neverMind'),
-                        colors,
-                        onClose: () => publishSheet(null),
-                        onGo: async () => {
-                          publishSheet(null)
-                          const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
-                          if (why === 'lastparent') setMiss(t('family.lastParent'))
-                          else if (why) setMiss(why)
-                          else {
-                            setMiss('')
-                            setSaid(t('confirm.memberRemoved', { name }))
-                          }
-                          load()
-                        },
-                      })
-                    }
-                  />
-                </View>
-              ) : null
             }
           />
         )
@@ -472,6 +487,30 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         </Modal>
       ) : null}
 
+      {menu ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setMenu(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setMenu(null)}>
+            <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
+              <Text style={[styles.cap, { color: colors.on }]}>{menu.name}</Text>
+              {menu.items.map((item) => (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setMenu(null)
+                    item.onPress()
+                  }}
+                  style={({ pressed }) => [styles.menuRow, { borderColor: colors.lineSoft, backgroundColor: pressed ? colors.panel2 : 'transparent' }]}
+                >
+                  <Text style={[styles.menuRowText, { color: item.danger ? colors.miss : colors.ink }]}>{item.label}</Text>
+                </Pressable>
+              ))}
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setMenu(null)} />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
+
       {sheet ? (
         <SendSheet
           family
@@ -531,4 +570,9 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   veil: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
+  head: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 6 },
+  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreText: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 22 },
+  menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
+  menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },
 })

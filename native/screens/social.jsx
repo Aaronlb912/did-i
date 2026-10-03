@@ -647,6 +647,7 @@ export function PeopleScreen({ book, onChange }) {
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
+  const [tab, setTab] = useState('friends')
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -738,7 +739,23 @@ export function PeopleScreen({ book, onChange }) {
         />
       </View>
 
-      {links.asked.length ? (
+      <View style={styles.friendTabs}>
+        <KitSegment
+          items={[
+            {
+              id: 'friends',
+              label: links.asked.length ? t('people.tabFriendsAsks', { n: links.asked.length }) : t('people.friends'),
+            },
+            { id: 'families', label: t('people.families') },
+            { id: 'we', label: t('we.title') },
+          ]}
+          selected={tab}
+          onSelect={setTab}
+          colors={colors}
+        />
+      </View>
+
+      {tab === 'friends' && links.asked.length ? (
         <>
           <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
           {links.asked.map((row) => (
@@ -760,6 +777,8 @@ export function PeopleScreen({ book, onChange }) {
         </>
       ) : null}
 
+      {tab === 'friends' ? (
+        <>
       <SectionHead
         colors={colors}
         label={t('people.friends')}
@@ -803,7 +822,11 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
+        </>
+      ) : null}
 
+      {tab === 'families' ? (
+        <>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -840,7 +863,11 @@ export function PeopleScreen({ book, onChange }) {
         </EmptyCard>
       )}
       {families.length ? null : <JoinFamilyCard colors={colors} />}
+        </>
+      ) : null}
 
+      {tab === 'we' ? (
+        <>
       <SectionHead colors={colors} label={t('we.title')} />
       <Row colors={colors} label={t('we.open')} note={t('we.empty')} onPress={() => goHash('/we')} />
       <Row
@@ -849,6 +876,8 @@ export function PeopleScreen({ book, onChange }) {
         note={t('didYouLink.textSub')}
         onPress={() => setSheet({ kind: 'send', person: null })}
       />
+        </>
+      ) : null}
 
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
@@ -1079,7 +1108,28 @@ export function PeopleConnectScreen({ book, route }) {
       />
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
-      <View style={styles.friendIdCard}>
+      <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <Field
+          colors={colors}
+          label={t('friendId.add')}
+          value={formatFriendId(idDraft)}
+          onChangeText={(value) => setIdDraft(cleanFriendId(value))}
+          keyboardType="number-pad"
+        />
+        <Miss colors={colors}>{idAsk.found ? '' : idAsk.miss}</Miss>
+        <DidButton
+          colors={colors}
+          label={t('friendId.find')}
+          disabled={idAsk.busy || idDraft.length !== 12}
+          onPress={() => idAsk.look(idDraft)}
+        />
+        {canScan() ? (
+          <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} />
+        ) : null}
+      </View>
+      {idAsk.found ? <FriendConfirm ask={idAsk} colors={colors} /> : null}
+
+      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendId.yours')}</Text>
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
           {myId ? formatFriendId(myId) : t('family.loading')}
@@ -1099,24 +1149,6 @@ export function PeopleConnectScreen({ book, route }) {
           </View>
         ) : null}
       </View>
-      {canScan() ? (
-        <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} />
-      ) : null}
-      <Field
-        colors={colors}
-        label={t('friendId.add')}
-        value={formatFriendId(idDraft)}
-        onChangeText={(value) => setIdDraft(cleanFriendId(value))}
-        keyboardType="number-pad"
-      />
-      <Miss colors={colors}>{idAsk.found ? '' : idAsk.miss}</Miss>
-      <DidButton
-        colors={colors}
-        label={t('friendId.find')}
-        disabled={idAsk.busy || idDraft.length !== 12}
-        onPress={() => idAsk.look(idDraft)}
-      />
-      {idAsk.found ? <FriendConfirm ask={idAsk} colors={colors} /> : null}
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
       <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
@@ -1142,6 +1174,9 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   const [confirm, setConfirm] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [stock, setStock] = useState(null)
+  // A friend request push lands on Requests.
+  const [tab, setTab] = useState(highlightAsk ? 'requests' : '')
+  const [blockedOpen, setBlockedOpen] = useState(false)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -1307,6 +1342,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   // Only friends who share their streak can show done, so only they count.
   const sharing = links.friends.filter((row) => row.person?.share_streak !== false)
   const doneCount = sharing.filter((row) => doneTonight(row.person, today)).length
+  const requestCount = links.asked.length + links.sent.length
+  const shown = tab || (links.asked.length ? 'requests' : 'friends')
 
   return (
     <ScreenShell title={t('friends.title', { n: links.friends.length })} colors={colors}>
@@ -1318,7 +1355,24 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
         </Text>
       ) : null}
 
-      {/* Requests first: a friend request push lands here. */}
+      <View style={styles.friendTabs}>
+        <KitSegment
+          items={[
+            { id: 'friends', label: t('people.friends') },
+            {
+              id: 'requests',
+              label: requestCount ? t('friends.tabRequests', { n: requestCount }) : t('friends.requests'),
+            },
+          ]}
+          selected={shown}
+          onSelect={setTab}
+          colors={colors}
+        />
+      </View>
+
+      {shown === 'requests' ? (
+        <>
+      {requestCount ? null : <EmptyCard colors={colors} title={t('friends.noRequests')} body={t('friends.manage')} />}
       {links.asked.length ? (
         <>
           <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
@@ -1356,7 +1410,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
           ))}
         </>
       ) : null}
+        </>
+      ) : null}
 
+      {shown === 'friends' ? (
+        <>
       <View style={[styles.stockBar, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.stockCopy}>
           <Text style={[styles.stockValue, { color: colors.ink }]}>{t('friends.cheerStock', { n: cheersLeft })}</Text>
@@ -1432,7 +1490,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-
+        </>
+      ) : null}
 
       {links.friends.length ? (
         <DidButton colors={colors} label={t('people.connect')} onPress={() => goHash('/people/connect')} />
@@ -1441,8 +1500,22 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
       {blocks.length ? (
         <>
-          <SectionHead colors={colors} label={t('block.list')} count={blocks.length} />
-          {blocks.map((row) => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: blockedOpen }}
+            onPress={() => setBlockedOpen((open) => !open)}
+            style={({ pressed }) => [
+              styles.famCard,
+              { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel },
+            ]}
+          >
+            <View style={styles.famCopy}>
+              <Text style={[styles.famName, { color: colors.ink }]}>{t('block.list')} · {blocks.length}</Text>
+              <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('block.cannotReach')}</Text>
+            </View>
+            <Text style={[styles.chev, { color: colors.inkDim }]}>{blockedOpen ? '⌄' : '›'}</Text>
+          </Pressable>
+          {blockedOpen ? blocks.map((row) => (
             <PersonCard
               key={row.user_id}
               colors={colors}
@@ -1463,7 +1536,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                 />
               }
             />
-          ))}
+          )) : null}
         </>
       ) : null}
 
@@ -1869,6 +1942,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   const [rows, setRows] = useKept(`inbox.rows:${account.user?.id}`, [])
   const [ready, setReady] = useKept(`inbox.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
+  const [menu, setMenu] = useState(null)
   // Keep or Pass tapped on the notification: keep:<send id> or pass:<send id>.
   const fromPush = /^(keep|pass):([0-9a-f-]{36})$/.exec(String(route?.id || ''))
   const pushDone = useRef(false)
@@ -1962,8 +2036,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     <ScreenShell title={t('inbox.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <WeAsks colors={colors} />
-      <Meta colors={colors}>{t('inbox.hint')}</Meta>
-      <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
+      <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
       {rows.map((row) => (
         <PersonRow
           key={row.id}
@@ -1980,13 +2053,29 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
             onPress={() => answer(row, true)}
           />
           {row.kind === 'todo' ? (
-            <>
-              <KeyButton colors={colors} label={t('inbox.pass')} onPress={() => answer(row, false)} />
-              {row.appSend ? null : <KeyButton colors={colors} label={t('we.report')} onPress={() => report(row)} />}
-            </>
+            <Pressable
+              onPress={() => setMenu(row)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('inbox.more')}
+              style={({ pressed }) => [styles.moreBtn, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+            >
+              <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
+            </Pressable>
           ) : null}
         </PersonRow>
       ))}
+      {menu ? (
+        <FriendMenu
+          name={menu.question}
+          colors={colors}
+          onClose={() => setMenu(null)}
+          items={[
+            { key: 'pass', label: t('inbox.pass'), onPress: () => answer(menu, false) },
+            ...(menu.appSend ? [] : [{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]),
+          ]}
+        />
+      ) : null}
       <Miss colors={colors}>{miss}</Miss>
     </ScreenShell>
   )
@@ -2030,9 +2119,10 @@ export function SentScreen({ book, onChange }) {
   }
   if (!rows.length) {
     return (
-      <ScreenShell title={t('sent.emptyTitle')} colors={colors}>
-        <Meta colors={colors}>{t('sent.emptyBody')}</Meta>
-        <DidButton colors={colors} label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
+      <ScreenShell title={t('sent.title')} colors={colors}>
+        <EmptyCard colors={colors} title={t('sent.emptyTitle')} body={t('sent.emptyBody')}>
+          <DidButton colors={colors} small label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
+        </EmptyCard>
       </ScreenShell>
     )
   }
@@ -2040,16 +2130,21 @@ export function SentScreen({ book, onChange }) {
   return (
     <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
-      <Meta colors={colors}>{t('sent.hint')}</Meta>
-      {rows.map((row) => (
-        <PersonRow
-          key={row.id}
-          colors={colors}
-          title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
-          note={[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
-            .filter(Boolean)
-            .join(' · ')}
-        >
+      <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: rows.length })}</Text>
+        <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('sent.hint')}</Text>
+      </View>
+      <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      {rows.map((row, at) => (
+        <View key={row.id} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+          <View style={styles.personCopy}>
+            <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</Text>
+            <Text style={[styles.personNote, { color: colors.inkDim }]}>
+              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          </View>
           {row.state === 'sent' ? (
             <KeyButton
               colors={colors}
@@ -2063,15 +2158,19 @@ export function SentScreen({ book, onChange }) {
               }}
             />
           ) : null}
-        </PersonRow>
+        </View>
       ))}
+      </View>
       <Miss colors={colors}>{miss}</Miss>
     </ScreenShell>
   )
 }
 
 const styles = StyleSheet.create({
-  previewList: { gap: 8, marginTop: 12, marginBottom: 4 },
+  groupCard: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
+  groupPad: { padding: 14, gap: 8 },
+  groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  previewList:{ gap: 8, marginTop: 12, marginBottom: 4 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },
   previewIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   previewCopy: { flex: 1, minWidth: 0, gap: 2 },
