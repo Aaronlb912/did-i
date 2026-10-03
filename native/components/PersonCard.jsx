@@ -133,15 +133,18 @@ export function SectionHead({ label, count, link, onLink, onAdd, addLabel, color
       </Text>
       <View style={styles.headRight}>
         {onAdd ? (
-          <Pressable onPress={onAdd} hitSlop={10} accessibilityRole="button" accessibilityLabel={addLabel}>
+          // An outlined button, so it does not read as the same thing as See all.
+          <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={addLabel}>
             {({ pressed }) => (
-              <Text style={[styles.plusText, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>
+              <View style={[styles.addPill, { borderColor: colors.on, opacity: pressed ? 0.6 : 1 }]}>
+                <Text style={[styles.addPillText, { color: colors.on }]}>+ {t('tonight.add')}</Text>
+              </View>
             )}
           </Pressable>
         ) : null}
         {link ? (
           <Pressable onPress={onLink} hitSlop={8} accessibilityRole="button">
-            <Text style={[styles.headLink, { color: colors.on }]}>{link}</Text>
+            <Text style={[styles.headLink, { color: colors.inkSoft }]}>{link} ›</Text>
           </Pressable>
         ) : null}
       </View>
@@ -185,8 +188,9 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 8 },
   headText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   headRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  plusText: { fontFamily: fonts.ui, fontSize: 24, lineHeight: 26, fontWeight: '500' },
   headLink: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  addPill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
+  addPillText: { fontFamily: fonts.uiSemi, fontSize: 13 },
   empty: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 10, marginBottom: 10 },
   emptyTitle: { fontFamily: fonts.uiBold, fontSize: 16 },
 })
