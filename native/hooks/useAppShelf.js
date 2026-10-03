@@ -183,12 +183,14 @@ export function useAppShelf() {
     (questions) => {
       const clock = new Date()
       const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
-      if (!lamps.length) return
+      if (!lamps.length) return []
       let dest = live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)
       }
       persist(putBook(shelf, commitBook(dest, clock)))
+      // The new questions' ids, so a link can open Tonight right on them.
+      return lamps.map((lamp) => lamp.id)
     },
     [live, persist, shelf],
   )

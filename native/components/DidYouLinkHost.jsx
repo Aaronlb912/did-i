@@ -21,6 +21,31 @@ import { goHash } from '../navigation/hash.js'
 import { showToast } from '../lib/toast-queue.js'
 import { publishSheet } from './SheetHost.jsx'
 
+// Shown once each: what happens after the first Did you kept from a link,
+// and after the first Did we joined from one.
+function firstTime(key) {
+  try {
+    if (localStorage.getItem(key)) return false
+    localStorage.setItem(key, '1')
+    return true
+  } catch {
+    return false
+  }
+}
+
+function guide(kind, name, colors) {
+  publishSheet({
+    kicker: t(kind === 'we' ? 'we.title' : 'didYouLink.kicker'),
+    title: t(`${kind}Guide.title`),
+    body: t(`${kind}Guide.body`, { name }),
+    goLabel: t('linkGuide.ok'),
+    noClose: true,
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => publishSheet(null),
+  })
+}
+
 const WE_MISS = { gone: 'didYouLink.bad', full: 'weLink.full', blocked: 'weLink.blocked', cap: 'weLink.cap' }
 
 // A did-i.app/d/CODE link opened on this phone (or picked up on first
@@ -80,8 +105,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
             showToast({ id: 'did-you-link', kind: 'error', text: t(WE_MISS[out.miss] || 'didYouLink.reach'), ms: 5200 })
           } else {
             refreshWeNights()
-            showToast({ id: 'did-you-link', text: t('weLink.joined'), ms: 3200 })
-            goHash('/we', { id: out.card })
+            // Straight to tonight, where the Did we now waits, every tag showing.
+            goHash('/tonight', { tag: 'all' })
+            if (firstTime('did-i-guide-we')) guide('we', name, colors)
+            else showToast({ id: 'did-you-link', text: t('weLink.joined'), ms: 3200 })
           }
           setTick((n) => n + 1)
         }
@@ -104,15 +131,19 @@ export function DidYouLinkHost({ colors, onKeep }) {
       // A Did you. A link from Did I itself has no one to add.
       const name = found.name || 'Did I'
       const add = (addFriend) => {
-        keep.current({ question: found.question, person: { display_name: name } })
+        const ids = keep.current({ question: found.question, person: { display_name: name } }) || []
         saveDidYouClaim(code)
         if (addFriend) {
           if (userId) befriendByLink(code).catch(() => {})
           else saveLinkFriend(code)
         }
         claimPendingDidYous().catch(() => {})
-        showToast({ id: 'did-you-link', text: t(addFriend ? 'didYouLink.addedFriend' : 'didYouLink.added', { name }), ms: 3200 })
         next()
+        // Open tonight on the new question, every tag showing, so it is the
+        // first thing they see.
+        goHash('/tonight', { tag: 'all', ...(ids[0] ? { face: ids[0] } : {}) })
+        if (firstTime('did-i-guide-link')) guide('link', name, colors)
+        else showToast({ id: 'did-you-link', text: t(addFriend ? 'didYouLink.addedFriend' : 'didYouLink.added', { name }), ms: 3200 })
       }
       publishSheet({
         kicker: t('didYouLink.kicker'),
