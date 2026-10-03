@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FadeScroll } from '../components/FadeScroll.jsx'
 import { AppState, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
@@ -762,7 +763,7 @@ export function PeopleScreen({ book, onChange }) {
             {sharing.length ? `${t('people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
             {t('people.stripHint')}
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+          <FadeScroll fade={colors.bg} contentContainerStyle={styles.strip}>
             {links.friends.map((row) => {
               const done = doneTonight(row.person, today)
               return (
@@ -783,7 +784,7 @@ export function PeopleScreen({ book, onChange }) {
                 </Pressable>
               )
             })}
-          </ScrollView>
+          </FadeScroll>
         </>
       ) : (
         <EmptyCard colors={colors} title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
