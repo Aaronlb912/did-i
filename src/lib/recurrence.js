@@ -1,5 +1,5 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
-import { DAY_FOLD, wallClock } from './zone.js'
+import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -32,6 +32,23 @@ export function boardDate(now = new Date()) {
     local.setDate(local.getDate() - 1)
   }
   return isoDate(new Date(local.getFullYear(), local.getMonth(), local.getDate()))
+}
+
+// Last night, while its grace period runs (midnight to 9am); '' otherwise.
+export function graceNightIso(now = new Date()) {
+  if (wallClock(now).getHours() >= GRACE_END) return ''
+  return addDaysIso(boardDate(now), -1)
+}
+
+// Before 5am last night's open questions come first.
+export function graceFirst(now = new Date()) {
+  return Boolean(graceNightIso(now)) && wallClock(now).getHours() < GRACE_FIRST_UNTIL
+}
+
+// The oldest night that can still be answered: last night during its grace
+// period, tonight otherwise.
+export function openFloorIso(now = new Date()) {
+  return graceNightIso(now) || boardDate(now)
 }
 
 export function addDaysIso(iso, days) {

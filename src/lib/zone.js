@@ -7,6 +7,13 @@ export const DAY_FOLD = 0
 // the date has already turned over.
 export const LOOKS_LATE = 4
 
+// The grace period for the previous night: a night stays open until 9am the
+// next morning, the same for everyone, so a 2am did (or a night shift's
+// 7am) still counts for it. Until 5am its open questions come first; from
+// 5am to 9am they wait behind today's.
+export const GRACE_END = 9
+export const GRACE_FIRST_UNTIL = 5
+
 export function deviceZone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || ''

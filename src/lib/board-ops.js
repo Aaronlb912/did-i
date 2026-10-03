@@ -1,11 +1,11 @@
 import { answeredAtIso, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { answerFor, boardDate, periodPassed } from './recurrence.js'
+import { answerFor, openFloorIso, periodPassed } from './recurrence.js'
 
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
-  if (periodPassed(row.lamp, row.periodKey, boardDate(clock))) {
+  if (periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) {
     // A past night only takes the closing nope, and only while it is empty.
     if (status !== 'skip' || answerFor(book, row.lamp.id, row.periodKey)) return book
   }

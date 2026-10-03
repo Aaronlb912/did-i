@@ -21,6 +21,7 @@ import {
   dueTonight,
   finishStackCount,
   periodPassed,
+  openFloorIso,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -84,7 +85,7 @@ function applyItemStatus(book, item, status, clock = new Date()) {
 // The widget only ever shows the current night, so a tap stored for an
 // earlier night was made on that night. It lands there, not as a late edit.
 function tapClock(row, clock) {
-  if (!row?.dateIso || !periodPassed(row.lamp, row.periodKey, boardDate(clock))) return clock
+  if (!row?.dateIso || !periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) return clock
   return nightEnd(row.dateIso)
 }
 
@@ -349,7 +350,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
   if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const tappedAt = tapAt > 0 ? new Date(tapAt) : null
-  if (tappedAt && periodPassed(row.lamp, row.periodKey, boardDate(tappedAt))) return null
+  if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
   const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
