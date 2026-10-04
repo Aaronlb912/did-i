@@ -114,7 +114,18 @@ if (!global.localStorage) global.localStorage = kv('ls:')
 // Nothing stored yet means a new install (native/invite-capture.js).
 global.__didIFreshInstall =
   global.localStorage.getItem('did-i-shelf') == null && global.localStorage.getItem('did-i-prefs') == null
-if (!global.sessionStorage) global.sessionStorage = kv('ss:')
+// Session storage lasts one launch, like a browser tab, so the app PIN asks
+// again after the app is closed.
+function memoryKv() {
+  const mem = new Map()
+  return {
+    getItem: (key) => (mem.has(key) ? mem.get(key) : null),
+    setItem: (key, value) => mem.set(key, String(value)),
+    removeItem: (key) => mem.delete(key),
+    clear: () => mem.clear(),
+  }
+}
+if (!global.sessionStorage) global.sessionStorage = memoryKv()
 
 // One id per phone that survives a reinstall (and the Dev app), so Account
 // does not list the same phone again and again. Hashed: the phone's own id

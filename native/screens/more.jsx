@@ -755,7 +755,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
 export function EnterScreen({ book, onSaveKeeper, returnTo }) {
   const colors = useHallColors()
   const named = keeperNamed(book)
-  const locked = named && hasPin()
+  const locked = hasPin()
   const [person, setPerson] = useState(book?.keeperName || '')
   const [title, setTitle] = useState(
     book?.title && book.title !== 'My hall' && book.title !== 'My board' ? book.title : '',
@@ -804,7 +804,7 @@ export function EnterScreen({ book, onSaveKeeper, returnTo }) {
       <SetCard colors={colors}>
         <View style={styles.enterFields}>
           {locked ? (
-            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} />
+            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} keyboardType="number-pad" secureTextEntry maxLength={8} autoFocus />
           ) : (
             <>
               <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} />
@@ -1189,9 +1189,10 @@ function PhoneLockSection({ colors }) {
         secureTextEntry
         maxLength={8}
       />
-      <Row colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />
+      <View style={{ gap: 8 }}>
+      <KeyButton colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />
       {locked ? (
-        <Row
+        <KeyButton
           colors={colors}
           label={t('settings.removeLock')}
           onPress={() =>
@@ -1214,6 +1215,7 @@ function PhoneLockSection({ colors }) {
           }
         />
       ) : null}
+      </View>
       {pinMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{pinMiss}</Text> : null}
       {pinSaved ? <Text style={[styles.saved, { color: colors.on }]}>{t('settings.saved')}</Text> : null}
     </>
@@ -1234,7 +1236,7 @@ function AccountSignedOut({ on }) {
   }
 
   return (
-    <ScreenShell title={t('account.outTitle')} colors={colors}>
+    <ScreenShell title={t('settings.account')} colors={colors}>
       <Text style={[styles.accountLead, { color: colors.inkSoft }]}>{t('account.outBody')}</Text>
 
       <AuthEmailCard

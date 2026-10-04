@@ -10,7 +10,7 @@ import { checkPin, hasPin, keeperNamed, openSession } from './session.js'
 export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
   usePrefs()
   const named = keeperNamed(book)
-  const locked = named && hasPin()
+  const locked = hasPin()
   const [person, setPerson] = useState(book.keeperName || '')
   const [title, setTitle] = useState(
     book.title && book.title !== 'My hall' && book.title !== 'My board' ? book.title : '',
