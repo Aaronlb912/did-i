@@ -864,11 +864,9 @@ export const es = {
   'people.outBody': 'Tus amigos necesitan una cuenta para llegarte. Un Did you es una pregunta que te envía un amigo, como «¿Bebiste agua?», y aparece en tu Inicio.',
   'people.goAccount': 'Ir a la cuenta',
   'people.previewCheerTitle': 'Un amigo te anima',
-  'people.previewCheerBody':
-    'Cuando un amigo anima tu racha, aparece justo en tu tarjeta de esta noche.',
-  'people.previewFamilyTitle': 'Las preguntas de familia llegan a esta noche',
-  'people.previewFamilyBody':
-    'Una pregunta que tu familia comparte aparece en esta noche sin que tú la agregues.',
+  'people.previewCheerBody': 'Cuando un amigo anima tu racha, aparece en tu Inicio.',
+  'people.previewFamilyTitle': 'Las preguntas de familia aparecen en Inicio',
+  'people.previewFamilyBody': 'Una pregunta que comparte tu familia aparece en tu Inicio sin que la añadas.',
   'people.you': 'Tú',
   'people.name': 'Nombre',
   'people.namePh': 'Jordan',
@@ -2280,6 +2278,7 @@ export const es = {
   'didYouLink.bad': 'Ese enlace terminó o no es correcto. Pide uno nuevo a quien te lo envió.',
   'didYouLink.reach': 'No se pudo cargar el enlace. Revisa tu conexión. Vuelve a aparecer la próxima vez que abras Did I.',
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
+  'shop.teasedBody': 'Aún no ha salido. Sale a la venta el {date}.',
   'tonight.nextOn': 'Mañana nada. Próxima pregunta: {date}.',
   'shop.earnGems': 'Completa una noche cada semana para ganar 1 gema, o compra un paquete.',
   'tonight.restChange': 'Cambiar un nope',

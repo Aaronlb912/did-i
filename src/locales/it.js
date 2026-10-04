@@ -861,11 +861,9 @@ export const it = {
   'people.outBody': 'Gli amici hanno bisogno di un account per raggiungerti. Un Did you è una domanda che ti manda un amico, come «Hai bevuto acqua?», e compare nella tua Home.',
   'people.goAccount': 'Vai all\'account',
   'people.previewCheerTitle': 'Un amico fa il tifo per te',
-  'people.previewCheerBody':
-    'Quando un amico fa il tifo per la tua serie, appare sulla tua carta di stasera.',
-  'people.previewFamilyTitle': 'Le domande di famiglia arrivano a stasera',
-  'people.previewFamilyBody':
-    'Una domanda condivisa dalla tua famiglia appare a stasera senza che tu la aggiunga.',
+  'people.previewCheerBody': 'Quando un amico fa il tifo per la tua serie, compare nella tua Home.',
+  'people.previewFamilyTitle': 'Le domande di famiglia compaiono nella Home',
+  'people.previewFamilyBody': 'Una domanda condivisa dalla tua famiglia compare nella tua Home senza che tu la aggiunga.',
   'people.you': 'Tu',
   'people.name': 'Nome',
   'people.namePh': 'Aaron',
@@ -2271,6 +2269,7 @@ export const it = {
   'didYouLink.bad': 'Il link è scaduto o non è giusto. Chiedine uno nuovo a chi te l’ha mandato.',
   'didYouLink.reach': 'Impossibile caricare il link. Controlla la connessione. Ricompare la prossima volta che apri Did I.',
   'didYouLink.noApp': 'Non hai ancora Did I? Scaricalo, aprilo e comparirà questa domanda.',
+  'shop.teasedBody': 'Non è ancora uscito. In vendita dal {date}.',
   'tonight.nextOn': 'Domani niente. Prossima domanda: {date}.',
   'shop.earnGems': 'Completa una serata ogni settimana per guadagnare 1 gemma, o prendi un pacchetto.',
   'tonight.restChange': 'Cambia un nope',
