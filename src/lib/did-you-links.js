@@ -158,6 +158,15 @@ export async function makeDidYouLink(question) {
   return { code: cleanCode(data), miss: '' }
 }
 
+// Did you links you made, newest first, with who kept each one.
+export async function myDidYouLinks() {
+  const db = cloud()
+  if (!db) return []
+  const { data, error } = await db.rpc('my_did_you_links')
+  if (error) throw error
+  return (data || []).map((row) => ({ ...row, kept: Array.isArray(row.kept) ? row.kept : [] }))
+}
+
 // Add whoever made a Did you link as a friend. Signed in only.
 export async function befriendByLink(code) {
   const db = cloud()

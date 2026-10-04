@@ -1,0 +1,14 @@
+---
+description: Theme tokens, translations, and reduced motion
+globs: src/**,native/**,widgets/**
+alwaysApply: false
+---
+
+# Theme and i18n
+
+- Theme is Dark / Light / Phone in `src/lib/prefs.js` (key `did-i-prefs`), applied via `data-theme`. Do not add another prefs store.
+- New colors go on `--di-*` custom properties in `src/lib/did-i.css`. No hardcoded hex on new UI.
+- Shop looks (`data-look`) are separate from theme. Do not mix them.
+- Strings use `t('key')` from `src/lib/i18n.js`.
+- Every key goes in all 9 `src/locales/*.js` files. The check test requires identical keys and flags English left in other languages. See `docs/locales.md`.
+- New animation respects reduced motion: `useReduceMotion` / `prefers-reduced-motion`.

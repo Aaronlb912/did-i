@@ -249,3 +249,35 @@ create policy "own app send answers" on public.app_send_answers
 drop policy if exists "answer app sends" on public.app_send_answers;
 create policy "answer app sends" on public.app_send_answers
   for insert to authenticated with check (user_id = (select auth.uid()));
+
+-- Did you links you made, newest first, and who kept each. The maker already
+-- gets "{name} kept your Did you" as a push, so the same name shows here.
+-- Anyone blocked either way is left out.
+create or replace function public.my_did_you_links()
+returns table (code text, question text, made_at timestamptz, ended boolean, kept jsonb)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select l.code, l.question, l.made_at, l.ended,
+    coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'user_id', c.user_id,
+        'name', coalesce(nullif(trim(p.display_name), ''), ''),
+        'at', c.made_at) order by c.made_at)
+      from public.did_you_link_claims c
+      left join public.profiles p on p.user_id = c.user_id
+      where c.code = l.code
+        and not exists (select 1 from public.blocks b
+                        where (b.blocker = l.made_by and b.blocked = c.user_id)
+                           or (b.blocker = c.user_id and b.blocked = l.made_by))
+    ), '[]'::jsonb)
+  from public.did_you_links l
+  where l.made_by = (select auth.uid())
+  order by l.made_at desc
+  limit 50
+$$;
+
+revoke all on function public.my_did_you_links() from public, anon;
+grant execute on function public.my_did_you_links() to authenticated;
