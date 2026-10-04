@@ -182,7 +182,7 @@ export const de = {
     'Dieser Build hat keinen Kontoserver. Alles bleibt auf dem Telefon und nichts wird gesendet.',
   'account.offTester':
     'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
-  'account.outTitle': 'Melde dich an, um deine Ordner zu behalten',
+  'account.outTitle': 'Melde dich an, um deine Fragen zu behalten',
   'account.outBody':
     'Deine Fragen, Antworten, Streak, Coins, Gems und deine Cheers folgen dir auf ein neues Telefon. Niemand sonst sieht sie.',
   'account.email': 'E-Mail',

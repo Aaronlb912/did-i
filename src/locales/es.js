@@ -182,7 +182,7 @@ export const es = {
     'Esta versión no tiene servidor de cuentas. Todo se queda en este teléfono y no se envía a ningún lado.',
   'account.offTester':
     'Si a otra persona sí le funciona, esta instalación necesita un rebuild con las claves de Supabase. Los builds de EAS no leen .env.local. O entra en did-i.app en el navegador.',
-  'account.outTitle': 'Entra para guardar tus carpetas',
+  'account.outTitle': 'Entra para guardar tus preguntas',
   'account.outBody':
     'Tus preguntas, respuestas, racha, monedas, gemas y los cheers que tienes te siguen a otro teléfono. Nadie más los ve.',
   'account.email': 'Correo',
