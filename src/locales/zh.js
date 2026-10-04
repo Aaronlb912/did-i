@@ -173,7 +173,7 @@ export const zh = {
   'account.offBody': '此版本未设置账户服务器。所有内容留在手机上，不会发送。',
   'account.offTester':
     'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
-  'account.outTitle': '登录以保留文件夹',
+  'account.outTitle': '登录以保留问题',
   'account.outBody': '你的 questions、回答、streak、coins、gems 和拥有的 cheers 会跟着你到新手机。别人看不到。',
   'account.email': 'Email',
   'account.emailHint': 'you@example.com',

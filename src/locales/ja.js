@@ -173,7 +173,7 @@ export const ja = {
   'account.offBody': 'このビルドにアカウントサーバーなし。全部スマホに残り、送らない。',
   'account.offTester':
     'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
-  'account.outTitle': 'ログインしてフォルダを残す',
+  'account.outTitle': 'ログインして質問を残す',
   'account.outBody': 'questions、回答、streak、coins、gems、持ってる cheers は新しいスマホについてくる。他の人には見えない。',
   'account.email': 'Email',
   'account.emailHint': 'you@example.com',

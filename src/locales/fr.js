@@ -181,7 +181,7 @@ export const fr = {
     'Cette version n\'a pas de serveur de compte. Tout reste sur ce téléphone et rien n\'est envoyé.',
   'account.offTester':
     'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
-  'account.outTitle': 'Connecte-toi pour garder tes dossiers',
+  'account.outTitle': 'Connecte-toi pour garder tes questions',
   'account.outBody':
     'Tes questions, réponses, streak, coins, gems et les cheers que tu possèdes te suivent sur un nouveau téléphone. Personne d\'autre ne les voit.',
   'account.email': 'Courriel',

@@ -178,7 +178,7 @@ export const en = {
     'This build has no account server set. Everything stays on this phone and nothing is sent anywhere.',
   'account.offTester':
     'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
-  'account.outTitle': 'Sign in to keep your folders',
+  'account.outTitle': 'Sign in to keep your questions',
   'account.outBody':
     'Your questions, answers, streak, coins, gems, and the cheers you own follow you to a new phone. Nobody else sees them.',
   'account.email': 'Email',
