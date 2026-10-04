@@ -36,12 +36,12 @@ export function Help({ book, now }) {
         <section className="di-help-block" id="night">
           <h3>{t('help.tonight')}</h3>
           <p>{t('help.tonightP1')}</p>
-          <p>{t('help.tonightP2')}</p>
+          <p>{t('help.tonightP2', { time: clockWords('09:00') })}</p>
         </section>
 
         <section className="di-help-block" id="streak">
           <h3>{t('help.streak')}</h3>
-          <p>{t('help.streakP')}</p>
+          <p>{t('help.streakP', { time: clockWords('09:00') })}</p>
           <h3>{t('help.grace')}</h3>
           <p>{t('help.graceP', { time: clockWords('09:00') })}</p>
           <div className="di-hang-actions">

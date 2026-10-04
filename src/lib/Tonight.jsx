@@ -147,7 +147,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
             ? t('tonight.restOne')
             : t('tonight.restTitle', { n: stack.finishCount })}
         </h2>
-        <p className="di-detail-meta">{t('tonight.restHint')}</p>
+        <p className="di-detail-meta">{t('tonight.restHint', { time: clockWords('09:00') })}</p>
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={stack.continueStack}>
             {t('tonight.finishKeep')}

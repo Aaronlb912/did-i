@@ -2292,7 +2292,7 @@ export const pt = {
   'gems.signInBuy': 'Entre para comprar',
   'confirm.wearing': 'Usando {name}',
   'settings.yourData': 'Seus dados',
-  'settings.foldGraceSub': 'Seu relógio em {zone}. Hoje à noite fecha à meia-noite. Você ainda pode terminar a noite passada até as 9h.',
+  'settings.foldGraceSub': 'Seu relógio em {zone}. Hoje à noite fecha à meia-noite. Você ainda pode terminar a noite passada até as {time}.',
   'widget.settings.colors': 'Cores do widget',
   'settings.clearFolderBody': 'Apaga todas as perguntas e respostas de {name}. As outras pastas ficam. Salve uma cópia antes, se quiser.',
   'settings.clearFolderTitle': 'Limpar {name}?',

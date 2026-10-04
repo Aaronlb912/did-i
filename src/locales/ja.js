@@ -2229,7 +2229,7 @@ export const ja = {
   'gems.signInBuy': '購入するにはサインイン',
   'confirm.wearing': '{name}を着用中',
   'settings.yourData': 'あなたのデータ',
-  'settings.foldGraceSub': '{zone}の時計です。今夜は深夜0時に締まります。昨夜の分は午前9時まで記録できます。',
+  'settings.foldGraceSub': '{zone}の時計です。今夜は深夜0時に締まります。昨夜の分は{time}まで記録できます。',
   'widget.settings.colors': 'ウィジェットの色',
   'settings.clearFolderBody': '{name}の質問と答えをすべて消します。ほかのフォルダはそのままです。必要なら先にコピーを保存してください。',
   'settings.clearFolderTitle': '{name}を空にしますか？',

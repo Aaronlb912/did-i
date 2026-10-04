@@ -2292,7 +2292,7 @@ export const it = {
   'gems.signInBuy': 'Accedi per comprare',
   'confirm.wearing': 'Indossi {name}',
   'settings.yourData': 'I tuoi dati',
-  'settings.foldGraceSub': 'Il tuo orologio in {zone}. Stasera chiude a mezzanotte. Puoi ancora finire la notte scorsa fino alle 9.',
+  'settings.foldGraceSub': 'Il tuo orologio in {zone}. Stasera chiude a mezzanotte. Puoi ancora finire la notte scorsa fino alle {time}.',
   'widget.settings.colors': 'Colori del widget',
   'settings.clearFolderBody': 'Cancella ogni domanda e risposta in {name}. Le altre cartelle restano. Salva prima una copia se vuoi.',
   'settings.clearFolderTitle': 'Svuotare {name}?',

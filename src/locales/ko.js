@@ -2229,7 +2229,7 @@ export const ko = {
   'gems.signInBuy': '구매하려면 로그인',
   'confirm.wearing': '{name} 착용 중',
   'settings.yourData': '내 데이터',
-  'settings.foldGraceSub': '{zone} 기준 시계예요. 오늘 밤은 자정에 닫혀요. 어젯밤은 오전 9시까지 마칠 수 있어요.',
+  'settings.foldGraceSub': '{zone} 기준 시계예요. 오늘 밤은 자정에 닫혀요. 어젯밤은 {time}까지 마칠 수 있어요.',
   'widget.settings.colors': '위젯 색상',
   'settings.clearFolderBody': '{name}의 질문과 답을 모두 지웁니다. 다른 폴더는 그대로예요. 원하면 먼저 사본을 저장하세요.',
   'settings.clearFolderTitle': '{name}을(를) 비울까요?',

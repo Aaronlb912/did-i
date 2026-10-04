@@ -1,3 +1,4 @@
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
@@ -262,7 +263,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="clock"
           tint={colors.on}
           label={t('settings.fold')}
-          sub={t('settings.foldGraceSub', { zone: zoneWords() })}
+          sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
           value={t('settings.foldAt')}
         />
         <SetChoice

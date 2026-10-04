@@ -216,9 +216,9 @@ export function HelpScreen() {
       <HelpFold colors={colors} title={t('help.groupDaily')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
         <Meta colors={colors}>{t('help.tonightP1')}</Meta>
-        <Meta colors={colors}>{t('help.tonightP2')}</Meta>
+        <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
-        <Meta colors={colors}>{t('help.streakP')}</Meta>
+        <Meta colors={colors}>{t('help.streakP', { time: clockWords('09:00') })}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
         <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
         <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
