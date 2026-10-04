@@ -1,4 +1,4 @@
-import { hallHeat } from './hall-feel.js'
+import { hallHeat, shelfStreak } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -65,7 +65,31 @@ function dueOnNight(book, iso, at) {
   return dueTonight(book, at).filter((row) => !row.lamp.createdOn || row.lamp.createdOn <= iso)
 }
 
+// The first night anything happened: the oldest question's made date or the
+// oldest answer. Nights before it are blank on the calendar, not missed.
+const startMemo = new WeakMap()
+function startNight(book) {
+  if (startMemo.has(book)) return startMemo.get(book)
+  let first = ''
+  for (const lamp of book.lamps || []) {
+    const made = String(lamp.createdOn || '').slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(made) && (!first || made < first)) first = made
+  }
+  for (const answer of book.answers || []) {
+    const night = String(answer.periodKey || '').slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(night) && (!first || night < first)) first = night
+  }
+  startMemo.set(book, first)
+  return first
+}
+
 function nightMarks(books, iso, today) {
+  // Future nights and nights before you started stay blank.
+  if (iso > today) return { due: 0, on: false, miss: false, empty: true }
+  books = books.filter((book) => {
+    const start = startNight(book)
+    return start ? iso >= start : iso === today
+  })
   const at = noonOn(iso)
   let dueCount = 0
   let clear = true
@@ -227,6 +251,44 @@ export function weekCell(night, lamp) {
   if (row.answer.status === 'late') return { state: 'late', row }
   if (row.answer.status === 'skip') return { state: 'skip', row }
   return { state: 'hole', row }
+}
+
+// Seven nights across the folders in view ('' is every folder).
+export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7) {
+  const books = scopedBooks(boards, tagId)
+  if (!books.length) return []
+  const per = books.map((book) => weekNights(book, now, days))
+  return per[0].map((night, at) => ({
+    ...night,
+    due: per.flatMap((nights) => nights[at]?.due || []),
+  }))
+}
+
+// Every answer across the folders in view, newest first.
+export function shelfFeedRows(boards, tagId = '') {
+  return scopedBooks(boards, tagId)
+    .flatMap((book) => feedRows(book))
+    .sort((a, b) => String(b.answer.answeredAt).localeCompare(String(a.answer.answeredAt)))
+}
+
+export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  const sum = { hung: 0, down: 0, did: 0, late: 0, skip: 0 }
+  for (const book of books) {
+    const answers = book.answers || []
+    sum.hung += (book.lamps || []).filter((lamp) => !lamp.archived).length
+    sum.down += (book.lamps || []).filter((lamp) => lamp.archived).length
+    sum.did += answers.filter((answer) => answer.status === 'yes').length
+    sum.late += answers.filter((answer) => answer.status === 'late').length
+    sum.skip += answers.filter((answer) => answer.status === 'skip').length
+  }
+  return { ...sum, heat: books.length ? shelfStreak(books, now) : 0 }
+}
+
+// Streak goals in order: the two early marks, then the streak tiers.
+const STREAK_GOALS = [3, 5, 7, 10, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 730, 1000]
+export function nextStreakGoal(n) {
+  return STREAK_GOALS.find((goal) => goal > n) || 0
 }
 
 export function feedRows(book) {

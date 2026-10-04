@@ -39,18 +39,19 @@ import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { hallHeat } from '../../src/lib/hall-feel.js'
+import { hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
-  feedRows,
   markWelcomeSeen,
+  nextStreakGoal,
+  shelfFeedRows,
+  shelfStatsCounts,
+  shelfWeekNights,
   stampWhen,
-  statsCounts,
   tapWhen,
   weekCell,
   weekLamps,
-  weekNights,
 } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -70,7 +71,7 @@ import {
 import { armLampPings, upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
-import { leftoverOn } from '../../src/lib/tags.js'
+import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -79,7 +80,6 @@ import { CalendarGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
-import { SavableField } from '../components/SavableField.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { Avatar } from '../components/PersonCard.jsx'
 import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
@@ -321,6 +321,7 @@ export function MarksScreen({ book, boards = [], now }) {
 
   return (
     <ScreenShell book={book} title={t('marks.title')} colors={colors}>
+      <Meta colors={colors}>{t('marks.lede')}</Meta>
       {book?.quietMode ? (
         <Meta colors={colors}>{t('marks.hidden')}</Meta>
       ) : (
@@ -379,13 +380,33 @@ function NumberTile({ colors, label, n, onPress }) {
   )
 }
 
-export function StatsScreen({ book, now }) {
+// Which folders a page counts. Every folder unless a filter is on; then it
+// names them and offers All.
+function inView(book, boards) {
+  const live = (boards || []).filter((item) => !item.archived)
+  return live.length ? live : book ? [book] : []
+}
+
+function FolderScope({ colors, boards, tagId, path }) {
+  const ids = tagIdsOf(tagId)
+  if (!ids.length) return <Meta colors={colors}>{t('scope.all')}</Meta>
+  const names = (boards || []).filter((item) => ids.includes(item.id)).map((item) => item.title).join(', ')
+  return (
+    <View>
+      <Meta colors={colors}>{t('scope.only', { names })}</Meta>
+      <KeyButton colors={colors} label={t('scope.showAll')} onPress={() => goHash(path, { tag: 'all' })} />
+    </View>
+  )
+}
+
+export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const counts = statsCounts(book, clock)
+  const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
 
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
       <StreakHero colors={colors} n={counts.heat} label={t('stats.nightsOn')} />
       <View style={styles.tiles}>
         <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
@@ -400,13 +421,14 @@ export function StatsScreen({ book, now }) {
   )
 }
 
-export function FeedScreen({ book, now }) {
+export function FeedScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const rows = feedRows(book)
+  const rows = shelfFeedRows(inView(book, boards), tagId)
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/feed" />
       {!rows.length ? (
         <Meta colors={colors}>{t('feed.empty')}</Meta>
       ) : (
@@ -440,10 +462,10 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   )
 }
 
-export function WeekGridScreen({ book, now }) {
+export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
-  const nights = weekNights(book, clock, 7)
+  const nights = shelfWeekNights(inView(book, boards), clock, tagId, 7)
   const lamps = weekLamps(nights)
 
   function cellColor(state) {
@@ -467,6 +489,7 @@ export function WeekGridScreen({ book, now }) {
 
   return (
     <ScreenShell title={t('streaks.seven')} colors={colors}>
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/week" />
       {!lamps.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -524,18 +547,27 @@ export function WeekGridScreen({ book, now }) {
   )
 }
 
-export function StreaksScreen({ book, now }) {
+export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const heat = hallHeat(book, clock)
-  const lamps = (book?.lamps || []).filter((lamp) => !lamp.archived)
-  const rows = lamps
-    .map((lamp) => ({ lamp, n: streakLength(book, lamp, clock) }))
+  const books = scopedBooks(inView(book, boards), tagId)
+  const heat = books.length ? shelfStreak(books, clock) : 0
+  const goal = nextStreakGoal(heat)
+  const rows = books
+    .flatMap((one) =>
+      (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
+    )
     .sort((a, b) => b.n - a.n)
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>
-      <StreakHero colors={colors} n={heat} label={t('streaks.aria')} line={t('streaks.line', { n: heat })} />
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/streaks" />
+      <StreakHero
+        colors={colors}
+        n={heat}
+        label={t('streaks.aria')}
+        line={goal ? t('streaks.line', { n: heat, goal }) : null}
+      />
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -560,6 +592,33 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const colors = useHallColors()
   const [titleDraft, setTitleDraft] = useState(book?.title || '')
   const [addMiss, setAddMiss] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const renameDirty = Boolean(titleDraft.trim()) && titleDraft.trim() !== (book?.title || '')
+
+  function saveName() {
+    const title = titleDraft.trim()
+    if (!title || title === book?.title) return
+    setTitleDraft(title)
+    onChange({ ...book, title })
+    confirmDone(t('settings.saved'))
+  }
+
+  function addFolder() {
+    const title = newName.trim()
+    if (!title) {
+      setAddMiss(t('boards.addMiss'))
+      return
+    }
+    if ((boards || []).some((item) => !item.archived && item.title.trim().toLowerCase() === title.toLowerCase())) {
+      setAddMiss(t('boards.addSame'))
+      return
+    }
+    onAdd?.(title)
+    setAdding(false)
+    setNewName('')
+    setAddMiss('')
+  }
   const live = (boards || []).filter((item) => !item.archived)
 
   useEffect(() => {
@@ -582,7 +641,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             <SetRow
               colors={colors}
               tint={on ? colors.on : undefined}
-              icon="tag"
+              icon="folder"
               label={item.title}
               sub={`${on ? t('boards.thisOne') : t('boards.one')} · ${countNote} · ${leftNote}`}
               chevron
@@ -594,18 +653,15 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             />
             {on ? (
               <View style={styles.tagName}>
-              <SavableField
+              <Field
                 colors={colors}
                 label={t('boards.name')}
                 value={titleDraft}
-                savedValue={book?.title || ''}
                 onChangeText={setTitleDraft}
-                onSave={(title) => {
-                  if (!title) return false
-                  setTitleDraft(title)
-                  onChange({ ...book, title })
-                }}
+                onSubmitEditing={saveName}
+                returnKeyType="done"
               />
+              <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
               </View>
             ) : null}
           </View>
@@ -613,27 +669,68 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       })}
       </SetCard>
       <View style={styles.dataGap} />
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="add"
-          tint={colors.on}
-          label={t('boards.add')}
-          sub={t('boards.addHint')}
-          last
-          onPress={() => setAddMiss(onAdd?.() || '')}
-        />
-      </SetCard>
+      {adding ? (
+        <View style={styles.tagName}>
+          <Field
+            colors={colors}
+            label={t('boards.addName')}
+            value={newName}
+            onChangeText={(text) => {
+              setNewName(text)
+              setAddMiss('')
+            }}
+            onSubmitEditing={addFolder}
+            returnKeyType="done"
+            autoFocus
+          />
+          <KeyButton colors={colors} label={t('hang.add')} onPress={addFolder} />
+          <KeyButton
+            colors={colors}
+            label={t('hang.cancel')}
+            onPress={() => {
+              setAdding(false)
+              setNewName('')
+              setAddMiss('')
+            }}
+          />
+        </View>
+      ) : (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="add"
+            tint={colors.on}
+            label={t('boards.add')}
+            sub={t('boards.addHint')}
+            last
+            onPress={() => setAdding(true)}
+          />
+        </SetCard>
+      )}
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
-      <KeyButton colors={colors} label={t('boards.home')} onPress={() => goHash('/tonight')} />
+      <KeyButton colors={colors} label={t('boards.tonight')} onPress={() => goHash('/tonight')} />
       <KeyButton colors={colors} label={t('boards.calendar')} onPress={() => goHash('/calendar')} />
-      <KeyButton colors={colors} label={t('boards.feed')} onPress={() => goHash('/feed')} />
+      <KeyButton colors={colors} label={t('feed.title')} onPress={() => goHash('/feed')} />
       <KeyButton colors={colors} label={t('boards.stats')} onPress={() => goHash('/stats')} />
       {boards?.length > 1 && book ? (
         <KeyButton
           colors={colors}
-          label={t('boards.remove')}
-          onPress={() => onRemove?.(book.id)}
+          label={t('boards.removeNamed', { title: book.title })}
+          onPress={() =>
+            publishSheet({
+              title: t('boards.removeTitle', { title: book.title }),
+              body: t('boards.removeBody'),
+              goLabel: t('boards.removeNamed', { title: book.title }),
+              closeLabel: t('settings.neverMind'),
+              colors,
+              onClose: () => publishSheet(null),
+              onGo: () => {
+                publishSheet(null)
+                onRemove?.(book.id)
+                confirmDone(t('confirm.folderRemoved', { title: book.title }))
+              },
+            })
+          }
         />
       ) : null}
     </ScreenShell>

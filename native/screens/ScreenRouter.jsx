@@ -165,11 +165,11 @@ export function ScreenRouter({
     )
   }
   if (path === '/search') return <SearchScreen book={book} />
-  if (path === '/week') return <WeekGridScreen book={book} />
+  if (path === '/week') return <WeekGridScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/calendar') return <CalendarScreen book={book} boards={boards} tagId={tagId} />
-  if (path === '/streaks') return <StreaksScreen book={book} />
-  if (path === '/stats') return <StatsScreen book={book} />
-  if (path === '/feed') return <FeedScreen book={book} />
+  if (path === '/streaks') return <StreaksScreen book={book} boards={boards} tagId={tagId} />
+  if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
+  if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/pings') return <PingScreen book={book} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
   if (path === '/me') {
     return (

@@ -207,11 +207,11 @@ export function useAppShelf() {
   )
 
   const switchBoard = useCallback((id) => persist(selectBook(shelf, id)), [persist, shelf])
-  const addBoard = useCallback(() => {
+  const addBoard = useCallback((name) => {
     persist(
       putBook(shelf, {
         ...emptyBoard(),
-        title: nextBoardTitle(shelf.boards),
+        title: String(name || '').trim() || nextBoardTitle(shelf.boards),
         keeperName: live.keeperName,
       }),
     )

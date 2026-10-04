@@ -562,8 +562,9 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
   const title = gemPackTitle(pack)
   return (
     <Pressable
-      onPress={onBuy}
-      accessibilityRole="button"
+      onPress={onBuy || undefined}
+      disabled={!onBuy}
+      accessibilityRole={onBuy ? 'button' : 'text'}
       accessibilityLabel={`${title}, ${price}`}
       style={[styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}
     >
@@ -577,9 +578,13 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       </View>
       <Text style={[styles.gemFeaturedTitle, { color: colors.ink }]}>{title}</Text>
       {bonusNote ? <Text style={[styles.gemFeaturedNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
-      <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
-        <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price}</Text>
-      </View>
+      {onBuy ? (
+        <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
+          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price}</Text>
+        </View>
+      ) : (
+        <Text style={[styles.gemFeaturedTitle, { color: colors.inkDim }]}>{price}</Text>
+      )}
     </Pressable>
   )
 }
@@ -599,7 +604,7 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
           {price}
         </Text>
       </View>
-      <DidButton small label={t('gems.buy')} onPress={onBuy} colors={colors} />
+      {onBuy ? <DidButton small label={t('gems.buy')} onPress={onBuy} colors={colors} /> : null}
     </View>
   )
 }
@@ -1362,6 +1367,7 @@ export function GemShopScreen({ book }) {
   const balanceRef = useRef(null)
   const stream = useGemStream(purse.gems, balanceRef)
   const [banner, setBanner] = useState('')
+  const account = useAccount()
   // The packs and Buy buttons show at once with list prices. The store
   // connection (usually already warm from app start) fills in local prices;
   // a tap before it finishes just waits for it inside the purchase.
@@ -1434,6 +1440,7 @@ export function GemShopScreen({ book }) {
     setBanner(out.pending ? t('gems.pending') : '')
   }
 
+  const signedIn = Boolean(account.email)
   const expoGo = Constants.appOwnership === 'expo'
   const storeNote = expoGo ? t('gems.appOnly') : storeChecked && !storeReady ? t('gems.setup') : ''
 
@@ -1457,6 +1464,18 @@ export function GemShopScreen({ book }) {
         </View>
       ) : null}
 
+      {COMPACT_GEM_PACKS.map((pack) => (
+        <CompactGemRow
+          key={pack.id}
+          pack={pack}
+          price={packPriceLabel(pack, storePrice(pack.id))}
+          bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
+          onBuy={signedIn ? () => buy(pack.id) : null}
+          colors={colors}
+          artRef={stream.packRef(pack.id)}
+        />
+      ))}
+
       <View style={styles.gemFeaturedRow}>
         {FEATURED_GEM_PACKS.map((pack) => (
           <FeaturedGemCard
@@ -1465,24 +1484,14 @@ export function GemShopScreen({ book }) {
             price={packPriceLabel(pack, storePrice(pack.id))}
             bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
             best={pack.id === BEST_VALUE_GEM_ID}
-            onBuy={() => buy(pack.id)}
+            onBuy={signedIn ? () => buy(pack.id) : null}
             colors={colors}
             artRef={stream.packRef(pack.id)}
           />
         ))}
       </View>
 
-      {COMPACT_GEM_PACKS.map((pack) => (
-        <CompactGemRow
-          key={pack.id}
-          pack={pack}
-          price={packPriceLabel(pack, storePrice(pack.id))}
-          bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
-          onBuy={() => buy(pack.id)}
-          colors={colors}
-          artRef={stream.packRef(pack.id)}
-        />
-      ))}
+      {!signedIn ? <DidButton label={t('gems.signInBuy')} onPress={() => goHash('/account')} colors={colors} /> : null}
 
       <Meta colors={colors}>{t('gems.earn')}</Meta>
       <Meta colors={colors}>
@@ -1543,8 +1552,13 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
 
+  function wearOn(next, name) {
+    onChange(next.book)
+    if (name && !next.miss) confirmDone(t('confirm.wearing', { name }))
+  }
+
   function wearCheerId(id) {
-    onChange(wearCheer(book, id).book)
+    wearOn(wearCheer(book, id), id ? t(cheerText(id, 'name')) : '')
   }
 
   function pickStage(id, n) {
@@ -1571,7 +1585,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               label={t(lookText(item.id, 'name'))}
               worn={purse.lookOn === item.id}
               colors={colors}
-              onPress={() => onChange(buyLook(book, item.id).book)}
+              onPress={() => wearOn(buyLook(book, item.id), purse.lookOn === item.id ? '' : t(lookText(item.id, 'name')))}
             >
               <LookChip id={item.id} colors={colors} />
             </KitTile>
@@ -1592,7 +1606,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               label={t(buddyText(item.id, 'name'))}
               worn={purse.buddyOn === item.id}
               colors={colors}
-              onPress={() => onChange(wearBuddy(book, item.id).book)}
+              onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
             >
               <BuddyChip id={item.id} alive />
             </KitTile>
@@ -1635,7 +1649,9 @@ export function CollectionScreen({ book, onChange, startTab }) {
                       label={t(`accessory.${item.id}`)}
                       worn={purse.worn[item.slot] === item.id}
                       colors={colors}
-                      onPress={() => onChange(wearAccessory(book, item.id).book)}
+                      onPress={() =>
+                        wearOn(wearAccessory(book, item.id), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
+                      }
                     >
                       <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} />
                     </KitTile>
