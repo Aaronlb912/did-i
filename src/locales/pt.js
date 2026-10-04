@@ -2117,7 +2117,7 @@ export const pt = {
   'we.widgetCount': 'Did we · {n} de {total}',
   'we.widgetDone': 'Did we · feito juntos',
   'help.questions': 'Perguntas e pastas',
-  'help.questionsP': 'Adicione uma pergunta com o botão +. Escolha todas as noites ou algumas, e um horário se quiser um lembrete. As pastas agrupam suas perguntas, e os chips de pasta em Esta noite mostram uma pasta por vez.',
+  'help.questionsP': 'Toque em Adicionar em Perguntas ou no menu. Escolha todas as noites ou algumas, e um horário se quiser um lembrete. As pastas agrupam suas perguntas, e o chip TODAS no Início filtra por pasta.',
   'help.questionsGo': 'Ver suas perguntas',
   'help.pings': 'Lembretes',
   'help.pingsP':

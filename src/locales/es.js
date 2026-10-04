@@ -2125,7 +2125,7 @@ export const es = {
   'we.widgetCount': 'Did we · {n} de {total}',
   'we.widgetDone': 'Did we · hecho juntos',
   'help.questions': 'Preguntas y carpetas',
-  'help.questionsP': 'Añade una pregunta con el botón +. Elige todas las noches o algunas, y una hora si quieres un recordatorio. Las carpetas agrupan tus preguntas, y las fichas de carpeta en Esta noche muestran una carpeta a la vez.',
+  'help.questionsP': 'Toca Añadir en Preguntas o en el menú. Elige todas las noches o algunas, y una hora si quieres un recordatorio. Las carpetas agrupan tus preguntas, y la ficha TODAS en Inicio filtra por carpeta.',
   'help.questionsGo': 'Ver tus preguntas',
   'help.pings': 'Recordatorios',
   'help.pingsP':

@@ -2059,7 +2059,7 @@ export const ja = {
   'we.widgetCount': 'Did we · {total}人中{n}人',
   'we.widgetDone': 'Did we · 一緒にできた',
   'help.questions': '質問とフォルダ',
-  'help.questionsP': '+ ボタンで質問を追加します。毎晩か一部の夜を選び、リマインダーが欲しければ時刻も選べます。フォルダは質問をまとめ、今夜のフォルダチップは一度に1つのフォルダを表示します。',
+  'help.questionsP': '質問タブかメニューの「追加」から質問を追加します。毎晩か一部の夜を選び、リマインダーが欲しければ時刻も選べます。フォルダは質問をまとめ、ホームの「すべて」チップでフォルダごとに絞り込めます。',
   'help.questionsGo': '質問を見る',
   'help.pings': 'リマインダー',
   'help.pingsP':
