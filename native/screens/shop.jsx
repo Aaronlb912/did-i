@@ -869,6 +869,11 @@ export function ShopLooksScreen({ book, onChange }) {
             offerMoreGems(colors)
             return
           }
+          if (!item.gems && purse.coins < item.coins) {
+            const short = item.coins - purse.coins
+            setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+            return
+          }
           setMiss(NO_MISS)
           setConfirm({
             title: t(lookText(item.id, 'name')),
