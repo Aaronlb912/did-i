@@ -2287,7 +2287,7 @@ export const fr = {
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s\'affiche.',
   'shop.earnGems': 'Terminez une soirée chaque semaine pour gagner 1 gemme, ou prenez un pack.',
   'tonight.restChange': 'Changer un nope',
-  'tonight.meterNope': '{n} nope',
+  'tonight.meterNope': '{n} en nope',
   'settings.phoneSubOut': 'Votre nom et une note perso',
   'kit.accOnAnt': 'Aucun compagnon, alors la fourmi montre le rendu des accessoires.',
   'account.needEmail': 'Tapez d\'abord votre e-mail.',

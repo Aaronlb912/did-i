@@ -2273,7 +2273,7 @@ export const it = {
   'didYouLink.noApp': 'Non hai ancora Did I? Scaricalo, aprilo e comparirà questa domanda.',
   'shop.earnGems': 'Completa una serata ogni settimana per guadagnare 1 gemma, o prendi un pacchetto.',
   'tonight.restChange': 'Cambia un nope',
-  'tonight.meterNope': '{n} nope',
+  'tonight.meterNope': '{n} con nope',
   'settings.phoneSubOut': 'Il tuo nome e una nota per te',
   'kit.accOnAnt': 'Nessun compagno, quindi la formica mostra come stanno gli accessori.',
   'account.needEmail': 'Scrivi prima la tua email.',

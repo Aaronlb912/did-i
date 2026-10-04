@@ -2294,7 +2294,7 @@ export const de = {
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
   'shop.earnGems': 'Schließe jede Woche einen Abend ab für 1 Edelstein, oder hol dir ein Paket.',
   'tonight.restChange': 'Nope ändern',
-  'tonight.meterNope': '{n} Nope',
+  'tonight.meterNope': '{n}× Nope',
   'settings.phoneSubOut': 'Dein Name und eine Notiz an dich',
   'kit.accOnAnt': 'Kein Kumpel an, darum zeigt die Ameise, wie Accessoires aussehen.',
   'account.needEmail': 'Gib zuerst deine E-Mail ein.',

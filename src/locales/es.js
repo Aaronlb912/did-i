@@ -2282,7 +2282,7 @@ export const es = {
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
   'shop.earnGems': 'Completa una noche cada semana para ganar 1 gema, o compra un paquete.',
   'tonight.restChange': 'Cambiar un nope',
-  'tonight.meterNope': '{n} nope',
+  'tonight.meterNope': '{n} con nope',
   'settings.phoneSubOut': 'Tu nombre y una nota personal',
   'kit.accOnAnt': 'No llevas compañero, así que la hormiga muestra cómo quedan los accesorios.',
   'account.needEmail': 'Escribe primero tu correo.',

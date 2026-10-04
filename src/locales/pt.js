@@ -2273,7 +2273,7 @@ export const pt = {
   'didYouLink.noApp': 'Ainda sem Did I? Baixe, abra e esta pergunta aparece.',
   'shop.earnGems': 'Conclua uma noite por semana para ganhar 1 gema, ou pegue um pacote.',
   'tonight.restChange': 'Mudar um nope',
-  'tonight.meterNope': '{n} nope',
+  'tonight.meterNope': '{n} com nope',
   'settings.phoneSubOut': 'Seu nome e uma nota pessoal',
   'kit.accOnAnt': 'Nenhum parceiro em uso, então a formiga mostra como ficam os acessórios.',
   'account.needEmail': 'Digite seu e-mail primeiro.',
