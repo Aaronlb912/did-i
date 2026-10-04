@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
+import { myDidYouLinks } from './did-you-links.js'
 import { t, tMiss } from './i18n.js'
 import { listSent, personName, takeBack } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -20,6 +21,7 @@ export function Sent({ book, now }) {
   const account = useAccount()
   const online = useOnline()
   const [rows, setRows] = useState([])
+  const [links, setLinks] = useState([])
   const [ready, setReady] = useState(false)
   const [miss, setMiss] = useState('')
 
@@ -28,7 +30,9 @@ export function Sent({ book, now }) {
       setReady(true)
       return
     }
-    setRows(await listSent())
+    const [sent, made] = await Promise.all([listSent(), myDidYouLinks().catch(() => [])])
+    setRows(sent)
+    setLinks(made)
     setReady(true)
   }, [account.user])
 
@@ -62,7 +66,7 @@ export function Sent({ book, now }) {
 
   if (!ready) return shell(<p className="di-set-note">{t('family.loading')}</p>)
 
-  if (!rows.length) {
+  if (!rows.length && !links.length) {
     return shell(
       <>
         <h2 className="di-page-title">{t('sent.emptyTitle')}</h2>
@@ -80,6 +84,7 @@ export function Sent({ book, now }) {
     <>
       <h2 className="di-page-title">{t('sent.title')}</h2>
       <p className="di-set-note">{t('sent.hint')}</p>
+      {rows.length ? (
       <SetCard>
         {rows.map((row) => (
           <div className="di-people-row di-family-row" key={row.id}>
@@ -107,6 +112,26 @@ export function Sent({ book, now }) {
           </div>
         ))}
       </SetCard>
+      ) : null}
+      {links.length ? (
+        <>
+          <p className="di-set-cap">{t('sent.linksCap')}</p>
+          <SetCard>
+            {links.map((link) => (
+              <div className="di-people-row di-family-row" key={link.code}>
+                <span className="di-people-who">
+                  <strong>{link.question}</strong>
+                  <em>
+                    {link.kept.length
+                      ? t('sent.keptBy', { names: link.kept.map((row) => row.name || t('sent.keptAnon')).join(', ') })
+                      : t('sent.keptNone')}
+                  </em>
+                </span>
+              </div>
+            ))}
+          </SetCard>
+        </>
+      ) : null}
       {miss ? (
         <p className="di-miss" role="alert">
           {tMiss(miss)}

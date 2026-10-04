@@ -3,6 +3,7 @@ import { FadeScroll } from '../components/FadeScroll.jsx'
 import { AppState, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
+import { myDidYouLinks } from '../../src/lib/did-you-links.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { passAlong } from '../../src/lib/native.js'
@@ -462,6 +463,7 @@ function JoinFamilyCard({ colors, bare = false, scanned = '' }) {
         disabled={busy || code.length !== FAMILY_CODE_LEN}
         onPress={() => look()}
       />
+      {canScan() ? <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} /> : null}
     </View>
   )
 }
@@ -801,13 +803,13 @@ export function PeopleScreen({ book, onChange }) {
                 <Pressable
                   key={row.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${personName(row.person) || t('people.someone')}, ${friendLine(row.person)}`}
+                  accessibilityLabel={`${personName(row.person) || t('people.noName')}, ${friendLine(row.person)}`}
                   onPress={() => goHash('/friend', { id: row.person.user_id })}
                   style={styles.stripItem}
                 >
                   <Avatar person={row.person} done={done} colors={colors} size={52} />
-                  <Text style={[styles.stripName, { color: colors.ink }]} numberOfLines={1}>
-                    {personName(row.person) || t('people.someone')}
+                  <Text style={[styles.stripName, { color: colors.ink }]} numberOfLines={personName(row.person) ? 1 : 2}>
+                    {personName(row.person) || t('people.noName')}
                   </Text>
                   <Text style={[styles.stripLine, { color: done ? colors.on : colors.inkDim }]} numberOfLines={1}>
                     {done ? t('people.doneTonightShort') : t('people.notYet')}
@@ -1403,7 +1405,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               key={row.id}
               colors={colors}
               person={row.person}
-              name={personName(row.person) || t('people.someone')}
+              name={personName(row.person) || t('people.noName')}
               line={t('friends.notYet')}
               actions={<KeyButton colors={colors} label={t('friends.unsend')} onPress={() => unsend(row)} />}
             />
@@ -1439,7 +1441,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               colors={colors}
               person={row.person}
               done={done}
-              name={personName(row.person) || t('people.someone')}
+              name={personName(row.person) || t('people.noName')}
               line={[done ? streakOnly(row.person) : friendLine(row.person), auto ? t('people.autoOnChip') : '']
                 .filter(Boolean)
                 .join(' · ')}
@@ -1520,7 +1522,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               key={row.user_id}
               colors={colors}
               person={row}
-              name={row.display_name || t('people.someone')}
+              name={row.display_name || t('people.noName')}
               line={t('block.cannotReach')}
               actions={
                 <KeyButton
@@ -1650,6 +1652,7 @@ export function FriendScreen({ route }) {
   const otherId = route?.id || ''
   const [person, setPerson] = useKept(`friend.person:${otherId}`, { user_id: otherId })
   const [sends, setSends] = useState({ mine: [], theirs: [], miss: '' })
+  const [keptLinks, setKeptLinks] = useState([])
   const [ready, setReady] = useState(false)
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
@@ -1663,7 +1666,13 @@ export function FriendScreen({ route }) {
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked] = await Promise.all([personById(otherId), sendsWith(otherId), stillLinked(otherId)])
+    const [who, both, linked, made] = await Promise.all([
+      personById(otherId),
+      sendsWith(otherId),
+      stillLinked(otherId),
+      myDidYouLinks().catch(() => []),
+    ])
+    setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
     setPerson(who)
     setSends(both)
     setGone(linked === false)
@@ -1676,6 +1685,7 @@ export function FriendScreen({ route }) {
 
   if (!account.user) return <NeedAccount kicker={t('people.friends')} title={t('people.outTitle')} colors={colors} />
   const name = personName(person) || t('people.someone')
+  const shownName = personName(person) || t('people.noName')
   const together = (cards || []).filter((card) =>
     (card.people || []).some((p) => p.id === otherId && p.state !== 'left'),
   )
@@ -1686,7 +1696,7 @@ export function FriendScreen({ route }) {
       ? 'theirs'
       : sends.theirs.length
         ? 'theirs'
-        : sends.mine.length
+        : sends.mine.length || keptLinks.length
           ? 'mine'
           : together.length
             ? 'we'
@@ -1694,7 +1704,7 @@ export function FriendScreen({ route }) {
 
   if (gone) {
     return (
-      <ScreenShell title={name} colors={colors}>
+      <ScreenShell title={shownName} colors={colors}>
         <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody')}>
           <DidButton colors={colors} small label={t('people.seeAll')} onPress={() => goHash('/friends')} />
         </EmptyCard>
@@ -1703,7 +1713,7 @@ export function FriendScreen({ route }) {
   }
 
   return (
-    <ScreenShell title={name} colors={colors}>
+    <ScreenShell title={shownName} colors={colors}>
       <OfflineLine colors={colors} />
       <View style={[styles.confirmWho, styles.friendCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <Pressable
@@ -1715,7 +1725,7 @@ export function FriendScreen({ route }) {
           <Avatar person={person} done={doneTonight(person)} colors={colors} size={52} />
         </Pressable>
         <View style={styles.confirmCopy}>
-          <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{name}</Text>
+          <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{shownName}</Text>
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
         </View>
         <Pressable
@@ -1826,7 +1836,7 @@ export function FriendScreen({ route }) {
         <KitSegment
           items={[
             { id: 'theirs', label: t('friend.tabTheirs', { n: sends.theirs.length }) },
-            { id: 'mine', label: t('friend.tabMine', { n: sends.mine.length }) },
+            { id: 'mine', label: t('friend.tabMine', { n: sends.mine.length + keptLinks.length }) },
             { id: 'we', label: t('friend.tabWe', { n: together.length }) },
           ]}
           selected={shown}
@@ -1857,8 +1867,10 @@ export function FriendScreen({ route }) {
       ) : null}
       {shown === 'mine' ? (
         <>
-      {sends.mine.length ? (
-        sends.mine.map((send) => (
+      {sends.mine.length || keptLinks.length ? (
+        [...keptLinks.map((link) => (
+          <PersonRow key={link.code} colors={colors} title={link.question} note={t('friend.linkKept')} />
+        )), ...sends.mine.map((send) => (
           <PersonRow
             key={send.id}
             colors={colors}
@@ -1877,7 +1889,7 @@ export function FriendScreen({ route }) {
               />
             ) : null}
           </PersonRow>
-        ))
+        ))]
       ) : (
         <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
       )}
@@ -2085,6 +2097,7 @@ export function SentScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
   const [rows, setRows] = useKept(`sent.rows:${account.user?.id}`, [])
+  const [links, setLinks] = useKept(`sent.links:${account.user?.id}`, [])
   const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
 
@@ -2094,7 +2107,9 @@ export function SentScreen({ book, onChange }) {
       return
     }
     try {
-      setRows(await listSent())
+      const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
+      setRows(sent)
+      setLinks(made)
       setMiss('')
     } catch {
       setMiss(t('people.reach'))
@@ -2117,7 +2132,7 @@ export function SentScreen({ book, onChange }) {
       </ScreenShell>
     )
   }
-  if (!rows.length) {
+  if (!rows.length && !links.length) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
         <EmptyCard colors={colors} title={t('sent.emptyTitle')} body={t('sent.emptyBody')}>
@@ -2131,9 +2146,10 @@ export function SentScreen({ book, onChange }) {
     <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: rows.length })}</Text>
+        <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: rows.length + links.length })}</Text>
         <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('sent.hint')}</Text>
       </View>
+      {rows.length ? (
       <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
       {rows.map((row, at) => (
         <View key={row.id} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
@@ -2161,9 +2177,31 @@ export function SentScreen({ book, onChange }) {
         </View>
       ))}
       </View>
+      ) : null}
+      {links.length ? (
+        <>
+          <Cap colors={colors}>{t('sent.linksCap')}</Cap>
+          <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+            {links.map((link, at) => (
+              <View key={link.code} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+                <View style={styles.personCopy}>
+                  <Text style={[styles.personTitle, { color: colors.ink }]}>{link.question}</Text>
+                  <Text style={[styles.personNote, { color: colors.inkDim }]}>{linkKeptLine(link)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
       <Miss colors={colors}>{miss}</Miss>
     </ScreenShell>
   )
+}
+
+// Who kept a Did you you shared as a link.
+function linkKeptLine(link) {
+  if (!link.kept.length) return t('sent.keptNone')
+  return t('sent.keptBy', { names: link.kept.map((row) => row.name || t('sent.keptAnon')).join(', ') })
 }
 
 const styles = StyleSheet.create({
@@ -2249,7 +2287,7 @@ const styles = StyleSheet.create({
   glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
   stripItem: { width: 64, alignItems: 'center', gap: 4 },
-  stripName: { fontFamily: fonts.uiSemi, fontSize: 12, maxWidth: 64 },
+  stripName: { fontFamily: fonts.uiSemi, fontSize: 12, maxWidth: 64, textAlign: 'center' },
   stripLine: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', maxWidth: 64 },
   famCard: {
     flexDirection: 'row',

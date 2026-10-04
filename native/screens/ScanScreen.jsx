@@ -26,8 +26,8 @@ export function ScanScreen() {
 
   async function ask() {
     try {
-      const { requestCameraPermissionsAsync } = require('expo-camera')
-      const out = await requestCameraPermissionsAsync()
+      const { Camera } = require('expo-camera')
+      const out = await Camera.requestCameraPermissionsAsync()
       setAllowed(Boolean(out?.granted))
     } catch {
       setAllowed(false)

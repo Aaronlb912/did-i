@@ -1,77 +1,15 @@
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import * as Compose from '@expo/ui/jetpack-compose'
-import * as SwiftUI from '@expo/ui/swift-ui'
-import * as SwiftMods from '@expo/ui/swift-ui/modifiers'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ripple } from '../lib/ripple.js'
 import { fonts } from '../theme.js'
 
-// Same readiness check SetChoice.jsx already trusts: Menu/BottomSheet and
-// DropdownMenu/ModalBottomSheet only exist once each bridge's native views
-// are really in the binary, and Picker/SegmentedButton ride the same bridge.
-const iosReady = Platform.OS === 'ios' && 'Menu' in SwiftUI && 'BottomSheet' in SwiftUI && 'Picker' in SwiftUI
-const androidReady = Platform.OS === 'android' && 'DropdownMenu' in Compose && 'ModalBottomSheet' in Compose && 'SingleChoiceSegmentedButtonRow' in Compose && 'SegmentedButton' in Compose
-
 /**
- * A native segmented control: a SwiftUI segmented Picker on iOS, a Material 3
- * SingleChoiceSegmentedButtonRow on Android, and a plain styled row when
- * neither bridge's native views are in the current binary.
+ * The app's tab switcher: a rounded track with the picked tab filled like
+ * the Did button. Drawn the same on iPhone and Android so it matches the
+ * rest of the app instead of each system's own segmented control.
  */
 export function KitSegment({ items, selected, onSelect, colors }) {
-  if (iosReady) return <IosSegment items={items} selected={selected} onSelect={onSelect} colors={colors} />
-  if (androidReady) return <AndroidSegment items={items} selected={selected} onSelect={onSelect} colors={colors} />
-  return <PlainSegment items={items} selected={selected} onSelect={onSelect} colors={colors} />
-}
-
-function IosSegment({ items, selected, onSelect, colors }) {
-  const { Host, Picker, Text: SwiftText } = SwiftUI
-  const { pickerStyle, tag } = SwiftMods
   return (
-    <Host matchContents={{ vertical: true }} style={styles.host} seedColor={colors.on}>
-      <Picker selection={selected} onSelectionChange={onSelect} modifiers={[pickerStyle('segmented')]} label="">
-        {items.map((item) => (
-          <SwiftText key={item.id} modifiers={[tag(item.id)]}>
-            {item.label}
-          </SwiftText>
-        ))}
-      </Picker>
-    </Host>
-  )
-}
-
-function AndroidSegment({ items, selected, onSelect, colors }) {
-  const { Host, SingleChoiceSegmentedButtonRow, SegmentedButton, Text: ComposeText } = Compose
-  // Material's own palette paints the chosen segment pale lavender; use the app's.
-  const segColors = {
-    activeContainerColor: colors.panel,
-    activeContentColor: colors.on,
-    activeBorderColor: colors.onDeep,
-    inactiveContainerColor: colors.panel2,
-    inactiveContentColor: colors.inkSoft,
-    inactiveBorderColor: colors.line,
-  }
-  return (
-    <Host matchContents={{ vertical: true }} style={styles.host}>
-      <SingleChoiceSegmentedButtonRow>
-        {items.map((item) => {
-          const on = selected === item.id
-          return (
-            <SegmentedButton key={item.id} selected={on} onClick={() => onSelect(item.id)} colors={segColors}>
-              <SegmentedButton.Label>
-                <ComposeText color={on ? colors.on : colors.inkSoft} maxLines={1} softWrap={false} overflow="ellipsis">
-                  {item.label}
-                </ComposeText>
-              </SegmentedButton.Label>
-            </SegmentedButton>
-          )
-        })}
-      </SingleChoiceSegmentedButtonRow>
-    </Host>
-  )
-}
-
-function PlainSegment({ items, selected, onSelect, colors }) {
-  return (
-    <View style={[styles.plain, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
+    <View style={[styles.track, { borderColor: colors.line, backgroundColor: colors.panel }]} accessibilityRole="tablist">
       {items.map((item) => {
         const on = selected === item.id
         return (
@@ -79,11 +17,12 @@ function PlainSegment({ items, selected, onSelect, colors }) {
             key={item.id}
             onPress={() => onSelect(item.id)}
             android_ripple={ripple(`${colors.on}33`)}
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityLabel={item.label}
             accessibilityState={{ selected: on }}
-            style={[styles.plainSeg, on && { backgroundColor: colors.panel, borderColor: colors.onDeep }]}
+            style={[styles.tab, on && { backgroundColor: colors.on }]}
           >
-            <Text style={[styles.plainText, { color: on ? colors.on : colors.inkSoft }]} numberOfLines={1}>
+            <Text style={[styles.label, items.length > 3 && styles.labelTight, { color: on ? colors.bg : colors.inkSoft }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
               {item.label}
             </Text>
           </Pressable>
@@ -94,22 +33,23 @@ function PlainSegment({ items, selected, onSelect, colors }) {
 }
 
 const styles = StyleSheet.create({
-  host: { width: '100%', height: 36 },
-  plain: {
+  track: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 2,
-    gap: 2,
+    borderRadius: 999,
+    padding: 4,
+    gap: 4,
   },
-  plainSeg: {
+  tab: {
     flex: 1,
-    minHeight: 32,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    flexBasis: 0,
+    minHeight: 40,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 6,
+    overflow: 'hidden',
   },
-  plainText: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  label: { fontFamily: fonts.uiBold, fontSize: 14 },
+  labelTight: { fontSize: 12 },
 })

@@ -5,14 +5,17 @@ const { softModule, view } = require('./expo-soft.cjs')
 function fallback() {
   return softModule({
     CameraView: view('CameraView'),
-    requestCameraPermissionsAsync() {
-      return Promise.resolve({ granted: false, canAskAgain: false })
+    Camera: {
+      requestCameraPermissionsAsync() {
+        return Promise.resolve({ granted: false, canAskAgain: false })
+      },
     },
   })
 }
 
+// expo-camera keeps the permission calls on Camera, not as top-level exports.
 function isOk(mod) {
-  return Boolean(mod && mod.CameraView && typeof mod.requestCameraPermissionsAsync === 'function')
+  return Boolean(mod && mod.CameraView && typeof mod.Camera?.requestCameraPermissionsAsync === 'function')
 }
 
 module.exports = loadPinned(() => require('expo-camera'), isOk, fallback, '__didICameraError')

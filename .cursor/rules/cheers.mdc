@@ -1,0 +1,17 @@
+---
+description: How cheers are built and staged
+globs: src/lib/cheer-pops.js,src/lib/CheerBurst.jsx,native/components/CheerBurst.jsx,src/lib/purse.js
+alwaysApply: false
+---
+
+# Cheers
+
+Full rules: `docs/cheers.md`. Read it before adding or tweaking a cheer.
+
+- `src/lib/cheer-pops.js` is the one source of truth: origins, builders, `stageMul`, `popsFor`, `holdFor`, timing.
+- Stage N = N pops, each bigger than stage 1. Stage 5 covers the screen.
+- Do not hardcode pop count or positions in Shop or Collection.
+- Preview and a real tap use the same layout. `preview: true` only bypasses reduce-motion.
+- Bits offset from each pop's anchor in rem, not screen %.
+- A new cheer is wired in `purse.js`, `cheer-pops.js`, web `src/lib/CheerBurst.jsx` + `did-i.css`, and native `native/components/CheerBurst.jsx`.
+- A cheer is not done until it shows on a phone.

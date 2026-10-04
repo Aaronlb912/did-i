@@ -1,0 +1,36 @@
+---
+description: Answer the edge cases before building, and every action says what happened
+alwaysApply: true
+---
+
+# Whole feature
+
+Before building, answer each of these in the plan. Social features (friends, family, Did you, Did we, links) must answer all of them. Template: `docs/feature-checklist.md`.
+
+- Already friends? Not friends?
+- Blocked, either way?
+- Same family?
+- They remove you, or leave the family?
+- Signed out?
+- Brand new install (link opened before onboarding)?
+- Offline?
+- Full or capped?
+- Expired?
+- What does the OTHER person see?
+- What does the widget show? iOS `widgets/DidITonightWidget.tsx` and Android `widgets/android/` only draw a question that has a matching item.
+- Which push goes out, and which notification switch turns it off?
+- What happens to the data when the relationship ends?
+
+## Every action says so
+
+- Server action succeeds: `confirmDone` (`native/lib/confirm.js`) or visible inline text.
+- Server action fails: `confirmMiss` or inline text. No silent no-op.
+- Destructive: a `publishSheet` confirm (SheetHost) or an undo.
+- Double taps: `once()` or a busy state.
+- `scripts/check.mjs` enforces the "says so" part.
+
+## Edges
+
+- Empty states say what to do next.
+- New routes go in `ROUTES` and have a way in and a way back.
+- Copy buttons where the app already has them (links, codes).

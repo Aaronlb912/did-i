@@ -1,0 +1,25 @@
+---
+description: Supabase rules for tables, functions, caps, and people links
+globs: supabase/**,api/**
+alwaysApply: false
+---
+
+# Scale and safety
+
+- RLS on every new table, with policies in the same change.
+- Policies use `(select auth.uid())`, not bare `auth.uid()`.
+- Helpers: `security definer`, `stable` when read-only, pinned `search_path`.
+- Revoke execute from `public` and `anon`; grant only what is needed.
+- Caps on repeatable writes live in the DB (triggers), not only the client.
+- Length and size checks on writable text/json (`supabase/hardening.sql` pattern).
+- Index foreign keys you filter or join on.
+- No N+1. Batch with `in (...)` and match in JS (`familyTonight` is the example).
+- Anything that connects people checks blocks (`blocked_with`) both ways.
+- Links and invites stop working when their maker leaves or is blocked.
+- Server functions in `api/` never trust request headers for identity. Verify the token.
+- Every new SQL file is added to `scripts/apply-all-sql.mjs`.
+
+## Before calling backend work done
+
+- `npm run db:audit` returns no rows.
+- The SQL tests in `supabase/tests/` pass, and new behavior gets a test there.
