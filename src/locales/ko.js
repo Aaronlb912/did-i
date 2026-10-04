@@ -2059,7 +2059,7 @@ export const ko = {
   'we.widgetCount': 'Did we · {total}명 중 {n}명',
   'we.widgetDone': 'Did we · 함께 해냈어요',
   'help.questions': '질문과 폴더',
-  'help.questionsP': '+ 버튼으로 질문을 추가하세요. 매일 밤이나 일부 밤을 고르고, 알림이 필요하면 시간도 정하세요. 폴더는 질문을 묶어 주고, 오늘 밤의 폴더 칩은 한 번에 폴더 하나를 보여 줘요.',
+  'help.questionsP': '질문 탭이나 메뉴의 추가로 질문을 추가하세요. 매일 밤이나 일부 밤을 고르고, 알림이 필요하면 시간도 정하세요. 폴더는 질문을 묶어 주고, 홈의 전부 칩으로 폴더별로 걸러 볼 수 있어요.',
   'help.questionsGo': '내 질문 보기',
   'help.pings': '알림',
   'help.pingsP':

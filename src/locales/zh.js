@@ -2048,7 +2048,7 @@ export const zh = {
   'we.widgetCount': 'Did we · {total} 人中 {n} 人',
   'we.widgetDone': 'Did we · 一起完成了',
   'help.questions': '问题和文件夹',
-  'help.questionsP': '用 + 按钮添加问题。选择每晚或某几晚，想要提醒就设一个时间。文件夹把问题分组，今晚页面上的文件夹标签一次显示一个文件夹。',
+  'help.questionsP': '在“问题”页或菜单里点“添加”来添加问题。选择每晚或某几晚，想要提醒就设一个时间。文件夹把问题分组，首页的“全部”标签可按文件夹筛选。',
   'help.questionsGo': '查看你的问题',
   'help.pings': '提醒',
   'help.pingsP': '打开通知后，问题会在设定的时间提醒你。朋友、家人、欢呼和 Did we 也能发给你。在设置里选择类型，打开“隐藏内容”后锁屏上不会显示问题。',

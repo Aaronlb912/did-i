@@ -2119,7 +2119,7 @@ export const it = {
   'we.widgetCount': 'Did we · {n} su {total}',
   'we.widgetDone': 'Did we · fatto insieme',
   'help.questions': 'Domande e cartelle',
-  'help.questionsP': 'Aggiungi una domanda con il pulsante +. Scegli ogni sera o alcune sere, e un orario se vuoi un promemoria. Le cartelle raggruppano le domande, e i chip delle cartelle su Stasera mostrano una cartella alla volta.',
+  'help.questionsP': 'Tocca Aggiungi in Domande o nel menu. Scegli ogni sera o alcune sere, e un orario se vuoi un promemoria. Le cartelle raggruppano le domande, e il chip TUTTI nella Home filtra per cartella.',
   'help.questionsGo': 'Vedi le tue domande',
   'help.pings': 'Promemoria',
   'help.pingsP':

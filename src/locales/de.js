@@ -2136,7 +2136,7 @@ export const de = {
   'we.widgetCount': 'Did we · {n} von {total}',
   'we.widgetDone': 'Did we · gemeinsam geschafft',
   'help.questions': 'Fragen und Ordner',
-  'help.questionsP': 'Füge mit + eine Frage hinzu. Wähle jeden Abend oder manche Abende und eine Uhrzeit, wenn du erinnert werden willst. Ordner gruppieren deine Fragen, und die Ordner-Chips auf Heute Abend zeigen jeweils einen Ordner.',
+  'help.questionsP': 'Tippe in Fragen oder im Menü auf Hinzufügen. Wähle jeden Abend oder manche Abende und eine Uhrzeit, wenn du erinnert werden willst. Ordner gruppieren deine Fragen, und der Chip ALLE auf Home filtert nach Ordner.',
   'help.questionsGo': 'Deine Fragen ansehen',
   'help.pings': 'Erinnerungen',
   'help.pingsP':

@@ -2131,7 +2131,7 @@ export const fr = {
   'we.widgetCount': 'Did we · {n} sur {total}',
   'we.widgetDone': 'Did we · fait ensemble',
   'help.questions': 'Questions et dossiers',
-  'help.questionsP': 'Ajoute une question avec le bouton +. Choisis chaque soir ou certains soirs, et une heure si tu veux un rappel. Les dossiers regroupent tes questions, et les puces de dossier sur Ce soir montrent un dossier à la fois.',
+  'help.questionsP': 'Touche Ajouter dans Questions ou dans le menu. Choisis chaque soir ou certains soirs, et une heure si tu veux un rappel. Les dossiers regroupent tes questions, et la puce TOUS sur l\'Accueil filtre par dossier.',
   'help.questionsGo': 'Voir tes questions',
   'help.pings': 'Rappels',
   'help.pingsP':
