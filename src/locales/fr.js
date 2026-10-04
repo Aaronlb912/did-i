@@ -1282,7 +1282,7 @@ export const fr = {
   'pings.on': 'Les rappels sont activés',
   'pings.state.on': 'Pings activés',
   'pings.state.blocked': 'Pings bloqués',
-  'pings.state.ask': 'Rappeler quand ça tombe',
+  'pings.state.ask': 'Activer les notifications',
   'pings.noBrowser': 'Ce navigateur ne peut pas te tapper.',
   'pings.waitingTonight': 'Encore en attente ce soir',
   'pings.emptyTonight': 'Rien n\'attend une heure ce soir.',

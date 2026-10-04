@@ -1246,7 +1246,7 @@ export const ko = {
   'pings.on': '리마인더 켜짐',
   'pings.state.on': 'Ping 켜짐',
   'pings.state.blocked': 'Ping 차단',
-  'pings.state.ask': '기한 되면 알려줘',
+  'pings.state.ask': '알림 켜기',
   'pings.noBrowser': '이 브라우저는 알림 안 해.',
   'pings.waitingTonight': '오늘 밤 아직 대기',
   'pings.emptyTonight': '오늘 밤, 시간 기다리는 건 없어.',

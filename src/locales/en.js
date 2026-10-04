@@ -1098,7 +1098,7 @@ export const en = {
   'about.p1':
     'Did I is the unanswered question for tonight. One at a time. Hit DID if you did it. Hit nope if tonight is not that night.',
   'about.p4':
-    'The day folds at the hour you set. A 1am tap still belongs to last night if the fold is 4. Reminders fire on this device when a question is due, if you turned them on.',
+    'The day folds at the hour you set. A 1:00 AM tap still belongs to last night if the fold is 4. Reminders fire on this device when a question is due, if you turned them on.',
   'about.home': 'Home',
   'about.how': 'How to use it',
   'marks.kicker': 'Achievements',
@@ -1164,10 +1164,10 @@ export const en = {
   'ach.high.how': 'Say did {n} times to high priority questions.',
   'ach.owl.name': 'Night owl',
   'ach.owl.line': 'You said did {n} times after midnight.',
-  'ach.owl.how': 'Say did {n} times between midnight and 4am.',
+  'ach.owl.how': 'Say did {n} times between midnight and 4:00 AM.',
   'ach.early.name': 'Early bird',
   'ach.early.line': 'You said did {n} times in the morning.',
-  'ach.early.how': 'Say did {n} times between 5 and 9am.',
+  'ach.early.how': 'Say did {n} times between 5:00 and 9:00 AM.',
   'ach.looks.name': 'Looks: {n}',
   'ach.looks.line': 'Looks from the shop: {n}.',
   'ach.looks.how': 'Get looks from the shop. Goal: {n}.',
@@ -1274,7 +1274,7 @@ export const en = {
   'pings.on': 'Reminders are on',
   'pings.state.on': 'Pings on',
   'pings.state.blocked': 'Pings blocked',
-  'pings.state.ask': 'Remind when it is due',
+  'pings.state.ask': 'Turn on notifications',
   'pings.noBrowser': 'This browser will not tap you.',
   'pings.waitingTonight': 'Still waiting tonight',
   'pings.emptyTonight': 'Nothing left waiting on a clock time tonight.',
@@ -1413,7 +1413,7 @@ export const en = {
   'site.read.p2':
     'A question can wait until a clock time. Coming up shows the next nights so a waiting question is not a blank screen. Last time is last night, or the last due day, if you missed it. Late still counts.',
   'site.read.p3':
-    'Add a question from Questions, or start from What to ask. It can be every day, some weekdays, monthly, every few days, or once. The day folds at the hour in Settings, so a 1am tap still belongs to last night if the fold is 4.',
+    'Add a question from Questions, or start from What to ask. It can be every day, some weekdays, monthly, every few days, or once. The day folds at the hour in Settings, so a 1:00 AM tap still belongs to last night if the fold is 4.',
   'site.read.p4':
     'This phone keeps your questions. There is no email. Settings has a copy of the file, an optional number lock, and reminders. Chrome and Android can ping at the ask-after hour. An iPhone can install the page. Pings there are weak until a Mac builds the native app.',
   'site.read.p5':
@@ -2247,7 +2247,7 @@ export const en = {
   'together.widgetCount': '{n} of {total} done',
   'together.widgetEmpty': 'Add friends or family in Did I.',
   'pings.kind.family': 'Family tonight',
-  'pings.kind.familySub': 'At 9pm, how many in each family are done.',
+  'pings.kind.familySub': 'At 9:00 PM, how many in each family are done.',
   'legal.privacy.photos.title': 'Profile pictures and the camera',
   'legal.privacy.photos.body': 'A profile picture is optional. You pick a photo from your library or take one with the camera. The app crops it to a square and shrinks it on your phone before it is uploaded. We store only that small copy.\n\nYour profile picture can be seen by your friends, the people in your families, and anyone signed in who looks up your friend ID or scans your QR code. Do not use a photo you would not want them to see.\n\nYou can change or remove it in Account at any time. Removing it, or deleting your account, deletes the stored file.\n\nThe camera is also used to scan friend and family QR codes. Scanning happens on your phone. We do not receive or keep camera images, other than a profile picture you choose to save.\n\nAnyone can report a profile picture. A report blocks that person for you and files the report with us.',
   'legal.privacy.voice.title': 'Siri, Google Assistant, shortcuts, and widgets',

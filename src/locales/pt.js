@@ -1276,7 +1276,7 @@ export const pt = {
   'pings.on': 'Os lembretes estão ligados',
   'pings.state.on': 'Pings ligados',
   'pings.state.blocked': 'Pings bloqueados',
-  'pings.state.ask': 'Lembrar quando está devido',
+  'pings.state.ask': 'Ativar notificações',
   'pings.noBrowser': 'Este navegador não te toca.',
   'pings.waitingTonight': 'Ainda à espera esta noite',
   'pings.emptyTonight': 'Nada fica à espera de uma hora esta noite.',
