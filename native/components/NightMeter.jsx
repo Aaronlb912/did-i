@@ -61,13 +61,20 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
   if (!total) return null
   const done = ratio >= 1
   const left = total - answered
+  // A nope is answered for now, so it is counted apart from what is still open.
+  const nope = (due || []).filter((row) => row.answer?.status === 'skip').length
+  const open = Math.max(0, left - nope)
   // Counts answers, so it reads as done and left, not as a card position.
-  const label = left
-    ? `${t('tonight.meterDone')} · ${t('tonight.meterLeft', { n: left })}`
-    : t('tonight.meterDone')
+  const label = [
+    t('tonight.meterDone'),
+    nope ? t('tonight.meterNope', { n: nope }) : '',
+    open ? t('tonight.meterLeft', { n: open }) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <View style={styles.wrap} accessible accessibilityLabel={t('tonight.meterDoneAria', { n: answered, left })}>
+    <View style={styles.wrap} accessible accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}`}>
       <View style={styles.top}>
         <RollNumber
           value={answered}

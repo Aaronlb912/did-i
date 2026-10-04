@@ -12,7 +12,7 @@ import { fonts } from '../theme.js'
 export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
   return (
     <View>
-      <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.finishKicker')}</Text>
+      <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.restKicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>
         {rows.length === 1
           ? t('tonight.nopedOne', { question: rows[0].lamp.question })
