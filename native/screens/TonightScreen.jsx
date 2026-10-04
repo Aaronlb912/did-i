@@ -443,7 +443,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
         <View style={styles.actions}>
-          <DidButton label={t('tonight.finishKeep')} colors={colors} small onPress={stack.reopenStillOpen} />
+          <DidButton label={t('tonight.restChange')} colors={colors} small onPress={stack.reopenStillOpen} />
         </View>
       </GemFaceShell>
     )

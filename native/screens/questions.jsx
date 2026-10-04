@@ -399,7 +399,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   return (
     <View style={styles.fill}>
       {/* A tab, never pushed: no back arrow, even while a form that just saved is still popping off the stack. */}
-      <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
+      <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
         <TagFilter
           boards={shelf}
           tagId={tagId}
