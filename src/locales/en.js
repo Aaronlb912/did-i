@@ -2368,7 +2368,7 @@ export const en = {
   'friend.didYouHint': 'Ask {name} if they did something.',
   'friend.startDidWe': 'Start a Did we',
   'friend.sendDidYou': 'Send a Did you',
-  'help.phonePApp': 'Sign in under Account with email. Your questions, answers, streak, coins, and gems follow the account between this phone and did-i.app. Tap Sync now on Account if two screens disagree. Settings also has a copy, a number lock, and reminders.',
+  'help.phonePApp': 'Sign in under Account with email. Your questions, answers, streak, coins, and gems follow the account between this phone and did-i.app. Tap Sync now on Account if two screens disagree. Account also has a number lock; Settings has a copy and reminders.',
   'friend.tabWe': 'Did we\'s · {n}',
   'friend.tabMine': 'You sent · {n}',
   'friend.tabTheirs': 'Sent you · {n}',

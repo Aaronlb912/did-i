@@ -2307,7 +2307,7 @@ export const ja = {
   'friend.didYouHint': '{name} にやったか聞く。',
   'friend.startDidWe': 'Did we を始める',
   'friend.sendDidYou': 'Did you を送る',
-  'help.phonePApp': 'アカウントでメールからサインインします。質問、回答、連続記録、コイン、ジェムは、このスマホと did-i.app の間でアカウントについていきます。2つの画面が合わないときは、アカウントで「今すぐ同期」をタップしてください。設定にはコピー、番号ロック、リマインダーもあります。',
+  'help.phonePApp': 'アカウントからメールでログインします。質問、回答、連続記録、コイン、ジェムはこのスマホとdid-i.appの間でアカウントについてきます。2つの画面が食い違うときはアカウントで「今すぐ同期」をタップ。アカウントには数字ロックも、設定にはコピーとリマインダーがあります。',
   'friend.tabWe': 'Did we · {n}',
   'friend.tabMine': '送信 · {n}',
   'friend.tabTheirs': '受信 · {n}',

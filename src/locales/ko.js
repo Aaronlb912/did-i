@@ -2307,7 +2307,7 @@ export const ko = {
   'friend.didYouHint': '{name}님에게 했는지 물어봐요.',
   'friend.startDidWe': 'Did we 시작',
   'friend.sendDidYou': 'Did you 보내기',
-  'help.phonePApp': '계정에서 이메일로 로그인하세요. 질문, 답, 연속 기록, 코인, 보석은 이 휴대폰과 did-i.app 사이에서 계정을 따라갑니다. 두 화면이 다르면 계정에서 지금 동기화를 누르세요. 설정에는 사본, 숫자 잠금, 알림도 있습니다.',
+  'help.phonePApp': '계정에서 이메일로 로그인하세요. 질문, 답, 연속 기록, 코인, 보석이 이 휴대폰과 did-i.app 사이에서 계정을 따라가요. 두 화면이 다르면 계정에서 지금 동기화를 누르세요. 계정에는 숫자 잠금도 있고, 설정에는 사본과 알림이 있어요.',
   'friend.tabWe': 'Did we · {n}',
   'friend.tabMine': '보낸 것 · {n}',
   'friend.tabTheirs': '받은 것 · {n}',

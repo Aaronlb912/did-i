@@ -2386,7 +2386,7 @@ export const fr = {
   'friend.didYouHint': 'Demande à {name} si c\'est fait.',
   'friend.startDidWe': 'Lancer un Did we',
   'friend.sendDidYou': 'Envoyer un Did you',
-  'help.phonePApp': 'Connecte-toi dans Compte avec ton e-mail. Tes questions, réponses, série, pièces et gemmes suivent le compte entre ce téléphone et did-i.app. Touche Synchroniser dans Compte si deux écrans ne sont pas d\'accord. Les réglages ont aussi une copie, un verrou par code et des rappels.',
+  'help.phonePApp': 'Connectez-vous dans Compte avec votre e-mail. Vos questions, réponses, série, pièces et gemmes suivent le compte entre ce téléphone et did-i.app. Touchez Synchroniser dans Compte si deux écrans ne sont pas d\'accord. Compte a aussi un verrou à code ; Réglages a une copie et les rappels.',
   'friend.tabWe': 'Ensemble · {n}',
   'friend.tabMine': 'Envoyés · {n}',
   'friend.tabTheirs': 'Pour toi · {n}',
