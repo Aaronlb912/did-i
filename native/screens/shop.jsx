@@ -36,6 +36,7 @@ import {
   nextCheerStage,
   normalizePurse,
   dropSlides,
+  isTeased,
   giftItems,
   shopTag,
   stampPurse,
@@ -654,7 +655,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
   // Short on coins: keep the price and the earn line, not just the miss.
   const tag = shopTag(purse, type, item)
   const short = !tag.owned && tag.coins > 0 && purse.coins < tag.coins
-  const body = short ? previewBody(type, item, purse) : miss || previewBody(type, item, purse)
+  const body = miss && !action ? miss : short ? previewBody(type, item, purse) : miss || previewBody(type, item, purse)
   let preview = null
   if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
@@ -768,6 +769,11 @@ export function ShopScreen({ book, onChange }) {
   }
 
   function onTile(type, item) {
+    // A Coming item is a look only: say when it goes on sale, no Buy.
+    if (isTeased(item)) {
+      openTilePreview(type, item, purse, colors, coat, null, t('shop.teasedBody', { date: formatBoardDate(item.from) }))
+      return
+    }
     openTilePreview(type, item, purse, colors, coat, tileAction(type, item))
   }
 

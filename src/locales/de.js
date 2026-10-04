@@ -868,11 +868,9 @@ export const de = {
   'people.outBody': 'Freunde brauchen ein Konto, um dich zu erreichen. Ein Did you ist eine Frage, die dir ein Freund schickt, etwa „Hast du Wasser getrunken?“, und sie erscheint auf deinem Home.',
   'people.goAccount': 'Zum Konto',
   'people.previewCheerTitle': 'Ein Freund feuert dich an',
-  'people.previewCheerBody':
-    'Wenn ein Freund deine Serie anfeuert, siehst du es direkt auf deiner Heute-Abend-Karte.',
-  'people.previewFamilyTitle': 'Familienfragen landen auf Heute Abend',
-  'people.previewFamilyBody':
-    'Eine Frage, die deine Familie teilt, taucht auf deiner Heute-Abend-Karte auf, ohne dass du sie selbst hinzufügst.',
+  'people.previewCheerBody': 'Wenn ein Freund deine Serie anfeuert, siehst du es direkt auf deinem Home.',
+  'people.previewFamilyTitle': 'Familienfragen erscheinen auf Home',
+  'people.previewFamilyBody': 'Eine Frage, die deine Familie teilt, erscheint auf deinem Home, ohne dass du sie hinzufügst.',
   'people.you': 'Du',
   'people.name': 'Name',
   'people.namePh': 'Aaron',
@@ -2292,6 +2290,7 @@ export const de = {
   'didYouLink.bad': 'Dieser Link ist abgelaufen oder stimmt nicht. Bitte die Person um einen neuen.',
   'didYouLink.reach': 'Der Link konnte nicht geladen werden. Prüfe deine Verbindung. Er kommt beim nächsten Öffnen von Did I wieder.',
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
+  'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
   'tonight.nextOn': 'Morgen nichts. Nächste Frage: {date}.',
   'shop.earnGems': 'Schließe jede Woche einen Abend ab für 1 Edelstein, oder hol dir ein Paket.',
   'tonight.restChange': 'Nope ändern',
