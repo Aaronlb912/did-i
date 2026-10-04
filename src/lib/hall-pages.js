@@ -246,6 +246,10 @@ export function weekLamps(nights) {
 export function weekCell(night, lamp) {
   const row = night.due.find((item) => item.lamp.id === lamp.id)
   if (!row) return { state: 'off', row: null }
+  // Before the question was made it was never due.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(lamp.createdOn || '')) && night.iso < lamp.createdOn) return { state: 'off', row: null }
+  // Tonight is still open, not missed.
+  if (!row.answer && night.isToday) return { state: 'open', row }
   if (!row.answer) return { state: 'hole', row }
   if (row.answer.status === 'yes') return { state: 'yes', row }
   if (row.answer.status === 'late') return { state: 'late', row }

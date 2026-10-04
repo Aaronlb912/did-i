@@ -2446,6 +2446,17 @@ test('goHash pushes, pops back to a screen it has, and switches the hall tab', (
   assert.equal(nav.readRoute().path, '/lamps')
 })
 
+test('a done form going back to the screen behind it pops, so back never lands on the form again', () => {
+  const stack = fakeStack()
+  nav.goHash('/lamp', { id: 'a' })
+  nav.goHash('/hang', { id: 'a' })
+  assert.equal(stack.depth(), 3)
+  nav.swapHash('/lamp', { id: 'a' })
+  assert.equal(stack.depth(), 2, 'saving an edit goes back to the question, not a second copy of it')
+  assert.equal(stack.top(), '/lamp')
+  assert.equal(stack.types().at(-1), 'POP')
+})
+
 test('back pops a pushed screen, returns to Tonight, and leaves the app from the hall', () => {
   const stack = fakeStack()
   assert.equal(nav.canGoBack(), false)

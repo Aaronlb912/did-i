@@ -52,7 +52,7 @@ export function Meta({ children, colors }) {
 }
 
 // `dim` looks disabled but still takes the press, so the screen can say why.
-export function DidButton({ label, onPress, colors, small, disabled, dim }) {
+export function DidButton({ label, onPress, colors, small, disabled, dim, danger }) {
   const off = disabled || dim
   return (
     <Pressable
@@ -65,7 +65,8 @@ export function DidButton({ label, onPress, colors, small, disabled, dim }) {
       style={[
         styles.did,
         small && styles.didSmall,
-        { backgroundColor: off ? colors.panel3 : colors.on },
+        // danger: the red for actions that remove something.
+        { backgroundColor: off ? colors.panel3 : danger ? colors.miss : colors.on },
       ]}
     >
       <Text style={[styles.didText, { color: off ? colors.inkDim : colors.bg }]}>{label}</Text>

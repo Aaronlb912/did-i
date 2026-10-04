@@ -1457,6 +1457,7 @@ export function GemShopScreen({ book }) {
         <RollNumber value={stream.shown} reduce={reduce} style={[styles.gemBalanceN, { color: colors.ink }]} />
       </Reanimated.View>
       <Meta colors={colors}>{t('gems.hintNative')}</Meta>
+      {signedIn ? null : <DidButton small label={t('gems.signIn')} onPress={() => goHash('/account')} colors={colors} />}
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
       {banner ? (
         <View style={[styles.gemSheet, { borderColor: colors.on, backgroundColor: colors.panel }]}>
@@ -1625,6 +1626,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
       {tab === 'accessories' ? (
         <>
           <AccessoryPreviewCard id="" purse={purse} colors={colors} />
+          {purse.buddyOn ? null : <Meta colors={colors}>{t('kit.accOnAnt')}</Meta>}
           {!accessories.length ? (
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.kitEmpty}>

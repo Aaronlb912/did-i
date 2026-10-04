@@ -41,6 +41,7 @@ import {
 
 export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
+  const account = useAccount()
   const [keeperDraft, setKeeperDraft] = useState(book?.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book?.inkNote || '')
 
@@ -82,6 +83,9 @@ export function PhoneSettingsScreen({ book, onChange }) {
         />
       </SetCard>
 
+      {/* Never signed in, there is nothing to sign out of. */}
+      {account.user ? (
+      <>
       <SetCap colors={colors}>{t('settings.danger')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
@@ -97,8 +101,8 @@ export function PhoneSettingsScreen({ book, onChange }) {
           }}
         />
       </SetCard>
-
-      <KeyButton colors={colors} label={t('settings.back')} onPress={() => goHash('/settings')} />
+      </>
+      ) : null}
     </BoardShell>
   )
 }
@@ -306,7 +310,12 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           sub={t('tags.openHint')}
           chevron
           onPress={() => goHash('/me')}
+          last
         />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('settings.history')}</SetCap>
+      <SetCard colors={colors}>
         <SetRow
           colors={colors}
           icon="collection"
@@ -341,7 +350,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="settings"
           tint={colors.inkSoft}
           label={t('settings.title')}
-          sub={t('settings.phoneSub')}
+          sub={account.user ? t('settings.phoneSub') : t('settings.phoneSubOut')}
           chevron
           onPress={() => goHash('/settings/phone')}
         />
@@ -370,7 +379,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         )}
         <SetRow
           colors={colors}
-          icon="note"
+          icon="inbox"
           tint={colors.late}
           label={t('settings.loadCopy')}
           sub={t('settings.loadCopySub')}
@@ -392,7 +401,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="note"
+          icon="pen"
           tint={colors.late}
           label={t('feedback.send')}
           sub={t('feedback.sub')}
@@ -458,6 +467,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
                 title: t('settings.clearFolderTitle', { name: book?.title || '' }),
                 body: t('settings.clearFolderBody', { name: book?.title || '' }),
                 goLabel: t('settings.clearYes'),
+                danger: true,
                 closeLabel: t('settings.neverMind'),
                 colors,
                 onClose: () => publishSheet(null),

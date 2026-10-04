@@ -451,8 +451,16 @@ export function duplicateLamp(lamp, now = new Date()) {
   copy.archived = false
   // Trim the name first so " copy" always fits inside the limit.
   const suffix = ` ${t('lamp.copySuffix')}`
-  const base = shortLabel(copy).slice(0, Math.max(0, SHORT_MAX - suffix.length)).trim()
-  copy.short = `${base}${suffix}`
+  const full = shortLabel(copy)
+  const room = Math.max(0, SHORT_MAX - suffix.length)
+  if (full.length <= room) {
+    copy.short = `${full}${suffix}`
+    return copy
+  }
+  // Cut on a word and mark the cut, so a word is never swapped for "copy".
+  const cut = full.slice(0, room - 1)
+  const word = cut.lastIndexOf(' ') > 0 ? cut.slice(0, cut.lastIndexOf(' ')) : cut
+  copy.short = `${word.trim()}…${suffix}`
   return copy
 }
 

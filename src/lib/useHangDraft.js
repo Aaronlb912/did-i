@@ -93,6 +93,7 @@ export function useHangDraft({
 
   function changeAskAfter(value) {
     setDraft((prev) => ({ ...prev, askAfter: value, slot: slotFromAskAfter(value) }))
+    if (miss) setMiss('')
   }
 
   function toggleDay(day) {
@@ -103,6 +104,7 @@ export function useHangDraft({
         : [...(prev.weekdays || []), day].sort((a, b) => a - b)
       return { ...prev, weekdays }
     })
+    if (miss) setMiss('')
   }
 
   function buildLamp() {

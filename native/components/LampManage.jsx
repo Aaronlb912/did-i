@@ -4,6 +4,7 @@ import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { confirmDone } from '../lib/confirm.js'
+import { showToast } from '../lib/toast-queue.js'
 
 function deleteNote(book, lamp) {
   const taps = (book.answers || []).filter((item) => item.lampId === lamp.id).length
@@ -21,7 +22,26 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
     const next = toggleArchive(book, lamp)
     onChange(next)
     onPaused?.(!lamp.archived)
-    confirmDone(lamp.archived ? t('confirm.questionResumed') : t('confirm.questionPaused'))
+    if (lamp.archived) {
+      confirmDone(t('confirm.questionResumed'))
+      return
+    }
+    // Pausing can be taken back for a few seconds, like an answer.
+    const before = book
+    const now = Date.now()
+    showToast({
+      id: 'undo:pause',
+      kind: 'undo',
+      rev: now,
+      label: t('confirm.questionPaused'),
+      hint: t('tonight.undoTap'),
+      until: now + 6000,
+      total: 6000,
+      onPress: () => {
+        onChange(before)
+        onPaused?.(false)
+      },
+    })
   }
 
   function askDelete() {
@@ -29,6 +49,7 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
       title: t('lamp.deleteTitle'),
       body: deleteNote(book, lamp),
       goLabel: t('lamp.delete'),
+      danger: true,
       closeLabel: t('lamp.keep'),
       colors,
       onClose: () => publishSheet(null),

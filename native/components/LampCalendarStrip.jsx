@@ -29,7 +29,9 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
   if (!lamp || !dateIso) return null
   const shown = { ...lamp, archived: false }
   const once = lamp.cadence === 'once' ? onceDay(book, lamp, dateIso) : null
-  const due = (iso) => (once === null ? isDueOn(shown, iso) : once === iso)
+  // Nights before the question was made, or still ahead, were never due.
+  const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.createdOn || '')) ? lamp.createdOn : ''
+  const due = (iso) => (!made || iso >= made) && iso <= dateIso && (once === null ? isDueOn(shown, iso) : once === iso)
 
   const weeks = []
   for (let w = WEEKS - 1; w >= 0; w -= 1) {
@@ -51,7 +53,7 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
 
   return (
     <View style={styles.wrap} accessibilityLabel={t('strip.recent', { name: shortLabel(lamp) })}>
-      <Text style={[styles.label, { color: colors.inkSoft }]}>{t('strip.recent', { name: shortLabel(lamp) })}</Text>
+      <Text style={[styles.label, { color: colors.inkSoft }]}>{t('strip.recentNights')}</Text>
       <View style={styles.row} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         {letters.map((letter, index) => (
           <View key={weeks[0][index]} style={styles.cell}>

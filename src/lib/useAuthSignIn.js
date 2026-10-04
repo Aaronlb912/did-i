@@ -42,7 +42,7 @@ export function useAuthSignIn({ onSignedIn }) {
 
   async function askEmail() {
     if (!looksLikeEmail(email)) {
-      setMiss(t('account.missEmail'))
+      setMiss(String(email || '').trim() ? t('account.missEmail') : t('account.needEmail'))
       setMissSource('email')
       return
     }
