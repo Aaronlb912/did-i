@@ -1066,7 +1066,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
       {BUDDIES.map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
-        const label = on ? t('shop.on') : have ? t('shop.use') : t('shop.buy')
+        const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
         return (
           <ShopActionRow
             key={item.id}
@@ -1080,8 +1080,11 @@ export function ShopBuddiesScreen({ book, onChange }) {
             miss={miss.id === item.id ? miss.text : ''}
             actionLabel={label}
             primary={on}
-            disabled={on}
             onAction={() => {
+              if (on) {
+                take(wearBuddy(book, ''), item.id)
+                return
+              }
               if (have) {
                 take(wearBuddy(book, item.id), item.id)
                 return
