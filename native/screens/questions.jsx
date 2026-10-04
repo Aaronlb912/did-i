@@ -979,7 +979,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     Keyboard.dismiss()
     const target = bookForTag(boards, book, hang.tagTitle)
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
-    if (onSaveTo) onSaveTo(target, next, sourceBook)
+    // Only an edit moves from its old folder; a copy is new wherever it lands.
+    if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
@@ -1365,7 +1366,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
       : nextDueLine(lamp, dateIso)
   const priority = lamp.priority || 'normal'
-  const extras = [lamp.kind, lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
+  const extras = [topicsOf(lamp).map(topicLabel).join(', '), lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
