@@ -1020,10 +1020,10 @@ export function FirstNightScreen({ book, onChange, now }) {
           onPress={next}
           dim={step === 0 && !question}
         />
+        {step === 0 && !question ? (
+          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.finishFirst')}</Text>
+        ) : null}
       </View>
-      {step === 0 && !question ? (
-        <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.finishFirst')}</Text>
-      ) : null}
     </ScreenShell>
   )
 }
@@ -1678,7 +1678,7 @@ const styles = StyleSheet.create({
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
   firstBlank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 2 },
-  firstWhy: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center', marginTop: 8 },
+  firstWhy: { flex: 1, fontFamily: fonts.ui, fontSize: 13 },
   firstWhen: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
   firstWhenLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
   firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
