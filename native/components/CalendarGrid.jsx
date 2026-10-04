@@ -23,11 +23,14 @@ function dowMarks(locale) {
 // Every mark reads the same way: Did, Late, Nope, Open.
 const upFirst = (text) => text.charAt(0).toLocaleUpperCase() + text.slice(1)
 
-function markOf(answer) {
+// No answer reads by where the night sits: still ahead, tonight, or gone.
+function markOf(answer, when = 0) {
   const status = answer?.status
   if (status === 'yes') return { key: 'yes', label: t('widget.tonight.did') }
   if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
   if (status === 'skip') return { key: 'skip', label: t('widget.tonight.nope') }
+  if (when > 0) return { key: 'hole', label: t('cal.ahead') }
+  if (when < 0) return { key: 'skip', label: t('later.missed') }
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
@@ -112,7 +115,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
             <ScrollView style={{ maxHeight: 240 }}>
               {nightRows.length ? (
                 nightRows.map((row) => {
-                  const mark = markOf(row.answer)
+                  const today = boardDate(clock, book?.dayFoldHour)
+                  const mark = markOf(row.answer, picked > today ? 1 : picked < today ? -1 : 0)
                   return (
                     <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
                       <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : 'open'] }]} />

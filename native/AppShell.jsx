@@ -330,7 +330,8 @@ export function AppShell() {
               name={path}
               component={RouteScreen}
               options={
-                path === '/add'
+                // Android draws a form sheet as a page with an empty band on top, so Add is a plain page there.
+                path === '/add' && Platform.OS === 'ios'
                   ? { presentation: 'formSheet', sheetGrabberVisible: true, headerLargeTitleEnabled: false }
                   : NO_TITLE.has(path)
                     ? { headerLargeTitleEnabled: false }

@@ -136,6 +136,11 @@ function go(route) {
   // retraces the path you took.
   const key = routeKey(route)
   if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) return
+  // A done form going back to the screen right behind it is just back.
+  if (swapping && routes.length > 1 && routeKey(routeFromScreen(routes[routes.length - 2])) === key) {
+    navigationRef.dispatch(StackActions.pop())
+    return
+  }
   const move = swapping && routes.length > 1 ? StackActions.replace : StackActions.push
   navigationRef.dispatch(move(route.path, paramsOf(route)))
 }

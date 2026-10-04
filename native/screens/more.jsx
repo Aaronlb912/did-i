@@ -485,6 +485,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['yes', t('later.did')],
     ['late', t('later.late')],
     ['skip', t('later.nope')],
+    ['hole', t('later.missed')],
   ]
 
   return (
@@ -643,7 +644,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               tint={on ? colors.on : undefined}
               icon="folder"
               label={item.title}
-              sub={`${on ? t('boards.thisOne') : t('boards.one')} · ${countNote} · ${leftNote}`}
+              sub={on ? `${t('boards.addsHere')} · ${countNote} · ${leftNote}` : `${countNote} · ${leftNote}`}
               chevron
               last={at === live.length - 1 && !on}
               onPress={() => {
@@ -683,16 +684,23 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             returnKeyType="done"
             autoFocus
           />
-          <KeyButton colors={colors} label={t('hang.add')} onPress={addFolder} />
-          <KeyButton
-            colors={colors}
-            label={t('hang.cancel')}
-            onPress={() => {
-              setAdding(false)
-              setNewName('')
-              setAddMiss('')
-            }}
-          />
+          {/* Side by side, so the keyboard does not cover them. */}
+          <View style={styles.addRow}>
+            <View style={styles.addCell}>
+              <KeyButton colors={colors} label={t('hang.add')} onPress={addFolder} />
+            </View>
+            <View style={styles.addCell}>
+              <KeyButton
+                colors={colors}
+                label={t('hang.cancel')}
+                onPress={() => {
+                  setAdding(false)
+                  setNewName('')
+                  setAddMiss('')
+                }}
+              />
+            </View>
+          </View>
         </View>
       ) : (
         <SetCard colors={colors}>
@@ -721,6 +729,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               title: t('boards.removeTitle', { title: book.title }),
               body: t('boards.removeBody'),
               goLabel: t('boards.removeNamed', { title: book.title }),
+              danger: true,
               closeLabel: t('settings.neverMind'),
               colors,
               onClose: () => publishSheet(null),
@@ -1113,9 +1122,9 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
           onPress={onAskPings}
         />
       ) : (
-        <Meta colors={colors}>{t('pings.noBrowser')}</Meta>
+        <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
       )}
-      <PingKinds colors={colors} on={on} />
+      <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
@@ -1628,6 +1637,8 @@ const styles = StyleSheet.create({
   legendText: { fontFamily: fonts.ui, fontSize: 12 },
   foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   tagName: { paddingHorizontal: 14, paddingBottom: 10 },
+  addRow: { flexDirection: 'row', gap: 10 },
+  addCell: { flex: 1 },
   enterFields: { padding: 14, gap: 8 },
   avatarEdit: {
     position: 'absolute',

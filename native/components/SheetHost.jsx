@@ -109,7 +109,7 @@ export function SheetHost() {
         ) : null}
         <View style={[styles.row, sheet.center && styles.rowMid]}>
           {sheet.onGo ? (
-            <DidButton small label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+            <DidButton small danger={sheet.danger} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
           ) : null}
           {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
           {sheet.noClose ? null : (

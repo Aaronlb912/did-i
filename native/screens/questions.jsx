@@ -35,7 +35,7 @@ import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps 
 import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import { boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
 import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -73,7 +73,7 @@ import {
   Meta,
   Page,
 } from '../components/ui.jsx'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -379,6 +379,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       title: t('questions.bulkDeleteTitle'),
       body: t('questions.bulkDeleteBody', { n: chosen.length }),
       goLabel: t('lamp.delete'),
+      danger: true,
       closeLabel: t('lamp.keep'),
       colors,
       onClose: () => publishSheet(null),
@@ -635,6 +636,7 @@ function timeLabel(value) {
 
 function whenLine(draft) {
   if (draft.cadence === 'every_n' && !Number(draft.everyN)) return t('hang.everyN')
+  if (draft.cadence === 'weekly' && !(draft.weekdays || []).length) return t('hang.weekly')
   return cadenceLine(draft)
 }
 
@@ -643,6 +645,16 @@ function reminderLine(draft) {
   if (!lampBuzzes(draft)) return t('hang.remindQuiet')
   if (draft.askAfter) return t('hang.remindAt', { time: timeLabel(draft.askAfter) })
   return t('hang.remindAny')
+}
+
+// Off tonight: say when it comes up next, if that is within two months.
+function nextDueLine(lamp, dateIso) {
+  const shown = { ...lamp, archived: false }
+  for (let day = 1; day <= 62; day += 1) {
+    const iso = addDaysIso(dateIso, day)
+    if (isDueOn(shown, iso)) return t('lamp.notTonightNext', { date: formatBoardDate(iso) })
+  }
+  return t('lamp.notTonight')
 }
 
 // True while the phone has notifications off, so a reminder cannot buzz.
@@ -664,7 +676,7 @@ function usePhoneQuiet() {
       sub.remove()
     }
   }, [])
-  const quiet = state === 'default' || state === 'denied'
+  const quiet = state === 'default' || state === 'denied' || state === 'missing'
   return {
     quiet,
     turnOn: (colors) => {
@@ -942,8 +954,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   leaveRef.current = leaveEdit
 
   function cancel() {
-    if (existing) goHash('/lamp', { id: existing.id })
-    else if (copySource) goHash('/lamp', { id: copySource.id })
+    if (existing) swapHash('/lamp', { id: existing.id })
+    else if (copySource) swapHash('/lamp', { id: copySource.id })
     else goHash('/lamps')
   }
 
@@ -973,7 +985,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     if (hang.editing) {
       playClick()
       confirmDone(t('confirm.questionSaved'))
-      goHash('/lamp', { id: next.id })
+      swapHash('/lamp', { id: next.id })
       offerPingPrimer(newTime, colors)
       return
     }
@@ -1085,6 +1097,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               ))}
             </View>
 
+            {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
+            {SCHEDULE_MISSES.has(hang.miss) ? (
+              <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
+                {t(hang.miss)}
+              </Text>
+            ) : null}
+
             {schedule === 'weekly' ? (
               <View style={styles.pillRow}>
                 {WEEKDAYS.map((day) => (
@@ -1163,7 +1182,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             colors={colors}
           >
             <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
-            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.timeHint')}</Text>
+            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
           </HangFold>
 
           {hang.priority === 'low' ? (
@@ -1300,7 +1319,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         </SetCard>
       </View>
 
-      {hang.miss ? (
+      {hang.miss && !SCHEDULE_MISSES.has(hang.miss) ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {t(hang.miss)}
         </Text>
@@ -1344,14 +1363,14 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     ? t('lamp.pausedLine')
     : record.due
       ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
-      : t('lamp.notTonight')
+      : nextDueLine(lamp, dateIso)
   const priority = lamp.priority || 'normal'
   const extras = [lamp.kind, lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
     lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
-    priority !== 'low' && phone.quiet ? t('hang.remindPhoneOff') : reminderLine(lamp),
+    priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp),
     lampBook.title,
     t(`hang.priority.${priority}`),
   ].join(' · ')
