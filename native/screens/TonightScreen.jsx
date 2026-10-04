@@ -441,7 +441,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>
           {stack.finishCount === 1 ? t('tonight.restOne') : t('tonight.restTitle', { n: stack.finishCount })}
         </Text>
-        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint')}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: clockWords('09:00') })}</Text>
         <View style={styles.actions}>
           <DidButton label={t('tonight.restChange')} colors={colors} small onPress={stack.reopenStillOpen} />
         </View>

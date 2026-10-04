@@ -2313,7 +2313,7 @@ export const de = {
   'gems.signInBuy': 'Zum Kaufen anmelden',
   'confirm.wearing': 'Du trägst {name}',
   'settings.yourData': 'Deine Daten',
-  'settings.foldGraceSub': 'Deine Uhr in {zone}. Heute Abend endet um Mitternacht. Die letzte Nacht kannst du bis 9 Uhr noch abschließen.',
+  'settings.foldGraceSub': 'Deine Uhr in {zone}. Heute Abend endet um Mitternacht. Die letzte Nacht kannst du bis {time} noch abschließen.',
   'widget.settings.colors': 'Widget-Farben',
   'settings.clearFolderBody': 'Alle Fragen und Antworten in {name} werden gelöscht. Andere Ordner bleiben. Speichere vorher eine Kopie, wenn du willst.',
   'settings.clearFolderTitle': '{name} leeren?',

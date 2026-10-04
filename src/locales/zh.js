@@ -2214,7 +2214,7 @@ export const zh = {
   'gems.signInBuy': '登录后购买',
   'confirm.wearing': '已穿戴{name}',
   'settings.yourData': '你的数据',
-  'settings.foldGraceSub': '按你在{zone}的时间。今晚在午夜结束。昨晚的可以补到上午9点。',
+  'settings.foldGraceSub': '按你在{zone}的时间。今晚在午夜结束。昨晚的可以补到{time}。',
   'widget.settings.colors': '小组件颜色',
   'settings.clearFolderBody': '清除{name}中的所有问题和回答。其他文件夹保留。需要的话先保存一份副本。',
   'settings.clearFolderTitle': '清空{name}？',
