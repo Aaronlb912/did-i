@@ -523,7 +523,13 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               {nights.map((night) => (
                 <View key={night.iso} style={styles.weekHeadCell}>
                   <View
-                    style={[styles.weekCell, { backgroundColor: cellColor(weekCell(night, lamp).state) }]}
+                    style={[
+                      styles.weekCell,
+                      // Not due that night: an empty outline, not a color from the legend.
+                      weekCell(night, lamp).state === 'off'
+                        ? { borderWidth: 1, borderColor: colors.lineSoft }
+                        : { backgroundColor: cellColor(weekCell(night, lamp).state) },
+                    ]}
                   />
                 </View>
               ))}
