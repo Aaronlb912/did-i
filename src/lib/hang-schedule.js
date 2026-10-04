@@ -43,6 +43,9 @@ export function applySchedulePick(draft, pick, today) {
     return next
   }
   next.cadence = pick
+  // Every few days starts at the number the field shows, so it is never blank.
+  if (pick === 'every_n' && !(Number(next.everyN) >= 2)) next.everyN = 3
+  if (pick === 'every_n' && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.everyNAnchor || ''))) next.everyNAnchor = today
   next.onceWhen = 'on'
   next.onceOn = ''
   next.dueBy = ''
