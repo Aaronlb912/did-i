@@ -13,17 +13,13 @@ import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
-// A quiet text link, not a button: "use on this phone only" is an escape
-// hatch, not a third sign-in option.
-function AuthTextLink({ colors, label, onPress }) {
+// Trying the app without an account is a real choice, so it gets a real
+// button. Reviewer sign-in stays behind a long-press on the mark.
+function LocalButton({ colors, onPress }) {
   return (
-    <Text
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.textLink, { color: colors.inkDim }]}
-    >
-      {label}
-    </Text>
+    <View style={styles.localWrap}>
+      <KeyButton colors={colors} label={t('auth.tryLocal')} onPress={onPress} />
+    </View>
   )
 }
 
@@ -42,7 +38,7 @@ export function SignInScreen({ onDone }) {
       <Text style={[styles.title, { color: colors.ink }]}>{t('account.offTitle')}</Text>
       <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.offBody')}</Text>
       <DidButton colors={colors} label={t('account.stay')} onPress={() => goHash('/tonight')} />
-      <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
+      <LocalButton colors={colors} onPress={useLocalOnly} />
     </View>
   ) : (
     <View style={styles.panel}>
@@ -54,7 +50,7 @@ export function SignInScreen({ onDone }) {
 
       <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
         {auth.step === 'start' ? (
-          <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
+          <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newEmail')}</Text>
         ) : null}
         <Field
           colors={colors}
@@ -92,11 +88,8 @@ export function SignInScreen({ onDone }) {
         )}
       </View>
 
-      <AuthTextLink colors={colors} label={t('auth.local')} onPress={useLocalOnly} />
+      <LocalButton colors={colors} onPress={useLocalOnly} />
       <AuthLegalNote colors={colors} />
-      {auth.step === 'start' ? (
-        <AuthTextLink colors={colors} label={t('auth.reviewer')} onPress={auth.showReviewer} />
-      ) : null}
     </View>
   )
 
@@ -167,11 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 10,
   },
-  textLink: {
-    fontFamily: fonts.ui,
-    fontSize: 13,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
+  localWrap: {
     marginTop: 14,
   },
 })

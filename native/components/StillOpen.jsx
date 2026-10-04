@@ -1,19 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { faceCardStyles } from '../lib/face-card.js'
 import { fonts } from '../theme.js'
 
 /**
  * What is left after a nope: each noped question as a slim row with its own
- * way out. "Did it now" saves it as late (the blue dot); "Leave it" lets the
- * nope stand and takes it off the list.
+ * way out. "Did it now" saves it as late; "Keep nope" lets the nope stand and
+ * takes it off the list. Either can still change until the grace period ends.
  */
 export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
   return (
     <View>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.finishKicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-        {rows.length === 1 ? t('tonight.finishOne') : t('tonight.finishTitle', { n: rows.length })}
+        {rows.length === 1
+          ? t('tonight.nopedOne', { question: rows[0].lamp.question })
+          : t('tonight.nopedMany', { n: rows.length })}
+      </Text>
+      <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+        {t('tonight.nopedChange', { time: clockWords('09:00') })}
       </Text>
       <View style={styles.list}>
         {rows.map((row) => (
@@ -28,11 +34,11 @@ export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
               <Pressable
                 onPress={() => onLeave(row)}
                 accessibilityRole="button"
-                accessibilityLabel={`${t('hole.leave')}: ${row.lamp.question}`}
+                accessibilityLabel={`${t('tonight.keepNope')}: ${row.lamp.question}`}
                 hitSlop={6}
                 style={({ pressed }) => [styles.action, styles.leave, { opacity: pressed ? 0.6 : 1 }]}
               >
-                <Text style={[styles.actionText, { color: colors.inkSoft }]}>{t('hole.leave')}</Text>
+                <Text style={[styles.actionText, { color: colors.inkSoft }]}>{t('tonight.keepNope')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => onLate(row)}
@@ -41,7 +47,7 @@ export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
                 hitSlop={6}
                 style={({ pressed }) => [
                   styles.action,
-                  { backgroundColor: colors.late, borderColor: colors.late, opacity: pressed ? 0.85 : 1 },
+                  { backgroundColor: colors.on, borderColor: colors.on, opacity: pressed ? 0.85 : 1 },
                 ]}
               >
                 <Text style={[styles.actionText, { color: colors.bg }]}>{t('tonight.didItNow')}</Text>

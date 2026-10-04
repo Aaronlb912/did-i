@@ -169,6 +169,24 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stack.shelf, stack.dateIso, tagId, stack.nightDone],
   )
+  // New people see Did and Nope buttons and a swipe hint until they have
+  // answered on 3 different nights. Read from the shelf, nothing stored.
+  const isNew = useMemo(() => {
+    const nights = new Set()
+    for (const item of stack.shelf || []) {
+      for (const answer of item.answers || []) {
+        if (answer.periodKey) nights.add(String(answer.periodKey).slice(0, 10))
+        if (nights.size >= 3) return false
+      }
+    }
+    return true
+  }, [stack.shelf])
+  // Questions made today earn no coins (coinsFor). Say when they start.
+  const coinsTomorrow = useMemo(() => {
+    if (!stack.nightDone) return false
+    const rows = stack.due || []
+    return rows.length > 0 && rows.every((row) => row.lamp?.createdOn && row.lamp.createdOn >= stack.dateIso)
+  }, [stack.nightDone, stack.due, stack.dateIso])
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
   // Undo joins the one toast line above the tab bar. Shake still undoes where
@@ -286,8 +304,26 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     })
   }, [graceShowing, colors])
   let face = null
+  // New here: Did and Nope buttons under the card, until swiping is familiar.
+  let answerBar = null
+  const withAnswerButtons = (card, onDid, onNope) => {
+    answerBar = (
+    <View style={styles.answerBar}>
+      <View style={styles.answerRow}>
+        <View style={styles.answerCell}>
+          <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={onNope} />
+        </View>
+        <View style={styles.answerCell}>
+          <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
+        </View>
+      </View>
+      <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text>
+    </View>
+    )
+    return card
+  }
   if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
-    face = graceCard
+    face = isNew && graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     face = (
       <WeSwipeCard
@@ -354,6 +390,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         ) : null}
       </SwipeCardHost>
     )
+    if (isNew) face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
   } else if (stack.bodyKind === 'hall' && stack.nightDone) {
     face = (
       <CardSettle play={Boolean(stack.cheer)}>
@@ -376,6 +413,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           ) : null}
           {summary ? (
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
+          ) : null}
+          {coinsTomorrow ? (
+            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
         </GemFaceShell>
       </CardSettle>
@@ -676,6 +716,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <FamilyTonight colors={colors} />
         </Slot>
       </SwipeFlyHost>
+      {answerBar}
     </View>
     </View>
     </MastMenuRoot>
@@ -697,6 +738,10 @@ const styles = StyleSheet.create({
   },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
+  answerBar: { paddingBottom: 12 },
+  answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  answerCell: { flex: 1 },
+  swipeHint: { textAlign: 'center', marginTop: 10 },
   jewels: { flexGrow: 0, marginBottom: 12 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
   back: {

@@ -614,8 +614,9 @@ function previewBody(type, item, purse) {
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
     const nights = Math.ceil(short / COINS_PER_NIGHT_CAP)
-    return `${base}\n${t('shop.earnCoins', { coins: short, nights })}`
+    return `${base}\n${t('shop.needMoreCoins', { n: short })}\n${t('shop.earnCoins', { coins: short, nights })}`
   }
+  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
   return base
 }
 
@@ -635,7 +636,10 @@ function CheerLoop({ id, coat }) {
 // `action` is the item's own Buy or Use, so the preview is never a dead end.
 function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
   const name = tileName(type, item.id)
-  const body = miss || previewBody(type, item, purse)
+  // Short on coins: keep the price and the earn line, not just the miss.
+  const tag = shopTag(purse, type, item)
+  const short = !tag.owned && tag.coins > 0 && purse.coins < tag.coins
+  const body = short ? previewBody(type, item, purse) : miss || previewBody(type, item, purse)
   let preview = null
   if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
@@ -690,7 +694,22 @@ export function ShopScreen({ book, onChange }) {
       return false
     }
     // The preview's Buy asks "Buy this?" with the price before anything is spent.
-    const buy = (spend) => ({
+    // Can't afford it: no bright Buy. Coins show how to earn (no button);
+    // gems point to the gem packs.
+    const buy = (spend) => {
+      if (tag.coins > 0 && purse.coins < tag.coins) return null
+      if (tag.gems > 0 && purse.gems < tag.gems) {
+        return {
+          label: t('gems.shortGo'),
+          go: () => {
+            publishSheet(null)
+            goHash('/gems')
+          },
+        }
+      }
+      return buyNow(spend)
+    }
+    const buyNow = (spend) => ({
       label: t('shop.buy'),
       go: async () => {
         if (needGems()) return
@@ -740,6 +759,9 @@ export function ShopScreen({ book, onChange }) {
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
+      {purse.coins < 15 && !purse.gems ? (
+        <Meta colors={colors}>{t('shop.howEarn', { cap: NIGHT_COIN_CAP })}</Meta>
+      ) : null}
 
       <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={onTile} />
 

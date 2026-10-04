@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  AppState,
   Keyboard,
   LayoutAnimation,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
+  findNodeHandle,
 } from 'react-native'
+import { checkPings } from '../../src/lib/notify.js'
 import {
   activeDeadline,
   blankLamp,
@@ -48,7 +52,7 @@ import { HangFold } from '../components/HangFold.jsx'
 import { SetCap, SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
-import { questionAddsToName, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
+import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { lampRecord } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
@@ -56,7 +60,7 @@ import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { confirmDone } from '../lib/confirm.js'
-import { offerPingPrimer } from '../lib/ping-primer.js'
+import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import {
@@ -170,11 +174,9 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
                   {shortLabel(row.lamp)}
                 </Text>
-                {questionAddsToName(row.lamp) ? (
-                  <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
-                    {row.lamp.question}
-                  </Text>
-                ) : null}
+                <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
+                  {row.lamp.question}
+                </Text>
                 <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
                   {meta}
                 </Text>
@@ -394,7 +396,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   return (
     <View style={styles.fill}>
-      <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd>
+      {/* A tab, never pushed: no back arrow, even while a form that just saved is still popping off the stack. */}
+      <BoardShell book={book} boards={shelf} title={hung.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
         <TagFilter
           boards={shelf}
           tagId={tagId}
@@ -641,6 +644,52 @@ function reminderLine(draft) {
   return t('hang.remindAny')
 }
 
+// True while the phone has notifications off, so a reminder cannot buzz.
+// Checked again when the app comes back, in case they changed it in settings.
+function usePhoneQuiet() {
+  const [state, setState] = useState('')
+  useEffect(() => {
+    let live = true
+    const check = () =>
+      checkPings()
+        .then((next) => live && setState(next))
+        .catch(() => {})
+    check()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') check()
+    })
+    return () => {
+      live = false
+      sub.remove()
+    }
+  }, [])
+  const quiet = state === 'default' || state === 'denied'
+  return {
+    quiet,
+    turnOn: (colors) => {
+      playClick()
+      askPingsNow(colors)
+        .then(setState)
+        .catch(() => {})
+    },
+  }
+}
+
+// The reminder row when the phone will not let it buzz. The question keeps its own setting.
+function QuietReminderRow({ colors, onTurnOn, last }) {
+  return (
+    <SetRow
+      colors={colors}
+      icon="bell"
+      label={t('hang.reminder')}
+      sub={t('hang.remindPhoneOff')}
+      value={t('hang.remindTurnOn')}
+      onPress={onTurnOn}
+      last={last}
+    />
+  )
+}
+
 export function Pill({ label, on, onPress, colors, dim, radio }) {
   return (
     <Pressable
@@ -789,9 +838,38 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const schedule = schedulePick(draft)
   const tagName = String(hang.tagTitle || '').trim() || book.title
   const ready = Boolean(draft.question.trim())
-  const detailCount = [draft.short, draft.kind, draft.notes].filter((v) => String(v || '').trim()).length
+  const detailCount = [draft.kind, draft.notes].filter((v) => String(v || '').trim()).length
+  const phone = usePhoneQuiet()
+  // The short name shows in full, filled with the one made from the question
+  // until they type their own, so it never changes behind their back.
+  const [shortTyped, setShortTyped] = useState(false)
+  const shortShown = shortTyped || String(draft.short || '').trim() ? draft.short : shortFromQuestion(draft.question, 24)
+  const scrollHandle = useRef(null)
+  const picksH = useRef(0)
 
   useEffect(() => () => clearTimeout(leave.current), [])
+
+  // The keyboard would cover the ideas and schedule under the card. Once it is
+  // up, scroll so the question and the ideas right under it stay in sight.
+  useEffect(() => {
+    if (!focused) return undefined
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    let timer = null
+    const lift = () => {
+      timer = setTimeout(() => {
+        const scroller = scrollHandle.current
+        const field = findNodeHandle(inputRef.current)
+        if (!scroller?.scrollResponderScrollNativeHandleToKeyboard || !field) return
+        scroller.scrollResponderScrollNativeHandleToKeyboard(field, picksH.current + 16, true)
+      }, Platform.OS === 'ios' ? 300 : 60)
+    }
+    const sub = Keyboard.addListener(event, lift)
+    if (Keyboard.isVisible?.()) lift()
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+  }, [focused])
 
   function fold(id) {
     if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
@@ -887,6 +965,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       back={hang.editing ? undefined : false}
       leftAction={hang.editing ? undefined : { label: t('hang.cancel'), onPress: cancel }}
       rightAction={hang.editing ? undefined : { label: t('hang.addIt'), onPress: save, disabled: !ready }}
+      scrollHandle={scrollHandle}
     >
       <HangCard
         ref={inputRef}
@@ -910,12 +989,30 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       />
       {below}
 
-      <IdeaPicks
-        label={t('first.picks')}
-        starters={blank.trim() && !picked ? [] : starters}
-        picked={picked}
-        onPick={pickIdea}
-        tilt={wobble.tilt}
+      <View
+        onLayout={(event) => {
+          picksH.current = event.nativeEvent.layout.height
+        }}
+      >
+        <IdeaPicks
+          label={t('first.picks')}
+          starters={blank.trim() && !picked ? [] : starters}
+          picked={picked}
+          onPick={pickIdea}
+          tilt={wobble.tilt}
+          colors={colors}
+        />
+      </View>
+
+      <FoldInput
+        label={t('hang.short')}
+        value={shortShown}
+        onChangeText={(value) => {
+          setShortTyped(true)
+          hang.change('short', value)
+        }}
+        placeholder={t('hang.shortPh')}
+        maxLength={24}
         colors={colors}
       />
 
@@ -1023,18 +1120,22 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.timeHint')}</Text>
           </HangFold>
 
-          <SetSwitch
-            label={t('hang.reminder')}
-            sub={reminderLine(draft)}
-            icon="bell"
-            last
-            on={hang.notifyOn}
-            onPress={() => {
-              playClick()
-              hang.change('notify', !hang.notifyOn)
-            }}
-            colors={colors}
-          />
+          {phone.quiet ? (
+            <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last />
+          ) : (
+            <SetSwitch
+              label={t('hang.reminder')}
+              sub={reminderLine(draft)}
+              icon="bell"
+              last
+              on={hang.notifyOn}
+              onPress={() => {
+                playClick()
+                hang.change('notify', !hang.notifyOn)
+              }}
+              colors={colors}
+            />
+          )}
         </SetCard>
 
         <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
@@ -1123,10 +1224,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           <HangFold
             label={t('hang.details')}
             value={
-              String(draft.short || '').trim() ||
-              (detailCount
+              detailCount
                 ? t(detailCount === 1 ? 'hang.detailsOne' : 'hang.detailsSome', { n: detailCount })
-                : t('hang.detailsNone'))
+                : t('hang.detailsNone')
             }
             icon="note"
             open={open === 'details'}
@@ -1134,14 +1234,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             last
             colors={colors}
           >
-            <FoldInput
-              label={t('hang.short')}
-              value={draft.short}
-              onChangeText={(value) => hang.change('short', value)}
-              placeholder={shortFromQuestion(draft.question, 24) || t('hang.shortPh')}
-              maxLength={24}
-              colors={colors}
-            />
             <TopicPick
               value={draft.kind}
               known={shelfTopics(boards.length ? boards : [book])}
@@ -1195,6 +1287,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
+  const phone = usePhoneQuiet()
 
   function change(next) {
     onChange(commitBook(next, clock))
@@ -1279,7 +1372,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           chevron
           onPress={() => editAt('time')}
         />
-        <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={reminderLine(lamp)} last />
+        {phone.quiet ? (
+          <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last />
+        ) : (
+          <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={reminderLine(lamp)} last />
+        )}
       </SetCard>
 
       <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>

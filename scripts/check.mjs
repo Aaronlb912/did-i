@@ -2224,7 +2224,7 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
     assert.ok(sign.includes("t('account.email')"), 'the sign-in screen has an email field')
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
-    assert.ok(sign.includes("t('auth.local')"), 'the sign-in screen can stay on this phone')
+    assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
     assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
     skipAuth()

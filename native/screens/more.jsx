@@ -843,13 +843,19 @@ export function FirstNightScreen({ book, onChange, now }) {
               onSubmitEditing={next}
               placeholder={t('first.ownHint')}
               placeholderTextColor={withAlpha(colors.ink, 0.45)}
+              selectionColor={colors.on}
+              cursorColor={colors.on}
               accessibilityLabel={t('tonight.didI')}
               autoCapitalize="none"
               returnKeyType="done"
               blurOnSubmit
               multiline
               maxLength={120}
-              style={[faceCardStyles.title, styles.firstBlank, { color: colors.ink }]}
+              style={[
+                faceCardStyles.title,
+                styles.firstBlank,
+                { color: colors.ink, borderBottomColor: focused ? colors.on : colors.line },
+              ]}
             />
             <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
               <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
@@ -871,7 +877,10 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Title colors={colors}>{t('first.timeTitle')}</Title>
           <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
           <SetCard colors={colors}>
-            <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
+            <View style={styles.firstWhen}>
+              <Text style={[styles.firstWhenLabel, { color: colors.ink }]}>{t('hang.daily')}</Text>
+              <Text style={[styles.firstWhenSub, { color: colors.inkDim }]}>{t('first.whenLater')}</Text>
+            </View>
             <View style={styles.firstTime}>
               <HangTimePick value={askAfter} onChange={setAskAfter} colors={colors} />
             </View>
@@ -900,6 +909,9 @@ export function FirstNightScreen({ book, onChange, now }) {
           dim={step === 0 && !question}
         />
       </View>
+      {step === 0 && !question ? (
+        <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.finishFirst')}</Text>
+      ) : null}
     </ScreenShell>
   )
 }
@@ -1551,7 +1563,11 @@ const styles = StyleSheet.create({
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
-  firstBlank: { padding: 0, paddingTop: 0, minHeight: 32 },
+  firstBlank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 2 },
+  firstWhy: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center', marginTop: 8 },
+  firstWhen: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
+  firstWhenLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
+  firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   firstSwipes: {
     flexDirection: 'row',
     justifyContent: 'space-between',

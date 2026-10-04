@@ -24,7 +24,7 @@ export function AuthEmailCard({
       {/* Start: Apple and Google first, then email with its own button, same as the sign-in screen. */}
       {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
       {auth.step === 'start' ? (
-        <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newHere')}</Text>
+        <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newEmail')}</Text>
       ) : null}
 
       <Field

@@ -272,6 +272,7 @@ function NeedAccount({ kicker, title, colors }) {
   return (
     <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
+      <Meta colors={colors}>{t('people.outComesAlong')}</Meta>
       <View style={styles.previewList}>
         <PreviewRow
           icon="people"
