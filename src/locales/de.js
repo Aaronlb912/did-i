@@ -2292,6 +2292,7 @@ export const de = {
   'didYouLink.bad': 'Dieser Link ist abgelaufen oder stimmt nicht. Bitte die Person um einen neuen.',
   'didYouLink.reach': 'Der Link konnte nicht geladen werden. Prüfe deine Verbindung. Er kommt beim nächsten Öffnen von Did I wieder.',
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
+  'tonight.nextOn': 'Morgen nichts. Nächste Frage: {date}.',
   'shop.earnGems': 'Schließe jede Woche einen Abend ab für 1 Edelstein, oder hol dir ein Paket.',
   'tonight.restChange': 'Nope ändern',
   'tonight.meterNope': '{n}× Nope',

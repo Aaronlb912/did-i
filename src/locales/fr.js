@@ -2285,6 +2285,7 @@ export const fr = {
   'didYouLink.bad': 'Ce lien a expiré ou n’est pas bon. Demande-en un nouveau à la personne qui l’a envoyé.',
   'didYouLink.reach': 'Impossible de charger ce lien. Vérifie ta connexion. Il reviendra la prochaine fois que tu ouvres Did I.',
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s\'affiche.',
+  'tonight.nextOn': 'Rien demain. Prochaine question : {date}.',
   'shop.earnGems': 'Terminez une soirée chaque semaine pour gagner 1 gemme, ou prenez un pack.',
   'tonight.restChange': 'Changer un nope',
   'tonight.meterNope': '{n} en nope',

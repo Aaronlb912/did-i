@@ -2206,6 +2206,7 @@ export const ko = {
   'didYouLink.bad': '이 링크는 끝났거나 올바르지 않아요. 보낸 사람에게 새 링크를 부탁하세요.',
   'didYouLink.reach': '링크를 불러올 수 없어요. 연결을 확인하세요. 다음에 Did I를 열면 다시 나와요.',
   'didYouLink.noApp': '아직 Did I가 없나요? 설치하고 열면 이 질문이 나와요.',
+  'tonight.nextOn': '내일은 없어요. 다음 질문: {date}.',
   'shop.earnGems': '매주 하룻밤을 마치면 보석 1개를 받아요. 팩으로 살 수도 있어요.',
   'tonight.restChange': 'Nope 바꾸기',
   'tonight.meterNope': 'Nope {n}',

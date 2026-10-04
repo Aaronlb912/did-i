@@ -3047,7 +3047,7 @@ test('the done card says what tomorrow night holds and from when', () => {
   assert.deepEqual(tomorrowPreview([book], clock), { count: 2, from: '20:00' }, 'counts what is due tomorrow, earliest first')
   const anytime = { ...book, lamps: [...book.lamps, lamp('phone')] }
   assert.deepEqual(tomorrowPreview([anytime], clock), { count: 3, from: '' }, 'no "from" when one is open all evening')
-  assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '' })
+  assert.deepEqual(tomorrowPreview([{ ...book, lamps: [book.lamps[2]] }], clock), { count: 0, from: '', next: '2026-09-30' }, 'nothing tomorrow names the next night something is due')
 })
 
 // Just enough of React to drive one hook here: state, refs, memos and
