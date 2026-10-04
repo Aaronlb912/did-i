@@ -1,5 +1,5 @@
 import { emptyBoard, normalizeBook, normalizeGone } from './board-json.js'
-import { alignShelfPurse } from './purse.js'
+import { alignShelfPurse, mergePurses, stampPurse } from './purse.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
@@ -55,10 +55,12 @@ export function enterLand(home = '/') {
   return hallEmpty(readShelf()) ? '/first' : home
 }
 
+// Empty folders hide, except the one you're on: a folder you just made
+// stays until you add to it or move away.
 export function parkEmptyTags(shelf) {
   const boards = (shelf.boards || []).map((book) => ({
     ...book,
-    archived: liveLampCount(book) === 0,
+    archived: liveLampCount(book) === 0 && book.id !== shelf.currentId,
   }))
   const live = boards.filter((book) => !book.archived)
   if (!boards.length) return shelf
@@ -209,7 +211,10 @@ export function putBook(shelf, book) {
       boards: shelf.boards.map((item) => (item.id === same.id ? merged : item)),
     }
   }
-  return { ...shelf, currentId: next.id, boards: [...shelf.boards, next] }
+  // A new folder starts with the shelf's purse. Its empty default purse would
+  // otherwise be copied onto every folder on save and wipe coins.
+  const fresh = shelf.boards.length ? stampPurse(next, mergePurses(shelf.boards)) : next
+  return { ...shelf, currentId: next.id, boards: [...shelf.boards, fresh] }
 }
 
 export function selectBook(shelf, id) {

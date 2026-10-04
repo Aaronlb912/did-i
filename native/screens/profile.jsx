@@ -29,7 +29,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
-import { DidButton, KeyButton } from '../components/ui.jsx'
+import { KeyButton } from '../components/ui.jsx'
 import { appVersionLines } from '../components/AppVersion.jsx'
 import {
   SetCap,
@@ -110,7 +110,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const colors = useHallColors(book)
   const prefs = usePrefs()
   const account = useAccount()
-  const [confirm, setConfirm] = useState(null)
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
@@ -149,29 +148,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     }
   }
 
-  if (confirm) {
-    return (
-      <BoardShell book={book} title={confirm.title} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
-        <Text style={[styles.popKicker, { color: colors.on }]}>{confirm.kicker}</Text>
-        <Text style={[styles.popTitle, { color: colors.ink }]}>{confirm.title}</Text>
-        <SetNote colors={colors}>{confirm.body}</SetNote>
-        <View style={styles.popRow}>
-          <DidButton
-            small
-            label={confirm.yes}
-            colors={colors}
-            onPress={() => {
-              const go = confirm.go
-              setConfirm(null)
-              if (typeof go === 'function') go()
-            }}
-          />
-          <KeyButton label={t('settings.neverMind')} onPress={() => setConfirm(null)} colors={colors} />
-        </View>
-      </BoardShell>
-    )
-  }
-
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={formatBoardDate(boardDate(new Date(), book.dayFoldHour))} colors={colors}>
 
@@ -202,21 +178,12 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
-          icon="moon"
+          icon={prefs.theme === 'light' ? 'sun' : prefs.theme === 'dark' ? 'moon' : 'phone'}
           tint={colors.late}
           label={t('settings.theme')}
           options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
           selected={prefs.theme}
           onSelect={(id) => writePrefs({ theme: id })}
-        />
-        <SetChoice
-          colors={colors}
-          icon="clock"
-          tint={colors.on}
-          label={t('settings.clock')}
-          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
-          selected={prefs.clock}
-          onSelect={(id) => writePrefs({ clock: id })}
         />
         <SetChoice
           colors={colors}
@@ -244,7 +211,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="grid"
           tint={colors.on}
-          label={t('widget.settings.look')}
+          label={t('widget.settings.colors')}
           sub={t('widget.settings.lookSub')}
           options={[
             { id: WIDGET_LOOK_TAG, label: t('widget.settings.lookTag') },
@@ -291,8 +258,17 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="clock"
           tint={colors.on}
           label={t('settings.fold')}
-          sub={t('settings.foldSub', { zone: zoneWords() })}
+          sub={t('settings.foldGraceSub', { zone: zoneWords() })}
           value={t('settings.foldAt')}
+        />
+        <SetChoice
+          colors={colors}
+          icon="clock"
+          tint={colors.on}
+          label={t('settings.clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
         />
         <SetRow
           colors={colors}
@@ -371,7 +347,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
       </SetCard>
 
-      <SetCap colors={colors}>{t('settings.help')}</SetCap>
+      <SetCap colors={colors}>{t('settings.yourData')}</SetCap>
       <SetCard colors={colors}>
         {onSendCopy ? (
           <SetRow
@@ -399,7 +375,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.loadCopy')}
           sub={t('settings.loadCopySub')}
           onPress={loading ? undefined : pickFile}
+          last
         />
+      </SetCard>
+      {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
+
+      <SetCap colors={colors}>{t('settings.help')}</SetCap>
+      <SetCard colors={colors}>
         <SetRow
           colors={colors}
           icon="help"
@@ -429,7 +411,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => goHash('/welcome')}
         />
       </SetCard>
-      {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
 
       <SetCap colors={colors}>{t('settings.privacyChoices')}</SetCap>
       <SetCard colors={colors}>
@@ -468,14 +449,20 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             colors={colors}
             icon="warning"
             label={t('settings.emptyBoard')}
+            sub={t('settings.clearFolderSub', { name: book?.title || '' })}
             danger
+            last
             onPress={() =>
-              setConfirm({
+              publishSheet({
                 kicker: t('settings.startOver'),
-                title: t('settings.clearTitle'),
-                body: t('settings.clearBody'),
-                yes: t('settings.clearYes'),
-                go: () => {
+                title: t('settings.clearFolderTitle', { name: book?.title || '' }),
+                body: t('settings.clearFolderBody', { name: book?.title || '' }),
+                goLabel: t('settings.clearYes'),
+                closeLabel: t('settings.neverMind'),
+                colors,
+                onClose: () => publishSheet(null),
+                onGo: () => {
+                  publishSheet(null)
                   onStartEmpty()
                   confirmDone(t('confirm.startedOver'))
                 },

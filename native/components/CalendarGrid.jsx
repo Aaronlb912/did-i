@@ -86,14 +86,18 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
               ]}
             >
               <Text style={{ color: night.isToday ? colors.on : colors.ink, fontSize: 13 }}>{night.dayNum}</Text>
-              <View
-                style={[
-                  styles.pip,
-                  {
-                    backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
-                  },
-                ]}
-              />
+              {night.empty ? (
+                <View style={styles.pip} />
+              ) : (
+                <View
+                  style={[
+                    styles.pip,
+                    {
+                      backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                    },
+                  ]}
+                />
+              )}
             </Pressable>
           ),
         )}

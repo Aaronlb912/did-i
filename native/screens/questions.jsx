@@ -729,7 +729,8 @@ export function TopicPick({ value, known, onChange, colors }) {
   }
   return (
     <View style={styles.foldField}>
-      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kind')}</Text>
+      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kindLabel')}</Text>
+      <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.kindHint')}</Text>
       {choices.length ? (
         <View style={styles.pillRow}>
           {choices.map((topic) => (
@@ -849,6 +850,21 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   useEffect(() => () => clearTimeout(leave.current), [])
 
+  const [startSnap] = useState(() => JSON.stringify([draft, hang.tagTitle]))
+  const dirty = hang.editing && JSON.stringify([draft, hang.tagTitle]) !== startSnap
+  const leaveRef = useRef(null)
+  const editing = hang.editing
+  // Phone back on the edit page asks first when there are changes.
+  useEffect(() => {
+    if (!editing) return undefined
+    function onBack(event) {
+      event?.preventDefault?.()
+      leaveRef.current?.()
+    }
+    window.addEventListener('did-i-back', onBack)
+    return () => window.removeEventListener('did-i-back', onBack)
+  }, [editing])
+
   // The keyboard would cover the ideas and schedule under the card. Once it is
   // up, scroll so the question and the ideas right under it stay in sight.
   useEffect(() => {
@@ -883,17 +899,38 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const question = lead ? didQuestion(value) : value
     if (picked && question !== picked.question && draft.short === picked.short) {
       hang.change('short', '')
-      hang.change('kind', '')
     }
     hang.change('question', question)
   }
 
   function pickIdea(starter) {
     setBlank(starterBlank(starter))
-    hang.applyStarter(starter)
+    // Ideas carry a topic of their own; topics only come from the topics field.
+    hang.applyStarter({ ...starter, kind: draft.kind })
     setWave((count) => count + 1)
     playClick()
   }
+
+  // Asks before throwing away edits, from Cancel and from back.
+  function leaveEdit() {
+    if (!dirty || stamp) {
+      cancel()
+      return
+    }
+    Keyboard.dismiss()
+    publishSheet({
+      title: t('hang.discardTitle'),
+      goLabel: t('hang.discard'),
+      closeLabel: t('hang.keepEditing'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        cancel()
+      },
+    })
+  }
+  leaveRef.current = leaveEdit
 
   function cancel() {
     if (existing) goHash('/lamp', { id: existing.id })
@@ -962,9 +999,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       date={shellDate(book, clock)}
       colors={colors}
       showAdd
-      back={hang.editing ? undefined : false}
-      leftAction={hang.editing ? undefined : { label: t('hang.cancel'), onPress: cancel }}
-      rightAction={hang.editing ? undefined : { label: t('hang.addIt'), onPress: save, disabled: !ready }}
+      back={false}
+      leftAction={{ label: t('hang.cancel'), onPress: hang.editing ? leaveEdit : cancel }}
+      rightAction={{ label: hang.editing ? t('hang.save') : t('hang.addIt'), onPress: save, disabled: !ready }}
       scrollHandle={scrollHandle}
     >
       <HangCard
@@ -1120,7 +1157,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.timeHint')}</Text>
           </HangFold>
 
-          {phone.quiet ? (
+          {hang.priority === 'low' ? (
+            <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.remindLowNote')} value={t('hang.remindOff')} last />
+          ) : phone.quiet ? (
             <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last />
           ) : (
             <SetSwitch
@@ -1258,15 +1297,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         </Text>
       ) : null}
 
-      {hang.editing ? (
-        <View style={styles.hangActions}>
-          <DidButton label={t('hang.save')} onPress={save} colors={colors} dim={!ready} />
-          <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" style={styles.cancel}>
-            <Text style={[styles.cancelText, { color: colors.inkSoft }]}>{t('hang.cancel')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
       {existing && sourceBook && !stamp ? (
         <LampManage
           book={sourceBook}
@@ -1293,11 +1323,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     onChange(commitBook(next, clock))
   }
 
-  function editAt(section) {
-    foldNext = section
-    goHash('/hang', { id: lamp.id })
-  }
-
   if (!lamp) {
     return (
       <BoardShell book={lampBook} title={t('lamp.gone')} date={shellDate(lampBook, clock)} colors={colors}>
@@ -1313,6 +1338,14 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       : t('lamp.notTonight')
   const priority = lamp.priority || 'normal'
   const extras = [lamp.kind, lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
+  // One look at the settings; changing them happens on Edit question.
+  const summary = [
+    cadenceLine(lamp),
+    lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
+    priority !== 'low' && phone.quiet ? t('hang.remindPhoneOff') : reminderLine(lamp),
+    lampBook.title,
+    t(`hang.priority.${priority}`),
+  ].join(' · ')
 
   return (
     <BoardShell book={lampBook} title={t('lamp.kicker')} date={shellDate(lampBook, clock)} colors={colors}>
@@ -1328,6 +1361,17 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         ) : null}
         <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
+
+      {lamp.archived ? (
+        <KeyButton
+          label={t('lamp.askAgain')}
+          onPress={() => {
+            change(toggleArchive(lampBook, lamp))
+            confirmDone(t('confirm.questionResumed'))
+          }}
+          colors={colors}
+        />
+      ) : null}
 
       {lamp.optional ? (
         // Added for you: it only counts once you choose it.
@@ -1361,47 +1405,17 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
 
-      <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="calendar" label={t('hang.when')} value={cadenceLine(lamp)} chevron onPress={() => editAt('when')} />
-        <SetRow
-          colors={colors}
-          icon="clock"
-          label={t('hang.timeRow')}
-          value={lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny')}
-          chevron
-          onPress={() => editAt('time')}
-        />
-        {phone.quiet ? (
-          <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last />
-        ) : (
-          <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={reminderLine(lamp)} last />
-        )}
+        <Text style={[styles.summary, { color: colors.ink }]}>{summary}</Text>
+        {extras.length ? (
+          <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={2}>
+            {extras.join(' · ')}
+          </Text>
+        ) : null}
+        <View style={styles.summaryEdit}>
+          <KeyButton label={t('hang.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
+        </View>
       </SetCard>
-
-      <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow colors={colors} icon="folder" label={t('hang.tag')} value={lampBook.title} chevron onPress={() => editAt('tag')} />
-        <SetRow
-          colors={colors}
-          icon="flag"
-          label={t('hang.priority')}
-          value={t(`hang.priority.${priority}`)}
-          chevron
-          onPress={() => editAt('priority')}
-        />
-        <SetRow
-          colors={colors}
-          icon="note"
-          label={t('hang.details')}
-          sub={extras.join(' · ') || ''}
-          value={extras.length ? '' : t('hang.detailsNone')}
-          chevron
-          last
-          onPress={() => editAt('details')}
-        />
-      </SetCard>
-
       <LampManage book={lampBook} lamp={lamp} colors={colors} onChange={change} />
     </BoardShell>
   )
@@ -1478,6 +1492,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
+  fieldHintTight: { marginTop: -4 },
+  summaryEdit: { padding: 12 },
+  summary: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, paddingHorizontal: 16, paddingTop: 12 },
   settings: { marginTop: 4 },
   goRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   goText: { flex: 1, gap: 2 },

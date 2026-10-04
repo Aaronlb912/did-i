@@ -13,7 +13,7 @@ import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
-import { AppTextInput, DidButton, KeyButton } from '../components/ui.jsx'
+import { DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
@@ -35,7 +35,6 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
-import { confirmDone } from '../lib/confirm.js'
 import { EditPen } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
@@ -49,7 +48,7 @@ import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { weOpenOn } from '../../src/lib/we-nights.js'
-import { graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
+import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
 import { saveWeReminders, saveWeWidgetLine, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
@@ -117,7 +116,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const prefsSeen = usePrefs().jewelKeySeen === true
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
-  const titleSaid = useRef('')
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
@@ -197,7 +195,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     flyBackNext()
     applyUndo()
   }, [applyUndo])
-  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'))
+  // A Did on last night's card after its nope is saved as late; the toast says so.
+  const lateNext = useRef(false)
+  const lateUndo = useRef({ undo: null, late: false })
+  if (stack.undo !== lateUndo.current.undo) {
+    lateUndo.current = { undo: stack.undo, late: Boolean(stack.undo) && lateNext.current }
+    lateNext.current = false
+  }
+  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, lateUndo.current.late ? t('tonight.undoLate') : t('tonight.undoTap'))
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
@@ -251,7 +256,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     ...stack.graceOpen.map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
       title: row.lamp.question,
-      onDid: () => stack.markGrace(row, 'yes'),
+      late: didStatusForRow(row) === 'late',
+      onDid: () => {
+        lateNext.current = didStatusForRow(row) === 'late'
+        stack.markGrace(row, 'yes')
+      },
       onNope: () => stack.markGrace(row, 'skip'),
       buddy: activeBuddy(stack.bookOf(row)),
     })),
@@ -285,7 +294,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       onDid={graceTop.onDid}
       onNope={graceTop.onNope}
       buddy={graceTop.buddy}
-    />
+    >
+      {graceTop.late ? (
+        <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>{t('tonight.graceLate')}</Text>
+      ) : null}
+    </SwipeCardHost>
   ) : null
   const graceFirstNow = graceItems.length > 0 && graceFirst()
   const graceShowing = Boolean(
@@ -487,7 +500,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       />
     )
   } else if (stack.bodyKind === 'wait' && stack.waitPick) {
-    face = <WaitPlate row={stack.waitPick} colors={colors} onClose={() => stack.closePlates()} />
+    face = (
+      <WaitPlate
+        row={stack.waitPick}
+        colors={colors}
+        onDid={() => stack.mark(stack.waitPick, 'yes')}
+        onClose={() => stack.closePlates()}
+      />
+    )
   } else if (stack.bodyKind === 'pillView' && stack.pillPick) {
     const pillRow = stack.pillPick
     const pillBook = stack.bookOf(pillRow)
@@ -569,41 +589,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       topicPicks={picks}
       onTopics={setTopicPicks}
       inline={showChips}
+      noCount
     />
   )
 
-  // Blur and submit both save; say it once per rename.
-  function saveTitle() {
-    const next = String(stack.titleDraft || '').trim()
-    if (next && next !== book.title && titleSaid.current !== next) {
-      titleSaid.current = next
-      confirmDone(t('confirm.tagRenamed'))
-    }
-    stack.saveTitle()
-  }
-
-  const titleSlot = stack.titleEdit ? (
-    <AppTextInput
-      colors={colors}
-      value={stack.titleDraft}
-      onChangeText={stack.setTitleDraft}
-      onBlur={saveTitle}
-      onSubmitEditing={saveTitle}
-      returnKeyType="done"
-      style={[styles.titleInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel }]}
-      accessibilityLabel={t('tonight.boardName')}
-      autoFocus
-    />
-  ) : (
-    <Pressable
-      onPress={() => {
-        titleSaid.current = ''
-        stack.setTitleEdit(true)
-      }} style={styles.titleHit}>
+  // Rename lives in Settings > Folders; the title is only a title here.
+  const titleSlot = (
+    <View style={styles.titleHit}>
       <Text style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
         {mastTitle}
       </Text>
-    </Pressable>
+    </View>
   )
 
   return (
@@ -729,13 +725,7 @@ const styles = StyleSheet.create({
   shell: { flex: 1, paddingHorizontal: 16, position: 'relative' },
   sitOn: {},
   titleHit: { alignSelf: 'flex-start', maxWidth: '100%' },
-  titleInput: {
-    ...headerTitleStyle,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+  graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
   answerBar: { paddingBottom: 12 },

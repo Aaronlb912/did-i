@@ -27,8 +27,11 @@ import {
   byPriority,
   didQuestion,
   dueByUrgency,
+  duplicateLamp,
+  SHORT_MAX,
   lampBuzzes,
   lampNudgesLate,
+  emptyBoard,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
 import { STARTERS, starterBlank } from '../src/lib/starters.js'
@@ -63,6 +66,7 @@ import {
   mergeSameTitles,
   normalizeShelf,
   parkEmptyTags,
+  putBook,
   readShelf,
   writeShelf,
 } from '../src/lib/board-shelf.js'
@@ -74,6 +78,7 @@ import {
   FRIEND_CHEERS_PER_GEM,
   gemWeekKey,
   spendGems,
+  spreadPurseFrom,
   takeFriendCheer,
   weeklyGemBump,
 } from '../src/lib/purse.js'
@@ -106,7 +111,7 @@ import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
+import { clockWords, monthStripNights, nextStreakGoal, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -171,6 +176,13 @@ test('a bulk delete across folders comes back whole on undo', () => {
   const stopped = bulkLamps([home, work], picks, 'stop')
   assert.equal(stopped[0].lamps.find((item) => item.id === 'b').archived, true)
   assert.equal(stopped[0].lamps.find((item) => item.id === 'a').archived, undefined)
+})
+
+test('a duplicate keeps " copy" inside the short name limit', () => {
+  const copy = duplicateLamp({ id: 'a', question: 'Did I water the plants daily?', short: 'Water the plants daily' })
+  assert.ok(copy.short.length <= SHORT_MAX, copy.short)
+  assert.ok(copy.short.endsWith(' copy'), copy.short)
+  assert.equal(duplicateLamp({ id: 'b', question: 'Did I read?', short: 'Read' }).short, 'Read copy')
 })
 
 test('the night turns over at midnight, not at four', () => {
@@ -605,6 +617,55 @@ test('low never buzzes, only high nudges late', () => {
   assert.equal(lampBuzzes(lamp('a', { notify: false })), false)
   assert.equal(lampNudgesLate(lamp('a', { priority: 'high' })), true)
   assert.equal(lampNudgesLate(lamp('a', { priority: 'normal' })), false)
+})
+
+test('moving a question to a brand-new folder keeps coins', () => {
+  const a = lamp('a')
+  let shelf = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [a], answers: [], coins: 5, gems: 2 }] }
+  // Same path as Edit question > Folder > new folder > Save: takeDown, then putBook the new folder.
+  shelf = putBook(shelf, takeDown(shelf.boards[0], a))
+  const fresh = hangInto({ ...emptyBoard(), title: 'New one' }, a, false)
+  shelf = putBook(shelf, fresh)
+  const current = shelf.boards.find((item) => item.id === shelf.currentId)
+  const saved = spreadPurseFrom(shelf, current)
+  assert.ok(saved.boards.every((item) => item.coins === 5), 'coins stay 5 on every folder')
+  assert.ok(saved.boards.every((item) => item.gems === 2), 'gems too')
+})
+
+test('a folder you just made stays visible until you move away', () => {
+  const shelf = { currentId: 'new', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }, { id: 'new', title: 'Gym', lamps: [], answers: [] }] }
+  assert.equal(parkEmptyTags(shelf).boards.find((item) => item.id === 'new').archived, false)
+  assert.equal(parkEmptyTags({ ...shelf, currentId: 'b1' }).boards.find((item) => item.id === 'new').archived, true)
+})
+
+test('So far and Every answer count every folder', () => {
+  const boards = [
+    { id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [{ id: 'x', lampId: 'a', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00' }] },
+    { id: 'b2', title: 'Pills', lamps: [lamp('b')], answers: [{ id: 'y', lampId: 'b', periodKey: '2026-10-02', status: 'skip', answeredAt: '2026-10-02T20:00' }] },
+  ]
+  const counts = shelfStatsCounts(boards, new Date('2026-10-03T12:00:00'), '')
+  assert.equal(counts.did, 1)
+  assert.equal(counts.skip, 1)
+  assert.equal(counts.hung, 2)
+  assert.equal(shelfStatsCounts(boards, new Date('2026-10-03T12:00:00'), 'b2').did, 0)
+  assert.deepEqual(shelfFeedRows(boards).map((row) => row.answer.id), ['y', 'x'])
+  assert.equal(nextStreakGoal(1), 3)
+  assert.equal(nextStreakGoal(5), 7)
+})
+
+test('the calendar leaves future nights and nights before you started blank', () => {
+  const boards = [{ id: 'b1', title: 'Tag', lamps: [lamp('a', { createdOn: '2026-10-03' })], answers: [] }]
+  const { nights } = monthStripNights(boards, new Date('2026-10-04T12:00:00'), '', 0)
+  const day = (iso) => nights.find((night) => night.iso === iso)
+  assert.equal(day('2026-10-01').miss, false, 'before the first question')
+  assert.equal(day('2026-10-01').empty, true)
+  assert.equal(day('2026-10-03').miss, true, 'a real missed night')
+  assert.equal(day('2026-10-09').empty, true, 'future')
+  // No made date at all: nothing before the first answer counts as missed.
+  const bare = [{ id: 'b1', title: 'Tag', lamps: [{ ...lamp('a'), createdOn: '' }], answers: [{ lampId: 'a', periodKey: '2026-10-02', status: 'yes' }] }]
+  const pack = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights
+  assert.equal(pack.find((night) => night.iso === '2026-10-01').miss, false)
+  assert.equal(pack.find((night) => night.iso === '2026-10-02').on, true)
 })
 
 test('two phones combine instead of overwriting', () => {

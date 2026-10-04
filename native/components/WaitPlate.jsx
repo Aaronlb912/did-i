@@ -5,7 +5,7 @@ import { goHash } from '../navigation/hash.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
-export function WaitPlate({ row, colors, onClose }) {
+export function WaitPlate({ row, colors, onDid, onClose }) {
   if (!row) return null
   const after = row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('wait.later')
   return (
@@ -14,12 +14,8 @@ export function WaitPlate({ row, colors, onClose }) {
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>{row.lamp.question}</Text>
       <Text style={[faceCardStyles.meta, styles.meta, { color: colors.inkSoft }]}>{t('wait.after', { time: after })}</Text>
       <View style={[styles.actions, { borderTopColor: colors.lineSoft }]}>
-        <DidButton
-          label={t('wait.thisQuestion')}
-          colors={colors}
-          small
-          onPress={() => goHash('/lamp', { id: row.lamp.id })}
-        />
+        {onDid ? <DidButton label={t('wait.didAlready')} colors={colors} small onPress={onDid} /> : null}
+        <KeyButton label={t('wait.settings')} colors={colors} onPress={() => goHash('/lamp', { id: row.lamp.id })} />
         <KeyButton label={t('wait.sit')} colors={colors} onPress={onClose} />
       </View>
     </View>

@@ -10,7 +10,7 @@ import { fonts } from '../theme.js'
 // It floats over the page, so nothing below moves, and scrolls when the list
 // is long. Tap to add or remove; "All" clears a section. Done or a tap
 // outside closes it.
-export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false }) {
+export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false, noCount = false }) {
   const [open, setOpen] = useState(false)
   const [at, setAt] = useState(null)
   const button = useRef(null)
@@ -107,7 +107,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         >
           {label}
         </Text>
-        {count && showFolders && !topicPicks.length ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
+        {count && showFolders && !topicPicks.length && !noCount ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
       </Pressable>
       {filtering ? (
         <Pressable

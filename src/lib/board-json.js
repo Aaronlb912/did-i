@@ -441,14 +441,18 @@ export function addUnlock(book, id) {
   return { ...book, unlocked: [...book.unlocked, id] }
 }
 
+// The short name field's length limit.
+export const SHORT_MAX = 24
+
 export function duplicateLamp(lamp, now = new Date()) {
   const copy = normalizeLamp(lamp)
   copy.id = newLampId()
   copy.createdOn = isoDate(now)
   copy.archived = false
-  const short = shortLabel(copy)
-  if (!copy.short) copy.short = short
-  copy.short = `${copy.short} ${t('lamp.copySuffix')}`
+  // Trim the name first so " copy" always fits inside the limit.
+  const suffix = ` ${t('lamp.copySuffix')}`
+  const base = shortLabel(copy).slice(0, Math.max(0, SHORT_MAX - suffix.length)).trim()
+  copy.short = `${base}${suffix}`
   return copy
 }
 
