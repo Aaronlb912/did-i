@@ -1007,7 +1007,7 @@ const WE_IDEAS = ['we.idea.dog', 'we.idea.date', 'we.idea.gym', 'we.idea.call', 
 export function WeHomeScreen({ book, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
-  const { cards, reload } = useWeTonight(account.user)
+  const { cards, loaded, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
   if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
@@ -1060,7 +1060,8 @@ export function WeHomeScreen({ book, onChange }) {
       <Text style={[styles.weLead, { color: colors.inkSoft }]}>{t('we.homeLead')}</Text>
       <WeAsks colors={colors} />
 
-      {!mine.length ? (
+      {!loaded ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {loaded && !mine.length ? (
         <View style={[styles.weEmpty, { borderColor: colors.we, backgroundColor: colors.panel }]}>
           <MenuIcon name="together" color={colors.we} size={36} stroke />
           <Text style={[styles.weEmptyTitle, { color: colors.ink }]}>{t('we.emptyTitle')}</Text>

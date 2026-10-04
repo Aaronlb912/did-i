@@ -506,7 +506,8 @@ export function useWeTonight(user) {
     return () => document.removeEventListener('visibilitychange', onShow)
   }, [look])
 
-  return { ...state, reload: look }
+  // loaded: false until the first fetch for this user lands (EMPTY is the not-yet value).
+  return { ...state, loaded: state !== EMPTY, reload: look }
 }
 
 // Words that sound like doing it with someone ("together", "as a family").

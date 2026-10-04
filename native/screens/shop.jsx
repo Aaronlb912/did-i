@@ -759,7 +759,7 @@ export function ShopScreen({ book, onChange }) {
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
-      {purse.coins < 15 && !purse.gems ? (
+      {purse.coins < 15 && purse.gems < 2 ? (
         <Meta colors={colors}>{t('shop.howEarn', { cap: NIGHT_COIN_CAP })}</Meta>
       ) : null}
 
