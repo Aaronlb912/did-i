@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
+import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { streakNights, streakParts } from '../../src/lib/streak-copy.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { svgParts } from '../lib/svg-parts.js'
@@ -161,7 +162,8 @@ export function NightWeek({ nights, colors }) {
 }
 
 /** "Tomorrow: 4 questions from 8:00 PM", so done has a next step. */
-export function tomorrowLine({ count, from }) {
+export function tomorrowLine({ count, from, next }) {
+  if (!count && next) return t('tonight.nextOn', { date: formatBoardDate(next) })
   if (!count) return t('tonight.tomorrowNone')
   const time = from ? clockWords(from) : ''
   if (count === 1) return time ? t('tonight.tomorrowOne', { time }) : t('tonight.tomorrowOneAny')

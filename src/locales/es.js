@@ -2280,6 +2280,7 @@ export const es = {
   'didYouLink.bad': 'Ese enlace terminó o no es correcto. Pide uno nuevo a quien te lo envió.',
   'didYouLink.reach': 'No se pudo cargar el enlace. Revisa tu conexión. Vuelve a aparecer la próxima vez que abras Did I.',
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
+  'tonight.nextOn': 'Mañana nada. Próxima pregunta: {date}.',
   'shop.earnGems': 'Completa una noche cada semana para ganar 1 gema, o compra un paquete.',
   'tonight.restChange': 'Cambiar un nope',
   'tonight.meterNope': '{n} con nope',

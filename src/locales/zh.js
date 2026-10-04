@@ -2191,6 +2191,7 @@ export const zh = {
   'didYouLink.bad': '这个链接已失效或不正确。请让发送的人重新发一个。',
   'didYouLink.reach': '无法加载这个链接。请检查网络。下次打开 Did I 时会再次出现。',
   'didYouLink.noApp': '还没有 Did I？下载并打开，这个问题就会出现。',
+  'tonight.nextOn': '明天没有。下一个问题：{date}。',
   'shop.earnGems': '每周完成一晚可得1颗宝石，也可以买礼包。',
   'tonight.restChange': '修改 Nope',
   'tonight.meterNope': '{n} 个 Nope',

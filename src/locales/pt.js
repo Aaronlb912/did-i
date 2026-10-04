@@ -2271,6 +2271,7 @@ export const pt = {
   'didYouLink.bad': 'Esse link acabou ou não está certo. Peça um novo para quem enviou.',
   'didYouLink.reach': 'Não foi possível carregar o link. Confira sua conexão. Ele aparece de novo na próxima vez que você abrir o Did I.',
   'didYouLink.noApp': 'Ainda sem Did I? Baixe, abra e esta pergunta aparece.',
+  'tonight.nextOn': 'Nada amanhã. Próxima pergunta: {date}.',
   'shop.earnGems': 'Conclua uma noite por semana para ganhar 1 gema, ou pegue um pacote.',
   'tonight.restChange': 'Mudar um nope',
   'tonight.meterNope': '{n} com nope',

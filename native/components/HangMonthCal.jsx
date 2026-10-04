@@ -67,7 +67,11 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     return night.iso === value
   }
 
+  // A date to do it by or on can't be in the past.
+  const gone = (night) => mode !== 'monthly' && night.iso < todayIso
+
   function pickDay(night) {
+    if (gone(night)) return
     if (mode === 'monthly') onChange(Number(night.dayNum))
     else onChange(night.iso)
   }
@@ -94,7 +98,10 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
             <Pressable
               key={night.key}
               onPress={() => pickDay(night)}
+              disabled={gone(night)}
+              accessibilityState={{ disabled: gone(night), selected: isPick(night) }}
               style={[
+                gone(night) && { opacity: 0.35 },
                 styles.day,
                 dayBox,
                 {

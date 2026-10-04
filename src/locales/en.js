@@ -2267,6 +2267,7 @@ export const en = {
   'didYouLink.bad': 'That link has ended or is not right. Ask whoever sent it for a new one.',
   'didYouLink.reach': 'Could not load that link. Check your connection. It comes up again next time you open Did I.',
   'didYouLink.noApp': 'No Did I yet? Get it, open it, and this question comes up.',
+  'tonight.nextOn': 'Nothing tomorrow. Next question: {date}.',
   'shop.earnGems': 'Clear a night each week to earn 1 gem, or get a pack.',
   'tonight.restChange': 'Change a nope',
   'tonight.meterNope': '{n} nope',

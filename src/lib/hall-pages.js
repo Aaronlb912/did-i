@@ -94,7 +94,8 @@ function nightMarks(books, iso, today) {
   let dueCount = 0
   let clear = true
   for (const book of books) {
-    const due = at ? dueOnNight(book, iso, at) : []
+    // A deadline still days away is optional, so it does not break the night.
+    const due = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
     dueCount += due.length
     if (due.length && !due.every((row) => row.answer)) clear = false
   }
@@ -120,7 +121,14 @@ export function tomorrowPreview(boards, now = new Date(), tagId = '') {
     .filter((row) => mustSwipeDeadline(row.lamp, row.dateIso))
   const times = rows.map((row) => String(row.lamp.askAfter || '').trim())
   const from = rows.length && times.every((time) => /^\d{2}:\d{2}$/.test(time)) ? [...times].sort()[0] : ''
-  return { count: rows.length, from }
+  if (rows.length) return { count: rows.length, from }
+  // Nothing tomorrow: the next night anything is due, within two weeks.
+  for (let day = 1; day <= 13; day += 1) {
+    const later = addDaysIso(iso, day)
+    const laterAt = noonOn(later)
+    if (laterAt && books.some((book) => dueOnNight(book, later, laterAt).some((row) => mustSwipeDeadline(row.lamp, row.dateIso)))) return { count: 0, from: '', next: later }
+  }
+  return { count: 0, from: '' }
 }
 
 export function nightDueRows(boards, iso, tagId = '') {

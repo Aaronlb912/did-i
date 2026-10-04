@@ -2206,6 +2206,7 @@ export const ja = {
   'didYouLink.bad': 'このリンクは終了したか正しくありません。送った人に新しいリンクを頼んでください。',
   'didYouLink.reach': 'リンクを読み込めませんでした。接続を確認してください。次にDid Iを開くともう一度表示されます。',
   'didYouLink.noApp': 'Did I をまだ持っていませんか？入手して開くと、この質問が表示されます。',
+  'tonight.nextOn': '明日はなし。次の質問は{date}。',
   'shop.earnGems': '毎週1晩終えるとジェムが1個もらえます。パックでも買えます。',
   'tonight.restChange': 'Nopeを変える',
   'tonight.meterNope': 'Nope {n}',
