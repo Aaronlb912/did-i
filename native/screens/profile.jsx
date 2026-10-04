@@ -26,6 +26,7 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
+import { publishSheet } from '../components/SheetHost.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { DidButton, KeyButton } from '../components/ui.jsx'
@@ -264,6 +265,22 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           sub={t('widget.settings.openOnlySub')}
           on={widget.openOnly}
           onPress={() => applyWidgetPrefs({ widgetOpenOnly: !widget.openOnly })}
+        />
+        <SetRow
+          colors={colors}
+          icon="grid"
+          tint={colors.on}
+          label={t('widget.settings.howAdd')}
+          chevron
+          onPress={() =>
+            publishSheet({
+              title: t('widget.settings.howAdd'),
+              body: t(Platform.OS === 'ios' ? 'widget.settings.howAddIos' : 'widget.settings.howAddAndroid'),
+              closeLabel: t('settings.close'),
+              colors,
+              onClose: () => publishSheet(null),
+            })
+          }
         />
       </SetCard>
 

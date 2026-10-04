@@ -16,6 +16,7 @@ import {
   saveLinkFriend,
 } from '../../src/lib/did-you-links.js'
 import { t } from '../../src/lib/i18n.js'
+import { readMine } from '../../src/lib/people.js'
 import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { goHash } from '../navigation/hash.js'
 import { showToast } from '../lib/toast-queue.js'
@@ -144,6 +145,28 @@ export function DidYouLinkHost({ colors, onKeep }) {
         goHash('/tonight', { tag: 'all', ...(ids[0] ? { face: ids[0] } : {}) })
         if (firstTime('did-i-guide-link')) guide('link', name, colors)
         else showToast({ id: 'did-you-link', text: t(addFriend ? 'didYouLink.addedFriend' : 'didYouLink.added', { name }), ms: 3200 })
+        // With no name, the sender only sees "someone". Ask once, after the guide.
+        if (userId && found.name) {
+          readMine()
+            .then((mine) => {
+              if (mine?.display_name?.trim()) return
+              setTimeout(() => {
+                publishSheet({
+                  title: t('didYouLink.nameTitle', { name }),
+                  body: t('didYouLink.nameBody', { name }),
+                  goLabel: t('didYouLink.nameGo'),
+                  closeLabel: t('settings.neverMind'),
+                  colors,
+                  onClose: () => publishSheet(null),
+                  onGo: () => {
+                    publishSheet(null)
+                    goHash('/people')
+                  },
+                })
+              }, 1200)
+            })
+            .catch(() => {})
+        }
       }
       publishSheet({
         kicker: t('didYouLink.kicker'),

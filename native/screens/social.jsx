@@ -269,9 +269,19 @@ function offerWeWith(person, colors) {
 // full sign-in (Apple, Google and email) right here.
 function NeedAccount({ kicker, title, colors }) {
   const auth = useAuthSignIn({})
+  const account = useAccount()
+  // Still checking for a saved sign-in: loading, not the sign-in prompt.
+  if (!account.ready) {
+    return (
+      <ScreenShell title={title} colors={colors}>
+        <Meta colors={colors}>{t('family.loading')}</Meta>
+      </ScreenShell>
+    )
+  }
   return (
     <ScreenShell title={title} colors={colors}>
       <Meta colors={colors}>{t('people.outBody')}</Meta>
+      <Meta colors={colors}>{t('people.outComesAlong')}</Meta>
       <View style={styles.previewList}>
         <PreviewRow
           icon="people"
@@ -1651,9 +1661,10 @@ export function FriendScreen({ route }) {
   const account = useAccount()
   const otherId = route?.id || ''
   const [person, setPerson] = useKept(`friend.person:${otherId}`, { user_id: otherId })
-  const [sends, setSends] = useState({ mine: [], theirs: [], miss: '' })
-  const [keptLinks, setKeptLinks] = useState([])
-  const [ready, setReady] = useState(false)
+  // Kept between visits so a revisit opens on the last tab and counts at once.
+  const [sends, setSends] = useKept(`friend.sends:${account.user?.id}:${otherId}`, { mine: [], theirs: [], miss: '' })
+  const [keptLinks, setKeptLinks] = useKept(`friend.links:${account.user?.id}:${otherId}`, [])
+  const [ready, setReady] = useKept(`friend.ready:${account.user?.id}:${otherId}`, false)
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
   const [bigPhoto, setBigPhoto] = useState(false)
@@ -1690,8 +1701,10 @@ export function FriendScreen({ route }) {
     (card.people || []).some((p) => p.id === otherId && p.state !== 'left'),
   )
 
-  const shown =
-    tab ||
+  // No tab until the sends are in, so it does not open on one and jump.
+  const shown = !ready
+    ? ''
+    : tab ||
     (sends.theirs.some((send) => send.state === 'sent')
       ? 'theirs'
       : sends.theirs.length
@@ -1832,6 +1845,8 @@ export function FriendScreen({ route }) {
         />
       ) : null}
 
+      {!ready ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {ready ? (
       <View style={styles.friendTabs}>
         <KitSegment
           items={[
@@ -1844,6 +1859,7 @@ export function FriendScreen({ route }) {
           colors={colors}
         />
       </View>
+      ) : null}
       {shown === 'theirs' ? (
         <>
       {sends.theirs.length ? (

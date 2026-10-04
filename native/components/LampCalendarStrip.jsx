@@ -40,9 +40,25 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
     weeks.push(row)
   }
 
+  // Every row runs the same seven weekdays, so the first row names the columns.
+  const letters = weeks[0].map((iso) => Array.from(t(`hang.day.${new Date(`${iso}T12:00:00`).getDay()}`))[0] || '')
+  const key = [
+    { id: 'did', color: colors.on, label: t('jewelKey.did') },
+    { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
+    { id: 'nope', color: colors.miss, label: t('jewelKey.nope') },
+    { id: 'open', color: colors.open, label: t('jewelKey.open'), dim: true },
+  ]
+
   return (
     <View style={styles.wrap} accessibilityLabel={t('strip.recent', { name: shortLabel(lamp) })}>
       <Text style={[styles.label, { color: colors.inkSoft }]}>{t('strip.recent', { name: shortLabel(lamp) })}</Text>
+      <View style={styles.row} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        {letters.map((letter, index) => (
+          <View key={weeks[0][index]} style={styles.cell}>
+            <Text style={[styles.letter, { color: colors.inkDim }]}>{letter}</Text>
+          </View>
+        ))}
+      </View>
       {weeks.map((week) => (
         <View key={week[0]} style={styles.row}>
           {week.map((iso) => {
@@ -69,6 +85,14 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
           })}
         </View>
       ))}
+      <View style={styles.key}>
+        {key.map((item) => (
+          <View key={item.id} style={styles.keyItem}>
+            <View style={[styles.dot, { backgroundColor: item.color, opacity: item.dim ? 0.35 : 1 }]} />
+            <Text style={[styles.keyText, { color: colors.inkSoft }]}>{item.label}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   )
 }
@@ -84,4 +108,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 2 },
   cell: { flex: 1, alignItems: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  letter: { fontFamily: fonts.mono, fontSize: 10 },
+  key: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4, marginTop: 6 },
+  keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  keyText: { fontFamily: fonts.ui, fontSize: 11 },
 })

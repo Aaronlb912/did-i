@@ -31,6 +31,8 @@ export function BoardShell({
   scroll = true,
   // Add forms: no page title at all; the card says what it is.
   noTitle = false,
+  // Optional ref that gets the page's scroll view, for a form that scrolls a field into view.
+  scrollHandle,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
@@ -108,7 +110,10 @@ export function BoardShell({
   const inner = scroll ? (
     <KeyboardAvoidingView style={styles.scroll} behavior="padding">
       <Animated.ScrollView
-        ref={scrollRef}
+        ref={(node) => {
+          scrollRef.current = node
+          if (scrollHandle) scrollHandle.current = node
+        }}
         onLayout={onScrollLayout}
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}

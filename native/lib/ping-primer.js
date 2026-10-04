@@ -1,3 +1,4 @@
+import { Linking } from 'react-native'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
@@ -75,4 +76,21 @@ export async function offerPingPrimer(askAfter, colors) {
 // First run, just past sign-in, so nobody has to go looking for it.
 export function offerFirstPingPrimer(colors) {
   return showPrimer({ title: t('notify.firstTitle'), body: t('notify.firstBody'), colors })
+}
+
+// A Turn on tap where the phone has notifications off. Asks if it still can;
+// once the phone has said no, only its settings can undo that.
+export async function askPingsNow(colors) {
+  const state = await checkPings().catch(() => 'missing')
+  if (state === 'denied') {
+    Linking.openSettings().catch(() => {})
+    return state
+  }
+  const next = await requestPings().catch(() => 'denied')
+  listen?.(next)
+  if (next === 'granted') {
+    Promise.resolve(armLampPings(readShelf().boards)).catch(() => {})
+    offerExactAlarms(colors).catch(() => {})
+  }
+  return next
 }
