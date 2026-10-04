@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import {
   AppState,
   Keyboard,
@@ -864,6 +865,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     window.addEventListener('did-i-back', onBack)
     return () => window.removeEventListener('did-i-back', onBack)
   }, [editing])
+
+  // The iPhone edge swipe can't be asked about, so it is off while there are
+  // unsaved changes. Add keeps its swipe.
+  const navigation = useNavigation()
+  useEffect(() => {
+    navigation.setOptions?.({ gestureEnabled: !dirty })
+    return () => navigation.setOptions?.({ gestureEnabled: true })
+  }, [dirty, navigation])
 
   // The keyboard would cover the ideas and schedule under the card. Once it is
   // up, scroll so the question and the ideas right under it stay in sight.

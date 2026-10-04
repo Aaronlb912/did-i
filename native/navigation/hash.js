@@ -132,13 +132,10 @@ function go(route) {
     )
     return
   }
-  // Already in the stack: go back to it, the same as the web trims its history.
+  // Already on it: stay. Anything else opens fresh, so back always
+  // retraces the path you took.
   const key = routeKey(route)
-  const at = routes.findIndex((screen) => routeKey(routeFromScreen(screen)) === key)
-  if (at >= 0) {
-    if (at < routes.length - 1) navigationRef.dispatch(StackActions.pop(routes.length - 1 - at))
-    return
-  }
+  if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) return
   const move = swapping && routes.length > 1 ? StackActions.replace : StackActions.push
   navigationRef.dispatch(move(route.path, paramsOf(route)))
 }
