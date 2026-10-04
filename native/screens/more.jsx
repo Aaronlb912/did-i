@@ -307,7 +307,7 @@ export function LaterScreen({ book, now }) {
           </View>
         ))
       )}
-      <DidButton colors={colors} label={t('later.tonightBtn')} onPress={() => goHash('/tonight')} />
+      <DidButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
       <KeyButton colors={colors} label={t('tonight.add')} onPress={() => goHash('/add')} />
     </ScreenShell>
   )
@@ -407,7 +407,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-      <StreakHero colors={colors} n={counts.heat} label={t('stats.nightsOn')} />
+      <StreakHero colors={colors} n={counts.heat} label={t('home.streak')} />
       <View style={styles.tiles}>
         <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
         <NumberTile colors={colors} label={t('stats.did')} n={counts.did} />
@@ -722,7 +722,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         </SetCard>
       )}
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
-      <KeyButton colors={colors} label={t('boards.tonight')} onPress={() => goHash('/tonight')} />
+      <KeyButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
       <KeyButton colors={colors} label={t('boards.calendar')} onPress={() => goHash('/calendar')} />
       <KeyButton colors={colors} label={t('feed.title')} onPress={() => goHash('/feed')} />
       <KeyButton colors={colors} label={t('boards.stats')} onPress={() => goHash('/stats')} />
