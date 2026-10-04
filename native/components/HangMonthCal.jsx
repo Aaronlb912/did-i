@@ -59,11 +59,15 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
   const col = cell > 0 ? { width: cell, height: 18 } : { width: '14.28%' }
   const dayBox = cell > 0 ? { width: cell, height: cell } : { width: '14.28%', height: 40 }
 
+  // Once a month picks a day number, not a date: a plain 1 to 31 grid, no
+  // month, weekdays or today ring.
+  const monthly = mode === 'monthly'
+  const nights = monthly
+    ? Array.from({ length: 31 }, (_, i) => ({ key: `d${i + 1}`, dayNum: i + 1, iso: '', isToday: false }))
+    : view.nights
+
   function isPick(night) {
-    if (mode === 'monthly') {
-      if (value === 'last') return Number(night.dayNum) === view.lastDay
-      return Number(night.dayNum) === Number(value)
-    }
+    if (monthly) return value !== 'last' && Number(night.dayNum) === Number(value)
     return night.iso === value
   }
 
@@ -78,6 +82,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
 
   return (
     <View style={styles.wrap}>
+      {monthly ? null : (
       <View style={styles.head}>
         <Pressable onPress={() => setMonthShift((n) => n - 1)} hitSlop={8}>
           <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
@@ -87,11 +92,12 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
           <Text style={[styles.shift, { color: colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
+      )}
       <View style={styles.grid} onLayout={onGrid}>
-        {dows.map((day, i) => (
+        {monthly ? null : dows.map((day, i) => (
           <Text key={`dow-${i}`} style={[styles.dow, col, { color: colors.inkDim }]}>{day}</Text>
         ))}
-        {view.nights.map((night) =>
+        {nights.map((night) =>
           night.pad ? (
             <View key={night.key} style={dayBox} />
           ) : (
