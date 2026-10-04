@@ -5,6 +5,10 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## App PIN
+
+- **No way back from a forgotten PIN.** The PIN is a hash on the phone; the only reset is clearing the app's data, which also clears an unsynced shelf. A "Forgot PIN" that re-checks sign-in (for signed-in people) would cover most cases.
+
 ## Did you links and sends from Did I (branch `did-you-links`)
 
 - **Links**: "Share as a link" on the send sheet makes did-i.app/d/CODE (20 a day). Opening it on a phone needs the next native build for the Android `/d/` App Link and the updated AASA on the site; didi://d/CODE and the page's Open button work over the air. Not tried on a phone yet.
