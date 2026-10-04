@@ -1335,7 +1335,7 @@ export const en = {
   'cadence.weekly': 'Weekly',
   'cadence.monthly': 'Monthly',
   'cadence.monthlyLast': 'Last day of the month',
-  'cadence.monthlyOn': 'Monthly on the {day}',
+  'cadence.monthlyOn': 'Monthly on day {day}',
   'cadence.once': 'Once',
   'cadence.onceOn': 'Once on {date}',
   'cadence.onceBy': 'Due by {date}',

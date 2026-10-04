@@ -1349,7 +1349,7 @@ export const de = {
   'cadence.weekly': 'Wöchentlich',
   'cadence.monthly': 'Monatlich',
   'cadence.monthlyLast': 'Letzter Tag des Monats',
-  'cadence.monthlyOn': 'Monatlich am {day}',
+  'cadence.monthlyOn': 'Monatlich am {day}.',
   'cadence.once': 'Nur einmal',
   'cadence.onceOn': 'Einmal am {date}',
   'cadence.onceBy': 'Bis {date}',
