@@ -1244,7 +1244,7 @@ export const zh = {
   'pings.on': '提醒已开启',
   'pings.state.on': 'Ping 已开',
   'pings.state.blocked': 'Ping 被阻止',
-  'pings.state.ask': '到期时提醒',
+  'pings.state.ask': '开启通知',
   'pings.noBrowser': '此浏览器无法通知你。',
   'pings.waitingTonight': '今晚还在等',
   'pings.emptyTonight': '今晚没有还在等具体时间的了。',

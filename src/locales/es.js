@@ -1279,7 +1279,7 @@ export const es = {
   'pings.on': 'Los avisos están activos',
   'pings.state.on': 'Avisos activos',
   'pings.state.blocked': 'Avisos bloqueados',
-  'pings.state.ask': 'Avisar cuando toque',
+  'pings.state.ask': 'Activar notificaciones',
   'pings.noBrowser': 'Este navegador no puede avisarte.',
   'pings.waitingTonight': 'Aún en espera esta noche',
   'pings.emptyTonight': 'Nada queda esperando una hora esta noche.',

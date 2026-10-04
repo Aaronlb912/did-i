@@ -1276,7 +1276,7 @@ export const it = {
   'pings.on': 'I promemoria sono attivi',
   'pings.state.on': 'Ping attivi',
   'pings.state.blocked': 'Ping bloccati',
-  'pings.state.ask': 'Ricordami quando scade',
+  'pings.state.ask': 'Attiva le notifiche',
   'pings.noBrowser': 'Questo browser non può avvisarti.',
   'pings.waitingTonight': 'Ancora in attesa stasera',
   'pings.emptyTonight': 'Stasera non resta nulla in attesa di un orario.',

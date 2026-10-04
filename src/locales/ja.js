@@ -1247,7 +1247,7 @@ export const ja = {
   'pings.on': 'リマインダーはオン',
   'pings.state.on': 'Ping オン',
   'pings.state.blocked': 'Ping ブロック',
-  'pings.state.ask': '期限になったら知らせる',
+  'pings.state.ask': '通知をオンにする',
   'pings.noBrowser': 'このブラウザは知らせない。',
   'pings.waitingTonight': '今夜まだ待ち',
   'pings.emptyTonight': '今夜、時刻待ちのものはない。',

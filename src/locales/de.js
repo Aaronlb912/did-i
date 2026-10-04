@@ -1288,7 +1288,7 @@ export const de = {
   'pings.on': 'Erinnerungen sind an',
   'pings.state.on': 'Pings an',
   'pings.state.blocked': 'Pings blockiert',
-  'pings.state.ask': 'Erinnern, wenn es fällig ist',
+  'pings.state.ask': 'Mitteilungen einschalten',
   'pings.noBrowser': 'Dieser Browser kann dich nicht tippen.',
   'pings.waitingTonight': 'Heute Nacht noch wartend',
   'pings.emptyTonight': 'Heute Nacht wartet nichts mehr auf eine Uhrzeit.',
