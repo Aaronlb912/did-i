@@ -37,6 +37,7 @@ import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
+import { LegalPlain } from './screens/LegalScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { reportRejection } from '../src/lib/report.js'
@@ -170,10 +171,14 @@ export function AppShell() {
   }, [clearMark, mark])
   const account = useAccount()
   const colors = useHallColors(app.book)
-  const gated = authGated(route.path, account)
+  // Terms and privacy before sign-in open over sign-in, not in the navigator,
+  // which is not there yet.
+  const legalOut = (route.path === '/terms' || route.path === '/privacy') && authGated('/', account)
+  const gated = legalOut || authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
+  const leaveLegal = useCallback(() => goHash('/enter'), [])
   const askPings = useCallback(async () => {
     // Once the phone has said no it will not ask again; only its settings can undo that.
     if (pingState === 'denied') {
@@ -302,6 +307,10 @@ export function AppShell() {
     }),
     [colors],
   )
+
+  if (legalOut) {
+    return <LegalPlain kind={route.path === '/privacy' ? 'privacy' : 'terms'} colors={colors} onBack={leaveLegal} />
+  }
 
   if (gated) {
     return (

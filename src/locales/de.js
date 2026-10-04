@@ -2393,7 +2393,7 @@ export const de = {
   'friend.didYouHint': 'Frag {name}, ob etwas erledigt ist.',
   'friend.startDidWe': 'Did we starten',
   'friend.sendDidYou': 'Did you senden',
-  'help.phonePApp': 'Melde dich unter Konto mit E-Mail an. Deine Fragen, Antworten, Serie, Münzen und Edelsteine folgen dem Konto zwischen diesem Handy und did-i.app. Tippe auf Konto auf Jetzt synchronisieren, wenn zwei Bildschirme nicht übereinstimmen. In den Einstellungen gibt es auch eine Kopie, eine Zahlensperre und Erinnerungen.',
+  'help.phonePApp': 'Melde dich unter Konto mit E-Mail an. Deine Fragen, Antworten, Serie, Münzen und Edelsteine folgen dem Konto zwischen diesem Handy und did-i.app. Tippe unter Konto auf Jetzt synchronisieren, wenn zwei Bildschirme nicht übereinstimmen. Unter Konto gibt es auch eine Zahlensperre; in den Einstellungen eine Kopie und Erinnerungen.',
   'friend.tabWe': 'Zusammen · {n}',
   'friend.tabMine': 'Von dir · {n}',
   'friend.tabTheirs': 'An dich · {n}',

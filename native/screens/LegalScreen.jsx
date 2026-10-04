@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { useEffect } from 'react'
+import { BackHandler, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PRIVACY_SECTIONS, TERMS_SECTIONS } from '../../src/lib/legal-sections.js'
 import { legalVars } from '../../src/lib/legal.js'
 import { inEnglish, t } from '../../src/lib/i18n.js'
@@ -53,7 +55,43 @@ export function LegalScreen({ kind, book }) {
   )
 }
 
+// Before sign-in there is no navigator, so the terms open here, plain, with
+// Back (and the phone's back) returning to sign-in.
+export function LegalPlain({ kind, colors, onBack }) {
+  const insets = useSafeAreaInsets()
+  const sections = kind === 'privacy' ? PRIVACY_SECTIONS : TERMS_SECTIONS
+  const vars = { ...legalVars(), date: t('legal.date') }
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack()
+      return true
+    })
+    return () => sub.remove()
+  }, [onBack])
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{ padding: 20, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }}
+    >
+      <View style={styles.actions}>
+        <KeyButton colors={colors} label={t('nav.back')} onPress={onBack} />
+      </View>
+      <Text style={[styles.title, { color: colors.ink }]}>{t(`legal.${kind}.title`)}</Text>
+      <Meta colors={colors}>{t('legal.effective', vars)}</Meta>
+      <Meta colors={colors}>{t('legal.notLawyer')}</Meta>
+      {inEnglish() ? null : <Meta colors={colors}>{t('legal.translated')}</Meta>}
+      {sections.map((id) => (
+        <Section key={id} kind={kind} id={id} vars={vars} colors={colors} />
+      ))}
+      <View style={styles.actions}>
+        <DidButton colors={colors} label={t('nav.back')} small onPress={onBack} />
+      </View>
+    </ScrollView>
+  )
+}
+
 const styles = StyleSheet.create({
+  title: { fontFamily: fonts.display, fontSize: 30, fontWeight: '700', marginTop: 16, marginBottom: 4 },
   block: { marginTop: 20, gap: 8 },
   h2: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   p: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },

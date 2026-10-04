@@ -2381,7 +2381,7 @@ export const es = {
   'friend.didYouHint': 'Pregunta a {name} si hizo algo.',
   'friend.startDidWe': 'Empezar un Did we',
   'friend.sendDidYou': 'Enviar un Did you',
-  'help.phonePApp': 'Inicia sesión en Cuenta con tu correo. Tus preguntas, respuestas, racha, monedas y gemas siguen a la cuenta entre este teléfono y did-i.app. Toca Sincronizar ahora en Cuenta si dos pantallas no coinciden. Ajustes también tiene una copia, un bloqueo con número y recordatorios.',
+  'help.phonePApp': 'Inicia sesión en Cuenta con tu correo. Tus preguntas, respuestas, racha, monedas y gemas siguen a la cuenta entre este teléfono y did-i.app. Toca Sincronizar ahora en Cuenta si dos pantallas no coinciden. Cuenta también tiene un bloqueo numérico; Ajustes tiene una copia y recordatorios.',
   'friend.tabWe': 'Juntos · {n}',
   'friend.tabMine': 'Enviados · {n}',
   'friend.tabTheirs': 'Para ti · {n}',

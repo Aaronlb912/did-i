@@ -2292,7 +2292,7 @@ export const zh = {
   'friend.didYouHint': '问 {name} 有没有做。',
   'friend.startDidWe': '开始 Did we',
   'friend.sendDidYou': '发送 Did you',
-  'help.phonePApp': '在账户里用邮箱登录。你的问题、回答、连续记录、金币和宝石会随账户在这部手机和 did-i.app 之间同步。如果两个屏幕不一致，在账户里点立即同步。设置里还有备份、数字锁和提醒。',
+  'help.phonePApp': '在账户里用邮箱登录。你的问题、回答、连续记录、金币和宝石会随账户在这部手机和 did-i.app 之间同步。两个屏幕不一致时，在账户里点立即同步。账户里还有数字锁，设置里有备份和提醒。',
   'friend.tabWe': 'Did we · {n}',
   'friend.tabMine': '已发 · {n}',
   'friend.tabTheirs': '收到 · {n}',

@@ -2372,7 +2372,7 @@ export const it = {
   'friend.didYouHint': 'Chiedi a {name} se l\'ha fatto.',
   'friend.startDidWe': 'Inizia un Did we',
   'friend.sendDidYou': 'Invia un Did you',
-  'help.phonePApp': 'Accedi in Account con l\'email. Domande, risposte, serie, monete e gemme seguono l\'account tra questo telefono e did-i.app. Tocca Sincronizza ora in Account se due schermi non coincidono. Nelle impostazioni trovi anche una copia, un blocco con codice e i promemoria.',
+  'help.phonePApp': 'Accedi in Account con l\'email. Domande, risposte, serie, monete e gemme seguono l\'account tra questo telefono e did-i.app. Tocca Sincronizza ora in Account se due schermi non coincidono. In Account c\'è anche un blocco con codice; nelle Impostazioni una copia e i promemoria.',
   'friend.tabWe': 'Insieme · {n}',
   'friend.tabMine': 'Inviati · {n}',
   'friend.tabTheirs': 'Per te · {n}',

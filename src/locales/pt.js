@@ -2372,7 +2372,7 @@ export const pt = {
   'friend.didYouHint': 'Pergunte a {name} se fez algo.',
   'friend.startDidWe': 'Começar um Did we',
   'friend.sendDidYou': 'Enviar um Did you',
-  'help.phonePApp': 'Entre em Conta com seu e-mail. Suas perguntas, respostas, sequência, moedas e gemas acompanham a conta entre este celular e did-i.app. Toque em Sincronizar agora em Conta se duas telas não baterem. Ajustes também tem uma cópia, um bloqueio por número e lembretes.',
+  'help.phonePApp': 'Entre em Conta com seu e-mail. Suas perguntas, respostas, sequência, moedas e gemas acompanham a conta entre este celular e did-i.app. Toque em Sincronizar agora em Conta se duas telas não baterem. Conta também tem um bloqueio por número; Ajustes tem uma cópia e lembretes.',
   'friend.tabWe': 'Juntos · {n}',
   'friend.tabMine': 'Enviados · {n}',
   'friend.tabTheirs': 'Para você · {n}',
