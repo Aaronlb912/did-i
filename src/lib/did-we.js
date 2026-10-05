@@ -7,6 +7,7 @@ import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
+import { weDueOn, weNextDue, weNextLabel } from './we-next.js'
 
 // Did we: one question two or more people answer together. The server
 // (supabase/did-we.sql) decides what counts as done and what each person may
@@ -94,6 +95,7 @@ export async function weEdit(card, { question, mode, shows, cadence, weekdays, g
   if (!db) return { miss: 'off' }
   const text = String(question || '').trim()
   if (!text) return { miss: 'we.missBlank' }
+  if (cadence === 'weekly' && !(weekdays || []).length) return { miss: 'we.missDays' }
   const { error } = await db.rpc('we_edit', {
     card,
     want_question: text.slice(0, 200),
@@ -233,6 +235,8 @@ export async function weKnownPeople() {
 export const weAsk = (card, other) => call('we_ask', { card, other })
 export const weReply = (card, yes) => call('we_reply', { card, yes })
 export const weLeave = (card) => call('we_leave', { card })
+// Only the maker can close it; the server checks.
+export const weClose = (card) => call('we_close', { card })
 // Filed in reports with the question; nothing is sent to anyone.
 export const reportWe = (card, why = '') => call('report_we', { card, why })
 export const weNudge = (card, other, night = tonightIso()) => call('we_nudge', { card, other, on_night: night })
@@ -267,10 +271,12 @@ export function weNextNight(card, night = tonightIso()) {
   return ''
 }
 
-export function weDueOn(card, night) {
-  if (night < String(card.startsOn || '')) return false
-  if (card.cadence !== 'weekly') return true
-  return (card.weekdays || []).includes(new Date(`${night}T12:00:00`).getDay())
+export { weDueOn }
+
+// "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
+export function weNotTonightLine(card, locale, night = tonightIso()) {
+  const next = weNextLabel(weNextDue(card, night), locale)
+  return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
 }
 
 // The run of due nights done together, ending tonight, or last night while

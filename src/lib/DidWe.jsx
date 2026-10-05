@@ -16,6 +16,8 @@ import {
   weGoal,
   weKnownPeople,
   weLeave,
+  weClose,
+  weNotTonightLine,
   weMake,
   noteAsked,
   reportWe,
@@ -29,6 +31,7 @@ import {
   weTonight,
   weWaiting,
 } from './did-we.js'
+import { readPrefs } from './prefs.js'
 import { clockWords } from './hall-pages.js'
 import { shelfTopics } from './board-json.js'
 import { readShelf } from './board-shelf.js'
@@ -289,7 +292,7 @@ export function WeList() {
               <WeFaces card={card} cheer={cheer} />
               <em>
                 {card.folder ? `${card.folder} · ` : ''}
-                {card.due ? weStatusLine(card) : t('we.notTonight')}
+                {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
                 {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
                 {goal ? ` · ${t('we.goalLine', { n: goal.done, goal: goal.goal })}` : ''}
               </em>
@@ -676,7 +679,7 @@ export function WeHome({ book, onChange }) {
               <WeFaces card={card} />
               <em>
                 {card.folder ? `${card.folder} · ` : ''}
-                {card.due ? weStatusLine(card) : t('we.notTonight')}
+                {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
                 {weStreak(card) > 0 ? ` · ${t('we.streak', { n: weStreak(card) })}` : ''}
               </em>
             </button>
@@ -731,6 +734,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const [asking, setAsking] = useState([])
   const [sure, setSure] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
@@ -806,11 +810,18 @@ function WeCardPage({ book, cardId, onChange }) {
     goHash('/tonight')
   }
 
+  async function close() {
+    setClosing(false)
+    const out = await weClose(card.id)
+    if (out.miss) return setMiss(tMiss(out.miss))
+    goHash('/we')
+  }
+
   return (
     <Shell book={book} title={t('we.title')}>
       <h2 className="di-page-title">{card.question}</h2>
       <WeFaces card={card} cheer={cheer} />
-      <p className="di-set-note">{card.due ? weStatusLine(card) : t('we.notTonight')}</p>
+      <p className="di-set-note">{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</p>
       <p className="di-set-note">
         {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
         {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
@@ -938,6 +949,21 @@ function WeCardPage({ book, cardId, onChange }) {
             </button>
           </div>
         </div>
+      ) : closing ? (
+        <div className="di-we-sure" role="alertdialog" aria-label={t('we.closeTitle')}>
+          <p>
+            <strong>{t('we.closeTitle')}</strong>
+          </p>
+          <p className="di-set-note">{t('we.closeBody')}</p>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" onClick={close}>
+              {t('we.close')}
+            </button>
+            <button className="di-key" type="button" onClick={() => setClosing(false)}>
+              {t('settings.neverMind')}
+            </button>
+          </div>
+        </div>
       ) : reporting ? (
         <div className="di-we-sure" role="alertdialog" aria-label={t('we.reportTitle')}>
           <p>
@@ -968,6 +994,11 @@ function WeCardPage({ book, cardId, onChange }) {
           <button className="di-key" type="button" onClick={() => setSure(true)}>
             {t('we.leave')}
           </button>
+          {card.mine ? (
+            <button className="di-key" type="button" onClick={() => setClosing(true)}>
+              {t('we.close')}
+            </button>
+          ) : null}
           <button className="di-key" type="button" onClick={() => setReporting(true)}>
             {t('we.report')}
           </button>

@@ -1125,7 +1125,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 }
 
 // Pushes come from the server, which reads these switches from the synced prefs.
-const PUSH_KINDS = new Set(['sends', 'cheers', 'friends', 'family', 'didi'])
+const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
 
 function PingKinds({ colors, on }) {
   const prefs = usePrefs()
