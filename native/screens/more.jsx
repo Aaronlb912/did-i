@@ -85,6 +85,7 @@ import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid } from '../components/CalendarGrid.jsx'
@@ -1455,9 +1456,11 @@ function AccountSignedIn({ book, email, onChange }) {
   const purse = normalizePurse(book)
   const myAvatar = useMyAvatar()
   const [nameDraft, setNameDraft] = useState(book?.keeperName || keptProfileName())
-  const [devices, setDevices] = useState([])
+  const account = useAccount()
+  // Last launch's list shows while the fresh one loads.
+  const [devices, setDevices] = useKept(`account.devices:${account.user?.id}`, [], KEEP)
   // Until the list comes back, say nothing rather than "only this phone".
-  const [devicesIn, setDevicesIn] = useState(false)
+  const [devicesIn, setDevicesIn] = useKept(`account.devicesIn:${account.user?.id}`, false, KEEP)
   const [sure, setSure] = useState(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMiss, setPhotoMiss] = useState('')

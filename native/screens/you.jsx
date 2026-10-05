@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Keyboard, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
-import { noteAsked, weKnownPeople } from '../../src/lib/did-we.js'
+import { noteAsked } from '../../src/lib/did-we.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { sendDidI } from '../../src/lib/people.js'
 import { makeDidYouLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
@@ -18,6 +18,7 @@ import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { Pill, useAddFeel } from './questions.jsx'
+import { usePeople } from './we.jsx'
 
 // Did you: ask a friend or someone in your family if they did something.
 // Laid out like the Add screen, and reached from it by tapping "Did I".
@@ -39,7 +40,7 @@ export function DidYouScreen({ book, start = '', withId = '', onBlankChange, onL
 function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const colors = useHallColors(book)
   const inputRef = useRef(null)
-  const [people, setPeople] = useState(null)
+  const people = usePeople()
   const [blank, setBlank] = useState(start)
   const [to, setTo] = useState(withId)
   const [note, setNote] = useState('')
@@ -59,14 +60,6 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const person = (people || []).find((p) => p.id === to)
   const repeat = repeatFrom(cadence, days)
   const ready = Boolean(question) && Boolean(to) && !busy && !done
-
-  useEffect(() => {
-    let alive = true
-    weKnownPeople().then((rows) => alive && setPeople(rows))
-    return () => {
-      alive = false
-    }
-  }, [])
 
   function fold(id) {
     feel.ease()
