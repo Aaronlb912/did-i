@@ -260,6 +260,32 @@ export async function joinWeLink(code, addFriend = false) {
   return { card: data?.card || '' }
 }
 
+// A Did we link opened on the website while signed out. Kept until sign-in,
+// then the web app takes it back to the join page (src/App.jsx).
+const WE_WEB_KEY = 'did-i-we-link-web'
+
+export function saveWebWeLink(code) {
+  const clean = cleanCode(code)
+  if (clean.length !== 12) return
+  try {
+    localStorage.setItem(WE_WEB_KEY, clean)
+  } catch {
+    // Without storage they open the link again after signing in.
+  }
+}
+
+export function takeWebWeLink() {
+  try {
+    const code = cleanCode(localStorage.getItem(WE_WEB_KEY) || '')
+    localStorage.removeItem(WE_WEB_KEY)
+    return code.length === 12 ? code : ''
+  } catch {
+    return ''
+  }
+}
+
+export const WE_LINK_MISS = { gone: 'didYouLink.bad', full: 'weLink.full', blocked: 'weLink.blocked', cap: 'weLink.cap' }
+
 export async function makeWeLink(card) {
   const db = cloud()
   if (!db) return { code: '', miss: 'off' }

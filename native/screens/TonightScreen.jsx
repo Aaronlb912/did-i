@@ -63,10 +63,11 @@ import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
-import { WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { FriendsRow } from '../components/FriendsRow.jsx'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
+import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -161,7 +162,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     if (earned.length) onChange({ ...book, unlocked: [...(book.unlocked || []), ...earned] })
     // Someone else's did finished a card: play their cheer here, once.
     const [first, ...more] = takeWeFinishes(we.cards)
-    if (!first) return
+    if (!first) {
+      // You and someone else both said did: a small moment, once a night.
+      const both = takeWeBoth(we.cards)
+      if (both) {
+        showToast({
+          id: `we-both:${both.id}`,
+          kind: 'we',
+          cardId: both.id,
+          text: t(both.total > 2 ? 'we.allDid' : 'we.bothDid'),
+          ms: 3600,
+        })
+      }
+      return
+    }
     fireCheer(first.cheer, first.stage)
     showToast({
       id: `we-finish:${first.card.id}`,
@@ -825,6 +839,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <Slot>{face}</Slot>
         <Slot>
           <FamilyTonight colors={colors} />
+        </Slot>
+        <Slot>
+          <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
+        </Slot>
+        <Slot>
+          <FriendsRow colors={colors} />
         </Slot>
       </SwipeFlyHost>
       {answerBar}
