@@ -38,19 +38,22 @@ const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
 
-// Height of Home's Did and Nope row plus its gap.
-const ANSWER_BAR = 96
+// Home's header height below the status bar. The toast covers the count row
+// under it, the one strip of Home with nothing to tap.
+const HOME_TOP = 65
 
 /**
  * The one toast on screen, above the tab bar. The rest of the queue waits.
  */
 export function ToastHost({ colors }) {
   const items = useToastQueue()
-  const { overlayBottom: tabBottom } = useAppInsets()
-  // Home keeps Did and Nope at the bottom; the toast sits above them so a tap
-  // on Undo can never land on Nope underneath.
+  const { insets, overlayBottom: tabBottom } = useAppInsets()
+  // Home has answer buttons from the middle down (Did, Nope, Did it now), so a
+  // tap on Undo just as the toast leaves could answer a question. There the
+  // toast sits at the top instead.
   const homePath = useScreenRoute().path
-  const bottom = homePath === '/tonight' || homePath === '/' ? tabBottom + ANSWER_BAR : tabBottom
+  const onHome = homePath === '/tonight' || homePath === '/'
+  const place = onHome ? { top: insets.top + HOME_TOP } : { bottom: tabBottom }
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
   const [landed, setLanded] = useState('')
@@ -99,7 +102,7 @@ export function ToastHost({ colors }) {
   const item = live || shown
   const key = `${item.id}:${item.rev || 0}`
   return (
-    <View ref={layerRef} collapsable={false} pointerEvents="box-none" style={[styles.layer, { bottom }]}>
+    <View ref={layerRef} collapsable={false} pointerEvents="box-none" style={[styles.layer, place]}>
       <Toast
         key={key}
         item={item}
