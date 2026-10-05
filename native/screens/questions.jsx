@@ -87,6 +87,7 @@ import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
+import { useLayoutState } from '../lib/motion.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -380,14 +381,14 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
   const allRows = inHandOrder(taggedLamps(shelf, tagId))
-  const [deadlineOnly, setDeadlineOnly] = useState(false)
-  const [didYouOnly, setDidYouOnly] = useState(false)
+  const [deadlineOnly, setDeadlineOnly] = useLayoutState(false)
+  const [didYouOnly, setDidYouOnly] = useLayoutState(false)
   const [query, setQuery] = useState('')
   const rows = searchRows(allRows, query)
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
   const [topicPicks, setTopicPicks] = useState([])
-  const [picking, setPicking] = useState(false)
-  const [ordering, setOrdering] = useState(false)
+  const [picking, setPicking] = useLayoutState(false)
+  const [ordering, setOrdering] = useLayoutState(false)
   const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)

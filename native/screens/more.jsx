@@ -110,6 +110,7 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
+import { pressFx, animateNextLayout } from '../lib/motion.js'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -395,7 +396,7 @@ function NumberTile({ colors, label, n, onPress, third = false, half = false }) 
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      style={[styles.tile, third && styles.tileThird, half && styles.tileHalf, { backgroundColor: colors.panel, borderColor: colors.line }]}
+      style={({ pressed }) => [styles.tile, third && styles.tileThird, half && styles.tileHalf, { backgroundColor: colors.panel, borderColor: colors.line }, pressFx(pressed)]}
     >
       <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
@@ -1690,6 +1691,7 @@ function AccountSignedIn({ book, email, onChange }) {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      animateNextLayout()
       setDevices(rows)
       setDevicesIn(true)
     })

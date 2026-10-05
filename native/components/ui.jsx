@@ -3,6 +3,7 @@ import { FadeScroll } from './FadeScroll.jsx'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
+import { pressFx } from '../lib/motion.js'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
 
@@ -62,11 +63,12 @@ export function DidButton({ label, onPress, colors, small, disabled, dim, danger
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(off) }}
-      style={[
+      style={({ pressed }) => [
         styles.did,
         small && styles.didSmall,
         // danger: the red for actions that remove something.
         { backgroundColor: off ? colors.panel3 : danger ? colors.miss : colors.on },
+        pressFx(pressed),
       ]}
     >
       <Text style={[styles.didText, { color: off ? colors.inkDim : colors.bg }]}>{label}</Text>
@@ -83,13 +85,14 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
-      style={[
+      style={({ pressed }) => [
         styles.key,
         {
           borderColor: picked ? colors.onDeep : colors.line,
           backgroundColor: colors.panel2,
           opacity: disabled ? 0.5 : 1,
         },
+        pressFx(pressed),
       ]}
     >
       <Text style={[styles.keyText, { color: danger ? colors.miss : picked ? colors.on : colors.ink }]}>{label}</Text>
@@ -103,7 +106,7 @@ export function Row({ label, note, onPress, colors }) {
       accessibilityRole="button"
       onPress={onPress}
       android_ripple={ripple(`${colors.on}33`)}
-      style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.row, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
       {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
@@ -166,7 +169,7 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
         accessibilityState={{ selected: on }}
         onPress={() => onPick(item.id)}
         android_ripple={ripple(`${colors.on}33`)}
-        style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
+        style={({ pressed }) => [styles.chip, { borderColor: on ? colors.onDeep : colors.line }, pressFx(pressed)]}
       >
         <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
       </Pressable>

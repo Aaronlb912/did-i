@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
+import { useLayoutState } from '../lib/motion.js'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -35,7 +36,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
   const prefs = usePrefs()
   const todayIso = boardDate(now, dayFoldHour)
   const todayDate = parseIsoDate(todayIso) || now
-  const [monthShift, setMonthShift] = useState(0)
+  const [monthShift, setMonthShift] = useLayoutState(0)
 
   const view = useMemo(() => {
     const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)

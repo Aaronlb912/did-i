@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { pressFx, useFadeIn } from '../lib/motion.js'
 
 const SHOWN = 6
 
@@ -25,6 +26,9 @@ export function FriendsRow({ colors, cheer = null }) {
     return off
   }, [account.user])
 
+  const fade = useFadeIn(Boolean(account.user && people.length))
+  const cheerFade = useFadeIn(Boolean(cheer))
+
   if (!account.user || !people.length) return null
   const props = buildTogetherWidgetProps(people)
   // Done first here: the row is a nudge that others are already there.
@@ -34,12 +38,13 @@ export function FriendsRow({ colors, cheer = null }) {
   const tint = colors.we || colors.on
 
   return (
+    <Animated.View style={{ opacity: fade }}>
     <Pressable
       onPress={() => goHash('/people')}
       accessibilityRole="button"
       accessibilityLabel={`${props.title}: ${props.countLine}`}
       hitSlop={6}
-      style={[styles.wrap, { borderColor: colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.wrap, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       <View style={styles.faces}>
         {shown.map((p) => (
@@ -64,17 +69,20 @@ export function FriendsRow({ colors, cheer = null }) {
         {props.countLine}
       </Text>
       {cheer ? (
+        <Animated.View style={{ opacity: cheerFade }}>
         <Pressable
           onPress={() => goHash('/friend', { id: cheer.id })}
           accessibilityRole="button"
           accessibilityLabel={t('home.friendNotDone', { name: cheer.name || t('people.someone') })}
           hitSlop={8}
-          style={[styles.cheer, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+          style={({ pressed }) => [styles.cheer, { backgroundColor: colors.panel2, borderColor: colors.line }, pressFx(pressed)]}
         >
           <Text style={[styles.cheerText, { color: colors.on }]}>{t('home.cheerGo')}</Text>
         </Pressable>
+        </Animated.View>
       ) : null}
     </Pressable>
+    </Animated.View>
   )
 }
 

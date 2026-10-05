@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { answerFor, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
+import { useLayoutState } from '../lib/motion.js'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -46,7 +47,7 @@ function cellColor(state, colors) {
 
 /** A small month calendar under the recent nights, back to the month the question was made. */
 export function LampMonth({ book, lamp, colors, dateIso }) {
-  const [back, setBack] = useState(0)
+  const [back, setBack] = useLayoutState(0)
   const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp?.createdOn || '')) ? lamp.createdOn : dateIso
   const { y, m } = monthOf(dateIso, back)
   const first = monthOf(made, 0)

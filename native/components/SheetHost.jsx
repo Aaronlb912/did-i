@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Animated, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { MOTION_MS, easeOut } from '../lib/motion.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
@@ -57,8 +59,34 @@ export function offerMoreGems(colors) {
 }
 
 export function SheetHost() {
-  const [sheet, setSheet] = useState(current)
+  const [next, setSheet] = useState(current)
   const [live, setLive] = useState(false)
+  const reduce = useReduceMotion()
+  // The last sheet stays drawn while it slides out, then unmounts.
+  const [sheet, setShown] = useState(current)
+  const fade = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (next?.title) {
+      setShown(next)
+      fade.stopAnimation()
+      if (reduce) fade.setValue(1)
+      else Animated.timing(fade, { toValue: 1, duration: MOTION_MS, easing: easeOut, useNativeDriver: true }).start()
+      return undefined
+    }
+    if (reduce) {
+      fade.setValue(0)
+      setShown(null)
+      return undefined
+    }
+    let alive = true
+    Animated.timing(fade, { toValue: 0, duration: 160, easing: easeOut, useNativeDriver: true }).start(() => {
+      if (alive) setShown(null)
+    })
+    return () => {
+      alive = false
+    }
+  }, [next, reduce, fade])
 
   useEffect(() => {
     listen = (next) => {
@@ -72,28 +100,31 @@ export function SheetHost() {
   }, [])
 
   useEffect(() => {
-    if (!sheet) return undefined
+    if (!next) return undefined
     const timer = setTimeout(() => setLive(true), 280)
     return () => clearTimeout(timer)
-  }, [sheet])
+  }, [next])
 
   // Android back closes the sheet, like tapping outside.
   useEffect(() => {
-    if (!sheet?.title) return undefined
+    if (!next?.title) return undefined
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      sheet.onClose?.()
+      next.onClose?.()
       return true
     })
     return () => sub.remove()
-  }, [sheet])
+  }, [next])
 
   if (!sheet?.title || !sheet.colors) return null
   const colors = sheet.colors
+  const closing = !next?.title
+  const lift = fade.interpolate({ inputRange: [0, 1], outputRange: [24, 0] })
 
   return (
-    <View style={styles.host} pointerEvents="box-none">
+    <View style={styles.host} pointerEvents={closing ? 'none' : 'box-none'}>
       {/* The veil always takes taps, so a quick tap as a sheet pops up never
           lands on Did or Nope behind it. It only closes the sheet once live. */}
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
       <Pressable
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]}
         onPress={() => {
@@ -102,7 +133,14 @@ export function SheetHost() {
         accessibilityRole="button"
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
-      <View style={[styles.pop, sheet.center && styles.popCenter, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.pop,
+          sheet.center && styles.popCenter,
+          { backgroundColor: colors.panel, borderColor: colors.line, opacity: fade, transform: [{ translateY: reduce ? 0 : lift }] },
+        ]}
+      >
         {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
@@ -141,7 +179,7 @@ export function SheetHost() {
             <Text style={[styles.footText, { color: colors.inkDim }]}>{sheet.footLabel}</Text>
           </Pressable>
         ) : null}
-      </View>
+      </Animated.View>
     </View>
   )
 }

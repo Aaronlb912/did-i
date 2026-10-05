@@ -4,10 +4,11 @@ import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { useLayoutState } from '../lib/motion.js'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
-  const [weekShift, setWeekShift] = useState(0)
+  const [weekShift, setWeekShift] = useLayoutState(0)
   useEffect(() => {
     setWeekShift(0)
   }, [tagId])
