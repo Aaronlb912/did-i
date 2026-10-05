@@ -762,6 +762,16 @@ export async function takeBack(id) {
   return error ? bad(error) : { miss: '' }
 }
 
+// New words for a Did you you sent. Only while they have not answered it;
+// the server says no after that (supabase/hardening.sql edit_send).
+export async function editSend(id, question) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('edit_send', { send: id, question })
+  if (error) return /duplicate/i.test(error.message || '') ? { miss: 'sent.editSame' } : bad(error)
+  return data ? { miss: '' } : { miss: 'sent.editAnswered' }
+}
+
 // The last few nights on a family tag, for everyone in it.
 export async function familyHistory(familyId, nights) {
   const db = cloud()

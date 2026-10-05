@@ -3390,6 +3390,24 @@ test('a Did you link reads back from the page, the Open button, a copied line an
   assert.equal(sharedDidYouLine('get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23', 'the Did you lead comes back')
 })
 
+test('a sent Did you edits only while it waits, a stopped link says so', async () => {
+  const { canEditSent, cleanSentEdit, deadLinkKey } = await import('../src/lib/did-you-links.js')
+  assert.equal(canEditSent({ kind: 'todo', state: 'sent' }), true)
+  assert.equal(canEditSent({ kind: 'todo', state: 'kept' }), false, 'answered: no edit')
+  assert.equal(canEditSent({ kind: 'cheer', state: 'sent' }), false, 'a cheer has no words to edit')
+  assert.equal(canEditSent(null), false)
+  assert.deepEqual(cleanSentEdit('  call mom  '), { text: 'call mom', miss: '' })
+  assert.equal(cleanSentEdit('   ').miss, 'sent.editBlank')
+  assert.equal(cleanSentEdit('x'.repeat(201)).miss, 'sent.editLong')
+  assert.equal(cleanSentEdit('x'.repeat(200)).miss, '')
+  assert.equal(deadLinkKey(true), 'didYouLink.stopped')
+  assert.equal(deadLinkKey(false), 'didYouLink.bad')
+  const sql = readFileSync(path.join(checkRoot, 'supabase/did-you-links.sql'), 'utf8')
+  assert.ok(/end_did_you_link[\s\S]*l\.made_by = me/.test(sql), 'only the maker stops a link')
+  const hard = readFileSync(path.join(checkRoot, 'supabase/hardening.sql'), 'utf8')
+  assert.ok(/edit_send[\s\S]*s\.from_id = me and s\.state = 'sent'/.test(hard), 'only the sender edits, only while it waits')
+})
+
 test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {
   const { didYouCodeFromPath, scanFromPath } = await import('../src/site/path.js')
   assert.equal(didYouCodeFromPath('/d/ABCDEFGH23'), 'abcdefgh23')
