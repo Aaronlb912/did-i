@@ -1,6 +1,6 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
-import { ACCESSORY_IDS, accessoriesForSale, accessoryById, normalizeWorn } from './accessories.js'
+import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -338,6 +338,7 @@ export function normalizePurse(book) {
     cheerStages: stages,
     cheerPlayStages,
     friendCheers: asFriendCheers(book?.friendCheers),
+    wish: asWish(book?.wish, { looks: lookOwned, cheers: owned, buddies, accessories }),
   }
 }
 
@@ -378,6 +379,7 @@ export function mergePurses(boards) {
       ]),
     ),
     friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
+    wish: [...new Set(purses.flatMap((item) => item.wish))].slice(0, WISH_MAX),
   }
 }
 
@@ -408,6 +410,7 @@ export function spreadPurseFrom(shelf, book) {
     buddyOn: from.buddyOn,
     worn: from.worn,
     friendCheers: from.friendCheers,
+    wish: from.wish,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
     buddies: [...new Set([...merged.buddies, ...from.buddies])],
@@ -883,4 +886,121 @@ export function wearGift(book, kind, id) {
     return { ...book, ...purse, worn: { ...purse.worn, [slot]: id }, buddyOn: purse.buddyOn || FREE_BUDDY }
   }
   return purse.cheers.includes(id) ? { ...book, ...purse, cheerOn: id } : book
+}
+
+// Wishlist: items someone hearted but cannot afford yet, as 'type:id'. It
+// rides on the purse so it syncs with the shelf. Anything owned drops off, so
+// a buy (here or on the server) clears its heart.
+export const WISH_MAX = 20
+
+export function wishItem(key) {
+  const [type, id] = String(key || '').split(':')
+  if (type === 'look') return ALL_LOOKS.find((item) => item.id === id) || null
+  if (type === 'cheer') return ALL_CHEERS.find((item) => item.id === id) || null
+  if (type === 'buddy') return ALL_BUDDIES.find((item) => item.id === id) || null
+  if (type === 'accessory') return accessoryById(id) || null
+  return null
+}
+
+function ownsKey(key, owned) {
+  const [type, id] = key.split(':')
+  const list = { look: owned.looks, cheer: owned.cheers, buddy: owned.buddies, accessory: owned.accessories }[type]
+  return Boolean(list?.includes(id))
+}
+
+function asWish(raw, owned) {
+  if (!Array.isArray(raw)) return []
+  const keys = [...new Set(raw.map((key) => String(key)))]
+  return keys.filter((key) => wishItem(key) && !ownsKey(key, owned)).slice(0, WISH_MAX)
+}
+
+export function isWished(purse, type, id) {
+  return purse.wish.includes(`${type}:${id}`)
+}
+
+// Hearts it, or takes the heart off. Full at WISH_MAX.
+export function toggleWish(book, type, id) {
+  const purse = normalizePurse(book)
+  const key = `${type}:${id}`
+  if (!wishItem(key)) return { book, miss: 'shop.miss.wishGone' }
+  if (purse.wish.includes(key)) {
+    return { book: { ...book, ...purse, wish: purse.wish.filter((k) => k !== key) }, miss: '' }
+  }
+  if (ownsKey(key, purse)) return { book, miss: '' }
+  if (purse.wish.length >= WISH_MAX) return { book, miss: 'shop.miss.wishFull', missN: WISH_MAX }
+  return { book: { ...book, ...purse, wish: [...purse.wish, key] }, miss: '' }
+}
+
+// The hearted item closest to reach, for one line on the done card. Coins
+// come at up to NIGHT_COIN_CAP a night, gems at one a week.
+export function wishGoal(purse) {
+  let best = null
+  for (const key of purse.wish) {
+    const item = wishItem(key)
+    if (!item) continue
+    const [type, id] = key.split(':')
+    const gems = Number(item.gems) || 0
+    const coins = Number(item.coins) || 0
+    const short = gems ? Math.max(0, gems - purse.gems) : Math.max(0, coins - purse.coins)
+    const n = gems ? short : Math.ceil(short / NIGHT_COIN_CAP)
+    const nights = gems ? short * 7 : n
+    if (!best || nights < best.nights) best = { type, id, kind: gems ? 'gems' : 'coins', n, nights }
+  }
+  return best
+}
+
+// A shop row: on sale today, not in a coming drop, not owned.
+export function shopRow(type, list, purse, today = boardDate(new Date())) {
+  return list.filter((item) => isLive(item, today) && !shopTag(purse, type, item).owned)
+}
+
+// Owned items go to the end of an All page.
+export function ownedLast(type, list, purse) {
+  return [...list].sort(
+    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
+  )
+}
+
+// Seasonal items (an `until` date) come back each year. The next day one
+// goes on sale, today or later: its `from`, moved on a year at a time.
+export function seasonNext(item, today = boardDate(new Date())) {
+  if (!item?.from) return ''
+  let from = item.from
+  let until = item.until || ''
+  while (until && until <= today) {
+    from = `${Number(from.slice(0, 4)) + 1}${from.slice(4)}`
+    until = `${Number(until.slice(0, 4)) + 1}${until.slice(4)}`
+  }
+  return from
+}
+
+export function isSeasonal(item) {
+  return Boolean(item?.until)
+}
+
+// Seasonal accessories not on sale today, split into what you own (back on
+// a date) and what you could get when they return.
+export function offSeason(purse, today = boardDate(new Date())) {
+  const off = ACCESSORIES.filter((item) => isSeasonal(item) && !accessoryOnSale(item, today))
+  const row = (item) => ({ item, date: seasonNext(item, today) })
+  return {
+    owned: off.filter((item) => purse.accessories.includes(item.id)).map(row),
+    coming: off.filter((item) => !purse.accessories.includes(item.id)).map(row),
+  }
+}
+
+// The done card's line for a wishlist goal: which key, the count, the name key.
+export function wishLine(goal) {
+  if (!goal) return null
+  const nameKey =
+    goal.type === 'look'
+      ? lookText(goal.id, 'name')
+      : goal.type === 'cheer'
+        ? cheerText(goal.id, 'name')
+        : goal.type === 'buddy'
+          ? buddyText(goal.id, 'name')
+          : `accessory.${goal.id}`
+  if (!goal.n) return { key: 'wish.ready', n: 0, nameKey }
+  if (goal.kind === 'gems') return { key: goal.n === 1 ? 'wish.gem' : 'wish.gems', n: goal.n, nameKey }
+  return { key: goal.n === 1 ? 'wish.night' : 'wish.nights', n: goal.n, nameKey }
 }
