@@ -227,12 +227,15 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Text style={[styles.weekCount, { color: colors.inkDim }]}>
           {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
         </Text>
-        <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t('family.doneOf', {
-            done: fam.members.filter((row) => doneTonight(row.person, night)).length,
-            n: fam.members.length,
-          })}
-        </Text>
+        {/* With nothing in the family folder, no one can be done. */}
+        {lamps.length ? (
+          <Text style={[styles.glance, { color: colors.inkSoft }]}>
+            {t('family.doneOf', {
+              done: fam.members.filter((row) => doneTonight(row.person, night)).length,
+              n: fam.members.length,
+            })}
+          </Text>
+        ) : null}
       </View>
 
       <SectionHead colors={colors} label={t('family.people')} />
