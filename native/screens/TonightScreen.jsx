@@ -543,16 +543,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
-          {social?.kind === 'cheer' ? (
-            <View style={[styles.social, { borderTopColor: colors.lineSoft }]}>
-              <Text style={[faceCardStyles.meta, { color: colors.ink }]}>
-                {t('home.friendNotDone', { name: social.name || t('people.someone') })}
-              </Text>
-              <View style={styles.cheerKey}>
-                <KeyButton label={t('home.cheerGo')} colors={colors} onPress={() => goHash('/friend', { id: social.id })} />
-              </View>
-            </View>
-          ) : null}
           <View style={styles.actions}>
             <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
             <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
@@ -886,7 +876,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           ) : null}
         </Slot>
         <Slot>
-          <FriendsRow colors={colors} />
+          <FriendsRow colors={colors} cheer={social?.kind === 'cheer' ? social : null} />
         </Slot>
       </SwipeFlyHost>
       {answerBar}

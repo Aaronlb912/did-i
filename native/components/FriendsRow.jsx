@@ -13,7 +13,8 @@ const SHOWN = 6
 // Reads the list the Together widget keeps (one known_people call, saved),
 // so it draws at once with no flash, then refreshes at most every 5 minutes.
 // Nothing shows when you have nobody yet. Tap to open Friends and family.
-export function FriendsRow({ colors }) {
+// cheer: a friend who isn't done yet (from pickSocialLine); adds a Cheer chip.
+export function FriendsRow({ colors, cheer = null }) {
   const account = useAccount()
   const [people, setPeople] = useState(() => readTogetherPeople())
 
@@ -62,6 +63,17 @@ export function FriendsRow({ colors }) {
       <Text style={[styles.count, { color: colors.inkSoft }]} numberOfLines={1}>
         {props.countLine}
       </Text>
+      {cheer ? (
+        <Pressable
+          onPress={() => goHash('/friend', { id: cheer.id })}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.friendNotDone', { name: cheer.name || t('people.someone') })}
+          hitSlop={8}
+          style={[styles.cheer, { backgroundColor: colors.panel2, borderColor: colors.line }]}
+        >
+          <Text style={[styles.cheerText, { color: colors.on }]}>{t('home.cheerGo')}</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   )
 }
@@ -91,4 +103,6 @@ const styles = StyleSheet.create({
   },
   faceText: { fontFamily: fonts.uiSemi, fontSize: 10 },
   count: { fontFamily: fonts.ui, fontSize: 13, marginLeft: 4, flexShrink: 1 },
+  cheer: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  cheerText: { fontFamily: fonts.uiSemi, fontSize: 13 },
 })
