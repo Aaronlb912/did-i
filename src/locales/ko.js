@@ -2580,4 +2580,15 @@ export const ko = {
   'coins.why.nope': 'nope는 0이에요.',
   'coins.why.none': '답한 게 없어요.',
   'coins.why.open': '오늘 밤은 아직 열려 있어요.',
+  // round4-polish/questions-round4
+  'lamp.copySub': '같은 일정으로 복사본을 만들어요.',
+  'lamp.monthPrev': '지난달',
+  'lamp.monthNext': '다음 달',
+  'hang.folderHint': '한 곳에만 있어요. 홈과 통계를 거르는 데 써요.',
+  'hang.topicsHint': '선택 라벨이에요. 질문 하나에 여러 개 붙일 수 있어요.',
+  'hang.discardNewTitle': '이 질문을 버릴까요?',
+  'questions.reorder': '순서 바꾸기',
+  'questions.reorderHint': '오늘 밤 이 순서로 물어봐요.',
+  'questions.moveUp': '{name} 위로',
+  'questions.moveDown': '{name} 아래로',
 }

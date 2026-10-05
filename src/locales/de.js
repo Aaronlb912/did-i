@@ -2659,4 +2659,15 @@ export const de = {
   'coins.why.nope': 'Ein Nope zahlt 0.',
   'coins.why.none': 'Nichts beantwortet.',
   'coins.why.open': 'Heute Abend ist noch offen.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Eine Kopie mit demselben Zeitplan anlegen.',
+  'lamp.monthPrev': 'Letzter Monat',
+  'lamp.monthNext': 'Nächster Monat',
+  'hang.folderHint': 'Ein fester Ort. Filtert Start und Statistik.',
+  'hang.topicsHint': 'Freie Stichworte. Eine Frage kann mehrere haben.',
+  'hang.discardNewTitle': 'Diese Frage verwerfen?',
+  'questions.reorder': 'Ordnen',
+  'questions.reorderHint': 'Heute Abend kommen sie in dieser Reihenfolge.',
+  'questions.moveUp': '{name} nach oben',
+  'questions.moveDown': '{name} nach unten',
 }

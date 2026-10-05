@@ -2636,4 +2636,15 @@ export const en = {
   'coins.why.nope': 'A nope pays 0.',
   'coins.why.none': 'Nothing answered.',
   'coins.why.open': 'Tonight is still open.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Make a copy with the same schedule.',
+  'lamp.monthPrev': 'Last month',
+  'lamp.monthNext': 'Next month',
+  'hang.folderHint': 'One place it lives. Filters Home and stats.',
+  'hang.topicsHint': 'Optional labels. A question can have several.',
+  'hang.discardNewTitle': 'Discard this question?',
+  'questions.reorder': 'Reorder',
+  'questions.reorderHint': 'Tonight asks them in this order.',
+  'questions.moveUp': 'Move {name} up',
+  'questions.moveDown': 'Move {name} down',
 }

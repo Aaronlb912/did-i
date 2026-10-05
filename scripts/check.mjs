@@ -1538,6 +1538,27 @@ test('tonight orders questions by ask time, untimed ones first, priority breakin
   assert.deepEqual(order, ['anyHigh', 'anyLow', 'eight', 'nine'])
 })
 
+test('a hand-set question order beats priority, survives normalize, and spans folders', async () => {
+  const { byAskTime, normalizeLamp, setLampOrder } = await import('../src/lib/board-json.js')
+  const row = (id, askAfter, priority, order) => ({ lamp: { id, askAfter, priority, ...(order == null ? {} : { order }) } })
+  const order = byAskTime([
+    row('high', '', 'high'),
+    row('second', '', 'low', 1),
+    row('first', '', 'normal', 0),
+    row('late', '21:00', 'normal', 0),
+  ]).map((r) => r.lamp.id)
+  assert.deepEqual(order, ['first', 'second', 'high', 'late'], 'ordered ones first, unmoved after, ask time still wins')
+  assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', order: 3 }).order, 3)
+  assert.equal('order' in normalizeLamp({ id: 'a', question: 'Did I?' }), false)
+  const books = [
+    { id: 'b1', lamps: [{ id: 'x' }, { id: 'y' }] },
+    { id: 'b2', lamps: [{ id: 'z' }] },
+  ]
+  const next = setLampOrder(books, ['z', 'x', 'y'])
+  assert.deepEqual(next.flatMap((book) => book.lamps.map((lamp) => [lamp.id, lamp.order])), [['x', 1], ['y', 2], ['z', 0]])
+  assert.equal(setLampOrder(next, ['z', 'x', 'y'])[0], next[0], 'an unchanged folder keeps its object')
+})
+
 test('every accessory the shop shows is sold by the server at the same price', async () => {
   const { ACCESSORIES } = await import('../src/lib/accessories.js')
   const sql = readFileSync(new URL('../supabase/shop-catalog.sql', import.meta.url), 'utf8')

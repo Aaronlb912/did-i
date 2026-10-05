@@ -21,6 +21,8 @@ import {
   duplicateLamp,
   lampBuzzes,
   hasAnyTopic,
+  lampOrder,
+  setLampOrder,
   joinTopics,
   lampNotifyOn,
   prepQuestionRows,
@@ -38,6 +40,8 @@ import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
 import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
+import { LampMonth } from '../components/LampMonth.jsx'
+import { readPrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -92,6 +96,15 @@ function useHall(book) {
   return { colors, clock, dateIso }
 }
 
+// "Sep 28" in the person's language, for the week bars.
+function shortDay(iso) {
+  try {
+    return new Date(`${iso}T12:00:00`).toLocaleDateString(readPrefs().locale || undefined, { month: 'short', day: 'numeric' })
+  } catch {
+    return iso.slice(5)
+  }
+}
+
 function shellDate(book, clock = new Date()) {
   return formatBoardDate(boardDate(clock, book.dayFoldHour))
 }
@@ -104,13 +117,40 @@ function openStarters(book) {
   )
 }
 
-function stateDot(state, urgency, colors) {
-  if (state === 'did') return { backgroundColor: colors.on, borderColor: colors.on }
-  if (state === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
-  if (state === 'nope') return { backgroundColor: colors.skip, borderColor: colors.skip }
-  if (urgency === 'today' || urgency === 'soon') return { backgroundColor: 'transparent', borderColor: colors.miss }
-  if (state === 'open') return { backgroundColor: 'transparent', borderColor: colors.on }
+// The dot on each row, in Home's colors: did, late, nope (muted), not
+// answered yet, due today (red ring), or not asked tonight.
+function dotKind(state, urgency) {
+  if (state === 'did' || state === 'late' || state === 'nope') return state
+  if (urgency === 'today' || urgency === 'soon') return 'due'
+  if (state === 'open') return 'open'
+  return 'off'
+}
+
+function stateDot(kind, colors) {
+  if (kind === 'did') return { backgroundColor: colors.on, borderColor: colors.on }
+  if (kind === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
+  if (kind === 'nope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
+  if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
+  if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.open || colors.on }
   return { backgroundColor: 'transparent', borderColor: colors.line }
+}
+
+const DOT_WORDS = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', open: 'jewelKey.open', due: 'jewelKey.due' }
+
+// One line over the list naming only the dots that are on it.
+function DotKey({ kinds, colors }) {
+  const shown = ['did', 'late', 'nope', 'open', 'due'].filter((kind) => kinds.has(kind))
+  if (!shown.length) return null
+  return (
+    <View style={styles.dotKey} accessible accessibilityLabel={shown.map((kind) => t(DOT_WORDS[kind])).join(', ')}>
+      {shown.map((kind) => (
+        <View key={kind} style={styles.dotKeyItem}>
+          <View style={[styles.dotKeyDot, stateDot(kind, colors)]} />
+          <Text style={[styles.dotKeyText, { color: colors.inkSoft }]}>{t(DOT_WORDS[kind])}</Text>
+        </View>
+      ))}
+    </View>
+  )
 }
 
 function PickBox({ on, colors }) {
@@ -126,9 +166,28 @@ function PickBox({ on, colors }) {
   )
 }
 
+function MoveKey({ glyph, label, on, onPress, colors }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!on}
+      hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !on }}
+      style={({ pressed }) => [
+        styles.moveKey,
+        { borderColor: colors.line, backgroundColor: pressed ? colors.panel3 : colors.panel2, opacity: on ? 1 : 0.3 },
+      ]}
+    >
+      <Text style={[styles.moveGlyph, { color: colors.ink }]}>{glyph}</Text>
+    </Pressable>
+  )
+}
+
 // One question per row: its short name, the question on one line, then
 // tag, schedule and time. Every line clips, so long words never crowd the list.
-function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick }) {
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove }) {
   if (!items.length) return null
   return (
     <View style={styles.block}>
@@ -150,6 +209,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           return (
             <Pressable
               key={rowId(row)}
+              disabled={Boolean(onMove)}
               accessibilityRole={picking ? 'checkbox' : 'button'}
               accessibilityState={picking ? { checked: on } : undefined}
               accessibilityLabel={row.lamp.question}
@@ -171,7 +231,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               {picking ? (
                 <PickBox on={on} colors={colors} />
               ) : (
-                <View style={[styles.lampDot, stateDot(states.get(rowId(row)) || '', urgency, colors)]} />
+                <View style={[styles.lampDot, stateDot(dotKind(states.get(rowId(row)) || '', urgency), colors)]} />
               )}
               <View style={styles.lampCopy}>
                 <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
@@ -184,7 +244,14 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                   {meta}
                 </Text>
               </View>
-              {picking ? null : <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>}
+              {onMove ? (
+                <View style={styles.moveKeys}>
+                  <MoveKey glyph="↑" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
+                  <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
+                </View>
+              ) : picking ? null : (
+                <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>
+              )}
             </Pressable>
           )
         })}
@@ -248,11 +315,11 @@ function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
 // Did yous and Did wes, one tap from Questions. Each pill shows only when
 // there is something behind it, so the page looks the same for people who
 // never use them.
-function FromFriends({ rows, didYouOnly, onDidYou, dateIso, colors }) {
+function useFromFriends(rows, dateIso) {
   const account = useAccount()
   const { inbox } = usePeoplePulse(account.user)
   const { cards } = useWeTonight(account.user)
-  if (!account.user) return null
+  if (!account.user) return { signedIn: false, youN: 0, weN: 0, inbox: 0 }
   // Count only what is still being asked, tonight or on a later night: not
   // stopped, and not a one-night did you whose night has gone.
   const kept = rows.filter(
@@ -267,35 +334,51 @@ function FromFriends({ rows, didYouOnly, onDidYou, dateIso, colors }) {
       (card.myState === 'asked' || card.myState === 'in') &&
       !(card.cadence === 'once' && card.startsOn && card.startsOn < dateIso),
   ).length
-  if (!youN && !weN && !didYouOnly) return null
+  return { signedIn: true, youN, weN, inbox: inbox || 0 }
+}
+
+function FriendPills({ friends, didYouOnly, onDidYou, colors }) {
+  if (!friends.signedIn) return null
+  const { youN, weN } = friends
   return (
     <>
-      <View style={styles.pillRow}>
-        {youN || didYouOnly ? (
-          <Pill label={t('questions.didYouPill', { n: youN })} on={didYouOnly} onPress={onDidYou} colors={colors} />
-        ) : null}
-        {weN ? <Pill label={t('questions.didWePill', { n: weN })} onPress={() => goHash('/we')} colors={colors} /> : null}
-      </View>
-      {didYouOnly ? (
-        <View style={[styles.lampList, { borderColor: inbox ? colors.on : colors.lineSoft, backgroundColor: colors.panel }]}>
-          <GoRow
-            label={t('questions.didYouInbox')}
-            note={inbox ? t('questions.didYouToKeep', { n: inbox }) : t('questions.didYouNoneWaiting')}
-            lit={Boolean(inbox)}
-            onPress={() => goHash('/inbox')}
-            colors={colors}
-          />
-          <GoRow label={t('sent.kicker')} note={t('sent.rowSub')} onPress={() => goHash('/sent')} colors={colors} top />
-        </View>
+      {youN || didYouOnly ? (
+        <Pill label={t('questions.didYouPill', { n: youN })} on={didYouOnly} onPress={onDidYou} colors={colors} />
       ) : null}
+      {weN ? <Pill label={t('questions.didWePill', { n: weN })} onPress={() => goHash('/we')} colors={colors} /> : null}
     </>
   )
 }
 
+function DidYouRows({ inbox, colors }) {
+  return (
+    <View style={[styles.lampList, { borderColor: inbox ? colors.on : colors.lineSoft, backgroundColor: colors.panel }]}>
+      <GoRow
+        label={t('questions.didYouInbox')}
+        note={inbox ? t('questions.didYouToKeep', { n: inbox }) : t('questions.didYouNoneWaiting')}
+        lit={Boolean(inbox)}
+        onPress={() => goHash('/inbox')}
+        colors={colors}
+      />
+      <GoRow label={t('sent.kicker')} note={t('sent.rowSub')} onPress={() => goHash('/sent')} colors={colors} top />
+    </View>
+  )
+}
+
+// Questions in their hand-set order (see lampOrder); unmoved ones keep theirs after.
+function inHandOrder(rows) {
+  return rows
+    .map((row, at) => ({ row, at, rank: lampOrder(row.lamp) }))
+    .sort((a, b) => (a.rank === b.rank ? a.at - b.at : a.rank === Infinity ? 1 : b.rank === Infinity ? -1 : a.rank - b.rank))
+    .map((item) => item.row)
+}
+
+const SEARCH_FROM = 10
+
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
-  const allRows = taggedLamps(shelf, tagId)
+  const allRows = inHandOrder(taggedLamps(shelf, tagId))
   const [deadlineOnly, setDeadlineOnly] = useState(false)
   const [didYouOnly, setDidYouOnly] = useState(false)
   const [query, setQuery] = useState('')
@@ -303,6 +386,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useState(false)
+  const [ordering, setOrdering] = useState(false)
+  const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
   // The undo toast joins the one line above the tab bar; shake still undoes.
@@ -312,10 +397,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
   const fromOk = (row) => !didYouOnly || row.lamp.fromDidYou
-  const hung = prepQuestionRows(rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row)), {
-    dateIso,
-    deadlineOnly,
-  })
+  const liveRows = rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row))
+  // While ordering, the list shows the plain hand order, not deadlines first.
+  const hung = ordering ? liveRows : prepQuestionRows(liveRows, { dateIso, deadlineOnly })
   const down = prepQuestionRows(rows.filter((row) => row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row)), {
     dateIso,
     deadlineOnly,
@@ -327,20 +411,46 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const allOn = shown.length > 0 && chosen.length === shown.length
   const allDown = chosen.length > 0 && chosen.every((row) => row.lamp.archived)
 
+  const dotKinds = (() => {
+    const kinds = new Set()
+    for (const row of hung) kinds.add(dotKind(states.get(rowId(row)) || '', dueByUrgency(row.lamp, dateIso)))
+    return kinds
+  })()
+
+  // Swaps a question with the one next to it on screen, then numbers every
+  // live question so tonight and the widget follow.
+  function move(index, step) {
+    const a = hung[index]
+    const b = hung[index + step]
+    if (!a || !b || !onChangeBooks) return
+    feelTap()
+    // Every folder at once, so orders never collide when tonight shows All.
+    const ids = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
+    const ai = ids.indexOf(a.lamp.id)
+    const bi = ids.indexOf(b.lamp.id)
+    if (ai < 0 || bi < 0) return
+    ids[ai] = b.lamp.id
+    ids[bi] = a.lamp.id
+    const next = setLampOrder(shelf, ids)
+    const changed = next.filter((item, at) => item !== shelf[at])
+    if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
+  }
+
   function stopPicking() {
     setPicking(false)
     setPicked(new Set())
   }
 
   useEffect(() => {
-    if (!picking) return undefined
+    if (!picking && !ordering) return undefined
     function onBack(event) {
       stopPicking()
+      setOrdering(false)
       event?.preventDefault?.()
     }
     window.addEventListener('did-i-back', onBack)
     return () => window.removeEventListener('did-i-back', onBack)
-  }, [picking])
+  }, [picking, ordering])
 
   useEffect(() => {
     if (!undo) return undefined
@@ -402,26 +512,38 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     <View style={styles.fill}>
       {/* A tab, never pushed: no back arrow, even while a form that just saved is still popping off the stack. */}
       <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
-        <TagFilter
-          boards={shelf}
-          tagId={tagId}
-          onTag={onTag}
-          now={clock}
-          colors={colors}
-          topics={topics}
-          topicPicks={picks}
-          onTopics={setTopicPicks}
-        />
-        {allRows.length ? <SearchBox value={query} onChange={setQuery} colors={colors} /> : null}
-        <FromFriends
-          rows={allRows}
-          didYouOnly={didYouOnly}
-          onDidYou={() => setDidYouOnly((on) => !on)}
-          dateIso={dateIso}
-          colors={colors}
-        />
+        {/* Filters, Did you / Did we, Add and Select share one wrapping row, so the list starts high. */}
+        {picking || ordering ? null : (
+          <View style={styles.topRow}>
+            <TagFilter
+              boards={shelf}
+              tagId={tagId}
+              onTag={onTag}
+              now={clock}
+              colors={colors}
+              topics={topics}
+              topicPicks={picks}
+              onTopics={setTopicPicks}
+              inline
+            />
+            <FriendPills friends={friends} didYouOnly={didYouOnly} onDidYou={() => setDidYouOnly((on) => !on)} colors={colors} />
+            {didYouOnly ? null : (
+              <>
+                <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
+                {shown.length && onChangeBooks ? (
+                  <KeyButton colors={colors} label={t('questions.pick')} onPress={() => setPicking(true)} />
+                ) : null}
+                {hung.length > 1 && onChangeBooks ? (
+                  <KeyButton colors={colors} label={t('questions.reorder')} onPress={() => setOrdering(true)} />
+                ) : null}
+              </>
+            )}
+          </View>
+        )}
+        {(allRows.length >= SEARCH_FROM || query) && !ordering ? <SearchBox value={query} onChange={setQuery} colors={colors} /> : null}
+        {didYouOnly && friends.signedIn ? <DidYouRows inbox={friends.inbox} colors={colors} /> : null}
 
-        {hasDeadlines ? (
+        {hasDeadlines && !ordering ? (
           <>
             <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('questions.filter')}</Text>
             <ChipRow
@@ -436,6 +558,14 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </>
         ) : null}
 
+        {ordering ? (
+          <View style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+            <View style={styles.pickHead}>
+              <Text style={[styles.pickCount, { color: colors.ink }]}>{t('questions.reorderHint')}</Text>
+              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={() => setOrdering(false)} />
+            </View>
+          </View>
+        ) : null}
         {picking ? (
           <View style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
             <View style={styles.pickHead}>
@@ -473,17 +603,12 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </Pressable>
             </View>
           </View>
-        ) : didYouOnly ? null : (
-          <View style={styles.topKeys}>
-            <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
-            {shown.length && onChangeBooks ? (
-              <KeyButton colors={colors} label={t('questions.pick')} onPress={() => setPicking(true)} />
-            ) : null}
-          </View>
-        )}
+        ) : null}
 
+        {hung.length && !picking && !ordering ? <DotKey kinds={dotKinds} colors={colors} /> : null}
         {hung.length ? (
           <LampBlock
+            onMove={ordering ? move : undefined}
             label={didYouOnly ? t('questions.didYouKeptList') : t('questions.list')}
             items={hung}
             shelf={shelf}
@@ -525,7 +650,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </>
         )}
 
-        <LampBlock
+        {ordering ? null : <LampBlock
           label={t('questions.down')}
           items={down}
           shelf={shelf}
@@ -536,7 +661,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           picking={picking}
           picked={picked}
           onPick={pick}
-        />
+        />}
       </BoardShell>
     </View>
   )
@@ -746,7 +871,7 @@ export function TopicPick({ value, known, onChange, colors }) {
   return (
     <View style={styles.foldField}>
       <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kindLabel')}</Text>
-      <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.kindHint')}</Text>
+      <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.topicsHint')}</Text>
       {choices.length ? (
         <View style={styles.pillRow}>
           {choices.map((topic) => (
@@ -904,19 +1029,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   useEffect(() => () => clearTimeout(leave.current), [])
 
   const [startSnap] = useState(() => JSON.stringify([draft, hang.tagTitle]))
-  const dirty = hang.editing && JSON.stringify([draft, hang.tagTitle]) !== startSnap
+  const dirty = JSON.stringify([draft, hang.tagTitle]) !== startSnap
   const leaveRef = useRef(null)
-  const editing = hang.editing
-  // Phone back on the edit page asks first when there are changes.
+  // Phone back asks first when there are changes, on Add as well as Edit.
   useEffect(() => {
-    if (!editing) return undefined
+    if (!dirty) return undefined
     function onBack(event) {
       event?.preventDefault?.()
       leaveRef.current?.()
     }
     window.addEventListener('did-i-back', onBack)
     return () => window.removeEventListener('did-i-back', onBack)
-  }, [editing])
+  }, [dirty])
 
   // The iPhone edge swipe can't be asked about, so it is off while there are
   // unsaved changes. Add keeps its swipe.
@@ -980,7 +1104,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
     Keyboard.dismiss()
     publishSheet({
-      title: t('hang.discardTitle'),
+      title: hang.editing ? t('hang.discardTitle') : t('hang.discardNewTitle'),
       goLabel: t('hang.discard'),
       closeLabel: t('hang.keepEditing'),
       colors,
@@ -1062,7 +1186,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       colors={colors}
       showAdd
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: hang.editing ? leaveEdit : cancel }}
+      leftAction={{ label: t('hang.cancel'), onPress: leaveEdit }}
       rightAction={{ label: hang.editing ? t('hang.save') : t('hang.addIt'), onPress: save, disabled: !ready }}
       scrollHandle={scrollHandle}
     >
@@ -1279,6 +1403,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             colors={colors}
           >
             <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
+            <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
             <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tag')}>
               {hang.liveTags.map((item) => (
                 <Pill
@@ -1431,16 +1556,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       : nextDueLine(lamp, dateIso)
   const priority = lamp.priority || 'normal'
   const topics = topicsOf(lamp).map(topicLabel).join(', ')
-  // Topics are labeled so they don't read as the question's name.
-  const extras = [topics ? `${t('hang.kind')}: ${topics}` : '', lamp.notes]
-    .map((item) => String(item || '').trim())
-    .filter(Boolean)
+  const notes = String(lamp.notes || '').trim()
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
     lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
     priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp),
-    lampBook.title,
     t(`hang.priority.${priority}`),
   ].join(' · ')
 
@@ -1520,28 +1641,59 @@ export function LampScreen({ book, boards = [], onChange, route }) {
                   ) : null}
                 </View>
                 <Text style={[styles.trendNum, { color: colors.inkDim }]}>{week.due ? `${week.did}/${week.due}` : '-'}</Text>
+                <Text style={[styles.trendDate, { color: colors.inkDim }]} numberOfLines={1}>
+                  {shortDay(week.from)}
+                </Text>
               </View>
             ))}
           </View>
         </View>
       ) : null}
 
+      <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
+
       <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
 
-      <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
-
       <SetCard colors={colors}>
-        <Text style={[styles.summary, { color: colors.ink }]}>{summary}</Text>
-        {extras.length ? (
-          <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={2}>
-            {extras.join(' · ')}
+        {/* The whole card opens Edit question, like the pen at the top. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('hang.edit')}
+          accessibilityHint={summary}
+          onPress={() => goHash('/hang', { id: lamp.id })}
+          android_ripple={ripple(colors.panel3)}
+          style={({ pressed }) => [styles.summaryTap, pressed && { backgroundColor: colors.panel2 }]}
+        >
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summary, styles.summaryText, { color: colors.ink }]}>{summary}</Text>
+            <Text style={[styles.summaryChev, { color: colors.inkDim }]}>›</Text>
+          </View>
+          <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
+            {`${t('hang.tag')}: ${lampBook.title}`}
           </Text>
-        ) : null}
-        <View style={styles.summaryEdit}>
-          <KeyButton label={t('hang.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
-        </View>
+          <Text style={[styles.hintLine, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
+          {topics ? (
+            <>
+              <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
+                {`${t('hang.kind')}: ${topics}`}
+              </Text>
+              <Text style={[styles.hintLine, { color: colors.inkDim }]}>{t('hang.topicsHint')}</Text>
+            </>
+          ) : null}
+          {notes ? (
+            <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={2}>
+              {notes}
+            </Text>
+          ) : null}
+        </Pressable>
       </SetCard>
-      <LampManage book={lampBook} lamp={lamp} colors={colors} onChange={change} />
+      <LampManage
+        book={lampBook}
+        lamp={lamp}
+        colors={colors}
+        onChange={change}
+        onDuplicate={() => goHash('/hang', { copy: lamp.id })}
+      />
     </BoardShell>
   )
 }
@@ -1557,6 +1709,14 @@ const styles = StyleSheet.create({
   block: { gap: 8, marginTop: 4 },
   fill: { flex: 1 },
   topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 },
+  dotKey: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4, marginTop: 2 },
+  dotKeyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dotKeyDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
+  dotKeyText: { fontFamily: fonts.ui, fontSize: 12 },
+  moveKeys: { flexDirection: 'row', gap: 6 },
+  moveKey: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moveGlyph: { fontFamily: fonts.uiBold, fontSize: 16 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
@@ -1620,7 +1780,10 @@ const styles = StyleSheet.create({
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   fieldHintTight: { marginTop: -4 },
-  summaryEdit: { padding: 12 },
+  summaryTap: { paddingBottom: 12 },
+  summaryRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  summaryText: { flex: 1 },
+  summaryChev: { fontFamily: fonts.ui, fontSize: 22, paddingTop: 8, paddingRight: 14 },
   summary: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, paddingHorizontal: 16, paddingTop: 12 },
   settings: { marginTop: 4 },
   goRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
@@ -1663,11 +1826,13 @@ const styles = StyleSheet.create({
   tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   trend: { gap: 8, marginBottom: 12 },
   trendLabel: { ...sectionLabel },
-  trendRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
-  trendWeek: { flex: 1, alignItems: 'center', gap: 4 },
-  trendBar: { width: '100%', maxWidth: 28, height: 48, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },
+  trendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 8 },
+  trendWeek: { width: 36, alignItems: 'center', gap: 4 },
+  trendBar: { width: 24, height: 48, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },
   trendFill: { width: '100%' },
   trendNum: { fontFamily: fonts.mono, fontSize: 10 },
+  trendDate: { fontFamily: fonts.mono, fontSize: 9 },
+  hintLine: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, paddingHorizontal: 16, paddingTop: 2 },
   tonight: { gap: 8, marginTop: 4 },
   tonightRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   more: { gap: 12, marginTop: 8 },

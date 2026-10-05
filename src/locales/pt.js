@@ -2641,4 +2641,15 @@ export const pt = {
   'coins.why.nope': 'Um nope paga 0.',
   'coins.why.none': 'Nada respondido.',
   'coins.why.open': 'Hoje à noite ainda está aberto.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Fazer uma cópia com a mesma agenda.',
+  'lamp.monthPrev': 'Mês anterior',
+  'lamp.monthNext': 'Próximo mês',
+  'hang.folderHint': 'Um só lugar. Filtra Início e estatísticas.',
+  'hang.topicsHint': 'Etiquetas opcionais. Uma pergunta pode ter várias.',
+  'hang.discardNewTitle': 'Descartar esta pergunta?',
+  'questions.reorder': 'Reordenar',
+  'questions.reorderHint': 'Hoje à noite elas vêm nesta ordem.',
+  'questions.moveUp': 'Subir {name}',
+  'questions.moveDown': 'Descer {name}',
 }

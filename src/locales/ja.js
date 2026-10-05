@@ -2579,4 +2579,15 @@ export const ja = {
   'coins.why.nope': 'nope は 0 です。',
   'coins.why.none': '回答なし。',
   'coins.why.open': '今夜はまだ受付中です。',
+  // round4-polish/questions-round4
+  'lamp.copySub': '同じスケジュールでコピーを作ります。',
+  'lamp.monthPrev': '前の月',
+  'lamp.monthNext': '次の月',
+  'hang.folderHint': '置き場所はひとつ。ホームと統計の絞り込みに使います。',
+  'hang.topicsHint': '任意のラベル。ひとつの質問に複数つけられます。',
+  'hang.discardNewTitle': 'この質問を破棄しますか？',
+  'questions.reorder': '並べ替え',
+  'questions.reorderHint': '今夜はこの順番で聞きます。',
+  'questions.moveUp': '{name}を上へ',
+  'questions.moveDown': '{name}を下へ',
 }
