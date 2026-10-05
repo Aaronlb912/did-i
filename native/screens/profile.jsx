@@ -452,37 +452,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       </SetCard>
       {!legalEmail() ? <Text style={[styles.miss, { color: colors.miss }]}>{t('legal.operatorWarn')}</Text> : null}
 
-      <SetCap colors={colors}>{t('settings.danger')}</SetCap>
-      <SetCard colors={colors}>
-        {onStartEmpty ? (
-          <SetRow
-            colors={colors}
-            icon="warning"
-            label={t('settings.emptyBoard')}
-            sub={t('settings.clearFolderSub', { name: book?.title || '' })}
-            danger
-            last
-            onPress={() =>
-              publishSheet({
-                kicker: t('settings.startOver'),
-                title: t('settings.clearFolderTitle', { name: book?.title || '' }),
-                body: t('settings.clearFolderBody', { name: book?.title || '' }),
-                goLabel: t('settings.clearYes'),
-                danger: true,
-                closeLabel: t('settings.neverMind'),
-                colors,
-                onClose: () => publishSheet(null),
-                onGo: () => {
-                  publishSheet(null)
-                  onStartEmpty()
-                  confirmDone(t('confirm.startedOver'))
-                },
-              })
-            }
-          />
-        ) : null}
-      </SetCard>
-
       <Text style={[styles.version, { color: colors.inkDim }]} accessibilityRole="text">
         {appVersionLines().join(' · ')}
       </Text>

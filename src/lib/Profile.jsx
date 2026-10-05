@@ -262,25 +262,6 @@ export function Profile({
           </p>
         ) : null}
 
-        <SetCap>{t('settings.danger')}</SetCap>
-        <SetCard>
-          {onStartEmpty ? (
-            <SetRow
-              label={t('settings.emptyBoard')}
-              danger
-              onClick={() =>
-                setConfirm({
-                  kicker: t('settings.startOver'),
-                  title: t('settings.clearTitle'),
-                  body: t('settings.clearBody'),
-                  yes: t('settings.clearYes'),
-                  go: onStartEmpty,
-                })
-              }
-            />
-          ) : null}
-        </SetCard>
-
         {sheet === 'theme' ? (
           <SetSheet title={t('settings.theme')} still={still} onClose={() => setSheet(null)}>
             {THEME_IDS.map((id) => (

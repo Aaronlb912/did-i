@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
+import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { isReactNative } from './env.js'
 import { startGemPurchase } from './gem-buy.js'
@@ -29,6 +30,7 @@ export function GemShop({ book, now }) {
   const clock = now || new Date()
   const purse = normalizePurse(book)
   const native = isReactNative()
+  const signedIn = Boolean(useAccount().user)
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
   const [storeReady, setStoreReady] = useState(!native)
@@ -72,7 +74,7 @@ export function GemShop({ book, now }) {
           <PurseBits purse={purse} />
         </p>
         <p className="di-set-note">{t('gems.balance', { gems: purse.gems })}</p>
-        <p className="di-set-note">{native ? t('gems.hintNative') : t('gems.hint')}</p>
+        <p className="di-set-note">{native ? t(signedIn ? 'gems.hintNativeIn' : 'gems.hintNative') : t(signedIn ? 'gems.hintIn' : 'gems.hint')}</p>
         {native && !storeReady ? <p className="di-set-note">{t('gems.loadingStore')}</p> : null}
         {!native ? <p className="di-set-note">{t('gems.appOnly')}</p> : null}
 

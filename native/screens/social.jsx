@@ -57,6 +57,7 @@ import {
   unsendAsk,
   usePeoplePulse,
 } from '../../src/lib/people.js'
+import { keptProfileName } from '../../src/lib/cloud-sync.js'
 import {
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
@@ -341,6 +342,25 @@ function friendLine(person) {
 // The pill already says done tonight; the line under the name adds the streak.
 function streakOnly(person) {
   return person?.streak > 0 ? t('people.streakN', { n: person.streak }) : ''
+}
+
+// What you sent: finished items you cleared stay hidden on this phone.
+function readSentHidden(uid) {
+  try {
+    const list = JSON.parse(localStorage.getItem(`did-i-sent-hidden:${uid}`) || '[]')
+    return Array.isArray(list) ? list.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function keepSentHidden(uid, list) {
+  try {
+    if (list.length) localStorage.setItem(`did-i-sent-hidden:${uid}`, JSON.stringify(list.slice(-500)))
+    else localStorage.removeItem(`did-i-sent-hidden:${uid}`)
+  } catch {
+    // Cleared items come back next time.
+  }
 }
 
 function sentState(state) {
@@ -896,7 +916,7 @@ export function PeopleScreen({ book, onChange }) {
       <Row
         colors={colors}
         label={t('people.name')}
-        note={mine?.display_name || t('people.nameInAccount')}
+        note={mine?.display_name || book.keeperName || keptProfileName() || t('people.nameInAccount')}
         onPress={() => goHash('/account')}
       />
       <Row
@@ -2119,6 +2139,23 @@ export function SentScreen({ book, onChange }) {
   const [miss, setMiss] = useState('')
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [hidden, setHidden] = useState(() => readSentHidden(account.user?.id))
+  useEffect(() => {
+    setHidden(readSentHidden(account.user?.id))
+  }, [account.user?.id])
+  const hiddenSet = new Set(hidden)
+  const shownRows = rows.filter((row) => !hiddenSet.has(`s:${row.id}`))
+  const shownLinks = links.filter((link) => !hiddenSet.has(`l:${link.code}`))
+  const finished = [
+    ...shownRows.filter((row) => row.state === 'kept' || row.state === 'passed').map((row) => `s:${row.id}`),
+    ...shownLinks.filter((link) => link.ended).map((link) => `l:${link.code}`),
+  ]
+  const clearedCount = rows.length + links.length - shownRows.length - shownLinks.length
+
+  function setHiddenKept(next) {
+    setHidden(next)
+    keepSentHidden(account.user?.id, next)
+  }
 
   async function saveEdit() {
     if (busy || !editing) return
@@ -2180,11 +2217,14 @@ export function SentScreen({ book, onChange }) {
       </ScreenShell>
     )
   }
-  if (!rows.length && !links.length) {
+  if (!shownRows.length && !shownLinks.length) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
         <EmptyCard colors={colors} title={t('sent.emptyTitle')} body={t('sent.emptyBody')}>
           <DidButton colors={colors} small label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
+          {clearedCount ? (
+            <KeyButton colors={colors} label={t('sent.bringBack', { n: clearedCount })} onPress={() => setHiddenKept([])} />
+          ) : null}
         </EmptyCard>
       </ScreenShell>
     )
@@ -2194,13 +2234,30 @@ export function SentScreen({ book, onChange }) {
     <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: rows.length + links.length })}</Text>
+        <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: shownRows.length + shownLinks.length })}</Text>
         <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('sent.hint')}</Text>
+        {finished.length || clearedCount ? (
+          <View style={styles.personActions}>
+            {finished.length ? (
+              <KeyButton
+                colors={colors}
+                label={t('sent.clearFinished', { n: finished.length })}
+                onPress={() => {
+                  setHiddenKept([...hidden, ...finished])
+                  confirmDone(t('sent.cleared', { n: finished.length }))
+                }}
+              />
+            ) : null}
+            {clearedCount ? (
+              <KeyButton colors={colors} label={t('sent.bringBack', { n: clearedCount })} onPress={() => setHiddenKept([])} />
+            ) : null}
+          </View>
+        ) : null}
       </View>
-      {rows.length ? (
+      {shownRows.length ? (
       <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-      {rows.map((row, at) => (
-        <View key={row.id} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+      {shownRows.map((row, at) => (
+        <View key={row.id} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
           <View style={styles.personCopy}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
@@ -2209,6 +2266,8 @@ export function SentScreen({ book, onChange }) {
                 .join(' · ')}
             </Text>
           </View>
+          {canEditSent(row) || row.state === 'sent' ? (
+          <View style={styles.personActions}>
           {canEditSent(row) ? (
             <KeyButton colors={colors} label={t('sent.edit')} onPress={() => setEditing({ id: row.id, text: row.question })} />
           ) : null}
@@ -2225,16 +2284,18 @@ export function SentScreen({ book, onChange }) {
               }}
             />
           ) : null}
+          </View>
+          ) : null}
         </View>
       ))}
       </View>
       ) : null}
-      {links.length ? (
+      {shownLinks.length ? (
         <>
           <Cap colors={colors}>{t('sent.linksCap')}</Cap>
           <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-            {links.map((link, at) => (
-              <View key={link.code} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+            {shownLinks.map((link, at) => (
+              <View key={link.code} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
                 <View style={styles.personCopy}>
                   <Text style={[styles.personTitle, { color: colors.ink }]}>{link.question}</Text>
                   <Text style={[styles.personNote, { color: colors.inkDim }]}>
@@ -2242,7 +2303,9 @@ export function SentScreen({ book, onChange }) {
                   </Text>
                 </View>
                 {link.ended ? null : (
-                  <KeyButton colors={colors} label={t('sent.stopLink')} onPress={() => askStopLink(link)} />
+                  <View style={styles.personActions}>
+                    <KeyButton colors={colors} label={t('sent.stopLink')} onPress={() => askStopLink(link)} />
+                  </View>
                 )}
               </View>
             ))}
@@ -2292,6 +2355,8 @@ const styles = StyleSheet.create({
   groupPad: { padding: 14, gap: 8 },
   editLift: { justifyContent: 'center' },
   groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  // Text wraps full width; buttons sit on their own line under it.
+  sentRow: { gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   previewList:{ gap: 8, marginTop: 12, marginBottom: 4 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },
   previewIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
