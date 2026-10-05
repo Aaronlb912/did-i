@@ -40,8 +40,10 @@ export function needsAuth(account) {
   // cold open does not flash sign-in. If the check finds no session, `ready`
   // flips with no user and the gate shows sign-in then.
   if (!account?.ready && readAccountUserId()) return false
-  // A fresh install has no session yet. Waiting on `ready` used to open
-  // Tonight first, and a hung session check left no way to sign in.
+  // A fresh install goes straight to the first night. Sign-in is offered
+  // after night one and from Settings, not as a wall.
+  if (!readAccountUserId()) return false
+  // Signed in before and the session is gone: ask again.
   return true
 }
 
