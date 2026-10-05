@@ -2551,4 +2551,15 @@ export const zh = {
   'weLink.webJoin': '在网页上加入',
   'weLink.webLead': '没有应用？在这里加入，今晚在浏览器里回答。',
   'weLink.webSignIn': '在网页上登录即可加入。今晚在这里回答。',
+  // round4-polish/questions-round4
+  'lamp.copySub': '复制一份，日程相同。',
+  'lamp.monthPrev': '上个月',
+  'lamp.monthNext': '下个月',
+  'hang.folderHint': '只放在一个地方。用于筛选主页和统计。',
+  'hang.topicsHint': '可选标签。一个问题可以有多个。',
+  'hang.discardNewTitle': '放弃这个问题？',
+  'questions.reorder': '排序',
+  'questions.reorderHint': '今晚按这个顺序提问。',
+  'questions.moveUp': '上移{name}',
+  'questions.moveDown': '下移{name}',
 }

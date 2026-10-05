@@ -2642,4 +2642,15 @@ export const fr = {
   'weLink.webJoin': 'Rejoindre sur le web',
   'weLink.webLead': 'Pas d\'appli ? Rejoins ici et réponds ce soir dans ton navigateur.',
   'weLink.webSignIn': 'Connecte-toi sur le web pour rejoindre. Puis réponds ici ce soir.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Faire une copie avec le même rythme.',
+  'lamp.monthPrev': 'Mois précédent',
+  'lamp.monthNext': 'Mois suivant',
+  'hang.folderHint': 'Un seul endroit. Filtre Accueil et stats.',
+  'hang.topicsHint': 'Étiquettes facultatives. Une question peut en avoir plusieurs.',
+  'hang.discardNewTitle': 'Abandonner cette question ?',
+  'questions.reorder': 'Ordonner',
+  'questions.reorderHint': 'Ce soir, elles viennent dans cet ordre.',
+  'questions.moveUp': 'Monter {name}',
+  'questions.moveDown': 'Descendre {name}',
 }

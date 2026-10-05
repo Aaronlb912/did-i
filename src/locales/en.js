@@ -2623,4 +2623,15 @@ export const en = {
   'weLink.webJoin': 'Join on the web',
   'weLink.webLead': 'No app? Join here and answer tonight in your browser.',
   'weLink.webSignIn': 'Sign in on the web to join. Then answer it here tonight.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Make a copy with the same schedule.',
+  'lamp.monthPrev': 'Last month',
+  'lamp.monthNext': 'Next month',
+  'hang.folderHint': 'One place it lives. Filters Home and stats.',
+  'hang.topicsHint': 'Optional labels. A question can have several.',
+  'hang.discardNewTitle': 'Discard this question?',
+  'questions.reorder': 'Reorder',
+  'questions.reorderHint': 'Tonight asks them in this order.',
+  'questions.moveUp': 'Move {name} up',
+  'questions.moveDown': 'Move {name} down',
 }

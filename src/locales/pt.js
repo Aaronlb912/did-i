@@ -2628,4 +2628,15 @@ export const pt = {
   'weLink.webJoin': 'Entrar pela web',
   'weLink.webLead': 'Sem app? Entre aqui e responda hoje no navegador.',
   'weLink.webSignIn': 'Entre na web para participar. Depois responda aqui hoje à noite.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Fazer uma cópia com a mesma agenda.',
+  'lamp.monthPrev': 'Mês anterior',
+  'lamp.monthNext': 'Próximo mês',
+  'hang.folderHint': 'Um só lugar. Filtra Início e estatísticas.',
+  'hang.topicsHint': 'Etiquetas opcionais. Uma pergunta pode ter várias.',
+  'hang.discardNewTitle': 'Descartar esta pergunta?',
+  'questions.reorder': 'Reordenar',
+  'questions.reorderHint': 'Hoje à noite elas vêm nesta ordem.',
+  'questions.moveUp': 'Subir {name}',
+  'questions.moveDown': 'Descer {name}',
 }

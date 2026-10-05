@@ -2635,4 +2635,15 @@ export const es = {
   'weLink.webJoin': 'Unirse en la web',
   'weLink.webLead': '¿Sin app? Únete aquí y responde esta noche en el navegador.',
   'weLink.webSignIn': 'Inicia sesión en la web para unirte. Luego responde aquí esta noche.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Hacer una copia con el mismo horario.',
+  'lamp.monthPrev': 'Mes anterior',
+  'lamp.monthNext': 'Mes siguiente',
+  'hang.folderHint': 'Un solo lugar. Filtra Inicio y estadísticas.',
+  'hang.topicsHint': 'Etiquetas opcionales. Una pregunta puede tener varias.',
+  'hang.discardNewTitle': '¿Descartar esta pregunta?',
+  'questions.reorder': 'Ordenar',
+  'questions.reorderHint': 'Esta noche se preguntan en este orden.',
+  'questions.moveUp': 'Subir {name}',
+  'questions.moveDown': 'Bajar {name}',
 }

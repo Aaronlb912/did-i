@@ -2646,4 +2646,15 @@ export const de = {
   'weLink.webJoin': 'Im Web beitreten',
   'weLink.webLead': 'Keine App? Tritt hier bei und antworte heute Abend im Browser.',
   'weLink.webSignIn': 'Melde dich im Web an, um beizutreten. Dann antworte heute Abend hier.',
+  // round4-polish/questions-round4
+  'lamp.copySub': 'Eine Kopie mit demselben Zeitplan anlegen.',
+  'lamp.monthPrev': 'Letzter Monat',
+  'lamp.monthNext': 'Nächster Monat',
+  'hang.folderHint': 'Ein fester Ort. Filtert Start und Statistik.',
+  'hang.topicsHint': 'Freie Stichworte. Eine Frage kann mehrere haben.',
+  'hang.discardNewTitle': 'Diese Frage verwerfen?',
+  'questions.reorder': 'Ordnen',
+  'questions.reorderHint': 'Heute Abend kommen sie in dieser Reihenfolge.',
+  'questions.moveUp': '{name} nach oben',
+  'questions.moveDown': '{name} nach unten',
 }
