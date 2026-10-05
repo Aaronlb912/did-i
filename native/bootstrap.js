@@ -59,6 +59,19 @@ try {
   // Keeps the generic label.
 }
 
+// "Pixel 8 · Android 15" or "iPhone · iOS 18.2", so phones with the same
+// label can be told apart (devices.model, supabase/device-names.sql).
+try {
+  const pc = Platform.constants || {}
+  const model =
+    Platform.OS === 'android'
+      ? [pc.Model, `Android ${pc.Release || Platform.Version}`]
+      : [pc.interfaceIdiom === 'pad' ? 'iPad' : 'iPhone', `iOS ${Platform.Version}`]
+  globalThis.__didIDeviceModel = model.filter(Boolean).join(' · ').slice(0, 80)
+} catch {
+  // No model line.
+}
+
 globalThis.__didIOnVisible = (fn) => {
   const sub = AppState.addEventListener('change', (state) => {
     if (state === 'active') fn()

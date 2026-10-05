@@ -6,7 +6,7 @@ import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
 import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from '../../src/lib/did-you-links.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
-import { passAlong } from '../../src/lib/native.js'
+import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_GEMS_CAP,
   INVITE_LOOK_AT,
@@ -93,7 +93,7 @@ import {
 } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
-import { confirmDone, once } from '../lib/confirm.js'
+import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { fonts } from '../theme.js'
@@ -929,6 +929,28 @@ export function PeopleScreen({ book, onChange }) {
         note={mine?.friend_id ? formatFriendId(mine.friend_id) : t('friendId.shareSub')}
         onPress={() => goHash('/people/connect')}
       />
+      {mine?.friend_id ? (
+        <View style={styles.idButtons}>
+          <KeyButton
+            colors={colors}
+            label={t('friendId.copy')}
+            onPress={async () => {
+              if (await copyText(formatFriendId(mine.friend_id))) confirmDone(t('friendId.copied'))
+              else confirmMiss(t('confirm.miss'))
+            }}
+          />
+          <KeyButton
+            colors={colors}
+            label={t('friendId.share')}
+            onPress={async () => {
+              const id = mine.friend_id
+              const how = await passAlong(t('friendId.shareText', { id: formatFriendId(id), link: friendQrLink(id) }), t('friendId.title'))
+              if (how === 'copied') confirmDone(t('friendId.copied'))
+              else if (!how) confirmMiss(t('confirm.shareMiss'))
+            }}
+          />
+        </View>
+      ) : null}
       <Row
         colors={colors}
         label={t('people.connect')}
@@ -1116,6 +1138,11 @@ export function PeopleConnectScreen({ book, route }) {
     else setMiss(t('confirm.shareMiss'))
   }
 
+  async function copyId() {
+    if (await copyText(formatFriendId(myId))) confirmDone(t('friendId.copied'))
+    else confirmMiss(t('confirm.miss'))
+  }
+
   async function newFamily() {
     const { miss: why, id } = await makeFamily(famDraft || t('people.familyOne'))
     if (why) return setMiss(tMiss(why))
@@ -1171,7 +1198,10 @@ export function PeopleConnectScreen({ book, route }) {
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
           {myId ? formatFriendId(myId) : t('family.loading')}
         </Text>
-        <KeyButton colors={colors} label={t('friendId.share')} disabled={!myId} onPress={shareId} />
+        <View style={styles.idButtons}>
+          <KeyButton colors={colors} label={t('friendId.copy')} disabled={!myId} onPress={copyId} />
+          <KeyButton colors={colors} label={t('friendId.share')} disabled={!myId} onPress={shareId} />
+        </View>
         {myId ? (
           <KeyButton
             colors={colors}
@@ -2486,6 +2516,7 @@ const styles = StyleSheet.create({
   tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
   friendIdCard: { gap: 6, alignItems: 'flex-start' },
+  idButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   photoVeil: { alignItems: 'center', justifyContent: 'center', gap: 12 },
   bigPhoto: { width: 280, height: 280, borderRadius: 140 },
   qrBox: { alignSelf: 'stretch', alignItems: 'center', gap: 8, paddingVertical: 8 },

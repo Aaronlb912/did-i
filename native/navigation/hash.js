@@ -114,6 +114,7 @@ function ready() {
 }
 
 let swapping = false
+let fromMenu = false
 
 function go(route) {
   if (!ready()) {
@@ -140,6 +141,18 @@ function go(route) {
   // A done form going back to the screen right behind it is just back.
   if (swapping && routes.length > 1 && routeKey(routeFromScreen(routes[routes.length - 2])) === key) {
     navigationRef.dispatch(StackActions.pop())
+    return
+  }
+  // The main menu is a fresh start: Home, then the screen picked, so back
+  // goes home instead of through every screen opened before.
+  if (fromMenu) {
+    navigationRef.dispatch(
+      CommonActions.reset({
+        ...state,
+        index: 1,
+        routes: [routes[0], { name: route.path, params: paramsOf(route) }],
+      }),
+    )
     return
   }
   const move = swapping && routes.length > 1 ? StackActions.replace : StackActions.push
@@ -313,6 +326,16 @@ export function goHash(path, extras = '') {
     go(current)
   } catch {
     // The screen already moved. A navigator reject must not freeze the tap.
+  }
+}
+
+/** From the main menu: the stack becomes Home plus this screen. */
+export function goFromMenu(path, extras) {
+  fromMenu = true
+  try {
+    goHash(path, extras)
+  } finally {
+    fromMenu = false
   }
 }
 

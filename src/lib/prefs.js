@@ -40,6 +40,9 @@ function blankPrefs() {
     // One push the morning a shop drop goes live. Off until asked for in the
     // shop; the server reads it (queue_drop_pushes in supabase/shop-drops.sql).
     dropPings: false,
+    // Hour of the family summary push on the person's clock. The server reads
+    // profiles.family_hour (supabase/family-summary.sql); this mirrors it.
+    familyHour: 21,
   }
 }
 
@@ -106,6 +109,7 @@ function cleanPrefs(raw) {
   if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   if (raw?.dropPings === true) next.dropPings = true
+  if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
   return next

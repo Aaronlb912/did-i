@@ -855,6 +855,13 @@ function WeCardPage({ book, cardId, onChange }) {
     </View>
   )
 
+  // The swipe card below already shows the question in big type.
+  const bigCard = !card.due && early && !early.card.done && !weMine(early.card)?.status
+  const names = (card.people || [])
+    .filter((p) => p.state === 'in')
+    .map((p) => (p.me ? t('we.you') : p.name))
+    .join(', ')
+
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
       {shareFirst ? shareCard : null}
@@ -862,6 +869,11 @@ function WeCardPage({ book, cardId, onChange }) {
         <View style={styles.headTop}>
           <View style={styles.headFaces}>
             <WeFaces card={card} colors={colors} cheer={cheer} />
+            {names ? (
+              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={2}>
+                {names}
+              </Text>
+            ) : null}
           </View>
           <Pressable
             onPress={() => setMenu(true)}
@@ -873,7 +885,7 @@ function WeCardPage({ book, cardId, onChange }) {
             <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
           </Pressable>
         </View>
-        <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
+        {bigCard ? null : <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>}
         <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
       </View>
@@ -971,7 +983,7 @@ function WeCardPage({ book, cardId, onChange }) {
         </Meta>
         <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
           <Meta colors={colors}>
-            {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
+            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
             {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
           </Meta>
           {goal ? (
@@ -1162,7 +1174,8 @@ const styles = StyleSheet.create({
   panel: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
   card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
   headTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headFaces: { flex: 1 },
+  headFaces: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headNames: { flex: 1, fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
   moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },

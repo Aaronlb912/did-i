@@ -300,11 +300,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
-          icon="clock"
+          icon="moon"
           tint={colors.on}
-          label={t('settings.fold')}
+          label={t('settings.foldLine')}
           sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
-          value={t('settings.foldAt')}
         />
         <SetChoice
           colors={colors}
@@ -330,14 +329,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.soundOn')}
           on={Boolean(book?.clickSound)}
           onPress={() => onChange?.({ ...book, clickSound: !book.clickSound })}
-        />
-        <SetSwitch
-          colors={colors}
-          icon="eye"
-          tint={colors.late}
-          label={t('settings.hideMarks')}
-          on={Boolean(book?.quietMode)}
-          onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
         />
         <SetRow
           colors={colors}
@@ -403,6 +394,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       <SetCap colors={colors}>{t('settings.history')}</SetCap>
       <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          icon="eye"
+          tint={colors.late}
+          label={t('settings.hideMarks')}
+          on={Boolean(book?.quietMode)}
+          onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
+        />
         <SetRow
           colors={colors}
           icon="collection"
@@ -449,6 +448,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.on}
           label={t('settings.sendCsv')}
           sub={t('settings.sendCsvSub')}
+          chevron
           onPress={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
           last
         />
@@ -470,6 +470,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.late}
           label={t('feedback.send')}
           sub={t('feedback.sub')}
+          chevron
           onPress={() => {
             const url = feedbackMailto()
             if (url) Linking.openURL(url)

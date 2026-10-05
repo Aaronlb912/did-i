@@ -66,6 +66,8 @@ import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
 import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
+import { pickSocialLine } from '../../src/lib/social-line.js'
+import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
 import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weInFilter, weMine, weStats } from '../../src/lib/did-we.js'
@@ -138,6 +140,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const look = activeLook(book)
   const colors = useHallColors(book)
   const account = useAccount()
+  const [together, setTogether] = useState(() => readTogetherPeople())
+  useEffect(() => onTogetherSaved(() => setTogether(readTogetherPeople())), [])
   const sync = useSync()
   const now = useMinuteNow()
   const [topicPicks, setTopicPicks] = useState([])
@@ -289,6 +293,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         .map((item) => item.title)
     : []
   const weCards = we.cards.filter((card) => weInFilter(card, folderTitles, picks))
+  // At most one line about other people: a Did we waiting on you, or a
+  // friend still going once you are done.
+  const social = pickSocialLine({
+    weCards,
+    people: account.user ? buildTogetherWidgetProps(together).people : [],
+    nightDone: stack.nightDone,
+  })
   // Did wes asked tonight that you are on, for the pills.
   const wePills = weCards.filter((card) => card.myState === 'in' && card.due)
   const pickedWe = wePick ? weOpenForMe(weCards, new Date(), { early: true }).find((card) => card.id === wePick) : null
@@ -532,6 +543,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
+          {social?.kind === 'cheer' ? (
+            <Pressable
+              onPress={() => goHash('/friend', { id: social.id })}
+              accessibilityRole="button"
+              hitSlop={6}
+              style={[styles.social, { borderTopColor: colors.lineSoft }]}
+            >
+              <Text style={[faceCardStyles.meta, { color: colors.ink }]}>
+                {t('home.friendNotDone', { name: social.name || t('people.someone') })}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.actions}>
             <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
             <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
@@ -850,6 +873,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
         </Slot>
         <Slot>
+          {social?.kind === 'we' && face !== weSwipe && !pickedWe ? (
+            <Pressable
+              onPress={() => goHash('/we', { id: social.id })}
+              accessibilityRole="button"
+              hitSlop={6}
+              style={[styles.weTurn, { borderColor: colors.we || colors.on, backgroundColor: colors.panel }]}
+            >
+              <Text style={[styles.weTurnText, { color: colors.ink }]} numberOfLines={2}>
+                {t('home.weYourTurn', { name: social.name || t('people.someone') })}
+              </Text>
+            </Pressable>
+          ) : null}
+        </Slot>
+        <Slot>
           <FriendsRow colors={colors} />
         </Slot>
       </SwipeFlyHost>
@@ -870,6 +907,17 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  social: { marginTop: 14, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  weTurn: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderRadius: 999,
+  },
+  weTurnText: { fontFamily: fonts.uiSemi, fontSize: 14, textAlign: 'center' },
   answerBar: { paddingBottom: 12 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },

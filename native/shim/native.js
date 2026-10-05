@@ -307,6 +307,15 @@ export async function passAlong(text, title) {
   }
 }
 
+export async function copyText(text) {
+  try {
+    await Clipboard.setStringAsync(String(text || ''))
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function shareShelf(shelf) {
   const stamp = boardDate(new Date(), 4)
   const text = JSON.stringify(shelf, null, 2)

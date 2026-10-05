@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
-import { deviceKey, deviceLabel, devicePlatform, takeOldDeviceKey } from './account.js'
+import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
@@ -438,16 +438,17 @@ export async function touchDevice() {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').upsert(
-    {
-      user_id: user.id,
-      device_key: deviceKey(),
-      label: deviceLabel(),
-      platform: devicePlatform(),
-      last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,device_key' },
-  )
+  const row = {
+    user_id: user.id,
+    device_key: deviceKey(),
+    label: deviceLabel(),
+    platform: devicePlatform(),
+    last_seen_at: new Date().toISOString(),
+  }
+  const model = deviceModel()
+  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
+  // Before supabase/device-names.sql is applied there is no model column.
+  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
   // This phone moved to its stable id: its old row is the same phone.
   const old = takeOldDeviceKey()
   if (old && old !== deviceKey()) {
@@ -465,13 +466,31 @@ export async function listDevices() {
   const user = await me()
   if (!user) return []
   const since = new Date(Date.now() - DEVICE_FRESH_DAYS * 86400000).toISOString()
-  const { data } = await db
-    .from('devices')
-    .select('device_key, label, platform, last_seen_at')
-    .eq('user_id', user.id)
-    .gt('last_seen_at', since)
-    .order('last_seen_at', { ascending: false })
+  const pick = (cols) =>
+    db
+      .from('devices')
+      .select(cols)
+      .eq('user_id', user.id)
+      .gt('last_seen_at', since)
+      .order('last_seen_at', { ascending: false })
+  const named = await pick('device_key, label, platform, last_seen_at, model, name')
+  if (!named.error) return named.data || []
+  // Older database: no model or name yet.
+  const { data } = await pick('device_key, label, platform, last_seen_at')
   return data || []
+}
+
+// The owner's own name for a phone. 40 characters, same as the server check.
+export const DEVICE_NAME_MAX = 40
+
+export async function renameDevice(key, name) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const clean = String(name || '').trim().slice(0, DEVICE_NAME_MAX)
+  const { error } = await db.from('devices').update({ name: clean }).eq('user_id', user.id).eq('device_key', key)
+  return { miss: error ? error.message : '' }
 }
 
 // Every phone but this one. Their app signs in again on next open if still
