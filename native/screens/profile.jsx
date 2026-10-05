@@ -131,7 +131,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   async function loadFile() {
     try {
-      const picked = await DocumentPicker.getDocumentAsync({ type: 'application/json' })
+      const picked = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain'] })
       if (picked.canceled || !picked.assets?.[0]?.uri) return
       const response = await fetch(picked.assets[0].uri)
       const parsed = JSON.parse(await response.text())
