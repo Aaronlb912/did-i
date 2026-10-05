@@ -1,4 +1,4 @@
-import { answerFor, isDueOn, periodKeyFor, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, isDueOn, periodKeyFor, periodNight, recentPeriodKeys } from './recurrence.js'
 
 function didStatus(status) {
   return status === 'yes' || status === 'late'
@@ -22,4 +22,39 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
     streak += 1
   }
   return { streak, did, asked: keys.length, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
+}
+
+// One question's last few weeks, oldest first: how many due nights each week
+// were DID. Tonight only counts once it is answered. Once and monthly
+// questions have no weekly shape, so they get none.
+export function lampWeeks(book, lamp, dateIso, weeks = 8) {
+  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || !dateIso) return []
+  const live = { ...lamp, archived: false }
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  const out = []
+  for (let w = 0; w < weeks; w += 1) {
+    const from = addDaysIso(dateIso, -(weeks * 7 - 1) + w * 7)
+    let due = 0
+    let did = 0
+    for (let d = 0; d < 7; d += 1) {
+      const iso = d ? addDaysIso(from, d) : from
+      if (created && iso < created) continue
+      if (!isDueOn(live, iso)) continue
+      const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status || ''
+      if (iso === dateIso && !status) continue
+      due += 1
+      if (didStatus(status)) did += 1
+    }
+    out.push({ from, due, did })
+  }
+  return out
+}
+
+// This question's answers, newest night first, each with its readable night.
+export function lampNights(book, lamp) {
+  if (!lamp) return []
+  return (book?.answers || [])
+    .filter((answer) => answer.lampId === lamp.id && answer.periodKey)
+    .map((answer) => ({ answer, night: periodNight(lamp, answer.periodKey) }))
+    .sort((a, b) => b.night.localeCompare(a.night) || String(b.answer.periodKey).localeCompare(String(a.answer.periodKey)))
 }

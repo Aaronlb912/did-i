@@ -57,7 +57,7 @@ import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { lampRecord } from '../../src/lib/lamp-record.js'
+import { lampRecord, lampWeeks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -1394,6 +1394,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
+  const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
   const phone = usePhoneQuiet()
 
   function change(next) {
@@ -1483,6 +1484,31 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
         </View>
       </View>
+
+      {weeks.length ? (
+        <View style={styles.trend}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.trend')}</Text>
+          <View style={styles.trendRow}>
+            {weeks.map((week) => (
+              <View
+                key={week.from}
+                style={styles.trendWeek}
+                accessible
+                accessibilityLabel={t('lamp.trendWeek', { date: formatBoardDate(week.from), did: week.did, due: week.due })}
+              >
+                <View style={[styles.trendBar, { backgroundColor: colors.lineSoft }]}>
+                  {week.due ? (
+                    <View
+                      style={[styles.trendFill, { backgroundColor: colors.on, height: `${Math.round((week.did / week.due) * 100)}%` }]}
+                    />
+                  ) : null}
+                </View>
+                <Text style={[styles.trendNum, { color: colors.inkDim }]}>{week.due ? `${week.did}/${week.due}` : '-'}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
 
@@ -1619,6 +1645,13 @@ const styles = StyleSheet.create({
   tileNum: { fontFamily: fonts.mono, fontSize: 26, fontWeight: '700' },
   tileOf: { fontSize: 16, fontWeight: '400' },
   tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
+  trend: { gap: 8, marginBottom: 12 },
+  trendLabel: { ...sectionLabel },
+  trendRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+  trendWeek: { flex: 1, alignItems: 'center', gap: 4 },
+  trendBar: { width: '100%', maxWidth: 28, height: 48, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },
+  trendFill: { width: '100%' },
+  trendNum: { fontFamily: fonts.mono, fontSize: 10 },
   tonight: { gap: 8, marginTop: 4 },
   tonightRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   more: { gap: 12, marginTop: 8 },

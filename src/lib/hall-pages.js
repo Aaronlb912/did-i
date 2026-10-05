@@ -8,6 +8,7 @@ import {
   formatBoardDate,
   isoDate,
   parseIsoDate,
+  periodNight,
   rowDoneTonight,
   unansweredTonight,
   waitingTonight,
@@ -354,9 +355,15 @@ export function weekRecap(boards, week, tagId = '') {
   let dids = 0
   if (from && to) {
     for (const book of scopedBooks(boards, tagId)) {
+      let lamps = null
       for (const answer of book.answers || []) {
         if (answer.status !== 'yes' && answer.status !== 'late') continue
-        const key = String(answer.periodKey || '')
+        let key = String(answer.periodKey || '')
+        // A once question counts on its own day.
+        if (key.startsWith('once:')) {
+          lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+          key = periodNight(lamps.get(answer.lampId), key)
+        }
         if (key.length === 10 && key >= from && key <= to) dids += 1
       }
     }

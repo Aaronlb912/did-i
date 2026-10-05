@@ -324,6 +324,31 @@ export function formatBoardDate(iso) {
   })
 }
 
+// The day an answer belongs to. Once questions key on the question id
+// ("once:abc"), so read the day off the question; monthly keys get the 1st.
+export function periodNight(lamp, periodKey) {
+  const key = String(periodKey || '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return key
+  if (/^\d{4}-\d{2}$/.test(key)) return `${key}-01`
+  if (key.startsWith('once:')) {
+    const day = String((lamp?.onceWhen === 'by' ? lamp?.dueBy : lamp?.onceOn) || lamp?.createdOn || '').slice(0, 10)
+    return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : ''
+  }
+  return ''
+}
+
+// An answer's night for people to read: "Thu, Oct 1", or "Oct 2026" for a
+// monthly one. Never the raw key.
+export function periodLabel(lamp, periodKey) {
+  const key = String(periodKey || '')
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    const date = parseIsoDate(`${key}-01`)
+    return date ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''
+  }
+  const night = periodNight(lamp, key)
+  return night ? formatBoardDate(night) : ''
+}
+
 export function recentPeriodKeys(lamp, dateIso, count = 7) {
   if (lamp.cadence === 'once') return [`once:${lamp.id}`]
   const created = String(lamp.createdOn || '').trim()
