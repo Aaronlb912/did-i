@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
-import { feedRows, tapWhen } from './hall-pages.js'
+import { feedRows, feedSearch, tapWhen } from './hall-pages.js'
 import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
@@ -14,7 +15,9 @@ function statusWord(status) {
 
 export function Feed({ book, now }) {
   const clock = now || new Date()
-  const rows = feedRows(book)
+  const allRows = feedRows(book)
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
 
   return (
     <BoardShell
@@ -26,8 +29,29 @@ export function Feed({ book, now }) {
       <section className="di-page">
         <p className="di-face-plate">{t('feed.kicker')}</p>
         <h2 className="di-page-title">{t('feed.title')}</h2>
-        {rows.length === 0 ? (
+        {allRows.length ? (
+          <label className="di-search">
+            <span className="di-search-glyph" aria-hidden="true">
+              ⌕
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('feed.searchPh')}
+              aria-label={t('feed.searchPh')}
+            />
+            {query ? (
+              <button type="button" className="di-search-clear" aria-label={t('questions.searchClear')} onClick={() => setQuery('')}>
+                ×
+              </button>
+            ) : null}
+          </label>
+        ) : null}
+        {allRows.length === 0 ? (
           <p className="di-sit-line">{t('feed.empty')}</p>
+        ) : rows.length === 0 ? (
+          <p className="di-sit-line">{t('feed.noMatch')}</p>
         ) : (
           <ol className="di-feed">
             {rows.map((row) => (

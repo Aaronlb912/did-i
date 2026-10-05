@@ -193,7 +193,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
   )
 }
 
-function SearchBox({ value, onChange, colors }) {
+export function SearchBox({ value, onChange, colors, placeholder = t('questions.searchPh') }) {
   return (
     <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
       <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
@@ -201,8 +201,8 @@ function SearchBox({ value, onChange, colors }) {
         colors={colors}
         value={value}
         onChangeText={onChange}
-        placeholder={t('questions.searchPh')}
-        accessibilityLabel={t('questions.searchPh')}
+        placeholder={placeholder}
+        accessibilityLabel={placeholder}
         autoCorrect={false}
         returnKeyType="search"
         style={[styles.searchInput, { color: colors.ink }]}

@@ -59,6 +59,7 @@ import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { t } from '../src/lib/i18n.js'
+import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -3820,6 +3821,34 @@ await testAsync('the share text and the link preview say the same question', asy
     assert.equal(didYouAsk(q), linkPreviewText({ question: q }, we).description)
   }
   assert.equal(sharedDidYouLine('Get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23')
+})
+
+test('answers CSV escapes quotes, commas, newlines and formulas', () => {
+  assert.equal(csvCell('plain'), 'plain')
+  assert.equal(csvCell('a, b'), '"a, b"')
+  assert.equal(csvCell('say "hi"'), '"say ""hi"""')
+  assert.equal(csvCell('two\nlines'), '"two\nlines"')
+  assert.equal(csvCell('=SUM(A1)'), "'=SUM(A1)")
+  const shelf = {
+    boards: [
+      {
+        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }],
+        answers: [
+          { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
+          { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '' },
+          { lampId: 'gone', periodKey: '2026-10-03', status: 'late' },
+        ],
+      },
+    ],
+  }
+  assert.equal(
+    answersCsv(shelf),
+    'date,question,short name,answer,note\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,\r\n' +
+      '2026-10-02,"drink water, lots",Water,nope,"he said ""no"""\r\n' +
+      '2026-10-03,,,late,\r\n',
+  )
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note\r\n')
 })
 
 test('every t() key the app uses is in English', () => {
