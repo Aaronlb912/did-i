@@ -312,6 +312,12 @@ revoke all on public.family_lamps from anon;
 revoke all on public.family_answers from anon;
 revoke all on public.sends from anon;
 
+-- "parents edit the family" lets a parent update the row; the app only ever
+-- renames it. The join code, maker and day fold stay put, even for a parent
+-- with a modified app. Functions that change them run as the owner.
+revoke update on public.families from authenticated;
+grant update (name) on public.families to authenticated;
+
 -- 4. Fewer round trips ------------------------------------------------
 --
 -- Reading friends used to be one query for the links and another for the
@@ -425,7 +431,9 @@ alter role authenticated set statement_timeout = '8s';
 
 -- Edit a Did you you sent, while they have not answered it. Same limits as
 -- sending: 1 to 200 letters. Only the sender, only while it waits. The
--- recipient's inbox reads the row, so they see the new words.
+-- recipient's inbox reads the row, so they see the new words. They also get
+-- a push, at most one per Did you every 10 minutes so a run of edits is one
+-- buzz.
 create or replace function public.edit_send(send uuid, question text)
 returns boolean
 language plpgsql
@@ -436,15 +444,41 @@ as $$
 declare
   me uuid := auth.uid();
   q text := btrim(coalesce(edit_send.question, ''));
-  hit integer;
+  them uuid;
+  who text;
 begin
   if me is null then raise exception 'sign in first'; end if;
   if length(q) < 1 then raise exception 'blank'; end if;
   if length(q) > 200 then raise exception 'too long'; end if;
   update public.sends s set question = q
-  where s.id = edit_send.send and s.from_id = me and s.state = 'sent' and s.kind = 'todo';
-  get diagnostics hit = row_count;
-  return hit > 0;
+  where s.id = edit_send.send and s.from_id = me and s.state = 'sent' and s.kind = 'todo'
+  returning s.to_id into them;
+  if them is null then return false; end if;
+
+  -- A push for this Did you that has not gone out yet just carries the new
+  -- words.
+  update public.push_queue p
+  set body = left(public.push_text(them, 'send_did', jsonb_build_object('q', left(q, 120))), 200)
+  where p.send_id = edit_send.send and p.sent_at is null;
+  if found then return true; end if;
+
+  if public.push_wanted(them, 'sends') and not exists (
+    select 1 from public.push_queue p
+    where p.send_id = edit_send.send and p.made_at > now() - interval '10 minutes'
+  ) then
+    select coalesce(nullif(p.display_name, ''), '@' || coalesce(p.handle, ''), 'A friend')
+    into who
+    from public.profiles p where p.user_id = me;
+    insert into public.push_queue (to_id, title, body, go, send_id)
+    values (
+      them,
+      coalesce(who, public.push_text(them, 'a_friend')),
+      left(public.push_text(them, 'send_edit', jsonb_build_object('q', left(q, 120))), 200),
+      '/inbox',
+      edit_send.send
+    );
+  end if;
+  return true;
 end;
 $$;
 
