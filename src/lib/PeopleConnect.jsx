@@ -13,6 +13,7 @@ import {
   joinFamily,
   makeFamily,
   personName,
+  INVITE_GEMS_CAP,
 } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
@@ -115,7 +116,7 @@ export function PeopleConnect({ book, now }) {
       <SetCard>
         <SetRow
           label={t('people.refer')}
-          sub={t('people.referSub')}
+          sub={t('people.referSub', { max: INVITE_GEMS_CAP })}
           chevron
           onClick={() => goHash('/people/refer')}
         />

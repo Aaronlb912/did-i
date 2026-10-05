@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { previewSample } from './board-shelf.js'
 import { goHash } from '../site/hash.js'
 import { useBackDismiss } from '../site/nav.js'
 import { PurseBits } from './PurseIcons.jsx'
@@ -87,8 +88,8 @@ export function LookPreviewCard() {
     <div className="di-buddy-preview di-look-preview">
       <p className="di-set-cap">{t('shop.buddyPreview')}</p>
       <div className="di-buddy-preview-card di-face di-swipe">
-        <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-        <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+        <p className="di-face-plate">{previewSample().tag}</p>
+        <h2 className="di-question">{previewSample().question}</h2>
       </div>
     </div>
   )

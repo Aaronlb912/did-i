@@ -1556,15 +1556,20 @@ function AccountSignedIn({ book, email, onChange }) {
           value={nameDraft}
           savedValue={book?.keeperName || ''}
           onChangeText={setNameDraft}
-          onSave={(keeperName) => {
+          onSave={async (keeperName) => {
             setNameDraft(keeperName)
             onChange({ ...book, keeperName })
-            saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
-              .then((out) => {
-                if (out?.miss && out.miss !== 'out' && out.miss !== 'off') confirmMiss(tMiss(out.miss))
-                else confirmDone(t('confirm.nameSaved'))
-              })
-              .catch(() => confirmMiss(t('confirm.miss')))
+            try {
+              const out = await saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+              if (out?.miss && out.miss !== 'out' && out.miss !== 'off') {
+                confirmMiss(tMiss(out.miss))
+                return false
+              }
+              confirmDone(t('confirm.nameSaved'))
+            } catch {
+              confirmMiss(t('confirm.miss'))
+              return false
+            }
           }}
         />
         <SetRow colors={colors} icon="wallpaper" label={t('account.look')} value={lookName} chevron onPress={() => goHash('/kit')} />

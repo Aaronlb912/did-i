@@ -13,6 +13,7 @@ import {
   familyHistory,
   familyLampMeta,
   leaveFamily,
+  renameFamily,
   listFamilyLamps,
   personName,
   readFamily,
@@ -71,6 +72,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [showQr, setShowQr] = useState(false)
   const [sheet, setSheet] = useState(null)
   const [menu, setMenu] = useState(null)
+  const [naming, setNaming] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -236,7 +238,34 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             })}
           </Text>
         ) : null}
+        {fam.parent && naming == null ? (
+          <KeyButton colors={colors} label={t('family.rename')} onPress={() => setNaming(fam.name || '')} />
+        ) : null}
+        {naming != null ? (
+          <>
+            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus />
+            <View style={styles.rowActions}>
+              <DidButton
+                small
+                colors={colors}
+                label={t('settings.save')}
+                onPress={() =>
+                  once('fam-rename', async () => {
+                    const { miss: why } = await renameFamily(fam.id, naming)
+                    if (why) return setMiss(why)
+                    setMiss('')
+                    setNaming(null)
+                    confirmDone(t('confirm.familyRenamed'))
+                    return load()
+                  })
+                }
+              />
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setNaming(null)} />
+            </View>
+          </>
+        ) : null}
       </View>
+      {fam.members.length < 2 || !lamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
 
       <SectionHead colors={colors} label={t('family.people')} />
       {fam.members.map((row) => {

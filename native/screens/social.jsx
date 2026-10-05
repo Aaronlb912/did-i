@@ -1115,7 +1115,7 @@ export function PeopleConnectScreen({ book, route }) {
       <Row
         colors={colors}
         label={t('people.refer')}
-        note={t('people.referSub')}
+        note={t('people.referSub', { max: INVITE_GEMS_CAP })}
         onPress={() => goHash('/people/refer')}
       />
 

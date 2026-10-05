@@ -238,3 +238,13 @@ export function nextBoardTitle(boards) {
   while (used.has(t('tags.defaultN', { n }))) n += 1
   return t('tags.defaultN', { n })
 }
+
+// The shop preview card shows one of your own questions, with its folder name
+// as the kicker the way the real card does. No questions yet: the sample.
+export function previewSample() {
+  for (const book of readShelf()?.boards || []) {
+    const lamp = (book.lamps || []).find((item) => !item.archived && item.question)
+    if (lamp) return { question: lamp.question, tag: book.title || t('shop.buddyPreviewTag') }
+  }
+  return { question: t('shop.buddyPreviewQ'), tag: t('shop.buddyPreviewTag') }
+}
