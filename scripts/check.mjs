@@ -72,7 +72,9 @@ import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
+import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
+import { forgetAccountCaches } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
@@ -4053,6 +4055,64 @@ test('a sheet that pops up on Tonight catches the next tap', () => {
   const sheet = readFileSync(path.join(checkRoot, 'native/components/SheetHost.jsx'), 'utf8')
   assert.ok(!sheet.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the veil never lets a tap through to Did or Nope')
   assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
+})
+
+test('signing out clears the per-account lists kept for a fast first paint', () => {
+  const was = globalThis.localStorage
+  const keys = ['did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs']
+  try {
+    // A browser: length and key().
+    const web = new Map(keys.map((k) => [k, '1']))
+    globalThis.localStorage = {
+      get length() {
+        return web.size
+      },
+      key: (i) => [...web.keys()][i] ?? null,
+      getItem: (k) => web.get(k) ?? null,
+      setItem: (k, v) => web.set(k, v),
+      removeItem: (k) => web.delete(k),
+    }
+    forgetAccountCaches()
+    assert.deepEqual([...web.keys()].sort(), ['did-i-prefs', 'did-i-shelf'])
+    // The phone shim: allKeys().
+    const phone = new Map(keys.map((k) => [k, '1']))
+    globalThis.localStorage = {
+      allKeys: () => [...phone.keys()],
+      getItem: (k) => phone.get(k) ?? null,
+      setItem: (k, v) => phone.set(k, v),
+      removeItem: (k) => phone.delete(k),
+    }
+    forgetAccountCaches()
+    assert.deepEqual([...phone.keys()].sort(), ['did-i-prefs', 'did-i-shelf'])
+  } finally {
+    globalThis.localStorage = was
+  }
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const account = readFileSync(path.join(root, 'src/lib/account.js'), 'utf8')
+  const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
+  const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
+  assert.equal((account.match(/forgetAccountCaches\(\)/g) || []).length, 3, 'sign out here, everywhere, and delete clear them')
+  assert.ok(sync.includes('forgetAccountCaches()'), 'a session that ends on its own clears them')
+  assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
+})
+
+test('the web ships English and loads the language in use; the phone loads all', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const i18n = readFileSync(path.join(root, 'src/lib/i18n.js'), 'utf8')
+  const main = readFileSync(path.join(root, 'src/main.jsx'), 'utf8')
+  const entry = readFileSync(path.join(root, 'index.js'), 'utf8')
+  const imports = i18n.match(/from '\.\.\/locales\/\w+\.js'/g) || []
+  assert.deepEqual(imports, ["from '../locales/en.js'"], 'only English is in the main bundle')
+  assert.ok(main.includes('startLocales().finally(mount)'), 'the web waits for its language before the first render')
+  assert.ok(entry.includes("import './src/lib/locales-all.js'"), 'the phone has every language at start')
+  const was = globalThis.localStorage.getItem('did-i-prefs')
+  try {
+    globalThis.localStorage.setItem('did-i-prefs', JSON.stringify({ locale: 'es' }))
+    assert.notEqual(t('nav.home'), en['nav.home'], 'a loaded language is used')
+  } finally {
+    if (was == null) globalThis.localStorage.removeItem('did-i-prefs')
+    else globalThis.localStorage.setItem('did-i-prefs', was)
+  }
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

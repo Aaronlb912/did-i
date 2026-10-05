@@ -31,7 +31,7 @@ import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
-import { GiftHost } from './screens/shop.jsx'
+import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
@@ -46,6 +46,9 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
 import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
+
+// The shop module is big; gifts wait until the first frame is up.
+const GiftHost = lazyScreen(() => require('./screens/shop.jsx'), 'GiftHost')
 
 const Stack = createNativeStackNavigator()
 
@@ -177,6 +180,7 @@ export function AppShell() {
   const legalOut = (route.path === '/terms' || route.path === '/privacy') && authGated('/', account)
   const gated = legalOut || authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
+  const [booted, setBooted] = useState(false)
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const leaveLegal = useCallback(() => goHash('/enter'), [])
@@ -229,6 +233,7 @@ export function AppShell() {
     let warm = null
     afterNativeBridgeReady(() => {
       // Connect the gem store in the background so the gem page has prices ready.
+      if (alive) setBooted(true)
       warm = setTimeout(() => initGemIap().catch(() => {}), 3000)
       captureInviteOnFirstLaunch()
       checkPings()
@@ -363,7 +368,7 @@ export function AppShell() {
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
         <UpdatePrompt path={route.path} colors={colors} />
-        {app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
+        {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         <SheetHost />
         <CheerBurstHost />

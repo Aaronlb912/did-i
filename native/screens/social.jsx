@@ -68,7 +68,7 @@ import {
   applyInvitePayout,
   normalizePurse,
 } from '../../src/lib/purse.js'
-import { useKept } from '../hooks/useKept.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
@@ -674,13 +674,13 @@ export function PeopleScreen({ book, onChange }) {
   const account = useAccount()
   // The strip line teaches a tap; regulars know it.
   const newHere = useMemo(() => isNewShelf(readShelf().boards), [])
-  const [mine, setMine] = useKept(`people.mine:${account.user?.id}`, null)
-  const [links, setLinks] = useKept(`people.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
-  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
-  const [waiting, setWaiting] = useKept(`people.waiting:${account.user?.id}`, 0)
+  const [mine, setMine] = useKept(`people.mine:${account.user?.id}`, null, KEEP)
+  const [links, setLinks] = useKept(`people.links:${account.user?.id}`, { friends: [], asked: [], sent: [] }, KEEP)
+  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [], KEEP)
+  const [waiting, setWaiting] = useKept(`people.waiting:${account.user?.id}`, 0, KEEP)
   // Did we invites open from the same Did you inbox, so the tile counts them too.
-  const [weWaiting, setWeWaiting] = useKept(`people.weWaiting:${account.user?.id}`, 0)
-  const [ready, setReady] = useKept(`people.ready:${account.user?.id}`, false)
+  const [weWaiting, setWeWaiting] = useKept(`people.weWaiting:${account.user?.id}`, 0, KEEP)
+  const [ready, setReady] = useKept(`people.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
@@ -965,10 +965,10 @@ export function PeopleScreen({ book, onChange }) {
 export function PeopleReferScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [invite, setInvite] = useKept(`refer.invite:${account.user?.id}`, '')
-  const [joined, setJoined] = useKept(`refer.joined:${account.user?.id}`, 0)
-  const [gemsPaid, setGemsPaid] = useKept(`refer.gems:${account.user?.id}`, 0)
-  const [ready, setReady] = useKept(`refer.ready:${account.user?.id}`, false)
+  const [invite, setInvite] = useKept(`refer.invite:${account.user?.id}`, '', KEEP)
+  const [joined, setJoined] = useKept(`refer.joined:${account.user?.id}`, 0, KEEP)
+  const [gemsPaid, setGemsPaid] = useKept(`refer.gems:${account.user?.id}`, 0, KEEP)
+  const [ready, setReady] = useKept(`refer.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
 
@@ -1202,10 +1202,10 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   const colors = useHallColors()
   const account = useAccount()
   const purse = normalizePurse(book)
-  const [links, setLinks] = useKept(`friends.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
-  const [blocks, setBlocks] = useKept(`friends.blocks:${account.user?.id}`, [])
+  const [links, setLinks] = useKept(`friends.links:${account.user?.id}`, { friends: [], asked: [], sent: [] }, KEEP)
+  const [blocks, setBlocks] = useKept(`friends.blocks:${account.user?.id}`, [], KEEP)
   const [autoAdds, setAutoAdds] = useKept(`friends.auto:${account.user?.id}`, () => new Set())
-  const [ready, setReady] = useKept(`friends.ready:${account.user?.id}`, false)
+  const [ready, setReady] = useKept(`friends.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [confirm, setConfirm] = useState(null)
@@ -1601,9 +1601,9 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
 function FamilyListScreen({ colors }) {
   const account = useAccount()
-  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
+  const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [], KEEP)
   const [pop, setPop] = useState(false)
-  const [ready, setReady] = useKept(`families.ready:${account.user?.id}`, false)
+  const [ready, setReady] = useKept(`families.ready:${account.user?.id}`, false, KEEP)
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -1688,11 +1688,11 @@ export function FriendScreen({ book, onChange, route }) {
   const purse = normalizePurse(book)
   const [stock, setStock] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
-  const [person, setPerson] = useKept(`friend.person:${otherId}`, { user_id: otherId })
+  const [person, setPerson] = useKept(`friend.person:${otherId}`, { user_id: otherId }, KEEP)
   // Kept between visits so a revisit opens on the last tab and counts at once.
-  const [sends, setSends] = useKept(`friend.sends:${account.user?.id}:${otherId}`, { mine: [], theirs: [], miss: '' })
-  const [keptLinks, setKeptLinks] = useKept(`friend.links:${account.user?.id}:${otherId}`, [])
-  const [ready, setReady] = useKept(`friend.ready:${account.user?.id}:${otherId}`, false)
+  const [sends, setSends] = useKept(`friend.sends:${account.user?.id}:${otherId}`, { mine: [], theirs: [], miss: '' }, KEEP)
+  const [keptLinks, setKeptLinks] = useKept(`friend.links:${account.user?.id}:${otherId}`, [], KEEP)
+  const [ready, setReady] = useKept(`friend.ready:${account.user?.id}:${otherId}`, false, KEEP)
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
   const [bigPhoto, setBigPhoto] = useState(false)
@@ -2045,8 +2045,8 @@ export function FamilyScreen({ book, onChange, route }) {
 export function InboxScreen({ book, onChange, onKeep, route }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [rows, setRows] = useKept(`inbox.rows:${account.user?.id}`, [])
-  const [ready, setReady] = useKept(`inbox.ready:${account.user?.id}`, false)
+  const [rows, setRows] = useKept(`inbox.rows:${account.user?.id}`, [], KEEP)
+  const [ready, setReady] = useKept(`inbox.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [menu, setMenu] = useState(null)
   // Keep or Pass tapped on the notification: keep:<send id> or pass:<send id>.
@@ -2190,9 +2190,9 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
 export function SentScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
-  const [rows, setRows] = useKept(`sent.rows:${account.user?.id}`, [])
-  const [links, setLinks] = useKept(`sent.links:${account.user?.id}`, [])
-  const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false)
+  const [rows, setRows] = useKept(`sent.rows:${account.user?.id}`, [], KEEP)
+  const [links, setLinks] = useKept(`sent.links:${account.user?.id}`, [], KEEP)
+  const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)

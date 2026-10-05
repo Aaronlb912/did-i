@@ -3,6 +3,7 @@ import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
 import { clearAuthSkip } from './auth-gate.js'
+import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readPrefs, writePrefs } from './prefs.js'
@@ -210,7 +211,10 @@ export function bindAuthSync() {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
       return
     }
-    if (event === 'SIGNED_OUT') sessionMissing()
+    if (event === 'SIGNED_OUT') {
+      forgetAccountCaches()
+      sessionMissing()
+    }
   })
 }
 
