@@ -105,3 +105,12 @@ export function onWeNights(fn) {
 export function weOpenOn(nightIso) {
   return new Set((index().get(nightIso) || []).filter((row) => row.status !== 'did').map((row) => row.card))
 }
+
+// Did we card ids not yet did on a night, with the same tag rule as weNight.
+export function weOpenIds(nightIso, tagId = '') {
+  const ids = tagIdsOf(tagId)
+  return (index().get(nightIso) || [])
+    .filter((row) => !ids.length || (row.folder && ids.includes(row.folder)))
+    .filter((row) => row.status !== 'did')
+    .map((row) => row.card)
+}

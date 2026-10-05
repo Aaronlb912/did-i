@@ -5850,7 +5850,8 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   gap: 0.24rem;
 }
 
-.di-purse-bit.di-purse-gem-link {
+.di-purse-bit.di-purse-gem-link,
+.di-purse-bit.di-purse-coin-link {
   margin: 0;
   padding: 0;
   border: 0;
@@ -5865,11 +5866,14 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
 }
 
 .di-purse-bit.di-purse-gem-link:hover,
-.di-purse-bit.di-purse-gem-link:focus-visible {
+.di-purse-bit.di-purse-coin-link:hover,
+.di-purse-bit.di-purse-gem-link:focus-visible,
+.di-purse-bit.di-purse-coin-link:focus-visible {
   color: var(--di-on-deep);
 }
 
-.di-purse-bit.di-purse-gem-link:focus-visible {
+.di-purse-bit.di-purse-gem-link:focus-visible,
+.di-purse-bit.di-purse-coin-link:focus-visible {
   outline: 2px solid var(--di-on-deep);
   outline-offset: 2px;
   border-radius: 2px;
