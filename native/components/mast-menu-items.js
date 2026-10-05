@@ -13,7 +13,7 @@ export const PEOPLE_ON = new Set([
   '/we/new',
 ])
 export const ADD_ON = new Set(['/add', '/hang'])
-export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms'])
+export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 // Home and Questions already live in the system tab bar; the menu holds only
 // what the tabs don't: Add, Friends and family, Shop, Collection, Settings.

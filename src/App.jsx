@@ -689,9 +689,10 @@ export default function App() {
         onStartEmpty={hallProps.onStartEmpty}
       />
     )
-  } else if (path === '/settings') {
+  } else if (path === '/settings' || path === '/settings/more') {
     inner = (
       <Profile
+        page={path === '/settings/more' ? 'more' : ''}
         book={live}
         onChange={change}
         {...hallProps}

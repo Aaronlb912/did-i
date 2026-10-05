@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Settings polish (branch `polish/craft`)
+
+- **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.
+- **Drop switch does not ask for notification permission.** Turning on "Tell me when a drop goes live" only saves the pref; a phone that never allowed notifications gets nothing.
+- **Rating is a store link, not the in-app sheet.** `expo-store-review` is not installed (native dep). The card shows once after the 7th cleared night counted on this phone.
+- **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
+
 ## App PIN
 
 - **Forgot PIN.** Signed in: a code to the account email removes the PIN. Signed out: the only way past is to erase what is on the device.

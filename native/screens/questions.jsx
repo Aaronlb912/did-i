@@ -558,6 +558,7 @@ export function SearchScreen({ book }) {
         hits.map((lamp) => (
           <Pressable
             key={lamp.id}
+            accessibilityRole="button"
             onPress={() => goHash('/lamp', { id: lamp.id })}
             android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}

@@ -91,11 +91,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Pressable onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
           <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
         </Pressable>
         <Text style={[styles.month, { color: colors.ink }]}>{monthLabel}</Text>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('cal.next')}
+          accessibilityState={{ disabled: monthShift >= 0 }}
           disabled={monthShift >= 0}
           onPress={() => { setMonthShift((n) => Math.min(0, n + 1)); setPicked('') }}
           hitSlop={8}
@@ -113,6 +116,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
           ) : (
             <Pressable
               key={night.iso}
+              accessibilityRole="button"
+              accessibilityLabel={t('cal.day', { date: night.iso })}
               onPress={() => openDay(night.iso)}
               style={[
                 styles.day,

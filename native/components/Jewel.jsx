@@ -66,6 +66,9 @@ export function Jewel({
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={tag ? `${label}, ${tag}` : label}
+      accessibilityState={{ disabled, selected: Boolean(face), checked: Boolean(on) }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [

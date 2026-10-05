@@ -17,13 +17,16 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   return (
     <View style={[styles.wrap, { borderTopColor: colors.lineSoft }]}>
       <View style={styles.head}>
-        <Pressable onPress={() => setWeekShift((n) => n - 1)} hitSlop={8} style={styles.shiftBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('weekbar.prev')} onPress={() => setWeekShift((n) => n - 1)} hitSlop={8} style={styles.shiftBtn}>
           <Text style={[styles.shift, { color: colors.inkSoft }]}>‹</Text>
         </Pressable>
-        <Pressable onPress={() => goHash('/calendar')} style={styles.labelHit}>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/calendar')} style={styles.labelHit}>
           <Text style={[styles.open, { color: colors.inkSoft }]}>{label}</Text>
         </Pressable>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('weekbar.next')}
+          accessibilityState={{ disabled: weekShift >= 0 }}
           disabled={weekShift >= 0}
           onPress={() => setWeekShift((n) => Math.min(0, n + 1))}
           hitSlop={8}
