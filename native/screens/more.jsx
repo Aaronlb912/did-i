@@ -68,7 +68,8 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
-import { playClick, shareShelf } from '../../src/lib/native.js'
+import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
+import { syncLine } from '../../src/lib/sync-line.js'
 import {
   checkPin,
   clearPin,
@@ -1297,6 +1298,34 @@ function PingKinds({ colors, on }) {
   )
 }
 
+// Sends one sample reminder a few seconds out. Permission off says so, with a way to settings.
+function PingTest({ colors }) {
+  const [state, setState] = useState('')
+
+  async function send() {
+    if (state === 'busy') return
+    setState('busy')
+    const out = await pingTest(5).catch(() => 'miss')
+    setState(out)
+    if (out === 'set') confirmDone(t('pings.testSet'))
+    else if (out === 'miss') confirmMiss(t('confirm.miss'))
+  }
+
+  return (
+    <>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} last onPress={send} />
+      </SetCard>
+      {state === 'off' ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{t('pings.testOff')}</Text>
+          <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
+        </>
+      ) : null}
+    </>
+  )
+}
+
 export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -1332,6 +1361,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
         <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
       )}
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
+      <PingTest colors={colors} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
@@ -1501,14 +1531,8 @@ function AccountSignedIn({ book, email, onChange }) {
     }
   }, [book?.keeperName, sync.at])
 
-  const syncNote =
-    sync.how === 'busy'
-      ? t('account.syncBusy')
-      : sync.how === 'miss'
-        ? t('account.syncMiss')
-        : sync.how === 'saved'
-          ? t('account.syncSaved', { time: stampWhen(sync.at) })
-          : t('account.syncIdle')
+  const line = syncLine(sync)
+  const syncNote = line.at ? t(line.key, { time: stampWhen(line.at) }) : t(line.key)
 
   const lookName = purse.lookOn ? t(lookText(purse.lookOn, 'name')) : ''
   const cheerName = purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : t('kit.cheerOff')

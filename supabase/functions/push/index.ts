@@ -223,6 +223,7 @@ Deno.serve(async (req) => {
   // Why sends failed, without the tokens themselves. A push that quietly
   // goes nowhere is the whole reason this is hard to debug.
   const trouble: Record<string, number> = {}
+  const failed = new Map<string, { user_id: string | null; kind: string; code: string; platform: string }>()
 
   for (const row of batch) {
     for (const token of row.tokens ?? []) {
@@ -246,11 +247,24 @@ Deno.serve(async (req) => {
         why.match(/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SENDER_ID_MISMATCH|QUOTA_EXCEEDED|UNAVAILABLE|THIRD_PARTY_AUTH_ERROR|BadDeviceToken|InvalidProviderToken|TopicDisallowed/i)?.[0] ??
         why.slice(0, 40)
       trouble[kind] = (trouble[kind] ?? 0) + 1
+      // One row per person and code per run for public.app_errors. The code
+      // is the store's error name, never the message or the token.
+      const code = kind.replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 80)
+      failed.set(`${row.to_id}|${code}`, {
+        user_id: row.to_id ?? null,
+        kind: 'push',
+        code,
+        platform: apple ? 'ios' : 'android',
+      })
     }
   }
 
   if (dead.length) {
     await db.from('devices').update({ push_token: null }).in('push_token', dead)
+  }
+  if (failed.size) {
+    // Logging must never stop the sweep below.
+    await db.from('app_errors').insert([...failed.values()]).then(() => {}, () => {})
   }
 
   await db.rpc('sweep_push_queue')

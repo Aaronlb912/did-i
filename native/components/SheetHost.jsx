@@ -92,10 +92,13 @@ export function SheetHost() {
 
   return (
     <View style={styles.host} pointerEvents="box-none">
+      {/* The veil always takes taps, so a quick tap as a sheet pops up never
+          lands on Did or Nope behind it. It only closes the sheet once live. */}
       <Pressable
-        pointerEvents={live ? 'auto' : 'none'}
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]}
-        onPress={() => sheet.onClose?.()}
+        onPress={() => {
+          if (live) sheet.onClose?.()
+        }}
         accessibilityRole="button"
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
