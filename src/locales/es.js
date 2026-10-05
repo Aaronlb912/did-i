@@ -112,10 +112,8 @@ export const es = {
   'settings.showMarks': 'Mostrar logros',
   'settings.install': 'Instalar la app',
   'settings.lock': 'PIN de la app en este teléfono',
-  'settings.lockOn':
-    'Activo. Did I lo pide al abrir la app en este teléfono. No es tu contraseña de cuenta.',
-  'settings.lockOff':
-    'Opcional. De 4 a 8 dígitos. Did I lo pide al abrir la app en este teléfono. No es el código del teléfono ni tu contraseña de cuenta.',
+  'settings.lockOn': 'Activo. Did I lo pide al abrir la app en este teléfono. No es tu contraseña de cuenta.',
+  'settings.lockOff': 'Opcional. De 4 a 8 dígitos. Did I lo pide al abrir la app en este teléfono. No es el código del teléfono ni tu contraseña de cuenta.',
   'settings.number': 'Código PIN',
   'settings.newNumber': 'PIN nuevo',
   'settings.pinDigits': 'Usa de 4 a 8 dígitos.',
@@ -160,8 +158,7 @@ export const es = {
   'settings.accountSub': 'Tus carpetas te siguen a otro teléfono.',
   'settings.accountOffSub': 'Todo está solo en este teléfono.',
   'auth.title': 'Entrar o empezar',
-  'auth.body':
-    'Escribe tu correo para un código de un solo uso. Tus carpetas, amigos y racha te siguen en cada teléfono.',
+  'auth.body': 'Escribe tu correo para un código de un solo uso. Tus carpetas, amigos y racha te siguen en cada teléfono.',
   'auth.newHere': '¿Nuevo? Mismos pasos. Tu cuenta se crea cuando confirmas el código.',
   'auth.local': 'Solo en este teléfono',
   'auth.tagline': 'Una pregunta, una vez cada noche.',
@@ -180,8 +177,7 @@ export const es = {
   'account.offTitle': 'Sin conectar',
   'account.offBody':
     'Esta versión no tiene servidor de cuentas. Todo se queda en este teléfono y no se envía a ningún lado.',
-  'account.offTester':
-    'Si a otra persona sí le funciona, esta instalación necesita un rebuild con las claves de Supabase. Los builds de EAS no leen .env.local. O entra en did-i.app en el navegador.',
+  'account.offTester': 'Si a otra persona sí le funciona, esta instalación necesita un rebuild con las claves de Supabase. Los builds de EAS no leen .env.local. O entra en did-i.app en el navegador.',
   'account.outTitle': 'Entra para guardar tus preguntas',
   'account.outBody':
     'Tus preguntas, respuestas, racha, monedas, gemas y los cheers que tienes te siguen a otro teléfono. Nadie más los ve.',
@@ -359,8 +355,7 @@ export const es = {
   'tonight.waitKicker': 'Todavía no',
   'tonight.waitTitle': 'Ahora no hay nada que marcar',
   'tonight.waitLater': 'Estas se abren más tarde.',
-  'tonight.deadlineOptional':
-    'Para el {date}. Opcional hasta esa noche — toca aquí si quieres responder antes.',
+  'tonight.deadlineOptional': 'Para el {date}. Opcional hasta esa noche. Toca aquí si quieres responder antes.',
   'tonight.waitOpens': '{name} se abre a las {time}.',
   'tonight.offKicker': 'Hoy',
   'tonight.offTitle': 'Hoy no toca nada',
@@ -761,8 +756,7 @@ export const es = {
   'gems.balance': 'Tienes {gems}',
   'gems.hint':
     'Una gema cuesta un dólar. Los packs grandes traen gemas de regalo. Entra primero. Después de pagar, vuelve y sincroniza.',
-  'gems.hintNative':
-    'Una gema cuesta un dólar. Los packs grandes traen gemas de regalo. Entra primero. Los precios vienen de App Store o Google Play.',
+  'gems.hintNative': 'Una gema cuesta un dólar. Los packs grandes traen gemas de regalo. Entra primero. Los precios vienen de App Store o Google Play.',
   'gems.each': '{price} cada una',
   'gems.save': 'Ahorra {n}%',
   'gems.buy': 'Comprar',
@@ -1623,15 +1617,13 @@ export const es = {
     'Configura VITE_LEGAL_EMAIL en .env.local antes de que otros se registren.',
   'settings.privacyChoices': 'Privacidad',
   'settings.diagnostics': 'Reportes de fallos',
-  'settings.diagnosticsSub':
-    'Notas anónimas cuando la app falla. Apagado hasta que digas que sí. Sin rastreo de anuncios.',
+  'settings.diagnosticsSub': 'Notas anónimas cuando la app falla. Apagado hasta que digas que sí. Sin rastreo de anuncios.',
   'settings.phonePrivacy': 'Privacidad del teléfono',
   'settings.phonePrivacySub': 'Avisos y otros permisos en Ajustes de iOS.',
   'settings.phonePrivacySubAndroid': 'Avisos y otros permisos en Ajustes de Android.',
   'diagnostics.kicker': 'Privacidad',
   'diagnostics.title': '¿Enviar reportes de fallos?',
-  'diagnostics.body':
-    'Si Did I falla, podemos recibir una nota corta y anónima: qué falló y en qué pantalla. Sin preguntas, sin nombres, sin rastreo en otras apps. Puedes apagarlo cuando quieras en Ajustes.',
+  'diagnostics.body': 'Si Did I falla, podemos recibir una nota corta y anónima: qué falló y en qué pantalla. Sin preguntas, sin nombres, sin rastreo en otras apps. Puedes apagarlo cuando quieras en Ajustes.',
   'diagnostics.yes': 'Enviar reportes',
   'diagnostics.no': 'Ahora no',
   'settings.legal': 'Legal',
@@ -1728,8 +1720,7 @@ export const es = {
   'legal.terms.contact.title': 'Contacto',
   'legal.terms.contact.body': 'Preguntas sobre estos Términos: {email}{emailNote}.',
   'help.legal': 'Legal',
-  'help.legalP':
-    'Política de privacidad y Términos de uso están en Ajustes, Legal. Léelos antes de iniciar sesión o comprar gemas.',
+  'help.legalP': 'Política de privacidad y Términos de uso están en Ajustes, Legal. Léelos antes de iniciar sesión o comprar gemas.',
   'web.nav.home': 'Inicio',
   'web.nav.privacy': 'Privacidad',
   'web.nav.terms': 'Términos',
@@ -2277,6 +2268,8 @@ export const es = {
   'didYouLink.bad': 'Ese enlace terminó o no es correcto. Pide uno nuevo a quien te lo envió.',
   'didYouLink.reach': 'No se pudo cargar el enlace. Revisa tu conexión. Vuelve a aparecer la próxima vez que abras Did I.',
   'didYouLink.noApp': '¿Aún no tienes Did I? Descárgalo, ábrelo y aparecerá esta pregunta.',
+  'clock.pm': '{h}:{m} p. m.',
+  'clock.am': '{h}:{m} a. m.',
   'shop.teasedBody': 'Aún no ha salido. Sale a la venta el {date}.',
   'tonight.nextOn': 'Mañana nada. Próxima pregunta: {date}.',
   'shop.earnGems': 'Completa una noche cada semana para ganar 1 gema, o compra un paquete.',
