@@ -37,7 +37,21 @@ import {
   emptyBoard,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
-import { PACKS, STARTERS, addPack, packList, starterBlank, undoPack } from '../src/lib/starters.js'
+import { PACKS, STARTERS, addPack, packList, starterBlank, starterList, undoPack } from '../src/lib/starters.js'
+import {
+  FIRST_PICKS_MAX,
+  answeredNights,
+  firstRunBook,
+  isNewShelf,
+  isNightOne,
+  markNightOneSeen,
+  markSignInNudgeSeen,
+  nightOneSeen,
+  pickPack,
+  showSignInNudge,
+  signInNudgeSeen,
+  togglePick,
+} from '../src/lib/first-run.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
@@ -2479,7 +2493,7 @@ test('native look ids match did-i.css', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
-test('a fresh phone shows sign-in before the session check finishes', () => {
+test('a fresh phone opens the first night, a lost session shows sign-in', () => {
   const prev = globalThis.__didIPlatform
   globalThis.__didIPlatform = 'ios'
   clearAuthSkip()
@@ -2489,14 +2503,15 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
   const actions = readFileSync(path.join(root, 'native/components/AuthSignInActions.jsx'), 'utf8')
   try {
     writeAccountUserId('')
-    assert.equal(needsAuth({ ready: false, user: null }), true)
+    assert.equal(needsAuth({ ready: false, user: null }), false, 'no sign-in wall before the first night')
     writeAccountUserId('user-a')
     assert.equal(needsAuth({ ready: false, user: null }), false, 'a signed-in phone does not flash sign-in while the session loads')
     assert.equal(needsAuth({ ready: true, user: null }), true, 'no session after the check still gates')
+    assert.equal(authGated('/tonight', { ready: true, user: null }), true)
     writeAccountUserId('')
-    assert.equal(needsAuth({ ready: true, user: null }), true)
+    assert.equal(needsAuth({ ready: true, user: null }), false)
     assert.equal(needsAuth({ ready: true, user: { id: 'u' } }), false)
-    assert.equal(authGated('/tonight', { ready: false, user: null }), true)
+    assert.equal(authGated('/tonight', { ready: false, user: null }), false)
     assert.equal(authGated('/privacy', { ready: false, user: null }), false)
     assert.ok(shell.includes('<SignInScreen'), 'the gate renders the sign-in screen')
     assert.ok(sign.includes("t('auth.title')"), 'the sign-in screen has a title')
@@ -2514,6 +2529,52 @@ test('a fresh phone shows sign-in before the session check finishes', () => {
     if (prev == null) delete globalThis.__didIPlatform
     else globalThis.__didIPlatform = prev
   }
+})
+
+test('first run picks 2 or 3, adds them with one time, face is the first', () => {
+  const starters = starterList()
+  let picks = []
+  for (const item of starters.slice(0, FIRST_PICKS_MAX + 1)) picks = togglePick(picks, item)
+  assert.equal(picks.length, FIRST_PICKS_MAX, 'the cap holds')
+  picks = togglePick(picks, starters[0])
+  assert.equal(picks.length, FIRST_PICKS_MAX - 1, 'a second tap takes it off')
+  assert.equal(pickPack(PACKS[0]).length, Math.min(3, PACKS[0].items.length))
+  const book = { ...emptyBoard('first-run'), lamps: [], answers: [] }
+  const made = firstRunBook(book, picks, { question: 'Did I water the fern?', short: 'Fern' }, '21:00', new Date(2026, 9, 5, 15))
+  const live = made.book.lamps.filter((lamp) => !lamp.archived)
+  assert.equal(live.length, picks.length + 1)
+  assert.ok(live.every((lamp) => lamp.askAfter === '21:00'), 'every question gets the reminder time')
+  assert.equal(made.faceId, live.find((lamp) => lamp.question === picks[0].question).id)
+  assert.equal(firstRunBook(book, [], null, '21:00').faceId, '')
+})
+
+test('coaching stays for 3 nights, night one is the first cleared night', () => {
+  const ans = (periodKey) => ({ periodKey, status: 'yes' })
+  assert.equal(isNewShelf([]), true)
+  assert.equal(isNewShelf([{ answers: [ans('2026-10-01'), ans('2026-10-01'), ans('2026-10-02')] }]), true)
+  assert.equal(isNewShelf([{ answers: [ans('2026-10-01')] }, { answers: [ans('2026-10-02'), ans('2026-10-03')] }]), false)
+  assert.equal(answeredNights([{ answers: [ans('2026-10'), ans('once:x')] }]), 0, 'monthly and once keys are not nights')
+  assert.equal(isNightOne([{ answers: [ans('2026-10-05')] }], '2026-10-05'), true)
+  assert.equal(isNightOne([{ answers: [ans('2026-10-04')] }, { answers: [ans('2026-10-05')] }], '2026-10-05'), false)
+  assert.equal(isNightOne([{ answers: [] }], '2026-10-05'), false)
+  assert.equal(isNightOne([{ answers: [ans('2026-10-05')] }], ''), false)
+})
+
+test('night one and the sign-in card show once', () => {
+  localStorage.removeItem('did-i-night-one')
+  localStorage.removeItem('did-i-sign-in-nudge')
+  assert.equal(nightOneSeen(), false)
+  markNightOneSeen()
+  assert.equal(nightOneSeen(), true)
+  const base = { signedIn: false, cloud: true, nightDone: true, dismissed: signInNudgeSeen() }
+  assert.equal(showSignInNudge(base), true)
+  assert.equal(showSignInNudge({ ...base, signedIn: true }), false)
+  assert.equal(showSignInNudge({ ...base, nightDone: false }), false)
+  assert.equal(showSignInNudge({ ...base, cloud: false }), false)
+  markSignInNudgeSeen()
+  assert.equal(showSignInNudge({ ...base, dismissed: signInNudgeSeen() }), false)
+  localStorage.removeItem('did-i-night-one')
+  localStorage.removeItem('did-i-sign-in-nudge')
 })
 
 test('a still phone does not undo, a shake does', () => {

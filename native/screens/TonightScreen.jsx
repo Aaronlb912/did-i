@@ -71,6 +71,17 @@ import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { syncTonightWidget } from '../widget-sync.js'
+import { cloudSetUp } from '../../src/lib/cloud.js'
+import {
+  isNewShelf,
+  isNightOne,
+  markNightOneSeen,
+  markSignInNudgeSeen,
+  nightOneSeen,
+  showSignInNudge,
+  signInNudgeSeen,
+} from '../../src/lib/first-run.js'
+import { pinWidget } from '../lib/widget-pin.js'
 
 // Where the stack has no card of your own to swipe, so a Did we can have it.
 const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
@@ -193,16 +204,29 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   )
   // New people see Did and Nope buttons and a swipe hint until they have
   // answered on 3 different nights. Read from the shelf, nothing stored.
-  const isNew = useMemo(() => {
-    const nights = new Set()
-    for (const item of stack.shelf || []) {
-      for (const answer of item.answers || []) {
-        if (answer.periodKey) nights.add(String(answer.periodKey).slice(0, 10))
-        if (nights.size >= 3) return false
-      }
-    }
-    return true
-  }, [stack.shelf])
+  const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
+  // Night one: the first cleared night gets a bigger moment, once ever.
+  const [nightOne, setNightOne] = useState(false)
+  useEffect(() => {
+    if (!stack.nightDone || nightOneSeen() || !isNightOne(stack.shelf, stack.dateIso)) return
+    markNightOneSeen()
+    setNightOne(true)
+    // A bigger cheer on top of the usual one. CheerBurst skips it under reduced motion.
+    if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.nightDone, stack.dateIso])
+  // After a cleared night, one card asks to sign in. Dismissed stays dismissed.
+  const [nudgeGone, setNudgeGone] = useState(signInNudgeSeen)
+  const signInNudge = showSignInNudge({
+    signedIn: Boolean(account.user),
+    cloud: cloudSetUp(),
+    nightDone: stack.nightDone,
+    dismissed: nudgeGone,
+  })
+  const dropNudge = () => {
+    markSignInNudgeSeen()
+    setNudgeGone(true)
+  }
   // Questions made today earn no coins (coinsFor). Say when they start.
   const coinsTomorrow = useMemo(() => {
     if (!stack.nightDone) return false
@@ -465,7 +489,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         <GemFaceShell look={premium ? look : ''}
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
-          <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.doneTitle')}</Text>
+          <Text style={[faceCardStyles.title, { color: colors.ink }]}>
+            {nightOne ? t('nightOne.title') : t('tonight.doneTitle')}
+          </Text>
+          {nightOne ? (
+            <>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('nightOne.body')}</Text>
+              <View style={styles.actions}>
+                <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
+              </View>
+            </>
+          ) : null}
           {stack.streak > 0 ? (
             <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
           ) : null}
@@ -489,6 +523,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
+          {signInNudge && !nightOne ? (
+            <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>
+              <Text style={[faceCardStyles.meta, { color: colors.ink }]}>{t('signInNudge.title')}</Text>
+              <View style={styles.actions}>
+                <DidButton small label={t('signInNudge.go')} colors={colors} onPress={() => goHash('/account')} />
+                <KeyButton label={t('signInNudge.later')} colors={colors} onPress={dropNudge} />
+              </View>
+            </View>
+          ) : null}
         </GemFaceShell>
       </CardSettle>
     )
@@ -508,11 +551,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   } else if (stack.bodyKind === 'waiting') {
     const next = stack.nextOpenTime(stack.waiting)
+    // While new, a question that waits for its time can be answered now.
+    const firstWaiting = stack.dueWithWait.find((row) => row.waiting && !row.answer)
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
+        {isNew && firstWaiting ? (
+          <View style={styles.actions}>
+            <DidButton small label={t('tonight.answerEarly')} colors={colors} onPress={() => stack.jewelClick(firstWaiting)} />
+          </View>
+        ) : null}
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
           {next
             ? t('tonight.waitOpens', {
@@ -793,6 +843,7 @@ const styles = StyleSheet.create({
   graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
+  nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
   answerBar: { paddingBottom: 12 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },
