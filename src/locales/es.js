@@ -1524,7 +1524,7 @@ export const es = {
   'badge.bolt.sample': 'Recados',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I y solicitudes de amistad de gente que conoces',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': 'Onda',
   'cheer.lime.line': 'Anillos se abren desde donde tocaste.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': 'Serpentinas entran volando por los lados.',

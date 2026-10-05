@@ -1523,7 +1523,7 @@ export const it = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I e richieste di amicizia da persone che conosci',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': 'Onda',
   'cheer.lime.line': 'Anelli si allargano da dove hai toccato.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': 'Stelle filanti arrivano dai due lati.',

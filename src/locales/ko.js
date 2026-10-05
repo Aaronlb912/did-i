@@ -1488,7 +1488,7 @@ export const ko = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': '아는 사람의 Did I와 친구 요청',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': '물결',
   'cheer.lime.line': '탭한 자리에서 고리가 퍼져 나가요.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': '양쪽에서 리본이 휙 날아와요.',

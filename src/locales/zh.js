@@ -1482,7 +1482,7 @@ export const zh = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I s and friend requests from people you know',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': '涟漪',
   'cheer.lime.line': '圆环从你点的地方荡开。',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': '彩带从两边嗖地飞进来。',
