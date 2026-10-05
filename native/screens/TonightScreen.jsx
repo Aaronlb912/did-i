@@ -155,6 +155,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
   // Folders and topics are the first chip of the question row, not a row of their own.
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
+  // The folder name under each chip only helps when the chips come from more than one folder.
+  const tagsMixed = new Set(stack.dueWithWait.map((row) => row.tag || '')).size > 1
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
@@ -643,7 +645,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               <Jewel
                 key={stack.rowKey(row)}
                 label={stack.shortLabel(row.lamp)}
-                tag={row.tag && stack.shelf.length > 1 ? row.tag : ''}
+                tag={row.tag && tagsMixed ? row.tag : ''}
                 on={on}
                 skip={skip}
                 late={late}

@@ -965,6 +965,18 @@ export async function leaveFamily(familyId) {
   return { miss: '' }
 }
 
+// Parents only (RLS "parents edit the family"); the name is 1 to 60 characters.
+export async function renameFamily(familyId, name) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const clean = String(name || '').trim().slice(0, 60)
+  if (!clean) return { miss: 'family.nameEmpty' }
+  const { data, error } = await db.from('families').update({ name: clean }).eq('id', familyId).select('id')
+  if (error) return { miss: error.message }
+  if (!data?.length) return { miss: 'family.renameMiss' }
+  return { miss: '' }
+}
+
 export async function readFamily(familyId) {
   const db = cloud()
   if (!db) return null
