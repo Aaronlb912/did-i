@@ -669,6 +669,8 @@ export const zh = {
   'accessory.cocoa': '热可可',
   'accessory.snow': '雪花',
   'accessory.sparkler': '仙女棒',
+  'accessory.icecream': '冰淇淋',
+  'accessory.glasses3d': '3D眼镜',
   'shop.accessories': '配饰',
   'shop.allAccessories': '全部配饰',
   'shop.accessoriesHint': '每个位置可以戴一件。点一下看看戴上的样子。',

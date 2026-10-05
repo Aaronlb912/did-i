@@ -114,7 +114,9 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_unt
   ('accessory', 'antlers', 0, 30, '2026-12-01', '2027-01-01'),
   ('accessory', 'cocoa', 0, 30, '2026-12-01', '2027-01-01'),
   ('accessory', 'snow', 0, 30, '2026-12-01', '2027-01-01'),
-  ('accessory', 'sparkler', 0, 30, '2026-12-26', '2027-01-06')
+  ('accessory', 'sparkler', 0, 30, '2026-12-26', '2027-01-06'),
+  ('accessory', 'icecream', 0, 25, '2026-10-23', null),
+  ('accessory', 'glasses3d', 0, 40, '2026-10-23', null)
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 

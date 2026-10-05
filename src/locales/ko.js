@@ -670,6 +670,8 @@ export const ko = {
   'accessory.cocoa': '코코아',
   'accessory.snow': '눈',
   'accessory.sparkler': '불꽃 막대',
+  'accessory.icecream': '아이스크림',
+  'accessory.glasses3d': '3D 안경',
   'shop.accessories': '액세서리',
   'shop.allAccessories': '모든 액세서리',
   'shop.accessoriesHint': '버디는 자리마다 하나씩 착용해요. 눌러서 착용한 모습을 보세요.',

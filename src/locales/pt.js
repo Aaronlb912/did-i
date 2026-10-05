@@ -688,6 +688,8 @@ export const pt = {
   'accessory.cocoa': 'Chocolate quente',
   'accessory.snow': 'Neve',
   'accessory.sparkler': 'Estrelinha',
+  'accessory.icecream': 'Sorvete',
+  'accessory.glasses3d': 'Óculos 3D',
   'shop.accessories': 'Acessórios',
   'shop.allAccessories': 'Todos os acessórios',
   'shop.accessoriesHint': 'Seu parceiro usa um por lugar. Toque em um para ver como fica.',

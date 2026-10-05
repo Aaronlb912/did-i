@@ -685,6 +685,8 @@ export const en = {
   'accessory.cocoa': 'Cocoa',
   'accessory.snow': 'Snow',
   'accessory.sparkler': 'Sparkler',
+  'accessory.icecream': 'Ice cream',
+  'accessory.glasses3d': '3D glasses',
   'shop.accessories': 'Accessories',
   'shop.allAccessories': 'All accessories',
   'shop.accessoriesHint': 'Your buddy wears one per spot. Tap one to see it on.',

@@ -690,6 +690,8 @@ export const fr = {
   'accessory.cocoa': 'Chocolat chaud',
   'accessory.snow': 'Neige',
   'accessory.sparkler': 'Cierge magique',
+  'accessory.icecream': 'Glace',
+  'accessory.glasses3d': 'Lunettes 3D',
   'shop.accessories': 'Accessoires',
   'shop.allAccessories': 'Tous les accessoires',
   'shop.accessoriesHint': 'Votre compagnon en porte un par endroit. Touchez-en un pour le voir porté.',

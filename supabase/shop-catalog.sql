@@ -96,6 +96,12 @@ insert into public.shop_catalog (kind, item_id, coins, live_from, live_until) va
 on conflict (kind, item_id) do update
   set coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 
+-- Dated drops: on sale from live_from, no end.
+insert into public.shop_catalog (kind, item_id, coins, live_from) values
+  ('accessory', 'icecream', 25, '2026-10-23'),
+  ('accessory', 'glasses3d', 40, '2026-10-23')
+on conflict (kind, item_id) do update set coins = excluded.coins, live_from = excluded.live_from;
+
 create or replace function public.shop_item_live(p_kind text, p_item_id text)
 returns boolean
 language sql

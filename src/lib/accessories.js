@@ -176,6 +176,19 @@ const DRAW = {
       h('path', { d: `M${r + a.er * 0.75} ${a.ey + a.er * 0.75} Q${r + 4.5} ${a.ey + 8} ${r + 1.2} ${a.ey + 12}`, fill: 'none', stroke: GOLD, strokeWidth: 1.1 }),
     ]
   },
+  glasses3d: (h, a) => {
+    const [l, r] = a.ex
+    const s = Math.min(a.er + 1, (r - l) / 2 - 0.7)
+    const ry = s * 0.9
+    return [
+      h('path', { d: box(l - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, 1.6), fill: CREAM }),
+      h('path', { d: box(r - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, 1.6), fill: CREAM }),
+      h('path', { d: box(l - s, a.ey - ry, s * 2, ry * 2, 1), fill: '#e2463c' }),
+      h('path', { d: box(r - s, a.ey - ry, s * 2, ry * 2, 1), fill: '#2fb8e8' }),
+      h('path', { d: box(l + s + 0.6, a.ey - 1.2, r - l - s * 2 - 1.2, 1.4), fill: CREAM }),
+      h('path', { d: box(l - s + 1, a.ey - ry + 0.9, s * 0.7, 0.8, 0.4), fill: '#ffffff', opacity: 0.55 }),
+    ]
+  },
   // ---- back: drawn behind the buddy, so only what sticks out shows
   angelwings: (h, a) => {
     const y = mid(a) - 2
@@ -291,6 +304,18 @@ const DRAW = {
       h('path', { d: `M${x} ${y - 15} L${x} ${y + 1} q0 2 -2 2`, fill: 'none', stroke: '#3a3f4b', strokeWidth: 1.1, strokeLinecap: 'round' }),
     ]
   },
+  icecream: (h, a, t) => {
+    const [x, y] = hand(a)
+    return [
+      h('path', { d: `M${x - 3.6} ${y - 8.5} L${x + 3.6} ${y - 8.5} L${x} ${y + 2.5} Z`, fill: '#e0a860' }),
+      h('path', { d: `M${x - 2.2} ${y - 6.2} L${x + 1.3} ${y - 1} M${x + 2.2} ${y - 6.2} L${x - 1.3} ${y - 1}`, fill: 'none', stroke: '#a8702f', strokeWidth: 0.7, strokeLinecap: 'round' }),
+      h('ellipse', { cx: x, cy: y - 9, rx: 4.8, ry: 2.2, fill: CREAM }),
+      h('circle', { cx: x, cy: y - 13, r: 4, fill: t }),
+      h('ellipse', { cx: x - 1.4, cy: y - 14.2, rx: 1, ry: 1.5, fill: '#ffffff', opacity: 0.5 }),
+      h('path', { d: `M${x + 0.6} ${y - 18.4} Q${x + 1.2} ${y - 21} ${x + 3.2} ${y - 21.6}`, fill: 'none', stroke: '#3f8a3a', strokeWidth: 0.8, strokeLinecap: 'round' }),
+      h('circle', { cx: x + 0.6, cy: y - 17.4, r: 1.6, fill: '#e2463c' }),
+    ]
+  },
   cocoa: (h, a, t) => {
     const [x, y] = hand(a)
     return [
@@ -374,6 +399,9 @@ const ALL_ACCESSORIES = [
   { id: 'cocoa', slot: 'held', tier: 'seasonal', from: '2026-12-01', until: '2027-01-01' },
   { id: 'snow', slot: 'around', tier: 'seasonal', from: '2026-12-01', until: '2027-01-01' },
   { id: 'sparkler', slot: 'held', tier: 'seasonal', from: '2026-12-26', until: '2027-01-06' },
+  // Dated drops (docs/shop-drops.md): on sale from `from`, no end date.
+  { id: 'icecream', slot: 'held', tier: 'standard', from: '2026-10-23' },
+  { id: 'glasses3d', slot: 'eyes', tier: 'rare', from: '2026-10-23' },
 ].map((item) => ({ ...item, coins: ACCESSORY_TIERS[item.tier] }))
 
 export const ACCESSORIES = ALL_ACCESSORIES

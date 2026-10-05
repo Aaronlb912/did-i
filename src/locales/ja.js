@@ -671,6 +671,8 @@ export const ja = {
   'accessory.cocoa': 'ココア',
   'accessory.snow': '雪',
   'accessory.sparkler': '線香花火',
+  'accessory.icecream': 'アイス',
+  'accessory.glasses3d': '3Dメガネ',
   'shop.accessories': 'アクセサリー',
   'shop.allAccessories': 'すべてのアクセサリー',
   'shop.accessoriesHint': 'バディは場所ごとに1つ身につけます。タップすると着けた姿が見られます。',

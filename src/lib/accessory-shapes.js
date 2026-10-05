@@ -174,6 +174,19 @@ const SHAPES = {
     ['o', a.ex[1], a.ey, a.er + 0.3, a.er + 0.3, GOLD, 1.8],
     ['l', a.ex[1] + a.er * 0.75, a.ey + a.er * 0.75, a.ex[1] + 2.5, a.ey + 12, GOLD, 1.1],
   ],
+  glasses3d: (a) => {
+    const [l, r] = a.ex
+    const s = Math.min(a.er + 1, (r - l) / 2 - 0.7)
+    const ry = s * 0.9
+    return [
+      ['r', l - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, CREAM, 1.6],
+      ['r', r - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, CREAM, 1.6],
+      ['r', l - s, a.ey - ry, s * 2, ry * 2, '#e2463c', 1],
+      ['r', r - s, a.ey - ry, s * 2, ry * 2, '#2fb8e8', 1],
+      ['r', l + s + 0.6, a.ey - 1.2, r - l - s * 2 - 1.2, 1.4, CREAM, 0],
+      ['r', l - s + 1, a.ey - ry + 0.9, s * 0.7, 0.8, '#ffffff', 0.4],
+    ]
+  },
   // ---- back
   angelwings: (a) => {
     const y = mid(a) - 2
@@ -296,6 +309,19 @@ const SHAPES = {
       ['l', x, y + 1, x - 2, y + 3, '#3a3f4b', 1.1],
       ['e', x, y - 18.5, 9, 4.6, t],
       ...[-6, 0, 6].map((dx) => ['e', x + dx, y - 14.6, 3, 1.1, t]),
+    ]
+  },
+  icecream: (a, t) => {
+    const [x, y] = hand(a)
+    return [
+      ['t', x, y - 8.5, 3.6, -11, '#e0a860'],
+      ['l', x - 2.2, y - 6.2, x + 1.3, y - 1, '#a8702f', 0.7],
+      ['l', x + 2.2, y - 6.2, x - 1.3, y - 1, '#a8702f', 0.7],
+      ['e', x, y - 9, 4.8, 2.2, CREAM],
+      ['e', x, y - 13, 4, 4, t],
+      ['e', x - 1.4, y - 14.2, 1, 1.5, '#ffffff', 0, 0.5],
+      ['l', x + 0.6, y - 18.4, x + 2.6, y - 21.2, '#3f8a3a', 0.8],
+      ['e', x + 0.6, y - 17.4, 1.6, 1.6, '#e2463c'],
     ]
   },
   cocoa: (a, t) => {
