@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { shortLabel } from './board-json.js'
 import { BoardShell } from './BoardShell.jsx'
-import { monthStripNights, nightDueRows } from './hall-pages.js'
+import { monthStripNights, nightDueRows, nightWhy } from './hall-pages.js'
+import { nightWhyLines } from './night-why.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -140,6 +141,9 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
             <h2 id="di-cal-day-title" className="di-buy-title">
               {pickedLabel}
             </h2>
+            {nightWhyLines(nightWhy(shelf, picked, clock, tagId)).map((line) => (
+              <p className="di-detail-meta" key={line}>{line}</p>
+            ))}
             {nightRows.length ? (
               <ul className="di-mark-list">
                 {nightRows.map((row) => {
@@ -155,9 +159,7 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
                   )
                 })}
               </ul>
-            ) : (
-              <p className="di-cal-empty">{t('cal.empty')}</p>
-            )}
+            ) : null}
             <div className="di-hang-actions">
               <button className="di-key" type="button" onClick={() => setPicked('')}>
                 {t('cal.close')}

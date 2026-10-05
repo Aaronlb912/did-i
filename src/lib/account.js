@@ -54,6 +54,8 @@ export function devicePlatform() {
 
 export function deviceLabel() {
   const platform = devicePlatform()
+  const named = globalThis.__didIDeviceName
+  if (platform !== 'web' && typeof named === 'string' && named) return named.slice(0, 80)
   if (platform === 'android') return t('device.android')
   if (platform === 'ios') return t('device.ios')
   const agent = typeof navigator === 'undefined' ? '' : navigator.userAgent || ''

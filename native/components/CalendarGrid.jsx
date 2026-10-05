@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { monthStripNights, nightDueRows } from '../../src/lib/hall-pages.js'
+import { monthStripNights, nightDueRows, nightWhy } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { KeyButton } from './ui.jsx'
+import { nightWhyLines } from '../../src/lib/night-why.js'
+import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 
 function dateLocale(code) {
@@ -50,8 +51,42 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
-  const nightRows = picked ? nightDueRows(shelf, picked, tagId) : []
-  const pickedLabel = picked ? formatBoardDate(picked) : ''
+
+  // A day opens its sheet: why it did or did not clear, then each question.
+  function openDay(iso) {
+    setPicked(iso)
+    const today = boardDate(clock, book?.dayFoldHour)
+    const when = iso > today ? 1 : iso < today ? -1 : 0
+    const rows = nightDueRows(shelf, iso, tagId)
+    const close = () => {
+      setPicked('')
+      publishSheet(null)
+    }
+    publishSheet({
+      kicker: t('cal.kicker'),
+      title: formatBoardDate(iso),
+      body: nightWhyLines(nightWhy(shelf, iso, clock, tagId)).join('\n'),
+      content: rows.length ? (
+        <View style={styles.marks}>
+          {rows.map((row) => {
+            const mark = markOf(row.answer, when)
+            return (
+              <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
+                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : 'open'] }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
+                  <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
+                </View>
+              </View>
+            )
+          })}
+        </View>
+      ) : null,
+      closeLabel: t('cal.close'),
+      colors,
+      onClose: close,
+    })
+  }
 
   return (
     <View style={styles.wrap}>
@@ -78,7 +113,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
           ) : (
             <Pressable
               key={night.iso}
-              onPress={() => setPicked(night.iso)}
+              onPress={() => openDay(night.iso)}
               style={[
                 styles.day,
                 {
@@ -106,36 +141,6 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
         )}
       </View>
 
-      {picked ? (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setPicked('')}>
-        <Pressable accessible={false} style={styles.veil} onPress={() => setPicked('')}>
-          <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-            <Text style={[styles.popKicker, { color: colors.on }]}>{t('cal.kicker')}</Text>
-            <Text style={[styles.popTitle, { color: colors.ink }]}>{pickedLabel}</Text>
-            <ScrollView style={{ maxHeight: 240 }}>
-              {nightRows.length ? (
-                nightRows.map((row) => {
-                  const today = boardDate(clock, book?.dayFoldHour)
-                  const mark = markOf(row.answer, picked > today ? 1 : picked < today ? -1 : 0)
-                  return (
-                    <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
-                      <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : 'open'] }]} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
-                        <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
-                      </View>
-                    </View>
-                  )
-                })
-              ) : (
-                <Text style={{ color: colors.inkSoft }}>{t('cal.empty')}</Text>
-              )}
-            </ScrollView>
-            <KeyButton label={t('cal.close')} colors={colors} onPress={() => setPicked('')} />
-          </Pressable>
-        </Pressable>
-      </Modal>
-      ) : null}
     </View>
   )
 }
@@ -159,10 +164,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   pip: { width: 6, height: 6, borderRadius: 3 },
-  veil: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
-  pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
-  popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
-  popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
+  marks: { marginTop: 2 },
   markRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 10 },
   markPip: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   markLabel: { fontFamily: fonts.uiSemi, fontSize: 14 },

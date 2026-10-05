@@ -20,6 +20,7 @@ import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
+import { openNightWhy } from '../components/NightSheets.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -34,6 +35,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
+import { DropLine } from '../components/DropLine.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { EditPen } from '../components/SwipeFace.jsx'
@@ -156,6 +158,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
   // Folders and topics are the first chip of the question row, not a row of their own.
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
+  // The folder name under each chip only helps when the chips come from more than one folder.
+  const tagsMixed = new Set(stack.dueWithWait.map((row) => row.tag || '')).size > 1
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
@@ -421,14 +425,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
           ) : null}
           {summary ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('tonight.openCalendar')}
-              onPress={() => goHash('/calendar')}
-              style={({ pressed }) => pressed && { opacity: 0.7 }}
-            >
-              <NightWeek nights={summary.week} colors={colors} />
-            </Pressable>
+            <NightWeek
+              nights={summary.week}
+              colors={colors}
+              onNight={(iso) =>
+                openNightWhy({ colors, boards: stack.shelf, iso, now: stack.clock, tagId, onCalendar: () => goHash('/calendar') })
+              }
+            />
           ) : null}
           {summary ? (
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
@@ -650,7 +653,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               <Jewel
                 key={stack.rowKey(row)}
                 label={stack.shortLabel(row.lamp)}
-                tag={row.tag && stack.shelf.length > 1 ? row.tag : ''}
+                tag={row.tag && tagsMixed ? row.tag : ''}
                 on={on}
                 skip={skip}
                 late={late}
@@ -696,6 +699,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       {showChips ? null : <Slot>{tagFilter}</Slot>}
+
+      {stack.cheer ? null : <DropLine colors={colors} />}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable

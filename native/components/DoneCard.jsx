@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -132,13 +132,21 @@ export function StreakCount({ n, from = null, colors }) {
   )
 }
 
-/** The last seven nights as dots, tonight last and ringed. */
-export function NightWeek({ nights, colors }) {
+/** The last seven nights as dots, tonight last and ringed. A tap on one asks why. */
+export function NightWeek({ nights, colors, onNight }) {
   const done = nights.filter((night) => night.on).length
   return (
-    <View style={styles.week} accessible accessibilityRole="text" accessibilityLabel={t('tonight.weekAria', { n: done })}>
+    <View style={styles.week} accessibilityLabel={t('tonight.weekAria', { n: done })}>
       {nights.map((night) => (
-        <View key={night.iso} style={styles.night}>
+        <Pressable
+          key={night.iso}
+          style={({ pressed }) => [styles.night, pressed && { opacity: 0.6 }]}
+          disabled={!onNight}
+          onPress={() => onNight?.(night.iso)}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel={night.weekday}
+        >
           <View style={styles.dotWrap}>
             {night.isToday ? <View style={[styles.ring, { borderColor: night.on ? colors.on : colors.line }]} /> : null}
             <View
@@ -155,7 +163,7 @@ export function NightWeek({ nights, colors }) {
           <Text style={[styles.weekday, { color: night.isToday ? colors.ink : colors.inkDim }]}>
             {night.weekday.slice(0, 1)}
           </Text>
-        </View>
+        </Pressable>
       ))}
     </View>
   )

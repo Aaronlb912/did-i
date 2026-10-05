@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { previewSample } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
 import { buyWithGems } from './coin-shop.js'
@@ -92,8 +93,8 @@ export function ShopBuddies({ book, onChange, now }) {
             <p className="di-set-cap">{t('shop.buddyPreview')}</p>
             <div className="di-buddy-preview-card di-face di-swipe">
               <BuddyHang id={peekBuddy} />
-              <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-              <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+              <p className="di-face-plate">{previewSample().tag}</p>
+              <h2 className="di-question">{previewSample().question}</h2>
             </div>
           </div>
         ) : null}

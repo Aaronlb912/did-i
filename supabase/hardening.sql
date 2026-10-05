@@ -422,3 +422,31 @@ grant execute on function public.claim_invites() to authenticated;
 
 -- A query that runs away should die rather than hold a connection open.
 alter role authenticated set statement_timeout = '8s';
+
+-- Edit a Did you you sent, while they have not answered it. Same limits as
+-- sending: 1 to 200 letters. Only the sender, only while it waits. The
+-- recipient's inbox reads the row, so they see the new words.
+create or replace function public.edit_send(send uuid, question text)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  q text := btrim(coalesce(edit_send.question, ''));
+  hit integer;
+begin
+  if me is null then raise exception 'sign in first'; end if;
+  if length(q) < 1 then raise exception 'blank'; end if;
+  if length(q) > 200 then raise exception 'too long'; end if;
+  update public.sends s set question = q
+  where s.id = edit_send.send and s.from_id = me and s.state = 'sent' and s.kind = 'todo';
+  get diagnostics hit = row_count;
+  return hit > 0;
+end;
+$$;
+
+revoke all on function public.edit_send(uuid, text) from public, anon;
+grant execute on function public.edit_send(uuid, text) to authenticated;

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { previewSample } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { AccessoryChip, BuddyHang } from './Cosmetic.jsx'
 import { buyAccessoryWithCoins } from './coin-shop.js'
@@ -17,8 +18,8 @@ export function AccessoryPreview({ id, purse }) {
     <div className="di-buddy-preview">
       <div className="di-buddy-preview-card di-face di-swipe">
         <BuddyHang id={purse.buddyOn || 'ant'} worn={worn} />
-        <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-        <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+        <p className="di-face-plate">{previewSample().tag}</p>
+        <h2 className="di-question">{previewSample().question}</h2>
       </div>
     </div>
   )

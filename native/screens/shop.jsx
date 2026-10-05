@@ -79,16 +79,7 @@ import { useLookColors } from '../hooks/useHallColors.js'
 import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
-import { readShelf } from '../../src/lib/board-shelf.js'
-
-// The preview card shows one of your own questions when there is one.
-function previewQuestion() {
-  for (const book of readShelf()?.boards || []) {
-    const lamp = (book.lamps || []).find((item) => !item.archived && item.question)
-    if (lamp) return lamp.question
-  }
-  return t('shop.buddyPreviewQ')
-}
+import { previewSample } from '../../src/lib/board-shelf.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -168,8 +159,8 @@ function BuddyPreviewCard({ id, colors }) {
       <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
       <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <BuddyHang id={id} alive />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
       </View>
     </View>
   )
@@ -193,8 +184,8 @@ function LookPreviewCard({ id }) {
             gemCard,
           ]}
         >
-          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
         </View>
       </View>
     </View>
@@ -1127,8 +1118,8 @@ function AccessoryPreviewCard({ id, purse, colors }) {
     <View style={styles.buddyPreview}>
       <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
       </View>
     </View>
   )

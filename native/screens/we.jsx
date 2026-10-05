@@ -438,6 +438,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       const who = names.length === 1 ? t('confirm.askedOne', { name: names[0] }) : t('confirm.askedMany', { n: picked.length })
       confirmDone(`${who} ${t('confirm.weStartsOnYes')}`)
     }
+    justMade = out.id
     feel.land(t('lead.sent'), () => goHash('/we', { id: out.id }))
   }
 
@@ -587,6 +588,9 @@ function WeMenu({ title, items, colors, onClose }) {
   )
 }
 
+// A Did we does nothing alone, so the card you just made opens on sharing.
+let justMade = ''
+
 export function WeCardScreen({ book, cardId, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
@@ -606,6 +610,10 @@ function WeCardPage({ book, cardId, onChange }) {
   // Your link for this card while it works, so you can turn it off.
   const [link, setLink] = useState('')
   const [linkSaid, setLinkSaid] = useState('')
+  const [fresh] = useState(() => justMade === cardId)
+  useEffect(() => {
+    if (justMade === cardId) justMade = ''
+  }, [cardId])
   useEffect(() => {
     let alive = true
     myWeLink(cardId)
@@ -800,8 +808,30 @@ function WeCardPage({ book, cardId, onChange }) {
     { key: 'report', label: t('we.report'), onPress: report, danger: true },
   ].filter(Boolean)
 
+  // Nobody else on it yet, or just made: sharing comes first.
+  const shareFirst = fresh || !(card.people || []).some((p) => !p.me && (p.state === 'in' || p.state === 'asked'))
+  const shareCard = (
+    <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <Cap colors={colors}>{t('we.askMore')}</Cap>
+      <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
+      <View style={styles.grid}>
+        {asking.length ? (
+          <View style={styles.gridCell}>
+            <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
+          </View>
+        ) : null}
+        <View style={styles.gridCell}>
+          <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
+        </View>
+      </View>
+      <Meta colors={colors}>{t('weLink.hint')}</Meta>
+      {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
+    </View>
+  )
+
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      {shareFirst ? shareCard : null}
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.headTop}>
           <View style={styles.headFaces}>
@@ -869,7 +899,7 @@ function WeCardPage({ book, cardId, onChange }) {
             disabled={ans.busy === card.id}
             onPress={() => ans.answer(card, 'nope')}
           />
-          {mine?.status === 'did' && !card.done
+          {!card.done
             ? weWaiting(card)
                 .filter((p) => !p.nudged)
                 .map((p) => (
@@ -939,22 +969,7 @@ function WeCardPage({ book, cardId, onChange }) {
         </View>
       </View>
 
-      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Cap colors={colors}>{t('we.askMore')}</Cap>
-        <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
-        <View style={styles.grid}>
-          {asking.length ? (
-            <View style={styles.gridCell}>
-              <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
-            </View>
-          ) : null}
-          <View style={styles.gridCell}>
-            <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
-          </View>
-        </View>
-        <Meta colors={colors}>{t('weLink.hint')}</Meta>
-        {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
-      </View>
+      {shareFirst ? null : shareCard}
 
       <SetCap colors={colors}>{t('we.yourFiling')}</SetCap>
       <SetCard colors={colors}>

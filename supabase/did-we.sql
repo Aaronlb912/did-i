@@ -652,7 +652,8 @@ $$;
 revoke all on function public.we_answer(uuid, date, text) from public;
 grant execute on function public.we_answer(uuid, date, text) to authenticated;
 
--- "Your turn." Only once you have said did yourself, once per person per night.
+-- "Your turn." Once per sender per card per person per night (the
+-- we_nudges primary key), and at most a few for one person a night.
 create or replace function public.we_nudge(card uuid, other uuid, on_night date)
 returns void
 language plpgsql
@@ -668,11 +669,13 @@ begin
      or not exists (select 1 from public.we_members where card_id = card and user_id = other and state = 'in') then
     raise exception 'not on this card';
   end if;
-  if not exists (select 1 from public.we_answers
-                 where card_id = card and user_id = who and night = on_night and status = 'did') then
-    raise exception 'say did first';
+  -- Tonight, or last night while it is still open. No need to say did
+  -- yourself first: a card nobody answers should still get a nudge.
+  if on_night < current_date - 1 or on_night > current_date + 1 then
+    raise exception 'that night is closed';
   end if;
-  if on_night < current_date - 2 or on_night > current_date + 1 then
+  if not exists (select 1 from public.we_cards c
+                 where c.id = card and public.we_due(c.starts_on, c.cadence, c.weekdays, on_night)) then
     raise exception 'that night is closed';
   end if;
   if public.blocked_with(other) then

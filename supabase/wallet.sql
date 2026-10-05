@@ -325,6 +325,33 @@ revoke all on function public.credit_night_coins(text, integer) from public;
 revoke all on function public.credit_night_coins(text, integer) from anon;
 grant execute on function public.credit_night_coins(text, integer) to authenticated;
 
+-- Your last 14 nights of coins and the last week a gem paid, for the
+-- "how coins work" sheet. Read only, your own rows.
+create or replace function public.read_coin_history()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'nights', coalesce((
+      select jsonb_agg(jsonb_build_object('night', g.night_iso, 'coins', g.coins) order by g.night_iso desc)
+      from (
+        select night_iso, coins from public.coin_night_grants
+        where user_id = (select auth.uid())
+        order by night_iso desc
+        limit 14
+      ) g
+    ), '[]'::jsonb),
+    'gem_week', coalesce((select p.gem_week from public.profiles p where p.user_id = (select auth.uid())), '')
+  );
+$$;
+
+revoke all on function public.read_coin_history() from public;
+revoke all on function public.read_coin_history() from anon;
+grant execute on function public.read_coin_history() to authenticated;
+
 -- Option C: every coin spend goes through here. Shelf coins are display-only.
 create or replace function public.coin_catalog_normalize(raw jsonb)
 returns jsonb

@@ -112,7 +112,8 @@ import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, isRecapNight, monthStripNights, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { coinNights, gemThisWeek } from '../src/lib/coin-history.js'
+import { clockWords, isRecapNight, monthStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
 import { setWeNightRows } from '../src/lib/we-nights.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
@@ -694,6 +695,61 @@ test('the calendar leaves future nights and nights before you started blank', ()
   const weOpen = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights.find((night) => night.iso === '2026-10-02')
   setWeNightRows([])
   assert.equal(weOpen.on, false)
+})
+
+test('a night says why it broke, by the same rules as the dots', () => {
+  const now = new Date('2026-10-04T12:00:00')
+  const book = (answers, lamps = [lamp('a'), lamp('b')]) => [
+    { id: 'b1', title: 'Tag', dayFoldHour: 0, lamps, answers },
+  ]
+  const shelf = book([
+    { lampId: 'a', periodKey: '2026-10-02', status: 'skip' },
+    { lampId: 'a', periodKey: '2026-10-03', status: 'yes' },
+    { lampId: 'b', periodKey: '2026-10-03', status: 'late' },
+  ])
+  const broke = nightWhy(shelf, '2026-10-02', now)
+  assert.equal(broke.state, 'missed')
+  assert.deepEqual(broke.noped.map((row) => row.lamp.id), ['a'])
+  assert.deepEqual(broke.unanswered.map((row) => row.lamp.id), ['b'])
+  // A did and a late clear it.
+  assert.equal(nightWhy(shelf, '2026-10-03', now).state, 'clear')
+  assert.equal(nightWhy(shelf, '2026-10-04', now).state, 'open')
+  assert.equal(nightWhy(shelf, '2026-10-05', now).state, 'ahead')
+  assert.equal(nightWhy(book([], [lamp('a', { createdOn: '2026-10-03' })]), '2026-10-02', now).state, 'none')
+  // A Did we left open breaks an otherwise clear night.
+  setWeNightRows([{ card: 'w', folder: '', night: '2026-10-03', status: 'nope' }])
+  const we = nightWhy(shelf, '2026-10-03', now)
+  setWeNightRows([])
+  assert.equal(we.state, 'missed')
+  assert.deepEqual(we.weOpen, ['w'])
+  // Every night in the month agrees with its dot.
+  for (const night of monthStripNights(shelf, now, '', 0).nights.filter((item) => !item.pad)) {
+    const why = nightWhy(shelf, night.iso, now)
+    assert.equal(why.state === 'clear', night.on, night.iso)
+    assert.equal(why.state === 'missed', night.miss, night.iso)
+  }
+})
+
+test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question', () => {
+  const now = new Date('2026-10-04T21:00:00')
+  const old = ['a', 'b', 'c', 'd'].map((id) => lamp(id, { createdOn: '2026-09-01' }))
+  const answers = [
+    { lampId: 'a', periodKey: '2026-10-03', status: 'yes', answeredAt: '2026-10-03T20:00:00' },
+    { lampId: 'b', periodKey: '2026-10-03', status: 'late', answeredAt: '2026-10-03T20:01:00' },
+    { lampId: 'c', periodKey: '2026-10-03', status: 'skip', answeredAt: '2026-10-03T20:02:00' },
+    { lampId: 'c', periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' },
+    { lampId: 'a', periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:01:00' },
+    { lampId: 'b', periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:02:00' },
+    { lampId: 'd', periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:03:00' },
+    { lampId: 'n', periodKey: '2026-10-02', status: 'yes', answeredAt: '2026-10-02T20:00:00' },
+  ]
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [...old, lamp('n', { createdOn: '2026-10-02' })], answers }] }
+  assert.deepEqual(coinNights(shelf, now), [
+    { night: '2026-10-04', coins: 6 },
+    { night: '2026-10-03', coins: 3 },
+  ])
+  assert.equal(gemThisWeek(gemWeekKey(now), now), true)
+  assert.equal(gemThisWeek('', now), false)
 })
 
 test('two phones combine instead of overwriting', () => {
@@ -3467,6 +3523,24 @@ test('a Did you link reads back from the page, the Open button, a copied line an
   assert.equal(didYouFromText('did=abc'), '')
   assert.equal(sharedDidYouLine(' Did you go vote? ', 'abcdefgh23'), 'Did you go vote? https://did-i.app/d/abcdefgh23')
   assert.equal(sharedDidYouLine('get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23', 'the Did you lead comes back')
+})
+
+test('a sent Did you edits only while it waits, a stopped link says so', async () => {
+  const { canEditSent, cleanSentEdit, deadLinkKey } = await import('../src/lib/did-you-links.js')
+  assert.equal(canEditSent({ kind: 'todo', state: 'sent' }), true)
+  assert.equal(canEditSent({ kind: 'todo', state: 'kept' }), false, 'answered: no edit')
+  assert.equal(canEditSent({ kind: 'cheer', state: 'sent' }), false, 'a cheer has no words to edit')
+  assert.equal(canEditSent(null), false)
+  assert.deepEqual(cleanSentEdit('  call mom  '), { text: 'call mom', miss: '' })
+  assert.equal(cleanSentEdit('   ').miss, 'sent.editBlank')
+  assert.equal(cleanSentEdit('x'.repeat(201)).miss, 'sent.editLong')
+  assert.equal(cleanSentEdit('x'.repeat(200)).miss, '')
+  assert.equal(deadLinkKey(true), 'didYouLink.stopped')
+  assert.equal(deadLinkKey(false), 'didYouLink.bad')
+  const sql = readFileSync(path.join(checkRoot, 'supabase/did-you-links.sql'), 'utf8')
+  assert.ok(/end_did_you_link[\s\S]*l\.made_by = me/.test(sql), 'only the maker stops a link')
+  const hard = readFileSync(path.join(checkRoot, 'supabase/hardening.sql'), 'utf8')
+  assert.ok(/edit_send[\s\S]*s\.from_id = me and s\.state = 'sent'/.test(hard), 'only the sender edits, only while it waits')
 })
 
 test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {

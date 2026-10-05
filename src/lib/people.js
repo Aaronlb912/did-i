@@ -762,6 +762,16 @@ export async function takeBack(id) {
   return error ? bad(error) : { miss: '' }
 }
 
+// New words for a Did you you sent. Only while they have not answered it;
+// the server says no after that (supabase/hardening.sql edit_send).
+export async function editSend(id, question) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('edit_send', { send: id, question })
+  if (error) return /duplicate/i.test(error.message || '') ? { miss: 'sent.editSame' } : bad(error)
+  return data ? { miss: '' } : { miss: 'sent.editAnswered' }
+}
+
 // The last few nights on a family tag, for everyone in it.
 export async function familyHistory(familyId, nights) {
   const db = cloud()
@@ -962,6 +972,18 @@ export async function leaveFamily(familyId) {
     .eq('family_id', familyId)
     .eq('user_id', user.id)
   if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  return { miss: '' }
+}
+
+// Parents only (RLS "parents edit the family"); the name is 1 to 60 characters.
+export async function renameFamily(familyId, name) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const clean = String(name || '').trim().slice(0, 60)
+  if (!clean) return { miss: 'family.nameEmpty' }
+  const { data, error } = await db.from('families').update({ name: clean }).eq('id', familyId).select('id')
+  if (error) return { miss: error.message }
+  if (!data?.length) return { miss: 'family.renameMiss' }
   return { miss: '' }
 }
 

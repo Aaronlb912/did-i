@@ -2,10 +2,10 @@ import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useSavableField } from '../../src/lib/useSavableField.js'
 import { fonts } from '../theme.js'
-import { Field, KeyButton } from './ui.jsx'
+import { Field } from './ui.jsx'
 
 export function SavableField({ colors, label, value, savedValue, onSave, onChangeText, ...rest }) {
-  const { dirty, flash, save } = useSavableField({ value, saved: savedValue, onSave })
+  const { flash, save } = useSavableField({ value, saved: savedValue, onSave })
 
   return (
     <View style={styles.wrap}>
@@ -25,9 +25,7 @@ export function SavableField({ colors, label, value, savedValue, onSave, onChang
         {...rest}
       />
       <View style={styles.foot}>
-        {dirty ? (
-          <KeyButton colors={colors} label={t('settings.save')} onPress={() => save()} />
-        ) : flash ? (
+        {flash ? (
           <Text style={[styles.saved, { color: colors.on }]}>{t('settings.saved')}</Text>
         ) : (
           <Text style={[styles.hint, { color: colors.inkDim }]}>{t('settings.fieldHint')}</Text>

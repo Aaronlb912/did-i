@@ -49,6 +49,16 @@ globalThis.__didIPlatform = Platform.OS
 globalThis.__didIAppearance = Appearance
 globalThis.__didIExpoExtra = Constants.expoConfig?.extra || {}
 
+// A readable phone name for Account > Sync and phones (deviceLabel). Android
+// gives the model ("Pixel 7"). iOS 16+ only says "iPhone", so that falls back.
+try {
+  const model = Platform.OS === 'android' ? Platform.constants?.Model : Constants.deviceName
+  const name = String(model || '').trim().slice(0, 60)
+  if (name && !/^(iphone|ipad)$/i.test(name)) globalThis.__didIDeviceName = name
+} catch {
+  // Keeps the generic label.
+}
+
 globalThis.__didIOnVisible = (fn) => {
   const sub = AppState.addEventListener('change', (state) => {
     if (state === 'active') fn()

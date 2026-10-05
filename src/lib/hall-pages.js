@@ -14,7 +14,7 @@ import {
 } from './recurrence.js'
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
-import { weNight } from './we-nights.js'
+import { weNight, weOpenIds } from './we-nights.js'
 import { uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
@@ -113,6 +113,38 @@ function nightMarks(books, iso, today, tagId = '') {
     miss: dueCount > 0 && !clear && iso < today,
     empty: dueCount === 0,
   }
+}
+
+// Why a night did or did not clear, with the same rules as nightMarks.
+// state: ahead | none | clear | open (tonight, not done yet) | missed.
+// noped and unanswered are question rows; weOpen is Did we card ids.
+export function nightWhy(boards, iso, now = new Date(), tagId = '') {
+  const scoped = scopedBooks(boards, tagId)
+  const fold = (scoped[0] || boards?.[0])?.dayFoldHour
+  const today = boardDate(now, fold)
+  const out = { iso, state: 'none', noped: [], unanswered: [], weOpen: [] }
+  if (iso > today) return { ...out, state: 'ahead' }
+  const books = scoped.filter((book) => {
+    const start = startNight(book)
+    return start ? iso >= start : iso === today
+  })
+  const at = noonOn(iso)
+  let due = 0
+  for (const book of books) {
+    const rows = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    due += rows.length
+    for (const row of rows) {
+      if (rowDoneTonight(row)) continue
+      if (row.answer?.status === 'skip') out.noped.push(row)
+      else out.unanswered.push(row)
+    }
+  }
+  const we = weNight(iso, tagId)
+  due += we.due
+  if (we.due && !we.clear) out.weOpen = weOpenIds(iso, tagId)
+  if (!due) return out
+  const clear = !out.noped.length && !out.unanswered.length && !out.weOpen.length
+  return { ...out, state: clear ? 'clear' : iso < today ? 'missed' : 'open' }
 }
 
 // What tomorrow night holds, for the done card: how many questions it asks
