@@ -105,7 +105,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
-import { animateNextLayout } from '../lib/motion.js'
+import { Reveal } from '../lib/motion.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -637,10 +637,10 @@ function AddFriendPop({ colors, onClose, onAsked }) {
         />
       ) : null}
       {showQr ? (
-        <View style={styles.qrBox}>
+        <Reveal style={styles.qrBox}>
           <QrCode value={friendQrLink(myId)} size={180} label={t('qr.friendLabel')} />
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatFriendId(myId)}</Text>
-        </View>
+        </Reveal>
       ) : null}
       <Field
         colors={colors}
@@ -1216,10 +1216,10 @@ export function PeopleConnectScreen({ book, route }) {
           />
         ) : null}
         {showQr ? (
-          <View style={styles.qrBox}>
+          <Reveal style={styles.qrBox}>
             <QrCode value={friendQrLink(myId)} label={t('qr.friendLabel')} />
             <Meta colors={colors}>{t('qr.friendHint')}</Meta>
-          </View>
+          </Reveal>
         ) : null}
       </View>
 
@@ -1589,8 +1589,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
             <Text style={[styles.chev, { color: colors.inkDim }]}>{blockedOpen ? '⌄' : '›'}</Text>
           </Pressable>
           {blockedOpen ? blocks.map((row) => (
+            <Reveal key={row.user_id}>
             <PersonCard
-              key={row.user_id}
               colors={colors}
               person={row}
               name={row.display_name || t('people.noName')}
@@ -1609,6 +1609,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                 />
               }
             />
+            </Reveal>
           )) : null}
         </>
       ) : null}
@@ -2097,7 +2098,6 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     try {
       // Family did yous and allowed friends go onto tonight first.
       await refreshPeople()
-      animateNextLayout()
       setRows(await listInbox())
       setMiss('')
     } catch {
@@ -2181,8 +2181,8 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       <WeAsks colors={colors} />
       <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
       {rows.map((row) => (
+        <Reveal key={row.id}>
         <PersonRow
-          key={row.id}
           colors={colors}
           title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
           note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), row.note]
@@ -2207,6 +2207,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
             </Pressable>
           ) : null}
         </PersonRow>
+        </Reveal>
       ))}
       {menu ? (
         <FriendMenu
@@ -2287,7 +2288,6 @@ export function SentScreen({ book, onChange }) {
     }
     try {
       const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
-      animateNextLayout()
       setRows(sent)
       setLinks(made)
       setMiss('')
@@ -2352,7 +2352,7 @@ export function SentScreen({ book, onChange }) {
       {shownRows.length ? (
       <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
       {shownRows.map((row, at) => (
-        <View key={row.id} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+        <Reveal key={row.id} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
           <View style={styles.personCopy}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
@@ -2381,7 +2381,7 @@ export function SentScreen({ book, onChange }) {
           ) : null}
           </View>
           ) : null}
-        </View>
+        </Reveal>
       ))}
       </View>
       ) : null}
@@ -2390,7 +2390,7 @@ export function SentScreen({ book, onChange }) {
           <Cap colors={colors}>{t('sent.linksCap')}</Cap>
           <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {shownLinks.map((link, at) => (
-              <View key={link.code} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
+              <Reveal key={link.code} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
                 <View style={styles.personCopy}>
                   <Text style={[styles.personTitle, { color: colors.ink }]}>{link.question}</Text>
                   <Text style={[styles.personNote, { color: colors.inkDim }]}>
@@ -2402,7 +2402,7 @@ export function SentScreen({ book, onChange }) {
                     <KeyButton colors={colors} label={t('sent.stopLink')} onPress={() => askStopLink(link)} />
                   </View>
                 )}
-              </View>
+              </Reveal>
             ))}
           </View>
         </>

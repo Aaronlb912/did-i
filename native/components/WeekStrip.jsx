@@ -4,7 +4,7 @@ import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
@@ -36,7 +36,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
           <Text style={[styles.shift, { color: weekShift >= 0 ? colors.line : colors.inkSoft }]}>›</Text>
         </Pressable>
       </View>
-      <View style={styles.days}>
+      <Reveal key={`w${weekShift}`} style={styles.days} exiting={undefined} layout={false}>
         {nights.map((night) => (
           <View key={night.iso} style={styles.day}>
             <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{night.weekday[0]}</Text>
@@ -56,7 +56,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
             </View>
           </View>
         ))}
-      </View>
+      </Reveal>
     </View>
   )
 }

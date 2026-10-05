@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { MOTION_MS, easeOut } from '../lib/motion.js'
+import { MOTION_MS, easeOut } from '../lib/motion.jsx'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
 

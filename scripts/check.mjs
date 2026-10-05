@@ -2939,7 +2939,7 @@ test('the menu, a buy confirm, and a cheer preview can show on the phone', () =>
   const sheet = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
   assert.ok(sheet.includes("goHash('/gems')"), 'the short-gems popup opens the gem page')
   assert.ok(sheet.includes('useReduceMotion()') && sheet.includes('Animated.timing'), 'sheets slide in, and not with Less motion on')
-  const motion = readFileSync(path.join(root, 'native/lib/motion.js'), 'utf8')
+  const motion = readFileSync(path.join(root, 'native/lib/motion.jsx'), 'utf8')
   assert.ok(/if \(reduce\) return/.test(motion) && motion.includes('motionOff()'), 'shared motion helpers stop for Less motion')
   const ui = readFileSync(path.join(root, 'native/components/ui.jsx'), 'utf8')
   assert.ok((ui.match(/pressFx\(pressed\)/g) || []).length >= 4, 'shared buttons dip when pressed')
