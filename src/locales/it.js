@@ -2710,4 +2710,9 @@ export const it = {
   'home.cheerGo': "Fai il tifo",
   'home.weAnswerGo': "Rispondi",
   'questions.reorderTimed': "Le domande con un orario fisso arrivano comunque a quell'ora.",
+  // round6
+  'cal.keyCleared': "Completata",
+  'cal.keyMissed': "Non completata",
+  'pings.comingUpSub': "Cosa ti ricorderemo dopo",
+  'pings.helpSub': "Come funzionano i promemoria su questo telefono",
 }

@@ -173,6 +173,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             tint={colors.inkSoft}
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
+            chevron
             onPress={onSendCopy || (() => shareShelf(readShelf()))}
           />
           <SetRow
@@ -181,6 +182,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             tint={colors.late}
             label={t('settings.loadCopy')}
             sub={t('settings.loadCopySub')}
+            chevron
             onPress={loading ? undefined : pickFile}
             last
           />
@@ -430,7 +432,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="flag"
+          icon="chart"
           tint={colors.on}
           label={t('stats.title')}
           sub={t('settings.statsSub')}

@@ -2650,4 +2650,9 @@ export const ko = {
   'home.cheerGo': "응원하기",
   'home.weAnswerGo': "답하기",
   'questions.reorderTimed': "시간을 정한 질문은 그 시간에 나와요.",
+  // round6
+  'cal.keyCleared': "완료",
+  'cal.keyMissed': "미완료",
+  'pings.comingUpSub': "다음에 받을 알림",
+  'pings.helpSub': "이 휴대폰에서 알림이 작동하는 방식",
 }

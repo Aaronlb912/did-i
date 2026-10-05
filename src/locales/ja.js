@@ -2649,4 +2649,9 @@ export const ja = {
   'home.cheerGo': "応援する",
   'home.weAnswerGo': "答える",
   'questions.reorderTimed': "時間を決めた質問は、その時間に出てきます。",
+  // round6
+  'cal.keyCleared': "クリア",
+  'cal.keyMissed': "未クリア",
+  'pings.comingUpSub': "次に届くリマインダー",
+  'pings.helpSub': "この端末でのリマインダーの仕組み",
 }

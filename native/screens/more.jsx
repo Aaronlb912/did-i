@@ -519,11 +519,19 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const clock = now || new Date()
 
   return (
-    <ScreenShell title={t('cal.aria')} colors={colors}>
+    <ScreenShell title={t('boards.calendar')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
       <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
-      <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
-      <KeyButton colors={colors} label={t('boards.week')} onPress={() => goHash('/week')} />
+      <View style={styles.calKey}>
+        <View style={[styles.calDot, { backgroundColor: colors.on }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
+        <View style={[styles.calDot, { backgroundColor: colors.miss }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+      </View>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -694,7 +702,9 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
           ))}
         </View>
       )}
-      <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -826,10 +836,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         </SetCard>
       )}
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
-      <KeyButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
-      <KeyButton colors={colors} label={t('boards.calendar')} onPress={() => goHash('/calendar')} />
-      <KeyButton colors={colors} label={t('feed.title')} onPress={() => goHash('/feed')} />
-      <KeyButton colors={colors} label={t('boards.stats')} onPress={() => goHash('/stats')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="home" label={t('nav.home')} chevron onPress={() => goHash('/tonight')} />
+        <SetRow colors={colors} icon="calendar" label={t('boards.calendar')} sub={t('settings.calendarSub')} chevron onPress={() => goHash('/calendar')} />
+        <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
+        <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
+      </SetCard>
       {boards?.length > 1 && book ? (
         <KeyButton
           colors={colors}
@@ -1489,8 +1501,10 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
           ))}
         </SetCard>
       )}
-      <KeyButton colors={colors} label={t('pings.comingUp')} onPress={() => goHash('/later')} />
-      <KeyButton colors={colors} label={t('pings.help')} onPress={() => goHash('/help')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="clock" label={t('pings.comingUp')} sub={t('pings.comingUpSub')} chevron onPress={() => goHash('/later')} />
+        <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -2064,6 +2078,9 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  calDot: { width: 8, height: 8, borderRadius: 4 },
+  calKeyText: { fontSize: 12, marginRight: 10 },
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   headCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 20 },
   dataGap: { height: 20 },

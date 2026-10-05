@@ -2718,4 +2718,9 @@ export const es = {
   'home.cheerGo': "Animar",
   'home.weAnswerGo': "Responder",
   'questions.reorderTimed': "Las preguntas con hora fija siguen saliendo a esa hora.",
+  // round6
+  'cal.keyCleared': "Completada",
+  'cal.keyMissed': "Sin completar",
+  'pings.comingUpSub': "Lo próximo que te recordaremos",
+  'pings.helpSub': "Cómo funcionan los recordatorios en este teléfono",
 }

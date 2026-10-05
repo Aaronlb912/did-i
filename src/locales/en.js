@@ -2706,4 +2706,9 @@ export const en = {
   'home.cheerGo': "Cheer",
   'home.weAnswerGo': "Answer",
   'questions.reorderTimed': "Questions with a set time still come up at that time.",
+  // round6
+  'cal.keyCleared': "Cleared",
+  'cal.keyMissed': "Not cleared",
+  'pings.comingUpSub': "What is set to remind you next",
+  'pings.helpSub': "How reminders work on this phone",
 }
