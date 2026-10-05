@@ -2725,4 +2725,9 @@ export const fr = {
   'home.cheerGo': "Encourager",
   'home.weAnswerGo': "Répondre",
   'questions.reorderTimed': "Les questions avec une heure fixe arrivent quand même à cette heure.",
+  // round6
+  'cal.keyCleared': "Réussie",
+  'cal.keyMissed': "Pas réussie",
+  'pings.comingUpSub': "Ce qui va te le rappeler ensuite",
+  'pings.helpSub': "Comment marchent les rappels sur ce téléphone",
 }

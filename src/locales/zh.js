@@ -2634,4 +2634,9 @@ export const zh = {
   'home.cheerGo': "加油",
   'home.weAnswerGo': "回答",
   'questions.reorderTimed': "设了时间的问题仍会在那个时间出现。",
+  // round6
+  'cal.keyCleared': "已完成",
+  'cal.keyMissed': "未完成",
+  'pings.comingUpSub': "接下来会提醒你的内容",
+  'pings.helpSub': "这台手机上的提醒怎么用",
 }

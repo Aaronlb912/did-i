@@ -2711,4 +2711,9 @@ export const pt = {
   'home.cheerGo': "Torcer",
   'home.weAnswerGo': "Responder",
   'questions.reorderTimed': "Perguntas com horário definido ainda aparecem nesse horário.",
+  // round6
+  'cal.keyCleared': "Concluída",
+  'cal.keyMissed': "Não concluída",
+  'pings.comingUpSub': "O próximo lembrete marcado",
+  'pings.helpSub': "Como os lembretes funcionam neste telefone",
 }

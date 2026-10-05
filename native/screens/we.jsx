@@ -913,6 +913,7 @@ function WeCardPage({ book, cardId, onChange }) {
               colors={{ ...colors, on: colors.we || colors.on, line: colors.we || colors.line }}
               kicker={t('we.earlyKicker', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
               title={card.question}
+              panelStyle={styles.earlyFace}
               stampDid={t('tonight.swipeDid')}
               stampNope={t('tonight.swipeNope')}
               behind={[]}
@@ -1168,9 +1169,11 @@ export function WeHomeScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
-  earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 8 },
+  earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 0, marginBottom: 8 },
   earlyKey: { flex: 1 },
-  earlySlot: { height: 250, justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
+  earlyFace: { minHeight: 0, paddingTop: 18, paddingBottom: 18 },
+  // Sized to the card: the early note, question and keys read as one block.
+  earlySlot: { justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },

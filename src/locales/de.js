@@ -2729,4 +2729,9 @@ export const de = {
   'home.cheerGo': "Anfeuern",
   'home.weAnswerGo': "Antworten",
   'questions.reorderTimed': "Fragen mit fester Uhrzeit kommen trotzdem zu dieser Zeit.",
+  // round6
+  'cal.keyCleared': "Geschafft",
+  'cal.keyMissed': "Nicht geschafft",
+  'pings.comingUpSub': "Woran du als Nächstes erinnert wirst",
+  'pings.helpSub': "So funktionieren Erinnerungen auf diesem Handy",
 }
