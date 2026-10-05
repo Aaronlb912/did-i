@@ -72,6 +72,48 @@ begin
   select question into q from public.sends where id = sid;
   if q <> 'Did you read a chapter?' then raise exception 'FAIL: edit not saved: %', q; end if;
 
+  -- Pushes: the waiting send push carries the new words; once it went out,
+  -- edits buzz again only after 10 minutes.
+  select count(*) into n from public.push_queue where send_id = sid;
+  if n > 1 then raise exception 'FAIL: an edit queued a second push before the first went out'; end if;
+  if n = 1 then
+    select body into q from public.push_queue where send_id = sid;
+    if q not like '%chapter%' then raise exception 'FAIL: waiting push kept the old words: %', q; end if;
+    update public.push_queue set sent_at = now() where send_id = sid;
+    perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    perform public.edit_send(sid, 'Did you read two chapters?');
+    execute 'reset role';
+    select count(*) into n from public.push_queue where send_id = sid;
+    if n <> 1 then raise exception 'FAIL: an edit within 10 minutes buzzed again'; end if;
+    update public.push_queue set made_at = now() - interval '11 minutes' where send_id = sid;
+    perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    perform public.edit_send(sid, 'Did you read a chapter?');
+    execute 'reset role';
+    select count(*) into n from public.push_queue where send_id = sid;
+    if n <> 2 then raise exception 'FAIL: an edit after 10 minutes did not buzz'; end if;
+  end if;
+
+  -- A parent can rename the family but not change its join code.
+  declare
+    fid uuid;
+  begin
+    insert into public.families (name, code, made_by) values ('Fam', 'T' || left(md5(a::text), 7), a) returning id into fid;
+    insert into public.family_members (family_id, user_id, role) values (fid, a, 'parent');
+    perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    update public.families set name = 'Home' where id = fid;
+    begin
+      update public.families set code = 'HACKED1' where id = fid;
+      raise exception 'FAIL: a parent changed the join code';
+    exception when insufficient_privilege then null;
+    end;
+    execute 'reset role';
+    select name into q from public.families where id = fid;
+    if q <> 'Home' then raise exception 'FAIL: parent rename did not save'; end if;
+  end;
+
   -- Bea can not edit it, and once she answers, Ann can not either.
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
