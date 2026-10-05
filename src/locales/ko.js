@@ -2481,7 +2481,7 @@ export const ko = {
   'note.fewer': '줄여 보기',
   'note.pickNight': '메모할 밤을 고르세요.',
   'note.pickQuestion': '메모할 질문을 고르세요.',
-  'lamp.trend': '최근 8주',
+  'lamp.trend': '주별',
   'lamp.trendWeek': '{date} 주: {due}번 중 {did}번 Did',
   'recap.kicker': '이번 주',
   'recap.cleared': '{n}밤 중 {cleared}밤 완료',

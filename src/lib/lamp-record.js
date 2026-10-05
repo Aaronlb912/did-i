@@ -47,7 +47,9 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
     }
     out.push({ from, due, did })
   }
-  return out
+  // Weeks before the question had anything due are not a trend, just blanks.
+  const first = out.findIndex((week) => week.due > 0)
+  return first < 0 ? [] : out.slice(first)
 }
 
 // This question's answers, newest night first, each with its readable night.

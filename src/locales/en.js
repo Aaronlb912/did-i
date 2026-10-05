@@ -2537,7 +2537,7 @@ export const en = {
   'note.fewer': 'Show fewer',
   'note.pickNight': 'Pick a night to note.',
   'note.pickQuestion': 'Pick a question to note.',
-  'lamp.trend': 'Last 8 weeks',
+  'lamp.trend': 'Week by week',
   'lamp.trendWeek': 'Week of {date}: {did} of {due} Did',
   'recap.kicker': 'This week',
   'recap.cleared': '{cleared} of {n} nights cleared',
