@@ -669,6 +669,7 @@ export default function App() {
         onAdd={addBoard}
         onRemove={removeBoard}
         onChange={change}
+        onStartEmpty={hallProps.onStartEmpty}
       />
     )
   } else if (path === '/settings') {

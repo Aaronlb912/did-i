@@ -281,6 +281,11 @@ export async function shareShelf(shelf) {
   await Share.share({ title: 'Did I', message: text })
 }
 
+// Same share path as the text copy; paste into a .csv or a sheet.
+export async function shareCsv(text) {
+  await Share.share({ title: 'Did I', message: text })
+}
+
 export async function shareBook(book) {
   const stamp = boardDate(new Date(), book.dayFoldHour)
   const slug =

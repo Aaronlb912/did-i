@@ -18,8 +18,11 @@ import {
   faceSwipeTonight,
   isDueOn,
   isoDate,
+  periodLabel,
+  periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
+import { lampNights, lampWeeks } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -56,6 +59,7 @@ import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import { t } from '../src/lib/i18n.js'
+import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
 import {
@@ -766,6 +770,50 @@ test('two phones combine instead of overwriting', () => {
   assert.deepEqual(book.lamps.map((one) => one.id).sort(), ['x', 'y'])
   assert.equal(book.coins, 9, 'the bigger purse wins')
   assert.equal(book.gems, 7, 'and per column, not per phone')
+})
+
+test('an answer night reads as a date, never the raw key, once questions included', () => {
+  const once = lamp('di-vqcaay81', { cadence: 'once', onceOn: '2026-10-01' })
+  const by = lamp('b', { cadence: 'once', onceWhen: 'by', dueBy: '2026-10-03', onceOn: '2026-09-01' })
+  assert.equal(periodNight(once, 'once:di-vqcaay81'), '2026-10-01')
+  assert.equal(periodNight(by, 'once:b'), '2026-10-03', 'a by-date once uses its due day')
+  assert.equal(periodNight(lamp('n', { cadence: 'once', createdOn: '' }), 'once:n'), '', 'no day, no guess')
+  assert.equal(periodLabel(once, 'once:di-vqcaay81'), 'Thu, Oct 1')
+  assert.equal(periodLabel(lamp('x'), '2026-10-01'), 'Thu, Oct 1')
+  assert.equal(periodLabel(lamp('m', { cadence: 'monthly' }), '2026-10'), 'Oct 2026')
+  assert.ok(!periodLabel(null, 'once:gone').includes('once:'), 'a deleted question still hides the key')
+  // Notes list order: newest night first, the once answer on its own day.
+  const book = {
+    lamps: [once],
+    answers: [{ lampId: 'di-vqcaay81', periodKey: 'once:di-vqcaay81', status: 'yes' }],
+  }
+  assert.deepEqual(lampNights(book, once).map((row) => row.night), ['2026-10-01'])
+  const daily = lamp('d')
+  const nights = lampNights({ answers: [
+    { lampId: 'd', periodKey: '2026-09-30', status: 'yes' },
+    { lampId: 'd', periodKey: '2026-10-02', status: 'skip' },
+    { lampId: 'z', periodKey: '2026-10-03', status: 'yes' },
+  ] }, daily)
+  assert.deepEqual(nights.map((row) => row.night), ['2026-10-02', '2026-09-30'], 'only this question, newest first')
+  // The Sunday recap counts a once Did on its day.
+  const week = Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso('2026-09-28', i), on: false }))
+  assert.equal(weekRecap([book], week).dids, 1)
+})
+
+test('a question page trend counts dids out of due per week, tonight only once answered', () => {
+  const daily = lamp('d', { createdOn: '2026-09-01' })
+  const answers = [
+    { lampId: 'd', periodKey: '2026-10-05', status: 'yes' },
+    { lampId: 'd', periodKey: '2026-10-04', status: 'late' },
+    { lampId: 'd', periodKey: '2026-10-03', status: 'skip' },
+  ]
+  const weeks = lampWeeks({ answers }, daily, '2026-10-05', 8)
+  assert.equal(weeks.length, 8)
+  assert.deepEqual(weeks[7], { from: '2026-09-29', due: 7, did: 2 })
+  assert.equal(weeks[0].due, 0, 'nights before the question was made are not due')
+  const open = lampWeeks({ answers: answers.slice(1) }, daily, '2026-10-05', 8)
+  assert.equal(open[7].due, 6, 'an unanswered tonight is not counted yet')
+  assert.deepEqual(lampWeeks({ answers }, lamp('o', { cadence: 'once' }), '2026-10-05'), [])
 })
 
 test('a note on one night rides the answer, is capped, and survives two phones syncing', () => {
@@ -3775,6 +3823,34 @@ await testAsync('the share text and the link preview say the same question', asy
   assert.equal(sharedDidYouLine('Get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23')
 })
 
+test('answers CSV escapes quotes, commas, newlines and formulas', () => {
+  assert.equal(csvCell('plain'), 'plain')
+  assert.equal(csvCell('a, b'), '"a, b"')
+  assert.equal(csvCell('say "hi"'), '"say ""hi"""')
+  assert.equal(csvCell('two\nlines'), '"two\nlines"')
+  assert.equal(csvCell('=SUM(A1)'), "'=SUM(A1)")
+  const shelf = {
+    boards: [
+      {
+        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }],
+        answers: [
+          { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
+          { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '' },
+          { lampId: 'gone', periodKey: '2026-10-03', status: 'late' },
+        ],
+      },
+    ],
+  }
+  assert.equal(
+    answersCsv(shelf),
+    'date,question,short name,answer,note\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,\r\n' +
+      '2026-10-02,"drink water, lots",Water,nope,"he said ""no"""\r\n' +
+      '2026-10-03,,,late,\r\n',
+  )
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note\r\n')
+})
+
 test('every t() key the app uses is in English', () => {
   const files = []
   const walk = (dir) => {
@@ -3794,6 +3870,24 @@ test('every t() key the app uses is in English', () => {
     }
   }
   assert.deepEqual([...missing], [])
+})
+
+test('a Did we not due tonight names its next night, same rule as we_due', async () => {
+  const { weNextDue, weNextLabel } = await import('../src/lib/we-next.js')
+  // 2026-10-05 is a Monday; Saturday is 6.
+  const sat = { cadence: 'weekly', weekdays: [6], startsOn: '2026-01-01' }
+  assert.equal(weNextDue(sat, '2026-10-05'), '2026-10-10')
+  assert.equal(weNextDue(sat, '2026-10-10'), '2026-10-17')
+  assert.equal(weNextDue({ cadence: 'daily', startsOn: '2026-01-01' }, '2026-10-05'), '2026-10-06')
+  assert.equal(weNextDue({ cadence: 'daily', startsOn: '2026-10-20' }, '2026-10-05'), '2026-10-20')
+  assert.equal(weNextDue({ ...sat, startsOn: '2026-10-12' }, '2026-10-05'), '2026-10-17')
+  assert.equal(weNextDue({ cadence: 'weekly', weekdays: [], startsOn: '2026-01-01' }, '2026-10-05'), '')
+  assert.equal(weNextLabel('2026-10-10', 'en-US'), 'Sat, Oct 10')
+  assert.equal(weNextLabel('', 'en-US'), '')
+  const { PING_KINDS } = await import('../src/lib/prefs.js')
+  assert.ok(PING_KINDS.includes('we'))
+  const sql = readFileSync(path.join(checkRoot, 'supabase/did-we.sql'), 'utf8')
+  assert.ok(!/push_wanted\([^)]*'sends'\)/.test(sql), 'Did we pushes use their own switch')
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

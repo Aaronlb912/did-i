@@ -241,6 +241,51 @@ begin
     raise exception 'FAIL: an expired ask could not be sent again';
   end if;
 
+  -- Only the maker edits or closes it; closing drops it for everyone.
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.we_edit(turncard, 'b took it over', 'turns', 'all', 'daily', '{}', null);
+    raise exception 'FAIL: b edited a card b did not make';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  begin
+    perform public.we_close(turncard);
+    raise exception 'FAIL: b closed a card b did not make';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.we_edit(turncard, '   ', 'turns', 'all', 'daily', '{}', null);
+    raise exception 'FAIL: a blank question saved';
+  exception when check_violation then
+    null;
+  end;
+  perform public.we_edit(turncard, 'Did we dry the dishes?', 'turns', 'all', 'weekly', '{6}', null);
+  perform public.we_close(turncard);
+  execute 'reset role';
+  if not (select archived from public.we_cards where id = turncard) then
+    raise exception 'FAIL: close did not close';
+  end if;
+  if (select question from public.we_cards where id = turncard) <> 'Did we dry the dishes?' then
+    raise exception 'FAIL: the edit did not save';
+  end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = turncard::text;
+  if n <> 0 then raise exception 'FAIL: b still saw a closed card'; end if;
+  execute 'reset role';
+
+  -- Did we pushes follow their own switch, not Did yous from friends.
+  update public.profiles set prefs = jsonb_build_object('pingsOff', jsonb_build_array('sends')) where user_id = b;
+  if not public.push_wanted(b, 'we') then raise exception 'FAIL: sends off turned Did we off'; end if;
+  update public.profiles set prefs = jsonb_build_object('pingsOff', jsonb_build_array('we')) where user_id = b;
+  if public.push_wanted(b, 'we') then raise exception 'FAIL: the Did we switch did nothing'; end if;
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;

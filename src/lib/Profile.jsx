@@ -9,6 +9,8 @@ import { CLOCK_IDS, LOCALE_IDS, THEME_IDS, usePrefs, writePrefs } from './prefs.
 import { ownedLookIds, readWidgetSettings } from './widget-config.js'
 import { applyWidgetPrefs } from './widget-settings.js'
 import { readShelf } from './board-shelf.js'
+import { answersCsv } from './answers-csv.js'
+import { shareCsv } from './native.js'
 import { mergeShelves } from './shelf-merge.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { zoneWords } from './zone.js'
@@ -232,6 +234,11 @@ export function Profile({
               onClick={onSendCopy}
             />
           ) : null}
+          <SetRow
+            label={t('settings.sendCsv')}
+            sub={t('settings.sendCsvSub')}
+            onClick={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
+          />
           <SetRow label={t('settings.loadCopy')} sub={t('settings.loadCopySub')} onClick={pickFile} />
           <SetRow label={t('settings.how')} chevron onClick={() => goHash('/help')} />
           <SetRow label={t('feedback.send')} sub={t('feedback.sub')} onClick={openFeedback} />
@@ -261,25 +268,6 @@ export function Profile({
             {t('legal.operatorWarn')}
           </p>
         ) : null}
-
-        <SetCap>{t('settings.danger')}</SetCap>
-        <SetCard>
-          {onStartEmpty ? (
-            <SetRow
-              label={t('settings.emptyBoard')}
-              danger
-              onClick={() =>
-                setConfirm({
-                  kicker: t('settings.startOver'),
-                  title: t('settings.clearTitle'),
-                  body: t('settings.clearBody'),
-                  yes: t('settings.clearYes'),
-                  go: onStartEmpty,
-                })
-              }
-            />
-          ) : null}
-        </SetCard>
 
         {sheet === 'theme' ? (
           <SetSheet title={t('settings.theme')} still={still} onClose={() => setSheet(null)}>

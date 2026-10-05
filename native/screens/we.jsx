@@ -19,6 +19,8 @@ import {
   weGoal,
   weKnownPeople,
   weLeave,
+  weClose,
+  weNotTonightLine,
   weMake,
   noteAsked,
   reportWe,
@@ -766,6 +768,25 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  // The maker ends it for everyone. Past answers stay.
+  function close() {
+    publishSheet({
+      title: t('we.closeTitle'),
+      body: t('we.closeBody'),
+      goLabel: t('we.close'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const out = await weClose(card.id)
+        if (out.miss) return setMiss(tMiss(out.miss))
+        confirmDone(t('confirm.weClosed'))
+        goHash('/we')
+      },
+    })
+  }
+
   // Filed for Aaron to look at, with the question. Blocking stays on the
   // person's own sheet in Friends and family.
   function report() {
@@ -805,6 +826,7 @@ function WeCardPage({ book, cardId, onChange }) {
     card.mine && !edit ? { key: 'edit', label: t('we.edit'), onPress: startEdit } : null,
     link ? { key: 'link', label: t('weLink.off'), onPress: endLink } : null,
     { key: 'leave', label: t('we.leave'), onPress: leave, danger: true },
+    card.mine ? { key: 'close', label: t('we.close'), onPress: close, danger: true } : null,
     { key: 'report', label: t('we.report'), onPress: report, danger: true },
   ].filter(Boolean)
 
@@ -848,7 +870,7 @@ function WeCardPage({ book, cardId, onChange }) {
           </Pressable>
         </View>
         <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
-        <Meta colors={colors}>{card.due ? weStatusLine(card) : t('we.notTonight')}</Meta>
+        <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
       </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
@@ -1055,7 +1077,7 @@ export function WeHomeScreen({ book, onChange }) {
           <Text style={[styles.weQ, { color: colors.ink }]}>{card.question}</Text>
           <WeFaces card={card} colors={colors} cheer={cheer} />
           <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
-            {card.due ? weStatusLine(card) : t('we.notTonight')}
+            {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
             {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
             {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
           </Text>

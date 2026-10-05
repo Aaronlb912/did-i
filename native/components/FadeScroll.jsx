@@ -2,12 +2,23 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { svgGradient } from '../lib/svg-parts.js'
 
-const FADE = 28
+const FADE = 40
+const STEPS = [0.15, 0.35, 0.55, 0.75, 0.9]
 
-// No svg (the fallback, or the web visual check): no fade, the row still scrolls.
+// No svg (the fallback, or the web visual check): stepped strips, so a chip
+// cut at the edge still reads as "more this way".
 function Fade({ side, color }) {
   const parts = svgGradient()
-  if (!parts) return null
+  if (!parts) {
+    const steps = side === 'left' ? [...STEPS].reverse() : STEPS
+    return (
+      <View pointerEvents="none" style={[styles.fade, styles.steps, side === 'left' ? styles.left : styles.right]}>
+        {steps.map((opacity, at) => (
+          <View key={at} style={[styles.step, { backgroundColor: color, opacity }]} />
+        ))}
+      </View>
+    )
+  }
   const { Svg, Defs, LinearGradient, Stop, Rect } = parts
   const id = `fade-${side}`
   return (
@@ -64,4 +75,6 @@ const styles = StyleSheet.create({
   fade: { position: 'absolute', top: 0, bottom: 0, width: FADE },
   left: { left: 0 },
   right: { right: 0 },
+  steps: { flexDirection: 'row' },
+  step: { flex: 1 },
 })

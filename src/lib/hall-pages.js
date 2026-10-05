@@ -8,6 +8,7 @@ import {
   formatBoardDate,
   isoDate,
   parseIsoDate,
+  periodNight,
   rowDoneTonight,
   unansweredTonight,
   waitingTonight,
@@ -354,9 +355,15 @@ export function weekRecap(boards, week, tagId = '') {
   let dids = 0
   if (from && to) {
     for (const book of scopedBooks(boards, tagId)) {
+      let lamps = null
       for (const answer of book.answers || []) {
         if (answer.status !== 'yes' && answer.status !== 'late') continue
-        const key = String(answer.periodKey || '')
+        let key = String(answer.periodKey || '')
+        // A once question counts on its own day.
+        if (key.startsWith('once:')) {
+          lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+          key = periodNight(lamps.get(answer.lampId), key)
+        }
         if (key.length === 10 && key >= from && key <= to) dids += 1
       }
     }
@@ -374,6 +381,32 @@ export function recapShareText(recap) {
   return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
 }
 
+// The Sunday that closed the week before `dateIso`. Monday gives yesterday.
+export function lastWeekSunday(dateIso) {
+  const at = parseIsoDate(dateIso)
+  if (!at) return ''
+  return addDaysIso(dateIso, -(at.getDay() || 7))
+}
+
+const RECAP_SEEN_KEY = 'did-i-recap-seen'
+// Last week's recap shows once, on the first open of the new week.
+export function weekRecapDue(dateIso) {
+  const sunday = lastWeekSunday(dateIso)
+  if (!sunday) return ''
+  try {
+    return localStorage.getItem(RECAP_SEEN_KEY) === sunday ? '' : sunday
+  } catch {
+    return ''
+  }
+}
+export function markWeekRecapSeen(sunday) {
+  try {
+    localStorage.setItem(RECAP_SEEN_KEY, sunday)
+  } catch {
+    // Shows again next open; harmless.
+  }
+}
+
 // Streak goals in order: the two early marks, then the streak tiers.
 const STREAK_GOALS = [3, 5, 7, 10, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 730, 1000]
 export function nextStreakGoal(n) {
@@ -388,6 +421,15 @@ export function feedRows(book) {
       answer,
       lamp: lamps.find((item) => item.id === answer.lampId) || null,
     }))
+}
+
+// Every answer search: question text, short name, or note, any case.
+export function feedSearch(rows, query) {
+  const want = String(query || '').trim().toLowerCase()
+  if (!want) return rows
+  return rows.filter((row) =>
+    [row.lamp?.question, row.lamp?.short, row.answer?.note].some((text) => String(text || '').toLowerCase().includes(want)),
+  )
 }
 
 export function statsCounts(book, now = new Date()) {
