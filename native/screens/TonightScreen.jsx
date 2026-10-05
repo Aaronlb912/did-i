@@ -484,11 +484,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           <View style={styles.actions}>
             <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
+            <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
-          <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
         </GemFaceShell>
       </CardSettle>
     )

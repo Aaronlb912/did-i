@@ -190,6 +190,7 @@ export function TonightNote({ rows, bookOf, colors, onChange }) {
 const styles = StyleSheet.create({
   wrap: { gap: 8, marginTop: 8 },
   label: { ...sectionLabel },
-  edit: { gap: 8, marginTop: 8 },
-  keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  // Full width, so in a row of buttons the open note drops to its own line.
+  edit: { gap: 8, marginTop: 8, width: '100%' },
+  keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 })
