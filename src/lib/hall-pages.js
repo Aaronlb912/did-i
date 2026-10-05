@@ -450,10 +450,11 @@ export function clockWords(timePart) {
   if (!match) return ''
   if (uses24h()) return `${match[1].padStart(2, '0')}:${match[2]}`
   let hour = Number(match[1])
-  const suffix = hour >= 12 ? 'PM' : 'AM'
+  const pm = hour >= 12
   hour = hour % 12
   if (hour === 0) hour = 12
-  return `${hour}:${match[2]} ${suffix}`
+  // The AM/PM wording follows the language (午前, 오후, a. m.).
+  return t(pm ? 'clock.pm' : 'clock.am', { h: hour, m: match[2] })
 }
 
 export function matchLamps(book, query) {

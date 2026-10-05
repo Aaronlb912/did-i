@@ -110,10 +110,8 @@ export const en = {
   'settings.showMarks': 'Show achievements',
   'settings.install': 'Install the app',
   'settings.lock': 'App PIN on this phone',
-  'settings.lockOn':
-    'On. Did I asks for this PIN when you open the app on this phone. Not your sign-in password.',
-  'settings.lockOff':
-    'Optional. 4 to 8 digits. Did I asks when you open the app on this phone. Not your phone passcode or sign-in password.',
+  'settings.lockOn': 'On. Did I asks for this PIN when you open the app on this phone. Not your sign-in password.',
+  'settings.lockOff': 'Optional. 4 to 8 digits. Did I asks when you open the app on this phone. Not your phone passcode or sign-in password.',
   'settings.number': 'PIN',
   'settings.newNumber': 'New PIN',
   'settings.pinDigits': 'Use 4 to 8 digits.',
@@ -158,8 +156,7 @@ export const en = {
   'settings.accountSub': 'Your folders follow you to a new phone.',
   'settings.accountOffSub': 'Everything is on this phone only.',
   'auth.title': 'Sign in or start',
-  'auth.body':
-    'Enter your email for a one-time code. Your folders, friends, and streak follow you on every phone.',
+  'auth.body': 'Enter your email for a one-time code. Your folders, friends, and streak follow you on every phone.',
   'auth.newHere': 'New here? Same steps. Your account is created when you confirm the code.',
   'auth.local': 'Use on this phone only',
   'auth.tagline': 'One question, once a night.',
@@ -176,8 +173,7 @@ export const en = {
   'account.offTitle': 'Not switched on',
   'account.offBody':
     'This build has no account server set. Everything stays on this phone and nothing is sent anywhere.',
-  'account.offTester':
-    'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
+  'account.offTester': 'If sign-in works for someone else, this install needs a rebuild with Supabase keys. EAS builds do not pick up .env.local. Or sign in at did-i.app in a browser.',
   'account.outTitle': 'Sign in to keep your questions',
   'account.outBody':
     'Your questions, answers, streak, coins, gems, and the cheers you own follow you to a new phone. Nobody else sees them.',
@@ -356,8 +352,7 @@ export const en = {
   'tonight.waitKicker': 'Not yet',
   'tonight.waitTitle': 'Nothing to answer right now',
   'tonight.waitLater': 'These open later tonight.',
-  'tonight.deadlineOptional':
-    'Due by {date}. Optional until that night — tap here if you want to answer early.',
+  'tonight.deadlineOptional': 'Due by {date}. Optional until that night. Tap here if you want to answer early.',
   'tonight.waitOpens': '{name} opens at {time}.',
   'tonight.offKicker': 'Today',
   'tonight.offTitle': 'Nothing is due today',
@@ -757,8 +752,7 @@ export const en = {
   'gems.balance': 'You have {gems}',
   'gems.hint':
     'One gem is a dollar. Bigger packs add bonus gems. Sign in first. After checkout, come back and sync.',
-  'gems.hintNative':
-    'One gem is a dollar. Bigger packs add bonus gems. Sign in first. Prices come from the App Store or Google Play.',
+  'gems.hintNative': 'One gem is a dollar. Bigger packs add bonus gems. Sign in first. Prices come from the App Store or Google Play.',
   'gems.each': '{price} each',
   'gems.save': 'Save {n}%',
   'gems.buy': 'Buy',
@@ -1617,15 +1611,13 @@ export const en = {
   'legal.operatorWarn': 'Set VITE_LEGAL_EMAIL in .env.local before other people sign up.',
   'settings.privacyChoices': 'Privacy',
   'settings.diagnostics': 'Crash reports',
-  'settings.diagnosticsSub':
-    'Anonymous notes when the app breaks. Off until you say yes. No ad tracking.',
+  'settings.diagnosticsSub': 'Anonymous notes when the app breaks. Off until you say yes. No ad tracking.',
   'settings.phonePrivacy': 'Phone privacy settings',
   'settings.phonePrivacySub': 'Notifications and other permissions in iOS Settings.',
   'settings.phonePrivacySubAndroid': 'Notifications and other permissions in Android Settings.',
   'diagnostics.kicker': 'Privacy',
   'diagnostics.title': 'Send crash reports?',
-  'diagnostics.body':
-    'If Did I breaks, we can get a short anonymous note: what failed and which screen. No questions, no names, no tracking across other apps. You can turn this off anytime in Settings.',
+  'diagnostics.body': 'If Did I breaks, we can get a short anonymous note: what failed and which screen. No questions, no names, no tracking across other apps. You can turn this off anytime in Settings.',
   'diagnostics.yes': 'Send reports',
   'diagnostics.no': 'Not now',
   'settings.legal': 'Legal',
@@ -1722,8 +1714,7 @@ export const en = {
   'legal.terms.contact.title': 'Contact',
   'legal.terms.contact.body': 'Questions about these Terms: {email}{emailNote}.',
   'help.legal': 'Legal',
-  'help.legalP':
-    'Privacy Policy and Terms of Use live in Settings under Legal. Read them before you sign in or buy gems.',
+  'help.legalP': 'Privacy Policy and Terms of Use live in Settings under Legal. Read them before you sign in or buy gems.',
   'web.nav.home': 'Home',
   'web.nav.privacy': 'Privacy',
   'web.nav.terms': 'Terms',
@@ -2265,6 +2256,8 @@ export const en = {
   'didYouLink.bad': 'That link has ended or is not right. Ask whoever sent it for a new one.',
   'didYouLink.reach': 'Could not load that link. Check your connection. It comes up again next time you open Did I.',
   'didYouLink.noApp': 'No Did I yet? Get it, open it, and this question comes up.',
+  'clock.pm': '{h}:{m} PM',
+  'clock.am': '{h}:{m} AM',
   'shop.teasedBody': 'Not out yet. It goes on sale {date}.',
   'tonight.nextOn': 'Nothing tomorrow. Next question: {date}.',
   'shop.earnGems': 'Clear a night each week to earn 1 gem, or get a pack.',
