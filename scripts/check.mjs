@@ -113,6 +113,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { clockWords, monthStripNights, nextStreakGoal, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
+import { setWeNightRows } from '../src/lib/we-nights.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -683,6 +684,16 @@ test('the calendar leaves future nights and nights before you started blank', ()
   const pack = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights
   assert.equal(pack.find((night) => night.iso === '2026-10-01').miss, false)
   assert.equal(pack.find((night) => night.iso === '2026-10-02').on, true)
+  // A nope night is not cleared, so it is not filled in, like the streak.
+  const noped = [{ ...bare[0], answers: [{ lampId: 'a', periodKey: '2026-10-02', status: 'skip' }] }]
+  const nope = monthStripNights(noped, new Date('2026-10-04T12:00:00'), '', 0).nights.find((night) => night.iso === '2026-10-02')
+  assert.equal(nope.on, false)
+  assert.equal(nope.miss, true)
+  // A Did we you left open that night leaves it open too.
+  setWeNightRows([{ card: 'w', folder: '', night: '2026-10-02', status: '' }])
+  const weOpen = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights.find((night) => night.iso === '2026-10-02')
+  setWeNightRows([])
+  assert.equal(weOpen.on, false)
 })
 
 test('two phones combine instead of overwriting', () => {
