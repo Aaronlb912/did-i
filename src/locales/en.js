@@ -2328,7 +2328,7 @@ export const en = {
   'shop.howEarn': 'How to earn: clear tonight\'s questions for up to {cap} coins a night. The first night you clear each week also gives 1 gem. More gems come in packs from Get gems below.',
   'shop.needMoreGems': 'Need {n} more gems.',
   'shop.needMoreCoins': 'Need {n} more coins.',
-  'tonight.coinsTomorrow': 'New questions earn coins from tomorrow night onward.',
+  'tonight.coinsTomorrow': 'New questions pay starting tomorrow.',
   'tonight.keepNope': 'Keep nope',
   'tonight.nopedChange': 'You can still change it until {time}. It counts as late.',
   'tonight.nopedMany': 'You said nope to {n} questions.',

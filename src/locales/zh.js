@@ -2256,7 +2256,7 @@ export const zh = {
   'shop.howEarn': '如何赚取：完成今晚的问题，每晚最多 {cap} 金币。每周第一次完成的那晚还会得到 1 颗宝石。更多宝石可在下方的获取宝石里按包购买。',
   'shop.needMoreGems': '还差 {n} 颗宝石。',
   'shop.needMoreCoins': '还差 {n} 枚金币。',
-  'tonight.coinsTomorrow': '新问题从明晚开始（之后每晚）可以赚金币。',
+  'tonight.coinsTomorrow': '新问题从明天开始给金币。',
   'tonight.keepNope': '保留 nope',
   'tonight.nopedChange': '{time}前仍可修改，算作迟到。',
   'tonight.nopedMany': '你对 {n} 个问题选了 nope。',

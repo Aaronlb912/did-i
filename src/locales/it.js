@@ -2332,7 +2332,7 @@ export const it = {
   'shop.howEarn': 'Come guadagnare: completa le domande di stasera per fino a {cap} monete a sera. La prima sera completata ogni settimana dà anche 1 gemma. Altre gemme arrivano in pacchetti da Ottieni gemme, qui sotto.',
   'shop.needMoreGems': 'Ti mancano {n} gemme.',
   'shop.needMoreCoins': 'Ti mancano {n} monete.',
-  'tonight.coinsTomorrow': 'Le domande nuove danno monete da domani sera in poi.',
+  'tonight.coinsTomorrow': 'Le domande nuove pagano da domani.',
   'tonight.keepNope': 'Tieni nope',
   'tonight.nopedChange': 'Puoi ancora cambiarlo fino alle {time}. Conta come in ritardo.',
   'tonight.nopedMany': 'Hai detto nope a {n} domande.',

@@ -2351,7 +2351,7 @@ export const de = {
   'shop.howEarn': 'So verdienst du: Erledige die Fragen von heute Abend für bis zu {cap} Münzen pro Abend. Der erste erledigte Abend jeder Woche bringt außerdem 1 Edelstein. Mehr Edelsteine gibt es als Pakete unter Edelsteine holen.',
   'shop.needMoreGems': 'Noch {n} Edelsteine nötig.',
   'shop.needMoreCoins': 'Noch {n} Münzen nötig.',
-  'tonight.coinsTomorrow': 'Neue Fragen bringen ab morgen Abend Münzen, jeden Abend danach auch.',
+  'tonight.coinsTomorrow': 'Neue Fragen zahlen ab morgen.',
   'tonight.keepNope': 'Nope behalten',
   'tonight.nopedChange': 'Du kannst es bis {time} noch ändern. Es zählt als spät.',
   'tonight.nopedMany': 'Du hast bei {n} Fragen Nope gesagt.',

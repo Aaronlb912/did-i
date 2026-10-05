@@ -2333,7 +2333,7 @@ export const pt = {
   'shop.howEarn': 'Como ganhar: conclua as perguntas desta noite para até {cap} moedas por noite. A primeira noite concluída de cada semana também dá 1 gema. Mais gemas vêm em pacotes em Obter gemas, abaixo.',
   'shop.needMoreGems': 'Faltam {n} gemas.',
   'shop.needMoreCoins': 'Faltam {n} moedas.',
-  'tonight.coinsTomorrow': 'Perguntas novas dão moedas de amanhã à noite em diante.',
+  'tonight.coinsTomorrow': 'Perguntas novas pagam a partir de amanhã.',
   'tonight.keepNope': 'Manter nope',
   'tonight.nopedChange': 'Ainda dá para mudar até {time}. Conta como atrasado.',
   'tonight.nopedMany': 'Você disse nope para {n} perguntas.',

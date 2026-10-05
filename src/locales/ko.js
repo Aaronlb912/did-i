@@ -2272,7 +2272,7 @@ export const ko = {
   'shop.howEarn': '버는 방법: 오늘 밤 질문을 끝내면 하룻밤에 최대 {cap}코인. 매주 처음 끝낸 밤에는 보석 1개도 받아요. 더 많은 보석은 아래 보석 받기에서 팩으로 살 수 있어요.',
   'shop.needMoreGems': '젬이 {n}개 더 필요해요.',
   'shop.needMoreCoins': '코인이 {n}개 더 필요해요.',
-  'tonight.coinsTomorrow': '새 질문은 내일 밤부터 계속 코인을 줘요.',
+  'tonight.coinsTomorrow': '새 질문은 내일부터 코인을 줘요.',
   'tonight.keepNope': 'nope 유지',
   'tonight.nopedChange': '{time}까지 아직 바꿀 수 있어요. 늦게로 쳐요.',
   'tonight.nopedMany': '질문 {n}개에 nope를 눌렀어요.',

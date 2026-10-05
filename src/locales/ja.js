@@ -2271,7 +2271,7 @@ export const ja = {
   'shop.howEarn': '稼ぎ方：今夜の質問を終えると1晩で最大 {cap} コイン。毎週最初に終えた夜にはジェムが1個もらえます。ほかのジェムは下の「ジェムを入手」でパック購入できます。',
   'shop.needMoreGems': 'あと{n}ジェム必要です。',
   'shop.needMoreCoins': 'あと{n}コイン必要です。',
-  'tonight.coinsTomorrow': '新しい質問は明日の夜以降からコインがもらえます。',
+  'tonight.coinsTomorrow': '新しい質問は明日から支払われます。',
   'tonight.keepNope': 'nopeのままにする',
   'tonight.nopedChange': '{time}までまだ変えられます。遅れとして数えます。',
   'tonight.nopedMany': '{n}件の質問をnopeにしました。',
