@@ -3,6 +3,12 @@ import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight,
 import { scopedBooks } from './tags.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
+// A question only counts on nights it existed: one added today must not make
+// last night look missed, or adding a new daily question cuts the streak.
+function dueThatNight(book, iso, at) {
+  return dueTonight(book, at).filter((row) => !row.lamp.createdOn || row.lamp.createdOn <= iso)
+}
+
 function noonOn(iso) {
   const date = parseIsoDate(iso)
   if (!date) return null
@@ -72,7 +78,7 @@ export function lastBrokenNight(boards, now = new Date()) {
   for (let step = 0; step < 40 && !found; step += 1) {
     const at = noonOn(night)
     if (!at) return null
-    if (weNight(night).due || books.some((book) => countedTonightRows(dueTonight(book, at)).length)) found = true
+    if (weNight(night).due || books.some((book) => countedTonightRows(dueThatNight(book, night, at)).length)) found = true
     else night = addDaysIso(night, -1)
   }
   if (!found) return null
@@ -94,7 +100,7 @@ function nightOf(book, iso, at) {
   }
   let night = nights.get(iso)
   if (!night) {
-    const rows = dueTonight(book, at)
+    const rows = dueThatNight(book, iso, at)
     const counted = countedTonightRows(rows).length
     night = { counted, clear: counted > 0 && dueClearTonight(rows) }
     nights.set(iso, night)

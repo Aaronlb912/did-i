@@ -74,6 +74,7 @@ import { sessionMissing, signedOutSync } from '../src/lib/cloud-sync.js'
 import {
   buyCheer,
   buyFriendCheers,
+  coinsFor,
   FRIEND_CHEER_CAP,
   FRIEND_CHEERS_PER_GEM,
   gemWeekKey,
@@ -160,6 +161,22 @@ function test(name, fn) {
 function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
+
+test('a night pays 2 a did, 1 late, nothing for new questions or past 3 taps', () => {
+  const clock = new Date('2026-10-04T21:00:00')
+  const old = lamp('a', { createdOn: '2026-10-01' })
+  const fresh = lamp('n', { createdOn: '2026-10-04' })
+  const book = (lamps, answers = []) => ({ id: 'b', dayFoldHour: 0, lamps, answers })
+  assert.equal(coinsFor('yes', book([old]), { lamp: old }, clock), 2)
+  assert.equal(coinsFor('late', book([old]), { lamp: old }, clock), 1)
+  assert.equal(coinsFor('skip', book([old]), { lamp: old }, clock), 0)
+  // Added today, even one just for tonight: coins start tomorrow night.
+  assert.equal(coinsFor('yes', book([fresh]), { lamp: fresh }, clock), 0)
+  const paid = ['x', 'y', 'z'].map((id) => lamp(id, { createdOn: '2026-10-01' }))
+  const answers = paid.map((item) => ({ lampId: item.id, periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' }))
+  const fourth = lamp('w', { createdOn: '2026-10-01' })
+  assert.equal(coinsFor('yes', book([...paid, fourth], answers), { lamp: fourth }, clock), 0)
+})
 
 test('a bulk delete across folders comes back whole on undo', () => {
   const home = { id: 'home', lamps: [{ id: 'a' }, { id: 'b' }], answers: [{ lampId: 'b', periodKey: '2026-09-25', status: 'yes' }] }
@@ -2799,6 +2816,19 @@ async function testAsync(name, fn) {
     console.error(`FAIL ${name}\n     ${error.message}`)
   }
 }
+
+await testAsync('adding a new daily question does not cut the streak', async () => {
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const now = new Date('2026-10-05T21:13:00')
+  const yes = (lampId, periodKey) => ({ lampId, periodKey, status: 'yes', answeredAt: `${periodKey}T21:00:00` })
+  const book = {
+    id: 'b',
+    dayFoldHour: 0,
+    lamps: [lamp('c', { createdOn: '2026-10-04' }), lamp('p', { createdOn: '2026-10-05' })],
+    answers: [yes('c', '2026-10-04'), yes('c', '2026-10-05'), yes('p', '2026-10-05')],
+  }
+  assert.equal(streakOf([book], now), 2)
+})
 
 await testAsync('a streak push that throws right after a Did waits for the app instead of rejecting', async () => {
   setAppForeground(false)

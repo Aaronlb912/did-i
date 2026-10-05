@@ -855,6 +855,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
             : t('enter.whoTitle')
       }
       colors={colors}
+      locked={locked}
     >
       <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t('enter.body')}</Text>

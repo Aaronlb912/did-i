@@ -102,6 +102,7 @@ import {
 import { applyPrefsToDocument, usePrefs } from './lib/prefs.js'
 import { wallClock } from './lib/zone.js'
 import { cloudSetUp } from './lib/cloud.js'
+import { accountSessionOn } from './lib/session-id.js'
 import {
   alignShelfPurse,
   mergePurses,
@@ -182,7 +183,7 @@ export default function App() {
     const now = new Date()
     const before = currentBook(shelf)
     const coinsBefore = mergePurses(shelf.boards).coins
-    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
+    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
       next = closePastNights(next, now)
@@ -214,7 +215,7 @@ export default function App() {
         pushSoon(synced)
       })
     }
-    if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
+    if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
         if (bal == null) return
         const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))

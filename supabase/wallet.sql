@@ -180,7 +180,14 @@ begin
   if who is null then
     raise exception 'not signed in';
   end if;
-  if key !~ '^\d{4}-W\d{2}$' or key <> now_week then
+  -- The phone names the week by its own local date, the server by UTC, so
+  -- around Sunday midnight they differ by one. Accept the weeks either side;
+  -- gem_week still pays each week once.
+  if key !~ '^\d{4}-W\d{2}$' or key not in (
+    now_week,
+    public.iso_gem_week((timezone('utc', now()))::date - 1),
+    public.iso_gem_week((timezone('utc', now()))::date + 1)
+  ) then
     return coalesce((select gem_balance from public.profiles where user_id = who), 0);
   end if;
 
