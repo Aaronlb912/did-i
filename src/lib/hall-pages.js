@@ -353,22 +353,31 @@ export function weekRecap(boards, week, tagId = '') {
   const from = nights[0]?.iso || ''
   const to = nights[nights.length - 1]?.iso || ''
   let dids = 0
+  let late = 0
+  let nopes = 0
   if (from && to) {
     for (const book of scopedBooks(boards, tagId)) {
       let lamps = null
       for (const answer of book.answers || []) {
-        if (answer.status !== 'yes' && answer.status !== 'late') continue
+        const status = answer.status
+        if (status !== 'yes' && status !== 'late' && status !== 'skip') continue
         let key = String(answer.periodKey || '')
         // A once question counts on its own day.
         if (key.startsWith('once:')) {
           lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
           key = periodNight(lamps.get(answer.lampId), key)
         }
-        if (key.length === 10 && key >= from && key <= to) dids += 1
+        if (key.length !== 10 || key < from || key > to) continue
+        if (status === 'skip') nopes += 1
+        else {
+          dids += 1
+          if (status === 'late') late += 1
+        }
       }
     }
   }
-  return { cleared, nights: nights.length, dids, best }
+  // dids counts late ones too; late and nopes are for the week's own tiles.
+  return { cleared, nights: nights.length, dids, late, nopes, best }
 }
 
 // Sunday night closes the week.

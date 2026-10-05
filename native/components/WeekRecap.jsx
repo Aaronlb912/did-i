@@ -6,15 +6,18 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { KeyButton } from './ui.jsx'
 import { fonts, sectionLabel } from '../theme.js'
 
+/** Shares the week as text, with a visible copied or failed note. */
+export async function shareRecap(recap) {
+  const how = await passAlong(recapShareText(recap), t('recap.kicker'))
+  if (how === 'copied') confirmDone(t('recap.copied'))
+  else if (!how) confirmMiss(t('confirm.shareMiss'))
+}
+
 /** The week in three lines, with a share. `recap` comes from weekRecap. */
 export function WeekRecap({ recap, colors }) {
   if (!recap) return null
 
-  async function share() {
-    const how = await passAlong(recapShareText(recap), t('recap.kicker'))
-    if (how === 'copied') confirmDone(t('recap.copied'))
-    else if (!how) confirmMiss(t('confirm.shareMiss'))
-  }
+  const share = () => shareRecap(recap)
 
   return (
     <View style={[styles.wrap, { borderColor: colors.lineSoft || colors.line }]}>

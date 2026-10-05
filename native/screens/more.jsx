@@ -61,7 +61,7 @@ import {
   weekStripNights,
   feedSearch,
 } from '../../src/lib/hall-pages.js'
-import { WeekRecap } from '../components/WeekRecap.jsx'
+import { shareRecap } from '../components/WeekRecap.jsx'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -377,13 +377,13 @@ function StreakHero({ colors, n, label, line }) {
   )
 }
 
-function NumberTile({ colors, label, n, onPress }) {
+function NumberTile({ colors, label, n, onPress, third = false }) {
   return (
     <Pressable
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.line }]}
+      style={[styles.tile, third && styles.tileThird, { backgroundColor: colors.panel, borderColor: colors.line }]}
     >
       <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
@@ -425,14 +425,31 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-      <StreakHero colors={colors} n={counts.heat} label={t('home.streak')} />
+      {/* This week first, then everything since you started, each with the
+          same three tiles so the two read the same way. */}
+      <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
+      <StreakHero
+        colors={colors}
+        n={counts.heat}
+        label={t('home.streak')}
+        line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+      />
       <View style={styles.tiles}>
-        <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
-        <NumberTile colors={colors} label={t('stats.did')} n={counts.did} />
-        <NumberTile colors={colors} label={t('stats.late')} n={counts.late} />
-        <NumberTile colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
+        <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
+        <NumberTile third colors={colors} label={t('stats.nope')} n={recap.nopes} />
       </View>
-      <WeekRecap recap={recap} colors={colors} />
+      <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={() => shareRecap(recap)} />
+
+      <SetCap colors={colors}>{t('stats.allCap')}</SetCap>
+      <View style={styles.tiles}>
+        <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
+        <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
+        <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
+      </View>
+
+      <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
       <KeyButton colors={colors} label={t('stats.marks')} onPress={() => goHash('/marks')} />
       <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
       <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
@@ -1838,6 +1855,8 @@ const styles = StyleSheet.create({
   heroLine: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   tile: { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: 18, padding: 16, gap: 4 },
+  // Three in a row: the week's DID, Late and Nope.
+  tileThird: { flexBasis: '30%' },
   tileNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700' },
   tileLabel: { fontFamily: fonts.ui, fontSize: 13 },
   subtitle: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 16 },

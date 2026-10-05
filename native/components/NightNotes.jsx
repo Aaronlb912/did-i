@@ -11,6 +11,7 @@ import { sectionLabel } from '../theme.js'
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
+const NOTES_SHOWN = 3
 
 function statusWord(status) {
   if (status === 'late') return t('feed.status.late')
@@ -52,6 +53,9 @@ export function NightNotes({ book, lamp, colors, onChange }) {
   const [picking, setPicking] = useState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
   const noted = nights.filter((row) => row.answer.note)
+  // The newest few, so a question with many notes stays short; the rest on ask.
+  const [all, setAll] = useState(false)
+  const shown = all ? noted : noted.slice(0, NOTES_SHOWN)
   const picks = nights.filter((row) => !row.answer.note).slice(0, PICKS)
 
   function save(key, draft) {
@@ -80,7 +84,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: colors.inkSoft }]}>{t('note.title')}</Text>
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
-      {noted.map(({ answer }) =>
+      {shown.map(({ answer }) =>
         open === answer.periodKey ? (
           edit(answer)
         ) : (
@@ -96,6 +100,15 @@ export function NightNotes({ book, lamp, colors, onChange }) {
           />
         ),
       )}
+      {noted.length > NOTES_SHOWN ? (
+        <View style={styles.keys}>
+          <KeyButton
+            colors={colors}
+            label={all ? t('note.fewer') : t('note.all', { n: noted.length })}
+            onPress={() => setAll(!all)}
+          />
+        </View>
+      ) : null}
       {openPick ? (
         edit(openPick.answer)
       ) : picking ? (

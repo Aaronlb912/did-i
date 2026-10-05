@@ -887,7 +887,7 @@ test('the week recap counts cleared nights, dids and the best run', () => {
     { lampId: 'x', periodKey: '2026-10', status: 'yes' },
   ]
   const recap = weekRecap([{ id: 'b1', lamps: [lamp('x')], answers }], week)
-  assert.deepEqual(recap, { cleared: 5, nights: 7, dids: 2, best: 3 })
+  assert.deepEqual(recap, { cleared: 5, nights: 7, dids: 2, late: 1, nopes: 1, best: 3 })
   assert.equal(isRecapNight('2026-10-04'), true, 'Sunday')
   assert.equal(isRecapNight('2026-10-05'), false)
   assert.equal(isRecapNight(''), false)
