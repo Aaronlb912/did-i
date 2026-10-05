@@ -10,6 +10,7 @@ import { afterQuiet, pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
+import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { readWePings } from '../../src/lib/we-widget.js'
@@ -26,6 +27,9 @@ export function isAppForeground() {
 
 export async function bootNative() {
   setAppForeground(AppState.currentState === 'active')
+  import('expo-application')
+    .then((Application) => setErrorAppVersion(Application.nativeApplicationVersion))
+    .catch(() => {})
   AppState.addEventListener('change', (next) => {
     setAppForeground(next === 'active')
   })
@@ -52,6 +56,34 @@ export async function pingStreakHit(hit, dateIso) {
     return true
   } catch {
     return false
+  }
+}
+
+// A sample reminder a few seconds out, so you can see notifications work.
+// 'off' means permission is not on; the caller sends you to settings.
+export async function pingTest(seconds = 5) {
+  if ((await checkNativePings()) !== 'granted') return 'off'
+  try {
+    const Notifications = await notifications()
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+        name: t('push.channelName'),
+        description: t('push.channelDesc'),
+        importance: Notifications.AndroidImportance.HIGH,
+      }).catch(() => {})
+    }
+    await Notifications.scheduleNotificationAsync({
+      identifier: 'did-i-test',
+      content: { title: 'Did I', body: t('pings.testBody'), data: { go: '/tonight' } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        channelId: CHANNEL_ID,
+      },
+    })
+    return 'set'
+  } catch {
+    return 'miss'
   }
 }
 

@@ -45,7 +45,7 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget } from '../widget-sync.js'
+import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { runAfterLaunchReady } from '../lib/launch-ready.js'
@@ -299,7 +299,10 @@ export function useAppShelf() {
         })
     })
     function onShelfIn(event) {
-      if (event?.detail) setShelf(event.detail)
+      if (!event?.detail) return
+      setShelf(event.detail)
+      // Answers from another phone (sync): the widget shows them too.
+      syncTonightWidgetIfChanged(event.detail).catch(() => {})
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

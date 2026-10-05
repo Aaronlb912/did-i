@@ -121,8 +121,19 @@ function widgetOpenCount(props) {
 }
 
 /** Headless Android can rebuild before the shelf is warm; keep the fresher open stack. */
+// What the Tonight widget shows, as one string: which questions, which
+// night, and how each is answered. Two shelves with the same key draw the
+// same card, so a sync that changes nothing tonight skips the redraw.
+export function tonightWidgetKey(props) {
+  const items = (props?.items || []).map((item) => `${item.lampId}|${item.periodKey}|${item.status}`)
+  return [props?.leadLampId || '', props?.left ?? '', props?.footer || '', ...items].join('\n')
+}
+
 export function preferStoredTonightProps(built, stored) {
   if (!stored?.items?.length) return built
+  // A card saved on an earlier night is never kept past midnight.
+  if (stored.updatedAt && built.updatedAt &&
+      boardDate(new Date(stored.updatedAt)) !== boardDate(new Date(built.updatedAt))) return built
   // A saved card that still shows a question the shelf has answered is stale
   // (answered in the app, or by an earlier tap). Never bring it back.
   const builtStatus = new Map(

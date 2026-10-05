@@ -2321,7 +2321,7 @@ test('the last cloud save reads as a local time, not a raw timestamp', () => {
   assert.equal(stampWhen('not a date'), '')
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
-  assert.ok(more.includes("t('account.syncSaved', { time: stampWhen(sync.at) })"))
+  assert.ok(more.includes('t(line.key, { time: stampWhen(line.at) })'))
 })
 
 test('deadline questions before the due night do not count on the tonight meter', () => {
@@ -3968,6 +3968,93 @@ test('a Did we not due tonight names its next night, same rule as we_due', async
   assert.ok(PING_KINDS.includes('we'))
   const sql = readFileSync(path.join(checkRoot, 'supabase/did-we.sql'), 'utf8')
   assert.ok(!/push_wanted\([^)]*'sends'\)/.test(sql), 'Did we pushes use their own switch')
+})
+
+test('the widget redraws at midnight and when last night\'s grace ends', async () => {
+  const { widgetRedrawTimes } = await import('../src/lib/widget-config.js')
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const now = new Date('2026-09-23T19:00:00')
+  const times = widgetRedrawTimes([book], now)
+  assert.ok(times.length >= 2, `got ${times.length}`)
+  // Night turns come first, so the native cap of 12 never drops midnight.
+  const turn = times[0]
+  assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
+  assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
+  assert.ok(times.some((d) => d.getHours() === 21 && d.getMinutes() === 0), 'ask times stay')
+  assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
+  assert.ok(times.every((d) => d > now))
+})
+
+test('a widget card from an earlier night does not win after midnight', async () => {
+  const { preferStoredTonightProps, tonightWidgetKey } = await import('../src/lib/widget-tonight.js')
+  const stored = {
+    items: [{ lampId: 'a', periodKey: '2026-09-23', status: 'open' }, { lampId: 'b', periodKey: '2026-09-23', status: 'open' }],
+    leadLampId: 'a',
+    updatedAt: new Date('2026-09-23T22:00:00').getTime(),
+  }
+  const built = {
+    items: [{ lampId: 'a', periodKey: '2026-09-24', status: 'open' }],
+    leadLampId: 'a',
+    updatedAt: new Date('2026-09-24T12:00:00').getTime(),
+  }
+  assert.equal(preferStoredTonightProps(built, stored), built)
+  // Same night, more open on the card: the card still wins (taps saved natively).
+  const sameNight = { ...built, updatedAt: new Date('2026-09-23T22:30:00').getTime() }
+  assert.equal(preferStoredTonightProps(sameNight, stored).items, stored.items)
+  // The redraw key moves when an answer from another phone lands.
+  const answered = { ...built, items: [{ ...built.items[0], status: 'done' }] }
+  assert.notEqual(tonightWidgetKey(built), tonightWidgetKey(answered))
+  assert.equal(tonightWidgetKey(built), tonightWidgetKey({ ...built, updatedAt: 1 }))
+})
+
+test('the sync line says synced just now, or saved on this phone after a miss', async () => {
+  const { syncLine, syncFailed } = await import('../src/lib/sync-line.js')
+  const now = Date.parse('2026-10-05T12:00:00Z')
+  assert.equal(syncLine({ how: 'saved', at: '2026-10-05T11:59:30Z' }, now).key, 'account.syncJust')
+  const older = syncLine({ how: 'saved', at: '2026-10-05T11:00:00Z' }, now)
+  assert.equal(older.key, 'account.syncSaved')
+  assert.equal(older.at, '2026-10-05T11:00:00Z')
+  assert.equal(syncLine({ how: 'miss', miss: 'net' }, now).key, 'account.syncLocal')
+  assert.equal(syncLine({ how: 'busy' }, now).key, 'account.syncBusy')
+  assert.equal(syncLine({ how: 'out' }, now).key, 'account.syncIdle')
+  assert.ok(syncFailed({ how: 'miss' }))
+  assert.ok(!syncFailed({ how: 'saved' }))
+  const { en } = await import('../src/locales/en.js')
+  for (const key of ['account.syncJust', 'account.syncLocal', 'settings.syncMiss', 'pings.test', 'pings.testOff']) assert.ok(en[key], key)
+})
+
+test('the error log keeps no personal content and is capped', async () => {
+  const { errorCode } = await import('../src/lib/app-errors.js')
+  assert.equal(errorCode(new Error('FetchError: could not reach did I walk the dog')), 'FetchError:')
+  assert.equal(errorCode({ code: 'PGRST301', message: 'secret' }), 'PGRST301')
+  assert.equal(errorCode(null), 'unknown')
+  assert.ok(errorCode('x'.repeat(200)).length <= 80)
+  const sql = readFileSync(path.join(checkRoot, 'supabase/reliability.sql'), 'utf8')
+  assert.ok(sql.includes('enable row level security'), 'app_errors has RLS')
+  assert.ok(sql.includes('(select auth.uid())'), 'policies use (select auth.uid())')
+  assert.ok(!/grant select[^;]*app_errors/i.test(sql), 'nobody but the service role reads the log')
+  assert.ok(!sql.slice(sql.indexOf('create table if not exists public.app_errors')).includes('user_id'), 'the error log has no user id')
+  assert.ok(sql.includes("interval '90 days'"), 'old phones drop off after 90 days')
+  const all = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(all.includes("'supabase/reliability.sql'"))
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(sync.includes("recordAppError('sync'"), 'failed syncs are logged')
+  const push = readFileSync(path.join(checkRoot, 'supabase/functions/push/index.ts'), 'utf8')
+  assert.ok(push.includes("from('app_errors')"), 'failed pushes are logged')
+  assert.ok(!push.includes('user_id: row.to_id'), 'push errors carry no user id')
+})
+
+test('a sheet that pops up on Tonight catches the next tap', () => {
+  const sheet = readFileSync(path.join(checkRoot, 'native/components/SheetHost.jsx'), 'utf8')
+  assert.ok(!sheet.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the veil never lets a tap through to Did or Nope')
+  assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
 })
 
 test('signing out clears the per-account lists kept for a fast first paint', () => {

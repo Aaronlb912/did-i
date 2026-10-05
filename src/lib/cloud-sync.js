@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
 import { clearAuthSkip } from './auth-gate.js'
@@ -362,6 +363,7 @@ async function pullAndMergeOnce() {
     return written
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    recordAppError('sync', error).catch(() => {})
     return null
   }
 }
@@ -396,6 +398,7 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    recordAppError('sync', error).catch(() => {})
   }
 }
 
@@ -452,8 +455,9 @@ export async function touchDevice() {
   }
 }
 
-// Phones seen in the last 30 days. Older rows are installs that are gone.
-export const DEVICE_FRESH_DAYS = 30
+// Phones seen in the last 90 days. The server removes older rows when a
+// phone checks in (supabase/reliability.sql).
+export const DEVICE_FRESH_DAYS = 90
 
 export async function listDevices() {
   const db = cloud()
