@@ -337,6 +337,43 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
   return { ...sum, heat: books.length ? shelfStreak(books, now) : 0 }
 }
 
+// The week behind a night, for the Sunday recap and Stats. `week` is
+// weekStripNights for that night, so one walk feeds the dots and this.
+export function weekRecap(boards, week, tagId = '') {
+  const nights = week || []
+  let cleared = 0
+  let run = 0
+  let best = 0
+  for (const night of nights) {
+    run = night.on ? run + 1 : 0
+    if (night.on) cleared += 1
+    if (run > best) best = run
+  }
+  const from = nights[0]?.iso || ''
+  const to = nights[nights.length - 1]?.iso || ''
+  let dids = 0
+  if (from && to) {
+    for (const book of scopedBooks(boards, tagId)) {
+      for (const answer of book.answers || []) {
+        if (answer.status !== 'yes' && answer.status !== 'late') continue
+        const key = String(answer.periodKey || '')
+        if (key.length === 10 && key >= from && key <= to) dids += 1
+      }
+    }
+  }
+  return { cleared, nights: nights.length, dids, best }
+}
+
+// Sunday night closes the week.
+export function isRecapNight(dateIso) {
+  const at = parseIsoDate(dateIso)
+  return Boolean(at) && at.getDay() === 0
+}
+
+export function recapShareText(recap) {
+  return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
+}
+
 // Streak goals in order: the two early marks, then the streak tiers.
 const STREAK_GOALS = [3, 5, 7, 10, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 730, 1000]
 export function nextStreakGoal(n) {

@@ -1,5 +1,6 @@
 import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
+import { answerStamp } from './board-ops.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -43,6 +44,7 @@ function rowsOf(shelf) {
         s: answer.status || 'yes',
         a: answer.answeredAt || '',
         n: answer.note || '',
+        e: answer.noteAt || '',
       })
     }
   }
@@ -53,7 +55,12 @@ function rowsOf(shelf) {
 export function answersToSend(shelf, all = false) {
   const mark = all ? '' : read(MARK)
   const rows = rowsOf(shelf)
-  return mark ? rows.filter((row) => row.a > mark) : rows
+  return mark ? rows.filter((row) => rowStamp(row) > mark) : rows
+}
+
+// The tap or the note, whichever changed last.
+function rowStamp(row) {
+  return row.e > row.a ? row.e : row.a
 }
 
 export async function pushAnswers(shelf, all = false) {
@@ -67,7 +74,7 @@ export async function pushAnswers(shelf, all = false) {
     const slice = rows.slice(at, at + CHUNK)
     const { error } = await db.rpc('put_answers', { rows: slice })
     if (error) return { sent: at, miss: error.message }
-    for (const row of slice) if (row.a > newest) newest = row.a
+    for (const row of slice) if (rowStamp(row) > newest) newest = rowStamp(row)
   }
   write(MARK, newest)
   return { sent: rows.length, miss: '' }
@@ -92,7 +99,8 @@ export function applyAnswers(shelf, rows) {
       (item) => item.lampId === row.lamp_id && item.periodKey === row.period_key,
     )
     const mine = at >= 0 ? book.answers[at] : null
-    if (mine && String(mine.answeredAt || '') >= String(row.answered_at || '')) continue
+    const theirs = { answeredAt: row.answered_at || '', noteAt: row.note_at || '' }
+    if (mine && answerStamp(mine) >= answerStamp(theirs)) continue
     const next = {
       id: mine?.id || `ans-${row.lamp_id}-${row.period_key}`,
       lampId: row.lamp_id,
@@ -100,6 +108,7 @@ export function applyAnswers(shelf, rows) {
       status: row.status,
       answeredAt: row.answered_at || '',
       note: row.note || '',
+      ...(row.note_at ? { noteAt: row.note_at } : {}),
     }
     if (at >= 0) book.answers[at] = next
     else book.answers.push(next)
@@ -114,7 +123,8 @@ export async function pullAnswers(shelf) {
   const since = read(SEEN)
   let query = db
     .from('answer_log')
-    .select('lamp_id, period_key, board_id, status, answered_at, note, updated_at')
+    // '*' so this read works before and after note_at is added (answers.sql).
+    .select('*')
     .order('updated_at', { ascending: true })
     .limit(5000)
   // Greater-or-equal on purpose. A batch written in one statement shares

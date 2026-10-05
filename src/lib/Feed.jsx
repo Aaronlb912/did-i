@@ -48,6 +48,7 @@ export function Feed({ book, now }) {
                         ? ` · ${tapWhen(row.answer.answeredAt, clock)}`
                         : ''}
                     </span>
+                    {row.answer.note ? <span className="di-feed-meta">{row.answer.note}</span> : null}
                   </span>
                 </button>
               </li>

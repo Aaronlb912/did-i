@@ -31,6 +31,10 @@ create policy "own answers" on public.answer_log
 
 revoke all on public.answer_log from anon;
 
+-- When the note on a night was last saved. It moves without touching
+-- answered_at, so a later note still wins a sync.
+alter table public.answer_log add column if not exists note_at text not null default '';
+
 alter table public.answer_log drop constraint if exists answer_log_len;
 alter table public.answer_log add constraint answer_log_len check (
   length(lamp_id) <= 64
@@ -38,6 +42,7 @@ alter table public.answer_log add constraint answer_log_len check (
   and length(board_id) <= 64
   and length(answered_at) <= 32
   and length(note) <= 500
+  and length(note_at) <= 32
 );
 
 -- Writing a batch ------------------------------------------------------
@@ -66,7 +71,7 @@ begin
   end if;
 
   insert into public.answer_log
-    (user_id, lamp_id, period_key, board_id, status, answered_at, note, updated_at)
+    (user_id, lamp_id, period_key, board_id, status, answered_at, note, note_at, updated_at)
   select
     me,
     left(r->>'l', 64),
@@ -74,7 +79,8 @@ begin
     left(coalesce(r->>'b', ''), 64),
     case when r->>'s' in ('yes', 'skip', 'late') then r->>'s' else 'yes' end,
     left(coalesce(r->>'a', ''), 32),
-    left(coalesce(r->>'n', ''), 500)
+    left(coalesce(r->>'n', ''), 500),
+    left(coalesce(r->>'e', ''), 32)
   , now()
   from jsonb_array_elements(rows) r
   where r->>'l' is not null and r->>'p' is not null
@@ -82,9 +88,11 @@ begin
     set status = excluded.status,
         answered_at = excluded.answered_at,
         note = excluded.note,
+        note_at = excluded.note_at,
         board_id = excluded.board_id,
         updated_at = now()
-    where excluded.answered_at > public.answer_log.answered_at;
+    where greatest(excluded.answered_at, excluded.note_at)
+      > greatest(public.answer_log.answered_at, public.answer_log.note_at);
 
   get diagnostics put = row_count;
   return put;

@@ -1,5 +1,6 @@
 import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
+import { answerStamp } from './board-ops.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
 // Two phones can both be right. Questions and answers always combine.
@@ -17,9 +18,10 @@ function answerKey(answer) {
   return `${answer.lampId}:${answer.periodKey}`
 }
 
+// A note saved later wins too (noteAt), without moving the tap time.
 function laterAnswer(a, b) {
-  const left = String(a?.answeredAt || '')
-  const right = String(b?.answeredAt || '')
+  const left = answerStamp(a)
+  const right = answerStamp(b)
   if (left && right) return right > left ? b : a
   return right && !left ? b : a
 }
