@@ -699,6 +699,23 @@ test('the calendar leaves future nights and nights before you started blank', ()
   const weOpen = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights.find((night) => night.iso === '2026-10-02')
   setWeNightRows([])
   assert.equal(weOpen.on, false)
+  // A paused Did we (nobody answered 3 nights) does not hold the night open.
+  setWeNightRows([{ card: 'w', folder: '', night: '2026-10-02', status: '', paused: true }])
+  const wePaused = monthStripNights(bare, new Date('2026-10-04T12:00:00'), '', 0).nights.find((night) => night.iso === '2026-10-02')
+  setWeNightRows([])
+  assert.equal(wePaused.on, true)
+})
+
+await testAsync('a paused Did we is not asked, and "you both did it" needs two dids', async () => {
+  const { weBothDid, wePausedCards, weReminders } = await import('../src/lib/did-we.js')
+  const me = { id: 'm', me: true, state: 'in', status: 'did' }
+  const pal = { id: 'p', state: 'in', status: 'did' }
+  assert.equal(weBothDid({ done: true, people: [me, pal] }), true)
+  assert.equal(weBothDid({ done: true, people: [me, { ...pal, status: null }] }), false)
+  assert.equal(weBothDid({ done: false, people: [me, pal] }), false)
+  const paused = { id: 'c', myState: 'in', paused: true, askAfter: '20:00', question: 'Did we walk?' }
+  assert.deepEqual(wePausedCards([paused, { ...paused, id: 'd', paused: false }]).map((card) => card.id), ['c'])
+  assert.equal(weReminders([paused]).length, 0, 'a paused card sets no reminder')
 })
 
 test('a night says why it broke, by the same rules as the dots', () => {

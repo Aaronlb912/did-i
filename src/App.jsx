@@ -91,6 +91,7 @@ import { Into } from './site/Into.jsx'
 import { NameBoard } from './site/NameBoard.jsx'
 import { Read } from './site/Read.jsx'
 import { goFromPush, goHash, parseHash } from './site/hash.js'
+import { takeWebWeLink } from './lib/did-you-links.js'
 import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { DiagnosticsAsk } from './lib/DiagnosticsAsk.jsx'
@@ -178,6 +179,12 @@ export default function App() {
   )
   const showNav = !SITE.has(path) && showBottomNav(path)
   const account = useAccount()
+  // Signed in after opening a Did we link on the web: back to its join page.
+  useEffect(() => {
+    if (!account.user) return
+    const code = takeWebWeLink()
+    if (code) goHash('/we', { link: code })
+  }, [account.user])
 
   function persist(nextShelf) {
     const now = new Date()
@@ -607,7 +614,7 @@ export default function App() {
     inner = route.id ? (
       <WeCard book={live} cardId={route.id} onChange={change} />
     ) : (
-      <WeHome book={live} onChange={change} />
+      <WeHome book={live} onChange={change} link={route.link} />
     )
   } else if (path === '/add' || path === '/hang') {
     inner = (
