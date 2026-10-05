@@ -8,6 +8,7 @@ import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
+import { useLayoutState } from '../lib/motion.js'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -38,7 +39,7 @@ function markOf(answer, when = 0) {
 export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
   const prefs = usePrefs()
   const clock = now || new Date()
-  const [monthShift, setMonthShift] = useState(0)
+  const [monthShift, setMonthShift] = useLayoutState(0)
   const [picked, setPicked] = useState('')
 
   useEffect(() => {

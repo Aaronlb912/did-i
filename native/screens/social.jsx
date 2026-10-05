@@ -105,6 +105,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
+import { animateNextLayout } from '../lib/motion.js'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -2096,6 +2097,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     try {
       // Family did yous and allowed friends go onto tonight first.
       await refreshPeople()
+      animateNextLayout()
       setRows(await listInbox())
       setMiss('')
     } catch {
@@ -2285,6 +2287,7 @@ export function SentScreen({ book, onChange }) {
     }
     try {
       const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
+      animateNextLayout()
       setRows(sent)
       setLinks(made)
       setMiss('')

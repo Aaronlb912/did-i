@@ -8,6 +8,7 @@ import { periodLabel } from '../../src/lib/recurrence.js'
 import { confirmDone } from '../lib/confirm.js'
 import { Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
+import { useLayoutState } from '../lib/motion.js'
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
@@ -49,12 +50,12 @@ function NoteEdit({ label, initial, colors, onSave, onCancel }) {
 
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
 export function NightNotes({ book, lamp, colors, onChange }) {
-  const [open, setOpen] = useState('')
-  const [picking, setPicking] = useState(false)
+  const [open, setOpen] = useLayoutState('')
+  const [picking, setPicking] = useLayoutState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
   const noted = nights.filter((row) => row.answer.note)
   // The newest few, so a question with many notes stays short; the rest on ask.
-  const [all, setAll] = useState(false)
+  const [all, setAll] = useLayoutState(false)
   const shown = all ? noted : noted.slice(0, NOTES_SHOWN)
   const picks = nights.filter((row) => !row.answer.note).slice(0, PICKS)
 
@@ -149,8 +150,8 @@ export function NightNotes({ book, lamp, colors, onChange }) {
  */
 // quiet: a small text link instead of a full button (the Home done card).
 export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
-  const [picking, setPicking] = useState(false)
-  const [open, setOpen] = useState(null)
+  const [picking, setPicking] = useLayoutState(false)
+  const [open, setOpen] = useLayoutState(null)
   const answered = rows.filter((row) => row.answer && row.lamp)
   if (!answered.length) return null
 

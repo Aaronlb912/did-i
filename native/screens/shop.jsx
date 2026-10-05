@@ -89,6 +89,7 @@ import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
 import { previewSample } from '../../src/lib/board-shelf.js'
+import { pressFx, animateNextLayout } from '../lib/motion.js'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -282,7 +283,7 @@ function ShopTile({ type, item, purse, colors, onTile, style }) {
       onPress={() => onTile(type, item)}
       accessibilityRole="button"
       accessibilityLabel={t('shop.see', { name })}
-      style={[styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style]}
+      style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
         <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />
@@ -422,7 +423,7 @@ function WishButton({ on, onPress, colors }) {
       accessibilityState={{ selected: on }}
       onPress={onPress}
       hitSlop={8}
-      style={[styles.wishBtn, { borderColor: on ? colors.on : colors.line }]}
+      style={({ pressed }) => [styles.wishBtn, { borderColor: on ? colors.on : colors.line }, pressFx(pressed)]}
     >
       <Text style={[styles.wishText, { color: on ? colors.on : colors.ink }]}>
         {on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`}
@@ -445,7 +446,7 @@ function ShopDoor({ preview, title, note, meta, onPress, colors }) {
       accessibilityRole="button"
       accessibilityLabel={typeof title === 'string' ? title : undefined}
       onPress={onPress}
-      style={[styles.shopDoor, { borderBottomColor: colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.shopDoor, { borderBottomColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       <View style={styles.shopDoorChip}>{preview}</View>
       <View style={styles.shopCopy}>
@@ -624,7 +625,7 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       disabled={!onBuy}
       accessibilityRole={onBuy ? 'button' : 'text'}
       accessibilityLabel={`${title}, ${price}`}
-      style={[styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       {best ? (
         <View style={[styles.gemBestBadge, { backgroundColor: colors.on }]}>
@@ -1731,7 +1732,7 @@ function KitTile({ label, worn, onPress, colors, children, big = false, caption 
       accessibilityLabel={label}
       accessibilityState={{ selected: Boolean(worn) }}
       onPress={onPress}
-      style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
+      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, pressFx(pressed)]}>
       <View style={[styles.kitTileChip, big && styles.kitTileChipBig]}>
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
@@ -2477,6 +2478,7 @@ export function GiftsSentScreen({ book }) {
     let alive = true
     listSentGifts().then((out) => {
       if (!alive) return
+      animateNextLayout()
       setList(out.rows)
       if (out.miss === 'out') setMiss(t('gift.needAccount'))
       else if (out.miss) setMiss(tMiss(out.miss))
