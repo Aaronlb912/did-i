@@ -2000,6 +2000,7 @@ export const pt = {
   'we.best': 'Melhor: {n}',
   'we.nextCoins': 'Moedas em mais {n}',
   'we.thisMonth': 'Este mês: {n} de {due} noites',
+  'we.thisMonthOne': 'Este mês: {n} de 1 noite',
   'we.lastMonth': 'Mês passado: {n} de {due} noites',
   'we.people': 'Pessoas',
   'we.you': 'Você',

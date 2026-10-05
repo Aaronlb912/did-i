@@ -1947,6 +1947,7 @@ export const ko = {
   'we.best': '최고: {n}',
   'we.nextCoins': '{n}일 더 하면 코인',
   'we.thisMonth': '이번 달: {due}일 중 {n}일',
+  'we.thisMonthOne': '이번 달: 1일 중 {n}일',
   'we.lastMonth': '지난달: {due}일 중 {n}일',
   'we.people': '사람들',
   'we.you': '나',

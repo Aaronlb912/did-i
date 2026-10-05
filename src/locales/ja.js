@@ -1946,6 +1946,7 @@ export const ja = {
   'we.best': '最高：{n}',
   'we.nextCoins': 'あと{n}夜でコイン',
   'we.thisMonth': '今月：{due}夜中{n}夜',
+  'we.thisMonthOne': '今月：1夜中{n}夜',
   'we.lastMonth': '先月：{due}夜中{n}夜',
   'we.people': 'メンバー',
   'we.you': 'あなた',

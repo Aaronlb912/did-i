@@ -2011,6 +2011,7 @@ export const fr = {
   'we.best': 'Record : {n}',
   'we.nextCoins': 'Pièces dans {n} de plus',
   'we.thisMonth': 'Ce mois-ci : {n} nuits sur {due}',
+  'we.thisMonthOne': 'Ce mois-ci : {n} nuit sur 1',
   'we.lastMonth': 'Le mois dernier : {n} nuits sur {due}',
   'we.people': 'Personnes',
   'we.you': 'Toi',

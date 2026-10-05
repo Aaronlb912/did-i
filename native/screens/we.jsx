@@ -923,7 +923,7 @@ function WeCardPage({ book, cardId, onChange }) {
               {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
             </Meta>
           ) : null}
-          <Meta colors={colors}>{t('we.thisMonth', { n: month.done, due: month.due })}</Meta>
+          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
           {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
           {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
         </View>

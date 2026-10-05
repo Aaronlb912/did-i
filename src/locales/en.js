@@ -1996,6 +1996,7 @@ export const en = {
   'we.best': 'Best: {n}',
   'we.nextCoins': 'Coins in {n} more',
   'we.thisMonth': 'This month: {n} of {due} nights',
+  'we.thisMonthOne': 'This month: {n} of 1 night',
   'we.lastMonth': 'Last month: {n} of {due} nights',
   'we.people': 'People',
   'we.you': 'You',

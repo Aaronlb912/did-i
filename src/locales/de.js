@@ -2016,6 +2016,7 @@ export const de = {
   'we.best': 'Bestes: {n}',
   'we.nextCoins': 'Münzen in {n} weiteren',
   'we.thisMonth': 'Diesen Monat: {n} von {due} Nächten',
+  'we.thisMonthOne': 'Diesen Monat: {n} von 1 Nacht',
   'we.lastMonth': 'Letzten Monat: {n} von {due} Nächten',
   'we.people': 'Leute',
   'we.you': 'Du',

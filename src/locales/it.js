@@ -2001,6 +2001,7 @@ export const it = {
   'we.best': 'Record: {n}',
   'we.nextCoins': 'Monete tra {n}',
   'we.thisMonth': 'Questo mese: {n} notti su {due}',
+  'we.thisMonthOne': 'Questo mese: {n} notte su 1',
   'we.lastMonth': 'Il mese scorso: {n} notti su {due}',
   'we.people': 'Persone',
   'we.you': 'Tu',

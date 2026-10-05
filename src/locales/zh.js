@@ -1936,6 +1936,7 @@ export const zh = {
   'we.best': '最佳：{n}',
   'we.nextCoins': '再 {n} 晚得金币',
   'we.thisMonth': '本月：{due} 晚中的 {n} 晚',
+  'we.thisMonthOne': '本月：1 晚中的 {n} 晚',
   'we.lastMonth': '上月：{due} 晚中的 {n} 晚',
   'we.people': '成员',
   'we.you': '你',
