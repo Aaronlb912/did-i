@@ -2484,4 +2484,11 @@ export const ja = {
   'coins.gemNot': '今週のジェム：まだです。',
   'coins.none': 'まだコインはありません。今夜答えて始めましょう。',
   'coins.tapAria': 'コインのしくみ',
+  'widget.settings.pin': 'ホーム画面に追加',
+  'widget.settings.pinSub': 'ウィジェットをホーム画面に置きます。',
+  'pings.quietCap': 'おやすみ時間',
+  'pings.quiet': '通知を保留',
+  'pings.quietSub': 'この時間は通知しません。終わったら届きます。',
+  'pings.quietFrom': '開始',
+  'pings.quietTo': '終了',
 }

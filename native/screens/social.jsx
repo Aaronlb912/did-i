@@ -47,6 +47,7 @@ import {
   sendCheer,
   buyCheers,
   cheerFriend,
+  cheerFamily,
   readFriendCheers,
   setAutoAdd,
   shareStreak,
@@ -1657,10 +1658,13 @@ function FamilyListScreen({ colors }) {
 
 // One friend or family member: did yous both ways and the Did wes you
 // share. Opened by tapping their card on Friends or in a family.
-export function FriendScreen({ route }) {
+export function FriendScreen({ book, onChange, route }) {
   const colors = useHallColors()
   const account = useAccount()
   const otherId = route?.id || ''
+  const purse = normalizePurse(book)
+  const [stock, setStock] = useState(null)
+  const cheersLeft = stock == null ? purse.friendCheers : stock
   const [person, setPerson] = useKept(`friend.person:${otherId}`, { user_id: otherId })
   // Kept between visits so a revisit opens on the last tab and counts at once.
   const [sends, setSends] = useKept(`friend.sends:${account.user?.id}:${otherId}`, { mine: [], theirs: [], miss: '' })
@@ -1678,12 +1682,14 @@ export function FriendScreen({ route }) {
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked, made] = await Promise.all([
+    const [who, both, linked, made, serverCheers] = await Promise.all([
       personById(otherId),
       sendsWith(otherId),
       stillLinked(otherId),
       myDidYouLinks().catch(() => []),
+      readFriendCheers().catch(() => null),
     ])
+    if (typeof serverCheers === 'number') setStock(serverCheers)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
     setPerson(who)
     setSends(both)
@@ -1694,6 +1700,40 @@ export function FriendScreen({ route }) {
   useEffect(() => {
     load()
   }, [load])
+
+  // Same path and limits as the Friends list: one stored cheer per tap,
+  // bought five for a gem. Family members go through the family cheer.
+  function cheer() {
+    if (cheersLeft < 1) {
+      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return
+      if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
+      return confirmFriendCheers(colors, () => once('buy-cheers', buyCheersNow))
+    }
+    return once(`cheer:${otherId}`, cheerNow)
+  }
+
+  async function cheerNow() {
+    let sent = await cheerFriend(book, otherId, purse.cheerOn)
+    if (sent.miss === 'notFriend') sent = await cheerFamily(book, otherId, '', purse.cheerOn)
+    const known = friendCheerMissKey(sent.miss)
+    if (known) return setSaid(t(known.key, known.vars))
+    if (sent.miss) return setSaid(tMiss(sent.miss))
+    setStock(normalizePurse(sent.book).friendCheers)
+    if (onChange) onChange(sent.book)
+    fireCheer(purse.cheerOn, 1)
+    return setSaid(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+  }
+
+  async function buyCheersNow() {
+    const bought = await buyCheers(book)
+    if (bought.miss === 'gems') return offerMoreGems(colors)
+    const known = friendCheerMissKey(bought.miss)
+    if (known) return setSaid(t(known.key, known.vars))
+    if (bought.miss) return setSaid(tMiss(bought.miss))
+    setStock(normalizePurse(bought.book).friendCheers)
+    if (onChange) onChange(bought.book)
+    return setSaid(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+  }
 
   if (!account.user) return <NeedAccount kicker={t('people.friends')} title={t('people.outTitle')} colors={colors} />
   const name = personName(person) || t('people.someone')
@@ -1781,6 +1821,20 @@ export function FriendScreen({ route }) {
             <Text style={[styles.friendWeText, { color: colors.ink }]}>{t('friend.startDidWe')}</Text>
           </Pressable>
           <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didWeHint')}</Text>
+        </View>
+      </View>
+      <View style={styles.friendActions}>
+        <View style={styles.friendAction}>
+          <KeyButton
+            colors={colors}
+            label={cheersLeft < 1 ? t('friends.cheerBuyShort') : t('friends.cheerUse')}
+            disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
+            onPress={cheer}
+          />
+          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friends.cheerStock', { n: cheersLeft })}</Text>
+        </View>
+        <View style={styles.friendAction}>
+          <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: otherId })} />
         </View>
       </View>
       {said ? <Meta colors={colors}>{said}</Meta> : null}

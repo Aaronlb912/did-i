@@ -2560,4 +2560,11 @@ export const fr = {
   'coins.gemNot': 'Gemme de la semaine : pas encore.',
   'coins.none': 'Pas encore de pièces. Réponds ce soir pour commencer.',
   'coins.tapAria': 'Comment marchent les pièces',
+  'widget.settings.pin': 'Ajouter à l\'écran d\'accueil',
+  'widget.settings.pinSub': 'Place le widget sur ton écran d\'accueil.',
+  'pings.quietCap': 'Heures calmes',
+  'pings.quiet': 'Retenir les notifications',
+  'pings.quietSub': 'Aucune notification pendant ces heures. Elles arrivent à la fin.',
+  'pings.quietFrom': 'Début',
+  'pings.quietTo': 'Fin',
 }

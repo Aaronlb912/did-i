@@ -2541,4 +2541,11 @@ export const en = {
   'coins.gemNot': "This week's gem: not yet.",
   'coins.none': 'No coins yet. Answer tonight to start.',
   'coins.tapAria': 'How coins work',
+  'widget.settings.pin': 'Add to home screen',
+  'widget.settings.pinSub': 'Puts the widget on your home screen.',
+  'pings.quietCap': 'Quiet hours',
+  'pings.quiet': 'Hold notifications',
+  'pings.quietSub': 'No notifications in these hours. They come when quiet hours end.',
+  'pings.quietFrom': 'Starts',
+  'pings.quietTo': 'Ends',
 }

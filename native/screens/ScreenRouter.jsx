@@ -128,7 +128,7 @@ export function ScreenRouter({
   if (path === '/people/connect') return <PeopleConnectScreen key={route.id} book={book} onChange={change} route={route} />
   if (path === '/friends') return <FriendsScreen book={book} onChange={change} highlightAsk={route.id} />
   if (path === '/family') return <FamilyScreen book={book} onChange={change} route={route} />
-  if (path === '/friend') return <FriendScreen route={route} />
+  if (path === '/friend') return <FriendScreen book={book} onChange={change} route={route} />
   if (path === '/inbox') return <InboxScreen key={route.id} book={book} onChange={change} onKeep={keepSent} route={route} />
   if (path === '/sent') return <SentScreen book={book} onChange={change} />
   // /we/new: start is an idea to fill in, id a person to ask. /we: the Did we

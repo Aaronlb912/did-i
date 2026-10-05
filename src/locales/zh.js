@@ -2469,4 +2469,11 @@ export const zh = {
   'coins.gemNot': '本周宝石：还没有。',
   'coins.none': '还没有金币。今晚回答就能开始。',
   'coins.tapAria': '金币怎么得',
+  'widget.settings.pin': '添加到主屏幕',
+  'widget.settings.pinSub': '把小组件放到你的主屏幕上。',
+  'pings.quietCap': '免打扰时段',
+  'pings.quiet': '暂缓通知',
+  'pings.quietSub': '这段时间不发通知。时段结束后再送达。',
+  'pings.quietFrom': '开始',
+  'pings.quietTo': '结束',
 }

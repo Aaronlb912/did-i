@@ -2485,4 +2485,11 @@ export const ko = {
   'coins.gemNot': '이번 주 보석: 아직이에요.',
   'coins.none': '아직 코인이 없어요. 오늘 밤 답하면서 시작하세요.',
   'coins.tapAria': '코인 받는 법',
+  'widget.settings.pin': '홈 화면에 추가',
+  'widget.settings.pinSub': '위젯을 홈 화면에 놓아요.',
+  'pings.quietCap': '방해 금지 시간',
+  'pings.quiet': '알림 보류',
+  'pings.quietSub': '이 시간에는 알림이 오지 않아요. 끝나면 도착해요.',
+  'pings.quietFrom': '시작',
+  'pings.quietTo': '종료',
 }

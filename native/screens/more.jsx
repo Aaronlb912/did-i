@@ -93,6 +93,7 @@ import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
 import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
 import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetNote, SetRow, SetSwitch } from '../components/SetBits.jsx'
+import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
@@ -1126,6 +1127,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 
 // Pushes come from the server, which reads these switches from the synced prefs.
 const PUSH_KINDS = new Set(['sends', 'cheers', 'friends', 'family', 'didi'])
+const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
 
 function PingKinds({ colors, on }) {
   const prefs = usePrefs()
@@ -1144,6 +1146,20 @@ function PingKinds({ colors, on }) {
     // Signed out there are no pushes, so the switch only has to hold here.
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
       writePrefs({ pingsOff: was })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
+  // Reminders are set on the phone; pushes wait on the server. Both read these.
+  async function saveQuiet(patch) {
+    const was = readPrefs()
+    writePrefs(patch)
+    setMiss('')
+    armLampPings(readShelf().boards).catch(() => {})
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ quietOn: was.quietOn, quietFrom: was.quietFrom, quietTo: was.quietTo })
+      armLampPings(readShelf().boards).catch(() => {})
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1186,6 +1202,36 @@ function PingKinds({ colors, on }) {
           last
           onPress={flipPrivate}
         />
+      </SetCard>
+      <SetCap colors={colors}>{t('pings.quietCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          label={t('pings.quiet')}
+          sub={t('pings.quietSub')}
+          on={prefs.quietOn}
+          last={!prefs.quietOn}
+          onPress={() => saveQuiet({ quietOn: !prefs.quietOn })}
+        />
+        {prefs.quietOn ? (
+          <>
+            <SetChoice
+              colors={colors}
+              label={t('pings.quietFrom')}
+              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              selected={prefs.quietFrom}
+              onSelect={(id) => saveQuiet({ quietFrom: id })}
+            />
+            <SetChoice
+              colors={colors}
+              label={t('pings.quietTo')}
+              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              selected={prefs.quietTo}
+              onSelect={(id) => saveQuiet({ quietTo: id })}
+              last
+            />
+          </>
+        ) : null}
       </SetCard>
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
