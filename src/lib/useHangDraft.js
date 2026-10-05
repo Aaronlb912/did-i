@@ -12,7 +12,7 @@ import {
 import { findBookByTitle } from './board-shelf.js'
 import { applySchedulePick } from './hang-schedule.js'
 import { boardDate } from './recurrence.js'
-import { STARTERS } from './starters.js'
+import { starterList } from './starters.js'
 
 export function hasExtraFields(item) {
   return Boolean(
@@ -31,10 +31,13 @@ export function bookForTag(boards, book, name) {
 function initialDraft({ clock, lamp, seed, start, words }) {
   if (lamp) return { ...lamp }
   if (seed) return { ...seed }
-  const pick = STARTERS.find(
+  const pick = starterList().find(
     (item) => item.short.toLowerCase() === String(start || '').toLowerCase(),
   )
-  if (pick) return { ...blankLamp(clock), ...pick }
+  if (pick) {
+    const { idea, ...fields } = pick
+    return { ...blankLamp(clock), ...fields }
+  }
   return words ? { ...blankLamp(clock), question: didQuestion(words) } : blankLamp(clock)
 }
 
@@ -87,7 +90,8 @@ export function useHangDraft({
 
   // An idea brings its own schedule, time and name along with the question.
   function applyStarter(starter) {
-    setDraft((prev) => ({ ...prev, ...starter }))
+    const { idea, ...fields } = starter
+    setDraft((prev) => ({ ...prev, ...fields }))
     if (miss) setMiss('')
   }
 

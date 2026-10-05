@@ -1686,6 +1686,7 @@ const styles = StyleSheet.create({
   firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   firstSwipes: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 12,
     marginTop: 20,
