@@ -880,6 +880,13 @@ test('a gem lands once per week when a night clears', () => {
   }
   assert.equal(allClearTonight(noped, clock), false)
 
+  // A deadline question days before its date never clears the night on its own.
+  const pending = {
+    ...book,
+    lamps: [{ ...lamp('d'), cadence: 'once', onceWhen: 'by', dueBy: '2026-09-27' }],
+  }
+  assert.equal(allClearTonight(pending, clock), false)
+
   const shelf = { currentId: 'b1', boards: [cleared], gemWeek: '' }
   const prev = { currentId: 'b1', boards: [book], gemWeek: '' }
   const once = weeklyGemBump(shelf, prev, clock)
