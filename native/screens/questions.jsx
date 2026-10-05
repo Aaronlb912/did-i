@@ -78,6 +78,7 @@ import {
   KeyButton,
   Meta,
   Page,
+  Row,
 } from '../components/ui.jsx'
 import { goHash, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
@@ -531,10 +532,30 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               <>
                 <DidButton label={t('tonight.add')} onPress={() => goHash('/add')} colors={colors} small />
                 {shown.length && onChangeBooks ? (
-                  <KeyButton colors={colors} label={t('questions.pick')} onPress={() => setPicking(true)} />
-                ) : null}
-                {hung.length > 1 && onChangeBooks ? (
-                  <KeyButton colors={colors} label={t('questions.reorder')} onPress={() => setOrdering(true)} />
+                  <KeyButton
+                    colors={colors}
+                    label={t('questions.editMenu')}
+                    onPress={() => {
+                      // Select and Reorder share one pill so the top row stays short.
+                      if (hung.length < 2) return setPicking(true)
+                      const pick = (go) => () => {
+                        publishSheet(null)
+                        go(true)
+                      }
+                      publishSheet({
+                        title: t('questions.editTitle'),
+                        colors,
+                        closeLabel: t('settings.neverMind'),
+                        onClose: () => publishSheet(null),
+                        content: (
+                          <View style={styles.editMenu}>
+                            <Row colors={colors} label={t('questions.pick')} note={t('questions.pickSub')} onPress={pick(setPicking)} />
+                            <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(setOrdering)} />
+                          </View>
+                        ),
+                      })
+                    }}
+                  />
                 ) : null}
               </>
             )}
@@ -1714,6 +1735,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 },
+  editMenu: { gap: 8 },
   dotKey: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4, marginTop: 2 },
   dotKeyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dotKeyDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 2 },

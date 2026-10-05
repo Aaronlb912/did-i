@@ -2655,4 +2655,8 @@ export const ko = {
   'cal.keyMissed': "미완료",
   'pings.comingUpSub': "다음에 받을 알림",
   'pings.helpSub': "이 휴대폰에서 알림이 작동하는 방식",
+  // round7
+  'questions.editMenu': "편집",
+  'questions.editTitle': "질문 편집",
+  'questions.pickSub': "여러 개를 골라 옮기거나 멈추거나 지울 수 있어요.",
 }

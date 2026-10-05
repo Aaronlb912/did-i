@@ -2716,4 +2716,8 @@ export const pt = {
   'cal.keyMissed': "Não concluída",
   'pings.comingUpSub': "O próximo lembrete marcado",
   'pings.helpSub': "Como os lembretes funcionam neste telefone",
+  // round7
+  'questions.editMenu': "Editar",
+  'questions.editTitle': "Editar suas perguntas",
+  'questions.pickSub': "Escolha várias para mover, pausar ou apagar.",
 }

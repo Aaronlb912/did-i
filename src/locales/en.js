@@ -2711,4 +2711,8 @@ export const en = {
   'cal.keyMissed': "Not cleared",
   'pings.comingUpSub': "What is set to remind you next",
   'pings.helpSub': "How reminders work on this phone",
+  // round7
+  'questions.editMenu': "Edit",
+  'questions.editTitle': "Edit your questions",
+  'questions.pickSub': "Pick several to move, stop or delete.",
 }

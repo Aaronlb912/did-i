@@ -2723,4 +2723,8 @@ export const es = {
   'cal.keyMissed': "Sin completar",
   'pings.comingUpSub': "Lo próximo que te recordaremos",
   'pings.helpSub': "Cómo funcionan los recordatorios en este teléfono",
+  // round7
+  'questions.editMenu': "Editar",
+  'questions.editTitle': "Editar tus preguntas",
+  'questions.pickSub': "Elige varias para mover, pausar o borrar.",
 }

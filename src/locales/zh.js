@@ -2639,4 +2639,8 @@ export const zh = {
   'cal.keyMissed': "未完成",
   'pings.comingUpSub': "接下来会提醒你的内容",
   'pings.helpSub': "这台手机上的提醒怎么用",
+  // round7
+  'questions.editMenu': "编辑",
+  'questions.editTitle': "编辑你的问题",
+  'questions.pickSub': "选择多个来移动、停止或删除。",
 }

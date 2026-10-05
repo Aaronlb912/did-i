@@ -46,6 +46,7 @@ import {
   wearCheerStage,
   wearAccessory,
   NIGHT_COIN_CAP,
+  isLive,
   isSeasonal,
   isWished,
   offSeason,
@@ -368,10 +369,11 @@ function DropCarousel({ slides, purse, colors, onTile }) {
   )
 }
 
-// What you can still buy of one kind, side-scrolling. Own it all and the row
-// says so; owned items live on the All page.
+// One kind, side-scrolling: what you can buy first, then what you own (marked
+// Owned), so the row always shows what the shop has.
 function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
-  const sorted = shopRow(type, list, purse)
+  const buy = shopRow(type, list, purse)
+  const sorted = [...buy, ...ownedLast(type, list.filter((item) => isLive(item) && !buy.includes(item)), purse)]
   return (
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
@@ -879,22 +881,10 @@ export function ShopScreen({ book, onChange }) {
         </Pressable>
       ) : null}
 
-      {ownAll ? (
-        <View style={styles.promoShelf}>
-          <Meta colors={colors}>{t('shop.ownAll')}</Meta>
-          <View style={styles.ownAllLinks}>
-            {rows.map((row) => (
-              <Pressable key={row.type} accessibilityRole="button" onPress={() => goHash(row.path)} hitSlop={8}>
-                <Text style={[styles.promoAll, { color: colors.on }]}>{row.allLabel}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      ) : (
-        rows.map((row) => (
-          <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
-        ))
-      )}
+      {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
+      {rows.map((row) => (
+        <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
+      ))}
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
