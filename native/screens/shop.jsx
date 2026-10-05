@@ -47,7 +47,8 @@ import {
   wearAccessory,
   NIGHT_COIN_CAP,
 } from '../../src/lib/purse.js'
-import { useTheme } from '../../src/lib/prefs.js'
+import { usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
+import { SetCard, SetSwitch } from '../components/SetBits.jsx'
 import {
   AccessoryChip,
   BuddyChip,
@@ -124,7 +125,7 @@ const PRESS_IN_DELAY = 90
 // Pressing in (or hovering) already played it, so the tap that follows does not.
 const PRESS_DEDUPE_MS = 900
 
-function PreviewButton({ onPress, pressIn = false, selected, colors, children }) {
+function PreviewButton({ onPress, pressIn = false, selected, colors, children, label }) {
   const fired = useRef(0)
   const early = () => {
     fired.current = Date.now()
@@ -140,6 +141,8 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children })
       onHoverIn={pressIn ? early : undefined}
       unstable_pressDelay={pressIn ? PRESS_IN_DELAY : undefined}
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(selected) }}
       style={[
         styles.previewBtn,
         {
@@ -367,7 +370,7 @@ function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Cap colors={colors}>{cap}</Cap>
-        <Pressable onPress={onAll} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={onAll} hitSlop={8}>
           <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
         </Pressable>
       </View>
@@ -391,6 +394,8 @@ function GemDoorChip({ colors }) {
 function ShopDoor({ preview, title, note, meta, onPress, colors }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={typeof title === 'string' ? title : undefined}
       onPress={onPress}
       style={[styles.shopDoor, { borderBottomColor: colors.line, backgroundColor: colors.panel }]}
     >
@@ -468,7 +473,7 @@ function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, 
   const art = preview
     ? onPreview
       ? (
-        <PreviewButton onPress={onPreview} pressIn={previewPressIn} selected={previewOn} colors={colors}>
+        <PreviewButton onPress={onPreview} pressIn={previewPressIn} selected={previewOn} colors={colors} label={typeof name === 'string' ? t('a11y.preview', { name }) : undefined}>
           {preview}
         </PreviewButton>
       )
@@ -530,6 +535,9 @@ function StagePicks({ owned, play, on, onPick, colors }) {
         return (
           <Pressable
             key={n}
+            accessibilityRole="button"
+            accessibilityLabel={t('shop.stage', { n })}
+            accessibilityState={{ disabled: !have, selected: using }}
             disabled={!have}
             onPress={() => onPick(n)}
             style={[
@@ -665,6 +673,8 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
 
 export function ShopScreen({ book, onChange }) {
   const colors = useShopColors(book)
+  const prefs = usePrefs()
+  const account = useAccount()
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const lookCount = purse.looks.length
@@ -776,6 +786,19 @@ export function ShopScreen({ book, onChange }) {
       ) : null}
 
       <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={onTile} />
+
+      <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          icon="bell"
+          tint={colors.on}
+          label={t('shop.dropPing')}
+          sub={account.user ? t('shop.dropPingSub') : t('shop.dropPingOut')}
+          on={Boolean(prefs.dropPings)}
+          onPress={() => writePrefs({ dropPings: !prefs.dropPings })}
+          last
+        />
+      </SetCard>
 
       <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
       <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />
@@ -1545,7 +1568,12 @@ function WornBadge({ colors }) {
 // as a big card and again as a tile. A tap wears it.
 function KitTile({ label, worn, onPress, colors, children, big = false }) {
   return (
-    <Pressable onPress={onPress} style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(worn) }}
+      onPress={onPress}
+      style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
       <View style={[styles.kitTileChip, big && styles.kitTileChipBig]}>
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
@@ -1652,7 +1680,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.kitEmpty}>
                 <Meta colors={colors}>{t('kit.noAccessories')}</Meta>
-                <Pressable onPress={() => goHash('/shop/accessories')} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={() => goHash('/shop/accessories')} hitSlop={8}>
                   <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allAccessories')}</Text>
                 </Pressable>
               </View>

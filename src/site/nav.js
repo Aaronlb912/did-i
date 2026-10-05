@@ -28,6 +28,8 @@ const FALLBACK = {
   '/about': '/settings',
   '/privacy': '/settings',
   '/terms': '/settings',
+  '/settings/phone': '/settings',
+  '/settings/more': '/settings',
   '/add': '/lamps',
   '/hang': '/lamps',
   '/lamp': '/lamps',

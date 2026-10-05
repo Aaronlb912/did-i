@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   error: { fontSize: 14, lineHeight: 19 },
   kitBadge: {
     minWidth: 30,
-    height: 30,
+    minHeight: 30,
     borderRadius: 15,
     paddingHorizontal: 8,
     alignItems: 'center',

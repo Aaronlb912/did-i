@@ -100,6 +100,7 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
 export function Row({ label, note, onPress, colors }) {
   return (
     <Pressable
+      accessibilityRole="button"
       onPress={onPress}
       android_ripple={ripple(`${colors.on}33`)}
       style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
@@ -161,6 +162,8 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
     return (
       <Pressable
         key={item.id}
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
         onPress={() => onPick(item.id)}
         android_ripple={ripple(`${colors.on}33`)}
         style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}

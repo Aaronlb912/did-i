@@ -3890,5 +3890,73 @@ test('a Did we not due tonight names its next night, same rule as we_due', async
   assert.ok(!/push_wanted\([^)]*'sends'\)/.test(sql), 'Did we pushes use their own switch')
 })
 
+const { contrastRatio, BODY_CONTRAST } = await import('../src/lib/contrast.js')
+const { hallColors, LOOK_IDS } = await import('../native/palette.js')
+test('dim and soft text stay readable on the panel in every look, dark and light', () => {
+  assert.equal(contrastRatio('#000000', '#ffffff').toFixed(0), '21')
+  assert.equal(contrastRatio('#777777', '#777777'), 1)
+  const low = []
+  for (const look of LOOK_IDS) {
+    for (const theme of ['dark', 'light']) {
+      const c = hallColors(look, theme)
+      for (const key of ['inkDim', 'inkSoft']) {
+        const r = contrastRatio(c[key], c.panel)
+        if (r < BODY_CONTRAST) low.push(`${look} ${theme} ${key} ${r.toFixed(2)}`)
+      }
+    }
+  }
+  assert.deepEqual(low, [])
+  const css = readFileSync(path.join(checkRoot, 'src/lib/did-i.css'), 'utf8')
+  const dims = new Set([...css.matchAll(/--di-ink-dim: (#[0-9a-f]{6})/g)].map((m) => m[1]))
+  for (const look of LOOK_IDS) {
+    for (const theme of ['dark', 'light']) {
+      assert.ok(dims.has(hallColors(look, theme).inkDim), `${look} ${theme} inkDim is in did-i.css too`)
+    }
+  }
+})
+
+const rateAsk = await import('../src/lib/rate-ask.js')
+test('the store rating card comes once, on the 7th cleared night', () => {
+  localStorage.removeItem('did-i-rate-ask')
+  for (let d = 1; d <= 6; d += 1) assert.equal(rateAsk.noteClearedNight(`2026-10-0${d}`), false)
+  assert.equal(rateAsk.noteClearedNight('2026-10-06'), false, 'the same night twice counts once')
+  assert.equal(rateAsk.rateAskDue(), false)
+  assert.equal(rateAsk.noteClearedNight('2026-10-07'), true)
+  rateAsk.markRateAsked()
+  assert.equal(rateAsk.rateAskDue(), false)
+  assert.equal(rateAsk.noteClearedNight('2026-10-08'), false)
+  localStorage.removeItem('did-i-rate-ask')
+})
+
+const { readPrefs: readPrefsForCheck } = await import('../src/lib/prefs.js')
+test('the drop push knows every shop drop date, runs in order, and is off by default', () => {
+  const sql = readFileSync(path.join(checkRoot, 'supabase/shop-drops.sql'), 'utf8')
+  const dates = new Set(
+    [...SHOP_CALENDAR.looks, ...SHOP_CALENDAR.cheers, ...SHOP_CALENDAR.buddies].map((item) => item.from).filter(Boolean),
+  )
+  for (const date of dates) assert.ok(sql.includes(`('${date}')`), `shop-drops.sql lists ${date}`)
+  assert.ok(/enable row level security/.test(sql))
+  const order = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf("'supabase/push.sql'") < order.indexOf("'supabase/shop-drops.sql'"))
+  const push = readFileSync(path.join(checkRoot, 'supabase/push.sql'), 'utf8')
+  assert.equal((push.match(/"drop_live":/g) || []).length, 9, 'drop push text in all 9 languages')
+  localStorage.removeItem('did-i-prefs')
+  assert.equal(readPrefsForCheck().dropPings, false)
+})
+
+test('every Settings row moved under More is still on a route, phone and web', () => {
+  for (const file of ['native/navigation/hash.js', 'src/site/hash.js']) {
+    assert.ok(readFileSync(path.join(checkRoot, file), 'utf8').includes("'/settings/more'"), file)
+  }
+  const phone = readFileSync(path.join(checkRoot, 'native/screens/profile.jsx'), 'utf8')
+  const web = readFileSync(path.join(checkRoot, 'src/lib/Profile.jsx'), 'utf8')
+  for (const key of ['settings.loadCopy', 'settings.sendCopy', 'settings.diagnostics', 'settings.privacy', 'settings.terms', 'settings.sendCsv', 'settings.reminders']) {
+    assert.ok(phone.includes(`'${key}'`), `phone ${key}`)
+    assert.ok(web.includes(`'${key}'`), `web ${key}`)
+  }
+  for (const key of ['settings.phonePrivacy', 'appVersionLines', 'settings.replayIntro']) assert.ok(phone.includes(key), `phone ${key}`)
+  assert.ok(phone.includes("goHash('/settings/more')") && web.includes("goHash('/settings/more')"))
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

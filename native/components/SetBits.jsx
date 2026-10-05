@@ -177,6 +177,8 @@ export function SetField({ label, colors, ...inputProps }) {
 export function SetPick({ label, on, onPress, colors }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(on) }}
       onPress={onPress}
       android_ripple={ripple(colors.panel3)}
       style={({ pressed }) => [
@@ -209,7 +211,7 @@ export function SetSheet({ title, onClose, children, colors }) {
             <View style={[styles.grabber, { backgroundColor: colors.line }]} />
             <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
               <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
-              <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('settings.close')} hitSlop={8}>
                 <Text style={[styles.sheetX, { color: colors.inkDim }]}>×</Text>
               </Pressable>
             </View>

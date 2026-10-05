@@ -37,6 +37,9 @@ function blankPrefs() {
     quietOn: false,
     quietFrom: '22:00',
     quietTo: '07:00',
+    // One push the morning a shop drop goes live. Off until asked for in the
+    // shop; the server reads it (queue_drop_pushes in supabase/shop-drops.sql).
+    dropPings: false,
   }
 }
 
@@ -102,6 +105,7 @@ function cleanPrefs(raw) {
   if (raw?.quietOn === true) next.quietOn = true
   if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
+  if (raw?.dropPings === true) next.dropPings = true
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
   return next

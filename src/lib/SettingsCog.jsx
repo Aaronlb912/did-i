@@ -9,7 +9,7 @@ import { usePrefs } from './prefs.js'
 
 const HOME_ON = ['/', '/home', '/tonight', '/later']
 const QUESTIONS_ON = ['/lamps', '/add', '/hang', '/lamp', '/search', '/ideas']
-const SETTINGS_ON = ['/settings', '/settings/phone', '/pings', '/about', '/help', '/privacy', '/terms']
+const SETTINGS_ON = ['/settings', '/settings/phone', '/settings/more', '/pings', '/about', '/help', '/privacy', '/terms']
 const PEOPLE_ON = ['/people', '/people/connect', '/people/refer', '/friends', '/family', '/inbox', '/sent', '/we', '/we/new', '/you']
 const ADD_ON = ['/add', '/hang']
 

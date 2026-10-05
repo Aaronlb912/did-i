@@ -58,7 +58,12 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = 
         return (
           <View key={key} style={styles.cell}>
             {canPick ? (
-              <Pressable onPress={() => onPickHole(lamp, key)} hitSlop={8}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.answerNight', { date: key })}
+                onPress={() => onPickHole(lamp, key)}
+                hitSlop={8}
+              >
                 {dot}
               </Pressable>
             ) : (

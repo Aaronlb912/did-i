@@ -125,7 +125,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       ) : null}
       </View>
       <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel={t('settings.close')}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('settings.close')}>
           <Pressable
             style={[
               styles.menu,
@@ -166,6 +166,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
               ) : null}
             </ScrollView>
             <Pressable
+              accessibilityRole="button"
               style={[styles.done, { borderTopColor: colors.line }]}
               onPress={() => setOpen(false)}
               android_ripple={ripple(colors.panel3)}
