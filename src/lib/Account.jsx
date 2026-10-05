@@ -281,13 +281,17 @@ function SignedIn({ book, email, onChange }) {
   const [nameDraft, setNameDraft] = useState(book.keeperName || keptProfileName())
   const [nameMiss, setNameMiss] = useState('')
   const [devices, setDevices] = useState([])
+  // Until the list comes back, say nothing rather than "only this phone".
+  const [devicesIn, setDevicesIn] = useState(false)
   const [note, setNote] = useState(null)
   const here = deviceKey()
 
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
-      if (alive) setDevices(rows)
+      if (!alive) return
+      setDevices(rows)
+      setDevicesIn(true)
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book.keeperName) setNameDraft(row.display_name)
@@ -378,7 +382,7 @@ function SignedIn({ book, email, onChange }) {
             />
           ))
         ) : (
-          <p className="di-set-note">{t('account.noDevices')}</p>
+          devicesIn ? <p className="di-set-note">{t('account.noDevices')}</p> : null
         )}
       </SetCard>
 
