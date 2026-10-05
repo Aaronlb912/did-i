@@ -42,7 +42,7 @@ import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
 import { NOTE_MAX, bulkLamps, hangInto, setAnswerNote, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
-import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
+import { answersToSend, applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
   INVITE_CODE_LEN,
   INVITE_GEMS_CAP,
@@ -718,21 +718,32 @@ test('a note on one night rides the answer, is capped, and survives two phones s
   const noted = setAnswerNote(book, 'x', '2026-10-01', '  Charged it   at work ', new Date('2026-10-02T09:00:00'))
   assert.equal(noted.answers[0].note, 'Charged it at work')
   assert.equal(noted.answers[0].status, 'yes', 'the answer itself stays')
-  assert.ok(noted.answers[0].answeredAt > answer.answeredAt, 'a note moves answeredAt so sync carries it')
+  assert.equal(noted.answers[0].answeredAt, answer.answeredAt, 'a note leaves the tap time alone')
+  assert.ok(noted.answers[0].noteAt > answer.answeredAt, 'noteAt is what sync sees as newer')
   assert.equal(setAnswerNote(book, 'x', '2026-09-30', 'no answer', new Date()), book, 'no answer, no note')
   assert.equal(setAnswerNote(book, 'x', '2026-10-01', 'y'.repeat(500), new Date()).answers[0].note.length, NOTE_MAX)
   // A clock behind the answer still moves it forward.
   const behind = setAnswerNote(book, 'x', '2026-10-01', 'late clock', new Date('2026-09-01T09:00:00'))
-  assert.ok(behind.answers[0].answeredAt > answer.answeredAt)
+  assert.ok(behind.answers[0].noteAt > answer.answeredAt)
+  assert.equal(behind.answers[0].answeredAt, answer.answeredAt)
   // The phone that never saw the note does not wipe it, either way round.
   const older = { currentId: 'b1', boards: [book] }
   const fresh = { currentId: 'b1', boards: [noted] }
   for (const merged of [mergeShelves(fresh, older, '2026-10-02', '2026-10-01'), mergeShelves(older, fresh, '2026-10-03', '2026-10-02')]) {
     assert.equal(merged.boards[0].answers[0].note, 'Charged it at work')
+    assert.equal(merged.boards[0].answers[0].answeredAt, answer.answeredAt, 'and the tap time does not move')
   }
-  // The answer log folds it in too.
-  const rows = [{ lamp_id: 'x', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: noted.answers[0].answeredAt, note: 'Charged it at work' }]
-  assert.equal(applyAnswers(older, rows).shelf.boards[0].answers[0].note, 'Charged it at work')
+  // The answer log folds it in too, by note_at, with the same tap time.
+  const rows = [{ lamp_id: 'x', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: answer.answeredAt, note: 'Charged it at work', note_at: noted.answers[0].noteAt }]
+  const pulled = applyAnswers(older, rows).shelf.boards[0].answers[0]
+  assert.equal(pulled.note, 'Charged it at work')
+  assert.equal(pulled.answeredAt, answer.answeredAt)
+  // An older row without the note does not wipe it.
+  const stale = [{ ...rows[0], note: '', note_at: '' }]
+  assert.equal(applyAnswers(fresh, stale).changed, 0)
+  // The row sent up carries the note stamp.
+  assert.equal(answersToSend(fresh, true)[0].e, noted.answers[0].noteAt)
+  assert.equal(answersToSend(fresh, true)[0].a, answer.answeredAt)
 })
 
 test('a question pack adds only what is missing, and undo takes them off for good', () => {

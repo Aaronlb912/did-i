@@ -234,6 +234,8 @@ export function normalizeAnswer(raw) {
     status,
     answeredAt: asString(answer.answeredAt),
     note: asString(answer.note),
+    // When the note was last saved; answeredAt stays the tap.
+    ...(asString(answer.noteAt) ? { noteAt: asString(answer.noteAt) } : {}),
   }
 }
 

@@ -150,23 +150,30 @@ export function hangCopy(book, lamp, clock = new Date()) {
 }
 
 
-// A short line on one night's answer ("Charged it at work"). Saving it moves
-// answeredAt forward, so the answer log and a second phone both pick it up
-// (they keep the later answeredAt). The server keeps up to 500; we keep less.
+// A short line on one night's answer ("Charged it at work"). Saving it sets
+// noteAt and leaves answeredAt (the tap) alone. Sync keeps whichever copy
+// has the newer answerStamp. The server keeps up to 500; we keep less.
 export const NOTE_MAX = 120
+
+// The newest change to an answer: the tap or its note.
+export function answerStamp(answer) {
+  const tap = String(answer?.answeredAt || '')
+  const note = String(answer?.noteAt || '')
+  return note > tap ? note : tap
+}
 
 export function setAnswerNote(book, lampId, periodKey, note, clock = new Date()) {
   const text = String(note || '').replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX)
   const answers = book.answers || []
   const at = answers.findIndex((item) => item.lampId === lampId && item.periodKey === periodKey)
   if (at < 0 || (answers[at].note || '') === text) return book
-  const prev = String(answers[at].answeredAt || '')
+  const prev = answerStamp(answers[at])
   let stamp = answeredAtIso(clock)
   if (prev && stamp <= prev) {
     const last = new Date(prev)
     if (!Number.isNaN(last.getTime())) stamp = answeredAtIso(new Date(last.getTime() + 1000))
   }
   const next = [...answers]
-  next[at] = { ...answers[at], note: text, answeredAt: stamp }
+  next[at] = { ...answers[at], note: text, noteAt: stamp }
   return { ...book, answers: next }
 }
