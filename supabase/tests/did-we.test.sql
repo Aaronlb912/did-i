@@ -175,6 +175,13 @@ begin
   exception when raise_exception then
     if sqlerrm like 'FAIL%' then raise; end if;
   end;
+  -- Two nights back is past the grace night.
+  begin
+    perform public.we_nudge(card, b, night - 2);
+    raise exception 'FAIL: nudged for a closed night';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
 
   -- Streak coins: a seven night run on the any card pays once.
   execute 'reset role';
