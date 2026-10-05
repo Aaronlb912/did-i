@@ -18,7 +18,8 @@ import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
-import { shareShelf } from '../../src/lib/native.js'
+import { shareCsv, shareShelf } from '../../src/lib/native.js'
+import { answersCsv } from '../../src/lib/answers-csv.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
 import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
@@ -343,6 +344,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => goHash('/feed')}
         />
+        <SetRow
+          colors={colors}
+          icon="flag"
+          tint={colors.on}
+          label={t('stats.title')}
+          sub={t('settings.statsSub')}
+          chevron
+          onPress={() => goHash('/stats')}
+        />
       </SetCard>
 
       <SetCard colors={colors}>
@@ -378,6 +388,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             onPress={() => shareShelf(readShelf())}
           />
         )}
+        <SetRow
+          colors={colors}
+          icon="grid"
+          tint={colors.on}
+          label={t('settings.sendCsv')}
+          sub={t('settings.sendCsvSub')}
+          onPress={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
+        />
         <SetRow
           colors={colors}
           icon="inbox"

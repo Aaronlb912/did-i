@@ -6,7 +6,20 @@ import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords, graceExplained, isRecapNight, markGraceExplained, tomorrowPreview, weekRecap, weekStripNights } from '../../src/lib/hall-pages.js'
+import {
+  clockWords,
+  graceExplained,
+  isRecapNight,
+  markGraceExplained,
+  markWeekRecapSeen,
+  recapShareText,
+  tomorrowPreview,
+  weekRecap,
+  weekRecapDue,
+  weekStripNights,
+} from '../../src/lib/hall-pages.js'
+import { passAlong } from '../../src/lib/native.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
@@ -326,6 +339,37 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       onClose: () => publishSheet(null),
     })
   }, [graceShowing, colors])
+  // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
+  useEffect(() => {
+    if (summary?.recap && isRecapNight(stack.dateIso)) {
+      markWeekRecapSeen(stack.dateIso)
+      return
+    }
+    if (graceShowing || stack.cheer || !stack.dateIso) return
+    const sunday = weekRecapDue(stack.dateIso)
+    if (!sunday) return
+    markWeekRecapSeen(sunday)
+    const [y, m, d] = sunday.split('-').map(Number)
+    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId)
+    // Nothing answered last week (or a new phone): nothing to show.
+    if (!recap.dids && !recap.cleared) return
+    publishSheet({
+      kicker: t('recap.lastWeek'),
+      title: t('recap.cleared', { cleared: recap.cleared, n: recap.nights }),
+      body: `${t('recap.dids', { n: recap.dids })} · ${t('recap.best', { n: recap.best })}`,
+      goLabel: t('recap.shareBtn'),
+      closeLabel: t('settings.close'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const how = await passAlong(recapShareText(recap), t('recap.lastWeek'))
+        if (how === 'copied') confirmDone(t('recap.copied'))
+        else if (!how) confirmMiss(t('confirm.shareMiss'))
+      },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
   let face = null
   // Did and Nope buttons under the card, for anyone who would rather tap.
   let answerBar = null
@@ -437,6 +481,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
+          <View style={styles.actions}>
+            <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
+          </View>
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}

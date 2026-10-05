@@ -58,8 +58,10 @@ import {
   weekLamps,
   weekRecap,
   weekStripNights,
+  feedSearch,
 } from '../../src/lib/hall-pages.js'
 import { WeekRecap } from '../components/WeekRecap.jsx'
+import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
@@ -439,13 +441,20 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
 export function FeedScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const rows = shelfFeedRows(inView(book, boards), tagId)
+  const allRows = shelfFeedRows(inView(book, boards), tagId)
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/feed" />
-      {!rows.length ? (
+      {allRows.length ? (
+        <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('feed.searchPh')} />
+      ) : null}
+      {!allRows.length ? (
         <Meta colors={colors}>{t('feed.empty')}</Meta>
+      ) : !rows.length ? (
+        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
         rows.map((row) => (
           <Row

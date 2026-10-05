@@ -121,6 +121,27 @@ export async function shareShelf(shelf) {
   throw new Error('share-unavailable')
 }
 
+// Answers as a spreadsheet file. Falls back to a download when the browser cannot share files.
+export async function shareCsv(text) {
+  const name = `did-i-answers-${boardDate(new Date(), 4)}.csv`
+  const blob = new Blob([text], { type: 'text/csv' })
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], name, { type: 'text/csv' })
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Did I' })
+      return
+    }
+  }
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 500)
+}
+
 export async function shareBook(book) {
   const stamp = boardDate(new Date(), book.dayFoldHour)
   const slug =
