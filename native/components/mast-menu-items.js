@@ -1,4 +1,3 @@
-import { showMainNavInMenu } from '../../src/lib/app-nav.js'
 import { t } from '../../src/lib/i18n.js'
 import { readRoute } from '../navigation/hash.js'
 
@@ -27,9 +26,8 @@ export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/pings', '/
 export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
   const path = readRoute().path
   const waiting = signedIn ? inbox + asks + we : asks
-  const home = showMainNavInMenu(path)
-    ? [{ key: 'home', path: '/tonight', label: t('nav.home'), on: false, icon: 'home', stroke: true }]
-    : []
+  // Home always leads, so every row stays in the same place on every screen.
+  const home = [{ key: 'home', path: '/tonight', label: t('nav.home'), on: path === '/tonight' || path === '/', icon: 'home', stroke: true }]
   return [
     ...home,
     { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
