@@ -70,7 +70,7 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
-import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
@@ -4269,3 +4269,43 @@ test('the web ships English and loads the language in use; the phone loads all',
 
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
+
+test('seasonal items say when they come back', () => {
+  const cocoa = { id: 'cocoa', from: '2026-12-01', until: '2027-01-01' }
+  assert.equal(seasonNext(cocoa, '2026-10-05'), '2026-12-01', 'before the season: this year')
+  assert.equal(seasonNext(cocoa, '2026-12-10'), '2026-12-01', 'in season: the current one')
+  assert.equal(seasonNext(cocoa, '2027-01-01'), '2027-12-01', 'after it ends: next year')
+  assert.equal(seasonNext(cocoa, '2029-03-01'), '2029-12-01', 'years later still lands on Dec 1')
+  const off = offSeason(normalizePurse({ accessories: ['cocoa'] }), '2026-10-05')
+  assert.ok(off.owned.some((row) => row.item.id === 'cocoa'), 'owned cocoa is out of season in October')
+  assert.ok(off.coming.some((row) => row.item.id === 'sparkler'), 'sparkler shows as coming')
+  assert.ok(!off.coming.some((row) => row.item.id === 'cocoa'), 'owned items are not also coming')
+})
+
+test('the wishlist caps at its max and drops an item once bought', () => {
+  let book = { coins: 100, gems: 0 }
+  const looks = SHOP_CALENDAR.looks.filter((item) => item.id !== 'lime')
+  const cheers = SHOP_CALENDAR.cheers.filter((item) => item.gems > 0)
+  const keys = [...looks.map((item) => ['look', item.id]), ...cheers.map((item) => ['cheer', item.id])]
+  for (const [type, id] of keys.slice(0, WISH_MAX)) book = toggleWish(book, type, id).book
+  assert.equal(normalizePurse(book).wish.length, WISH_MAX)
+  const [type, id] = keys[WISH_MAX]
+  assert.equal(toggleWish(book, type, id).miss, 'shop.miss.wishFull', 'one past the max is turned down')
+  assert.equal(normalizePurse({ wish: keys.map(([a, b]) => `${a}:${b}`) }).wish.length, WISH_MAX, 'a synced list is capped too')
+  book = toggleWish({ coins: 30 }, 'look', 'ink').book
+  assert.deepEqual(wishGoal(normalizePurse(book)), { type: 'look', id: 'ink', kind: 'coins', n: 0, nights: 0 })
+  const bought = buyLook(book, 'ink')
+  assert.equal(bought.miss, '')
+  assert.deepEqual(normalizePurse(bought.book).wish, [], 'buying it clears the heart')
+  assert.equal(wishGoal(normalizePurse(toggleWish({ coins: 0 }, 'look', 'ink').book)).n, Math.ceil(30 / 6), '6 coins a night')
+})
+
+test('shop rows hide owned items and drops before their day', () => {
+  const owned = normalizePurse({ looks: LOOKS.map((item) => item.id) })
+  assert.deepEqual(shopRow('look', LOOKS, owned), [], 'own every look: the row is empty')
+  const none = normalizePurse({})
+  assert.ok(!shopRow('look', LOOKS, none).some((item) => item.id === 'lime'), 'the free look is owned, so hidden')
+  const drop = SHOP_CALENDAR.looks.find((item) => item.from === '2026-10-23')
+  assert.ok(!shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-20').includes(drop), 'a coming drop stays out of the row')
+  assert.ok(shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-23').includes(drop), 'on its day it is in')
+})

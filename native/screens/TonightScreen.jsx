@@ -23,7 +23,7 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
-import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
+import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor } from '../../src/lib/recurrence.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -189,6 +189,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     })
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
+  const wish = wishLine(wishGoal(purse))
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
   const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
@@ -537,6 +538,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           </View>
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
+          ) : null}
+          {wish ? (
+            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(wish.key, { n: wish.n, name: t(wish.nameKey) })}</Text>
           ) : null}
           {signInNudge && !nightOne ? (
             <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>

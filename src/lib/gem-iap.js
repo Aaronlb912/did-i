@@ -19,3 +19,7 @@ export function storePrice(_packId) {
 export async function buyGemPack(_packId) {
   return { miss: 'app' }
 }
+
+export async function restoreGemPurchases() {
+  return { gems: 0, miss: 'app' }
+}
