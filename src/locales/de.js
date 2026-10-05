@@ -437,7 +437,7 @@ export const de = {
   'cal.next': 'Späterer Monat',
   'cal.aria': 'Streak-Kalender',
   'cal.hint':
-    'Nächte, die du geschafft hast. Verpasste sind blass. Nichts fällig bleibt leer.',
+    'Ein Punkt für jede geschaffte Nacht. Verpasste bekommen einen roten Punkt. Nichts fällig bleibt leer.',
   'cal.empty': 'An dem Tag gab es nichts zu tun.',
   'cal.close': 'Schließen',
   'cal.open': 'offen',
@@ -2016,6 +2016,7 @@ export const de = {
   'we.best': 'Bestes: {n}',
   'we.nextCoins': 'Münzen in {n} weiteren',
   'we.thisMonth': 'Diesen Monat: {n} von {due} Nächten',
+  'we.thisMonthOne': 'Diesen Monat: {n} von 1 Nacht',
   'we.lastMonth': 'Letzten Monat: {n} von {due} Nächten',
   'we.people': 'Leute',
   'we.you': 'Du',

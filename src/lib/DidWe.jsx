@@ -821,7 +821,7 @@ function WeCardPage({ book, cardId, onChange }) {
         {t('we.best', { n: weBest(card) })}
         {next ? ` · ${t('we.nextCoins', { n: next - streak })}` : ''}
       </p>
-      <p className="di-set-note">{t('we.thisMonth', { n: month.done, due: month.due })}</p>
+      <p className="di-set-note">{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</p>
       {last.due ? <p className="di-set-note">{t('we.lastMonth', { n: last.done, due: last.due })}</p> : null}
       {goal ? (
         <p className="di-set-note">

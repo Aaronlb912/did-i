@@ -436,7 +436,7 @@ export const pt = {
   'cal.next': 'Mês seguinte',
   'cal.aria': 'Calendário de streak',
   'cal.hint':
-    'Noites que terminaste. As que falharam ficam fracas. Nada pendente fica vazio.',
+    'Um ponto por cada noite que terminaste. As que falharam têm um ponto vermelho. Nada pendente fica vazio.',
   'cal.empty': 'Não havia nada a fazer neste dia.',
   'cal.close': 'Fechar',
   'cal.open': 'aberto',
@@ -2000,6 +2000,7 @@ export const pt = {
   'we.best': 'Melhor: {n}',
   'we.nextCoins': 'Moedas em mais {n}',
   'we.thisMonth': 'Este mês: {n} de {due} noites',
+  'we.thisMonthOne': 'Este mês: {n} de 1 noite',
   'we.lastMonth': 'Mês passado: {n} de {due} noites',
   'we.people': 'Pessoas',
   'we.you': 'Você',

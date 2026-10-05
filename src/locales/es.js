@@ -437,7 +437,7 @@ export const es = {
   'cal.next': 'Mes siguiente',
   'cal.aria': 'Calendario de racha',
   'cal.hint':
-    'Noches que terminaste. Las que faltan se ven tenues. Si no había nada, queda vacío.',
+    'Un punto por cada noche que terminaste. Las que faltan llevan un punto rojo. Si no había nada, queda vacío.',
   'cal.empty': 'No había nada que hacer este día.',
   'cal.close': 'Cerrar',
   'cal.open': 'sin marcar',
@@ -2006,6 +2006,7 @@ export const es = {
   'we.best': 'Mejor: {n}',
   'we.nextCoins': 'Monedas en {n} más',
   'we.thisMonth': 'Este mes: {n} de {due} noches',
+  'we.thisMonthOne': 'Este mes: {n} de 1 noche',
   'we.lastMonth': 'El mes pasado: {n} de {due} noches',
   'we.people': 'Gente',
   'we.you': 'Tú',

@@ -434,7 +434,7 @@ export const it = {
   'cal.next': 'Mese dopo',
   'cal.aria': 'Calendario streak',
   'cal.hint':
-    'Notti che hai finito. Quelle mancate sono sbiadite. Niente in scadenza resta vuoto.',
+    'Un punto per ogni notte finita. Quelle mancate hanno un punto rosso. Niente in scadenza resta vuoto.',
   'cal.empty': 'Non c\'era niente da fare quel giorno.',
   'cal.close': 'Chiudi',
   'cal.open': 'aperto',
@@ -2001,6 +2001,7 @@ export const it = {
   'we.best': 'Record: {n}',
   'we.nextCoins': 'Monete tra {n}',
   'we.thisMonth': 'Questo mese: {n} notti su {due}',
+  'we.thisMonthOne': 'Questo mese: {n} notte su 1',
   'we.lastMonth': 'Il mese scorso: {n} notti su {due}',
   'we.people': 'Persone',
   'we.you': 'Tu',
