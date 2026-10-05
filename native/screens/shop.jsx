@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -48,7 +48,9 @@ import {
   NIGHT_COIN_CAP,
 } from '../../src/lib/purse.js'
 import { usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { SetCard, SetSwitch } from '../components/SetBits.jsx'
+import { SetCard, SetNote, SetSwitch } from '../components/SetBits.jsx'
+import { requestPings } from '../../src/lib/notify.js'
+import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import {
   AccessoryChip,
   BuddyChip,
@@ -675,6 +677,24 @@ export function ShopScreen({ book, onChange }) {
   const colors = useShopColors(book)
   const prefs = usePrefs()
   const account = useAccount()
+  const [pingsOff, setPingsOff] = useState(false)
+
+  // Turning the drop push on asks for notifications the same way Reminders
+  // does. A no leaves the switch off and points to the phone settings.
+  async function flipDropPings() {
+    if (prefs.dropPings) {
+      writePrefs({ dropPings: false })
+      return
+    }
+    const state = await requestPings().catch(() => 'denied')
+    if (state !== 'granted') {
+      setPingsOff(true)
+      return
+    }
+    setPingsOff(false)
+    writePrefs({ dropPings: true })
+    syncPushTokenIfAllowed().catch(() => {})
+  }
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const lookCount = purse.looks.length
@@ -795,10 +815,16 @@ export function ShopScreen({ book, onChange }) {
           label={t('shop.dropPing')}
           sub={account.user ? t('shop.dropPingSub') : t('shop.dropPingOut')}
           on={Boolean(prefs.dropPings)}
-          onPress={() => writePrefs({ dropPings: !prefs.dropPings })}
+          onPress={flipDropPings}
           last
         />
       </SetCard>
+      {pingsOff ? (
+        <>
+          <SetNote colors={colors}>{t('pings.offNote')}</SetNote>
+          <KeyButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
+        </>
+      ) : null}
 
       <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
       <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />

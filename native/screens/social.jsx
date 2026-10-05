@@ -71,6 +71,7 @@ import {
 import { useKept } from '../hooks/useKept.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
+import { isNewShelf } from '../../src/lib/first-run.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
@@ -671,6 +672,8 @@ function AddFriendPop({ colors, onClose, onAsked }) {
 export function PeopleScreen({ book, onChange }) {
   const colors = useHallColors()
   const account = useAccount()
+  // The strip line teaches a tap; regulars know it.
+  const newHere = useMemo(() => isNewShelf(readShelf().boards), [])
   const [mine, setMine] = useKept(`people.mine:${account.user?.id}`, null)
   const [links, setLinks] = useKept(`people.links:${account.user?.id}`, { friends: [], asked: [], sent: [] })
   const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [])
@@ -826,7 +829,7 @@ export function PeopleScreen({ book, onChange }) {
         <>
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
             {sharing.length ? `${t('people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
-            {t('people.stripHint')}
+            {newHere ? t('people.stripHint') : ''}
           </Text>
           <FadeScroll fade={colors.bg} contentContainerStyle={styles.strip}>
             {links.friends.map((row) => {
