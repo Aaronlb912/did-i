@@ -1392,6 +1392,8 @@ export const ja = {
   'site.into.p2': 'Tonight は localStorage に書かない。ホストで永続化する。固定時計が必要なら now を渡す。',
   'site.into.back': 'ドアに戻る',
   'device.android': 'Android アプリ',
+  'home.dropLine': 'ショップに新登場: {names}',
+  'home.dropHide': '隠す',
   'device.ios': 'iPhone アプリ',
   'device.safariIphone': 'iPhone の Safari',
   'device.browserAndroid': 'Android のブラウザ',

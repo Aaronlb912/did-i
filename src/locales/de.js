@@ -1436,6 +1436,8 @@ export const de = {
     'Tonight schreibt kein localStorage. Persistiere im Host. Übergib now, wenn du eine eingefrorene Uhr brauchst.',
   'site.into.back': 'Zurück zur Tür',
   'device.android': 'Android-App',
+  'home.dropLine': 'Neu im Shop: {names}',
+  'home.dropHide': 'Ausblenden',
   'device.ios': 'iPhone-App',
   'device.safariIphone': 'Safari auf iPhone',
   'device.browserAndroid': 'Browser auf Android',

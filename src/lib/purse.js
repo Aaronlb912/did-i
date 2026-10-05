@@ -155,6 +155,16 @@ export function dropSlides(today = boardDate(new Date())) {
   return slides
 }
 
+// A drop that went live today or yesterday, for the one line on Home.
+export function freshDrop(today = boardDate(new Date())) {
+  const yesterday = daysBefore(today, 1)
+  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES].map((item) => item.from))]
+    .filter((date) => date && date >= yesterday && date <= today)
+    .sort()
+  const date = dates[dates.length - 1]
+  return date ? { date, items: slideItems(date) } : null
+}
+
 // What a tile says under its name: owned, or its price.
 export function shopTag(purse, type, item) {
   const owned =

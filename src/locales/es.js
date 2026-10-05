@@ -1428,6 +1428,8 @@ export const es = {
     'Tonight no escribe localStorage. Persiste en el host. Pasa now si necesitas un reloj fijo.',
   'site.into.back': 'Volver a la puerta',
   'device.android': 'App Android',
+  'home.dropLine': 'Nuevo en la tienda: {names}',
+  'home.dropHide': 'Ocultar',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari en iPhone',
   'device.browserAndroid': 'Navegador en Android',

@@ -1427,6 +1427,8 @@ export const it = {
     'Tonight non scrive localStorage. Persisti nell\'host. Passa now se ti serve un orologio fermo.',
   'site.into.back': 'Torna alla porta',
   'device.android': 'App Android',
+  'home.dropLine': 'Novità nel negozio: {names}',
+  'home.dropHide': 'Nascondi',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari su iPhone',
   'device.browserAndroid': 'Browser su Android',

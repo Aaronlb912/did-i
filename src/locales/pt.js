@@ -1427,6 +1427,8 @@ export const pt = {
     'Tonight não escreve localStorage. Persiste no host. Passa now se precisares de um relógio parado.',
   'site.into.back': 'Voltar à porta',
   'device.android': 'App Android',
+  'home.dropLine': 'Novo na loja: {names}',
+  'home.dropHide': 'Ocultar',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari no iPhone',
   'device.browserAndroid': 'Browser no Android',

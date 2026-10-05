@@ -1386,6 +1386,8 @@ export const zh = {
   'site.into.p2': 'Tonight 不写 localStorage。在宿主里持久化。需要固定时钟就传入 now。',
   'site.into.back': '回到门口',
   'device.android': 'Android 应用',
+  'home.dropLine': '商店上新：{names}',
+  'home.dropHide': '隐藏',
   'device.ios': 'iPhone 应用',
   'device.safariIphone': 'iPhone 上的 Safari',
   'device.browserAndroid': 'Android 浏览器',
