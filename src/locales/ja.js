@@ -2654,4 +2654,8 @@ export const ja = {
   'cal.keyMissed': "未クリア",
   'pings.comingUpSub': "次に届くリマインダー",
   'pings.helpSub': "この端末でのリマインダーの仕組み",
+  // round7
+  'questions.editMenu': "編集",
+  'questions.editTitle': "質問を編集",
+  'questions.pickSub': "まとめて選んで、移動・停止・削除できます。",
 }

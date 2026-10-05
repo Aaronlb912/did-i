@@ -2734,4 +2734,8 @@ export const de = {
   'cal.keyMissed': "Nicht geschafft",
   'pings.comingUpSub': "Woran du als Nächstes erinnert wirst",
   'pings.helpSub': "So funktionieren Erinnerungen auf diesem Handy",
+  // round7
+  'questions.editMenu': "Bearbeiten",
+  'questions.editTitle': "Deine Fragen bearbeiten",
+  'questions.pickSub': "Mehrere auswählen, um sie zu verschieben, zu stoppen oder zu löschen.",
 }

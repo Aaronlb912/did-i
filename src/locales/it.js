@@ -2715,4 +2715,8 @@ export const it = {
   'cal.keyMissed': "Non completata",
   'pings.comingUpSub': "Cosa ti ricorderemo dopo",
   'pings.helpSub': "Come funzionano i promemoria su questo telefono",
+  // round7
+  'questions.editMenu': "Modifica",
+  'questions.editTitle': "Modifica le tue domande",
+  'questions.pickSub': "Scegline più di una da spostare, fermare o eliminare.",
 }

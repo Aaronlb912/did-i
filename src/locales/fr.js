@@ -2730,4 +2730,8 @@ export const fr = {
   'cal.keyMissed': "Pas réussie",
   'pings.comingUpSub': "Ce qui va te le rappeler ensuite",
   'pings.helpSub': "Comment marchent les rappels sur ce téléphone",
+  // round7
+  'questions.editMenu': "Modifier",
+  'questions.editTitle': "Modifier tes questions",
+  'questions.pickSub': "Choisis-en plusieurs pour les déplacer, les arrêter ou les supprimer.",
 }
