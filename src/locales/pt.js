@@ -2570,4 +2570,11 @@ export const pt = {
   'coins.gemNot': 'Gema desta semana: ainda não.',
   'coins.none': 'Ainda sem moedas. Responda hoje à noite para começar.',
   'coins.tapAria': 'Como funcionam as moedas',
+  'widget.settings.pin': 'Adicionar à tela inicial',
+  'widget.settings.pinSub': 'Coloca o widget na sua tela inicial.',
+  'pings.quietCap': 'Horas de silêncio',
+  'pings.quiet': 'Segurar notificações',
+  'pings.quietSub': 'Sem notificações nessas horas. Elas chegam quando terminam.',
+  'pings.quietFrom': 'Começa',
+  'pings.quietTo': 'Termina',
 }

@@ -15,6 +15,8 @@ export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 // (push_wanted in supabase/push.sql), so keep the names in step.
 export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'we', 'cheers', 'friends', 'family', 'didi']
 
+const QUIET_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
+
 function blankPrefs() {
   return {
     theme: 'dark',
@@ -30,6 +32,11 @@ function blankPrefs() {
     pingsOff: [],
     // Pushes say who, not what (push_private in supabase/did-we-guard.sql).
     pingsPrivate: false,
+    // Quiet hours: no pushes or reminders from quietFrom to quietTo, in the
+    // person's own time. The server reads these too (push_quiet in supabase/push.sql).
+    quietOn: false,
+    quietFrom: '22:00',
+    quietTo: '07:00',
   }
 }
 
@@ -92,6 +99,9 @@ function cleanPrefs(raw) {
   if (raw?.widgetOpenOnly === true) next.widgetOpenOnly = true
   if (Array.isArray(raw?.pingsOff)) next.pingsOff = PING_KINDS.filter((kind) => raw.pingsOff.includes(kind))
   if (raw?.pingsPrivate === true) next.pingsPrivate = true
+  if (raw?.quietOn === true) next.quietOn = true
+  if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
+  if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
   return next
@@ -144,6 +154,25 @@ export function uses24h() {
 
 export function pingOn(kind) {
   return !readPrefs().pingsOff.includes(kind)
+}
+
+function minutesOf(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+// A reminder that would land in quiet hours moves to when they end.
+export function afterQuiet(at, prefs = readPrefs()) {
+  if (!prefs.quietOn) return at
+  const from = minutesOf(prefs.quietFrom)
+  const to = minutesOf(prefs.quietTo)
+  if (from === to) return at
+  const now = at.getHours() * 60 + at.getMinutes()
+  const quiet = from < to ? now >= from && now < to : now >= from || now < to
+  if (!quiet) return at
+  const end = new Date(at.getFullYear(), at.getMonth(), at.getDate(), Math.floor(to / 60), to % 60, 0, 0)
+  if (end.getTime() <= at.getTime()) end.setDate(end.getDate() + 1)
+  return end
 }
 
 export function onPrefs(fn) {

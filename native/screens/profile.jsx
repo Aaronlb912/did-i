@@ -14,6 +14,7 @@ import {
 } from '../../src/lib/prefs.js'
 import { ownedLookIds, readWidgetSettings } from '../../src/lib/widget-config.js'
 import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
+import { WIDGET_NAME } from '../../src/lib/widget-tonight.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -40,6 +41,31 @@ import {
   SetRow,
   SetSwitch,
 } from '../components/SetBits.jsx'
+
+function showWidgetHow(colors) {
+  publishSheet({
+    title: t('widget.settings.howAdd'),
+    body: t(Platform.OS === 'ios' ? 'widget.settings.howAddIos' : 'widget.settings.howAddAndroid'),
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: () => publishSheet(null),
+  })
+}
+
+// Asks the launcher to put the widget on the home screen. Launchers that
+// cannot (or a build without the call) get the steps instead.
+async function pinWidget(colors) {
+  let asked = false
+  try {
+    const mod = await import('react-native-android-widget')
+    if (typeof mod?.requestPinWidget === 'function') {
+      asked = await mod.requestPinWidget({ widgetName: WIDGET_NAME })
+    }
+  } catch {
+    asked = false
+  }
+  if (!asked) showWidgetHow(colors)
+}
 
 export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
@@ -239,21 +265,24 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           on={widget.openOnly}
           onPress={() => applyWidgetPrefs({ widgetOpenOnly: !widget.openOnly })}
         />
+        {Platform.OS === 'android' ? (
+          <SetRow
+            colors={colors}
+            icon="add"
+            tint={colors.on}
+            label={t('widget.settings.pin')}
+            sub={t('widget.settings.pinSub')}
+            chevron
+            onPress={() => pinWidget(colors)}
+          />
+        ) : null}
         <SetRow
           colors={colors}
           icon="grid"
           tint={colors.on}
           label={t('widget.settings.howAdd')}
           chevron
-          onPress={() =>
-            publishSheet({
-              title: t('widget.settings.howAdd'),
-              body: t(Platform.OS === 'ios' ? 'widget.settings.howAddIos' : 'widget.settings.howAddAndroid'),
-              closeLabel: t('settings.close'),
-              colors,
-              onClose: () => publishSheet(null),
-            })
-          }
+          onPress={() => showWidgetHow(colors)}
         />
       </SetCard>
 

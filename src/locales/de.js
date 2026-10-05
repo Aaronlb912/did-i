@@ -2588,4 +2588,11 @@ export const de = {
   'coins.gemNot': 'Edelstein dieser Woche: noch nicht.',
   'coins.none': 'Noch keine Münzen. Antworte heute Abend, um zu starten.',
   'coins.tapAria': 'So funktionieren Münzen',
+  'widget.settings.pin': 'Zum Startbildschirm hinzufügen',
+  'widget.settings.pinSub': 'Legt das Widget auf deinen Startbildschirm.',
+  'pings.quietCap': 'Ruhezeit',
+  'pings.quiet': 'Benachrichtigungen zurückhalten',
+  'pings.quietSub': 'Keine Benachrichtigungen in dieser Zeit. Sie kommen, wenn die Ruhezeit endet.',
+  'pings.quietFrom': 'Beginnt',
+  'pings.quietTo': 'Endet',
 }

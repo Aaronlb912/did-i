@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { pingOn } from '../../src/lib/prefs.js'
+import { afterQuiet, pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -131,7 +131,7 @@ export async function scheduleNativePings(books, now = new Date()) {
     ]).catch(() => {})
     const when = (at) => ({
       type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: at,
+      date: afterQuiet(at),
       channelId: CHANNEL_ID,
     })
     const notes = []

@@ -2569,4 +2569,11 @@ export const it = {
   'coins.gemNot': 'Gemma di questa settimana: non ancora.',
   'coins.none': 'Ancora nessuna moneta. Rispondi stasera per iniziare.',
   'coins.tapAria': 'Come funzionano le monete',
+  'widget.settings.pin': 'Aggiungi alla schermata Home',
+  'widget.settings.pinSub': 'Mette il widget nella tua schermata Home.',
+  'pings.quietCap': 'Ore di silenzio',
+  'pings.quiet': 'Trattieni le notifiche',
+  'pings.quietSub': 'Nessuna notifica in queste ore. Arrivano quando finiscono.',
+  'pings.quietFrom': 'Inizia',
+  'pings.quietTo': 'Finisce',
 }

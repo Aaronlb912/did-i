@@ -301,8 +301,53 @@ create trigger drop_ask_push
   after delete on public.friend_links
   for each row execute function public.drop_ask_push();
 
+-- Quiet hours (prefs.quietOn, quietFrom, quietTo as HH:MM, set in the
+-- app's Notifications screen). True when at_time falls inside them on the
+-- person's own clock (profiles.zone). No zone, a bad zone, or a start equal
+-- to the end means never quiet, so a push is never held for good.
+create or replace function public.push_quiet(prefs jsonb, zone text, at_time timestamptz default now())
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  from_t time;
+  to_t time;
+  local_t time;
+begin
+  if prefs is null or (prefs ->> 'quietOn') is distinct from 'true' or coalesce(zone, '') = '' then
+    return false;
+  end if;
+  if coalesce(prefs ->> 'quietFrom', '') !~ '^([01]\d|2[0-3]):[0-5]\d$'
+     or coalesce(prefs ->> 'quietTo', '') !~ '^([01]\d|2[0-3]):[0-5]\d$' then
+    return false;
+  end if;
+  from_t := (prefs ->> 'quietFrom')::time;
+  to_t := (prefs ->> 'quietTo')::time;
+  if from_t = to_t then
+    return false;
+  end if;
+  begin
+    local_t := (at_time at time zone zone)::time;
+  exception when others then
+    return false;
+  end;
+  if from_t < to_t then
+    return local_t >= from_t and local_t < to_t;
+  end if;
+  return local_t >= from_t or local_t < to_t;
+end;
+$$;
+
+revoke all on function public.push_quiet(jsonb, text, timestamptz) from public, anon, authenticated;
+
 -- What the edge function calls. It runs with the service role, which is
 -- why neither anon nor a signed-in person can reach any of this.
+-- Pushes for someone in quiet hours stay queued and go out when the hours
+-- end. The family summary (go = '/people') is about tonight, so one that
+-- lands in quiet hours is dropped instead of arriving in the morning.
 -- The return shape grew send_id; Postgres cannot change it in place.
 drop function if exists public.take_push_batch(integer);
 create or replace function public.take_push_batch(how_many integer default 50)
@@ -312,6 +357,13 @@ security definer
 set search_path = public
 as $$
 begin
+  delete from public.push_queue q
+  using public.profiles p
+  where q.sent_at is null
+    and q.go = '/people'
+    and p.user_id = q.to_id
+    and public.push_quiet(p.prefs, p.zone);
+
   return query
   with picked as (
     update public.push_queue q
@@ -319,6 +371,10 @@ begin
     where q.id in (
       select q2.id from public.push_queue q2
       where q2.sent_at is null
+        and not coalesce(
+          (select public.push_quiet(p.prefs, p.zone) from public.profiles p where p.user_id = q2.to_id),
+          false
+        )
       order by q2.made_at
       limit greatest(1, least(how_many, 200))
       for update skip locked
