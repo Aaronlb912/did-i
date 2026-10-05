@@ -23,8 +23,10 @@ import {
   useAccount,
 } from '../../src/lib/account.js'
 import {
+  DEVICE_NAME_MAX,
   exportAll,
   forgetDevice,
+  renameDevice,
   forgetOtherDevices,
   listDevices,
   keptProfileName,
@@ -98,7 +100,7 @@ import { Avatar } from '../components/PersonCard.jsx'
 import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
 import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
 import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
-import { SetCap, SetCard, SetNote, SetRow, SetSwitch } from '../components/SetBits.jsx'
+import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
@@ -1207,6 +1209,19 @@ function PingKinds({ colors, on }) {
     }
   }
 
+  // The server sends the family summary at profiles.family_hour.
+  async function saveFamilyHour(id) {
+    const hour = Number(id.slice(0, 2))
+    const was = readPrefs().familyHour
+    writePrefs({ familyHour: hour })
+    setMiss('')
+    const saved = await saveProfile({ family_hour: hour, prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ familyHour: was })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
   async function flipPrivate() {
     const was = readPrefs().pingsPrivate
     writePrefs({ pingsPrivate: !was })
@@ -1218,21 +1233,34 @@ function PingKinds({ colors, on }) {
     }
   }
 
+  const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
+  const familyTime = clockWords(familyId)
+
   return (
     <>
       <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
       {on ? null : <SetNote colors={colors}>{t('pings.offNote')}</SetNote>}
       <SetCard colors={colors}>
         {PING_KINDS.map((kind, i) => (
-          <SetSwitch
-            key={kind}
-            colors={colors}
-            label={t(`pings.kind.${kind}`)}
-            sub={t(`pings.kind.${kind}Sub`)}
-            on={!prefs.pingsOff.includes(kind)}
-            last={i === PING_KINDS.length - 1}
-            onPress={() => flip(kind)}
-          />
+          <View key={kind}>
+            <SetSwitch
+              colors={colors}
+              label={t(`pings.kind.${kind}`)}
+              sub={kind === 'family' ? t('pings.kind.familySubAt', { time: familyTime }) : t(`pings.kind.${kind}Sub`)}
+              on={!prefs.pingsOff.includes(kind)}
+              last={i === PING_KINDS.length - 1}
+              onPress={() => flip(kind)}
+            />
+            {kind === 'family' && !prefs.pingsOff.includes('family') ? (
+              <SetChoice
+                colors={colors}
+                label={t('pings.familyAt')}
+                options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+                selected={familyId}
+                onSelect={saveFamilyHour}
+              />
+            ) : null}
+          </View>
         ))}
       </SetCard>
       <SetNote colors={colors}>{t('pings.kindsNote')}</SetNote>
@@ -1334,15 +1362,32 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
   return (
     <ScreenShell title={t('pings.title')} colors={colors}>
       <Text style={[styles.subtitle, { color: colors.inkDim }]}>{t('pings.body')}</Text>
-      {onAskPings ? (
-        <DidButton
-          colors={colors}
-          label={on ? t('pings.on') : labelKey === 'pings.state.blocked' ? t('pings.openSettings') : t(labelKey)}
-          onPress={onAskPings}
-        />
-      ) : (
-        <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
-      )}
+      <SetCard colors={colors}>
+        {onAskPings && labelKey !== 'pings.state.blocked' ? (
+          // On: the phone owns the off switch, so tapping opens its settings.
+          <SetSwitch
+            colors={colors}
+            icon="bell"
+            tint={colors.on}
+            label={t('pings.rowTitle')}
+            sub={on ? t('pings.rowOn') : t('pings.rowAsk')}
+            on={on}
+            last
+            onPress={on ? () => Linking.openSettings().catch(() => {}) : onAskPings}
+          />
+        ) : (
+          <SetRow
+            colors={colors}
+            icon="bell"
+            tint={colors.miss}
+            label={t('pings.openSettings')}
+            sub={t('pings.rowBlocked')}
+            chevron
+            last
+            onPress={() => Linking.openSettings().catch(() => {})}
+          />
+        )}
+      </SetCard>
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />
       <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
@@ -1480,6 +1525,52 @@ function deviceSeen(iso) {
   })
 }
 
+// Your own name first, then what the phone calls itself.
+function phoneName(row, here) {
+  if (row.name) return row.name
+  return row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')
+}
+
+function phoneSub(row, here) {
+  const parts = []
+  if (row.name && row.device_key === here) parts.push(t('account.thisPhone'))
+  if (row.model) parts.push(row.model)
+  parts.push(t('account.seen', { date: deviceSeen(row.last_seen_at) }))
+  return parts.join(' · ')
+}
+
+function RenamePhone({ row, colors, onClose, onSaved }) {
+  const [draft, setDraft] = useState(row.name || '')
+  const [busy, setBusy] = useState(false)
+  async function save() {
+    if (busy) return
+    setBusy(true)
+    const out = await renameDevice(row.device_key, draft).catch(() => ({ miss: 'net' }))
+    setBusy(false)
+    if (out.miss) return confirmMiss(t('confirm.miss'))
+    confirmDone(t('account.renamed'))
+    onSaved()
+  }
+  return (
+    <SetSheet colors={colors} title={t('account.renameTitle')} onClose={onClose}>
+      <SetField
+        colors={colors}
+        label={t('account.renameLabel')}
+        value={draft}
+        onChangeText={setDraft}
+        placeholder={row.label || t('account.aPhone')}
+        maxLength={DEVICE_NAME_MAX}
+        autoFocus
+        returnKeyType="done"
+        onSubmitEditing={save}
+      />
+      <View style={styles.renameRow}>
+        <DidButton small colors={colors} label={t('account.renameSave')} onPress={save} />
+      </View>
+    </SetSheet>
+  )
+}
+
 function AccountSignedIn({ book, email, onChange }) {
   const colors = useHallColors()
   const sync = useSync()
@@ -1604,10 +1695,37 @@ function AccountSignedIn({ book, email, onChange }) {
     })
   }
 
+  const [renaming, setRenaming] = useState(null)
+
+  // Rename any phone; forget any but this one.
+  function phoneMenu(row) {
+    if (row.device_key === here) {
+      setRenaming(row)
+      return
+    }
+    publishSheet({
+      title: phoneName(row, here),
+      body: row.model || undefined,
+      goLabel: t('account.rename'),
+      onGo: () => {
+        publishSheet(null)
+        setRenaming(row)
+      },
+      moreLabel: t('account.forgetShort'),
+      onMore: () => {
+        publishSheet(null)
+        forgetOne(row)
+      },
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
   function forgetOne(row) {
     setSure({
       title: t('account.forgetTitle'),
-      body: t('account.forgetBody', { phone: row.label || t('account.aPhone') }),
+      body: t('account.forgetBody', { phone: phoneName(row, here) }),
       yes: t('account.forgetYes'),
       go: async () => {
         try {
@@ -1731,11 +1849,11 @@ function AccountSignedIn({ book, email, onChange }) {
               colors={colors}
               icon={row.platform === 'web' ? 'globe' : 'person'}
               tint={row.device_key === here ? colors.on : colors.inkSoft}
-              label={row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')}
-              sub={t('account.seen', { date: deviceSeen(row.last_seen_at) })}
-              value={row.device_key === here ? '' : t('account.forgetShort')}
+              label={phoneName(row, here)}
+              sub={phoneSub(row, here)}
+              chevron
               last={at === shownPhones.length - 1 && !phonesHidden}
-              onPress={row.device_key === here ? undefined : () => forgetOne(row)}
+              onPress={() => phoneMenu(row)}
             />
           ))
         ) : (
@@ -1746,6 +1864,17 @@ function AccountSignedIn({ book, email, onChange }) {
         ) : null}
       </SetCard>
       <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
+      {renaming ? (
+        <RenamePhone
+          row={renaming}
+          colors={colors}
+          onClose={() => setRenaming(null)}
+          onSaved={async () => {
+            setRenaming(null)
+            setDevices(await listDevices())
+          }}
+        />
+      ) : null}
       {sync.how === 'miss' && sync.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
@@ -1944,6 +2073,7 @@ const styles = StyleSheet.create({
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   popBody: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  renameRow: { flexDirection: 'row', padding: 16 },
   week: { gap: 6 },
   weekRow: { flexDirection: 'row', alignItems: 'center' },
   weekName: { width: 96, paddingRight: 8 },

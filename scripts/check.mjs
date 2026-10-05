@@ -118,6 +118,7 @@ import { ko } from '../src/locales/ko.js'
 import { englishLeft, isLegalKey, mayMatchEnglish, wrongScript } from './locale-shared.mjs'
 import englishOk from './locale-english.json' with { type: 'json' }
 import { writePrefs } from '../src/lib/prefs.js'
+import { pickSocialLine } from '../src/lib/social-line.js'
 import { nightProgress } from '../src/lib/night-progress.js'
 import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
@@ -4182,6 +4183,41 @@ test('the web ships English and loads the language in use; the phone loads all',
     if (was == null) globalThis.localStorage.removeItem('did-i-prefs')
     else globalThis.localStorage.setItem('did-i-prefs', was)
   }
+})
+
+test('Home shows at most one social line: a Did we waiting on you, then a friend still going', () => {
+  const me = { id: 'me', me: true, state: 'in', status: null }
+  const cob = { id: 'c', name: 'CobaltLily', state: 'in', status: 'did' }
+  const card = { id: 'w1', due: true, myState: 'in', done: false, mode: 'all', people: [me, cob] }
+  const friends = [{ id: 'f1', name: 'Rae', shared: true, done: false }]
+  assert.deepEqual(pickSocialLine({ weCards: [card], people: friends, nightDone: true }), { kind: 'we', id: 'w1', name: 'CobaltLily' })
+  assert.equal(pickSocialLine({ weCards: [{ ...card, people: [{ ...me, status: 'did' }, cob] }], people: [], nightDone: false }), null)
+  assert.equal(pickSocialLine({ weCards: [{ ...card, due: false }], people: friends, nightDone: false }), null)
+  assert.equal(pickSocialLine({ weCards: [{ ...card, mode: 'turns', turn: 'c' }], people: [], nightDone: false }), null)
+  assert.deepEqual(pickSocialLine({ weCards: [], people: friends, nightDone: true }), { kind: 'cheer', id: 'f1', name: 'Rae' })
+  assert.equal(pickSocialLine({ weCards: [], people: friends, nightDone: false }), null, 'no cheer line before you are done')
+  assert.equal(pickSocialLine({ weCards: [], people: [{ ...friends[0], done: true }], nightDone: true }), null)
+  assert.equal(pickSocialLine({ weCards: [], people: [{ ...friends[0], shared: false }], nightDone: true }), null, 'sharing off is never shown as not done')
+})
+
+test('family summary hour and phone names: prefs clamp, SQL order, menu resets the stack', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  writePrefs({ familyHour: 19 })
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('did-i-prefs')).familyHour, 19)
+  writePrefs({ familyHour: 24 })
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('did-i-prefs')).familyHour, 21, 'out of range falls back to 9pm')
+  writePrefs({ familyHour: 21 })
+  const summary = readFileSync(path.join(root, 'supabase/family-summary.sql'), 'utf8')
+  assert.ok(summary.includes('= p.family_hour'), 'the summary waits for the chosen hour')
+  assert.ok(summary.includes('family_hour between 0 and 23'))
+  const names = readFileSync(path.join(root, 'supabase/device-names.sql'), 'utf8')
+  assert.ok(names.includes('length(name) <= 40'), 'phone names are capped on the server')
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.includes("'supabase/device-names.sql'"))
+  const menu = readFileSync(path.join(root, 'native/components/MastMenu.jsx'), 'utf8')
+  assert.ok(menu.includes('goFromMenu(item.path)'), 'a menu pick starts from Home')
+  const hash = readFileSync(path.join(root, 'native/navigation/hash.js'), 'utf8')
+  assert.ok(hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps only Home behind the screen')
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)
