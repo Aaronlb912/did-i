@@ -22,7 +22,7 @@ import {
   periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
-import { lampNights, lampWeeks } from '../src/lib/lamp-record.js'
+import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -70,7 +70,7 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
-import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
@@ -118,6 +118,7 @@ import { ko } from '../src/locales/ko.js'
 import { englishLeft, isLegalKey, mayMatchEnglish, wrongScript } from './locale-shared.mjs'
 import englishOk from './locale-english.json' with { type: 'json' }
 import { writePrefs } from '../src/lib/prefs.js'
+import { pickSocialLine } from '../src/lib/social-line.js'
 import { nightProgress } from '../src/lib/night-progress.js'
 import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
@@ -132,9 +133,10 @@ import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { coinNights, gemThisWeek } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
-import { setWeNightRows } from '../src/lib/we-nights.js'
+import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
+import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -781,12 +783,73 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
     { lampId: 'n', periodKey: '2026-10-02', status: 'yes', answeredAt: '2026-10-02T20:00:00' },
   ]
   const shelf = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [...old, lamp('n', { createdOn: '2026-10-02' })], answers }] }
-  assert.deepEqual(coinNights(shelf, now), [
-    { night: '2026-10-04', coins: 6 },
-    { night: '2026-10-03', coins: 3 },
+  // Every night is listed, a 0 night too, with why.
+  const nights = coinNights(shelf, now)
+  assert.deepEqual(nights.slice(0, 4), [
+    { night: '2026-10-04', coins: 6, reason: 'cap' },
+    { night: '2026-10-03', coins: 3, reason: '' },
+    { night: '2026-10-02', coins: 0, reason: 'new' },
+    { night: '2026-10-01', coins: 0, reason: 'none' },
   ])
+  assert.equal(nights.length, 7)
+  // Signed in, the server's numbers win but its missing 0 nights stay listed.
+  const merged = mergeCoinNights(nights, [{ night: '2026-10-04', coins: 6 }, { night: '2026-10-03', coins: 2 }])
+  assert.equal(merged.length, 7)
+  assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
+  assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
+  assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
+  // Nothing before the first question or answer.
+  const young = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [lamp('y', { createdOn: '2026-10-03' })], answers: [] }] }
+  assert.deepEqual(coinNights(young, now).map((row) => row.reason), ['open', 'none'])
   assert.equal(gemThisWeek(gemWeekKey(now), now), true)
   assert.equal(gemThisWeek('', now), false)
+})
+
+test('one streak rule per question: a nope breaks it, late keeps it, every screen agrees', () => {
+  const now = new Date('2026-10-05T21:00:00')
+  const q = lamp('q', { createdOn: '2026-09-25' })
+  const say = (night, status) => ({ lampId: 'q', periodKey: night, status, answeredAt: `${night}T20:00:00` })
+  const answers = [
+    say('2026-09-26', 'yes'), say('2026-09-27', 'yes'), say('2026-09-28', 'late'), say('2026-09-29', 'yes'),
+    say('2026-09-30', 'skip'),
+    say('2026-10-01', 'yes'), say('2026-10-02', 'late'), say('2026-10-03', 'yes'), say('2026-10-04', 'yes'),
+  ]
+  const shelfBook = { id: 'b', dayFoldHour: 0, lamps: [q], answers }
+  // Tonight not answered yet does not break it.
+  assert.equal(questionStreak(shelfBook, q, '2026-10-05'), 4)
+  assert.equal(streakLength(shelfBook, q, now), 4)
+  assert.equal(lampRecord(shelfBook, q, '2026-10-05').streak, 4)
+  assert.equal(bestQuestionStreak(shelfBook, q, '2026-10-05'), 4)
+  // Tonight's nope ends it on every screen.
+  const noped = { ...shelfBook, answers: [...answers, say('2026-10-05', 'skip')] }
+  assert.equal(streakLength(noped, q, now), 0)
+  assert.equal(lampRecord(noped, q, '2026-10-05').streak, 0)
+  // A missed night ends it too; best remembers the longer run.
+  const gap = { ...shelfBook, answers: answers.filter((answer) => answer.periodKey !== '2026-10-02' && answer.periodKey !== '2026-09-30') }
+  assert.equal(questionStreak(gap, q, '2026-10-05'), 2)
+  assert.equal(bestQuestionStreak(gap, q, '2026-10-05'), 4)
+})
+
+test('Seven nights counts a night like Home: a missed Did we leaves it red', () => {
+  const now = new Date('2026-10-04T21:00:00')
+  const q = lamp('q', { createdOn: '2026-09-25' })
+  const answers = ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map((night) => ({
+    lampId: 'q', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00`,
+  }))
+  const shelf = [{ id: 'b', dayFoldHour: 0, lamps: [q], answers }]
+  setWeNightRows([
+    { card: 'w', folder: '', night: '2026-10-03', status: '' },
+    { card: 'w', folder: '', night: '2026-10-04', status: 'did' },
+  ])
+  const strip = weekStripNights(shelf, now)
+  assert.equal(strip.filter((night) => night.on).length, 6)
+  assert.equal(strip.find((night) => night.iso === '2026-10-03').on, false)
+  assert.deepEqual(weCardsOn(strip.map((night) => night.iso)), ['w'])
+  assert.equal(weCardState('2026-10-03', 'w'), '')
+  assert.equal(weCardState('2026-10-04', 'w'), 'did')
+  assert.equal(weCardState('2026-10-02', 'w'), 'off')
+  assert.deepEqual(nightWhy(shelf, '2026-10-03', now).weOpen, ['w'])
+  setWeNightRows([])
 })
 
 test('two phones combine instead of overwriting', () => {
@@ -1474,6 +1537,27 @@ test('tonight orders questions by ask time, untimed ones first, priority breakin
     row('anyHigh', '', 'high'),
   ]).map((r) => r.lamp.id)
   assert.deepEqual(order, ['anyHigh', 'anyLow', 'eight', 'nine'])
+})
+
+test('a hand-set question order beats priority, survives normalize, and spans folders', async () => {
+  const { byAskTime, normalizeLamp, setLampOrder } = await import('../src/lib/board-json.js')
+  const row = (id, askAfter, priority, order) => ({ lamp: { id, askAfter, priority, ...(order == null ? {} : { order }) } })
+  const order = byAskTime([
+    row('high', '', 'high'),
+    row('second', '', 'low', 1),
+    row('first', '', 'normal', 0),
+    row('late', '21:00', 'normal', 0),
+  ]).map((r) => r.lamp.id)
+  assert.deepEqual(order, ['first', 'second', 'high', 'late'], 'ordered ones first, unmoved after, ask time still wins')
+  assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', order: 3 }).order, 3)
+  assert.equal('order' in normalizeLamp({ id: 'a', question: 'Did I?' }), false)
+  const books = [
+    { id: 'b1', lamps: [{ id: 'x' }, { id: 'y' }] },
+    { id: 'b2', lamps: [{ id: 'z' }] },
+  ]
+  const next = setLampOrder(books, ['z', 'x', 'y'])
+  assert.deepEqual(next.flatMap((book) => book.lamps.map((lamp) => [lamp.id, lamp.order])), [['x', 1], ['y', 2], ['z', 0]])
+  assert.equal(setLampOrder(next, ['z', 'x', 'y'])[0], next[0], 'an unchanged folder keeps its object')
 })
 
 test('every accessory the shop shows is sold by the server at the same price', async () => {
@@ -4184,5 +4268,80 @@ test('the web ships English and loads the language in use; the phone loads all',
   }
 })
 
+test('Home shows at most one social line: a Did we waiting on you, then a friend still going', () => {
+  const me = { id: 'me', me: true, state: 'in', status: null }
+  const cob = { id: 'c', name: 'CobaltLily', state: 'in', status: 'did' }
+  const card = { id: 'w1', due: true, myState: 'in', done: false, mode: 'all', people: [me, cob] }
+  const friends = [{ id: 'f1', name: 'Rae', shared: true, done: false }]
+  assert.deepEqual(pickSocialLine({ weCards: [card], people: friends, nightDone: true }), { kind: 'we', id: 'w1', name: 'CobaltLily' })
+  assert.equal(pickSocialLine({ weCards: [{ ...card, people: [{ ...me, status: 'did' }, cob] }], people: [], nightDone: false }), null)
+  assert.equal(pickSocialLine({ weCards: [{ ...card, due: false }], people: friends, nightDone: false }), null)
+  assert.equal(pickSocialLine({ weCards: [{ ...card, mode: 'turns', turn: 'c' }], people: [], nightDone: false }), null)
+  assert.deepEqual(pickSocialLine({ weCards: [], people: friends, nightDone: true }), { kind: 'cheer', id: 'f1', name: 'Rae' })
+  assert.equal(pickSocialLine({ weCards: [], people: friends, nightDone: false }), null, 'no cheer line before you are done')
+  assert.equal(pickSocialLine({ weCards: [], people: [{ ...friends[0], done: true }], nightDone: true }), null)
+  assert.equal(pickSocialLine({ weCards: [], people: [{ ...friends[0], shared: false }], nightDone: true }), null, 'sharing off is never shown as not done')
+})
+
+test('family summary hour and phone names: prefs clamp, SQL order, menu resets the stack', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  writePrefs({ familyHour: 19 })
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('did-i-prefs')).familyHour, 19)
+  writePrefs({ familyHour: 24 })
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('did-i-prefs')).familyHour, 21, 'out of range falls back to 9pm')
+  writePrefs({ familyHour: 21 })
+  const summary = readFileSync(path.join(root, 'supabase/family-summary.sql'), 'utf8')
+  assert.ok(summary.includes('= p.family_hour'), 'the summary waits for the chosen hour')
+  assert.ok(summary.includes('family_hour between 0 and 23'))
+  const names = readFileSync(path.join(root, 'supabase/device-names.sql'), 'utf8')
+  assert.ok(names.includes('length(name) <= 40'), 'phone names are capped on the server')
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.includes("'supabase/device-names.sql'"))
+  const menu = readFileSync(path.join(root, 'native/components/MastMenu.jsx'), 'utf8')
+  assert.ok(menu.includes('goFromMenu(item.path)'), 'a menu pick starts from Home')
+  const hash = readFileSync(path.join(root, 'native/navigation/hash.js'), 'utf8')
+  assert.ok(hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps only Home behind the screen')
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
+
+test('seasonal items say when they come back', () => {
+  const cocoa = { id: 'cocoa', from: '2026-12-01', until: '2027-01-01' }
+  assert.equal(seasonNext(cocoa, '2026-10-05'), '2026-12-01', 'before the season: this year')
+  assert.equal(seasonNext(cocoa, '2026-12-10'), '2026-12-01', 'in season: the current one')
+  assert.equal(seasonNext(cocoa, '2027-01-01'), '2027-12-01', 'after it ends: next year')
+  assert.equal(seasonNext(cocoa, '2029-03-01'), '2029-12-01', 'years later still lands on Dec 1')
+  const off = offSeason(normalizePurse({ accessories: ['cocoa'] }), '2026-10-05')
+  assert.ok(off.owned.some((row) => row.item.id === 'cocoa'), 'owned cocoa is out of season in October')
+  assert.ok(off.coming.some((row) => row.item.id === 'sparkler'), 'sparkler shows as coming')
+  assert.ok(!off.coming.some((row) => row.item.id === 'cocoa'), 'owned items are not also coming')
+})
+
+test('the wishlist caps at its max and drops an item once bought', () => {
+  let book = { coins: 100, gems: 0 }
+  const looks = SHOP_CALENDAR.looks.filter((item) => item.id !== 'lime')
+  const cheers = SHOP_CALENDAR.cheers.filter((item) => item.gems > 0)
+  const keys = [...looks.map((item) => ['look', item.id]), ...cheers.map((item) => ['cheer', item.id])]
+  for (const [type, id] of keys.slice(0, WISH_MAX)) book = toggleWish(book, type, id).book
+  assert.equal(normalizePurse(book).wish.length, WISH_MAX)
+  const [type, id] = keys[WISH_MAX]
+  assert.equal(toggleWish(book, type, id).miss, 'shop.miss.wishFull', 'one past the max is turned down')
+  assert.equal(normalizePurse({ wish: keys.map(([a, b]) => `${a}:${b}`) }).wish.length, WISH_MAX, 'a synced list is capped too')
+  book = toggleWish({ coins: 30 }, 'look', 'ink').book
+  assert.deepEqual(wishGoal(normalizePurse(book)), { type: 'look', id: 'ink', kind: 'coins', n: 0, nights: 0 })
+  const bought = buyLook(book, 'ink')
+  assert.equal(bought.miss, '')
+  assert.deepEqual(normalizePurse(bought.book).wish, [], 'buying it clears the heart')
+  assert.equal(wishGoal(normalizePurse(toggleWish({ coins: 0 }, 'look', 'ink').book)).n, Math.ceil(30 / 6), '6 coins a night')
+})
+
+test('shop rows hide owned items and drops before their day', () => {
+  const owned = normalizePurse({ looks: LOOKS.map((item) => item.id) })
+  assert.deepEqual(shopRow('look', LOOKS, owned), [], 'own every look: the row is empty')
+  const none = normalizePurse({})
+  assert.ok(!shopRow('look', LOOKS, none).some((item) => item.id === 'lime'), 'the free look is owned, so hidden')
+  const drop = SHOP_CALENDAR.looks.find((item) => item.from === '2026-10-23')
+  assert.ok(!shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-20').includes(drop), 'a coming drop stays out of the row')
+  assert.ok(shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-23').includes(drop), 'on its day it is in')
+})

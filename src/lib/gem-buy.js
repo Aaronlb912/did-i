@@ -2,9 +2,9 @@ import { readUser } from './account.js'
 import { isReactNative } from './env.js'
 import { claimGemPurchases } from './gem-claim.js'
 import { gemPack } from './gem-packs.js'
-import { buyGemPack, iapReady, initGemIap, iapPossible } from './gem-iap.js'
+import { buyGemPack, iapReady, initGemIap, iapPossible, restoreGemPurchases } from './gem-iap.js'
 
-export { claimGemPurchases }
+export { claimGemPurchases, restoreGemPurchases }
 
 export function gemCheckoutReady(_packId) {
   if (isReactNative()) return iapPossible()

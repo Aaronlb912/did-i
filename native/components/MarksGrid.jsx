@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { InteractionManager, StyleSheet, Text, View } from 'react-native'
 import { ACHIEVEMENTS, MARK_SECTIONS, markLabel } from '../../src/lib/achievements.js'
 import { t } from '../../src/lib/i18n.js'
 import { LOCK_PATH, markIconPath } from '../../src/lib/mark-icons.js'
@@ -19,7 +19,7 @@ function Glyph({ d, color, size = 20 }) {
   )
 }
 
-function Tile({ item, on, width, colors }) {
+const Tile = memo(function Tile({ item, on, width, colors }) {
   return (
     <View
       accessible
@@ -48,16 +48,24 @@ function Tile({ item, on, width, colors }) {
       </Text>
     </View>
   )
-}
+})
 
 // A count across the top, then one block per kind of achievement, earned
 // first in each. Two across on a phone, three on a wide screen.
+// About a hundred tiles with icons: the page opens with the summary and the
+// first block, and draws the rest once the screen change has finished.
 export function MarksGrid({ have, colors }) {
   const [width, setWidth] = useState(0)
+  const [all, setAll] = useState(false)
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setAll(true))
+    return () => task.cancel()
+  }, [])
   const cols = width >= 560 ? 3 : 2
   const tile = width ? Math.floor((width - GAP * (cols - 1)) / cols) : 0
-  const count = ACHIEVEMENTS.filter((item) => have.has(item.id)).length
+  const count = useMemo(() => ACHIEVEMENTS.filter((item) => have.has(item.id)).length, [have])
   const total = ACHIEVEMENTS.length
+  const sections = all ? MARK_SECTIONS : MARK_SECTIONS.slice(0, 1)
 
   return (
     <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
@@ -72,7 +80,7 @@ export function MarksGrid({ have, colors }) {
         </View>
       </View>
 
-      {MARK_SECTIONS.map((section) => {
+      {width ? sections.map((section) => {
         const items = ACHIEVEMENTS.filter((item) => item.section === section)
         if (!items.length) return null
         const got = items.filter((item) => have.has(item.id))
@@ -94,7 +102,7 @@ export function MarksGrid({ have, colors }) {
             </View>
           </View>
         )
-      })}
+      }) : null}
     </View>
   )
 }

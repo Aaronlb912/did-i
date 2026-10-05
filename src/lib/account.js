@@ -67,6 +67,11 @@ export function deviceLabel() {
   return t('device.browser')
 }
 
+export function deviceModel() {
+  const model = globalThis.__didIDeviceModel
+  return typeof model === 'string' ? model.slice(0, 80) : ''
+}
+
 function cleanEmail(value) {
   return String(value || '').trim().toLowerCase()
 }

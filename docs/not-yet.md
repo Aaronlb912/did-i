@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Settings and social round 4 (branch `polish/settings-social-round4`)
+
+- **SQL not applied.** `supabase/family-summary.sql` (profiles.family_hour) and the new `supabase/device-names.sql` (devices.model, devices.name). Until applied, the family hour picker shows a save miss and phone rename fails; the app falls back to the old device columns. Test: `supabase/tests/settings-social.test.sql`.
+- **iOS phones show "iPhone · iOS 18.2", not the exact model.** No expo-device; Platform constants have no hardware model on iOS.
+- **The cheer line opens the friend page, not a one-tap cheer.** On purpose (no auto-send), but it is one more tap.
+- **New day start is fixed at midnight.** Shown as plain info; a picker for dayFoldHour would need night-math and server changes.
+
 ## Settings polish (branch `polish/craft`)
 
 - **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.

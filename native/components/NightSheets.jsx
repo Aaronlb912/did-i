@@ -2,7 +2,7 @@
 // coins work. Both use SheetHost.
 import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { coinNights, gemThisWeek } from '../../src/lib/coin-history.js'
+import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../../src/lib/coin-history.js'
 import { COIN_RULES, nightWhyLines } from '../../src/lib/night-why.js'
 import { nightWhy } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
@@ -47,7 +47,7 @@ function CoinHistory({ colors }) {
     let live = true
     readCoinHistory()
       .then((next) => {
-        if (live && next) setHist({ nights: next.nights.slice(0, 7), gemWeek: next.gemWeek })
+        if (live && next) setHist({ nights: mergeCoinNights(coinNights(readShelf()), next.nights), gemWeek: next.gemWeek })
       })
       .catch(() => {})
     return () => {
@@ -62,7 +62,7 @@ function CoinHistory({ colors }) {
       {hist.nights.length ? (
         hist.nights.map((row) => (
           <Text key={row.night} style={[styles.line, ink]}>
-            {t('coins.nightLine', { date: formatBoardDate(row.night), n: row.coins })}
+            {coinNightLine(row, formatBoardDate(row.night))}
           </Text>
         ))
       ) : (

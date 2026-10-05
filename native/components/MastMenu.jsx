@@ -19,7 +19,7 @@ import { setAppBadge } from '../../src/lib/push.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { goHash, onRoute, readRoute } from '../navigation/hash.js'
+import { goFromMenu, onRoute, readRoute } from '../navigation/hash.js'
 import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
 import { ripple } from '../lib/ripple.js'
@@ -275,10 +275,11 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   accessibilityRole="button"
                   accessibilityLabel={item.a11y || item.label}
                   onPress={() => {
-                    feelTap()
-                    // A new route drops the menu at once; the current one shrinks it home.
+                    // Navigate first so the screen starts at once; a new route
+                    // drops the menu, the current one shrinks it home.
+                    goFromMenu(item.path)
                     close()
-                    goHash(item.path)
+                    feelTap()
                   }}
                   android_ripple={ripple(colors.panel3)}
                   style={({ pressed }) => [

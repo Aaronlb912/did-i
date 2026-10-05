@@ -109,6 +109,27 @@ export function weOpenOn(nightIso) {
   return new Set((index().get(nightIso) || []).filter((row) => row.status !== 'did').map((row) => row.card))
 }
 
+// Every Did we card due for you on any of these nights, same tag rule as
+// weNight, in first-seen order. For the Seven nights grid's Did we rows.
+export function weCardsOn(nightIsos, tagId = '') {
+  const ids = tagIdsOf(tagId)
+  const out = []
+  for (const iso of nightIsos || []) {
+    for (const row of index().get(iso) || []) {
+      if (ids.length && !(row.folder && ids.includes(row.folder))) continue
+      if (!out.includes(row.card)) out.push(row.card)
+    }
+  }
+  return out
+}
+
+// One Did we on one night: off (not due), did, nope, or '' (due, no answer).
+export function weCardState(nightIso, card) {
+  const row = (index().get(nightIso) || []).find((item) => item.card === card)
+  if (!row) return 'off'
+  return row.status === 'did' || row.status === 'nope' ? row.status : ''
+}
+
 // Did we card ids not yet did on a night, with the same tag rule as weNight.
 export function weOpenIds(nightIso, tagId = '') {
   const ids = tagIdsOf(tagId)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { coinNights, gemThisWeek } from './coin-history.js'
+import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from './coin-history.js'
 import { readShelf } from './board-shelf.js'
 import { t } from './i18n.js'
 import { COIN_RULES } from './night-why.js'
@@ -29,7 +29,7 @@ export function CoinsHow({ onClose }) {
     let live = true
     readCoinHistory()
       .then((next) => {
-        if (live && next) setHist((was) => ({ ...was, nights: next.nights.slice(0, 7), gemWeek: next.gemWeek }))
+        if (live && next) setHist((was) => ({ ...was, nights: mergeCoinNights(coinNights(readShelf()), next.nights), gemWeek: next.gemWeek }))
       })
       .catch(() => {})
     return () => {
@@ -47,7 +47,7 @@ export function CoinsHow({ onClose }) {
         <p className="di-detail-meta"><strong>{t('coins.recent')}</strong></p>
         {hist.nights.length ? (
           hist.nights.map((row) => (
-            <p className="di-detail-meta" key={row.night}>{t('coins.nightLine', { date: formatBoardDate(row.night), n: row.coins })}</p>
+            <p className="di-detail-meta" key={row.night}>{coinNightLine(row, formatBoardDate(row.night))}</p>
           ))
         ) : (
           <p className="di-detail-meta">{t('coins.none')}</p>

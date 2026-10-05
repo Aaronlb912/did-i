@@ -309,7 +309,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     footer: '',
     didLabel: 'Did',
     nopeLabel: 'Nope',
-    openLabel: 'Tonight',
+    openLabel: 'Open',
     left: 0,
     openUri: 'didi://tonight',
   }

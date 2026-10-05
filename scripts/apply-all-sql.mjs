@@ -39,6 +39,7 @@ const files = [
   'supabase/unfriend.sql',
   'supabase/reliability.sql',
   'supabase/shop-drops.sql',
+  'supabase/device-names.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
