@@ -108,6 +108,16 @@ function kv(prefix) {
         mem.delete(id)
       }
     },
+    // Keys without the prefix, so sign-out can find per-account caches.
+    allKeys: () => {
+      try {
+        const box = storageBox()
+        const ids = box.getAllKeys ? box.getAllKeys() : [...box.keys()]
+        return ids.filter((id) => id.startsWith(prefix)).map((id) => id.slice(prefix.length))
+      } catch {
+        return []
+      }
+    },
     clear: () => {
       try {
         const box = storageBox()
