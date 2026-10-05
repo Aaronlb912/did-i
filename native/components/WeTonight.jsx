@@ -14,6 +14,8 @@ import {
   weStreak,
   weTimeReady,
   weWaiting,
+  wePausedCards,
+  weRestart,
 } from '../../src/lib/did-we.js'
 import { SwipeCardHost } from './SwipeCardHost.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
@@ -285,8 +287,52 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       <View style={styles.swipeFoot}>
         <WeFaces card={card} colors={colors} />
         <Text style={[styles.meta, { color: colors.inkSoft }]}>{weStatusLine(card)}</Text>
+        {weStreak(card) > 0 ? (
+          <Text style={[styles.meta, { color: colors.we || colors.on }]}>{t('we.streak', { n: weStreak(card) })}</Text>
+        ) : null}
       </View>
     </SwipeCardHost>
+  )
+}
+
+// Did wes nobody answered for 3 nights. They stop asking until a member
+// restarts one. Nothing when none is paused.
+export function WePausedRow({ cards, colors, reload }) {
+  const [busy, setBusy] = useState('')
+  const [miss, setMiss] = useState('')
+  const paused = wePausedCards(cards)
+  if (!paused.length) return null
+
+  async function restart(card) {
+    setBusy(card.id)
+    const out = await weRestart(card.id)
+    setBusy('')
+    setMiss(out.miss ? tMiss(out.miss) : '')
+    if (!out.miss) {
+      confirmDone(t('we.restarted'))
+      reload()
+    }
+  }
+
+  return (
+    <View style={[styles.wrap, styles.pausedWrap, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      {paused.map((card, i) => (
+        <View key={card.id} style={[styles.row, i ? { borderTopColor: colors.line } : { borderTopWidth: 0 }]}>
+          <View style={styles.copy}>
+            <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
+              {card.question}
+            </Text>
+            <Text style={[styles.meta, { color: colors.inkDim }]}>{t('we.paused')}</Text>
+          </View>
+          <KeyButton colors={colors} label={t('we.restart')} disabled={busy === card.id} onPress={() => restart(card)} />
+        </View>
+      ))}
+      {miss ? (
+        <Text style={[styles.note, { color: colors.miss }]} accessibilityRole="alert">
+          {miss}
+        </Text>
+      ) : null}
+    </View>
   )
 }
 
@@ -315,7 +361,7 @@ export function WeList({ colors }) {
               <WeFaces card={card} colors={colors} />
               <Text style={[styles.meta, { color: card.done ? colors.on : colors.inkSoft }]}>
                 {card.folder ? `${card.folder} · ` : ''}
-                {card.due ? weStatusLine(card) : t('we.notTonight')}
+                {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : t('we.notTonight')}
                 {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
                 {goal ? ` · ${t('we.goalLine', { n: goal.done, goal: goal.goal })}` : ''}
               </Text>
@@ -355,4 +401,5 @@ const styles = StyleSheet.create({
   faceText: { fontFamily: fonts.uiSemi, fontSize: 11 },
   note: { fontFamily: fonts.ui, fontSize: 13, padding: 12 },
   swipeFoot: { alignItems: 'center', gap: 6, marginTop: 10 },
+  pausedWrap: { marginTop: 8 },
 })
