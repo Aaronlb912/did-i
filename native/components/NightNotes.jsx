@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
@@ -152,6 +152,17 @@ export function NightNotes({ book, lamp, colors, onChange }) {
 export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
   const [picking, setPicking] = useLayoutState(false)
   const [open, setOpen] = useLayoutState(null)
+  // Phone back closes the note, then the picker, before leaving the screen.
+  useEffect(() => {
+    if (!picking && !open) return undefined
+    function onBack(event) {
+      if (open) setOpen(null)
+      else setPicking(false)
+      event?.preventDefault?.()
+    }
+    window.addEventListener('did-i-back', onBack)
+    return () => window.removeEventListener('did-i-back', onBack)
+  }, [picking, open])
   const answered = rows.filter((row) => row.answer && row.lamp)
   if (!answered.length) return null
 
