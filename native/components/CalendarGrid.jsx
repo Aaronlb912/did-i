@@ -8,7 +8,7 @@ import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { useLayoutState } from '../lib/motion.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'

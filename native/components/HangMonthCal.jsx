@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { useLayoutState } from '../lib/motion.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'

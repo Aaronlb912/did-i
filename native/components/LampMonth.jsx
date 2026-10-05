@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { answerFor, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { useLayoutState } from '../lib/motion.jsx'
 
 function pad(n) {
   return String(n).padStart(2, '0')

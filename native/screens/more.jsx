@@ -110,7 +110,7 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
-import { pressFx, animateNextLayout } from '../lib/motion.js'
+import { pressFx, animateNextLayout } from '../lib/motion.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 

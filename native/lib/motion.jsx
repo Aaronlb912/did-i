@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native'
 import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
+import Reanimated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated'
 
 // Short, calm motion for things a tap opens or changes. Every helper here
 // shows the end state at once when Less motion (or the phone's setting) is on.
@@ -72,4 +73,22 @@ export function useFadeIn(show = true, reduce = motionOff()) {
     Animated.timing(value, { toValue: 1, duration: MOTION_MS, easing: easeOut, useNativeDriver: true }).start()
   }, [show, reduce, value])
   return value
+}
+
+// A block that fades and slides in when it mounts and fades out when it
+// leaves. LayoutAnimation does nothing on the new architecture, so anything
+// a tap opens in place should sit in a <Reveal>.
+export function Reveal({ children, style, ...rest }) {
+  const off = motionOff()
+  return (
+    <Reanimated.View
+      entering={off ? undefined : FadeInDown.duration(MOTION_MS).withInitialValues({ transform: [{ translateY: -8 }] })}
+      exiting={off ? undefined : FadeOut.duration(150)}
+      layout={off ? undefined : LinearTransition.duration(MOTION_MS)}
+      style={style}
+      {...rest}
+    >
+      {children}
+    </Reanimated.View>
+  )
 }

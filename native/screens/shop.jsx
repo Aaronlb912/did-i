@@ -89,7 +89,7 @@ import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
 import { previewSample } from '../../src/lib/board-shelf.js'
-import { pressFx, animateNextLayout } from '../lib/motion.js'
+import { pressFx, animateNextLayout } from '../lib/motion.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)

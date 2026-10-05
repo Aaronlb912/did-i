@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
@@ -8,7 +8,8 @@ import { periodLabel } from '../../src/lib/recurrence.js'
 import { confirmDone } from '../lib/confirm.js'
 import { Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
+import { publishSheet } from './SheetHost.jsx'
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
@@ -149,75 +150,71 @@ export function NightNotes({ book, lamp, colors, onChange }) {
  * finds the folder each one lives in.
  */
 // quiet: a small text link instead of a full button (the Home done card).
+// The picker and the note box open in a sheet: it slides in, and a tap
+// outside it (or phone back) closes it.
 export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
-  const [picking, setPicking] = useLayoutState(false)
-  const [open, setOpen] = useLayoutState(null)
-  // Phone back closes the note, then the picker, before leaving the screen.
-  useEffect(() => {
-    if (!picking && !open) return undefined
-    function onBack(event) {
-      if (open) setOpen(null)
-      else setPicking(false)
-      event?.preventDefault?.()
-    }
-    window.addEventListener('did-i-back', onBack)
-    return () => window.removeEventListener('did-i-back', onBack)
-  }, [picking, open])
   const answered = rows.filter((row) => row.answer && row.lamp)
   if (!answered.length) return null
 
-  if (open) {
-    const row = answered.find((item) => item.lamp.id === open.lampId && item.answer.periodKey === open.periodKey)
-    if (row) {
-      return (
-        <NoteEdit
-          label={shortLabel(row.lamp)}
-          initial={row.answer.note}
-          colors={colors}
-          onSave={(draft) => {
-            onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft))
-            setOpen(null)
-            setPicking(false)
-            confirmDone(t('note.saved'))
-          }}
-          onCancel={() => setOpen(null)}
-        />
-      )
-    }
+  const close = () => publishSheet(null)
+  const save = (row, draft) => {
+    onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft))
+    close()
+    confirmDone(t('note.saved'))
   }
+  const openSheet = () =>
+    publishSheet({
+      title: t('note.add'),
+      colors,
+      closeLabel: t('settings.neverMind'),
+      onClose: close,
+      content: <NotePick answered={answered} colors={colors} onSave={save} onCancel={close} />,
+    })
 
-  if (!picking && quiet) {
+  if (quiet) {
     return (
-      <Pressable onPress={() => setPicking(true)} accessibilityRole="button" hitSlop={10}>
+      <Pressable onPress={openSheet} accessibilityRole="button" hitSlop={10} style={({ pressed }) => pressFx(pressed)}>
         <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${t('note.add')}`}</Text>
       </Pressable>
     )
   }
+  return (
+    <View style={styles.keys}>
+      <KeyButton colors={colors} label={t('note.add')} onPress={openSheet} />
+    </View>
+  )
+}
 
-  if (!picking) {
+// Inside the sheet: pick a question, then write its note in place.
+function NotePick({ answered, colors, onSave }) {
+  const [open, setOpen] = useState(null)
+  const row = open && answered.find((item) => item.lamp.id === open.lampId && item.answer.periodKey === open.periodKey)
+  if (row) {
     return (
-      <View style={styles.keys}>
-        <KeyButton colors={colors} label={t('note.add')} onPress={() => setPicking(true)} />
-      </View>
+      <Reveal key="edit">
+        <NoteEdit
+          label={shortLabel(row.lamp)}
+          initial={row.answer.note}
+          colors={colors}
+          onSave={(draft) => onSave(row, draft)}
+          onCancel={() => setOpen(null)}
+        />
+      </Reveal>
     )
   }
-
   return (
-    <View style={styles.edit}>
+    <Reveal key="pick" style={styles.edit}>
       <Meta colors={colors}>{t('note.pickQuestion')}</Meta>
-      {answered.map((row) => (
+      {answered.map((item) => (
         <Row
-          key={`${row.lamp.id}:${row.answer.periodKey}`}
+          key={`${item.lamp.id}:${item.answer.periodKey}`}
           colors={colors}
-          label={`${shortLabel(row.lamp)} · ${statusWord(row.answer.status)}`}
-          note={row.answer.note || ''}
-          onPress={() => setOpen({ lampId: row.lamp.id, periodKey: row.answer.periodKey })}
+          label={`${shortLabel(item.lamp)} · ${statusWord(item.answer.status)}`}
+          note={item.answer.note || ''}
+          onPress={() => setOpen({ lampId: item.lamp.id, periodKey: item.answer.periodKey })}
         />
       ))}
-      <View style={styles.keys}>
-        <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setPicking(false)} />
-      </View>
-    </View>
+    </Reveal>
   )
 }
 

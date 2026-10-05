@@ -105,7 +105,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
-import { animateNextLayout } from '../lib/motion.js'
+import { animateNextLayout } from '../lib/motion.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())

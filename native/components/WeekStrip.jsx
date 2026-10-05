@@ -4,7 +4,7 @@ import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { useLayoutState } from '../lib/motion.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
