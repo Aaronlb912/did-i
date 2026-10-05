@@ -528,7 +528,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             </>
           ) : null}
           {stack.streak > 0 ? (
-            <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
+            <Pressable
+              onPress={() => goHash('/stats')}
+              accessibilityRole="button"
+              accessibilityHint={t('stats.title')}
+              style={styles.streakTap}
+            >
+              <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
+              <Text style={[styles.streakChevron, { color: colors.inkDim }]}>›</Text>
+            </Pressable>
           ) : null}
           {summary ? (
             <NightWeek
@@ -539,14 +547,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               }
             />
           ) : null}
-          {summary ? (
-            <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
-          ) : null}
-          {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
-          <View style={styles.actions}>
-            <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
-            <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
+          <View style={styles.tomorrowRow}>
+            {summary ? (
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
+            ) : null}
+            <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
+          {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
@@ -895,6 +902,9 @@ const styles = StyleSheet.create({
   graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
+  tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
+  streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
+  streakChevron: { fontSize: 22, marginTop: 10 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
   social: { marginTop: 14, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
   weTurn: {

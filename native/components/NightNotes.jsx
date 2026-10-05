@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
@@ -16,7 +16,7 @@ const NOTES_SHOWN = 3
 function statusWord(status) {
   if (status === 'late') return t('feed.status.late')
   if (status === 'skip') return t('feed.status.nope')
-  return t('feed.status.did')
+  return t('later.did')
 }
 
 function nightLine(lamp, answer) {
@@ -147,7 +147,8 @@ export function NightNotes({ book, lamp, colors, onChange }) {
  * then write its note. `rows` are tonight's rows with an answer; `bookOf`
  * finds the folder each one lives in.
  */
-export function TonightNote({ rows, bookOf, colors, onChange }) {
+// quiet: a small text link instead of a full button (the Home done card).
+export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
   const [picking, setPicking] = useState(false)
   const [open, setOpen] = useState(null)
   const answered = rows.filter((row) => row.answer && row.lamp)
@@ -171,6 +172,14 @@ export function TonightNote({ rows, bookOf, colors, onChange }) {
         />
       )
     }
+  }
+
+  if (!picking && quiet) {
+    return (
+      <Pressable onPress={() => setPicking(true)} accessibilityRole="button" hitSlop={10}>
+        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${t('note.add')}`}</Text>
+      </Pressable>
+    )
   }
 
   if (!picking) {
@@ -206,4 +215,5 @@ const styles = StyleSheet.create({
   // Full width, so in a row of buttons the open note drops to its own line.
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quiet: { fontSize: 14 },
 })
