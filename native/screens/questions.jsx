@@ -37,7 +37,7 @@ import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
 import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
-import { STARTERS, starterBlank, unusedStarters } from '../../src/lib/starters.js'
+import { starterBlank, starterList, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
 import { ripple } from '../lib/ripple.js'
@@ -96,7 +96,7 @@ function shellDate(book, clock = new Date()) {
 
 function openStarters(book) {
   const hung = (book.lamps || []).filter((lamp) => !lamp.archived)
-  return STARTERS.filter(
+  return starterList().filter(
     (starter) =>
       !hung.some((lamp) => lamp.short === starter.short || lamp.question === starter.question),
   )
