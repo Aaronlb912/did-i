@@ -60,6 +60,10 @@ import {
   feedSearch,
 } from '../../src/lib/hall-pages.js'
 import { shareRecap } from '../components/WeekRecap.jsx'
+import { openNightWhy } from '../components/NightSheets.jsx'
+import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
+import { weCardTitle } from '../../src/lib/did-we.js'
+import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -330,8 +334,10 @@ export function LaterScreen({ book, now }) {
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const heat = hallHeat(book, clock)
-  const have = shelfMarks(boards.length ? boards : [book])
+  const dateIso = boardDate(clock, book?.dayFoldHour)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const heat = useMemo(() => hallHeat(book, clock), [book, dateIso])
+  const have = useMemo(() => shelfMarks(boards.length ? boards : [book]), [boards, book])
 
   return (
     <ScreenShell book={book} title={t('marks.title')} colors={colors}>
@@ -380,13 +386,13 @@ function StreakHero({ colors, n, label, line }) {
   )
 }
 
-function NumberTile({ colors, label, n, onPress, third = false }) {
+function NumberTile({ colors, label, n, onPress, third = false, half = false }) {
   return (
     <Pressable
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      style={[styles.tile, third && styles.tileThird, { backgroundColor: colors.panel, borderColor: colors.line }]}
+      style={[styles.tile, third && styles.tileThird, half && styles.tileHalf, { backgroundColor: colors.panel, borderColor: colors.line }]}
     >
       <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
@@ -424,6 +430,14 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
     return weekRecap(books, weekStripNights(books, clock, tagId), tagId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book, boards, dateIso, tagId])
+  // The longest run any one question had (nope breaks it), walked once a night.
+  const bestRun = useMemo(() => {
+    let best = 0
+    for (const one of scopedBooks(inView(book, boards), tagId)) {
+      for (const lamp of one.lamps || []) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
+    }
+    return best
+  }, [book, boards, dateIso, tagId])
 
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
@@ -449,13 +463,16 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
         <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
-        <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
+        <NumberTile half colors={colors} label={t('stats.questions')} n={counts.hung} />
+        <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
-      <KeyButton colors={colors} label={t('stats.marks')} onPress={() => goHash('/marks')} />
-      <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
-      <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -511,8 +528,15 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
-  const nights = shelfWeekNights(inView(book, boards), clock, tagId, 7)
+  const shelf = inView(book, boards)
+  const nights = shelfWeekNights(shelf, clock, tagId, 7)
   const lamps = weekLamps(nights)
+  // Same night rule as the Home dots and So far: every question and every Did
+  // we due that night answered Did (or late).
+  const strip = weekStripNights(shelf, clock, tagId)
+  const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
+  const doneNights = cleared.size
+  const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
 
   function cellColor(state) {
     if (state === 'yes') return colors.on
@@ -522,11 +546,37 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     return colors.open
   }
 
-  // A night counts once every question on it was answered Did or late.
-  const doneNights = nights.filter((night) => {
-    const states = lamps.map((lamp) => weekCell(night, lamp).state).filter((state) => state !== 'off')
-    return states.length > 0 && states.every((state) => state === 'yes' || state === 'late')
-  }).length
+  function weState(night, card) {
+    const state = weCardState(night.iso, card)
+    if (state === 'off') return 'off'
+    if (state === 'did') return 'yes'
+    if (state === 'nope') return 'skip'
+    return night.isToday ? 'open' : 'hole'
+  }
+
+  function openNight(night) {
+    openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
+  }
+
+  function cell(night, state) {
+    return (
+      <Pressable
+        key={night.iso}
+        style={styles.weekHeadCell}
+        onPress={() => openNight(night)}
+        accessibilityRole="button"
+        accessibilityLabel={night.label}
+      >
+        <View
+          style={[
+            styles.weekCell,
+            // Not due that night: an empty outline, not a color from the legend.
+            state === 'off' ? { borderWidth: 1, borderColor: colors.lineSoft } : { backgroundColor: cellColor(state) },
+          ]}
+        />
+      </Pressable>
+    )
+  }
   const legend = [
     ['yes', t('later.did')],
     ['late', t('later.late')],
@@ -549,12 +599,20 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           <View style={styles.weekRow}>
             <View style={styles.weekName} />
             {nights.map((night) => (
-              <View key={night.iso} style={styles.weekHeadCell}>
+              <Pressable
+                key={night.iso}
+                style={styles.weekHeadCell}
+                onPress={() => openNight(night)}
+                accessibilityRole="button"
+                accessibilityLabel={night.label}
+              >
                 <Text style={[styles.weekDow, { color: night.isToday ? colors.on : colors.inkDim }]}>
                   {night.weekday}
                 </Text>
                 <Text style={[styles.weekDay, { color: colors.inkSoft }]}>{night.dayNum}</Text>
-              </View>
+                {/* Cleared nights get a dot under the date, the same rule as Home. */}
+                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : 'transparent' }]} />
+              </Pressable>
             ))}
           </View>
           {lamps.map((lamp) => (
@@ -566,19 +624,15 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               >
                 {shortLabel(lamp)}
               </Text>
-              {nights.map((night) => (
-                <View key={night.iso} style={styles.weekHeadCell}>
-                  <View
-                    style={[
-                      styles.weekCell,
-                      // Not due that night: an empty outline, not a color from the legend.
-                      weekCell(night, lamp).state === 'off'
-                        ? { borderWidth: 1, borderColor: colors.lineSoft }
-                        : { backgroundColor: cellColor(weekCell(night, lamp).state) },
-                    ]}
-                  />
-                </View>
-              ))}
+              {nights.map((night) => cell(night, weekCell(night, lamp).state))}
+            </View>
+          ))}
+          {weCards.map((card) => (
+            <View key={`we-${card}`} style={styles.weekRow}>
+              <Text numberOfLines={1} style={[styles.weekName, styles.weekNameText, { color: colors.ink }]}>
+                {weCardTitle(card) || t('we.title')}
+              </Text>
+              {nights.map((night) => cell(night, weState(night, card)))}
             </View>
           ))}
         </View>
@@ -590,6 +644,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               </View>
             ))}
           </View>
+          <Meta colors={colors}>{t('week.tapHint')}</Meta>
         </View>
         </>
       )}
@@ -619,7 +674,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         colors={colors}
         n={heat}
         label={t('streaks.aria')}
-        line={goal ? t('streaks.line', { n: heat, goal }) : null}
+        line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
@@ -1952,4 +2007,6 @@ const styles = StyleSheet.create({
   weekDow: { fontFamily: fonts.mono, fontSize: 10 },
   weekDay: { fontFamily: fonts.mono, fontSize: 10 },
   weekCell: { width: 14, height: 14, borderRadius: 4 },
+  weekDot: { width: 5, height: 5, borderRadius: 3, marginTop: 1 },
+  tileHalf: { flexBasis: '45%' },
 })

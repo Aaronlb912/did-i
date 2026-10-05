@@ -1,18 +1,15 @@
 import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { t } from './i18n.js'
+import { questionStreak } from './lamp-record.js'
 import { BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
 import {
   addDaysIso,
   allClearTonight,
-  answerFor,
   boardDate,
   countedTonightRows,
   dueTonight,
-  isDueOn,
   parseIsoDate,
-  periodKeyFor,
-  previousDueDate,
 } from './recurrence.js'
 
 // The first fourteen, each with its own words (mark.<id>.name / line / how).
@@ -166,20 +163,7 @@ export function nextMark(book) {
 
 export function streakLength(book, lamp, now) {
   if (!lamp) return 0
-  const today = boardDate(now, book.dayFoldHour)
-  let cursor = isDueOn(lamp, today) ? today : previousDueDate(lamp, today)
-  if (isDueOn(lamp, today) && !answerFor(book, lamp.id, periodKeyFor(lamp, today))) {
-    cursor = previousDueDate(lamp, today)
-  }
-  let count = 0
-  while (cursor && count < 40) {
-    const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    if (!answer) break
-    if (answer.status !== 'yes' && answer.status !== 'late' && answer.status !== 'skip') break
-    count += 1
-    cursor = previousDueDate(lamp, cursor)
-  }
-  return count
+  return questionStreak(book, lamp, boardDate(now, book.dayFoldHour))
 }
 
 function cameBackAfterHole(book, now = new Date()) {

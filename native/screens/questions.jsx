@@ -57,7 +57,7 @@ import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { lampRecord, lampWeeks } from '../../src/lib/lamp-record.js'
+import { bestQuestionStreak, lampRecord, lampWeeks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -107,7 +107,7 @@ function openStarters(book) {
 function stateDot(state, urgency, colors) {
   if (state === 'did') return { backgroundColor: colors.on, borderColor: colors.on }
   if (state === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
-  if (state === 'nope') return { backgroundColor: colors.miss, borderColor: colors.miss }
+  if (state === 'nope') return { backgroundColor: colors.skip, borderColor: colors.skip }
   if (urgency === 'today' || urgency === 'soon') return { backgroundColor: 'transparent', borderColor: colors.miss }
   if (state === 'open') return { backgroundColor: 'transparent', borderColor: colors.on }
   return { backgroundColor: 'transparent', borderColor: colors.line }
@@ -1408,6 +1408,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
+  const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
   const phone = usePhoneQuiet()
 
@@ -1489,6 +1490,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
           <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
+          {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
         </View>
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
           <Text style={[styles.tileNum, { color: colors.ink }]}>

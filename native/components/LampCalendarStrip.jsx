@@ -10,7 +10,8 @@ const DAYS = WEEKS * 7
 function jewelColor(state, colors) {
   if (state === 'yes') return colors.on
   if (state === 'late') return colors.late || colors.on
-  if (state === 'skip') return colors.miss
+  if (state === 'skip') return colors.skip
+  if (state === 'missed') return colors.miss
   return colors.open
 }
 
@@ -47,7 +48,8 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
   const key = [
     { id: 'did', color: colors.on, label: t('jewelKey.did') },
     { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
-    { id: 'nope', color: colors.miss, label: t('jewelKey.nope') },
+    { id: 'nope', color: colors.skip, label: t('jewelKey.nope') },
+    { id: 'missed', color: colors.miss, label: t('later.missed') },
     { id: 'open', color: colors.open, label: t('jewelKey.open'), dim: true },
   ]
 
@@ -71,6 +73,7 @@ export function LampCalendarStrip({ book, lamp, colors, dateIso }) {
               if (answer?.status === 'yes') state = 'yes'
               else if (answer?.status === 'late') state = 'late'
               else if (answer?.status === 'skip') state = 'skip'
+              else if (iso < dateIso) state = 'missed'
             }
             return (
               <View key={iso} style={styles.cell}>

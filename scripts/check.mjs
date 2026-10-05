@@ -22,7 +22,7 @@ import {
   periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
-import { lampNights, lampWeeks } from '../src/lib/lamp-record.js'
+import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -132,9 +132,10 @@ import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { coinNights, gemThisWeek } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
-import { setWeNightRows } from '../src/lib/we-nights.js'
+import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
+import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -781,12 +782,73 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
     { lampId: 'n', periodKey: '2026-10-02', status: 'yes', answeredAt: '2026-10-02T20:00:00' },
   ]
   const shelf = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [...old, lamp('n', { createdOn: '2026-10-02' })], answers }] }
-  assert.deepEqual(coinNights(shelf, now), [
-    { night: '2026-10-04', coins: 6 },
-    { night: '2026-10-03', coins: 3 },
+  // Every night is listed, a 0 night too, with why.
+  const nights = coinNights(shelf, now)
+  assert.deepEqual(nights.slice(0, 4), [
+    { night: '2026-10-04', coins: 6, reason: 'cap' },
+    { night: '2026-10-03', coins: 3, reason: '' },
+    { night: '2026-10-02', coins: 0, reason: 'new' },
+    { night: '2026-10-01', coins: 0, reason: 'none' },
   ])
+  assert.equal(nights.length, 7)
+  // Signed in, the server's numbers win but its missing 0 nights stay listed.
+  const merged = mergeCoinNights(nights, [{ night: '2026-10-04', coins: 6 }, { night: '2026-10-03', coins: 2 }])
+  assert.equal(merged.length, 7)
+  assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
+  assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
+  assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
+  // Nothing before the first question or answer.
+  const young = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [lamp('y', { createdOn: '2026-10-03' })], answers: [] }] }
+  assert.deepEqual(coinNights(young, now).map((row) => row.reason), ['open', 'none'])
   assert.equal(gemThisWeek(gemWeekKey(now), now), true)
   assert.equal(gemThisWeek('', now), false)
+})
+
+test('one streak rule per question: a nope breaks it, late keeps it, every screen agrees', () => {
+  const now = new Date('2026-10-05T21:00:00')
+  const q = lamp('q', { createdOn: '2026-09-25' })
+  const say = (night, status) => ({ lampId: 'q', periodKey: night, status, answeredAt: `${night}T20:00:00` })
+  const answers = [
+    say('2026-09-26', 'yes'), say('2026-09-27', 'yes'), say('2026-09-28', 'late'), say('2026-09-29', 'yes'),
+    say('2026-09-30', 'skip'),
+    say('2026-10-01', 'yes'), say('2026-10-02', 'late'), say('2026-10-03', 'yes'), say('2026-10-04', 'yes'),
+  ]
+  const shelfBook = { id: 'b', dayFoldHour: 0, lamps: [q], answers }
+  // Tonight not answered yet does not break it.
+  assert.equal(questionStreak(shelfBook, q, '2026-10-05'), 4)
+  assert.equal(streakLength(shelfBook, q, now), 4)
+  assert.equal(lampRecord(shelfBook, q, '2026-10-05').streak, 4)
+  assert.equal(bestQuestionStreak(shelfBook, q, '2026-10-05'), 4)
+  // Tonight's nope ends it on every screen.
+  const noped = { ...shelfBook, answers: [...answers, say('2026-10-05', 'skip')] }
+  assert.equal(streakLength(noped, q, now), 0)
+  assert.equal(lampRecord(noped, q, '2026-10-05').streak, 0)
+  // A missed night ends it too; best remembers the longer run.
+  const gap = { ...shelfBook, answers: answers.filter((answer) => answer.periodKey !== '2026-10-02' && answer.periodKey !== '2026-09-30') }
+  assert.equal(questionStreak(gap, q, '2026-10-05'), 2)
+  assert.equal(bestQuestionStreak(gap, q, '2026-10-05'), 4)
+})
+
+test('Seven nights counts a night like Home: a missed Did we leaves it red', () => {
+  const now = new Date('2026-10-04T21:00:00')
+  const q = lamp('q', { createdOn: '2026-09-25' })
+  const answers = ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map((night) => ({
+    lampId: 'q', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00`,
+  }))
+  const shelf = [{ id: 'b', dayFoldHour: 0, lamps: [q], answers }]
+  setWeNightRows([
+    { card: 'w', folder: '', night: '2026-10-03', status: '' },
+    { card: 'w', folder: '', night: '2026-10-04', status: 'did' },
+  ])
+  const strip = weekStripNights(shelf, now)
+  assert.equal(strip.filter((night) => night.on).length, 6)
+  assert.equal(strip.find((night) => night.iso === '2026-10-03').on, false)
+  assert.deepEqual(weCardsOn(strip.map((night) => night.iso)), ['w'])
+  assert.equal(weCardState('2026-10-03', 'w'), '')
+  assert.equal(weCardState('2026-10-04', 'w'), 'did')
+  assert.equal(weCardState('2026-10-02', 'w'), 'off')
+  assert.deepEqual(nightWhy(shelf, '2026-10-03', now).weOpen, ['w'])
+  setWeNightRows([])
 })
 
 test('two phones combine instead of overwriting', () => {

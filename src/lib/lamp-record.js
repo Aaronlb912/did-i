@@ -1,7 +1,58 @@
-import { addDaysIso, answerFor, isDueOn, periodKeyFor, periodNight, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, isDueOn, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 
 function didStatus(status) {
   return status === 'yes' || status === 'late'
+}
+
+
+// The one streak rule for a question: Did and late Did keep it going; a nope
+// or a missed night ends it. Tonight counts once answered, and an unanswered
+// tonight does not break it yet. Every per-question streak uses this.
+export function questionStreak(book, lamp, dateIso, cap = 400) {
+  if (!lamp || !dateIso) return 0
+  if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
+  const live = { ...lamp, archived: false }
+  let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
+  if (cursor === dateIso && !answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))) cursor = previousDueDate(live, dateIso)
+  let count = 0
+  while (cursor && count < cap) {
+    if (!didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, cursor))?.status)) break
+    count += 1
+    cursor = previousDueDate(live, cursor)
+  }
+  return count
+}
+
+// The longest run this question ever had, same rule as questionStreak.
+// Walks due nights back to the question's first; callers memoize it.
+export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
+  if (!lamp || !dateIso) return 0
+  if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
+  const live = { ...lamp, archived: false }
+  let first = String(lamp.createdOn || '').slice(0, 10)
+  if (!first) {
+    for (const answer of book?.answers || []) {
+      if (answer.lampId !== lamp.id || !answer.periodKey) continue
+      const night = periodNight(lamp, answer.periodKey)
+      if (night && (!first || night < first)) first = night
+    }
+  }
+  if (first && lamp.cadence === 'monthly') first = `${first.slice(0, 7)}-01`
+  let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
+  let best = 0
+  let run = 0
+  let steps = 0
+  while (cursor && steps < cap && (!first || cursor >= first)) {
+    if (didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, cursor))?.status)) {
+      run += 1
+      if (run > best) best = run
+    } else if (cursor !== dateIso) {
+      run = 0
+    }
+    steps += 1
+    cursor = previousDueDate(live, cursor)
+  }
+  return best
 }
 
 // One question's record for its page: the DID streak, and how many of its
@@ -16,11 +67,7 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   for (const key of keys) {
     if (didStatus(answerFor(book, lamp.id, key)?.status)) did += 1
   }
-  let streak = 0
-  for (let i = keys.length - 1; i >= 0; i -= 1) {
-    if (!didStatus(answerFor(book, lamp.id, keys[i])?.status)) break
-    streak += 1
-  }
+  const streak = questionStreak(book, lamp, dateIso)
   return { streak, did, asked: keys.length, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
 }
 
