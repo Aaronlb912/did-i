@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
   Linking,
@@ -56,7 +56,10 @@ import {
   tapWhen,
   weekCell,
   weekLamps,
+  weekRecap,
+  weekStripNights,
 } from '../../src/lib/hall-pages.js'
+import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
@@ -407,6 +410,13 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
+  const dateIso = boardDate(clock, book?.dayFoldHour)
+  // The last seven nights, walked once per night (the Sunday recap, any day).
+  const recap = useMemo(() => {
+    const books = inView(book, boards)
+    return weekRecap(books, weekStripNights(books, clock, tagId), tagId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book, boards, dateIso, tagId])
 
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
@@ -418,6 +428,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile colors={colors} label={t('stats.late')} n={counts.late} />
         <NumberTile colors={colors} label={t('stats.nope')} n={counts.skip} />
       </View>
+      <WeekRecap recap={recap} colors={colors} />
       <KeyButton colors={colors} label={t('stats.marks')} onPress={() => goHash('/marks')} />
       <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
       <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
@@ -443,7 +454,7 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
             label={row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
             note={`${statusWord(row.answer.status)}${
               tapWhen(row.answer.answeredAt, clock) ? ` · ${tapWhen(row.answer.answeredAt, clock)}` : ''
-            }`}
+            }${row.answer.note ? `\n${row.answer.note}` : ''}`}
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
           />
         ))

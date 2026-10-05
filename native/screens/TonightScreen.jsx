@@ -6,7 +6,8 @@ import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
-import { clockWords, graceExplained, markGraceExplained, tomorrowPreview, weekStripNights } from '../../src/lib/hall-pages.js'
+import { clockWords, graceExplained, isRecapNight, markGraceExplained, tomorrowPreview, weekRecap, weekStripNights } from '../../src/lib/hall-pages.js'
+import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses } from '../../src/lib/purse.js'
@@ -162,7 +163,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const summary = useMemo(
     () =>
       stack.nightDone
-        ? { week: weekStripNights(stack.shelf, stack.clock, tagId), tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
+        ? (() => {
+            const week = weekStripNights(stack.shelf, stack.clock, tagId)
+            // Sunday night closes the week: a small recap rides on the done card.
+            const recap = isRecapNight(stack.dateIso) ? weekRecap(stack.shelf, week, tagId) : null
+            return { week, recap, tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
+          })()
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stack.shelf, stack.dateIso, tagId, stack.nightDone],
@@ -427,6 +433,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           {summary ? (
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
           ) : null}
+          {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}

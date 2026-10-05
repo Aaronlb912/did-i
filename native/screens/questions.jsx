@@ -37,7 +37,8 @@ import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
 import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
-import { starterBlank, starterList, unusedStarters } from '../../src/lib/starters.js'
+import { NightNotes } from '../components/NightNotes.jsx'
+import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, playClick } from '../../src/lib/native.js'
 import { ripple } from '../lib/ripple.js'
@@ -848,6 +849,39 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const fresh = !hang.editing && !copySource
   const starters = fresh ? unusedStarters(book, clock) : []
   const picked = starters.find((starter) => starter.question === draft.question) || null
+  const packs = fresh ? packList(book) : []
+  const [packUndo, setPackUndo] = useState(null)
+  useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'))
+  useEffect(() => {
+    if (!packUndo) return undefined
+    const timer = setTimeout(() => setPackUndo(null), UNDO_MS)
+    return () => clearTimeout(timer)
+  }, [packUndo])
+
+  function takePackBack() {
+    if (!packUndo) return
+    onChange(commitBook(undoPack(book, packUndo.ids, clock), clock))
+    setPackUndo(null)
+  }
+
+  // A pack adds its questions only after a look at what they are.
+  function askPack(pack) {
+    publishSheet({
+      kicker: pack.title,
+      title: t('pack.sureTitle', { n: pack.items.length }),
+      body: pack.items.map((item) => item.question).join('\n'),
+      goLabel: t('pack.sureGo'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        const added = addPack(book, pack, clock)
+        onChange(commitBook(added.book, clock))
+        setPackUndo({ label: t('pack.added', { n: added.ids.length }), ids: added.ids })
+      },
+    })
+  }
   const wobble = useWobble(starters.length, fresh && !blank.trim() && !focused && !stamp, reduce)
   const schedule = schedulePick(draft)
   const tagName = String(hang.tagTitle || '').trim() || book.title
@@ -1061,6 +1095,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           tilt={wobble.tilt}
           colors={colors}
         />
+        {packs.length && !blank.trim() ? (
+          <View style={styles.packs}>
+            <Text style={[styles.packLabel, { color: colors.inkSoft }]}>{t('pack.label')}</Text>
+            <View style={styles.topKeys}>
+              {packs.map((pack) => (
+                <KeyButton key={pack.id} label={pack.title} colors={colors} onPress={() => askPack(pack)} />
+              ))}
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <FoldInput
@@ -1436,6 +1480,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       </View>
 
+      <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
+
       <KeyButton label={t('lamp.copy')} onPress={() => goHash('/hang', { copy: lamp.id })} colors={colors} />
 
       <SetCard colors={colors}>
@@ -1466,6 +1512,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
+  packs: { gap: 8, marginBottom: 12 },
+  packLabel: { ...sectionLabel, marginBottom: 2 },
   pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickCount: { fontFamily: fonts.uiBold, fontSize: 15, flexGrow: 1 },
   pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

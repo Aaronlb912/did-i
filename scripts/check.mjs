@@ -34,13 +34,13 @@ import {
   emptyBoard,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
-import { STARTERS, starterBlank } from '../src/lib/starters.js'
+import { PACKS, STARTERS, addPack, packList, starterBlank, undoPack } from '../src/lib/starters.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
-import { bulkLamps, hangInto, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
+import { NOTE_MAX, bulkLamps, hangInto, setAnswerNote, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -112,7 +112,7 @@ import { readReduceMotion } from '../src/lib/useReduceMotion.js'
 import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
-import { clockWords, monthStripNights, nextStreakGoal, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
 import { setWeNightRows } from '../src/lib/we-nights.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
@@ -710,6 +710,74 @@ test('two phones combine instead of overwriting', () => {
   assert.deepEqual(book.lamps.map((one) => one.id).sort(), ['x', 'y'])
   assert.equal(book.coins, 9, 'the bigger purse wins')
   assert.equal(book.gems, 7, 'and per column, not per phone')
+})
+
+test('a note on one night rides the answer, is capped, and survives two phones syncing', () => {
+  const answer = { id: 'a1', lampId: 'x', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T21:00:00', note: '' }
+  const book = { id: 'b1', title: 'Tag', lamps: [lamp('x')], answers: [answer] }
+  const noted = setAnswerNote(book, 'x', '2026-10-01', '  Charged it   at work ', new Date('2026-10-02T09:00:00'))
+  assert.equal(noted.answers[0].note, 'Charged it at work')
+  assert.equal(noted.answers[0].status, 'yes', 'the answer itself stays')
+  assert.ok(noted.answers[0].answeredAt > answer.answeredAt, 'a note moves answeredAt so sync carries it')
+  assert.equal(setAnswerNote(book, 'x', '2026-09-30', 'no answer', new Date()), book, 'no answer, no note')
+  assert.equal(setAnswerNote(book, 'x', '2026-10-01', 'y'.repeat(500), new Date()).answers[0].note.length, NOTE_MAX)
+  // A clock behind the answer still moves it forward.
+  const behind = setAnswerNote(book, 'x', '2026-10-01', 'late clock', new Date('2026-09-01T09:00:00'))
+  assert.ok(behind.answers[0].answeredAt > answer.answeredAt)
+  // The phone that never saw the note does not wipe it, either way round.
+  const older = { currentId: 'b1', boards: [book] }
+  const fresh = { currentId: 'b1', boards: [noted] }
+  for (const merged of [mergeShelves(fresh, older, '2026-10-02', '2026-10-01'), mergeShelves(older, fresh, '2026-10-03', '2026-10-02')]) {
+    assert.equal(merged.boards[0].answers[0].note, 'Charged it at work')
+  }
+  // The answer log folds it in too.
+  const rows = [{ lamp_id: 'x', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: noted.answers[0].answeredAt, note: 'Charged it at work' }]
+  assert.equal(applyAnswers(older, rows).shelf.boards[0].answers[0].note, 'Charged it at work')
+})
+
+test('a question pack adds only what is missing, and undo takes them off for good', () => {
+  for (const pack of PACKS) {
+    assert.equal(pack.items.length, 3, `${pack.id} adds 3`)
+    for (const item of pack.items) {
+      assert.ok(t(`starter.${item.idea}.blank`) !== `starter.${item.idea}.blank`, `${item.idea} has words`)
+      assert.ok(t(`ideas.${item.idea}.start`) !== `ideas.${item.idea}.start`, `${item.idea} has a name`)
+    }
+  }
+  const empty = { id: 'b1', title: 'Tag', lamps: [], answers: [] }
+  const house = packList(empty).find((pack) => pack.id === 'house')
+  const { book, ids } = addPack(empty, house, new Date('2026-10-05T10:00:00'))
+  assert.equal(ids.length, 3)
+  assert.equal(new Set(ids).size, 3)
+  assert.equal(book.lamps.length, 3)
+  assert.ok(!packList(book).some((pack) => pack.id === 'house'), 'a pack already on the tag is not offered again')
+  const meds = packList({ ...empty, lamps: [{ ...lamp('p'), question: `Did I ${t('starter.pills.blank')}?` }] }).find((pack) => pack.id === 'meds')
+  assert.equal(meds.items.length, 2, 'the evening pills already there are left out')
+  const undone = undoPack(book, ids, new Date('2026-10-05T10:00:05'))
+  assert.equal(undone.lamps.length, 0)
+  // An older copy still holding them does not bring them back.
+  const merged = mergeShelves({ currentId: 'b1', boards: [undone] }, { currentId: 'b1', boards: [book] }, '2026-10-05T11', '2026-10-05T10')
+  assert.equal(merged.boards[0].lamps.length, 0)
+})
+
+test('the week recap counts cleared nights, dids and the best run', () => {
+  const week = ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'].map((iso, i) => ({
+    iso,
+    on: [true, true, false, true, true, true, false][i],
+  }))
+  const answers = [
+    { lampId: 'x', periodKey: '2026-09-28', status: 'yes' },
+    { lampId: 'x', periodKey: '2026-10-01', status: 'late' },
+    { lampId: 'x', periodKey: '2026-10-02', status: 'skip' },
+    { lampId: 'x', periodKey: '2026-09-27', status: 'yes' },
+    { lampId: 'x', periodKey: '2026-10', status: 'yes' },
+  ]
+  const recap = weekRecap([{ id: 'b1', lamps: [lamp('x')], answers }], week)
+  assert.deepEqual(recap, { cleared: 5, nights: 7, dids: 2, best: 3 })
+  assert.equal(isRecapNight('2026-10-04'), true, 'Sunday')
+  assert.equal(isRecapNight('2026-10-05'), false)
+  assert.equal(isRecapNight(''), false)
+  const text = recapShareText(recap)
+  assert.ok(text.includes('5') && text.includes('3') && !text.includes('{'), 'share text is filled in')
 })
 
 test('a question deleted on one phone stays deleted when an older phone syncs', () => {
