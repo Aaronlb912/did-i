@@ -317,7 +317,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     })
   }, [graceShowing, colors])
   let face = null
-  // New here: Did and Nope buttons under the card, until swiping is familiar.
+  // Did and Nope buttons under the card, for anyone who would rather tap.
   let answerBar = null
   const withAnswerButtons = (card, onDid, onNope) => {
     answerBar = (
@@ -330,13 +330,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
       </View>
-      <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text>
+      {isNew ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
     </View>
     )
     return card
   }
   if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
-    face = isNew && graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
+    face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     face = (
       <WeSwipeCard
@@ -403,7 +403,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         ) : null}
       </SwipeCardHost>
     )
-    if (isNew) face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
+    face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
   } else if (stack.bodyKind === 'hall' && stack.nightDone) {
     face = (
       <CardSettle play={Boolean(stack.cheer)}>

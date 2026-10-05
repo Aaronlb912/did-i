@@ -1085,7 +1085,8 @@ export function WeHomeScreen({ book, onChange }) {
         </View>
       ))}
 
-      {mine.length ? (
+      {/* Nothing done together yet: a big 0 only reads as failing. */}
+      {mine.length && nightsTogether > 0 ? (
         <View style={[styles.panel, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           <Cap colors={colors}>{t('we.monthTogether')}</Cap>
           <Text style={[styles.big, { color: colors.we }]}>{t('we.nightsDone', { n: nightsTogether })}</Text>

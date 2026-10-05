@@ -314,7 +314,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         {t('family.week')}: {t('family.weekFrom', { from: formatBoardDate(nights[0] || night), to: formatBoardDate(night) })}
       </Meta>
       {fam.members.length < 2 ? (
-        <EmptyCard colors={colors} title={t('family.aloneTitle')} body={t('family.inviteHint', { code: fam.code })} />
+        <EmptyCard colors={colors} title={t('family.aloneTitle')} body={t('family.inviteHint', { code: fam.code })}>
+          <KeyButton colors={colors} label={t('people.joinCode')} onPress={() => setCodeOpen(true)} />
+        </EmptyCard>
       ) : null}
 
       <Cap colors={colors}>{t('family.tonight')}</Cap>
@@ -446,7 +448,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {said ? <Meta colors={colors}>{said}</Meta> : null}
       {miss ? <Text style={{ color: colors.miss }}>{tMiss(miss)}</Text> : null}
-      <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/family')} />
+      <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/people')} />
 
       {codeOpen ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>

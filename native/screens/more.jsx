@@ -61,7 +61,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
-import { CHEERS, LOOKS, normalizePurse } from '../../src/lib/purse.js'
+import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { playClick, shareShelf } from '../../src/lib/native.js'
 import {
   checkPin,
@@ -1390,8 +1390,8 @@ function AccountSignedIn({ book, email, onChange }) {
           ? t('account.syncSaved', { time: stampWhen(sync.at) })
           : t('account.syncIdle')
 
-  const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
-  const cheerName = CHEERS.find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
+  const lookName = purse.lookOn ? t(lookText(purse.lookOn, 'name')) : ''
+  const cheerName = purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : t('kit.cheerOff')
   // This phone first, then the rest by when they were last seen.
   const phones = [...devices].sort((a, b) => (a.device_key === here ? -1 : b.device_key === here ? 1 : 0))
   const others = phones.filter((row) => row.device_key !== here)
