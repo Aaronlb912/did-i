@@ -3960,6 +3960,7 @@ test('the error log keeps no personal content and is capped', async () => {
   assert.ok(sql.includes('enable row level security'), 'app_errors has RLS')
   assert.ok(sql.includes('(select auth.uid())'), 'policies use (select auth.uid())')
   assert.ok(!/grant select[^;]*app_errors/i.test(sql), 'nobody but the service role reads the log')
+  assert.ok(!sql.slice(sql.indexOf('create table if not exists public.app_errors')).includes('user_id'), 'the error log has no user id')
   assert.ok(sql.includes("interval '90 days'"), 'old phones drop off after 90 days')
   const all = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
   assert.ok(all.includes("'supabase/reliability.sql'"))
@@ -3967,6 +3968,7 @@ test('the error log keeps no personal content and is capped', async () => {
   assert.ok(sync.includes("recordAppError('sync'"), 'failed syncs are logged')
   const push = readFileSync(path.join(checkRoot, 'supabase/functions/push/index.ts'), 'utf8')
   assert.ok(push.includes("from('app_errors')"), 'failed pushes are logged')
+  assert.ok(!push.includes('user_id: row.to_id'), 'push errors carry no user id')
 })
 
 test('a sheet that pops up on Tonight catches the next tap', () => {

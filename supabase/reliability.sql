@@ -31,12 +31,11 @@ create trigger prune_stale_devices
   for each row execute function public.prune_stale_devices();
 
 -- Error log ------------------------------------------------------------------
--- No personal content: what kind of thing failed, a short code, the app
--- version and platform. Phones insert their own rows; nobody reads them but
--- the service role.
+-- Anonymous, as the crash report copy says: what kind of thing failed, a
+-- short code, the app version and platform. No user id. Signed-in phones
+-- insert; nobody reads but the service role.
 create table if not exists public.app_errors (
   id bigint generated always as identity primary key,
-  user_id uuid references auth.users on delete cascade default auth.uid(),
   kind text not null,
   code text not null default '',
   app_version text not null default '',
@@ -48,22 +47,21 @@ create table if not exists public.app_errors (
   )
 );
 
-create index if not exists app_errors_user_idx on public.app_errors (user_id, created_at);
+create index if not exists app_errors_made_idx on public.app_errors (created_at);
 
 alter table public.app_errors enable row level security;
 
 drop policy if exists "insert own errors" on public.app_errors;
-create policy "insert own errors" on public.app_errors
+drop policy if exists "signed in can log errors" on public.app_errors;
+create policy "signed in can log errors" on public.app_errors
   for insert to authenticated
-  with check (user_id = (select auth.uid()));
+  with check ((select auth.uid()) is not null);
 
 revoke all on public.app_errors from anon;
 revoke all on public.app_errors from authenticated;
 grant insert (kind, code, app_version, platform) on public.app_errors to authenticated;
 
--- At most 20 rows per person per hour from the phone. A phone stuck offline
--- should not fill the table. The service role (push function, no auth.uid())
--- writes one row per person and code per run instead.
+-- At most 2000 rows an hour in all. Phones also send at most one a minute.
 create or replace function public.cap_app_errors()
 returns trigger
 language plpgsql
@@ -71,10 +69,8 @@ security definer
 set search_path = public
 as $$
 begin
-  if (select auth.uid()) is not null and (
-    select count(*) from public.app_errors
-    where user_id = new.user_id and created_at > now() - interval '1 hour'
-  ) >= 20 then
+  if (select count(*) from public.app_errors
+      where created_at > now() - interval '1 hour') >= 2000 then
     raise exception 'error log cap';
   end if;
   return new;

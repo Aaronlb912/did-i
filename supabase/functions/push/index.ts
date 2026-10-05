@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
   // Why sends failed, without the tokens themselves. A push that quietly
   // goes nowhere is the whole reason this is hard to debug.
   const trouble: Record<string, number> = {}
-  const failed = new Map<string, { user_id: string | null; kind: string; code: string; platform: string }>()
+  const failed = new Map<string, { kind: string; code: string; platform: string }>()
 
   for (const row of batch) {
     for (const token of row.tokens ?? []) {
@@ -247,11 +247,10 @@ Deno.serve(async (req) => {
         why.match(/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SENDER_ID_MISMATCH|QUOTA_EXCEEDED|UNAVAILABLE|THIRD_PARTY_AUTH_ERROR|BadDeviceToken|InvalidProviderToken|TopicDisallowed/i)?.[0] ??
         why.slice(0, 40)
       trouble[kind] = (trouble[kind] ?? 0) + 1
-      // One row per person and code per run for public.app_errors. The code
-      // is the store's error name, never the message or the token.
+      // One row per code and platform per run for public.app_errors. No user
+      // id; the code is the store's error name, never the message or the token.
       const code = kind.replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 80)
-      failed.set(`${row.to_id}|${code}`, {
-        user_id: row.to_id ?? null,
+      failed.set(`${code}|${apple}`, {
         kind: 'push',
         code,
         platform: apple ? 'ios' : 'android',

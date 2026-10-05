@@ -1,5 +1,5 @@
 -- Checks for supabase/reliability.sql: phones not seen for 90 days are
--- removed when a phone checks in, and the error log is capped per hour.
+-- removed when a phone checks in, and the anonymous error log is capped per hour.
 --
 -- Run with: node scripts/test-sql.mjs supabase/tests/reliability.test.sql
 -- One DO block that always ends by raising, so everything rolls back.
@@ -26,34 +26,33 @@ begin
     raise exception 'FAIL: the old phone is still listed';
   end if;
 
-  -- The service role (no auth.uid()) is not capped per hour.
-  for i in 1..25 loop
-    insert into public.app_errors (user_id, kind, code) values (a, 'push', 'UNAVAILABLE');
-  end loop;
-  delete from public.app_errors where user_id = a;
+  -- No user id on the log: it stays anonymous.
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'app_errors' and column_name = 'user_id') then
+    raise exception 'FAIL: app_errors should not hold a user id';
+  end if;
 
-  -- Signed in as a: 20 errors an hour, then the cap.
-  perform set_config('request.jwt.claims', json_build_object('sub', a::text, 'role', 'authenticated')::text, true);
-  for i in 1..20 loop
-    insert into public.app_errors (user_id, kind, code) values (a, 'sync', 'net');
-  end loop;
+  -- 2000 rows an hour in all, then the cap.
+  delete from public.app_errors;
+  insert into public.app_errors (kind, code) select 'sync', 'net' from generate_series(1, 2000);
   begin
-    insert into public.app_errors (user_id, kind, code) values (a, 'sync', 'net');
+    insert into public.app_errors (kind, code) values ('push', 'UNAVAILABLE');
   exception when others then
     capped := sqlerrm like '%error log cap%';
   end;
   if not capped then
-    raise exception 'FAIL: the 21st error in an hour should hit the cap';
+    raise exception 'FAIL: row 2001 in an hour should hit the cap';
   end if;
+  delete from public.app_errors;
 
   -- Only known kinds, short codes.
   begin
-    insert into public.app_errors (user_id, kind) values (null, 'question');
+    insert into public.app_errors (kind) values ('question');
     raise exception 'FAIL: unknown kind went in';
   exception when check_violation then null;
   end;
   begin
-    insert into public.app_errors (user_id, kind, code) values (null, 'push', repeat('x', 81));
+    insert into public.app_errors (kind, code) values ('push', repeat('x', 81));
     raise exception 'FAIL: an 81 character code went in';
   exception when check_violation then null;
   end;

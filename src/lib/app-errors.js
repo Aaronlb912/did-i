@@ -3,7 +3,7 @@ import { devicePlatform } from './account.js'
 import { diagnosticsOn } from './diagnostics.js'
 
 // Failed syncs go to public.app_errors: a kind, a short code, the app
-// version and platform. Never question text or names. Only with crash
+// version and platform. No user id, never question text or names. Only with crash
 // reports switched on, and at most one row a minute from this phone.
 let appVersion = ''
 let lastAt = 0
