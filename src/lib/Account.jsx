@@ -12,6 +12,7 @@ import {
   exportAll,
   forgetDevice,
   listDevices,
+  keptProfileName,
   loadProfile,
   pullAndMerge,
   saveProfile,
@@ -277,7 +278,7 @@ function SignedOut({ on }) {
 function SignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
-  const [nameDraft, setNameDraft] = useState(book.keeperName || '')
+  const [nameDraft, setNameDraft] = useState(book.keeperName || keptProfileName())
   const [nameMiss, setNameMiss] = useState('')
   const [devices, setDevices] = useState([])
   const [note, setNote] = useState(null)

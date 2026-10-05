@@ -61,7 +61,8 @@ export function gemFaceSize(count, big = false) {
 
 export function GemFaceMark({ count, big, colors, accessibilityLabel }) {
   const size = gemFaceSize(count, big)
-  const box = size + (big ? 24 : 16)
+  // Same tile on every row; only the gem inside grows with the pack.
+  const box = big ? 72 + 24 : 30 + 16
   return (
     <View
       accessible={Boolean(accessibilityLabel)}

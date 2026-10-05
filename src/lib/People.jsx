@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
+import { keptProfileName } from './cloud-sync.js'
 import { t, tMiss } from './i18n.js'
 import {
   askByFriendId,
@@ -362,8 +363,8 @@ export function People({ book, onChange, now }) {
 
       <SetCap>{t('people.you')}</SetCap>
       <SetCard>
-        {mine?.display_name ? (
-          <SetRow label={t('people.name')} value={mine.display_name} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
+        {mine?.display_name || book?.keeperName || keptProfileName() ? (
+          <SetRow label={t('people.name')} value={mine?.display_name || book?.keeperName || keptProfileName()} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
         ) : (
           <SetRow label={t('people.name')} sub={t('people.nameInAccount')} chevron onClick={() => goHash('/account')} />
         )}

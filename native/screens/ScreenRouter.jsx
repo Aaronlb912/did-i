@@ -181,6 +181,7 @@ export function ScreenRouter({
         onAdd={addBoard}
         onRemove={removeBoard}
         onChange={change}
+        onStartEmpty={onStartEmpty}
       />
     )
   }

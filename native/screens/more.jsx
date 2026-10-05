@@ -27,6 +27,7 @@ import {
   forgetDevice,
   forgetOtherDevices,
   listDevices,
+  keptProfileName,
   loadProfile,
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
@@ -619,7 +620,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   )
 }
 
-export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange }) {
+export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange, onStartEmpty }) {
   const colors = useHallColors()
   const [titleDraft, setTitleDraft] = useState(book?.title || '')
   const [addMiss, setAddMiss] = useState('')
@@ -771,6 +772,38 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             })
           }
         />
+      ) : null}
+      {onStartEmpty && book ? (
+        <>
+          <SetCap colors={colors}>{t('settings.danger')}</SetCap>
+          <SetCard colors={colors}>
+            <SetRow
+              colors={colors}
+              icon="warning"
+              label={t('settings.emptyBoard')}
+              sub={t('settings.clearFolderSub', { name: book.title || '' })}
+              danger
+              last
+              onPress={() =>
+                publishSheet({
+                  kicker: t('settings.startOver'),
+                  title: t('settings.clearFolderTitle', { name: book.title || '' }),
+                  body: t('settings.clearFolderBody', { name: book.title || '' }),
+                  goLabel: t('settings.clearYes'),
+                  danger: true,
+                  closeLabel: t('settings.neverMind'),
+                  colors,
+                  onClose: () => publishSheet(null),
+                  onGo: () => {
+                    publishSheet(null)
+                    onStartEmpty()
+                    confirmDone(t('confirm.startedOver'))
+                  },
+                })
+              }
+            />
+          </SetCard>
+        </>
       ) : null}
     </ScreenShell>
   )
@@ -1376,7 +1409,7 @@ function AccountSignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
   const myAvatar = useMyAvatar()
-  const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
+  const [nameDraft, setNameDraft] = useState(book?.keeperName || keptProfileName())
   const [devices, setDevices] = useState([])
   const [sure, setSure] = useState(null)
   const [photoBusy, setPhotoBusy] = useState(false)
@@ -1385,7 +1418,7 @@ function AccountSignedIn({ book, email, onChange }) {
   const canPhoto = canPickAvatar()
 
   useEffect(() => {
-    setNameDraft(book?.keeperName || '')
+    setNameDraft(book?.keeperName || keptProfileName())
   }, [book?.keeperName])
 
   useEffect(() => {
@@ -1470,6 +1503,31 @@ function AccountSignedIn({ book, email, onChange }) {
     setPhotoBusy(false)
   }
 
+  // One row for both: pick from the library or take a new one.
+  function choosePhoto() {
+    if (photoBusy) return
+    if (!canTakePhoto()) {
+      pickPhoto('library')
+      return
+    }
+    publishSheet({
+      title: myAvatar ? t('avatar.change') : t('avatar.add'),
+      goLabel: t('avatar.choose'),
+      onGo: () => {
+        publishSheet(null)
+        pickPhoto('library')
+      },
+      moreLabel: t('avatar.takePhoto'),
+      onMore: () => {
+        publishSheet(null)
+        pickPhoto('camera')
+      },
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
   function forgetOne(row) {
     setSure({
       title: t('account.forgetTitle'),
@@ -1493,7 +1551,7 @@ function AccountSignedIn({ book, email, onChange }) {
         {/* Tapping your own photo changes it, the way most apps work. */}
         <Pressable
           disabled={!canPhoto || photoBusy}
-          onPress={() => pickPhoto('library')}
+          onPress={choosePhoto}
           accessibilityRole="button"
           accessibilityLabel={myAvatar ? t('avatar.change') : t('avatar.add')}
         >
@@ -1524,17 +1582,7 @@ function AccountSignedIn({ book, email, onChange }) {
             label={myAvatar ? t('avatar.change') : t('avatar.add')}
             sub={photoBusy ? t('avatar.saving') : t('avatar.sub')}
             chevron
-            onPress={photoBusy ? undefined : () => pickPhoto('library')}
-          />
-        ) : null}
-        {canPhoto && canTakePhoto() ? (
-          <SetRow
-            colors={colors}
-            icon="camera"
-            tint={colors.on}
-            label={t('avatar.takePhoto')}
-            chevron
-            onPress={photoBusy ? undefined : () => pickPhoto('camera')}
+            onPress={photoBusy ? undefined : choosePhoto}
           />
         ) : null}
         {canPhoto ? null : (

@@ -122,6 +122,7 @@ export function signedOutSync() {
   forgetAnswerMarks()
   clearWeNights()
   const shelf = clearLocalShelf()
+  keepProfileName('')
   writeLastUser('')
   clearAuthSkip()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
@@ -483,6 +484,27 @@ export async function forgetDevice(key) {
   await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
 }
 
+// Your display name from the last profile load, so Account and Friends show
+// it right away instead of "Add your name" while the server answers.
+const NAME_KEY = 'did-i-profile-name'
+
+export function keptProfileName() {
+  try {
+    return localStorage.getItem(NAME_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+function keepProfileName(name) {
+  try {
+    if (name) localStorage.setItem(NAME_KEY, String(name))
+    else localStorage.removeItem(NAME_KEY)
+  } catch {
+    // Shows again after the next profile load.
+  }
+}
+
 export async function loadProfile() {
   const db = cloud()
   if (!db) return null
@@ -493,7 +515,10 @@ export async function loadProfile() {
     .select('display_name, look_on, badge_cheer, prefs, gem_balance, avatar_url')
     .eq('user_id', user.id)
     .maybeSingle()
-  if (data) noteAvatar(data.avatar_url)
+  if (data) {
+    noteAvatar(data.avatar_url)
+    keepProfileName(data.display_name || '')
+  }
   return data || null
 }
 
@@ -506,6 +531,7 @@ export async function saveProfile(patch) {
     { user_id: user.id, ...patch, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' },
   )
+  if (!error && typeof patch?.display_name === 'string') keepProfileName(patch.display_name)
   return { miss: error ? error.message : '' }
 }
 

@@ -1471,7 +1471,7 @@ export function GemShopScreen({ book }) {
         <GemStack count={stream.shown} max={10} />
         <RollNumber value={stream.shown} reduce={reduce} style={[styles.gemBalanceN, { color: colors.ink }]} />
       </Reanimated.View>
-      <Meta colors={colors}>{t('gems.hintNative')}</Meta>
+      <Meta colors={colors}>{signedIn ? t('gems.hintNativeIn') : t('gems.hintNative')}</Meta>
       {signedIn ? null : <DidButton small label={t('gems.signIn')} onPress={() => goHash('/account')} colors={colors} />}
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
       {banner ? (
@@ -1543,10 +1543,10 @@ function WornBadge({ colors }) {
 
 // One grid: the worn item carries a check badge instead of living twice, once
 // as a big card and again as a tile. A tap wears it.
-function KitTile({ label, worn, onPress, colors, children }) {
+function KitTile({ label, worn, onPress, colors, children, big = false }) {
   return (
     <Pressable onPress={onPress} style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
-      <View style={styles.kitTileChip}>
+      <View style={[styles.kitTileChip, big && styles.kitTileChipBig]}>
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
       </View>
@@ -1666,11 +1666,12 @@ export function CollectionScreen({ book, onChange, startTab }) {
                       label={t(`accessory.${item.id}`)}
                       worn={purse.worn[item.slot] === item.id}
                       colors={colors}
+                      big
                       onPress={() =>
                         wearOn(wearAccessory(book, item.id), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
                       }
                     >
-                      <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} />
+                      <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} big />
                     </KitTile>
                   ))}
                 </View>
@@ -1972,6 +1973,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  kitTileChipBig: { width: 72, height: 72 },
   wornBadge: {
     position: 'absolute',
     right: -4,

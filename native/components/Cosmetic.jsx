@@ -27,6 +27,7 @@ import { fonts } from '../theme.js'
 const R = 16
 const CHIP = 2.4 * R
 const CHIP_R = 0.55 * R
+const CHIP_BIG = 72
 
 const LOOK_META = {
   lime: { on: '#c9f24d' },
@@ -852,23 +853,25 @@ function Dressed({ id, worn, tone, width, height, blink }) {
 // A shop tile: the buddy wearing just this one item, small enough that wings
 // fit. Eye items are too small to read on a whole buddy, so those tiles show
 // the face up close instead.
-export function AccessoryChip({ id, buddyId = 'ant', tone }) {
+// big: the Collection grid, where a tiny buddy makes every hat look alike.
+export function AccessoryChip({ id, buddyId = 'ant', tone, big = false }) {
   const slot = accessoryById(id)?.slot || 'head'
+  const box = big ? CHIP_BIG : CHIP
   if (slot === 'eyes') {
-    const w = 72
+    const w = big ? 132 : 72
     const h = (w * 58) / 48
     const k = w / 48
     return (
-      <View style={[styles.accessoryChip, styles.accessoryChipZoom]}>
-        <View style={{ position: 'absolute', left: CHIP / 2 - 24 * k, top: CHIP / 2 - eyeLine(buddyId) * k, width: w, height: h }}>
+      <View style={[styles.accessoryChip, styles.accessoryChipZoom, big && styles.accessoryChipBig]}>
+        <View style={{ position: 'absolute', left: box / 2 - 24 * k, top: box / 2 - eyeLine(buddyId) * k, width: w, height: h }}>
           <Dressed id={buddyId} worn={{ eyes: id }} tone={tone} width={w} height={h} />
         </View>
       </View>
     )
   }
   return (
-    <View style={styles.accessoryChip}>
-      <Dressed id={buddyId} worn={{ [slot]: id }} tone={tone} width={28} height={34} />
+    <View style={[styles.accessoryChip, big && styles.accessoryChipBig]}>
+      <Dressed id={buddyId} worn={{ [slot]: id }} tone={tone} width={big ? 58 : 28} height={big ? 70 : 34} />
     </View>
   )
 }
@@ -1001,6 +1004,7 @@ const styles = StyleSheet.create({
   buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   accessoryChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center' },
   accessoryChipZoom: { overflow: 'hidden', borderRadius: CHIP_R },
+  accessoryChipBig: { width: CHIP_BIG, height: CHIP_BIG },
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
   buddyOwl: { marginTop: -6 },
