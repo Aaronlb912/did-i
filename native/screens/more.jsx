@@ -13,8 +13,11 @@ import { MarksGrid } from '../components/MarksGrid.jsx'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
+  accountMissText,
+  checkCode,
   deleteAccount,
   deviceKey,
+  sendCode,
   signOutEverywhere,
   signOutHere,
   useAccount,
@@ -35,6 +38,7 @@ import {
   shortFromQuestion,
   shortLabel,
 } from '../../src/lib/board-json.js'
+import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
@@ -752,7 +756,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   )
 }
 
-export function EnterScreen({ book, onSaveKeeper, returnTo }) {
+export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
   const colors = useHallColors()
   const named = keeperNamed(book)
   const locked = hasPin()
@@ -762,6 +766,60 @@ export function EnterScreen({ book, onSaveKeeper, returnTo }) {
   )
   const [pin, setPinDraft] = useState('')
   const [miss, setMiss] = useState('')
+  const account = useAccount()
+  const email = account.user?.email || ''
+  // Forgot PIN: signed in, a code to the account's email proves it is you.
+  const [forgot, setForgot] = useState(false)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function sendForgotCode() {
+    setBusy(true)
+    const { miss: bad } = await sendCode(email)
+    setBusy(false)
+    setMiss(bad ? accountMissText(bad) : '')
+  }
+
+  function askForgot() {
+    if (email) {
+      setForgot(true)
+      setCode('')
+      sendForgotCode()
+      return
+    }
+    // No account: the PIN only lives on this phone, so the way past it is
+    // to erase what is here.
+    publishSheet({
+      title: t('enter.forgotTitle'),
+      body: t('enter.eraseBody'),
+      goLabel: t('enter.eraseGo'),
+      danger: true,
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        clearPin()
+        const fresh = { ...emptyBoard(), id: newBoardId() }
+        onEraseHere?.({ currentId: fresh.id, boards: [fresh] })
+        openSession()
+        goHash('/first')
+      },
+    })
+  }
+
+  async function removeWithCode() {
+    setBusy(true)
+    const { miss: bad } = await checkCode(email, code)
+    setBusy(false)
+    if (bad) {
+      setMiss(accountMissText(bad))
+      return
+    }
+    clearPin()
+    confirmDone(t('confirm.pinRemoved'))
+    finish()
+  }
 
   function finish() {
     openSession()
@@ -822,6 +880,32 @@ export function EnterScreen({ book, onSaveKeeper, returnTo }) {
         onPress={openNamed}
       />
       {!locked ? <KeyButton colors={colors} label={t('enter.later')} onPress={finish} /> : null}
+      {locked && !forgot ? <KeyButton colors={colors} label={t('enter.forgot')} onPress={askForgot} /> : null}
+      {locked && forgot ? (
+        <SetCard colors={colors}>
+          <View style={styles.enterFields}>
+            <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t('enter.forgotSent', { email })}</Text>
+            <Field
+              colors={colors}
+              label={t('account.code')}
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={8}
+            />
+            <DidButton colors={colors} label={t('enter.forgotGo')} onPress={removeWithCode} disabled={busy} />
+            <KeyButton colors={colors} label={t('enter.forgotResend')} onPress={sendForgotCode} disabled={busy} />
+            <KeyButton
+              colors={colors}
+              label={t('nav.back')}
+              onPress={() => {
+                setForgot(false)
+                setMiss('')
+              }}
+            />
+          </View>
+        </SetCard>
+      ) : null}
     </ScreenShell>
   )
 }
