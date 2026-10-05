@@ -1519,7 +1519,7 @@ export const en = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I s and friend requests from people you know',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': 'Ripple',
   'cheer.lime.line': 'Rings ripple out from where you tapped.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': 'Streamers whip in from both sides.',

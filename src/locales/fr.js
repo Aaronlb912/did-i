@@ -1528,7 +1528,7 @@ export const fr = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I et demandes d\'amis de gens que tu connais',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': 'Onde',
   'cheer.lime.line': 'Des anneaux s\'étendent là où tu as tapé.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': 'Des serpentins arrivent des deux côtés.',

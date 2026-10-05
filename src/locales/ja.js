@@ -1488,7 +1488,7 @@ export const ja = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I s and friend requests from people you know',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': '波紋',
   'cheer.lime.line': 'タップしたところから輪が広がる。',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': '両側からテープがひゅっと飛んでくる。',

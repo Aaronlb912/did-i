@@ -1594,6 +1594,8 @@ export function CollectionScreen({ book, onChange, startTab }) {
       <KitSegment items={segItems} selected={tab} onSelect={setTab} colors={colors} />
 
       {tab === 'looks' ? (
+        <>
+        <LookPreviewCard id={purse.lookOn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {looks.map((item) => (
             <KitTile
@@ -1607,9 +1609,12 @@ export function CollectionScreen({ book, onChange, startTab }) {
             </KitTile>
           ))}
         </View>
+        </>
       ) : null}
 
       {tab === 'buddies' ? (
+        <>
+        <BuddyPreviewCard id={purse.buddyOn} colors={colors} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
@@ -1636,6 +1641,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
           </KitTile>
         </View>
+        </>
       ) : null}
 
       {tab === 'accessories' ? (
@@ -1683,6 +1689,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'cheers' ? (
         <>
+          <LookPreviewCard id={purse.lookOn} />
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {cheers.map((item) => {
               const play = cheerPlayOf(book, item.id)

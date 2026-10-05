@@ -1532,7 +1532,7 @@ export const de = {
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I und Freundschaftsanfragen von Leuten, die du kennst',
-  'cheer.lime.name': 'Lime',
+  'cheer.lime.name': 'Welle',
   'cheer.lime.line': 'Ringe breiten sich von deinem Tipp aus.',
   'cheer.tape.name': 'Tape',
   'cheer.tape.line': 'Luftschlangen fliegen von beiden Seiten rein.',
