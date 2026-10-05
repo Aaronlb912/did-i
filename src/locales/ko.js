@@ -423,7 +423,7 @@ export const ko = {
   'cal.prev': '이전 달',
   'cal.next': '다음 달',
   'cal.aria': 'Streak 캘린더',
-  'cal.hint': '끝낸 밤. 놓친 밤은 흐리게. 할 게 없으면 비어 있어.',
+  'cal.hint': '끝낸 밤에는 점. 놓친 밤에는 빨간 점. 할 게 없으면 비어 있어.',
   'cal.empty': '이 날은 아무것도 없었어.',
   'cal.close': '닫기',
   'cal.open': '미완료',

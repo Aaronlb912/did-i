@@ -434,7 +434,7 @@ export const it = {
   'cal.next': 'Mese dopo',
   'cal.aria': 'Calendario streak',
   'cal.hint':
-    'Notti che hai finito. Quelle mancate sono sbiadite. Niente in scadenza resta vuoto.',
+    'Un punto per ogni notte finita. Quelle mancate hanno un punto rosso. Niente in scadenza resta vuoto.',
   'cal.empty': 'Non c\'era niente da fare quel giorno.',
   'cal.close': 'Chiudi',
   'cal.open': 'aperto',

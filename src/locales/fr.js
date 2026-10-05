@@ -438,7 +438,7 @@ export const fr = {
   'cal.prev': 'Mois précédent',
   'cal.next': 'Mois suivant',
   'cal.aria': 'Calendrier de streak',
-  'cal.hint': 'Nuits terminées. Les manquées sont pâles. Rien à faire reste vide.',
+  'cal.hint': 'Un point pour chaque nuit terminée. Les manquées ont un point rouge. Rien à faire reste vide.',
   'cal.empty': 'Rien à faire ce jour-là.',
   'cal.close': 'Fermer',
   'cal.open': 'ouvert',

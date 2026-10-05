@@ -437,7 +437,7 @@ export const es = {
   'cal.next': 'Mes siguiente',
   'cal.aria': 'Calendario de racha',
   'cal.hint':
-    'Noches que terminaste. Las que faltan se ven tenues. Si no había nada, queda vacío.',
+    'Un punto por cada noche que terminaste. Las que faltan llevan un punto rojo. Si no había nada, queda vacío.',
   'cal.empty': 'No había nada que hacer este día.',
   'cal.close': 'Cerrar',
   'cal.open': 'sin marcar',

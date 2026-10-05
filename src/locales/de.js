@@ -437,7 +437,7 @@ export const de = {
   'cal.next': 'Späterer Monat',
   'cal.aria': 'Streak-Kalender',
   'cal.hint':
-    'Nächte, die du geschafft hast. Verpasste sind blass. Nichts fällig bleibt leer.',
+    'Ein Punkt für jede geschaffte Nacht. Verpasste bekommen einen roten Punkt. Nichts fällig bleibt leer.',
   'cal.empty': 'An dem Tag gab es nichts zu tun.',
   'cal.close': 'Schließen',
   'cal.open': 'offen',

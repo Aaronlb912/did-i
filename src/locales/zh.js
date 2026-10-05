@@ -423,7 +423,7 @@ export const zh = {
   'cal.prev': '上个月',
   'cal.next': '下个月',
   'cal.aria': 'Streak 日历',
-  'cal.hint': '你完成的夜晚。错过的较淡。没有待办的留空。',
+  'cal.hint': '完成的夜晚有一个点。错过的是红点。没有待办的留空。',
   'cal.empty': '这天没什么要做。',
   'cal.close': '关闭',
   'cal.open': '未完成',

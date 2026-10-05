@@ -436,7 +436,7 @@ export const pt = {
   'cal.next': 'Mês seguinte',
   'cal.aria': 'Calendário de streak',
   'cal.hint':
-    'Noites que terminaste. As que falharam ficam fracas. Nada pendente fica vazio.',
+    'Um ponto por cada noite que terminaste. As que falharam têm um ponto vermelho. Nada pendente fica vazio.',
   'cal.empty': 'Não havia nada a fazer neste dia.',
   'cal.close': 'Fechar',
   'cal.open': 'aberto',

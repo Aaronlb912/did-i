@@ -433,7 +433,7 @@ export const en = {
   'cal.prev': 'Earlier month',
   'cal.next': 'Later month',
   'cal.aria': 'Streak calendar',
-  'cal.hint': 'Nights you finished. Missed nights are dim. Nothing due stays blank.',
+  'cal.hint': 'A dot marks each night you finished. Missed nights get a red dot. Nothing due stays blank.',
   'cal.empty': 'Didn\'t have anything to do this day.',
   'cal.close': 'Close',
   'cal.open': 'open',

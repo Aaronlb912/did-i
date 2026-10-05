@@ -423,7 +423,7 @@ export const ja = {
   'cal.prev': '前の月',
   'cal.next': '次の月',
   'cal.aria': 'Streak カレンダー',
-  'cal.hint': '終えた夜。逃した夜は薄い。やることがなければ空白。',
+  'cal.hint': '終えた夜には点。逃した夜には赤い点。やることがなければ空白。',
   'cal.empty': 'この日は何もなかった。',
   'cal.close': '閉じる',
   'cal.open': '未完了',
