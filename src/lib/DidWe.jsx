@@ -231,7 +231,7 @@ export function useWeAnswer(reload, book) {
     }
   }
 
-  return { busy, miss, note, run, answer }
+  return { busy, miss, note, setNote, run, answer }
 }
 
 export function weOpenForMe(cards, now = new Date()) {
@@ -305,7 +305,7 @@ export function WeList() {
 function WeActs({ card, ans, cheer }) {
   if (!card.due) return null
   const mine = weMine(card)
-  const nudgeable = mine?.status === 'did' && !card.done ? weWaiting(card).filter((p) => !p.nudged) : []
+  const nudgeable = !card.done ? weWaiting(card).filter((p) => !p.nudged) : []
   // Someone already said did: no nudge, a cheer instead.
   const cheerable = cheer?.can ? (card.people || []).filter((p) => !p.me && p.state === 'in' && p.status === 'did') : []
   return (
@@ -335,7 +335,10 @@ function WeActs({ card, ans, cheer }) {
             className="di-key"
             type="button"
             disabled={ans.busy === card.id}
-            onClick={() => ans.run(card.id, () => weNudge(card.id, p.id))}
+            onClick={async () => {
+              const out = await ans.run(card.id, () => weNudge(card.id, p.id))
+              if (!out?.miss) ans.setNote(t('confirm.nudged', { name: p.name }))
+            }}
           >
             {t('we.nudge', { name: p.name })}
           </button>
