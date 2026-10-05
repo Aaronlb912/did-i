@@ -564,6 +564,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               <Text style={[styles.pickCount, { color: colors.ink }]}>{t('questions.reorderHint')}</Text>
               <KeyButton colors={colors} label={t('questions.pickDone')} onPress={() => setOrdering(false)} />
             </View>
+            {liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
+              <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
+            ) : null}
           </View>
         ) : null}
         {picking ? (
@@ -1107,6 +1110,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       title: hang.editing ? t('hang.discardTitle') : t('hang.discardNewTitle'),
       goLabel: t('hang.discard'),
       closeLabel: t('hang.keepEditing'),
+      danger: true,
       colors,
       onClose: () => publishSheet(null),
       onGo: () => {
@@ -1720,6 +1724,7 @@ const styles = StyleSheet.create({
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
+  reorderTimed: { fontFamily: fonts.ui, fontSize: 13, marginTop: 6 },
   pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickCount: { fontFamily: fonts.uiBold, fontSize: 15, flexGrow: 1 },
   pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

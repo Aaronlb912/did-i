@@ -241,7 +241,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   if (nextLine && !openRows.length) footer = nextLine
   const colorBook = widgetColorBook(shelf)
   return {
-    tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
+    tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
     question,
     leadLampId: lead?.lamp.id || weItem?.lampId || '',
     items,
