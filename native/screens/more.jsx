@@ -1457,6 +1457,8 @@ function AccountSignedIn({ book, email, onChange }) {
   const myAvatar = useMyAvatar()
   const [nameDraft, setNameDraft] = useState(book?.keeperName || keptProfileName())
   const [devices, setDevices] = useState([])
+  // Until the list comes back, say nothing rather than "only this phone".
+  const [devicesIn, setDevicesIn] = useState(false)
   const [sure, setSure] = useState(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMiss, setPhotoMiss] = useState('')
@@ -1470,7 +1472,9 @@ function AccountSignedIn({ book, email, onChange }) {
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
-      if (alive) setDevices(rows)
+      if (!alive) return
+      setDevices(rows)
+      setDevicesIn(true)
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
@@ -1709,7 +1713,7 @@ function AccountSignedIn({ book, email, onChange }) {
             />
           ))
         ) : (
-          <SetRow colors={colors} label={t('account.noDevices')} last />
+          devicesIn ? <SetRow colors={colors} label={t('account.noDevices')} last /> : null
         )}
         {phonesHidden ? (
           <SetRow colors={colors} label={t('people.seeAll')} value={String(phones.length)} chevron last onPress={() => setAllPhones(true)} />
