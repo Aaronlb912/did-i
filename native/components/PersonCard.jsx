@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Reveal } from '../lib/motion.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { personInitials } from '../../src/lib/people.js'
 import { fonts } from '../theme.js'
@@ -118,7 +119,7 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
           ) : null}
         </View>
       ) : null}
-      {more && open ? <View style={[styles.fold, { borderTopColor: colors.lineSoft }]}>{more}</View> : null}
+      {more && open ? <Reveal style={[styles.fold, { borderTopColor: colors.lineSoft }]}>{more}</Reveal> : null}
     </View>
   )
 }

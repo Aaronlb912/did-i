@@ -110,7 +110,7 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
-import { pressFx, animateNextLayout } from '../lib/motion.jsx'
+import { pressFx, Reveal } from '../lib/motion.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -221,7 +221,7 @@ function HelpFold({ colors, title, children }) {
         <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
         <Text style={[styles.slotChev, { color: colors.inkDim }]}>{open ? '▴' : '▾'}</Text>
       </Pressable>
-      {open ? children : null}
+      {open ? <Reveal>{children}</Reveal> : null}
     </View>
   )
 }
@@ -1691,7 +1691,6 @@ function AccountSignedIn({ book, email, onChange }) {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
-      animateNextLayout()
       setDevices(rows)
       setDevicesIn(true)
     })
@@ -1940,8 +1939,8 @@ function AccountSignedIn({ book, email, onChange }) {
         <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
         {phones.length ? (
           shownPhones.map((row, at) => (
+            <Reveal key={row.device_key}>
             <SetRow
-              key={row.device_key}
               colors={colors}
               icon={row.platform === 'web' ? 'globe' : 'person'}
               tint={row.device_key === here ? colors.on : colors.inkSoft}
@@ -1951,6 +1950,7 @@ function AccountSignedIn({ book, email, onChange }) {
               last={at === shownPhones.length - 1 && !phonesHidden}
               onPress={() => phoneMenu(row)}
             />
+            </Reveal>
           ))
         ) : (
           devicesIn ? <SetRow colors={colors} label={t('account.noDevices')} last /> : null
@@ -2012,7 +2012,7 @@ function AccountSignedIn({ book, email, onChange }) {
         />
       </SetCard>
       {dataOpen ? (
-        <>
+        <Reveal>
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
@@ -2055,7 +2055,7 @@ function AccountSignedIn({ book, email, onChange }) {
           }
         />
       </SetCard>
-        </>
+        </Reveal>
       ) : null}
       <SureModal
         sure={sure}

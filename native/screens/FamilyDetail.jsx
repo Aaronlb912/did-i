@@ -37,6 +37,7 @@ import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/
 import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { Reveal } from '../lib/motion.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
@@ -497,10 +498,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                 onPress={() => setShowQr((on) => !on)}
               />
               {showQr ? (
-                <View style={{ alignItems: 'center', gap: 8 }}>
+                <Reveal style={{ alignItems: 'center', gap: 8 }}>
                   <QrCode value={familyQrLink(fam.code)} size={180} label={t('qr.familyLabel', { name: fam.name })} />
                   <Meta colors={colors}>{t('qr.familyHint')}</Meta>
-                </View>
+                </Reveal>
               ) : null}
               <DidButton
                 colors={colors}

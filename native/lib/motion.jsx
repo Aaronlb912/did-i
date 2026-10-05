@@ -1,21 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native'
-import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { useEffect, useRef, useState } from 'react'
+import { AccessibilityInfo, Animated, Easing } from 'react-native'
 import Reanimated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated'
+import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 // Short, calm motion for things a tap opens or changes. Every helper here
 // shows the end state at once when Less motion (or the phone's setting) is on.
 
 export const MOTION_MS = 200
 export const easeOut = Easing.out(Easing.cubic)
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  try {
-    UIManager.setLayoutAnimationEnabledExperimental(true)
-  } catch {
-    // New architecture ignores this; LayoutAnimation still works there.
-  }
-}
 
 // One listener for the whole app, so press feedback can read it without a
 // hook per button.
@@ -35,21 +27,34 @@ export function motionOff() {
   return systemReduce || readReduceMotion()
 }
 
-// Call right before a setState that adds, removes or resizes rows.
+// Kept for callers that used to ease the next layout change. LayoutAnimation
+// does nothing on the New Architecture, so <Reveal> does the motion now.
 export function animateNextLayout(reduce = motionOff()) {
   if (reduce) return
-  LayoutAnimation.configureNext(LayoutAnimation.create(MOTION_MS, 'easeOut', 'opacity'))
 }
 
-// useState whose setter eases the layout change it causes (open/close,
-// show all, a banner coming in). Same shape as useState.
+// Same shape as useState. Wrap what it opens in <Reveal> to animate it.
 export function useLayoutState(initial) {
-  const [value, setValue] = useState(initial)
-  const set = useCallback((next) => {
-    animateNextLayout()
-    setValue(next)
-  }, [])
-  return [value, set]
+  return useState(initial)
+}
+
+// A block a tap opens, closes or swaps: fades and slides in, fades out, and
+// eases the rows around it. Give it a key when swapping content. Inside a
+// FlatList item pass layout={false}: virtualized rows must not run layout
+// transitions.
+export function Reveal({ children, style, layout = true, ...rest }) {
+  const off = motionOff()
+  return (
+    <Reanimated.View
+      entering={off ? undefined : FadeInDown.duration(MOTION_MS)}
+      exiting={off ? undefined : FadeOut.duration(150)}
+      layout={off || !layout ? undefined : LinearTransition.duration(MOTION_MS)}
+      style={style}
+      {...rest}
+    >
+      {children}
+    </Reanimated.View>
+  )
 }
 
 // Pressable style helper: a small scale on press, or a plain dim when motion is off.
@@ -73,22 +78,4 @@ export function useFadeIn(show = true, reduce = motionOff()) {
     Animated.timing(value, { toValue: 1, duration: MOTION_MS, easing: easeOut, useNativeDriver: true }).start()
   }, [show, reduce, value])
   return value
-}
-
-// A block that fades and slides in when it mounts and fades out when it
-// leaves. LayoutAnimation does nothing on the new architecture, so anything
-// a tap opens in place should sit in a <Reveal>.
-export function Reveal({ children, style, ...rest }) {
-  const off = motionOff()
-  return (
-    <Reanimated.View
-      entering={off ? undefined : FadeInDown.duration(MOTION_MS).withInitialValues({ transform: [{ translateY: -8 }] })}
-      exiting={off ? undefined : FadeOut.duration(150)}
-      layout={off ? undefined : LinearTransition.duration(MOTION_MS)}
-      style={style}
-      {...rest}
-    >
-      {children}
-    </Reanimated.View>
-  )
 }

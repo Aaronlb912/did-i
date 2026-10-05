@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.jsx'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -94,7 +94,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
         </Pressable>
       </View>
       )}
-      <View style={styles.grid} onLayout={onGrid}>
+      <Reveal key={`m${monthShift}`} style={styles.grid} onLayout={onGrid} exiting={undefined} layout={false}>
         {monthly ? null : dows.map((day, i) => (
           <Text key={`dow-${i}`} style={[styles.dow, col, { color: colors.inkDim }]}>{day}</Text>
         ))}
@@ -123,7 +123,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
             </Pressable>
           ),
         )}
-      </View>
+      </Reveal>
       {mode === 'monthly' ? (
         <Pressable
           accessibilityRole="button"

@@ -8,7 +8,7 @@ import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.jsx'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -107,7 +107,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
           <Text style={[styles.shift, { color: monthShift >= 0 ? colors.line : colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
-      <View style={styles.grid}>
+      <Reveal key={`m${monthShift}`} style={styles.grid} exiting={undefined} layout={false}>
         {dows.map((day, i) => (
           <Text key={`dow-${i}`} style={[styles.dow, { color: colors.inkDim }]}>{day}</Text>
         ))}
@@ -145,7 +145,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
             </Pressable>
           ),
         )}
-      </View>
+      </Reveal>
 
     </View>
   )

@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { answerFor, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
-import { useLayoutState } from '../lib/motion.jsx'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -102,6 +102,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           </Text>
         ))}
       </View>
+      <Reveal key={`m${back}`} exiting={undefined} layout={false}>
       {rows.map((row, r) => (
         <View key={r} style={styles.row}>
           {row.map((cell, c) => {
@@ -128,6 +129,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           })}
         </View>
       ))}
+      </Reveal>
     </View>
   )
 }
