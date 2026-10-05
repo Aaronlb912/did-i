@@ -2347,7 +2347,7 @@ export const fr = {
   'shop.howEarn': 'Pour gagner : termine les questions de ce soir pour jusqu\'à {cap} pièces par soir. Le premier soir terminé chaque semaine donne aussi 1 gemme. D\'autres gemmes s\'achètent en packs dans Obtenir des gemmes, plus bas.',
   'shop.needMoreGems': 'Il te manque {n} gemmes.',
   'shop.needMoreCoins': 'Il te manque {n} pièces.',
-  'tonight.coinsTomorrow': 'Les nouvelles questions rapportent des pièces à partir de demain soir.',
+  'tonight.coinsTomorrow': 'Les nouvelles questions paient à partir de demain.',
   'tonight.keepNope': 'Garder nope',
   'tonight.nopedChange': 'Vous pouvez encore le changer jusqu\'à {time}. Il compte en retard.',
   'tonight.nopedMany': 'Tu as dit nope à {n} questions.',
