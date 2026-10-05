@@ -7,7 +7,8 @@ Last worked through 2026-10-02.
 
 ## App PIN
 
-- **No way back from a forgotten PIN.** The PIN is a hash on the phone; the only reset is clearing the app's data, which also clears an unsynced shelf. A "Forgot PIN" that re-checks sign-in (for signed-in people) would cover most cases.
+- **Forgot PIN.** Signed in: a code to the account email removes the PIN. Signed out: the only way past is to erase what is on the device.
+- **The sign-in code path is not tried end to end** (needs a real inbox); the signed-out erase path is.
 
 ## Save a copy
 

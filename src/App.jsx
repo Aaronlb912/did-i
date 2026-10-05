@@ -541,6 +541,7 @@ export default function App() {
       <Enter
         book={live}
         onSaveKeeper={saveKeeper}
+        onEraseHere={(next) => persist(next)}
         returnTo={path === '/enter' ? undefined : path}
         returnFace={route.face}
       />

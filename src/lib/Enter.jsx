@@ -5,9 +5,11 @@ import { BoardShell } from './BoardShell.jsx'
 import { markWelcomeSeen } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { checkPin, hasPin, keeperNamed, openSession } from './session.js'
+import { accountMissText, checkCode, sendCode, useAccount } from './account.js'
+import { emptyBoard, newBoardId } from './board-json.js'
+import { checkPin, clearPin, hasPin, keeperNamed, openSession } from './session.js'
 
-export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
+export function Enter({ book, onSaveKeeper, onEraseHere, returnTo = '/', returnFace = '' }) {
   usePrefs()
   const named = keeperNamed(book)
   const locked = hasPin()
@@ -17,6 +19,51 @@ export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
   )
   const [pin, setPinDraft] = useState('')
   const [miss, setMiss] = useState('')
+  const account = useAccount()
+  const email = account.user?.email || ''
+  // Forgot PIN: 'code' (signed in, a code to the account email) or 'erase'
+  // (signed out, the PIN only lives here so the way past is a fresh start).
+  const [forgot, setForgot] = useState('')
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function sendForgotCode() {
+    setBusy(true)
+    const { miss: bad } = await sendCode(email)
+    setBusy(false)
+    setMiss(bad ? accountMissText(bad) : '')
+  }
+
+  function askForgot() {
+    setMiss('')
+    if (email) {
+      setForgot('code')
+      setCode('')
+      sendForgotCode()
+    } else {
+      setForgot('erase')
+    }
+  }
+
+  async function removeWithCode() {
+    setBusy(true)
+    const { miss: bad } = await checkCode(email, code)
+    setBusy(false)
+    if (bad) {
+      setMiss(accountMissText(bad))
+      return
+    }
+    clearPin()
+    finish()
+  }
+
+  function eraseHere() {
+    clearPin()
+    const fresh = { ...emptyBoard(), id: newBoardId() }
+    onEraseHere?.({ currentId: fresh.id, boards: [fresh] })
+    openSession()
+    goHash('/first')
+  }
 
   function finish() {
     openSession()
@@ -121,7 +168,48 @@ export function Enter({ book, onSaveKeeper, returnTo = '/', returnFace = '' }) {
               {t('enter.later')}
             </button>
           ) : null}
+          {locked && !forgot ? (
+            <button className="di-key" type="button" onClick={askForgot}>
+              {t('enter.forgot')}
+            </button>
+          ) : null}
         </div>
+
+        {forgot === 'code' ? (
+          <div className="di-enter-forgot">
+            <p className="di-detail-meta">{t('enter.forgotSent', { email })}</p>
+            <label className="di-field">
+              <span>{t('account.code')}</span>
+              <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value)} />
+            </label>
+            <div className="di-hang-actions">
+              <button className="di-did di-did-small" type="button" disabled={busy} onClick={removeWithCode}>
+                {t('enter.forgotGo')}
+              </button>
+              <button className="di-key" type="button" disabled={busy} onClick={sendForgotCode}>
+                {t('enter.forgotResend')}
+              </button>
+              <button className="di-key" type="button" onClick={() => setForgot('')}>
+                {t('nav.back')}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {forgot === 'erase' ? (
+          <div className="di-enter-forgot">
+            <p className="di-face-plate">{t('enter.forgotTitle')}</p>
+            <p className="di-detail-meta">{t('enter.eraseBody')}</p>
+            <div className="di-hang-actions">
+              <button className="di-key di-key-danger" type="button" onClick={eraseHere}>
+                {t('enter.eraseGo')}
+              </button>
+              <button className="di-key" type="button" onClick={() => setForgot('')}>
+                {t('settings.neverMind')}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </BoardShell>
   )
