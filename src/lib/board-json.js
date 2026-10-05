@@ -488,6 +488,6 @@ export function cadenceLine(lamp) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('cadence.onceOn', { date: formatBoardDate(on) })
     return t('cadence.once')
   }
-  if (lamp.cadence === 'every_n') return t('cadence.everyN', { n: lamp.everyN })
+  if (lamp.cadence === 'every_n') return Number(lamp.everyN) >= 2 ? t('cadence.everyN', { n: lamp.everyN }) : t('hang.everyN')
   return lamp.cadence
 }

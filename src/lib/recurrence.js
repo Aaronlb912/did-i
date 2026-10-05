@@ -286,9 +286,16 @@ function requiredTonightRows(rows) {
 // What counts for tonight: everything you chose, and an optional question
 // (put on your tonight for you) only once you said did. A night with nothing
 // but an unanswered optional one is like a night with nothing due.
-// One Did I put on a night's tonight never counts, did or nope.
+// One Did I put on a night's tonight never counts, did or nope. A deadline
+// question before its day is the same as an optional one: it counts once
+// answered, so adding one never clears the night by itself.
 export function countedTonightRows(rows) {
-  return (rows || []).filter((row) => !row?.lamp?.fromDidI && (!row?.lamp?.optional || rowDoneTonight(row)))
+  return (rows || []).filter(
+    (row) =>
+      !row?.lamp?.fromDidI &&
+      (!row?.lamp?.optional || rowDoneTonight(row)) &&
+      (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
+  )
 }
 
 export function allClearTonight(book, now = new Date()) {
