@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useKept } from '../hooks/useKept.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -55,14 +55,14 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const myAvatar = useMyAvatar()
   const purse = normalizePurse(book)
   const clock = new Date()
-  const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null)
-  const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [])
-  const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [])
+  const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null, KEEP)
+  const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [], KEEP)
+  const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [], KEEP)
   const [night, setNight] = useState(() => boardDate(clock, book.dayFoldHour))
   const [nights, setNights] = useState([])
   const [past, setPast] = useState([])
   const [edit, setEdit] = useState(null)
-  const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false)
+  const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false, KEEP)
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')

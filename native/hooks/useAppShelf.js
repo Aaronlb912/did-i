@@ -45,9 +45,10 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget } from '../widget-sync.js'
+import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
+import { runAfterLaunchReady } from '../lib/launch-ready.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
@@ -253,8 +254,10 @@ export function useAppShelf() {
       } catch {
         // ok
       }
-      pullAndMerge()
-        .then((result) => {
+      // Tonight paints from the stored shelf first; the cloud pull waits for that frame.
+      runAfterLaunchReady(() => {
+        if (cancelled) return undefined
+        return pullAndMerge().then((result) => {
           if (cancelled) return
           const merged = result || readShelf()
           const closed =
@@ -262,7 +265,7 @@ export function useAppShelf() {
           if (closed !== merged) setShelf(writeShelf(closed))
           else if (result) setShelf(result)
         })
-        .catch(() => {})
+      })
       afterNativeBridgeReady(() => {
         if (cancelled) return
         if (!nativeWidgetsEnabled()) return
@@ -296,7 +299,10 @@ export function useAppShelf() {
         })
     })
     function onShelfIn(event) {
-      if (event?.detail) setShelf(event.detail)
+      if (!event?.detail) return
+      setShelf(event.detail)
+      // Answers from another phone (sync): the widget shows them too.
+      syncTonightWidgetIfChanged(event.detail).catch(() => {})
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

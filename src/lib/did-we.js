@@ -394,11 +394,34 @@ const watchers = new Set()
 
 let sharedFor = ''
 
+// The last cards are stored per account and day, so a cold start shows them
+// while the fresh load runs. Another day's cards are stale (due changes).
+const CARDS_KEY = 'did-i-we-cards:'
+
+function storedCards(userId) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CARDS_KEY + userId) || 'null')
+    if (raw?.day === new Date().toDateString() && Array.isArray(raw.cards)) return { cards: raw.cards, miss: '' }
+  } catch {
+    // Loads fresh.
+  }
+  return EMPTY
+}
+
+function storeCards(userId, cards) {
+  try {
+    const raw = JSON.stringify({ day: new Date().toDateString(), cards })
+    if (raw.length < 200_000) localStorage.setItem(CARDS_KEY + userId, raw)
+  } catch {
+    // Memory still has them.
+  }
+}
+
 // Kept per account: after a sign-out and in, the last person's cards never show.
 function sharedFor_(userId) {
   if (sharedFor !== userId) {
     sharedFor = userId
-    shared = EMPTY
+    shared = storedCards(userId)
     loadedAt = 0
   }
   return shared
@@ -506,6 +529,7 @@ function loadShared(force, userId) {
       shareMyBuddy(next.cards)
       shared = next
       loadedAt = Date.now()
+      if (!next.miss) storeCards(userId, next.cards || [])
       watchers.forEach((fn) => fn(next))
       return next
     })
@@ -513,6 +537,11 @@ function loadShared(force, userId) {
       inflight = null
     })
   return inflight
+}
+
+// A card from the last load, or undefined, so its page opens on it.
+export function weCardKept(id) {
+  return (shared.cards || []).find((card) => card.id === id)
 }
 
 // The question on a Did we card from the last load, or empty if not loaded.

@@ -1,26 +1,18 @@
-import { de } from '../locales/de.js'
 import { en } from '../locales/en.js'
-import { es } from '../locales/es.js'
-import { fr } from '../locales/fr.js'
-import { it } from '../locales/it.js'
-import { ja } from '../locales/ja.js'
-import { ko } from '../locales/ko.js'
-import { pt } from '../locales/pt.js'
-import { zh } from '../locales/zh.js'
 import { readPrefs, usePrefs } from './prefs.js'
 
 // English fills any key a locale file missed. Every key goes in all 9 files;
-// npm test checks that (docs/locales.md).
-const packs = {
-  en,
-  es: { ...en, ...es },
-  fr: { ...en, ...fr },
-  de: { ...en, ...de },
-  pt: { ...en, ...pt },
-  it: { ...en, ...it },
-  zh: { ...en, ...zh },
-  ja: { ...en, ...ja },
-  ko: { ...en, ...ko },
+// npm test checks that (docs/locales.md). The other 8 are added with
+// addLocale: all at once on the phone and in tests (locales-all.js), only the
+// one in use on the web (locale-load.js), so the web skips ~1 MB of text.
+const packs = { en }
+
+export function addLocale(code, pack) {
+  if (code !== 'en') packs[code] = { ...en, ...pack }
+}
+
+export function hasLocale(code) {
+  return Boolean(packs[code])
 }
 
 export function localePack(locale = readPrefs().locale) {
@@ -45,7 +37,7 @@ export function t(key, vars) {
 
 // True when the app shows English, so a translation note is not needed.
 export function inEnglish() {
-  return !packs[readPrefs().locale] || readPrefs().locale === 'en'
+  return readPrefs().locale === 'en'
 }
 
 export function hasLocaleKey(key) {

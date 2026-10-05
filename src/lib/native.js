@@ -1,4 +1,5 @@
 import { isAppForeground } from './app-foreground.js'
+import { t } from './i18n.js'
 import { streakHitCopy } from './streak-copy.js'
 import { pingOn } from './prefs.js'
 import { boardDate } from './recurrence.js'
@@ -25,6 +26,20 @@ export async function requestNativePings() {
 }
 
 export async function scheduleNativePings() {}
+
+// Web: a sample notification a few seconds out, while this tab stays open.
+export async function pingTest(seconds = 5) {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'off'
+  if (Notification.permission !== 'granted') return 'off'
+  window.setTimeout(() => {
+    try {
+      new Notification('Did I', { body: t('pings.testBody'), icon: './icon-192.png' })
+    } catch {
+      // ok
+    }
+  }, seconds * 1000)
+  return 'set'
+}
 
 export { isAppForeground }
 

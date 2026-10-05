@@ -1,5 +1,6 @@
 import './native/fatal-guard.cjs'
 import './native/bootstrap.js'
+import './src/lib/locales-all.js'
 import 'react-native-gesture-handler'
 import 'react-native-reanimated'
 import { Platform } from 'react-native'

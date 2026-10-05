@@ -61,6 +61,7 @@ import {
 import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
@@ -2313,7 +2314,8 @@ const giftStyles = StyleSheet.create({
 // /gifts: what you have sent, and whether it was opened or sent back.
 export function GiftsSentScreen({ book }) {
   const colors = useShopColors(book)
-  const [list, setList] = useState(null)
+  const account = useAccount()
+  const [list, setList] = useKept(`gifts.sent:${account.user?.id}`, null, KEEP)
   const [miss, setMiss] = useState('')
 
   useEffect(() => {

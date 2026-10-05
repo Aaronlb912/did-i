@@ -179,6 +179,12 @@ export function afterQuiet(at, prefs = readPrefs()) {
   return end
 }
 
+// Re-render prefs readers without saving, e.g. after a language file loads.
+export function bumpPrefs() {
+  const next = readPrefs()
+  listeners.forEach((fn) => fn(next))
+}
+
 export function onPrefs(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)

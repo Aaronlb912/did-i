@@ -3,6 +3,7 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
+import { forgetAccountCaches } from './account-cache.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -150,6 +151,7 @@ export async function signOutHere() {
   await db.auth.signOut({ scope: 'local' })
   // The home screen widget must not keep showing this account's people.
   saveTogetherPeople([])
+  forgetAccountCaches()
 }
 
 export async function signOutEverywhere() {
@@ -159,6 +161,7 @@ export async function signOutEverywhere() {
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) throw error
   saveTogetherPeople([])
+  forgetAccountCaches()
 }
 
 export async function deleteAccount() {
@@ -170,6 +173,7 @@ export async function deleteAccount() {
   if (error) return { miss: error.message }
   await db.auth.signOut()
   saveTogetherPeople([])
+  forgetAccountCaches()
   return { miss: '' }
 }
 

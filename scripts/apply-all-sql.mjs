@@ -37,6 +37,7 @@ const files = [
   'supabase/did-you-links.sql',
   'supabase/share-links.sql',
   'supabase/unfriend.sql',
+  'supabase/reliability.sql',
   'supabase/shop-drops.sql',
 ]
 

@@ -1,6 +1,8 @@
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { useEffect, useState } from 'react'
-import { Linking, Platform, StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
+import { syncFailed } from '../../src/lib/sync-line.js'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
 import { confirmDone } from '../lib/confirm.js'
@@ -117,6 +119,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const colors = useHallColors(book)
   const prefs = usePrefs()
   const account = useAccount()
+  const sync = useSync()
   const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
@@ -224,6 +227,11 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
 
+      {account.email && syncFailed(sync) ? (
+        <Pressable accessibilityRole="button" onPress={() => pullAndMerge()} hitSlop={8}>
+          <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
+        </Pressable>
+      ) : null}
       <SetCap colors={colors}>{t('account.kicker')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
@@ -493,6 +501,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 const styles = StyleSheet.create({
   version: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, marginBottom: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 14, marginHorizontal: 3, marginTop: 4 },
+  syncMiss: { fontFamily: fonts.ui, fontSize: 12, marginHorizontal: 3, marginTop: 4 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700', marginBottom: 4 },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

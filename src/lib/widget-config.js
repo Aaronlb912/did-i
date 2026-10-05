@@ -3,7 +3,7 @@ import { byAskTime } from './board-json.js'
 import { currentBook } from './board-shelf.js'
 import { normalizePurse } from './purse.js'
 import { readPrefs, resolveTheme } from './prefs.js'
-import { askAfterPassed, boardDate, faceSwipeTonight, waitingTonight } from './recurrence.js'
+import { askAfterPassed, boardDate, faceSwipeTonight, graceNightIso, waitingTonight } from './recurrence.js'
 import { mustSwipeDeadline } from './lamp-deadline.js'
 
 const LOOK_IDS = new Set([
@@ -121,6 +121,46 @@ export function widgetAskTimes(boards, now) {
     if (at > now.getTime()) times.add(at)
   }
   return [...times].sort((a, b) => a - b).map((at) => new Date(at))
+}
+
+// The first minute after `now` where `read` gives a different answer, within
+// a day. Works in the person's zone because `read` does (boardDate).
+function nextChange(read, now) {
+  const start = read(now)
+  const step = 60 * 60 * 1000
+  let lo = now.getTime()
+  let hi = 0
+  for (let at = lo + step; at <= lo + 26 * step; at += step) {
+    if (read(new Date(at)) !== start) {
+      hi = at
+      break
+    }
+    lo = at
+  }
+  if (!hi) return null
+  while (hi - lo > 60 * 1000) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (read(new Date(mid)) !== start) hi = mid
+    else lo = mid
+  }
+  return new Date(hi)
+}
+
+// Every moment the Tonight widget has to redraw with the app closed: the
+// next night starting (midnight), last night's grace period ending, and
+// each ask time still to come. Night turns first, so the cap never drops them.
+export function widgetRedrawTimes(boards, now) {
+  const turns = [nextChange((at) => boardDate(at), now), nextChange((at) => graceNightIso(at), now)]
+    .filter(Boolean)
+    // A few seconds past the turn, so the redraw reads the new night.
+    .map((at) => new Date(at.getTime() + 5000))
+  const seen = new Set()
+  return [...turns, ...widgetAskTimes(boards, now)].filter((at) => {
+    const key = at.getTime()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 /** Open rows ready to ask now come before waiting ones; priority orders each group. */

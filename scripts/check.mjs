@@ -72,7 +72,9 @@ import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
 import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, isLive, isTeased, normalizePurse } from '../src/lib/purse.js'
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
+import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
+import { forgetAccountCaches } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
@@ -2319,7 +2321,7 @@ test('the last cloud save reads as a local time, not a raw timestamp', () => {
   assert.equal(stampWhen('not a date'), '')
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
-  assert.ok(more.includes("t('account.syncSaved', { time: stampWhen(sync.at) })"))
+  assert.ok(more.includes('t(line.key, { time: stampWhen(line.at) })'))
 })
 
 test('deadline questions before the due night do not count on the tonight meter', () => {
@@ -4034,6 +4036,152 @@ test('every Settings row moved under More is still on a route, phone and web', (
   }
   for (const key of ['settings.phonePrivacy', 'appVersionLines', 'settings.replayIntro']) assert.ok(phone.includes(key), `phone ${key}`)
   assert.ok(phone.includes("goHash('/settings/more')") && web.includes("goHash('/settings/more')"))
+})
+
+
+test('the widget redraws at midnight and when last night\'s grace ends', async () => {
+  const { widgetRedrawTimes } = await import('../src/lib/widget-config.js')
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const now = new Date('2026-09-23T19:00:00')
+  const times = widgetRedrawTimes([book], now)
+  assert.ok(times.length >= 2, `got ${times.length}`)
+  // Night turns come first, so the native cap of 12 never drops midnight.
+  const turn = times[0]
+  assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
+  assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
+  assert.ok(times.some((d) => d.getHours() === 21 && d.getMinutes() === 0), 'ask times stay')
+  assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
+  assert.ok(times.every((d) => d > now))
+})
+
+test('a widget card from an earlier night does not win after midnight', async () => {
+  const { preferStoredTonightProps, tonightWidgetKey } = await import('../src/lib/widget-tonight.js')
+  const stored = {
+    items: [{ lampId: 'a', periodKey: '2026-09-23', status: 'open' }, { lampId: 'b', periodKey: '2026-09-23', status: 'open' }],
+    leadLampId: 'a',
+    updatedAt: new Date('2026-09-23T22:00:00').getTime(),
+  }
+  const built = {
+    items: [{ lampId: 'a', periodKey: '2026-09-24', status: 'open' }],
+    leadLampId: 'a',
+    updatedAt: new Date('2026-09-24T12:00:00').getTime(),
+  }
+  assert.equal(preferStoredTonightProps(built, stored), built)
+  // Same night, more open on the card: the card still wins (taps saved natively).
+  const sameNight = { ...built, updatedAt: new Date('2026-09-23T22:30:00').getTime() }
+  assert.equal(preferStoredTonightProps(sameNight, stored).items, stored.items)
+  // The redraw key moves when an answer from another phone lands.
+  const answered = { ...built, items: [{ ...built.items[0], status: 'done' }] }
+  assert.notEqual(tonightWidgetKey(built), tonightWidgetKey(answered))
+  assert.equal(tonightWidgetKey(built), tonightWidgetKey({ ...built, updatedAt: 1 }))
+})
+
+test('the sync line says synced just now, or saved on this phone after a miss', async () => {
+  const { syncLine, syncFailed } = await import('../src/lib/sync-line.js')
+  const now = Date.parse('2026-10-05T12:00:00Z')
+  assert.equal(syncLine({ how: 'saved', at: '2026-10-05T11:59:30Z' }, now).key, 'account.syncJust')
+  const older = syncLine({ how: 'saved', at: '2026-10-05T11:00:00Z' }, now)
+  assert.equal(older.key, 'account.syncSaved')
+  assert.equal(older.at, '2026-10-05T11:00:00Z')
+  assert.equal(syncLine({ how: 'miss', miss: 'net' }, now).key, 'account.syncLocal')
+  assert.equal(syncLine({ how: 'busy' }, now).key, 'account.syncBusy')
+  assert.equal(syncLine({ how: 'out' }, now).key, 'account.syncIdle')
+  assert.ok(syncFailed({ how: 'miss' }))
+  assert.ok(!syncFailed({ how: 'saved' }))
+  const { en } = await import('../src/locales/en.js')
+  for (const key of ['account.syncJust', 'account.syncLocal', 'settings.syncMiss', 'pings.test', 'pings.testOff']) assert.ok(en[key], key)
+})
+
+test('the error log keeps no personal content and is capped', async () => {
+  const { errorCode } = await import('../src/lib/app-errors.js')
+  assert.equal(errorCode(new Error('FetchError: could not reach did I walk the dog')), 'FetchError:')
+  assert.equal(errorCode({ code: 'PGRST301', message: 'secret' }), 'PGRST301')
+  assert.equal(errorCode(null), 'unknown')
+  assert.ok(errorCode('x'.repeat(200)).length <= 80)
+  const sql = readFileSync(path.join(checkRoot, 'supabase/reliability.sql'), 'utf8')
+  assert.ok(sql.includes('enable row level security'), 'app_errors has RLS')
+  assert.ok(sql.includes('(select auth.uid())'), 'policies use (select auth.uid())')
+  assert.ok(!/grant select[^;]*app_errors/i.test(sql), 'nobody but the service role reads the log')
+  assert.ok(!sql.slice(sql.indexOf('create table if not exists public.app_errors')).includes('user_id'), 'the error log has no user id')
+  assert.ok(sql.includes("interval '90 days'"), 'old phones drop off after 90 days')
+  const all = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(all.includes("'supabase/reliability.sql'"))
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(sync.includes("recordAppError('sync'"), 'failed syncs are logged')
+  const push = readFileSync(path.join(checkRoot, 'supabase/functions/push/index.ts'), 'utf8')
+  assert.ok(push.includes("from('app_errors')"), 'failed pushes are logged')
+  assert.ok(!push.includes('user_id: row.to_id'), 'push errors carry no user id')
+})
+
+test('a sheet that pops up on Tonight catches the next tap', () => {
+  const sheet = readFileSync(path.join(checkRoot, 'native/components/SheetHost.jsx'), 'utf8')
+  assert.ok(!sheet.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the veil never lets a tap through to Did or Nope')
+  assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
+})
+
+test('signing out clears the per-account lists kept for a fast first paint', () => {
+  const was = globalThis.localStorage
+  const keys = ['did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs']
+  try {
+    // A browser: length and key().
+    const web = new Map(keys.map((k) => [k, '1']))
+    globalThis.localStorage = {
+      get length() {
+        return web.size
+      },
+      key: (i) => [...web.keys()][i] ?? null,
+      getItem: (k) => web.get(k) ?? null,
+      setItem: (k, v) => web.set(k, v),
+      removeItem: (k) => web.delete(k),
+    }
+    forgetAccountCaches()
+    assert.deepEqual([...web.keys()].sort(), ['did-i-prefs', 'did-i-shelf'])
+    // The phone shim: allKeys().
+    const phone = new Map(keys.map((k) => [k, '1']))
+    globalThis.localStorage = {
+      allKeys: () => [...phone.keys()],
+      getItem: (k) => phone.get(k) ?? null,
+      setItem: (k, v) => phone.set(k, v),
+      removeItem: (k) => phone.delete(k),
+    }
+    forgetAccountCaches()
+    assert.deepEqual([...phone.keys()].sort(), ['did-i-prefs', 'did-i-shelf'])
+  } finally {
+    globalThis.localStorage = was
+  }
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const account = readFileSync(path.join(root, 'src/lib/account.js'), 'utf8')
+  const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
+  const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
+  assert.equal((account.match(/forgetAccountCaches\(\)/g) || []).length, 3, 'sign out here, everywhere, and delete clear them')
+  assert.ok(sync.includes('forgetAccountCaches()'), 'a session that ends on its own clears them')
+  assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
+})
+
+test('the web ships English and loads the language in use; the phone loads all', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const i18n = readFileSync(path.join(root, 'src/lib/i18n.js'), 'utf8')
+  const main = readFileSync(path.join(root, 'src/main.jsx'), 'utf8')
+  const entry = readFileSync(path.join(root, 'index.js'), 'utf8')
+  const imports = i18n.match(/from '\.\.\/locales\/\w+\.js'/g) || []
+  assert.deepEqual(imports, ["from '../locales/en.js'"], 'only English is in the main bundle')
+  assert.ok(main.includes('startLocales().finally(mount)'), 'the web waits for its language before the first render')
+  assert.ok(entry.includes("import './src/lib/locales-all.js'"), 'the phone has every language at start')
+  const was = globalThis.localStorage.getItem('did-i-prefs')
+  try {
+    globalThis.localStorage.setItem('did-i-prefs', JSON.stringify({ locale: 'es' }))
+    assert.notEqual(t('nav.home'), en['nav.home'], 'a loaded language is used')
+  } finally {
+    if (was == null) globalThis.localStorage.removeItem('did-i-prefs')
+    else globalThis.localStorage.setItem('did-i-prefs', was)
+  }
 })
 
 console.log(`\n${ran - failed} of ${ran} passed`)

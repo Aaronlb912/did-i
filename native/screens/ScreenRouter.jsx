@@ -3,52 +3,56 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
 import { goHash, redirectFrom } from '../navigation/hash.js'
+import { lazyScreen } from '../lib/lazy-screen.jsx'
 import { LegalScreen } from './LegalScreen.jsx'
-import {
-  AboutScreen,
-  AccountScreen,
-  BoardsScreen,
-  CalendarScreen,
-  EnterScreen,
-  FeedScreen,
-  FirstNightScreen,
-  HelpScreen,
-  IdeasScreen,
-  LaterScreen,
-  MarksScreen,
-  PingScreen,
-  StatsScreen,
-  StreaksScreen,
-  WeekGridScreen,
-  WelcomeScreen,
-} from './more.jsx'
-import { PhoneSettingsScreen, ProfileScreen } from './profile.jsx'
-import { WeCardScreen, WeHomeScreen } from './we.jsx'
-import { AddScreen } from './AddScreen.jsx'
 import { LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
-import {
-  CollectionScreen,
-  GemShopScreen,
-  GiftScreen,
-  GiftsSentScreen,
-  ShopAccessoriesScreen,
-  ShopBuddiesScreen,
-  ShopCheersScreen,
-  ShopLooksScreen,
-  ShopScreen,
-} from './shop.jsx'
-import {
-  FamilyScreen,
-  FriendScreen,
-  FriendsScreen,
-  InboxScreen,
-  PeopleConnectScreen,
-  PeopleReferScreen,
-  PeopleScreen,
-  SentScreen,
-} from './social.jsx'
 import { TonightScreen } from './TonightScreen.jsx'
-import { ScanScreen } from './ScanScreen.jsx'
+
+// Everything off the two tabs loads the first time it opens.
+const more = () => require('./more.jsx')
+const AboutScreen = lazyScreen(more, 'AboutScreen')
+const AccountScreen = lazyScreen(more, 'AccountScreen')
+const BoardsScreen = lazyScreen(more, 'BoardsScreen')
+const CalendarScreen = lazyScreen(more, 'CalendarScreen')
+const EnterScreen = lazyScreen(more, 'EnterScreen')
+const FeedScreen = lazyScreen(more, 'FeedScreen')
+const FirstNightScreen = lazyScreen(more, 'FirstNightScreen')
+const HelpScreen = lazyScreen(more, 'HelpScreen')
+const IdeasScreen = lazyScreen(more, 'IdeasScreen')
+const LaterScreen = lazyScreen(more, 'LaterScreen')
+const MarksScreen = lazyScreen(more, 'MarksScreen')
+const PingScreen = lazyScreen(more, 'PingScreen')
+const StatsScreen = lazyScreen(more, 'StatsScreen')
+const StreaksScreen = lazyScreen(more, 'StreaksScreen')
+const WeekGridScreen = lazyScreen(more, 'WeekGridScreen')
+const WelcomeScreen = lazyScreen(more, 'WelcomeScreen')
+const profile = () => require('./profile.jsx')
+const PhoneSettingsScreen = lazyScreen(profile, 'PhoneSettingsScreen')
+const ProfileScreen = lazyScreen(profile, 'ProfileScreen')
+const we = () => require('./we.jsx')
+const WeCardScreen = lazyScreen(we, 'WeCardScreen')
+const WeHomeScreen = lazyScreen(we, 'WeHomeScreen')
+const AddScreen = lazyScreen(() => require('./AddScreen.jsx'), 'AddScreen')
+const shop = () => require('./shop.jsx')
+const CollectionScreen = lazyScreen(shop, 'CollectionScreen')
+const GemShopScreen = lazyScreen(shop, 'GemShopScreen')
+const GiftScreen = lazyScreen(shop, 'GiftScreen')
+const GiftsSentScreen = lazyScreen(shop, 'GiftsSentScreen')
+const ShopAccessoriesScreen = lazyScreen(shop, 'ShopAccessoriesScreen')
+const ShopBuddiesScreen = lazyScreen(shop, 'ShopBuddiesScreen')
+const ShopCheersScreen = lazyScreen(shop, 'ShopCheersScreen')
+const ShopLooksScreen = lazyScreen(shop, 'ShopLooksScreen')
+const ShopScreen = lazyScreen(shop, 'ShopScreen')
+const social = () => require('./social.jsx')
+const FamilyScreen = lazyScreen(social, 'FamilyScreen')
+const FriendScreen = lazyScreen(social, 'FriendScreen')
+const FriendsScreen = lazyScreen(social, 'FriendsScreen')
+const InboxScreen = lazyScreen(social, 'InboxScreen')
+const PeopleConnectScreen = lazyScreen(social, 'PeopleConnectScreen')
+const PeopleReferScreen = lazyScreen(social, 'PeopleReferScreen')
+const PeopleScreen = lazyScreen(social, 'PeopleScreen')
+const SentScreen = lazyScreen(social, 'SentScreen')
+const ScanScreen = lazyScreen(() => require('./ScanScreen.jsx'), 'ScanScreen')
 
 const HALL = new Set(['/', '/home', '/tonight'])
 
