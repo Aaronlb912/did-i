@@ -19,6 +19,7 @@ import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
+import { openNightWhy } from '../components/NightSheets.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -418,14 +419,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
           ) : null}
           {summary ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('tonight.openCalendar')}
-              onPress={() => goHash('/calendar')}
-              style={({ pressed }) => pressed && { opacity: 0.7 }}
-            >
-              <NightWeek nights={summary.week} colors={colors} />
-            </Pressable>
+            <NightWeek
+              nights={summary.week}
+              colors={colors}
+              onNight={(iso) =>
+                openNightWhy({ colors, boards: stack.shelf, iso, now: stack.clock, tagId, onCalendar: () => goHash('/calendar') })
+              }
+            />
           ) : null}
           {summary ? (
             <Text style={[faceCardStyles.meta, styles.tomorrow, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>

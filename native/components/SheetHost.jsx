@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
@@ -104,6 +104,7 @@ export function SheetHost() {
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
         {sheet.body ? <Text style={[styles.body, sheet.center && styles.mid, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
+        {sheet.content ? <ScrollView style={styles.content}>{sheet.content}</ScrollView> : null}
         {sheet.quote ? (
           <Text style={[styles.quote, sheet.center ? styles.quoteMid : { borderLeftWidth: 3, paddingLeft: 10, borderColor: colors.on }, { color: colors.ink }]}>{sheet.quote}</Text>
         ) : null}
@@ -151,6 +152,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   preview: { alignItems: 'center', marginBottom: 2 },
+  content: { maxHeight: 320 },
   title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },

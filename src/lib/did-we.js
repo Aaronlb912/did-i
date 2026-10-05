@@ -472,6 +472,11 @@ function loadShared(force, userId) {
   return inflight
 }
 
+// The question on a Did we card from the last load, or empty if not loaded.
+export function weCardTitle(id) {
+  return (shared.cards || []).find((card) => card.id === id)?.question || ''
+}
+
 export function useWeTonight(user) {
   const [state, setState] = useState(() => (user?.id ? sharedFor_(user.id) : EMPTY))
 

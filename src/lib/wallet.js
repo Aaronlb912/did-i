@@ -289,3 +289,17 @@ export function applyCosmeticBuyToBook(book, remote, opts = {}) {
 export function applyCoinCosmeticsToShelf(shelf, payload) {
   return applyCoinCatalogToShelf(shelf, { catalog: payload })
 }
+
+// Signed in: { nights: [{ night, coins }], gemWeek } from the server, or null.
+export async function readCoinHistory() {
+  const db = cloud()
+  if (!db) return null
+  const user = await readUser()
+  if (!user) return null
+  const { data, error } = await db.rpc('read_coin_history')
+  if (error || !data) return null
+  const nights = (Array.isArray(data.nights) ? data.nights : [])
+    .map((row) => ({ night: String(row.night || '').slice(0, 10), coins: Math.max(0, Math.floor(Number(row.coins) || 0)) }))
+    .filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.night))
+  return { nights, gemWeek: String(data.gem_week || '') }
+}
