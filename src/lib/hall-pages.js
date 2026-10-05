@@ -8,11 +8,13 @@ import {
   formatBoardDate,
   isoDate,
   parseIsoDate,
+  rowDoneTonight,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
+import { weNight } from './we-nights.js'
 import { uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
@@ -83,7 +85,7 @@ function startNight(book) {
   return first
 }
 
-function nightMarks(books, iso, today) {
+function nightMarks(books, iso, today, tagId = '') {
   // Future nights and nights before you started stay blank.
   if (iso > today) return { due: 0, on: false, miss: false, empty: true }
   books = books.filter((book) => {
@@ -97,8 +99,14 @@ function nightMarks(books, iso, today) {
     // A deadline still days away is optional, so it does not break the night.
     const due = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
     dueCount += due.length
-    if (due.length && !due.every((row) => row.answer)) clear = false
+    // Only a did fills the dot, the same rule as the streak: a nope night is
+    // not a cleared night.
+    if (due.length && !due.every(rowDoneTonight)) clear = false
   }
+  // A Did we due for you counts too, as it does for the streak.
+  const we = weNight(iso, tagId)
+  dueCount += we.due
+  if (we.due && !we.clear) clear = false
   return {
     due: dueCount,
     on: dueCount > 0 && clear,
@@ -165,7 +173,7 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   const nights = []
   for (let i = 6; i >= 0; i -= 1) {
     const iso = addDaysIso(end, -i)
-    const marks = nightMarks(books, iso, today)
+    const marks = nightMarks(books, iso, today, tagId)
     nights.push({
       iso,
       weekday: weekdayShort(iso),
@@ -204,7 +212,7 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
       pad: false,
       dayNum: String(day),
       isToday: iso === today,
-      ...nightMarks(books, iso, today),
+      ...nightMarks(books, iso, today, tagId),
     })
   }
   while (nights.length % 7 !== 0) {
