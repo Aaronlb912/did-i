@@ -1327,7 +1327,7 @@ export const it = {
   'ideas.pills.kind': 'Medicina',
   'ideas.pills.question': 'Ho preso le pillole della sera?',
   'ideas.pills.body': 'La cosa che non riesci a ricostruire a memoria alle 23.',
-  'ideas.pills.start': 'Pillole',
+  'ideas.pills.start': 'Pillole della sera',
   'ideas.door.kind': 'La casa',
   'ideas.door.question': 'Ho chiuso la porta sul retro?',
   'ideas.door.body':
@@ -2514,7 +2514,8 @@ export const it = {
   'we.earlyDid': 'Hai detto sì per {day}.',
   'we.earlyNope': 'Hai detto no per {day}.',
   'we.earlyUndo': 'Annulla',
-  'pack.label': 'Oppure aggiungine alcune insieme',
+  'pack.label': 'Pacchetti di domande',
+  'pack.count': '+{n} domande',
   'pack.bedtime': 'Prima di dormire',
   'pack.meds': 'Medicine',
   'pack.house': 'Casa',

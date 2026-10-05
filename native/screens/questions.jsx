@@ -850,7 +850,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const fresh = !hang.editing && !copySource
   const starters = fresh ? unusedStarters(book, clock) : []
   const picked = starters.find((starter) => starter.question === draft.question) || null
-  const packs = fresh ? packList(book) : []
+  // Packs help someone getting started; once a folder has a few questions they
+  // would just be in the way every time, so they go.
+  const fewSoFar = (book?.lamps || []).filter((lamp) => !lamp.archived).length < 3
+  const packs = fresh && fewSoFar ? packList(book) : []
   const [packUndo, setPackUndo] = useState(null)
   useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'))
   useEffect(() => {
@@ -1099,12 +1102,22 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         />
         {packs.length && !blank.trim() ? (
           <View style={styles.packs}>
-            <Text style={[styles.packLabel, { color: colors.inkSoft }]}>{t('pack.label')}</Text>
-            <View style={styles.topKeys}>
-              {packs.map((pack) => (
-                <KeyButton key={pack.id} label={pack.title} colors={colors} onPress={() => askPack(pack)} />
+            <SetCap colors={colors}>{t('pack.label')}</SetCap>
+            {/* One row per pack: what it adds is right there, so it never reads as another idea chip. */}
+            <SetCard colors={colors}>
+              {packs.map((pack, at) => (
+                <SetRow
+                  key={pack.id}
+                  colors={colors}
+                  label={pack.title}
+                  sub={pack.items.map((item) => shortLabel(item)).join(', ')}
+                  value={t('pack.count', { n: pack.items.length })}
+                  chevron
+                  last={at === packs.length - 1}
+                  onPress={() => askPack(pack)}
+                />
               ))}
-            </View>
+            </SetCard>
           </View>
         ) : null}
       </View>
