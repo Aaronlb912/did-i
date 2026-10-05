@@ -30,6 +30,7 @@ import {
   weNextNight,
   weNudge,
   weStreak,
+  weCardKept,
   weTonight,
   weWaiting,
   useWeTonight,
@@ -43,6 +44,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { canGoBack, goBack, goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
@@ -57,8 +59,10 @@ function Cap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
 }
 
-function usePeople() {
-  const [people, setPeople] = useState(null)
+// Friends and family to pick from: last launch's list first, then fresh.
+export function usePeople() {
+  const account = useAccount()
+  const [people, setPeople] = useKept(`we.people:${account.user?.id}`, null, KEEP)
   useEffect(() => {
     let alive = true
     weKnownPeople().then((rows) => {
@@ -604,7 +608,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const colors = useHallColors(book)
   const cheer = useWeCheer(book, onChange)
   const people = usePeople()
-  const [card, setCard] = useState(undefined)
+  const [card, setCard] = useState(() => weCardKept(cardId))
   const [edit, setEdit] = useState(null)
   const [asking, setAsking] = useState([])
   const [busy, setBusy] = useState(false)
