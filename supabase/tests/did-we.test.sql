@@ -286,6 +286,46 @@ begin
   update public.profiles set prefs = jsonb_build_object('pingsOff', jsonb_build_array('we')) where user_id = b;
   if public.push_wanted(b, 'we') then raise exception 'FAIL: the Did we switch did nothing'; end if;
 
+  -- A card nobody answered for 3 due nights pauses, and a member can restart it.
+  insert into public.we_cards (made_by, question, starts_on) values (a, 'Did we stretch?', night - 10)
+  returning id into card;
+  insert into public.we_members (card_id, user_id, state, joined_at)
+  values (card, a, 'in', now() - interval '10 days'), (card, b, 'in', now() - interval '10 days');
+  if not public.we_paused(card, night) then raise exception 'FAIL: 3 quiet nights did not pause'; end if;
+  insert into public.we_answers (card_id, user_id, night, status) values (card, b, night - 2, 'nope');
+  if public.we_paused(card, night) then raise exception 'FAIL: a nope 2 nights back still paused'; end if;
+  if not public.we_paused(card, night + 3) then raise exception 'FAIL: 3 more quiet nights did not pause'; end if;
+  delete from public.we_answers where card_id = card;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select (x->>'paused')::boolean into ok from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = card::text;
+  if not ok then raise exception 'FAIL: we_tonight did not say paused'; end if;
+  if not exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night and w.paused) then
+    raise exception 'FAIL: my_we_nights did not mark tonight paused';
+  end if;
+  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night - 9 and w.paused) then
+    raise exception 'FAIL: an early night was marked paused';
+  end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.we_restart(card);
+    raise exception 'FAIL: a stranger restarted a card';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.we_restart(card);
+  select (x->>'paused')::boolean into ok from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = card::text;
+  if ok then raise exception 'FAIL: restart did not unpause'; end if;
+  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night and w.paused) then
+    raise exception 'FAIL: tonight still paused after restart';
+  end if;
+  execute 'reset role';
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;

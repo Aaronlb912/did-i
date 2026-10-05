@@ -16,7 +16,7 @@ import {
 } from '../../src/lib/prefs.js'
 import { ownedLookIds, readWidgetSettings } from '../../src/lib/widget-config.js'
 import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
-import { WIDGET_NAME } from '../../src/lib/widget-tonight.js'
+import { pinWidget, showWidgetHow } from '../lib/widget-pin.js'
 import { useAccount } from '../../src/lib/account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -31,7 +31,6 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
-import { publishSheet } from '../components/SheetHost.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { SavableSetField } from '../components/SavableSetField.jsx'
 import { KeyButton } from '../components/ui.jsx'
@@ -44,30 +43,6 @@ import {
   SetSwitch,
 } from '../components/SetBits.jsx'
 
-function showWidgetHow(colors) {
-  publishSheet({
-    title: t('widget.settings.howAdd'),
-    body: t(Platform.OS === 'ios' ? 'widget.settings.howAddIos' : 'widget.settings.howAddAndroid'),
-    closeLabel: t('settings.close'),
-    colors,
-    onClose: () => publishSheet(null),
-  })
-}
-
-// Asks the launcher to put the widget on the home screen. Launchers that
-// cannot (or a build without the call) get the steps instead.
-async function pinWidget(colors) {
-  let asked = false
-  try {
-    const mod = await import('react-native-android-widget')
-    if (typeof mod?.requestPinWidget === 'function') {
-      asked = await mod.requestPinWidget({ widgetName: WIDGET_NAME })
-    }
-  } catch {
-    asked = false
-  }
-  if (!asked) showWidgetHow(colors)
-}
 
 export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
