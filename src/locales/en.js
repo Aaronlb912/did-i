@@ -1423,6 +1423,8 @@ export const en = {
     'Tonight does not write localStorage. Persist in the host. Pass now if you need a frozen clock.',
   'site.into.back': 'Back to the door',
   'device.android': 'Android app',
+  'home.dropLine': 'New in the shop: {names}',
+  'home.dropHide': 'Hide',
   'device.ios': 'iPhone app',
   'device.safariIphone': 'Safari on iPhone',
   'device.browserAndroid': 'Browser on Android',

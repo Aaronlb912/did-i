@@ -33,6 +33,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { StillOpen } from '../components/StillOpen.jsx'
+import { DropLine } from '../components/DropLine.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { EditPen } from '../components/SwipeFace.jsx'
@@ -689,6 +690,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       ) : null}
 
       {showChips ? null : <Slot>{tagFilter}</Slot>}
+
+      {stack.cheer ? null : <DropLine colors={colors} />}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable

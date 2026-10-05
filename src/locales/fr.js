@@ -1432,6 +1432,8 @@ export const fr = {
     'Tonight n\'écrit pas localStorage. Persiste dans l\'hôte. Passe now si tu as besoin d\'une horloge figée.',
   'site.into.back': 'Retour à la porte',
   'device.android': 'App Android',
+  'home.dropLine': 'Nouveau dans la boutique : {names}',
+  'home.dropHide': 'Masquer',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari sur iPhone',
   'device.browserAndroid': 'Navigateur sur Android',
