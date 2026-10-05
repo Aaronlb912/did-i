@@ -18,8 +18,11 @@ import {
   faceSwipeTonight,
   isDueOn,
   isoDate,
+  periodLabel,
+  periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
+import { lampNights, lampWeeks } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -766,6 +769,50 @@ test('two phones combine instead of overwriting', () => {
   assert.deepEqual(book.lamps.map((one) => one.id).sort(), ['x', 'y'])
   assert.equal(book.coins, 9, 'the bigger purse wins')
   assert.equal(book.gems, 7, 'and per column, not per phone')
+})
+
+test('an answer night reads as a date, never the raw key, once questions included', () => {
+  const once = lamp('di-vqcaay81', { cadence: 'once', onceOn: '2026-10-01' })
+  const by = lamp('b', { cadence: 'once', onceWhen: 'by', dueBy: '2026-10-03', onceOn: '2026-09-01' })
+  assert.equal(periodNight(once, 'once:di-vqcaay81'), '2026-10-01')
+  assert.equal(periodNight(by, 'once:b'), '2026-10-03', 'a by-date once uses its due day')
+  assert.equal(periodNight(lamp('n', { cadence: 'once', createdOn: '' }), 'once:n'), '', 'no day, no guess')
+  assert.equal(periodLabel(once, 'once:di-vqcaay81'), 'Thu, Oct 1')
+  assert.equal(periodLabel(lamp('x'), '2026-10-01'), 'Thu, Oct 1')
+  assert.equal(periodLabel(lamp('m', { cadence: 'monthly' }), '2026-10'), 'Oct 2026')
+  assert.ok(!periodLabel(null, 'once:gone').includes('once:'), 'a deleted question still hides the key')
+  // Notes list order: newest night first, the once answer on its own day.
+  const book = {
+    lamps: [once],
+    answers: [{ lampId: 'di-vqcaay81', periodKey: 'once:di-vqcaay81', status: 'yes' }],
+  }
+  assert.deepEqual(lampNights(book, once).map((row) => row.night), ['2026-10-01'])
+  const daily = lamp('d')
+  const nights = lampNights({ answers: [
+    { lampId: 'd', periodKey: '2026-09-30', status: 'yes' },
+    { lampId: 'd', periodKey: '2026-10-02', status: 'skip' },
+    { lampId: 'z', periodKey: '2026-10-03', status: 'yes' },
+  ] }, daily)
+  assert.deepEqual(nights.map((row) => row.night), ['2026-10-02', '2026-09-30'], 'only this question, newest first')
+  // The Sunday recap counts a once Did on its day.
+  const week = Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso('2026-09-28', i), on: false }))
+  assert.equal(weekRecap([book], week).dids, 1)
+})
+
+test('a question page trend counts dids out of due per week, tonight only once answered', () => {
+  const daily = lamp('d', { createdOn: '2026-09-01' })
+  const answers = [
+    { lampId: 'd', periodKey: '2026-10-05', status: 'yes' },
+    { lampId: 'd', periodKey: '2026-10-04', status: 'late' },
+    { lampId: 'd', periodKey: '2026-10-03', status: 'skip' },
+  ]
+  const weeks = lampWeeks({ answers }, daily, '2026-10-05', 8)
+  assert.equal(weeks.length, 8)
+  assert.deepEqual(weeks[7], { from: '2026-09-29', due: 7, did: 2 })
+  assert.equal(weeks[0].due, 0, 'nights before the question was made are not due')
+  const open = lampWeeks({ answers: answers.slice(1) }, daily, '2026-10-05', 8)
+  assert.equal(open[7].due, 6, 'an unanswered tonight is not counted yet')
+  assert.deepEqual(lampWeeks({ answers }, lamp('o', { cadence: 'once' }), '2026-10-05'), [])
 })
 
 test('a note on one night rides the answer, is capped, and survives two phones syncing', () => {

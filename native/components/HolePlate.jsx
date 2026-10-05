@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { periodLabel } from '../../src/lib/recurrence.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
@@ -12,7 +13,7 @@ export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, on
       </Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>{lamp.question}</Text>
       <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-        {wasSkip ? t('hole.nopeBody') : periodKey}
+        {wasSkip ? t('hole.nopeBody') : periodLabel(lamp, periodKey)}
       </Text>
       <View style={styles.actions}>
         <DidButton label={t('hole.late')} colors={colors} small onPress={onLate} />

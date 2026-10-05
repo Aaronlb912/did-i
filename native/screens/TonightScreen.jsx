@@ -21,6 +21,7 @@ import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
+import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -440,6 +441,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           {coinsTomorrow ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
+          <TonightNote rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
         </GemFaceShell>
       </CardSettle>
     )
