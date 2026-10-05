@@ -13,7 +13,7 @@ export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 // Notification kinds a person can turn off. The first three are scheduled on
 // the phone; the rest are pushes, and the server reads prefs.pingsOff too
 // (push_wanted in supabase/push.sql), so keep the names in step.
-export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'cheers', 'friends', 'family', 'didi']
+export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'we', 'cheers', 'friends', 'family', 'didi']
 
 function blankPrefs() {
   return {

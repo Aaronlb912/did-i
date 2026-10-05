@@ -3872,5 +3872,23 @@ test('every t() key the app uses is in English', () => {
   assert.deepEqual([...missing], [])
 })
 
+test('a Did we not due tonight names its next night, same rule as we_due', async () => {
+  const { weNextDue, weNextLabel } = await import('../src/lib/we-next.js')
+  // 2026-10-05 is a Monday; Saturday is 6.
+  const sat = { cadence: 'weekly', weekdays: [6], startsOn: '2026-01-01' }
+  assert.equal(weNextDue(sat, '2026-10-05'), '2026-10-10')
+  assert.equal(weNextDue(sat, '2026-10-10'), '2026-10-17')
+  assert.equal(weNextDue({ cadence: 'daily', startsOn: '2026-01-01' }, '2026-10-05'), '2026-10-06')
+  assert.equal(weNextDue({ cadence: 'daily', startsOn: '2026-10-20' }, '2026-10-05'), '2026-10-20')
+  assert.equal(weNextDue({ ...sat, startsOn: '2026-10-12' }, '2026-10-05'), '2026-10-17')
+  assert.equal(weNextDue({ cadence: 'weekly', weekdays: [], startsOn: '2026-01-01' }, '2026-10-05'), '')
+  assert.equal(weNextLabel('2026-10-10', 'en-US'), 'Sat, Oct 10')
+  assert.equal(weNextLabel('', 'en-US'), '')
+  const { PING_KINDS } = await import('../src/lib/prefs.js')
+  assert.ok(PING_KINDS.includes('we'))
+  const sql = readFileSync(path.join(checkRoot, 'supabase/did-we.sql'), 'utf8')
+  assert.ok(!/push_wanted\([^)]*'sends'\)/.test(sql), 'Did we pushes use their own switch')
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

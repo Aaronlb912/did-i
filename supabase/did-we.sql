@@ -320,7 +320,7 @@ begin
     insert into public.push_queue (to_id, title, body, go)
     select m.user_id, 'Did we', left(public.push_text(m.user_id, 'we_done', jsonb_build_object('q', left(q, 120))), 200), '/tonight'
     from public.we_members m
-    where m.card_id = card and m.state = 'in' and public.push_wanted(m.user_id, 'sends');
+    where m.card_id = card and m.state = 'in' and public.push_wanted(m.user_id, 'we');
   elsif was_done and not now_done then
     delete from public.we_done where card_id = card and night = on_night;
   end if;
@@ -544,6 +544,26 @@ $$;
 revoke all on function public.we_edit(uuid, text, text, text, text, smallint[], smallint) from public;
 grant execute on function public.we_edit(uuid, text, text, text, text, smallint[], smallint) to authenticated;
 
+-- The owner closes it for everyone. Answers stay; it drops off every list.
+create or replace function public.we_close(card uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.we_cards set archived = true
+  where id = card and made_by = (select auth.uid()) and not archived;
+  if not found then
+    raise exception 'only the person who made it can change it';
+  end if;
+end;
+$$;
+
+revoke all on function public.we_close(uuid) from public;
+revoke all on function public.we_close(uuid) from anon;
+grant execute on function public.we_close(uuid) to authenticated;
+
 -- The extras the Add screen has: a time it comes up, a reminder at that
 -- time, and a note. The reminder is set on each phone from this.
 alter table public.we_cards add column if not exists ask_after text;
@@ -686,7 +706,7 @@ begin
     raise exception 'enough nudges tonight';
   end if;
   insert into public.we_nudges (card_id, from_id, to_id, night) values (card, who, other, on_night);
-  if public.push_wanted(other, 'sends') then
+  if public.push_wanted(other, 'we') then
     select coalesce(nullif(btrim(p.display_name), ''), 'Someone') into name
     from public.profiles p where p.user_id = who;
     select question into q from public.we_cards where id = card;
@@ -887,7 +907,7 @@ begin
   if tg_op = 'UPDATE' and old.state = 'asked' and old.asked_at = new.asked_at then
     return new;
   end if;
-  if not public.push_wanted(new.user_id, 'sends') then
+  if not public.push_wanted(new.user_id, 'we') then
     return new;
   end if;
   select coalesce(nullif(btrim(p.display_name), ''), 'Someone') into name
