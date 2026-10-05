@@ -52,6 +52,8 @@ export async function weTonight(night = tonightIso()) {
     for (const card of cards) if (totals.has(card.id)) card.total = totals.get(card.id)
   }
   for (const card of cards) {
+    // A paused card is not asked tonight: no pill, no swipe card, no reminder.
+    if (card.paused) card.due = false
     if (card.total == null) card.total = (card.people || []).filter((p) => p.state === 'in').length
   }
   return { cards, miss: '' }
@@ -148,7 +150,7 @@ export function weTimeReady(card, now = new Date()) {
 // and the reminder on. Tonight's is left out once you have answered or it is done.
 export function weReminders(cards, night = tonightIso()) {
   return (cards || [])
-    .filter((card) => card.myState === 'in' && card.remind !== false && card.askAfter)
+    .filter((card) => card.myState === 'in' && !card.paused && card.remind !== false && card.askAfter)
     .map((card) => ({
       id: card.id,
       question: card.question,
@@ -237,6 +239,13 @@ export const weReply = (card, yes) => call('we_reply', { card, yes })
 export const weLeave = (card) => call('we_leave', { card })
 // Only the maker can close it; the server checks.
 export const weClose = (card) => call('we_close', { card })
+// A paused card (nobody answered 3 nights) asks again from tonight.
+export const weRestart = (card) => call('we_restart', { card })
+
+// Paused cards you are on, for the line with a restart button.
+export function wePausedCards(cards) {
+  return (cards || []).filter((card) => card.myState === 'in' && card.paused)
+}
 // Filed in reports with the question; nothing is sent to anyone.
 export const reportWe = (card, why = '') => call('report_we', { card, why })
 export const weNudge = (card, other, night = tonightIso()) => call('we_nudge', { card, other, on_night: night })
@@ -480,6 +489,34 @@ export function takeWeFinishes(cards, night = tonightIso()) {
     cheer: card.finish.cheer || 'lime',
     stage: weCheerStage(card),
   }))
+}
+
+// "You both did it": a card done tonight where you and someone else both
+// said did. Shown once a night on this device, for the first such card.
+const BOTH_KEY = 'did-i-we-both-seen'
+
+export function weBothDid(card) {
+  if (!card?.done) return false
+  const people = (card.people || []).filter((p) => p.state === 'in')
+  return people.some((p) => p.me && p.status === 'did') && people.some((p) => !p.me && p.status === 'did')
+}
+
+export function takeWeBoth(cards, night = tonightIso()) {
+  let seen = ''
+  try {
+    seen = localStorage.getItem(BOTH_KEY) || ''
+  } catch {
+    seen = ''
+  }
+  if (seen === night) return null
+  const card = (cards || []).find((item) => item.myState === 'in' && weBothDid(item))
+  if (!card) return null
+  try {
+    localStorage.setItem(BOTH_KEY, night)
+  } catch {
+    // Without storage it may show again; better than never.
+  }
+  return card
 }
 
 function loadShared(force, userId) {

@@ -62,6 +62,8 @@ function index() {
   if (byNight) return byNight
   byNight = new Map()
   for (const row of rows) {
+    // A paused night (nobody answered 3 due nights) counts for nothing.
+    if (row.paused) continue
     const list = byNight.get(row.night)
     if (list) list.push(row)
     else byNight.set(row.night, [row])
@@ -91,6 +93,7 @@ export async function refreshWeNights() {
       folder: String(row.folder || ''),
       night: String(row.night || '').slice(0, 10),
       status: String(row.status || ''),
+      paused: row.paused === true,
     })),
   )
 }

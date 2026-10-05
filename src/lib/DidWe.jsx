@@ -30,7 +30,10 @@ import {
   weTimeReady,
   weTonight,
   weWaiting,
+  weRestart,
 } from './did-we.js'
+import { WE_LINK_MISS, joinWeLink, lookUpWeLink, saveWebWeLink } from './did-you-links.js'
+import { refreshWeNights } from './we-nights.js'
 import { readPrefs } from './prefs.js'
 import { clockWords } from './hall-pages.js'
 import { shelfTopics } from './board-json.js'
@@ -559,11 +562,11 @@ export function Shell({ book, title, plate = t('we.title'), children }) {
   )
 }
 
-function NeedAccount({ book, lead = false }) {
+function NeedAccount({ book, lead = false, note = '' }) {
   return (
     <Shell book={book} title={t('we.title')}>
       {lead ? <LeadSwitch mode="we" question="" /> : null}
-      <p className="di-set-note">{t('we.needAccount')}</p>
+      <p className="di-set-note">{note || t('we.needAccount')}</p>
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={() => goHash('/account')}>
           {t('we.signIn')}
@@ -640,11 +643,115 @@ const WE_IDEAS = ['we.idea.dog', 'we.idea.date', 'we.idea.gym', 'we.idea.call', 
 
 // The Did we home: asks, tonight's shared questions, all of yours, the month
 // together, and a start button. Reached from the menu.
-export function WeHome({ book, onChange }) {
+// A Did we link opened on the website (did-i.app/d/CODE, then /app#/we?link=).
+// Join here and the card opens, ready to answer tonight. Signed out, the code
+// is kept and sign-in brings you back (src/App.jsx).
+function WeLinkJoin({ book, code }) {
+  const [found, setFound] = useState(undefined)
+  const [busy, setBusy] = useState(false)
+  const [miss, setMiss] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    lookUpWeLink(code).then((next) => {
+      if (alive) setFound(next)
+    })
+    return () => {
+      alive = false
+    }
+  }, [code])
+
+  async function join(addFriend) {
+    setBusy(true)
+    const out = await joinWeLink(code, addFriend)
+    setBusy(false)
+    if (out.miss) return setMiss(t(WE_LINK_MISS[out.miss] || 'didYouLink.reach'))
+    refreshWeNights().catch(() => {})
+    goHash('/we', { id: out.card })
+  }
+
+  const name = found?.name || t('weLink.someone')
+  return (
+    <Shell book={book} title={t('we.title')}>
+      {found === undefined ? <p className="di-set-note">{t('we.loading')}</p> : null}
+      {found === null || found?.full || found?.miss ? (
+        <p className="di-set-note">
+          {t(found?.full ? 'weLink.full' : found?.miss ? 'didYouLink.reach' : 'didYouLink.bad')}
+        </p>
+      ) : null}
+      {found && !found.miss && !found.full ? (
+        <>
+          <h2 className="di-page-title">{t('weLink.asked', { name })}</h2>
+          <p className="di-set-note">{found.question}</p>
+          <p className="di-set-note">{t('weLink.people', { n: found.people })}</p>
+          <div className="di-hang-actions">
+            {found.name ? (
+              <button className="di-did di-did-small" type="button" disabled={busy} onClick={() => join(true)}>
+                {t('weLink.joinAdd', { name })}
+              </button>
+            ) : null}
+            <button
+              className={found.name ? 'di-key' : 'di-did di-did-small'}
+              type="button"
+              disabled={busy}
+              onClick={() => join(false)}
+            >
+              {found.name ? t('weLink.join') : t('weLink.joinPlain')}
+            </button>
+          </div>
+        </>
+      ) : null}
+      {miss ? (
+        <p className="di-miss" role="alert">
+          {miss}
+        </p>
+      ) : null}
+      <div className="di-hang-actions">
+        <button className="di-key" type="button" onClick={() => goHash('/we')}>
+          {t('didYouLink.no')}
+        </button>
+      </div>
+    </Shell>
+  )
+}
+
+// Paused: nobody answered 3 nights. Any member can restart it.
+function WePaused({ card, onDone }) {
+  const [busy, setBusy] = useState(false)
+  const [miss, setMiss] = useState('')
+  if (!card.paused || card.myState !== 'in') return null
+  async function restart() {
+    setBusy(true)
+    const out = await weRestart(card.id)
+    setBusy(false)
+    setMiss(out.miss ? tMiss(out.miss) : '')
+    if (!out.miss) onDone()
+  }
+  return (
+    <div className="di-hang-actions">
+      <span className="di-set-note">{t('we.paused')}</span>
+      <button className="di-key" type="button" disabled={busy} onClick={restart}>
+        {t('we.restart')}
+      </button>
+      {miss ? (
+        <span className="di-miss" role="alert">
+          {miss}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+export function WeHome({ book, onChange, link = '' }) {
   const account = useAccount()
   const { cards, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
+  if (link && account.ready && !account.user) {
+    saveWebWeLink(link)
+    return <NeedAccount book={book} note={t('weLink.webSignIn')} />
+  }
+  if (link && account.user) return <WeLinkJoin book={book} code={link} />
   if (account.ready && !account.user) return <NeedAccount book={book} />
   const mine = cards.filter((card) => card.myState === 'in')
   const month = new Date().toISOString().slice(0, 7)
@@ -679,10 +786,11 @@ export function WeHome({ book, onChange }) {
               <WeFaces card={card} />
               <em>
                 {card.folder ? `${card.folder} · ` : ''}
-                {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
+                {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
                 {weStreak(card) > 0 ? ` · ${t('we.streak', { n: weStreak(card) })}` : ''}
               </em>
             </button>
+            <WePaused card={card} onDone={reload} />
             {open ? (
               <div className="di-hang-actions">
                 <button className="di-did di-did-small" type="button" onClick={() => ans.answer(card, 'did')}>
@@ -822,6 +930,7 @@ function WeCardPage({ book, cardId, onChange }) {
       <h2 className="di-page-title">{card.question}</h2>
       <WeFaces card={card} cheer={cheer} />
       <p className="di-set-note">{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</p>
+      <WePaused card={card} onDone={load} />
       <p className="di-set-note">
         {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
         {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}

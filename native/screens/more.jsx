@@ -32,7 +32,6 @@ import {
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
 import {
-  blankLamp,
   didQuestion,
   isOnceBy,
   lampNotifyOn,
@@ -40,7 +39,6 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
-import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -80,7 +78,10 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, upcomingPings } from '../../src/lib/notify.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
+import { packList, unusedStarters } from '../../src/lib/starters.js'
+import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
+import { cloudSetUp } from '../../src/lib/cloud.js'
+import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -498,7 +499,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 
   return (
     <ScreenShell title={t('cal.aria')} colors={colors}>
-      <Meta colors={colors}>{t('cal.hint')}</Meta>
+      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
       <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
       <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
       <KeyButton colors={colors} label={t('boards.week')} onPress={() => goHash('/week')} />
@@ -1000,80 +1001,58 @@ export function WelcomeScreen({ book }) {
   )
 }
 
-// The first question is a sentence to finish, written on the card it becomes.
-// The first question comes up every day; the only choice here is from when.
-function timed(next, question, askAfter) {
-  if (!askAfter) return next
-  const lamps = (next.lamps || []).map((lamp) => (lamp.question === question ? { ...lamp, askAfter } : lamp))
-  return { ...next, lamps }
-}
-
+// First run: tap 2 or 3 questions (or a set), pick a time, done. The typed
+// card stays for anyone whose question is not on the list. No sign-in here.
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const named = firstName(book)
   const [step, setStep] = useState(0)
-  const [person, setPerson] = useState(book?.keeperName || '')
+  const [picks, setPicks] = useState([])
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
-  const [askAfter, setAskAfter] = useState('')
+  const [askAfter, setAskAfter] = useState(FIRST_TIME)
   const reduce = useReduceMotion()
   const starters = unusedStarters(book, clock, true)
+  const packs = packList(book)
   const question = didQuestion(blank)
-  const picked = starters.find((starter) => starter.question === question)
-  const wobble = useWobble(starters.length, !blank.trim() && !focused, reduce)
-  const totalSteps = named ? 2 : 3
-
-  function withName(next) {
-    const keeperName = person.trim()
-    if (!keeperName) return next
-    return { ...next, keeperName }
-  }
-
-  function land(next, face = '') {
-    markWelcomeSeen()
-    onChange?.(withName(next))
-    goHash('/tonight', face ? { face } : '')
-    offerPingPrimer(askAfter, colors)
-  }
+  const ready = picks.length > 0 || Boolean(question)
+  const wobble = useWobble(starters.length, !ready && !focused, reduce)
+  const totalSteps = 2
 
   function pick(starter) {
-    setBlank(starterBlank(starter))
+    setPicks((list) => togglePick(list, starter))
+    setWave((count) => count + 1)
+    playClick()
+  }
+
+  function takePack(pack) {
+    setPicks(pickPack(pack))
     setWave((count) => count + 1)
     playClick()
   }
 
   function finish() {
-    if (picked) {
-      land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
-      return
-    }
-    const lamp = {
-      ...blankLamp(clock),
-      question,
-      short: shortFromQuestion(question, 24),
-      cadence: 'daily',
-      askAfter,
-      slot: 'whenever',
-    }
-    land(hangInto(book, lamp), lamp.id)
+    const own =
+      question && !picks.some((item) => item.question === question)
+        ? { question, short: shortFromQuestion(question, 24) }
+        : null
+    const made = firstRunBook(book, picks, own, askAfter, clock)
+    markWelcomeSeen()
+    onChange?.(made.book)
+    goHash('/tonight', made.faceId ? { face: made.faceId } : '')
+    offerPingPrimer(askAfter, colors)
   }
 
   function next() {
+    playClick()
     if (step === 0) {
-      if (!question) {
-        playClick()
+      if (!ready) {
         wobble.nudge()
         return
       }
-      playClick()
       setStep(1)
-      return
-    }
-    if (step === 1 && !named) {
-      playClick()
-      setStep(2)
       return
     }
     finish()
@@ -1081,7 +1060,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 
   function back() {
     playClick()
-    setStep((current) => Math.max(0, current - 1))
+    setStep(0)
   }
 
   return (
@@ -1094,7 +1073,25 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Title colors={colors}>
             {named ? t('first.titleNamed', { name: named }) : t('first.title')}
           </Title>
-          <Meta colors={colors}>{t('first.body')}</Meta>
+          <Meta colors={colors}>{t('first.pickBody')}</Meta>
+          <IdeaPicks
+            label={t('first.pickLabel')}
+            starters={starters}
+            isOn={(starter) => picks.some((item) => item.question === starter.question)}
+            onPick={pick}
+            tilt={wobble.tilt}
+            colors={colors}
+          />
+          {packs.length ? (
+            <>
+              <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.packs')}</Text>
+              <View style={styles.firstPacks}>
+                {packs.map((pack) => (
+                  <KeyButton key={pack.id} colors={colors} label={pack.title} onPress={() => takePack(pack)} />
+                ))}
+              </View>
+            </>
+          ) : null}
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1114,7 +1111,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               placeholderTextColor={withAlpha(colors.ink, 0.45)}
               selectionColor={colors.on}
               cursorColor={colors.on}
-              accessibilityLabel={t('tonight.didI')}
+              accessibilityLabel={t('first.own')}
               autoCapitalize="none"
               returnKeyType="done"
               blurOnSubmit
@@ -1131,14 +1128,6 @@ export function FirstNightScreen({ book, onChange, now }) {
               <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
             </View>
           </View>
-          <IdeaPicks
-            label={t('first.picks')}
-            starters={starters}
-            picked={picked}
-            onPick={pick}
-            tilt={wobble.tilt}
-            colors={colors}
-          />
         </>
       ) : null}
       {step === 1 ? (
@@ -1156,31 +1145,24 @@ export function FirstNightScreen({ book, onChange, now }) {
           </SetCard>
         </>
       ) : null}
-      {step === 2 && !named ? (
-        <Field
-          colors={colors}
-          label={t('first.name')}
-          value={person}
-          onChangeText={setPerson}
-          placeholder={t('first.nameHint')}
-          autoCapitalize="words"
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={next}
-        />
-      ) : null}
       <View style={styles.stepNav}>
         {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
-          label={step === totalSteps - 1 ? t('first.add') : t('first.next')}
+          label={step === totalSteps - 1 ? t('first.done') : t('first.next')}
           onPress={next}
-          dim={step === 0 && !question}
+          dim={step === 0 && !ready}
         />
-        {step === 0 && !question ? (
-          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.finishFirst')}</Text>
+        {step === 0 && !ready ? (
+          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
         ) : null}
       </View>
+      {step === 0 && cloudSetUp() ? (
+        <View style={styles.firstPacks}>
+          <KeyButton colors={colors} label={t('first.haveAccount')} onPress={() => goHash('/account')} />
+        </View>
+      ) : null}
+      {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
   )
 }
@@ -1924,6 +1906,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
+  firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
