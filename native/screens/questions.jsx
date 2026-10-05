@@ -29,6 +29,7 @@ import {
   topicsOf,
   shortFromQuestion,
   shortLabel,
+  SHORT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
@@ -891,7 +892,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // The short name shows in full, filled with the one made from the question
   // until they type their own, so it never changes behind their back.
   const [shortTyped, setShortTyped] = useState(false)
-  const shortShown = shortTyped || String(draft.short || '').trim() ? draft.short : shortFromQuestion(draft.question, 24)
+  const [shortRoom] = useState(() => Math.max(SHORT_MAX, String(draft.short || '').length))
+  const shortShown = shortTyped || String(draft.short || '').trim() ? draft.short : shortFromQuestion(draft.question, SHORT_MAX)
   const scrollHandle = useRef(null)
   const picksH = useRef(0)
 
@@ -1115,7 +1117,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           hang.change('short', value)
         }}
         placeholder={t('hang.shortPh')}
-        maxLength={24}
+        // A name saved under an older, longer limit still fits, so it can be
+        // edited and shortened instead of locking the field.
+        maxLength={shortRoom}
         colors={colors}
       />
 
@@ -1425,7 +1429,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   ].join(' · ')
 
   return (
-    <BoardShell book={lampBook} title={t('lamp.kicker')} date={shellDate(lampBook, clock)} colors={colors}>
+    <BoardShell book={lampBook} title={t('lamp.kicker')} noTitle date={shellDate(lampBook, clock)} colors={colors}>
       <View style={[...faceCardStyle(colors), styles.lampCard, lamp.archived && { opacity: 0.75 }]}>
         <EditPen onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
         <Text style={[faceCardStyles.kicker, { color: colors.on }]} numberOfLines={1}>
