@@ -582,7 +582,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
-        {status === 'yes' || status === 'late' ? (
+        {/* Only while new: after a few nights people know a DID stays. */}
+        {isNew && (status === 'yes' || status === 'late') ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkDim }]}>{t('pill.doneFinal')}</Text>
         ) : null}
       </GemFaceShell>
