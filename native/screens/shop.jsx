@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -55,9 +55,6 @@ import {
   wishItem,
 } from '../../src/lib/purse.js'
 import { usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { SetCard, SetNote, SetSwitch } from '../components/SetBits.jsx'
-import { requestPings } from '../../src/lib/notify.js'
-import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import {
   AccessoryChip,
   BuddyChip,
@@ -725,27 +722,18 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
 export function ShopScreen({ book, onChange }) {
   const colors = useShopColors(book)
   const prefs = usePrefs()
-  const account = useAccount()
-  const [pingsOff, setPingsOff] = useState(false)
-
-  // Turning the drop push on asks for notifications the same way Reminders
-  // does. A no leaves the switch off and points to the phone settings.
-  async function flipDropPings() {
-    if (prefs.dropPings) {
-      writePrefs({ dropPings: false })
-      return
-    }
-    const state = await requestPings().catch(() => 'denied')
-    if (state !== 'granted') {
-      setPingsOff(true)
-      return
-    }
-    setPingsOff(false)
-    writePrefs({ dropPings: true })
-    syncPushTokenIfAllowed().catch(() => {})
-  }
   const purse = normalizePurse(book)
   const coat = activeLook(book)
+  const slides = dropSlides()
+  const accessoryList = accessoriesForSale(boardDate(new Date()))
+  const rows = [
+    { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
+    { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
+    { type: 'buddy', list: BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
+    { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
+  ]
+  // Nothing left to buy anywhere: one line, not four empty rows.
+  const ownAll = rows.every((row) => !shopRow(row.type, row.list, purse).length)
   const lookCount = purse.looks.length
   const cheerCount = purse.cheers.length
   const buddyCount = purse.buddies.length
@@ -884,31 +872,29 @@ export function ShopScreen({ book, onChange }) {
 
       <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
-      <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={onTile} />
-
-      <SetCard colors={colors}>
-        <SetSwitch
-          colors={colors}
-          icon="bell"
-          tint={colors.on}
-          label={t('shop.dropPing')}
-          sub={account.user ? t('shop.dropPingSub') : t('shop.dropPingOut')}
-          on={Boolean(prefs.dropPings)}
-          onPress={flipDropPings}
-          last
-        />
-      </SetCard>
-      {pingsOff ? (
-        <>
-          <SetNote colors={colors}>{t('pings.offNote')}</SetNote>
-          <KeyButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
-        </>
+      <DropCarousel slides={slides} purse={purse} colors={colors} onTile={onTile} />
+      {slides[0]?.kind === 'coming' && !prefs.dropPings ? (
+        <Pressable accessibilityRole="link" onPress={() => goHash('/pings')} hitSlop={8} style={styles.dropLink}>
+          <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
+        </Pressable>
       ) : null}
 
-      <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="accessory" list={accessoriesForSale(boardDate(new Date()))} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} colors={colors} onTile={onTile} />
+      {ownAll ? (
+        <View style={styles.promoShelf}>
+          <Meta colors={colors}>{t('shop.ownAll')}</Meta>
+          <View style={styles.ownAllLinks}>
+            {rows.map((row) => (
+              <Pressable key={row.type} accessibilityRole="button" onPress={() => goHash(row.path)} hitSlop={8}>
+                <Text style={[styles.promoAll, { color: colors.on }]}>{row.allLabel}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : (
+        rows.map((row) => (
+          <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
+        ))
+      )}
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
@@ -1727,7 +1713,6 @@ export function GemShopScreen({ book }) {
           </Text>
         </Pressable>
       ) : null}
-      <KeyButton label={t('gems.backShop')} onPress={() => goHash('/shop')} colors={colors} />
     </BoardShell>
   )
 }
@@ -1968,7 +1953,6 @@ export function CollectionScreen({ book, onChange, startTab }) {
         </>
       ) : null}
 
-      <KeyButton label={t('shop.title')} onPress={() => goHash('/shop')} colors={colors} />
     </BoardShell>
   )
 }
@@ -2147,6 +2131,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  dropLink: { alignSelf: 'flex-start', marginTop: 4, marginBottom: 8 },
+  ownAllLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 6 },
   promoShelf: { gap: 8, marginTop: 4 },
   carousel: { gap: 8, marginTop: 4 },
   slide: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 4 },

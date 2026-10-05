@@ -111,17 +111,29 @@ export function SheetHost() {
         {sheet.quote ? (
           <Text style={[styles.quote, sheet.center ? styles.quoteMid : { borderLeftWidth: 3, paddingLeft: 10, borderColor: colors.on }, { color: colors.ink }]}>{sheet.quote}</Text>
         ) : null}
+        {/* A sheet that removes something: the safe choice is the filled button,
+            the destructive one is a plain button in red. */}
         <View style={[styles.row, sheet.center && styles.rowMid]}>
-          {sheet.onGo ? (
-            <DidButton small danger={sheet.danger} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
-          ) : null}
-          {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
-          {sheet.noClose ? null : (
-            <KeyButton
-              label={sheet.closeLabel || t('settings.neverMind')}
-              onPress={() => sheet.onClose?.()}
-              colors={colors}
-            />
+          {sheet.danger && sheet.onGo && !sheet.noClose ? (
+            <>
+              <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => sheet.onClose?.()} colors={colors} />
+              {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
+              <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+            </>
+          ) : (
+            <>
+              {sheet.onGo ? (
+                <DidButton small danger={sheet.danger} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+              ) : null}
+              {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
+              {sheet.noClose ? null : (
+                <KeyButton
+                  label={sheet.closeLabel || t('settings.neverMind')}
+                  onPress={() => sheet.onClose?.()}
+                  colors={colors}
+                />
+              )}
+            </>
           )}
         </View>
         {sheet.onFoot ? (

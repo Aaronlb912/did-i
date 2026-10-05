@@ -859,6 +859,12 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
+      <Row
+        colors={colors}
+        label={t('didYouLink.textTitle')}
+        note={t('didYouLink.textSub')}
+        onPress={() => setSheet({ kind: 'send', person: null })}
+      />
         </>
       ) : null}
 
@@ -907,15 +913,12 @@ export function PeopleScreen({ book, onChange }) {
         <>
       <SectionHead colors={colors} label={t('we.title')} />
       <Row colors={colors} label={t('we.open')} note={t('we.empty')} onPress={() => goHash('/we')} />
-      <Row
-        colors={colors}
-        label={t('didYouLink.textTitle')}
-        note={t('didYouLink.textSub')}
-        onPress={() => setSheet({ kind: 'send', person: null })}
-      />
         </>
       ) : null}
 
+      {/* You: only on the Friends tab, so it does not repeat on every tab. */}
+      {tab === 'friends' ? (
+        <>
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}
@@ -958,6 +961,8 @@ export function PeopleScreen({ book, onChange }) {
         onPress={() => goHash('/people/connect')}
       />
 
+        </>
+      ) : null}
       {links.sent.length ? (
         <Meta colors={colors}>
           {t('people.outstanding', {

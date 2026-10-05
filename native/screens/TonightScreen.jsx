@@ -544,16 +544,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           ) : null}
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           {social?.kind === 'cheer' ? (
-            <Pressable
-              onPress={() => goHash('/friend', { id: social.id })}
-              accessibilityRole="button"
-              hitSlop={6}
-              style={[styles.social, { borderTopColor: colors.lineSoft }]}
-            >
+            <View style={[styles.social, { borderTopColor: colors.lineSoft }]}>
               <Text style={[faceCardStyles.meta, { color: colors.ink }]}>
                 {t('home.friendNotDone', { name: social.name || t('people.someone') })}
               </Text>
-            </Pressable>
+              <View style={styles.cheerKey}>
+                <KeyButton label={t('home.cheerGo')} colors={colors} onPress={() => goHash('/friend', { id: social.id })} />
+              </View>
+            </View>
           ) : null}
           <View style={styles.actions}>
             <KeyButton label={t('stats.title')} colors={colors} onPress={() => goHash('/stats')} />
@@ -883,6 +881,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               <Text style={[styles.weTurnText, { color: colors.ink }]} numberOfLines={2}>
                 {t('home.weYourTurn', { name: social.name || t('people.someone') })}
               </Text>
+              <Text style={[styles.weTurnGo, { color: colors.we || colors.on }]}>{t('home.weAnswerGo')} ›</Text>
             </Pressable>
           ) : null}
         </Slot>
@@ -916,8 +915,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  weTurnText: { fontFamily: fonts.uiSemi, fontSize: 14, textAlign: 'center' },
+  cheerKey: { alignSelf: 'flex-start', marginTop: 8 },
+  weTurnGo: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  weTurnText: { fontFamily: fonts.uiSemi, fontSize: 14, textAlign: 'center', flexShrink: 1 },
   answerBar: { paddingBottom: 12 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },

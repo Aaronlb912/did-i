@@ -83,7 +83,8 @@ import {
   openSession,
   setPin,
 } from '../../src/lib/session.js'
-import { armLampPings, upcomingPings } from '../../src/lib/notify.js'
+import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
+import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
@@ -1231,6 +1232,7 @@ const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2
 
 function PingKinds({ colors, on }) {
   const prefs = usePrefs()
+  const account = useAccount()
   const [miss, setMiss] = useState('')
 
   async function flip(kind) {
@@ -1288,6 +1290,22 @@ function PingKinds({ colors, on }) {
     }
   }
 
+  // The shop drop push. Turning it on asks for notifications first.
+  async function flipDropPings() {
+    if (prefs.dropPings) {
+      writePrefs({ dropPings: false })
+      return
+    }
+    const state = await requestPings().catch(() => 'denied')
+    if (state !== 'granted') {
+      setMiss(t('pings.offNote'))
+      return
+    }
+    setMiss('')
+    writePrefs({ dropPings: true })
+    syncPushTokenIfAllowed().catch(() => {})
+  }
+
   const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
   const familyTime = clockWords(familyId)
 
@@ -1303,7 +1321,6 @@ function PingKinds({ colors, on }) {
               label={t(`pings.kind.${kind}`)}
               sub={kind === 'family' ? t('pings.kind.familySubAt', { time: familyTime }) : t(`pings.kind.${kind}Sub`)}
               on={!prefs.pingsOff.includes(kind)}
-              last={i === PING_KINDS.length - 1}
               onPress={() => flip(kind)}
             />
             {kind === 'family' && !prefs.pingsOff.includes('family') ? (
@@ -1317,6 +1334,14 @@ function PingKinds({ colors, on }) {
             ) : null}
           </View>
         ))}
+        <SetSwitch
+          colors={colors}
+          label={t('shop.dropPing')}
+          sub={account.user ? t('shop.dropPingSub') : t('shop.dropPingOut')}
+          on={Boolean(prefs.dropPings)}
+          last
+          onPress={flipDropPings}
+        />
       </SetCard>
       <SetNote colors={colors}>{t('pings.kindsNote')}</SetNote>
       <SetCard colors={colors}>

@@ -904,6 +904,8 @@ function WeCardPage({ book, cardId, onChange }) {
             />
           </View>
         ) : (
+          <>
+          <Meta colors={colors}>{t('we.earlyOk')}</Meta>
           <SwipeFlyHost style={styles.earlySlot}>
             <SwipeCardHost
               key={`we-early:${card.id}`}
@@ -918,6 +920,15 @@ function WeCardPage({ book, cardId, onChange }) {
               onNope={() => ans.answer(early.card, 'nope', early.night)}
             />
           </SwipeFlyHost>
+          <View style={styles.earlyKeys}>
+            <View style={styles.earlyKey}>
+              <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={() => ans.answer(early.card, 'nope', early.night)} />
+            </View>
+            <View style={styles.earlyKey}>
+              <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={() => ans.answer(early.card, 'did', early.night)} />
+            </View>
+          </View>
+          </>
         )
       ) : null}
       {card.due ? (
@@ -1157,6 +1168,8 @@ export function WeHomeScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 8 },
+  earlyKey: { flex: 1 },
   earlySlot: { height: 250, justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
