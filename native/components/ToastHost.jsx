@@ -16,6 +16,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
+import { useScreenRoute } from '../navigation/screen-route.js'
 import { goHash } from '../navigation/hash.js'
 import { dropToast, useToastQueue } from '../lib/toast-queue.js'
 import { launchFlight } from './FlyHost.jsx'
@@ -37,12 +38,19 @@ const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
 
+// Height of Home's Did and Nope row plus its gap.
+const ANSWER_BAR = 96
+
 /**
  * The one toast on screen, above the tab bar. The rest of the queue waits.
  */
 export function ToastHost({ colors }) {
   const items = useToastQueue()
-  const { overlayBottom: bottom } = useAppInsets()
+  const { overlayBottom: tabBottom } = useAppInsets()
+  // Home keeps Did and Nope at the bottom; the toast sits above them so a tap
+  // on Undo can never land on Nope underneath.
+  const homePath = useScreenRoute().path
+  const bottom = homePath === '/tonight' || homePath === '/' ? tabBottom + ANSWER_BAR : tabBottom
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
   const [landed, setLanded] = useState('')
