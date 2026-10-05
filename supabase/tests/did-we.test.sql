@@ -19,6 +19,7 @@ declare
   turncard uuid;
   countcard uuid;
   night date := current_date;
+  test_night date := current_date;
   j jsonb;
   n integer;
   ok boolean;
@@ -300,10 +301,10 @@ begin
   execute 'set local role authenticated';
   select (x->>'paused')::boolean into ok from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = card::text;
   if not ok then raise exception 'FAIL: we_tonight did not say paused'; end if;
-  if not exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night and w.paused) then
+  if not exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = test_night and w.paused) then
     raise exception 'FAIL: my_we_nights did not mark tonight paused';
   end if;
-  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night - 9 and w.paused) then
+  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = test_night - 9 and w.paused) then
     raise exception 'FAIL: an early night was marked paused';
   end if;
   execute 'reset role';
@@ -321,7 +322,7 @@ begin
   perform public.we_restart(card);
   select (x->>'paused')::boolean into ok from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = card::text;
   if ok then raise exception 'FAIL: restart did not unpause'; end if;
-  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = night and w.paused) then
+  if exists (select 1 from public.my_we_nights() w where w.card_id = card and w.night = test_night and w.paused) then
     raise exception 'FAIL: tonight still paused after restart';
   end if;
   execute 'reset role';
