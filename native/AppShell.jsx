@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
+import { needsEnter } from '../src/lib/session.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
@@ -116,7 +117,7 @@ const QUESTIONS_ICON =
 
 /** The root screen: Tonight and Questions in the system tab bar. */
 function HallScreen() {
-  const colors = useContext(ScreenProps).colors
+  const { colors, locked } = useContext(ScreenProps)
   // The hall mounts first, so a goHash from before the stack existed lands now.
   useEffect(() => {
     flushNavigation()
@@ -131,12 +132,12 @@ function HallScreen() {
       tabBarMinimizeBehavior: 'onScrollDown',
       ...(Platform.OS === 'android'
         ? {
-            tabBarStyle: { backgroundColor: colors.panel },
+            tabBarStyle: { backgroundColor: colors.panel, display: locked ? 'none' : 'flex' },
             tabBarLabelStyle: { fontFamily: fonts.uiSemi },
           }
-        : null),
+        : { tabBarStyle: { display: locked ? 'none' : 'flex' } }),
     }),
-    [colors],
+    [colors, locked],
   )
   return (
     <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
@@ -255,6 +256,7 @@ export function AppShell() {
 
   const pingLabel = pingButtonLabel(pingState)
 
+  const locked = needsEnter(app.book)
   const screenProps = useMemo(
     () => ({
       colors,
@@ -274,8 +276,11 @@ export function AppShell() {
       onSendCopy: app.sendCopy,
       onAskPings: pingLabel ? askPings : undefined,
       pingLabel,
+      // The PIN screen shows no tabs, so nothing behind it looks reachable.
+      locked,
     }),
     [
+      locked,
       app.addBoard,
       app.book,
       app.change,

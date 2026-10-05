@@ -33,6 +33,7 @@ import { clockWords } from './hall-pages.js'
 import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
+import { settleTapEarnings } from './tap-earnings.js'
 
 export function publishShelf(shelf) {
   try {
@@ -423,7 +424,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
-  const nextShelf = writeShelf({ ...shelf, boards })
+  const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
   const previous = readWidgetTonightProps()
   const props = buildTonightWidgetProps(nextShelf, clock)
   const items = props.items.map((item) =>
@@ -500,7 +501,7 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
   const boards = shelf.boards.map((b) => (b.id === nextBook.id ? nextBook : b))
-  const nextShelf = writeShelf({ ...shelf, boards })
+  const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
   const props = buildTonightWidgetProps(nextShelf, clock)
   const items = props.items.map((item) =>
     item.lampId === lampId ? { ...item, status } : item,

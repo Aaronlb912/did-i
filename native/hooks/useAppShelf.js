@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { commitBook, marksToToast, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
 import {
@@ -27,6 +27,7 @@ import {
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { accountSessionOn } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
@@ -95,7 +96,7 @@ export function useAppShelf() {
     const now = new Date()
     const before = currentBook(shelf)
     const coinsBefore = mergePurses(shelf.boards).coins
-    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: cloudSetUp() })
+    const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
       next = closePastNights(next, now)
@@ -120,9 +121,14 @@ export function useAppShelf() {
         pushSoon(synced)
       }).catch(reportRejection('night-coins'))
     }
-    if (cloudSetUp() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
+    if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
-        if (bal == null) return
+        // Not granted: forget the week so the next cleared night asks again.
+        if (bal == null) {
+          const now = readShelf()
+          if (now.gemWeek === bumped.gemWeek) setShelf(writeShelf({ ...now, gemWeek: shelf.gemWeek || '' }))
+          return
+        }
         const synced = writeShelf(applyGemBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
@@ -277,12 +283,25 @@ export function useAppShelf() {
       })
     }
     boot()
+    // Back from the home screen: a widget tap made while the app sat in the
+    // background is on disk (or still queued natively), so show it now
+    // instead of waiting for the next cold start.
+    const wake = AppState.addEventListener('change', (next) => {
+      if (next !== 'active' || Platform.OS !== 'android') return
+      applyPendingAndroidWidgetTap()
+        .catch(() => null)
+        .then(() => {
+          if (cancelled) return
+          setShelf(reconcileShelfFromWidget(readShelf()))
+        })
+    })
     function onShelfIn(event) {
       if (event?.detail) setShelf(event.detail)
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {
       cancelled = true
+      wake.remove()
       window.removeEventListener(SHELF_IN, onShelfIn)
     }
   }, [])
