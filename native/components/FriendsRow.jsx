@@ -6,7 +6,7 @@ import { refreshTogether } from '../../src/lib/people.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
-import { pressFx, useFadeIn } from '../lib/motion.js'
+import { pressFx, useFadeIn } from '../lib/motion.jsx'
 
 const SHOWN = 6
 

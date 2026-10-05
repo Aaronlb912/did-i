@@ -8,7 +8,7 @@ import { periodLabel } from '../../src/lib/recurrence.js'
 import { confirmDone } from '../lib/confirm.js'
 import { Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
-import { useLayoutState } from '../lib/motion.js'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
@@ -85,12 +85,12 @@ export function NightNotes({ book, lamp, colors, onChange }) {
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: colors.inkSoft }]}>{t('note.title')}</Text>
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
-      {shown.map(({ answer }) =>
-        open === answer.periodKey ? (
-          edit(answer)
-        ) : (
+      {shown.map(({ answer }) => (
+        <Reveal key={answer.periodKey}>
+          {open === answer.periodKey ? (
+            edit(answer)
+          ) : (
           <Row
-            key={answer.periodKey}
             colors={colors}
             label={nightLine(lamp, answer)}
             note={answer.note}
@@ -99,8 +99,9 @@ export function NightNotes({ book, lamp, colors, onChange }) {
               setOpen(answer.periodKey)
             }}
           />
-        ),
-      )}
+          )}
+        </Reveal>
+      ))}
       {noted.length > NOTES_SHOWN ? (
         <View style={styles.keys}>
           <KeyButton
@@ -110,6 +111,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
           />
         </View>
       ) : null}
+      <Reveal key={openPick ? 'edit-' + open : picking ? 'pick' : 'add'}>
       {openPick ? (
         edit(openPick.answer)
       ) : picking ? (
@@ -139,6 +141,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
           />
         </View>
       ) : null}
+      </Reveal>
     </View>
   )
 }

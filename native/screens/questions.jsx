@@ -87,7 +87,7 @@ import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
-import { useLayoutState } from '../lib/motion.js'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -516,7 +516,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
         {/* Filters, Did you / Did we, Add and Select share one wrapping row, so the list starts high. */}
         {picking || ordering ? null : (
-          <View style={styles.topRow}>
+          <Reveal style={styles.topRow}>
             <TagFilter
               boards={shelf}
               tagId={tagId}
@@ -560,13 +560,21 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 ) : null}
               </>
             )}
-          </View>
+          </Reveal>
         )}
-        {(allRows.length >= SEARCH_FROM || query) && !ordering ? <SearchBox value={query} onChange={setQuery} colors={colors} /> : null}
-        {didYouOnly && friends.signedIn ? <DidYouRows inbox={friends.inbox} colors={colors} /> : null}
+        {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
+          <Reveal>
+            <SearchBox value={query} onChange={setQuery} colors={colors} />
+          </Reveal>
+        ) : null}
+        {didYouOnly && friends.signedIn ? (
+          <Reveal>
+            <DidYouRows inbox={friends.inbox} colors={colors} />
+          </Reveal>
+        ) : null}
 
         {hasDeadlines && !ordering ? (
-          <>
+          <Reveal>
             <Text style={[styles.fieldCap, { color: colors.inkSoft }]}>{t('questions.filter')}</Text>
             <ChipRow
               items={[
@@ -577,22 +585,24 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               onPick={(value) => setDeadlineOnly(value === 'deadline')}
               colors={colors}
             />
-          </>
+          </Reveal>
         ) : null}
 
         {ordering ? (
-          <View style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+          <Reveal style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
             <View style={styles.pickHead}>
               <Text style={[styles.pickCount, { color: colors.ink }]}>{t('questions.reorderHint')}</Text>
               <KeyButton colors={colors} label={t('questions.pickDone')} onPress={() => setOrdering(false)} />
             </View>
             {liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
-              <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
+              <Reveal>
+                <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
+              </Reveal>
             ) : null}
-          </View>
+          </Reveal>
         ) : null}
         {picking ? (
-          <View style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+          <Reveal style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
             <View style={styles.pickHead}>
               <Text style={[styles.pickCount, { color: colors.ink }]}>
                 {t('questions.pickedN', { n: chosen.length })}
@@ -627,7 +637,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 <Text style={[styles.dropText, { color: colors.miss }]}>{t('lamp.delete')}</Text>
               </Pressable>
             </View>
-          </View>
+          </Reveal>
         ) : null}
 
         {hung.length && !picking && !ordering ? <DotKey kinds={dotKinds} colors={colors} /> : null}
@@ -646,11 +656,17 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             onPick={pick}
           />
         ) : query.trim() && allRows.length ? (
-          <Meta colors={colors}>{t('questions.noMatch')}</Meta>
+          <Reveal key="noMatch">
+            <Meta colors={colors}>{t('questions.noMatch')}</Meta>
+          </Reveal>
         ) : picks.length ? (
-          <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
+          <Reveal key="emptyTopic">
+            <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
+          </Reveal>
         ) : deadlineOnly ? (
-          <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
+          <Reveal key="emptyDeadline">
+            <Meta colors={colors}>{t('questions.emptyDeadline')}</Meta>
+          </Reveal>
         ) : (
           <>
             <Meta colors={colors}>{t('questions.hint')}</Meta>

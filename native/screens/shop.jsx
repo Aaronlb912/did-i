@@ -89,7 +89,7 @@ import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
 import { previewSample } from '../../src/lib/board-shelf.js'
-import { pressFx, animateNextLayout } from '../lib/motion.js'
+import { pressFx, Reveal } from '../lib/motion.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -2478,7 +2478,6 @@ export function GiftsSentScreen({ book }) {
     let alive = true
     listSentGifts().then((out) => {
       if (!alive) return
-      animateNextLayout()
       setList(out.rows)
       if (out.miss === 'out') setMiss(t('gift.needAccount'))
       else if (out.miss) setMiss(tMiss(out.miss))
@@ -2493,17 +2492,17 @@ export function GiftsSentScreen({ book }) {
       {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       {list === null ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
       {list && !list.length && !miss ? (
-        <>
+        <Reveal>
           <Meta colors={colors}>{t('gifts.none')}</Meta>
           <DidButton colors={colors} small label={t('people.friends')} onPress={() => goHash('/friends')} />
-        </>
+        </Reveal>
       ) : null}
       {(list || []).map((row) => {
         const type = sentGiftType(row)
         const name = personName(row.person) || t('people.someone')
         return (
+          <Reveal key={row.id}>
           <Pressable
-            key={row.id}
             onPress={() => goHash('/gift', { id: row.to_id })}
             accessibilityRole="button"
             accessibilityLabel={t('gifts.rowLabel', { item: tileName(type, row.cheer_id), name })}
@@ -2526,6 +2525,7 @@ export function GiftsSentScreen({ book }) {
               ) : null}
             </View>
           </Pressable>
+          </Reveal>
         )
       })}
     </BoardShell>

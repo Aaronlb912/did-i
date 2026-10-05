@@ -3,7 +3,7 @@ import { FadeScroll } from './FadeScroll.jsx'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
-import { pressFx } from '../lib/motion.js'
+import { pressFx } from '../lib/motion.jsx'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
 
