@@ -1366,7 +1366,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
       : nextDueLine(lamp, dateIso)
   const priority = lamp.priority || 'normal'
-  const extras = [topicsOf(lamp).map(topicLabel).join(', '), lamp.notes].map((item) => String(item || '').trim()).filter(Boolean)
+  const topics = topicsOf(lamp).map(topicLabel).join(', ')
+  // Topics are labeled so they don't read as the question's name.
+  const extras = [topics ? `${t('hang.kind')}: ${topics}` : '', lamp.notes]
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
