@@ -1485,7 +1485,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       </View>
 
-      {weeks.length ? (
+      {weeks.length > 1 ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.trend')}</Text>
           <View style={styles.trendRow}>

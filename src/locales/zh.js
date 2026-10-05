@@ -2465,7 +2465,7 @@ export const zh = {
   'note.fewer': '收起',
   'note.pickNight': '选一个晚上来写备注。',
   'note.pickQuestion': '选一个问题来写备注。',
-  'lamp.trend': '过去 8 周',
+  'lamp.trend': '每周',
   'lamp.trendWeek': '{date} 那周:{due} 次中 {did} 次 Did',
   'recap.kicker': '本周',
   'recap.cleared': '{n} 晚中完成 {cleared} 晚',

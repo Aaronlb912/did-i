@@ -2549,7 +2549,7 @@ export const es = {
   'note.fewer': 'Ver menos',
   'note.pickNight': 'Elige una noche para la nota.',
   'note.pickQuestion': 'Elige una pregunta para la nota.',
-  'lamp.trend': 'Últimas 8 semanas',
+  'lamp.trend': 'Semana a semana',
   'lamp.trendWeek': 'Semana del {date}: {did} de {due} Did',
   'recap.kicker': 'Esta semana',
   'recap.cleared': '{cleared} de {n} noches completas',

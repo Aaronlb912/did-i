@@ -2542,7 +2542,7 @@ export const pt = {
   'note.fewer': 'Ver menos',
   'note.pickNight': 'Escolha uma noite para anotar.',
   'note.pickQuestion': 'Escolha uma pergunta para anotar.',
-  'lamp.trend': 'Últimas 8 semanas',
+  'lamp.trend': 'Semana a semana',
   'lamp.trendWeek': 'Semana de {date}: {did} de {due} Did',
   'recap.kicker': 'Esta semana',
   'recap.cleared': '{cleared} de {n} noites completas',

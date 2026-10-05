@@ -808,11 +808,11 @@ test('a question page trend counts dids out of due per week, tonight only once a
     { lampId: 'd', periodKey: '2026-10-03', status: 'skip' },
   ]
   const weeks = lampWeeks({ answers }, daily, '2026-10-05', 8)
-  assert.equal(weeks.length, 8)
-  assert.deepEqual(weeks[7], { from: '2026-09-29', due: 7, did: 2 })
-  assert.equal(weeks[0].due, 0, 'nights before the question was made are not due')
+  assert.equal(weeks.length, 5, 'weeks before the question was made are left off')
+  assert.deepEqual(weeks[4], { from: '2026-09-29', due: 7, did: 2 })
+  assert.ok(weeks[0].due > 0)
   const open = lampWeeks({ answers: answers.slice(1) }, daily, '2026-10-05', 8)
-  assert.equal(open[7].due, 6, 'an unanswered tonight is not counted yet')
+  assert.equal(open[4].due, 6, 'an unanswered tonight is not counted yet')
   assert.deepEqual(lampWeeks({ answers }, lamp('o', { cadence: 'once' }), '2026-10-05'), [])
 })
 

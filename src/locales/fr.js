@@ -2556,7 +2556,7 @@ export const fr = {
   'note.fewer': 'Voir moins',
   'note.pickNight': 'Choisis un soir à annoter.',
   'note.pickQuestion': 'Choisis une question à annoter.',
-  'lamp.trend': '8 dernières semaines',
+  'lamp.trend': 'Semaine par semaine',
   'lamp.trendWeek': 'Semaine du {date} : {did} sur {due} Did',
   'recap.kicker': 'Cette semaine',
   'recap.cleared': '{cleared} nuits faites sur {n}',

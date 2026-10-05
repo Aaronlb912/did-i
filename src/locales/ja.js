@@ -2480,7 +2480,7 @@ export const ja = {
   'note.fewer': '少なく表示',
   'note.pickNight': 'メモする夜を選んでください。',
   'note.pickQuestion': 'メモする質問を選んでください。',
-  'lamp.trend': '過去8週間',
+  'lamp.trend': '週ごと',
   'lamp.trendWeek': '{date}の週: {due}回中{did}回 Did',
   'recap.kicker': '今週',
   'recap.cleared': '{n} 夜中 {cleared} 夜クリア',
