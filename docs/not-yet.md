@@ -7,7 +7,7 @@ Last worked through 2026-10-02.
 
 ## App PIN
 
-- **Forgot PIN.** Signed in: a code to the account email removes the PIN. Signed out: the only way past is to erase what is on the phone..
+- **Forgot PIN.** Signed in: a code to the account email removes the PIN. Signed out: the only way past is to erase what is on the device.
 - **The sign-in code path is not tried end to end** (needs a real inbox); the signed-out erase path is.
 
 ## Save a copy
