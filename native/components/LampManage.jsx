@@ -1,4 +1,4 @@
-import { takeDown, toggleArchive } from '../../src/lib/board-ops.js'
+import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
@@ -55,9 +55,23 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
       onClose: () => publishSheet(null),
       onGo: () => {
         publishSheet(null)
-        onChange(takeDown(book, lamp))
-        confirmDone(t('confirm.questionRemoved'))
+        // Like Select's delete, it can be taken back for a few seconds.
+        const before = book
+        const after = takeDown(book, lamp)
+        const now = Date.now()
+        onChange(after)
         goHash('/lamps')
+        showToast({
+          id: 'undo:delete',
+          kind: 'undo',
+          rev: now,
+          label: t('confirm.questionRemoved'),
+          hint: t('tonight.undoTap'),
+          until: now + 6000,
+          total: 6000,
+          // Clears the delete's tombstone too, or sync would drop it again.
+          onPress: () => onChange(undoBulkLamps([after], [before], [{ lampId: lamp.id }])[0] || before),
+        })
       },
     })
   }
