@@ -167,6 +167,44 @@ export async function myDidYouLinks() {
   return (data || []).map((row) => ({ ...row, kept: Array.isArray(row.kept) ? row.kept : [] }))
 }
 
+// Stop a link you made. People who already kept it keep it.
+export async function endDidYouLink(code) {
+  const db = cloud()
+  const clean = cleanCode(code)
+  if (!db || !clean) return { miss: 'off' }
+  const { data, error } = await db.rpc('end_did_you_link', { code: clean })
+  if (error) return { miss: error.message || 'people.reach' }
+  return data ? { miss: '' } : { miss: 'people.reach' }
+}
+
+// Which line a link that did not open gets: stopped by its maker, or bad.
+export function deadLinkKey(stopped) {
+  return stopped ? 'didYouLink.stopped' : 'didYouLink.bad'
+}
+
+// A Did you link that looked up as nothing: was it stopped? Falls back to
+// the plain "bad" line when the check fails.
+export async function deadDidYouLinkKey(code) {
+  const db = cloud()
+  const clean = cleanCode(code)
+  if (!db || !clean || clean.length !== 10) return deadLinkKey(false)
+  const { data, error } = await db.rpc('did_you_link_stopped', { code: clean })
+  return deadLinkKey(!error && Boolean(data))
+}
+
+// A sent Did you can be edited while it waits for an answer.
+export function canEditSent(row) {
+  return Boolean(row && row.kind !== 'cheer' && row.state === 'sent')
+}
+
+// The same limits as sending: 1 to 200 letters, trimmed. { text, miss }.
+export function cleanSentEdit(value) {
+  const text = String(value || '').trim()
+  if (!text) return { text: '', miss: 'sent.editBlank' }
+  if (text.length > 200) return { text: '', miss: 'sent.editLong' }
+  return { text, miss: '' }
+}
+
 // Add whoever made a Did you link as a friend. Signed in only.
 export async function befriendByLink(code) {
   const db = cloud()

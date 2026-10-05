@@ -3,7 +3,7 @@ import { FadeScroll } from '../components/FadeScroll.jsx'
 import { AppState, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
-import { myDidYouLinks } from '../../src/lib/did-you-links.js'
+import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from '../../src/lib/did-you-links.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { passAlong } from '../../src/lib/native.js'
@@ -15,6 +15,7 @@ import {
   reportSend,
   askByFriendId,
   cleanFriendId,
+  editSend,
   formatFriendId,
   lookUpFriendId,
   myFriendId,
@@ -2116,6 +2117,37 @@ export function SentScreen({ book, onChange }) {
   const [links, setLinks] = useKept(`sent.links:${account.user?.id}`, [])
   const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false)
   const [miss, setMiss] = useState('')
+  const [editing, setEditing] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  async function saveEdit() {
+    if (busy || !editing) return
+    const { text, miss: why } = cleanSentEdit(editing.text)
+    if (why) {
+      setMiss(t(why))
+      return
+    }
+    setBusy(true)
+    setMiss('')
+    const out = await editSend(editing.id, text)
+    setBusy(false)
+    if (out.miss) setMiss(tMiss(out.miss))
+    else {
+      setEditing(null)
+      confirmDone(t('sent.edited'))
+    }
+    load()
+  }
+
+  function askStopLink(link) {
+    askFirst(colors, t('sent.stopTitle'), t('sent.stopBody'), t('sent.stopLink'), async () => {
+      setMiss('')
+      const out = await endDidYouLink(link.code)
+      if (out.miss) setMiss(tMiss(out.miss))
+      else confirmDone(t('sent.linkStopped'))
+      load()
+    })
+  }
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -2177,6 +2209,9 @@ export function SentScreen({ book, onChange }) {
                 .join(' · ')}
             </Text>
           </View>
+          {canEditSent(row) ? (
+            <KeyButton colors={colors} label={t('sent.edit')} onPress={() => setEditing({ id: row.id, text: row.question })} />
+          ) : null}
           {row.state === 'sent' ? (
             <KeyButton
               colors={colors}
@@ -2202,14 +2237,46 @@ export function SentScreen({ book, onChange }) {
               <View key={link.code} style={[styles.groupRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
                 <View style={styles.personCopy}>
                   <Text style={[styles.personTitle, { color: colors.ink }]}>{link.question}</Text>
-                  <Text style={[styles.personNote, { color: colors.inkDim }]}>{linkKeptLine(link)}</Text>
+                  <Text style={[styles.personNote, { color: colors.inkDim }]}>
+                    {link.ended ? `${linkKeptLine(link)} · ${t('sent.stoppedNote')}` : linkKeptLine(link)}
+                  </Text>
                 </View>
+                {link.ended ? null : (
+                  <KeyButton colors={colors} label={t('sent.stopLink')} onPress={() => askStopLink(link)} />
+                )}
               </View>
             ))}
           </View>
         </>
       ) : null}
       <Miss colors={colors}>{miss}</Miss>
+      {editing ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setEditing(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEditing(null)}>
+            <KeyboardLift style={styles.editLift}>
+              <Pressable
+                accessible={false}
+                style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
+                onPress={(event) => event.stopPropagation()}
+              >
+                <Text style={[styles.popKicker, { color: colors.on }]}>{t('sent.editTitle')}</Text>
+                <Field
+                  colors={colors}
+                  label={t('people.sendWhat')}
+                  value={editing.text}
+                  maxLength={200}
+                  autoFocus
+                  onChangeText={(text) => setEditing({ ...editing, text })}
+                />
+                <View style={styles.personActions}>
+                  <DidButton colors={colors} small label={t('sent.editSave')} disabled={busy} onPress={saveEdit} />
+                  <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEditing(null)} />
+                </View>
+              </Pressable>
+            </KeyboardLift>
+          </Pressable>
+        </Modal>
+      ) : null}
     </ScreenShell>
   )
 }
@@ -2223,6 +2290,7 @@ function linkKeptLine(link) {
 const styles = StyleSheet.create({
   groupCard: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
   groupPad: { padding: 14, gap: 8 },
+  editLift: { justifyContent: 'center' },
   groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   previewList:{ gap: 8, marginTop: 12, marginBottom: 4 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },

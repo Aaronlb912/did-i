@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { APP_STORE_URL, betaLinkFor } from '../lib/invite-link.js'
-import { didYouAsk, didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
+import { deadDidYouLinkKey, didYouAsk, didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
 
@@ -14,11 +14,17 @@ export function DidYouLanding({ code }) {
   const we = isWeLinkCode(code)
   const [found, setFound] = useState(link ? undefined : null)
   const [copied, setCopied] = useState(false)
+  const [deadKey, setDeadKey] = useState('didYouLink.bad')
 
   useEffect(() => {
     if (!link) return undefined
     let alive = true
-    ;(we ? lookUpWeLink(code) : lookUpDidYouLink(code)).then((next) => {
+    ;(we ? lookUpWeLink(code) : lookUpDidYouLink(code)).then(async (next) => {
+      // Nothing came back: say "stopped" when its maker stopped it.
+      if (!next && !we) {
+        const key = await deadDidYouLinkKey(code)
+        if (alive) setDeadKey(key)
+      }
       if (alive) setFound(next)
     })
     return () => {
@@ -45,7 +51,7 @@ export function DidYouLanding({ code }) {
           ? we
             ? t('weLink.asked', { name: found.name || t('weLink.someone') })
             : t('didYouLink.asked', { name: found.name || 'Did I' })
-          : t('didYouLink.bad')
+          : t(deadKey)
 
   return (
     <MarketingShell path="/download">

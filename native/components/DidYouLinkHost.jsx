@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAccount } from '../../src/lib/account.js'
 import {
   befriendByLink,
+  deadDidYouLinkKey,
   didYouAsk,
   claimPendingDidYous,
   dropPendingDidYou,
@@ -90,6 +91,12 @@ export function DidYouLinkHost({ colors, onKeep }) {
       const next = () => {
         publishSheet(null)
         setTick((n) => n + 1)
+      }
+      if (!found && !we) {
+        // Stopped by whoever made it, or never right.
+        deadDidYouLinkKey(code).then((key) => showToast({ id: 'did-you-link', kind: 'error', text: t(key), ms: 5200 }))
+        setTick((n) => n + 1)
+        return
       }
       if (!found || found.full) {
         showToast({ id: 'did-you-link', kind: 'error', text: t(found?.full ? 'weLink.full' : 'didYouLink.bad'), ms: 5200 })

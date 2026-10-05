@@ -281,3 +281,43 @@ $$;
 
 revoke all on function public.my_did_you_links() from public, anon;
 grant execute on function public.my_did_you_links() to authenticated;
+
+-- Stop a link you made. Nobody new can keep it after this. People who
+-- already kept it keep their copy. Only the maker can stop it.
+create or replace function public.end_did_you_link(code text)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  hit integer;
+begin
+  if me is null then raise exception 'sign in first'; end if;
+  update public.did_you_links l set ended = true
+  where l.code = lower(btrim(coalesce(end_did_you_link.code, ''))) and l.made_by = me;
+  get diagnostics hit = row_count;
+  return hit > 0;
+end;
+$$;
+
+revoke all on function public.end_did_you_link(text) from public, anon;
+grant execute on function public.end_did_you_link(text) to authenticated;
+
+-- True when the code was a real link and its maker stopped it, so the link
+-- page can say so instead of "not right". Nothing else about the link.
+create or replace function public.did_you_link_stopped(code text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.did_you_links l
+                 where l.code = lower(btrim(coalesce(did_you_link_stopped.code, ''))) and l.ended);
+$$;
+
+revoke all on function public.did_you_link_stopped(text) from public;
+grant execute on function public.did_you_link_stopped(text) to anon, authenticated;
