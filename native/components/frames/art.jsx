@@ -1080,7 +1080,10 @@ function EmberOver({ f }) {
               <S.Stop offset="1" stopColor="#ff6e28" stopOpacity="0.45" />
             </S.LinearGradient>
           </S.Defs>
-          <S.Rect x={0} y={f.h - 70} width={f.w} height={70} fill="url(#eg)" />
+          {/* Trimmed to the card's round corners, so the glow never pokes past them. */}
+          <RoundClip f={f} o={0} id="ebc">
+            <S.Rect x={0} y={f.h - 70} width={f.w} height={70} fill="url(#eg)" />
+          </RoundClip>
         </Layer>
       </Mover>
       <Layer f={f}>
@@ -1277,7 +1280,17 @@ function confettiAt(time, it, w, h) {
   return { x: s.x, y: s.y, o: inCard ? 0 : 1, r: s.r }
 }
 
-const LEAF_COLORS = ['#d9822b', '#c94f2c', '#e6b23a', '#a8541f']
+// Leaves fade out near the top and bottom of their box, so a parent that
+// clips close to the card never shows them cut on a straight line.
+function leafAt(time, it, w, h) {
+  'worklet'
+  const s = fallAt(time, it, w, h)
+  const top = Math.min(1, Math.max(0, (s.y + 40) / 28))
+  const bottom = Math.min(1, Math.max(0, (h + 24 - s.y) / 24))
+  return { x: s.x, y: s.y, o: Math.min(top, bottom), r: s.r }
+}
+
+const LEAF_COLORS =['#d9822b', '#c94f2c', '#e6b23a', '#a8541f']
 
 function LeavesOver({ f }) {
   const S = svgAll()
@@ -1294,7 +1307,7 @@ function LeavesOver({ f }) {
         <Ring f={f} k={0.5} color="rgba(217,130,43,0.5)" width={1} />
       </Layer>
       {items.map((it, i) => (
-        <Particle key={i} clock={f.clock} item={it} fn={fallAt} w={f.w} h={f.h} size={24}>
+        <Particle key={i} clock={f.clock} item={it} fn={leafAt} w={f.w} h={f.h} size={24}>
           <S.Svg width={24} height={24} viewBox="-12 -12 24 24">
             <S.Path d={`M0 ${-it.s} Q${it.s * 0.9} 0 0 ${it.s} Q${-it.s * 0.9} 0 0 ${-it.s} Z`} fill={it.c} />
             <S.Line x1={0} y1={-it.s} x2={0} y2={it.s} stroke="rgba(60,30,10,0.5)" strokeWidth={1} />

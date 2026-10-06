@@ -67,6 +67,7 @@ import {
   fireCheer,
   friendCheerMissKey,
   applyInvitePayout,
+  lookText,
   normalizePurse,
 } from '../../src/lib/purse.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -94,7 +95,7 @@ import {
 } from '../components/ui.jsx'
 import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
-import { FRAME_IDS } from '../../src/lib/frames.js'
+import { FRAME_IDS, frameText } from '../../src/lib/frames.js'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
@@ -933,7 +934,8 @@ export function PeopleScreen({ book, onChange }) {
         colors={colors}
         label={t('friendId.yours')}
         note={mine?.friend_id ? formatFriendId(mine.friend_id) : t('friendId.shareSub')}
-        onPress={() => goHash('/people/connect')}
+        // With an ID, Copy and Share sit right below; without one, go get it.
+        onPress={mine?.friend_id ? undefined : () => goHash('/people/connect')}
       />
       {mine?.friend_id ? (
         <View style={styles.idButtons}>
@@ -1740,6 +1742,13 @@ function FriendCardArt({ person, size }) {
   return <FramePreview id={frame} colors={colors} size={size} />
 }
 
+// "Lime look, Frost frame": what the card in the sheet is wearing.
+function friendCardLine(person) {
+  const look = t(lookText(LOOK_IDS.includes(person.look_on) ? person.look_on : 'lime', 'name'))
+  const frame = FRAME_IDS.has(person.frame_on) ? person.frame_on : ''
+  return frame ? t('friend.cardLook', { look, frame: t(frameText(frame, 'name')) }) : t('friend.cardLookNone', { look })
+}
+
 // A tap shows the card bigger, still, in a sheet.
 function FriendCardPreview({ person, name, colors }) {
   const label = t('friend.cardA11y', { name })
@@ -1756,6 +1765,7 @@ function FriendCardPreview({ person, name, colors }) {
             </View>
           ),
           title: label,
+          body: friendCardLine(person),
           closeLabel: t('settings.close'),
           colors,
           onClose: () => publishSheet(null),
@@ -2057,7 +2067,6 @@ export function FriendScreen({ book, onChange, route }) {
       ) : (
         <>
           <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
-          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
         </>
       )}
 
@@ -2091,7 +2100,6 @@ export function FriendScreen({ book, onChange, route }) {
       ) : (
         <>
           <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
-          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
         </>
       )}
         </>
