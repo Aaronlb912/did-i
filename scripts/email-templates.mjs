@@ -3,11 +3,11 @@
 // Apply:   node scripts/email-templates.mjs --apply   (needs SUPABASE_ACCESS_TOKEN in .env.local)
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const INK = '#eef1f5'
+const INK = '#f4f6fa'
 const SOFT = '#a5adb9'
-const LINE = '#2a3240'
-const ACCENT = '#8fb6dc'
-const BG = '#0b0e13'
+const LINE = '#2b3140'
+const ACCENT = '#c9f24d'
+const BG = '#0e1014'
 
 // Table layout and inline styles: what email clients actually render. Dark, like the app.
 function layout({ preheader, title, body, footer }) {
@@ -19,7 +19,7 @@ function layout({ preheader, title, body, footer }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
 <tr><td style="padding:0 4px 18px;font:700 20px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK}" class="ink">
 <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${ACCENT};box-shadow:inset -6px -3px 0 0 ${BG};vertical-align:-3px;margin-right:8px"></span>Did I</td></tr>
-<tr><td class="card" style="background:#151b24;border:1px solid ${LINE};border-radius:20px;padding:32px 28px;font:400 16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK}">
+<tr><td class="card" style="background:#16191f;border:1px solid ${LINE};border-radius:20px;padding:32px 28px;font:400 16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK}">
 <h1 class="ink" style="margin:0 0 12px;font:800 24px/1.2 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK}">${title}</h1>
 ${body}
 </td></tr>
@@ -28,8 +28,8 @@ ${body}
 }
 
 const p = (text) => `<p class="soft" style="margin:0 0 18px;color:${SOFT}">${text}</p>`
-const code = (token) => `<div class="code" style="margin:6px 0 20px;padding:18px 0;text-align:center;background:#0f141c;border:1px solid ${LINE};border-radius:14px;font:700 34px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:10px;color:${INK}">${token}</div>`
-const button = (href, label) => `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 20px"><tr><td class="btn" style="background:${ACCENT};border-radius:999px"><a href="${href}" style="display:inline-block;padding:14px 26px;font:700 16px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0b0e13;text-decoration:none">${label}</a></td></tr></table>`
+const code = (token) => `<div class="code" style="margin:6px 0 20px;padding:18px 0;text-align:center;background:#0b0d10;border:1px solid ${LINE};border-radius:14px;font:700 34px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:10px;color:${INK}">${token}</div>`
+const button = (href, label) => `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 20px"><tr><td class="btn" style="background:${ACCENT};border-radius:999px"><a href="${href}" style="display:inline-block;padding:14px 26px;font:700 16px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0e1014;text-decoration:none">${label}</a></td></tr></table>`
 const notMe = "If this wasn't you, you can ignore this email. Nobody can get in without the code."
 const changed = "If you didn't make this change, reply to this email and we'll help you lock your account."
 
