@@ -6,7 +6,7 @@
 export const FRAME_IDS = [
   'first', 'thin', 'double', 'dotted', 'washi', 'pixel', 'stitch', 'polaroid', 'wood', 'flowers',
   'comic', 'moon', 'filigree', 'deco', 'marble', 'glow', 'silver', 'neon', 'fireflies', 'shoot',
-  'glass', 'gold', 'const', 'ring', 'aurora', 'vine', 'ember', 'gems', 'frost', 'web', 'leaves',
+  'glass', 'gold', 'const', 'ring', 'aurora', 'vine', 'ember', 'gems', 'frost', 'bloom', 'web', 'leaves',
   'snow', 'sakura', 'bday',
 ]
 

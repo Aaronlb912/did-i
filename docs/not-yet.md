@@ -16,6 +16,12 @@ Last worked through 2026-10-02.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
 - **Frames have no wishlist and no "Remind me".** Looks, cheers, buddies and accessories can be wishlisted; frame sheets cannot (the wish list in `purse.js` only knows those four kinds). A seasonal frame that is not out yet says when it is back, with no reminder.
 
+## Referral rewards (branch `feat/referral-rewards`)
+
+- **SQL not applied.** `supabase/referral-rewards.sql` (claim_invites lists the Hive buddy at 15 friends and the Bloom frame at 20) and the `bloom` id in `supabase/friends-week.sql`. Run `npm run db:apply:all`, then `node scripts/test-sql.mjs supabase/tests/referral-rewards.test.sql`. Until then nobody gets the two rewards and wearing Bloom fails the frame_on write quietly.
+- **Needs device testing:** the Refer ladder at 390px (dark, light, a gem look), the Hive chip sway and the sheets, Bloom on the top card only, still with Less motion and in tiles; Hive on the Android widget and wearing a hat between its antennae. The iPhone widget draws Hive from the next store build.
+- **Web Refer page draws Bloom from its own SVG.** The web has no frame renderer, so the ladder there uses a small copy of the art.
+
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 
 - **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.

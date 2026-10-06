@@ -199,6 +199,24 @@ const BUDDY_SVG = {
     <ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#3a2a22"/>
     <ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#3a2a22"/>
   </svg>`,
+  hive: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(-25 11 18)"/>
+    <ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(25 37 18)"/>
+    <path d="M19 17 Q16 10 13 8 M29 17 Q32 10 35 8" fill="none" stroke="#2b2018" stroke-width="1.4" stroke-linecap="round"/>
+    <ellipse cx="13" cy="8" rx="2.2" ry="2.2" fill="#2b2018"/>
+    <ellipse cx="35" cy="8" rx="2.2" ry="2.2" fill="#2b2018"/>
+    <ellipse cx="24" cy="31" rx="15" ry="14" fill="#f6c443"/>
+    <path d="M10.5 35 Q24 40 37.5 35 V38.4 Q24 43.4 10.5 38.4 Z M12 41.5 Q24 45.5 36 41.5 L34 44.1 Q24 47.1 14 44.1 Z" fill="#2b2018"/>
+    <ellipse cx="18" cy="27" rx="2.3" ry="3.1" fill="#2d241c"/>
+    <ellipse cx="30" cy="27" rx="2.3" ry="3.1" fill="#2d241c"/>
+    <ellipse cx="18.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="30.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="14" cy="32" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55"/>
+    <ellipse cx="34" cy="32" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55"/>
+    <path d="M22 31.5 Q24 33.3 26 31.5" fill="none" stroke="#2b2018" stroke-width="1" stroke-linecap="round"/>
+    <ellipse cx="17" cy="47" rx="4.2" ry="2.8" fill="#2b2018"/>
+    <ellipse cx="31" cy="47" rx="4.2" ry="2.8" fill="#2b2018"/>
+  </svg>`,
 }
 
 // The buddy wearing its accessories (worn), when it has any on.

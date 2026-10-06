@@ -14,6 +14,7 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
+  SHOP_BUDDIES,
   BUDDY_GEMS,
   buyCheerStage,
   buyLook,
@@ -866,7 +867,7 @@ export function ShopScreen({ book, onChange }) {
   const rows = [
     { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
     { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
-    { type: 'buddy', list: BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
+    { type: 'buddy', list: SHOP_BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
     { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
   ]
   // Nothing left to buy anywhere: one line, not four empty rows.
@@ -1314,7 +1315,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
 
-      {ownedLast('buddy', BUDDIES, purse).map((item) => {
+      {ownedLast('buddy', SHOP_BUDDIES, purse).map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
         const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
