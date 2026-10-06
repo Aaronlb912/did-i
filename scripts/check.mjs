@@ -57,7 +57,7 @@ import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
-import { NOTE_MAX, bulkLamps, hangInto, setAnswerNote, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
+import { NOTE_MAX, bulkLamps, hangInto, moveLamps, setAnswerNote, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
 import { answersToSend, applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
@@ -135,7 +135,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
@@ -218,6 +218,20 @@ test('a bulk delete across folders comes back whole on undo', () => {
   const stopped = bulkLamps([home, work], picks, 'stop')
   assert.equal(stopped[0].lamps.find((item) => item.id === 'b').archived, true)
   assert.equal(stopped[0].lamps.find((item) => item.id === 'a').archived, undefined)
+})
+
+test('a bulk move takes answers along and moves back on undo', () => {
+  const home = { id: 'home', lamps: [{ id: 'a' }, { id: 'b' }], answers: [{ lampId: 'b', periodKey: '2026-09-25', status: 'yes', note: 'hi' }] }
+  const work = { id: 'work', lamps: [{ id: 'c' }], answers: [] }
+  const moved = moveLamps([home, work], [{ boardId: 'home', lampId: 'b' }], 'work')
+  const [h, w] = ['home', 'work'].map((id) => moved.find((book) => book.id === id))
+  assert.deepEqual(h.lamps.map((item) => item.id), ['a'])
+  assert.deepEqual(w.lamps.map((item) => item.id), ['c', 'b'])
+  assert.equal(w.answers[0].note, 'hi')
+  const back = moveLamps([h, w], [{ boardId: 'work', lampId: 'b' }], 'home')
+  assert.deepEqual(back.find((book) => book.id === 'home').lamps.map((item) => item.id), ['a', 'b'])
+  assert.equal(back.find((book) => book.id === 'home').answers.length, 1)
+  assert.deepEqual(moveLamps([home, work], [{ boardId: 'work', lampId: 'c' }], 'work'), [])
 })
 
 test('a duplicate keeps " copy" inside the short name limit', () => {
@@ -703,6 +717,8 @@ test('the year view stops at this month and goes back to the first answer', () =
   const boards = [{ id: 'b1', title: 'Tag', lamps: [{ ...lamp('a'), createdOn: '' }], answers: [{ lampId: 'a', periodKey: '2024-03-02', status: 'yes' }] }]
   assert.equal(firstAnswerYear(boards, now), 2024)
   assert.equal(firstAnswerYear([{ id: 'b', lamps: [], answers: [] }], now), 2026)
+  assert.equal(firstAnswerMonth(boards, now), '2024-03')
+  assert.equal(firstAnswerMonth([{ id: 'b', lamps: [], answers: [] }], now), '2026-10', 'no answers: this month')
   assert.equal(yearMonths(boards, 2026, now).length, 10)
   const old = yearMonths(boards, 2024, now)
   assert.equal(old.length, 12)
@@ -827,7 +843,7 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   const nights = coinNights(shelf, now)
   assert.deepEqual(nights.slice(0, 4), [
     { night: '2026-10-04', coins: 6, reason: 'cap' },
-    { night: '2026-10-03', coins: 3, reason: '' },
+    { night: '2026-10-03', coins: 3, reason: 'late' },
     { night: '2026-10-02', coins: 0, reason: 'new' },
     { night: '2026-10-01', coins: 0, reason: 'none' },
   ])
@@ -838,6 +854,8 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
   assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
   assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
+  assert.match(coinNightLine(nights[1], 'Sat'), /late/i, 'a late Did explains 3 coins, not 4')
+  assert.match(coinNightLine(merged[1], 'Sat'), /\.$/, 'a line with no reason still ends in a period')
   // Nothing before the first question or answer.
   const young = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [lamp('y', { createdOn: '2026-10-03' })], answers: [] }] }
   assert.deepEqual(coinNights(young, now).map((row) => row.reason), ['open', 'none'])

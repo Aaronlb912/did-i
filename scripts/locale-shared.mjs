@@ -63,6 +63,7 @@ const TEMPLATE_SAME = new Set([
   'hang.pm',
   'hang.timeDaypart',
   'hang.priority.normal',
+  'pill.markedWhat',
   'people.namePh',
   'people.addPh',
   'people.newFamilyPh',

@@ -58,7 +58,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
 
   function Check({ on }) {
     return (
-      <View style={[styles.box, { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.on : 'transparent' }]}>
+      <View style={[styles.box, { borderColor: on ? colors.on : colors.inkDim, backgroundColor: on ? colors.on : 'transparent' }]}>
         {on ? <Text style={[styles.tick, { color: colors.bg }]}>✓</Text> : null}
       </View>
     )
@@ -154,13 +154,11 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
               {oneFolder ? (
                 <>
                   <Text style={[styles.cap, { color: colors.inkDim }]}>{t('nav.boards')}</Text>
-                  <View style={styles.row} accessibilityState={{ checked: true, disabled: true }}>
-                    <View style={styles.rowName}>
-                      <Check on />
-                      <Text style={{ color: colors.inkSoft, flexShrink: 1 }} numberOfLines={1}>
-                        {live[0].title}
-                      </Text>
-                    </View>
+                  {/* Plain text: one folder is nothing to pick, so no checkbox. */}
+                  <View style={styles.row}>
+                    <Text style={{ color: colors.inkSoft, flexShrink: 1 }} numberOfLines={1}>
+                      {live[0].title}
+                    </Text>
                   </View>
                 </>
               ) : null}

@@ -131,6 +131,33 @@ export function undoBulkLamps(books, before, picks) {
   return out
 }
 
+// Moves picked questions, with their answers and notes, into one folder.
+// Same steps as moving one from its edit form (saveLamp). Undo is the
+// same call with the picks pointing back. Hands back only changed folders.
+export function moveLamps(books, picks, targetId) {
+  const target = books.find((book) => book.id === targetId)
+  if (!target) return []
+  const changed = new Map()
+  const latest = (book) => changed.get(book.id) || book
+  let dest = target
+  for (const pick of picks) {
+    if (pick.boardId === targetId) continue
+    const source = books.find((book) => book.id === pick.boardId)
+    const lamp = source && (latest(source).lamps || []).find((item) => item.id === pick.lampId)
+    if (!lamp) continue
+    const from = latest(source)
+    const answers = (from.answers || []).filter((item) => item.lampId === lamp.id)
+    changed.set(source.id, takeDown(from, lamp))
+    dest = {
+      ...hangInto(dest, lamp, false),
+      answers: [...(dest.answers || []).filter((item) => item.lampId !== lamp.id), ...answers],
+    }
+  }
+  if (dest === target) return []
+  changed.set(targetId, dest)
+  return [...changed.values()]
+}
+
 export function toggleArchive(book, lamp) {
   if (!lamp) return book
   return {

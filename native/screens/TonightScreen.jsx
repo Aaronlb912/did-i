@@ -44,7 +44,8 @@ import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/Freeze
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
-import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
+import { dropToast, showToast, useToastQueue, useUndoToast } from '../lib/toast-queue.js'
+import { HOME_LIFT, TOAST_ROOM } from '../components/ToastHost.jsx'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
@@ -261,6 +262,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.streak, frameCtx.everFrozen])
   const { bottom: bottomPad } = useAppInsets()
+  const toastUp = useToastQueue().length > 0
   const headerInset = useHeaderInset()
   const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
   const premium = isGemLook(look)
@@ -946,7 +948,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      <SwipeFlyHost style={styles.slot}>
+      {/* While a toast shows, the card and friends row move up out from under it.
+          The toast sits HOME_LIFT over the bottom: on the Did and Nope row, if any. */}
+      <SwipeFlyHost style={[styles.slot, toastUp ? { marginBottom: answerBar ? TOAST_ROOM : HOME_LIFT + TOAST_ROOM } : null]}>
         {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />

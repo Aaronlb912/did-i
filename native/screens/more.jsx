@@ -607,8 +607,10 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
         <View style={[styles.calDot, { backgroundColor: colors.miss }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
-        <View style={[styles.calDot, { backgroundColor: colors.freeze }]} />
+        <View style={[styles.calDot, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
+        <View style={[styles.calDot, { backgroundColor: colors.open }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('later.tonight')}</Text>
       </View>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />

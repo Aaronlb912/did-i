@@ -9,7 +9,7 @@ Use: folder, question, tonight, Did I, coins, gems, shop, cheer, streak, nope.
 
 Never in UI copy: board, hall, hang, heat, skip. The tap button is "nope".
 
-- Plurals: "Did wes", "Did yous". No apostrophe.
+- Plurals: "Did we's", "Did you's" (owner's call; scripts/check.mjs enforces it).
 - Did you questions are typed after a "Did you" label. Anything shown on its own (preview, push, share text) uses `didYouAsk` from `src/lib/link-preview.js`.
 - Shared links are full `https://` links (e.g. `https://did-i.app/d/CODE`).
 - Short sentences. Concrete nouns. No em dashes.

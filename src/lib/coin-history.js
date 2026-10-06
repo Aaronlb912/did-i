@@ -6,7 +6,8 @@ import { addDaysIso, boardDate } from './recurrence.js'
 import { t } from './i18n.js'
 import { gemWeekKey, PAID_TAPS } from './purse.js'
 
-// reason: cap (more Dids than pay), new (only new questions), nope (only
+// reason: cap (more Dids than pay), late (a paid Did was late, so 1 coin),
+// capLate (both), new (only new questions), nope (only
 // nopes), none (nothing answered), open (tonight, not answered yet), '' (paid).
 export function coinNights(shelf, now = new Date(), days = 7) {
   const boards = shelf?.boards || []
@@ -17,7 +18,7 @@ export function coinNights(shelf, now = new Date(), days = 7) {
   const at = (night) => {
     let row = seen.get(night)
     if (!row) {
-      row = { coins: 0, paid: 0, extra: 0, fresh: 0, nopes: 0 }
+      row = { coins: 0, paid: 0, late: 0, extra: 0, fresh: 0, nopes: 0 }
       seen.set(night, row)
     }
     return row
@@ -56,6 +57,7 @@ export function coinNights(shelf, now = new Date(), days = 7) {
       const row = at(night)
       row.coins += paid.reduce((sum, a) => sum + (a.status === 'yes' ? 2 : 1), 0)
       row.paid += paid.length
+      row.late += paid.filter((a) => a.status === 'late').length
       row.extra += list.length - paid.length
     }
   }
@@ -66,7 +68,8 @@ export function coinNights(shelf, now = new Date(), days = 7) {
     const row = seen.get(night)
     let reason = ''
     if (!row || (!row.paid && !row.fresh && !row.nopes)) reason = night === today ? 'open' : 'none'
-    else if (row.extra) reason = 'cap'
+    else if (row.extra) reason = row.late ? 'capLate' : 'cap'
+    else if (row.late) reason = 'late'
     else if (!row.paid && row.fresh) reason = 'new'
     else if (!row.paid) reason = 'nope'
     out.push({ night, coins: row?.coins || 0, reason })
@@ -87,7 +90,7 @@ export function mergeCoinNights(local, server) {
 
 export function coinNightLine(row, date) {
   const base = t('coins.nightLine', { date, n: row.coins })
-  return row.reason ? `${base}. ${t(`coins.why.${row.reason}`, { n: PAID_TAPS })}` : base
+  return row.reason ? `${base}. ${t(`coins.why.${row.reason}`, { n: PAID_TAPS })}` : `${base}.`
 }
 
 // Whether this week's gem is already earned.

@@ -41,7 +41,10 @@ const RING_SIZE = 24.5
 // Home keeps Did and Nope just above the tab bar. Its toast sits at the
 // bottom like everywhere else, lifted over those buttons, so a tap on Undo
 // can't land on Nope and the count at the top stays in view.
-const HOME_LIFT = 84
+export const HOME_LIFT = 84
+// Room Home clears under its content while a toast shows: the toast (two
+// lines at most) plus a gap, so it never sits on the friends row or a card.
+export const TOAST_ROOM = 66
 
 /**
  * The one toast on screen, above the tab bar. The rest of the queue waits.

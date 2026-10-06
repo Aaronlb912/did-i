@@ -280,15 +280,22 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
 // The year of the oldest answer (or question made), for how far back the
 // year view goes. Falls back to this year.
 export function firstAnswerYear(boards, now = new Date(), tagId = '') {
+  return Number(firstAnswerMonth(boards, now, tagId).slice(0, 4))
+}
+
+// 'YYYY-MM' of the oldest answer, or this month. The year view starts its
+// first year there, so someone who began in September sees no empty spring.
+export function firstAnswerMonth(boards, now = new Date(), tagId = '') {
   let first = ''
   for (const book of scopedBooks(boards, tagId)) {
     for (const answer of book.answers || []) {
       const key = String(answer?.periodKey || '')
-      if (/^\d{4}-/.test(key) && (!first || key < first)) first = key
+      if (/^\d{4}-\d{2}/.test(key) && (!first || key < first)) first = key
     }
   }
-  const year = first ? Number(first.slice(0, 4)) : now.getFullYear()
-  return Math.min(year, now.getFullYear())
+  const here = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const month = first ? first.slice(0, 7) : here
+  return month < here ? month : here
 }
 
 // One pass over a book's answers: lampId -> (periodKey -> status), plus the
