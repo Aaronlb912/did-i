@@ -382,7 +382,7 @@ function sentState(state) {
 }
 
 function streakLine(row) {
-  if (row.streak > 0) return t('all.streakN', { n: row.streak })
+  if (row.streak > 0) return t(row.streak === 1 ? 'all.streakOne' : 'all.streakN', { n: row.streak })
   return t('all.noStreak')
 }
 
@@ -838,7 +838,7 @@ export function PeopleScreen({ book, onChange }) {
       {links.friends.length ? (
         <>
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
-            {sharing.length ? `${t('people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
+            {sharing.length ? `${t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
             {newHere ? t('people.stripHint') : ''}
           </Text>
           <FadeScroll fade={colors.bg} contentContainerStyle={styles.strip}>
@@ -1441,7 +1441,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
       {sharing.length ? (
         <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t('people.doneOf', { done: doneCount, n: sharing.length })}
+          {t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })}
         </Text>
       ) : null}
 

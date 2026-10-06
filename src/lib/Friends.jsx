@@ -189,7 +189,7 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       <h2 className="di-page-title">{t('friends.title', { n: links.friends.length })}</h2>
       {links.friends.length ? (
         <p className="di-set-note">
-          {t('people.doneOf', {
+          {t(links.friends.length === 1 ? 'people.doneOfOne' : 'people.doneOf', {
             done: links.friends.filter((row) => doneTonight(row.person, isoDate(clock))).length,
             n: links.friends.length,
           })}

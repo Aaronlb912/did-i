@@ -220,7 +220,7 @@ export function Family({ book, onChange, now, familyId }) {
 
       <SectionHead label={t('family.people')} count={fam.members.length} />
       <p className="di-set-note">
-        {t('people.doneOf', {
+        {t(fam.members.length === 1 ? 'people.doneOfOne' : 'people.doneOf', {
           done: fam.members.filter((row) => doneTonight(row.person, night)).length,
           n: fam.members.length,
         })}

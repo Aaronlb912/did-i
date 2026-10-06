@@ -83,7 +83,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { behindPath, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
+import { behindPath, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -858,7 +858,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </Pressable>
               <View style={styles.modeMid}>
                 <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.reorder')}</Text>
-                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.reorderHint')}</Text>
+                <Text style={[styles.modeSub, styles.modeSubWrap, { color: colors.inkSoft }]} numberOfLines={2}>{t('questions.reorderHint')}</Text>
               </View>
               <View style={[styles.modeSide, styles.modeEnd]}>
                 <DidButton label={t('questions.pickDone')} onPress={() => setOrdering(false)} colors={colors} small />
@@ -1474,12 +1474,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
     else feelTap('hall-on')
-    // Back to where Add was opened: Questions stays on Questions; Home opens the new card.
+    // Back to where Add was opened: Questions stays on Questions; Home opens the new card;
+    // any other page (Recent, Settings) is popped back to, params and all.
     const from = behindPath()
     leave.current = setTimeout(
       () => {
         if (from === '/lamps') goHash('/lamps')
         else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', isDueOn(next, dateIso) ? { face: next.id } : '')
+        else if (from && !wasEmpty) goBack()
         else goHash(wasEmpty ? '/tonight' : '/lamps')
         confirmDone(t('confirm.questionAdded'))
         offerPingPrimer(newTime, colors)
@@ -2082,6 +2084,7 @@ const styles = StyleSheet.create({
   modeMid: { flex: 1, alignItems: 'center' },
   modeTitle: { fontFamily: fonts.uiBold, fontSize: 16 },
   modeSub: { fontFamily: fonts.ui, fontSize: 13 },
+  modeSubWrap: { fontSize: 12, lineHeight: 15, textAlign: 'center' },
   modeCancel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   modeRoom: { height: 64 },
   flex1: { flex: 1 },

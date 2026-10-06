@@ -136,13 +136,14 @@ function M3Switch({ on, onPress, label, colors }) {
         styles.m3Track,
         on
           ? { backgroundColor: colors.on, borderColor: colors.on }
-          : { backgroundColor: colors.open, borderColor: colors.inkSoft },
+          : // Off: a pale track and a mid-grey thumb in both themes, so it never reads as on.
+            { backgroundColor: colors.panel2, borderColor: colors.openRing || colors.inkDim },
       ]}
     >
       <Animated.View
         style={[
           styles.m3Thumb,
-          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.inkSoft },
+          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.openRing || colors.inkDim },
         ]}
       />
     </Pressable>

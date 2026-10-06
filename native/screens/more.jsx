@@ -57,6 +57,7 @@ import {
   shelfStatsCounts,
   shelfWeekNights,
   stampWhen,
+  streakBreak,
   tapWhen,
   weekCell,
   weekLamps,
@@ -689,8 +690,10 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   }
 
   function cellLook(state) {
-    // Not due that night: a faint outline, not a color from the legend.
-    if (state === 'off') return { borderWidth: 1, borderColor: colors.lineSoft }
+    // Not due that night: a short dash, so it never reads as an empty "not answered yet" square.
+    if (state === 'off') return { ...styles.weekOff, backgroundColor: colors.line }
+    // The dot under a cleared date, for the legend.
+    if (state === 'cleared') return { ...styles.weekDot, marginTop: 0, backgroundColor: colors.on }
     // Due tonight, not answered yet: a ring, so it never reads as a nope.
     if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
     // A night a freeze kept: a ring, as in the history legend.
@@ -736,6 +739,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],
     ...(anyOff ? [['off', t('week.notAsked')]] : []),
+    ...(cleared.size ? [['cleared', t('week.clearedDot')]] : []),
   ]
 
   return (
@@ -831,6 +835,17 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
       (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
     )
     .sort((a, b) => b.n - a.n)
+  // A question's run can be longer than the overall one: say which night broke it.
+  const longest = rows.length ? rows[0].n : 0
+  const breakNight = useMemo(
+    () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
+    [book, boards, tagId, longest, heat], // eslint-disable-line react-hooks/exhaustive-deps
+  )
+  const breakLine = breakNight
+    ? breakNight.question
+      ? t('streaks.broke', { date: formatBoardDate(breakNight.iso), what: breakNight.question })
+      : t('streaks.brokeWe', { date: formatBoardDate(breakNight.iso), what: weCardShort(breakNight.weId) || t('we.title') })
+    : ''
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>
@@ -841,6 +856,18 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         label={t('streaks.aria')}
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
+      {breakLine ? (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="week"
+            label={breakLine}
+            chevron
+            last
+            onPress={() => openNightWhy({ colors, boards: inView(book, boards), iso: breakNight.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })}
+          />
+        </SetCard>
+      ) : null}
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
       </SetCard>
@@ -2353,5 +2380,6 @@ const styles = StyleSheet.create({
   weekDay: { fontFamily: fonts.mono, fontSize: 10 },
   weekCell: { width: 14, height: 14, borderRadius: 4 },
   weekDot: { width: 5, height: 5, borderRadius: 3, marginTop: 1 },
+  weekOff: { height: 2, borderRadius: 1, marginVertical: 6 },
   tileHalf: { flexBasis: '45%' },
 })

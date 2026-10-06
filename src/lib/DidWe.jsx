@@ -807,9 +807,9 @@ export function WeHome({ book, onChange, link = '' }) {
       {mine.length ? (
         <>
           <SetCap>{t('we.monthTogether')}</SetCap>
-          <p className="di-we-big">{t('we.nightsDone', { n: nights })}</p>
+          <p className="di-we-big">{t(nights === 1 ? 'we.nightsDoneOne' : 'we.nightsDone', { n: nights })}</p>
           {longest?.n ? (
-            <p className="di-set-note">{t('we.longest', { question: longest.card.question, n: longest.n })}</p>
+            <p className="di-set-note">{t(longest.n === 1 ? 'we.longestOne' : 'we.longest', { question: longest.card.question, n: longest.n })}</p>
           ) : null}
         </>
       ) : null}

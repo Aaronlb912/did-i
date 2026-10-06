@@ -232,6 +232,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   useEffect(() => {
     if (focused && !pillPicked) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
   }, [focused, pillPicked, pillCount])
+  // A picked card keeps the height it had before its answer, so the rows under it stay put.
+  const pickKey = stack.pillPick ? stack.rowKey(stack.pillPick) : ''
+  const [pickTall, setPickTall] = useState({ key: '', h: 0 })
+  const onPickLayout = (event) => {
+    if (!pickKey) return
+    const h = Math.ceil(event.nativeEvent.layout.height)
+    setPickTall((prev) => (prev.key === pickKey && prev.h >= h ? prev : { key: pickKey, h }))
+  }
+  const pickMinH = pickKey && pickTall.key === pickKey ? pickTall.h : 0
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -944,8 +953,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
 
       {showChips ? null : <Slot>{tagFilter}</Slot>}
 
-      {stack.cheer ? null : <DropLine colors={colors} />}
-      {stack.cheer ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
+      {/* A picked card stays put after its answer, so these rows stay too. */}
+      {stack.cheer && !pickKey ? null : <DropLine colors={colors} />}
+      {stack.cheer && !pickKey ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable
@@ -977,7 +987,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Slot>{face}</Slot>
           </ScrollView>
         ) : (
-          <Slot>{face}</Slot>
+          <Slot>
+            <View onLayout={onPickLayout} style={pickMinH ? { minHeight: pickMinH } : null}>
+              {face}
+            </View>
+          </Slot>
         )}
         <Slot>
           <FamilyTonight colors={colors} />
