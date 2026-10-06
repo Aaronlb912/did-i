@@ -860,7 +860,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         <SetCard colors={colors}>
           <SetRow
             colors={colors}
-            icon="week"
+            icon="broke"
             label={breakLine}
             chevron
             last

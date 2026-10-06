@@ -347,7 +347,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
-          icon="grid"
+          icon="palette"
           tint={colors.on}
           label={t('widget.settings.colors')}
           sub={t('widget.settings.lookSub')}
@@ -474,7 +474,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
-          icon="grid"
+          icon="table"
           tint={colors.on}
           label={t('settings.sendCsv')}
           sub={t('settings.sendCsvSub')}
@@ -496,7 +496,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="pen"
+          icon="mail"
           tint={colors.late}
           label={t('feedback.send')}
           sub={t('feedback.sub')}

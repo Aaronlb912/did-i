@@ -1,5 +1,6 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
+import { readPrefs } from './prefs.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -314,10 +315,17 @@ export function dueClearTonight(rows) {
   return required.every(rowDoneTonight)
 }
 
+// Dates read in the app's language, not always English.
+function dateTag() {
+  const code = readPrefs().locale
+  if (code === 'zh') return 'zh-CN'
+  return !code || code === 'en' ? 'en-US' : code
+}
+
 export function formatBoardDate(iso) {
   const date = parseIsoDate(iso)
   if (!date) return iso
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(dateTag(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -343,7 +351,7 @@ export function periodLabel(lamp, periodKey) {
   const key = String(periodKey || '')
   if (/^\d{4}-\d{2}$/.test(key)) {
     const date = parseIsoDate(`${key}-01`)
-    return date ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''
+    return date ? date.toLocaleDateString(dateTag(), { month: 'short', year: 'numeric' }) : ''
   }
   const night = periodNight(lamp, key)
   return night ? formatBoardDate(night) : ''

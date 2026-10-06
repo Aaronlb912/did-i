@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
+import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
 import { markedToast } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
@@ -129,7 +130,7 @@ export function useTonightStack({
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -264,6 +265,8 @@ export function useTonightStack({
     if (!undo) return
     setOverlay(undo.book)
     change(undo.book)
+    // The tap may already be on the account; without this the next pull brings it back.
+    takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
     setUndo(null)
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
     feelTap('undo')
@@ -315,7 +318,7 @@ export function useTonightStack({
     setWaitPick(null)
     // A picked card stays open in its answered state, with its note.
     if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
-    armUndo({ book, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')

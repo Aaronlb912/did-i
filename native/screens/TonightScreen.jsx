@@ -567,6 +567,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <SwipeCardHost
         key="face"
+        alignTop
         cardKey={cardKeyOf(faceRow)}
         colors={colors}
         panelStyle={gemCard}
@@ -971,8 +972,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      {/* A picked card keeps its top edge put; answering or a note only grows it downward. */}
-      <SwipeFlyHost style={[styles.slot, stack.pillPick || stack.waitPick ? styles.slotTop : null]}>
+      {/* A picked card keeps its top edge put; answering or a note only grows it downward.
+          The stack's card starts at that same line, with room where Back to tonight sits. */}
+      <SwipeFlyHost
+        style={[
+          styles.slot,
+          stack.pillPick || stack.waitPick ? styles.slotTop : doneFace || pickedWe ? null : [styles.slotTop, styles.slotRoom],
+        ]}
+      >
         {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
@@ -1089,6 +1096,8 @@ const styles = StyleSheet.create({
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
   slotTop: { justifyContent: 'flex-start' },
+  // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
+  slotRoom: { paddingTop: 42 },
   pickBox: { flex: 1 },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },

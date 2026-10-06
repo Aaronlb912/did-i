@@ -15,7 +15,8 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const [at, setAt] = useState(null)
   const button = useRef(null)
   const { height } = useWindowDimensions()
-  const live = (boards || []).filter((book) => !book.archived)
+  // Every folder, empty (parked) ones too, the same list the Move sheet shows.
+  const live = boards || []
   const ids = tagIdsOf(tagId)
   const showTopics = Boolean(onTopics) && topics.length > 0
   const showFolders = live.length >= 2

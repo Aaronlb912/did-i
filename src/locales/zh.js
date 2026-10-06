@@ -842,7 +842,7 @@ export const zh = {
   'lamp.tonightIs': '今晚:{status}',
   'lamp.notTonight': '今晚没有。',
   'lamp.streakCap': '这个问题的连续次数',
-  'lamp.didCap': 'Did,过去 {n} 天',
+  'lamp.didCap': '做了，过去 {n} 天',
   'hole.kicker': '那晚',
   'hole.nopeKicker': 'Nope',
   'hole.nopeBody': '你说了 nope。如果后来做了，标记为迟。',

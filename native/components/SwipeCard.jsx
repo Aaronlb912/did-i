@@ -93,6 +93,8 @@ export function SwipeCard({
   nopeLabel = '',
   // The worn card frame (CardFrame props) or null. Only the top card animates.
   frame = null,
+  // Sit at the top of its box instead of the middle (Home's stack, so it lines up with a picked card).
+  alignTop = false,
   children,
 }) {
   const theme = useTheme()
@@ -194,7 +196,7 @@ export function SwipeCard({
   const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current, frame: demo ? null : frame }
 
   return (
-    <View style={styles.host} pointerEvents="box-none">
+    <View style={[styles.host, alignTop ? styles.hostTop : null]} pointerEvents="box-none">
       {/* The rails span the whole screen, so a demo card would draw them over the page it sits in. */}
       {demo ? null : (
         <View style={styles.railsHost} pointerEvents="none">
@@ -472,6 +474,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'visible',
   },
+  hostTop: { justifyContent: 'flex-start' },
   railsHost: {
     ...StyleSheet.absoluteFill,
     zIndex: 8,

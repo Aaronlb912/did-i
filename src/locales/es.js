@@ -864,7 +864,7 @@ export const es = {
   'lamp.tonightIs': 'Esta noche: {status}',
   'lamp.notTonight': 'No toca esta noche.',
   'lamp.streakCap': 'Seguidas en esta pregunta',
-  'lamp.didCap': 'Did, últimos {n} días',
+  'lamp.didCap': 'Hecho, últimos {n} días',
   'hole.kicker': 'Esa noche',
   'hole.nopeKicker': 'Nope',
   'hole.nopeBody': 'Dijiste nope. Márcala tarde si al final lo hiciste.',

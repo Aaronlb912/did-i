@@ -844,7 +844,7 @@ export const ko = {
   'lamp.tonightIs': '오늘 밤: {status}',
   'lamp.notTonight': '오늘 밤은 없어요.',
   'lamp.streakCap': '이 질문의 연속 기록',
-  'lamp.didCap': 'Did, 최근 {n}일',
+  'lamp.didCap': '했음, 최근 {n}일',
   'hole.kicker': '그 밤',
   'hole.nopeKicker': 'Nope',
   'hole.nopeBody': 'nope라고 했어. 결국 했으면 늦음으로 표시해.',
