@@ -4429,6 +4429,54 @@ await testAsync('frames: owned lists merge across phones and server lists keep t
   assert.equal(validateCoinItem('frame', 'glow'), false, 'a gem frame is not a coin buy')
 })
 
+const frameGeo = await import('../native/components/frames/geometry.js')
+
+test('every card frame id has art, and the vine and moon math hold', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const ids = frameGeo.FRAME_IDS
+  assert.equal(ids.length, 34)
+  assert.equal(new Set(ids).size, 34)
+  const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
+  const map = art.slice(art.indexOf('export const FRAME_ART = {'))
+  const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])
+  assert.deepEqual([...keys].sort(), [...ids].sort(), 'FRAME_ART covers exactly the catalog')
+  for (const key of keys) assert.ok(new RegExp(key + ': \\{ (under|over): \\w+').test(map), key + ' draws something')
+  if (existsSync(path.join(root, 'src/lib/frames.js'))) {
+    const data = readFileSync(path.join(root, 'src/lib/frames.js'), 'utf8')
+    for (const id of ids) assert.ok(data.includes("'" + id + "'"), id + ' is in src/lib/frames.js')
+  }
+  const preview = readFileSync(path.join(root, 'native/components/frames/FramePreview.jsx'), 'utf8')
+  assert.ok(preview.includes('<CardFrame id={id}') && preview.includes('active={false}'), 'previews are still')
+  const frame = readFileSync(path.join(root, 'native/components/frames/CardFrame.jsx'), 'utf8')
+  assert.ok(frame.includes('FRAME_ART[id]') && frame.includes('pointerEvents="none"'), 'frames never take touches')
+  const runtime = readFileSync(path.join(root, 'native/components/frames/runtime.jsx'), 'utf8')
+  assert.ok(runtime.includes('IDLE_MS = 25000') && runtime.includes('useReduceMotion'), 'frames pause on idle and reduce motion')
+  // Vine: a short streak barely starts, 60+ nights wrap the card, flowers come after 8.
+  const small = frameGeo.vineLayout(3, 300, 360, 24)
+  const big = frameGeo.vineLayout(80, 300, 360, 24)
+  assert.ok(small.usable < small.length * 0.2)
+  assert.equal(big.usable, big.length)
+  assert.equal(small.flowers.length, 0)
+  assert.equal(frameGeo.vineCounts(22).flowers, 2)
+  assert.equal(frameGeo.vineCounts(1000).leaves, 70)
+  // The perimeter walk closes on itself and starts at the bottom-left going up.
+  const L = frameGeo.rrLength(300, 360, 24)
+  const a = frameGeo.rrPointAt(0, 0, 300, 360, 24, 0)
+  const b = frameGeo.rrPointAt(0, 0, 300, 360, 24, L - 0.001)
+  assert.ok(Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01)
+  assert.deepEqual([a.x, a.y, Math.round(a.nx)], [0, 336, -1])
+  // Moon: a known full moon (2024-10-17) and new moon (2024-11-01).
+  const full = frameGeo.moonPhase(new Date(Date.UTC(2024, 9, 17, 11, 26)))
+  const fresh = frameGeo.moonPhase(new Date(Date.UTC(2024, 10, 1, 12, 47)))
+  assert.ok(Math.abs(full - 0.5) < 0.02, 'full ' + full)
+  assert.ok(fresh < 0.02 || fresh > 0.98, 'new ' + fresh)
+  const week = frameGeo.moonWeek(new Date(2026, 9, 5))
+  assert.equal(week.week.length, 7)
+  assert.equal(week.week.filter((d) => d.today).length, 1)
+  assert.equal(frameGeo.ringProgress(2, 4), 0.5)
+  assert.equal(frameGeo.ringProgress(3, 0), 0)
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
 

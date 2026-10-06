@@ -46,7 +46,7 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
 import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
-import { noteFrameTouch } from './components/frames/useFrameActive.js'
+import { noteFrameTouch } from './components/frames/index.js'
 
 // The shop module is big; gifts wait until the first frame is up.
 const GiftHost = lazyScreen(() => require('./screens/shop.jsx'), 'GiftHost')

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
-import { useFrameActive } from '../components/frames/useFrameActive.js'
+import { useFrameActive } from '../components/frames/index.js'
 import { keepEarnedFrames, wornFrame } from '../../src/lib/frames.js'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
