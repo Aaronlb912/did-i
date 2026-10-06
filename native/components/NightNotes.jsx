@@ -43,7 +43,7 @@ function NoteEdit({ label, initial, colors, onSave, onCancel }) {
         onSubmitEditing={() => onSave(draft)}
       />
       <View style={styles.keys}>
-        <KeyButton colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} />
+        <KeyButton colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} picked />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
       </View>
     </View>
@@ -137,6 +137,12 @@ export function NightNotes({ book, lamp, colors, onChange }) {
             colors={colors}
             label={t('note.add')}
             onPress={() => {
+              // One night to choose from: straight to its note.
+              if (picks.length === 1) {
+                setPicking(false)
+                setOpen(picks[0].answer.periodKey)
+                return
+              }
               setOpen('')
               setPicking(true)
             }}
@@ -144,6 +150,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
         </View>
       ) : null}
       </Reveal>
+      {noted.length ? (
       <Pressable
         onPress={() => goHash('/notes')}
         accessibilityRole="link"
@@ -152,6 +159,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       >
         <Text style={[styles.quiet, { color: colors.inkSoft }]}>{t('notes.seeAll')} ›</Text>
       </Pressable>
+      ) : null}
     </View>
   )
 }
