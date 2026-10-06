@@ -653,7 +653,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
           {wish ? (
-            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(wish.key, { n: wish.n, name: t(wish.nameKey) })}</Text>
+            <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+                {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
+              </Text>
+            </Pressable>
           ) : null}
           {signInNudge && !nightOne ? (
             <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>

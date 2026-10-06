@@ -276,7 +276,8 @@ export function HelpScreen() {
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupShop')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.coinsP')}</Meta>
+        <Meta colors={colors}>{t('help.coinsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.wishP')}</Meta>
         <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('frames.what')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('frames.howBody')}</Meta>
