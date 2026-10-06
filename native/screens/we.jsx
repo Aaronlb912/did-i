@@ -1034,7 +1034,7 @@ function WeCardPage({ book, cardId, onChange }) {
 
       {shareFirst ? null : shareCard}
 
-      <SetCap colors={colors}>{t('we.yourFiling')}</SetCap>
+      <SetCap colors={colors} style={styles.listCap}>{t('we.yourFiling')}</SetCap>
       <SetCard colors={colors}>
         <FilingFolds
           folder={filing.folder}
@@ -1178,9 +1178,9 @@ export function WeHomeList({ book, onChange }) {
       {mine.length && nightsTogether > 0 ? (
         <View style={[styles.panel, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           <Cap colors={colors}>{t('we.monthTogether')}</Cap>
-          <Text style={[styles.big, { color: colors.we }]}>{t('we.nightsDone', { n: nightsTogether })}</Text>
+          <Text style={[styles.big, { color: colors.we }]}>{t(nightsTogether === 1 ? 'we.nightsDoneOne' : 'we.nightsDone', { n: nightsTogether })}</Text>
           {longest?.streak ? (
-            <Meta colors={colors}>{t('we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
+            <Meta colors={colors}>{t(longest.streak === 1 ? 'we.longestOne' : 'we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
           ) : null}
         </View>
       ) : null}

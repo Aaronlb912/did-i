@@ -161,6 +161,21 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   return { ...out, state: clear ? 'clear' : iso < today ? 'missed' : 'open' }
 }
 
+// The last night the overall streak broke, looking back `back` nights, with
+// the first thing that broke it. For "why is my streak lower than a question's?"
+export function streakBreak(boards, now = new Date(), tagId = '', back = 60) {
+  const scoped = scopedBooks(boards, tagId)
+  if (!scoped.length) return null
+  const today = boardDate(now, scoped[0].dayFoldHour)
+  for (let i = 1; i <= back; i += 1) {
+    const why = nightWhy(boards, addDaysIso(today, -i), now, tagId)
+    if (why.state !== 'missed') continue
+    const row = why.unanswered[0] || why.noped[0]
+    return { iso: why.iso, question: row ? shortLabel(row.lamp) : '', weId: row ? '' : why.weOpen[0] || '' }
+  }
+  return null
+}
+
 // What tomorrow night holds, for the done card: how many questions it asks
 // and the earliest time one opens. `from` is empty when any of them is open
 // all evening, since "from 8:00 PM" would then be wrong.

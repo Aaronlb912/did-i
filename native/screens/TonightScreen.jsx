@@ -232,6 +232,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   useEffect(() => {
     if (focused && !pillPicked) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
   }, [focused, pillPicked, pillCount])
+  // A picked card keeps the height it had before its answer, so the rows under it stay put.
+  const pickKey = stack.pillPick ? stack.rowKey(stack.pillPick) : ''
+  const [pickTall, setPickTall] = useState({ key: '', h: 0 })
+  const onPickLayout = (event) => {
+    if (!pickKey) return
+    const h = Math.ceil(event.nativeEvent.layout.height)
+    setPickTall((prev) => (prev.key === pickKey && prev.h >= h ? prev : { key: pickKey, h }))
+  }
+  const pickMinH = pickKey && pickTall.key === pickKey ? pickTall.h : 0
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -296,6 +305,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
   const wheels = useSwipeWheels()
+  const hadWheels = useRef(wheels.buttons)
+  if (wheels.buttons) hadWheels.current = true
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {
@@ -492,9 +503,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   let answerBar = null
   // Training wheels: they go after a few swipes (kept for screen readers and reduced motion).
   const withAnswerButtons = (card, onDid, onNope) => {
-    if (!wheels.buttons) return card
+    if (!wheels.buttons && !hadWheels.current) return card
+    // When the buttons go, their space stays until Home opens again, so the card does not jump.
+    const gone = !wheels.buttons
     answerBar = (
-    <View style={styles.answerBar}>
+    <View
+      style={[styles.answerBar, gone ? styles.answerGone : null]}
+      pointerEvents={gone ? 'none' : 'auto'}
+      accessibilityElementsHidden={gone}
+      importantForAccessibility={gone ? 'no-hide-descendants' : 'auto'}
+    >
       <View style={styles.answerRow}>
         {onNope ? (
           <View style={styles.answerCell}>
@@ -505,7 +523,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
       </View>
-      {wheels.hint ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
+      {wheels.hint || gone ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
     </View>
     )
     return card
@@ -935,8 +953,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
 
       {showChips ? null : <Slot>{tagFilter}</Slot>}
 
-      {stack.cheer ? null : <DropLine colors={colors} />}
-      {stack.cheer ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
+      {/* A picked card stays put after its answer, so these rows stay too. */}
+      {stack.cheer && !pickKey ? null : <DropLine colors={colors} />}
+      {stack.cheer && !pickKey ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable
@@ -968,7 +987,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Slot>{face}</Slot>
           </ScrollView>
         ) : (
-          <Slot>{face}</Slot>
+          <Slot>
+            {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
+            <View onLayout={onPickLayout} style={[styles.pickBox, pickMinH ? { minHeight: pickMinH } : null]}>
+              {face}
+            </View>
+          </Slot>
         )}
         <Slot>
           <FamilyTonight colors={colors} />
@@ -1044,6 +1068,7 @@ const styles = StyleSheet.create({
   weTurnGo: { fontFamily: fonts.uiSemi, fontSize: 13 },
   weTurnText: { fontFamily: fonts.uiSemi, fontSize: 14, textAlign: 'center', flexShrink: 1 },
   answerBar: { paddingBottom: 12 },
+  answerGone: { opacity: 0 },
   toastRoom: { height: TOAST_ROOM, flexShrink: 0 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },
@@ -1064,6 +1089,7 @@ const styles = StyleSheet.create({
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
   slotTop: { justifyContent: 'flex-start' },
+  pickBox: { flex: 1 },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

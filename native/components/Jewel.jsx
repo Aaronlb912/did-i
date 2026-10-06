@@ -46,9 +46,10 @@ export function Jewel({
 }) {
   const glow = on && filament > 0
   const ink = on || face ? colors.ink : skip && !on ? colors.inkDim : colors.inkSoft
+  // Only the card on screen gets the strong ring; an answered pill just changes its dot.
   const rim =
-    on || face
-      ? colors.onDeep
+    face
+      ? colors.on
       : dueToday
         ? colors.miss
         : dueSoon
@@ -82,6 +83,7 @@ export function Jewel({
           borderColor: hole ? colors.line : sit && on ? colors.on : rim,
           opacity: pressed ? 0.88 : hole ? 0.9 : 1,
         },
+        face && styles.face,
         waiting && styles.wait,
         optional && styles.optional,
         hole && styles.hole,
@@ -136,6 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     maxWidth: 220,
+  },
+  face: {
+    borderWidth: 2,
+    paddingHorizontal: 13,
   },
   wait: {
     borderStyle: 'dashed',

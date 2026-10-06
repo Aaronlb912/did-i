@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
-import { answerFor, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
+import { shortLabel } from '../../src/lib/board-json.js'
+import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
@@ -72,6 +74,21 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
   const last = rows[rows.length - 1]
   if (last) while (last.length < 7) last.push(null)
 
+  // A tapped night opens a small sheet for this question, like a night in Your history.
+  const STATE_WORD = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', missed: 'later.missed', open: 'jewelKey.open' }
+  function openDay(cell) {
+    const note = String(answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))?.note || '').trim()
+    const close = () => publishSheet(null)
+    publishSheet({
+      kicker: shortLabel(lamp),
+      title: formatBoardDate(cell.iso),
+      body: [t(STATE_WORD[cell.state]), note].filter(Boolean).join('\n'),
+      closeLabel: t('cal.close'),
+      colors,
+      onClose: close,
+    })
+  }
+
   function Arrow({ label, glyph, on, onPress }) {
     return (
       <Pressable
@@ -109,7 +126,14 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
             if (!cell) return <View key={c} style={styles.cell} />
             const fill = cellColor(cell.state, colors)
             return (
-              <View key={cell.iso} style={styles.cell}>
+              <Pressable
+                key={cell.iso}
+                style={styles.cell}
+                disabled={!cell.state}
+                onPress={() => openDay(cell)}
+                accessibilityRole={cell.state ? 'button' : undefined}
+                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(STATE_WORD[cell.state])}` : undefined}
+              >
                 <View
                   style={[
                     styles.day,
@@ -124,7 +148,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                     {cell.day}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             )
           })}
         </View>

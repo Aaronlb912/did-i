@@ -95,7 +95,8 @@ function IosSheet({ label, sub, title, icon, tint, value, options, selected, onS
         <BottomSheet isPresented={open} onIsPresentedChange={setOpen}>
           <Form
             modifiers={[
-              presentationDetents(['medium', 'large']),
+              // A long list (languages) opens tall, so every choice shows.
+              presentationDetents(options.length > 7 ? ['large'] : ['medium', 'large']),
               presentationDragIndicator('visible'),
               // The sheet is its own window: it takes the app's theme and surfaces
               // here, since the system glass would follow the phone instead.
@@ -134,6 +135,7 @@ function AndroidSheet({ label, sub, title, icon, tint, value, options, selected,
   // Hosted content sizes to itself, so give it the sheet's width (Material caps sheets at 640dp).
   const width = Math.min(useWindowDimensions().width, 640)
   const sheet = useRef(null)
+  const list = useRef(null)
   const [open, setOpen] = useState(false)
 
   async function pick(id) {
@@ -156,19 +158,26 @@ function AndroidSheet({ label, sub, title, icon, tint, value, options, selected,
             onDismissRequest={() => setOpen(false)}
             containerColor={colors.panel}
             showDragHandle
+            // Opens at full height, so a long list (languages) shows whole.
+            skipPartiallyExpanded
           >
             <RNHostView matchContents>
               <View style={[styles.sheetBody, { width, paddingBottom: insets.bottom + 8 }]}>
                 <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
-                <ScrollView style={styles.sheetList}>
+                <ScrollView ref={list} style={styles.sheetList}>
                   {options.map((option) => (
-                    <SetPick
+                    <View
                       key={option.id}
-                      colors={colors}
-                      label={option.label}
-                      on={option.id === selected}
-                      onPress={() => pick(option.id)}
-                    />
+                      // The checked row scrolls into view when the list is taller than the sheet.
+                      onLayout={option.id === selected ? (event) => list.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 48), animated: false }) : undefined}
+                    >
+                      <SetPick
+                        colors={colors}
+                        label={option.label}
+                        on={option.id === selected}
+                        onPress={() => pick(option.id)}
+                      />
+                    </View>
                   ))}
                 </ScrollView>
               </View>

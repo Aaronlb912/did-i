@@ -287,7 +287,7 @@ export function People({ book, onChange, now }) {
       {links.friends.length ? (
         <>
           <p className="di-set-note">
-            {t('people.doneOf', { done: doneCount, n: links.friends.length })} {t('people.stripHint')}
+            {t(links.friends.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: links.friends.length })} {t('people.stripHint')}
           </p>
           <div className="di-people-strip">
             {links.friends.map((row) => {

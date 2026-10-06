@@ -90,7 +90,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
       publishSheet(null)
     }
     publishSheet({
-      kicker: t('cal.kicker'),
+      kicker: t('why.kicker'),
       title: formatBoardDate(iso),
       body: nightWhyLines(why, { itemsShown: rows.length > 0 || weOpen.length > 0 }).join('\n'),
       content: rows.length || weOpen.length ? (

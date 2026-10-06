@@ -2,7 +2,6 @@ import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -87,7 +86,7 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, framesForSaleCount, framesOwnedCount } from './frames.jsx'
+import { FramesCollection, FramesShopRow, framesForSaleCount, framesOwnedCount, leftAfter } from './frames.jsx'
 import { openCoinsHow } from '../components/NightSheets.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
@@ -334,6 +333,7 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim }) {
   return (
     <Pressable
       onPress={() => onTile(type, item)}
+      unstable_pressDelay={100}
       accessibilityRole="button"
       accessibilityLabel={t('shop.see', { name })}
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, dim && styles.tileDim, pressFx(pressed)]}
@@ -369,35 +369,13 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   const [width, setWidth] = useState(() => Math.max(0, Dimensions.get('window').width - 32))
   const [at, setAt] = useState(0)
   const pager = useRef(null)
-  const page = useRef({ width: 0, count: 0, x: 0, from: 0 })
-  page.current.width = width
-  page.current.count = slides.length
-  // A quick flick lands diagonal, and the page's vertical ScrollView sees it
-  // first: on Android the parent checks its touch slop before the pager, so
-  // it takes the touch and the pager never moves (a slow, flat drag works).
-  // This pan only wakes on a fast sideways move, takes the touch from the
-  // scroll views and the tile under the finger, and turns the page itself.
-  // Slow drags never reach minVelocityX, so the pager still follows them.
-  const fling = usePanGesture({
-    runOnJS: true,
-    enabled: slides.length > 1,
-    minVelocityX: 500,
-    failOffsetY: [-40, 40],
-    // From the page under the finger at touch down, so a fling the pager
-    // also caught never turns two pages.
-    onBegin: () => {
-      const { x, width: w } = page.current
-      page.current.from = w ? Math.round(x / w) : 0
-    },
-    onDeactivate: (event) => {
-      const { from, width: w, count } = page.current
-      if (!w || Math.abs(event.translationX) < Math.abs(event.translationY)) return
-      const to = Math.max(0, Math.min(count - 1, from + (event.translationX < 0 ? 1 : -1)))
-      setAt(to)
-      page.current.x = to * w
-      pager.current?.scrollToOffset({ offset: to * w, animated: !motionOff() })
-    },
-  })
+  const dragFrom = useRef(0)
+  // Pass 6 wrapped this pager in a gesture-handler pan (minVelocityX 500).
+  // That pan began on every touch down and, once it saw sideways movement,
+  // claimed the touch for the gesture-handler root, which cancels the native
+  // horizontal ScrollView under it. Its own page math then only fired past
+  // 500 px/s, so slow left drags did nothing and fast ones were eaten too.
+  // Plain native paging owns the touch now, in both directions.
   if (!slides.length) return null
   // A FlatList pager with plain pagingEnabled. The old ScrollView set the page
   // on every scroll event, so the first drag re-rendered every slide and
@@ -405,8 +383,23 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   // and snapToInterval + disableIntervalMomentum on top of paging made a
   // short fast fling snap back. Now the page only changes when it settles.
   const settle = (e) => {
-    page.current.x = e.nativeEvent.contentOffset.x
     const n = Math.round(e.nativeEvent.contentOffset.x / width)
+    if (n !== at) setAt(n)
+  }
+  // Native snapping (pagingEnabled, snapToInterval, snapToOffsets) nested in
+  // the page scroll on Android only paged forward: a swipe back from page 2
+  // settled at 379.05 of 379.43 and snapped to page 2 again. The page is
+  // picked here instead, from where the drag began and which way it went.
+  const release = (e) => {
+    const x = e.nativeEvent.contentOffset.x
+    const vx = e.nativeEvent.velocity?.x ?? 0
+    const from = Math.round(dragFrom.current / width)
+    const dx = x - dragFrom.current
+    let n = from
+    if (dx > width * 0.15 || (dx > 4 && vx < -0.2)) n = from + 1
+    else if (dx < -width * 0.15 || (dx < -4 && vx > 0.2)) n = from - 1
+    n = Math.max(0, Math.min(slides.length - 1, n))
+    pager.current?.scrollToOffset({ offset: n * width, animated: !motionOff() })
     if (n !== at) setAt(n)
   }
   return (
@@ -418,13 +411,13 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
       }}
     >
       {width ? (
-        <GestureDetector gesture={fling}>
         <FlatList
           ref={pager}
           data={slides}
           horizontal
-          pagingEnabled
-          nestedScrollEnabled
+          decelerationRate="fast"
+          onScrollBeginDrag={(e) => { dragFrom.current = e.nativeEvent.contentOffset.x }}
+          onScrollEndDrag={release}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(slide) => `${slide.kind}-${slide.date}`}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
@@ -461,7 +454,6 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
             )
           }}
         />
-        </GestureDetector>
       ) : null}
       {slides.length > 1 ? (
         <View style={styles.dots}>
@@ -475,7 +467,6 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
               hitSlop={10}
               onPress={() => {
                 setAt(i)
-                page.current.x = i * width
                 pager.current?.scrollToOffset({ offset: i * width, animated: !motionOff() })
               }}
             >
@@ -936,7 +927,7 @@ export function ShopScreen({ book, onChange }) {
         if (tag.coins > 0 && purse.coins < tag.coins) return done(type, item, await spend(), true)
         confirmBuy(colors, {
           title: tileName(type, item.id),
-          body: t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) }),
+          body: `${t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) })} ${leftAfter(purse, tag)}`,
           onGo: async () => done(type, item, await spend(), true),
         })
       },
@@ -1133,7 +1124,7 @@ export function ShopLooksScreen({ book, onChange }) {
           setMiss(NO_MISS)
           setConfirm({
             title: t(lookText(item.id, 'name')),
-            body: t('shop.buyLookBody', { cost }),
+            body: `${t('shop.buyLookBody', { cost })} ${leftAfter(purse, item)}`,
             go: async () => {
               const next = await buyLookWithCoins(book, item.id)
               take(next, item.id, true)
@@ -1222,7 +1213,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setMiss(NO_MISS)
           setConfirm({
             title: t(cheerText(item.id, 'name')),
-            body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
+            body: `${t('shop.buyCheerBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
             go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id, true),
           })
         }
@@ -1355,7 +1346,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setMiss(NO_MISS)
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
-                body: t('shop.buyBuddyBody', { cost: gemLine(item.gems) }),
+                body: `${t('shop.buyBuddyBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
                 go: async () => take(await buyWithGems(book, 'buddy', item.id), item.id, true),
               })
             }}
@@ -2329,7 +2320,8 @@ const styles = StyleSheet.create({
     minWidth: 46,
     minHeight: 46,
   },
-  buddyPreview: { gap: 8, marginTop: 4 },
+  // Full sheet width, so a gift's card is the same size as the shop's.
+  buddyPreview: { gap: 8, marginTop: 4, alignSelf: 'stretch' },
   // Frame art reaches past the card edge; leave it room so nothing is cut.
   // Every Collection tab uses this box, so the preview never changes size.
   kitPreviewRoom: { paddingHorizontal: 14, paddingVertical: 22, minHeight: 216, justifyContent: 'center' },

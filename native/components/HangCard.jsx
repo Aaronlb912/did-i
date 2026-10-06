@@ -121,6 +121,8 @@ export const HangCard = forwardRef(function HangCard(
       >
         {tag}
       </Animated.Text>
+      {/* Did I, the question and its ? read as one line, as on Home. */}
+      <View style={lead ? styles.leadRow : null}>
       {lead && onLeadPress && !landed ? (
         // The first words are a button: Did I, Did we or Did you.
         <Pressable
@@ -161,8 +163,13 @@ export const HangCard = forwardRef(function HangCard(
           faceCardStyles.title,
           styles.blank,
           { color: colors.ink, borderBottomColor: landed ? 'transparent' : focused ? colors.on : colors.line },
+          lead ? styles.leadBlank : null,
         ]}
       />
+      {lead && String(blank || '').trim() && !/[?？]$/.test(String(blank).trim()) ? (
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>?</Text>
+      ) : null}
+      </View>
       {meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
           {meta}
@@ -176,6 +183,8 @@ const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
   leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
   leadChev: { fontSize: 26, marginTop: 2 },
+  leadRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', columnGap: 8 },
+  leadBlank: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 140 },
   // The underline says "you can type here"; it lights up while typing.
   blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },
   stampLayer: {

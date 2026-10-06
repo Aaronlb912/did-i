@@ -382,7 +382,7 @@ function sentState(state) {
 }
 
 function streakLine(row) {
-  if (row.streak > 0) return t('all.streakN', { n: row.streak })
+  if (row.streak > 0) return t(row.streak === 1 ? 'all.streakOne' : 'all.streakN', { n: row.streak })
   return t('all.noStreak')
 }
 
@@ -648,12 +648,13 @@ function AddFriendPop({ colors, onClose, onAsked }) {
       {showQr ? (
         <Reveal style={styles.qrBox}>
           <QrCode value={friendQrLink(myId)} size={180} label={t('qr.friendLabel')} />
-          <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatFriendId(myId)}</Text>
+          <Text selectable style={[styles.friendId, { color: colors.ink }]}>{formatFriendId(myId)}</Text>
         </Reveal>
       ) : null}
       <Field
         colors={colors}
         label={t('friendId.add')}
+        placeholder={t('friendId.addPh')}
         value={formatFriendId(draft)}
         onChangeText={(value) => setDraft(cleanFriendId(value))}
         keyboardType="number-pad"
@@ -838,7 +839,7 @@ export function PeopleScreen({ book, onChange }) {
       {links.friends.length ? (
         <>
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
-            {sharing.length ? `${t('people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
+            {sharing.length ? `${t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
             {newHere ? t('people.stripHint') : ''}
           </Text>
           <FadeScroll fade={colors.bg} contentContainerStyle={styles.strip}>
@@ -1199,6 +1200,7 @@ export function PeopleConnectScreen({ book, route }) {
         <Field
           colors={colors}
           label={t('friendId.add')}
+          placeholder={t('friendId.addPh')}
           value={formatFriendId(idDraft)}
           onChangeText={(value) => setIdDraft(cleanFriendId(value))}
           keyboardType="number-pad"
@@ -1441,7 +1443,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
       {sharing.length ? (
         <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t('people.doneOf', { done: doneCount, n: sharing.length })}
+          {t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })}
         </Text>
       ) : null}
 

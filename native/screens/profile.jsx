@@ -415,7 +415,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         {/* The same pages, same names, as the Your history page lists. */}
         <SetRow
           colors={colors}
-          icon="calendar"
+          icon="priority"
           tint={colors.on}
           label={t('streaks.title')}
           sub={t('stats.streaksSub')}
@@ -424,7 +424,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="grid"
+          icon="week"
           tint={colors.on}
           label={t('streaks.seven')}
           sub={t('stats.sevenSub')}

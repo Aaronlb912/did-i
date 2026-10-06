@@ -19,7 +19,7 @@ export function InviteCodeSection({ book, onChange, gemsPaid, joined, hideBar = 
         <SetField
           label={t('people.gotCode')}
           value={ref.draft}
-          placeholder="D93AQ5LBS4"
+          placeholder={t('people.gotCodePh')}
           autoCapitalize="characters"
           autoCorrect="off"
           onChange={(event) => ref.setDraft(event.target.value)}

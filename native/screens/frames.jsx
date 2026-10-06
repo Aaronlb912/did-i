@@ -130,9 +130,19 @@ function weekFor(frame, owned, ctx) {
 
 const CORNER_ART = new Set(['frost'])
 
+// What is left after a buy, so spending the last gem is never a surprise.
+export function leftAfter(purse, item) {
+  if (item.gems) {
+    const n = purse.gems - item.gems
+    return n === 1 ? t('shop.leftGemOne') : t('shop.leftGems', { n })
+  }
+  const n = purse.coins - item.coins
+  return n === 1 ? t('shop.leftCoinOne') : t('shop.leftCoins', { n })
+}
+
 function FrameSheetPreview({ id, colors, ctx, weekLit }) {
   return (
-    <View style={styles.sheetPreview}>
+    <View style={[styles.sheetPreview, id === 'polaroid' && styles.sheetPreviewCaption]}>
       {/* Same label and centered card as the look sheets. */}
       <Text style={[styles.cap, styles.sheetCap, { color: colors.inkDim }]}>{t('shop.buddyPreview')}</Text>
       <CardFrame
@@ -221,7 +231,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
           }
           confirmBuy(colors, {
             title: frameName(id),
-            body: t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) }),
+            body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
               const next = await buyFrame(book, id)
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
@@ -487,14 +497,16 @@ const styles = StyleSheet.create({
   tile: { borderWidth: 1, borderRadius: 12, padding: 10, minHeight: 176, alignItems: 'center', justifyContent: 'space-between' },
   tileArt: { height: 112, width: '100%', alignItems: 'center', justifyContent: 'center' },
   tileLabel: { width: '100%', alignItems: 'center', gap: 4 },
-  tileName: { fontFamily: fonts.uiBold, fontSize: 13, textAlign: 'center' },
+  // Room for two lines on every tile, so a long name (Tonight's moon) keeps its price level with the row.
+  tileName: { fontFamily: fonts.uiBold, fontSize: 13, lineHeight: 17, minHeight: 34, textAlign: 'center' },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
   // Room for art that reaches past the card, then clipped so sparks stay in the sheet.
+  sheetPreview: { width: '100%', alignItems: 'center', paddingBottom: 20, overflow: 'hidden' },
   // Bottom room so Polaroid's caption strip under the card is not cut off.
-  sheetPreview: { width: '100%', alignItems: 'center', paddingBottom: 50, overflow: 'hidden' },
+  sheetPreviewCaption: { paddingBottom: 50 },
   sheetCap: { alignSelf: 'stretch', marginBottom: 32 },
   howEarn: { gap: 2 },
   sheetFrame: { width: 260 },
