@@ -231,7 +231,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                   colors={colors}
                   small
                   label={t("didYouLink.share")}
-                  disabled={busy}
+                  disabled={busy || !question.trim()}
                   onPress={shareLink}
                 />
                 <KeyButton
@@ -247,7 +247,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                     colors={colors}
                     small
                     label={t("people.send")}
-                    disabled={busy}
+                    disabled={busy || !question.trim()}
                     onPress={send}
                   />
                   <KeyButton
@@ -259,7 +259,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                 <KeyButton
                   colors={colors}
                   label={t("didYouLink.share")}
-                  disabled={busy}
+                  disabled={busy || !question.trim()}
                   onPress={shareLink}
                 />
               </>

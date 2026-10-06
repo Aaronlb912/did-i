@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Dimensions, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -349,8 +349,10 @@ function slideHead(slide) {
 }
 
 // The drop carousel: the Coming drop first, then recent drops. Swipe sideways.
-function DropCarousel({ slides, purse, colors, onTile }) {
-  const [width, setWidth] = useState(0)
+function DropCarousel({ slides, purse, colors, onTile, foot }) {
+  // A first guess at the width, so the banner draws on the first frame and
+  // the page below does not jump when the real width comes in.
+  const [width, setWidth] = useState(() => Math.max(0, Dimensions.get('window').width - 32))
   const [at, setAt] = useState(0)
   const pager = useRef(null)
   if (!slides.length) return null
@@ -417,6 +419,7 @@ function DropCarousel({ slides, purse, colors, onTile }) {
           ))}
         </View>
       ) : null}
+      {foot ? foot(slides[at] || slides[0]) : null}
     </View>
   )
 }
@@ -701,6 +704,12 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
   )
 }
 
+// A Coming item: when it goes on sale and what it will cost.
+function teasedBody(item) {
+  const cost = item.gems ? gemLine(item.gems) : item.coins ? coinLine(item.coins) : ''
+  return [t('shop.teasedBody', { date: formatBoardDate(item.from) }), cost].filter(Boolean).join('\n')
+}
+
 // coinsFor(): up to two paid taps of up to two coins each.
 const COINS_PER_NIGHT_CAP = NIGHT_COIN_CAP
 
@@ -710,8 +719,7 @@ function previewBody(type, item, purse) {
   const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
-    const nights = Math.ceil(short / COINS_PER_NIGHT_CAP)
-    return `${base}\n${t('shop.needMoreCoins', { n: short })}\n${t('shop.earnCoins', { coins: short, nights })}`
+    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: COINS_PER_NIGHT_CAP })}`
   }
   if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}\n${t('shop.earnGems')}`
   return base
@@ -782,7 +790,9 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     title: name,
     body,
     ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, onMore: wish.toggle } : {}),
-    ...(short ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors) } : {}),
+    ...(short
+      ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish)) }
+      : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -918,7 +928,7 @@ export function ShopScreen({ book, onChange }) {
           colors,
           coat,
           teased ? null : tileAction(type, item),
-          teased ? t('shop.teasedBody', { date: formatBoardDate(item.from) }) : '',
+          teased ? teasedBody(item) : '',
           wishFor(type, item, next.book),
         )
       },
@@ -928,7 +938,7 @@ export function ShopScreen({ book, onChange }) {
   function onTile(type, item) {
     // A Coming item is a look only: say when it goes on sale, no Buy.
     if (isTeased(item)) {
-      openTilePreview(type, item, purse, colors, coat, null, t('shop.teasedBody', { date: formatBoardDate(item.from) }), wishFor(type, item))
+      openTilePreview(type, item, purse, colors, coat, null, teasedBody(item), wishFor(type, item))
       return
     }
     openTilePreview(type, item, purse, colors, coat, tileAction(type, item), '', wishFor(type, item))
@@ -943,12 +953,19 @@ export function ShopScreen({ book, onChange }) {
 
       <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
-      <DropCarousel slides={slides} purse={purse} colors={colors} onTile={onTile} />
-      {slides[0]?.kind === 'coming' && !prefs.dropPings ? (
-        <Pressable accessibilityRole="link" onPress={() => goHash('/pings')} hitSlop={8} style={styles.dropLink}>
-          <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
-        </Pressable>
-      ) : null}
+      <DropCarousel
+        slides={slides}
+        purse={purse}
+        colors={colors}
+        onTile={onTile}
+        foot={(slide) =>
+          slide?.kind === 'coming' && !prefs.dropPings ? (
+            <Pressable accessibilityRole="link" onPress={() => goHash('/pings')} hitSlop={8} style={styles.dropLink}>
+              <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
+            </Pressable>
+          ) : null
+        }
+      />
 
       {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
       {rows.map((row) => (
@@ -1036,7 +1053,7 @@ export function ShopLooksScreen({ book, onChange }) {
           }
           if (!item.gems && purse.coins < item.coins) {
             const short = item.coins - purse.coins
-            setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+            setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
             return
           }
           setMiss(NO_MISS)
@@ -1415,7 +1432,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
               }
               if (purse.coins < item.coins) {
                 const short = item.coins - purse.coins
-                setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+                setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
                 return
               }
               setMiss(NO_MISS)
@@ -1807,7 +1824,7 @@ function KitTile({ label, worn, onPress, colors, children, big = false, caption 
       accessibilityLabel={label}
       accessibilityState={{ selected: Boolean(worn) }}
       onPress={onPress}
-      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, worn && { backgroundColor: colors.panel2 }, pressFx(pressed)]}>
+      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, worn && [styles.kitTileWorn, { borderColor: colors.on, backgroundColor: colors.panel2 }], pressFx(pressed)]}>
       <View style={[styles.kitTileChip, big && styles.kitTileChipBig]}>
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
@@ -1830,8 +1847,8 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const colors = useShopColors(book)
   const coat = activeLook(book)
   const purse = normalizePurse(book)
-  // The worn look first, so its check is at the top of the grid.
-  const looks = LOOKS.filter((item) => purse.looks.includes(item.id)).sort((a, b) => (b.id === purse.lookOn) - (a.id === purse.lookOn))
+  // Shop order, always: a tile never moves under your finger when you wear it.
+  const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
   const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
@@ -2336,6 +2353,8 @@ const styles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  // The worn tile gets a ring in place, so a look that glows on its own is not mistaken for it.
+  kitTileWorn: { borderWidth: 2, borderRadius: 12 },
   kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   kitTileChipBig: { width: 72, height: 72 },
   wornBadge: {
@@ -2362,7 +2381,8 @@ const GIFT_TABS = [
   { id: 'looks', type: 'look', key: 'shop.looks' },
   { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
   { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
-  { id: 'accessories', type: 'accessory', key: 'shop.accessories' },
+  // A short label, so five tabs fit at one size.
+  { id: 'accessories', type: 'accessory', key: 'gift.tabAccessories' },
   { id: 'frames', type: 'frame', key: 'frames.title' },
 ]
 
@@ -2482,7 +2502,7 @@ export function GiftScreen({ book, onChange, toId }) {
   }
 
   return (
-    <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors} showPurse>
       {person ? (
         <View style={giftStyles.to}>
           <PersonAvatar person={person} colors={colors} size={36} />

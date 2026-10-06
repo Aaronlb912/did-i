@@ -6,7 +6,7 @@ import { activeLook } from '../../src/lib/active-look.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
-import { normalizePurse } from '../../src/lib/purse.js'
+import { NIGHT_COIN_CAP, normalizePurse } from '../../src/lib/purse.js'
 import { buyFrame } from '../../src/lib/coin-shop.js'
 import {
   claimFrame,
@@ -119,7 +119,14 @@ function MiniCard({ colors }) {
   )
 }
 
-function FrameSheetPreview({ id, colors, ctx }) {
+// Week stars shows the nights you have so far, so the art matches "3 of 7".
+function weekFor(frame, owned, ctx) {
+  if (frame?.id !== 'gems' || owned) return undefined
+  const n = Math.min(7, frameProgress(frame, ctx).n)
+  return [0, 1, 2, 3, 4, 5, 6].map((i) => i < n)
+}
+
+function FrameSheetPreview({ id, colors, ctx, weekLit }) {
   return (
     <View style={styles.sheetPreview}>
       <CardFrame
@@ -129,7 +136,7 @@ function FrameSheetPreview({ id, colors, ctx }) {
         streak={ctx.bestStreak}
         answered={3}
         total={3}
-        weekLit={[true, true, true, true, true, false, false]}
+        weekLit={weekLit || [true, true, true, true, true, false, false]}
         date={ctx.today}
         style={styles.sheetFrame}
       >
@@ -142,11 +149,14 @@ function FrameSheetPreview({ id, colors, ctx }) {
 function FrameFacts({ frame, owned, colors }) {
   return (
     <View style={styles.facts}>
-      <View style={[styles.rarity, { borderColor: colors.on }]}>
-        <Text style={[styles.rarityText, { color: colors.on }]}>
-          {frame.rarity === 'earned' && !owned ? t('frames.rarity.earnIt') : t(`frames.rarity.${frame.rarity}`)}
-        </Text>
-      </View>
+      {/* "Earn it" is a plain label: nothing to tap, the facts below say how. */}
+      {frame.rarity === 'earned' && !owned ? (
+        <Text style={[styles.rarityText, { color: colors.inkSoft }]}>{t('frames.rarity.earnIt')}</Text>
+      ) : (
+        <View style={[styles.rarity, { borderColor: colors.on }]}>
+          <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
+        </View>
+      )}
       <Text style={[styles.desc, { color: colors.ink }]}>{t(frameText(frame.id, 'desc'))}</Text>
       {['f1', 'f2', 'f3'].map((key) => (
         <Text key={key} style={[styles.fact, { color: colors.inkSoft }]}>
@@ -223,12 +233,12 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
   }
   const shortCoins = !owned && frame.coins && purse.coins < frame.coins
   publishSheet({
-    preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} />,
+    preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} weekLit={weekFor(frame, owned, ctx)} />,
     title: frameName(id),
     body: shortCoins
-      ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })}\n${t('shop.earnCoins', { coins: frame.coins - purse.coins })}`
+      ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
       : priceLine,
-    ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors) } : {}),
+    ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => reopen(book)) } : {}),
     content: <FrameFacts frame={frame} owned={owned} colors={colors} />,
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
@@ -249,6 +259,7 @@ export function openFramesHow(colors) {
 
 function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
   const name = frameName(frame.id)
+  const owned = framesOwned(purse, ctx).has(frame.id)
   return (
     <Pressable
       onPress={() => onPress(frame.id)}
@@ -257,10 +268,10 @@ function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
-        <FramePreview id={frame.id} colors={colors} size={92} />
+        <FramePreview id={frame.id} colors={colors} size={92} weekLit={weekFor(frame, owned, ctx)} />
       </View>
       <View style={styles.tileLabel}>
-        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
+        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={2}>
           {name}
         </Text>
         <StatusTag status={frameStatus(frame, purse, ctx)} colors={colors} />
@@ -304,10 +315,10 @@ export function FramesShopRow({ book, colors, onChange }) {
 
 const SECTIONS = [
   { kind: 'free', key: 'frames.sec.free' },
+  { kind: 'season', key: 'frames.sec.season' },
   { kind: 'earned', key: 'frames.sec.earned' },
   { kind: 'coin', key: 'frames.sec.coin' },
   { kind: 'gem', key: 'frames.sec.gem' },
-  { kind: 'season', key: 'frames.sec.season' },
 ]
 
 export function ShopFramesScreen({ book, onChange }) {
@@ -336,24 +347,30 @@ export function ShopFramesScreen({ book, onChange }) {
   )
 }
 
-function KitFrameTile({ id, label, caption, worn, locked, colors, onPress }) {
+function KitFrameTile({ id, label, caption, worn, locked, colors, onPress, weekLit }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: Boolean(worn) }}
       onPress={onPress}
-      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, locked && styles.locked, pressFx(pressed)]}
+      style={({ pressed }) => [
+        styles.kitTile,
+        { borderColor: colors.lineSoft },
+        worn && [styles.kitTileWorn, { borderColor: colors.on, backgroundColor: colors.panel2 }],
+        locked && styles.locked,
+        pressFx(pressed),
+      ]}
     >
       <View style={styles.kitChip}>
-        {id ? <FramePreview id={id} colors={colors} size={44} /> : <View style={[styles.offChip, { borderColor: colors.line }]} />}
+        {id ? <FramePreview id={id} colors={colors} size={44} weekLit={weekLit} /> : <View style={[styles.offChip, { borderColor: colors.line }]} />}
         {worn ? (
           <View style={[styles.wornBadge, { backgroundColor: colors.on, borderColor: colors.panel }]}>
             <Text style={[styles.wornBadgeText, { color: colors.bg }]}>✓</Text>
           </View>
         ) : null}
       </View>
-      <Text style={[styles.kitName, { color: colors.ink }]} numberOfLines={1}>
+      <Text style={[styles.kitName, { color: worn ? colors.on : colors.ink }]} numberOfLines={2}>
         {label}
       </Text>
       {caption ? (
@@ -401,6 +418,7 @@ export function FramesCollection({ book, colors, onChange }) {
             id={frame.id}
             label={frameName(frame.id)}
             caption={frameStatus(frame, purse, ctx).text}
+            weekLit={weekFor(frame, false, ctx)}
             locked
             colors={colors}
             onPress={() => openFrameSheet({ id: frame.id, book, colors, ctx, onChange })}
@@ -443,9 +461,11 @@ const styles = StyleSheet.create({
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
-  sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 12 },
+  // Room for art that reaches past the card, then clipped so sparks stay in the sheet.
+  sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 36, overflow: 'hidden' },
   sheetFrame: { width: 260 },
-  miniCard: { minHeight: 120, paddingHorizontal: 18 },
+  // Extra inner padding keeps corner art (Frost's crystals) off the words.
+  miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26 },
   facts: { gap: 6, paddingBottom: 4 },
   rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },
@@ -465,7 +485,8 @@ const styles = StyleSheet.create({
   locked: { opacity: 0.55 },
   kitChip: { width: 56, height: 60, alignItems: 'center', justifyContent: 'center' },
   offChip: { width: 36, height: 44, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
-  kitName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%' },
+  kitName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%', textAlign: 'center' },
+  kitTileWorn: { borderWidth: 2, borderRadius: 12 },
   kitCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
   wornBadge: {
     position: 'absolute',

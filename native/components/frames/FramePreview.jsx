@@ -8,21 +8,23 @@ const BASE_W = 220
 const BASE_H = 264
 const BASE_R = 30
 const WEEK = [true, true, true, true, false, true, true]
+// The tile knows its size, so the art draws on the first frame, not after layout.
+const FIXED = { w: BASE_W, h: BASE_H }
 
-export function FramePreview({ id, colors = {}, size = 120 }) {
+export function FramePreview({ id, colors = {}, size = 120, weekLit = WEEK }) {
   const height = Math.round(size * 1.2)
   const k = (size * 0.66) / BASE_W
   const card = colors.card || colors.panel
   return (
     <View pointerEvents="none" style={[styles.tile, { width: size, height }]}>
       <View style={{ position: 'absolute', left: (size - BASE_W) / 2, top: (height - BASE_H) / 2, width: BASE_W, height: BASE_H, transform: [{ scale: k }] }}>
-        <CardFrame id={id} colors={colors} active={false} streak={30} answered={3} total={4} weekLit={WEEK} radius={BASE_R}>
+        <CardFrame id={id} colors={colors} active={false} streak={30} answered={3} total={4} weekLit={weekLit} radius={BASE_R} fixedSize={FIXED}>
           <View style={[styles.card, { backgroundColor: card, borderColor: colors.line }]}>
             <View style={[styles.kicker, { backgroundColor: colors.on }]} />
             <View style={[styles.title, { backgroundColor: colors.ink }]} />
             <View style={[styles.title, styles.short, { backgroundColor: colors.ink }]} />
             <View style={styles.dots}>
-              {WEEK.map((on, i) => (
+              {weekLit.map((on, i) => (
                 <View key={i} style={[styles.dot, { backgroundColor: on ? colors.on : colors.miss || colors.line }]} />
               ))}
             </View>
