@@ -66,7 +66,8 @@ export function openFreezeHow(colors, boards, now = new Date()) {
 
 // Snowflake and count. Shows nothing when none are held.
 export function FreezeChip({ colors, held, onPress }) {
-  if (!held) return null
+  // Shown at 0 too, faint, so people find out freezes exist.
+  const faint = !held
   return (
     <Pressable
       onPress={onPress}
@@ -75,11 +76,11 @@ export function FreezeChip({ colors, held, onPress }) {
       accessibilityLabel={t('freeze.chipAria', { n: held, max: FREEZE_MAX })}
       style={({ pressed }) => [
         styles.chip,
-        { borderColor: colors.freeze, backgroundColor: withAlpha(colors.freeze, 0.14) },
+        faint ? { borderColor: colors.line, backgroundColor: 'transparent' } : { borderColor: colors.freeze, backgroundColor: withAlpha(colors.freeze, 0.14) },
         pressFx(pressed),
       ]}
     >
-      <Text style={[styles.chipText, { color: colors.freeze }]}>{`${FREEZE_GLYPH} ${held}`}</Text>
+      <Text style={[styles.chipText, { color: faint ? colors.inkDim : colors.freeze }]}>{`${FREEZE_GLYPH} ${held}`}</Text>
     </Pressable>
   )
 }
