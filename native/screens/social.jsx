@@ -1852,7 +1852,7 @@ export function FriendScreen({ book, onChange, route }) {
         <View style={styles.confirmCopy}>
           <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{shownName}</Text>
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
-          {week.length === 7 ? (
+          {week.length === 7 && week.some((night) => night.cleared) ? (
             <View
               style={styles.friendWeek}
               accessible
@@ -1894,10 +1894,10 @@ export function FriendScreen({ book, onChange, route }) {
         <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} />
         <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didYouHint', { name })}</Text>
       </View>
+      <View style={styles.friendWeRow}>
+        <KeyButton colors={colors} label={t('friend.startDidWe')} onPress={() => goHash('/we/new', { id: otherId })} />
+      </View>
       <View style={styles.friendMinor}>
-        <View style={styles.friendAction}>
-          <KeyButton colors={colors} label={t('friend.startDidWe')} onPress={() => goHash('/we/new', { id: otherId })} />
-        </View>
         <View style={styles.friendAction}>
           <KeyButton
             colors={colors}
@@ -2542,6 +2542,7 @@ const styles = StyleSheet.create({
   friendCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16 },
   friendPrimary: { marginBottom: 14 },
   friendMinor: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  friendWeRow: { marginBottom: 8 },
   friendSmall: { fontFamily: fonts.ui, fontSize: 12, textAlign: 'center', marginTop: 6 },
   friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },
   friendWeekDot: { width: 8, height: 8, borderRadius: 4 },
