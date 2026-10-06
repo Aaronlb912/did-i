@@ -51,7 +51,7 @@ alter table public.shop_catalog add column if not exists coins integer
 alter table public.shop_catalog add column if not exists live_until date;
 alter table public.shop_catalog drop constraint if exists shop_catalog_kind_check;
 alter table public.shop_catalog add constraint shop_catalog_kind_check
-  check (kind in ('look', 'cheer_stage', 'accessory'));
+  check (kind in ('look', 'cheer_stage', 'accessory', 'frame'));
 
 insert into public.shop_catalog (kind, item_id, coins) values
   ('accessory', 'beanie', 15),
@@ -121,12 +121,12 @@ insert into public.shop_catalog (kind, item_id, coins, gems, live_from) values
   ('frame', 'filigree', 120, null, '2026-10-05'),
   ('frame', 'deco', 120, null, '2026-10-05'),
   ('frame', 'marble', 120, null, '2026-10-05'),
-  ('frame', 'glow', null, 2, '2026-10-05'),
-  ('frame', 'silver', null, 2, '2026-10-05'),
-  ('frame', 'neon', null, 2, '2026-10-05'),
-  ('frame', 'fireflies', null, 2, '2026-10-05'),
-  ('frame', 'shoot', null, 2, '2026-10-05'),
-  ('frame', 'glass', null, 2, '2026-10-05'),
+  ('frame', 'glow', null, 3, '2026-10-05'),
+  ('frame', 'silver', null, 3, '2026-10-05'),
+  ('frame', 'neon', null, 3, '2026-10-05'),
+  ('frame', 'fireflies', null, 3, '2026-10-05'),
+  ('frame', 'shoot', null, 3, '2026-10-05'),
+  ('frame', 'glass', null, 3, '2026-10-05'),
   ('frame', 'gold', null, 3, '2026-10-05'),
   ('frame', 'const', null, 3, '2026-10-05'),
   ('frame', 'ring', null, 3, '2026-10-05'),

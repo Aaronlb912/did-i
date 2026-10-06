@@ -6,7 +6,7 @@ import { CardFrame } from './CardFrame.jsx'
 
 const BASE_W = 220
 const BASE_H = 264
-const BASE_R = 20
+const BASE_R = 30
 const WEEK = [true, true, true, true, false, true, true]
 
 export function FramePreview({ id, colors = {}, size = 120 }) {

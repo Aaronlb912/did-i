@@ -41,7 +41,7 @@ import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.js
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
-import { freezeState } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -220,7 +220,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const focused = useIsFocused()
   const frameAwake = useFrameActive(focused)
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
-  const frameCtx = { bestStreak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
+  // Best run ever, so a streak reached before frames shipped still earns them.
+  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
+  const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
   const weekLit = useMemo(
     () => (wornId && stack.shelf ? weekStripNights(stack.shelf, stack.clock, tagId).map((night) => Boolean(night.on)) : []),

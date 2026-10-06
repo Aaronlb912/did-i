@@ -47,16 +47,16 @@ begin
 
   -- A gem frame takes its gems.
   out := public.buy_with_gems('frame', 'glow');
-  if (out->>'gems')::int <> 1 or not (out->'frames' @> '["glow"]') then
-    raise exception 'FAIL: Soft Glow should cost 2 gems and be owned: %', out;
+  if (out->>'gems')::int <> 0 or not (out->'frames' @> '["glow"]') then
+    raise exception 'FAIL: Soft Glow should cost 3 gems and be owned: %', out;
   end if;
   out := public.buy_with_gems('frame', 'glow');
-  if (out->>'gems')::int <> 1 then
+  if (out->>'gems')::int <> 0 then
     raise exception 'FAIL: a gem frame you own charged again: %', out;
   end if;
   begin
     perform public.buy_with_gems('frame', 'gold');
-    raise exception 'FAIL: a 3 gem frame went through with 1 gem';
+    raise exception 'FAIL: a 3 gem frame went through with 0 gems';
   exception when raise_exception then
     if sqlerrm like 'FAIL%' then raise; end if;
     if sqlerrm <> 'need gems' then raise exception 'FAIL: wrong message: %', sqlerrm; end if;

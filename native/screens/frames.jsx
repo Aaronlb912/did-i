@@ -5,7 +5,7 @@ import { readPrefs } from '../../src/lib/prefs.js'
 import { activeLook } from '../../src/lib/active-look.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { normalizePurse } from '../../src/lib/purse.js'
 import { buyFrame } from '../../src/lib/coin-shop.js'
 import {
@@ -42,7 +42,7 @@ export function frameCtxFor(boards, now = new Date()) {
   const today = boardDate(now, list[0]?.dayFoldHour)
   if (!list.length) return { bestStreak: 0, everFrozen: false, today }
   return {
-    bestStreak: shelfStreak(list, now),
+    bestStreak: Math.max(shelfStreak(list, now), bestShelfStreak(list, now)),
     everFrozen: freezeState(list, now).frozen.size > 0,
     today,
   }
@@ -251,7 +251,7 @@ function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
-        <FramePreview id={frame.id} colors={colors} size={44} />
+        <FramePreview id={frame.id} colors={colors} size={92} />
       </View>
       <View style={styles.tileLabel}>
         <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
@@ -286,9 +286,6 @@ export function FramesShopRow({ book, colors, onChange }) {
           <Text style={[styles.promoAll, { color: colors.on }]}>{t('frames.all')}</Text>
         </Pressable>
       </View>
-      <Pressable accessibilityRole="button" onPress={() => openFramesHow(colors)} hitSlop={6} style={styles.whatLink}>
-        <Text style={[styles.whatText, { color: colors.inkSoft }]}>{t('frames.what')}</Text>
-      </Pressable>
       {forSale.length ? null : <Meta colors={colors}>{t('frames.allOwned')}</Meta>}
       <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
         {list.map((frame) => (
@@ -315,9 +312,6 @@ export function ShopFramesScreen({ book, onChange }) {
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>
-      <Pressable accessibilityRole="button" onPress={() => openFramesHow(colors)} hitSlop={6} style={styles.whatLink}>
-        <Text style={[styles.whatText, { color: colors.on }]}>{t('frames.what')}</Text>
-      </Pressable>
       {SECTIONS.map((sec) => {
         const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind)
         return (
@@ -430,14 +424,14 @@ const styles = StyleSheet.create({
   whatText: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline' },
   rowScroll: { gap: 8, paddingRight: 4 },
   rowTile: { width: 104 },
-  tile: { borderWidth: 1, borderRadius: 12, padding: 10, minHeight: 132, alignItems: 'center', justifyContent: 'space-between' },
-  tileArt: { height: 64, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  tile: { borderWidth: 1, borderRadius: 12, padding: 10, minHeight: 176, alignItems: 'center', justifyContent: 'space-between' },
+  tileArt: { height: 112, width: '100%', alignItems: 'center', justifyContent: 'center' },
   tileLabel: { width: '100%', alignItems: 'center', gap: 4 },
   tileName: { fontFamily: fonts.uiBold, fontSize: 13, textAlign: 'center' },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  gridTile: { width: '31%', flexGrow: 1 },
+  gridTile: { width: '31%', flexGrow: 0 },
   sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 12 },
   sheetFrame: { width: 240 },
   miniCard: { minHeight: 120 },

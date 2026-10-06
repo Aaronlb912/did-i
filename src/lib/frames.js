@@ -5,6 +5,18 @@
 // live in native/components/frames/; this file is the catalog and the rules.
 // Prices here must match supabase/shop-catalog.sql (a check keeps them equal).
 
+// The day Did I went live on the App Store, as 'YYYY-MM-DD'. Leave it empty
+// until then. The Birthday frame opens each year on that date, for a week,
+// starting with the first anniversary.
+export const APP_LAUNCH = ''
+
+function addDays(md, n) {
+  const d = new Date(Date.UTC(2001, Number(md.slice(0, 2)) - 1, Number(md.slice(3, 5)) + n))
+  return d.toISOString().slice(5, 10)
+}
+
+const LAUNCH_MD = APP_LAUNCH.length === 10 ? APP_LAUNCH.slice(5, 10) : ''
+
 export const FRAME_KINDS = ['free', 'coin', 'gem', 'earned', 'season']
 export const FREE_FRAME = 'first'
 
@@ -29,12 +41,12 @@ const RAW = [
   coin('filigree', 120),
   coin('deco', 120),
   coin('marble', 120),
-  gem('glow', 2),
-  gem('silver', 2),
-  gem('neon', 2),
-  gem('fireflies', 2),
-  gem('shoot', 2),
-  gem('glass', 2),
+  gem('glow', 3),
+  gem('silver', 3),
+  gem('neon', 3),
+  gem('fireflies', 3),
+  gem('shoot', 3),
+  gem('glass', 3),
   gem('gold', 3),
   gem('const', 3),
   gem('ring', 3),
@@ -47,14 +59,17 @@ const RAW = [
   season('leaves', '11-01', '11-30'),
   season('snow', '12-01', '12-31'),
   season('sakura', '03-15', '04-15'),
-  // No birthday field yet, so this one stays out of every list.
-  season('bday', '01-01', '01-01', { hidden: true }),
+  // Did I's birthday: hidden until APP_LAUNCH is set.
+  LAUNCH_MD ? season('bday', LAUNCH_MD, addDays(LAUNCH_MD, 6), { firstYear: Number(APP_LAUNCH.slice(0, 4)) + 1 }) : season('bday', '01-01', '01-01', { hidden: true }),
 ]
+
+// Every gem frame costs 3; these four are the showpieces.
+const LEGENDARY = new Set(['gold', 'const', 'ring', 'aurora'])
 
 export function frameRarity(frame) {
   if (!frame) return ''
   if (frame.kind === 'coin') return frame.coins >= 80 ? 'rare' : 'common'
-  if (frame.kind === 'gem') return frame.gems >= 3 ? 'legendary' : 'epic'
+  if (frame.kind === 'gem') return LEGENDARY.has(frame.id) ? 'legendary' : 'epic'
   if (frame.kind === 'earned') return 'earned'
   if (frame.kind === 'season') return 'seasonal'
   return 'free'
@@ -84,6 +99,7 @@ function monthDay(today) {
 export function seasonOpen(frame, today) {
   const win = frame?.season
   if (!win || frame.hidden) return false
+  if (frame.firstYear && Number(String(today).slice(0, 4)) < frame.firstYear) return false
   const md = monthDay(today)
   if (!/^\d{2}-\d{2}$/.test(md)) return false
   if (win.from <= win.until) return md >= win.from && md <= win.until

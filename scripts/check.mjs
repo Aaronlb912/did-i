@@ -4625,3 +4625,20 @@ test('friends: one color per person, and the product names take a plural', () =>
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
 })
+
+test('earned frames use the best streak ever, not just tonight', async () => {
+  const { bestShelfStreak, shelfStreak } = await import('../src/lib/hall-feel.js')
+  const day = (n) => `2026-09-${String(n).padStart(2, '0')}`
+  const yes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
+  const book = {
+    id: 'b1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'daily', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: day(1) }],
+    answers: yes.map((n) => ({ lampId: 'daily', periodKey: day(n), status: 'yes', answeredAt: `${day(n)}T21:00:00` })),
+  }
+  const now = new Date(2026, 8, 15, 12, 0)
+  assert.equal(shelfStreak([book], now), 3, 'Sep 11 was left open, so tonight is 3')
+  assert.equal(bestShelfStreak([book], now), 10, 'the 10 nights before the break still count as the best')
+  assert.equal(bestShelfStreak([], now), 0)
+})

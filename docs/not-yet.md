@@ -5,15 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
-## Card frames (branch `feat/frames-data`)
+## Card frames
 
-- **SQL to apply:** `shop-catalog.sql`, `wallet.sql`, `gifts.sql` (in that order, via `db:apply:all`), then run `supabase/tests/frames.test.sql`. Until then a signed-in frame buy fails with "not for sale".
 - **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
 - **Friends do not see your frame yet.** Friends never get your look either; there is no `frame_on` on profiles. Add it with the look when the friend page shows your card.
-- **Birthday frame is hidden.** There is no birthday field. It stays in the catalog, out of every list.
+- **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
 - **Frames are not gifts.** Not in `gift_catalog`.
-- **Earned frames use tonight's streak.** There is no stored best streak, so a frame is kept the first time the app sees the streak reach it. Someone who had a 30 night streak before this shipped earns Ember again only by reaching 30.
+- **No low power pause.** Frames stop off screen, in the background, after 25 s without a touch and with Less motion, but not in low power mode. That needs `expo-battery` (a new dependency and a native build).
 
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 

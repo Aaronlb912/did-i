@@ -73,6 +73,21 @@ function Slab({ f, o, fill, stroke, strokeWidth }) {
 }
 
 /** The same art in all four corners, rotated, like the mockup's cornerSet. */
+// Cards are round, so corner art is trimmed to a rounded edge o px outside the card.
+function RoundClip({ f, o, id, children }) {
+  const S = svgAll()
+  return (
+    <>
+      <S.Defs>
+        <S.ClipPath id={id}>
+          <S.Path d={rrPath(-o, -o, f.w + 2 * o, f.h + 2 * o, f.R + o)} />
+        </S.ClipPath>
+      </S.Defs>
+      <S.G clipPath={`url(#${id})`}>{children}</S.G>
+    </>
+  )
+}
+
 function Corners({ f, size, off, view = 64, children }) {
   const S = svgAll()
   const k = size / view
@@ -266,13 +281,11 @@ const HEART = 'M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z'
 function PixelOver({ f }) {
   const S = svgAll()
   const { w, h } = f
-  const square = `M 0 0 L ${w} 0 L ${w} ${h} L 0 ${h} Z ${rrPath(0, 0, w, h, f.R)}`
   return (
     <Layer f={f}>
-      <S.Path d={square} fill={f.c.card} fillRule="evenodd" />
-      <S.Rect x={-2} y={-2} width={w + 4} height={h + 4} fill="none" stroke={f.c.accent} strokeWidth={4} />
-      <S.Rect x={-6} y={-6} width={w + 12} height={h + 12} fill="none" stroke={f.c.card} strokeWidth={4} />
-      <S.Rect x={-10} y={-10} width={w + 20} height={h + 20} fill="none" stroke={f.c.ink} strokeWidth={4} />
+      <S.Rect x={-2} y={-2} width={w + 4} height={h + 4} rx={f.R + 2} fill="none" stroke={f.c.accent} strokeWidth={4} />
+      <S.Rect x={-6} y={-6} width={w + 12} height={h + 12} rx={f.R + 6} fill="none" stroke={f.c.card} strokeWidth={4} />
+      <S.Rect x={-10} y={-10} width={w + 20} height={h + 20} rx={f.R + 10} fill="none" stroke={f.c.ink} strokeWidth={4} />
       {[[-14, -14], [w - 14, -14], [-14, h - 10], [w - 14, h - 10]].map(([x, y]) => (
         <S.Path key={`${x}${y}`} d={HEART} fill="#ef6a5b" transform={`translate(${x} ${y}) scale(4)`} />
       ))}
@@ -311,8 +324,8 @@ function PolaroidUnder({ f }) {
   if (n > 0) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
   return (
     <Layer f={f}>
-      <S.Rect x={-12} y={-10} width={f.w + 24} height={f.h + 54} rx={6} fill="#000000" opacity={0.18} />
-      <S.Rect x={-12} y={-12} width={f.w + 24} height={f.h + 52} rx={6} fill="#faf8f3" />
+      <S.Rect x={-12} y={-10} width={f.w + 24} height={f.h + 54} rx={f.R + 12} fill="#000000" opacity={0.18} />
+      <S.Rect x={-12} y={-12} width={f.w + 24} height={f.h + 52} rx={f.R + 12} fill="#faf8f3" />
       <S.Text x={f.w / 2} y={f.h + 27} fontSize={15} fontStyle="italic" fontWeight="600" fill="#2f3a4f" textAnchor="middle">
         {label}
       </S.Text>
@@ -522,6 +535,7 @@ function DecoOver({ f }) {
   return (
     <Layer f={f}>
       <GoldDefs />
+      <RoundClip f={f} o={10} id="dcc">
       <Corners f={f} size={72} off={-16}>
         <S.Path d="M3 3 L50 3 A47 47 0 0 1 3 50 Z" fill="none" stroke="url(#gg)" strokeWidth={2} />
         <S.Path d="M3 3 L36 3 A33 33 0 0 1 3 36 Z" fill="none" stroke="url(#gg)" strokeWidth={1.4} />
@@ -530,6 +544,7 @@ function DecoOver({ f }) {
           <S.Line key={a} x1={3} y1={3} x2={3 + 47 * Math.cos((a * Math.PI) / 180)} y2={3 + 47 * Math.sin((a * Math.PI) / 180)} stroke="url(#gg)" strokeWidth={1} />
         ))}
       </Corners>
+      </RoundClip>
     </Layer>
   )
 }
@@ -1096,19 +1111,18 @@ function GemsOver({ f }) {
       <Layer f={f}>
         <S.Defs>
           <S.LinearGradient id="gm" x1="0" y1="0" x2="1" y2="1">
-            <S.Stop offset="0" stopColor="#e8fbff" />
-            <S.Stop offset="0.5" stopColor="#7fd4ec" />
-            <S.Stop offset="1" stopColor="#2d7c9c" />
+            <S.Stop offset="0" stopColor="#fff6d6" />
+            <S.Stop offset="0.55" stopColor="#ffd25e" />
+            <S.Stop offset="1" stopColor="#d99a1e" />
           </S.LinearGradient>
         </S.Defs>
-        <Ring f={f} k={0.75} color={f.c.freeze} width={1.5} opacity={0.5} />
+        <Ring f={f} k={0.75} color="#ffd25e" width={1.5} opacity={0.45} />
         {xs.map((x, i) => {
           const on = Boolean(lit[i])
           return (
             <S.G key={i} transform={`translate(${x} ${f.h + 2})`}>
-              {on ? <S.Circle r={14} fill="#7fd4ec" opacity={0.18} /> : null}
-              <S.Path d="M0 -11 L9 -3 L0 11 L-9 -3 Z" fill={on ? 'url(#gm)' : f.c.line} stroke={on ? '#e8fbff' : 'none'} strokeWidth={0.8} />
-              {on ? <S.Path d="M-9 -3 L9 -3 M0 -11 L-3 -3 L0 11 M0 -11 L3 -3" stroke="rgba(255,255,255,0.6)" strokeWidth={0.6} fill="none" /> : null}
+              {on ? <S.Circle r={14} fill="#ffd25e" opacity={0.18} /> : null}
+              <S.Path d="M0.00 -11.00 L2.70 -3.72 L10.46 -3.40 L4.37 1.42 L6.47 8.90 L0.00 4.60 L-6.47 8.90 L-4.37 1.42 L-10.46 -3.40 L-2.70 -3.72 Z" fill={on ? 'url(#gm)' : f.c.line} stroke={on ? '#fff6d6' : 'none'} strokeWidth={0.8} strokeLinejoin="round" />
             </S.G>
           )
         })}
@@ -1116,8 +1130,8 @@ function GemsOver({ f }) {
       {sparks.map((it, i) =>
         lit[i] ? (
           <Particle key={i} clock={f.clock} item={it} fn={sparkleAt} w={f.w} h={f.h} size={16}>
-            <View style={[styles.sparkH, { backgroundColor: '#e6faff' }]} />
-            <View style={[styles.sparkV, { backgroundColor: '#e6faff' }]} />
+            <View style={[styles.sparkH, { backgroundColor: '#fff3c4' }]} />
+            <View style={[styles.sparkV, { backgroundColor: '#fff3c4' }]} />
           </Particle>
         ) : null,
       )}
@@ -1167,9 +1181,11 @@ function FrostOver({ f }) {
         <Halo f={f} from={0} spread={16} color="#7fd4ec" opacity={0.22} inward={10} />
         <Ring f={f} k={0.75} color="rgba(127,212,236,0.7)" width={1.5} />
         {show ? (
-          <Corners f={f} size={70} off={-8}>
-            <FrostCorner />
-          </Corners>
+          <RoundClip f={f} o={8} id="frc">
+            <Corners f={f} size={70} off={-8}>
+              <FrostCorner />
+            </Corners>
+          </RoundClip>
         ) : null}
       </Layer>
       {show
@@ -1191,7 +1207,7 @@ function WebArt() {
   const S = svgAll()
   return (
     <S.G stroke="rgba(210,210,220,0.65)" strokeWidth={1} fill="none">
-      <S.Path d="M2 2 L70 2 M2 2 L2 70 M2 2 L64 34 M2 2 L34 64 M2 2 L54 54" />
+      <S.Path d="M2 2 L64 34 M2 2 L34 64 M2 2 L54 54" />
       {[16, 30, 44, 58].map((r) => (
         <S.Path key={r} d={`M${r} 2 Q${r * 0.9} ${r * 0.38} ${r * 0.88} ${r * 0.47} Q${r * 0.72} ${r * 0.72} ${r * 0.47} ${r * 0.88} Q${r * 0.38} ${r * 0.9} 2 ${r}`} />
       ))}
@@ -1211,12 +1227,14 @@ function WebOver({ f }) {
     <>
       <Layer f={f}>
         <Ring f={f} k={0.5} color="rgba(180,180,190,0.4)" width={1} />
-        <S.G transform={`translate(-6 -6) scale(${k})`}>
-          <WebArt />
-        </S.G>
-        <S.G transform={`translate(${f.w + 6} ${f.h + 6}) rotate(180) scale(${k})`}>
-          <WebArt />
-        </S.G>
+        <RoundClip f={f} o={1} id="wbc">
+          <S.G transform={`translate(-6 -6) scale(${k})`}>
+            <WebArt />
+          </S.G>
+          <S.G transform={`translate(${f.w + 6} ${f.h + 6}) rotate(180) scale(${k})`}>
+            <WebArt />
+          </S.G>
+        </RoundClip>
       </Layer>
       <Mover f={f} fn={bob}>
         <Layer f={f}>
