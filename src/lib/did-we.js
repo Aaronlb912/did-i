@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readShelf } from './board-shelf.js'
-import { saveProfile } from './cloud-sync.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
@@ -443,7 +442,10 @@ function shareMyBuddy(cards) {
       if (p.me) Object.assign(p, { buddy, cheer })
     }
   }
-  saveProfile({ buddy_on: buddy, badge_cheer: cheer }).catch(() => {})
+  // Loaded late: cloud-sync imports people.js, which imports this file.
+  import('./cloud-sync.js')
+    .then(({ saveProfile }) => saveProfile({ buddy_on: buddy, badge_cheer: cheer }))
+    .catch(() => {})
 }
 
 // A shared streak that just reached 7, 30, 100 or 365 plays a bigger cheer.

@@ -427,6 +427,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
   let face = null
+  // The done card grows (note, sign-in, recap). Centred in a fixed slot it
+  // spilled under the meter and the tab bar, so it scrolls instead.
+  let doneFace = false
   // Did and Nope buttons under the card, for anyone who would rather tap.
   let answerBar = null
   const withAnswerButtons = (card, onDid, onNope) => {
@@ -515,6 +518,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
     face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
   } else if (stack.bodyKind === 'hall' && stack.nightDone) {
+    doneFace = true
     face = (
       <CardSettle play={Boolean(stack.cheer)}>
         <GemFaceShell look={premium ? look : ''}
@@ -869,7 +873,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <NightSky colors={colors} />
           </Slot>
         ) : null}
-        <Slot>{face}</Slot>
+        {doneFace ? (
+          <ScrollView
+            style={styles.doneScroll}
+            contentContainerStyle={styles.doneScrollIn}
+            showsVerticalScrollIndicator={false}
+          >
+            <Slot>{face}</Slot>
+          </ScrollView>
+        ) : (
+          <Slot>{face}</Slot>
+        )}
         <Slot>
           <FamilyTonight colors={colors} />
         </Slot>
@@ -951,4 +965,6 @@ const styles = StyleSheet.create({
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
+  doneScroll: { flexGrow: 0, flexShrink: 1 },
+  doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })
