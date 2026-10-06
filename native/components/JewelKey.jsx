@@ -48,7 +48,7 @@ export function JewelKey({ colors, onDone }) {
   const rows = [
     { color: colors.on, label: t('jewelKey.did') },
     { color: colors.late, label: t('jewelKey.late') },
-    { color: colors.skip, label: t('jewelKey.nope') },
+    { color: colors.skip, label: t('jewelKey.notYet') },
     { color: colors.open, label: t('jewelKey.open') },
     { color: colors.miss, label: t('jewelKey.due') },
   ]

@@ -122,10 +122,10 @@ function openStarters(book) {
   )
 }
 
-// The dot on each row, in Home's colors: did, late, nope (muted), not
-// answered yet, due today (red ring), or not asked tonight.
+// The dot on each row, in Home's colors: did, late, not yet (muted; nope
+// on a closed night), not answered yet, due today (red ring), or not asked tonight.
 function dotKind(state, urgency) {
-  if (state === 'did' || state === 'late' || state === 'nope' || state === 'missed') return state
+  if (state === 'did' || state === 'late' || state === 'nope' || state === 'pastNope' || state === 'missed') return state
   if (urgency === 'today' || urgency === 'soon') return 'due'
   if (state === 'open') return 'open'
   return 'off'
@@ -134,18 +134,19 @@ function dotKind(state, urgency) {
 function stateDot(kind, colors) {
   if (kind === 'did') return { backgroundColor: colors.on, borderColor: colors.on }
   if (kind === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
-  if (kind === 'nope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
+  if (kind === 'nope' || kind === 'pastNope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
   if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
   if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.openRing || colors.open || colors.on }
   if (kind === 'missed') return { backgroundColor: colors.miss, borderColor: colors.miss }
   return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 
-const DOT_WORDS = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', open: 'jewelKey.open', due: 'jewelKey.due', missed: 'later.missed' }
+// Tonight's skip is a not yet; a past one-time question's skip is a nope.
+const DOT_WORDS = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.notYet', pastNope: 'jewelKey.nope', open: 'jewelKey.open', due: 'jewelKey.due', missed: 'later.missed' }
 
 // One line over the list naming only the dots that are on it.
 function DotKey({ kinds, colors }) {
-  const shown = ['did', 'late', 'nope', 'missed', 'open', 'due'].filter((kind) => kinds.has(kind))
+  const shown = ['did', 'late', 'nope', 'pastNope', 'missed', 'open', 'due'].filter((kind) => kinds.has(kind))
   if (!shown.length) return null
   return (
     <View style={styles.dotKey} accessible accessibilityLabel={shown.map((kind) => t(DOT_WORDS[kind])).join(', ')}>
@@ -217,7 +218,7 @@ function earlierStates(rows) {
       const id = `${boardId}:${answer.lampId}`
       if (!ids.has(id)) continue
       const status = answer.status
-      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : 'missed')
+      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : 'missed')
     }
   }
   return states

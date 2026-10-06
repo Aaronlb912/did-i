@@ -1,6 +1,6 @@
 // Card frames: a layer around the card, never instead of a look. Any frame
 // works with any look. Still frames cost coins, animated ones cost gems,
-// earned ones come from your streak, seasonal ones are free while their
+// earned ones come from your streak or friends who joined, seasonal ones are free while their
 // season is open and kept after. Everyone owns First Light. The drawings
 // live in native/components/frames/; this file is the catalog and the rules.
 // Prices here must match supabase/shop-catalog.sql (a check keeps them equal).
@@ -55,6 +55,8 @@ const RAW = [
   earned('ember', 'streak', 30),
   earned('gems', 'streak', 7),
   earned('frost', 'freeze', 1),
+  // The server gives it at 20 friends joined (claim_invites); never sold.
+  earned('bloom', 'refer', 20),
   season('web', '10-01', '10-31'),
   season('leaves', '11-01', '11-30'),
   season('snow', '12-01', '12-31'),
@@ -131,6 +133,7 @@ export function frameEarned(frame, ctx = {}) {
   if (!frame || frame.kind !== 'earned') return false
   if (frame.earn === 'streak') return (Number(ctx.bestStreak) || 0) >= frame.need
   if (frame.earn === 'freeze') return Boolean(ctx.everFrozen)
+  // 'refer' is never earned here: claim_invites puts it on the owned list.
   return false
 }
 
@@ -142,6 +145,7 @@ export function frameProgress(frame, ctx = {}) {
     const run = ctx.streak ?? ctx.bestStreak
     return { n: Math.min(frame.need, Math.max(0, Number(run) || 0)), of: frame.need }
   }
+  if (frame.earn === 'refer') return { n: Math.min(frame.need, Math.max(0, Number(ctx.joined) || 0)), of: frame.need }
   return { n: ctx.everFrozen ? 1 : 0, of: 1 }
 }
 

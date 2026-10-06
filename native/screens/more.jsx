@@ -90,7 +90,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate, periodLabel } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -167,10 +167,11 @@ function foldClock(at) {
   return clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
 }
 
-function statusWord(status) {
+// A skip reads Not yet while its night is open, Nope once it closed.
+function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t('feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
   return status
 }
 
@@ -187,7 +188,8 @@ function answerLabel(row, nightIso) {
   }
   if (row.answer.status === 'yes') return t('later.did')
   if (row.answer.status === 'late') return t('later.late')
-  return t('later.nope')
+  // Tonight and the nights ahead are still open.
+  return t('jewelKey.notYet')
 }
 
 export function AboutScreen({ book }) {
@@ -274,7 +276,8 @@ export function HelpScreen() {
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupShop')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.coinsP')}</Meta>
+        <Meta colors={colors}>{t('help.coinsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.wishP')}</Meta>
         <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('frames.what')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('frames.howBody')}</Meta>
@@ -558,7 +561,7 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
             key={row.answer.id}
             colors={colors}
             label={row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
-            note={`${statusWord(row.answer.status)}${
+            note={`${statusWord(row.answer.status, Boolean(row.lamp) && nightOpen(periodNight(row.lamp, row.answer.periodKey), clock))}${
               tapWhen(row.answer.answeredAt, clock) ? ` · ${tapWhen(row.answer.answeredAt, clock)}` : ''
             }${row.answer.note ? `\n${row.answer.note}` : ''}`}
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
@@ -596,7 +599,7 @@ export function NotesScreen({ book, boards }) {
               key={row.answer.id || `${row.lamp.id}:${row.answer.periodKey}`}
               colors={colors}
               label={shortLabel(row.lamp)}
-              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status)}\n${row.answer.note}`}
+              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status, nightOpen(periodNight(row.lamp, row.answer.periodKey)))}\n${row.answer.note}`}
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           )

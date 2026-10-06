@@ -376,11 +376,15 @@ async function pullAndMergeOnce() {
     // A code saved from an invite link is used here, so the claim below pays it.
     await applyPendingInvite().catch(() => {})
     const invited = await claimInvites()
-    if (invited.gems > 0 || invited.looks.length) {
-      const boards = written.boards.map((item) =>
-        item.id === written.currentId ? applyInvitePayout(item, invited) : item,
-      )
-      written = land({ ...written, boards }, metaAt)
+    if (invited.gems > 0 || invited.looks.length || invited.buddies.length || invited.frames.length) {
+      let changed = false
+      const boards = written.boards.map((item) => {
+        if (item.id !== written.currentId) return item
+        const next = applyInvitePayout(item, invited)
+        if (next !== item) changed = true
+        return next
+      })
+      if (changed) written = land({ ...written, boards }, metaAt)
     }
 
     // A weekly gem earned signed out only lived on the phone, and the server

@@ -276,7 +276,10 @@ function WashiOver({ f }) {
   )
 }
 
-const HEART = 'M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z'
+// A 7x7 pixel coin: dark rim, gold face, a light glint top left.
+const COIN_RIM = 'M2 0h3v1H2zM1 1h1v1H1zM5 1h1v1H5zM0 2h1v3H0zM6 2h1v3H6zM1 5h1v1H1zM5 5h1v1H5zM2 6h3v1H2z'
+const COIN_FACE = 'M2 1h3v1H2zM1 2h5v3H1zM2 5h3v1H2z'
+const COIN_GLINT = 'M2 2h1v2H2zM3 2h1v1H3z'
 
 function PixelOver({ f }) {
   const S = svgAll()
@@ -286,8 +289,12 @@ function PixelOver({ f }) {
       <S.Rect x={-2} y={-2} width={w + 4} height={h + 4} rx={f.R + 2} fill="none" stroke={f.c.accent} strokeWidth={4} />
       <S.Rect x={-6} y={-6} width={w + 12} height={h + 12} rx={f.R + 6} fill="none" stroke={f.c.card} strokeWidth={4} />
       <S.Rect x={-10} y={-10} width={w + 20} height={h + 20} rx={f.R + 10} fill="none" stroke={f.c.ink} strokeWidth={4} />
-      {[[-14, -14], [w - 14, -14], [-14, h - 10], [w - 14, h - 10]].map(([x, y]) => (
-        <S.Path key={`${x}${y}`} d={HEART} fill="#ef6a5b" transform={`translate(${x} ${y}) scale(4)`} />
+      {[[-14, -14], [w - 14, -14], [-14, h - 14], [w - 14, h - 14]].map(([x, y]) => (
+        <S.G key={`${x}${y}`} transform={`translate(${x} ${y}) scale(4)`}>
+          <S.Path d={COIN_FACE} fill="#f5c542" />
+          <S.Path d={COIN_GLINT} fill="#fff1b8" />
+          <S.Path d={COIN_RIM} fill="#9a6a12" />
+        </S.G>
       ))}
     </Layer>
   )
@@ -1221,6 +1228,127 @@ function FrostOver({ f }) {
   )
 }
 
+/* ---------- Bloom (20 friends joined) ---------- */
+
+// A point it.d px along the rounded rect it.g px outside the card, so the
+// light walks the same line as the edge. rrPointAt as a worklet.
+function bloomAt(time, it, w, h) {
+  'worklet'
+  const x = -it.g
+  const y = -it.g
+  const W = w + 2 * it.g
+  const H = h + 2 * it.g
+  const r = Math.max(0, Math.min(it.R + it.g, W / 2, H / 2))
+  const sv = H - 2 * r
+  const sh = W - 2 * r
+  const arc = (Math.PI * r) / 2
+  const L = 2 * sv + 2 * sh + 4 * arc
+  let s = ((((time / it.period) * L - it.lag) % L) + L) % L
+  let px = x
+  let py = y
+  if (s < sh) {
+    px = x + r + s
+    py = y
+  } else if ((s -= sh) < arc) {
+    const a = -Math.PI / 2 + s / r
+    px = x + W - r + r * Math.cos(a)
+    py = y + r + r * Math.sin(a)
+  } else if ((s -= arc) < sv) {
+    px = x + W
+    py = y + r + s
+  } else if ((s -= sv) < arc) {
+    const a = s / r
+    px = x + W - r + r * Math.cos(a)
+    py = y + H - r + r * Math.sin(a)
+  } else if ((s -= arc) < sh) {
+    px = x + W - r - s
+    py = y + H
+  } else if ((s -= sh) < arc) {
+    const a = Math.PI / 2 + s / r
+    px = x + r + r * Math.cos(a)
+    py = y + H - r + r * Math.sin(a)
+  } else if ((s -= arc) < sv) {
+    px = x
+    py = y + H - r - s
+  } else {
+    const a = Math.PI + Math.min(s - sv, arc) / r
+    px = x + r + r * Math.cos(a)
+    py = y + r + r * Math.sin(a)
+  }
+  return { x: px, y: py, o: it.o }
+}
+
+function twinkle(time, it) {
+  'worklet'
+  return { x: it.x, y: it.y, o: 0.35 + 0.65 * (0.5 - 0.5 * Math.cos((TAU * (time + it.ph)) / 2.8)), s: 1 }
+}
+
+const BLOOM_MID = '#7fd4ec'
+const BLOOM_END = '#b98cff'
+const SPARK = 'M0 -1 Q0 0 1 0 Q0 0 0 1 Q0 0 -1 0 Q0 0 0 -1 Z'
+
+function BloomSpark({ size }) {
+  const S = svgAll()
+  return (
+    <S.Svg width={size * 2} height={size * 2} viewBox="-1 -1 2 2">
+      <S.Path d={SPARK} fill="#fff6d8" />
+    </S.Svg>
+  )
+}
+
+function BloomOver({ f }) {
+  const S = svgAll()
+  const g = 4
+  const big = f.w > 140
+  const s = big ? 7 : 3
+  const sparks = useMemo(
+    () => [
+      { x: -g + 2, y: -g + 2, s, ph: 0 },
+      { x: f.w + g - 2, y: -g + 2, s: s * 0.8, ph: 0.9 },
+      { x: f.w + g - 2, y: f.h + g - 2, s, ph: 1.6 },
+      { x: -g + 2, y: f.h + g - 2, s: s * 0.8, ph: 2.2 },
+    ],
+    [f.w, f.h, s],
+  )
+  // Three soft lights in a row read as one glow walking round the edge.
+  const lights = useMemo(
+    () => [
+      { g, R: f.R, period: 9, lag: 0, o: 0.9, size: 8 },
+      { g, R: f.R, period: 9, lag: 14, o: 0.55, size: 14 },
+      { g, R: f.R, period: 9, lag: 30, o: 0.3, size: 20 },
+    ],
+    [f.R],
+  )
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="blm" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor={f.c.accent} />
+            <S.Stop offset="0.5" stopColor={BLOOM_MID} />
+            <S.Stop offset="1" stopColor={BLOOM_END} />
+          </S.LinearGradient>
+        </S.Defs>
+        <Halo f={f} from={-g} spread={10} color={BLOOM_MID} opacity={0.18} />
+        <Ring f={f} k={-g} color="url(#blm)" width={big ? 3 : 2} opacity={0.85} />
+        {f.still
+          ? sparks.map((it, i) => <S.Path key={i} d={SPARK} fill="#fff6d8" transform={`translate(${it.x} ${it.y}) scale(${it.s})`} />)
+          : null}
+      </Layer>
+      {lights.map((it, i) => (
+        <Particle key={`l${i}`} clock={f.clock} item={it} fn={bloomAt} w={f.w} h={f.h} size={it.size}>
+          <View style={{ width: it.size, height: it.size, borderRadius: it.size / 2, backgroundColor: '#fff6d8' }} />
+        </Particle>
+      ))}
+      {sparks.map((it, i) => (
+        <Particle key={`s${i}`} clock={f.clock} item={it} fn={twinkle} w={f.w} h={f.h} size={it.s * 2}>
+          <BloomSpark size={it.s} />
+        </Particle>
+      ))}
+    </>
+  )
+}
+
 /* ---------- Seasonal frames ---------- */
 
 function WebArt() {
@@ -1470,6 +1598,7 @@ export const FRAME_ART = {
   ember: { under: EmberUnder, over: EmberOver, animated: true },
   gems: { over: GemsOver, animated: true },
   frost: { over: FrostOver, animated: true },
+  bloom: { over: BloomOver, animated: true },
   web: { over: WebOver, animated: true },
   leaves: { over: LeavesOver, animated: true },
   snow: { over: SnowOver, animated: true },

@@ -52,6 +52,20 @@ export function openFloorIso(now = new Date()) {
   return graceNightIso(now) || boardDate(now)
 }
 
+// A night can still take answers: tonight, or last night in its grace period.
+export function nightOpen(dateIso, now = new Date()) {
+  return Boolean(dateIso) && dateIso >= openFloorIso(now)
+}
+
+// The word for an answer: a skip reads "Not yet" while its night is open and
+// "Nope" once it closed. A closed night with no answer reads "Nope" too.
+// Returns 'notYet', 'nope', the status itself, or '' (open, not answered).
+export function answerWord(status, isOpen) {
+  if (status === 'skip') return isOpen ? 'notYet' : 'nope'
+  if (!status) return isOpen ? '' : 'nope'
+  return status
+}
+
 export function addDaysIso(iso, days) {
   const date = parseIsoDate(iso)
   if (!date) return ''

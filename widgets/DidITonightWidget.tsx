@@ -130,7 +130,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const lead = leadItem(items, props?.leadLampId)
   const questionText = String(props?.question || '').trim() || lead?.label || footer
   const didLabel = String(props?.didLabel || 'Did')
-  const nopeLabel = String(props?.nopeLabel || 'Nope')
+  const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
   const buddyId = String(props?.buddyId || '')
 
@@ -334,6 +334,32 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       ['e', 33.5, 31.8, 2.2, 1.3, '#f59aa8', 0, 0.7],
       ['e', 17, 45, 4.5, 2.8, '#3a2a22'],
       ['e', 31, 45, 4.5, 2.8, '#3a2a22'],
+    ],
+    // Curved stripes and antennae are paths in the SVG; bars and lines here.
+    hive: [
+      ['e', 11, 18, 6, 8, '#8fb8d4', -25],
+      ['e', 37, 18, 6, 8, '#8fb8d4', 25],
+      ['e', 11, 18, 5.2, 7.2, '#dff3ff', -25],
+      ['e', 37, 18, 5.2, 7.2, '#dff3ff', 25],
+      ['l', 19, 17, 15.5, 11, '#2b2018', 1.4],
+      ['l', 15.5, 11, 13, 8, '#2b2018', 1.4],
+      ['l', 29, 17, 32.5, 11, '#2b2018', 1.4],
+      ['l', 32.5, 11, 35, 8, '#2b2018', 1.4],
+      ['e', 13, 8, 2.2, 2.2, '#2b2018'],
+      ['e', 35, 8, 2.2, 2.2, '#2b2018'],
+      ['e', 24, 31, 15, 14, '#f6c443'],
+      ['r', 10.5, 35.6, 27, 3.6, '#2b2018', 1.8],
+      ['r', 13, 41.6, 22, 2.8, '#2b2018', 1.4],
+      ['e', 18, 27, 2.3, 3.1, '#2d241c'],
+      ['e', 30, 27, 2.3, 3.1, '#2d241c'],
+      ['e', 18.8, 26, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 30.8, 26, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 14, 32, 2.4, 1.5, '#f08a7a', 0, 0.55],
+      ['e', 34, 32, 2.4, 1.5, '#f08a7a', 0, 0.55],
+      ['l', 22, 31.5, 24, 32.6, '#2b2018', 1],
+      ['l', 24, 32.6, 26, 31.5, '#2b2018', 1],
+      ['e', 17, 47, 4.2, 2.8, '#2b2018'],
+      ['e', 31, 47, 4.2, 2.8, '#2b2018'],
     ],
   }
 

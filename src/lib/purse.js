@@ -1,7 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { FRAMES, FRAME_IDS, normalizeFrames, normalizeWornFrame } from './frames.js'
+import { FRAMES, FRAME_IDS, frameById, normalizeFrames, normalizeWornFrame } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -53,7 +53,11 @@ const ALL_BUDDIES = [
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
+  // Never sold. The server gives it at 15 friends joined (claim_invites).
+  { id: 'hive', gems: 0, refer: 15 },
 ]
+
+export const REFER_BUDDY = 'hive'
 
 const ALL_LOOKS = [
   { id: 'lime', coins: 0, gems: 0 },
@@ -87,6 +91,12 @@ export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
 // Every cheer someone can own: the shop's plus the special ones.
 export const OWNABLE_CHEERS = [...CHEERS, ...SPECIAL_CHEERS]
 export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
+// What the shop sells: every buddy but the one earned by referring friends.
+export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer)
+
+export function isReferBuddy(id) {
+  return Boolean(ALL_BUDDIES.find((item) => item.id === id)?.refer)
+}
 export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
 
 // A drop shows as "Coming" for the week before its day, then goes on sale.
@@ -238,10 +248,10 @@ export function recentCheers(count = 2) {
 }
 
 export function recentBuddies(count = 2) {
-  const drop = newestDrop(BUDDIES)
+  const drop = newestDrop(SHOP_BUDDIES)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return BUDDIES.slice(-n)
+  return SHOP_BUDDIES.slice(-n)
 }
 
 export const FRIEND_CHEER_GEMS = 1
@@ -631,8 +641,27 @@ export function addGems(book, gems) {
 export function applyInvitePayout(book, won) {
   const coins = Math.max(0, Math.floor(Number(won?.coins) || 0))
   const looks = Array.isArray(won?.looks) ? won.looks : []
-  if (!coins && !looks.length) return book
-  return giveCoins(book, coins, looks)
+  const paid = coins || looks.length ? giveCoins(book, coins, looks) : book
+  return giveReferRewards(paid, won)
+}
+
+// Rewards for friends who joined, as the server counted them (claim_invites
+// lists them every time, so a new phone gets them back). Kept once given.
+export function giveReferRewards(book, won) {
+  const purse = normalizePurse(book)
+  const buddies = (Array.isArray(won?.buddies) ? won.buddies : []).filter(
+    (id) => isReferBuddy(id) && BUDDY_IDS.has(id) && !purse.buddies.includes(id),
+  )
+  const frames = (Array.isArray(won?.frames) ? won.frames : []).filter(
+    (id) => frameById(id)?.earn === 'refer' && !purse.frames.includes(id),
+  )
+  if (!buddies.length && !frames.length) return book
+  return {
+    ...book,
+    ...purse,
+    buddies: [...purse.buddies, ...buddies],
+    frames: normalizeFrames([...purse.frames, ...frames]),
+  }
 }
 
 export function addGemsShelf(shelf, gems) {
@@ -794,7 +823,7 @@ export function buyCheerStage(book, id) {
 }
 
 export function buyBuddy(book, id) {
-  const buddy = BUDDIES.find((item) => item.id === id)
+  const buddy = SHOP_BUDDIES.find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!buddy) return { book, miss: 'shop.miss.buddyGone' }
   if (purse.buddies.includes(id)) {

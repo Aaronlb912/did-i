@@ -516,6 +516,36 @@ test('referral reward bar tracks paid gems toward the cap', () => {
   assert.equal(inviteNextFriendGems(5, 10), 0)
 })
 
+await testAsync('referral ladder: real gem steps, Night look, Hive at 15, Bloom at 20, server-given only', async () => {
+  const R = await import('../src/lib/invite-reward.js')
+  const P = await import('../src/lib/purse.js')
+  const F = await import('../src/lib/frames.js')
+  const at12 = R.referLadder(12)
+  assert.equal(at12.goal, 15)
+  assert.equal(at12.toBuddy, 3)
+  assert.deepEqual(at12.rungs.filter((r) => r.kind === 'gems').map((r) => [r.n, r.gems]), [[1, 1], [2, 2], [3, 3], [4, 4]], 'gem steps add to ten')
+  assert.deepEqual(at12.rungs.map((r) => r.state), ['got', 'got', 'got', 'got', 'got', 'next', 'later'])
+  assert.equal(R.referLadder(16).goal, 20)
+  assert.equal(R.referLadderNote(R.referLadder(25)).key, 'refer.allDone')
+  // Never sold: not in the shop, not buyable, not a gift.
+  assert.ok(!P.SHOP_BUDDIES.some((b) => b.id === 'hive') && P.BUDDIES.some((b) => b.id === 'hive'))
+  assert.equal(P.buyBuddy({ gems: 99 }, 'hive').miss, 'shop.miss.buddyGone')
+  assert.ok(!P.giftItems().buddies.some((b) => b.id === 'hive'))
+  assert.ok(!F.frameForSale('bloom'))
+  assert.ok(!F.framesOwned({}, { bestStreak: 999, joined: 50 }).has('bloom'), 'Bloom only comes from the server list')
+  // claim_invites lists them; the purse keeps them, and only these ids.
+  const won = P.applyInvitePayout({}, { gems: 0, looks: [], buddies: ['hive', 'cat'], frames: ['bloom', 'gold'] })
+  const purse = P.normalizePurse(won)
+  assert.ok(purse.buddies.includes('hive') && !purse.buddies.includes('cat'))
+  assert.deepEqual(purse.frames, ['bloom'])
+  assert.equal(P.applyInvitePayout(won, { buddies: ['hive'], frames: ['bloom'] }), won, 'given twice changes nothing')
+  // A server gem list does not take the earned buddy away.
+  const W = await import('../src/lib/wallet.js')
+  assert.ok(W.applyGemOwnedToBook(won, { gems: 0, buddies: [] }).buddies.includes('hive'))
+  const sql = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../supabase/referral-rewards.sql'), 'utf8')
+  assert.ok(sql.includes("select 15") && sql.includes("select 20") && sql.includes("'hive'") && sql.includes("'bloom'"))
+})
+
 test('every sql file in db:apply:all is on disk', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const src = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
@@ -3336,6 +3366,30 @@ await testAsync('the widget shows the open Did we once your own questions are do
   }
 })
 
+await testAsync('a skip reads Not yet while its night is open, Nope once it closed', async () => {
+  const { answerWord, nightOpen } = await import('../src/lib/recurrence.js')
+  const { nightWhyLines } = await import('../src/lib/night-why.js')
+  const { pillStatusLabel } = await import('../src/lib/pill-status.js')
+  // Friday Oct 2 is the night; it stays open until 9am Saturday.
+  const fri = '2026-10-02'
+  const sat2am = new Date(2026, 9, 3, 2, 0)
+  const sat9am = new Date(2026, 9, 3, 9, 0)
+  assert.equal(nightOpen(fri, new Date(2026, 9, 2, 22, 0)), true, 'tonight is open')
+  assert.equal(nightOpen(fri, sat2am), true, 'open through the grace period')
+  assert.equal(nightOpen(fri, sat9am), false, 'closed at 9am')
+  assert.equal(nightOpen('2026-09-30', sat2am), false, 'older nights are closed')
+  assert.equal(answerWord('skip', true), 'notYet')
+  assert.equal(answerWord('skip', false), 'nope')
+  assert.equal(answerWord('', false), 'nope', 'an empty closed night is a nope')
+  assert.equal(answerWord('', true), '', 'an empty open night is just open')
+  assert.equal(answerWord('yes', false), 'yes')
+  assert.equal(answerWord('late', true), 'late')
+  assert.equal(pillStatusLabel('skip'), 'Marked not yet')
+  const why = (iso, state) => ({ iso, state, noped: [{ lamp: { question: 'Did I read?', short: 'Read' } }], unanswered: [], weOpen: [] })
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat2am }).join(' '), /Not yet: Read/)
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Noped: Read/)
+})
+
 await testAsync('the grace period for the previous night runs until 9am', async () => {
   const { graceNightIso, graceFirst, answerFor } = await import('../src/lib/recurrence.js')
   const { graceRowsFor } = await import('../src/lib/grace.js')
@@ -4528,8 +4582,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 34)
-  assert.equal(new Set(ids).size, 34)
+  assert.equal(ids.length, 35)
+  assert.equal(new Set(ids).size, 35)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])

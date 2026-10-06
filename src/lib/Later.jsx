@@ -19,7 +19,8 @@ function answerLabel(row, nightIso) {
   }
   if (row.answer.status === 'yes') return t('later.did')
   if (row.answer.status === 'late') return t('later.late')
-  return t('later.nope')
+  // Tonight and the nights ahead are still open.
+  return t('jewelKey.notYet')
 }
 
 export function Later({ book, now }) {

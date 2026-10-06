@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, periodKeyFor } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, isDueOn, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
@@ -76,13 +76,15 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
 
   // A tapped night opens a small sheet for this question, like a night in Your history.
   const STATE_WORD = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', missed: 'later.missed', open: 'jewelKey.open' }
+  // A skip on a night that is still open reads Not yet.
+  const stateWord = (cell) => (cell.state === 'nope' && nightOpen(cell.iso) ? 'jewelKey.notYet' : STATE_WORD[cell.state])
   function openDay(cell) {
     const note = String(answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))?.note || '').trim()
     const close = () => publishSheet(null)
     publishSheet({
       kicker: shortLabel(lamp),
       title: formatBoardDate(cell.iso),
-      body: [t(STATE_WORD[cell.state]), note].filter(Boolean).join('\n'),
+      body: [t(stateWord(cell)), note].filter(Boolean).join('\n'),
       closeLabel: t('cal.close'),
       colors,
       onClose: close,
@@ -132,7 +134,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                 disabled={!cell.state}
                 onPress={() => openDay(cell)}
                 accessibilityRole={cell.state ? 'button' : undefined}
-                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(STATE_WORD[cell.state])}` : undefined}
+                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : undefined}
               >
                 <View
                   style={[

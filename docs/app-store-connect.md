@@ -43,7 +43,7 @@ em dashes. Do not paste before 1.2 is live: it describes Did we.
 Did I lock the door? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
 
 **Short description (Google Play, 80 max):**
-One question at a time. Swipe did or nope. Share with friends and family.
+One question at a time. Swipe did or not yet. Share with friends and family.
 
 **Keywords (App Store, 100 max):**
 habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,together,widget,gifts

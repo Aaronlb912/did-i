@@ -2,7 +2,7 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
-import { BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
+import { SHOP_BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -287,7 +287,7 @@ export function shelfStats(boards, now = new Date()) {
   s.cheers = purse.cheers.filter((id) => id !== 'lime').length
   s.cheersAll = CHEERS.every((item) => purse.cheers.includes(item.id))
   s.buddies = purse.buddies.filter((id) => id !== FREE_BUDDY).length
-  s.buddiesAll = BUDDIES.every((item) => purse.buddies.includes(item.id))
+  s.buddiesAll = SHOP_BUDDIES.every((item) => purse.buddies.includes(item.id))
   s.plays = purse.cheerUses
   s.coins = purse.coins
   return s

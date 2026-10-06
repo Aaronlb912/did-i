@@ -14,6 +14,7 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
+  SHOP_BUDDIES,
   BUDDY_GEMS,
   buyCheerStage,
   buyLook,
@@ -328,7 +329,7 @@ function PriceTag({ tag, colors }) {
 // The label always sits on the tile's bottom edge: the art area above it is a
 // fixed height, so a short chip (Spark) and a tall one line up the same way.
 // dim: can't afford it yet. Still tappable, so the sheet can say how many more.
-function ShopTile({ type, item, purse, colors, onTile, style, dim }) {
+function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
   return (
@@ -347,9 +348,26 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim }) {
           {name}
         </Text>
         <PriceTag tag={tag} colors={colors} />
+        {note ? (
+          <Text style={[styles.tileNote, { color: colors.inkDim }]} numberOfLines={1}>
+            {note}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   )
+}
+
+// A wishlist tile's second line: can you buy it now, or how many more.
+function wishNeed(type, item, purse) {
+  const tag = shopTag(purse, type, item)
+  const short = tag.gems ? tag.gems - purse.gems : tag.coins - purse.coins
+  if (short <= 0) return t('shop.canBuy')
+  return t(tag.gems ? 'shop.moreGems' : 'shop.moreCoins', { n: short })
+}
+
+function wishRows(purse) {
+  return purse.wish.map((key) => ({ type: key.split(':')[0], item: wishItem(key) })).filter((row) => row.item)
 }
 
 function slideHead(slide) {
@@ -506,20 +524,21 @@ function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
   )
 }
 
-// Hearted items, first in the shop, so a goal is one tap away.
+// Hearted items, right under the drop, so a goal is one tap away.
 function SavedRow({ purse, colors, onTile }) {
-  const saved = purse.wish
-    .map((key) => ({ type: key.split(':')[0], item: wishItem(key) }))
-    .filter((row) => row.item)
+  const saved = wishRows(purse)
   if (!saved.length) return null
   return (
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
-        <Cap colors={colors}>{t('shop.saved')}</Cap>
+        <Cap colors={colors}>{t('shop.wishTitle')}</Cap>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+          <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.wishTab')}</Text>
+        </Pressable>
       </View>
       <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
         {saved.map(({ type, item }) => (
-          <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} />
+          <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} note={wishNeed(type, item, purse)} />
         ))}
       </FadeScroll>
     </View>
@@ -856,25 +875,9 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
   })
 }
 
-export function ShopScreen({ book, onChange }) {
-  const colors = useShopColors(book)
-  const prefs = usePrefs()
-  const purse = normalizePurse(book)
-  const coat = activeLook(book)
-  const slides = dropSlides()
-  const accessoryList = accessoriesForSale(boardDate(new Date()))
-  const rows = [
-    { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
-    { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
-    { type: 'buddy', list: BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
-    { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
-  ]
-  // Nothing left to buy anywhere: one line, not four empty rows.
-  const ownAll = rows.every((row) => !shopRow(row.type, row.list, purse).length) && !framesForSaleCount(book)
-  const lookCount = purse.looks.length
-  const cheerCount = purse.cheers.length
-  const buddyCount = purse.buddies.length
-
+// A shop tile's tap: its sheet with Buy or Use and the wishlist heart. The
+// shop and Collection's wishlist share it.
+function useTileTap(book, onChange, colors, coat, purse) {
   // The preview already shows the price, so its Buy is the confirm step.
   function done(type, item, next, bought) {
     if (shortOnGems(next, colors)) return
@@ -1002,14 +1005,36 @@ export function ShopScreen({ book, onChange }) {
     openTilePreview(type, item, purse, colors, coat, tileAction(type, item), '', wishFor(type, item))
   }
 
+  return onTile
+}
+
+export function ShopScreen({ book, onChange }) {
+  const colors = useShopColors(book)
+  const prefs = usePrefs()
+  const purse = normalizePurse(book)
+  const coat = activeLook(book)
+  const slides = dropSlides()
+  const accessoryList = accessoriesForSale(boardDate(new Date()))
+  const rows = [
+    { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
+    { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
+    { type: 'buddy', list: SHOP_BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
+    { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
+  ]
+  // Nothing left to buy anywhere: one line, not four empty rows.
+  const ownAll = rows.every((row) => !shopRow(row.type, row.list, purse).length) && !framesForSaleCount(book)
+  const lookCount = purse.looks.length
+  const cheerCount = purse.cheers.length
+  const buddyCount = purse.buddies.length
+
+  const onTile = useTileTap(book, onChange, colors, coat, purse)
+
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.hubHint')}</Meta>
       {purse.coins < 15 && purse.gems < 2 ? (
         <Meta colors={colors}>{t('shop.howEarn', { cap: NIGHT_COIN_CAP })}</Meta>
       ) : null}
-
-      <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
       <DropCarousel
         slides={slides}
@@ -1032,6 +1057,8 @@ export function ShopScreen({ book, onChange }) {
           )
         }}
       />
+
+      <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
       {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
       {rows.map((row) => (
@@ -1314,7 +1341,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
 
-      {ownedLast('buddy', BUDDIES, purse).map((item) => {
+      {ownedLast('buddy', SHOP_BUDDIES, purse).map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
         const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
@@ -1877,6 +1904,7 @@ const KIT_TABS = [
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
   { id: 'accessories', key: 'shop.accessories' },
+  { id: 'wish', key: 'shop.wishTab' },
 ]
 
 function WornBadge({ colors }) {
@@ -1925,6 +1953,8 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
+  const wished = wishRows(purse)
+  const onWish = useTileTap(book, onChange, colors, coat, purse)
 
   function wearOn(next, name) {
     onChange(next.book)
@@ -1954,7 +1984,9 @@ export function CollectionScreen({ book, onChange, startTab }) {
           ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
           : tab === 'frames'
             ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
-            : t('kit.wearing', { names: wornNames.length ? wornNames.join(', ') : none })
+            : tab === 'wish'
+              ? t('shop.wishTitle')
+              : t('kit.wearing', { names: wornNames.length ? wornNames.join(', ') : none })
 
   // One tile per kind: what you wear in it and how many you own. A tap
   // shows that kind below, so nothing is hidden behind a scrolling row.
@@ -1966,6 +1998,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
     cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
     buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
     accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
+    wish: { art: <Text style={[styles.kindHeart, { color: colors.on }]}>♥</Text>, count: t('kit.wishN', { n: wished.length }) },
   }
 
   return (
@@ -1981,7 +2014,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               key={item.id}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${t(item.key)}, ${t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
+              accessibilityLabel={`${t(item.key)}, ${kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
               onPress={() => setTab(item.id)}
               style={({ pressed }) => [
                 styles.kindTile,
@@ -1993,7 +2026,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               <View style={styles.kindCopy}>
                 <Text style={[styles.kindName, { color: on ? colors.on : colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
                 <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
-                  {t('kit.ownedOf', { n: kind.n, of: kind.of })}
+                  {kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}
                 </Text>
               </View>
             </Pressable>
@@ -2002,6 +2035,25 @@ export function CollectionScreen({ book, onChange, startTab }) {
       </View>
       <Reveal key={tab}>
       <Text style={[styles.kitWearing, { color: colors.ink }]}>{wearingLine}</Text>
+
+      {tab === 'wish' ? (
+        wished.length ? (
+          <View style={styles.wishGrid}>
+            {wished.map(({ type, item }) => (
+              <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} colors={colors} onTile={onWish} style={styles.wishTile} note={wishNeed(type, item, purse)} />
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+            <View style={styles.kitEmpty}>
+              <Meta colors={colors}>{t('kit.wishEmpty')}</Meta>
+              <Pressable accessibilityRole="link" onPress={() => goHash('/shop')} hitSlop={8} style={styles.dropLink}>
+                <Text style={[styles.promoAll, { color: colors.on }]}>{t('help.shopGo')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )
+      ) : null}
 
       {tab === 'frames' ? <FramePreviewCard lookId={purse.lookOn} frameId={frameInfo.worn} buddyId={purse.buddyOn} /> : null}
       {tab === 'frames' ? <FramesCollection book={book} colors={colors} onChange={onChange} /> : null}
@@ -2393,6 +2445,10 @@ const styles = StyleSheet.create({
   lookStageWas: { position: 'absolute', left: 0, right: 0, top: 0 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12 },
+  tileNote: { fontFamily: fonts.ui, fontSize: 11, textAlign: 'center' },
+  wishGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  wishTile: { width: '31%' },
+  kindHeart: { fontSize: 22 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   promoAll: { fontFamily: fonts.uiSemi, fontSize: 13 },
 

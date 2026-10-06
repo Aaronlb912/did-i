@@ -653,7 +653,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
           ) : null}
           {wish ? (
-            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(wish.key, { n: wish.n, name: t(wish.nameKey) })}</Text>
+            <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+                {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
+              </Text>
+            </Pressable>
           ) : null}
           {signInNudge && !nightOne ? (
             <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>
@@ -806,6 +810,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         frame={cardFrame}
       >
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
+        {/* A not yet still takes a swipe right to Did (late); say where it stands. */}
+        {status === 'skip' ? (
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{`${pillStatusLabel(status)} · ${t('tonight.nopedChange', { time: clockWords('09:00') })}`}</Text>
+        ) : null}
         {pillHistory ? (
           <NightStrip
             book={pillBook}

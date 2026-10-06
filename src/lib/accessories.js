@@ -23,6 +23,8 @@ const AT = {
   frog: { ex: [16, 32], ey: 19, er: 5.4, crown: 16, neck: 38, side: 15, hat: { y: 13.2, scale: 1.3 } },
   penguin: { ex: [19.8, 28.2], ey: 26.5, er: 3.5, crown: 17, neck: 36.8, side: 14 },
   fox: { ex: [19.8, 28.2], ey: 27.5, er: 3.5, crown: 18, neck: 37, side: 14 },
+  // The bee's antennae stand tall, so head items sit up between their tips.
+  hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
 }
 
 const INK = '#2d241c'

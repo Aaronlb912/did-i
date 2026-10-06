@@ -5,6 +5,8 @@ import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import {
+  INVITE_BUDDY_AT,
+  INVITE_FRAME_AT,
   INVITE_GEMS_CAP,
   INVITE_LOOK_AT,
   invitePayoutNote,
@@ -14,7 +16,7 @@ import {
 } from './people.js'
 import { applyInvitePayout } from './purse.js'
 import { InviteCodeSection } from './InviteCodeSection.jsx'
-import { InviteRewardBar } from './InviteRewardBar.jsx'
+import { ReferLadder } from './ReferLadder.jsx'
 import { passAlong } from './native.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
@@ -44,8 +46,9 @@ export function PeopleRefer({ book, onChange, now }) {
     setJoined(won.joined)
     const who = await readMine()
     setGemsPaid(Number(who?.invite_gems_paid) || 0)
+    const next = applyInvitePayout(book, won)
+    if (onChange && next !== book) onChange(next)
     if (!won.gems && !won.looks.length) return
-    if (onChange) onChange(applyInvitePayout(book, won))
     setSaid(invitePayoutNote(won))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account.user])
@@ -93,7 +96,7 @@ export function PeopleRefer({ book, onChange, now }) {
       <h2 className="di-page-title">{t('people.refer')}</h2>
       <p className="di-set-note">{t('people.referBody')}</p>
 
-      <InviteRewardBar gemsPaid={gemsPaid} joined={joined} />
+      <ReferLadder joined={joined} book={book} />
 
       <SetCap>{t('people.yourCode')}</SetCap>
       <SetCard>
@@ -113,17 +116,9 @@ export function PeopleRefer({ book, onChange, now }) {
               : undefined
           }
         />
-        <SetRow
-          label={t('people.joinedCount', { n: joined })}
-          sub={
-            joined >= INVITE_LOOK_AT
-              ? t('people.lookWon')
-              : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })
-          }
-        />
       </SetCard>
       <p className="di-set-note">
-        {t('people.inviteHint', { max: INVITE_GEMS_CAP, n: INVITE_LOOK_AT })}
+        {t('people.inviteHint', { max: INVITE_GEMS_CAP, n: INVITE_LOOK_AT, buddy: INVITE_BUDDY_AT, frame: INVITE_FRAME_AT })}
       </p>
 
       <InviteCodeSection book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
