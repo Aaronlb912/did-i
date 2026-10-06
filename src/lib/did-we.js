@@ -70,10 +70,17 @@ async function saveExtras(db, card, { askAfter, remind, note }) {
 }
 
 // alone: make it with nobody asked yet, to share as a link.
+// A Did we reads as a question, like Did I: add the "?" if it is missing.
+export function weQuestion(raw) {
+  const text = String(raw || '').trim()
+  if (!text || /[?？]$/.test(text)) return text
+  return `${text.slice(0, 199)}?`
+}
+
 export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics, alone = false }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const text = String(question || '').trim()
+  const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
   if (!ask?.length && !alone) return { miss: 'we.missNobody' }
   const { data, error } = await db.rpc('we_make', {
@@ -94,7 +101,7 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
 export async function weEdit(card, { question, mode, shows, cadence, weekdays, goal, askAfter, remind, note }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const text = String(question || '').trim()
+  const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
   if (cadence === 'weekly' && !(weekdays || []).length) return { miss: 'we.missDays' }
   const { error } = await db.rpc('we_edit', {

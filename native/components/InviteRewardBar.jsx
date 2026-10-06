@@ -9,7 +9,7 @@ export function InviteRewardBar({ colors, gemsPaid = 0, joined = 0 }) {
   const note = prog.full
     ? t('people.inviteGemFull', { max: prog.cap })
     : next > 0
-      ? t('people.inviteGemNext', { gems: next })
+      ? next === 1 ? t('people.inviteGemNextOne') : t('people.inviteGemNext', { gems: next })
       : t('people.inviteGemWait')
 
   return (
