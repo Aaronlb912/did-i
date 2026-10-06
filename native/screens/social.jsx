@@ -375,9 +375,11 @@ function keepSentHidden(uid, list) {
   }
 }
 
-function sentState(state) {
+function sentState(state, name) {
   if (state === 'kept') return t('sent.kept')
   if (state === 'passed') return t('sent.passed')
+  // On a friend's own page the line has no "To {name}" before it, so it names them.
+  if (name !== undefined) return name ? t('sent.waitingName', { name }) : t('sent.waitingNone')
   return t('sent.waiting')
 }
 
@@ -592,7 +594,7 @@ function FriendConfirm({ ask, colors, onDone }) {
         <Avatar person={found.person} colors={colors} size={52} />
         <View style={styles.confirmCopy}>
           <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{name}</Text>
-          <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatFriendId(found.code)}</Text>
+          <Text style={[styles.friendId, styles.friendIdSmall, { color: colors.inkDim }]}>{formatFriendId(found.code)}</Text>
         </View>
       </View>
       <Text style={[styles.confirmLine, { color: colors.inkSoft }]}>{line}</Text>
@@ -934,10 +936,13 @@ export function PeopleScreen({ book, onChange }) {
       <Row
         colors={colors}
         label={t('friendId.yours')}
-        note={mine?.friend_id ? formatFriendId(mine.friend_id) : t('friendId.shareSub')}
+        note={mine?.friend_id ? undefined : t('friendId.shareSub')}
         // With an ID, Copy and Share sit inside this card; without one, go get it.
         onPress={mine?.friend_id ? undefined : () => goHash('/people/connect')}
       >
+      {mine?.friend_id ? (
+        <Text selectable style={[styles.friendId, { color: colors.ink }]}>{formatFriendId(mine.friend_id)}</Text>
+      ) : null}
       {mine?.friend_id ? (
         <View style={styles.idButtons}>
           <KeyButton
@@ -2085,7 +2090,7 @@ export function FriendScreen({ book, onChange, route }) {
             key={send.id}
             colors={colors}
             title={askShown(send.question)}
-            note={[repeatLabel(send.repeat), sentState(send.state)].filter(Boolean).join(' · ')}
+            note={[repeatLabel(send.repeat), sentState(send.state, personName(person) || '')].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
               <KeyButton
@@ -2647,6 +2652,7 @@ const styles = StyleSheet.create({
   bigPhoto: { width: 280, height: 280, borderRadius: 140 },
   qrBox: { alignSelf: 'stretch', alignItems: 'center', gap: 8, paddingVertical: 8 },
   friendId: { fontFamily: fonts.mono, fontSize: 22, letterSpacing: 1 },
+  friendIdSmall: { fontSize: 15 },
   glance: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 10 },
   strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
   stripItem: { width: 64, alignItems: 'center', gap: 4 },

@@ -174,7 +174,7 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children, l
 
 // A gift preview is someone else's card, so it never shows your own questions.
 function sampleFor(cap) {
-  return cap ? { question: t('shop.buddyPreviewQ'), tag: t('shop.buddyPreviewTag') } : previewSample()
+  return cap ? { question: t('shop.buddyPreviewQ'), tag: t('tags.general') } : previewSample()
 }
 
 // Collection draws the frame you wear around every preview, like your Home card.
@@ -465,7 +465,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
               accessibilityRole="button"
               accessibilityLabel={t('shop.slideN', { n: i + 1, total: slides.length })}
               accessibilityState={{ selected: i === at }}
-              hitSlop={10}
+              style={styles.dotHit}
               onPress={() => {
                 setAt(i)
                 pager.current?.scrollToOffset({ offset: i * width, animated: !motionOff() })
@@ -2371,7 +2371,9 @@ const styles = StyleSheet.create({
   // Top-aligned, so every page's tiles start at the same height.
   slideGrid: { flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap: 8 },
   slideTile: { width: '31%', flexGrow: 1 },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  // Each dot owns a 44pt box of its own (not hitSlop, which reached into the tiles above).
+  dots: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  dotHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   rowScroll: { gap: 8, paddingRight: 4 },
   rowTile: { width: 104 },
@@ -2562,7 +2564,7 @@ export function GiftScreen({ book, onChange, toId }) {
       preview: giftArt(type, item.id, colors, coat, BARE, t('gift.preview')),
       kicker: t('gift.kicker', { name }),
       title: tileName(type, item.id),
-      body: short ? `${cost}\n${need}` : miss || `${cost}\n${t('gift.howItWorks')}`,
+      body: short ? `${cost}\n${need}` : miss || `${cost}\n${leftAfter(purse, item)} ${t('gift.howItWorks')}`,
       quote: note.trim(),
       goLabel: t('gift.send'),
       goDisabled: short,

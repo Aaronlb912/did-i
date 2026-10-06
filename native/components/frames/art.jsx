@@ -768,8 +768,8 @@ function FirefliesOver({ f }) {
       <S.Svg width={f.w} height={f.h}>
         {spots.map(([x, y], i) => (
           <S.G key={i}>
-            <S.Circle cx={x * f.w} cy={y * f.h} r={16} fill="#e8ff8c" fillOpacity={0.3} />
-            <S.Circle cx={x * f.w} cy={y * f.h} r={8} fill="#faffd2" />
+            <S.Circle cx={x * f.w} cy={y * f.h} r={16} fill={f.c.glow} fillOpacity={0.3} />
+            <S.Circle cx={x * f.w} cy={y * f.h} r={8} fill={f.c.spark} />
           </S.G>
         ))}
       </S.Svg>
@@ -780,12 +780,12 @@ function FirefliesOver({ f }) {
       <S.Svg width={28} height={28}>
         <S.Defs>
           <S.RadialGradient id="ff">
-            <S.Stop offset="0" stopColor="#e8ff8c" stopOpacity="1" />
-            <S.Stop offset="1" stopColor="#e8ff8c" stopOpacity="0" />
+            <S.Stop offset="0" stopColor={f.c.glow} stopOpacity="1" />
+            <S.Stop offset="1" stopColor={f.c.glow} stopOpacity="0" />
           </S.RadialGradient>
         </S.Defs>
         <S.Circle cx={14} cy={14} r={14} fill="url(#ff)" />
-        <S.Circle cx={14} cy={14} r={it.r} fill="#faffd2" />
+        <S.Circle cx={14} cy={14} r={it.r} fill={f.c.spark} />
       </S.Svg>
     </Particle>
   ))
@@ -873,8 +873,8 @@ function ConstOver({ f }) {
   return (
     <>
       <Layer f={f}>
-        <Ring f={f} k={0.5} color="rgba(170,200,255,0.4)" width={1} />
-        <S.Path d={line} fill="none" stroke={f.c.sky} strokeOpacity={0.18} strokeWidth={1} />
+        <Ring f={f} k={0.5} color={f.c.light ? f.c.sky : 'rgba(170,200,255,0.4)'} width={1} />
+        <S.Path d={line} fill="none" stroke={f.c.sky} strokeOpacity={f.c.lineOpacity} strokeWidth={1} />
       </Layer>
       {stars.map((s, i) => (
         <Particle key={i} clock={f.clock} item={s} fn={twinkleAt} w={f.w} h={f.h} size={14}>
