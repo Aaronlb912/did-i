@@ -44,7 +44,7 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
+import { FREEZE_MAX, freezeState, hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
@@ -597,6 +597,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const strip = weekStripNights(shelf, clock, tagId)
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
+  const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
   const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
 
   function cellColor(state) {
@@ -604,6 +605,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
     if (state === 'hole') return colors.miss
+    if (state === 'freeze') return colors.freeze
     return colors.open
   }
 
@@ -643,6 +645,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['late', t('later.late')],
     ['skip', t('later.nope')],
     ['hole', t('later.missed')],
+    ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
   ]
 
   return (
@@ -672,7 +675,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
                 </Text>
                 <Text style={[styles.weekDay, { color: colors.inkSoft }]}>{night.dayNum}</Text>
                 {/* Cleared nights get a dot under the date, the same rule as Home. */}
-                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : 'transparent' }]} />
+                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : frozen.has(night.iso) ? colors.freeze : 'transparent' }]} />
               </Pressable>
             ))}
           </View>
@@ -721,6 +724,8 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const clock = now || new Date()
   const books = scopedBooks(inView(book, boards), tagId)
   const heat = books.length ? shelfStreak(books, clock) : 0
+  // Freezes belong to the overall streak, whatever tag is picked.
+  const freezes = freezeState(inView(book, boards), clock)
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
@@ -737,6 +742,9 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         label={t('streaks.aria')}
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
+      <Meta colors={colors}>
+        {`${t('freeze.held', { n: freezes.held, max: FREEZE_MAX })}\n${t('freeze.how')}`}
+      </Meta>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (

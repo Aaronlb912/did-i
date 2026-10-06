@@ -1,4 +1,4 @@
-import { hallHeat, shelfStreak } from './hall-feel.js'
+import { freezeState, hallHeat, shelfStreak } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -88,6 +88,16 @@ function startNight(book) {
   return first
 }
 
+// A missed night a freeze covered reads as freeze, not missed. Freezes keep
+// the overall streak only, so with a tag picked there are none.
+function withFreeze(marks, iso, frozen) {
+  return marks.miss && frozen?.has(iso) ? { ...marks, miss: false, freeze: true } : marks
+}
+
+function frozenFor(boards, now, tagId) {
+  return tagId ? null : freezeState(boards, now).frozen
+}
+
 function nightMarks(books, iso, today, tagId = '') {
   // Future nights and nights before you started stay blank.
   if (iso > today) return { due: 0, on: false, miss: false, empty: true }
@@ -147,6 +157,7 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   if (we.due && !we.clear) out.weOpen = weOpenIds(iso, tagId)
   if (!due) return out
   const clear = !out.noped.length && !out.unanswered.length && !out.weOpen.length
+  if (!clear && iso < today && frozenFor(boards, now, tagId)?.has(iso)) return { ...out, state: 'freeze' }
   return { ...out, state: clear ? 'clear' : iso < today ? 'missed' : 'open' }
 }
 
@@ -205,10 +216,11 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
   const end = addDaysIso(today, weekShift * 7)
+  const frozen = frozenFor(boards, now, tagId)
   const nights = []
   for (let i = 6; i >= 0; i -= 1) {
     const iso = addDaysIso(end, -i)
-    const marks = nightMarks(books, iso, today, tagId)
+    const marks = withFreeze(nightMarks(books, iso, today, tagId), iso, frozen)
     nights.push({
       iso,
       weekday: weekdayShort(iso),
@@ -228,6 +240,7 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
   const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
   const pad = start.getDay()
   const last = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+  const frozen = frozenFor(boards, now, tagId)
   const nights = []
   for (let i = 0; i < pad; i += 1) {
     nights.push({
@@ -247,7 +260,7 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
       pad: false,
       dayNum: String(day),
       isToday: iso === today,
-      ...nightMarks(books, iso, today, tagId),
+      ...withFreeze(nightMarks(books, iso, today, tagId), iso, frozen),
     })
   }
   while (nights.length % 7 !== 0) {

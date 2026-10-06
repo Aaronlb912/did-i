@@ -138,7 +138,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
                   style={[
                     styles.pip,
                     {
-                      backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                      backgroundColor: night.on ? colors.on : night.freeze ? colors.freeze : night.miss ? colors.miss : colors.open,
                     },
                   ]}
                 />

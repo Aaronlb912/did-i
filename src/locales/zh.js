@@ -2659,4 +2659,10 @@ export const zh = {
   'cal.viewYear': "年",
   'cal.prevYear': "上一年",
   'cal.nextYear': "下一年",
+  // r10-answer
+  'freeze.dot': "冻结",
+  'freeze.held': "冻结：{n} / {max}",
+  'freeze.how': "每连续 14 晚可获得一次冻结。错过一晚时，它会保住你的连续记录。",
+  'why.freeze': "一次冻结保住了你的连续记录。",
+  'noteAnswer.notSaved': "回答没有保存。这一晚可能已结束，或已经回答过。",
 }

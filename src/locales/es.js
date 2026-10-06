@@ -2743,4 +2743,10 @@ export const es = {
   'cal.viewYear': "Año",
   'cal.prevYear': "Año anterior",
   'cal.nextYear': "Año siguiente",
+  // r10-answer
+  'freeze.dot': "Congelador",
+  'freeze.held': "Congeladores: {n} de {max}",
+  'freeze.how': "Cada 14 noches seguidas ganas un congelador. Mantiene tu racha si te pierdes una noche.",
+  'why.freeze': "Un congelador mantuvo tu racha.",
+  'noteAnswer.notSaved': "No se guardó la respuesta. Puede que la noche haya terminado o ya tuviera respuesta.",
 }

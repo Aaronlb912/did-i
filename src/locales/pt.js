@@ -2736,4 +2736,10 @@ export const pt = {
   'cal.viewYear': "Ano",
   'cal.prevYear': "Ano anterior",
   'cal.nextYear': "Ano seguinte",
+  // r10-answer
+  'freeze.dot': "Congelamento",
+  'freeze.held': "Congelamentos: {n} de {max}",
+  'freeze.how': "A cada 14 noites seguidas você ganha um congelamento. Ele mantém sua sequência se você perder uma noite.",
+  'why.freeze': "Um congelamento manteve sua sequência.",
+  'noteAnswer.notSaved': "A resposta não foi salva. A noite pode ter acabado, ou já tinha resposta.",
 }

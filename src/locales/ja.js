@@ -2674,4 +2674,10 @@ export const ja = {
   'cal.viewYear': "年",
   'cal.prevYear': "前の年",
   'cal.nextYear': "次の年",
+  // r10-answer
+  'freeze.dot': "フリーズ",
+  'freeze.held': "フリーズ: {n} / {max}",
+  'freeze.how': "14夜連続ごとにフリーズを1つもらえます。1夜逃しても連続記録を守ります。",
+  'why.freeze': "フリーズが連続記録を守りました。",
+  'noteAnswer.notSaved': "回答は保存されませんでした。その夜は終わったか、すでに回答済みです。",
 }

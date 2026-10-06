@@ -2731,4 +2731,10 @@ export const en = {
   'cal.viewYear': "Year",
   'cal.prevYear': "Earlier year",
   'cal.nextYear': "Later year",
+  // r10-answer
+  'freeze.dot': "Freeze",
+  'freeze.held': "Freezes: {n} of {max}",
+  'freeze.how': "Every 14 nights in a row earns a freeze. It keeps your streak going if you miss a night.",
+  'why.freeze': "A freeze kept your streak.",
+  'noteAnswer.notSaved': "That answer did not save. The night may be over, or it was already answered.",
 }

@@ -48,7 +48,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                    backgroundColor: night.on ? colors.on : night.freeze ? colors.freeze : night.miss ? colors.miss : colors.open,
                     opacity: night.empty ? 0.35 : 1,
                   },
                 ]}

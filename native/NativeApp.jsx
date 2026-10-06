@@ -79,16 +79,17 @@ export function NativeApp() {
         onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : ''),
         // Keep or Pass on a friend's did you: the inbox answers it.
         onSend: (sendId, keep) => goHash('/inbox', { id: `${keep ? 'keep' : 'pass'}:${sendId}` }),
-        // Did or Nope from a reminder: saved the same way as a widget tap.
-        onAnswer: (lampId, kind, night) => {
-          const shelf = applyWidgetTapOnce(lampId, kind, night)
+        // Did or Nope from a reminder: saved the same way as a widget tap,
+        // without opening Tonight. A night that has turned or an answer that
+        // is already set (the undo and lock rules) is not changed.
+        onAnswer: (lampId, kind, night, at) => {
+          const shelf = applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())
           if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
-          goHash('/tonight')
+          if (!shelf) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
         },
-        // Did or Nope on a Did we reminder: saved on the server, then Tonight
-        // shows it. A miss (offline, card left) says so there.
+        // Did or Nope on a Did we reminder: saved on the server. A miss
+        // (offline, card left) says so on the next look at the app.
         onWeAnswer: async (cardId, kind, night) => {
-          goHash('/tonight')
           try {
             const { weAnswer } = await import('../src/lib/did-we.js')
             const out = await weAnswer(cardId, kind, night || undefined)

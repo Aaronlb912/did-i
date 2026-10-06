@@ -2750,4 +2750,10 @@ export const fr = {
   'cal.viewYear': "Année",
   'cal.prevYear': "Année précédente",
   'cal.nextYear': "Année suivante",
+  // r10-answer
+  'freeze.dot': "Gel",
+  'freeze.held': "Gels : {n} sur {max}",
+  'freeze.how': "Chaque série de 14 nuits te donne un gel. Il garde ta série si tu manques une nuit.",
+  'why.freeze': "Un gel a gardé ta série.",
+  'noteAnswer.notSaved': "La réponse n'a pas été enregistrée. La nuit est peut-être finie, ou déjà répondue.",
 }

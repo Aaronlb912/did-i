@@ -2675,4 +2675,10 @@ export const ko = {
   'cal.viewYear': "연도",
   'cal.prevYear': "이전 연도",
   'cal.nextYear': "다음 연도",
+  // r10-answer
+  'freeze.dot': "프리즈",
+  'freeze.held': "프리즈: {max}개 중 {n}개",
+  'freeze.how': "14일 밤 연속마다 프리즈를 하나 받아요. 하룻밤을 놓쳐도 연속 기록을 지켜 줘요.",
+  'why.freeze': "프리즈가 연속 기록을 지켰어요.",
+  'noteAnswer.notSaved': "답이 저장되지 않았어요. 그 밤이 끝났거나 이미 답했을 수 있어요.",
 }

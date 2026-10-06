@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
+import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
 import { afterQuiet, pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
@@ -132,7 +133,6 @@ const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
-const ASK_CATEGORY = 'did-i-ask'
 
 // Takes one board or every board on the shelf; each tag's questions ping.
 export async function scheduleNativePings(books, now = new Date()) {
@@ -155,12 +155,9 @@ export async function scheduleNativePings(books, now = new Date()) {
         importance: Notifications.AndroidImportance.HIGH,
       }).catch(() => {})
     }
-    // Did and Nope buttons on a question reminder. Both open the app, which
-    // saves the answer (native/shim/push.js), so it lands even if the app was closed.
-    await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, [
-      { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: true } },
-      { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: true } },
-    ]).catch(() => {})
+    // Did and Nope buttons on a question reminder. They answer without opening
+    // the app (native/shim/push.js saves it like a widget tap).
+    await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, askActions(t)).catch(() => {})
     const when = (at) => ({
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: afterQuiet(at),
@@ -185,7 +182,7 @@ export async function scheduleNativePings(books, now = new Date()) {
             content: {
               title: 'Did I',
               body: row.lamp.question,
-              data: { lampId: row.lamp.id, night: row.periodKey, go: '/tonight' },
+              data: askNoteData(row),
               categoryIdentifier: ASK_CATEGORY,
             },
             trigger: when(at),

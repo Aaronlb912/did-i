@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
+import { notificationAnswer } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -116,12 +117,15 @@ async function bindResponseListener(handlers = {}) {
       const go = data.go ? String(data.go) : ''
       const sendId = data.sendId ? String(data.sendId) : ''
       const action = String(response?.actionIdentifier || '')
+      const answer = notificationAnswer(response)
+      // The buttons do not open the app, so the reminder is cleared here.
+      if (answer?.noteId) Notifications.dismissNotificationAsync?.(answer.noteId)?.catch?.(() => {})
       if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
         handlers.onSend(sendId, action === 'keep')
-      } else if (data.weId && (action === 'did' || action === 'nope') && typeof handlers.onWeAnswer === 'function') {
-        handlers.onWeAnswer(String(data.weId), action, data.night ? String(data.night) : '')
-      } else if (lampId && (action === 'did' || action === 'nope') && typeof handlers.onAnswer === 'function') {
-        handlers.onAnswer(lampId, action, data.night ? String(data.night) : '')
+      } else if (answer?.kind === 'we' && typeof handlers.onWeAnswer === 'function') {
+        handlers.onWeAnswer(answer.id, answer.action, answer.night)
+      } else if (answer?.kind === 'lamp' && typeof handlers.onAnswer === 'function') {
+        handlers.onAnswer(answer.id, answer.action, answer.night, answer.at)
       } else if (lampId && typeof onLamp === 'function') onLamp(lampId)
       else if (go && typeof onGo === 'function') onGo(go)
     }
