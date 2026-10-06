@@ -171,18 +171,37 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children, l
   )
 }
 
+// A gift preview is someone else's card, so it never shows your own questions.
+function sampleFor(cap) {
+  return cap ? { question: t('shop.buddyPreviewQ'), tag: t('shop.buddyPreviewTag') } : previewSample()
+}
+
+// Collection draws the frame you wear around every preview, like your Home card.
+function WornFrame({ frameId, colors, children }) {
+  const active = useFrameActive(useIsFocused())
+  if (!frameId) return children
+  return (
+    <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={7} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
+      {children}
+    </CardFrame>
+  )
+}
+
 // cap: the label over the card ("On their card" for a gift).
 // room: Collection's padded box, so every tab's preview is the same size.
-function BuddyPreviewCard({ id, colors, cap, room }) {
+function BuddyPreviewCard({ id, colors, cap, room, frameId }) {
+  const sample = sampleFor(cap)
   return (
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
       <View style={room ? styles.kitPreviewRoom : null}>
+        <WornFrame frameId={frameId} colors={colors}>
         <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
           <BuddyHang id={id} alive />
-          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
         </View>
+        </WornFrame>
       </View>
     </View>
   )
@@ -190,7 +209,8 @@ function BuddyPreviewCard({ id, colors, cap, room }) {
 
 // A look shown in its own colours, not the page's ambient ones, so it reads
 // true whether the page is peeking a coin look or a gem look.
-function LookPreviewCard({ id, cap, room }) {
+function LookPreviewCard({ id, cap, room, frameId }) {
+  const sample = sampleFor(cap)
   const theme = useTheme()
   const colors = useLookColors(id)
   const gemCard = gemPanelStyle(id, theme)
@@ -198,6 +218,7 @@ function LookPreviewCard({ id, cap, room }) {
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
       <View style={room ? styles.kitPreviewRoom : null}>
+      <WornFrame frameId={frameId} colors={colors}>
       <View style={[styles.buddyPreviewGlow, gemGlowHostStyle(id, theme)]}>
         <View
           style={[
@@ -207,10 +228,11 @@ function LookPreviewCard({ id, cap, room }) {
             gemCard,
           ]}
         >
-          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
         </View>
       </View>
+      </WornFrame>
       </View>
     </View>
   )
@@ -371,7 +393,17 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
           horizontal
           pagingEnabled
           nestedScrollEnabled
+          directionalLockEnabled
+          decelerationRate="fast"
+          disableIntervalMomentum
+          snapToInterval={width}
+          snapToAlignment="start"
           showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={32}
+          onScroll={(e) => {
+            const n = Math.round(e.nativeEvent.contentOffset.x / width)
+            if (n !== at) setAt(n)
+          }}
           onMomentumScrollEnd={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / width))}
         >
           {slides.map((slide, i) => {
@@ -386,7 +418,8 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
                   { width, borderColor: coming ? colors.on : colors.line, backgroundColor: colors.panel },
                 ]}
               >
-                {head.kicker ? <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker}</Text> : null}
+                {/* Every page keeps the kicker line, so a short page has no gap at the bottom. */}
+                <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker || ' '}</Text>
                 <Text style={[styles.slideTitle, { color: colors.ink }]}>{head.title}</Text>
                 <View style={styles.slideGrid}>
                   {slide.items.map(({ type, item }) => (
@@ -796,7 +829,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     preview,
     title: name,
     body,
-    ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, onMore: wish.toggle } : {}),
+    ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
     ...(short
       ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish)) }
       : {}),
@@ -1326,18 +1359,21 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
 // Your buddy (or the ant, if none is on) with what it has on, plus the item
 // being looked at, so you see the whole outfit before buying.
-function AccessoryPreviewCard({ id, purse, colors, cap, room }) {
+function AccessoryPreviewCard({ id, purse, colors, cap, room, frameId }) {
+  const sample = sampleFor(cap)
   const item = accessoryById(id)
   const worn = item ? { ...purse.worn, [item.slot]: id } : purse.worn
   return (
     <View style={styles.buddyPreview}>
       {cap || room ? <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap> : null}
       <View style={room ? styles.kitPreviewRoom : null}>
+        <WornFrame frameId={frameId} colors={colors}>
         <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
           <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
-          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
         </View>
+        </WornFrame>
       </View>
     </View>
   )
@@ -1914,7 +1950,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
   const kinds = {
     looks: { art: <LookChip id={purse.lookOn} colors={colors} />, n: looks.length, of: LOOKS.length },
-    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, count: t('shop.ownedN', { n: frameInfo.n }) },
+    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
     cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
     buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
     accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
@@ -1933,19 +1969,19 @@ export function CollectionScreen({ book, onChange, startTab }) {
               key={item.id}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${t(item.key)}, ${kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
+              accessibilityLabel={`${t(item.key)}, ${t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
               onPress={() => setTab(item.id)}
               style={({ pressed }) => [
                 styles.kindTile,
-                { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.panel2 : colors.panel },
+                on ? [styles.kindTileOn, { borderColor: colors.on, backgroundColor: colors.panel2 }] : { borderColor: colors.line, backgroundColor: colors.panel },
                 pressFx(pressed),
               ]}
             >
               <View style={styles.kindArt}>{kind.art}</View>
               <View style={styles.kindCopy}>
-                <Text style={[styles.kindName, { color: colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
+                <Text style={[styles.kindName, { color: on ? colors.on : colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
                 <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
-                  {kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}
+                  {t('kit.ownedOf', { n: kind.n, of: kind.of })}
                 </Text>
               </View>
             </Pressable>
@@ -1960,7 +1996,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'looks' ? (
         <>
-        <LookPreviewCard id={purse.lookOn} room />
+        <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {looks.map((item) => (
             <KitTile
@@ -1979,7 +2015,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'buddies' ? (
         <>
-        <BuddyPreviewCard id={purse.buddyOn} colors={colors} room />
+        <BuddyPreviewCard id={purse.buddyOn} colors={colors} room frameId={frameInfo.worn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
@@ -2011,7 +2047,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'accessories' ? (
         <>
-          <AccessoryPreviewCard id="" purse={purse} colors={colors} room />
+          <AccessoryPreviewCard id="" purse={purse} colors={colors} room frameId={frameInfo.worn} />
           {purse.buddyOn ? null : <Meta colors={colors}>{t('kit.accOnAnt')}</Meta>}
           {!accessories.length ? (
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -2055,7 +2091,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'cheers' ? (
         <>
-          <LookPreviewCard id={purse.lookOn} room />
+          <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} />
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {cheers.map((item) => {
               const play = cheerPlayOf(book, item.id)
@@ -2124,6 +2160,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 60,
   },
+  // Selected: a thicker accent border, so a glowing look chip never reads as picked.
+  kindTileOn: { borderWidth: 2, paddingHorizontal: 9, paddingVertical: 7 },
   kindArt: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   kindCopy: { flex: 1, minWidth: 0 },
   kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
@@ -2318,7 +2356,7 @@ const styles = StyleSheet.create({
   slide: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 4 },
   slideKicker: { fontFamily: fonts.uiBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   slideTitle: { fontFamily: fonts.uiBold, fontSize: 20, marginBottom: 6 },
-  slideGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slideGrid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: 8 },
   slideTile: { width: '31%', flexGrow: 1 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4 },

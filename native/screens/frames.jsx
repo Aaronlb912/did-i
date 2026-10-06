@@ -155,7 +155,12 @@ function FrameFacts({ frame, owned, colors }) {
     <View style={styles.facts}>
       {/* "Earn it" is a plain label: nothing to tap, the facts below say how. */}
       {frame.rarity === 'earned' && !owned ? (
-        <Text style={[styles.rarityText, { color: colors.inkSoft }]}>{t('frames.rarity.earnIt')}</Text>
+        <View style={styles.howEarn}>
+          <Text style={[styles.rarityText, { color: colors.inkSoft }]}>{t('frames.rarity.earnIt')}</Text>
+          <Text style={[styles.desc, { color: colors.ink }]}>
+            {frame.earn === 'freeze' ? t('frames.howFreeze') : t('frames.howStreak', { n: frame.need })}
+          </Text>
+        </View>
       ) : (
         <View style={[styles.rarity, { borderColor: colors.on }]}>
           <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
@@ -180,7 +185,10 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
   const owned = framesOwned(purse, ctx).has(id)
   const on = wornFrame(purse, ctx) === id
   const status = frameStatus(frame, purse, ctx)
-  const priceLine = status.coins
+  // The sheet line is a status; how to earn sits once under "How to earn".
+  const priceLine = !owned && frame.earn === 'freeze'
+    ? t('frames.notEarned')
+    : status.coins
     ? t('shop.coins', { n: status.coins })
     : status.gems
       ? t('shop.gems', { n: status.gems })
@@ -468,7 +476,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
   // Room for art that reaches past the card, then clipped so sparks stay in the sheet.
-  sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 36, overflow: 'hidden' },
+  sheetPreview: { width: '100%', alignItems: 'center', paddingTop: 36, paddingBottom: 14, overflow: 'hidden' },
+  howEarn: { gap: 2 },
   sheetFrame: { width: 260 },
   // Extra inner padding keeps corner art (Frost's crystals) off the words.
   miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26 },

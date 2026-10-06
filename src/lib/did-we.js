@@ -563,7 +563,14 @@ export function weCardTitle(id) {
 // The card as a short name, like the Home pill: no "Did we", no "?". Lists
 // that also hold your own questions' short names use this.
 export function weCardShort(id) {
-  return weCardTitle(id).replace(/^did we\s+/i, '').replace(/\?$/, '').trim()
+  return weShort(weCardTitle(id))
+}
+
+// One name per Did we everywhere (pill, Seven nights, night sheet), the same
+// shape as shortLabel for your own: "Did we do X?" reads "Do X".
+export function weShort(question) {
+  const text = String(question || '').replace(/^did we\s+/i, '').replace(/\?+$/, '').trim()
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 export function useWeTonight(user) {

@@ -964,7 +964,7 @@ function WeCardPage({ book, cardId, onChange }) {
               <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={() => ans.answer(early.card, 'nope', early.night)} />
             </View>
             <View style={styles.earlyKey}>
-              <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={() => ans.answer(early.card, 'did', early.night)} />
+              <KeyButton label={t('tonight.answerDid')} colors={colors} onPress={() => ans.answer(early.card, 'did', early.night)} />
             </View>
           </View>
           </>

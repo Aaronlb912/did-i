@@ -16,7 +16,6 @@ import { feelTap } from '../../src/lib/native.js'
 import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { useScreenRoute } from '../navigation/screen-route.js'
 import { goHash } from '../navigation/hash.js'
 import { dropToast, useToastQueue } from '../lib/toast-queue.js'
 import { launchFlight } from './FlyHost.jsx'
@@ -38,12 +37,9 @@ const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
 
-// Home keeps Did and Nope just above the tab bar. Its toast sits at the
-// bottom like everywhere else, lifted over those buttons, so a tap on Undo
-// can't land on Nope and the count at the top stays in view.
-export const HOME_LIFT = 84
-// Room Home clears under its content while a toast shows: the toast (two
-// lines at most) plus a gap, so it never sits on the friends row or a card.
+// Home always keeps this much empty room at its bottom, under Did and Nope,
+// and the toast shows there. It never covers the card or the friends row,
+// and nothing moves when a toast comes or goes.
 export const TOAST_ROOM = 66
 
 /**
@@ -52,9 +48,7 @@ export const TOAST_ROOM = 66
 export function ToastHost({ colors }) {
   const items = useToastQueue()
   const { overlayBottom: tabBottom } = useAppInsets()
-  const homePath = useScreenRoute().path
-  const onHome = homePath === '/tonight' || homePath === '/'
-  const place = { bottom: tabBottom + (onHome ? HOME_LIFT : 0) }
+  const place = { bottom: tabBottom }
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
   const [landed, setLanded] = useState('')

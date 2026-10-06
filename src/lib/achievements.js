@@ -1,6 +1,6 @@
 import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
-import { t } from './i18n.js'
+import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
 import { BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
 import {
@@ -142,7 +142,12 @@ export function markLabel(id, field) {
   const item = BY_ID.get(id)
   if (!item) return ''
   if (item.own) return t(`mark.${id}.${field}`)
-  if (item.group) return t(`ach.${item.group}.${field}`, { n: item.n.toLocaleString() })
+  if (item.group) {
+    // A tier of 1 uses its own words when the plural would read wrong ("1 nights").
+    const one = `ach.${item.group}.${field}One`
+    if (item.n === 1 && hasLocaleKey(one)) return t(one)
+    return t(`ach.${item.group}.${field}`, { n: item.n.toLocaleString() })
+  }
   return t(`ach.${id}.${field}`)
 }
 
