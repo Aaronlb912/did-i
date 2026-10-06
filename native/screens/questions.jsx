@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   AppState,
@@ -167,7 +167,7 @@ function PickBox({ on, colors }) {
         { borderColor: on ? colors.onDeep : colors.inkDim, backgroundColor: on ? colors.on : colors.panel2 },
       ]}
     >
-      {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>✓</Text> : null}
+      {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>âœ“</Text> : null}
     </View>
   )
 }
@@ -227,8 +227,8 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
   if (!items.length) return null
   const head = (
     <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
-      {label} · {items.length}
-      {onToggle ? (open ? '  ▾' : '  ▸') : ''}
+      {label} Â· {items.length}
+      {onToggle ? (open ? '  â–¾' : '  â–¸') : ''}
     </Text>
   )
   return (
@@ -259,7 +259,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
             row.lamp.askAfter ? timeLabel(row.lamp.askAfter) : '',
           ]
             .filter(Boolean)
-            .join(' · ')
+            .join(' Â· ')
           return (
             <Pressable
               key={rowId(row)}
@@ -302,11 +302,11 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               </View>
               {onMove ? (
                 <View style={styles.moveKeys}>
-                  <MoveKey glyph="↑" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
-                  <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
+                  <MoveKey glyph="â†‘" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
+                  <MoveKey glyph="â†“" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
                 </View>
               ) : picking ? null : (
-                <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>
+                <Text style={[styles.lampChev, { color: colors.inkDim }]}>â€º</Text>
               )}
             </Pressable>
           )
@@ -321,7 +321,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
 export function SearchBox({ value, onChange, colors, placeholder = t('questions.searchPh') }) {
   return (
     <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
-      <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
+      <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>âŒ•</Text>
       <AppTextInput
         colors={colors}
         value={value}
@@ -340,7 +340,7 @@ export function SearchBox({ value, onChange, colors, placeholder = t('questions.
           accessibilityLabel={t('questions.searchClear')}
           style={styles.searchClear}
         >
-          <Text style={[styles.searchGlyph, { color: colors.ink }]}>×</Text>
+          <Text style={[styles.searchGlyph, { color: colors.ink }]}>Ã—</Text>
         </Pressable>
       ) : null}
     </View>
@@ -365,7 +365,7 @@ function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
         <Text style={[styles.goLabel, { color: lit ? colors.on : colors.ink }]}>{label}</Text>
         <Text style={[styles.goNote, { color: colors.inkSoft }]}>{note}</Text>
       </View>
-      <Text style={[styles.goChev, { color: colors.inkDim }]}>›</Text>
+      <Text style={[styles.goChev, { color: colors.inkDim }]}>â€º</Text>
     </Pressable>
   )
 }
@@ -736,6 +736,25 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </ScrollView>
           </Reveal>
           </View>
+          {/* Select bar sits in the hidden row's space, right above the list: Never mind, count, Select all. */}
+          {picking ? (
+            <Reveal style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]} accessibilityRole="header">
+              <Pressable accessibilityRole="button" onPress={stopPicking} hitSlop={10} style={styles.modeSide}>
+                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
+              </Pressable>
+              <View style={styles.modeMid}>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.pick')}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.pickedN', { n: chosen.length })}</Text>
+              </View>
+              <View style={[styles.modeSide, styles.modeEnd]}>
+                <KeyButton
+                  colors={colors}
+                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
+                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+                />
+              </View>
+            </Reveal>
+          ) : null}
           </View>
         )}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
@@ -857,42 +876,26 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {/* Room so the floating Select bar never covers the last rows. */}
         {picking ? <View style={styles.pickRoom} /> : null}
       </BoardShell>
-          {/* One pinned mode bar for Select and Reorder: what mode, Never mind, Done. */}
-          {picking || ordering ? (
+          {/* Pinned Reorder bar: Never mind puts the order back, Done keeps it. */}
+          {ordering ? (
             <Reveal
               style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
               accessibilityRole="header"
             >
-              <Pressable
-                accessibilityRole="button"
-                onPress={picking ? stopPicking : cancelOrder}
-                hitSlop={10}
-                style={styles.modeSide}
-              >
+              <Pressable accessibilityRole="button" onPress={cancelOrder} hitSlop={10} style={styles.modeSide}>
                 <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
               </Pressable>
               <View style={styles.modeMid}>
-                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>
-                  {picking ? t('questions.pick') : t('questions.reorder')}
-                </Text>
-                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>
-                  {picking ? t('questions.pickedN', { n: chosen.length }) : t('questions.reorderHint')}
-                </Text>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.reorder')}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.reorderHint')}</Text>
               </View>
               <View style={[styles.modeSide, styles.modeEnd]}>
-                <DidButton label={t('questions.pickDone')} onPress={picking ? stopPicking : () => setOrdering(false)} colors={colors} small />
+                <DidButton label={t('questions.pickDone')} onPress={() => setOrdering(false)} colors={colors} small />
               </View>
             </Reveal>
           ) : null}
           {picking ? (
             <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
-              <View style={styles.pickHead}>
-                <KeyButton
-                  colors={colors}
-                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
-                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
-                />
-              </View>
               <View style={styles.pickActions}>
                 <KeyButton
                   colors={colors}
@@ -1498,7 +1501,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     hang.priority === 'high' ? t('hang.metaHigh') : '',
   ]
     .filter(Boolean)
-    .join(' · ')
+    .join(' Â· ')
 
   return (
     <>
@@ -1912,7 +1915,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
     priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp, true),
     t(`hang.priority.${priority}`),
-  ].join(' · ')
+  ].join(' Â· ')
 
   return (
     <BoardShell book={lampBook} title={t('lamp.kicker')} noTitle date={shellDate(lampBook, clock)} colors={colors}>
@@ -2011,7 +2014,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         >
           <View style={styles.summaryRow}>
             <Text style={[styles.summary, styles.summaryText, { color: colors.ink }]}>{summary}</Text>
-            <Text style={[styles.summaryChev, { color: colors.inkDim }]}>›</Text>
+            <Text style={[styles.summaryChev, { color: colors.inkDim }]}>â€º</Text>
           </View>
           <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
             {`${t('hang.tag')}: ${lampBook.title}`}
@@ -2065,7 +2068,7 @@ const styles = StyleSheet.create({
   moveGlyph: { fontFamily: fonts.uiBold, fontSize: 16 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
-  pickRoom: { height: 140 },
+  pickRoom: { height: 90 },
   modeBar: {
     position: 'absolute',
     left: 12,
@@ -2108,7 +2111,6 @@ const styles = StyleSheet.create({
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
   reorderTimed: { fontFamily: fonts.ui, fontSize: 13, marginTop: 6 },
-  pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickCount: { fontFamily: fonts.uiBold, fontSize: 15, flexGrow: 1 },
   pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pickBox: {
