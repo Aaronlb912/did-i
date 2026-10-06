@@ -285,6 +285,7 @@ function TileArt({ type, id, colors, buddy = '' }) {
   if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} tone={colors.on} />
   if (type === 'look') return <LookChip id={id} colors={colors} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
+  if (type === 'frame') return <FramePreview id={id} colors={colors} size={40} />
   return <BuddyChip id={id} alive />
 }
 
@@ -292,6 +293,7 @@ function tileName(type, id) {
   if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
+  if (type === 'frame') return t(frameText(id, 'name'))
   return t(buddyText(id, 'name'))
 }
 
@@ -2357,12 +2359,13 @@ const styles = StyleSheet.create({
 
 // Gifts ------------------------------------------------------------------
 
-const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [] }
+const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [], frames: [] }
 const GIFT_TABS = [
   { id: 'looks', type: 'look', key: 'shop.looks' },
   { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
   { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
   { id: 'accessories', type: 'accessory', key: 'shop.accessories' },
+  { id: 'frames', type: 'frame', key: 'frames.title' },
 ]
 
 // Nobody's outfit: a gift's accessory shows on the ant, alone.
@@ -2372,6 +2375,7 @@ function giftArt(type, id, colors, coat, purse = BARE) {
   if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} />
   if (type === 'cheer') return <CheerSheetPreview id={id} coat={coat} colors={colors} />
   if (type === 'look') return <LookPreviewCard id={id} />
+  if (type === 'frame') return <FramePreview id={id} colors={colors} size={120} />
   return <BuddyPreviewCard id={id} colors={colors} />
 }
 
@@ -2383,7 +2387,7 @@ function giftMiss(why) {
   return tMiss(why)
 }
 
-// Send a look, cheer or buddy to a friend or family member (/gift?id=...).
+// Send a look, cheer, buddy, accessory or gem frame to a friend or family member (/gift?id=...).
 // The server takes the gems or coins; they get it next time they open the app.
 export function GiftScreen({ book, onChange, toId }) {
   const account = useAccount()

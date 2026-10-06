@@ -2743,6 +2743,7 @@ export const de = {
   'friend.noCheersLeft': 'Kein Jubel übrig',
   'friend.getMoreCheers': 'Mehr holen',
   'friend.weekA11y': '{name} hat {n} der letzten 7 Nächte geschafft',
+  'friend.cardA11y': 'Karte von {name}',
   // r10-merged
   'questions.earlier': "Früher",
   'we.details': "Einzelheiten",

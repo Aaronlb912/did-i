@@ -9,6 +9,7 @@ import { activeLook } from './active-look.js'
 import { CoinIcon, GemIcon } from './PurseIcons.jsx'
 import { LookPreviewCard, ShopDoor, ShopPurse } from './shop-bits.jsx'
 import { t } from './i18n.js'
+import { frameText } from './frames.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import {
@@ -30,6 +31,8 @@ export function tileChip(type, id, buddy = '') {
   if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} />
   if (type === 'look') return <LookChip id={id} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} />
+  // The web has no frame art yet; a gifted frame shows by name.
+  if (type === 'frame') return null
   return <BuddyChip id={id} />
 }
 
@@ -37,6 +40,7 @@ export function tileName(type, id) {
   if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
+  if (type === 'frame') return t(frameText(id, 'name'))
   return t(buddyText(id, 'name'))
 }
 

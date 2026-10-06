@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppState, StyleSheet } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
+import { requireOptionalNativeModule } from 'expo'
 import { useReduceMotion } from '../../../src/lib/useReduceMotion.js'
 
 const Animated = Reanimated.default || Reanimated.Animated
@@ -55,13 +56,56 @@ export function noteFrameTouch() {
   for (const fn of listeners) fn()
 }
 
+let batteryCache
+
+// expo-battery, or null. A binary without the native module (before 1.3.1)
+// never loads it, and reads as not low power.
+function battery() {
+  if (batteryCache !== undefined) return batteryCache
+  try {
+    batteryCache = requireOptionalNativeModule('ExpoBattery') ? require('expo-battery') : null
+  } catch {
+    batteryCache = null
+  }
+  return batteryCache
+}
+
+/** True while the phone is in low power mode. False when it cannot tell. */
+export function useLowPowerMode() {
+  const [low, setLow] = useState(false)
+  useEffect(() => {
+    const mod = battery()
+    if (!mod) return undefined
+    let alive = true
+    let sub
+    try {
+      Promise.resolve(mod.isLowPowerModeEnabledAsync())
+        .then((on) => alive && setLow(Boolean(on)))
+        .catch(() => {})
+      sub = mod.addLowPowerModeListener((e) => setLow(Boolean(e?.lowPowerMode)))
+    } catch {
+      setLow(false)
+    }
+    return () => {
+      alive = false
+      try {
+        sub?.remove()
+      } catch {
+        // already gone
+      }
+    }
+  }, [])
+  return low
+}
+
 /**
  * True only when the screen is focused, the app is in front, motion is
- * allowed (OS setting and the app's Less motion), and there was a touch in
- * the last 25 s. Low power mode is not read: expo-battery is not installed.
+ * allowed (OS setting and the app's Less motion), the phone is not in low
+ * power mode, and there was a touch in the last 25 s.
  */
 export function useFrameActive(focused = true) {
   const reduce = useReduceMotion()
+  const lowPower = useLowPowerMode()
   const [appActive, setAppActive] = useState(() => AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
   const [awake, setAwake] = useState(() => Date.now() - lastTouch < IDLE_MS)
 
@@ -70,7 +114,7 @@ export function useFrameActive(focused = true) {
     return () => sub.remove()
   }, [])
 
-  const want = Boolean(focused) && appActive && !reduce
+  const want = Boolean(focused) && appActive && !reduce && !lowPower
 
   useEffect(() => {
     if (!want) return undefined

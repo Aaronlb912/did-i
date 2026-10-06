@@ -2724,6 +2724,7 @@ export const it = {
   'friend.noCheersLeft': 'Nessun incitamento rimasto',
   'friend.getMoreCheers': 'Prendine altri',
   'friend.weekA11y': '{name} ha finito {n} delle ultime 7 notti',
+  'friend.cardA11y': 'Carta di {name}',
   // r10-merged
   'questions.earlier': "Prima",
   'we.details': "Dettagli",

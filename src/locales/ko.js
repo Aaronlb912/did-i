@@ -2664,6 +2664,7 @@ export const ko = {
   'friend.noCheersLeft': '남은 응원 없음',
   'friend.getMoreCheers': '더 받기',
   'friend.weekA11y': '{name}님은 지난 7일 밤 중 {n}일을 끝냈어요',
+  'friend.cardA11y': '{name}님의 카드',
   // r10-merged
   'questions.earlier': "이전",
   'we.details': "자세히",

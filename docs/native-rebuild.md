@@ -313,6 +313,10 @@ would quietly never apply. The version is a plain string, the same everywhere.
 Expo also refuses runtime policies in a project with a committed `android/`.
 The cost is remembering the bump above.
 
+1.3.1 adds `expo-battery` so card frames pause in low power mode. It goes
+through `native/shim/battery-safe.cjs`, so a binary without the module (an
+old dev client, say) never crashes; it just never pauses for low power.
+
 The first build made after this change is the one that can take updates.
 Builds 55 and older ignore them.
 

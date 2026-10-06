@@ -2663,6 +2663,7 @@ export const ja = {
   'friend.noCheersLeft': '応援の残りなし',
   'friend.getMoreCheers': 'もっと手に入れる',
   'friend.weekA11y': '{name} は直近 7 夜のうち {n} 夜クリア',
+  'friend.cardA11y': '{name} のカード',
   // r10-merged
   'questions.earlier': "以前",
   'we.details': "詳細",

@@ -2648,6 +2648,7 @@ export const zh = {
   'friend.noCheersLeft': '没有加油了',
   'friend.getMoreCheers': '再拿一些',
   'friend.weekA11y': '{name} 最近 7 晚完成了 {n} 晚',
+  'friend.cardA11y': '{name} 的卡片',
   // r10-merged
   'questions.earlier': "更早",
   'we.details': "详情",

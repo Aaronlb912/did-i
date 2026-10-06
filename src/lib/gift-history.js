@@ -9,7 +9,7 @@ export function sentGiftStatus(row) {
   return row.claimed_at ? t('gifts.opened') : t('gifts.waiting')
 }
 
-const GIFT_KINDS = new Set(['look', 'buddy', 'accessory'])
+const GIFT_KINDS = new Set(['look', 'buddy', 'accessory', 'frame'])
 
 // The kind a gift row shows as. Anything unknown (older free cheers) is a cheer.
 export function sentGiftType(row) {
@@ -18,7 +18,7 @@ export function sentGiftType(row) {
 
 // The Collection tab a gift of this kind lands in.
 export function giftTab(type) {
-  return { look: 'looks', buddy: 'buddies', accessory: 'accessories' }[type] || 'cheers'
+  return { look: 'looks', buddy: 'buddies', accessory: 'accessories', frame: 'frames' }[type] || 'cheers'
 }
 
 export function sentGiftDate(row) {

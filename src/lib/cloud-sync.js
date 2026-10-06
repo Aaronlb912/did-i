@@ -26,7 +26,8 @@ import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from '
 import { queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGift } from './purse.js'
+import { applyInvitePayout, mergeGift, mergePurses } from './purse.js'
+import { FRAME_IDS } from './frames.js'
 import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
@@ -189,8 +190,31 @@ async function putPrefs(db, user, shelf) {
     },
     { onConflict: 'user_id' },
   )
-  if (!error) markCleared(db, user, mark)
+  if (!error) {
+    markCleared(db, user, mark)
+    markCard(db, user, doc)
+  }
   return error || null
+}
+
+// The look and frame you wear, for the small card on a friend's page. Its
+// own write, sent only when it changes, so a server without frame_on yet
+// never stops the sync above.
+let cardSent = ''
+function markCard(db, user, shelf) {
+  const purse = mergePurses(shelf?.boards || [])
+  const look = /^[a-z0-9-]{1,24}$/.test(purse.lookOn || '') ? purse.lookOn : 'lime'
+  const frame = FRAME_IDS.has(purse.frame) ? purse.frame : ''
+  const key = `${user.id}:${look}:${frame}`
+  if (key === cardSent) return
+  cardSent = key
+  Promise.resolve(db.from('profiles').update({ look_on: look, frame_on: frame }).eq('user_id', user.id))
+    .then((res) => {
+      if (res?.error) cardSent = ''
+    })
+    .catch(() => {
+      cardSent = ''
+    })
 }
 
 // Tonight cleared or not, for a friend's week. Sent only when it changes.

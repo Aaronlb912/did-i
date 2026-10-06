@@ -2720,6 +2720,7 @@ export const en = {
   'friend.noCheersLeft': 'No cheers left',
   'friend.getMoreCheers': 'Get more',
   'friend.weekA11y': '{name} cleared {n} of the last 7 nights',
+  'friend.cardA11y': '{name}\'s card',
   // r10-merged
   'questions.earlier': "Earlier",
   'we.details': "Details",

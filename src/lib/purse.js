@@ -1,7 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { normalizeFrames, normalizeWornFrame } from './frames.js'
+import { FRAMES, FRAME_IDS, normalizeFrames, normalizeWornFrame } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -172,7 +172,8 @@ export function shopTag(purse, type, item) {
     (type === 'look' && purse.looks.includes(item.id)) ||
     (type === 'cheer' && purse.cheers.includes(item.id)) ||
     (type === 'buddy' && purse.buddies.includes(item.id)) ||
-    (type === 'accessory' && purse.accessories.includes(item.id))
+    (type === 'accessory' && purse.accessories.includes(item.id)) ||
+    (type === 'frame' && (purse.frames || []).includes(item.id))
   if (owned) return { owned: true, gems: 0, coins: 0 }
   return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
 }
@@ -851,13 +852,15 @@ export function buyCheer(book, id) {
 
 
 // What can be sent as a gift: anything in the shop that costs something.
-// Prices match gift_catalog in supabase/gifts.sql.
+// Prices match gift_catalog in supabase/gifts.sql; gem frames match
+// shop_catalog. Coin, earned, seasonal and free frames are not gifts.
 export function giftItems() {
   return {
     looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
     cheers: CHEERS.filter((item) => item.gems > 0),
     buddies: BUDDIES.filter((item) => item.gems > 0),
     accessories: accessoriesForSale(boardDate(new Date())),
+    frames: FRAMES.filter((item) => item.kind === 'gem'),
   }
 }
 
@@ -875,6 +878,11 @@ export function mergeGift(book, gift) {
     if (purse.accessories.includes(id)) return { book, had: true, known: true }
     return { book: { ...book, ...purse, accessories: [...purse.accessories, id] }, had: false, known: true }
   }
+  if (gift?.kind === 'frame') {
+    if (!FRAME_IDS.has(id)) return { book, had: false, known: false }
+    if (purse.frames.includes(id)) return { book, had: true, known: true }
+    return { book: { ...book, ...purse, frames: [...purse.frames, id] }, had: false, known: true }
+  }
   if (gift?.kind === 'buddy') {
     if (!BUDDY_IDS.has(id)) return { book, had: false, known: false }
     if (purse.buddies.includes(id)) return { book, had: true, known: true }
@@ -889,6 +897,7 @@ export function wearGift(book, kind, id) {
   const purse = normalizePurse(book)
   if (kind === 'look') return purse.looks.includes(id) ? { ...book, ...purse, lookOn: id } : book
   if (kind === 'buddy') return purse.buddies.includes(id) ? { ...book, ...purse, buddyOn: id } : book
+  if (kind === 'frame') return purse.frames.includes(id) ? { ...book, ...purse, frame: id } : book
   if (kind === 'accessory') {
     const slot = accessoryById(id)?.slot
     if (!slot || !purse.accessories.includes(id)) return book

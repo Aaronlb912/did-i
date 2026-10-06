@@ -8,11 +8,11 @@ Last worked through 2026-10-02.
 ## Card frames
 
 - **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
-- **Friends do not see your frame yet.** Friends never get your look either; there is no `frame_on` on profiles. Add it with the look when the friend page shows your card.
+- **Needs device testing (friends, gifts, low power):** a friend's page shows their card in their look and frame (and a plain card with no frame); a gem frame sent as a gift arrives, Wear it puts it on, a second copy goes back; frames hold still in low power mode (iPhone Low Power Mode, Android Battery Saver) and move again when it is off. Low power needs build 1.3.1 (expo-battery); a binary without it never pauses for it and does not crash.
+- **Supabase not applied yet for frame_on and frame gifts.** friends-week.sql and gifts.sql changed; run npm run db:apply:all and the frames-social test before the OTA. Until then the phone's look and frame write fails quietly and friends see no card.
+- **Web shows a gifted frame by name only.** No frame art on the web, and View in collection there has no frames tab.
 - **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
-- **Frames are not gifts.** Not in `gift_catalog`.
-- **No low power pause.** Frames stop off screen, in the background, after 25 s without a touch and with Less motion, but not in low power mode. That needs `expo-battery` (a new dependency and a native build).
 
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 
