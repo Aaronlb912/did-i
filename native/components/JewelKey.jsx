@@ -72,6 +72,7 @@ export function JewelKey({ colors, onDone }) {
           <Text style={[styles.label, { color: colors.inkSoft }]}>{t('jewelKey.wait')}</Text>
         </View>
       </View>
+      <Text style={[styles.label, styles.why, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text>
       <View style={styles.ok}>
         <DidButton
           label={t('jewelKey.ok')}
@@ -97,5 +98,6 @@ const styles = StyleSheet.create({
   tap: { marginTop: -4, marginBottom: 10 },
   dash: { width: 16, height: 10, borderRadius: 5, borderWidth: 1, borderStyle: 'dashed' },
   label: { fontFamily: fonts.ui, fontSize: 13 },
+  why: { marginTop: 10 },
   ok: { alignSelf: 'flex-start', marginTop: 12 },
 })

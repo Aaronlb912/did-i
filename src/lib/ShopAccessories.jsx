@@ -56,7 +56,7 @@ export function ShopAccessories({ book, onChange, now }) {
     }
     if (purse.coins < item.coins) {
       const short = item.coins - purse.coins
-      setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+      setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
       return
     }
     setMiss({ id: '', text: '' })

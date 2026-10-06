@@ -53,6 +53,8 @@ export async function weTonight(night = tonightIso()) {
   for (const card of cards) {
     // A paused card is not asked tonight: no pill, no swipe card, no reminder.
     if (card.paused) card.due = false
+    // Older cards were saved without the "?"; show every one as a question.
+    card.question = weQuestion(card.question)
     if (card.total == null) card.total = (card.people || []).filter((p) => p.state === 'in').length
   }
   return { cards, miss: '' }

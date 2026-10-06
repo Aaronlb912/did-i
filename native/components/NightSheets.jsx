@@ -73,20 +73,26 @@ function CoinHistory({ colors }) {
   )
 }
 
-export function openCoinsHow(colors) {
+// back: opened from a shop item. No Shop button (you are there), and
+// Close goes back to that item.
+export function openCoinsHow(colors, back) {
   const close = () => publishSheet(null)
   publishSheet({
     title: t('coins.howTitle'),
     body: COIN_RULES.map((key) => t(key)).join('\n'),
     content: <CoinHistory colors={colors} />,
-    goLabel: t('shop.title'),
+    ...(back
+      ? {}
+      : {
+          goLabel: t('shop.title'),
+          onGo: () => {
+            close()
+            goHash('/shop')
+          },
+        }),
     closeLabel: t('cal.close'),
     colors,
-    onClose: close,
-    onGo: () => {
-      close()
-      goHash('/shop')
-    },
+    onClose: back || close,
   })
 }
 

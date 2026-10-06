@@ -1029,7 +1029,7 @@ function WeCardPage({ book, cardId, onChange }) {
         <Text style={[styles.big, { color: colors.ink }]}>{t('we.streak', { n: streak })}</Text>
         <Meta colors={colors}>
           {t('we.best', { n: best })}
-          {next ? ` · ${t('we.nextCoins', { n: next - streak })}` : ''}
+          {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
         </Meta>
       </View>
 

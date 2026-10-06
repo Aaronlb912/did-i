@@ -51,11 +51,12 @@ export function CardFrame({
   frozenRecently,
   date,
   radius = 24,
+  fixedSize,
   children,
   style,
 }) {
   const art = id ? FRAME_ART[id] : null
-  const [size, setSize] = useState(null)
+  const [size, setSize] = useState(fixedSize || null)
   const animated = Boolean(art && art.animated && active)
   const clock = useFrameClock(animated)
   const c = useMemo(() => framePalette(colors), [colors])

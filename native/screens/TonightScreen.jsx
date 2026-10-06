@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
@@ -7,7 +7,7 @@ import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
@@ -135,8 +135,11 @@ const FRAME_GAP = 8
 function GemFaceShell({ look, theme, style, buddy = '', children }) {
   const glow = look ? gemGlowHostStyle(look, theme) : null
   const frame = useContext(CardFrameProps)
+  // On Android the look's ring is a border. Put it on the card itself, so the
+  // card has one outline, not its own plus the ring around it.
+  const ringOnCard = Boolean(glow) && Platform.OS === 'android'
   const card = (
-    <View style={style}>
+    <View style={ringOnCard ? [style, glow] : style}>
       <BuddyHang id={buddy} alive />
       {children}
     </View>
@@ -146,7 +149,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
       {card}
     </CardFrame>
   ) : card
-  if (!glow) return body
+  if (!glow || ringOnCard) return body
   return (
     <View style={[faceCardStyles.gemShell, glow]}>
       {body}
@@ -219,6 +222,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // (useFrameActive holds the battery rules); cards behind stay still.
   const focused = useIsFocused()
   const frameAwake = useFrameActive(focused)
+  // Back on tonight (or back on this screen, or a pill gone): the pill row
+  // starts at the left again, so the filter chip is in view.
+  const pillScroll = useRef(null)
+  const pillPicked = Boolean(stack.pillPick || stack.waitPick || wePick)
+  const pillCount = stack.dueWithWait.length
+  useEffect(() => {
+    if (focused && !pillPicked) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
+  }, [focused, pillPicked, pillCount])
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -850,7 +861,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       </Slot>
 
       {showChips ? (
-        <FadeScroll fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
+        <FadeScroll scrollRef={pillScroll} fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
           <Slot>{tagFilter}</Slot>
           {/* The filter picks a folder; each pill after the line opens one question. */}
           {(stack.shelf || []).filter((item) => !item.archived).length >= 2 || topics.length > 0 ? (

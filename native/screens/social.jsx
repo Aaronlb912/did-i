@@ -103,7 +103,8 @@ import { LOOK_IDS, fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
-import { useWeTonight, weAskCount } from '../../src/lib/did-we.js'
+import { useWeTonight, weAskCount, weQuestion } from '../../src/lib/did-we.js'
+import { didYouAsk } from '../../src/lib/link-preview.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
@@ -1078,7 +1079,7 @@ export function PeopleReferScreen({ book, onChange }) {
           />
           <KeyButton
             colors={colors}
-            label={t('friendId.share')}
+            label={t('people.shareCode')}
             disabled={!invite}
             onPress={async () => {
               const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
@@ -1732,14 +1733,38 @@ function FamilyListScreen({ colors }) {
 // One friend or family member: did yous both ways and the Did wes you
 // share. Opened by tapping their card on Friends or in a family.
 // A friend's card, small and still, in their look and frame.
-function FriendCardPreview({ person, name }) {
+function FriendCardArt({ person, size }) {
   const look = LOOK_IDS.includes(person.look_on) ? person.look_on : 'lime'
   const colors = useLookColors(look)
   const frame = FRAME_IDS.has(person.frame_on) ? person.frame_on : ''
+  return <FramePreview id={frame} colors={colors} size={size} />
+}
+
+// A tap shows the card bigger, still, in a sheet.
+function FriendCardPreview({ person, name, colors }) {
+  const label = t('friend.cardA11y', { name })
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={t('friend.cardA11y', { name })}>
-      <FramePreview id={frame} colors={colors} size={56} />
-    </View>
+    <Pressable
+      accessibilityRole="imagebutton"
+      accessibilityLabel={label}
+      hitSlop={6}
+      onPress={() =>
+        publishSheet({
+          preview: (
+            <View style={styles.cardBig}>
+              <FriendCardArt person={person} size={180} />
+            </View>
+          ),
+          title: label,
+          closeLabel: t('settings.close'),
+          colors,
+          onClose: () => publishSheet(null),
+        })
+      }
+      style={({ pressed }) => pressFx(pressed)}
+    >
+      <FriendCardArt person={person} size={56} />
+    </Pressable>
   )
 }
 
@@ -1867,7 +1892,6 @@ export function FriendScreen({ book, onChange, route }) {
           <Avatar person={person} done={doneTonight(person)} colors={colors} size={52} />
         </Pressable>
         <View style={styles.confirmCopy}>
-          <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{shownName}</Text>
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
           {week.length === 7 && week.some((night) => night.cleared) ? (
             <View
@@ -1884,7 +1908,7 @@ export function FriendScreen({ book, onChange, route }) {
             </View>
           ) : null}
         </View>
-        {typeof person?.look_on === 'string' ? <FriendCardPreview person={person} name={name} /> : null}
+        {typeof person?.look_on === 'string' ? <FriendCardPreview person={person} name={name} colors={colors} /> : null}
         <Pressable
           onPress={() => setMenu(true)}
           hitSlop={10}
@@ -2022,7 +2046,7 @@ export function FriendScreen({ book, onChange, route }) {
           <PersonRow
             key={send.id}
             colors={colors}
-            title={send.question}
+            title={askShown(send.question)}
             note={[repeatLabel(send.repeat), theirSendState(send.state)].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
@@ -2043,12 +2067,12 @@ export function FriendScreen({ book, onChange, route }) {
         <>
       {sends.mine.length || keptLinks.length ? (
         [...keptLinks.map((link) => (
-          <PersonRow key={link.code} colors={colors} title={link.question} note={t('friend.linkKept')} />
+          <PersonRow key={link.code} colors={colors} title={askShown(link.question)} note={t('friend.linkKept')} />
         )), ...sends.mine.map((send) => (
           <PersonRow
             key={send.id}
             colors={colors}
-            title={send.question}
+            title={askShown(send.question)}
             note={[repeatLabel(send.repeat), sentState(send.state)].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
@@ -2236,7 +2260,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <PersonRow
           colors={colors}
           person={row.person}
-          title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
+          title={row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}
           note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), row.note]
             .filter(Boolean)
             .join(' · ')}
@@ -2422,7 +2446,7 @@ export function SentScreen({ book, onChange }) {
           <View style={styles.personHead}>
           <Avatar person={row.person} colors={colors} size={36} />
           <View style={[styles.personCopy, styles.personCopyFlex]}>
-            <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</Text>
+            <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
               {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
                 .filter(Boolean)
@@ -2461,7 +2485,7 @@ export function SentScreen({ book, onChange }) {
             {shownLinks.map((link, at) => (
               <Reveal key={link.code} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
                 <View style={styles.personCopy}>
-                  <Text style={[styles.personTitle, { color: colors.ink }]}>{link.question}</Text>
+                  <Text style={[styles.personTitle, { color: colors.ink }]}>{askShown(link.question)}</Text>
                   <Text style={[styles.personNote, { color: colors.inkDim }]}>
                     {link.ended ? `${linkKeptLine(link)} · ${t('sent.stoppedNote')}` : linkKeptLine(link)}
                   </Text>
@@ -2514,7 +2538,13 @@ function linkKeptLine(link) {
   return t('sent.keptBy', { names: link.kept.map((row) => row.name || t('sent.keptAnon')).join(', ') })
 }
 
+// A Did you shown on its own reads as the whole question: "Did you call mom?"
+function askShown(question) {
+  return weQuestion(didYouAsk(question, t('people.sendWhat')))
+}
+
 const styles = StyleSheet.create({
+  cardBig: { width: '100%', alignItems: 'center', paddingVertical: 12 },
   groupCard: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
   groupPad: { padding: 14, gap: 8 },
   editLift: { justifyContent: 'center' },

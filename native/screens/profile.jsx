@@ -405,9 +405,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="collection"
+          icon="flag"
           tint={colors.late}
-          label={t('marks.kicker')}
+          label={t('stats.marks')}
+          sub={t('stats.marksSub')}
           chevron
           onPress={() => goHash('/marks')}
         />

@@ -6,7 +6,7 @@ import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { periodLabel } from '../../src/lib/recurrence.js'
 import { confirmDone } from '../lib/confirm.js'
-import { Field, KeyButton, Meta, Row } from './ui.jsx'
+import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
@@ -43,7 +43,7 @@ function NoteEdit({ label, initial, colors, onSave, onCancel }) {
         onSubmitEditing={() => onSave(draft)}
       />
       <View style={styles.keys}>
-        <KeyButton colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} picked />
+        <DidButton small colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
       </View>
     </View>
@@ -182,25 +182,31 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
     close()
     confirmDone(t('note.saved'))
   }
+  // One card with a note already: say Edit note, not Add a note.
+  const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')
   const openSheet = () =>
     publishSheet({
-      title: t('note.add'),
+      title: label,
       colors,
       closeLabel: t('settings.neverMind'),
       onClose: close,
+      // The note box has its own Never mind, so the sheet adds none.
+      noClose: true,
       content: <NotePick answered={answered} colors={colors} onSave={save} onCancel={close} />,
     })
 
   if (quiet) {
     return (
       <Pressable onPress={openSheet} accessibilityRole="button" hitSlop={10} style={({ pressed }) => pressFx(pressed)}>
-        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${t('note.add')}`}</Text>
+        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${label}`}</Text>
       </Pressable>
     )
   }
+  const note = answered.length === 1 ? answered[0].answer.note : ''
   return (
     <View style={styles.keys}>
-      <KeyButton colors={colors} label={t('note.add')} onPress={openSheet} />
+      {note ? <Text style={[styles.quiet, styles.noteText, { color: colors.ink }]}>{note}</Text> : null}
+      <KeyButton colors={colors} label={label} onPress={openSheet} />
     </View>
   )
 }
@@ -236,6 +242,9 @@ function NotePick({ answered, colors, onSave, onCancel }) {
           onPress={() => setOpen({ lampId: item.lamp.id, periodKey: item.answer.periodKey })}
         />
       ))}
+      <View style={styles.keys}>
+        <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
+      </View>
     </Reveal>
   )
 }
@@ -247,5 +256,6 @@ const styles = StyleSheet.create({
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quiet: { fontSize: 14 },
+  noteText: { width: '100%', fontStyle: 'italic' },
   seeAll: { alignSelf: 'flex-start', marginTop: 8 },
 })

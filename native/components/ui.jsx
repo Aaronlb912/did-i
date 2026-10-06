@@ -118,8 +118,11 @@ export function Row({ label, note, onPress, colors }) {
       android_ripple={ripple(`${colors.on}33`)}
       style={({ pressed }) => [styles.row, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
-      <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
-      {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+      <View style={styles.rowText}>
+        <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
+        {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+      </View>
+      <Text style={[styles.rowChev, { color: colors.inkDim }]}>›</Text>
     </Pressable>
   )
 }
@@ -205,7 +208,9 @@ const styles = StyleSheet.create({
   didText: { fontFamily: fonts.uiBold, fontSize: 15 },
   key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1 },
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
-  row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, gap: 4 },
+  row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowText: { flex: 1, gap: 4 },
+  rowChev: { fontSize: 22, lineHeight: 24 },
   rowLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   rowNote: { fontFamily: fonts.ui, fontSize: 13 },
   field: { gap: 6, marginBottom: 10 },

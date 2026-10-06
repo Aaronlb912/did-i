@@ -143,9 +143,10 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           </View>
         ))}
         <View style={styles.keyItem}>
-          <View style={[styles.keyDot, { borderWidth: 1, borderColor: colors.open || colors.line }]} />
+          <View style={[styles.keyDot, { borderWidth: 1, borderColor: colors.openRing || colors.open || colors.line }]} />
           <Text style={[styles.keyText, { color: colors.inkSoft }]}>{t('jewelKey.open')}</Text>
         </View>
+        <Text style={[styles.keyText, styles.keyWhy, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text>
       </View>
     </View>
   )
@@ -166,4 +167,5 @@ const styles = StyleSheet.create({
   keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   keyDot: { width: 10, height: 10, borderRadius: 5 },
   keyText: { fontFamily: fonts.ui, fontSize: 11 },
+  keyWhy: { width: '100%', textAlign: 'center' },
 })

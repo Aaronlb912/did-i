@@ -7,6 +7,7 @@ import {
   LayoutAnimation,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -133,16 +134,16 @@ function stateDot(kind, colors) {
   if (kind === 'late') return { backgroundColor: colors.late || colors.on, borderColor: colors.late || colors.on }
   if (kind === 'nope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
   if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
-  if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.open || colors.on }
+  if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.openRing || colors.open || colors.on }
   if (kind === 'missed') return { backgroundColor: colors.miss, borderColor: colors.miss }
   return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 
-const DOT_WORDS = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', open: 'jewelKey.open', due: 'jewelKey.due' }
+const DOT_WORDS = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', open: 'jewelKey.open', due: 'jewelKey.due', missed: 'later.missed' }
 
 // One line over the list naming only the dots that are on it.
 function DotKey({ kinds, colors }) {
-  const shown = ['did', 'late', 'nope', 'open', 'due'].filter((kind) => kinds.has(kind))
+  const shown = ['did', 'late', 'nope', 'missed', 'open', 'due'].filter((kind) => kinds.has(kind))
   if (!shown.length) return null
   return (
     <View style={styles.dotKey} accessible accessibilityLabel={shown.map((kind) => t(DOT_WORDS[kind])).join(', ')}>
@@ -475,6 +476,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const dotKinds = (() => {
     const kinds = new Set()
     for (const row of hung) kinds.add(dotKind(states.get(rowId(row)) || '', dueByUrgency(row.lamp, dateIso)))
+    // Open Earlier rows have dots too, so the key names theirs.
+    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || 'missed')
     return kinds
   })()
 
@@ -587,9 +590,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     <View style={styles.fill}>
       {/* A tab, never pushed: no back arrow, even while a form that just saved is still popping off the stack. */}
       <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
-        {/* Filters, Did you / Did we, Add and Select share one wrapping row, so the list starts high. */}
+        {/* Filters, Did you / Did we, Add and Edit share one row, so the list starts high.
+            It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
         {picking || ordering ? null : (
-          <Reveal style={styles.topRow}>
+          <Reveal style={styles.topWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
             <TagFilter
               boards={shelf}
               tagId={tagId}
@@ -633,6 +638,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 ) : null}
               </>
             )}
+          </ScrollView>
           </Reveal>
         )}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
@@ -1173,15 +1179,26 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const dirty = JSON.stringify([draft, hang.tagTitle]) !== startSnap
   const leaveRef = useRef(null)
   // Phone back asks first when there are changes, on Add as well as Edit.
+  // First back closes an open section; then, with changes, it asks.
   useEffect(() => {
-    if (!dirty) return undefined
+    if (!dirty && !open) return undefined
     function onBack(event) {
       event?.preventDefault?.()
-      leaveRef.current?.()
+      if (open) fold(open)
+      else leaveRef.current?.()
     }
     window.addEventListener('did-i-back', onBack)
-    return () => window.removeEventListener('did-i-back', onBack)
-  }, [dirty])
+    // Android back reaches the stack before did-i-back, so take it here first.
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack()
+      return true
+    })
+    return () => {
+      window.removeEventListener('did-i-back', onBack)
+      sub.remove()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, open])
 
   // The iPhone edge swipe can't be asked about, so it is off while there are
   // unsaved changes. Add keeps its swipe.
@@ -1554,9 +1571,15 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               sub={reminderLine(draft)}
               icon="bell"
               last
-              on={hang.notifyOn}
+              // With no time it cannot buzz, so it reads off; turning it on opens the time.
+              on={hang.notifyOn && Boolean(draft.askAfter)}
               onPress={() => {
                 playClick()
+                if (!draft.askAfter) {
+                  hang.change('notify', true)
+                  if (open !== 'time') fold('time')
+                  return
+                }
                 hang.change('notify', !hang.notifyOn)
               }}
               colors={colors}
@@ -1894,7 +1917,8 @@ const styles = StyleSheet.create({
   block: { gap: 8, marginTop: 4 },
   fill: { flex: 1 },
   topKeys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 },
+  topWrap: { marginBottom: 10 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   editMenu: { gap: 8 },
   dotKey: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 4, marginTop: 2 },
   dotKeyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },

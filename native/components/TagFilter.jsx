@@ -17,8 +17,11 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const { height } = useWindowDimensions()
   const live = (boards || []).filter((book) => !book.archived)
   const ids = tagIdsOf(tagId)
-  const showFolders = live.length >= 2
   const showTopics = Boolean(onTopics) && topics.length > 0
+  const showFolders = live.length >= 2
+  // One folder: nothing to pick, but the menu still names it above the
+  // topics, so folders and topics read as two different things.
+  const oneFolder = !showFolders && showTopics && live.length === 1
   if (!showFolders && !showTopics) return null
 
   const clock = now || new Date()
@@ -148,9 +151,22 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
                   ))}
                 </>
               ) : null}
+              {oneFolder ? (
+                <>
+                  <Text style={[styles.cap, { color: colors.inkDim }]}>{t('nav.boards')}</Text>
+                  <View style={styles.row} accessibilityState={{ checked: true, disabled: true }}>
+                    <View style={styles.rowName}>
+                      <Check on />
+                      <Text style={{ color: colors.inkSoft, flexShrink: 1 }} numberOfLines={1}>
+                        {live[0].title}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
               {showTopics ? (
                 <>
-                  <Text style={[styles.cap, { color: colors.inkDim }, showFolders && styles.capGap]}>
+                  <Text style={[styles.cap, { color: colors.inkDim }, (showFolders || oneFolder) && styles.capGap]}>
                     {t('questions.topics')}
                   </Text>
                   <Row on={!topicPicks.length} name={t('tags.all')} onPress={() => onTopics([])} />

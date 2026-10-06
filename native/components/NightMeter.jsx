@@ -78,7 +78,9 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
       <View style={styles.top}>
         <RollNumber
           value={answered}
-          reduce={reduce}
+          // No roll: the left count beside it changes at once, and a roll that
+          // stalled behind the cheer showed the old done count for a second.
+          reduce
           style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]}
           accessibilityLabel=""
         />
