@@ -134,7 +134,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { clockWords, firstAnswerYear, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
@@ -692,6 +692,17 @@ test('So far and Every answer count every folder', () => {
   assert.deepEqual(shelfFeedRows(boards).map((row) => row.answer.id), ['y', 'x'])
   assert.equal(nextStreakGoal(1), 3)
   assert.equal(nextStreakGoal(5), 7)
+})
+
+test('the year view stops at this month and goes back to the first answer', () => {
+  const now = new Date('2026-10-04T12:00:00')
+  const boards = [{ id: 'b1', title: 'Tag', lamps: [{ ...lamp('a'), createdOn: '' }], answers: [{ lampId: 'a', periodKey: '2024-03-02', status: 'yes' }] }]
+  assert.equal(firstAnswerYear(boards, now), 2024)
+  assert.equal(firstAnswerYear([{ id: 'b', lamps: [], answers: [] }], now), 2026)
+  assert.equal(yearMonths(boards, 2026, now).length, 10)
+  const old = yearMonths(boards, 2024, now)
+  assert.equal(old.length, 12)
+  assert.equal(old[2].nights.find((night) => night.iso === '2024-03-02').on, true)
 })
 
 test('the calendar leaves future nights and nights before you started blank', () => {

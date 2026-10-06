@@ -2727,4 +2727,12 @@ export const es = {
   'questions.editMenu': "Editar",
   'questions.editTitle': "Editar tus preguntas",
   'questions.pickSub': "Elige varias para mover, pausar o borrar.",
+  // r10-extras
+  'shop.cheerPlay': "Ver",
+  'shop.cheerPlayA11y': "Ver {name}",
+  'shop.cheerStill': "Menos movimiento está activado, así que es una imagen fija. Tras un Did, esta ovación estalla alrededor de tu tarjeta.",
+  'cal.viewMonth': "Mes",
+  'cal.viewYear': "Año",
+  'cal.prevYear': "Año anterior",
+  'cal.nextYear': "Año siguiente",
 }

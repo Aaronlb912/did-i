@@ -262,6 +262,35 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
   return { start, nights }
 }
 
+// The year of the oldest answer (or question made), for how far back the
+// year view goes. Falls back to this year.
+export function firstAnswerYear(boards, now = new Date(), tagId = '') {
+  let first = ''
+  for (const book of scopedBooks(boards, tagId)) {
+    for (const answer of book.answers || []) {
+      const key = String(answer?.periodKey || '')
+      if (/^\d{4}-/.test(key) && (!first || key < first)) first = key
+    }
+  }
+  const year = first ? Number(first.slice(0, 4)) : now.getFullYear()
+  return Math.min(year, now.getFullYear())
+}
+
+// Twelve month grids for one year, same shape as monthStripNights. Months
+// after this one are left out.
+export function yearMonths(boards, year, now = new Date(), tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  const fold = (books[0] || boards?.[0])?.dayFoldHour
+  const todayDate = parseIsoDate(boardDate(now, fold)) || now
+  const months = []
+  for (let m = 0; m < 12; m += 1) {
+    const shift = (year - todayDate.getFullYear()) * 12 + (m - todayDate.getMonth())
+    if (shift > 0) break
+    months.push(monthStripNights(boards, now, tagId, shift))
+  }
+  return months
+}
+
 export function comingDays(book, now = new Date(), days = 7) {
   const today = boardDate(now, book.dayFoldHour)
   const nights = []

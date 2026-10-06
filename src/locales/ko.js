@@ -2659,4 +2659,12 @@ export const ko = {
   'questions.editMenu': "편집",
   'questions.editTitle': "질문 편집",
   'questions.pickSub': "여러 개를 골라 옮기거나 멈추거나 지울 수 있어요.",
+  // r10-extras
+  'shop.cheerPlay': "재생",
+  'shop.cheerPlayA11y': "{name} 재생",
+  'shop.cheerStill': "동작 줄이기가 켜져 있어 정지 화면입니다. Did 후에 이 응원이 카드 주위에서 터집니다.",
+  'cal.viewMonth': "월",
+  'cal.viewYear': "연도",
+  'cal.prevYear': "이전 연도",
+  'cal.nextYear': "다음 연도",
 }

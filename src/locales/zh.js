@@ -2643,4 +2643,12 @@ export const zh = {
   'questions.editMenu': "编辑",
   'questions.editTitle': "编辑你的问题",
   'questions.pickSub': "选择多个来移动、停止或删除。",
+  // r10-extras
+  'shop.cheerPlay': "播放",
+  'shop.cheerPlayA11y': "播放{name}",
+  'shop.cheerStill': "已开启减少动态效果，这里显示静态画面。完成 Did 后，这个欢呼会在你的卡片周围绽放。",
+  'cal.viewMonth': "月",
+  'cal.viewYear': "年",
+  'cal.prevYear': "上一年",
+  'cal.nextYear': "下一年",
 }

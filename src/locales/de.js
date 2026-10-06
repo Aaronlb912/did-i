@@ -2738,4 +2738,12 @@ export const de = {
   'questions.editMenu': "Bearbeiten",
   'questions.editTitle': "Deine Fragen bearbeiten",
   'questions.pickSub': "Mehrere auswählen, um sie zu verschieben, zu stoppen oder zu löschen.",
+  // r10-extras
+  'shop.cheerPlay': "Abspielen",
+  'shop.cheerPlayA11y': "{name} abspielen",
+  'shop.cheerStill': "Weniger Bewegung ist an, daher ein Standbild. Nach einem Did platzt dieser Jubel um deine Karte.",
+  'cal.viewMonth': "Monat",
+  'cal.viewYear': "Jahr",
+  'cal.prevYear': "Früheres Jahr",
+  'cal.nextYear': "Späteres Jahr",
 }

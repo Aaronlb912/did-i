@@ -2715,4 +2715,12 @@ export const en = {
   'questions.editMenu': "Edit",
   'questions.editTitle': "Edit your questions",
   'questions.pickSub': "Pick several to move, stop or delete.",
+  // r10-extras
+  'shop.cheerPlay': "Play",
+  'shop.cheerPlayA11y': "Play {name}",
+  'shop.cheerStill': "Less motion is on, so this is a still. After a Did, this cheer bursts around your card.",
+  'cal.viewMonth': "Month",
+  'cal.viewYear': "Year",
+  'cal.prevYear': "Earlier year",
+  'cal.nextYear': "Later year",
 }

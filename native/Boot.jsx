@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
+import * as SplashScreen from 'expo-splash-screen'
 import { t } from '../src/lib/i18n.js'
+
+// Keep the native splash up from the first JS view. NativeApp hides it once
+// the first real screen renders; before this, a blank view showed instead.
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export function Boot() {
   const [App, setApp] = useState(null)
@@ -15,6 +20,7 @@ export function Boot() {
       const detail = global.__didIFatal?.message || error?.message || String(error)
       const stack = __DEV__ ? global.__didIFatal?.stack || error?.stack || '' : ''
       setFail(stack ? `${detail}\n\n${stack}` : detail)
+      SplashScreen.hideAsync().catch(() => {})
     }
   }, [])
 

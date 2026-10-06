@@ -2719,4 +2719,12 @@ export const it = {
   'questions.editMenu': "Modifica",
   'questions.editTitle': "Modifica le tue domande",
   'questions.pickSub': "Scegline più di una da spostare, fermare o eliminare.",
+  // r10-extras
+  'shop.cheerPlay': "Riproduci",
+  'shop.cheerPlayA11y': "Riproduci {name}",
+  'shop.cheerStill': "Meno movimento è attivo, quindi è un fermo immagine. Dopo un Did, questo applauso esplode intorno alla tua scheda.",
+  'cal.viewMonth': "Mese",
+  'cal.viewYear': "Anno",
+  'cal.prevYear': "Anno precedente",
+  'cal.nextYear': "Anno successivo",
 }
