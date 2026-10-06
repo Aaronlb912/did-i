@@ -4392,7 +4392,7 @@ test('shop rows hide owned items and drops before their day', () => {
 })
 
 // r10-answer: earned streak freezes and Did / Nope from a reminder.
-const { FREEZE_MAX, freezeState, walkFreezes } = await import('../src/lib/hall-feel.js')
+const { FREEZE_MAX, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
 const { askActions, askNoteData, notificationAnswer } = await import('../src/lib/notify-answer.js')
 
 test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
@@ -4407,6 +4407,14 @@ test('a freeze is earned every 14 nights in a row, capped at two, and spent on t
   assert.equal(walkFreezes([...clears(14), 'miss', 'miss']).run, 0, 'one freeze covers one miss only')
   assert.equal(walkFreezes([...clears(14), 'miss', ...clears(13)]).held, 0, 'the covered night does not count toward the next 14')
   assert.equal(walkFreezes([...clears(14), 'miss', ...clears(14)]).held, 1)
+})
+
+test('next freeze counts down to the next 14, none when two are held', () => {
+  assert.equal(nightsToNextFreeze(0), 14)
+  assert.equal(nightsToNextFreeze(5), 9)
+  assert.equal(nightsToNextFreeze(14, 1), 14)
+  assert.equal(nightsToNextFreeze(27, 1), 1)
+  assert.equal(nightsToNextFreeze(30, 2), 0)
 })
 
 test('a freeze keeps the overall streak and shows as its own dot', () => {

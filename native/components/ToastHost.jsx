@@ -215,6 +215,12 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       goHash('/we', { id: item.cardId })
       leave(0, FROM_Y)
     }
+  } else if (item.onPress) {
+    // A plain or done toast that opens something (a streak freeze sheet).
+    press = () => {
+      item.onPress()
+      leave(0, FROM_Y)
+    }
   }
 
   const aimAt = useCallback((rel) => onAim(item, rel, wrapWidth.current), [item, onAim])

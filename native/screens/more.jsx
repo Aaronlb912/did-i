@@ -44,7 +44,7 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { FREEZE_MAX, freezeState, hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
+import { freezeState, hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
@@ -64,6 +64,7 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { shareRecap } from '../components/WeekRecap.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
+import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
 import { weCardTitle } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
@@ -242,6 +243,9 @@ export function HelpScreen() {
         <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
         <Meta colors={colors}>{t('help.streakP', { time: clockWords('09:00') })}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('freeze.howTitle')}</Text>
+        <Meta colors={colors}>{t('freeze.helpP')}</Meta>
+        <KeyButton colors={colors} label={t('freeze.helpGo')} onPress={() => openFreezeHow(colors, readShelf()?.boards)} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
         <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
         <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
@@ -381,11 +385,14 @@ export function IdeasScreen() {
   )
 }
 
-function StreakHero({ colors, n, label, line }) {
+function StreakHero({ colors, n, label, line, chip }) {
   return (
     <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
       <Text style={[styles.heroCap, { color: colors.on }]}>{label}</Text>
-      <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <View style={styles.heroNumRow}>
+        <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+        {chip || null}
+      </View>
       {line ? <Text style={[styles.heroLine, { color: colors.inkSoft }]}>{line}</Text> : null}
     </View>
   )
@@ -455,6 +462,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         n={counts.heat}
         label={t('home.streak')}
         line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+        chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
       />
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
@@ -577,6 +585,8 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
         <View style={[styles.calDot, { backgroundColor: colors.miss }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+        <View style={[styles.calDot, { backgroundColor: colors.freeze }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
       </View>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
@@ -742,9 +752,9 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         label={t('streaks.aria')}
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
-      <Meta colors={colors}>
-        {`${t('freeze.held', { n: freezes.held, max: FREEZE_MAX })}\n${t('freeze.how')}`}
-      </Meta>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="shield" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+      </SetCard>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -2137,6 +2147,7 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },
   calKeyText: { fontSize: 12, marginRight: 10 },

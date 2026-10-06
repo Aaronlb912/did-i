@@ -863,16 +863,6 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-      {/* A quiet link, not a card: most Did you's go to a friend above. */}
-      <Pressable
-        onPress={() => setSheet({ kind: 'send', person: null })}
-        accessibilityRole="button"
-        accessibilityHint={t('didYouLink.textSub')}
-        hitSlop={8}
-        style={({ pressed }) => [styles.textLink, pressFx(pressed)]}
-      >
-        <Text style={[styles.textLinkText, { color: colors.on }]}>{`${t('didYouLink.textTitle')} ›`}</Text>
-      </Pressable>
         </>
       ) : null}
 
@@ -2195,7 +2185,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSending(true)} />
         {miss ? <Miss colors={colors}>{miss}</Miss> : null}
         {sending ? (
-          <SendSheet person={null} colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
+          <SendSheet person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
         ) : null}
       </ScreenShell>
     )
@@ -2261,6 +2251,8 @@ export function SentScreen({ book, onChange }) {
   const [miss, setMiss] = useState('')
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
+  // Link Did you's are kept here, so texting one starts here too.
+  const [texting, setTexting] = useState(false)
   const [hidden, setHidden] = useState(() => readSentHidden(account.user?.id))
   useEffect(() => {
     setHidden(readSentHidden(account.user?.id))
@@ -2342,12 +2334,18 @@ export function SentScreen({ book, onChange }) {
   if (!shownRows.length && !shownLinks.length) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
+        <View style={styles.sentTop}>
+          <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
+        </View>
         <EmptyCard colors={colors} title={t('sent.emptyTitle')} body={t('sent.emptyBody')}>
           <DidButton colors={colors} small label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
           {clearedCount ? (
             <KeyButton colors={colors} label={t('sent.bringBack', { n: clearedCount })} onPress={() => setHiddenKept([])} />
           ) : null}
         </EmptyCard>
+        {texting ? (
+          <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+        ) : null}
       </ScreenShell>
     )
   }
@@ -2355,6 +2353,12 @@ export function SentScreen({ book, onChange }) {
   return (
     <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
+      <View style={styles.sentTop}>
+        <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
+      </View>
+      {texting ? (
+        <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+      ) : null}
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: shownRows.length + shownLinks.length })}</Text>
         <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('sent.hint')}</Text>
@@ -2542,8 +2546,7 @@ const styles = StyleSheet.create({
   friendPrimary: { marginBottom: 14 },
   friendMinor: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   friendWeRow: { marginBottom: 8 },
-  textLink: { alignSelf: 'flex-start', marginTop: 4, marginBottom: 16 },
-  textLinkText: { fontSize: 15 },
+  sentTop: { alignSelf: 'flex-end' },
   friendSmall: { fontFamily: fonts.ui, fontSize: 12, textAlign: 'center', marginTop: 6 },
   friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },
   friendWeekDot: { width: 8, height: 8, borderRadius: 4 },

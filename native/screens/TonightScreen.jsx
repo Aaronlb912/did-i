@@ -34,6 +34,8 @@ import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
+import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
+import { freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -151,6 +153,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const topics = shelfTopics(boards && boards.length ? boards : [book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
+  useFreezeToasts(colors, stack.shelf, stack.clock)
+  const freezesHeld = stack.shelf ? freezeState(stack.shelf, stack.clock).held : 0
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
   const [graceWeLeft, setGraceWeLeft] = useState([])
@@ -528,6 +532,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             </>
           ) : null}
           {stack.streak > 0 ? (
+            <View style={styles.streakRow}>
             <Pressable
               onPress={() => goHash('/stats')}
               accessibilityRole="button"
@@ -537,6 +542,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
               <Text style={[styles.streakChevron, { color: colors.inkDim }]}>›</Text>
             </Pressable>
+            <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
+            </View>
           ) : null}
           {summary ? (
             <NightWeek
@@ -903,6 +910,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   tomorrow: { marginTop: 16 },
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
+  streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
   streakChevron: { fontSize: 22, marginTop: 10 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },

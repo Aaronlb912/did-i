@@ -185,6 +185,14 @@ export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, star
   return { run, held, frozen }
 }
 
+// Nights left until the next freeze, from the run walkFreezes counts.
+// 0 when the most a person can hold is already held.
+export function nightsToNextFreeze(run, held = 0, every = FREEZE_EVERY, max = FREEZE_MAX) {
+  if (held >= max) return 0
+  const n = Math.max(0, Math.floor(Number(run) || 0))
+  return every - (n % every)
+}
+
 // The first night anything happened: the oldest made date or answer.
 function startOf(books, today) {
   let first = firstNight(books)
@@ -202,7 +210,7 @@ function startOf(books, today) {
 // land on the same freezes. Tonight and a night still in its grace period
 // are not judged yet. Memoized on the shelf, the night and Did we nights.
 const freezeMemo = new WeakMap()
-const NO_FREEZE = { held: 0, frozen: new Set() }
+const NO_FREEZE = { held: 0, run: 0, frozen: new Set() }
 export function freezeState(boards, now = new Date()) {
   if (!boards || typeof boards !== 'object') return NO_FREEZE
   const books = scopedBooks(boards, '')
@@ -246,7 +254,7 @@ export function freezeState(boards, now = new Date()) {
     settledMemo.set(sign, past)
   }
   const walk = walkNights(settledTo, addDaysIso(today, 1), past)
-  const out = { held: walk.held, frozen: new Set(walk.frozen) }
+  const out = { held: walk.held, run: walk.run, frozen: new Set(walk.frozen) }
   if (byKey.size > 8) byKey.clear()
   byKey.set(key, out)
   return out
