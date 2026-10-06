@@ -15,7 +15,6 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { gemMeterStyle } from '../lib/gem-look-tone.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
-import { RollNumber } from './RollNumber.jsx'
 
 // Once the bar is full it glows: flaring as the night clears, then resting.
 const GLOW_REST = 0.45
@@ -76,14 +75,11 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
   return (
     <View style={styles.wrap} accessible accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}`}>
       <View style={styles.top}>
-        <RollNumber
-          value={answered}
-          // No roll: the left count beside it changes at once, and a roll that
-          // stalled behind the cheer showed the old done count for a second.
-          reduce
-          style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]}
-          accessibilityLabel=""
-        />
+        {/* Plain text, not RollNumber: its digit moves on the UI thread, which
+            the cheer keeps busy, so done lagged the left count by a second. */}
+        <Text style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]} accessible={false}>
+          {answered}
+        </Text>
         <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
       </View>
       <View style={styles.barWrap}>

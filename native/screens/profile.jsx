@@ -416,10 +416,29 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="calendar"
           tint={colors.on}
-          label={t('boards.calendar')}
+          label={t('settings.history')}
           sub={t('settings.calendarSub')}
           chevron
           onPress={() => goHash('/calendar')}
+        />
+        {/* The same pages, same names, as the Your history page lists. */}
+        <SetRow
+          colors={colors}
+          icon="calendar"
+          tint={colors.on}
+          label={t('streaks.title')}
+          sub={t('stats.streaksSub')}
+          chevron
+          onPress={() => goHash('/streaks')}
+        />
+        <SetRow
+          colors={colors}
+          icon="grid"
+          tint={colors.on}
+          label={t('streaks.seven')}
+          sub={t('stats.sevenSub')}
+          chevron
+          onPress={() => goHash('/week')}
         />
         <SetRow
           colors={colors}

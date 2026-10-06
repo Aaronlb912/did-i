@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { firstAnswerYear, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
+import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
-import { weCardTitle } from '../../src/lib/did-we.js'
+import { weCardShort } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
@@ -85,7 +85,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
               <View style={[styles.markPip, { backgroundColor: weMark.tone }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.markLabel, { color: colors.ink }]}>{weMark.label}</Text>
-                <Text style={[styles.markSub, { color: colors.inkDim }]}>{weCardTitle(id) || t('we.title')}</Text>
+                <Text style={[styles.markSub, { color: colors.inkDim }]}>{weCardShort(id) || t('we.title')}</Text>
               </View>
             </View>
           ))}
@@ -160,9 +160,13 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                 <View
                   style={[
                     styles.pip,
-                    {
-                      backgroundColor: night.on ? colors.on : night.freeze ? colors.freeze : night.miss ? colors.miss : colors.open,
-                    },
+                    // A freeze is a ring, not a dot, so it never reads as cleared
+                    // when a look tints cleared close to the freeze blue.
+                    night.on
+                      ? { backgroundColor: colors.on }
+                      : night.freeze
+                        ? { borderWidth: 1.5, borderColor: colors.freeze }
+                        : { backgroundColor: night.miss ? colors.miss : colors.open },
                   ]}
                 />
               )}
@@ -190,9 +194,16 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
     setYear(thisYear)
   }, [tagId, thisYear])
 
-  const firstYear = useMemo(() => firstAnswerYear(shelf, clock, tagId), [shelf, tagId, dateIso])
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso])
+  const firstYear = Number(firstMonth.slice(0, 4))
   // One walk per [shelf, year]; the night changing also refreshes today.
-  const months = useMemo(() => yearMonths(shelf, year, clock, tagId), [shelf, year, tagId, dateIso])
+  // The first year starts at the first month with answers, not January.
+  const months = useMemo(() => {
+    const all = yearMonths(shelf, year, clock, tagId)
+    if (year !== firstYear) return all
+    const from = Number(firstMonth.slice(5, 7)) - 1
+    return all.filter((pack) => pack.start.getMonth() >= from)
+  }, [shelf, year, tagId, dateIso, firstMonth, firstYear])
   const locale = dateLocale(prefs.locale)
   const canBack = year > firstYear
   const canNext = year < thisYear
@@ -264,6 +275,10 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
               )}
             </View>
           </View>
+        ))}
+        {/* Fill the last row of three, so a short year keeps its columns. */}
+        {Array.from({ length: (3 - (months.length % 3)) % 3 }, (_, at) => (
+          <View key={`pad${at}`} style={styles.mini} />
         ))}
       </Reveal>
     </View>

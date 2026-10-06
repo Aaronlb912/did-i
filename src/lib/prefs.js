@@ -139,9 +139,12 @@ export function writePrefs(patch, fromCloud = false) {
   return next
 }
 
-function phoneUses24h() {
+// English follows the device (US 12h, UK 24h). Other app languages use
+// their own habit, so German shows 09:00, not "9:00 vorm."
+function phoneUses24h(locale) {
   try {
-    const opts = new Intl.DateTimeFormat([], { hour: 'numeric' }).resolvedOptions()
+    const tag = locale && locale !== 'en' ? [locale] : []
+    const opts = new Intl.DateTimeFormat(tag, { hour: 'numeric' }).resolvedOptions()
     if (opts.hourCycle) return opts.hourCycle === 'h23' || opts.hourCycle === 'h24'
     return opts.hour12 === false
   } catch {
@@ -154,8 +157,8 @@ let clockCache = null
 // 12 or 24 hour, from the clock setting. "Phone" follows the device.
 export function uses24h() {
   if (clockCache == null) {
-    const clock = readPrefs().clock
-    clockCache = clock === '24' || (clock === 'phone' && phoneUses24h())
+    const { clock, locale } = readPrefs()
+    clockCache = clock === '24' || (clock === 'phone' && phoneUses24h(locale))
   }
   return clockCache
 }

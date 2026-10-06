@@ -560,6 +560,12 @@ export function weCardTitle(id) {
   return (shared.cards || []).find((card) => card.id === id)?.question || ''
 }
 
+// The card as a short name, like the Home pill: no "Did we", no "?". Lists
+// that also hold your own questions' short names use this.
+export function weCardShort(id) {
+  return weCardTitle(id).replace(/^did we\s+/i, '').replace(/\?$/, '').trim()
+}
+
 export function useWeTonight(user) {
   const [state, setState] = useState(() => (user?.id ? sharedFor_(user.id) : EMPTY))
 

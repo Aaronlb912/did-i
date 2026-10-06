@@ -36,7 +36,7 @@ import {
   SHORT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
-import { bulkLamps, hangInto, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
@@ -162,7 +162,7 @@ function PickBox({ on, colors }) {
     <View
       style={[
         styles.pickBox,
-        { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.on : colors.panel2 },
+        { borderColor: on ? colors.onDeep : colors.inkDim, backgroundColor: on ? colors.on : colors.panel2 },
       ]}
     >
       {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>✓</Text> : null}
@@ -563,6 +563,46 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     stopPicking()
   }
 
+  // Move only makes sense with somewhere else to go.
+  const folders = shelf.filter((item) => !item.archived)
+
+  function moveTo(targetId) {
+    if (!chosen.length || !onChangeBooks) return
+    const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
+    const moving = lampPicks.filter((one) => one.boardId !== targetId)
+    const changed = moveLamps(shelf, moving, targetId)
+    if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
+    const folder = folders.find((item) => item.id === targetId)?.title || ''
+    // Undo moves each one back to the folder it came from.
+    setUndo({ id: Date.now(), label: t('questions.bulkMoved', { n: lampPicks.length, folder }), moved: moving, to: targetId })
+    stopPicking()
+  }
+
+  function askMove() {
+    if (!chosen.length) return
+    publishSheet({
+      title: t('questions.moveTitle'),
+      colors,
+      closeLabel: t('settings.neverMind'),
+      onClose: () => publishSheet(null),
+      content: (
+        <View style={styles.editMenu}>
+          {folders.map((item) => (
+            <Row
+              key={item.id}
+              colors={colors}
+              label={item.title}
+              onPress={() => {
+                publishSheet(null)
+                moveTo(item.id)
+              }}
+            />
+          ))}
+        </View>
+      ),
+    })
+  }
+
   function askDelete() {
     if (!chosen.length) return
     publishSheet({
@@ -582,6 +622,20 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   function takeBack() {
     if (!undo || !onChangeBooks) return
+    if (undo.moved) {
+      let books = shelf
+      const back = new Set()
+      for (const boardId of new Set(undo.moved.map((one) => one.boardId))) {
+        const picks = undo.moved.filter((one) => one.boardId === boardId).map((one) => ({ boardId: undo.to, lampId: one.lampId }))
+        for (const item of moveLamps(books, picks, boardId)) {
+          books = books.map((old) => (old.id === item.id ? item : old))
+          back.add(item.id)
+        }
+      }
+      if (back.size) onChangeBooks(books.filter((item) => back.has(item.id)).map((item) => commitBook(item, clock)))
+      setUndo(null)
+      return
+    }
     onChangeBooks(undoBulkLamps(shelf, undo.before, undo.picks))
     setUndo(null)
   }
@@ -700,6 +754,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 label={allDown ? t('lamp.askAgain') : t('lamp.stop')}
                 onPress={() => apply(allDown ? 'ask' : 'stop')}
               />
+              {folders.length > 1 ? (
+                <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.move')} onPress={askMove} />
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 disabled={!chosen.length}
@@ -913,11 +970,13 @@ function whenLine(draft) {
   return cadenceLine(draft)
 }
 
-function reminderLine(draft) {
+// summary: the question page's one line, where "Off until you pick a time"
+// reads oddly out of the form, so it just says No reminder.
+function reminderLine(draft, summary = false) {
   if (!lampNotifyOn(draft)) return t('hang.remindOff')
   if (!lampBuzzes(draft)) return t('hang.remindQuiet')
   if (draft.askAfter) return t('hang.remindAt', { time: timeLabel(draft.askAfter) })
-  return t('hang.remindAny')
+  return summary ? t('hang.remindNone') : t('hang.remindAny')
 }
 
 // Off tonight: say when it comes up next, if that is within two months.
@@ -1773,7 +1832,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const summary = [
     cadenceLine(lamp),
     lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
-    priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp),
+    priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp, true),
     t(`hang.priority.${priority}`),
   ].join(' · ')
 
@@ -1879,7 +1938,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
             {`${t('hang.tag')}: ${lampBook.title}`}
           </Text>
-          <Text style={[styles.hintLine, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
           {topics ? (
             <>
               <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>

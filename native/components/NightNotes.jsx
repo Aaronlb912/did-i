@@ -11,6 +11,29 @@ import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { goHash } from '../navigation/hash.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { UNDO_MS } from '../../src/lib/useTonightStack.js'
+import { showToast } from '../lib/toast-queue.js'
+
+// Clears a note, with Undo in the toast like other removals. Undo writes the
+// note back onto the folder as it is then, so nothing done since is lost.
+function removeNote(book, lampId, periodKey, note, onChange) {
+  onChange(setAnswerNote(book, lampId, periodKey, ''))
+  const now = Date.now()
+  showToast({
+    id: 'undo:note',
+    kind: 'undo',
+    rev: now,
+    label: t('note.removed'),
+    hint: t('tonight.undoTap'),
+    until: now + UNDO_MS,
+    total: UNDO_MS,
+    onPress: () => {
+      const live = (readShelf().boards || []).find((item) => item.id === book.id) || book
+      onChange(setAnswerNote(live, lampId, periodKey, note))
+    },
+  })
+}
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
@@ -28,7 +51,7 @@ function nightLine(lamp, answer) {
 }
 
 /** One note box with Save and Never mind. */
-function NoteEdit({ label, initial, colors, onSave, onCancel }) {
+function NoteEdit({ label, initial, colors, onSave, onCancel, onRemove }) {
   const [draft, setDraft] = useState(initial || '')
   return (
     <View style={styles.edit}>
@@ -45,14 +68,47 @@ function NoteEdit({ label, initial, colors, onSave, onCancel }) {
       <View style={styles.keys}>
         <DidButton small colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
+        {initial && onRemove ? <KeyButton danger colors={colors} label={t('note.remove')} onPress={onRemove} /> : null}
       </View>
     </View>
   )
 }
 
+// The one way to write a note: a sheet with the box, Save, Never mind and,
+// when there is a note, Remove note. Home and the question page both use it.
+function openNoteSheet({ title, label, initial, colors, onSave, onRemove }) {
+  const close = () => publishSheet(null)
+  publishSheet({
+    title,
+    colors,
+    closeLabel: t('settings.neverMind'),
+    onClose: close,
+    noClose: true,
+    content: (
+      <NoteEdit
+        label={label}
+        initial={initial}
+        colors={colors}
+        onSave={(draft) => {
+          close()
+          onSave(draft)
+        }}
+        onCancel={close}
+        onRemove={
+          onRemove
+            ? () => {
+                close()
+                onRemove()
+              }
+            : null
+        }
+      />
+    ),
+  })
+}
+
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
 export function NightNotes({ book, lamp, colors, onChange }) {
-  const [open, setOpen] = useLayoutState('')
   const [picking, setPicking] = useLayoutState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
   const noted = nights.filter((row) => row.answer.note)
@@ -61,27 +117,20 @@ export function NightNotes({ book, lamp, colors, onChange }) {
   const shown = all ? noted : noted.slice(0, NOTES_SHOWN)
   const picks = nights.filter((row) => !row.answer.note).slice(0, PICKS)
 
-  function save(key, draft) {
-    onChange(setAnswerNote(book, lamp.id, key, draft))
-    setOpen('')
-    setPicking(false)
-    confirmDone(t('note.saved'))
-  }
-
   function edit(answer) {
-    return (
-      <NoteEdit
-        key={answer.periodKey}
-        label={nightLine(lamp, answer)}
-        initial={answer.note}
-        colors={colors}
-        onSave={(draft) => save(answer.periodKey, draft)}
-        onCancel={() => setOpen('')}
-      />
-    )
+    setPicking(false)
+    openNoteSheet({
+      title: answer.note ? t('note.edit') : t('note.add'),
+      label: nightLine(lamp, answer),
+      initial: answer.note,
+      colors,
+      onSave: (draft) => {
+        onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft))
+        confirmDone(t('note.saved'))
+      },
+      onRemove: () => removeNote(book, lamp.id, answer.periodKey, answer.note, onChange),
+    })
   }
-
-  const openPick = picks.find((row) => row.answer.periodKey === open)
 
   return (
     <View style={styles.wrap}>
@@ -89,19 +138,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
       {shown.map(({ answer }) => (
         <Reveal key={answer.periodKey}>
-          {open === answer.periodKey ? (
-            edit(answer)
-          ) : (
-          <Row
-            colors={colors}
-            label={nightLine(lamp, answer)}
-            note={answer.note}
-            onPress={() => {
-              setPicking(false)
-              setOpen(answer.periodKey)
-            }}
-          />
-          )}
+          <Row colors={colors} label={nightLine(lamp, answer)} note={answer.note} onPress={() => edit(answer)} />
         </Reveal>
       ))}
       {noted.length > NOTES_SHOWN ? (
@@ -113,10 +150,8 @@ export function NightNotes({ book, lamp, colors, onChange }) {
           />
         </View>
       ) : null}
-      <Reveal key={openPick ? 'edit-' + open : picking ? 'pick' : 'add'}>
-      {openPick ? (
-        edit(openPick.answer)
-      ) : picking ? (
+      <Reveal key={picking ? 'pick' : 'add'}>
+      {picking ? (
         <View style={styles.edit}>
           <Meta colors={colors}>{t('note.pickNight')}</Meta>
           <View style={styles.keys}>
@@ -125,7 +160,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
                 key={answer.periodKey}
                 colors={colors}
                 label={nightLine(lamp, answer)}
-                onPress={() => setOpen(answer.periodKey)}
+                onPress={() => edit(answer)}
               />
             ))}
             <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setPicking(false)} />
@@ -139,11 +174,9 @@ export function NightNotes({ book, lamp, colors, onChange }) {
             onPress={() => {
               // One night to choose from: straight to its note.
               if (picks.length === 1) {
-                setPicking(false)
-                setOpen(picks[0].answer.periodKey)
+                edit(picks[0].answer)
                 return
               }
-              setOpen('')
               setPicking(true)
             }}
           />
@@ -182,6 +215,10 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
     close()
     confirmDone(t('note.saved'))
   }
+  const remove = (row) => {
+    close()
+    removeNote(bookOf(row), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
+  }
   // One card with a note already: say Edit note, not Add a note.
   const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')
   const openSheet = () =>
@@ -192,7 +229,7 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
       onClose: close,
       // The note box has its own Never mind, so the sheet adds none.
       noClose: true,
-      content: <NotePick answered={answered} colors={colors} onSave={save} onCancel={close} />,
+      content: <NotePick answered={answered} colors={colors} onSave={save} onRemove={remove} onCancel={close} />,
     })
 
   if (quiet) {
@@ -212,7 +249,7 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 }
 
 // Inside the sheet: pick a question, then write its note in place.
-function NotePick({ answered, colors, onSave, onCancel }) {
+function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
   // One question (a card picked on Home): straight to its note box.
   const only = answered.length === 1 ? answered[0] : null
   const [open, setOpen] = useState(only ? { lampId: only.lamp.id, periodKey: only.answer.periodKey } : null)
@@ -225,6 +262,7 @@ function NotePick({ answered, colors, onSave, onCancel }) {
           initial={row.answer.note}
           colors={colors}
           onSave={(draft) => onSave(row, draft)}
+          onRemove={() => onRemove(row)}
           onCancel={only ? onCancel : () => setOpen(null)}
         />
       </Reveal>

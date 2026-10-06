@@ -7,6 +7,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { MOTION_MS, easeOut } from '../lib/motion.jsx'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
+import { KeyboardLift } from './KeyboardLift.jsx'
 
 let listen = null
 let current = null
@@ -138,6 +139,8 @@ export function SheetHost() {
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
       </Animated.View>
+      {/* A sheet with a text box (a note) rises over the keyboard, buttons and all. */}
+      <KeyboardLift pointerEvents="box-none" style={styles.lift}>
       <Animated.View
         style={[
           styles.pop,
@@ -184,6 +187,7 @@ export function SheetHost() {
           </Pressable>
         ) : null}
       </Animated.View>
+      </KeyboardLift>
     </View>
   )
 }
@@ -209,6 +213,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   preview: { alignItems: 'center', marginBottom: 2 },
+  lift: { justifyContent: 'center' },
   content: { maxHeight: 320 },
   title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },

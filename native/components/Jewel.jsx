@@ -64,7 +64,8 @@ export function Jewel({
           ? colors.miss
           : dueSoon
             ? colors.late
-            : colors.open
+            : // open is too pale on a white pill in Light.
+              colors.openRing || colors.open
 
   return (
     <Pressable

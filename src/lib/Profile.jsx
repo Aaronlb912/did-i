@@ -258,7 +258,7 @@ export function Profile({
             <SetCap>{t('settings.history')}</SetCap>
             <SetCard>
               <SetRow label={t('marks.kicker')} chevron onClick={() => goHash('/marks')} />
-              <SetRow label={t('boards.calendar')} sub={t('settings.calendarSub')} chevron onClick={() => goHash('/calendar')} />
+              <SetRow label={t('settings.history')} sub={t('settings.calendarSub')} chevron onClick={() => goHash('/calendar')} />
               <SetRow label={t('feed.title')} sub={t('settings.feedSub')} chevron onClick={() => goHash('/feed')} />
               <SetRow label={t('stats.title')} sub={t('settings.statsSub')} chevron onClick={() => goHash('/stats')} />
             </SetCard>
