@@ -760,6 +760,21 @@ function FirefliesOver({ f }) {
     const rnd = seeded(11)
     return Array.from({ length: 22 }, () => ({ u: rnd(), s: 0.012 + rnd() * 0.02, ph: rnd() * 9, r: 1.5 + rnd() * 1.8 }))
   }, [])
+  // Still tiles have no clock, so the drifting lights never show: draw a few
+  // fixed ones along the edges instead, so the tile does not look empty.
+  if (f.still) {
+    const spots = [[0.08, 0.12], [0.94, 0.2], [0.04, 0.55], [0.97, 0.66], [0.2, 0.96], [0.72, 0.94], [0.5, 0.03]]
+    return (
+      <S.Svg width={f.w} height={f.h}>
+        {spots.map(([x, y], i) => (
+          <S.G key={i}>
+            <S.Circle cx={x * f.w} cy={y * f.h} r={16} fill="#e8ff8c" fillOpacity={0.3} />
+            <S.Circle cx={x * f.w} cy={y * f.h} r={8} fill="#faffd2" />
+          </S.G>
+        ))}
+      </S.Svg>
+    )
+  }
   return items.map((it, i) => (
     <Particle key={i} clock={f.clock} item={it} fn={fireflyAt} w={f.w} h={f.h} size={28}>
       <S.Svg width={28} height={28}>

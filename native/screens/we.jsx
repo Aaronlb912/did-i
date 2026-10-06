@@ -1034,7 +1034,7 @@ function WeCardPage({ book, cardId, onChange }) {
 
       {shareFirst ? null : shareCard}
 
-      <SetCap colors={colors}>{t('we.yourFiling')}</SetCap>
+      <SetCap colors={colors} style={styles.listCap}>{t('we.yourFiling')}</SetCap>
       <SetCard colors={colors}>
         <FilingFolds
           folder={filing.folder}

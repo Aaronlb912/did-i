@@ -648,12 +648,13 @@ function AddFriendPop({ colors, onClose, onAsked }) {
       {showQr ? (
         <Reveal style={styles.qrBox}>
           <QrCode value={friendQrLink(myId)} size={180} label={t('qr.friendLabel')} />
-          <Text style={[styles.tileNote, { color: colors.inkDim }]}>{formatFriendId(myId)}</Text>
+          <Text selectable style={[styles.friendId, { color: colors.ink }]}>{formatFriendId(myId)}</Text>
         </Reveal>
       ) : null}
       <Field
         colors={colors}
         label={t('friendId.add')}
+        placeholder={t('friendId.addPh')}
         value={formatFriendId(draft)}
         onChangeText={(value) => setDraft(cleanFriendId(value))}
         keyboardType="number-pad"
@@ -1199,6 +1200,7 @@ export function PeopleConnectScreen({ book, route }) {
         <Field
           colors={colors}
           label={t('friendId.add')}
+          placeholder={t('friendId.addPh')}
           value={formatFriendId(idDraft)}
           onChangeText={(value) => setIdDraft(cleanFriendId(value))}
           keyboardType="number-pad"
