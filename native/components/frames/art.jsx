@@ -1258,13 +1258,20 @@ function animatedPath(S) {
 }
 
 // The showroom's light: one stroke 70/400 of the way round, slid along by its
-// dash offset once every 9 s. Wide faint strokes under it stand in for the
-// blur, with a thin white core near the head. One line, so it never beads.
+// dash offset once every 9 s. One line, so it never beads.
+// Many faint layers, all centered on one point: the wide ones are shorter,
+// so the glow thins smoothly toward both ends instead of in visible steps.
 const BLOOM_STROKES = [
-  { width: 14, color: '#fff6d8', opacity: 0.12, len: 70, at: 0 },
-  { width: 9, color: '#fff6d8', opacity: 0.2, len: 66, at: 2 },
-  { width: 5, color: '#fff6d8', opacity: 0.35, len: 60, at: 5 },
-  { width: 1.6, color: '#ffffff', opacity: 1, len: 40, at: 15 },
+  ...Array.from({ length: 12 }, (_, i) => {
+    const k = i / 11
+    const len = 34 + 36 * k
+    return { width: 18 - 15 * k, color: '#fff6d8', opacity: 0.055, len, at: (70 - len) / 2 }
+  }),
+  ...Array.from({ length: 4 }, (_, i) => {
+    const k = i / 3
+    const len = 22 + 22 * k
+    return { width: 2.4 - 1.4 * k, color: '#ffffff', opacity: 0.3, len, at: (70 - len) / 2 }
+  }),
 ]
 
 function BloomStroke({ f, d, L, it, Path }) {
