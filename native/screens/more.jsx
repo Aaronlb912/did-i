@@ -593,7 +593,10 @@ export function CalendarScreen({ book, boards, tagId, now }) {
       </View>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
-        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="pen" label={t('notes.title')} sub={t('notes.sub')} chevron onPress={() => goHash('/notes')} />
+        <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
+        <SetRow colors={colors} icon="collection" label={t('marks.kicker')} chevron last onPress={() => goHash('/marks')} />
       </SetCard>
     </ScreenShell>
   )
