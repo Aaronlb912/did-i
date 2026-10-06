@@ -108,6 +108,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
+import { WeHomeList } from './we.jsx'
 import { Reveal, pressFx } from '../lib/motion.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
@@ -913,7 +914,7 @@ export function PeopleScreen({ book, onChange }) {
       {tab === 'we' ? (
         <>
       <SectionHead colors={colors} label={t('we.title')} />
-      <Row colors={colors} label={t('we.open')} note={t('we.empty')} onPress={() => goHash('/we')} />
+      <WeHomeList book={book} onChange={onChange} />
         </>
       ) : null}
 
@@ -1060,27 +1061,39 @@ export function PeopleReferScreen({ book, onChange }) {
 
       <InviteRewardBar colors={colors} gemsPaid={gemsPaid} joined={joined} />
 
-      <Cap colors={colors}>{t('people.yourCode')}</Cap>
-      <Row
-        colors={colors}
-        label={t('people.yourCode')}
-        note={invite || '...'}
-        onPress={
-          invite
-            ? async () => {
-                const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
-                if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-                else setMiss(t('confirm.shareMiss'))
-              }
-            : undefined
-        }
-      />
-      <Meta colors={colors}>
-        {joined >= INVITE_LOOK_AT
-          ? t('people.lookWon')
-          : t('people.lookLeft', { n: INVITE_LOOK_AT - joined })}
-      </Meta>
-      <Meta colors={colors}>{t('people.inviteHint', { max: INVITE_GEMS_CAP, n: INVITE_LOOK_AT })}</Meta>
+      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('people.invite')}</Text>
+        <Text selectable style={[styles.friendId, { color: colors.ink }]}>
+          {invite || t('family.loading')}
+        </Text>
+        <View style={styles.idButtons}>
+          <KeyButton
+            colors={colors}
+            label={t('friendId.copy')}
+            disabled={!invite}
+            onPress={async () => {
+              if (await copyText(invite)) confirmDone(t('people.copied'))
+              else confirmMiss(t('confirm.miss'))
+            }}
+          />
+          <KeyButton
+            colors={colors}
+            label={t('friendId.share')}
+            disabled={!invite}
+            onPress={async () => {
+              const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
+              if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
+              else setMiss(t('confirm.shareMiss'))
+            }}
+          />
+        </View>
+      </View>
+      {/* Night already owned (bought or won): no goal to chase. */}
+      {joined >= INVITE_LOOK_AT ? (
+        <Meta colors={colors}>{t('people.lookWon')}</Meta>
+      ) : normalizePurse(book).looks.includes('night') ? null : (
+        <Meta colors={colors}>{t('people.lookLeft', { n: INVITE_LOOK_AT - joined })}</Meta>
+      )}
 
       <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
 
@@ -2018,7 +2031,10 @@ export function FriendScreen({ book, onChange, route }) {
           </PersonRow>
         ))
       ) : (
-        <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
+        <>
+          <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
+          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
+        </>
       )}
 
         </>
@@ -2049,7 +2065,10 @@ export function FriendScreen({ book, onChange, route }) {
           </PersonRow>
         ))]
       ) : (
-        <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
+        <>
+          <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
+          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
+        </>
       )}
         </>
       ) : null}

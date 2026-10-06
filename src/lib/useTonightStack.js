@@ -4,10 +4,10 @@ import { unlockAchievements } from './achievements.js'
 import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
 import { reportRejection } from './report.js'
+import { pillStatusLabel } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
 import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
-import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
 import {
   allClearTonight,
@@ -129,7 +129,7 @@ export function useTonightStack({
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, label: t('tonight.saved') })
+    armUndo({ book, label: pillStatusLabel(finalStatus) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -314,13 +314,15 @@ export function useTonightStack({
     setHolePick(null)
     setWaitPick(null)
     setPillPick(null)
-    armUndo({ book, label: t('tonight.saved') })
+    armUndo({ book, label: pillStatusLabel(finalStatus) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
     else if (!clears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
     if (clears) {
+      // The night just cleared: no card follows, so its cheer plays in full.
+      if (typeof window !== 'undefined') window.__didICheerFull = Date.now()
       feelTap('hall-on')
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)

@@ -41,6 +41,8 @@ const ICONS = {
   filter: 'M4 5h16l-6 7.5V19l-4 2v-8.5L4 5Z',
   eye: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   shield: 'M12 3l7 3v6c0 4.8-3 7.8-7 9-4-1.2-7-4.2-7-9V6l7-3Z',
+  // Streak freezes: the same snowflake as the freeze chip.
+  snow: 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2 3-2M9 20.5l3-2 3 2',
   help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM9.3 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.5 2.2-2.5 4.1M12 17.2h.01',
   logout: 'M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9',
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',

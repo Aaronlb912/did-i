@@ -234,15 +234,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
         </Pressable>
       ) : null}
-      <SetCap colors={colors}>{t('account.kicker')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
           icon="person"
           tint={colors.on}
           label={t('settings.account')}
-          sub={account.email ? t('settings.accountSub') : t('settings.accountOffSub')}
-          value={account.email || t('settings.accountOff')}
+          sub={account.email || t('settings.accountOffSub')}
+          value={account.email ? '' : t('settings.accountOff')}
           chevron
           onPress={() => goHash('/account')}
         />

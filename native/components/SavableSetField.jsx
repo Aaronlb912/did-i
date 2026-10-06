@@ -26,7 +26,7 @@ export function SavableSetField({ colors, label, value, savedValue, onSave, onCh
       />
       <View style={[styles.foot, { borderBottomColor: colors.lineSoft }]}>
         {flash ? (
-          <Text style={[styles.saved, { color: colors.on }]}>{t('settings.saved')}</Text>
+          <Text style={[styles.saved, { color: colors.on }]} accessibilityLiveRegion="polite">{`✓ ${t('settings.saved')}`}</Text>
         ) : (
           <Text style={[styles.hint, { color: colors.inkDim }]}>{t('settings.fieldHint')}</Text>
         )}

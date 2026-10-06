@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   AppState,
+  BackHandler,
   Keyboard,
   LayoutAnimation,
   Platform,
@@ -79,7 +80,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { goHash, swapHash } from '../navigation/hash.js'
+import { goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -121,7 +122,7 @@ function openStarters(book) {
 // The dot on each row, in Home's colors: did, late, nope (muted), not
 // answered yet, due today (red ring), or not asked tonight.
 function dotKind(state, urgency) {
-  if (state === 'did' || state === 'late' || state === 'nope') return state
+  if (state === 'did' || state === 'late' || state === 'nope' || state === 'missed') return state
   if (urgency === 'today' || urgency === 'soon') return 'due'
   if (state === 'open') return 'open'
   return 'off'
@@ -133,6 +134,7 @@ function stateDot(kind, colors) {
   if (kind === 'nope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
   if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
   if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.open || colors.on }
+  if (kind === 'missed') return { backgroundColor: colors.miss, borderColor: colors.miss }
   return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 
@@ -193,6 +195,29 @@ export function onceIsPast(lamp, dateIso) {
   if (lamp?.cadence !== 'once') return false
   const target = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || '').trim()
   return /^\d{4}-\d{2}-\d{2}$/.test(target) && target < dateIso
+}
+
+// The short name and the question in the same words: the row shows one line.
+function sameWords(lamp) {
+  const plain = (text) => shortFromQuestion(text).toLowerCase()
+  return plain(shortLabel(lamp)) === plain(lamp.question)
+}
+
+// Past one-time questions: how their night went, or missed when never answered.
+function earlierStates(rows) {
+  const ids = new Set(rows.map(rowId))
+  const books = new Map(rows.map((row) => [row.boardId, row.book]))
+  const states = new Map()
+  for (const row of rows) states.set(rowId(row), 'missed')
+  for (const [boardId, book] of books) {
+    for (const answer of book?.answers || []) {
+      const id = `${boardId}:${answer.lampId}`
+      if (!ids.has(id)) continue
+      const status = answer.status
+      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : 'missed')
+    }
+  }
+  return states
 }
 
 function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle }) {
@@ -263,9 +288,11 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
                   {shortLabel(row.lamp)}
                 </Text>
-                <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
-                  {row.lamp.question}
-                </Text>
+                {sameWords(row.lamp) ? null : (
+                  <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
+                    {row.lamp.question}
+                  </Text>
+                )}
                 <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
                   {meta}
                 </Text>
@@ -437,6 +464,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   )
   // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
+  const pastStates = earlierOpen ? earlierStates(earlier) : states
   const starters = openStarters(book)
   const shown = [...hung, ...down, ...(earlierOpen ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
@@ -482,7 +510,21 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       event?.preventDefault?.()
     }
     window.addEventListener('did-i-back', onBack)
-    return () => window.removeEventListener('did-i-back', onBack)
+    // Android back reaches the stack before did-i-back, so take it here first, like a sheet.
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack()
+      return true
+    })
+    // Leaving Questions (another tab, a pushed page) ends the mode and drops the picks.
+    const here = readRoute()?.path
+    const off = onRoute((route) => {
+      if (route?.path !== here) onBack()
+    })
+    return () => {
+      window.removeEventListener('did-i-back', onBack)
+      sub.remove()
+      off()
+    }
   }, [picking, ordering])
 
   useEffect(() => {
@@ -739,7 +781,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             label={t('questions.earlier')}
             items={earlier}
             shelf={shelf}
-            states={states}
+            states={pastStates}
             dateIso={dateIso}
             colors={colors}
             onOpen={onOpen}
@@ -850,6 +892,15 @@ function timeLabel(value) {
   return value ? clockWords(value) : ''
 }
 
+// The short name made from the question, cut at a whole word so it never
+// looks like a letter went missing.
+function autoShort(question) {
+  const full = shortFromQuestion(question)
+  if (full.length <= SHORT_MAX) return full
+  const cut = full.slice(0, SHORT_MAX + 1).lastIndexOf(' ')
+  return (cut > 0 ? full.slice(0, cut) : full.slice(0, SHORT_MAX)).trim()
+}
+
 function whenLine(draft) {
   if (draft.cadence === 'every_n' && !Number(draft.everyN)) return t('hang.everyN')
   if (draft.cadence === 'weekly' && !(draft.weekdays || []).length) return t('hang.weekly')
@@ -958,7 +1009,7 @@ export function TopicPick({ value, known, onChange, colors }) {
   }
   return (
     <View style={styles.foldField}>
-      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kindLabel')}</Text>
+      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.kind')}</Text>
       <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.topicsHint')}</Text>
       {choices.length ? (
         <View style={styles.pillRow}>
@@ -1111,7 +1162,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // until they type their own, so it never changes behind their back.
   const [shortTyped, setShortTyped] = useState(false)
   const [shortRoom] = useState(() => Math.max(SHORT_MAX, String(draft.short || '').length))
-  const shortShown = shortTyped || String(draft.short || '').trim() ? draft.short : shortFromQuestion(draft.question, SHORT_MAX)
+  const shortAuto = !shortTyped && !String(draft.short || '').trim()
+  const shortShown = shortAuto ? autoShort(draft.question) : draft.short
   const scrollHandle = useRef(null)
   const picksH = useRef(0)
 
@@ -1167,6 +1219,29 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     Keyboard.dismiss()
   }
 
+  // An opened section that ends below the screen scrolls up just enough to
+  // show it, keeping its top row in sight.
+  function showFold(node) {
+    const scroller = scrollHandle.current
+    const inner = scroller?.getInnerViewRef?.()
+    if (!scroller?.scrollTo || !inner || !node?.measureLayout) return
+    node.measureLayout(
+      inner,
+      (_x, top, _w, height) => {
+        node.measureInWindow((_wx, winTop, _ww, winH) => {
+          scroller.measureInWindow?.((_sx, viewTop, _sw, viewH) => {
+            const offset = top - (winTop - viewTop)
+            const below = winTop + winH - (viewTop + viewH) + 24
+            if (below <= 0) return
+            const y = Math.min(offset + below, top - 8)
+            scroller.scrollTo({ y: Math.max(0, y), animated: !reduce })
+          })
+        })
+      },
+      () => {},
+    )
+  }
+
   function changeBlank(value) {
     setBlank(value)
     onBlankChange?.(value)
@@ -1215,7 +1290,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   function save() {
     if (stamp) return
-    const { lamp: next, problem } = hang.buildLamp()
+    const built = hang.buildLamp()
+    const problem = built.problem
+    // The short name saved is the one the field showed.
+    const next = shortAuto && shortShown ? { ...built.lamp, short: shortShown } : built.lamp
     if (problem) {
       hang.setMiss(problem)
       feelTap('skip')
@@ -1253,6 +1331,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     leave.current = setTimeout(
       () => {
         goHash(wasEmpty ? '/tonight' : '/lamps')
+        confirmDone(t('confirm.questionAdded'))
         offerPingPrimer(newTime, colors)
       },
       reduce ? LAND_HOLD_STILL : LAND_HOLD,
@@ -1361,6 +1440,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="calendar"
             open={open === 'when'}
             onToggle={() => fold('when')}
+            onShown={showFold}
             colors={colors}
           >
             <View style={styles.pillRow}>
@@ -1457,6 +1537,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="clock"
             open={open === 'time'}
             onToggle={() => fold('time')}
+            onShown={showFold}
             colors={colors}
           >
             <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
@@ -1491,6 +1572,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="folder"
             open={open === 'tag'}
             onToggle={() => fold('tag')}
+            onShown={showFold}
             colors={colors}
           >
             <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
@@ -1549,6 +1631,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="priority"
             open={open === 'priority'}
             onToggle={() => fold('priority')}
+            onShown={showFold}
             colors={colors}
           >
             <View style={styles.pillRow}>
@@ -1573,6 +1656,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="tag"
             open={open === 'topics'}
             onToggle={() => fold('topics')}
+            onShown={showFold}
             colors={colors}
           >
             <TopicPick
@@ -1593,6 +1677,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             icon="note"
             open={open === 'details'}
             onToggle={() => fold('details')}
+            onShown={showFold}
             last
             colors={colors}
           >
@@ -1717,10 +1802,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
         </View>
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
-          <Text style={[styles.tileNum, { color: colors.ink }]}>
-            {record.did}
-            <Text style={[styles.tileOf, { color: colors.inkDim }]}> / {record.asked}</Text>
-          </Text>
+          <Text style={[styles.tileNum, { color: colors.ink }]}>{t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
         </View>
       </View>
@@ -1927,7 +2009,6 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 12 },
   tile: { flex: 1, borderWidth: 1, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 2 },
   tileNum: { fontFamily: fonts.mono, fontSize: 26, fontWeight: '700' },
-  tileOf: { fontSize: 16, fontWeight: '400' },
   tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   trend: { gap: 8, marginBottom: 12 },
   trendLabel: { ...sectionLabel },

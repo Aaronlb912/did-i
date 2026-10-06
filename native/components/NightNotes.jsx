@@ -43,7 +43,7 @@ function NoteEdit({ label, initial, colors, onSave, onCancel }) {
         onSubmitEditing={() => onSave(draft)}
       />
       <View style={styles.keys}>
-        <KeyButton colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} />
+        <KeyButton colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} picked />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
       </View>
     </View>
@@ -137,6 +137,12 @@ export function NightNotes({ book, lamp, colors, onChange }) {
             colors={colors}
             label={t('note.add')}
             onPress={() => {
+              // One night to choose from: straight to its note.
+              if (picks.length === 1) {
+                setPicking(false)
+                setOpen(picks[0].answer.periodKey)
+                return
+              }
               setOpen('')
               setPicking(true)
             }}
@@ -144,6 +150,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
         </View>
       ) : null}
       </Reveal>
+      {noted.length ? (
       <Pressable
         onPress={() => goHash('/notes')}
         accessibilityRole="link"
@@ -152,6 +159,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       >
         <Text style={[styles.quiet, { color: colors.inkSoft }]}>{t('notes.seeAll')} ›</Text>
       </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -198,8 +206,10 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 }
 
 // Inside the sheet: pick a question, then write its note in place.
-function NotePick({ answered, colors, onSave }) {
-  const [open, setOpen] = useState(null)
+function NotePick({ answered, colors, onSave, onCancel }) {
+  // One question (a card picked on Home): straight to its note box.
+  const only = answered.length === 1 ? answered[0] : null
+  const [open, setOpen] = useState(only ? { lampId: only.lamp.id, periodKey: only.answer.periodKey } : null)
   const row = open && answered.find((item) => item.lamp.id === open.lampId && item.answer.periodKey === open.periodKey)
   if (row) {
     return (
@@ -209,7 +219,7 @@ function NotePick({ answered, colors, onSave }) {
           initial={row.answer.note}
           colors={colors}
           onSave={(draft) => onSave(row, draft)}
-          onCancel={() => setOpen(null)}
+          onCancel={only ? onCancel : () => setOpen(null)}
         />
       </Reveal>
     )

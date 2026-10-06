@@ -29,6 +29,7 @@ import {
   weNextMilestone,
   weNextNight,
   weNudge,
+  weQuestion,
   weStreak,
   weCardKept,
   weTonight,
@@ -1085,12 +1086,23 @@ const WE_IDEAS = ['we.idea.dog', 'we.idea.date', 'we.idea.gym', 'we.idea.call', 
 export function WeHomeScreen({ book, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
+  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
+  return (
+    <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <WeHomeList book={book} onChange={onChange} />
+    </ScreenShell>
+  )
+}
+
+// The Did we list itself: the Did we page and the Friends and family tab.
+export function WeHomeList({ book, onChange }) {
+  const account = useAccount()
+  const colors = useHallColors(book)
   const { cards, loaded, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
-  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
 
-  const mine = cards.filter((card) => card.myState === 'in')
+  const mine =cards.filter((card) => card.myState === 'in')
   const tonight = mine.filter((card) => card.due)
   const later = mine.filter((card) => !card.due)
   const month = new Date().toISOString().slice(0, 7)
@@ -1115,7 +1127,7 @@ export function WeHomeScreen({ book, onChange }) {
         style={[styles.weRow, { borderColor: colors.we, backgroundColor: colors.panel }]}
       >
         <View style={styles.weRowCopy}>
-          <Text style={[styles.weQ, { color: colors.ink }]}>{card.question}</Text>
+          <Text style={[styles.weQ, { color: colors.ink }]}>{weQuestion(card.question)}</Text>
           <WeFaces card={card} colors={colors} cheer={cheer} />
           <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
             {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
@@ -1134,7 +1146,7 @@ export function WeHomeScreen({ book, onChange }) {
   }
 
   return (
-    <ScreenShell book={book} title={t('we.title')} colors={colors}>
+    <>
       <Text style={[styles.weLead, { color: colors.inkSoft }]}>{t('we.homeLead')}</Text>
       <WeAsks colors={colors} />
 
@@ -1177,7 +1189,7 @@ export function WeHomeScreen({ book, onChange }) {
       {ans.note ? <Meta colors={colors}>{ans.note}</Meta> : null}
       {ans.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{ans.miss}</Text> : null}
       <DidButton colors={colors} label={t('we.new')} onPress={() => goHash('/we/new')} />
-    </ScreenShell>
+    </>
   )
 }
 

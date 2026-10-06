@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { t } from '../../src/lib/i18n.js'
+import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fonts, radius } from '../theme.js'
 
 const GLASS = 9
 
 /** The chip's dot: when it fills with an answer it pops once. */
-function Glass({ answered, style }) {
+function Glass({ answered, style, children }) {
   const reduce = useReduceMotion()
   const scale = useSharedValue(1)
   const was = useRef(answered)
@@ -21,7 +23,7 @@ function Glass({ answered, style }) {
     )
   }, [answered, reduce, scale])
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
-  return <Animated.View style={[style, popStyle]} />
+  return <Animated.View style={[style, popStyle]}>{children}</Animated.View>
 }
 
 export function Jewel({
@@ -67,7 +69,8 @@ export function Jewel({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={tag ? `${label}, ${tag}` : label}
+      accessibilityLabel={[label, tag, pillStatusLabel(late ? 'late' : on ? 'yes' : skip ? 'skip' : '')].filter(Boolean).join(', ')}
+      accessibilityHint={t('pill.openHint')}
       accessibilityState={{ disabled, selected: Boolean(face), checked: Boolean(on) }}
       disabled={disabled}
       onPress={onPress}
@@ -100,13 +103,20 @@ export function Jewel({
         ) : null}
         <Glass
           answered={late ? 'late' : on ? 'on' : skip ? 'skip' : ''}
-          style={[
-            styles.glass,
-            hole && !on
-              ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.inkDim }
-              : { backgroundColor: glassColor },
-          ]}
-        />
+          style={
+            // A Did reads as a check, not just a coloured dot.
+            on && !hole
+              ? styles.checkWrap
+              : [
+                  styles.glass,
+                  hole && !on
+                    ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.inkDim }
+                    : { backgroundColor: glassColor },
+                ]
+          }
+        >
+          {on && !hole ? <Text style={[styles.check, { color: glassColor }]}>✓</Text> : null}
+        </Glass>
       </View>
       <View style={styles.copy}>
         <Text style={[styles.label, { color: ink }]} numberOfLines={1}>
@@ -157,6 +167,8 @@ const styles = StyleSheet.create({
     height: GLASS,
     borderRadius: GLASS / 2,
   },
+  checkWrap: { alignItems: 'center', justifyContent: 'center' },
+  check: { fontSize: 14, lineHeight: 16, fontWeight: '700' },
   copy: {
     minWidth: 0,
     flexShrink: 1,

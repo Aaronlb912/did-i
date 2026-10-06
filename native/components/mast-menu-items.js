@@ -13,10 +13,12 @@ export const PEOPLE_ON = new Set([
   '/we/new',
 ])
 export const ADD_ON = new Set(['/add', '/hang'])
+export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
 export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 // Home and Questions already live in the system tab bar; the menu holds only
-// what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
+// what the tabs don't: Add, Friends and family, Shop, Collection, Your history
+// (Calendar, with Notes, Every answer and Achievements one tap on), Settings.
 // Screens pushed over the tabs hide that bar, so there Home leads the menu:
 // one tap back to Tonight from anywhere.
 // Inbox has no row of its own, its count folds into Friends and family's
@@ -43,6 +45,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
     },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
+    { key: 'history', path: '/calendar', label: t('settings.history'), on: HISTORY_ON.has(path), icon: 'calendar', stroke: true },
     {
       key: 'settings',
       path: '/settings',

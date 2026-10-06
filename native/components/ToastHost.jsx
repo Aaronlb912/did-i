@@ -38,22 +38,20 @@ const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
 
-// Home's header height below the status bar. The toast covers the count row
-// under it, the one strip of Home with nothing to tap.
-const HOME_TOP = 65
+// Home keeps Did and Nope just above the tab bar. Its toast sits at the
+// bottom like everywhere else, lifted over those buttons, so a tap on Undo
+// can't land on Nope and the count at the top stays in view.
+const HOME_LIFT = 84
 
 /**
  * The one toast on screen, above the tab bar. The rest of the queue waits.
  */
 export function ToastHost({ colors }) {
   const items = useToastQueue()
-  const { insets, overlayBottom: tabBottom } = useAppInsets()
-  // Home has answer buttons from the middle down (Did, Nope, Did it now), so a
-  // tap on Undo just as the toast leaves could answer a question. There the
-  // toast sits at the top instead.
+  const { overlayBottom: tabBottom } = useAppInsets()
   const homePath = useScreenRoute().path
   const onHome = homePath === '/tonight' || homePath === '/'
-  const place = onHome ? { top: insets.top + HOME_TOP } : { bottom: tabBottom }
+  const place = { bottom: tabBottom + (onHome ? HOME_LIFT : 0) }
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
   const [landed, setLanded] = useState('')

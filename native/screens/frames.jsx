@@ -21,6 +21,7 @@ import {
   wornFrame,
 } from '../../src/lib/frames.js'
 import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { openCoinsHow } from '../components/NightSheets.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
@@ -111,7 +112,7 @@ function MiniCard({ colors }) {
   return (
     <View style={[...faceCardStyle(colors), styles.miniCard]}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
-      <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={2}>
+      <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>
         {t('tonight.doneTitle')}
       </Text>
     </View>
@@ -138,11 +139,13 @@ function FrameSheetPreview({ id, colors, ctx }) {
   )
 }
 
-function FrameFacts({ frame, colors }) {
+function FrameFacts({ frame, owned, colors }) {
   return (
     <View style={styles.facts}>
       <View style={[styles.rarity, { borderColor: colors.on }]}>
-        <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
+        <Text style={[styles.rarityText, { color: colors.on }]}>
+          {frame.rarity === 'earned' && !owned ? t('frames.rarity.earnIt') : t(`frames.rarity.${frame.rarity}`)}
+        </Text>
       </View>
       <Text style={[styles.desc, { color: colors.ink }]}>{t(frameText(frame.id, 'desc'))}</Text>
       {['f1', 'f2', 'f3'].map((key) => (
@@ -222,8 +225,11 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
   publishSheet({
     preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} />,
     title: frameName(id),
-    body: shortCoins ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })}` : priceLine,
-    content: <FrameFacts frame={frame} colors={colors} />,
+    body: shortCoins
+      ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })}\n${t('shop.earnCoins', { coins: frame.coins - purse.coins })}`
+      : priceLine,
+    ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors) } : {}),
+    content: <FrameFacts frame={frame} owned={owned} colors={colors} />,
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -351,7 +357,7 @@ function KitFrameTile({ id, label, caption, worn, locked, colors, onPress }) {
         {label}
       </Text>
       {caption ? (
-        <Text style={[styles.kitCaption, { color: colors.inkDim }]} numberOfLines={1}>
+        <Text style={[styles.kitCaption, { color: colors.inkDim }]} numberOfLines={2}>
           {caption}
         </Text>
       ) : null}
@@ -408,6 +414,11 @@ export function FramesCollection({ book, colors, onChange }) {
   )
 }
 
+export function framesForSaleCount(book) {
+  const purse = normalizePurse(book)
+  return shopOrder(purse, frameCtxFor(readShelf().boards)).forSale.length
+}
+
 export function framesOwnedCount(book) {
   const purse = normalizePurse(book)
   const ctx = frameCtxFor(readShelf().boards)
@@ -433,8 +444,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
   sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 12 },
-  sheetFrame: { width: 240 },
-  miniCard: { minHeight: 120 },
+  sheetFrame: { width: 260 },
+  miniCard: { minHeight: 120, paddingHorizontal: 18 },
   facts: { gap: 6, paddingBottom: 4 },
   rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },
