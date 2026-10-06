@@ -31,6 +31,11 @@ export function framePalette(colors = {}) {
     // Stars and snow that sit outside the card need to read on a light page too.
     sky: light ? colors.inkDim || colors.ink : '#dcebff',
     snow: light ? colors.inkDim || colors.ink : '#ffffff',
+    // Fireflies: pale lights vanish on a light card, so go amber with an ink core there.
+    glow: light ? '#d9a300' : '#e8ff8c',
+    spark: light ? colors.ink || '#3a3000' : '#faffd2',
+    // Constellation lines need more weight on a light card.
+    lineOpacity: light ? 0.45 : 0.18,
     light,
   }
 }

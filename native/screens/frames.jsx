@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { t } from '../../src/lib/i18n.js'
+import { hasLocaleKey, t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { activeLook } from '../../src/lib/active-look.js'
 import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
@@ -71,6 +71,11 @@ function frameMiss(next) {
 
 function frameName(id) {
   return id ? t(frameText(id, 'name')) : t('frames.none')
+}
+
+// Tiles are narrow: a frame with a short name (Tonight's moon) uses it there; the sheet keeps the full one.
+function frameTileName(id) {
+  return id && hasLocaleKey(frameText(id, 'short')) ? t(frameText(id, 'short')) : frameName(id)
 }
 
 // The line under a frame's name: what it costs, Owned, how to earn it, or when it is back.
@@ -289,7 +294,7 @@ export function openFramesHow(colors) {
 }
 
 function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
-  const name = frameName(frame.id)
+  const name = frameTileName(frame.id)
   const owned = framesOwned(purse, ctx).has(frame.id)
   return (
     <Pressable
@@ -446,7 +451,7 @@ export function FramesCollection({ book, colors, onChange }) {
           <KitFrameTile
             key={frame.id}
             id={frame.id}
-            label={frameName(frame.id)}
+            label={frameTileName(frame.id)}
             caption={frame.kind === 'season' ? t('kit.seasonal') : ''}
             worn={worn === frame.id}
             colors={colors}
@@ -457,7 +462,7 @@ export function FramesCollection({ book, colors, onChange }) {
           <KitFrameTile
             key={frame.id}
             id={frame.id}
-            label={frameName(frame.id)}
+            label={frameTileName(frame.id)}
             caption={frameStatus(frame, purse, ctx).text}
             weekLit={weekFor(frame, false, ctx)}
             locked

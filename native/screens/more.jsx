@@ -226,7 +226,7 @@ function HelpFold({ colors, title, children }) {
         <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
         <Text style={[styles.slotChev, { color: colors.inkDim }]}>{open ? '▴' : '▾'}</Text>
       </Pressable>
-      {open ? <Reveal>{children}</Reveal> : null}
+      {open ? <Reveal style={styles.foldBody}>{children}</Reveal> : null}
     </View>
   )
 }
@@ -2304,6 +2304,8 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendText: { fontFamily: fonts.ui, fontSize: 12 },
+  // Same gap as the lead card, so a button never sits on the paragraph above it.
+  foldBody: { gap: 8 },
   foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   tagName: { paddingHorizontal: 14, paddingBottom: 10 },
   addRow: { flexDirection: 'row', gap: 10 },
