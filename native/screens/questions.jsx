@@ -668,6 +668,16 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
         {/* Select keeps this row's space (hidden) so the list never moves under a finger. */}
         {ordering ? null : (
+          <View>
+          {/* The Select header sits in the row's own space, so nothing moves. */}
+          {picking ? (
+            <View style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+              <Text style={[styles.pickCount, styles.flex1, { color: colors.ink }]} numberOfLines={1}>
+                {t('questions.pickedN', { n: chosen.length })}
+              </Text>
+              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
+            </View>
+          ) : null}
           <View {...stillWhilePicking}>
           <Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
@@ -716,6 +726,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             )}
           </ScrollView>
           </Reveal>
+          </View>
           </View>
         )}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
@@ -846,15 +857,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           {picking ? (
             <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
               <View style={styles.pickHead}>
-                <Text style={[styles.pickCount, { color: colors.ink }]}>
-                  {t('questions.pickedN', { n: chosen.length })}
-                </Text>
                 <KeyButton
                   colors={colors}
                   label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
                   onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
                 />
-                <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
               </View>
               <View style={styles.pickActions}>
                 <KeyButton
@@ -2017,6 +2024,22 @@ const styles = StyleSheet.create({
   pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
   pickRoom: { height: 140 },
   hiddenKeep: { opacity: 0 },
+  // Covers the hidden top row exactly (its bottom margin left clear).
+  pickTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 10,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  flex1: { flex: 1 },
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
   reorderTimed: { fontFamily: fonts.ui, fontSize: 13, marginTop: 6 },
