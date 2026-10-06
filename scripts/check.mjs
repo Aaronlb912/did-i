@@ -516,6 +516,36 @@ test('referral reward bar tracks paid gems toward the cap', () => {
   assert.equal(inviteNextFriendGems(5, 10), 0)
 })
 
+await testAsync('referral ladder: real gem steps, Night look, Hive at 15, Bloom at 20, server-given only', async () => {
+  const R = await import('../src/lib/invite-reward.js')
+  const P = await import('../src/lib/purse.js')
+  const F = await import('../src/lib/frames.js')
+  const at12 = R.referLadder(12)
+  assert.equal(at12.goal, 15)
+  assert.equal(at12.toBuddy, 3)
+  assert.deepEqual(at12.rungs.filter((r) => r.kind === 'gems').map((r) => [r.n, r.gems]), [[1, 1], [2, 2], [3, 3], [4, 4]], 'gem steps add to ten')
+  assert.deepEqual(at12.rungs.map((r) => r.state), ['got', 'got', 'got', 'got', 'got', 'next', 'later'])
+  assert.equal(R.referLadder(16).goal, 20)
+  assert.equal(R.referLadderNote(R.referLadder(25)).key, 'refer.allDone')
+  // Never sold: not in the shop, not buyable, not a gift.
+  assert.ok(!P.SHOP_BUDDIES.some((b) => b.id === 'hive') && P.BUDDIES.some((b) => b.id === 'hive'))
+  assert.equal(P.buyBuddy({ gems: 99 }, 'hive').miss, 'shop.miss.buddyGone')
+  assert.ok(!P.giftItems().buddies.some((b) => b.id === 'hive'))
+  assert.ok(!F.frameForSale('bloom'))
+  assert.ok(!F.framesOwned({}, { bestStreak: 999, joined: 50 }).has('bloom'), 'Bloom only comes from the server list')
+  // claim_invites lists them; the purse keeps them, and only these ids.
+  const won = P.applyInvitePayout({}, { gems: 0, looks: [], buddies: ['hive', 'cat'], frames: ['bloom', 'gold'] })
+  const purse = P.normalizePurse(won)
+  assert.ok(purse.buddies.includes('hive') && !purse.buddies.includes('cat'))
+  assert.deepEqual(purse.frames, ['bloom'])
+  assert.equal(P.applyInvitePayout(won, { buddies: ['hive'], frames: ['bloom'] }), won, 'given twice changes nothing')
+  // A server gem list does not take the earned buddy away.
+  const W = await import('../src/lib/wallet.js')
+  assert.ok(W.applyGemOwnedToBook(won, { gems: 0, buddies: [] }).buddies.includes('hive'))
+  const sql = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../supabase/referral-rewards.sql'), 'utf8')
+  assert.ok(sql.includes("select 15") && sql.includes("select 20") && sql.includes("'hive'") && sql.includes("'bloom'"))
+})
+
 test('every sql file in db:apply:all is on disk', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const src = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
@@ -4552,8 +4582,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 34)
-  assert.equal(new Set(ids).size, 34)
+  assert.equal(ids.length, 35)
+  assert.equal(new Set(ids).size, 35)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])

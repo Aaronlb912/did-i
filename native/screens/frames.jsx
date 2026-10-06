@@ -87,6 +87,7 @@ export function frameStatus(frame, purse, ctx) {
   if (frame.kind === 'gem') return { gems: frame.gems }
   if (frame.kind === 'earned') {
     const p = frameProgress(frame, ctx)
+    if (frame.earn === 'refer') return { text: t('frames.earnRefer', { n: frame.need }) }
     return { text: frame.earn === 'freeze' ? t('frames.earnFreeze') : t('frames.progress', { n: p.n, of: p.of }) }
   }
   if (frame.kind === 'season') {
@@ -176,7 +177,11 @@ function FrameFacts({ frame, owned, colors }) {
         <View style={styles.howEarn}>
           <Text style={[styles.rarityText, { color: colors.inkSoft }]}>{t('frames.rarity.earnIt')}</Text>
           <Text style={[styles.desc, { color: colors.ink }]}>
-            {frame.earn === 'freeze' ? t('frames.howFreeze') : t('frames.howStreak', { n: frame.need })}
+            {frame.earn === 'freeze'
+              ? t('frames.howFreeze')
+              : frame.earn === 'refer'
+                ? t('frames.howRefer', { n: frame.need })
+                : t('frames.howStreak', { n: frame.need })}
           </Text>
         </View>
       ) : (

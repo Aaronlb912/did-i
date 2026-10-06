@@ -10,7 +10,7 @@ alter table public.profiles add constraint profiles_frame_on_ok
   check (frame_on in ('', 'first', 'thin', 'double', 'dotted', 'washi', 'pixel', 'stitch',
     'polaroid', 'wood', 'flowers', 'comic', 'moon', 'filigree', 'deco', 'marble', 'glow',
     'silver', 'neon', 'fireflies', 'shoot', 'glass', 'gold', 'const', 'ring', 'aurora',
-    'vine', 'ember', 'gems', 'frost', 'web', 'leaves', 'snow', 'sakura', 'bday'));
+    'vine', 'ember', 'gems', 'frost', 'bloom', 'web', 'leaves', 'snow', 'sakura', 'bday'));
 alter table public.profiles drop constraint if exists profiles_look_on_ok;
 alter table public.profiles add constraint profiles_look_on_ok
   check (look_on ~ '^[a-z0-9-]{1,24}$') not valid;

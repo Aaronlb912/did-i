@@ -854,6 +854,9 @@ export async function listBlocks() {
 
 export const INVITE_GEMS_CAP = 10
 export const INVITE_LOOK_AT = 3
+// Past the gems and the look (supabase/referral-rewards.sql holds the same).
+export const INVITE_BUDDY_AT = 15
+export const INVITE_FRAME_AT = 20
 
 export function inviteGemsFor(which) {
   const n = Math.floor(Number(which) || 0)
@@ -896,12 +899,15 @@ export async function useInvite(code) {
 // What the account owes you. Calling it twice pays once.
 export async function claimInvites() {
   const db = cloud()
-  if (!db) return { gems: 0, looks: [], joined: 0 }
+  if (!db) return { gems: 0, looks: [], joined: 0, buddies: [], frames: [] }
   const { data } = await db.rpc('claim_invites')
   return {
     gems: Number(data?.gems) || 0,
     looks: Array.isArray(data?.looks) ? data.looks : [],
     joined: Number(data?.joined) || 0,
+    // Earned by the server's friend count; listed on every claim.
+    buddies: Array.isArray(data?.buddies) ? data.buddies : [],
+    frames: Array.isArray(data?.frames) ? data.frames : [],
   }
 }
 

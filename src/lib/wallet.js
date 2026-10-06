@@ -1,7 +1,7 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isLive, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { frameById, withServerFrames } from './frames.js'
 
@@ -109,7 +109,8 @@ export function applyGemOwnedToBook(book, owned, opts = {}) {
     gems: own.gems,
     looks: [...new Set([...purse.looks.filter((id) => !isGemLook(id)), ...own.looks])],
     cheers: [...new Set(['lime', ...own.cheers])],
-    buddies: [...new Set([FREE_BUDDY, ...own.buddies])],
+    // The referral buddy is not a gem item; it stays once claim_invites gave it.
+    buddies: [...new Set([FREE_BUDDY, ...purse.buddies.filter(isReferBuddy), ...own.buddies])],
     frames: withServerFrames(purse.frames, 'gem', own.frames),
     frame: opts.frameOn || purse.frame,
     lookOn: opts.lookOn || purse.lookOn,

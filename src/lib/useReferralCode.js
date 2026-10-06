@@ -42,9 +42,8 @@ export function useReferralCode({ book, onChange }) {
     if (why) return setMiss(tMiss(why))
     setDraft('')
     const won = await claimInvites()
-    if (onChange && (won.gems || won.looks.length)) {
-      onChange(applyInvitePayout(book, won))
-    }
+    const next = applyInvitePayout(book, won)
+    if (onChange && next !== book) onChange(next)
     await refresh()
     const words = invitePayoutNote(won)
     if (words) {

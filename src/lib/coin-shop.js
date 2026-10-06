@@ -1,5 +1,5 @@
 import { accountSessionOn } from './session-id.js'
-import { BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
+import { SHOP_BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
@@ -69,7 +69,7 @@ export async function buyAccessoryWithCoins(book, id) {
 const GEM_KINDS = {
   look: { list: LOOKS, owned: 'looks', on: 'lookOn', local: buyLook },
   cheer: { list: CHEERS, owned: 'cheers', on: 'cheerOn', local: buyCheer },
-  buddy: { list: BUDDIES, owned: 'buddies', on: 'buddyOn', local: buyBuddy },
+  buddy: { list: SHOP_BUDDIES, owned: 'buddies', on: 'buddyOn', local: buyBuddy },
 }
 
 // Signed in, the server takes the gems and records the item, so it cannot be

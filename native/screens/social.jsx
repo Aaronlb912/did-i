@@ -9,7 +9,6 @@ import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_GEMS_CAP,
-  INVITE_LOOK_AT,
   invitePayoutNote,
   answerSend,
   reportSend,
@@ -79,7 +78,8 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
 import { WeAsks } from '../components/WeTonight.jsx'
-import { InviteRewardBar } from '../components/InviteRewardBar.jsx'
+import { ReferLadder } from '../components/ReferLadder.jsx'
+import { activeLook } from '../../src/lib/active-look.js'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { askRemoveFriend } from '../components/removeFriend.js'
@@ -1003,6 +1003,8 @@ export function PeopleScreen({ book, onChange }) {
 
 export function PeopleReferScreen({ book, onChange }) {
   const colors = useHallColors()
+  // Frames show in your look, as on your card.
+  const frameColors = useLookColors(activeLook(book))
   const account = useAccount()
   const [invite, setInvite] = useKept(`refer.invite:${account.user?.id}`, '', KEEP)
   const [joined, setJoined] = useKept(`refer.joined:${account.user?.id}`, 0, KEEP)
@@ -1034,8 +1036,9 @@ export function PeopleReferScreen({ book, onChange }) {
       setJoined(won.joined)
       const who = await readMine()
       setGemsPaid(Number(who?.invite_gems_paid) || 0)
+      const next = applyInvitePayout(book, won)
+      if (next !== book && onChange) onChange(next)
       if (!won.gems && !won.looks.length) return
-      if (onChange) onChange(applyInvitePayout(book, won))
       setSaid(invitePayoutNote(won))
     } catch {
       setMiss(t('people.reach'))
@@ -1069,7 +1072,7 @@ export function PeopleReferScreen({ book, onChange }) {
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('people.referBody')}</Meta>
 
-      <InviteRewardBar colors={colors} gemsPaid={gemsPaid} joined={joined} />
+      <ReferLadder colors={colors} frameColors={frameColors} joined={joined} book={book} onChange={onChange} />
 
       <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('people.invite')}</Text>
@@ -1098,12 +1101,6 @@ export function PeopleReferScreen({ book, onChange }) {
           />
         </View>
       </View>
-      {/* Night already owned (bought or won): no goal to chase. */}
-      {joined >= INVITE_LOOK_AT ? (
-        <Meta colors={colors}>{t('people.lookWon')}</Meta>
-      ) : normalizePurse(book).looks.includes('night') ? null : (
-        <Meta colors={colors}>{t('people.lookLeft', { n: INVITE_LOOK_AT - joined })}</Meta>
-      )}
 
       <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
 

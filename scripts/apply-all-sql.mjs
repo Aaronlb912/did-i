@@ -42,6 +42,7 @@ const files = [
   'supabase/device-names.sql',
   'supabase/friends-week.sql',
   'supabase/streak-guard.sql',
+  'supabase/referral-rewards.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
