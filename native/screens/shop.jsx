@@ -369,6 +369,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   const [width, setWidth] = useState(() => Math.max(0, Dimensions.get('window').width - 32))
   const [at, setAt] = useState(0)
   const pager = useRef(null)
+  const dragFrom = useRef(0)
   // Pass 6 wrapped this pager in a gesture-handler pan (minVelocityX 500).
   // That pan began on every touch down and, once it saw sideways movement,
   // claimed the touch for the gesture-handler root, which cancels the native
@@ -385,6 +386,22 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
     const n = Math.round(e.nativeEvent.contentOffset.x / width)
     if (n !== at) setAt(n)
   }
+  // Native snapping (pagingEnabled, snapToInterval, snapToOffsets) nested in
+  // the page scroll on Android only paged forward: a swipe back from page 2
+  // settled at 379.05 of 379.43 and snapped to page 2 again. The page is
+  // picked here instead, from where the drag began and which way it went.
+  const release = (e) => {
+    const x = e.nativeEvent.contentOffset.x
+    const vx = e.nativeEvent.velocity?.x ?? 0
+    const from = Math.round(dragFrom.current / width)
+    const dx = x - dragFrom.current
+    let n = from
+    if (dx > width * 0.15 || (dx > 4 && vx < -0.2)) n = from + 1
+    else if (dx < -width * 0.15 || (dx < -4 && vx > 0.2)) n = from - 1
+    n = Math.max(0, Math.min(slides.length - 1, n))
+    pager.current?.scrollToOffset({ offset: n * width, animated: !motionOff() })
+    if (n !== at) setAt(n)
+  }
   return (
     <View
       style={styles.carousel}
@@ -398,8 +415,9 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
           ref={pager}
           data={slides}
           horizontal
-          pagingEnabled
-          nestedScrollEnabled={Platform.OS === 'android'}
+          decelerationRate="fast"
+          onScrollBeginDrag={(e) => { dragFrom.current = e.nativeEvent.contentOffset.x }}
+          onScrollEndDrag={release}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(slide) => `${slide.kind}-${slide.date}`}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
