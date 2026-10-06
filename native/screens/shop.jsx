@@ -84,6 +84,8 @@ import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIco
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
+import { CardFrame, useFrameActive } from '../components/frames/index.js'
+import { useIsFocused } from '@react-navigation/native'
 import { FramesCollection, FramesShopRow, framesOwnedCount } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
@@ -202,6 +204,37 @@ function LookPreviewCard({ id }) {
           <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
           <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
         </View>
+      </View>
+    </View>
+  )
+}
+
+// Your card in your look, wearing the frame you have on, like the other
+// Collection previews. It moves while this screen is in front.
+const SAMPLE_WEEK = [true, true, true, true, false, true, true]
+
+function FramePreviewCard({ lookId, frameId }) {
+  const theme = useTheme()
+  const colors = useLookColors(lookId)
+  const gemCard = gemPanelStyle(lookId, theme)
+  const active = useFrameActive(useIsFocused())
+  return (
+    <View style={styles.buddyPreview}>
+      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
+      <View style={styles.framePreviewRoom}>
+        <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={7} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
+          <View
+            style={[
+              styles.buddyPreviewCard,
+              styles.buddyPreviewCardGem,
+              { backgroundColor: colors.panel, borderColor: gemCard ? 'transparent' : colors.line },
+              gemCard,
+            ]}
+          >
+            <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+            <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+          </View>
+        </CardFrame>
       </View>
     </View>
   )
@@ -1881,6 +1914,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
       <Reveal key={tab}>
       <Text style={[styles.kitWearing, { color: colors.ink }]}>{wearingLine}</Text>
 
+      {tab === 'frames' ? <FramePreviewCard lookId={purse.lookOn} frameId={frameInfo.worn} /> : null}
       {tab === 'frames' ? <FramesCollection book={book} colors={colors} onChange={onChange} /> : null}
 
       {tab === 'looks' ? (
@@ -2197,6 +2231,8 @@ const styles = StyleSheet.create({
     minHeight: 46,
   },
   buddyPreview: { gap: 8, marginTop: 4 },
+  // Frame art reaches past the card edge; leave it room so nothing is cut.
+  framePreviewRoom: { paddingHorizontal: 14, paddingVertical: 22 },
   filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
   filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
   filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
