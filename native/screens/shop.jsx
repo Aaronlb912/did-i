@@ -1322,7 +1322,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
           <ShopActionRow
             key={item.id}
             colors={colors}
-            preview={<BuddyChip id={item.id} alive />}
+            preview={<BuddyChip id={item.id} alive={peekBuddy === item.id} />}
             artKey={`buddy:${item.id}`}
             previewOn={peekBuddy === item.id}
             onPreview={() => setPeekBuddy(item.id)}
@@ -2042,7 +2042,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               colors={colors}
               onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
             >
-              <BuddyChip id={item.id} alive />
+              <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
           ))}
           <KitTile
