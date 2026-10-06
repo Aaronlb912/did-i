@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { activeLook } from '../../src/lib/active-look.js'
-import { readShelf } from '../../src/lib/board-shelf.js'
+import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { NIGHT_COIN_CAP, normalizePurse } from '../../src/lib/purse.js'
@@ -107,15 +107,15 @@ function StatusTag({ status, colors }) {
   )
 }
 
-// A small done card, so the frame in the sheet sits around something real.
+// Your own sample question, like the look sheets, so the frame sits around your card.
 // roomy: more inner space for frames with art over the corners (Frost), so
 // the crystals never touch the text.
 function MiniCard({ colors, roomy }) {
   return (
     <View style={[...faceCardStyle(colors), styles.miniCard, roomy && styles.miniCardRoomy]}>
-      <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
+      <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{previewSample().tag}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>
-        {t('tonight.doneTitle')}
+        {previewSample().question}
       </Text>
     </View>
   )
@@ -345,6 +345,10 @@ export function ShopFramesScreen({ book, onChange }) {
       <Meta colors={colors}>{t('frames.hint')}</Meta>
       {SECTIONS.map((sec) => {
         const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind)
+        // Paid sections go up by price, then by name.
+        if (sec.kind === 'coin' || sec.kind === 'gem') {
+          list.sort((a, b) => (a.coins || a.gems || 0) - (b.coins || b.gems || 0) || frameName(a.id).localeCompare(frameName(b.id)))
+        }
         return (
           <View key={sec.kind}>
             <Text style={[styles.cap, { color: colors.inkDim }]}>{t(sec.key)}</Text>

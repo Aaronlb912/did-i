@@ -915,7 +915,7 @@ export function PeopleScreen({ book, onChange }) {
 
       {tab === 'we' ? (
         <>
-      <SectionHead colors={colors} label={t('we.title')} />
+      {/* The tab already says Did we; no second header. */}
       <WeHomeList book={book} onChange={onChange} />
         </>
       ) : null}
@@ -934,9 +934,9 @@ export function PeopleScreen({ book, onChange }) {
         colors={colors}
         label={t('friendId.yours')}
         note={mine?.friend_id ? formatFriendId(mine.friend_id) : t('friendId.shareSub')}
-        // With an ID, Copy and Share sit right below; without one, go get it.
+        // With an ID, Copy and Share sit inside this card; without one, go get it.
         onPress={mine?.friend_id ? undefined : () => goHash('/people/connect')}
-      />
+      >
       {mine?.friend_id ? (
         <View style={styles.idButtons}>
           <KeyButton
@@ -959,6 +959,7 @@ export function PeopleScreen({ book, onChange }) {
           />
         </View>
       ) : null}
+      </Row>
       <Row
         colors={colors}
         label={t('people.connect')}

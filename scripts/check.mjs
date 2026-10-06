@@ -853,6 +853,8 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   assert.equal(merged.length, 7)
   assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
   assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
+  // Tonight stays on your own answers, like Home, whatever the server says.
+  assert.deepEqual(mergeCoinNights(nights, [{ night: '2026-10-04', coins: 2 }], '2026-10-04')[0], nights[0])
   assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
   assert.match(coinNightLine(nights[1], 'Sat'), /late/i, 'a late Did explains 3 coins, not 4')
   assert.match(coinNightLine(merged[1], 'Sat'), /\.$/, 'a line with no reason still ends in a period')
@@ -4481,7 +4483,8 @@ test('every card frame id has art, and the vine and moon math hold', () => {
     for (const id of ids) assert.ok(data.includes("'" + id + "'"), id + ' is in src/lib/frames.js')
   }
   const preview = readFileSync(path.join(root, 'native/components/frames/FramePreview.jsx'), 'utf8')
-  assert.ok(preview.includes('<CardFrame id={id}') && preview.includes('active={false}'), 'previews are still')
+  assert.ok(preview.includes('<CardFrame id={id}') && preview.includes('active={false} still'), 'previews are still')
+  assert.ok(preview.includes('runAfterInteractions') && preview.includes('memo('), 'preview tiles mount lazily and are memoized')
   const frame = readFileSync(path.join(root, 'native/components/frames/CardFrame.jsx'), 'utf8')
   assert.ok(frame.includes('FRAME_ART[id]') && frame.includes('pointerEvents="none"'), 'frames never take touches')
   const runtime = readFileSync(path.join(root, 'native/components/frames/runtime.jsx'), 'utf8')

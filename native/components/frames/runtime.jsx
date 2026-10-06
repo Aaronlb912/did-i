@@ -1,7 +1,7 @@
 // Shared plumbing for card frames: the svg loader, the battery rules hook,
 // one UI-thread clock per frame, and the particle view.
 import { useEffect, useRef, useState } from 'react'
-import { AppState, StyleSheet } from 'react-native'
+import { AppState, StyleSheet, View } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
 import { requireOptionalNativeModule } from 'expo'
 import { useReduceMotion } from '../../../src/lib/useReduceMotion.js'
@@ -172,7 +172,14 @@ export function useFrameClock(active) {
  * One particle: a view whose place comes from fn(t, item, w, h) on the UI
  * thread. fn must be a worklet and return { x, y, o, r?, s? } (r in radians).
  */
-export function Particle({ clock, item, fn, w, h, size, children }) {
+// Thumbnails pass STILL_CLOCK: no frame callback, no particles, no animated styles.
+export const STILL_CLOCK = Object.freeze({ value: 0, still: true })
+
+export function Particle(props) {
+  return props.clock && props.clock.still ? null : <LiveParticle {...props} />
+}
+
+function LiveParticle({ clock, item, fn, w, h, size, children }) {
   const style = useAnimatedStyle(() => {
     const s = fn(clock.value, item, w, h)
     return {
@@ -193,7 +200,22 @@ export function Particle({ clock, item, fn, w, h, size, children }) {
 }
 
 /** A whole-layer animation (opacity, rotation, slide) driven by fn(t) -> style. */
-export function Moving({ clock, fn, style, children }) {
+export function Moving(props) {
+  if (!props.clock || !props.clock.still) return <LiveMoving {...props} />
+  let held = null
+  try {
+    held = props.fn(0)
+  } catch {
+    held = null
+  }
+  return (
+    <View pointerEvents="none" style={[props.style, held]}>
+      {props.children}
+    </View>
+  )
+}
+
+function LiveMoving({ clock, fn, style, children }) {
   const moving = useAnimatedStyle(() => fn(clock.value))
   return (
     <Animated.View pointerEvents="none" style={[style, moving]}>
