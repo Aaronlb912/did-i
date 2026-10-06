@@ -4409,6 +4409,23 @@ test('a freeze is earned every 14 nights in a row, capped at two, and spent on t
   assert.equal(walkFreezes([...clears(14), 'miss', ...clears(14)]).held, 1)
 })
 
+test('a freeze is never used by accident and there is no balance to add to', () => {
+  const clears = (n) => Array(n).fill('clear')
+  // Nights with nothing due never spend one, however many there are.
+  assert.deepEqual(walkFreezes([...clears(14), ...Array(30).fill('none')]), { run: 14, held: 1, frozen: [] })
+  // No streak, no freeze to spend: misses before any run cost nothing.
+  assert.deepEqual(walkFreezes(['miss', 'miss', ...clears(3)]), { run: 3, held: 0, frozen: [] })
+  // Freezes come only from the answers walk: nothing stored is read, and the shop has none.
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const feel = readFileSync(path.join(root, 'src/lib/hall-feel.js'), 'utf8')
+  assert.ok(!/\b(book|boards|purse|profile)\.freez/i.test(feel), 'no stored freeze count is read')
+  const purse = readFileSync(path.join(root, 'src/lib/purse.js'), 'utf8')
+  assert.ok(!/freez/i.test(purse), 'freezes are not sold or held in the purse')
+  // A past night cannot be answered, so freezes cannot be farmed by filling old nights.
+  const ops = readFileSync(path.join(root, 'src/lib/board-ops.js'), 'utf8')
+  assert.ok(/periodPassed\(row\.lamp, row\.periodKey, openFloorIso\(clock\)\)/.test(ops), 'answers refuse nights past the open floor')
+})
+
 test('next freeze counts down to the next 14, none when two are held', () => {
   assert.equal(nightsToNextFreeze(0), 14)
   assert.equal(nightsToNextFreeze(5), 9)
