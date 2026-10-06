@@ -2651,4 +2651,12 @@ export const zh = {
   'notes.searchPh': "搜索笔记",
   'notes.empty': "还没有笔记。打开一个问题，在笔记下点添加笔记。",
   'notes.seeAll': "查看全部笔记",
+  // r10-extras
+  'shop.cheerPlay': "播放",
+  'shop.cheerPlayA11y': "播放{name}",
+  'shop.cheerStill': "已开启减少动态效果，这里显示静态画面。完成 Did 后，这个欢呼会在你的卡片周围绽放。",
+  'cal.viewMonth': "月",
+  'cal.viewYear': "年",
+  'cal.prevYear': "上一年",
+  'cal.nextYear': "下一年",
 }

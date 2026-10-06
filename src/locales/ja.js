@@ -2666,4 +2666,12 @@ export const ja = {
   'notes.searchPh': "メモを検索",
   'notes.empty': "まだメモはありません。質問を開いて、メモの下の「メモを追加」をタップしてください。",
   'notes.seeAll': "すべてのメモを見る",
+  // r10-extras
+  'shop.cheerPlay': "再生",
+  'shop.cheerPlayA11y': "{name}を再生",
+  'shop.cheerStill': "動きを減らす設定がオンなので静止画です。Didのあと、この応援がカードのまわりではじけます。",
+  'cal.viewMonth': "月",
+  'cal.viewYear': "年",
+  'cal.prevYear': "前の年",
+  'cal.nextYear': "次の年",
 }

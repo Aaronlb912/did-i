@@ -2742,4 +2742,12 @@ export const fr = {
   'notes.searchPh': "Chercher dans les notes",
   'notes.empty': "Pas encore de notes. Ouvre une question et touche Ajouter une note sous Notes.",
   'notes.seeAll': "Voir toutes les notes",
+  // r10-extras
+  'shop.cheerPlay': "Lire",
+  'shop.cheerPlayA11y': "Lire {name}",
+  'shop.cheerStill': "Moins de mouvement est activé, voici une image fixe. Après un Did, cette ovation éclate autour de ta carte.",
+  'cal.viewMonth': "Mois",
+  'cal.viewYear': "Année",
+  'cal.prevYear': "Année précédente",
+  'cal.nextYear': "Année suivante",
 }

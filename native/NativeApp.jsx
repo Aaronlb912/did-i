@@ -18,6 +18,7 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+import { BootView } from './components/BootView.jsx'
 import { Boundary } from './components/Boundary.jsx'
 import { Slot } from './components/Slot.jsx'
 import { StreakMomentHost } from './components/StreakMoment.jsx'
@@ -103,7 +104,9 @@ export function NativeApp() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }}>
-      {!fontsLoaded || !launchReady ? null : (
+      {!fontsLoaded || !launchReady ? (
+        <BootView />
+      ) : (
         <SafeAreaProvider>
           <ThemedStatusBar />
           <Boundary>

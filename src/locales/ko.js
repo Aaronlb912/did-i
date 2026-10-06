@@ -2667,4 +2667,12 @@ export const ko = {
   'notes.searchPh': "메모 검색",
   'notes.empty': "아직 메모가 없어요. 질문을 열고 메모 아래의 메모 추가를 누르세요.",
   'notes.seeAll': "모든 메모 보기",
+  // r10-extras
+  'shop.cheerPlay': "재생",
+  'shop.cheerPlayA11y': "{name} 재생",
+  'shop.cheerStill': "동작 줄이기가 켜져 있어 정지 화면입니다. Did 후에 이 응원이 카드 주위에서 터집니다.",
+  'cal.viewMonth': "월",
+  'cal.viewYear': "연도",
+  'cal.prevYear': "이전 연도",
+  'cal.nextYear': "다음 연도",
 }

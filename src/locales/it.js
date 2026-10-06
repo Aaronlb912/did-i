@@ -2727,4 +2727,12 @@ export const it = {
   'notes.searchPh': "Cerca nelle note",
   'notes.empty': "Ancora nessuna nota. Apri una domanda e tocca Aggiungi una nota sotto Note.",
   'notes.seeAll': "Vedi tutte le note",
+  // r10-extras
+  'shop.cheerPlay': "Riproduci",
+  'shop.cheerPlayA11y': "Riproduci {name}",
+  'shop.cheerStill': "Meno movimento è attivo, quindi è un fermo immagine. Dopo un Did, questo applauso esplode intorno alla tua scheda.",
+  'cal.viewMonth': "Mese",
+  'cal.viewYear': "Anno",
+  'cal.prevYear': "Anno precedente",
+  'cal.nextYear': "Anno successivo",
 }

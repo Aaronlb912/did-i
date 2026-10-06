@@ -2735,4 +2735,12 @@ export const es = {
   'notes.searchPh': "Buscar notas",
   'notes.empty': "Aún no hay notas. Abre una pregunta y toca Añadir nota en Notas.",
   'notes.seeAll': "Ver todas las notas",
+  // r10-extras
+  'shop.cheerPlay': "Ver",
+  'shop.cheerPlayA11y': "Ver {name}",
+  'shop.cheerStill': "Menos movimiento está activado, así que es una imagen fija. Tras un Did, esta ovación estalla alrededor de tu tarjeta.",
+  'cal.viewMonth': "Mes",
+  'cal.viewYear': "Año",
+  'cal.prevYear': "Año anterior",
+  'cal.nextYear': "Año siguiente",
 }

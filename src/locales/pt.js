@@ -2728,4 +2728,12 @@ export const pt = {
   'notes.searchPh': "Buscar notas",
   'notes.empty': "Ainda não há notas. Abra uma pergunta e toque em Adicionar nota em Notas.",
   'notes.seeAll': "Ver todas as notas",
+  // r10-extras
+  'shop.cheerPlay': "Tocar",
+  'shop.cheerPlayA11y': "Tocar {name}",
+  'shop.cheerStill': "Menos movimento está ativado, então é uma imagem parada. Depois de um Did, esta torcida explode em volta do seu cartão.",
+  'cal.viewMonth': "Mês",
+  'cal.viewYear': "Ano",
+  'cal.prevYear': "Ano anterior",
+  'cal.nextYear': "Ano seguinte",
 }

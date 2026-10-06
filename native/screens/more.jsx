@@ -97,7 +97,7 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, sectionLabel, withAlpha } from '../theme.js'
-import { CalendarGrid } from '../components/CalendarGrid.jsx'
+import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
@@ -105,7 +105,7 @@ import { SavableSetField } from '../components/SavableSetField.jsx'
 import { Avatar } from '../components/PersonCard.jsx'
 import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
 import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
-import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
@@ -553,11 +553,25 @@ export function NotesScreen({ book, boards }) {
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
+  const [view, setView] = useState('month')
 
   return (
     <ScreenShell title={t('boards.calendar')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
-      <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      <ChipRow
+        items={[
+          { id: 'month', label: t('cal.viewMonth') },
+          { id: 'year', label: t('cal.viewYear') },
+        ]}
+        value={view}
+        onPick={setView}
+        colors={colors}
+      />
+      {view === 'year' ? (
+        <YearGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      ) : (
+        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, { backgroundColor: colors.on }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>

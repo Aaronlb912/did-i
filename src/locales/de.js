@@ -2746,4 +2746,12 @@ export const de = {
   'notes.searchPh': "Notizen durchsuchen",
   'notes.empty': "Noch keine Notizen. Öffne eine Frage und tippe unter Notizen auf Notiz hinzufügen.",
   'notes.seeAll': "Alle Notizen",
+  // r10-extras
+  'shop.cheerPlay': "Abspielen",
+  'shop.cheerPlayA11y': "{name} abspielen",
+  'shop.cheerStill': "Weniger Bewegung ist an, daher ein Standbild. Nach einem Did platzt dieser Jubel um deine Karte.",
+  'cal.viewMonth': "Monat",
+  'cal.viewYear': "Jahr",
+  'cal.prevYear': "Früheres Jahr",
+  'cal.nextYear': "Späteres Jahr",
 }
