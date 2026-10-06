@@ -7,9 +7,21 @@ import { MenuIcon } from './MenuIcon.jsx'
 
 // A settings row that shows its current value and opens in place.
 // Lives inside a SetCard; the last row drops its bottom rule.
-export function HangFold({ label, value, icon, open, onToggle, last, colors, children }) {
+// onShown gets the row's view once it has opened, so the page can bring it into view.
+export function HangFold({ label, value, icon, open, onToggle, last, colors, children, onShown }) {
   const reduce = useReduceMotion()
   const turn = useRef(new Animated.Value(open ? 1 : 0)).current
+  const box = useRef(null)
+  const wasOpen = useRef(open)
+
+  useEffect(() => {
+    const opened = open && !wasOpen.current
+    wasOpen.current = open
+    if (!opened || !onShown) return undefined
+    // After the body has laid out (and the fold ease has run).
+    const id = setTimeout(() => box.current && onShown(box.current), reduce ? 30 : 240)
+    return () => clearTimeout(id)
+  }, [open])
 
   useEffect(() => {
     if (reduce) {
@@ -30,7 +42,7 @@ export function HangFold({ label, value, icon, open, onToggle, last, colors, chi
   const rule = last && !open ? null : { borderBottomWidth: 1, borderBottomColor: colors.lineSoft }
 
   return (
-    <View style={[open && { backgroundColor: colors.panel2 }, last && open ? null : rule]}>
+    <View ref={box} collapsable={false} style={[open && { backgroundColor: colors.panel2 }, last && open ? null : rule]}>
       <Pressable
         onPress={onToggle}
         android_ripple={ripple(colors.panel3)}
