@@ -36,7 +36,19 @@
     },
     "plugins": [
       "expo-status-bar",
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./public/icon-512.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#eef1e6",
+          "dark": {
+            "image": "./public/icon-512.png",
+            "backgroundColor": "#0e1014"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

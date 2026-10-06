@@ -49,6 +49,34 @@ globalThis.__didIPlatform = Platform.OS
 globalThis.__didIAppearance = Appearance
 globalThis.__didIExpoExtra = Constants.expoConfig?.extra || {}
 
+// The biggest accessibility text sizes (about 3x) broke fixed rows, chips and
+// labels mid-word. Cap every Text and TextInput at 1.4x unless a screen sets
+// its own maxFontSizeMultiplier. React 19 ignores defaultProps on function
+// components, so the export is swapped for a thin wrapper before any render.
+const FONT_CAP = 1.4
+function capFontScale(name) {
+  try {
+    const RN = require('react-native')
+    const Base = RN[name]
+    if (!Base || Base.__didICapped) return
+    const React = require('react')
+    const Capped = React.forwardRef((props, ref) =>
+      React.createElement(Base, { maxFontSizeMultiplier: FONT_CAP, ...props, ref }),
+    )
+    // Statics like TextInput.State, but never the wrapper's own render.
+    for (const key of Object.keys(Base)) {
+      if (key !== '$$typeof' && key !== 'render' && key !== 'displayName') Capped[key] = Base[key]
+    }
+    Capped.displayName = name
+    Capped.__didICapped = true
+    Object.defineProperty(RN, name, { configurable: true, enumerable: true, value: Capped })
+  } catch {
+    // Text keeps the phone's full scale.
+  }
+}
+capFontScale('Text')
+capFontScale('TextInput')
+
 // A readable phone name for Account > Sync and phones (deviceLabel). Android
 // gives the model ("Pixel 7"). iOS 16+ only says "iPhone", so that falls back.
 try {
