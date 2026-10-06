@@ -402,7 +402,7 @@ function StreakHero({ colors, n, label, line, chip }) {
   )
 }
 
-function NumberTile({ colors, label, n, onPress, third = false, half = false }) {
+function NumberTile({ colors, label, n, unit = '', onPress, third = false, half = false }) {
   return (
     <Pressable
       disabled={!onPress}
@@ -410,7 +410,10 @@ function NumberTile({ colors, label, n, onPress, third = false, half = false }) 
       accessibilityRole={onPress ? 'button' : undefined}
       style={({ pressed }) => [styles.tile, third && styles.tileThird, half && styles.tileHalf, { backgroundColor: colors.panel, borderColor: colors.line }, pressFx(pressed)]}
     >
-      <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <Text style={[styles.tileNum, { color: colors.ink }]}>
+        {String(n || 0)}
+        {unit ? <Text style={[styles.tileUnit, { color: colors.inkSoft }]}>{` ${unit}`}</Text> : null}
+      </Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
     </Pressable>
   )
@@ -636,13 +639,15 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
   const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
+  const anyOff =
+    lamps.some((lamp) => nights.some((night) => weekCell(night, lamp).state === 'off')) ||
+    weCards.some((card) => nights.some((night) => weCardState(night.iso, card) === 'off'))
 
   function cellColor(state) {
     if (state === 'yes') return colors.on
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
     if (state === 'hole') return colors.miss
-    if (state === 'freeze') return colors.freeze
     return colors.open
   }
 
@@ -651,6 +656,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'off') return { borderWidth: 1, borderColor: colors.lineSoft }
     // Due tonight, not answered yet: a ring, so it never reads as a nope.
     if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
+    // A night a freeze kept: a ring, as in the history legend.
+    if (state === 'freeze') return { borderWidth: 1.5, borderColor: colors.freeze }
     return { backgroundColor: cellColor(state) }
   }
 
@@ -691,6 +698,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['hole', t('later.missed')],
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],
+    ...(anyOff ? [['off', t('week.notAsked')]] : []),
   ]
 
   return (
@@ -720,7 +728,16 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
                 </Text>
                 <Text style={[styles.weekDay, { color: colors.inkSoft }]}>{night.dayNum}</Text>
                 {/* Cleared nights get a dot under the date, the same rule as Home. */}
-                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : frozen.has(night.iso) ? colors.freeze : 'transparent' }]} />
+                <View
+                  style={[
+                    styles.weekDot,
+                    cleared.has(night.iso)
+                      ? { backgroundColor: colors.on }
+                      : frozen.has(night.iso)
+                        ? { borderWidth: 1, borderColor: colors.freeze }
+                        : null,
+                  ]}
+                />
               </Pressable>
             ))}
           </View>
@@ -800,6 +817,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
               colors={colors}
               label={shortLabel(row.lamp)}
               n={row.n}
+              unit={row.n === 1 ? t('streaks.unitOne') : t('streaks.unit')}
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           ))}
@@ -2207,6 +2225,7 @@ const styles = StyleSheet.create({
   // Three in a row: the week's DID, Late and Nope.
   tileThird: { flexBasis: '30%' },
   tileNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700' },
+  tileUnit: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '400' },
   tileLabel: { fontFamily: fonts.ui, fontSize: 13 },
   subtitle: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 16 },
   slotCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 10 },

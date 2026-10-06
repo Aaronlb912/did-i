@@ -71,6 +71,7 @@ import { confirmDone } from '../lib/confirm.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
+import { useAppInsets } from '../hooks/useAppInsets.js'
 import {
   AppTextInput,
   ChipRow,
@@ -566,6 +567,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   // Move only makes sense with somewhere else to go. Empty folders are parked
   // (archived) but are still places to move to.
   const folders = shelf
+  const { overlayBottom } = useAppInsets()
+  // While picking, the top row and dot key stay (hidden) so nothing moves.
+  const stillWhilePicking = picking
+    ? { pointerEvents: 'none', style: styles.hiddenKeep, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' }
+    : {}
 
   function moveTo(targetId) {
     if (!chosen.length || !onChangeBooks) return
@@ -575,30 +581,43 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
     const folder = folders.find((item) => item.id === targetId)?.title || ''
     // Undo moves each one back to the folder it came from.
-    setUndo({ id: Date.now(), label: t('questions.bulkMoved', { n: lampPicks.length, folder }), moved: moving, to: targetId })
+    const n = lampPicks.length
+    const label = n === 1 ? t('questions.bulkMovedOne', { folder }) : t('questions.bulkMoved', { n, folder })
+    setUndo({ id: Date.now(), label, moved: moving, to: targetId })
     stopPicking()
   }
 
   function askMove() {
     if (!chosen.length) return
+    const n = chosen.length
+    const from = new Set(chosen.map((row) => row.boardId || row.book?.id))
     publishSheet({
-      title: t('questions.moveTitle'),
+      title: n === 1 ? t('questions.moveTitleOne') : t('questions.moveTitle', { n }),
       colors,
       closeLabel: t('settings.neverMind'),
       onClose: () => publishSheet(null),
       content: (
         <View style={styles.editMenu}>
-          {folders.map((item) => (
-            <Row
-              key={item.id}
-              colors={colors}
-              label={item.title}
-              onPress={() => {
-                publishSheet(null)
-                moveTo(item.id)
-              }}
-            />
-          ))}
+          {folders.map((item) => {
+            // Every picked question already sits here: nothing to move.
+            const here = from.size === 1 && from.has(item.id)
+            return (
+              <Row
+                key={item.id}
+                colors={colors}
+                label={item.title}
+                note={here ? t('questions.hereNow') : ''}
+                onPress={
+                  here
+                    ? undefined
+                    : () => {
+                        publishSheet(null)
+                        moveTo(item.id)
+                      }
+                }
+              />
+            )
+          })}
         </View>
       ),
     })
@@ -647,7 +666,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
         {/* Filters, Did you / Did we, Add and Edit share one row, so the list starts high.
             It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
-        {picking || ordering ? null : (
+        {/* Select keeps this row's space (hidden) so the list never moves under a finger. */}
+        {ordering ? null : (
+          <View {...stillWhilePicking}>
           <Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
             <TagFilter
@@ -695,6 +716,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             )}
           </ScrollView>
           </Reveal>
+          </View>
         )}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
           <Reveal>
@@ -735,49 +757,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             ) : null}
           </Reveal>
         ) : null}
-        {picking ? (
-          <Reveal style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
-            <View style={styles.pickHead}>
-              <Text style={[styles.pickCount, { color: colors.ink }]}>
-                {t('questions.pickedN', { n: chosen.length })}
-              </Text>
-              <KeyButton
-                colors={colors}
-                label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
-                onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
-              />
-              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
-            </View>
-            <View style={styles.pickActions}>
-              <KeyButton
-                colors={colors}
-                disabled={!chosen.length}
-                label={allDown ? t('lamp.askAgain') : t('lamp.stop')}
-                onPress={() => apply(allDown ? 'ask' : 'stop')}
-              />
-              {folders.length > 1 ? (
-                <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.move')} onPress={askMove} />
-              ) : null}
-              <Pressable
-                accessibilityRole="button"
-                disabled={!chosen.length}
-                onPress={askDelete}
-                style={({ pressed }) => [
-                  styles.dropBtn,
-                  {
-                    borderColor: colors.miss,
-                    backgroundColor: pressed ? colors.panel2 : 'transparent',
-                    opacity: chosen.length ? 1 : 0.4,
-                  },
-                ]}
-              >
-                <Text style={[styles.dropText, { color: colors.miss }]}>{t('lamp.delete')}</Text>
-              </Pressable>
-            </View>
-          </Reveal>
+        {hung.length && !ordering ? (
+          <View {...stillWhilePicking}>
+            <DotKey kinds={dotKinds} colors={colors} />
+          </View>
         ) : null}
-
-        {hung.length && !picking && !ordering ? <DotKey kinds={dotKinds} colors={colors} /> : null}
         {hung.length ? (
           <LampBlock
             onMove={ordering ? move : undefined}
@@ -856,7 +840,50 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             onToggle={() => setEarlierOpen((on) => !on)}
           />
         )}
+        {/* Room so the floating Select bar never covers the last rows. */}
+        {picking ? <View style={styles.pickRoom} /> : null}
       </BoardShell>
+          {picking ? (
+            <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
+              <View style={styles.pickHead}>
+                <Text style={[styles.pickCount, { color: colors.ink }]}>
+                  {t('questions.pickedN', { n: chosen.length })}
+                </Text>
+                <KeyButton
+                  colors={colors}
+                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
+                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+                />
+                <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
+              </View>
+              <View style={styles.pickActions}>
+                <KeyButton
+                  colors={colors}
+                  disabled={!chosen.length}
+                  label={allDown ? t('lamp.askAgain') : t('lamp.stop')}
+                  onPress={() => apply(allDown ? 'ask' : 'stop')}
+                />
+                {folders.length > 1 ? (
+                  <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.move')} onPress={askMove} />
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!chosen.length}
+                  onPress={askDelete}
+                  style={({ pressed }) => [
+                    styles.dropBtn,
+                    {
+                      borderColor: colors.miss,
+                      backgroundColor: pressed ? colors.panel2 : 'transparent',
+                      opacity: chosen.length ? 1 : 0.4,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.dropText, { color: colors.miss }]}>{t('lamp.delete')}</Text>
+                </Pressable>
+              </View>
+            </Reveal>
+          ) : null}
     </View>
   )
 }
@@ -1987,6 +2014,9 @@ const styles = StyleSheet.create({
   moveKey: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moveGlyph: { fontFamily: fonts.uiBold, fontSize: 16 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
+  pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
+  pickRoom: { height: 140 },
+  hiddenKeep: { opacity: 0 },
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
   reorderTimed: { fontFamily: fonts.ui, fontSize: 13, marginTop: 6 },

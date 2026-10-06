@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 // One line of toasts above the tab bar. Undo, marks and errors wait their
 // turn here and ToastHost shows the first. A toast is { id, kind, ... }:
 //   kind 'undo'  { label, hint, until, onPress }  one at a time; a newer undo
-//                                                  replaces the older and goes
-//                                                  next in line
+//                                                  replaces the older. It goes
+//                                                  first in line, and ToastHost
+//                                                  sets aside any other toast
+//                                                  on screen for it
 //   kind 'mark'  { mark, ms, onGone }
 //   kind 'error' { text, ms }
 //   kind 'done'  { text, ms }                    an action worked (lib/confirm.js)
@@ -31,12 +33,10 @@ export function showToast(toast) {
     return
   }
   if (toast.kind === 'undo') {
-    // Only the latest answer can be undone; it goes right after the toast on
-    // screen, or on screen at once if the undo it replaces is showing.
-    const showing = items[0]
+    // Only the latest answer can be undone, and its clock is already running,
+    // so it shows at once. Whatever it pushes aside waits its turn again.
     const rest = items.filter((item) => item.kind !== 'undo')
-    if (!rest.length || (showing && showing.kind === 'undo')) items = [toast, ...rest]
-    else items = [rest[0], toast, ...rest.slice(1)]
+    items = [toast, ...rest]
     emit()
     return
   }

@@ -36,7 +36,7 @@ function FreezeHow({ colors, state }) {
         <Text key={key} style={[styles.line, ink]}>{t(key)}</Text>
       ))}
       <View style={styles.dotRow}>
-        <View style={[styles.dot, { backgroundColor: colors.freeze }]} />
+        <View style={[styles.dot, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.line, ink, styles.flex]}>{t('freeze.rule5')}</Text>
       </View>
       {FREEZE_RULES.slice(4).map((key) => (

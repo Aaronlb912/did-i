@@ -313,7 +313,8 @@ export function useTonightStack({
     change(next)
     setHolePick(null)
     setWaitPick(null)
-    setPillPick(null)
+    // A picked card stays open in its answered state, with its note.
+    if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
     armUndo({ book, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
