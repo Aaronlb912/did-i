@@ -96,6 +96,49 @@ insert into public.shop_catalog (kind, item_id, coins, live_from, live_until) va
 on conflict (kind, item_id) do update
   set coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 
+
+-- Card frames (src/lib/frames.js, a test keeps prices equal). Still frames
+-- cost coins (buy_with_coins), animated ones cost gems (buy_with_gems, gifts.sql).
+-- Earned, seasonal and free frames are never sold, so they are not here.
+alter table public.shop_catalog add column if not exists gems integer
+  check (gems is null or gems between 1 and 9);
+alter table public.shop_catalog drop constraint if exists shop_catalog_kind_check;
+alter table public.shop_catalog add constraint shop_catalog_kind_check
+  check (kind in ('look', 'cheer_stage', 'accessory', 'frame'));
+
+insert into public.shop_catalog (kind, item_id, coins, gems, live_from) values
+  ('frame', 'thin', 30, null, '2026-10-05'),
+  ('frame', 'double', 40, null, '2026-10-05'),
+  ('frame', 'dotted', 40, null, '2026-10-05'),
+  ('frame', 'washi', 60, null, '2026-10-05'),
+  ('frame', 'pixel', 50, null, '2026-10-05'),
+  ('frame', 'stitch', 70, null, '2026-10-05'),
+  ('frame', 'polaroid', 80, null, '2026-10-05'),
+  ('frame', 'wood', 80, null, '2026-10-05'),
+  ('frame', 'flowers', 80, null, '2026-10-05'),
+  ('frame', 'comic', 90, null, '2026-10-05'),
+  ('frame', 'moon', 100, null, '2026-10-05'),
+  ('frame', 'filigree', 120, null, '2026-10-05'),
+  ('frame', 'deco', 120, null, '2026-10-05'),
+  ('frame', 'marble', 120, null, '2026-10-05'),
+  ('frame', 'glow', null, 2, '2026-10-05'),
+  ('frame', 'silver', null, 2, '2026-10-05'),
+  ('frame', 'neon', null, 2, '2026-10-05'),
+  ('frame', 'fireflies', null, 2, '2026-10-05'),
+  ('frame', 'shoot', null, 2, '2026-10-05'),
+  ('frame', 'glass', null, 2, '2026-10-05'),
+  ('frame', 'gold', null, 3, '2026-10-05'),
+  ('frame', 'const', null, 3, '2026-10-05'),
+  ('frame', 'ring', null, 3, '2026-10-05'),
+  ('frame', 'aurora', null, 3, '2026-10-05')
+on conflict (kind, item_id) do update
+  set coins = excluded.coins, gems = excluded.gems, live_from = excluded.live_from;
+
+-- A frame is a coin frame or a gem frame, never both or neither.
+alter table public.shop_catalog drop constraint if exists shop_catalog_frame_price;
+alter table public.shop_catalog add constraint shop_catalog_frame_price
+  check (kind <> 'frame' or ((coins is null) <> (gems is null)));
+
 create or replace function public.shop_item_live(p_kind text, p_item_id text)
 returns boolean
 language sql

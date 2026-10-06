@@ -83,6 +83,9 @@ import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost
 import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
+import { FramesCollection, FramesShopRow, framesOwnedCount } from './frames.jsx'
+import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
@@ -921,6 +924,7 @@ export function ShopScreen({ book, onChange }) {
       {rows.map((row) => (
         <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
       ))}
+      <FramesShopRow book={book} colors={colors} onChange={onChange} />
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
@@ -935,7 +939,7 @@ export function ShopScreen({ book, onChange }) {
           preview={<LookChip id={purse.lookOn} colors={colors} />}
           title={t('shop.kit')}
           note={t('shop.kitDoor')}
-          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount + purse.accessories.length })}
+          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount + purse.accessories.length + framesOwnedCount(book).n })}
           onPress={() => goHash('/kit')}
         />
       </View>
@@ -1748,6 +1752,7 @@ export function GemShopScreen({ book }) {
 
 const KIT_TABS = [
   { id: 'looks', key: 'shop.looks' },
+  { id: 'frames', key: 'frames.title' },
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
   { id: 'accessories', key: 'shop.accessories' },
@@ -1789,6 +1794,7 @@ function KitTile({ label, worn, onPress, colors, children, big = false, caption 
 
 export function CollectionScreen({ book, onChange, startTab }) {
   const [tab, setTab] = useState(KIT_TABS.some((item) => item.id === startTab) ? startTab : 'looks')
+  const frameInfo = framesOwnedCount(book)
   const colors = useShopColors(book)
   const coat = activeLook(book)
   const purse = normalizePurse(book)
@@ -1824,16 +1830,58 @@ export function CollectionScreen({ book, onChange, startTab }) {
         ? t('kit.using', { name: purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : none })
         : tab === 'buddies'
           ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
-          : t('kit.wearing', { names: wornNames.length ? wornNames.join(', ') : none })
+          : tab === 'frames'
+            ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
+            : t('kit.wearing', { names: wornNames.length ? wornNames.join(', ') : none })
 
-  const segItems = KIT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))
+  // One tile per kind: what you wear in it and how many you own. A tap
+  // shows that kind below, so nothing is hidden behind a scrolling row.
+  const firstWorn = ACCESSORY_SLOTS.map((slot) => purse.worn[slot]).find(Boolean)
+  const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
+  const kinds = {
+    looks: { art: <LookChip id={purse.lookOn} colors={colors} />, n: looks.length, of: LOOKS.length },
+    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
+    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
+    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
+    accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
+  }
 
   return (
     <BoardShell book={book} title={t('kit.title')} date={shellDate(book)} colors={colors}>
       <Meta colors={colors}>{t('kit.hint')}</Meta>
 
-      <KitSegment items={segItems} selected={tab} onSelect={setTab} colors={colors} />
+      <View style={styles.kindGrid}>
+        {KIT_TABS.map((item) => {
+          const kind = kinds[item.id]
+          const on = tab === item.id
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`${t(item.key)}, ${t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
+              onPress={() => setTab(item.id)}
+              style={({ pressed }) => [
+                styles.kindTile,
+                { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.panel2 : colors.panel },
+                pressFx(pressed),
+              ]}
+            >
+              <View style={styles.kindArt}>{kind.art}</View>
+              <View style={styles.kindCopy}>
+                <Text style={[styles.kindName, { color: colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
+                <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
+                  {t('kit.ownedOf', { n: kind.n, of: kind.of })}
+                </Text>
+              </View>
+            </Pressable>
+          )
+        })}
+      </View>
+      <Reveal key={tab}>
       <Text style={[styles.kitWearing, { color: colors.ink }]}>{wearingLine}</Text>
+
+      {tab === 'frames' ? <FramesCollection book={book} colors={colors} onChange={onChange} /> : null}
 
       {tab === 'looks' ? (
         <>
@@ -1981,12 +2029,30 @@ export function CollectionScreen({ book, onChange, startTab }) {
           ) : null}
         </>
       ) : null}
+      </Reveal>
 
     </BoardShell>
   )
 }
 
 const styles = StyleSheet.create({
+  kindGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 4 },
+  kindTile: {
+    width: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 60,
+  },
+  kindArt: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  kindCopy: { flex: 1, minWidth: 0 },
+  kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
+  kindCount: { fontFamily: fonts.ui, fontSize: 12 },
   kitTileCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
   restoreBtn: { alignSelf: 'center', paddingVertical: 10 },
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },

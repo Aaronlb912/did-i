@@ -1,0 +1,214 @@
+// Card frames: a layer around the card, never instead of a look. Any frame
+// works with any look. Still frames cost coins, animated ones cost gems,
+// earned ones come from your streak, seasonal ones are free while their
+// season is open and kept after. Everyone owns First Light. The drawings
+// live in native/components/frames/; this file is the catalog and the rules.
+// Prices here must match supabase/shop-catalog.sql (a check keeps them equal).
+
+export const FRAME_KINDS = ['free', 'coin', 'gem', 'earned', 'season']
+export const FREE_FRAME = 'first'
+
+const coin = (id, coins) => ({ id, kind: 'coin', price: { coins }, coins, gems: 0, animated: false, season: null, earn: null })
+const gem = (id, gems) => ({ id, kind: 'gem', price: { gems }, coins: 0, gems, animated: true, season: null, earn: null })
+const earned = (id, earn, need) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need })
+const season = (id, from, until, extra = {}) => ({ id, kind: 'season', price: null, coins: 0, gems: 0, animated: true, season: { from, until }, earn: null, ...extra })
+
+const RAW = [
+  { id: 'first', kind: 'free', price: null, coins: 0, gems: 0, animated: false, season: null, earn: null },
+  coin('thin', 30),
+  coin('double', 40),
+  coin('dotted', 40),
+  coin('washi', 60),
+  coin('pixel', 50),
+  coin('stitch', 70),
+  coin('polaroid', 80),
+  coin('wood', 80),
+  coin('flowers', 80),
+  coin('comic', 90),
+  coin('moon', 100),
+  coin('filigree', 120),
+  coin('deco', 120),
+  coin('marble', 120),
+  gem('glow', 2),
+  gem('silver', 2),
+  gem('neon', 2),
+  gem('fireflies', 2),
+  gem('shoot', 2),
+  gem('glass', 2),
+  gem('gold', 3),
+  gem('const', 3),
+  gem('ring', 3),
+  gem('aurora', 3),
+  earned('vine', 'streak', 3),
+  earned('ember', 'streak', 30),
+  earned('gems', 'streak', 7),
+  earned('frost', 'freeze', 1),
+  season('web', '10-01', '10-31'),
+  season('leaves', '11-01', '11-30'),
+  season('snow', '12-01', '12-31'),
+  season('sakura', '03-15', '04-15'),
+  // No birthday field yet, so this one stays out of every list.
+  season('bday', '01-01', '01-01', { hidden: true }),
+]
+
+export function frameRarity(frame) {
+  if (!frame) return ''
+  if (frame.kind === 'coin') return frame.coins >= 80 ? 'rare' : 'common'
+  if (frame.kind === 'gem') return frame.gems >= 3 ? 'legendary' : 'epic'
+  if (frame.kind === 'earned') return 'earned'
+  if (frame.kind === 'season') return 'seasonal'
+  return 'free'
+}
+
+export const FRAMES = RAW.map((frame) => ({ ...frame, rarity: frameRarity(frame) }))
+export const FRAME_IDS = new Set(FRAMES.map((frame) => frame.id))
+const BY_ID = new Map(FRAMES.map((frame) => [frame.id, frame]))
+
+export function frameById(id) {
+  return BY_ID.get(String(id || '')) || null
+}
+
+// What the shop lists: everything but hidden ones.
+export const SHOWN_FRAMES = FRAMES.filter((frame) => !frame.hidden)
+
+export function frameText(id, field) {
+  return `frame.${id}.${field}`
+}
+
+function monthDay(today) {
+  return String(today || '').slice(5, 10)
+}
+
+// Open from `from` to `until`, both days included. A window that wraps the
+// new year (from > until) is open at either end.
+export function seasonOpen(frame, today) {
+  const win = frame?.season
+  if (!win || frame.hidden) return false
+  const md = monthDay(today)
+  if (!/^\d{2}-\d{2}$/.test(md)) return false
+  if (win.from <= win.until) return md >= win.from && md <= win.until
+  return md >= win.from || md <= win.until
+}
+
+// The next day a season opens, today or later, as YYYY-MM-DD.
+export function seasonNextText(frame, today) {
+  const win = frame?.season
+  if (!win) return ''
+  if (seasonOpen(frame, today)) return String(today).slice(0, 10)
+  const year = Number(String(today).slice(0, 4)) || new Date().getFullYear()
+  const md = monthDay(today)
+  return md < win.from ? `${year}-${win.from}` : `${year + 1}-${win.from}`
+}
+
+// Only coin and gem frames are ever sold.
+export function frameForSale(id, _today) {
+  const frame = frameById(id)
+  return Boolean(frame && (frame.kind === 'coin' || frame.kind === 'gem'))
+}
+
+export function isSoldFrame(id) {
+  return frameForSale(id)
+}
+
+// Earned now, from what the shelf shows tonight.
+export function frameEarned(frame, ctx = {}) {
+  if (!frame || frame.kind !== 'earned') return false
+  if (frame.earn === 'streak') return (Number(ctx.bestStreak) || 0) >= frame.need
+  if (frame.earn === 'freeze') return Boolean(ctx.everFrozen)
+  return false
+}
+
+// "12 of 30" for a frame that is not earned yet.
+export function frameProgress(frame, ctx = {}) {
+  if (!frame || frame.kind !== 'earned') return null
+  if (frame.earn === 'streak') return { n: Math.min(frame.need, Math.max(0, Number(ctx.bestStreak) || 0)), of: frame.need }
+  return { n: ctx.everFrozen ? 1 : 0, of: 1 }
+}
+
+// Kept ids: bought (coin, gem), earned once and kept, or a seasonal one
+// claimed. A seasonal id stays forever once it is in the list.
+export function normalizeFrames(list) {
+  if (!Array.isArray(list)) return []
+  return [...new Set(list.map((id) => String(id)).filter((id) => FRAME_IDS.has(id) && id !== FREE_FRAME))]
+}
+
+export function framesOwned(purse, ctx = {}) {
+  const owned = new Set([FREE_FRAME, ...normalizeFrames(purse?.frames)])
+  for (const frame of FRAMES) {
+    if (frameEarned(frame, ctx)) owned.add(frame.id)
+  }
+  return owned
+}
+
+// The worn id, or '' for no frame. Only an id you own counts.
+export function wornFrame(purse, ctx = {}) {
+  const id = String(purse?.frame || '')
+  if (!id || !FRAME_IDS.has(id)) return ''
+  return framesOwned(purse, ctx).has(id) ? id : ''
+}
+
+// What `frame` keeps after a normalize: a known id in the owned list (or the
+// free one, or an earned one already stored). Earned-by-streak ids that were
+// never stored stay worn only while they are earned (wornFrame checks).
+export function normalizeWornFrame(raw, frames) {
+  const id = String(raw || '')
+  if (!id || !FRAME_IDS.has(id)) return ''
+  if (id === FREE_FRAME || frames.includes(id)) return id
+  if (frameById(id)?.kind === 'earned') return id
+  return ''
+}
+
+// Earned frames not in the list yet: store them so they stay after a streak ends.
+export function framesToKeep(purse, ctx = {}) {
+  const have = new Set(normalizeFrames(purse?.frames))
+  return FRAMES.filter((frame) => frameEarned(frame, ctx) && !have.has(frame.id)).map((frame) => frame.id)
+}
+
+export function keepEarnedFrames(book, ctx = {}) {
+  const add = framesToKeep(book, ctx)
+  if (!add.length) return book
+  return { ...book, frames: normalizeFrames([...(book?.frames || []), ...add]) }
+}
+
+// A free claim while the season is open. Kept after.
+export function claimFrame(book, id, today) {
+  const frame = frameById(id)
+  const frames = normalizeFrames(book?.frames)
+  if (!frame || frame.kind !== 'season') return { book, miss: 'shop.miss.buyFail' }
+  if (frames.includes(id)) return { book: { ...book, frames, frame: id }, miss: '' }
+  if (!seasonOpen(frame, today)) return { book, miss: 'frames.miss.closed' }
+  return { book: { ...book, frames: [...frames, id], frame: id }, miss: '' }
+}
+
+// Puts a frame on, or takes it off when it is already on. '' is no frame.
+export function wearFrame(book, id, ctx = {}) {
+  const want = String(id || '')
+  if (!want) return { book: { ...book, frame: '' }, miss: '' }
+  if (!framesOwned(book, ctx).has(want)) return { book, miss: 'frames.miss.notOwned' }
+  const on = String(book?.frame || '') === want
+  return { book: { ...book, frame: on ? '' : want }, miss: '' }
+}
+
+// Signed out: coins or gems come off this phone. Signed in, coin-shop.js
+// asks the server first.
+export function buyFrameLocal(book, id) {
+  const frame = frameById(id)
+  const frames = normalizeFrames(book?.frames)
+  if (!frame || !frameForSale(id)) return { book, miss: 'frames.miss.notSold' }
+  if (frames.includes(id)) return { book: { ...book, frames, frame: id }, miss: '' }
+  const coins = Math.max(0, Math.floor(Number(book?.coins) || 0))
+  const gems = Math.max(0, Math.floor(Number(book?.gems) || 0))
+  if (frame.coins && coins < frame.coins) return { book, miss: 'shop.miss.needCoins', missN: frame.coins }
+  if (frame.gems && gems < frame.gems) return { book, miss: 'shop.miss.needGems', missN: frame.gems }
+  return {
+    book: { ...book, coins: coins - frame.coins, gems: gems - frame.gems, frames: [...frames, id], frame: id },
+    miss: '',
+  }
+}
+
+// Server lists replace only the frames of their own currency.
+export function withServerFrames(frames, kind, serverIds) {
+  const keep = normalizeFrames(frames).filter((id) => frameById(id)?.kind !== kind)
+  const from = normalizeFrames(serverIds).filter((id) => frameById(id)?.kind === kind)
+  return [...new Set([...keep, ...from])]
+}

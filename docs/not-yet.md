@@ -5,6 +5,16 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Card frames (branch `feat/frames-data`)
+
+- **SQL to apply:** `shop-catalog.sql`, `wallet.sql`, `gifts.sql` (in that order, via `db:apply:all`), then run `supabase/tests/frames.test.sql`. Until then a signed-in frame buy fails with "not for sale".
+- **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
+- **Friends do not see your frame yet.** Friends never get your look either; there is no `frame_on` on profiles. Add it with the look when the friend page shows your card.
+- **Birthday frame is hidden.** There is no birthday field. It stays in the catalog, out of every list.
+- **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
+- **Frames are not gifts.** Not in `gift_catalog`.
+- **Earned frames use tonight's streak.** There is no stored best streak, so a frame is kept the first time the app sees the streak reach it. Someone who had a 30 night streak before this shipped earns Ember again only by reaching 30.
+
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 
 - **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
@@ -182,6 +192,9 @@ real phone are still open on both stores.
 - [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 
 ## Decided, not building
+
+**Widgets never get frames.** A frame is for the card in the app. The
+home screen widgets stay as they are.
 
 **Kid accounts stay as they are.** A family is people sharing chores,
 and the parent and kid roles decide who can assign what. Did I is not a

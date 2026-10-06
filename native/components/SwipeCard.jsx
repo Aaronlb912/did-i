@@ -35,6 +35,7 @@ import { SwipeFace } from './SwipeFace.jsx'
 import { useSwipeFly } from './SwipeFly.jsx'
 import { aimCheer } from '../lib/cheer-origin.js'
 import { fonts } from '../theme.js'
+import { CardFrame } from './frames/CardFrame.jsx'
 
 const SPRING = { damping: 20, stiffness: 260 }
 
@@ -89,6 +90,8 @@ export function SwipeCard({
   behind = [],
   didLabel = '',
   nopeLabel = '',
+  // The worn card frame (CardFrame props) or null. Only the top card animates.
+  frame = null,
   children,
 }) {
   const theme = useTheme()
@@ -187,7 +190,7 @@ export function SwipeCard({
 
   const depth = demo ? [] : behind.slice(0, DEPTH_SHOWN)
   const buttons = !demo && (didLabel || nopeLabel)
-  const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current }
+  const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current, frame: demo ? null : frame }
 
   return (
     <View style={styles.host} pointerEvents="box-none">
@@ -283,6 +286,7 @@ function StackCard({
   blockDid = false,
   blockNope = false,
   onAnswer,
+  frame = null,
   children,
   ...a11y
 }) {
@@ -410,6 +414,18 @@ function StackCard({
     }
   })
 
+  const inner = (
+    <View
+      style={[
+        ...faceCardStyle(colors, panelStyle),
+        top ? null : styles.behindCard,
+        { borderWidth: 1, borderColor: line },
+      ]}
+    >
+      {top ? <SwipeFace x={faceX} colors={colors} {...face} /> : children}
+    </View>
+  )
+
   const card = (
     <Animated.View
       {...a11y}
@@ -426,15 +442,13 @@ function StackCard({
         moving,
       ]}
     >
-      <View
-        style={[
-          ...faceCardStyle(colors, panelStyle),
-          top ? null : styles.behindCard,
-          { borderWidth: 1, borderColor: line },
-        ]}
-      >
-        {top ? <SwipeFace x={faceX} colors={colors} {...face} /> : children}
-      </View>
+      {frame?.id ? (
+        <CardFrame {...frame} active={top && Boolean(frame.active)} style={[styles.framed, top ? null : styles.behindFrame]}>
+          {inner}
+        </CardFrame>
+      ) : (
+        inner
+      )}
     </Animated.View>
   )
 
@@ -471,6 +485,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   origin: { transformOrigin: 'bottom' },
+  // Room for the frame, so it stays clear of the pills and the week dots.
+  framed: { margin: 8 },
+  behindFrame: { flex: 1 },
   answers: { flexDirection: 'row', gap: 12, marginTop: 14 },
   answer: {
     flex: 1,

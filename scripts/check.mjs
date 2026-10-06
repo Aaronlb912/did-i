@@ -4348,6 +4348,87 @@ test('family summary hour and phone names: prefs clamp, SQL order, menu resets t
   assert.ok(hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps only Home behind the screen')
 })
 
+await testAsync('frames: still frames cost coins, animated cost gems, and the server sells the same', async () => {
+  const F = await import('../src/lib/frames.js')
+  for (const frame of F.FRAMES) {
+    if (frame.kind === 'coin') assert.ok(frame.coins > 0 && !frame.gems && !frame.animated, `${frame.id} is a still coin frame`)
+    if (frame.kind === 'gem') assert.ok([2, 3].includes(frame.gems) && !frame.coins && frame.animated, `${frame.id} is 2 or 3 gems`)
+    if (['free', 'earned', 'season'].includes(frame.kind)) assert.ok(!F.frameForSale(frame.id), `${frame.id} is never sold`)
+    for (const field of ['name', 'desc', 'f1', 'f2', 'f3']) assert.ok(F.frameText(frame.id, field) in en, `${frame.id} ${field} string`)
+  }
+  assert.equal(F.frameRarity(F.frameById('thin')), 'common')
+  assert.equal(F.frameRarity(F.frameById('wood')), 'rare')
+  assert.equal(F.frameRarity(F.frameById('glow')), 'epic')
+  assert.equal(F.frameRarity(F.frameById('aurora')), 'legendary')
+  // shop-catalog.sql carries the same prices.
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/shop-catalog.sql'), 'utf8')
+  const rows = [...sql.matchAll(/\('frame', '([a-z]+)', (null|\d+), (null|\d+),/g)]
+  const sold = F.FRAMES.filter((frame) => F.frameForSale(frame.id))
+  assert.equal(rows.length, sold.length, 'every sold frame is in shop_catalog')
+  for (const [, id, coins, gems] of rows) {
+    const frame = F.frameById(id)
+    assert.equal(coins === 'null' ? 0 : Number(coins), frame.coins, `${id} coins`)
+    assert.equal(gems === 'null' ? 0 : Number(gems), frame.gems, `${id} gems`)
+  }
+})
+
+await testAsync('frames: who owns what, seasons, and the worn frame', async () => {
+  const F = await import('../src/lib/frames.js')
+  const none = F.framesOwned({}, { bestStreak: 0, everFrozen: false, today: '2026-10-05' })
+  assert.deepEqual([...none], ['first'], 'everyone owns First Light')
+  const ctx = { bestStreak: 12, everFrozen: true, today: '2026-10-05' }
+  const owned = F.framesOwned({ frames: ['thin', 'web'] }, ctx)
+  for (const id of ['first', 'thin', 'web', 'vine', 'gems', 'frost']) assert.ok(owned.has(id), id)
+  assert.ok(!owned.has('ember'), 'ember needs 30 nights')
+  assert.deepEqual(F.frameProgress(F.frameById('ember'), ctx), { n: 12, of: 30 })
+  // Seasons, both ends included, and one that wraps the year.
+  const web = F.frameById('web')
+  assert.ok(F.seasonOpen(web, '2026-10-01') && F.seasonOpen(web, '2026-10-31'))
+  assert.ok(!F.seasonOpen(web, '2026-11-01'))
+  assert.equal(F.seasonNextText(web, '2026-11-02'), '2027-10-01')
+  assert.equal(F.seasonNextText(F.frameById('sakura'), '2026-10-05'), '2027-03-15')
+  const wrap = { season: { from: '12-20', until: '01-05' } }
+  assert.ok(F.seasonOpen(wrap, '2026-12-25') && F.seasonOpen(wrap, '2027-01-05') && !F.seasonOpen(wrap, '2027-01-06'))
+  assert.ok(!F.seasonOpen(F.frameById('bday'), '2026-01-01'), 'birthday stays hidden')
+  // A claim only while open, kept after.
+  assert.equal(F.claimFrame({}, 'snow', '2026-10-05').miss, 'frames.miss.closed')
+  const claimed = F.claimFrame({}, 'web', '2026-10-05').book
+  assert.ok(F.framesOwned(claimed, { today: '2026-12-05' }).has('web'), 'a seasonal frame stays after its season')
+  // Worn: only a frame you own; normalize drops unknown ids.
+  assert.equal(F.wornFrame({ frame: 'gold' }, ctx), '', 'not owned, not worn')
+  assert.equal(F.wornFrame({ frame: 'thin', frames: ['thin'] }, ctx), 'thin')
+  assert.equal(F.wornFrame({ frame: 'nope' }, ctx), '')
+  const purse = normalizePurse({ frames: ['thin', 'nope', 'thin', 'first'], frame: 'gold' })
+  assert.deepEqual(purse.frames, ['thin'])
+  assert.equal(purse.frame, '')
+  assert.equal(normalizePurse({ frame: 'first' }).frame, 'first')
+  // Wear toggles, buying takes coins or gems signed out.
+  assert.equal(F.wearFrame({ frame: 'first' }, 'first').book.frame, '')
+  assert.equal(F.buyFrameLocal({ coins: 10 }, 'thin').miss, 'shop.miss.needCoins')
+  const bought = F.buyFrameLocal({ coins: 40, gems: 0 }, 'thin').book
+  assert.equal(bought.coins, 10)
+  assert.equal(bought.frame, 'thin')
+  assert.equal(F.buyFrameLocal({ coins: 999 }, 'ember').miss, 'frames.miss.notSold')
+  // Kept once earned.
+  assert.deepEqual(F.keepEarnedFrames({ frames: [] }, { bestStreak: 7 }).frames, ['vine', 'gems'])
+})
+
+await testAsync('frames: owned lists merge across phones and server lists keep their own kind', async () => {
+  const { mergePurses } = await import('../src/lib/purse.js')
+  const { applyCoinCatalogToBook } = await import('../src/lib/wallet.js')
+  const merged = mergePurses([{ frames: ['thin'], frame: '' }, { frames: ['web'], frame: 'web' }])
+  assert.deepEqual(merged.frames.sort(), ['thin', 'web'])
+  assert.equal(merged.frame, 'web')
+  const book = { frames: ['thin', 'glow', 'web', 'vine'], frame: 'web' }
+  const coin = applyCoinCatalogToBook(book, { coins: 5, looks: [], cheerStages: {}, accessories: [], frames: ['wood'] })
+  assert.deepEqual(coin.frames.sort(), ['glow', 'vine', 'web', 'wood'], 'coin list replaces coin frames only')
+  const gem = applyGemOwnedToBook(book, { gems: 1, looks: [], cheers: [], buddies: [], frames: ['aurora'] })
+  assert.deepEqual(gem.frames.sort(), ['aurora', 'thin', 'vine', 'web'], 'gem list replaces gem frames only')
+  assert.equal(validateCoinItem('frame', 'thin'), true)
+  assert.equal(validateCoinItem('frame', 'glow'), false, 'a gem frame is not a coin buy')
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
 

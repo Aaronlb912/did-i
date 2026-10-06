@@ -1,6 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
+import { normalizeFrames, normalizeWornFrame } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -315,6 +316,8 @@ export function normalizePurse(book) {
     ? [...new Set(book.accessories.map((id) => String(id)).filter((id) => ACCESSORY_IDS.has(id)))]
     : []
   const worn = normalizeWorn(book?.worn, accessories)
+  const frames = normalizeFrames(book?.frames)
+  const frame = normalizeWornFrame(book?.frame, frames)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
   const cheerStage = cheerOn
@@ -333,6 +336,8 @@ export function normalizePurse(book) {
     buddyOn,
     accessories,
     worn,
+    frames,
+    frame,
     cheerUses,
     cheerStage,
     cheerStages: stages,
@@ -364,6 +369,8 @@ export function mergePurses(boards) {
     buddyOn: purses.find((item) => item.buddyOn)?.buddyOn || '',
     accessories: [...new Set(purses.flatMap((item) => item.accessories))],
     worn: purses.find((item) => Object.keys(item.worn).length)?.worn || {},
+    frames: [...new Set(purses.flatMap((item) => item.frames))],
+    frame: purses.find((item) => item.frame)?.frame || '',
     cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
     cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
     cheerStages: Object.fromEntries(
@@ -409,12 +416,14 @@ export function spreadPurseFrom(shelf, book) {
     cheerOn: from.cheerOn,
     buddyOn: from.buddyOn,
     worn: from.worn,
+    frame: from.frame,
     friendCheers: from.friendCheers,
     wish: from.wish,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
     buddies: [...new Set([...merged.buddies, ...from.buddies])],
     accessories: [...new Set([...merged.accessories, ...from.accessories])],
+    frames: [...new Set([...merged.frames, ...from.frames])],
   }
   return {
     ...shelf,

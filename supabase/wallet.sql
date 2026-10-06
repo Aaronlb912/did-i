@@ -364,7 +364,8 @@ as $$
     'badges', coalesce(raw->'badges', '[]'::jsonb),
     'looks', coalesce(raw->'looks', '[]'::jsonb),
     'cheer_stages', coalesce(raw->'cheer_stages', '{}'::jsonb),
-    'accessories', coalesce(raw->'accessories', '[]'::jsonb)
+    'accessories', coalesce(raw->'accessories', '[]'::jsonb),
+    'frames', coalesce(raw->'frames', '[]'::jsonb)
   );
 $$;
 
@@ -383,7 +384,8 @@ as $$
         'badges', public.coin_catalog_normalize(p.coin_cosmetics)->'badges',
         'looks', public.coin_catalog_normalize(p.coin_cosmetics)->'looks',
         'cheer_stages', public.coin_catalog_normalize(p.coin_cosmetics)->'cheer_stages',
-        'accessories', public.coin_catalog_normalize(p.coin_cosmetics)->'accessories'
+        'accessories', public.coin_catalog_normalize(p.coin_cosmetics)->'accessories',
+        'frames', public.coin_catalog_normalize(p.coin_cosmetics)->'frames'
       )
       from public.profiles p
       where p.user_id = (select auth.uid())
@@ -394,7 +396,8 @@ as $$
       'badges', '[]'::jsonb,
       'looks', '[]'::jsonb,
       'cheer_stages', '{}'::jsonb,
-      'accessories', '[]'::jsonb
+      'accessories', '[]'::jsonb,
+      'frames', '[]'::jsonb
     )
   );
 $$;
@@ -440,6 +443,7 @@ declare
   looks jsonb;
   stages jsonb;
   accs jsonb;
+  frms jsonb;
   cur_stage integer;
   next_stage integer;
   bal integer;
@@ -476,6 +480,15 @@ begin
     if cost is null or cost < 1 then
       raise exception 'bad item';
     end if;
+  elsif k = 'frame' then
+    -- Coin frames only: gem, earned, seasonal and free frames have no coin price.
+    if not public.shop_item_live('frame', id) then
+      raise exception 'bad item';
+    end if;
+    select c.coins into cost from public.shop_catalog c where c.kind = 'frame' and c.item_id = id;
+    if cost is null or cost < 1 then
+      raise exception 'bad item';
+    end if;
   else
     raise exception 'bad kind';
   end if;
@@ -492,6 +505,7 @@ begin
   looks := cos->'looks';
   stages := cos->'cheer_stages';
   accs := cos->'accessories';
+  frms := cos->'frames';
 
   if k = 'stamp' and stamps @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
@@ -503,6 +517,9 @@ begin
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
   if k = 'accessory' and accs @> jsonb_build_array(id) then
+    return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
+  end if;
+  if k = 'frame' and frms @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
 
@@ -519,11 +536,11 @@ begin
     update public.profiles
     set coin_balance = coin_balance - cost,
         coin_cosmetics = jsonb_build_object(
-          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
+          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms
         )
     where user_id = who
     returning coin_balance into bal;
-    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
+    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms);
     return jsonb_build_object('coins', bal, 'catalog', cos);
   end if;
 
@@ -537,6 +554,8 @@ begin
     badges := badges || to_jsonb(id);
   elsif k = 'accessory' then
     accs := accs || to_jsonb(id);
+  elsif k = 'frame' then
+    frms := frms || to_jsonb(id);
   else
     looks := looks || to_jsonb(id);
   end if;
@@ -545,12 +564,12 @@ begin
   set
     coin_balance = coin_balance - cost,
     coin_cosmetics = jsonb_build_object(
-      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
+      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms
     )
   where user_id = who
   returning coin_balance into bal;
 
-  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
+  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms);
   return jsonb_build_object('coins', bal, 'catalog', cos);
 end;
 $$;

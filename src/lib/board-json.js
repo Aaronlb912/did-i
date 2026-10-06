@@ -322,6 +322,8 @@ export function normalizeBook(raw) {
     buddyOn: purse.buddyOn,
     accessories: purse.accessories,
     worn: purse.worn,
+    frames: purse.frames,
+    frame: purse.frame,
     friendCheers: purse.friendCheers,
   }
 }
