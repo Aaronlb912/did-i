@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   AppState,
+  BackHandler,
   Keyboard,
   LayoutAnimation,
   Platform,
@@ -79,7 +80,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { goHash, swapHash } from '../navigation/hash.js'
+import { goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -509,7 +510,21 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       event?.preventDefault?.()
     }
     window.addEventListener('did-i-back', onBack)
-    return () => window.removeEventListener('did-i-back', onBack)
+    // Android back reaches the stack before did-i-back, so take it here first, like a sheet.
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack()
+      return true
+    })
+    // Leaving Questions (another tab, a pushed page) ends the mode and drops the picks.
+    const here = readRoute()?.path
+    const off = onRoute((route) => {
+      if (route?.path !== here) onBack()
+    })
+    return () => {
+      window.removeEventListener('did-i-back', onBack)
+      sub.remove()
+      off()
+    }
   }, [picking, ordering])
 
   useEffect(() => {

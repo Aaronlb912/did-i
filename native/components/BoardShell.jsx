@@ -10,6 +10,8 @@ import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
 import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
+// Room under the last row so it never sits against the home indicator or nav bar.
+const END_ROOM = 24
 
 export function BoardShell({
   book,
@@ -90,7 +92,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad + keyboardPad }]}>
+    <View style={[styles.page, { paddingBottom: bottomPad + (scroll ? END_ROOM : 0) + keyboardPad }]}>
       {children}
     </View>
   )

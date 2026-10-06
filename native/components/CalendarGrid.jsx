@@ -7,6 +7,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
+import { weCardTitle } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
@@ -33,18 +34,18 @@ function markOf(answer, when = 0) {
   if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
   if (status === 'skip') return { key: 'skip', label: t('widget.tonight.nope') }
   if (when > 0) return { key: 'hole', label: t('cal.ahead') }
-  if (when < 0) return { key: 'skip', label: t('later.missed') }
+  if (when < 0) return { key: 'miss', label: t('cal.notAnswered') }
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
-export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
+export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0 }) {
   const prefs = usePrefs()
   const clock = now || new Date()
-  const [monthShift, setMonthShift] = useLayoutState(0)
+  const [monthShift, setMonthShift] = useLayoutState(startShift)
   const [picked, setPicked] = useState('')
 
   useEffect(() => {
-    setMonthShift(0)
+    setMonthShift(startShift)
     setPicked('')
   }, [tagId])
 
@@ -53,13 +54,22 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
+  // One row per week: a wrapped grid of square cells left a tall blank gap under it on Android.
+  const weeks = []
+  for (let i = 0; i < pack.nights.length; i += 7) weeks.push(pack.nights.slice(i, i + 7))
 
   // A day opens its sheet: why it did or did not clear, then each question.
   function openDay(iso) {
     setPicked(iso)
     const today = boardDate(clock, book?.dayFoldHour)
     const when = iso > today ? 1 : iso < today ? -1 : 0
+    const why = nightWhy(shelf, iso, clock, tagId)
+    // What broke the night leads: open Did wes, then anything not a Did, then the Dids.
+    const done = (row) => ['yes', 'late'].includes(row.answer?.status)
     const rows = nightDueRows(shelf, iso, tagId)
+    const sorted = [...rows.filter((row) => !done(row)), ...rows.filter(done)]
+    const weOpen = why.weOpen || []
+    const weMark = when < 0 ? { label: t('cal.notAnswered'), tone: colors.miss } : { label: upFirst(t('cal.open')), tone: colors.open }
     const close = () => {
       setPicked('')
       publishSheet(null)
@@ -67,14 +77,23 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
     publishSheet({
       kicker: t('cal.kicker'),
       title: formatBoardDate(iso),
-      body: nightWhyLines(nightWhy(shelf, iso, clock, tagId)).join('\n'),
-      content: rows.length ? (
+      body: nightWhyLines(why).join('\n'),
+      content: rows.length || weOpen.length ? (
         <View style={styles.marks}>
-          {rows.map((row) => {
+          {weOpen.map((id) => (
+            <View key={`we-${id}`} style={styles.markRow}>
+              <View style={[styles.markPip, { backgroundColor: weMark.tone }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.markLabel, { color: colors.ink }]}>{weMark.label}</Text>
+                <Text style={[styles.markSub, { color: colors.inkDim }]}>{weCardTitle(id) || t('we.title')}</Text>
+              </View>
+            </View>
+          ))}
+          {sorted.map((row) => {
             const mark = markOf(row.answer, when)
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
-                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : 'open'] }]} />
+                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' ? 'miss' : 'open'] }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
@@ -109,10 +128,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
         </Pressable>
       </View>
       <Reveal key={`m${monthShift}`} style={styles.grid} exiting={undefined} layout={false}>
-        {dows.map((day, i) => (
-          <Text key={`dow-${i}`} style={[styles.dow, { color: colors.inkDim }]}>{day}</Text>
-        ))}
-        {pack.nights.map((night) =>
+        <View style={styles.week}>
+          {dows.map((day, i) => (
+            <Text key={`dow-${i}`} style={[styles.dow, { color: colors.inkDim }]}>{day}</Text>
+          ))}
+        </View>
+        {weeks.map((week) => (
+        <View key={week[0].iso} style={styles.week}>
+        {week.map((night) =>
           night.pad ? (
             <View key={night.iso} style={styles.pad} />
           ) : (
@@ -146,15 +169,16 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
             </Pressable>
           ),
         )}
+        </View>
+        ))}
       </Reveal>
-
     </View>
   )
 }
 
 // A whole year: twelve small month grids of cleared and not cleared nights.
 // Arrows go back to the year of the first answer. A day opens its sheet.
-export function YearGrid({ book, boards, tagId = '', now, colors }) {
+export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const prefs = usePrefs()
   const clock = now || new Date()
   const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
@@ -201,9 +225,18 @@ export function YearGrid({ book, boards, tagId = '', now, colors }) {
       <Reveal key={`y${year}`} style={styles.year} exiting={undefined} layout={false}>
         {months.map((pack) => (
           <View key={pack.start.getMonth()} style={styles.mini}>
-            <Text style={[styles.miniLabel, { color: colors.inkDim }]}>
-              {pack.start.toLocaleDateString(locale, { month: 'short' })}
-            </Text>
+            {/* The squares are small: the month name opens that month full size. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
+              disabled={!onMonth}
+              onPress={() => onMonth?.((year - thisYear) * 12 + pack.start.getMonth() - clock.getMonth())}
+              hitSlop={8}
+            >
+              <Text style={[styles.miniLabel, { color: onMonth ? colors.on : colors.inkDim }]}>
+                {`${pack.start.toLocaleDateString(locale, { month: 'short' })}${onMonth ? ' ›' : ''}`}
+              </Text>
+            </Pressable>
             <View style={styles.miniGrid}>
               {pack.nights.map((night) =>
                 night.pad ? (
@@ -248,7 +281,8 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  grid: {},
+  week: { flexDirection: 'row' },
   dow: { width: '14.28%', textAlign: 'center', fontSize: 11, marginBottom: 4 },
   pad: { width: '14.28%', aspectRatio: 1 },
   day: {

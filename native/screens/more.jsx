@@ -44,7 +44,7 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { freezeState, hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
@@ -347,8 +347,9 @@ export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const dateIso = boardDate(clock, book?.dayFoldHour)
+  // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const heat = useMemo(() => hallHeat(book, clock), [book, dateIso])
+  const best = useMemo(() => bestShelfStreak(boards.length ? boards : [book], clock), [boards, book, dateIso])
   const have = useMemo(() => shelfMarks(boards.length ? boards : [book]), [boards, book])
 
   return (
@@ -359,7 +360,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('marks.streak', { n: heat })}</Meta>
+      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -424,7 +425,8 @@ function inView(book, boards) {
 
 function FolderScope({ colors, boards, tagId, path }) {
   const ids = tagIdsOf(tagId)
-  if (!ids.length) return <Meta colors={colors}>{t('scope.all')}</Meta>
+  // No filter: say nothing. A plain "All folders" line looked like a picker and did nothing.
+  if (!ids.length) return null
   const names = (boards || []).filter((item) => ids.includes(item.id)).map((item) => item.title).join(', ')
   return (
     <View>
@@ -540,7 +542,10 @@ export function NotesScreen({ book, boards }) {
         <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('notes.searchPh')} />
       ) : null}
       {!allRows.length ? (
-        <Meta colors={colors}>{t('notes.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('notes.empty')}</Meta>
+          <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
+        </>
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
@@ -565,6 +570,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const [view, setView] = useState('month')
+  const [startShift, setStartShift] = useState(0)
 
   return (
     <ScreenShell title={t('boards.calendar')} colors={colors}>
@@ -575,13 +581,26 @@ export function CalendarScreen({ book, boards, tagId, now }) {
           { id: 'year', label: t('cal.viewYear') },
         ]}
         value={view}
-        onPick={setView}
+        onPick={(next) => {
+          setStartShift(0)
+          setView(next)
+        }}
         colors={colors}
       />
       {view === 'year' ? (
-        <YearGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+        <YearGrid
+          book={book}
+          boards={boards}
+          tagId={tagId}
+          now={clock}
+          colors={colors}
+          onMonth={(shift) => {
+            setStartShift(Math.min(0, shift))
+            setView('month')
+          }}
+        />
       ) : (
-        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} startShift={startShift} />
       )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, { backgroundColor: colors.on }]} />
@@ -759,7 +778,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="shield" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
       </SetCard>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
@@ -1491,7 +1510,7 @@ function PingTest({ colors }) {
   return (
     <>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} last onPress={send} />
+        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} on={state === 'set'} last onPress={send} />
       </SetCard>
       {state === 'off' ? (
         <>
@@ -1556,7 +1575,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
       </SetCard>
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />
-      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
+      <SetCap colors={colors}>{t('pings.waitingTonight')}</SetCap>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
       ) : (
@@ -1694,15 +1713,19 @@ function deviceSeen(iso) {
 }
 
 // Your own name first, then what the phone calls itself.
+// The model beats the generic "Android app", so rows can be told apart.
 function phoneName(row, here) {
   if (row.name) return row.name
-  return row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')
+  return row.device_key === here ? t('account.thisPhone') : row.model || row.label || t('account.aPhone')
 }
 
 function phoneSub(row, here) {
   const parts = []
-  if (row.name && row.device_key === here) parts.push(t('account.thisPhone'))
-  if (row.model) parts.push(row.model)
+  const mine = row.device_key === here
+  if (row.name && mine) parts.push(t('account.thisPhone'))
+  // Whatever the name did not already say: the model, or the kind of phone.
+  if (row.model && (row.name || mine)) parts.push(row.model)
+  else if (row.model && row.label && row.label !== row.model) parts.push(row.label)
   parts.push(t('account.seen', { date: deviceSeen(row.last_seen_at) }))
   return parts.join(' · ')
 }
@@ -2048,8 +2071,12 @@ function AccountSignedIn({ book, email, onChange }) {
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
       {others.length > 1 ? (
-        <KeyButton
+        <SetCard colors={colors}>
+        <SetRow
           colors={colors}
+          icon="trash"
+          danger
+          last
           label={t('account.forgetOthers', { n: others.length })}
           onPress={() =>
             setSure({
@@ -2068,6 +2095,7 @@ function AccountSignedIn({ book, email, onChange }) {
             })
           }
         />
+        </SetCard>
       ) : null}
 
       <PhoneLockSection colors={colors} />

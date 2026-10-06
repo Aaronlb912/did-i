@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  clearInline: { width: 40, height: 40, borderRadius: 20 },
+  clearInline: { width: 32, height: 32, borderRadius: 16 },
   clearText: { fontFamily: fonts.ui, fontSize: 18, lineHeight: 20 },
   pick: {
     flexDirection: 'row',
@@ -204,7 +204,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   // Same height as the question chips it sits in front of.
-  pickInline: { minHeight: 40, paddingHorizontal: 14 },
+  // Inline sits in the Questions top row: a long folder name truncates so Edit stays on the same line.
+  pickInline: { minHeight: 40, paddingHorizontal: 12, maxWidth: 120 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
   count: { fontFamily: fonts.mono, fontSize: 11 },

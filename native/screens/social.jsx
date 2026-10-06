@@ -2031,7 +2031,10 @@ export function FriendScreen({ book, onChange, route }) {
           </PersonRow>
         ))
       ) : (
-        <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
+        <>
+          <Meta colors={colors}>{ready ? t('friend.theySentNone', { name }) : t('family.loading')}</Meta>
+          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
+        </>
       )}
 
         </>
@@ -2062,7 +2065,10 @@ export function FriendScreen({ book, onChange, route }) {
           </PersonRow>
         ))]
       ) : (
-        <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
+        <>
+          <Meta colors={colors}>{ready ? t('friend.youSentNone', { name }) : t('family.loading')}</Meta>
+          {ready ? <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} /> : null}
+        </>
       )}
         </>
       ) : null}
