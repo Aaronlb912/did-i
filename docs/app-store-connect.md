@@ -85,6 +85,13 @@ SAFE AND PRIVATE
 **What's new in 1.2:**
 Did we: questions you answer together with friends or family, with a shared streak. One Add screen: tap "Did I" to switch to Did we or Did you. A Did you can repeat every night. Tap the faces on a Did we to see everyone and their buddy. Send gifts: buy a look, cheer or buddy for a friend or family member, with a short note. They see it the next time they open the app. New privacy choices: hide what notifications say, and report and block.
 
+**What's new in 1.3.1:**
+Card frames: dress up your card with a frame. Some are free, some cost coins or gems, some you earn with a streak, and some come with the seasons. Bring friends to Did I and earn Hive, a new bee buddy, at 15 friends and the Bloom frame at 20. Swipe left now says Not yet, so you can still come back and say Did before the night ends. A wishlist in the Shop and Collection keeps track of what you want next. Undo after a swipe is easier to catch, deleted questions stay deleted, and the Shop is smoother. Frames rest in low power mode, and the launch screen matches your light or dark setting.
+
+**App Privacy labels for 1.3.1:** no new data types. The look and card
+frame you wear are shown to friends and family (Other User Content, already
+declared).
+
 **App Privacy labels for 1.2:** no new data types. A buddy shown to people
 on a shared card is Other User Content (already declared). Reports stay under
 Customer Support. A gift note is also Other User Content.
