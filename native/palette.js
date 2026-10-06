@@ -16,6 +16,8 @@ const DARK = {
   late: '#6fb7ff',
   skip: '#7d8694',
   open: '#39404e',
+  // The ring of a not-yet-answered dot: open is a fill, too faint as a thin line in light.
+  openRing: '#5a6273',
   miss: '#ff6f61',
   // A missed night an earned freeze covered.
   freeze: '#7fd4f0',
@@ -47,6 +49,7 @@ const LIGHT = {
   late: '#1e6bb8',
   skip: '#6a7164',
   open: '#d5d9cc',
+  openRing: '#8a9180',
   miss: '#c44536',
   freeze: '#2a86a8',
   we: '#6b4fc8',

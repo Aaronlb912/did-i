@@ -38,7 +38,7 @@ function Fade({ side, color }) {
 
 // A sideways ScrollView that fades the edge with more past it, so people
 // can tell the row keeps going. fade is the color behind the row.
-export function FadeScroll({ fade, style, children, onScroll, onLayout, onContentSizeChange, ...props }) {
+export function FadeScroll({ fade, style, children, onScroll, onLayout, onContentSizeChange, scrollRef, ...props }) {
   const [x, setX] = useState(0)
   const [width, setWidth] = useState(0)
   const [inner, setInner] = useState(0)
@@ -47,6 +47,7 @@ export function FadeScroll({ fade, style, children, onScroll, onLayout, onConten
     <View style={style}>
       <ScrollView
         {...props}
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={32}

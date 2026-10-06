@@ -573,7 +573,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const [startShift, setStartShift] = useState(0)
 
   return (
-    <ScreenShell title={t('boards.calendar')} colors={colors}>
+    <ScreenShell title={t('settings.history')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
       <ChipRow
         items={[
@@ -615,7 +615,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
         <SetRow colors={colors} icon="pen" label={t('notes.title')} sub={t('notes.sub')} chevron onPress={() => goHash('/notes')} />
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
-        <SetRow colors={colors} icon="collection" label={t('marks.kicker')} chevron last onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron last onPress={() => goHash('/marks')} />
       </SetCard>
     </ScreenShell>
   )

@@ -23,6 +23,7 @@
   --di-late: #6fb7ff;
   --di-skip: #7d8694;
   --di-open: #39404e;
+  --di-open-ring: #5a6273;
   --di-miss: #ff6f61;
   --di-freeze: #7fd4f0;
   --di-we: #b69cff;
@@ -674,6 +675,7 @@ html[data-theme='light'] .di-hall,
   --di-late: #1e6bb8;
   --di-skip: #6a7164;
   --di-open: #d5d9cc;
+  --di-open-ring: #8a9180;
   --di-miss: #c44536;
   --di-freeze: #2a86a8;
   --di-we: #6b4fc8;
