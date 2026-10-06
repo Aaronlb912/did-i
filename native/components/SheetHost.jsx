@@ -162,7 +162,7 @@ export function SheetHost() {
           {sheet.danger && sheet.onGo && !sheet.noClose ? (
             <>
               <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => sheet.onClose?.()} colors={colors} />
-              {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
+              {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
               <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
             </>
           ) : (
@@ -170,7 +170,7 @@ export function SheetHost() {
               {sheet.onGo ? (
                 <DidButton small danger={sheet.danger} disabled={Boolean(sheet.goDisabled)} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
               ) : null}
-              {sheet.onMore ? <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} /> : null}
+              {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
               {sheet.noClose ? null : (
                 <KeyButton
                   label={sheet.closeLabel || t('settings.neverMind')}
@@ -192,7 +192,23 @@ export function SheetHost() {
   )
 }
 
+// moreSizeLabels: every label the button can show. Hidden copies set its
+// width to the widest, so a label change never moves the buttons beside it.
+function MoreButton({ sheet, colors }) {
+  return (
+    <View>
+      {(sheet.moreSizeLabels || []).map((label) => (
+        <View key={label} style={styles.ghost} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <KeyButton label={label} colors={colors} />
+        </View>
+      ))}
+      <KeyButton label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} />
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
+  ghost: { height: 0, opacity: 0, overflow: 'hidden' },
   host: {
     ...StyleSheet.absoluteFill,
     zIndex: 180,
