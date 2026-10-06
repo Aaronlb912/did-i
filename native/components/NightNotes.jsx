@@ -4,7 +4,7 @@ import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
-import { periodLabel } from '../../src/lib/recurrence.js'
+import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { confirmDone } from '../lib/confirm.js'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
@@ -39,15 +39,17 @@ function removeNote(book, lampId, periodKey, note, onChange) {
 const PICKS = 7
 const NOTES_SHOWN = 3
 
-function statusWord(status) {
+// A skip reads Not yet while its night is open, Nope after.
+function statusWord(status, open = false) {
   if (status === 'late') return t('jewelKey.late')
-  if (status === 'skip') return t('jewelKey.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'jewelKey.nope')
   return t('jewelKey.did')
 }
 
 function nightLine(lamp, answer) {
   const night = periodLabel(lamp, answer.periodKey)
-  return night ? `${night} · ${statusWord(answer.status)}` : statusWord(answer.status)
+  const word = statusWord(answer.status, nightOpen(periodNight(lamp, answer.periodKey)))
+  return night ? `${night} · ${word}` : word
 }
 
 /** One note box with Save and Never mind. */
@@ -275,7 +277,7 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
         <Row
           key={`${item.lamp.id}:${item.answer.periodKey}`}
           colors={colors}
-          label={`${shortLabel(item.lamp)} · ${statusWord(item.answer.status)}`}
+          label={`${shortLabel(item.lamp)} · ${statusWord(item.answer.status, true)}`}
           note={item.answer.note || ''}
           onPress={() => setOpen({ lampId: item.lamp.id, periodKey: item.answer.periodKey })}
         />

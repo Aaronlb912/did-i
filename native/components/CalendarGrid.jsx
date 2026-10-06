@@ -5,7 +5,7 @@ import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths 
 import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
-import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { weCardShort } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
@@ -39,15 +39,15 @@ function dowMarks(locale) {
   })
 }
 
-// Every mark reads the same way: Did, Late, Nope, Open.
+// Every mark reads the same way: Did, Late, Not yet (open night) or Nope, Open.
 const upFirst = (text) => text.charAt(0).toLocaleUpperCase() + text.slice(1)
 
 // No answer reads by where the night sits: still ahead, tonight, or gone.
-function markOf(answer, when = 0) {
+function markOf(answer, when = 0, open = when === 0) {
   const status = answer?.status
   if (status === 'yes') return { key: 'yes', label: t('widget.tonight.did') }
   if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
-  if (status === 'skip') return { key: 'skip', label: t('widget.tonight.nope') }
+  if (status === 'skip') return { key: 'skip', label: t(open ? 'jewelKey.notYet' : 'jewelKey.nope') }
   if (when > 0) return { key: 'hole', label: t('cal.ahead') }
   if (when < 0) return { key: 'miss', label: t('cal.notAnswered') }
   return { key: 'hole', label: upFirst(t('cal.open')) }
@@ -105,7 +105,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             </View>
           ))}
           {sorted.map((row) => {
-            const mark = markOf(row.answer, when)
+            const mark = markOf(row.answer, when, nightOpen(iso, clock))
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
                 <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' ? 'miss' : 'open'] }]} />

@@ -4,12 +4,13 @@ import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { feedRows, feedSearch, tapWhen } from './hall-pages.js'
 import { t } from './i18n.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { boardDate, formatBoardDate, nightOpen, periodNight } from './recurrence.js'
 
-function statusWord(status) {
+// A skip reads Not yet while its night is open, Nope once it closed.
+function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t('feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
   return status
 }
 
@@ -67,7 +68,7 @@ export function Feed({ book, now }) {
                       {row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
                     </span>
                     <span className="di-feed-meta">
-                      {statusWord(row.answer.status)}
+                      {statusWord(row.answer.status, Boolean(row.lamp) && nightOpen(periodNight(row.lamp, row.answer.periodKey), clock))}
                       {tapWhen(row.answer.answeredAt, clock)
                         ? ` · ${tapWhen(row.answer.answeredAt, clock)}`
                         : ''}

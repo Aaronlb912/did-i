@@ -63,9 +63,10 @@ export const faceCardStyles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   stampNope: {
+    // Clear of the buddy in the top right corner; "Not yet" is wider than the old word.
     position: 'absolute',
     top: 16,
-    right: 16,
+    right: 64,
     fontFamily: fonts.display,
     fontSize: 15,
     fontWeight: '700',

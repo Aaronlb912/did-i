@@ -276,7 +276,10 @@ function WashiOver({ f }) {
   )
 }
 
-const HEART = 'M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z'
+// A 7x7 pixel coin: dark rim, gold face, a light glint top left.
+const COIN_RIM = 'M2 0h3v1H2zM1 1h1v1H1zM5 1h1v1H5zM0 2h1v3H0zM6 2h1v3H6zM1 5h1v1H1zM5 5h1v1H5zM2 6h3v1H2z'
+const COIN_FACE = 'M2 1h3v1H2zM1 2h5v3H1zM2 5h3v1H2z'
+const COIN_GLINT = 'M2 2h1v2H2zM3 2h1v1H3z'
 
 function PixelOver({ f }) {
   const S = svgAll()
@@ -286,8 +289,12 @@ function PixelOver({ f }) {
       <S.Rect x={-2} y={-2} width={w + 4} height={h + 4} rx={f.R + 2} fill="none" stroke={f.c.accent} strokeWidth={4} />
       <S.Rect x={-6} y={-6} width={w + 12} height={h + 12} rx={f.R + 6} fill="none" stroke={f.c.card} strokeWidth={4} />
       <S.Rect x={-10} y={-10} width={w + 20} height={h + 20} rx={f.R + 10} fill="none" stroke={f.c.ink} strokeWidth={4} />
-      {[[-14, -14], [w - 14, -14], [-14, h - 10], [w - 14, h - 10]].map(([x, y]) => (
-        <S.Path key={`${x}${y}`} d={HEART} fill="#ef6a5b" transform={`translate(${x} ${y}) scale(4)`} />
+      {[[-14, -14], [w - 14, -14], [-14, h - 14], [w - 14, h - 14]].map(([x, y]) => (
+        <S.G key={`${x}${y}`} transform={`translate(${x} ${y}) scale(4)`}>
+          <S.Path d={COIN_FACE} fill="#f5c542" />
+          <S.Path d={COIN_GLINT} fill="#fff1b8" />
+          <S.Path d={COIN_RIM} fill="#9a6a12" />
+        </S.G>
       ))}
     </Layer>
   )

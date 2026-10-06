@@ -130,7 +130,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const lead = leadItem(items, props?.leadLampId)
   const questionText = String(props?.question || '').trim() || lead?.label || footer
   const didLabel = String(props?.didLabel || 'Did')
-  const nopeLabel = String(props?.nopeLabel || 'Nope')
+  const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
   const buddyId = String(props?.buddyId || '')
 

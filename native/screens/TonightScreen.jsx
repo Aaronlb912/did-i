@@ -806,6 +806,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         frame={cardFrame}
       >
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
+        {/* A not yet still takes a swipe right to Did (late); say where it stands. */}
+        {status === 'skip' ? (
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{`${pillStatusLabel(status)} · ${t('tonight.nopedChange', { time: clockWords('09:00') })}`}</Text>
+        ) : null}
         {pillHistory ? (
           <NightStrip
             book={pillBook}
