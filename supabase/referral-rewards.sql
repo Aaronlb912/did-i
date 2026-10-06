@@ -78,6 +78,9 @@ begin
       invite_gems_paid = row.invite_gems_paid + gems,
       invite_look_paid = invite_look_paid or wins_look
     where user_id = me;
+    -- Close the trusted-write window, so nothing later in the same
+    -- transaction can rewrite the invite columns.
+    perform set_config('did_i.invite_write', '', true);
   end if;
 
   return jsonb_build_object('gems', gems, 'looks', to_jsonb(looks), 'joined', joined,
