@@ -542,7 +542,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
               <Text style={[styles.streakChevron, { color: colors.inkDim }]}>›</Text>
             </Pressable>
-            <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
+            <View style={styles.streakChip}>
+              <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
+            </View>
             </View>
           ) : null}
           {summary ? (
@@ -911,6 +913,7 @@ const styles = StyleSheet.create({
   tomorrow: { marginTop: 16 },
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  streakChip: { marginTop: 14 },
   streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
   streakChevron: { fontSize: 22, marginTop: 10 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
