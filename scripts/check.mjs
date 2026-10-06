@@ -4373,6 +4373,23 @@ await testAsync('frames: still frames cost coins, animated cost gems, and the se
   }
 })
 
+await testAsync('frames: friends read the same frame ids, and only gem frames are gifts', async () => {
+  const F = await import('../src/lib/frames.js')
+  const P = await import('../src/lib/purse.js')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/friends-week.sql'), 'utf8').replace(/\r\n/g, '\n')
+  const list = sql.match(/check \(frame_on in \(([^)]*)\)\)/)
+  assert.ok(list, 'friends-week.sql checks frame_on')
+  const ids = [...list[1].matchAll(/'([a-z]*)'/g)].map((m) => m[1]).filter(Boolean)
+  assert.deepEqual([...ids].sort(), F.FRAMES.map((frame) => frame.id).sort(), 'frame_on allows every frame id and no other')
+  const gifts = P.giftItems().frames
+  assert.ok(gifts.length > 0 && gifts.every((frame) => frame.kind === 'gem'), 'gift frames are gem frames only')
+  const got = P.mergeGift({}, { kind: 'frame', item_id: 'glow' })
+  assert.ok(got.known && !got.had && P.normalizePurse(got.book).frames.includes('glow'), 'a gifted frame lands on the list')
+  assert.ok(P.mergeGift(got.book, { kind: 'frame', item_id: 'glow' }).had, 'a second one goes back')
+  assert.equal(P.normalizePurse(P.wearGift(got.book, 'frame', 'glow')).frame, 'glow', 'wear it puts it on')
+})
+
 await testAsync('frames: who owns what, seasons, and the worn frame', async () => {
   const F = await import('../src/lib/frames.js')
   const none = F.framesOwned({}, { bestStreak: 0, everFrozen: false, today: '2026-10-05' })

@@ -19,6 +19,7 @@ const NATIVE_SHIMS = [
   ['expo-sensors', 'sensors-safe.cjs'],
   ['expo-clipboard', 'clipboard-safe.cjs'],
   ['expo-haptics', 'haptics-safe.cjs'],
+  ['expo-battery', 'battery-safe.cjs'],
   ['expo-linking', 'linking-safe.cjs'],
   ['expo-splash-screen', 'splash-safe.cjs'],
   ['expo-document-picker', 'document-picker-safe.cjs'],

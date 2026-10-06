@@ -2725,6 +2725,7 @@ export const pt = {
   'friend.noCheersLeft': 'Sem ânimos',
   'friend.getMoreCheers': 'Obter mais',
   'friend.weekA11y': '{name} concluiu {n} das últimas 7 noites',
+  'friend.cardA11y': 'Cartão de {name}',
   // r10-merged
   'questions.earlier': "Anteriores",
   'we.details': "Detalhes",
