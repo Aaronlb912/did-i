@@ -11,7 +11,8 @@ import {
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
-import { markNoticesSeen, useNotices } from '../../src/lib/notices.js'
+import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
+import { useUndoToast } from '../lib/toast-queue.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -404,8 +405,17 @@ export function RecentScreen() {
     markNoticesSeen()
   }, [list.length])
   const locale = readPrefs().locale
+  const [undo, setUndo] = useState(null)
+  useUndoToast('recent', undo, () => {
+    restoreNotices(undo?.list)
+    setUndo(null)
+  }, 6000)
+  function clearAll() {
+    setUndo({ label: t('recent.cleared'), list: clearNotices() })
+  }
   return (
     <ScreenShell title={t('recent.title')} colors={colors}>
+      {list.length ? <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} /> : null}
       {list.length ? (
         list.map((item) => (
           <Pressable

@@ -44,6 +44,22 @@ export function addNotice(notice, now = Date.now()) {
   emit()
 }
 
+/** Empties Recent and returns what was there, for undo. */
+export function clearNotices() {
+  const before = readNotices()
+  write(KEY, [])
+  emit()
+  return before
+}
+
+/** Puts a cleared list back, keeping anything that came in since. */
+export function restoreNotices(list) {
+  const now = readNotices()
+  const ids = new Set(now.map((item) => item.id))
+  write(KEY, [...now, ...(list || []).filter((item) => !ids.has(item.id))].slice(0, NOTICE_CAP))
+  emit()
+}
+
 export function noticesSeenAt() {
   return Number(read(SEEN_KEY, 0)) || 0
 }

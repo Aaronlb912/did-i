@@ -521,7 +521,7 @@ await testAsync('referral ladder: real gem steps, Night look, Hive at 15, Bloom 
   const P = await import('../src/lib/purse.js')
   const F = await import('../src/lib/frames.js')
   const at12 = R.referLadder(12)
-  assert.equal(at12.goal, 15)
+  assert.equal(at12.goal, 20)
   assert.equal(at12.toBuddy, 3)
   assert.deepEqual(at12.rungs.filter((r) => r.kind === 'gems').map((r) => [r.n, r.gems]), [[1, 1], [2, 2], [3, 3], [4, 4]], 'gem steps add to ten')
   assert.deepEqual(at12.rungs.map((r) => r.state), ['got', 'got', 'got', 'got', 'got', 'next', 'later'])

@@ -92,6 +92,19 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
 }
 
 /** Section heading with an optional count and a link on the right. */
+/** "+ Add" as an outlined pill, so it does not read as the same thing as See all. */
+export function AddPill({ colors, onPress, label }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
+      {({ pressed }) => (
+        <View style={[styles.addPill, { borderColor: colors.on, opacity: pressed ? 0.6 : 1 }]}>
+          <Text style={[styles.addPillText, { color: colors.on }]}>+ {t('tonight.add')}</Text>
+        </View>
+      )}
+    </Pressable>
+  )
+}
+
 export function SectionHead({ label, count, link, onLink, onAdd, addLabel, colors }) {
   return (
     <View style={styles.head}>
@@ -100,16 +113,7 @@ export function SectionHead({ label, count, link, onLink, onAdd, addLabel, color
         {count != null ? ` · ${count}` : ''}
       </Text>
       <View style={styles.headRight}>
-        {onAdd ? (
-          // An outlined button, so it does not read as the same thing as See all.
-          <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={addLabel}>
-            {({ pressed }) => (
-              <View style={[styles.addPill, { borderColor: colors.on, opacity: pressed ? 0.6 : 1 }]}>
-                <Text style={[styles.addPillText, { color: colors.on }]}>+ {t('tonight.add')}</Text>
-              </View>
-            )}
-          </Pressable>
-        ) : null}
+        {onAdd ? <AddPill colors={colors} onPress={onAdd} label={addLabel} /> : null}
         {link ? (
           <Pressable onPress={onLink} hitSlop={8} accessibilityRole="button">
             <Text style={[styles.headLink, { color: colors.inkSoft }]}>{link} ›</Text>

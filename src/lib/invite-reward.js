@@ -46,8 +46,8 @@ export function referLadder(joined) {
       next = true
     } else rung.state = 'later'
   }
-  // The big count heads for the buddy, then the frame.
-  const goal = have < INVITE_BUDDY_AT ? INVITE_BUDDY_AT : INVITE_FRAME_AT
+  // The big count always runs to the last reward, the frame.
+  const goal = INVITE_FRAME_AT
   return {
     joined: have,
     goal,
