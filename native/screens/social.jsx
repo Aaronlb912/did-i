@@ -105,7 +105,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
-import { Reveal } from '../lib/motion.jsx'
+import { Reveal, pressFx } from '../lib/motion.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -863,17 +863,16 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="note"
-          label={t('didYouLink.textTitle')}
-          sub={t('didYouLink.textSub')}
-          chevron
-          last
-          onPress={() => setSheet({ kind: 'send', person: null })}
-        />
-      </SetCard>
+      {/* A quiet link, not a card: most Did you's go to a friend above. */}
+      <Pressable
+        onPress={() => setSheet({ kind: 'send', person: null })}
+        accessibilityRole="button"
+        accessibilityHint={t('didYouLink.textSub')}
+        hitSlop={8}
+        style={({ pressed }) => [styles.textLink, pressFx(pressed)]}
+      >
+        <Text style={[styles.textLinkText, { color: colors.on }]}>{`${t('didYouLink.textTitle')} ›`}</Text>
+      </Pressable>
         </>
       ) : null}
 
@@ -2543,6 +2542,8 @@ const styles = StyleSheet.create({
   friendPrimary: { marginBottom: 14 },
   friendMinor: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   friendWeRow: { marginBottom: 8 },
+  textLink: { alignSelf: 'flex-start', marginTop: 4, marginBottom: 16 },
+  textLinkText: { fontSize: 15 },
   friendSmall: { fontFamily: fonts.ui, fontSize: 12, textAlign: 'center', marginTop: 6 },
   friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },
   friendWeekDot: { width: 8, height: 8, borderRadius: 4 },
