@@ -416,7 +416,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="calendar"
           tint={colors.on}
-          label={t('settings.history')}
+          label={t('boards.calendar')}
           sub={t('settings.calendarSub')}
           chevron
           onPress={() => goHash('/calendar')}
