@@ -26,11 +26,13 @@ import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from '
 import { queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGift } from './purse.js'
+import { applyInvitePayout, mergeGift, mergePurses } from './purse.js'
+import { FRAME_IDS } from './frames.js'
 import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
+  grantWeeklyGem,
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
@@ -42,6 +44,7 @@ import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+const GEM_WEEK_ASKED_KEY = 'did-i-gem-week-asked'
 export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
 
@@ -189,8 +192,31 @@ async function putPrefs(db, user, shelf) {
     },
     { onConflict: 'user_id' },
   )
-  if (!error) markCleared(db, user, mark)
+  if (!error) {
+    markCleared(db, user, mark)
+    markCard(db, user, doc)
+  }
   return error || null
+}
+
+// The look and frame you wear, for the small card on a friend's page. Its
+// own write, sent only when it changes, so a server without frame_on yet
+// never stops the sync above.
+let cardSent = ''
+function markCard(db, user, shelf) {
+  const purse = mergePurses(shelf?.boards || [])
+  const look = /^[a-z0-9-]{1,24}$/.test(purse.lookOn || '') ? purse.lookOn : 'lime'
+  const frame = FRAME_IDS.has(purse.frame) ? purse.frame : ''
+  const key = `${user.id}:${look}:${frame}`
+  if (key === cardSent) return
+  cardSent = key
+  Promise.resolve(db.from('profiles').update({ look_on: look, frame_on: frame }).eq('user_id', user.id))
+    .then((res) => {
+      if (res?.error) cardSent = ''
+    })
+    .catch(() => {
+      cardSent = ''
+    })
 }
 
 // Tonight cleared or not, for a friend's week. Sent only when it changes.
@@ -344,6 +370,28 @@ async function pullAndMergeOnce() {
         item.id === written.currentId ? applyInvitePayout(item, invited) : item,
       )
       written = writeShelf({ ...written, boards }, metaAt)
+    }
+
+    // A weekly gem earned signed out only lived on the phone, and the server
+    // balance below replaced it. Ask the server for that week once per
+    // account; it checks the week and pays each week at most once.
+    const gemWeek = String(written.gemWeek || '')
+    const gemAsk = `${user.id}:${gemWeek}`
+    let gemAsked = ''
+    try {
+      gemAsked = localStorage.getItem(GEM_WEEK_ASKED_KEY) || ''
+    } catch {
+      gemAsked = ''
+    }
+    if (gemWeek && gemAsked !== gemAsk) {
+      const paid = await grantWeeklyGem(gemWeek).catch(() => null)
+      if (paid != null) {
+        try {
+          localStorage.setItem(GEM_WEEK_ASKED_KEY, gemAsk)
+        } catch {
+          // Asks again next sync; the server still pays once.
+        }
+      }
     }
 
     const bal = await readGemBalance()

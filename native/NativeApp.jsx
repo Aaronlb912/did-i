@@ -18,6 +18,7 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
 import { Boundary } from './components/Boundary.jsx'
 import { Slot } from './components/Slot.jsx'
@@ -37,6 +38,7 @@ function ThemedStatusBar() {
 }
 
 export function NativeApp() {
+  const theme = useTheme()
   const fontsLoaded = useAppFonts()
   const [launchReady, setLaunchReady] = useState(false)
 
@@ -104,7 +106,7 @@ export function NativeApp() {
   }, [launchReady])
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0e1014' }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: hallColors('lime', theme).bg }}>
       {!fontsLoaded || !launchReady ? (
         <BootView />
       ) : (

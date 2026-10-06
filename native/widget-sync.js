@@ -10,6 +10,24 @@ import { readShelf } from '../src/lib/board-shelf.js'
 import { isoDate } from '../src/lib/recurrence.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 
+// The native side takes plain records. undefined, functions or Dates in the
+// props can make the whole update throw, so send a JSON copy.
+function plainProps(props) {
+  try {
+    return JSON.parse(JSON.stringify(props ?? {}))
+  } catch {
+    return props
+  }
+}
+
+// One string, so the code and message survive in the device log too
+// (a second console argument is often dropped there).
+function warnWidget(where, error) {
+  const code = error?.code ? ` [${error.code}]` : ''
+  const text = error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
+  console.warn(`${where} failed${code}: ${text}`)
+}
+
 function snapshotColors(colors, look) {
   return {
     bg: colors.bg,
@@ -89,10 +107,12 @@ export async function syncTonightWidget(shelf) {
         date,
         props: enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf, date)),
       }))
-      if (later.length && api.updateTimeline) await api.updateTimeline([{ date: new Date(), props }, ...later])
-      else await api.updateSnapshot(props)
+      if (later.length && api.updateTimeline) {
+        const entries = [{ date: new Date(), props }, ...later]
+        await api.updateTimeline(entries.map((entry) => ({ date: entry.date, props: plainProps(entry.props) })))
+      } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
-      console.warn('widget updateSnapshot', error?.message || error)
+      warnWidget('widget updateSnapshot', error)
     }
     return
   }
@@ -164,12 +184,12 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
       )
       if (api.updateTimeline) {
         await api.updateTimeline([
-          { date: new Date(), props },
-          { date: midnight, props: tomorrow },
+          { date: new Date(), props: plainProps(props) },
+          { date: midnight, props: plainProps(tomorrow) },
         ])
-      } else await api.updateSnapshot(props)
+      } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
-      console.warn('together widget updateSnapshot', error?.message || error)
+      warnWidget('together widget updateSnapshot', error)
     }
     return
   }

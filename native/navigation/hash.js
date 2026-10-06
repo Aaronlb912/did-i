@@ -43,6 +43,7 @@ const ROUTES = new Set([
   '/shop/cheers',
   '/shop/buddies',
   '/shop/accessories',
+  '/shop/frames',
   '/gems',
   '/kit',
   '/gift',

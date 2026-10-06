@@ -5,6 +5,15 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Card frames
+
+- **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
+- **Needs device testing (friends, gifts, low power):** a friend's page shows their card in their look and frame (and a plain card with no frame); a gem frame sent as a gift arrives, Wear it puts it on, a second copy goes back; frames hold still in low power mode (iPhone Low Power Mode, Android Battery Saver) and move again when it is off. Low power needs the next native build (bump to 1.3.1; expo-battery); a binary without it never pauses for it and does not crash.
+- **Supabase not applied yet for frame_on and frame gifts.** friends-week.sql and gifts.sql changed; run npm run db:apply:all and the frames-social test before the OTA. Until then the phone's look and frame write fails quietly and friends see no card.
+- **Web shows a gifted frame by name only.** No frame art on the web, and View in collection there has no frames tab.
+- **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
+- **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
+
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 
 - **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
@@ -182,6 +191,9 @@ real phone are still open on both stores.
 - [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 
 ## Decided, not building
+
+**Widgets never get frames.** A frame is for the card in the app. The
+home screen widgets stay as they are.
 
 **Kid accounts stay as they are.** A family is people sharing chores,
 and the parent and kid roles decide who can assign what. Did I is not a

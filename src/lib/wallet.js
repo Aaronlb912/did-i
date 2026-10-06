@@ -3,6 +3,7 @@ import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
 import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isLive, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
 import { accessoryById } from './accessories.js'
+import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
   const gems = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
@@ -41,6 +42,7 @@ export function normalizeCoinCatalog(raw) {
     looks: asIdList(catalog.looks),
     cheerStages: asStageMap(catalog.cheer_stages || catalog.cheerStages),
     accessories: asIdList(catalog.accessories),
+    frames: asIdList(catalog.frames),
   }
 }
 
@@ -75,6 +77,9 @@ export function applyCoinCatalogToBook(book, cat, opts = {}) {
     cheerStages,
     accessories,
     worn: slot ? { ...kept, [slot]: opts.wear } : kept,
+    // Coin frames come from the server list; earned, seasonal and gem ones stay.
+    frames: withServerFrames(purse.frames, 'coin', catalog.frames || []),
+    frame: opts.frameOn || purse.frame,
     buddyOn: slot ? purse.buddyOn || FREE_BUDDY : purse.buddyOn,
     lookOn: opts.lookOn || purse.lookOn,
   }
@@ -89,6 +94,7 @@ export function normalizeGemOwned(raw) {
     looks: asIdList(bag.looks),
     cheers: asIdList(bag.cheers),
     buddies: asIdList(bag.buddies),
+    frames: asIdList(bag.frames),
   }
 }
 
@@ -104,6 +110,8 @@ export function applyGemOwnedToBook(book, owned, opts = {}) {
     looks: [...new Set([...purse.looks.filter((id) => !isGemLook(id)), ...own.looks])],
     cheers: [...new Set(['lime', ...own.cheers])],
     buddies: [...new Set([FREE_BUDDY, ...own.buddies])],
+    frames: withServerFrames(purse.frames, 'gem', own.frames),
+    frame: opts.frameOn || purse.frame,
     lookOn: opts.lookOn || purse.lookOn,
     cheerOn: opts.cheerOn || purse.cheerOn,
     buddyOn: opts.buddyOn || purse.buddyOn,
@@ -134,6 +142,7 @@ export async function purchaseWithGems(kind, itemId) {
     if (/need gems/i.test(text)) return { miss: 'shop.miss.needGems' }
     if (/bad item/i.test(text)) {
       if (kind === 'look') return { miss: 'shop.miss.lookGone' }
+      if (kind === 'frame') return { miss: 'frames.miss.notSold' }
       return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     }
     return { miss: 'shop.miss.buyFail' }
@@ -227,6 +236,7 @@ function coinCostFor(kind, itemId) {
   if (kind === 'look') return LOOK_COIN_PRICE
   if (kind === 'cheer_stage') return CHEER_STAGE_COIN
   if (kind === 'accessory') return accessoryById(itemId)?.coins || 0
+  if (kind === 'frame') return frameById(itemId)?.coins || 0
   return 0
 }
 
@@ -235,6 +245,7 @@ export function validateCoinItem(kind, itemId) {
   if (kind === 'look') return COIN_LOOK_IDS.has(id)
   if (kind === 'cheer_stage') return Boolean(id)
   if (kind === 'accessory') return Boolean(accessoryById(id) && isLive(accessoryById(id)))
+  if (kind === 'frame') return frameById(id)?.kind === 'coin'
   return false
 }
 
@@ -246,7 +257,7 @@ export async function purchaseWithCoins(kind, itemId) {
   if (!user) return { miss: 'shop.miss.buyFail' }
   const k = String(kind || '').trim()
   const id = String(itemId || '').trim()
-  const gone = k === 'look' ? 'shop.miss.lookGone' : k === 'accessory' ? 'shop.miss.accessoryGone' : 'shop.miss.cheerGone'
+  const gone = k === 'look' ? 'shop.miss.lookGone' : k === 'accessory' ? 'shop.miss.accessoryGone' : k === 'frame' ? 'frames.miss.notSold' : 'shop.miss.cheerGone'
   if (!validateCoinItem(k, id)) return { miss: gone }
   const { data, error } = await db.rpc('buy_with_coins', { p_kind: k, p_item_id: id })
   if (error) {

@@ -1,0 +1,471 @@
+import { useMemo } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { t } from '../../src/lib/i18n.js'
+import { readPrefs } from '../../src/lib/prefs.js'
+import { activeLook } from '../../src/lib/active-look.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
+import { normalizePurse } from '../../src/lib/purse.js'
+import { buyFrame } from '../../src/lib/coin-shop.js'
+import {
+  claimFrame,
+  frameById,
+  frameProgress,
+  frameText,
+  framesOwned,
+  seasonNextText,
+  seasonOpen,
+  SHOWN_FRAMES,
+  wearFrame,
+  wornFrame,
+} from '../../src/lib/frames.js'
+import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { CardFrame } from '../components/frames/CardFrame.jsx'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
+import { CoinIcon, GemIcon } from '../components/PurseIcons.jsx'
+import { BoardShell } from '../components/BoardShell.jsx'
+import { FadeScroll } from '../components/FadeScroll.jsx'
+import { Meta } from '../components/ui.jsx'
+import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
+import { useLookColors } from '../hooks/useHallColors.js'
+import { goHash } from '../navigation/hash.js'
+import { pressFx } from '../lib/motion.jsx'
+import { fonts } from '../theme.js'
+
+// What frames you have earned, from the whole shelf: the streak tonight and
+// whether a freeze ever saved it. Earned frames are stored once reached
+// (keepEarnedFrames), so a streak that ends later does not take them back.
+export function frameCtxFor(boards, now = new Date()) {
+  const list = Array.isArray(boards) ? boards : []
+  const today = boardDate(now, list[0]?.dayFoldHour)
+  if (!list.length) return { bestStreak: 0, everFrozen: false, today }
+  return {
+    bestStreak: Math.max(shelfStreak(list, now), bestShelfStreak(list, now)),
+    everFrozen: freezeState(list, now).frozen.size > 0,
+    today,
+  }
+}
+
+export function useFrameCtx(book) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => frameCtxFor(readShelf().boards), [book])
+}
+
+function monthDay(iso) {
+  const [y, m, d] = String(iso || '').split('-').map(Number)
+  if (!y || !m || !d) return iso
+  try {
+    return new Date(y, m - 1, d, 12).toLocaleDateString(readPrefs().locale || 'en', { month: 'short', day: 'numeric' })
+  } catch {
+    return formatBoardDate(iso)
+  }
+}
+
+function frameMiss(next) {
+  if (!next?.miss) return ''
+  return next.missN != null ? t(next.miss, { n: next.missN }) : t(next.miss)
+}
+
+function frameName(id) {
+  return id ? t(frameText(id, 'name')) : t('frames.none')
+}
+
+// The line under a frame's name: what it costs, Owned, how to earn it, or when it is back.
+export function frameStatus(frame, purse, ctx) {
+  const owned = framesOwned(purse, ctx).has(frame.id)
+  if (owned) return { text: t('shop.owned'), owned: true }
+  if (frame.kind === 'coin') return { coins: frame.coins }
+  if (frame.kind === 'gem') return { gems: frame.gems }
+  if (frame.kind === 'earned') {
+    const p = frameProgress(frame, ctx)
+    return { text: frame.earn === 'freeze' ? t('frames.earnFreeze') : t('frames.progress', { n: p.n, of: p.of }) }
+  }
+  if (frame.kind === 'season') {
+    return seasonOpen(frame, ctx.today)
+      ? { text: t('frames.freeNow') }
+      : { text: t('frames.back', { date: monthDay(seasonNextText(frame, ctx.today)) }) }
+  }
+  return { text: t('frames.free') }
+}
+
+function StatusTag({ status, colors }) {
+  if (status.coins || status.gems) {
+    return (
+      <View style={styles.tagRow}>
+        {status.gems ? <GemIcon size={12} /> : <CoinIcon size={12} />}
+        <Text style={[styles.tagText, { color: colors.ink }]}>{status.gems || status.coins}</Text>
+      </View>
+    )
+  }
+  return (
+    <Text style={[styles.tagText, { color: colors.inkDim }]} numberOfLines={1}>
+      {status.text}
+    </Text>
+  )
+}
+
+// A small done card, so the frame in the sheet sits around something real.
+function MiniCard({ colors }) {
+  return (
+    <View style={[...faceCardStyle(colors), styles.miniCard]}>
+      <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
+      <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={2}>
+        {t('tonight.doneTitle')}
+      </Text>
+    </View>
+  )
+}
+
+function FrameSheetPreview({ id, colors, ctx }) {
+  return (
+    <View style={styles.sheetPreview}>
+      <CardFrame
+        id={id}
+        colors={colors}
+        active
+        streak={ctx.bestStreak}
+        answered={3}
+        total={3}
+        weekLit={[true, true, true, true, true, false, false]}
+        date={ctx.today}
+        style={styles.sheetFrame}
+      >
+        <MiniCard colors={colors} />
+      </CardFrame>
+    </View>
+  )
+}
+
+function FrameFacts({ frame, colors }) {
+  return (
+    <View style={styles.facts}>
+      <View style={[styles.rarity, { borderColor: colors.on }]}>
+        <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
+      </View>
+      <Text style={[styles.desc, { color: colors.ink }]}>{t(frameText(frame.id, 'desc'))}</Text>
+      {['f1', 'f2', 'f3'].map((key) => (
+        <Text key={key} style={[styles.fact, { color: colors.inkSoft }]}>
+          {`• ${t(frameText(frame.id, key))}`}
+        </Text>
+      ))}
+    </View>
+  )
+}
+
+// One sheet for every frame: a big live preview, what it is, and the one
+// thing you can do with it (Buy, Wear, Take off, Claim) or why you cannot yet.
+export function openFrameSheet({ id, book, colors, ctx, onChange }) {
+  const frame = frameById(id)
+  if (!frame) return
+  const purse = normalizePurse(book)
+  const owned = framesOwned(purse, ctx).has(id)
+  const on = wornFrame(purse, ctx) === id
+  const status = frameStatus(frame, purse, ctx)
+  const priceLine = status.coins
+    ? t('shop.coins', { n: status.coins })
+    : status.gems
+      ? t('shop.gems', { n: status.gems })
+      : status.text
+  let action = null
+  const reopen = (next) => openFrameSheet({ id, book: next, colors, ctx, onChange })
+  if (owned) {
+    action = {
+      label: on ? t('shop.takeOff') : t('frames.wear'),
+      go: () => {
+        const next = wearFrame(book, id, ctx)
+        if (next.miss) return confirmMiss(frameMiss(next))
+        publishSheet(null)
+        onChange(next.book)
+        if (!on) confirmDone(t('confirm.wearing', { name: frameName(id) }))
+      },
+    }
+  } else if (frame.kind === 'coin' || frame.kind === 'gem') {
+    const short = frame.coins ? purse.coins < frame.coins : purse.gems < frame.gems
+    if (!short || frame.gems) {
+      action = {
+        label: short ? t('gems.shortGo') : t('shop.buy'),
+        go: () => {
+          if (short) {
+            publishSheet(null)
+            offerMoreGems(colors)
+            return
+          }
+          confirmBuy(colors, {
+            title: frameName(id),
+            body: t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) }),
+            onGo: async () => {
+              const next = await buyFrame(book, id)
+              if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
+              if (next.miss) return confirmMiss(frameMiss(next))
+              onChange(next.book)
+              confirmDone(t('confirm.wearing', { name: frameName(id) }))
+            },
+          })
+        },
+      }
+    }
+  } else if (frame.kind === 'season' && seasonOpen(frame, ctx.today)) {
+    action = {
+      label: t('frames.claim'),
+      go: () => {
+        const next = claimFrame(book, id, ctx.today)
+        if (next.miss) return confirmMiss(frameMiss(next))
+        onChange(next.book)
+        reopen(next.book)
+        confirmDone(t('confirm.wearing', { name: frameName(id) }))
+      },
+    }
+  }
+  const shortCoins = !owned && frame.coins && purse.coins < frame.coins
+  publishSheet({
+    preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} />,
+    title: frameName(id),
+    body: shortCoins ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })}` : priceLine,
+    content: <FrameFacts frame={frame} colors={colors} />,
+    ...(action ? { goLabel: action.label, onGo: action.go } : {}),
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: () => publishSheet(null),
+  })
+}
+
+export function openFramesHow(colors) {
+  publishSheet({
+    title: t('frames.howTitle'),
+    body: t('frames.howBody'),
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: () => publishSheet(null),
+  })
+}
+
+function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
+  const name = frameName(frame.id)
+  return (
+    <Pressable
+      onPress={() => onPress(frame.id)}
+      accessibilityRole="button"
+      accessibilityLabel={t('shop.see', { name })}
+      style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
+    >
+      <View style={styles.tileArt}>
+        <FramePreview id={frame.id} colors={colors} size={92} />
+      </View>
+      <View style={styles.tileLabel}>
+        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
+          {name}
+        </Text>
+        <StatusTag status={frameStatus(frame, purse, ctx)} colors={colors} />
+      </View>
+    </Pressable>
+  )
+}
+
+// Things you can buy or claim first, then the ones you own.
+function shopOrder(purse, ctx) {
+  const owned = framesOwned(purse, ctx)
+  const forSale = SHOWN_FRAMES.filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
+  const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
+  return { forSale, mine }
+}
+
+// The Frames row in the Shop hub, like Looks or Cheers.
+export function FramesShopRow({ book, colors, onChange }) {
+  const ctx = useFrameCtx(book)
+  const purse = normalizePurse(book)
+  const { forSale, mine } = shopOrder(purse, ctx)
+  const list = [...forSale, ...mine]
+  const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
+  return (
+    <View style={styles.promoShelf}>
+      <View style={styles.promoHead}>
+        <Text style={[styles.cap, { color: colors.inkDim }]}>{t('frames.title')}</Text>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/shop/frames')} hitSlop={8}>
+          <Text style={[styles.promoAll, { color: colors.on }]}>{t('frames.all')}</Text>
+        </Pressable>
+      </View>
+      {forSale.length ? null : <Meta colors={colors}>{t('frames.allOwned')}</Meta>}
+      <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
+        {list.map((frame) => (
+          <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.rowTile} />
+        ))}
+      </FadeScroll>
+    </View>
+  )
+}
+
+const SECTIONS = [
+  { kind: 'free', key: 'frames.sec.free' },
+  { kind: 'earned', key: 'frames.sec.earned' },
+  { kind: 'coin', key: 'frames.sec.coin' },
+  { kind: 'gem', key: 'frames.sec.gem' },
+  { kind: 'season', key: 'frames.sec.season' },
+]
+
+export function ShopFramesScreen({ book, onChange }) {
+  const colors = useLookColors(activeLook(book), true)
+  const ctx = useFrameCtx(book)
+  const purse = normalizePurse(book)
+  const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
+  return (
+    <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
+      <Meta colors={colors}>{t('frames.hint')}</Meta>
+      {SECTIONS.map((sec) => {
+        const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind)
+        return (
+          <View key={sec.kind}>
+            <Text style={[styles.cap, { color: colors.inkDim }]}>{t(sec.key)}</Text>
+            {sec.kind === 'earned' ? <Meta colors={colors}>{t('frames.earnHint')}</Meta> : null}
+            <View style={styles.grid}>
+              {list.map((frame) => (
+                <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.gridTile} />
+              ))}
+            </View>
+          </View>
+        )
+      })}
+    </BoardShell>
+  )
+}
+
+function KitFrameTile({ id, label, caption, worn, locked, colors, onPress }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(worn) }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, locked && styles.locked, pressFx(pressed)]}
+    >
+      <View style={styles.kitChip}>
+        {id ? <FramePreview id={id} colors={colors} size={44} /> : <View style={[styles.offChip, { borderColor: colors.line }]} />}
+        {worn ? (
+          <View style={[styles.wornBadge, { backgroundColor: colors.on, borderColor: colors.panel }]}>
+            <Text style={[styles.wornBadgeText, { color: colors.bg }]}>✓</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={[styles.kitName, { color: colors.ink }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {caption ? (
+        <Text style={[styles.kitCaption, { color: colors.inkDim }]} numberOfLines={1}>
+          {caption}
+        </Text>
+      ) : null}
+    </Pressable>
+  )
+}
+
+// Collection > Frames: No frame first, then what you own (tap to wear), then
+// earned frames still locked with how far along you are.
+export function FramesCollection({ book, colors, onChange }) {
+  const ctx = useFrameCtx(book)
+  const purse = normalizePurse(book)
+  const owned = framesOwned(purse, ctx)
+  const worn = wornFrame(purse, ctx)
+  const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
+  const locked = SHOWN_FRAMES.filter((f) => f.kind === 'earned' && !owned.has(f.id))
+  function wear(id) {
+    const next = wearFrame(book, id === worn ? '' : id, ctx)
+    if (next.miss) return confirmMiss(frameMiss(next))
+    onChange(next.book)
+    if (id && id !== worn) confirmDone(t('confirm.wearing', { name: frameName(id) }))
+  }
+  return (
+    <>
+      <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <KitFrameTile id="" label={t('frames.none')} worn={!worn} colors={colors} onPress={() => wear('')} />
+        {mine.map((frame) => (
+          <KitFrameTile
+            key={frame.id}
+            id={frame.id}
+            label={frameName(frame.id)}
+            caption={frame.kind === 'season' ? t('kit.seasonal') : ''}
+            worn={worn === frame.id}
+            colors={colors}
+            onPress={() => wear(frame.id)}
+          />
+        ))}
+        {locked.map((frame) => (
+          <KitFrameTile
+            key={frame.id}
+            id={frame.id}
+            label={frameName(frame.id)}
+            caption={frameStatus(frame, purse, ctx).text}
+            locked
+            colors={colors}
+            onPress={() => openFrameSheet({ id: frame.id, book, colors, ctx, onChange })}
+          />
+        ))}
+      </View>
+      <Pressable accessibilityRole="button" onPress={() => goHash('/shop/frames')} hitSlop={8}>
+        <Text style={[styles.promoAll, { color: colors.on }]}>{t('frames.all')}</Text>
+      </Pressable>
+    </>
+  )
+}
+
+export function framesOwnedCount(book) {
+  const purse = normalizePurse(book)
+  const ctx = frameCtxFor(readShelf().boards)
+  const owned = framesOwned(purse, ctx)
+  return { n: SHOWN_FRAMES.filter((f) => owned.has(f.id)).length, of: SHOWN_FRAMES.length, worn: wornFrame(purse, ctx) }
+}
+
+const styles = StyleSheet.create({
+  promoShelf: { gap: 8, marginTop: 4 },
+  promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  promoAll: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', marginTop: 8, marginBottom: 4 },
+  whatLink: { alignSelf: 'flex-start' },
+  whatText: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline' },
+  rowScroll: { gap: 8, paddingRight: 4 },
+  rowTile: { width: 104 },
+  tile: { borderWidth: 1, borderRadius: 12, padding: 10, minHeight: 176, alignItems: 'center', justifyContent: 'space-between' },
+  tileArt: { height: 112, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  tileLabel: { width: '100%', alignItems: 'center', gap: 4 },
+  tileName: { fontFamily: fonts.uiBold, fontSize: 13, textAlign: 'center' },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tagText: { fontFamily: fonts.uiSemi, fontSize: 12, textAlign: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  gridTile: { width: '31%', flexGrow: 0 },
+  sheetPreview: { width: '100%', alignItems: 'center', paddingVertical: 12 },
+  sheetFrame: { width: 240 },
+  miniCard: { minHeight: 120 },
+  facts: { gap: 6, paddingBottom: 4 },
+  rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },
+  desc: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
+  fact: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
+  kitGrid: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginTop: 10, marginBottom: 8 },
+  kitTile: {
+    width: '33.333%',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 104,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  locked: { opacity: 0.55 },
+  kitChip: { width: 56, height: 60, alignItems: 'center', justifyContent: 'center' },
+  offChip: { width: 36, height: 44, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
+  kitName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%' },
+  kitCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
+  wornBadge: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wornBadgeText: { fontSize: 10, fontWeight: '700', lineHeight: 12 },
+})

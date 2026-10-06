@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { FadeScroll } from './FadeScroll.jsx'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -50,6 +50,16 @@ export function Title({ children, colors }) {
 
 export function Meta({ children, colors }) {
   return <Text style={[styles.meta, { color: colors.inkSoft }]}>{children}</Text>
+}
+
+// A loading line that waits 300 ms, so a fast load never flashes it for one frame.
+export function LateMeta({ children, colors }) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 300)
+    return () => clearTimeout(timer)
+  }, [])
+  return show ? <Meta colors={colors}>{children}</Meta> : null
 }
 
 // `dim` looks disabled but still takes the press, so the screen can say why.

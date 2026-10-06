@@ -1,4 +1,5 @@
--- Gifts: buy a look, cheer or buddy for a friend or family member.
+-- Gifts: buy a look, cheer, buddy, accessory or gem frame for a friend or
+-- family member.
 -- The giver pays from their server balance here, never on the phone.
 -- The gift waits in cheer_gifts until the other person opens the app.
 -- Run after wallet.sql, blocks.sql and did-we-guard.sql.
@@ -11,7 +12,7 @@ alter table public.cheer_gifts add column if not exists returned_at timestamptz;
 
 alter table public.cheer_gifts drop constraint if exists cheer_gifts_kind;
 alter table public.cheer_gifts add constraint cheer_gifts_kind
-  check (kind in ('cheer', 'look', 'buddy', 'accessory'));
+  check (kind in ('cheer', 'look', 'buddy', 'accessory', 'frame'));
 
 alter table public.cheer_gifts drop constraint if exists cheer_gifts_note_len;
 alter table public.cheer_gifts add constraint cheer_gifts_note_len
@@ -130,7 +131,8 @@ as $$
   select jsonb_build_object(
     'looks', coalesce(raw->'looks', '[]'::jsonb),
     'cheers', coalesce(raw->'cheers', '[]'::jsonb),
-    'buddies', coalesce(raw->'buddies', '[]'::jsonb)
+    'buddies', coalesce(raw->'buddies', '[]'::jsonb),
+    'frames', coalesce(raw->'frames', '[]'::jsonb)
   );
 $$;
 
@@ -199,7 +201,8 @@ $$;
 revoke all on function public.read_gem_owned() from public, anon;
 grant execute on function public.read_gem_owned() to authenticated;
 
--- Buy a gem look, cheer or buddy. Prices come from gift_catalog.
+-- Buy a gem look, cheer, buddy or frame. Prices come from gift_catalog;
+-- gem frames are priced in shop_catalog (shop-catalog.sql).
 create or replace function public.buy_with_gems(p_kind text, p_item_id text)
 returns jsonb
 language plpgsql
@@ -211,18 +214,23 @@ declare
   k text := lower(btrim(coalesce(p_kind, '')));
   id text := lower(btrim(coalesce(p_item_id, '')));
   list text;
-  price public.gift_catalog;
+  cost integer;
   row public.profiles;
   owned jsonb;
 begin
   if who is null then
     raise exception 'not signed in';
   end if;
-  list := case k when 'look' then 'looks' when 'cheer' then 'cheers' when 'buddy' then 'buddies' end;
-  select * into price from public.gift_catalog c
-  where c.kind = k and c.item_id = id and c.gems > 0
-    and c.live_from <= (timezone('utc', now()))::date + 1;
-  if list is null or price is null then
+  list := case k when 'look' then 'looks' when 'cheer' then 'cheers' when 'buddy' then 'buddies' when 'frame' then 'frames' end;
+  if k = 'frame' then
+    select g.gems into cost from public.shop_catalog g
+    where g.kind = 'frame' and g.item_id = id and g.gems > 0 and public.shop_item_live('frame', id);
+  else
+    select c.gems into cost from public.gift_catalog c
+    where c.kind = k and c.item_id = id and c.gems > 0
+      and c.live_from <= (timezone('utc', now()))::date + 1;
+  end if;
+  if list is null or cost is null then
     raise exception 'bad item';
   end if;
 
@@ -232,13 +240,13 @@ begin
   if owned->list @> jsonb_build_array(id) then
     return owned || jsonb_build_object('gems', row.gem_balance);
   end if;
-  if row.gem_balance < price.gems then
+  if row.gem_balance < cost then
     raise exception 'need gems';
   end if;
 
   owned := public.gem_owned_add(owned, list, id);
   update public.profiles
-  set gem_balance = gem_balance - price.gems, gem_cosmetics = owned
+  set gem_balance = gem_balance - cost, gem_cosmetics = owned
   where user_id = who
   returning * into row;
   return owned || jsonb_build_object('gems', row.gem_balance);
@@ -317,10 +325,18 @@ begin
     raise exception 'not friends';
   end if;
 
-  select * into price from public.gift_catalog c
-  where c.kind = k and c.item_id = id
-    and c.live_from <= (timezone('utc', now()))::date + 1
-    and (c.live_until is null or (timezone('utc', now()))::date - 1 < c.live_until);
+  if k = 'frame' then
+    -- Gem frames only, priced in shop_catalog. Coin, earned, seasonal and
+    -- free frames are never gifts.
+    select 'frame', s.item_id, s.gems, 0, s.live_from, null::date into price
+    from public.shop_catalog s
+    where s.kind = 'frame' and s.item_id = id and s.gems > 0 and public.shop_item_live('frame', id);
+  else
+    select * into price from public.gift_catalog c
+    where c.kind = k and c.item_id = id
+      and c.live_from <= (timezone('utc', now()))::date + 1
+      and (c.live_until is null or (timezone('utc', now()))::date - 1 < c.live_until);
+  end if;
   if price is null then
     raise exception 'bad item';
   end if;
@@ -437,7 +453,11 @@ begin
       'buddies', (select coalesce(jsonb_agg(distinct x), '[]'::jsonb) from (
         select jsonb_array_elements_text(public.gem_owned_normalize(p.gem_cosmetics)->'buddies') as x
         union select g.cheer_id from public.cheer_gifts g
-        where g.to_id = who and g.claimed_at is null and g.kind = 'buddy') u)
+        where g.to_id = who and g.claimed_at is null and g.kind = 'buddy') u),
+      'frames', (select coalesce(jsonb_agg(distinct x), '[]'::jsonb) from (
+        select jsonb_array_elements_text(public.gem_owned_normalize(p.gem_cosmetics)->'frames') as x
+        union select g.cheer_id from public.cheer_gifts g
+        where g.to_id = who and g.claimed_at is null and g.kind = 'frame') u)
     )
   )
   where p.user_id = who

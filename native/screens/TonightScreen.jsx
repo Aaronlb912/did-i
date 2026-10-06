@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
+import { CardFrame } from '../components/frames/CardFrame.jsx'
+import { useFrameActive } from '../components/frames/index.js'
+import { keepEarnedFrames, wornFrame } from '../../src/lib/frames.js'
+import { nightProgress } from '../../src/lib/night-progress.js'
+import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -35,7 +41,7 @@ import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.js
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
-import { freezeState } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -121,14 +127,25 @@ function useMinuteNow() {
   return now
 }
 
+// The worn frame for Tonight's cards, or null. Every static card reads it.
+const CardFrameProps = createContext(null)
+// Room around a framed card, so the frame never sits on the week dots or the pills.
+const FRAME_GAP = 8
+
 function GemFaceShell({ look, theme, style, buddy = '', children }) {
   const glow = look ? gemGlowHostStyle(look, theme) : null
-  const body = (
+  const frame = useContext(CardFrameProps)
+  const card = (
     <View style={style}>
       <BuddyHang id={buddy} alive />
       {children}
     </View>
   )
+  const body = frame ? (
+    <CardFrame {...frame} style={frameStyles.gap}>
+      {card}
+    </CardFrame>
+  ) : card
   if (!glow) return body
   return (
     <View style={[faceCardStyles.gemShell, glow]}>
@@ -198,6 +215,40 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
   const wish = wishLine(wishGoal(purse))
+  // Card frame: the top card animates only while this screen is in front
+  // (useFrameActive holds the battery rules); cards behind stay still.
+  const focused = useIsFocused()
+  const frameAwake = useFrameActive(focused)
+  const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
+  // Best run ever, so a streak reached before frames shipped still earns them.
+  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
+  const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
+  const wornId = wornFrame(purse, frameCtx)
+  const weekLit = useMemo(
+    () => (wornId && stack.shelf ? weekStripNights(stack.shelf, stack.clock, tagId).map((night) => Boolean(night.on)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [wornId, stack.shelf, stack.dateIso, tagId],
+  )
+  const progress = nightProgress(stack.due, stack.weTonight)
+  const cardFrame = wornId
+    ? {
+        id: wornId,
+        colors,
+        active: frameAwake,
+        streak: stack.streak,
+        answered: progress.answered,
+        total: progress.total,
+        weekLit,
+        frozenRecently: Boolean(frozen && stack.dateIso && frozen.has(addDaysIso(stack.dateIso, -1))),
+        date: stack.dateIso,
+      }
+    : null
+  // An earned frame is kept once reached, so a streak that ends later does not take it back.
+  useEffect(() => {
+    const next = keepEarnedFrames(book, frameCtx)
+    if (next !== book) onChange(next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.streak, frameCtx.everFrozen])
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
   const mastTitle = tagId && !tagId.includes(',') ? book.title : t('tonight.didI')
@@ -427,6 +478,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
   let face = null
+  // The done card grows (note, sign-in, recap). Centred in a fixed slot it
+  // spilled under the meter and the tab bar, so it scrolls instead.
+  let doneFace = false
   // Did and Nope buttons under the card, for anyone who would rather tap.
   let answerBar = null
   const withAnswerButtons = (card, onDid, onNope) => {
@@ -501,6 +555,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onNope={() => stack.mark(faceRow, 'skip')}
         buddy={activeBuddy(faceBook)}
         onEdit={() => goHash('/hang', { id: faceRow.lamp.id })}
+        frame={cardFrame}
       >
         {hasHistory ? (
           <NightStrip
@@ -515,6 +570,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
     face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
   } else if (stack.bodyKind === 'hall' && stack.nightDone) {
+    doneFace = true
     face = (
       <CardSettle play={Boolean(stack.cheer)}>
         <GemFaceShell look={premium ? look : ''}
@@ -712,6 +768,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onNope={() => stack.mark(pillRow, 'skip')}
         buddy={activeBuddy(pillBook)}
         onEdit={() => goHash('/hang', { id: pillRow.lamp.id })}
+        frame={cardFrame}
       >
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
       </SwipeCardHost>
@@ -762,6 +819,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   )
 
   return (
+    <CardFrameProps.Provider value={cardFrame}>
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
       <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu clear={premium} />
@@ -869,7 +927,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <NightSky colors={colors} />
           </Slot>
         ) : null}
-        <Slot>{face}</Slot>
+        {doneFace ? (
+          <ScrollView
+            style={styles.doneScroll}
+            contentContainerStyle={styles.doneScrollIn}
+            showsVerticalScrollIndicator={false}
+          >
+            <Slot>{face}</Slot>
+          </ScrollView>
+        ) : (
+          <Slot>{face}</Slot>
+        )}
         <Slot>
           <FamilyTonight colors={colors} />
         </Slot>
@@ -899,8 +967,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     </View>
     </View>
     </MastMenuRoot>
+    </CardFrameProps.Provider>
   )
 }
+
+const frameStyles = StyleSheet.create({
+  gap: { margin: FRAME_GAP },
+})
 
 const styles = StyleSheet.create({
   frame: { flex: 1, position: 'relative' },
@@ -951,4 +1024,6 @@ const styles = StyleSheet.create({
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
+  doneScroll: { flexGrow: 0, flexShrink: 1 },
+  doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

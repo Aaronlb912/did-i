@@ -88,15 +88,18 @@ import {
   DidButton,
   Field,
   KeyButton,
+  LateMeta,
   Meta,
   Row,
 } from '../components/ui.jsx'
-import { useHallColors } from '../hooks/useHallColors.js'
+import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
+import { FRAME_IDS } from '../../src/lib/frames.js'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { inviteLink } from '../../src/lib/invite-link.js'
-import { fonts } from '../theme.js'
+import { LOOK_IDS, fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
@@ -279,7 +282,7 @@ function NeedAccount({ kicker, title, colors }) {
   if (!account.ready) {
     return (
       <ScreenShell title={title} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -748,7 +751,7 @@ export function PeopleScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1045,7 +1048,7 @@ export function PeopleReferScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.refer')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1403,7 +1406,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   if (!ready) {
     return (
       <ScreenShell title={t('friends.title', { n: 0 })} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1659,7 +1662,7 @@ function FamilyListScreen({ colors }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.families')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1715,6 +1718,18 @@ function FamilyListScreen({ colors }) {
 
 // One friend or family member: did yous both ways and the Did wes you
 // share. Opened by tapping their card on Friends or in a family.
+// A friend's card, small and still, in their look and frame.
+function FriendCardPreview({ person, name }) {
+  const look = LOOK_IDS.includes(person.look_on) ? person.look_on : 'lime'
+  const colors = useLookColors(look)
+  const frame = FRAME_IDS.has(person.frame_on) ? person.frame_on : ''
+  return (
+    <View accessible accessibilityRole="image" accessibilityLabel={t('friend.cardA11y', { name })}>
+      <FramePreview id={frame} colors={colors} size={56} />
+    </View>
+  )
+}
+
 export function FriendScreen({ book, onChange, route }) {
   const colors = useHallColors()
   const account = useAccount()
@@ -1856,6 +1871,7 @@ export function FriendScreen({ book, onChange, route }) {
             </View>
           ) : null}
         </View>
+        {typeof person?.look_on === 'string' ? <FriendCardPreview person={person} name={name} /> : null}
         <Pressable
           onPress={() => setMenu(true)}
           hitSlop={10}
@@ -1971,7 +1987,7 @@ export function FriendScreen({ book, onChange, route }) {
         />
       ) : null}
 
-      {!ready ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {!ready ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
       {ready ? (
       <View style={styles.friendTabs}>
         <KitSegment
@@ -2172,7 +2188,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   if (!ready) {
     return (
       <ScreenShell title={t('inbox.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -2327,7 +2343,7 @@ export function SentScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }

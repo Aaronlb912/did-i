@@ -44,6 +44,7 @@ const ShopBuddiesScreen = lazyScreen(shop, 'ShopBuddiesScreen')
 const ShopCheersScreen = lazyScreen(shop, 'ShopCheersScreen')
 const ShopLooksScreen = lazyScreen(shop, 'ShopLooksScreen')
 const ShopScreen = lazyScreen(shop, 'ShopScreen')
+const ShopFramesScreen = lazyScreen(() => require('./frames.jsx'), 'ShopFramesScreen')
 const social = () => require('./social.jsx')
 const FamilyScreen = lazyScreen(social, 'FamilyScreen')
 const FriendScreen = lazyScreen(social, 'FriendScreen')
@@ -122,6 +123,7 @@ export function ScreenRouter({
   if (path === '/shop/cheers') return <ShopCheersScreen book={book} onChange={change} />
   if (path === '/shop/buddies') return <ShopBuddiesScreen book={book} onChange={change} />
   if (path === '/shop/accessories') return <ShopAccessoriesScreen book={book} onChange={change} />
+  if (path === '/shop/frames') return <ShopFramesScreen book={book} onChange={change} />
   if (path === '/gems') return <GemShopScreen book={book} />
   if (path === '/gifts') return <GiftsSentScreen book={book} />
   if (path === '/gift') return <GiftScreen key={route.id} book={book} onChange={change} toId={route.id} />

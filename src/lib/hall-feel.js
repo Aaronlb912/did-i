@@ -145,6 +145,36 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
   return heat
 }
 
+// The longest overall streak ever, same rules as shelfStreak: nights with
+// nothing due are skipped, a freeze keeps the run, an open night ends it.
+// Tonight and a night still in grace never end a run. One walk, oldest night
+// bounded by the first question, so callers memoize it per night.
+export function bestShelfStreak(boards, now = new Date(), lookBack = 1100) {
+  const books = scopedBooks(boards, '')
+  if (!books.length) return 0
+  const floor = firstNight(books)
+  const tonight = boardDate(now, books[0].dayFoldHour)
+  const grace = graceNightIso(now)
+  const frozen = freezeState(boards, now).frozen
+  let cursor = tonight
+  let run = 0
+  let best = 0
+  for (let step = 0; step < lookBack; step += 1) {
+    if (floor && cursor < floor) break
+    const at = noonOn(cursor)
+    if (!at) break
+    const { due, clear } = nightTally(books, cursor, at, '')
+    if (due && clear) {
+      run += 1
+      if (run > best) best = run
+    } else if (due && !(frozen && frozen.has(cursor)) && cursor !== tonight && cursor !== grace) {
+      run = 0
+    }
+    cursor = addDaysIso(cursor, -1)
+  }
+  return best
+}
+
 // How many things were due on a night across books, and whether all were did.
 function nightTally(books, iso, at, tagId = '') {
   let due = 0

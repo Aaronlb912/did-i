@@ -2,6 +2,27 @@ import { accountSessionOn } from './session-id.js'
 import { BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
+import { buyFrameLocal, frameById, frameForSale } from './frames.js'
+
+// Signed in, the server takes the coins or gems and keeps the frame, so it
+// cannot be added by editing the phone's saved data. Buying one puts it on.
+export async function buyFrame(book, id) {
+  const frame = frameById(id)
+  const purse = normalizePurse(book)
+  if (!frame || !frameForSale(id)) return { book, miss: 'frames.miss.notSold' }
+  if (purse.frames.includes(id)) return { book: { ...book, ...purse, frame: id }, miss: '' }
+  if (!accountSessionOn()) return buyFrameLocal({ ...book, ...purse }, id)
+  if (frame.coins && purse.coins < frame.coins) return { book, miss: 'shop.miss.needCoins', missN: frame.coins }
+  if (frame.gems && purse.gems < frame.gems) return { book, miss: 'shop.miss.needGems', missN: frame.gems }
+  if (frame.gems) {
+    const remote = await purchaseWithGems('frame', id)
+    if (remote.miss) return { book, miss: remote.miss, missN: frame.gems }
+    return { book: applyGemOwnedToBook(book, remote.owned, { frameOn: id }), miss: '' }
+  }
+  const remote = await purchaseWithCoins('frame', id)
+  if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
+  return { book: applyPurchaseToBook(book, remote, { frameOn: id }), miss: '' }
+}
 
 export async function buyLookWithCoins(book, id) {
   const look = LOOKS.find((item) => item.id === id)

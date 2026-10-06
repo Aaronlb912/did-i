@@ -1,7 +1,22 @@
 -- Did I: friends show as their buddy, and a friend's last 7 nights.
 -- Run after avatars.sql. Safe to run again.
 
--- Friends and family, now with the buddy they wear. Same rules as avatars.sql.
+-- The look and frame you wear, for the small card on a friend's page. The
+-- phone writes them on sync. Frame ids come from src/lib/frames.js (a check
+-- test keeps this list equal).
+alter table public.profiles add column if not exists frame_on text not null default '';
+alter table public.profiles drop constraint if exists profiles_frame_on_ok;
+alter table public.profiles add constraint profiles_frame_on_ok
+  check (frame_on in ('', 'first', 'thin', 'double', 'dotted', 'washi', 'pixel', 'stitch',
+    'polaroid', 'wood', 'flowers', 'comic', 'moon', 'filigree', 'deco', 'marble', 'glow',
+    'silver', 'neon', 'fireflies', 'shoot', 'glass', 'gold', 'const', 'ring', 'aurora',
+    'vine', 'ember', 'gems', 'frost', 'web', 'leaves', 'snow', 'sakura', 'bday'));
+alter table public.profiles drop constraint if exists profiles_look_on_ok;
+alter table public.profiles add constraint profiles_look_on_ok
+  check (look_on ~ '^[a-z0-9-]{1,24}$') not valid;
+
+-- Friends and family, now with the buddy, look and frame they wear. Same
+-- rules as avatars.sql.
 drop function if exists public.known_people();
 
 create or replace function public.known_people()
@@ -13,7 +28,9 @@ returns table (
   streak integer,
   done_on date,
   avatar_url text,
-  buddy_on text
+  buddy_on text,
+  look_on text,
+  frame_on text
 )
 language sql
 security definer
@@ -32,7 +49,8 @@ as $$
     where mine.user_id = (select id from me)
   )
   select p.user_id, p.handle, p.display_name, p.share_streak, p.streak, p.done_on,
-    nullif(p.avatar_url, ''), coalesce(p.buddy_on, '')
+    nullif(p.avatar_url, ''), coalesce(p.buddy_on, ''),
+    coalesce(p.look_on, 'lime'), coalesce(p.frame_on, '')
   from public.profiles p
   join mine on mine.who = p.user_id
   where p.user_id <> (select id from me)
