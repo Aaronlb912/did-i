@@ -135,8 +135,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
-import { clockWords, firstAnswerYear, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
@@ -4459,6 +4458,8 @@ test('a reminder answer for a night that has turned is dropped', () => {
   const saved = applyWidgetTapOnce('door', 'did', night, evening, evening.getTime())
   assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
   assert.equal(applyWidgetTapOnce('door', 'nope', night, evening, evening.getTime()), null, 'a did is not turned into a nope')
+})
+
 test('friends: one color per person, and the product names take a plural', () => {
   const id = '2f0c6a3e-1111-4222-8333-444455556666'
   assert.equal(personTintIndex(id), personTintIndex(id), 'same id, same color')
