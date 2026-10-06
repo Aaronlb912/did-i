@@ -6,6 +6,7 @@
 // past a few milliseconds here is a dropped frame on a phone.
 
 import { shelfHeat } from '../src/lib/hall-feel.js'
+import { yearMonths } from '../src/lib/hall-pages.js'
 import { boardDate, dueTonight, isoDate } from '../src/lib/recurrence.js'
 
 function makeShelf(tags, perTag, nights) {
@@ -85,6 +86,7 @@ function time(label, fn, rounds = 9, runs = 20) {
 }
 
 let worst = 0
+let worstYear = 0
 for (const [tags, perTag, nights] of [
   [1, 6, 30],
   [4, 15, 90],
@@ -100,6 +102,15 @@ for (const [tags, perTag, nights] of [
     time('tonight over the shelf', () => shelf.forEach((book) => dueTonight(book, now))),
   )
   time('which night it is', () => boardDate(now))
+  // The Calendar year view, cold: fresh copies so no memo carries over.
+  const cold = () => shelf.map((book) => ({ ...book, answers: book.answers.slice() }))
+  worstYear = Math.max(worstYear, time('a year on the calendar', () => yearMonths(cold(), now.getFullYear(), now, ''), 5, 5))
+}
+
+console.log(`\nslowest year view ${worstYear.toFixed(2)} ms`)
+if (worstYear > 20) {
+  console.error('the year view is too slow. it should walk the answers once.')
+  process.exit(1)
 }
 
 console.log(`\nworst single call ${worst.toFixed(2)} ms`)

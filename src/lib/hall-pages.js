@@ -6,8 +6,10 @@ import {
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
+  isDueOn,
   isoDate,
   parseIsoDate,
+  periodKeyFor,
   periodNight,
   rowDoneTonight,
   unansweredTonight,
@@ -276,17 +278,97 @@ export function firstAnswerYear(boards, now = new Date(), tagId = '') {
   return Math.min(year, now.getFullYear())
 }
 
+// One pass over a book's answers: lampId -> (periodKey -> status), plus the
+// once questions already answered. Hangs off the answers array, so an edit
+// drops it on its own.
+const yearIndexMemo = new WeakMap()
+function yearIndex(book) {
+  const rows = book.answers || []
+  let found = yearIndexMemo.get(rows)
+  if (found) return found
+  const byLamp = new Map()
+  const onceDone = new Set()
+  for (const answer of rows) {
+    let nights = byLamp.get(answer.lampId)
+    if (!nights) byLamp.set(answer.lampId, (nights = new Map()))
+    if (!nights.has(answer.periodKey)) nights.set(answer.periodKey, answer.status)
+    if (answer.status === 'yes' || answer.status === 'skip' || answer.status === 'late') onceDone.add(answer.lampId)
+  }
+  found = { byLamp, onceDone }
+  yearIndexMemo.set(rows, found)
+  return found
+}
+
+// nightMarks for many nights at once, with the same rules, without
+// rebuilding the due list per book per night. Daily questions (most of them)
+// skip the date parse.
+function nightMarksMany(books, isos, today, tagId = '') {
+  const prepped = books.map((book) => ({
+    start: startNight(book),
+    lamps: (book.lamps || []).filter((lamp) => !lamp.archived),
+    index: yearIndex(book),
+  }))
+  const out = new Map()
+  for (const iso of isos) {
+    if (iso > today) {
+      out.set(iso, { due: 0, on: false, miss: false, empty: true })
+      continue
+    }
+    let dueCount = 0
+    let clear = true
+    for (const book of prepped) {
+      if (book.start ? iso < book.start : iso !== today) continue
+      for (const lamp of book.lamps) {
+        if (lamp.createdOn && lamp.createdOn > iso) continue
+        const daily = lamp.cadence === 'daily'
+        if (!daily && !isDueOn(lamp, iso)) continue
+        const key = daily ? iso : periodKeyFor(lamp, iso)
+        const status = book.index.byLamp.get(lamp.id)?.get(key)
+        if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
+        if (!mustSwipeDeadline(lamp, iso)) continue
+        dueCount += 1
+        if (status !== 'yes' && status !== 'late') clear = false
+      }
+    }
+    const we = weNight(iso, tagId)
+    dueCount += we.due
+    if (we.due && !we.clear) clear = false
+    out.set(iso, {
+      due: dueCount,
+      on: dueCount > 0 && clear,
+      miss: dueCount > 0 && !clear && iso < today,
+      empty: dueCount === 0,
+    })
+  }
+  return out
+}
+
 // Twelve month grids for one year, same shape as monthStripNights. Months
 // after this one are left out.
 export function yearMonths(boards, year, now = new Date(), tagId = '') {
   const books = scopedBooks(boards, tagId)
   const fold = (books[0] || boards?.[0])?.dayFoldHour
-  const todayDate = parseIsoDate(boardDate(now, fold)) || now
+  const today = boardDate(now, fold)
+  const todayDate = parseIsoDate(today) || now
+  const lastMonth = year < todayDate.getFullYear() ? 11 : year === todayDate.getFullYear() ? todayDate.getMonth() : -1
+  const isos = []
+  for (let m = 0; m <= lastMonth; m += 1) {
+    const last = new Date(year, m + 1, 0).getDate()
+    for (let day = 1; day <= last; day += 1) isos.push(isoDate(new Date(year, m, day)))
+  }
+  const marks = nightMarksMany(books, isos, today, tagId)
   const months = []
-  for (let m = 0; m < 12; m += 1) {
-    const shift = (year - todayDate.getFullYear()) * 12 + (m - todayDate.getMonth())
-    if (shift > 0) break
-    months.push(monthStripNights(boards, now, tagId, shift))
+  for (let m = 0; m <= lastMonth; m += 1) {
+    const start = new Date(year, m, 1)
+    const nights = []
+    for (let i = 0; i < start.getDay(); i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    const last = new Date(year, m + 1, 0).getDate()
+    for (let day = 1; day <= last; day += 1) {
+      const iso = isoDate(new Date(year, m, day))
+      nights.push({ iso, pad: false, dayNum: String(day), isToday: iso === today, ...marks.get(iso) })
+    }
+    while (nights.length % 7 !== 0) nights.push({ iso: `pad-end-${nights.length}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    months.push({ start, nights })
   }
   return months
 }
