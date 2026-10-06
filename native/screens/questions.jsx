@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   AppState,
@@ -51,7 +51,7 @@ import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
-import { rowKey, taggedLamps } from '../../src/lib/tags.js'
+import { rowKey, tagIdsOf, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
@@ -72,6 +72,7 @@ import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
+import { useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import {
   AppTextInput,
   ChipRow,
@@ -82,7 +83,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
+import { behindPath, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -506,6 +507,21 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     setPicked(new Set())
   }
 
+  // Reorder saves as you go; Never mind puts the order back the way it was.
+  const orderBefore = useRef(null)
+  function startOrdering() {
+    orderBefore.current = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
+    setOrdering(true)
+  }
+  function cancelOrder() {
+    const ids = orderBefore.current
+    setOrdering(false)
+    if (!ids || !onChangeBooks) return
+    const next = setLampOrder(shelf, ids)
+    const changed = next.filter((item, at) => item !== shelf[at])
+    if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
+  }
+
   useEffect(() => {
     if (!picking && !ordering) return undefined
     function onBack(event) {
@@ -568,6 +584,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   // (archived) but are still places to move to.
   const folders = shelf
   const { overlayBottom } = useAppInsets()
+  const headerBottom = useHeaderBottom()
   // While picking, the top row and dot key stay (hidden) so nothing moves.
   const stillWhilePicking = picking
     ? { pointerEvents: 'none', style: styles.hiddenKeep, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' }
@@ -598,7 +615,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       onClose: () => publishSheet(null),
       content: (
         <View style={styles.editMenu}>
-          {folders.map((item) => {
+          {/* The folder they sit in now leads, so "Here now" is never cut off at the bottom. */}
+          {[...folders.filter((item) => from.has(item.id)), ...folders.filter((item) => !from.has(item.id))].map((item) => {
             // Every picked question already sits here: nothing to move.
             const here = from.size === 1 && from.has(item.id)
             return (
@@ -669,15 +687,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {/* Select keeps this row's space (hidden) so the list never moves under a finger. */}
         {ordering ? null : (
           <View>
-          {/* The Select header sits in the row's own space, so nothing moves. */}
-          {picking ? (
-            <View style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]}>
-              <Text style={[styles.pickCount, styles.flex1, { color: colors.ink }]} numberOfLines={1}>
-                {t('questions.pickedN', { n: chosen.length })}
-              </Text>
-              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
-            </View>
-          ) : null}
           <View {...stillWhilePicking}>
           <Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
@@ -715,7 +724,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                         content: (
                           <View style={styles.editMenu}>
                             <Row colors={colors} label={t('questions.pick')} note={t(folders.length > 1 ? 'questions.pickSub' : 'questions.pickSubNoMove')} onPress={pick(setPicking)} />
-                            <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(setOrdering)} />
+                            <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(startOrdering)} />
                           </View>
                         ),
                       })
@@ -727,6 +736,25 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </ScrollView>
           </Reveal>
           </View>
+          {/* Select bar sits in the hidden row's space, right above the list: Never mind, count, Select all. */}
+          {picking ? (
+            <Reveal style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]} accessibilityRole="header">
+              <Pressable accessibilityRole="button" onPress={stopPicking} hitSlop={10} style={styles.modeSide}>
+                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
+              </Pressable>
+              <View style={styles.modeMid}>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.pick')}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.pickedN', { n: chosen.length })}</Text>
+              </View>
+              <View style={[styles.modeSide, styles.modeEnd]}>
+                <KeyButton
+                  colors={colors}
+                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
+                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+                />
+              </View>
+            </Reveal>
+          ) : null}
           </View>
         )}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
@@ -755,17 +783,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </Reveal>
         ) : null}
 
-        {ordering ? (
-          <Reveal style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
-            <View style={styles.pickHead}>
-              <Text style={[styles.pickCount, { color: colors.ink }]}>{t('questions.reorderHint')}</Text>
-              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={() => setOrdering(false)} />
-            </View>
-            {liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
-              <Reveal>
-                <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
-              </Reveal>
-            ) : null}
+        {/* Room under the pinned mode bar, so it never covers the first row. */}
+        {ordering ? <View style={styles.modeRoom} /> : null}
+        {ordering && liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
+          <Reveal>
+            <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
           </Reveal>
         ) : null}
         {hung.length && !ordering ? (
@@ -854,15 +876,26 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {/* Room so the floating Select bar never covers the last rows. */}
         {picking ? <View style={styles.pickRoom} /> : null}
       </BoardShell>
+          {/* Pinned Reorder bar: Never mind puts the order back, Done keeps it. */}
+          {ordering ? (
+            <Reveal
+              style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
+              accessibilityRole="header"
+            >
+              <Pressable accessibilityRole="button" onPress={cancelOrder} hitSlop={10} style={styles.modeSide}>
+                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
+              </Pressable>
+              <View style={styles.modeMid}>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.reorder')}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.reorderHint')}</Text>
+              </View>
+              <View style={[styles.modeSide, styles.modeEnd]}>
+                <DidButton label={t('questions.pickDone')} onPress={() => setOrdering(false)} colors={colors} small />
+              </View>
+            </Reveal>
+          ) : null}
           {picking ? (
             <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
-              <View style={styles.pickHead}>
-                <KeyButton
-                  colors={colors}
-                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
-                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
-                />
-              </View>
               <View style={styles.pickActions}>
                 <KeyButton
                   colors={colors}
@@ -1168,6 +1201,15 @@ function FoldInput({ label, colors, multiline, ...props }) {
 
 // initialBlank / onBlankChange carry the words across when the Add screen
 // switches between Did I, Did we and Did you; onLeadPress opens that choice.
+// A new question goes in the folder being shown. With every folder shown
+// (ALL), it goes in the first folder in the list, never a last-used one.
+function newFolderTitle(boards, book, tagId) {
+  const live = (boards.length ? boards : [book]).filter((item) => !item.archived)
+  const ids = tagIdsOf(tagId)
+  const shownOne = ids.length === 1 ? live.find((item) => item.id === ids[0]) : null
+  return (shownOne || live[0] || book).title
+}
+
 export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, below = null }) {
   const { colors, clock, dateIso } = useHall(book)
   const reduce = useReduceMotion()
@@ -1195,7 +1237,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           ? { ...blankLamp(clock), question: didQuestion(initialBlank) }
           : null,
     start,
-    tagTitle: sourceBook?.title || book.title,
+    tagTitle: sourceBook?.title || newFolderTitle(boards, book, route?.tag),
   })
   const { draft } = hang
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
@@ -1439,9 +1481,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
     else feelTap('hall-on')
+    // Back to where Add was opened: Questions stays on Questions; Home opens the new card.
+    const from = behindPath()
     leave.current = setTimeout(
       () => {
-        goHash(wasEmpty ? '/tonight' : '/lamps')
+        if (from === '/lamps') goHash('/lamps')
+        else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', isDueOn(next, dateIso) ? { face: next.id } : '')
+        else goHash(wasEmpty ? '/tonight' : '/lamps')
         confirmDone(t('confirm.questionAdded'))
         offerPingPrimer(newTime, colors)
       },
@@ -2022,8 +2068,31 @@ const styles = StyleSheet.create({
   moveGlyph: { fontFamily: fonts.uiBold, fontSize: 16 },
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
-  pickRoom: { height: 140 },
-  hiddenKeep: { opacity: 0 },
+  pickRoom: { height: 90 },
+  modeBar: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    zIndex: 21,
+    elevation: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeSide: { flexBasis: 96, flexShrink: 1, justifyContent: 'center' },
+  modeEnd: { alignItems: 'flex-end' },
+  modeMid: { flex: 1, alignItems: 'center' },
+  modeTitle: { fontFamily: fonts.uiBold, fontSize: 16 },
+  modeSub: { fontFamily: fonts.ui, fontSize: 13 },
+  modeCancel: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  modeRoom: { height: 64 },
+  // Tall enough for the Select bar on top of it: title, count, and its key.
+  hiddenKeep: { opacity: 0, minHeight: 72 },
   // Covers the hidden top row exactly (its bottom margin left clear).
   pickTop: {
     position: 'absolute',
@@ -2036,6 +2105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderRadius: 16,
   },
@@ -2043,7 +2113,6 @@ const styles = StyleSheet.create({
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },
   reorderTimed: { fontFamily: fonts.ui, fontSize: 13, marginTop: 6 },
-  pickHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   pickCount: { fontFamily: fonts.uiBold, fontSize: 15, flexGrow: 1 },
   pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pickBox: {

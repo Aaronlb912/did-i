@@ -44,6 +44,7 @@ import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/Freeze
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
+import { useSwipeWheels } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -73,7 +74,7 @@ import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
-import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { WeAnswered, WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
@@ -294,6 +295,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // New people see Did and Nope buttons and a swipe hint until they have
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
+  const wheels = useSwipeWheels()
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {
@@ -488,7 +490,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   let doneFace = false
   // Did and Nope buttons under the card, for anyone who would rather tap.
   let answerBar = null
+  // Training wheels: they go after a few swipes (kept for screen readers and reduced motion).
   const withAnswerButtons = (card, onDid, onNope) => {
+    if (!wheels.buttons) return card
     answerBar = (
     <View style={styles.answerBar}>
       <View style={styles.answerRow}>
@@ -501,7 +505,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
       </View>
-      {isNew ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
+      {wheels.hint ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
     </View>
     )
     return card
@@ -948,7 +952,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      <SwipeFlyHost style={styles.slot}>
+      {/* A picked card keeps its top edge put; answering or a note only grows it downward. */}
+      <SwipeFlyHost style={[styles.slot, stack.pillPick || stack.waitPick ? styles.slotTop : null]}>
         {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
@@ -970,6 +975,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Slot>
         <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
+        </Slot>
+        <Slot>
+          {stack.cheer ? null : <WeAnswered cards={weCards} colors={colors} />}
         </Slot>
         <Slot>
           {social?.kind === 'we' && face !== weSwipe && !pickedWe ? (
@@ -1055,6 +1063,7 @@ const styles = StyleSheet.create({
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
+  slotTop: { justifyContent: 'flex-start' },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

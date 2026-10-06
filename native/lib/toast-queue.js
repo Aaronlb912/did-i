@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { markLabel } from '../../src/lib/achievements.js'
+import { t } from '../../src/lib/i18n.js'
+import { addNotice } from '../../src/lib/notices.js'
 
 // One line of toasts above the tab bar. Undo, marks and errors wait their
 // turn here and ToastHost shows the first. A toast is { id, kind, ... }:
@@ -17,6 +20,20 @@ import { useEffect, useRef, useState } from 'react'
 // Showing the same id again updates it in place.
 
 let items = []
+
+// A new achievement or Did we moment also goes on the Recent list, so one
+// missed on screen can still be read in full.
+function keepNotice(toast) {
+  if (toast.kind === 'mark') {
+    const mark = toast.mark || {}
+    const text = [markLabel(mark.id, 'name'), mark.id ? markLabel(mark.id, 'line') : '', mark.more ? t('marks.more', { n: mark.more }) : '']
+      .filter(Boolean)
+      .join('. ')
+    addNotice({ id: toast.id, kind: 'mark', title: t('marks.new'), text, go: { path: '/marks' } })
+  } else if (toast.kind === 'we') {
+    addNotice({ id: toast.id, kind: 'we', title: t('we.title'), text: toast.text || '', go: { path: '/we', id: toast.cardId } })
+  }
+}
 const listeners = new Set()
 
 function emit() {
@@ -32,6 +49,7 @@ export function showToast(toast) {
     emit()
     return
   }
+  keepNotice(toast)
   if (toast.kind === 'undo') {
     // Only the latest answer can be undone, and its clock is already running,
     // so it shows at once. Whatever it pushes aside waits its turn again.

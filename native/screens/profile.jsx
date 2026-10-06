@@ -405,15 +405,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
-          icon="flag"
-          tint={colors.late}
-          label={t('stats.marks')}
-          sub={t('stats.marksSub')}
-          chevron
-          onPress={() => goHash('/marks')}
-        />
-        <SetRow
-          colors={colors}
           icon="calendar"
           tint={colors.on}
           label={t('settings.history')}
@@ -457,6 +448,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           sub={t('settings.feedSub')}
           chevron
           onPress={() => goHash('/feed')}
+        />
+        <SetRow
+          colors={colors}
+          icon="flag"
+          tint={colors.late}
+          label={t('stats.marks')}
+          sub={t('stats.marksSub')}
+          chevron
+          onPress={() => goHash('/marks')}
         />
         <SetRow
           colors={colors}

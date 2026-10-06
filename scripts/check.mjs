@@ -137,7 +137,8 @@ import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
 import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
-import { streakLength } from '../src/lib/achievements.js'
+import { marksToToast, streakLength } from '../src/lib/achievements.js'
+import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
@@ -320,6 +321,8 @@ test('the first question finishes "Did I ___" once', () => {
   assert.equal(didQuestion('Did I'), '')
   assert.equal(didQuestion('   '), '')
   assert.equal(didQuestion('TV off'), 'Did I TV off?')
+  assert.equal(didQuestion('Pass6 test question'), 'Did I Pass6 test question?')
+  assert.equal(didQuestion('McDonald run'), 'Did I McDonald run?')
   for (const starter of STARTERS) {
     assert.equal(didQuestion(starterBlank(starter)), starter.question, starter.short)
   }
@@ -4275,6 +4278,39 @@ test('a sheet that pops up on Tonight catches the next tap', () => {
   assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
 })
 
+test('an achievement toasts once per phone, even when it is earned again', () => {
+  const was = globalThis.localStorage
+  const kv = new Map([['did-i-ach-caught-up', '1']])
+  try {
+    globalThis.localStorage = { getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => kv.set(k, String(v)), removeItem: (k) => kv.delete(k) }
+    assert.deepEqual(marksToToast(['first-did']), [{ id: 'first-did', more: 0 }])
+    assert.deepEqual(marksToToast(['first-did']), [])
+    assert.deepEqual(marksToToast(['first-did', 'honest-skip']), [{ id: 'honest-skip', more: 0 }])
+  } finally {
+    globalThis.localStorage = was
+  }
+})
+
+test('recent notices keep the newest, cap the list, and count unseen', () => {
+  const was = globalThis.localStorage
+  const kv = new Map()
+  try {
+    globalThis.localStorage = { getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => kv.set(k, String(v)), removeItem: (k) => kv.delete(k) }
+    for (let i = 0; i < NOTICE_CAP + 5; i += 1) addNotice({ id: `n${i}`, title: 'x', text: 'y' }, 1000 + i)
+    const list = readNotices()
+    assert.equal(list.length, NOTICE_CAP)
+    assert.equal(list[0].id, `n${NOTICE_CAP + 4}`)
+    assert.equal(unseenNotices(), NOTICE_CAP)
+    markNoticesSeen(5000)
+    assert.equal(unseenNotices(), 0)
+    addNotice({ id: 'n3', title: 'x' }, 6000)
+    assert.equal(readNotices()[0].id, 'n3')
+    assert.equal(unseenNotices(), 1)
+  } finally {
+    globalThis.localStorage = was
+  }
+})
+
 test('signing out clears the per-account lists kept for a fast first paint', () => {
   const was = globalThis.localStorage
   const keys = ['did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs']
@@ -4365,7 +4401,8 @@ test('family summary hour and phone names: prefs clamp, SQL order, menu resets t
   const menu = readFileSync(path.join(root, 'native/components/MastMenu.jsx'), 'utf8')
   assert.ok(menu.includes('goFromMenu(item.path)'), 'a menu pick starts from Home')
   const hash = readFileSync(path.join(root, 'native/navigation/hash.js'), 'utf8')
-  assert.ok(hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps only Home behind the screen')
+  // A menu page goes on top of the page you were on, so phone back returns there.
+  assert.ok(!hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps the page you were on behind it')
 })
 
 await testAsync('frames: still frames cost coins, animated cost gems, and the server sells the same', async () => {
@@ -4679,4 +4716,21 @@ test('earned frames use the best streak ever, not just tonight', async () => {
   assert.equal(shelfStreak([book], now), 3, 'Sep 11 was left open, so tonight is 3')
   assert.equal(bestShelfStreak([book], now), 10, 'the 10 nights before the break still count as the best')
   assert.equal(bestShelfStreak([], now), 0)
+})
+
+test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', async () => {
+  const { readdirSync, statSync } = await import('node:fs')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const bad = []
+  // Latin accents (Ã©, Â·) and 3-byte scripts (Japanese, Korean, Chinese) read as Windows-1252.
+  const MANGLED = /Â[ -¿]|Ã[-¿]|[â-ï][-¿Œ-Ÿƒˆ˜–-™]{2}/
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = path.join(dir, name)
+      if (statSync(p).isDirectory()) walk(p)
+      else if (/.(jsx?|mjs|tsx?)$/.test(name) && MANGLED.test(readFileSync(p, 'utf8'))) bad.push(path.relative(root, p))
+    }
+  }
+  for (const dir of ['native', 'src', 'widgets']) walk(path.join(root, dir))
+  assert.deepEqual(bad, [], 'files with mangled characters')
 })

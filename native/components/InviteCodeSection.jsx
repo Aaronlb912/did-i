@@ -22,6 +22,7 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
             colors={colors}
             label={t('people.gotCode')}
             value={ref.draft}
+            placeholder="D93AQ5LBS4"
             onChangeText={ref.setDraft}
             autoCapitalize="characters"
           />

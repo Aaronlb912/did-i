@@ -104,20 +104,13 @@ export function Jewel({
         ) : null}
         <Glass
           answered={late ? 'late' : on ? 'on' : skip ? 'skip' : ''}
-          style={
-            // A Did reads as a check, not just a coloured dot.
-            on && !hole
-              ? styles.checkWrap
-              : [
-                  styles.glass,
-                  hole && !on
-                    ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.inkDim }
-                    : { backgroundColor: glassColor },
-                ]
-          }
-        >
-          {on && !hole ? <Text style={[styles.check, { color: glassColor }]}>✓</Text> : null}
-        </Glass>
+          style={[
+            styles.glass,
+            hole && !on
+              ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.inkDim }
+              : { backgroundColor: glassColor },
+          ]}
+        />
       </View>
       <View style={styles.copy}>
         <Text style={[styles.label, { color: ink }]} numberOfLines={1}>
@@ -168,8 +161,6 @@ const styles = StyleSheet.create({
     height: GLASS,
     borderRadius: GLASS / 2,
   },
-  checkWrap: { alignItems: 'center', justifyContent: 'center' },
-  check: { fontSize: 14, lineHeight: 16, fontWeight: '700' },
   copy: {
     minWidth: 0,
     flexShrink: 1,

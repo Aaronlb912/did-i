@@ -42,7 +42,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
+import { WeAnswers, WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -925,6 +925,7 @@ function WeCardPage({ book, cardId, onChange }) {
         </View>
         {bigCard ? null : <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>}
         <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
+        {card.due ? <WeAnswers card={card} colors={colors} /> : null}
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
       </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
@@ -1126,7 +1127,7 @@ export function WeHomeList({ book, onChange }) {
       >
         <View style={styles.weRowCopy}>
           <Text style={[styles.weQ, { color: colors.ink }]}>{weQuestion(card.question)}</Text>
-          <WeFaces card={card} colors={colors} cheer={cheer} />
+          {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} cheer={cheer} />}
           <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
             {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
             {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
@@ -1163,12 +1164,12 @@ export function WeHomeList({ book, onChange }) {
         </View>
       ) : null}
 
-      {tonight.length ? <SetCap colors={colors}>{t('we.tonightTogether')}</SetCap> : null}
+      {tonight.length ? <SetCap colors={colors} style={styles.listCap}>{t('we.tonightTogether')}</SetCap> : null}
       {tonight.map((card) => row(card, true))}
 
       {folders.map((folder) => (
         <View key={folder || '-'}>
-          <SetCap colors={colors}>{folder || t('we.yours')}</SetCap>
+          <SetCap colors={colors} style={styles.listCap}>{folder || t('we.yours')}</SetCap>
           {later.filter((card) => (card.folder || '') === folder).map((card) => row(card, false))}
         </View>
       ))}
@@ -1198,6 +1199,8 @@ const styles = StyleSheet.create({
   // Sized to the card: the early note, question and keys read as one block.
   earlySlot: { justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
+  // The list sits on the page edge, not in a settings card, so no inset.
+  listCap: { marginHorizontal: 0 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },
   weRowActs: { flexDirection: 'row', gap: 8 },

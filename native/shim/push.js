@@ -48,11 +48,13 @@ export function pushPossible() {
 
 // Every push sets the icon to 1 and nothing cleared it, so the icon kept a
 // number after everything was read. The app sets it to what is really
-// waiting (0 clears it) whenever that count changes.
+// waiting (0 clears it) whenever that count changes. A push that came in
+// while away sets the icon behind the app's back, so `force` sets it again
+// each time the app comes to the front.
 let badgeShown = -1
-export async function setAppBadge(n) {
+export async function setAppBadge(n, force = false) {
   const next = Math.max(0, Math.floor(Number(n) || 0))
-  if (!pushPossible() || next === badgeShown) return
+  if (!pushPossible() || (next === badgeShown && !force)) return
   badgeShown = next
   try {
     const Notifications = await notifications()

@@ -9,8 +9,8 @@ import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
 import { AppTextInput } from './ui.jsx'
 
-export function SetCap({ children, colors }) {
-  return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
+export function SetCap({ children, colors, style }) {
+  return <Text style={[styles.cap, { color: colors.inkDim }, style]}>{children}</Text>
 }
 
 export function SetNote({ children, colors }) {

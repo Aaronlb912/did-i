@@ -59,7 +59,26 @@ export function BoardShell({
     const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
     return () => subs.forEach((sub) => sub.remove())
   }, [scroll, focused])
-  const onScrollLayout = useCallback(() => {
+  // When the page gets shorter (Select ends, rows go), the scroll view clamps
+  // its offset without an onScroll event, so the small bar title could stay up
+  // over the big one. Clamp our copy of the offset the same way.
+  const lastY = useRef(0)
+  const viewH = useRef(0)
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      lastY.current = value
+    })
+    return () => scrollY.removeListener(id)
+  }, [scrollY])
+  const onContentSize = useCallback(
+    (w, h) => {
+      const most = Math.max(0, h - viewH.current)
+      if (viewH.current && lastY.current > most) scrollY.setValue(most)
+    },
+    [scrollY],
+  )
+  const onScrollLayout = useCallback((event) => {
+    viewH.current = event?.nativeEvent?.layout?.height || viewH.current
     scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
   }, [])
   const keyboardPad =
@@ -117,6 +136,7 @@ export function BoardShell({
           if (scrollHandle) scrollHandle.current = node
         }}
         onLayout={onScrollLayout}
+        onContentSizeChange={onContentSize}
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"

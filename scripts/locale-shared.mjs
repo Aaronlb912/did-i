@@ -72,6 +72,7 @@ const TEMPLATE_SAME = new Set([
   'tonight.purse',
   'title.home',
   'tags.general',
+  'we.pAnswer',
 ])
 
 export function isLegalKey(key) {

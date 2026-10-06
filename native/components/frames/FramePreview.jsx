@@ -47,14 +47,18 @@ function useLazyReady() {
   return ready
 }
 
-function MiniCard({ colors, weekLit }) {
+// Frames that draw their own row along the bottom edge (moons, stars) hide the
+// sample dots, so the tile does not show two rows.
+const OWN_ROW = new Set(['moon', 'gems'])
+
+function MiniCard({ colors, weekLit, dots = true }) {
   const card = colors.card || colors.panel
   return (
     <View style={[styles.card, { backgroundColor: card, borderColor: colors.line }]}>
       <View style={[styles.kicker, { backgroundColor: colors.on }]} />
       <View style={[styles.title, { backgroundColor: colors.ink }]} />
       <View style={[styles.title, styles.short, { backgroundColor: colors.ink }]} />
-      <View style={styles.dots}>
+      <View style={[styles.dots, !dots && styles.noDots]}>
         {weekLit.map((on, i) => (
           <View key={i} style={[styles.dot, { backgroundColor: on ? colors.on : colors.miss || colors.line }]} />
         ))}
@@ -68,7 +72,7 @@ function Preview({ id, colors = {}, size = 120, weekLit = WEEK, streak = 30 }) {
   const ready = useLazyReady()
   const height = Math.round(size * 1.2)
   const k = (size * 0.66) / BASE_W
-  const mini = <MiniCard colors={colors} weekLit={weekLit} />
+  const mini = <MiniCard colors={colors} weekLit={weekLit} dots={!OWN_ROW.has(id)} />
   return (
     <View pointerEvents="none" style={[styles.tile, { width: size, height }]}>
       <View style={{ position: 'absolute', left: (size - BASE_W) / 2, top: (height - BASE_H) / 2, width: BASE_W, height: BASE_H, transform: [{ scale: k }] }}>
@@ -105,4 +109,5 @@ const styles = StyleSheet.create({
   short: { width: '58%' },
   dots: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto' },
   dot: { width: 14, height: 14, borderRadius: 7 },
+  noDots: { opacity: 0 },
 })
