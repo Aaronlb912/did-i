@@ -88,14 +88,18 @@ export function SheetHost() {
     }
   }, [next, reduce, fade])
 
+  // The newest host takes the sheets (a native sheet screen like Add on iPhone
+  // mounts its own, since it covers the app-wide one) and hands them back when it goes.
   useEffect(() => {
-    listen = (next) => {
+    const mine = (next) => {
       setLive(false)
       setSheet(next)
     }
+    const before = listen
+    listen = mine
     setSheet(current)
     return () => {
-      listen = null
+      if (listen === mine) listen = before
     }
   }, [])
 

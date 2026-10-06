@@ -64,7 +64,7 @@ import { bestQuestionStreak, lampRecord, lampWeeks } from '../../src/lib/lamp-re
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
-import { publishSheet } from '../components/SheetHost.jsx'
+import { SheetHost, publishSheet } from '../components/SheetHost.jsx'
 import { confirmDone } from '../lib/confirm.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
@@ -1268,6 +1268,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     .join(' · ')
 
   return (
+    <>
     <BoardShell
       book={book}
       title={hang.editing ? t('hang.edit') : t('hang.new')}
@@ -1623,6 +1624,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         />
       ) : null}
     </BoardShell>
+    {/* On iPhone, Add is a native sheet that covers the app-wide sheet layer, so it hosts its own. */}
+    {Platform.OS === 'ios' && !hang.editing ? <SheetHost /> : null}
+    </>
   )
 }
 
