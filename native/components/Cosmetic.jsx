@@ -833,7 +833,7 @@ export function BuddyChip({ id, alive = false }) {
   if (!id) return null
   return (
     <View style={styles.buddyChip}>
-      <Animated.View style={[styles.buddySway, life.idle]}>
+      <Animated.View style={[styles.buddySway, life.idle]} renderToHardwareTextureAndroid={Boolean(life.idle)} shouldRasterizeIOS={Boolean(life.idle)}>
         <Slot fallback={<BuddyPlain id={id} width={28} height={34} />}>
           <BuddyArt id={id} width={28} height={34} blink={life.blink} />
         </Slot>
@@ -905,7 +905,7 @@ export function BuddyHang({ id, inline = false, alive = false, worn = null, tone
     ? styles.buddyDropped
     : null
   return (
-    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none">
+    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none" renderToHardwareTextureAndroid={Boolean(life.idle)} shouldRasterizeIOS={Boolean(life.idle)}>
       <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
         <Dressed id={id} worn={outfit} tone={tone || mine.tone} width={width} height={height} blink={life.blink} />
       </Slot>

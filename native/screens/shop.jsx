@@ -291,15 +291,16 @@ function LookStage({ id }) {
   )
 }
 
-// A look reads as the same chip as the Looks page, a cheer sits still, a
-// buddy blinks and sways.
+// A look reads as the same chip as the Looks page; a cheer and a buddy sit
+// still. A swaying buddy in every tile redrew its SVG each frame and held the
+// Shop at ~5 fps on Android, so only the open sheet animates.
 // buddy: who models an accessory, your buddy if one is on.
 function TileArt({ type, id, colors, buddy = '' }) {
   if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} tone={colors.on} />
   if (type === 'look') return <LookChip id={id} colors={colors} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
   if (type === 'frame') return <FramePreview id={id} colors={colors} size={40} />
-  return <BuddyChip id={id} alive />
+  return <BuddyChip id={id} />
 }
 
 function tileName(type, id) {
@@ -1321,7 +1322,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
           <ShopActionRow
             key={item.id}
             colors={colors}
-            preview={<BuddyChip id={item.id} alive />}
+            preview={<BuddyChip id={item.id} alive={peekBuddy === item.id} />}
             artKey={`buddy:${item.id}`}
             previewOn={peekBuddy === item.id}
             onPreview={() => setPeekBuddy(item.id)}
@@ -2041,7 +2042,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               colors={colors}
               onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
             >
-              <BuddyChip id={item.id} alive />
+              <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
           ))}
           <KitTile
