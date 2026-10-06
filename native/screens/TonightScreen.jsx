@@ -988,7 +988,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           </ScrollView>
         ) : (
           <Slot>
-            <View onLayout={onPickLayout} style={pickMinH ? { minHeight: pickMinH } : null}>
+            {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
+            <View onLayout={onPickLayout} style={[styles.pickBox, pickMinH ? { minHeight: pickMinH } : null]}>
               {face}
             </View>
           </Slot>
@@ -1088,6 +1089,7 @@ const styles = StyleSheet.create({
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
   slotTop: { justifyContent: 'flex-start' },
+  pickBox: { flex: 1 },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })
