@@ -31,7 +31,6 @@ async function ensureNotificationHandler() {
     const Notifications = await notifications()
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldShowBanner: true,
         shouldShowList: true,
         shouldPlaySound: Platform.OS === 'ios',

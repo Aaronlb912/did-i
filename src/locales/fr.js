@@ -2393,7 +2393,7 @@ export const fr = {
   'tonight.keepNope': 'Garder nope',
   'tonight.nopedChange': 'Vous pouvez encore le changer jusqu\'à {time}. Il compte en retard.',
   'tonight.nopedMany': 'Tu as dit nope à {n} questions.',
-  'tonight.nopedOne': 'Tu as dit nope à « {question} ».',
+  'tonight.nopedOne': 'Tu as dit nope à « {question} »',
   'tonight.swipeHint': 'Glisse à droite pour Did, à gauche pour nope.',
   'first.finishFirst': 'Termine d’abord la question',
   'people.outComesAlong': 'Tes questions et ta série te suivent.',

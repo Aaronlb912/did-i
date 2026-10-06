@@ -2379,7 +2379,7 @@ export const pt = {
   'tonight.keepNope': 'Manter nope',
   'tonight.nopedChange': 'Ainda dá para mudar até {time}. Conta como atrasado.',
   'tonight.nopedMany': 'Você disse nope para {n} perguntas.',
-  'tonight.nopedOne': 'Você disse nope para "{question}".',
+  'tonight.nopedOne': 'Você disse nope para "{question}"',
   'tonight.swipeHint': 'Deslize para a direita para Did, para a esquerda para nope.',
   'first.finishFirst': 'Termine a pergunta primeiro',
   'people.outComesAlong': 'Suas perguntas e sua sequência vêm junto.',

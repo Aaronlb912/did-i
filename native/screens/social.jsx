@@ -88,6 +88,7 @@ import {
   DidButton,
   Field,
   KeyButton,
+  LateMeta,
   Meta,
   Row,
 } from '../components/ui.jsx'
@@ -281,7 +282,7 @@ function NeedAccount({ kicker, title, colors }) {
   if (!account.ready) {
     return (
       <ScreenShell title={title} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -750,7 +751,7 @@ export function PeopleScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1047,7 +1048,7 @@ export function PeopleReferScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.refer')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1405,7 +1406,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   if (!ready) {
     return (
       <ScreenShell title={t('friends.title', { n: 0 })} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1661,7 +1662,7 @@ function FamilyListScreen({ colors }) {
   if (!ready) {
     return (
       <ScreenShell title={t('people.families')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1986,7 +1987,7 @@ export function FriendScreen({ book, onChange, route }) {
         />
       ) : null}
 
-      {!ready ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {!ready ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
       {ready ? (
       <View style={styles.friendTabs}>
         <KitSegment
@@ -2187,7 +2188,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   if (!ready) {
     return (
       <ScreenShell title={t('inbox.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -2342,7 +2343,7 @@ export function SentScreen({ book, onChange }) {
   if (!ready) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }

@@ -32,6 +32,7 @@ import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
+  grantWeeklyGem,
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
@@ -43,6 +44,7 @@ import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+const GEM_WEEK_ASKED_KEY = 'did-i-gem-week-asked'
 export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
 
@@ -368,6 +370,28 @@ async function pullAndMergeOnce() {
         item.id === written.currentId ? applyInvitePayout(item, invited) : item,
       )
       written = writeShelf({ ...written, boards }, metaAt)
+    }
+
+    // A weekly gem earned signed out only lived on the phone, and the server
+    // balance below replaced it. Ask the server for that week once per
+    // account; it checks the week and pays each week at most once.
+    const gemWeek = String(written.gemWeek || '')
+    const gemAsk = `${user.id}:${gemWeek}`
+    let gemAsked = ''
+    try {
+      gemAsked = localStorage.getItem(GEM_WEEK_ASKED_KEY) || ''
+    } catch {
+      gemAsked = ''
+    }
+    if (gemWeek && gemAsked !== gemAsk) {
+      const paid = await grantWeeklyGem(gemWeek).catch(() => null)
+      if (paid != null) {
+        try {
+          localStorage.setItem(GEM_WEEK_ASKED_KEY, gemAsk)
+        } catch {
+          // Asks again next sync; the server still pays once.
+        }
+      }
     }
 
     const bal = await readGemBalance()

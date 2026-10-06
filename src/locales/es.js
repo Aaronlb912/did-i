@@ -2386,7 +2386,7 @@ export const es = {
   'tonight.keepNope': 'Dejar nope',
   'tonight.nopedChange': 'Aún puedes cambiarlo hasta las {time}. Cuenta como tarde.',
   'tonight.nopedMany': 'Dijiste nope a {n} preguntas.',
-  'tonight.nopedOne': 'Dijiste nope a «{question}».',
+  'tonight.nopedOne': 'Dijiste nope a «{question}»',
   'tonight.swipeHint': 'Desliza a la derecha para Did, a la izquierda para nope.',
   'first.finishFirst': 'Primero termina la pregunta',
   'people.outComesAlong': 'Tus preguntas y tu racha vienen contigo.',
