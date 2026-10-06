@@ -1,5 +1,6 @@
-// Did and Nope buttons on a reminder. The buttons answer without opening the
-// app; the answer goes through the same path as a widget tap.
+// Did and Nope buttons on a reminder. They open the app for a moment (a fully
+// closed app drops background taps without a native task); the answer goes
+// through the same path as a widget tap.
 
 export const ASK_CATEGORY = 'did-i-ask'
 
@@ -10,8 +11,8 @@ export function askNoteData(row) {
 
 export function askActions(t) {
   return [
-    { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: false } },
-    { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: false } },
+    { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: true } },
+    { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: true } },
   ]
 }
 

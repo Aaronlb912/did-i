@@ -4445,7 +4445,7 @@ test('reminder Did / Nope buttons map to the question and its period', () => {
   assert.equal(notificationAnswer(press('expo.modules.notifications.actions.DEFAULT', data)), null, 'a plain tap opens the app')
   assert.equal(notificationAnswer(press('did', { go: '/tonight' })), null)
   assert.equal(notificationAnswer(press('did', { weId: 'c1', night: '2026-10-05' })).kind, 'we')
-  assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === false), 'the buttons answer without opening the app')
+  assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === true), 'the buttons open the app so a closed app never drops the answer')
 })
 
 test('a reminder answer for a night that has turned is dropped', () => {
