@@ -226,8 +226,10 @@ export function SwipeCard({
           blockDid={blockDid}
           blockNope={blockNope}
           onAnswer={(way, from) => {
-            if (!demo) noteSwipe()
             answer(way, from)
+            // After the answer, not before: the prefs write re-renders the app
+            // and the first swipes lost their undo toast.
+            if (!demo) setTimeout(noteSwipe, 0)
           }}
           accessible={!demo}
           accessibilityLabel={title}
@@ -422,7 +424,8 @@ function StackCard({
     <View
       style={[
         ...faceCardStyle(colors, panelStyle),
-        top ? null : styles.behindCard,
+        // Top-aligned, so a card with no week dots keeps its label on the pen and buddy row.
+        top ? styles.topCard : styles.behindCard,
         { borderWidth: 1, borderColor: line },
       ]}
     >
@@ -485,6 +488,7 @@ const styles = StyleSheet.create({
   behind: {
     ...StyleSheet.absoluteFill,
   },
+  topCard: { justifyContent: 'flex-start' },
   behindCard: {
     flex: 1,
     minHeight: 0,

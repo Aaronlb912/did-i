@@ -572,7 +572,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     const n = lampPicks.length
     const label =
       kind === 'delete'
-        ? t('questions.bulkDeleted', { n })
+        ? t(n === 1 ? 'questions.bulkDeletedOne' : 'questions.bulkDeleted', { n })
         : kind === 'stop'
           ? t('questions.bulkStopped', { n })
           : t('questions.bulkAsked', { n })
@@ -585,10 +585,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const folders = shelf
   const { overlayBottom } = useAppInsets()
   const headerBottom = useHeaderBottom()
-  // While picking, the top row and dot key stay (hidden) so nothing moves.
-  const stillWhilePicking = picking
-    ? { pointerEvents: 'none', style: styles.hiddenKeep, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' }
-    : {}
 
   function moveTo(targetId) {
     if (!chosen.length || !onChangeBooks) return
@@ -684,10 +680,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
         {/* Filters, Did you / Did we, Add and Edit share one row, so the list starts high.
             It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
-        {/* Select keeps this row's space (hidden) so the list never moves under a finger. */}
-        {ordering ? null : (
-          <View>
-          <View {...stillWhilePicking}>
+        {/* Select and Reorder swap this row for their pinned bar. */}
+        {ordering || picking ? null : (
           <Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
             <TagFilter
@@ -735,28 +729,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             )}
           </ScrollView>
           </Reveal>
-          </View>
-          {/* Select bar sits in the hidden row's space, right above the list: Never mind, count, Select all. */}
-          {picking ? (
-            <Reveal style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]} accessibilityRole="header">
-              <Pressable accessibilityRole="button" onPress={stopPicking} hitSlop={10} style={styles.modeSide}>
-                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
-              </Pressable>
-              <View style={styles.modeMid}>
-                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.pick')}</Text>
-                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.pickedN', { n: chosen.length })}</Text>
-              </View>
-              <View style={[styles.modeSide, styles.modeEnd]}>
-                <KeyButton
-                  colors={colors}
-                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
-                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
-                />
-              </View>
-            </Reveal>
-          ) : null}
-          </View>
         )}
+        {/* Room under the pinned Select bar, where the top row was. */}
+        {picking ? <View style={styles.modeRoom} /> : null}
         {(allRows.length >= SEARCH_FROM || query) && !ordering ? (
           <Reveal>
             <SearchBox value={query} onChange={setQuery} colors={colors} />
@@ -790,11 +765,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
           </Reveal>
         ) : null}
-        {hung.length && !ordering ? (
-          <View {...stillWhilePicking}>
-            <DotKey kinds={dotKinds} colors={colors} />
-          </View>
-        ) : null}
+        {hung.length && !ordering && !picking ? <DotKey kinds={dotKinds} colors={colors} /> : null}
         {hung.length ? (
           <LampBlock
             onMove={ordering ? move : undefined}
@@ -891,6 +862,28 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </View>
               <View style={[styles.modeSide, styles.modeEnd]}>
                 <DidButton label={t('questions.pickDone')} onPress={() => setOrdering(false)} colors={colors} small />
+              </View>
+            </Reveal>
+          ) : null}
+          {/* Pinned Select bar: Never mind, count, Select all. It stays while the list scrolls. */}
+          {picking ? (
+            <Reveal
+              style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
+              accessibilityRole="header"
+            >
+              <Pressable accessibilityRole="button" onPress={stopPicking} hitSlop={10} style={styles.modeSide}>
+                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
+              </Pressable>
+              <View style={styles.modeMid}>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.pick')}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.pickedN', { n: chosen.length })}</Text>
+              </View>
+              <View style={[styles.modeSide, styles.modeEnd]}>
+                <KeyButton
+                  colors={colors}
+                  label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
+                  onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
+                />
               </View>
             </Reveal>
           ) : null}
@@ -2091,24 +2084,6 @@ const styles = StyleSheet.create({
   modeSub: { fontFamily: fonts.ui, fontSize: 13 },
   modeCancel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   modeRoom: { height: 64 },
-  // Tall enough for the Select bar on top of it: title, count, and its key.
-  hiddenKeep: { opacity: 0, minHeight: 72 },
-  // Covers the hidden top row exactly (its bottom margin left clear).
-  pickTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 10,
-    zIndex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderRadius: 16,
-  },
   flex1: { flex: 1 },
   packs: { gap: 8, marginBottom: 12 },
   packLabel: { ...sectionLabel, marginBottom: 2 },

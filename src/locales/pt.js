@@ -1955,7 +1955,8 @@ export const pt = {
   'questions.bulkDeleteTitle': 'Apagar o que escolheste?',
   'questions.bulkDeleteBody':
     '{n} escolhidas. As respostas vão também. Podes desfazer durante uns segundos.',
-  'questions.bulkDeleted': 'Apagadas: {n}.',
+  'questions.bulkDeleted': "{n} perguntas apagadas",
+  'questions.bulkDeletedOne': "1 pergunta apagada",
   'questions.bulkStopped': 'Já não perguntadas: {n}.',
   'questions.bulkAsked': 'Perguntadas de novo: {n}.',
   'notify.primerKicker': 'Lembretes',

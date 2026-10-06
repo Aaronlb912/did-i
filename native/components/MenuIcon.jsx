@@ -48,6 +48,8 @@ const ICONS = {
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',
   camera: 'M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1ZM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
   chart: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
+  // Seven nights: one mark per night.
+  week: 'M4 9v6M6.67 9v6M9.33 9v6M12 9v6M14.67 9v6M17.33 9v6M20 9v6',
   qr: 'M4 4h6v6H4V4ZM14 4h6v6h-6V4ZM4 14h6v6H4v-6ZM14 14h2v2h-2v-2ZM18 18h2v2h-2v-2ZM14 18h2M18 14h2',
   // Did we: two rings, linked. Draw with stroke.
   together: 'M4 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0ZM10 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z',

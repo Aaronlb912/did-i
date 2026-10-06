@@ -1954,7 +1954,8 @@ export const it = {
   'questions.bulkDeleteTitle': 'Eliminare quello che hai scelto?',
   'questions.bulkDeleteBody':
     '{n} scelte. Anche le risposte se ne vanno. Puoi annullare per qualche secondo.',
-  'questions.bulkDeleted': 'Eliminate: {n}.',
+  'questions.bulkDeleted': "{n} domande eliminate",
+  'questions.bulkDeletedOne': "1 domanda eliminata",
   'questions.bulkStopped': 'Non più chieste: {n}.',
   'questions.bulkAsked': 'Chieste di nuovo: {n}.',
   'notify.primerKicker': 'Promemoria',

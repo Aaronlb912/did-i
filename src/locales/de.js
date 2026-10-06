@@ -1969,7 +1969,8 @@ export const de = {
   'questions.bulkDeleteTitle': 'Ausgewähltes löschen?',
   'questions.bulkDeleteBody':
     '{n} ausgewählt. Ihre Antworten gehen mit. Ein paar Sekunden lang kannst du es rückgängig machen.',
-  'questions.bulkDeleted': 'Gelöscht: {n}.',
+  'questions.bulkDeleted': "{n} Fragen gelöscht",
+  'questions.bulkDeletedOne': "1 Frage gelöscht",
   'questions.bulkStopped': 'Nicht mehr gefragt: {n}.',
   'questions.bulkAsked': 'Wieder gefragt: {n}.',
   'notify.primerKicker': 'Erinnerungen',

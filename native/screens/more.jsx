@@ -527,8 +527,8 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
-        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
-        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
       </SetCard>
     </ScreenShell>
   )
@@ -652,8 +652,8 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('later.tonight')}</Text>
       </View>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
-        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
         <SetRow colors={colors} icon="pen" label={t('notes.title')} sub={t('notes.sub')} chevron onPress={() => goHash('/notes')} />
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
@@ -812,7 +812,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
         </>
       )}
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} chevron last onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} chevron last onPress={() => goHash('/streaks')} />
       </SetCard>
     </ScreenShell>
   )
@@ -861,7 +861,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         </View>
       )}
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
       </SetCard>
     </ScreenShell>
   )

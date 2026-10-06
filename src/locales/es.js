@@ -1958,7 +1958,8 @@ export const es = {
   'questions.bulkDeleteTitle': '¿Borrar lo que elegiste?',
   'questions.bulkDeleteBody':
     '{n} elegidas. Sus respuestas se van también. Puedes deshacer unos segundos.',
-  'questions.bulkDeleted': 'Borradas: {n}.',
+  'questions.bulkDeleted': "{n} preguntas borradas",
+  'questions.bulkDeletedOne': "1 pregunta borrada",
   'questions.bulkStopped': 'Ya no se preguntan: {n}.',
   'questions.bulkAsked': 'Se vuelven a preguntar: {n}.',
   'notify.primerKicker': 'Avisos',

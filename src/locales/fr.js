@@ -1963,7 +1963,8 @@ export const fr = {
   'questions.bulkDeleteTitle': 'Supprimer ce que tu as choisi ?',
   'questions.bulkDeleteBody':
     '{n} choisies. Leurs réponses partent aussi. Tu peux annuler quelques secondes.',
-  'questions.bulkDeleted': 'Supprimées : {n}.',
+  'questions.bulkDeleted': "{n} questions supprimées",
+  'questions.bulkDeletedOne': "1 question supprimée",
   'questions.bulkStopped': 'Plus demandées : {n}.',
   'questions.bulkAsked': 'Demandées de nouveau : {n}.',
   'notify.primerKicker': 'Rappels',
