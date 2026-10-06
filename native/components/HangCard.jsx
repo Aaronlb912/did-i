@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -41,6 +41,8 @@ export const HangCard = forwardRef(function HangCard(
   const slam = useRef(new Animated.Value(0)).current
   const jolt = useRef(new Animated.Value(0)).current
   const landed = Boolean(stamp)
+  const [textW, setTextW] = useState(0)
+  const mark = Boolean(lead && String(blank || '').trim() && !/[?？]$/.test(String(blank).trim()))
 
   useEffect(() => {
     if (!landed) return undefined
@@ -123,6 +125,17 @@ export const HangCard = forwardRef(function HangCard(
       </Animated.Text>
       {/* Did I, the question and its ? read as one line, as on Home. */}
       <View style={lead ? styles.leadRow : null}>
+      {mark ? (
+        // Measures the typed words, so the blank ends where they do and the ? sits right after.
+        <Text
+          style={[faceCardStyles.title, styles.measure]}
+          onLayout={(event) => setTextW(event.nativeEvent.layout.width)}
+          accessible={false}
+          importantForAccessibility="no"
+        >
+          {String(blank)}
+        </Text>
+      ) : null}
       {lead && onLeadPress && !landed ? (
         // The first words are a button: Did I, Did we or Did you.
         <Pressable
@@ -164,11 +177,10 @@ export const HangCard = forwardRef(function HangCard(
           styles.blank,
           { color: colors.ink, borderBottomColor: landed ? 'transparent' : focused ? colors.on : colors.line },
           lead ? styles.leadBlank : null,
+          mark && textW ? { flexGrow: 0, flexBasis: 'auto', minWidth: 0, width: textW + 4 } : null,
         ]}
       />
-      {lead && String(blank || '').trim() && !/[?？]$/.test(String(blank).trim()) ? (
-        <Text style={[faceCardStyles.title, { color: colors.ink }]}>?</Text>
-      ) : null}
+      {mark ? <Text style={[faceCardStyles.title, styles.mark, { color: colors.ink }]}>?</Text> : null}
       </View>
       {meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
@@ -185,6 +197,9 @@ const styles = StyleSheet.create({
   leadChev: { fontSize: 26, marginTop: 2 },
   leadRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', columnGap: 8 },
   leadBlank: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 140 },
+  // Same bottom room as the blank's padding and underline, so the ? shares its baseline.
+  mark: { paddingBottom: 7.5, marginLeft: -6 },
+  measure: { position: 'absolute', opacity: 0, left: 0, top: 0 },
   // The underline says "you can type here"; it lights up while typing.
   blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },
   stampLayer: {

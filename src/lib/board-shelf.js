@@ -16,8 +16,14 @@ const OLD_KEY = 'did-i-board'
 // General so it folds into today's General folder on next mergeSameTitles.
 const OLD_DEFAULT_TITLE = 'Did I'
 
+// The General folder in every language the app speaks ('tags.general').
+// A folder made in one language reads in the language in use now.
+const DEFAULT_TITLES = new Set([OLD_DEFAULT_TITLE, 'General', 'Allgemein', 'Général', 'Generale', 'Geral', '一般', '일반', '常规'])
+
 function migrateDefaultTitle(book) {
-  return book.title === OLD_DEFAULT_TITLE ? { ...book, title: t('tags.general') } : book
+  if (!DEFAULT_TITLES.has(book.title)) return book
+  const title = t('tags.general')
+  return book.title === title ? book : { ...book, title }
 }
 
 export function currentBook(shelf) {

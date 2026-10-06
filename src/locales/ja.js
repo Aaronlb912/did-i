@@ -844,7 +844,7 @@ export const ja = {
   'lamp.tonightIs': '今夜: {status}',
   'lamp.notTonight': '今夜はありません。',
   'lamp.streakCap': 'この質問の連続',
-  'lamp.didCap': 'Did、過去{n}日',
+  'lamp.didCap': 'できた、過去{n}日',
   'hole.kicker': 'その夜',
   'hole.nopeKicker': 'Nope',
   'hole.nopeBody': 'nope と言った。結局やったなら遅刻にする。',

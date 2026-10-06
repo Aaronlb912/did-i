@@ -1,6 +1,7 @@
 import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
 import { answerStamp } from './board-ops.js'
+import { answeredAtIso } from './board-json.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -144,6 +145,31 @@ export async function pullAnswers(shelf) {
   const next = applyAnswers(shelf, data || [])
   if (data?.length) write(SEEN, data[data.length - 1].updated_at)
   return { ...next, miss: '' }
+}
+
+// Undo of a tap. A later answeredAt always wins a pull, so the row the tap
+// sent up has to go, and the answer from before the tap (if any) goes back.
+// It runs again a moment later in case the tap's own send was still on its
+// way. Only rows from before the undo go, so a new tap since then stays.
+export async function takeBackAnswer(book, lampId, periodKey) {
+  const db = cloud()
+  if (!db || !lampId || !periodKey) return
+  const now = answeredAtIso()
+  const before = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
+  const row = before ? rowsOf({ boards: [{ ...book, answers: [before] }] }) : []
+  const once = async () => {
+    const { error } = await db
+      .from('answer_log')
+      .delete()
+      .eq('lamp_id', lampId)
+      .eq('period_key', periodKey)
+      .lte('answered_at', now)
+    if (error) throw new Error(error.message)
+    if (row.length) await db.rpc('put_answers', { rows: row })
+  }
+  await once()
+  await new Promise((done) => setTimeout(done, 4000))
+  await once()
 }
 
 // Rows the sample board left behind on a real account.

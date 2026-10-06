@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Reanimated, {
   Easing,
   useAnimatedStyle,
@@ -15,6 +15,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { gemMeterStyle } from '../lib/gem-look-tone.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
+import { goHash } from '../navigation/hash.js'
 
 // Once the bar is full it glows: flaring as the night clears, then resting.
 const GLOW_REST = 0.45
@@ -73,7 +74,13 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
     .join(' · ')
 
   return (
-    <View style={styles.wrap} accessible accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}`}>
+    // The count opens So far, the same page the streak line opens.
+    <Pressable
+      onPress={() => goHash('/stats')}
+      accessibilityRole="button"
+      accessibilityHint={t('stats.title')}
+      style={styles.wrap}
+      accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}`}>
       <View style={styles.top}>
         {/* Plain text, not RollNumber: its digit moves on the UI thread, which
             the cheer keeps busy, so done lagged the left count by a second. */}
@@ -114,7 +121,7 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
           />
         </View>
       </View>
-    </View>
+    </Pressable>
   )
 }
 

@@ -48,8 +48,16 @@ const ICONS = {
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',
   camera: 'M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1ZM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
   chart: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
-  // Seven nights: one mark per night.
-  week: 'M4 9v6M6.67 9v6M9.33 9v6M12 9v6M14.67 9v6M17.33 9v6M20 9v6',
+  // Seven nights: one ring per night, four over three.
+  week: 'M3.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM8.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM13.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM18.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM6 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM11 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM16 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0Z',
+  // The night a run of nights broke: a line with a gap in it.
+  broke: 'M3 12h6M15 12h6M10 7l4 10',
+  // A spreadsheet: rows and a column.
+  table: 'M4 5h16v14H4V5ZM4 10h16M4 15h16M10 5v14',
+  // Colors: a painter's palette.
+  palette: 'M12 3a9 9 0 1 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8ZM7.5 11.5h.01M10 7.5h.01M14.5 7.5h.01',
+  // Send feedback: an envelope.
+  mail: 'M4 6h16v12H4V6ZM4 7l8 6 8-6',
   qr: 'M4 4h6v6H4V4ZM14 4h6v6h-6V4ZM4 14h6v6H4v-6ZM14 14h2v2h-2v-2ZM18 18h2v2h-2v-2ZM14 18h2M18 14h2',
   // Did we: two rings, linked. Draw with stroke.
   together: 'M4 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0ZM10 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z',
