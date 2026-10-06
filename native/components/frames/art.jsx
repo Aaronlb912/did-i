@@ -1243,7 +1243,7 @@ function bloomAt(time, it, w, h) {
   const sh = W - 2 * r
   const arc = (Math.PI * r) / 2
   const L = 2 * sv + 2 * sh + 4 * arc
-  let s = ((((time / it.period) * L - it.lag) % L) + L) % L
+  let s = ((((time / it.period) * L - it.lag * L) % L) + L) % L
   let px = x
   let py = y
   if (s < sh) {
@@ -1310,15 +1310,25 @@ function BloomOver({ f }) {
     ],
     [f.w, f.h, s],
   )
-  // Three soft lights in a row read as one glow walking round the edge.
-  const lights = useMemo(
-    () => [
-      { g, R: f.R, period: 9, lag: 0, o: 0.9, size: 8 },
-      { g, R: f.R, period: 9, lag: 14, o: 0.55, size: 14 },
-      { g, R: f.R, period: 9, lag: 30, o: 0.3, size: 20 },
-    ],
-    [f.R],
-  )
+  // One streak of light walking the edge, as in the showroom: a soft cream
+  // glow 70/400 of the way round with a thin white core near its head. The
+  // dots sit close enough to read as one line. lag is a share of the loop.
+  const lights = useMemo(() => {
+    const L = rrLength(f.w + 2 * g, f.h + 2 * g, f.R + g)
+    const out = []
+    const glowN = Math.max(8, Math.round((L * 70) / 400 / 5))
+    for (let i = 0; i < glowN; i++) {
+      const p = i / (glowN - 1)
+      const end = Math.min(1, p * 4, (1 - p) * 4)
+      out.push({ g, R: f.R, period: 9, lag: (p * 70) / 400, o: 0.22 * (0.4 + 0.6 * end), size: 14, color: '#fff6d8' })
+    }
+    const coreN = Math.max(6, Math.round((L * 40) / 400 / 3))
+    for (let i = 0; i < coreN; i++) {
+      const p = i / (coreN - 1)
+      out.push({ g, R: f.R, period: 9, lag: (15 + p * 40) / 400, o: 0.95 * Math.min(1, 0.3 + p * 4, 0.3 + (1 - p) * 4), size: 3.5, color: '#ffffff' })
+    }
+    return out
+  }, [f.w, f.h, f.R])
   return (
     <>
       <Layer f={f}>
@@ -1337,7 +1347,7 @@ function BloomOver({ f }) {
       </Layer>
       {lights.map((it, i) => (
         <Particle key={`l${i}`} clock={f.clock} item={it} fn={bloomAt} w={f.w} h={f.h} size={it.size}>
-          <View style={{ width: it.size, height: it.size, borderRadius: it.size / 2, backgroundColor: '#fff6d8' }} />
+          <View style={{ width: it.size, height: it.size, borderRadius: it.size / 2, backgroundColor: it.color }} />
         </Particle>
       ))}
       {sparks.map((it, i) => (
