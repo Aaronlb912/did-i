@@ -1163,12 +1163,12 @@ export function WeHomeList({ book, onChange }) {
         </View>
       ) : null}
 
-      {tonight.length ? <SetCap colors={colors}>{t('we.tonightTogether')}</SetCap> : null}
+      {tonight.length ? <SetCap colors={colors} style={styles.listCap}>{t('we.tonightTogether')}</SetCap> : null}
       {tonight.map((card) => row(card, true))}
 
       {folders.map((folder) => (
         <View key={folder || '-'}>
-          <SetCap colors={colors}>{folder || t('we.yours')}</SetCap>
+          <SetCap colors={colors} style={styles.listCap}>{folder || t('we.yours')}</SetCap>
           {later.filter((card) => (card.folder || '') === folder).map((card) => row(card, false))}
         </View>
       ))}
@@ -1198,6 +1198,8 @@ const styles = StyleSheet.create({
   // Sized to the card: the early note, question and keys read as one block.
   earlySlot: { justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
+  // The list sits on the page edge, not in a settings card, so no inset.
+  listCap: { marginHorizontal: 0 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },
   weRowActs: { flexDirection: 'row', gap: 8 },

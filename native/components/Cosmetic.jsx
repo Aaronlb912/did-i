@@ -104,9 +104,13 @@ function chipShell(colors, bg, glow, chipShadow, borderless = false) {
 // plain: no glow or ring, for a tile that is not selected (a glow reads as selected).
 export function LookChip({ id, colors, plain = false }) {
   const theme = useTheme()
-  const meta = isGemLook(id) ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
-  const on = meta.on
   const premium = isGemLook(id)
+  const lookColors = useLookColors(id)
+  const base = premium ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
+  // In Light, a coin look's chip takes the look's own Light card colors, so
+  // the tile matches the card preview (Ink is cream there, not black).
+  const meta = !premium && theme === 'light' ? { on: lookColors.on, bg: lookColors.panel } : base
+  const on = meta.on
   const dot = rem(0.34)
   const dotStyle = (i) => ({
     width: dot,

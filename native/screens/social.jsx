@@ -2553,7 +2553,9 @@ function askShown(question) {
 }
 
 const styles = StyleSheet.create({
-  cardBig: { width: '100%', alignItems: 'center', paddingVertical: 12 },
+  // The 180 preview tile is 216 tall around a ~143 tall card; the box fits the
+  // card plus frame overhang so the sheet has no empty band under it.
+  cardBig: { width: '100%', height: 184, alignItems: 'center', justifyContent: 'center' },
   groupCard: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
   groupPad: { padding: 14, gap: 8 },
   editLift: { justifyContent: 'center' },

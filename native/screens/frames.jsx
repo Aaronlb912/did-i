@@ -114,7 +114,7 @@ function MiniCard({ colors, roomy }) {
   return (
     <View style={[...faceCardStyle(colors), styles.miniCard, roomy && styles.miniCardRoomy]}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{previewSample().tag}</Text>
-      <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>
+      <Text style={[faceCardStyles.title, styles.miniTitle, { color: colors.ink }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>
         {previewSample().question}
       </Text>
     </View>
@@ -133,6 +133,8 @@ const CORNER_ART = new Set(['frost'])
 function FrameSheetPreview({ id, colors, ctx, weekLit }) {
   return (
     <View style={styles.sheetPreview}>
+      {/* Same label and centered card as the look sheets. */}
+      <Text style={[styles.cap, styles.sheetCap, { color: colors.inkDim }]}>{t('shop.buddyPreview')}</Text>
       <CardFrame
         id={id}
         colors={colors}
@@ -253,6 +255,11 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
       ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
       : `${priceLine}${seasonLine}`,
     ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => reopen(book)) } : {}),
+    // Gem frames point at Get gems, like coin frames point at How coins work.
+    // When short, the main button already goes there.
+    ...(!owned && frame.gems && purse.gems >= frame.gems
+      ? { footLabel: t('gems.title'), onFoot: () => { publishSheet(null); goHash('/gems') } }
+      : {}),
     content: <FrameFacts frame={frame} owned={owned} colors={colors} />,
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
@@ -294,10 +301,16 @@ function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
   )
 }
 
+// Paid frames go up by price, then by name, in the Shop row and All frames.
+const byPrice = (a, b) => (a.coins || a.gems || 0) - (b.coins || b.gems || 0) || frameName(a.id).localeCompare(frameName(b.id))
+const SALE_RANK = { season: 0, coin: 1, gem: 2 }
+
 // Things you can buy or claim first, then the ones you own.
 function shopOrder(purse, ctx) {
   const owned = framesOwned(purse, ctx)
-  const forSale = SHOWN_FRAMES.filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
+  const forSale = SHOWN_FRAMES
+    .filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
+    .sort((a, b) => SALE_RANK[a.kind] - SALE_RANK[b.kind] || byPrice(a, b))
   const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
   return { forSale, mine }
 }
@@ -347,7 +360,7 @@ export function ShopFramesScreen({ book, onChange }) {
         const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind)
         // Paid sections go up by price, then by name.
         if (sec.kind === 'coin' || sec.kind === 'gem') {
-          list.sort((a, b) => (a.coins || a.gems || 0) - (b.coins || b.gems || 0) || frameName(a.id).localeCompare(frameName(b.id)))
+          list.sort(byPrice)
         }
         return (
           <View key={sec.kind}>
@@ -480,11 +493,14 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
   // Room for art that reaches past the card, then clipped so sparks stay in the sheet.
-  sheetPreview: { width: '100%', alignItems: 'center', paddingTop: 36, paddingBottom: 14, overflow: 'hidden' },
+  // Bottom room so Polaroid's caption strip under the card is not cut off.
+  sheetPreview: { width: '100%', alignItems: 'center', paddingBottom: 50, overflow: 'hidden' },
+  sheetCap: { alignSelf: 'stretch', marginBottom: 32 },
   howEarn: { gap: 2 },
   sheetFrame: { width: 260 },
   // Extra inner padding keeps corner art (Frost's crystals) off the words.
-  miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26 },
+  miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26, alignItems: 'center', justifyContent: 'center' },
+  miniTitle: { fontSize: 22, lineHeight: 28, textAlign: 'center' },
   miniCardRoomy: { paddingHorizontal: 54, paddingVertical: 50 },
   facts: { gap: 6, paddingBottom: 4 },
   rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },

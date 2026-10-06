@@ -257,7 +257,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
             pointerEvents="none"
             style={[styles.collapsed, { width: bw, height: bh }, iconStyle]}
           >
-            <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+            <MenuIcon name="grid" color={colors.on} size={16} />
           </Animated.View>
           <Animated.View
             style={[styles.panel, rowsStyle]}
@@ -361,7 +361,7 @@ export function MastMenuCog() {
       label={people.inbox ? t('didyou.menuButton', { n: people.inbox }) : t('mast.menu')}
       expanded={open}
     >
-      <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+      <MenuIcon name="grid" color={colors.on} size={16} />
       {people.inbox > 0 ? (
         <View pointerEvents="none" style={[styles.menuCount, { backgroundColor: colors.on, borderColor: colors.bg }]}>
           <Text style={[styles.countText, styles.menuCountText, { color: colors.bg }]}>{countLabel(people.inbox)}</Text>

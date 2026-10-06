@@ -2,6 +2,7 @@ import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -368,6 +369,35 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   const [width, setWidth] = useState(() => Math.max(0, Dimensions.get('window').width - 32))
   const [at, setAt] = useState(0)
   const pager = useRef(null)
+  const page = useRef({ width: 0, count: 0, x: 0, from: 0 })
+  page.current.width = width
+  page.current.count = slides.length
+  // A quick flick lands diagonal, and the page's vertical ScrollView sees it
+  // first: on Android the parent checks its touch slop before the pager, so
+  // it takes the touch and the pager never moves (a slow, flat drag works).
+  // This pan only wakes on a fast sideways move, takes the touch from the
+  // scroll views and the tile under the finger, and turns the page itself.
+  // Slow drags never reach minVelocityX, so the pager still follows them.
+  const fling = usePanGesture({
+    runOnJS: true,
+    enabled: slides.length > 1,
+    minVelocityX: 500,
+    failOffsetY: [-40, 40],
+    // From the page under the finger at touch down, so a fling the pager
+    // also caught never turns two pages.
+    onBegin: () => {
+      const { x, width: w } = page.current
+      page.current.from = w ? Math.round(x / w) : 0
+    },
+    onDeactivate: (event) => {
+      const { from, width: w, count } = page.current
+      if (!w || Math.abs(event.translationX) < Math.abs(event.translationY)) return
+      const to = Math.max(0, Math.min(count - 1, from + (event.translationX < 0 ? 1 : -1)))
+      setAt(to)
+      page.current.x = to * w
+      pager.current?.scrollToOffset({ offset: to * w, animated: !motionOff() })
+    },
+  })
   if (!slides.length) return null
   // A FlatList pager with plain pagingEnabled. The old ScrollView set the page
   // on every scroll event, so the first drag re-rendered every slide and
@@ -375,6 +405,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   // and snapToInterval + disableIntervalMomentum on top of paging made a
   // short fast fling snap back. Now the page only changes when it settles.
   const settle = (e) => {
+    page.current.x = e.nativeEvent.contentOffset.x
     const n = Math.round(e.nativeEvent.contentOffset.x / width)
     if (n !== at) setAt(n)
   }
@@ -387,6 +418,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
       }}
     >
       {width ? (
+        <GestureDetector gesture={fling}>
         <FlatList
           ref={pager}
           data={slides}
@@ -429,6 +461,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
             )
           }}
         />
+        </GestureDetector>
       ) : null}
       {slides.length > 1 ? (
         <View style={styles.dots}>
@@ -442,6 +475,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
               hitSlop={10}
               onPress={() => {
                 setAt(i)
+                page.current.x = i * width
                 pager.current?.scrollToOffset({ offset: i * width, animated: !motionOff() })
               }}
             >
@@ -2341,7 +2375,8 @@ const styles = StyleSheet.create({
   slide: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 4 },
   slideKicker: { fontFamily: fonts.uiBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   slideTitle: { fontFamily: fonts.uiBold, fontSize: 20, marginBottom: 6 },
-  slideGrid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: 8 },
+  // Top-aligned, so every page's tiles start at the same height.
+  slideGrid: { flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap: 8 },
   slideTile: { width: '31%', flexGrow: 1 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4 },
