@@ -137,7 +137,11 @@ export function frameEarned(frame, ctx = {}) {
 // "12 of 30" for a frame that is not earned yet.
 export function frameProgress(frame, ctx = {}) {
   if (!frame || frame.kind !== 'earned') return null
-  if (frame.earn === 'streak') return { n: Math.min(frame.need, Math.max(0, Number(ctx.bestStreak) || 0)), of: frame.need }
+  if (frame.earn === 'streak') {
+    // Counts the streak you are on (the one So far shows); the best run only decides earned.
+    const run = ctx.streak ?? ctx.bestStreak
+    return { n: Math.min(frame.need, Math.max(0, Number(run) || 0)), of: frame.need }
+  }
   return { n: ctx.everFrozen ? 1 : 0, of: 1 }
 }
 

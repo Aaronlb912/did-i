@@ -244,7 +244,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
-  const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
+  const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), streak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
   const weekLit = useMemo(
     () => (wornId && stack.shelf ? weekStripNights(stack.shelf, stack.clock, tagId).map((night) => Boolean(night.on)) : []),

@@ -841,7 +841,7 @@ export function PeopleScreen({ book, onChange }) {
       {links.friends.length ? (
         <>
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
-            {sharing.length ? `${t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })} ` : ''}
+            {sharing.length ? `${doneCount ? t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length }) : t('together.noneYet')} ` : ''}
             {newHere ? t('people.stripHint') : ''}
           </Text>
           <FadeScroll fade={colors.bg} contentContainerStyle={styles.strip}>
@@ -1448,7 +1448,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
 
       {sharing.length ? (
         <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length })}
+          {doneCount ? t(sharing.length === 1 ? 'people.doneOfOne' : 'people.doneOf', { done: doneCount, n: sharing.length }) : t('together.noneYet')}
         </Text>
       ) : null}
 

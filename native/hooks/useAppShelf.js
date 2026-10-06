@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, Platform } from 'react-native'
 import { commitBook, marksToToast, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
@@ -53,6 +53,7 @@ import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
+import { useLocale } from '../../src/lib/i18n.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -84,6 +85,15 @@ export function useAppShelf() {
   const [shelf, setShelf] = useState(firstShelf)
   // Marks unlocked together wait their turn instead of only the first showing.
   const [marks, setMarks] = useState([])
+  // The General folder's name follows the app language. Reading the shelf
+  // again renames it, so a language change shows at once, not on next launch.
+  const locale = useLocale()
+  const lastLocale = useRef(locale)
+  useEffect(() => {
+    if (lastLocale.current === locale) return
+    lastLocale.current = locale
+    setShelf(readShelf())
+  }, [locale])
   const book = useMemo(() => currentBook(shelf), [shelf])
   const live = book || emptyBoard()
   const route = readRoute()

@@ -140,7 +140,10 @@ function go(route) {
   // Already on it: stay. Anything else opens fresh, so back always
   // retraces the path you took.
   const key = routeKey(route)
-  if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) return
+  if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) {
+    if (fromMenu) navigationRef.dispatch(CommonActions.setParams({ menuAt: Date.now() }))
+    return
+  }
   // A done form going back to the screen right behind it is just back.
   if (swapping && routes.length > 1 && routeKey(routeFromScreen(routes[routes.length - 2])) === key) {
     navigationRef.dispatch(StackActions.pop())
@@ -152,7 +155,13 @@ function go(route) {
     const at = routes.findIndex((screen, i) => i > 0 && routeKey(routeFromScreen(screen)) === key)
     if (at > 0) {
       navigationRef.dispatch(
-        CommonActions.reset({ ...state, index: at, routes: routes.slice(0, at + 1) }),
+        CommonActions.reset({
+          ...state,
+          index: at,
+          routes: routes
+            .slice(0, at + 1)
+            .map((screen, i) => (i === at ? { ...screen, params: { ...screen.params, menuAt: Date.now() } } : screen)),
+        }),
       )
       return
     }

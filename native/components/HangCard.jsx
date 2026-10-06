@@ -154,7 +154,7 @@ export const HangCard = forwardRef(function HangCard(
           <Text style={[styles.leadChev, { color: leadColor || colors.on }]}>▾</Text>
         </Pressable>
       ) : lead ? (
-        <WaveLead text={leadText || t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
+        <WaveLead text={leadText || t('tonight.didI')} wave={wave} colors={colors} style={[faceCardStyles.title, styles.leadOnly]} />
       ) : null}
       <AppTextInput
         colors={colors}
@@ -193,7 +193,9 @@ export const HangCard = forwardRef(function HangCard(
 
 const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
-  leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
+  // Lifts Did I onto the typed words' baseline (checked on Android).
+  leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingBottom: 3.5 },
+  leadOnly: { paddingBottom: 3.5 },
   leadChev: { fontSize: 26, marginTop: 2 },
   leadRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', columnGap: 8 },
   leadBlank: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 140 },

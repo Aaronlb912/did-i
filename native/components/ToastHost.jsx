@@ -17,7 +17,7 @@ import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { goHash } from '../navigation/hash.js'
-import { dropToast, useToastQueue } from '../lib/toast-queue.js'
+import { dropToast, toastQueue, useToastQueue } from '../lib/toast-queue.js'
 import { launchFlight } from './FlyHost.jsx'
 import { fonts } from '../theme.js'
 import { RollNumber } from './RollNumber.jsx'
@@ -126,6 +126,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   const y = useSharedValue(reduce ? 0 : FROM_Y)
   const fade = useSharedValue(reduce ? 0 : 1)
   const leaving = useRef(false)
+  const letGo = useRef(null)
 
   const finish = useCallback(() => onGone(item.id), [item.id, onGone])
 
@@ -136,7 +137,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       item.onGone?.()
       // The timer, not the animation callback, lets go of the toast, so a
       // fallback without native animation never leaves one on screen.
-      setTimeout(finish, OUT_MS + 40)
+      letGo.current = setTimeout(finish, OUT_MS + 40)
       const out = { duration: OUT_MS, easing: Easing.in(Easing.quad) }
       if (reduce) {
         fade.value = withTiming(0, { duration: 160 })
@@ -147,6 +148,22 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       fade.value = withTiming(0, out)
     },
     [fade, finish, item, reduce, x, y],
+  )
+
+  // A toast taken off screen while it was leaving lets go of itself now. Its
+  // timer stops with it, so it never lets go of a newer toast with the same
+  // id (the next answer's undo).
+  const mine = useRef(item)
+  mine.current = item
+  useEffect(
+    () => () => {
+      clearTimeout(letGo.current)
+      if (!leaving.current) return
+      const gone = mine.current
+      const now = toastQueue().find((entry) => entry.id === gone.id)
+      if (now && (now.rev || 0) === (gone.rev || 0)) dropToast(gone.id)
+    },
+    [],
   )
 
   useEffect(() => {

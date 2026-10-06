@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useIsFocused } from '@react-navigation/native'
+import { useIsFocused, useRoute } from '@react-navigation/native'
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -47,6 +47,14 @@ export function BoardShell({
   const [keyboardTop, setKeyboardTop] = useState(null)
   const [scrollBottom, setScrollBottom] = useState(null)
   const focused = useIsFocused()
+  // Opened again from the menu while still open further back: start at the
+  // top, so a tap meant for the top of the page never lands on an old row.
+  const menuAt = useRoute()?.params?.menuAt
+  useEffect(() => {
+    if (!menuAt) return
+    scrollRef.current?.scrollTo?.({ y: 0, animated: false })
+    scrollY.setValue(0)
+  }, [menuAt, scrollY])
   useEffect(() => {
     if (!scroll || !focused) {
       setKeyboardTop(null)
