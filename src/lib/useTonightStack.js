@@ -321,6 +321,8 @@ export function useTonightStack({
     else if (!clears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
     if (clears) {
+      // The night just cleared: no card follows, so its cheer plays in full.
+      if (typeof window !== 'undefined') window.__didICheerFull = Date.now()
       feelTap('hall-on')
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)

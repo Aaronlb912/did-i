@@ -1805,7 +1805,9 @@ export function CheerBurst() {
   useEffect(() => {
     if (!burst) return undefined
     const hold = holdFor(burst.kind, burst.stage, burst.pops.length)
-    const end = burst.preview ? hold : Math.min(hold, REAL_MAX_MS)
+    // A cheer that cleared the night has no next card to cover: it plays in full.
+    const full = burst.preview || Date.now() - (window.__didICheerFull || 0) < 1000
+    const end = full ? hold : Math.min(hold, REAL_MAX_MS)
     fade.setValue(1)
     const fadeTimer =
       end < hold
