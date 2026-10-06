@@ -1230,54 +1230,6 @@ function FrostOver({ f }) {
 
 /* ---------- Bloom (20 friends joined) ---------- */
 
-// A point it.d px along the rounded rect it.g px outside the card, so the
-// light walks the same line as the edge. rrPointAt as a worklet.
-function bloomAt(time, it, w, h) {
-  'worklet'
-  const x = -it.g
-  const y = -it.g
-  const W = w + 2 * it.g
-  const H = h + 2 * it.g
-  const r = Math.max(0, Math.min(it.R + it.g, W / 2, H / 2))
-  const sv = H - 2 * r
-  const sh = W - 2 * r
-  const arc = (Math.PI * r) / 2
-  const L = 2 * sv + 2 * sh + 4 * arc
-  let s = ((((time / it.period) * L - it.lag * L) % L) + L) % L
-  let px = x
-  let py = y
-  if (s < sh) {
-    px = x + r + s
-    py = y
-  } else if ((s -= sh) < arc) {
-    const a = -Math.PI / 2 + s / r
-    px = x + W - r + r * Math.cos(a)
-    py = y + r + r * Math.sin(a)
-  } else if ((s -= arc) < sv) {
-    px = x + W
-    py = y + r + s
-  } else if ((s -= sv) < arc) {
-    const a = s / r
-    px = x + W - r + r * Math.cos(a)
-    py = y + H - r + r * Math.sin(a)
-  } else if ((s -= arc) < sh) {
-    px = x + W - r - s
-    py = y + H
-  } else if ((s -= sh) < arc) {
-    const a = Math.PI / 2 + s / r
-    px = x + r + r * Math.cos(a)
-    py = y + H - r + r * Math.sin(a)
-  } else if ((s -= arc) < sv) {
-    px = x
-    py = y + H - r - s
-  } else {
-    const a = Math.PI + Math.min(s - sv, arc) / r
-    px = x + r + r * Math.cos(a)
-    py = y + r + r * Math.sin(a)
-  }
-  return { x: px, y: py, o: it.o }
-}
-
 function twinkle(time, it) {
   'worklet'
   return { x: it.x, y: it.y, o: 0.35 + 0.65 * (0.5 - 0.5 * Math.cos((TAU * (time + it.ph)) / 2.8)), s: 1 }
@@ -1296,6 +1248,61 @@ function BloomSpark({ size }) {
   )
 }
 
+let AnimatedPath
+function animatedPath(S) {
+  if (AnimatedPath === undefined) {
+    const make = Reanimated.default?.createAnimatedComponent || Reanimated.createAnimatedComponent
+    AnimatedPath = typeof make === 'function' && typeof Reanimated.useAnimatedProps === 'function' ? make(S.Path) : null
+  }
+  return AnimatedPath
+}
+
+// The showroom's light: one stroke 70/400 of the way round, slid along by its
+// dash offset once every 9 s. Wide faint strokes under it stand in for the
+// blur, with a thin white core near the head. One line, so it never beads.
+const BLOOM_STROKES = [
+  { width: 14, color: '#fff6d8', opacity: 0.12, len: 70, at: 0 },
+  { width: 9, color: '#fff6d8', opacity: 0.2, len: 66, at: 2 },
+  { width: 5, color: '#fff6d8', opacity: 0.35, len: 60, at: 5 },
+  { width: 1.6, color: '#ffffff', opacity: 1, len: 40, at: 15 },
+]
+
+function BloomStroke({ f, d, L, it, Path }) {
+  const len = (L * it.len) / 400
+  const start = (L * it.at) / 400
+  const props = Reanimated.useAnimatedProps(() => ({
+    strokeDashoffset: -start - ((f.clock.value / 9) % 1) * L,
+  }))
+  return (
+    <Path
+      d={d}
+      fill="none"
+      stroke={it.color}
+      strokeOpacity={it.opacity}
+      strokeWidth={it.width}
+      strokeLinecap="round"
+      strokeDasharray={[len, L - len]}
+      animatedProps={props}
+    />
+  )
+}
+
+function BloomStreak({ f, g }) {
+  const S = svgAll()
+  const Path = S && animatedPath(S)
+  if (!Path) return null
+  const R = f.R + g
+  const d = rrPath(-g, -g, f.w + 2 * g, f.h + 2 * g, R)
+  const L = rrLength(f.w + 2 * g, f.h + 2 * g, R)
+  return (
+    <Layer f={f}>
+      {BLOOM_STROKES.map((it, i) => (
+        <BloomStroke key={i} f={f} d={d} L={L} it={it} Path={Path} />
+      ))}
+    </Layer>
+  )
+}
+
 function BloomOver({ f }) {
   const S = svgAll()
   const g = 4
@@ -1310,25 +1317,6 @@ function BloomOver({ f }) {
     ],
     [f.w, f.h, s],
   )
-  // One streak of light walking the edge, as in the showroom: a soft cream
-  // glow 70/400 of the way round with a thin white core near its head. The
-  // dots sit close enough to read as one line. lag is a share of the loop.
-  const lights = useMemo(() => {
-    const L = rrLength(f.w + 2 * g, f.h + 2 * g, f.R + g)
-    const out = []
-    const glowN = Math.max(8, Math.round((L * 70) / 400 / 5))
-    for (let i = 0; i < glowN; i++) {
-      const p = i / (glowN - 1)
-      const end = Math.min(1, p * 4, (1 - p) * 4)
-      out.push({ g, R: f.R, period: 9, lag: (p * 70) / 400, o: 0.22 * (0.4 + 0.6 * end), size: 14, color: '#fff6d8' })
-    }
-    const coreN = Math.max(6, Math.round((L * 40) / 400 / 3))
-    for (let i = 0; i < coreN; i++) {
-      const p = i / (coreN - 1)
-      out.push({ g, R: f.R, period: 9, lag: (15 + p * 40) / 400, o: 0.95 * Math.min(1, 0.3 + p * 4, 0.3 + (1 - p) * 4), size: 3.5, color: '#ffffff' })
-    }
-    return out
-  }, [f.w, f.h, f.R])
   return (
     <>
       <Layer f={f}>
@@ -1345,11 +1333,7 @@ function BloomOver({ f }) {
           ? sparks.map((it, i) => <S.Path key={i} d={SPARK} fill="#fff6d8" transform={`translate(${it.x} ${it.y}) scale(${it.s})`} />)
           : null}
       </Layer>
-      {lights.map((it, i) => (
-        <Particle key={`l${i}`} clock={f.clock} item={it} fn={bloomAt} w={f.w} h={f.h} size={it.size}>
-          <View style={{ width: it.size, height: it.size, borderRadius: it.size / 2, backgroundColor: it.color }} />
-        </Particle>
-      ))}
+      {f.still ? null : <BloomStreak f={f} g={g} />}
       {sparks.map((it, i) => (
         <Particle key={`s${i}`} clock={f.clock} item={it} fn={twinkle} w={f.w} h={f.h} size={it.s * 2}>
           <BloomSpark size={it.s} />

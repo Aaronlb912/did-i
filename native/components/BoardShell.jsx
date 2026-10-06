@@ -35,10 +35,13 @@ export function BoardShell({
   noTitle = false,
   // Optional ref that gets the page's scroll view, for a form that scrolls a field into view.
   scrollHandle,
+  // Optional Animated.Value to share the scroll offset with bars pinned over the page.
+  scrollY: scrollYIn,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
-  const scrollY = useRef(new Animated.Value(0)).current
+  const ownScrollY = useRef(new Animated.Value(0)).current
+  const scrollY = scrollYIn || ownScrollY
   // KeyboardAvoidingView repositions the page, but a form shorter than the
   // full screen has no content to scroll past the keyboard on its own. This
   // adds scroll room for whatever part of the scroll view the keyboard still

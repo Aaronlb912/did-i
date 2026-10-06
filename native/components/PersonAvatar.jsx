@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Image, StyleSheet, Text, View } from 'react-native'
 import { personTint } from '../../src/lib/person-tint.js'
 import { fonts } from '../theme.js'
-import { BuddyPlain } from './BuddyArt.jsx'
+import { BuddyArt } from './BuddyArt.jsx'
 
 function nameOf(person) {
   return String(person?.display_name || person?.name || '').replace(/^@/, '').trim()
@@ -57,7 +57,8 @@ export function PersonAvatar({ person, colors, size = 46, done = false, tint, ro
             onError={() => setBroken(true)}
           />
         ) : showBuddy ? (
-          <BuddyPlain id={buddy} width={size * 0.72} height={size * 0.86} />
+          // The real drawing: the plain blob version lost who was who at chip size.
+          <BuddyArt id={buddy} width={size * 0.8} height={size * 0.96} />
         ) : (
           <Text
             style={[styles.letters, { color: done ? colors.bg : colors.ink, fontSize: Math.round(size * 0.36) }]}

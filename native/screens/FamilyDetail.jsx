@@ -34,7 +34,7 @@ import {
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
+import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
@@ -218,14 +218,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
-          <Pressable
-            onPress={() => setCodeOpen(true)}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('people.joinCode')}
-          >
-            {({ pressed }) => <Text style={[styles.plus, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>}
-          </Pressable>
+          <AddPill colors={colors} onPress={() => setCodeOpen(true)} label={t('people.joinCode')} />
         </View>
         <Text style={[styles.weekCount, { color: colors.inkDim }]}>
           {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
@@ -592,7 +585,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 24, fontWeight: '700' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   titleText: { flex: 1 },
-  plus: { fontFamily: fonts.ui, fontSize: 28, lineHeight: 30, fontWeight: '500' },
   code: { fontFamily: fonts.mono, fontSize: 32, fontWeight: '700', letterSpacing: 4, textAlign: 'center', paddingVertical: 6 },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   rowTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },

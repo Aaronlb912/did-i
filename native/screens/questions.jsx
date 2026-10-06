@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
+  Animated,
   AppState,
   BackHandler,
   Keyboard,
@@ -586,6 +587,19 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const folders = shelf
   const { overlayBottom } = useAppInsets()
   const headerBottom = useHeaderBottom()
+  // The pinned bars sit under the header. On iOS the large title starts
+  // expanded, so the header ends where the page starts (-offset) until the
+  // title shrinks into the bar.
+  const scrollY = useRef(new Animated.Value(0)).current
+  const barShift = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [-2000, -headerBottom, 0],
+        outputRange: [2000 + 8, headerBottom + 8, headerBottom + 8],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, headerBottom],
+  )
 
   function moveTo(targetId) {
     if (!chosen.length || !onChangeBooks) return
@@ -678,7 +692,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   return (
     <View style={styles.fill}>
       {/* A tab, never pushed: no back arrow, even while a form that just saved is still popping off the stack. */}
-      <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false}>
+      <BoardShell book={book} boards={shelf} title={allRows.length ? t('questions.title') : t('questions.empty')} date={shellDate(book, clock)} colors={colors} showAdd back={false} scrollY={scrollY}>
         {/* Filters, Did you / Did we, Add and Edit share one row, so the list starts high.
             It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
         {/* Select and Reorder swap this row for their pinned bar. */}
@@ -850,8 +864,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       </BoardShell>
           {/* Pinned Reorder bar: Never mind puts the order back, Done keeps it. */}
           {ordering ? (
+            <Animated.View pointerEvents="box-none" style={[styles.modeWrap, { transform: [{ translateY: barShift }] }]}>
             <Reveal
-              style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
+              style={[styles.modeBar, { borderColor: colors.on, backgroundColor: colors.panel }]}
               accessibilityRole="header"
             >
               <Pressable accessibilityRole="button" onPress={cancelOrder} hitSlop={10} style={styles.modeSide}>
@@ -865,11 +880,13 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 <DidButton label={t('questions.pickDone')} onPress={() => setOrdering(false)} colors={colors} small />
               </View>
             </Reveal>
+            </Animated.View>
           ) : null}
           {/* Pinned Select bar: Never mind, count, Select all. It stays while the list scrolls. */}
           {picking ? (
+            <Animated.View pointerEvents="box-none" style={[styles.modeWrap, { transform: [{ translateY: barShift }] }]}>
             <Reveal
-              style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
+              style={[styles.modeBar, { borderColor: colors.on, backgroundColor: colors.panel }]}
               accessibilityRole="header"
             >
               <Pressable accessibilityRole="button" onPress={stopPicking} hitSlop={10} style={styles.modeSide}>
@@ -887,6 +904,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 />
               </View>
             </Reveal>
+            </Animated.View>
           ) : null}
           {picking ? (
             <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
@@ -2065,12 +2083,8 @@ const styles = StyleSheet.create({
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
   pickRoom: { height: 90 },
+  modeWrap: { position: 'absolute', top: 0, left: 12, right: 12, zIndex: 21, elevation: 12 },
   modeBar: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    zIndex: 21,
-    elevation: 12,
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 12,

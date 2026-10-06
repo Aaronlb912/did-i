@@ -428,7 +428,8 @@ function familyCodeMiss(why) {
 
 // Look the code up first: "Join {family}? 3 people are in it." Nothing
 // changes until Join.
-function JoinFamilyCard({ colors, bare = false, scanned = '' }) {
+// onScan closes the popup it sits in before the camera opens.
+function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
   const [code, setCode] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
@@ -508,7 +509,16 @@ function JoinFamilyCard({ colors, bare = false, scanned = '' }) {
         disabled={busy || code.length !== FAMILY_CODE_LEN}
         onPress={() => look()}
       />
-      {canScan() ? <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} /> : null}
+      {canScan() ? (
+        <KeyButton
+          colors={colors}
+          label={t('qr.scan')}
+          onPress={() => {
+            onScan?.()
+            goHash('/scan')
+          }}
+        />
+      ) : null}
     </View>
   )
 }
@@ -994,7 +1004,7 @@ export function PeopleScreen({ book, onChange }) {
       ) : null}
       {sheet?.kind === 'family' ? (
         <AddPop kicker={t('people.join')} colors={colors} onClose={() => setSheet(null)}>
-          <JoinFamilyCard colors={colors} bare />
+          <JoinFamilyCard colors={colors} bare onScan={() => setSheet(null)} />
         </AddPop>
       ) : null}
     </ScreenShell>
@@ -1729,7 +1739,7 @@ function FamilyListScreen({ colors }) {
       {families.length ? null : <JoinFamilyCard colors={colors} />}
       {pop ? (
         <AddPop kicker={t('people.join')} colors={colors} onClose={() => setPop(false)}>
-          <JoinFamilyCard colors={colors} bare />
+          <JoinFamilyCard colors={colors} bare onScan={() => setPop(false)} />
         </AddPop>
       ) : null}
       <KeyButton colors={colors} label={t('family.back')} onPress={() => goHash('/people')} />

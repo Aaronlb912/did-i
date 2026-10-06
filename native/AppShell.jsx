@@ -61,15 +61,19 @@ const Stack = createNativeStackNavigator()
 // Add forms have no page title (BoardShell noTitle), so no large title either.
 const NO_TITLE = new Set(['/hang', '/we/new'])
 
+const GLASS_BAR = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26
+
 function barOptions(colors) {
   if (Platform.OS !== 'ios') return { headerShown: false }
   return {
     headerShown: true,
     headerTransparent: true,
-    headerBlurEffect: 'systemChromeMaterial',
-    // The material does the job of iOS 26's top edge blur; both at once overlap.
-    scrollEdgeEffects: { top: 'hidden' },
-    headerShadowVisible: true,
+    // iOS 26 fades the page out under the bar with its soft edge, like the
+    // system apps. Older iOS has no edge effect, so it keeps a thin material.
+    // (The chrome material read as a solid grey block in dark mode.)
+    ...(GLASS_BAR
+      ? { scrollEdgeEffects: { top: 'soft' }, headerShadowVisible: false }
+      : { headerBlurEffect: 'systemUltraThinMaterial', scrollEdgeEffects: { top: 'hidden' }, headerShadowVisible: false }),
     headerLargeStyle: { backgroundColor: 'transparent' },
     headerLargeTitleShadowVisible: false,
     headerTintColor: colors.on,
