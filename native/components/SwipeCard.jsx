@@ -438,12 +438,14 @@ function StackCard({
       style={[
         top ? styles.face : styles.behind,
         top ? glowStyle : null,
+        // The room for the frame goes outside the look's glow, so the glow hugs the card.
+        frame?.id ? styles.framed : null,
         styles.origin,
         moving,
       ]}
     >
       {frame?.id ? (
-        <CardFrame {...frame} active={top && Boolean(frame.active)} style={[styles.framed, top ? null : styles.behindFrame]}>
+        <CardFrame {...frame} active={top && Boolean(frame.active)} style={top ? null : styles.behindFrame}>
           {inner}
         </CardFrame>
       ) : (
