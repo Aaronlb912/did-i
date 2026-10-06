@@ -166,9 +166,13 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
     [],
   )
 
+  // Tells an undo it is on screen once it has come in, so its clock starts then.
+  const onShown = item.onShown
+  const arrived = useCallback(() => onShown?.(), [onShown])
   useEffect(() => {
-    if (reduce) fade.value = withTiming(1, { duration: 160 })
-    else y.value = withSpring(0, ENTER)
+    if (reduce) fade.value = withTiming(1, { duration: 160 }, () => scheduleOnRN(arrived))
+    else y.value = withSpring(0, ENTER, () => scheduleOnRN(arrived))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fade, reduce, y])
 
   // Undo lasts until its own clock runs out; the rest for their `ms`.

@@ -261,6 +261,14 @@ export function useTonightStack({
     undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
   }
 
+  // The undo toast is on screen now: the window to undo starts over from here,
+  // so the whole of it can be tapped.
+  function holdUndo() {
+    if (!undo) return
+    if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+  }
+
   function applyUndo() {
     if (!undo) return
     setOverlay(undo.book)
@@ -532,6 +540,7 @@ export function useTonightStack({
     setTitleEdit,
     setTitleDraft,
     undo,
+    holdUndo,
     dateIso,
     mark,
     continueStack,

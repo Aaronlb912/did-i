@@ -346,7 +346,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     applyUndo()
   }, [applyUndo])
   // The toast's label says what was saved (Marked Did, nope or late).
-  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'))
+  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
