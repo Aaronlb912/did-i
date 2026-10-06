@@ -259,11 +259,13 @@ export function useAppShelf() {
         if (cancelled) return undefined
         return pullAndMerge().then((result) => {
           if (cancelled) return
-          const merged = result || readShelf()
+          // The stored shelf, not result: a delete made after the pull wrote
+          // is only there, and writing result back would undo it.
+          const merged = readShelf()
           const closed =
             Platform.OS === 'android' ? withNightsClosed(merged, new Date()) : merged
           if (closed !== merged) setShelf(writeShelf(closed))
-          else if (result) setShelf(result)
+          else if (result) setShelf(merged)
         })
       })
       afterNativeBridgeReady(() => {
@@ -280,7 +282,7 @@ export function useAppShelf() {
           .then(() => pullAndMerge())
           .then((result) => {
             if (cancelled) return
-            if (result) setShelf(result)
+            if (result) setShelf(readShelf())
           })
           .catch(() => {})
       })

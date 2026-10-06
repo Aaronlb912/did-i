@@ -338,12 +338,23 @@ async function pullAndMergeOnce() {
     const remoteSavedAt = shelfRow.data?.saved_at || ''
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
     const metaAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
+    // A delete or a tap made on this phone while the pull was out would be
+    // written over by the older shelf the pull started from. When the phone
+    // saved since, fold its newest copy in first (its gone list included).
+    let seenAt = readSavedAt()
+    const land = (next, at) => {
+      const nowAt = readSavedAt()
+      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, at) : next
+      const out = writeShelf(base, at)
+      seenAt = readSavedAt()
+      return out
+    }
 
     // Fold in every answer the account has that this phone has not seen.
     const pulled = await pullAnswers(merged)
     if (pulled.miss) throw new Error(pulled.miss)
 
-    let written = writeShelf(closeShelfPastNights(pulled.shelf), metaAt)
+    let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // Gifts go straight into the collection. One already owned goes back to
     // the giver; the rest wait for the pop-up.
     const { gifts } = await claimGifts()
@@ -358,7 +369,7 @@ async function pullAndMergeOnce() {
         boards = boards.map((book) => mergeGift(book, gift).book)
         fresh.push(gift)
       }
-      written = writeShelf({ ...written, boards }, metaAt)
+      written = land({ ...written, boards }, metaAt)
       queueGifts(fresh)
     }
     await claimGemPurchases()
@@ -369,7 +380,7 @@ async function pullAndMergeOnce() {
       const boards = written.boards.map((item) =>
         item.id === written.currentId ? applyInvitePayout(item, invited) : item,
       )
-      written = writeShelf({ ...written, boards }, metaAt)
+      written = land({ ...written, boards }, metaAt)
     }
 
     // A weekly gem earned signed out only lived on the phone, and the server
@@ -403,7 +414,7 @@ async function pullAndMergeOnce() {
 
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
-    written = writeShelf(written, uploadAt)
+    written = land(written, uploadAt)
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs

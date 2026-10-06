@@ -1075,6 +1075,26 @@ test('a question deleted on one phone stays deleted when an older phone syncs', 
   assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
 })
 
+test('a question deleted while the launch sync is out stays deleted', () => {
+  const start = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('x'), lamp('y')], answers: [{ lampId: 'y', periodKey: '2026-10-06', status: 'yes', answeredAt: '2026-10-06T10:00:00Z' }] }] }
+  // The pull read this phone, then the server, which still has y.
+  const pulled = mergeShelves(start, start, '2026-10-06T10:00', '2026-10-06T09:00')
+  // Meanwhile the delete lands on this phone.
+  const after = { ...start, boards: [takeDown(start.boards[0], lamp('y'), new Date('2026-10-06T10:01:00Z'))] }
+  assert.ok(pulled.boards[0].lamps.some((item) => item.id === 'y'), 'writing the pulled shelf as is would bring y back')
+  const landed = mergeShelves(after, pulled, '2026-10-06T10:01', '2026-10-06T10:00')
+  assert.deepEqual(landed.boards[0].lamps.map((item) => item.id), ['x'])
+  assert.equal(landed.boards[0].answers.length, 0)
+  // The server's old answer row for y does not come back either.
+  const rows = [{ lamp_id: 'y', period_key: '2026-10-06', board_id: 'b1', status: 'yes', answered_at: '2026-10-06T10:00:00Z' }]
+  assert.equal(applyAnswers(landed, rows).shelf.boards[0].answers.length, 0)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(!sync.includes('let written = writeShelf(') && sync.includes('written = land(written, uploadAt)'), 'the pull folds in local saves made while it ran')
+  const hook = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
+  assert.ok(!hook.includes('setShelf(result)'), 'the app shows the stored shelf after a pull, not the pull result')
+})
+
 test('a tag deleted on one phone stays deleted when an older phone syncs', () => {
   const older = {
     currentId: 'b1',

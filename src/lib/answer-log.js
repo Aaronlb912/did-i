@@ -89,9 +89,16 @@ export function applyAnswers(shelf, rows) {
   for (const book of boards) {
     for (const lamp of book.lamps || []) homeOf.set(lamp.id, book)
   }
+  // A question deleted here keeps its old rows on the server until the next
+  // prune. Those must not come back as answers.
+  const dead = new Set()
+  for (const book of boards) {
+    for (const item of book.gone || []) if (!item.back && !homeOf.has(item.id)) dead.add(item.id)
+  }
 
   let changed = 0
   for (const row of rows) {
+    if (dead.has(row.lamp_id)) continue
     const book =
       boards.find((item) => item.id === row.board_id) || homeOf.get(row.lamp_id) || boards[0]
     if (!book) continue
