@@ -2658,4 +2658,12 @@ export const ja = {
   'questions.editMenu': "編集",
   'questions.editTitle': "質問を編集",
   'questions.pickSub': "まとめて選んで、移動・停止・削除できます。",
+  // r10-questions
+  'questions.earlier': "以前",
+  'we.details': "詳細",
+  'notes.title': "メモ",
+  'notes.sub': "書いたメモすべて",
+  'notes.searchPh': "メモを検索",
+  'notes.empty': "まだメモはありません。質問を開いて、メモの下の「メモを追加」をタップしてください。",
+  'notes.seeAll': "すべてのメモを見る",
 }

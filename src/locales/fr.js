@@ -2734,4 +2734,12 @@ export const fr = {
   'questions.editMenu': "Modifier",
   'questions.editTitle': "Modifier tes questions",
   'questions.pickSub': "Choisis-en plusieurs pour les déplacer, les arrêter ou les supprimer.",
+  // r10-questions
+  'questions.earlier': "Plus tôt",
+  'we.details': "Détails",
+  'notes.title': "Mes notes",
+  'notes.sub': "Toutes tes notes",
+  'notes.searchPh': "Chercher dans les notes",
+  'notes.empty': "Pas encore de notes. Ouvre une question et touche Ajouter une note sous Notes.",
+  'notes.seeAll': "Voir toutes les notes",
 }

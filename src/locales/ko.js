@@ -2659,4 +2659,12 @@ export const ko = {
   'questions.editMenu': "편집",
   'questions.editTitle': "질문 편집",
   'questions.pickSub': "여러 개를 골라 옮기거나 멈추거나 지울 수 있어요.",
+  // r10-questions
+  'questions.earlier': "이전",
+  'we.details': "자세히",
+  'notes.title': "메모",
+  'notes.sub': "내가 쓴 모든 메모",
+  'notes.searchPh': "메모 검색",
+  'notes.empty': "아직 메모가 없어요. 질문을 열고 메모 아래의 메모 추가를 누르세요.",
+  'notes.seeAll': "모든 메모 보기",
 }

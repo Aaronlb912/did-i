@@ -51,6 +51,7 @@ import {
   markWelcomeSeen,
   nextStreakGoal,
   shelfFeedRows,
+  shelfNoteRows,
   shelfStatsCounts,
   shelfWeekNights,
   stampWhen,
@@ -85,7 +86,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, periodLabel } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -510,6 +511,40 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
           />
         ))
+      )}
+    </ScreenShell>
+  )
+}
+
+// Every note, newest first, with a search over the note and its question.
+export function NotesScreen({ book, boards }) {
+  const colors = useHallColors()
+  const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
+
+  return (
+    <ScreenShell title={t('notes.title')} colors={colors}>
+      {allRows.length ? (
+        <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('notes.searchPh')} />
+      ) : null}
+      {!allRows.length ? (
+        <Meta colors={colors}>{t('notes.empty')}</Meta>
+      ) : !rows.length ? (
+        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
+      ) : (
+        rows.map((row) => {
+          const night = periodLabel(row.lamp, row.answer.periodKey)
+          return (
+            <Row
+              key={row.answer.id || `${row.lamp.id}:${row.answer.periodKey}`}
+              colors={colors}
+              label={shortLabel(row.lamp)}
+              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status)}\n${row.answer.note}`}
+              onPress={() => goHash('/lamp', { id: row.lamp.id })}
+            />
+          )
+        })
       )}
     </ScreenShell>
   )

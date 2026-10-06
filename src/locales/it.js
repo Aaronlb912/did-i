@@ -2719,4 +2719,12 @@ export const it = {
   'questions.editMenu': "Modifica",
   'questions.editTitle': "Modifica le tue domande",
   'questions.pickSub': "Scegline più di una da spostare, fermare o eliminare.",
+  // r10-questions
+  'questions.earlier': "Prima",
+  'we.details': "Dettagli",
+  'notes.title': "Note",
+  'notes.sub': "Ogni nota che hai scritto",
+  'notes.searchPh': "Cerca nelle note",
+  'notes.empty': "Ancora nessuna nota. Apri una domanda e tocca Aggiungi una nota sotto Note.",
+  'notes.seeAll': "Vedi tutte le note",
 }

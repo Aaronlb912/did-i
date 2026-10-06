@@ -20,6 +20,7 @@ const ROUTES = new Set([
   '/streaks',
   '/stats',
   '/feed',
+  '/notes',
   '/search',
   '/me',
   '/settings',

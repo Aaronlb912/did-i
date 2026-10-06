@@ -16,6 +16,7 @@ const BoardsScreen = lazyScreen(more, 'BoardsScreen')
 const CalendarScreen = lazyScreen(more, 'CalendarScreen')
 const EnterScreen = lazyScreen(more, 'EnterScreen')
 const FeedScreen = lazyScreen(more, 'FeedScreen')
+const NotesScreen = lazyScreen(more, 'NotesScreen')
 const FirstNightScreen = lazyScreen(more, 'FirstNightScreen')
 const HelpScreen = lazyScreen(more, 'HelpScreen')
 const IdeasScreen = lazyScreen(more, 'IdeasScreen')
@@ -175,6 +176,7 @@ export function ScreenRouter({
   if (path === '/streaks') return <StreaksScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />
+  if (path === '/notes') return <NotesScreen book={book} boards={boards} />
   if (path === '/pings') return <PingScreen book={book} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
   if (path === '/me') {
     return (

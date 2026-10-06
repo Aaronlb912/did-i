@@ -25,11 +25,11 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on }) {
+export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on, plain }) {
   const flat = !onPress
   // A row that does something right away (no ›) reads as a button: its words
   // take the accent, or its trailing word ("Remove") when it has one.
-  const action = !flat && !chevron && !danger
+  const action = !flat && !chevron && !danger && !plain
   const labelColor = danger ? colors.miss : action && !value ? colors.on : colors.ink
   const valueColor = action ? colors.on : colors.inkDim
   const tileColor = danger ? colors.miss : tint || colors.inkSoft

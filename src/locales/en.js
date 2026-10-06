@@ -2715,4 +2715,12 @@ export const en = {
   'questions.editMenu': "Edit",
   'questions.editTitle': "Edit your questions",
   'questions.pickSub': "Pick several to move, stop or delete.",
+  // r10-questions
+  'questions.earlier': "Earlier",
+  'we.details': "Details",
+  'notes.title': "Notes",
+  'notes.sub': "Every note you wrote",
+  'notes.searchPh': "Search notes",
+  'notes.empty': "No notes yet. Open a question and tap Add a note under Notes.",
+  'notes.seeAll': "See all notes",
 }

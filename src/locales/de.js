@@ -2738,4 +2738,12 @@ export const de = {
   'questions.editMenu': "Bearbeiten",
   'questions.editTitle': "Deine Fragen bearbeiten",
   'questions.pickSub': "Mehrere auswählen, um sie zu verschieben, zu stoppen oder zu löschen.",
+  // r10-questions
+  'questions.earlier': "Früher",
+  'we.details': "Einzelheiten",
+  'notes.title': "Notizen",
+  'notes.sub': "Jede Notiz, die du geschrieben hast",
+  'notes.searchPh': "Notizen durchsuchen",
+  'notes.empty': "Noch keine Notizen. Öffne eine Frage und tippe unter Notizen auf Notiz hinzufügen.",
+  'notes.seeAll': "Alle Notizen",
 }

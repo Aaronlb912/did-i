@@ -81,7 +81,7 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
       <SetCap colors={colors}>{t('lamp.secManage')}</SetCap>
       <SetCard colors={colors}>
         {onDuplicate ? (
-          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} onPress={onDuplicate} />
+          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} onPress={onDuplicate} plain />
         ) : null}
         <SetRow
           colors={colors}
@@ -89,6 +89,7 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
           label={lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
           sub={lamp.archived ? t('lamp.askAgainSub') : t('lamp.stopSub')}
           onPress={togglePause}
+          plain
         />
         <SetRow
           colors={colors}

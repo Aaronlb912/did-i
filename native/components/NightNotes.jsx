@@ -10,6 +10,7 @@ import { Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
+import { goHash } from '../navigation/hash.js'
 
 // How many recent nights "Add a note" offers.
 const PICKS = 7
@@ -143,6 +144,14 @@ export function NightNotes({ book, lamp, colors, onChange }) {
         </View>
       ) : null}
       </Reveal>
+      <Pressable
+        onPress={() => goHash('/notes')}
+        accessibilityRole="link"
+        hitSlop={8}
+        style={({ pressed }) => [styles.seeAll, pressFx(pressed)]}
+      >
+        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{t('notes.seeAll')} ›</Text>
+      </Pressable>
     </View>
   )
 }
@@ -228,4 +237,5 @@ const styles = StyleSheet.create({
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quiet: { fontSize: 14 },
+  seeAll: { alignSelf: 'flex-start', marginTop: 8 },
 })

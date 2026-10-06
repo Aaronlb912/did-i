@@ -2720,4 +2720,12 @@ export const pt = {
   'questions.editMenu': "Editar",
   'questions.editTitle': "Editar suas perguntas",
   'questions.pickSub': "Escolha várias para mover, pausar ou apagar.",
+  // r10-questions
+  'questions.earlier': "Anteriores",
+  'we.details': "Detalhes",
+  'notes.title': "Notas",
+  'notes.sub': "Todas as notas que você escreveu",
+  'notes.searchPh': "Buscar notas",
+  'notes.empty': "Ainda não há notas. Abra uma pergunta e toque em Adicionar nota em Notas.",
+  'notes.seeAll': "Ver todas as notas",
 }

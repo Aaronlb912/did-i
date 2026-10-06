@@ -130,6 +130,23 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
         </View>
       ))}
       </Reveal>
+      <View style={styles.key}>
+        {[
+          { id: 'did', color: colors.on, label: t('jewelKey.did') },
+          { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
+          { id: 'nope', color: colors.skip || colors.inkDim, label: t('jewelKey.nope') },
+          { id: 'missed', color: colors.miss, label: t('later.missed') },
+        ].map((item) => (
+          <View key={item.id} style={styles.keyItem}>
+            <View style={[styles.keyDot, { backgroundColor: item.color }]} />
+            <Text style={[styles.keyText, { color: colors.inkSoft }]}>{item.label}</Text>
+          </View>
+        ))}
+        <View style={styles.keyItem}>
+          <View style={[styles.keyDot, { borderWidth: 1, borderColor: colors.open || colors.line }]} />
+          <Text style={[styles.keyText, { color: colors.inkSoft }]}>{t('jewelKey.open')}</Text>
+        </View>
+      </View>
     </View>
   )
 }
@@ -145,4 +162,8 @@ const styles = StyleSheet.create({
   letter: { fontFamily: fonts.mono, fontSize: 10, textAlign: 'center' },
   day: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   dayText: { fontFamily: fonts.mono, fontSize: 11 },
+  key: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 12, rowGap: 4, marginTop: 8 },
+  keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  keyDot: { width: 10, height: 10, borderRadius: 5 },
+  keyText: { fontFamily: fonts.ui, fontSize: 11 },
 })

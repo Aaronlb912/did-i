@@ -39,7 +39,6 @@ import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
-import { LampCalendarStrip } from '../components/LampCalendarStrip.jsx'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
@@ -87,7 +86,7 @@ import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
-import { Reveal, useLayoutState } from '../lib/motion.jsx'
+import { pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -189,13 +188,38 @@ function MoveKey({ glyph, label, on, onPress, colors }) {
 
 // One question per row: its short name, the question on one line, then
 // tag, schedule and time. Every line clips, so long words never crowd the list.
-function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove }) {
+// A one-time question whose night has passed: it is done, not paused.
+export function onceIsPast(lamp, dateIso) {
+  if (lamp?.cadence !== 'once') return false
+  const target = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || '').trim()
+  return /^\d{4}-\d{2}-\d{2}$/.test(target) && target < dateIso
+}
+
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle }) {
   if (!items.length) return null
+  const head = (
+    <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
+      {label} · {items.length}
+      {onToggle ? (open ? '  ▾' : '  ▸') : ''}
+    </Text>
+  )
   return (
     <View style={styles.block}>
-      <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
-        {label} · {items.length}
-      </Text>
+      {onToggle ? (
+        <Pressable
+          onPress={onToggle}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          style={({ pressed }) => pressFx(pressed)}
+        >
+          {head}
+        </Pressable>
+      ) : (
+        head
+      )}
+      {open ? (
+      <Reveal key="list" layout={false}>
       <View style={[styles.lampList, { borderColor: colors.lineSoft, backgroundColor: colors.panel }]}>
         {items.map((row, index) => {
           const urgency = dueByUrgency(row.lamp, dateIso)
@@ -258,6 +282,8 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           )
         })}
       </View>
+      </Reveal>
+      ) : null}
     </View>
   )
 }
@@ -399,15 +425,20 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
   const fromOk = (row) => !didYouOnly || row.lamp.fromDidYou
-  const liveRows = rows.filter((row) => !row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row))
+  const [earlierOpen, setEarlierOpen] = useLayoutState(false)
+  const liveRows = rows.filter(
+    (row) => !row.lamp.archived && !onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row),
+  )
   // While ordering, the list shows the plain hand order, not deadlines first.
   const hung = ordering ? liveRows : prepQuestionRows(liveRows, { dateIso, deadlineOnly })
-  const down = prepQuestionRows(rows.filter((row) => row.lamp.archived && hasAnyTopic(row.lamp, picks) && fromOk(row)), {
-    dateIso,
-    deadlineOnly,
-  })
+  const down = prepQuestionRows(
+    rows.filter((row) => row.lamp.archived && !onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row)),
+    { dateIso, deadlineOnly },
+  )
+  // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
+  const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
   const starters = openStarters(book)
-  const shown = [...hung, ...down]
+  const shown = [...hung, ...down, ...(earlierOpen ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
   const chosen = shown.filter((row) => picked.has(rowKey(row)))
   const allOn = shown.length > 0 && chosen.length === shown.length
@@ -703,6 +734,22 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           picked={picked}
           onPick={pick}
         />}
+        {ordering ? null : (
+          <LampBlock
+            label={t('questions.earlier')}
+            items={earlier}
+            shelf={shelf}
+            states={states}
+            dateIso={dateIso}
+            colors={colors}
+            onOpen={onOpen}
+            picking={picking}
+            picked={picked}
+            onPick={pick}
+            open={earlierOpen}
+            onToggle={() => setEarlierOpen((on) => !on)}
+          />
+        )}
       </BoardShell>
     </View>
   )
@@ -1057,7 +1104,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const schedule = schedulePick(draft)
   const tagName = String(hang.tagTitle || '').trim() || book.title
   const ready = Boolean(draft.question.trim())
-  const detailCount = [draft.kind, draft.notes].filter((v) => String(v || '').trim()).length
+  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length
+  const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
   // The short name shows in full, filled with the one made from the question
   // until they type their own, so it never changes behind their back.
@@ -1497,7 +1545,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           <HangFold
             label={t('hang.priority')}
             value={t(`hang.priority.${hang.priority}`)}
-            icon="flag"
+            icon="priority"
             open={open === 'priority'}
             onToggle={() => fold('priority')}
             colors={colors}
@@ -1519,6 +1567,22 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           </HangFold>
 
           <HangFold
+            label={t('hang.kind')}
+            value={topicCount ? topicsOf({ kind: draft.kind }).map(topicLabel).join(', ') : t('hang.detailsNone')}
+            icon="tag"
+            open={open === 'topics'}
+            onToggle={() => fold('topics')}
+            colors={colors}
+          >
+            <TopicPick
+              value={draft.kind}
+              known={shelfTopics(boards.length ? boards : [book])}
+              onChange={(value) => hang.change('kind', value)}
+              colors={colors}
+            />
+          </HangFold>
+
+          <HangFold
             label={t('hang.details')}
             value={
               detailCount
@@ -1531,12 +1595,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             last
             colors={colors}
           >
-            <TopicPick
-              value={draft.kind}
-              known={shelfTopics(boards.length ? boards : [book])}
-              onChange={(value) => hang.change('kind', value)}
-              colors={colors}
-            />
             <FoldInput
               label={t('hang.notes')}
               value={draft.notes}
@@ -1619,7 +1677,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         {lamp.fromName ? (
           <Text style={[styles.lampStatus, { color: colors.inkSoft }]}>{t('lamp.sentBy', { name: lamp.fromName })}</Text>
         ) : null}
-        <LampCalendarStrip book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
       </View>
 
       {lamp.archived ? (

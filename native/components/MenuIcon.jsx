@@ -22,6 +22,8 @@ const ICONS = {
   bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4',
   tag: 'M3 12V4h8l10 10-8 8-10-10ZM7.5 8h.01',
   flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
+  // Rising bars: how much a question matters (Priority). Not the flag, which means So far.
+  priority: 'M6 20v-5M12 20V10M18 20V4',
   pause: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 9v6M14 9v6',
   play: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 8.5v7l5.5-3.5-5.5-3.5Z',
   trash: 'M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v5M14 11v5',

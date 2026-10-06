@@ -134,7 +134,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
@@ -690,6 +690,9 @@ test('So far and Every answer count every folder', () => {
   assert.equal(counts.hung, 2)
   assert.equal(shelfStatsCounts(boards, new Date('2026-10-03T12:00:00'), 'b2').did, 0)
   assert.deepEqual(shelfFeedRows(boards).map((row) => row.answer.id), ['y', 'x'])
+  assert.deepEqual(shelfNoteRows(boards), [], 'no notes, no rows')
+  const noted = [{ ...boards[0], answers: [...boards[0].answers, { id: 'n1', lampId: 'a', periodKey: '2026-10-02', status: 'yes', note: 'ran', answeredAt: '2026-10-02T21:00' }, { id: 'n2', lampId: 'gone', periodKey: '2026-10-02', status: 'yes', note: 'x', answeredAt: '2026-10-02T22:00' }] }, boards[1]]
+  assert.deepEqual(shelfNoteRows(noted).map((row) => row.answer.id), ['n1'], 'notes only, and only on questions that still exist')
   assert.equal(nextStreakGoal(1), 3)
   assert.equal(nextStreakGoal(5), 7)
 })

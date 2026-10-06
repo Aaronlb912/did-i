@@ -2643,4 +2643,12 @@ export const zh = {
   'questions.editMenu': "编辑",
   'questions.editTitle': "编辑你的问题",
   'questions.pickSub': "选择多个来移动、停止或删除。",
+  // r10-questions
+  'questions.earlier': "更早",
+  'we.details': "详情",
+  'notes.title': "笔记",
+  'notes.sub': "你写过的所有笔记",
+  'notes.searchPh': "搜索笔记",
+  'notes.empty': "还没有笔记。打开一个问题，在笔记下点添加笔记。",
+  'notes.seeAll': "查看全部笔记",
 }

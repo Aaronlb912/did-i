@@ -324,6 +324,11 @@ export function shelfFeedRows(boards, tagId = '') {
     .sort((a, b) => String(b.answer.answeredAt).localeCompare(String(a.answer.answeredAt)))
 }
 
+// Every note across the folders in view, newest first. Notes on deleted questions drop out.
+export function shelfNoteRows(boards, tagId = '') {
+  return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
+}
+
 export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
   const books = scopedBooks(boards, tagId)
   const sum = { hung: 0, down: 0, did: 0, late: 0, skip: 0 }
