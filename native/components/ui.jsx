@@ -48,8 +48,8 @@ export function Title({ children, colors }) {
   return <Text style={[styles.title, { color: colors.ink }]}>{children}</Text>
 }
 
-export function Meta({ children, colors }) {
-  return <Text style={[styles.meta, { color: colors.inkSoft }]}>{children}</Text>
+export function Meta({ children, colors, style }) {
+  return <Text style={[styles.meta, { color: colors.inkSoft }, style]}>{children}</Text>
 }
 
 // A loading line that waits 300 ms, so a fast load never flashes it for one frame.

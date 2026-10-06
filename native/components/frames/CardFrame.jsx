@@ -35,7 +35,7 @@ export function framePalette(colors = {}) {
     glow: light ? '#d9a300' : '#e8ff8c',
     spark: light ? colors.ink || '#3a3000' : '#faffd2',
     // Constellation lines need more weight on a light card.
-    lineOpacity: light ? 0.45 : 0.18,
+    lineOpacity: light ? 0.55 : 0.32,
     light,
   }
 }

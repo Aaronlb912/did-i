@@ -40,9 +40,9 @@ const PICKS = 7
 const NOTES_SHOWN = 3
 
 function statusWord(status) {
-  if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t('feed.status.nope')
-  return t('later.did')
+  if (status === 'late') return t('jewelKey.late')
+  if (status === 'skip') return t('jewelKey.nope')
+  return t('jewelKey.did')
 }
 
 function nightLine(lamp, answer) {

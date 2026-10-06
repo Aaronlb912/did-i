@@ -2295,6 +2295,7 @@ export const en = {
   'voice.noMatch': 'Did I could not find "{said}" tonight. Answer it here.',
   'together.widgetTitle': 'Together tonight',
   'together.widgetCount': '{n} of {total} done',
+  'together.noneYet': 'Nobody done yet',
   'together.widgetEmpty': 'Add friends or family in Did I.',
   'pings.kind.family': 'Family tonight',
   'pings.kind.familySub': 'At 9:00 PM, how many in each family are done.',

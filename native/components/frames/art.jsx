@@ -866,7 +866,7 @@ function ConstOver({ f }) {
       const off = (rnd() - 0.5) * 16
       const p = edgePoint(f.w, f.h, (i + rnd() * 0.6) / n)
       const r = 0.8 + rnd() * 1.6
-      return { x: p[0] + off, y: p[1] + off * 0.4, r, ph: rnd() * 9, base: 0.4, amp: 0.6, speed: 1.3 }
+      return { x: p[0] + off, y: p[1] + off * 0.4, r, ph: rnd() * 9, base: 0.55, amp: 0.45, speed: 1.3 }
     })
   }, [f.w, f.h])
   const line = `M ${stars.map((s) => `${s.x} ${s.y}`).join(' L ')} Z`

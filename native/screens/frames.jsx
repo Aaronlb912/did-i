@@ -41,8 +41,9 @@ import { fonts } from '../theme.js'
 export function frameCtxFor(boards, now = new Date()) {
   const list = Array.isArray(boards) ? boards : []
   const today = boardDate(now, list[0]?.dayFoldHour)
-  if (!list.length) return { bestStreak: 0, everFrozen: false, today }
+  if (!list.length) return { bestStreak: 0, streak: 0, everFrozen: false, today }
   return {
+    streak: shelfStreak(list, now),
     bestStreak: Math.max(shelfStreak(list, now), bestShelfStreak(list, now)),
     everFrozen: freezeState(list, now).frozen.size > 0,
     today,

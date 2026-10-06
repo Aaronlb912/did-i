@@ -5,7 +5,7 @@ import { addNotice } from '../../src/lib/notices.js'
 
 // One line of toasts above the tab bar. Undo, marks and errors wait their
 // turn here and ToastHost shows the first. A toast is { id, kind, ... }:
-//   kind 'undo'  { label, hint, until, onPress }  one at a time; a newer undo
+//   kind 'undo'  { label, hint, until, onPress, onShown }  one at a time; a newer undo
 //                                                  replaces the older. It goes
 //                                                  first in line, and ToastHost
 //                                                  sets aside any other toast
@@ -88,10 +88,12 @@ export function useToastQueue() {
  * Offer `undo` (anything with a `label`) as the undo toast while it is set.
  * `owner` keeps two screens' undos apart; a newer one still replaces an older.
  */
-export function useUndoToast(owner, undo, onUndo, total, hint) {
+export function useUndoToast(owner, undo, onUndo, total, hint, onShown) {
   const id = `undo:${owner}`
   const press = useRef(onUndo)
   press.current = onUndo
+  const shown = useRef(onShown)
+  shown.current = onShown
   useEffect(() => {
     if (!undo) {
       dropToast(id)
@@ -107,6 +109,13 @@ export function useUndoToast(owner, undo, onUndo, total, hint) {
       until: now + total,
       total,
       onPress: () => press.current?.(),
+      // Once it has slid in, its clock starts over: the time to undo counts
+      // from when it can be seen and tapped, not from the answer.
+      onShown: () => {
+        if (!toastQueue().some((item) => item.id === id && item.rev === now)) return
+        showToast({ id, until: Date.now() + total })
+        shown.current?.()
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [undo])
