@@ -167,7 +167,7 @@ function PickBox({ on, colors }) {
         { borderColor: on ? colors.onDeep : colors.inkDim, backgroundColor: on ? colors.on : colors.panel2 },
       ]}
     >
-      {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>âœ“</Text> : null}
+      {on ? <Text style={[styles.pickTick, { color: colors.bg }]}>✓</Text> : null}
     </View>
   )
 }
@@ -227,8 +227,8 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
   if (!items.length) return null
   const head = (
     <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
-      {label} Â· {items.length}
-      {onToggle ? (open ? '  â–¾' : '  â–¸') : ''}
+      {label} · {items.length}
+      {onToggle ? (open ? '  ▾' : '  ▸') : ''}
     </Text>
   )
   return (
@@ -259,7 +259,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
             row.lamp.askAfter ? timeLabel(row.lamp.askAfter) : '',
           ]
             .filter(Boolean)
-            .join(' Â· ')
+            .join(' · ')
           return (
             <Pressable
               key={rowId(row)}
@@ -302,11 +302,11 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               </View>
               {onMove ? (
                 <View style={styles.moveKeys}>
-                  <MoveKey glyph="â†‘" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
-                  <MoveKey glyph="â†“" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
+                  <MoveKey glyph="↑" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
+                  <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
                 </View>
               ) : picking ? null : (
-                <Text style={[styles.lampChev, { color: colors.inkDim }]}>â€º</Text>
+                <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>
               )}
             </Pressable>
           )
@@ -321,7 +321,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
 export function SearchBox({ value, onChange, colors, placeholder = t('questions.searchPh') }) {
   return (
     <View style={[styles.search, { borderColor: value ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}>
-      <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>âŒ•</Text>
+      <Text style={[styles.searchGlyph, { color: colors.inkDim }]}>⌕</Text>
       <AppTextInput
         colors={colors}
         value={value}
@@ -340,7 +340,7 @@ export function SearchBox({ value, onChange, colors, placeholder = t('questions.
           accessibilityLabel={t('questions.searchClear')}
           style={styles.searchClear}
         >
-          <Text style={[styles.searchGlyph, { color: colors.ink }]}>Ã—</Text>
+          <Text style={[styles.searchGlyph, { color: colors.ink }]}>×</Text>
         </Pressable>
       ) : null}
     </View>
@@ -365,7 +365,7 @@ function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
         <Text style={[styles.goLabel, { color: lit ? colors.on : colors.ink }]}>{label}</Text>
         <Text style={[styles.goNote, { color: colors.inkSoft }]}>{note}</Text>
       </View>
-      <Text style={[styles.goChev, { color: colors.inkDim }]}>â€º</Text>
+      <Text style={[styles.goChev, { color: colors.inkDim }]}>›</Text>
     </Pressable>
   )
 }
@@ -1501,7 +1501,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     hang.priority === 'high' ? t('hang.metaHigh') : '',
   ]
     .filter(Boolean)
-    .join(' Â· ')
+    .join(' · ')
 
   return (
     <>
@@ -1915,7 +1915,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
     priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp, true),
     t(`hang.priority.${priority}`),
-  ].join(' Â· ')
+  ].join(' · ')
 
   return (
     <BoardShell book={lampBook} title={t('lamp.kicker')} noTitle date={shellDate(lampBook, clock)} colors={colors}>
@@ -2014,7 +2014,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         >
           <View style={styles.summaryRow}>
             <Text style={[styles.summary, styles.summaryText, { color: colors.ink }]}>{summary}</Text>
-            <Text style={[styles.summaryChev, { color: colors.inkDim }]}>â€º</Text>
+            <Text style={[styles.summaryChev, { color: colors.inkDim }]}>›</Text>
           </View>
           <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
             {`${t('hang.tag')}: ${lampBook.title}`}

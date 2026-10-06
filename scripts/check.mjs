@@ -4683,3 +4683,20 @@ test('earned frames use the best streak ever, not just tonight', async () => {
   assert.equal(bestShelfStreak([book], now), 10, 'the 10 nights before the break still count as the best')
   assert.equal(bestShelfStreak([], now), 0)
 })
+
+test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', async () => {
+  const { readdirSync, statSync } = await import('node:fs')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const bad = []
+  // Latin accents (Ã©, Â·) and 3-byte scripts (Japanese, Korean, Chinese) read as Windows-1252.
+  const MANGLED = /Â[ -¿]|Ã[-¿]|[â-ï][-¿Œ-Ÿƒˆ˜–-™]{2}/
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = path.join(dir, name)
+      if (statSync(p).isDirectory()) walk(p)
+      else if (/.(jsx?|mjs|tsx?)$/.test(name) && MANGLED.test(readFileSync(p, 'utf8'))) bad.push(path.relative(root, p))
+    }
+  }
+  for (const dir of ['native', 'src', 'widgets']) walk(path.join(root, dir))
+  assert.deepEqual(bad, [], 'files with mangled characters')
+})
