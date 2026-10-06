@@ -931,7 +931,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="home" label={t('nav.home')} chevron onPress={() => goHash('/tonight')} />
-        <SetRow colors={colors} icon="calendar" label={t('boards.calendar')} sub={t('settings.calendarSub')} chevron onPress={() => goHash('/calendar')} />
+        <SetRow colors={colors} icon="calendar" label={t('settings.history')} sub={t('settings.calendarSub')} chevron onPress={() => goHash('/calendar')} />
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
