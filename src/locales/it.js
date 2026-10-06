@@ -343,6 +343,7 @@ export const it = {
   'pill.late': 'Segnato in ritardo',
   'pill.nope': 'Segnato nope',
   'pill.edit': 'Modifica domanda',
+  'pill.openHint': 'Tocca una domanda per aprirla.',
   'jewelKey.title': 'Cosa indicano i punti',
   'jewelKey.did': 'Fatto',
   'jewelKey.late': 'Fatto in ritardo',

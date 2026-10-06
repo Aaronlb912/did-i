@@ -345,6 +345,7 @@ export const de = {
   'pill.late': 'Als spät markiert',
   'pill.nope': 'Als nope markiert',
   'pill.edit': 'Frage bearbeiten',
+  'pill.openHint': 'Tippe auf eine Frage, um sie zu öffnen.',
   'jewelKey.title': 'Was die Punkte bedeuten',
   'jewelKey.did': 'Erledigt',
   'jewelKey.late': 'Spät erledigt',

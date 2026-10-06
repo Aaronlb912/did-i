@@ -346,6 +346,7 @@ export const es = {
   'pill.late': 'Marcada tarde',
   'pill.nope': 'Marcada nope',
   'pill.edit': 'Editar pregunta',
+  'pill.openHint': 'Toca una pregunta para abrirla.',
   'jewelKey.title': 'Qué significan los puntos',
   'jewelKey.did': 'Hecho',
   'jewelKey.late': 'Hecho tarde',

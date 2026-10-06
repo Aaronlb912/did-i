@@ -334,6 +334,7 @@ export const ko = {
   'pill.late': '늦게로 표시함',
   'pill.nope': 'Nope로 표시함',
   'pill.edit': 'Edit question',
+  'pill.openHint': '질문을 탭하면 열립니다.',
   'jewelKey.title': '점 색깔의 뜻',
   'jewelKey.did': '했음',
   'jewelKey.late': '늦게 했음',

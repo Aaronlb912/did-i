@@ -348,6 +348,7 @@ export const fr = {
   'pill.late': 'Marqué en retard',
   'pill.nope': 'Marqué nope',
   'pill.edit': 'Modifier la question',
+  'pill.openHint': 'Touche une question pour l’ouvrir.',
   'jewelKey.title': 'Ce que veulent dire les points',
   'jewelKey.did': 'Fait',
   'jewelKey.late': 'Fait en retard',

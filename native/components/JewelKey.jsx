@@ -46,8 +46,8 @@ function markSeen() {
 // What the dot on each question pill means. Shown once, on a night after the first.
 export function JewelKey({ colors, onDone }) {
   const rows = [
-    { color: colors.on, label: t('jewelKey.did') },
-    { color: colors.late, label: t('jewelKey.late') },
+    { color: colors.on, label: t('jewelKey.did'), check: true },
+    { color: colors.late, label: t('jewelKey.late'), check: true },
     { color: colors.skip, label: t('jewelKey.nope') },
     { color: colors.open, label: t('jewelKey.open') },
     { color: colors.miss, label: t('jewelKey.due') },
@@ -55,10 +55,15 @@ export function JewelKey({ colors, onDone }) {
   return (
     <View style={[styles.box, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('jewelKey.title')}</Text>
+      <Text style={[styles.label, styles.tap, { color: colors.inkSoft }]}>{t('pill.openHint')}</Text>
       <View style={styles.grid}>
         {rows.map((row) => (
           <View key={row.label} style={styles.row}>
-            <View style={[styles.dot, { backgroundColor: row.color }]} />
+            {row.check ? (
+              <Text style={[styles.check, { color: row.color }]}>✓</Text>
+            ) : (
+              <View style={[styles.dot, { backgroundColor: row.color }]} />
+            )}
             <Text style={[styles.label, { color: colors.inkSoft }]}>{row.label}</Text>
           </View>
         ))}
@@ -88,6 +93,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '50%' },
   dot: { width: 9, height: 9, borderRadius: 5 },
+  check: { fontSize: 13, lineHeight: 15, fontWeight: '700', width: 11, textAlign: 'center' },
+  tap: { marginTop: -4, marginBottom: 10 },
   dash: { width: 16, height: 10, borderRadius: 5, borderWidth: 1, borderStyle: 'dashed' },
   label: { fontFamily: fonts.ui, fontSize: 13 },
   ok: { alignSelf: 'flex-start', marginTop: 12 },

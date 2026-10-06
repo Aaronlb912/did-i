@@ -343,6 +343,7 @@ export const en = {
   'pill.late': 'Marked late',
   'pill.nope': 'Marked nope',
   'pill.edit': 'Edit question',
+  'pill.openHint': 'Tap a question to open it.',
   'jewelKey.title': 'What the dots mean',
   'jewelKey.did': 'Did it',
   'jewelKey.late': 'Did it late',

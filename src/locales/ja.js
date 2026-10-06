@@ -334,6 +334,7 @@ export const ja = {
   'pill.late': '遅れとして記録',
   'pill.nope': 'Nope にしました',
   'pill.edit': 'Edit question',
+  'pill.openHint': '質問をタップすると開きます。',
   'jewelKey.title': '点の色の意味',
   'jewelKey.did': 'できた',
   'jewelKey.late': '遅れてできた',

@@ -334,6 +334,7 @@ export const zh = {
   'pill.late': '已标记迟到',
   'pill.nope': '已标记 Nope',
   'pill.edit': 'Edit question',
+  'pill.openHint': '点一个问题即可打开。',
   'jewelKey.title': '圆点颜色的含义',
   'jewelKey.did': '做了',
   'jewelKey.late': '晚了完成',

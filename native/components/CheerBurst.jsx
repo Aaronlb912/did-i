@@ -22,6 +22,9 @@ import { hallColors, fonts } from '../theme.js'
 import { Slot } from './Slot.jsx'
 
 const CHEER_TOP = 3.6 * 16
+// A real cheer is gone by this long after the tap, so it never sits on the next card.
+const REAL_MAX_MS = 1400
+const REAL_FADE_MS = 300
 
 function toneColor(tone, colors) {
   if (tone === 'gold') return colors.onDeep
@@ -1796,14 +1799,27 @@ export function CheerBurst() {
     return () => window.removeEventListener('did-i-cheer', onCheer)
   }, [reduce])
 
+  // A real cheer plays over Home while the next card comes up, so it fades
+  // out by REAL_MAX_MS instead of sitting on that card. Previews play in full.
+  const fade = useMemo(() => new Animated.Value(1), [])
   useEffect(() => {
     if (!burst) return undefined
-    const timer = setTimeout(
-      () => setBurst(null),
-      holdFor(burst.kind, burst.stage, burst.pops.length),
-    )
-    return () => clearTimeout(timer)
-  }, [burst])
+    const hold = holdFor(burst.kind, burst.stage, burst.pops.length)
+    const end = burst.preview ? hold : Math.min(hold, REAL_MAX_MS)
+    fade.setValue(1)
+    const fadeTimer =
+      end < hold
+        ? setTimeout(
+            () => Animated.timing(fade, { toValue: 0, duration: REAL_FADE_MS, useNativeDriver: true }).start(),
+            end - REAL_FADE_MS,
+          )
+        : null
+    const timer = setTimeout(() => setBurst(null), end)
+    return () => {
+      clearTimeout(timer)
+      if (fadeTimer) clearTimeout(fadeTimer)
+    }
+  }, [burst, fade])
 
   if ((reduce && !burst?.preview) || !burst?.pops?.length) return null
 
@@ -1822,7 +1838,7 @@ export function CheerBurst() {
   const layerStyle = burst.preview ? [styles.layer, styles.layerPreview] : styles.layer
 
   return (
-    <View pointerEvents="none" style={layerStyle} collapsable={false}>
+    <Animated.View pointerEvents="none" style={[layerStyle, { opacity: fade }]} collapsable={false}>
       <Slot key={burst.key}>
         <View style={[styles.stage, { top: shift.top, left: shift.left, width: stageW, height: stageH }]}>
           {screenPop
@@ -1852,7 +1868,7 @@ export function CheerBurst() {
           ))}
         </View>
       </Slot>
-    </View>
+    </Animated.View>
   )
 }
 

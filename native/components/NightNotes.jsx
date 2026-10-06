@@ -198,8 +198,10 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 }
 
 // Inside the sheet: pick a question, then write its note in place.
-function NotePick({ answered, colors, onSave }) {
-  const [open, setOpen] = useState(null)
+function NotePick({ answered, colors, onSave, onCancel }) {
+  // One question (a card picked on Home): straight to its note box.
+  const only = answered.length === 1 ? answered[0] : null
+  const [open, setOpen] = useState(only ? { lampId: only.lamp.id, periodKey: only.answer.periodKey } : null)
   const row = open && answered.find((item) => item.lamp.id === open.lampId && item.answer.periodKey === open.periodKey)
   if (row) {
     return (
@@ -209,7 +211,7 @@ function NotePick({ answered, colors, onSave }) {
           initial={row.answer.note}
           colors={colors}
           onSave={(draft) => onSave(row, draft)}
-          onCancel={() => setOpen(null)}
+          onCancel={only ? onCancel : () => setOpen(null)}
         />
       </Reveal>
     )

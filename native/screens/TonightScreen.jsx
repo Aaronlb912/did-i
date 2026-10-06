@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
@@ -167,7 +167,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const [keySeen, setKeySeen] = useState(() => jewelKeySeen())
   // Account prefs land after a reinstall; seen there hides it too.
   const prefsSeen = usePrefs().jewelKeySeen === true
-  const topics = shelfTopics(boards && boards.length ? boards : [book])
+  const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
   useFreezeToasts(colors, stack.shelf, stack.clock)
@@ -318,14 +318,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     flyBackNext()
     applyUndo()
   }, [applyUndo])
-  // A Did on last night's card after its nope is saved as late; the toast says so.
-  const lateNext = useRef(false)
-  const lateUndo = useRef({ undo: null, late: false })
-  if (stack.undo !== lateUndo.current.undo) {
-    lateUndo.current = { undo: stack.undo, late: Boolean(stack.undo) && lateNext.current }
-    lateNext.current = false
-  }
-  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, lateUndo.current.late ? t('tonight.undoLate') : t('tonight.undoTap'))
+  // The toast's label says what was saved (Marked Did, nope or late).
+  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'))
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
@@ -387,10 +381,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
       title: row.lamp.question,
       late: didStatusForRow(row) === 'late',
-      onDid: () => {
-        lateNext.current = didStatusForRow(row) === 'late'
-        stack.markGrace(row, 'yes')
-      },
+      onDid: () => stack.markGrace(row, 'yes'),
       onNope: () => stack.markGrace(row, 'skip'),
       buddy: activeBuddy(stack.bookOf(row)),
     })),
@@ -487,9 +478,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     answerBar = (
     <View style={styles.answerBar}>
       <View style={styles.answerRow}>
-        <View style={styles.answerCell}>
-          <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={onNope} />
-        </View>
+        {onNope ? (
+          <View style={styles.answerCell}>
+            <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={onNope} />
+          </View>
+        ) : null}
         <View style={styles.answerCell}>
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
@@ -738,6 +731,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         {isNew && (status === 'yes' || status === 'late') ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkDim }]}>{t('pill.doneFinal')}</Text>
         ) : null}
+        <View style={styles.actions}>
+          <TonightNote rows={[pillRow]} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
+        </View>
       </GemFaceShell>
     )
   } else if (stack.bodyKind === 'pill' && stack.pillPick) {
@@ -746,6 +742,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const status = pillRow.answer?.status || ''
     const isDid = status === 'yes' || status === 'late'
     const pillKey = `${stack.rowKey(pillRow)}:${status || 'open'}`
+    const pillKeys = stack.recentPeriodKeys(pillRow.lamp, stack.dateIso, 7)
+    const pillHistory = pillKeys.some((key) => answerFor(pillBook, pillRow.lamp.id, key))
     const pillMeta =
       pillRow.dateIso && !mustSwipeDeadline(pillRow.lamp, pillRow.dateIso)
         ? t('tonight.deadlineOptional', { date: formatBoardDate(pillRow.lamp.dueBy) })
@@ -771,8 +769,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         frame={cardFrame}
       >
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
+        {pillHistory ? (
+          <NightStrip
+            book={pillBook}
+            lamp={pillRow.lamp}
+            keys={pillKeys}
+            colors={colors}
+            onPickHole={(lamp, key) => stack.pickHole(lamp, key, pillRow)}
+          />
+        ) : null}
       </SwipeCardHost>
     )
+    // Picked from the pills: the same Did and Nope as the stack. A noped one
+    // can still take a Did (late), never a second nope.
+    face = withAnswerButtons(face, () => stack.mark(pillRow, 'yes'), status === 'skip' ? null : () => stack.mark(pillRow, 'skip'))
   } else if (stack.bodyKind === 'off') {
     face = (
       <GemFaceShell look={premium ? look : ''}
@@ -842,6 +852,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       {showChips ? (
         <FadeScroll fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
           <Slot>{tagFilter}</Slot>
+          {/* The filter picks a folder; each pill after the line opens one question. */}
+          {(stack.shelf || []).filter((item) => !item.archived).length >= 2 || topics.length > 0 ? (
+            <View style={[styles.jewelsRule, { backgroundColor: colors.line }]} />
+          ) : null}
           {stack.dueWithWait.map((row) => {
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
             const skip = row.answer?.status === 'skip'
@@ -1011,6 +1025,7 @@ const styles = StyleSheet.create({
   answerCell: { flex: 1 },
   swipeHint: { textAlign: 'center', marginTop: 10 },
   jewels: { flexGrow: 0, marginBottom: 12 },
+  jewelsRule: { width: StyleSheet.hairlineWidth * 2, height: 24, marginHorizontal: 2 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
   back: {
     alignSelf: 'flex-start',
