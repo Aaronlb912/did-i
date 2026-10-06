@@ -283,9 +283,9 @@ export function feelTap(kind) {
   feel(kind)
 }
 
-export function playClick() {
-  Haptics.selectionAsync().catch(() => {})
-}
+// The phone has no Did sound (the website's click is Web Audio), so there is
+// nothing to play and no setting for it.
+export function playClick() {}
 
 export async function passAlong(text, title) {
   const line = String(text || '')

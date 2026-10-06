@@ -323,14 +323,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => goHash('/pings')}
         />
-        <SetSwitch
-          colors={colors}
-          icon="volume"
-          tint={colors.on}
-          label={t('settings.soundOn')}
-          on={Boolean(book?.clickSound)}
-          onPress={() => onChange?.({ ...book, clickSound: !book.clickSound })}
-        />
         <SetRow
           colors={colors}
           icon="folder"
