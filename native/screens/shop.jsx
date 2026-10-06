@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dimensions, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
@@ -94,7 +94,8 @@ import { useLookColors } from '../hooks/useHallColors.js'
 import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
-import { previewSample } from '../../src/lib/board-shelf.js'
+import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { motionOff, pressFx, Reveal } from '../lib/motion.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
@@ -179,9 +180,11 @@ function sampleFor(cap) {
 // Collection draws the frame you wear around every preview, like your Home card.
 function WornFrame({ frameId, colors, children }) {
   const active = useFrameActive(useIsFocused())
+  // Your real streak, so Polaroid's caption matches Home.
+  const streak = useMemo(() => shelfStreak(readShelf().boards, new Date()), [])
   if (!frameId) return children
   return (
-    <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={7} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
+    <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={streak} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
       {children}
     </CardFrame>
   )
@@ -209,7 +212,8 @@ function BuddyPreviewCard({ id, colors, cap, room, frameId }) {
 
 // A look shown in its own colours, not the page's ambient ones, so it reads
 // true whether the page is peeking a coin look or a gem look.
-function LookPreviewCard({ id, cap, room, frameId }) {
+// buddyId: Collection shows your buddy on every tab, like your Home card.
+function LookPreviewCard({ id, cap, room, frameId, buddyId }) {
   const sample = sampleFor(cap)
   const theme = useTheme()
   const colors = useLookColors(id)
@@ -228,6 +232,7 @@ function LookPreviewCard({ id, cap, room, frameId }) {
             gemCard,
           ]}
         >
+          {buddyId ? <BuddyHang id={buddyId} alive /> : null}
           <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
           <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
         </View>
@@ -242,31 +247,10 @@ function LookPreviewCard({ id, cap, room, frameId }) {
 // Collection previews. It moves while this screen is in front.
 const SAMPLE_WEEK = [true, true, true, true, false, true, true]
 
-function FramePreviewCard({ lookId, frameId }) {
-  const theme = useTheme()
-  const colors = useLookColors(lookId)
-  const gemCard = gemPanelStyle(lookId, theme)
-  const active = useFrameActive(useIsFocused())
-  return (
-    <View style={styles.buddyPreview}>
-      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
-      <View style={styles.kitPreviewRoom}>
-        <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={7} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
-          <View
-            style={[
-              styles.buddyPreviewCard,
-              styles.buddyPreviewCardGem,
-              { backgroundColor: colors.panel, borderColor: gemCard ? 'transparent' : colors.line },
-              gemCard,
-            ]}
-          >
-            <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-            <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
-          </View>
-        </CardFrame>
-      </View>
-    </View>
-  )
+// The same card as the Looks and Cheers tabs, so the frame art (First
+// light's moon) and the buddy sit exactly as they do there.
+function FramePreviewCard({ lookId, frameId, buddyId }) {
+  return <LookPreviewCard id={lookId} room frameId={frameId} buddyId={buddyId} />
 }
 
 // The look being tried, or the one worn, as its own Tonight card. A new look
@@ -373,8 +357,8 @@ function slideHead(slide) {
       title: t('shop.coming', { date: formatBoardDate(slide.date) }),
     }
   }
-  if (slide.kind === 'drop') return { kicker: '', title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
-  return { kicker: '', title: t('shop.freshTitle') }
+  if (slide.kind === 'drop') return { kicker: t('shop.outNow'), title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
+  return { kicker: t('shop.outNow'), title: t('shop.freshTitle') }
 }
 
 // The drop carousel: the Coming drop first, then recent drops. Swipe sideways.
@@ -385,41 +369,47 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
   const [at, setAt] = useState(0)
   const pager = useRef(null)
   if (!slides.length) return null
+  // A FlatList pager with plain pagingEnabled. The old ScrollView set the page
+  // on every scroll event, so the first drag re-rendered every slide and
+  // changed the height under the banner mid-gesture (the hidden push link),
+  // and snapToInterval + disableIntervalMomentum on top of paging made a
+  // short fast fling snap back. Now the page only changes when it settles.
+  const settle = (e) => {
+    const n = Math.round(e.nativeEvent.contentOffset.x / width)
+    if (n !== at) setAt(n)
+  }
   return (
-    <View style={styles.carousel} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+    <View
+      style={styles.carousel}
+      onLayout={(e) => {
+        const next = e.nativeEvent.layout.width
+        if (Math.abs(next - width) > 1) setWidth(next)
+      }}
+    >
       {width ? (
-        <ScrollView
+        <FlatList
           ref={pager}
+          data={slides}
           horizontal
           pagingEnabled
           nestedScrollEnabled
-          directionalLockEnabled
-          decelerationRate="fast"
-          disableIntervalMomentum
-          snapToInterval={width}
-          snapToAlignment="start"
           showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={32}
-          onScroll={(e) => {
-            const n = Math.round(e.nativeEvent.contentOffset.x / width)
-            if (n !== at) setAt(n)
-          }}
-          onMomentumScrollEnd={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / width))}
-        >
-          {slides.map((slide, i) => {
+          keyExtractor={(slide) => `${slide.kind}-${slide.date}`}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          initialNumToRender={slides.length}
+          onMomentumScrollEnd={settle}
+          renderItem={({ item: slide, index: i }) => {
             const head = slideHead(slide)
             const coming = slide.kind === 'coming'
             return (
               <View
-                key={`${slide.kind}-${slide.date}`}
                 accessibilityLabel={t('shop.slideN', { n: i + 1, total: slides.length })}
                 style={[
                   styles.slide,
                   { width, borderColor: coming ? colors.on : colors.line, backgroundColor: colors.panel },
                 ]}
               >
-                {/* Every page keeps the kicker line, so a short page has no gap at the bottom. */}
-                <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker || ' '}</Text>
+                <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker}</Text>
                 <Text style={[styles.slideTitle, { color: colors.ink }]}>{head.title}</Text>
                 <View style={styles.slideGrid}>
                   {slide.items.map(({ type, item }) => (
@@ -434,10 +424,11 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
                     />
                   ))}
                 </View>
+                {foot ? foot(slide) : null}
               </View>
             )
-          })}
-        </ScrollView>
+          }}
+        />
       ) : null}
       {slides.length > 1 ? (
         <View style={styles.dots}>
@@ -451,7 +442,7 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
               hitSlop={10}
               onPress={() => {
                 setAt(i)
-                pager.current?.scrollTo({ x: i * width, animated: !motionOff() })
+                pager.current?.scrollToOffset({ offset: i * width, animated: !motionOff() })
               }}
             >
               <View style={[styles.dot, { backgroundColor: i === at ? colors.on : colors.line }]} />
@@ -459,7 +450,6 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
           ))}
         </View>
       ) : null}
-      {foot ? foot(slides[at] || slides[0]) : null}
     </View>
   )
 }
@@ -1000,20 +990,16 @@ export function ShopScreen({ book, onChange }) {
         purse={purse}
         colors={colors}
         onTile={onTile}
-        // The link shows on the coming page only, but its space stays on
-        // every page so nothing below jumps on a swipe.
+        // The link sits inside the coming page only. Pages share one height,
+        // so nothing below jumps on a swipe and other pages keep no blank strip.
         foot={(slide) => {
-          if (prefs.dropPings || !slides.some((item) => item.kind === 'coming')) return null
-          const shown = slide?.kind === 'coming'
+          if (prefs.dropPings || slide?.kind !== 'coming') return null
           return (
             <Pressable
               accessibilityRole="link"
-              accessibilityElementsHidden={!shown}
-              importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}
-              disabled={!shown}
               onPress={() => goHash('/pings')}
               hitSlop={8}
-              style={[styles.dropLink, !shown && styles.dropLinkHidden]}
+              style={styles.dropLink}
             >
               <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
             </Pressable>
@@ -1949,7 +1935,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const firstWorn = ACCESSORY_SLOTS.map((slot) => purse.worn[slot]).find(Boolean)
   const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
   const kinds = {
-    looks: { art: <LookChip id={purse.lookOn} colors={colors} />, n: looks.length, of: LOOKS.length },
+    looks: { art: <LookChip id={purse.lookOn} colors={colors} plain={tab !== 'looks'} />, n: looks.length, of: LOOKS.length },
     frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
     cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
     buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
@@ -1991,12 +1977,12 @@ export function CollectionScreen({ book, onChange, startTab }) {
       <Reveal key={tab}>
       <Text style={[styles.kitWearing, { color: colors.ink }]}>{wearingLine}</Text>
 
-      {tab === 'frames' ? <FramePreviewCard lookId={purse.lookOn} frameId={frameInfo.worn} /> : null}
+      {tab === 'frames' ? <FramePreviewCard lookId={purse.lookOn} frameId={frameInfo.worn} buddyId={purse.buddyOn} /> : null}
       {tab === 'frames' ? <FramesCollection book={book} colors={colors} onChange={onChange} /> : null}
 
       {tab === 'looks' ? (
         <>
-        <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} />
+        <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} buddyId={purse.buddyOn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {looks.map((item) => (
             <KitTile
@@ -2091,7 +2077,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'cheers' ? (
         <>
-          <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} />
+          <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} buddyId={purse.buddyOn} />
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {cheers.map((item) => {
               const play = cheerPlayOf(book, item.id)
@@ -2348,8 +2334,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  dropLink: { alignSelf: 'flex-start', marginTop: 4, marginBottom: 8 },
-  dropLinkHidden: { opacity: 0 },
+  dropLink: { alignSelf: 'flex-start', marginTop: 6 },
   ownAllLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 6 },
   promoShelf: { gap: 8, marginTop: 4 },
   carousel: { gap: 8, marginTop: 4 },

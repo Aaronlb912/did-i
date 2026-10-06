@@ -79,10 +79,12 @@ export function coinNights(shelf, now = new Date(), days = 7) {
 
 // Signed in, the server's numbers win, but the list keeps every local night
 // so a 0 night still shows. A reason stays only while the two agree.
-export function mergeCoinNights(local, server) {
+// Tonight (today) always comes from your own answers, the same ones Home
+// counts, so a server row that lags or leads them never shows a wrong number.
+export function mergeCoinNights(local, server, today = '') {
   const paid = new Map((server || []).map((row) => [row.night, row.coins]))
   return (local || []).map((row) => {
-    if (!paid.has(row.night)) return row
+    if (!paid.has(row.night) || row.night === today || row.reason === 'open') return row
     const coins = paid.get(row.night)
     return coins === row.coins ? row : { night: row.night, coins, reason: '' }
   })

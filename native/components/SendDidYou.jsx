@@ -250,11 +250,6 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                     disabled={busy || !question.trim()}
                     onPress={send}
                   />
-                  <KeyButton
-                    colors={colors}
-                    label={t("settings.neverMind")}
-                    onPress={onClose}
-                  />
                 </View>
                 <KeyButton
                   colors={colors}
@@ -274,6 +269,10 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                 }}
               />
             ) : null}
+            {/* Cancel goes last, after every way to send. */}
+            {linkOnly ? null : (
+              <KeyButton colors={colors} label={t("settings.neverMind")} onPress={onClose} />
+            )}
             </Reveal>
             )}
           </Pressable>

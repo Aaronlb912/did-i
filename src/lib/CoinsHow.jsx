@@ -3,7 +3,7 @@ import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from './coin-
 import { readShelf } from './board-shelf.js'
 import { t } from './i18n.js'
 import { COIN_RULES } from './night-why.js'
-import { formatBoardDate } from './recurrence.js'
+import { boardDate, formatBoardDate } from './recurrence.js'
 import { accountSessionOn } from './session-id.js'
 import { readCoinHistory } from './wallet.js'
 import { goHash } from '../site/hash.js'
@@ -29,7 +29,7 @@ export function CoinsHow({ onClose }) {
     let live = true
     readCoinHistory()
       .then((next) => {
-        if (live && next) setHist((was) => ({ ...was, nights: mergeCoinNights(coinNights(readShelf()), next.nights), gemWeek: next.gemWeek }))
+        if (live && next) setHist((was) => ({ ...was, nights: mergeCoinNights(coinNights(readShelf()), next.nights, boardDate(new Date(), was.fold)), gemWeek: next.gemWeek }))
       })
       .catch(() => {})
     return () => {

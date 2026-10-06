@@ -62,6 +62,13 @@ export function ToastHost({ colors }) {
     setShown(head)
   }, [head, pause, shown])
 
+  // A new undo never waits behind another toast. The one on screen steps
+  // aside, still in the queue, and comes back after the undo.
+  useEffect(() => {
+    if (!shown || shown.kind === 'undo' || head?.kind !== 'undo') return
+    setShown(null)
+  }, [head, shown])
+
   const gone = useCallback((id) => {
     dropToast(id)
     setShown(null)
@@ -210,6 +217,12 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       goHash('/we', { id: item.cardId })
       leave(0, FROM_Y)
     }
+  } else if (item.kind === 'mark') {
+    // A new achievement opens the achievements page, where the rest wait too.
+    press = () => {
+      goHash('/marks')
+      leave(0, FROM_Y)
+    }
   } else if (item.onPress) {
     // A plain or done toast that opens something (a streak freeze sheet).
     press = () => {
@@ -222,6 +235,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   let label
   if (item.kind === 'undo') label = `${item.label} ${item.hint}`
   else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
+  else if (item.kind === 'mark') label = markA11y(item.mark)
   else if (item.kind === 'we' || item.kind === 'done' || !item.kind) label = item.text || t('confirm.done')
 
   return (
@@ -317,23 +331,31 @@ function CountdownRing({ until, total, colors, reduce }) {
   )
 }
 
+function markA11y(mark = {}) {
+  return [
+    t('marks.new'),
+    markLabel(mark.id, 'name'),
+    mark.id ? markLabel(mark.id, 'line') : '',
+    mark.more ? t('marks.more', { n: mark.more }) : '',
+  ]
+    .filter(Boolean)
+    .join('. ')
+}
+
+// Two lines, so it fits the toast room under Did and Nope. The line that says
+// what it is for waits on the achievements page, one tap away.
 function MarkBody({ item, colors, onOk }) {
   const mark = item.mark || {}
   return (
     <>
       <View style={styles.copy}>
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('marks.new')}</Text>
+        <Text style={[styles.kicker, { color: colors.on }]} numberOfLines={1}>
+          {t('marks.new')}
+          {mark.more ? <Text style={{ color: colors.inkDim }}>{`  ·  ${t('marks.more', { n: mark.more })}`}</Text> : null}
+        </Text>
         <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
           {markLabel(mark.id, 'name')}
         </Text>
-        {mark.id ? (
-          <Text style={[styles.line, { color: colors.inkSoft }]} numberOfLines={2}>
-            {markLabel(mark.id, 'line')}
-          </Text>
-        ) : null}
-        {mark.more ? (
-          <Text style={[styles.line, { color: colors.inkDim }]}>{t('marks.more', { n: mark.more })}</Text>
-        ) : null}
       </View>
       <KeyButton label={t('marks.ok')} colors={colors} onPress={onOk} />
     </>

@@ -110,7 +110,19 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
   )
 }
 
-export function Row({ label, note, onPress, colors }) {
+// children: actions that belong to this row (Copy, Share), drawn inside its card.
+export function Row({ label, note, onPress, colors, children }) {
+  if (children && !onPress) {
+    return (
+      <View style={[styles.row, styles.rowStack, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
+          {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+        </View>
+        {children}
+      </View>
+    )
+  }
   return (
     // No onPress: a plain info row, no chevron and no press state.
     <Pressable
@@ -213,6 +225,7 @@ const styles = StyleSheet.create({
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowText: { flex: 1, gap: 4 },
+  rowStack: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
   rowChev: { fontSize: 22, lineHeight: 24 },
   rowLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   rowNote: { fontFamily: fonts.ui, fontSize: 13 },

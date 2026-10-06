@@ -268,6 +268,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
+  // A picked card keeps its folder label in one place before and after its answer.
+  const pickedPanel = { ...(gemCard || {}), justifyContent: 'flex-start' }
   // Folders and topics are the first chip of the question row, not a row of their own.
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
   // The folder name under each chip only helps when the chips come from more than one folder.
@@ -730,7 +732,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     const status = pillRow.answer?.status || ''
     face = (
       <GemFaceShell look={premium ? look : ''}
-        theme={theme} style={staticCardStyle} buddy={activeBuddy(pillBook)}>
+        theme={theme} style={faceCardStyle(colors, pickedPanel)} buddy={activeBuddy(pillBook)}>
         <EditPen
           onPress={() => goHash('/hang', { id: pillRow.lamp.id })}
           colors={colors}
@@ -765,7 +767,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         key={`pill:${pillKey}`}
         cardKey={pillKey}
         colors={colors}
-        panelStyle={gemCard}
+        panelStyle={pickedPanel}
         gemLook={premium ? look : ''}
         kicker={cardKicker(pillRow, '')}
         title={pillRow.lamp.question}
@@ -827,7 +829,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       topicPicks={picks}
       onTopics={setTopicPicks}
       inline={showChips}
-      noCount
     />
   )
 

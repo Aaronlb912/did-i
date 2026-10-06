@@ -9,7 +9,7 @@
 import { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { FRAME_ART } from './art.jsx'
-import { svgAll, useFrameClock } from './runtime.jsx'
+import { STILL_CLOCK, svgAll, useFrameClock } from './runtime.jsx'
 
 function luminance(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''))
@@ -40,7 +40,17 @@ export function framePalette(colors = {}) {
  * answered, total, weekLit [7 bools, Monday first], frozenRecently, date,
  * radius (the card's corner radius, default 24), children, style.
  */
-export function CardFrame({
+export function CardFrame(props) {
+  return props.still ? <FrameBody {...props} clock={STILL_CLOCK} /> : <LiveFrame {...props} />
+}
+
+function LiveFrame(props) {
+  const art = props.id ? FRAME_ART[props.id] : null
+  const clock = useFrameClock(Boolean(art && art.animated && props.active))
+  return <FrameBody {...props} clock={clock} />
+}
+
+function FrameBody({
   id,
   colors,
   active = false,
@@ -52,13 +62,13 @@ export function CardFrame({
   date,
   radius = 24,
   fixedSize,
+  clock,
   children,
   style,
 }) {
   const art = id ? FRAME_ART[id] : null
   const [size, setSize] = useState(fixedSize || null)
-  const animated = Boolean(art && art.animated && active)
-  const clock = useFrameClock(animated)
+  const animated = Boolean(art && art.animated && active && !clock.still)
   const c = useMemo(() => framePalette(colors), [colors])
 
   const onLayout = (event) => {
@@ -70,7 +80,7 @@ export function CardFrame({
 
   const ready = size && size.w > 0 && size.h > 0 && svgAll()
   const f = ready
-    ? { w: size.w, h: size.h, R: radius, c, clock, active: animated, p: { streak, answered, total, weekLit, frozenRecently, date } }
+    ? { w: size.w, h: size.h, R: radius, c, clock, active: animated, still: Boolean(clock.still), p: { streak, answered, total, weekLit, frozenRecently, date } }
     : null
   const Under = art.under
   const Over = art.over

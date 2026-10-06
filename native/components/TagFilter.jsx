@@ -10,7 +10,7 @@ import { fonts } from '../theme.js'
 // It floats over the page, so nothing below moves, and scrolls when the list
 // is long. Tap to add or remove; "All" clears a section. Done or a tap
 // outside closes it.
-export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false, noCount = false }) {
+export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false }) {
   const [open, setOpen] = useState(false)
   const [at, setAt] = useState(null)
   const button = useRef(null)
@@ -32,7 +32,6 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const topicPart =
     topicPicks.length === 0 ? '' : topicPicks.length === 1 ? topicLabel(topicPicks[0]) : t('topics.some', { n: topicPicks.length })
   const label = topicPart ? (picked.length ? `${folderPart} · ${topicPart}` : topicPart) : folderPart
-  const count = picked.length ? leftoverOn(live, clock, tagId) : allLeft
   const filtering = Boolean(tagId) || topicPicks.length > 0
 
   function toggleTag(id) {
@@ -110,7 +109,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         >
           {label}
         </Text>
-        {count && showFolders && !topicPicks.length && !noCount ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
+        {/* No count on the pill: it showed what is left tonight, not what the filter holds. */}
       </Pressable>
       {filtering ? (
         <Pressable
@@ -222,7 +221,6 @@ const styles = StyleSheet.create({
   pickInline: { minHeight: 40, paddingHorizontal: 12, maxWidth: 120 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
-  count: { fontFamily: fonts.mono, fontSize: 11 },
   backdrop: { flex: 1 },
   menu: {
     position: 'absolute',

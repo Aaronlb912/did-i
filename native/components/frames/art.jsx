@@ -50,14 +50,14 @@ function Ring({ f, k, color, width, opacity = 1, dash, cap }) {
 /** A fake blur: thin strokes stepping outward with falling opacity. */
 function Halo({ f, from = 0, spread = 14, color, opacity = 0.45, inward = 0 }) {
   const S = svgAll()
-  const steps = Math.max(3, Math.round(spread / 2))
+  const steps = f.still ? 3 : Math.max(3, Math.round(spread / 2))
   const out = []
   for (let i = 0; i < steps; i++) {
     const k = from - 1 - i * 2
     const a = opacity * Math.pow(1 - i / steps, 1.6)
     out.push(<S.Path key={`o${i}`} d={rrPath(k, k, f.w - 2 * k, f.h - 2 * k, Math.max(0, f.R - k))} fill="none" stroke={color} strokeWidth={2} strokeOpacity={a} />)
   }
-  const inSteps = Math.round(inward / 2)
+  const inSteps = Math.min(f.still ? 2 : 99, Math.round(inward / 2))
   for (let i = 0; i < inSteps; i++) {
     const k = from + 1 + i * 2
     const a = opacity * 0.6 * Math.pow(1 - i / inSteps, 1.6)
@@ -133,7 +133,7 @@ function SpinConic({ f, o, colors, period, opacity = 1 }) {
   const W = f.w + 2 * o
   const H = f.h + 2 * o
   const D = Math.ceil(Math.hypot(W, H)) + 4
-  const wedges = useMemo(() => conicWedges(D / 2, D / 2, D / 2 + 2, smoothConic(colors, 72)), [D, colors])
+  const wedges = useMemo(() => conicWedges(D / 2, D / 2, D / 2 + 2, smoothConic(colors, f.still ? 12 : 72)), [D, colors, f.still])
   const spin = (time) => {
     'worklet'
     return { transform: [{ rotate: `${((time / period) % 1) * 360}deg` }] }
@@ -321,7 +321,8 @@ function PolaroidUnder({ f }) {
     label = day.toDateString()
   }
   const n = Number(f.p.streak) || 0
-  if (n > 0) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
+  // Thumbnails show the date only: a sample number would read as your streak.
+  if (n > 0 && !f.still) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
   return (
     <Layer f={f}>
       <S.Rect x={-12} y={-10} width={f.w + 24} height={f.h + 54} rx={f.R + 12} fill="#000000" opacity={0.18} />
@@ -341,7 +342,8 @@ function WoodUnder({ f }) {
   const cy = -10 + 1.2 * H
   const r = Math.hypot(Math.max(cx + 10, W - cx - 10), cy + 10) + 4
   const stops = useMemo(() => {
-    const band = Math.max(18, r / 28)
+    // A thumbnail needs only a few grain rings.
+    const band = f.still ? r / 6 : Math.max(18, r / 28)
     const k = band / 18
     const parts = [[0, 6, '#8a5a33'], [6, 9, '#7a4c29'], [9, 15, '#94643b'], [15, 18, '#6f4424']]
     const out = []
@@ -351,7 +353,7 @@ function WoodUnder({ f }) {
       }
     }
     return out
-  }, [r])
+  }, [r, f.still])
   return (
     <Layer f={f}>
       <S.Defs>
@@ -556,7 +558,7 @@ function MarbleUnder({ f }) {
   const veins = useMemo(() => {
     const rnd = seeded(7)
     const out = []
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < (f.still ? 4 : 9); i++) {
       const y0 = -10 + rnd() * H
       const y1 = y0 + (rnd() - 0.3) * H * 0.7
       out.push({
@@ -566,7 +568,7 @@ function MarbleUnder({ f }) {
       })
     }
     return out
-  }, [W, H])
+  }, [W, H, f.still])
   return (
     <Layer f={f}>
       <S.Defs>

@@ -101,7 +101,8 @@ function chipShell(colors, bg, glow, chipShadow, borderless = false) {
   return shell
 }
 
-export function LookChip({ id, colors }) {
+// plain: no glow or ring, for a tile that is not selected (a glow reads as selected).
+export function LookChip({ id, colors, plain = false }) {
   const theme = useTheme()
   const meta = isGemLook(id) ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
   const on = meta.on
@@ -112,7 +113,7 @@ export function LookChip({ id, colors }) {
     height: dot,
     borderRadius: dot / 2,
     backgroundColor: on,
-    ...(meta.dotGlow
+    ...(meta.dotGlow && !plain
       ? {
           shadowColor: meta.dotGlow,
           shadowOffset: { width: 0, height: 0 },
@@ -122,7 +123,7 @@ export function LookChip({ id, colors }) {
       : null),
   })
   const chipBg = meta.bg
-  const chipGlow = meta.glow
+  const chipGlow = plain ? null : meta.glow
   const chip = (
     <View style={[styles.lookChip, chipShell(colors, chipBg, chipGlow, meta.chipShadow, id === 'glow')]}>
       {premium && meta.ring && id !== 'glow' ? (
@@ -134,7 +135,7 @@ export function LookChip({ id, colors }) {
     </View>
   )
 
-  if (!premium) return chip
+  if (!premium || plain) return chip
 
   if (id === 'glow') {
     return (
