@@ -17,6 +17,21 @@ function dateLocale(code) {
   return code || 'en'
 }
 
+// What a screen reader hears for one day: "October 1, Cleared".
+function dayLabel(night, locale) {
+  const date = new Date(`${night.iso}T12:00:00`).toLocaleDateString(locale, { month: 'long', day: 'numeric' })
+  const state = night.empty
+    ? ''
+    : night.on
+      ? t('cal.keyCleared')
+      : night.freeze
+        ? t('freeze.dot')
+        : night.miss
+          ? t('cal.keyMissed')
+          : t('later.tonight')
+  return t('cal.day', { date: state ? `${date}, ${state}` : date })
+}
+
 function dowMarks(locale) {
   return [0, 1, 2, 3, 4, 5, 6].map((day) => {
     const date = new Date(2026, 8, 6 + day)
@@ -142,7 +157,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             <Pressable
               key={night.iso}
               accessibilityRole="button"
-              accessibilityLabel={t('cal.day', { date: night.iso })}
+              accessibilityLabel={dayLabel(night, locale)}
               onPress={() => openDay(night.iso)}
               style={[
                 styles.day,
@@ -256,7 +271,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                   <Pressable
                     key={night.iso}
                     accessibilityRole="button"
-                    accessibilityLabel={t('cal.day', { date: night.iso })}
+                    accessibilityLabel={dayLabel(night, locale)}
                     onPress={() => openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId })}
                     hitSlop={2}
                     style={styles.miniCell}

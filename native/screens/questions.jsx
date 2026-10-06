@@ -51,7 +51,7 @@ import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
-import { rowKey, taggedLamps } from '../../src/lib/tags.js'
+import { rowKey, tagIdsOf, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
@@ -82,7 +82,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
+import { behindPath, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
@@ -598,7 +598,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       onClose: () => publishSheet(null),
       content: (
         <View style={styles.editMenu}>
-          {folders.map((item) => {
+          {/* The folder they sit in now leads, so "Here now" is never cut off at the bottom. */}
+          {[...folders.filter((item) => from.has(item.id)), ...folders.filter((item) => !from.has(item.id))].map((item) => {
             // Every picked question already sits here: nothing to move.
             const here = from.size === 1 && from.has(item.id)
             return (
@@ -862,6 +863,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                   label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
                   onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
                 />
+                {/* The count and Done ride along here too, so they never scroll away. */}
+                <Text style={[styles.pickCount, styles.flex1, { color: colors.ink }]} numberOfLines={1}>
+                  {t('questions.pickedN', { n: chosen.length })}
+                </Text>
+                <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
               </View>
               <View style={styles.pickActions}>
                 <KeyButton
@@ -1168,6 +1174,15 @@ function FoldInput({ label, colors, multiline, ...props }) {
 
 // initialBlank / onBlankChange carry the words across when the Add screen
 // switches between Did I, Did we and Did you; onLeadPress opens that choice.
+// A new question goes in the folder being shown. With every folder shown
+// (ALL), it goes in the first folder in the list, never a last-used one.
+function newFolderTitle(boards, book, tagId) {
+  const live = (boards.length ? boards : [book]).filter((item) => !item.archived)
+  const ids = tagIdsOf(tagId)
+  const shownOne = ids.length === 1 ? live.find((item) => item.id === ids[0]) : null
+  return (shownOne || live[0] || book).title
+}
+
 export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, below = null }) {
   const { colors, clock, dateIso } = useHall(book)
   const reduce = useReduceMotion()
@@ -1195,7 +1210,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           ? { ...blankLamp(clock), question: didQuestion(initialBlank) }
           : null,
     start,
-    tagTitle: sourceBook?.title || book.title,
+    tagTitle: sourceBook?.title || newFolderTitle(boards, book, route?.tag),
   })
   const { draft } = hang
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
@@ -1439,9 +1454,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
     else feelTap('hall-on')
+    // Back to where Add was opened: Questions stays on Questions; Home opens the new card.
+    const from = behindPath()
     leave.current = setTimeout(
       () => {
-        goHash(wasEmpty ? '/tonight' : '/lamps')
+        if (from === '/lamps') goHash('/lamps')
+        else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', isDueOn(next, dateIso) ? { face: next.id } : '')
+        else goHash(wasEmpty ? '/tonight' : '/lamps')
         confirmDone(t('confirm.questionAdded'))
         offerPingPrimer(newTime, colors)
       },

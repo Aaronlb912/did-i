@@ -948,7 +948,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      <SwipeFlyHost style={styles.slot}>
+      {/* A picked card keeps its top edge put; answering or a note only grows it downward. */}
+      <SwipeFlyHost style={[styles.slot, stack.pillPick || stack.waitPick ? styles.slotTop : null]}>
         {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
@@ -1055,6 +1056,7 @@ const styles = StyleSheet.create({
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
+  slotTop: { justifyContent: 'flex-start' },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

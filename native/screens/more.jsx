@@ -606,13 +606,13 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} startShift={startShift} />
       )}
       <View style={styles.calKey}>
-        <View style={[styles.calDot, { backgroundColor: colors.on }]} />
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
-        <View style={[styles.calDot, { backgroundColor: colors.miss }]} />
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
-        <View style={[styles.calDot, { borderWidth: 1.5, borderColor: colors.freeze }]} />
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
-        <View style={[styles.calDot, { backgroundColor: colors.open }]} />
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.open }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('later.tonight')}</Text>
       </View>
       <SetCard colors={colors}>
@@ -620,7 +620,8 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <SetRow colors={colors} icon="grid" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
         <SetRow colors={colors} icon="pen" label={t('notes.title')} sub={t('notes.sub')} chevron onPress={() => goHash('/notes')} />
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
-        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron last onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="chart" label={t('stats.title')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
     </ScreenShell>
   )
@@ -2212,6 +2213,8 @@ const styles = StyleSheet.create({
   heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },
+  // Year cells are small squares, so the key is too.
+  calSquare: { borderRadius: 2 },
   calKeyText: { fontSize: 12, marginRight: 10 },
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   headCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 20 },

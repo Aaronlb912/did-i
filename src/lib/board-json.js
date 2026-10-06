@@ -395,7 +395,10 @@ export function didQuestion(raw) {
     .replace(/\?+$/, '')
     .trim()
   if (!text) return ''
-  const rest = /^[A-Z]{2}/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1)
+  // Only a plain word ("Lock") loses its capital, the one a phone adds at the
+  // start. Acronyms, names with digits or inner capitals stay as typed.
+  const first = text.split(' ')[0]
+  const rest = /^\p{Lu}\p{Ll}+$/u.test(first) ? text.charAt(0).toLowerCase() + text.slice(1) : text
   return `Did I ${rest}?`
 }
 

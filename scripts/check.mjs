@@ -320,6 +320,8 @@ test('the first question finishes "Did I ___" once', () => {
   assert.equal(didQuestion('Did I'), '')
   assert.equal(didQuestion('   '), '')
   assert.equal(didQuestion('TV off'), 'Did I TV off?')
+  assert.equal(didQuestion('Pass6 test question'), 'Did I Pass6 test question?')
+  assert.equal(didQuestion('McDonald run'), 'Did I McDonald run?')
   for (const starter of STARTERS) {
     assert.equal(didQuestion(starterBlank(starter)), starter.question, starter.short)
   }
@@ -4365,7 +4367,8 @@ test('family summary hour and phone names: prefs clamp, SQL order, menu resets t
   const menu = readFileSync(path.join(root, 'native/components/MastMenu.jsx'), 'utf8')
   assert.ok(menu.includes('goFromMenu(item.path)'), 'a menu pick starts from Home')
   const hash = readFileSync(path.join(root, 'native/navigation/hash.js'), 'utf8')
-  assert.ok(hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps only Home behind the screen')
+  // A menu page goes on top of the page you were on, so phone back returns there.
+  assert.ok(!hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps the page you were on behind it')
 })
 
 await testAsync('frames: still frames cost coins, animated cost gems, and the server sells the same', async () => {
