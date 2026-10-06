@@ -9,6 +9,7 @@ Buddy section of `docs/shop-drops.md`.
 | Idea | Name | Line | Notes |
 |---|---|---|---|
 | Otter | Holdy | Otters hold hands so no one drifts off. | Holds a little pink shell. Brown body, cream face. Shown with a party hat. |
+| Axolotl | Lotl | Grows back stronger every time. | Chibi shape Aaron picked: big round head on a small round body, soft rounded gill fronds that wave, big shiny eyes. Colorway not picked yet (Pink, Wild or Gold). Drawing in axolotl-showroom.html (CHIBI). |
 | Duckling | Flock | Ducklings never go anywhere alone. | Yellow, head tuft, orange beak and feet. Shown with round glasses. |
 
 Used already: the bee (Hive) became the 15-referral reward.
