@@ -172,7 +172,7 @@ function nightMark(shelf, now = new Date()) {
     (!we.due || we.clear) &&
     boards.every((book) => countedTonightRows(dueTonight(book, now)).length === 0 || allClearTonight(book, now))
   // The real streak, not the room's glow that stops at five.
-  return { streak: shelfStreak(boards, now), doneOn: clear ? night : null }
+  return { streak: shelfStreak(boards, now), doneOn: clear ? night : null, night }
 }
 
 async function putPrefs(db, user, shelf) {
@@ -189,7 +189,23 @@ async function putPrefs(db, user, shelf) {
     },
     { onConflict: 'user_id' },
   )
+  if (!error) markCleared(db, user, mark)
   return error || null
+}
+
+// Tonight cleared or not, for a friend's week. Sent only when it changes.
+let clearedSent = ''
+function markCleared(db, user, mark) {
+  const key = `${user.id}:${mark.night}:${mark.doneOn ? 1 : 0}`
+  if (key === clearedSent) return
+  clearedSent = key
+  Promise.resolve(db.rpc('mark_cleared', { night: mark.night, cleared: Boolean(mark.doneOn) }))
+    .then((res) => {
+      if (res?.error) clearedSent = ''
+    })
+    .catch(() => {
+      clearedSent = ''
+    })
 }
 
 /** Lets push run while a session exists but sync UI still says signed out. */

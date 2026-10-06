@@ -52,6 +52,7 @@ import {
   setAutoAdd,
   shareStreak,
   personById,
+  friendWeek,
   sendsWith,
   takeBack,
   unblockPerson,
@@ -82,8 +83,7 @@ import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/Person
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { askRemoveFriend } from '../components/removeFriend.js'
 import { KitSegment } from '../components/KitSegment.jsx'
-import { ripple } from '../lib/ripple.js'
-import { SetSwitch } from '../components/SetBits.jsx'
+import { SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
 import {
   DidButton,
   Field,
@@ -105,7 +105,7 @@ import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
 import { canScan } from './ScanScreen.jsx'
-import { Reveal } from '../lib/motion.jsx'
+import { Reveal, pressFx } from '../lib/motion.jsx'
 
 function ScreenShell({ book, title, children, colors }) {
   const live = book || currentBook(readShelf())
@@ -317,7 +317,7 @@ function CloudOff({ colors }) {
   )
 }
 
-function PersonRow({ title, note, colors, children, highlight }) {
+function PersonRow({ title, note, colors, children, highlight, person }) {
   return (
     <View
       style={[
@@ -326,9 +326,12 @@ function PersonRow({ title, note, colors, children, highlight }) {
         highlight ? styles.askRow : null,
       ]}
     >
-      <View style={styles.personCopy}>
-        <Text style={[styles.personTitle, { color: colors.ink }]}>{title}</Text>
-        {note ? <Text style={[styles.personNote, { color: colors.inkDim }]}>{note}</Text> : null}
+      <View style={person ? styles.personHead : null}>
+        {person ? <Avatar person={person} colors={colors} size={36} /> : null}
+        <View style={[styles.personCopy, person ? styles.personCopyFlex : null]}>
+          <Text style={[styles.personTitle, { color: colors.ink }]}>{title}</Text>
+          {note ? <Text style={[styles.personNote, { color: colors.inkDim }]}>{note}</Text> : null}
+        </View>
       </View>
       {children ? <View style={styles.personActions}>{children}</View> : null}
     </View>
@@ -860,12 +863,6 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-      <Row
-        colors={colors}
-        label={t('didYouLink.textTitle')}
-        note={t('didYouLink.textSub')}
-        onPress={() => setSheet({ kind: 'send', person: null })}
-      />
         </>
       ) : null}
 
@@ -1738,18 +1735,21 @@ export function FriendScreen({ book, onChange, route }) {
   // No longer friends or family (removed, or an old notification).
   const [gone, setGone] = useState(false)
   const [tab, setTab] = useState('')
+  const [week, setWeek] = useKept(`friend.week:${account.user?.id}:${otherId}`, [], KEEP)
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked, made, serverCheers] = await Promise.all([
+    const [who, both, linked, made, serverCheers, nights] = await Promise.all([
       personById(otherId),
       sendsWith(otherId),
       stillLinked(otherId),
       myDidYouLinks().catch(() => []),
       readFriendCheers().catch(() => null),
+      friendWeek(otherId, boardDate(new Date())).catch(() => []),
     ])
     if (typeof serverCheers === 'number') setStock(serverCheers)
+    setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
     setPerson(who)
     setSends(both)
@@ -1841,6 +1841,20 @@ export function FriendScreen({ book, onChange, route }) {
         <View style={styles.confirmCopy}>
           <Text style={[styles.confirmName, { color: colors.ink }]} numberOfLines={1}>{shownName}</Text>
           <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
+          {week.length === 7 && week.some((night) => night.cleared) ? (
+            <View
+              style={styles.friendWeek}
+              accessible
+              accessibilityLabel={t('friend.weekA11y', { name, n: week.filter((night) => night.cleared).length })}
+            >
+              {week.map((night) => (
+                <View
+                  key={night.night}
+                  style={[styles.friendWeekDot, { backgroundColor: night.cleared ? colors.on : colors.open }]}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
         <Pressable
           onPress={() => setMenu(true)}
@@ -1865,25 +1879,14 @@ export function FriendScreen({ book, onChange, route }) {
           </Pressable>
         </Modal>
       ) : null}
-      <View style={styles.friendActions}>
-        <View style={styles.friendAction}>
-          <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} />
-          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didYouHint', { name })}</Text>
-        </View>
-        <View style={styles.friendAction}>
-          <Pressable
-            onPress={() => goHash('/we/new', { id: otherId })}
-            android_ripple={ripple(`${colors.on}33`)}
-            accessibilityRole="button"
-            accessibilityLabel={t('friend.startDidWe')}
-            style={[styles.friendWe, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
-          >
-            <Text style={[styles.friendWeText, { color: colors.ink }]}>{t('friend.startDidWe')}</Text>
-          </Pressable>
-          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didWeHint')}</Text>
-        </View>
+      <View style={styles.friendPrimary}>
+        <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSheet({ person })} />
+        <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friend.didYouHint', { name })}</Text>
       </View>
-      <View style={styles.friendActions}>
+      <View style={styles.friendWeRow}>
+        <KeyButton colors={colors} label={t('friend.startDidWe')} onPress={() => goHash('/we/new', { id: otherId })} />
+      </View>
+      <View style={styles.friendMinor}>
         <View style={styles.friendAction}>
           <KeyButton
             colors={colors}
@@ -1891,7 +1894,15 @@ export function FriendScreen({ book, onChange, route }) {
             disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP}
             onPress={cheer}
           />
-          <Text style={[styles.friendHint, { color: colors.inkDim }]}>{t('friends.cheerStock', { n: cheersLeft })}</Text>
+          {cheersLeft > 0 ? (
+            <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('friend.cheersLeft', { n: cheersLeft })}</Text>
+          ) : (
+            <Pressable onPress={cheer} accessibilityRole="button" hitSlop={6}>
+              <Text style={[styles.friendSmall, { color: colors.inkDim }]}>
+                {t('friend.noCheersLeft')} · <Text style={{ color: colors.on }}>{t('friend.getMoreCheers')}</Text>
+              </Text>
+            </Pressable>
+          )}
         </View>
         <View style={styles.friendAction}>
           <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: otherId })} />
@@ -2086,6 +2097,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   const [ready, setReady] = useKept(`inbox.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [menu, setMenu] = useState(null)
+  const [sending, setSending] = useState(false)
   // Keep or Pass tapped on the notification: keep:<send id> or pass:<send id>.
   const fromPush = /^(keep|pass):([0-9a-f-]{36})$/.exec(String(route?.id || ''))
   const pushDone = useRef(false)
@@ -2170,7 +2182,11 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <WeAsks colors={colors} />
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
         <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
-        <DidButton colors={colors} label={t('inbox.goPeople')} onPress={() => goHash('/people')} />
+        <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSending(true)} />
+        {miss ? <Miss colors={colors}>{miss}</Miss> : null}
+        {sending ? (
+          <SendSheet person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
+        ) : null}
       </ScreenShell>
     )
   }
@@ -2184,6 +2200,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <Reveal key={row.id}>
         <PersonRow
           colors={colors}
+          person={row.person}
           title={row.kind === 'cheer' ? t('inbox.aCheer') : row.question}
           note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), row.note]
             .filter(Boolean)
@@ -2234,6 +2251,8 @@ export function SentScreen({ book, onChange }) {
   const [miss, setMiss] = useState('')
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
+  // Link Did you's are kept here, so texting one starts here too.
+  const [texting, setTexting] = useState(false)
   const [hidden, setHidden] = useState(() => readSentHidden(account.user?.id))
   useEffect(() => {
     setHidden(readSentHidden(account.user?.id))
@@ -2315,12 +2334,18 @@ export function SentScreen({ book, onChange }) {
   if (!shownRows.length && !shownLinks.length) {
     return (
       <ScreenShell title={t('sent.title')} colors={colors}>
+        <View style={styles.sentTop}>
+          <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
+        </View>
         <EmptyCard colors={colors} title={t('sent.emptyTitle')} body={t('sent.emptyBody')}>
           <DidButton colors={colors} small label={t('sent.goFriends')} onPress={() => goHash('/friends')} />
           {clearedCount ? (
             <KeyButton colors={colors} label={t('sent.bringBack', { n: clearedCount })} onPress={() => setHiddenKept([])} />
           ) : null}
         </EmptyCard>
+        {texting ? (
+          <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+        ) : null}
       </ScreenShell>
     )
   }
@@ -2328,6 +2353,12 @@ export function SentScreen({ book, onChange }) {
   return (
     <ScreenShell title={t('sent.title')} colors={colors}>
       <OfflineLine colors={colors} />
+      <View style={styles.sentTop}>
+        <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
+      </View>
+      {texting ? (
+        <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+      ) : null}
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: shownRows.length + shownLinks.length })}</Text>
         <Text style={[styles.famLine, { color: colors.inkDim }]}>{t('sent.hint')}</Text>
@@ -2353,13 +2384,16 @@ export function SentScreen({ book, onChange }) {
       <View style={[styles.groupCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
       {shownRows.map((row, at) => (
         <Reveal key={row.id} style={[styles.sentRow, at ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line } : null]}>
-          <View style={styles.personCopy}>
+          <View style={styles.personHead}>
+          <Avatar person={row.person} colors={colors} size={36} />
+          <View style={[styles.personCopy, styles.personCopyFlex]}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
               {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
+          </View>
           </View>
           {canEditSent(row) || row.state === 'sent' ? (
           <View style={styles.personActions}>
@@ -2481,6 +2515,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   personCopy: { gap: 4 },
+  personHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  personCopyFlex: { flex: 1 },
   personTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },
   personNote: { fontFamily: fonts.ui, fontSize: 13 },
   personActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -2507,10 +2543,14 @@ const styles = StyleSheet.create({
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   confirmWho: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   friendCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16 },
-  friendActions: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  friendPrimary: { marginBottom: 14 },
+  friendMinor: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  friendWeRow: { marginBottom: 8 },
+  sentTop: { alignSelf: 'flex-end' },
+  friendSmall: { fontFamily: fonts.ui, fontSize: 12, textAlign: 'center', marginTop: 6 },
+  friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },
+  friendWeekDot: { width: 8, height: 8, borderRadius: 4 },
   friendAction: { flex: 1, flexBasis: 0 },
-  friendWe: { borderRadius: 999, minHeight: 48, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  friendWeText: { fontFamily: fonts.uiBold, fontSize: 15 },
   friendTabs: { marginBottom: 12 },
   friendHint: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 8, paddingHorizontal: 4 },
   confirmCopy: { flex: 1, minWidth: 0, gap: 2 },
@@ -2533,7 +2573,7 @@ const styles = StyleSheet.create({
   strip: { gap: 14, paddingRight: 8, paddingBottom: 4 },
   stripItem: { width: 64, alignItems: 'center', gap: 4 },
   stripName: { fontFamily: fonts.uiSemi, fontSize: 12, maxWidth: 64, textAlign: 'center' },
-  stripLine: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', maxWidth: 64 },
+  stripLine: { fontFamily: fonts.ui, fontSize: 11, maxWidth: 64 },
   famCard: {
     flexDirection: 'row',
     alignItems: 'center',

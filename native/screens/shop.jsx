@@ -8,7 +8,6 @@ import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
 import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
-import { holdFor } from '../../src/lib/cheer-pops.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -67,6 +66,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { PersonAvatar } from '../components/PersonAvatar.jsx'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
@@ -89,7 +89,7 @@ import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
 import { previewSample } from '../../src/lib/board-shelf.js'
-import { pressFx, Reveal } from '../lib/motion.jsx'
+import { motionOff, pressFx, Reveal } from '../lib/motion.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -517,7 +517,7 @@ function openInfo(name, info, colors) {
   })
 }
 
-function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn, previewPressIn, artKey }) {
+function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn, previewPressIn, artKey, extra }) {
   const artRef = useMemo(() => (artKey ? kitArtRef(artKey) : undefined), [artKey])
   const art = preview
     ? onPreview
@@ -561,6 +561,7 @@ function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, 
             {miss}
           </Text>
         ) : null}
+        {extra || null}
       </View>
       {primary ? (
         <DidButton small label={actionLabel} onPress={onAction} colors={colors} disabled={disabled} />
@@ -684,14 +685,48 @@ function previewBody(type, item, purse) {
   return base
 }
 
-function CheerLoop({ id, coat }) {
+// Play shows a cheer once, owned or not. With less motion on it shows a
+// still frame and a line about what the cheer does instead of the burst.
+function CheerPlay({ id, coat, colors, stage = 1 }) {
+  const [still, setStill] = useState(false)
+  function play() {
+    if (motionOff()) {
+      setStill((on) => !on)
+      return
+    }
+    fireCheer(id, stage, coat, undefined, true)
+  }
+  return (
+    <View style={styles.cheerPlayWrap}>
+      <Pressable
+        onPress={play}
+        accessibilityRole="button"
+        accessibilityLabel={t('shop.cheerPlayA11y', { name: t(cheerText(id, 'name')) })}
+        hitSlop={6}
+        style={({ pressed }) => [styles.cheerPlay, { borderColor: colors.line, backgroundColor: colors.panel2 }, pressFx(pressed)]}
+      >
+        <Text style={[styles.cheerPlayText, { color: colors.ink }]}>{t('shop.cheerPlay')}</Text>
+      </Pressable>
+      {still ? (
+        <Reveal style={styles.cheerStill}>
+          <CheerChip id={id} stage={stage} colors={colors} />
+          <Text style={[styles.shopNote, styles.cheerStillText, { color: colors.inkDim }]}>{t('shop.cheerStill')}</Text>
+        </Reveal>
+      ) : null}
+    </View>
+  )
+}
+
+function CheerSheetPreview({ id, coat, colors }) {
+  // Opening the sheet plays it once; Play runs it again.
   useEffect(() => {
-    const play = () => fireCheer(id, 1, coat, undefined, true)
-    play()
-    const timer = setInterval(play, holdFor(id, 1) + 260)
-    return () => clearInterval(timer)
+    if (!motionOff()) fireCheer(id, 1, coat, undefined, true)
   }, [id, coat])
-  return null
+  return (
+    <View style={styles.cheerSheetPreview}>
+      <CheerPlay id={id} coat={coat} colors={colors} />
+    </View>
+  )
 }
 
 // Tapping any item opens the real thing at full size: the look's own card,
@@ -706,7 +741,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
   const short = !tag.owned && tag.coins > 0 && purse.coins < tag.coins
   const body = miss && !action ? miss : short ? previewBody(type, item, purse) : miss || previewBody(type, item, purse)
   let preview = null
-  if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
+  if (type === 'cheer') preview = <CheerSheetPreview id={item.id} coat={coat} colors={colors} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
   else if (type === 'accessory') preview = <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />
@@ -1097,8 +1132,11 @@ export function ShopCheersScreen({ book, onChange }) {
             colors={colors}
             preview={<CheerChip id={item.id} stage={have ? stage : 1} colors={colors} />}
             artKey={`cheer:${item.id}`}
-            onPreview={() => fireCheer(item.id, 1, coat, undefined, true)}
+            onPreview={() => {
+              if (!motionOff()) fireCheer(item.id, 1, coat, undefined, true)
+            }}
             previewPressIn
+            extra={<CheerPlay id={item.id} coat={coat} colors={colors} />}
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
             miss={miss.id === item.id ? miss.text : ''}
@@ -1978,6 +2016,12 @@ const styles = StyleSheet.create({
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   shopCopy: { gap: 4, flex: 1 },
+  cheerPlayWrap: { gap: 8, alignSelf: 'stretch' },
+  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  cheerPlayText: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  cheerStill: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cheerStillText: { flex: 1 },
+  cheerSheetPreview: { alignItems: 'center', paddingVertical: 8 },
   shopName: { fontFamily: fonts.uiSemi, fontSize: 15 },
   shopNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   infoDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -2224,7 +2268,7 @@ const BARE = { worn: {}, buddyOn: '' }
 
 function giftArt(type, id, colors, coat, purse = BARE) {
   if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} />
-  if (type === 'cheer') return <CheerLoop id={id} coat={coat} />
+  if (type === 'cheer') return <CheerSheetPreview id={id} coat={coat} colors={colors} />
   if (type === 'look') return <LookPreviewCard id={id} />
   return <BuddyPreviewCard id={id} colors={colors} />
 }
@@ -2335,7 +2379,14 @@ export function GiftScreen({ book, onChange, toId }) {
 
   return (
     <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
-      <Meta colors={colors}>{person ? t('gift.to', { name }) : t('family.loading')}</Meta>
+      {person ? (
+        <View style={giftStyles.to}>
+          <PersonAvatar person={person} colors={colors} size={36} />
+          <Text style={[giftStyles.toText, { color: colors.inkSoft }]} numberOfLines={1}>{t('gift.to', { name })}</Text>
+        </View>
+      ) : (
+        <Meta colors={colors}>{t('family.loading')}</Meta>
+      )}
       <View style={giftStyles.note}>
         <AppTextInput
           colors={colors}
@@ -2456,6 +2507,8 @@ export function GiftHost({ book, onChange }) {
 
 const giftStyles = StyleSheet.create({
   note: { gap: 4 },
+  to: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  toText: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1 },
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
   sent: { fontFamily: fonts.uiBold, fontSize: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

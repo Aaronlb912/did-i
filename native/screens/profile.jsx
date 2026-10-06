@@ -423,6 +423,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="pen"
+          tint={colors.inkSoft}
+          label={t('notes.title')}
+          sub={t('notes.sub')}
+          chevron
+          onPress={() => goHash('/notes')}
+        />
+        <SetRow
+          colors={colors}
           icon="note"
           tint={colors.inkSoft}
           label={t('feed.title')}

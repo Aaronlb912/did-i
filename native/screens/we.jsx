@@ -826,7 +826,44 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  // The rules and who is on it, kept off the page and shown from the ⋯ menu.
+  function openDetails() {
+    publishSheet({
+      title: t('we.details'),
+      colors,
+      closeLabel: t('settings.close'),
+      onClose: () => publishSheet(null),
+      content: (
+        <View>
+          <Meta colors={colors}>
+            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
+            {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
+          </Meta>
+          {goal ? (
+            <Meta colors={colors}>
+              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+            </Meta>
+          ) : null}
+          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
+          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
+          {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
+          <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
+            <Cap colors={colors}>{t('we.people')}</Cap>
+            {(card.people || []).map((p) => (
+              <Meta key={p.id} colors={colors}>
+                {p.me ? t('we.you') : p.name}
+                {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
+                {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
+              </Meta>
+            ))}
+          </View>
+        </View>
+      ),
+    })
+  }
+
   const menuItems = [
+    { key: 'details', label: t('we.details'), onPress: openDetails },
     card.mine && !edit ? { key: 'edit', label: t('we.edit'), onPress: startEdit } : null,
     link ? { key: 'link', label: t('weLink.off'), onPress: endLink } : null,
     { key: 'leave', label: t('we.leave'), onPress: leave, danger: true },
@@ -993,30 +1030,6 @@ function WeCardPage({ book, cardId, onChange }) {
           {t('we.best', { n: best })}
           {next ? ` · ${t('we.nextCoins', { n: next - streak })}` : ''}
         </Meta>
-        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
-          <Meta colors={colors}>
-            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
-            {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
-          </Meta>
-          {goal ? (
-            <Meta colors={colors}>
-              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
-            </Meta>
-          ) : null}
-          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
-          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
-          {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
-        </View>
-        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
-          <Cap colors={colors}>{t('we.people')}</Cap>
-          {(card.people || []).map((p) => (
-            <Meta key={p.id} colors={colors}>
-              {p.me ? t('we.you') : p.name}
-              {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-              {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
-            </Meta>
-          ))}
-        </View>
       </View>
 
       {shareFirst ? null : shareCard}

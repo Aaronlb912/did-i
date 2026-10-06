@@ -17,10 +17,19 @@ const DARK = {
   skip: '#7d8694',
   open: '#39404e',
   miss: '#ff6f61',
+  // A missed night an earned freeze covered.
+  freeze: '#7fd4f0',
   // Did we: its own accent, so a shared card reads apart from your own.
   we: '#b69cff',
   weDeep: '#7d63d6',
   veil: 'rgba(8, 10, 14, 0.55)',
+  // Per-person badge tints (PersonAvatar), picked by a hash of their id.
+  person1: '#ff9f6b',
+  person2: '#6fd0c4',
+  person3: '#f27fb5',
+  person4: '#ffd166',
+  person5: '#8fb8ff',
+  person6: '#c49bff',
 }
 
 const LIGHT = {
@@ -39,9 +48,16 @@ const LIGHT = {
   skip: '#6a7164',
   open: '#d5d9cc',
   miss: '#c44536',
+  freeze: '#2a86a8',
   we: '#6b4fc8',
   weDeep: '#4f3799',
   veil: 'rgba(26, 29, 22, 0.4)',
+  person1: '#b8572a',
+  person2: '#1f7f74',
+  person3: '#a83a72',
+  person4: '#8a6a00',
+  person5: '#2f5fb0',
+  person6: '#6d43b8',
 }
 
 const LOOKS = {

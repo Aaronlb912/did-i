@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
+
+- **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
+- **No tap feedback on the notification itself.** The reminder is cleared; a refused answer (night over, already answered) shows a toast the next time the app is open.
+- **Freezes are only on the phone screens.** The web Home dots, calendar and streaks page still show a covered night as missed (the streak number itself agrees, since it is shared night math).
+- **First streak walk is slower on long histories.** Freezes walk every night from the first one; about 85 ms on a laptop for two years of 8 daily questions, once per day per launch. Later walks reuse the settled nights.
+- **Freezes are not on the server.** The server stores the streak the app sends (`profiles.streak`), so friends see the frozen streak too. No coins are paid for freezes and per-question streaks ignore them.
+
 ## Settings and social round 4 (branch `polish/settings-social-round4`)
 
 - **SQL not applied.** `supabase/family-summary.sql` (profiles.family_hour) and the new `supabase/device-names.sql` (devices.model, devices.name). Until applied, the family hour picker shows a save miss and phone rename fails; the app falls back to the old device columns. Test: `supabase/tests/settings-social.test.sql`.
@@ -60,7 +68,7 @@ None of these has run on a real phone yet. They need the 1.3.0 build.
 - **Keep and Pass on a friend's did you**: iPhone only; Android's system-drawn push has no buttons.
 - **Nightly family summary** (supabase/family-summary.sql, over the air): not applied yet. Apply it when the app with the 'family' notification switch ships, so people can turn it off. Counts only members who share their streak; English only, like the other server pushes.
 - **App icon shortcuts** (expo-quick-actions): Tonight, Add (iPhone only, since Android already has a fixed one), Friends and family, Scan. The labels are set when the app opens, so they follow a language change only on the next launch. Android shows no icons on these.
-- **Did and Nope on reminders**: these work over the air (expo-notifications was already in the app). Either button opens the app and saves the answer the way a widget tap does. Did we reminders have no buttons.
+- **Did and Nope on reminders**: over the air. The buttons no longer open the app (branch `feat/answer-freeze-r10`); JS saves the answer the way a widget tap does, clears the reminder and redraws the widget. Did we reminders carry the same buttons.
 
 ## Did we (branch `did-we`, after launch)
 

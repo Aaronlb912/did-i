@@ -7,6 +7,7 @@ import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '.
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { pressFx, useFadeIn } from '../lib/motion.jsx'
+import { PersonAvatar } from './PersonAvatar.jsx'
 
 const SHOWN = 6
 
@@ -34,6 +35,7 @@ export function FriendsRow({ colors, cheer = null }) {
   // Done first here: the row is a nudge that others are already there.
   const rows = [...props.people].sort((a, b) => Number(b.done) - Number(a.done) || a.name.localeCompare(b.name))
   const shown = rows.slice(0, SHOWN)
+  const raw = new Map(people.map((p) => [String(p.id || ''), p]))
   const more = rows.length - shown.length
   const tint = colors.we || colors.on
 
@@ -51,12 +53,16 @@ export function FriendsRow({ colors, cheer = null }) {
           <View
             key={p.id}
             accessibilityLabel={t(p.done ? 'friendsRow.done' : 'friendsRow.waiting', { name: p.name || '?' })}
-            style={[
-              styles.face,
-              { backgroundColor: p.done ? tint : colors.panel2, borderColor: p.done ? tint : colors.line },
-            ]}
+            style={styles.faceSlot}
           >
-            <Text style={[styles.faceText, { color: p.done ? colors.bg : colors.inkSoft }]}>{p.initials}</Text>
+            <PersonAvatar
+              person={{ ...p, buddy: raw.get(p.id)?.buddy, avatar: raw.get(p.id)?.avatar }}
+              colors={colors}
+              size={26}
+              round
+              done={p.done}
+              tint={tint}
+            />
           </View>
         ))}
         {more > 0 ? (
@@ -110,6 +116,7 @@ const styles = StyleSheet.create({
     marginRight: -4,
   },
   faceText: { fontFamily: fonts.uiSemi, fontSize: 10 },
+  faceSlot: { marginRight: 2 },
   count: { fontFamily: fonts.ui, fontSize: 13, marginLeft: 4, flexShrink: 1 },
   cheer: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   cheerText: { fontFamily: fonts.uiSemi, fontSize: 13 },

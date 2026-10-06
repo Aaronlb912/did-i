@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { monthStripNights, nightDueRows, nightWhy } from '../../src/lib/hall-pages.js'
+import { firstAnswerYear, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
+import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -137,7 +138,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
                   style={[
                     styles.pip,
                     {
-                      backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                      backgroundColor: night.on ? colors.on : night.freeze ? colors.freeze : night.miss ? colors.miss : colors.open,
                     },
                   ]}
                 />
@@ -151,8 +152,99 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors }) {
   )
 }
 
+// A whole year: twelve small month grids of cleared and not cleared nights.
+// Arrows go back to the year of the first answer. A day opens its sheet.
+export function YearGrid({ book, boards, tagId = '', now, colors }) {
+  const prefs = usePrefs()
+  const clock = now || new Date()
+  const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
+  const thisYear = clock.getFullYear()
+  const [year, setYear] = useState(thisYear)
+  const dateIso = boardDate(clock, book?.dayFoldHour)
+
+  useEffect(() => {
+    setYear(thisYear)
+  }, [tagId, thisYear])
+
+  const firstYear = useMemo(() => firstAnswerYear(shelf, clock, tagId), [shelf, tagId, dateIso])
+  // One walk per [shelf, year]; the night changing also refreshes today.
+  const months = useMemo(() => yearMonths(shelf, year, clock, tagId), [shelf, year, tagId, dateIso])
+  const locale = dateLocale(prefs.locale)
+  const canBack = year > firstYear
+  const canNext = year < thisYear
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.head}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('cal.prevYear')}
+          accessibilityState={{ disabled: !canBack }}
+          disabled={!canBack}
+          onPress={() => setYear((y) => y - 1)}
+          hitSlop={8}
+        >
+          <Text style={[styles.shift, { color: canBack ? colors.inkDim : colors.line }]}>‹</Text>
+        </Pressable>
+        <Text style={[styles.month, { color: colors.ink }]}>{String(year)}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('cal.nextYear')}
+          accessibilityState={{ disabled: !canNext }}
+          disabled={!canNext}
+          onPress={() => setYear((y) => Math.min(thisYear, y + 1))}
+          hitSlop={8}
+        >
+          <Text style={[styles.shift, { color: canNext ? colors.inkDim : colors.line }]}>›</Text>
+        </Pressable>
+      </View>
+      <Reveal key={`y${year}`} style={styles.year} exiting={undefined} layout={false}>
+        {months.map((pack) => (
+          <View key={pack.start.getMonth()} style={styles.mini}>
+            <Text style={[styles.miniLabel, { color: colors.inkDim }]}>
+              {pack.start.toLocaleDateString(locale, { month: 'short' })}
+            </Text>
+            <View style={styles.miniGrid}>
+              {pack.nights.map((night) =>
+                night.pad ? (
+                  <View key={night.iso} style={styles.miniCell} />
+                ) : (
+                  <Pressable
+                    key={night.iso}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('cal.day', { date: night.iso })}
+                    onPress={() => openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId })}
+                    hitSlop={2}
+                    style={styles.miniCell}
+                  >
+                    <View
+                      style={[
+                        styles.miniDot,
+                        {
+                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                          borderColor: night.isToday ? colors.ink : 'transparent',
+                        },
+                      ]}
+                    />
+                  </Pressable>
+                ),
+              )}
+            </View>
+          </View>
+        ))}
+      </Reveal>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
+  year: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  mini: { width: '31%', gap: 4 },
+  miniLabel: { fontFamily: fonts.uiSemi, fontSize: 12 },
+  miniGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  miniCell: { width: '14.28%', aspectRatio: 1, padding: 1 },
+  miniDot: { flex: 1, borderRadius: 2, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },

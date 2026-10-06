@@ -44,13 +44,14 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
+import { freezeState, hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
   markWelcomeSeen,
   nextStreakGoal,
   shelfFeedRows,
+  shelfNoteRows,
   shelfStatsCounts,
   shelfWeekNights,
   stampWhen,
@@ -63,6 +64,7 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { shareRecap } from '../components/WeekRecap.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
+import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
 import { weCardTitle } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
@@ -85,7 +87,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, periodLabel } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -96,7 +98,7 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, sectionLabel, withAlpha } from '../theme.js'
-import { CalendarGrid } from '../components/CalendarGrid.jsx'
+import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
@@ -104,7 +106,7 @@ import { SavableSetField } from '../components/SavableSetField.jsx'
 import { Avatar } from '../components/PersonCard.jsx'
 import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
 import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
-import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
@@ -241,6 +243,9 @@ export function HelpScreen() {
         <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
         <Meta colors={colors}>{t('help.streakP', { time: clockWords('09:00') })}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('freeze.howTitle')}</Text>
+        <Meta colors={colors}>{t('freeze.helpP')}</Meta>
+        <KeyButton colors={colors} label={t('freeze.helpGo')} onPress={() => openFreezeHow(colors, readShelf()?.boards)} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
         <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
         <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
@@ -380,11 +385,14 @@ export function IdeasScreen() {
   )
 }
 
-function StreakHero({ colors, n, label, line }) {
+function StreakHero({ colors, n, label, line, chip }) {
   return (
     <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
       <Text style={[styles.heroCap, { color: colors.on }]}>{label}</Text>
-      <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <View style={styles.heroNumRow}>
+        <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+        {chip || null}
+      </View>
       {line ? <Text style={[styles.heroLine, { color: colors.inkSoft }]}>{line}</Text> : null}
     </View>
   )
@@ -454,6 +462,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         n={counts.heat}
         label={t('home.streak')}
         line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+        chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
       />
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
@@ -515,19 +524,69 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
   )
 }
 
+// Every note, newest first, with a search over the note and its question.
+export function NotesScreen({ book, boards }) {
+  const colors = useHallColors()
+  const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
+
+  return (
+    <ScreenShell title={t('notes.title')} colors={colors}>
+      {allRows.length ? (
+        <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('notes.searchPh')} />
+      ) : null}
+      {!allRows.length ? (
+        <Meta colors={colors}>{t('notes.empty')}</Meta>
+      ) : !rows.length ? (
+        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
+      ) : (
+        rows.map((row) => {
+          const night = periodLabel(row.lamp, row.answer.periodKey)
+          return (
+            <Row
+              key={row.answer.id || `${row.lamp.id}:${row.answer.periodKey}`}
+              colors={colors}
+              label={shortLabel(row.lamp)}
+              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status)}\n${row.answer.note}`}
+              onPress={() => goHash('/lamp', { id: row.lamp.id })}
+            />
+          )
+        })
+      )}
+    </ScreenShell>
+  )
+}
+
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
+  const [view, setView] = useState('month')
 
   return (
     <ScreenShell title={t('boards.calendar')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
-      <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      <ChipRow
+        items={[
+          { id: 'month', label: t('cal.viewMonth') },
+          { id: 'year', label: t('cal.viewYear') },
+        ]}
+        value={view}
+        onPick={setView}
+        colors={colors}
+      />
+      {view === 'year' ? (
+        <YearGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      ) : (
+        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
+      )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, { backgroundColor: colors.on }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
         <View style={[styles.calDot, { backgroundColor: colors.miss }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+        <View style={[styles.calDot, { backgroundColor: colors.freeze }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
       </View>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="calendar" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
@@ -548,6 +607,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const strip = weekStripNights(shelf, clock, tagId)
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
+  const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
   const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
 
   function cellColor(state) {
@@ -555,6 +615,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
     if (state === 'hole') return colors.miss
+    if (state === 'freeze') return colors.freeze
     return colors.open
   }
 
@@ -594,6 +655,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['late', t('later.late')],
     ['skip', t('later.nope')],
     ['hole', t('later.missed')],
+    ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
   ]
 
   return (
@@ -623,7 +685,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
                 </Text>
                 <Text style={[styles.weekDay, { color: colors.inkSoft }]}>{night.dayNum}</Text>
                 {/* Cleared nights get a dot under the date, the same rule as Home. */}
-                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : 'transparent' }]} />
+                <View style={[styles.weekDot, { backgroundColor: cleared.has(night.iso) ? colors.on : frozen.has(night.iso) ? colors.freeze : 'transparent' }]} />
               </Pressable>
             ))}
           </View>
@@ -672,6 +734,8 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const clock = now || new Date()
   const books = scopedBooks(inView(book, boards), tagId)
   const heat = books.length ? shelfStreak(books, clock) : 0
+  // Freezes belong to the overall streak, whatever tag is picked.
+  const freezes = freezeState(inView(book, boards), clock)
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
@@ -688,6 +752,9 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         label={t('streaks.aria')}
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="shield" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+      </SetCard>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -2080,6 +2147,7 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },
   calKeyText: { fontSize: 12, marginRight: 10 },

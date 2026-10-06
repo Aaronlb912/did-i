@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { BuddyPlain } from './BuddyArt.jsx'
+import { PersonAvatar } from './PersonAvatar.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { pullAndMerge } from '../../src/lib/cloud-sync.js'
 import {
@@ -26,10 +26,6 @@ import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
-function initials(name) {
-  const parts = String(name || '').replace(/^@/, '').trim().split(/\s+/)
-  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?'
-}
 
 const FACES_SHOWN = 5
 
@@ -40,25 +36,16 @@ function WeFace({ person, card, colors, size = 30 }) {
   const turn = card.mode === 'turns' && card.turn === person.id
   const tint = colors.we || colors.on
   return (
-    <View
-      style={[
-        styles.face,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: lit ? tint : colors.panel2,
-          borderColor: turn || lit ? tint : colors.line,
-          opacity: person.state === 'asked' ? 0.5 : 1,
-        },
-      ]}
-    >
-      {person.buddy ? (
-        <BuddyPlain id={person.buddy} width={size * 0.72} height={size * 0.86} />
-      ) : (
-        <Text style={[styles.faceText, { color: lit ? colors.bg : colors.inkSoft }]}>{initials(person.name)}</Text>
-      )}
-    </View>
+    <PersonAvatar
+      person={person}
+      colors={colors}
+      size={size}
+      round
+      done={lit}
+      tint={tint}
+      ring={turn ? tint : undefined}
+      faded={person.state === 'asked'}
+    />
   )
 }
 

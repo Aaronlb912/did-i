@@ -107,6 +107,7 @@ import { authGated, clearAuthSkip, needsAuth, skipAuth } from '../src/lib/auth-g
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
 import { en } from '../src/locales/en.js'
+import { personTint, personTintIndex } from '../src/lib/person-tint.js'
 import { es } from '../src/locales/es.js'
 import { fr } from '../src/locales/fr.js'
 import { de } from '../src/locales/de.js'
@@ -134,7 +135,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { streakLength } from '../src/lib/achievements.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
@@ -690,8 +691,47 @@ test('So far and Every answer count every folder', () => {
   assert.equal(counts.hung, 2)
   assert.equal(shelfStatsCounts(boards, new Date('2026-10-03T12:00:00'), 'b2').did, 0)
   assert.deepEqual(shelfFeedRows(boards).map((row) => row.answer.id), ['y', 'x'])
+  assert.deepEqual(shelfNoteRows(boards), [], 'no notes, no rows')
+  const noted = [{ ...boards[0], answers: [...boards[0].answers, { id: 'n1', lampId: 'a', periodKey: '2026-10-02', status: 'yes', note: 'ran', answeredAt: '2026-10-02T21:00' }, { id: 'n2', lampId: 'gone', periodKey: '2026-10-02', status: 'yes', note: 'x', answeredAt: '2026-10-02T22:00' }] }, boards[1]]
+  assert.deepEqual(shelfNoteRows(noted).map((row) => row.answer.id), ['n1'], 'notes only, and only on questions that still exist')
   assert.equal(nextStreakGoal(1), 3)
   assert.equal(nextStreakGoal(5), 7)
+})
+
+test('the year view stops at this month and goes back to the first answer', () => {
+  const now = new Date('2026-10-04T12:00:00')
+  const boards = [{ id: 'b1', title: 'Tag', lamps: [{ ...lamp('a'), createdOn: '' }], answers: [{ lampId: 'a', periodKey: '2024-03-02', status: 'yes' }] }]
+  assert.equal(firstAnswerYear(boards, now), 2024)
+  assert.equal(firstAnswerYear([{ id: 'b', lamps: [], answers: [] }], now), 2026)
+  assert.equal(yearMonths(boards, 2026, now).length, 10)
+  const old = yearMonths(boards, 2024, now)
+  assert.equal(old.length, 12)
+  assert.equal(old[2].nights.find((night) => night.iso === '2024-03-02').on, true)
+  // The one-pass year walk marks every night the same as the month view.
+  const mixed = [{
+    id: 'b1',
+    title: 'Tag',
+    lamps: [
+      lamp('d', { createdOn: '2026-07-10' }),
+      lamp('w', { createdOn: '2026-07-01', cadence: 'weekly', weekdays: [1, 4] }),
+      lamp('m', { createdOn: '2026-06-01', cadence: 'monthly', monthDay: 'last' }),
+      lamp('o', { createdOn: '2026-08-01', cadence: 'once', onceWhen: 'by', dueBy: '2026-08-20' }),
+      lamp('x', { createdOn: '2026-07-01', archived: true }),
+    ],
+    answers: [
+      { lampId: 'd', periodKey: '2026-08-03', status: 'yes' },
+      { lampId: 'w', periodKey: '2026-08-03', status: 'yes' },
+      { lampId: 'd', periodKey: '2026-08-06', status: 'skip' },
+      { lampId: 'w', periodKey: '2026-08-06', status: 'late' },
+      { lampId: 'm', periodKey: '2026-07', status: 'yes' },
+      { lampId: 'o', periodKey: 'once:o', status: 'yes' },
+    ],
+  }]
+  const year = yearMonths(mixed, 2026, now)
+  for (let m = 5; m <= 9; m += 1) {
+    const month = monthStripNights(mixed, now, '', m - 9).nights
+    assert.deepEqual(year[m].nights, month, `month ${m + 1}`)
+  }
 })
 
 test('the calendar leaves future nights and nights before you started blank', () => {
@@ -3873,11 +3913,11 @@ test('reminders carry Did and Nope buttons that save through the widget tap path
   const pings = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
   assert.ok(pings.includes('setNotificationCategoryAsync(ASK_CATEGORY'), 'the category is registered')
   assert.ok(pings.includes('categoryIdentifier: ASK_CATEGORY'), 'question reminders use it')
-  assert.ok(pings.includes('night: row.periodKey'), 'the night rides along so a late tap lands on it')
+  assert.ok(pings.includes('data: askNoteData(row)'), 'the night rides along so a late tap lands on it')
   const push = readFileSync(path.join(checkRoot, 'native/shim/push.js'), 'utf8')
-  assert.ok(push.includes("action === 'did' || action === 'nope'"))
+  assert.ok(push.includes('notificationAnswer(response)'))
   const app = readFileSync(path.join(checkRoot, 'native/NativeApp.jsx'), 'utf8')
-  assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night)'))
+  assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())'))
 })
 
 test('a spoken answer finds the right open question, or none', async () => {
@@ -4349,4 +4389,93 @@ test('shop rows hide owned items and drops before their day', () => {
   const drop = SHOP_CALENDAR.looks.find((item) => item.from === '2026-10-23')
   assert.ok(!shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-20').includes(drop), 'a coming drop stays out of the row')
   assert.ok(shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-23').includes(drop), 'on its day it is in')
+})
+
+// r10-answer: earned streak freezes and Did / Nope from a reminder.
+const { FREEZE_MAX, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
+const { askActions, askNoteData, notificationAnswer } = await import('../src/lib/notify-answer.js')
+
+test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
+  const clears = (n) => Array(n).fill('clear')
+  assert.deepEqual(walkFreezes(clears(13)), { run: 13, held: 0, frozen: [] })
+  assert.equal(walkFreezes(clears(14)).held, 1)
+  assert.equal(walkFreezes(clears(28)).held, 2)
+  assert.equal(walkFreezes(clears(42)).held, FREEZE_MAX, 'never more than two held')
+  const spent = walkFreezes([...clears(14), 'none', 'miss', 'clear'])
+  assert.deepEqual(spent, { run: 15, held: 0, frozen: [15] }, 'the miss is covered, the run goes on but does not grow on it')
+  assert.deepEqual(walkFreezes([...clears(13), 'miss', 'clear']), { run: 1, held: 0, frozen: [] }, 'no freeze yet: the miss breaks it')
+  assert.equal(walkFreezes([...clears(14), 'miss', 'miss']).run, 0, 'one freeze covers one miss only')
+  assert.equal(walkFreezes([...clears(14), 'miss', ...clears(13)]).held, 0, 'the covered night does not count toward the next 14')
+  assert.equal(walkFreezes([...clears(14), 'miss', ...clears(14)]).held, 1)
+})
+
+test('next freeze counts down to the next 14, none when two are held', () => {
+  assert.equal(nightsToNextFreeze(0), 14)
+  assert.equal(nightsToNextFreeze(5), 9)
+  assert.equal(nightsToNextFreeze(14, 1), 14)
+  assert.equal(nightsToNextFreeze(27, 1), 1)
+  assert.equal(nightsToNextFreeze(30, 2), 0)
+})
+
+test('a freeze keeps the overall streak and shows as its own dot', () => {
+  const days = []
+  for (let d = 1; d <= 18; d += 1) days.push(`2026-08-${String(d).padStart(2, '0')}`)
+  const book = {
+    id: 'b1',
+    title: 'General',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }],
+    answers: days.filter((d) => d !== '2026-08-15').map((d) => ({ lampId: 'door', periodKey: d, status: 'yes', answeredAt: `${d}T20:00:00` })),
+  }
+  const now = new Date(2026, 7, 19, 21, 0)
+  const boards = [book]
+  assert.equal(shelfStreak(boards, now), 17, '14 + 3; the frozen night keeps it but does not add')
+  const state = freezeState(boards, now)
+  assert.equal(state.held, 0)
+  assert.ok(state.frozen.has('2026-08-15'))
+  assert.equal(freezeState(boards, now), state, 'memoized on the shelf and night')
+  const dot = weekStripNights(boards, now).find((night) => night.iso === '2026-08-15')
+  assert.equal(dot.freeze, true)
+  assert.equal(dot.miss, false)
+  assert.equal(nightWhy(boards, '2026-08-15', now).state, 'freeze')
+  assert.ok(en['why.freeze'])
+  const short = { ...book, lamps: [{ ...book.lamps[0], createdOn: '2026-08-02' }], answers: book.answers.filter((a) => a.periodKey >= '2026-08-02') }
+  assert.equal(shelfStreak([short], now), 3, 'only 13 nights before the miss: no freeze, the streak broke')
+  assert.equal(freezeState([short], now).frozen.size, 0)
+})
+
+test('reminder Did / Nope buttons map to the question and its period', () => {
+  const data = askNoteData({ lamp: { id: 'door' }, periodKey: '2026-10-05' })
+  assert.deepEqual(data, { lampId: 'door', night: '2026-10-05', go: '/tonight' })
+  const press = (action, payload) => ({ actionIdentifier: action, notification: { request: { identifier: '42', content: { data: payload } } } })
+  assert.deepEqual(notificationAnswer(press('did', data), 7), { kind: 'lamp', id: 'door', action: 'did', night: '2026-10-05', at: 7, noteId: '42' })
+  assert.equal(notificationAnswer(press('nope', data), 7).action, 'nope')
+  assert.equal(notificationAnswer(press('expo.modules.notifications.actions.DEFAULT', data)), null, 'a plain tap opens the app')
+  assert.equal(notificationAnswer(press('did', { go: '/tonight' })), null)
+  assert.equal(notificationAnswer(press('did', { weId: 'c1', night: '2026-10-05' })).kind, 'we')
+  assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === true), 'the buttons open the app so a closed app never drops the answer')
+})
+
+test('a reminder answer for a night that has turned is dropped', () => {
+  const night = '2026-08-10'
+  const book = { id: 'b1', title: 'General', dayFoldHour: 0, lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers: [] }
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const morning = new Date(2026, 7, 11, 10, 0)
+  assert.equal(applyWidgetTapOnce('door', 'did', night, morning, morning.getTime()), null)
+  const evening = new Date(2026, 7, 10, 21, 0)
+  const saved = applyWidgetTapOnce('door', 'did', night, evening, evening.getTime())
+  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
+  assert.equal(applyWidgetTapOnce('door', 'nope', night, evening, evening.getTime()), null, 'a did is not turned into a nope')
+})
+
+test('friends: one color per person, and the product names take a plural', () => {
+  const id = '2f0c6a3e-1111-4222-8333-444455556666'
+  assert.equal(personTintIndex(id), personTintIndex(id), 'same id, same color')
+  for (const sample of ['a', 'b', id, '']) assert.ok(personTintIndex(sample) >= 1 && personTintIndex(sample) <= 6)
+  assert.equal(personTint({ we: 'w' }, id), 'w', 'falls back to a theme color')
+  const bad = Object.entries(en).filter(([, value]) => /Did (wes|yous)\b/.test(String(value)))
+  assert.deepEqual(bad.map(([key]) => key), [], "say Did we's and Did you's")
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
 })
