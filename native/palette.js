@@ -17,6 +17,8 @@ const DARK = {
   skip: '#7d8694',
   open: '#39404e',
   miss: '#ff6f61',
+  // A missed night an earned freeze covered.
+  freeze: '#7fd4f0',
   // Did we: its own accent, so a shared card reads apart from your own.
   we: '#b69cff',
   weDeep: '#7d63d6',
@@ -39,6 +41,7 @@ const LIGHT = {
   skip: '#6a7164',
   open: '#d5d9cc',
   miss: '#c44536',
+  freeze: '#2a86a8',
   we: '#6b4fc8',
   weDeep: '#4f3799',
   veil: 'rgba(26, 29, 22, 0.4)',

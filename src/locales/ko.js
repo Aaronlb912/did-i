@@ -2659,4 +2659,10 @@ export const ko = {
   'questions.editMenu': "편집",
   'questions.editTitle': "질문 편집",
   'questions.pickSub': "여러 개를 골라 옮기거나 멈추거나 지울 수 있어요.",
+  // r10-answer
+  'freeze.dot': "프리즈",
+  'freeze.held': "프리즈: {max}개 중 {n}개",
+  'freeze.how': "14일 밤 연속마다 프리즈를 하나 받아요. 하룻밤을 놓쳐도 연속 기록을 지켜 줘요.",
+  'why.freeze': "프리즈가 연속 기록을 지켰어요.",
+  'noteAnswer.notSaved': "답이 저장되지 않았어요. 그 밤이 끝났거나 이미 답했을 수 있어요.",
 }

@@ -2719,4 +2719,10 @@ export const it = {
   'questions.editMenu': "Modifica",
   'questions.editTitle': "Modifica le tue domande",
   'questions.pickSub': "Scegline più di una da spostare, fermare o eliminare.",
+  // r10-answer
+  'freeze.dot': "Congelamento",
+  'freeze.held': "Congelamenti: {n} su {max}",
+  'freeze.how': "Ogni 14 notti di fila ottieni un congelamento. Salva la tua serie se perdi una notte.",
+  'why.freeze': "Un congelamento ha salvato la tua serie.",
+  'noteAnswer.notSaved': "La risposta non è stata salvata. La notte forse è finita, o aveva già una risposta.",
 }

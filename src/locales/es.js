@@ -2727,4 +2727,10 @@ export const es = {
   'questions.editMenu': "Editar",
   'questions.editTitle': "Editar tus preguntas",
   'questions.pickSub': "Elige varias para mover, pausar o borrar.",
+  // r10-answer
+  'freeze.dot': "Congelador",
+  'freeze.held': "Congeladores: {n} de {max}",
+  'freeze.how': "Cada 14 noches seguidas ganas un congelador. Mantiene tu racha si te pierdes una noche.",
+  'why.freeze': "Un congelador mantuvo tu racha.",
+  'noteAnswer.notSaved': "No se guardó la respuesta. Puede que la noche haya terminado o ya tuviera respuesta.",
 }

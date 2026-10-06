@@ -2643,4 +2643,10 @@ export const zh = {
   'questions.editMenu': "编辑",
   'questions.editTitle': "编辑你的问题",
   'questions.pickSub': "选择多个来移动、停止或删除。",
+  // r10-answer
+  'freeze.dot': "冻结",
+  'freeze.held': "冻结：{n} / {max}",
+  'freeze.how': "每连续 14 晚可获得一次冻结。错过一晚时，它会保住你的连续记录。",
+  'why.freeze': "一次冻结保住了你的连续记录。",
+  'noteAnswer.notSaved': "回答没有保存。这一晚可能已结束，或已经回答过。",
 }

@@ -2658,4 +2658,10 @@ export const ja = {
   'questions.editMenu': "編集",
   'questions.editTitle': "質問を編集",
   'questions.pickSub': "まとめて選んで、移動・停止・削除できます。",
+  // r10-answer
+  'freeze.dot': "フリーズ",
+  'freeze.held': "フリーズ: {n} / {max}",
+  'freeze.how': "14夜連続ごとにフリーズを1つもらえます。1夜逃しても連続記録を守ります。",
+  'why.freeze': "フリーズが連続記録を守りました。",
+  'noteAnswer.notSaved': "回答は保存されませんでした。その夜は終わったか、すでに回答済みです。",
 }

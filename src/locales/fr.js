@@ -2734,4 +2734,10 @@ export const fr = {
   'questions.editMenu': "Modifier",
   'questions.editTitle': "Modifier tes questions",
   'questions.pickSub': "Choisis-en plusieurs pour les déplacer, les arrêter ou les supprimer.",
+  // r10-answer
+  'freeze.dot': "Gel",
+  'freeze.held': "Gels : {n} sur {max}",
+  'freeze.how': "Chaque série de 14 nuits te donne un gel. Il garde ta série si tu manques une nuit.",
+  'why.freeze': "Un gel a gardé ta série.",
+  'noteAnswer.notSaved': "La réponse n'a pas été enregistrée. La nuit est peut-être finie, ou déjà répondue.",
 }

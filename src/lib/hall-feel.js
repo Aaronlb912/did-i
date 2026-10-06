@@ -1,4 +1,4 @@
-import { weNight } from './we-nights.js'
+import { weNight, weNightsStamp } from './we-nights.js'
 import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
@@ -82,6 +82,8 @@ export function lastBrokenNight(boards, now = new Date()) {
     else night = addDaysIso(night, -1)
   }
   if (!found) return null
+  // A freeze covered it: the streak went on.
+  if (freezeState(boards, now).frozen.has(night)) return null
   if (clearNightsInARow(boards, noonOn(night), '', 1, 1, false) > 0) return null
   const was = clearNightsInARow(boards, noonOn(addDaysIso(night, -1)), '', 1100, 1100, false)
   return was > 0 ? { night, was } : null
@@ -116,27 +118,23 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
   const floor = firstNight(books)
   let cursor = boardDate(now, books[0].dayFoldHour)
   const grace = waitTonight ? graceNightIso(now) : ''
+  // Freezes keep the overall streak only, never a tag's.
+  const frozen = tagId ? null : freezeState(boards, now).frozen
   let heat = 0
   for (let step = 0; step < lookBack && heat < cap; step += 1) {
     if (floor && cursor < floor) break
     const at = noonOn(cursor)
     if (!at) break
-    let dueCount = 0
-    let clear = true
-    for (const book of books) {
-      const night = nightOf(book, cursor, at)
-      dueCount += night.counted
-      if (night.counted && !night.clear) clear = false
-    }
-    // Did wes due for you that night: only your own did counts.
-    const we = weNight(cursor, tagId)
-    dueCount += we.due
-    if (we.due && !we.clear) clear = false
+    const { due: dueCount, clear } = nightTally(books, cursor, at, tagId)
     if (dueCount === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
     }
     if (!clear) {
+      if (frozen && step > 0 && frozen.has(cursor)) {
+        cursor = addDaysIso(cursor, -1)
+        continue
+      }
       if ((step > 0 && cursor !== grace) || !waitTonight) break
       cursor = addDaysIso(cursor, -1)
       continue
@@ -145,6 +143,151 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
     cursor = addDaysIso(cursor, -1)
   }
   return heat
+}
+
+// How many things were due on a night across books, and whether all were did.
+function nightTally(books, iso, at, tagId = '') {
+  let due = 0
+  let clear = true
+  for (const book of books) {
+    const night = nightOf(book, iso, at)
+    due += night.counted
+    if (night.counted && !night.clear) clear = false
+  }
+  // Did wes due for you that night: only your own did counts.
+  const we = weNight(iso, tagId)
+  due += we.due
+  if (we.due && !we.clear) clear = false
+  return { due, clear }
+}
+
+// Earned streak freezes. Every 14 cleared nights in a row earns one, up to
+// two held. A held freeze covers the next missed night: the streak goes on
+// but does not grow. nights is 'clear' | 'miss' | 'none' in date order.
+export const FREEZE_EVERY = 14
+export const FREEZE_MAX = 2
+export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, start = null) {
+  let run = start?.run || 0
+  let held = start?.held || 0
+  const frozen = []
+  for (let i = 0; i < nights.length; i += 1) {
+    const state = nights[i]
+    if (state === 'clear') {
+      run += 1
+      if (run % every === 0 && held < max) held += 1
+    } else if (state === 'miss') {
+      if (held > 0) {
+        held -= 1
+        frozen.push(i)
+      } else run = 0
+    }
+  }
+  return { run, held, frozen }
+}
+
+// The first night anything happened: the oldest made date or answer.
+function startOf(books, today) {
+  let first = firstNight(books)
+  if (first) return first
+  for (const book of books) {
+    for (const answer of book.answers || []) {
+      const night = String(answer.periodKey || '').slice(0, 10)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(night) && (!first || night < first)) first = night
+    }
+  }
+  return first || today
+}
+
+// Walks every night from the start, forward, so every device and the web
+// land on the same freezes. Tonight and a night still in its grace period
+// are not judged yet. Memoized on the shelf, the night and Did we nights.
+const freezeMemo = new WeakMap()
+const NO_FREEZE = { held: 0, frozen: new Set() }
+export function freezeState(boards, now = new Date()) {
+  if (!boards || typeof boards !== 'object') return NO_FREEZE
+  const books = scopedBooks(boards, '')
+  if (!books.length) return NO_FREEZE
+  const today = boardDate(now, books[0].dayFoldHour)
+  const grace = graceNightIso(now)
+  const key = `${today}|${grace}|${weNightsStamp()}`
+  let byKey = freezeMemo.get(boards)
+  if (!byKey) {
+    byKey = new Map()
+    freezeMemo.set(boards, byKey)
+  }
+  const hit = byKey.get(key)
+  if (hit) return hit
+  const walkNights = (from, to, start) => {
+    const isos = []
+    const states = []
+    let cursor = from
+    for (let step = 0; step <= 1100 && cursor < to; step += 1) {
+      const at = noonOn(cursor)
+      if (!at) break
+      const { due, clear } = nightTally(books, cursor, at)
+      isos.push(cursor)
+      states.push(!due ? 'none' : clear ? 'clear' : cursor === today || cursor === grace ? 'none' : 'miss')
+      cursor = addDaysIso(cursor, 1)
+    }
+    const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start)
+    return { run: walk.run, held: walk.held, frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])] }
+  }
+  // Nights before last night are settled. Their walk is kept by what they
+  // hold, so a tap tonight (a new shelf object) walks only the last nights.
+  const settledTo = addDaysIso(today, -1)
+  const sign = `${settledTo}|${weNightsStamp()}|${pastSign(books, settledTo)}`
+  let past = settledMemo.get(sign)
+  if (!past) {
+    let first = startOf(books, today)
+    const floor = addDaysIso(today, -1100)
+    if (first < floor) first = floor
+    past = walkNights(first, settledTo, null)
+    if (settledMemo.size > 4) settledMemo.clear()
+    settledMemo.set(sign, past)
+  }
+  const walk = walkNights(settledTo, addDaysIso(today, 1), past)
+  const out = { held: walk.held, frozen: new Set(walk.frozen) }
+  if (byKey.size > 8) byKey.clear()
+  byKey.set(key, out)
+  return out
+}
+
+// A cheap fingerprint of everything that decides the settled nights: the
+// questions and every answer filed before `before`.
+const settledMemo = new Map()
+function pastSign(books, before) {
+  let hash = 7
+  const mix = (text) => {
+    for (let i = 0; i < text.length; i += 1) hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0
+  }
+  for (const book of books) {
+    mix(`|${book.id}|${book.dayFoldHour}`)
+    for (const lamp of book.lamps || []) {
+      mix(JSON.stringify(lamp))
+    }
+    // Answers are hashed once each and summed, so a tap does not rehash years.
+    let sum = 0
+    let count = 0
+    for (const answer of book.answers || []) {
+      if (!answer || !(String(answer.periodKey || '') < before)) continue
+      count += 1
+      sum = (sum + answerSign(answer)) | 0
+    }
+    mix(`|${count}|${sum}`)
+  }
+  return hash
+}
+
+const answerSigns = new WeakMap()
+function answerSign(answer) {
+  let sign = answerSigns.get(answer)
+  if (sign === undefined) {
+    const text = `${answer.lampId}|${answer.periodKey}|${answer.status}`
+    sign = 17
+    for (let i = 0; i < text.length; i += 1) sign = (Math.imul(sign, 31) + text.charCodeAt(i)) | 0
+    answerSigns.set(answer, sign)
+  }
+  return sign
 }
 
 export function filamentLevel(book, lampId) {

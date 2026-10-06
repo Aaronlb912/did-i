@@ -3873,11 +3873,11 @@ test('reminders carry Did and Nope buttons that save through the widget tap path
   const pings = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
   assert.ok(pings.includes('setNotificationCategoryAsync(ASK_CATEGORY'), 'the category is registered')
   assert.ok(pings.includes('categoryIdentifier: ASK_CATEGORY'), 'question reminders use it')
-  assert.ok(pings.includes('night: row.periodKey'), 'the night rides along so a late tap lands on it')
+  assert.ok(pings.includes('data: askNoteData(row)'), 'the night rides along so a late tap lands on it')
   const push = readFileSync(path.join(checkRoot, 'native/shim/push.js'), 'utf8')
-  assert.ok(push.includes("action === 'did' || action === 'nope'"))
+  assert.ok(push.includes('notificationAnswer(response)'))
   const app = readFileSync(path.join(checkRoot, 'native/NativeApp.jsx'), 'utf8')
-  assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night)'))
+  assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())'))
 })
 
 test('a spoken answer finds the right open question, or none', async () => {
@@ -4349,4 +4349,73 @@ test('shop rows hide owned items and drops before their day', () => {
   const drop = SHOP_CALENDAR.looks.find((item) => item.from === '2026-10-23')
   assert.ok(!shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-20').includes(drop), 'a coming drop stays out of the row')
   assert.ok(shopRow('look', SHOP_CALENDAR.looks, none, '2026-10-23').includes(drop), 'on its day it is in')
+})
+
+// r10-answer: earned streak freezes and Did / Nope from a reminder.
+const { FREEZE_MAX, freezeState, walkFreezes } = await import('../src/lib/hall-feel.js')
+const { askActions, askNoteData, notificationAnswer } = await import('../src/lib/notify-answer.js')
+
+test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
+  const clears = (n) => Array(n).fill('clear')
+  assert.deepEqual(walkFreezes(clears(13)), { run: 13, held: 0, frozen: [] })
+  assert.equal(walkFreezes(clears(14)).held, 1)
+  assert.equal(walkFreezes(clears(28)).held, 2)
+  assert.equal(walkFreezes(clears(42)).held, FREEZE_MAX, 'never more than two held')
+  const spent = walkFreezes([...clears(14), 'none', 'miss', 'clear'])
+  assert.deepEqual(spent, { run: 15, held: 0, frozen: [15] }, 'the miss is covered, the run goes on but does not grow on it')
+  assert.deepEqual(walkFreezes([...clears(13), 'miss', 'clear']), { run: 1, held: 0, frozen: [] }, 'no freeze yet: the miss breaks it')
+  assert.equal(walkFreezes([...clears(14), 'miss', 'miss']).run, 0, 'one freeze covers one miss only')
+  assert.equal(walkFreezes([...clears(14), 'miss', ...clears(13)]).held, 0, 'the covered night does not count toward the next 14')
+  assert.equal(walkFreezes([...clears(14), 'miss', ...clears(14)]).held, 1)
+})
+
+test('a freeze keeps the overall streak and shows as its own dot', () => {
+  const days = []
+  for (let d = 1; d <= 18; d += 1) days.push(`2026-08-${String(d).padStart(2, '0')}`)
+  const book = {
+    id: 'b1',
+    title: 'General',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }],
+    answers: days.filter((d) => d !== '2026-08-15').map((d) => ({ lampId: 'door', periodKey: d, status: 'yes', answeredAt: `${d}T20:00:00` })),
+  }
+  const now = new Date(2026, 7, 19, 21, 0)
+  const boards = [book]
+  assert.equal(shelfStreak(boards, now), 17, '14 + 3; the frozen night keeps it but does not add')
+  const state = freezeState(boards, now)
+  assert.equal(state.held, 0)
+  assert.ok(state.frozen.has('2026-08-15'))
+  assert.equal(freezeState(boards, now), state, 'memoized on the shelf and night')
+  const dot = weekStripNights(boards, now).find((night) => night.iso === '2026-08-15')
+  assert.equal(dot.freeze, true)
+  assert.equal(dot.miss, false)
+  assert.equal(nightWhy(boards, '2026-08-15', now).state, 'freeze')
+  assert.ok(en['why.freeze'])
+  const short = { ...book, lamps: [{ ...book.lamps[0], createdOn: '2026-08-02' }], answers: book.answers.filter((a) => a.periodKey >= '2026-08-02') }
+  assert.equal(shelfStreak([short], now), 3, 'only 13 nights before the miss: no freeze, the streak broke')
+  assert.equal(freezeState([short], now).frozen.size, 0)
+})
+
+test('reminder Did / Nope buttons map to the question and its period', () => {
+  const data = askNoteData({ lamp: { id: 'door' }, periodKey: '2026-10-05' })
+  assert.deepEqual(data, { lampId: 'door', night: '2026-10-05', go: '/tonight' })
+  const press = (action, payload) => ({ actionIdentifier: action, notification: { request: { identifier: '42', content: { data: payload } } } })
+  assert.deepEqual(notificationAnswer(press('did', data), 7), { kind: 'lamp', id: 'door', action: 'did', night: '2026-10-05', at: 7, noteId: '42' })
+  assert.equal(notificationAnswer(press('nope', data), 7).action, 'nope')
+  assert.equal(notificationAnswer(press('expo.modules.notifications.actions.DEFAULT', data)), null, 'a plain tap opens the app')
+  assert.equal(notificationAnswer(press('did', { go: '/tonight' })), null)
+  assert.equal(notificationAnswer(press('did', { weId: 'c1', night: '2026-10-05' })).kind, 'we')
+  assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === false), 'the buttons answer without opening the app')
+})
+
+test('a reminder answer for a night that has turned is dropped', () => {
+  const night = '2026-08-10'
+  const book = { id: 'b1', title: 'General', dayFoldHour: 0, lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers: [] }
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const morning = new Date(2026, 7, 11, 10, 0)
+  assert.equal(applyWidgetTapOnce('door', 'did', night, morning, morning.getTime()), null)
+  const evening = new Date(2026, 7, 10, 21, 0)
+  const saved = applyWidgetTapOnce('door', 'did', night, evening, evening.getTime())
+  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
+  assert.equal(applyWidgetTapOnce('door', 'nope', night, evening, evening.getTime()), null, 'a did is not turned into a nope')
 })

@@ -2738,4 +2738,10 @@ export const de = {
   'questions.editMenu': "Bearbeiten",
   'questions.editTitle': "Deine Fragen bearbeiten",
   'questions.pickSub': "Mehrere auswählen, um sie zu verschieben, zu stoppen oder zu löschen.",
+  // r10-answer
+  'freeze.dot': "Schutz",
+  'freeze.held': "Schutz: {n} von {max}",
+  'freeze.how': "Alle 14 Nächte am Stück gibt es einen Schutz. Er hält deine Serie, wenn du eine Nacht verpasst.",
+  'why.freeze': "Ein Schutz hat deine Serie gehalten.",
+  'noteAnswer.notSaved': "Die Antwort wurde nicht gespeichert. Die Nacht ist vielleicht vorbei oder schon beantwortet.",
 }

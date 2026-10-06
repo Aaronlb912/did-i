@@ -9,6 +9,12 @@ const KEY = 'did-i-we-nights'
 const listeners = new Set()
 let rows = readStored()
 let byNight = null
+let stamp = 0
+
+// Bumps on every change, so a memo over Did we nights knows to redo itself.
+export function weNightsStamp() {
+  return stamp
+}
 
 function readStored() {
   try {
@@ -30,6 +36,7 @@ function store(next) {
 export function setWeNightRows(next) {
   rows = Array.isArray(next) ? next : []
   byNight = null
+  stamp += 1
   store(rows)
   listeners.forEach((fn) => {
     try {
