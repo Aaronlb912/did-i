@@ -2959,4 +2959,10 @@ export const zh = {
   "ach.wejoin.howOne": "加入一个 Did we。",
   "ach.wedone.nameOne": "一起完成 1 晚",
   "ach.wedone.lineOne": "你们一起完成了一个 Did we。",
+  "we.pAnswer": "{name}：{state}",
+  "we.a.waiting": "等待中",
+  "recent.cog": "最近",
+  "recent.title": "最近",
+  "recent.emptyTitle": "还没有",
+  "recent.emptyBody": "新成就和 Did we 动态会出现在这里，错过的也能再看。",
 }

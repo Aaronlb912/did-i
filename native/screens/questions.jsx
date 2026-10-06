@@ -2091,7 +2091,8 @@ const styles = StyleSheet.create({
   modeSub: { fontFamily: fonts.ui, fontSize: 13 },
   modeCancel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   modeRoom: { height: 64 },
-  hiddenKeep: { opacity: 0 },
+  // Tall enough for the Select bar on top of it: title, count, and its key.
+  hiddenKeep: { opacity: 0, minHeight: 72 },
   // Covers the hidden top row exactly (its bottom margin left clear).
   pickTop: {
     position: 'absolute',
@@ -2104,6 +2105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderRadius: 16,
   },

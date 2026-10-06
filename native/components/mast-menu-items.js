@@ -25,7 +25,7 @@ export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/m
 // badge. A badge never highlights a row; only where you are does.
 // we: Did we asks to join (and unopened gifts). Did we lives
 // on Friends and family, so its count folds into that row's badge.
-export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
+export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
   const path = readRoute().path
   const waiting = signedIn ? inbox + asks + we : asks
   // Home always leads, so every row stays in the same place on every screen.
@@ -43,6 +43,8 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0) {
       count: waiting,
       icon: 'people',
     },
+    // Recent: achievements and Did we moments, in full. Its count is the unseen ones.
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
     {

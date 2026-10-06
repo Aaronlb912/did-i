@@ -10,6 +10,8 @@ import {
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
+import { EmptyCard } from '../components/PersonCard.jsx'
+import { markNoticesSeen, useNotices } from '../../src/lib/notices.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -385,6 +387,40 @@ export function IdeasScreen() {
       ))}
       <DidButton colors={colors} label={t('ideas.writeOwn')} onPress={() => goHash('/add')} />
       <KeyButton colors={colors} label={t('ideas.help')} onPress={() => goHash('/help')} />
+    </ScreenShell>
+  )
+}
+
+// Recent: the last achievements and Did we moments, in full, newest first.
+// Opening it marks them seen, which clears the menu's count.
+export function RecentScreen() {
+  const colors = useHallColors()
+  const { list } = useNotices()
+  useEffect(() => {
+    markNoticesSeen()
+  }, [list.length])
+  const locale = readPrefs().locale
+  return (
+    <ScreenShell title={t('recent.title')} colors={colors}>
+      {list.length ? (
+        list.map((item) => (
+          <Pressable
+            key={item.id}
+            accessibilityRole={item.go?.path ? 'button' : undefined}
+            disabled={!item.go?.path}
+            onPress={() => goHash(item.go.path, item.go.id ? { id: item.go.id } : undefined)}
+            style={({ pressed }) => [styles.idea, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+          >
+            <Kicker colors={colors}>{item.title}</Kicker>
+            {item.text ? <Text style={[styles.recentText, { color: colors.ink }]}>{item.text}</Text> : null}
+            <Meta colors={colors}>
+              {new Date(item.at).toLocaleString(locale, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+            </Meta>
+          </Pressable>
+        ))
+      ) : (
+        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
+      )}
     </ScreenShell>
   )
 }
@@ -2298,6 +2334,7 @@ const styles = StyleSheet.create({
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
+  recentText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
   saved: { fontFamily: fonts.uiSemi, fontSize: 12, marginTop: 6 },
   veil: { flex: 1, justifyContent: 'center', padding: 20 },

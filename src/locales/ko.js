@@ -2974,4 +2974,10 @@ export const ko = {
   "ach.wejoin.howOne": "Did we에 참여하기.",
   "ach.wedone.nameOne": "함께 1밤",
   "ach.wedone.lineOne": "Did we를 함께 해냈어요.",
+  "we.pAnswer": "{name}: {state}",
+  "we.a.waiting": "기다리는 중",
+  "recent.cog": "최근",
+  "recent.title": "최근",
+  "recent.emptyTitle": "아직 없어요",
+  "recent.emptyBody": "새 업적과 Did we 소식이 여기 모여요. 놓친 것도 다시 볼 수 있어요.",
 }

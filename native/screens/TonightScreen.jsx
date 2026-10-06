@@ -74,7 +74,7 @@ import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { FamilyTonight } from '../components/FamilyTonight.jsx'
-import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { WeAnswered, WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
@@ -975,6 +975,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Slot>
         <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
+        </Slot>
+        <Slot>
+          {stack.cheer ? null : <WeAnswered cards={weCards} colors={colors} />}
         </Slot>
         <Slot>
           {social?.kind === 'we' && face !== weSwipe && !pickedWe ? (

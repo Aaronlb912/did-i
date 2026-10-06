@@ -3040,4 +3040,10 @@ export const es = {
   "ach.wejoin.howOne": "Únete a un Did we.",
   "ach.wedone.nameOne": "Juntos 1 noche",
   "ach.wedone.lineOne": "Terminaron un Did we juntos.",
+  "we.pAnswer": "{name}: {state}",
+  "we.a.waiting": "Esperando",
+  "recent.cog": "Recientes",
+  "recent.title": "Recientes",
+  "recent.emptyTitle": "Nada todavía",
+  "recent.emptyBody": "Los logros nuevos y los momentos de Did we llegan aquí, para leer los que te perdiste.",
 }

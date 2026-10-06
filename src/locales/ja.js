@@ -2973,4 +2973,10 @@ export const ja = {
   "ach.wejoin.howOne": "Did we に参加する。",
   "ach.wedone.nameOne": "一緒に1夜達成",
   "ach.wedone.lineOne": "Did we を一緒に達成した。",
+  "we.pAnswer": "{name}：{state}",
+  "we.a.waiting": "待ち",
+  "recent.cog": "最近",
+  "recent.title": "最近",
+  "recent.emptyTitle": "まだありません",
+  "recent.emptyBody": "新しい実績や Did we の出来事がここに届きます。見逃したものも読めます。",
 }

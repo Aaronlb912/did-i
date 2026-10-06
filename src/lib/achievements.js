@@ -379,6 +379,9 @@ export function commitBook(book, clock = new Date()) {
 // long list arrived catches up on tiers you already had, so those stay
 // quiet; the first fourteen still toast as before.
 const CATCH_UP_KEY = 'did-i-ach-caught-up'
+// Every achievement already toasted on this device. A sync or a Did we card
+// can earn one again after it was dropped from the book; it never toasts twice.
+const TOASTED_KEY = 'did-i-ach-toasted'
 
 export function marksToToast(news) {
   let ids = [...(news || [])]
@@ -386,6 +389,12 @@ export function marksToToast(news) {
   try {
     caughtUp = localStorage.getItem(CATCH_UP_KEY) === '1'
     if (!caughtUp) localStorage.setItem(CATCH_UP_KEY, '1')
+    const raw = JSON.parse(localStorage.getItem(TOASTED_KEY) || '[]')
+    const toasted = new Set(Array.isArray(raw) ? raw : [])
+    const fresh = ids.filter((id) => !toasted.has(id))
+    for (const id of ids) toasted.add(id)
+    localStorage.setItem(TOASTED_KEY, JSON.stringify([...toasted]))
+    ids = fresh
   } catch {
     caughtUp = true
   }

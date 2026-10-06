@@ -3026,4 +3026,10 @@ export const en = {
   "ach.wejoin.howOne": "Join a Did we.",
   "ach.wedone.nameOne": "Done together 1 night",
   "ach.wedone.lineOne": "You finished a Did we together.",
+  "we.pAnswer": "{name}: {state}",
+  "we.a.waiting": "Waiting",
+  "recent.cog": "Recent",
+  "recent.title": "Recent",
+  "recent.emptyTitle": "Nothing yet",
+  "recent.emptyBody": "New achievements and Did we moments land here, so you can read one you missed.",
 }

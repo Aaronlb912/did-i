@@ -60,6 +60,7 @@ const ROUTES = new Set([
   '/sent',
   '/we',
   '/we/new',
+  '/recent',
 ])
 
 /** The root screen every other route is pushed over. */

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { AppState, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -16,6 +16,7 @@ import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { setAppBadge } from '../../src/lib/push.js'
+import { useNotices } from '../../src/lib/notices.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -167,7 +168,8 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   // The safe-area anchor is a better guess than trusting that number.
   const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
-  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we)
+  const notices = useNotices()
+  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we, notices.unseen)
   const on = menuIsOn(items)
   const reduce = useReduceMotion()
   const theme = useTheme()
@@ -339,6 +341,16 @@ export function MastMenuCog() {
   useEffect(() => {
     setAppBadge(waiting)
   }, [waiting])
+  // A push sets the icon to 1 while the app is away; opening it sets it back.
+  const waitingNow = useRef(waiting)
+  waitingNow.current = waiting
+  useEffect(() => {
+    setAppBadge(waitingNow.current, true)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setAppBadge(waitingNow.current, true)
+    })
+    return () => sub.remove()
+  }, [])
   // (Did we's count shows through Friends and family.)
   const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we))
   const button = useRef(null)

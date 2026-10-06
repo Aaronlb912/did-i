@@ -136,6 +136,76 @@ export function WeFaces({ card, colors, cheer }) {
   )
 }
 
+// Where each person is tonight, as small chips: "You: Did", "Jo: Waiting".
+// The server already hides what the card's rules keep private (a nope under
+// "waiting", every name under "count"), so a hidden answer reads as waiting
+// and a count card lists only you, then the count.
+const STATE_KEY = { did: 'we.did', nope: 'we.nope', waiting: 'we.a.waiting' }
+
+export function WeAnswers({ card, colors }) {
+  const people = (card.people || []).filter((p) => p.state === 'in' && (card.shows !== 'count' || p.me))
+  if (!people.length) return null
+  const tint = colors.we || colors.on
+  return (
+    <View style={styles.answers}>
+      {people.map((person) => {
+        const state = person.status === 'did' ? 'did' : person.status === 'nope' ? 'nope' : 'waiting'
+        const label = t('we.pAnswer', { name: person.me ? t('we.you') : person.name, state: t(STATE_KEY[state]) })
+        return (
+          <View
+            key={person.id}
+            accessible
+            accessibilityLabel={label}
+            style={[
+              styles.answer,
+              {
+                borderColor: state === 'did' ? tint : colors.line,
+                backgroundColor: state === 'did' ? colors.panel2 : 'transparent',
+              },
+            ]}
+          >
+            <WeFace person={person} card={card} colors={colors} size={18} />
+            <Text style={[styles.answerText, { color: state === 'waiting' ? colors.inkDim : colors.ink }]} numberOfLines={1}>
+              {label}
+            </Text>
+          </View>
+        )
+      })}
+      {card.shows === 'count' ? (
+        <Text style={[styles.meta, styles.answerCount, { color: colors.inkSoft }]}>
+          {t('we.countLine', { n: card.dids, total: card.total })}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+// Did wes you already answered tonight, for Home: who has answered and what.
+// Each opens its page. Nothing when there are none.
+export function WeAnswered({ cards, colors, hide = '' }) {
+  const done = (cards || []).filter((card) => card.myState === 'in' && card.due && weMine(card)?.status && card.id !== hide)
+  if (!done.length) return null
+  return (
+    <View style={[styles.wrap, styles.pausedWrap, { borderColor: colors.we || colors.line, backgroundColor: colors.panel }]}>
+      {done.map((card, i) => (
+        <Pressable
+          key={card.id}
+          accessibilityRole="button"
+          onPress={() => goHash('/we', { id: card.id })}
+          style={[styles.row, i ? { borderTopColor: colors.line } : { borderTopWidth: 0 }]}
+        >
+          <View style={styles.copy}>
+            <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
+              {card.question}
+            </Text>
+            <WeAnswers card={card} colors={colors} />
+          </View>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
 export function weStatusLine(card) {
   if (card.done) return t('we.doneTogether')
   const waiting = weWaiting(card)
@@ -272,7 +342,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       buddy={buddy}
     >
       <View style={styles.swipeFoot}>
-        <WeFaces card={card} colors={colors} />
+        <WeAnswers card={card} colors={colors} />
         <Text style={[styles.meta, { color: colors.inkSoft }]}>{weStatusLine(card)}</Text>
         {weStreak(card) > 0 ? (
           <Text style={[styles.meta, { color: colors.we || colors.on }]}>{t('we.streak', { n: weStreak(card) })}</Text>
@@ -345,7 +415,7 @@ export function WeList({ colors }) {
           >
             <View style={styles.copy}>
               <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
-              <WeFaces card={card} colors={colors} />
+              {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} />}
               <Text style={[styles.meta, { color: card.done ? colors.on : colors.inkSoft }]}>
                 {card.folder ? `${card.folder} · ` : ''}
                 {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : t('we.notTonight')}
@@ -389,4 +459,8 @@ const styles = StyleSheet.create({
   note: { fontFamily: fonts.ui, fontSize: 13, padding: 12 },
   swipeFoot: { alignItems: 'center', gap: 6, marginTop: 10 },
   pausedWrap: { marginTop: 8 },
+  answers: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  answer: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 999, paddingLeft: 3, paddingRight: 9, paddingVertical: 3, maxWidth: '100%' },
+  answerText: { fontFamily: fonts.uiSemi, fontSize: 12, flexShrink: 1 },
+  answerCount: { marginLeft: 2 },
 })

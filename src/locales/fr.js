@@ -3047,4 +3047,10 @@ export const fr = {
   "ach.wejoin.howOne": "Rejoins un Did we.",
   "ach.wedone.nameOne": "Ensemble 1 soir",
   "ach.wedone.lineOne": "Vous avez fini un Did we ensemble.",
+  "we.pAnswer": "{name} : {state}",
+  "we.a.waiting": "En attente",
+  "recent.cog": "Récents",
+  "recent.title": "Récents",
+  "recent.emptyTitle": "Rien pour l’instant",
+  "recent.emptyBody": "Les nouveaux succès et les moments Did we arrivent ici, pour relire ceux que tu as ratés.",
 }

@@ -42,7 +42,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
+import { WeAnswers, WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -925,6 +925,7 @@ function WeCardPage({ book, cardId, onChange }) {
         </View>
         {bigCard ? null : <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>}
         <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
+        {card.due ? <WeAnswers card={card} colors={colors} /> : null}
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
       </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
@@ -1126,7 +1127,7 @@ export function WeHomeList({ book, onChange }) {
       >
         <View style={styles.weRowCopy}>
           <Text style={[styles.weQ, { color: colors.ink }]}>{weQuestion(card.question)}</Text>
-          <WeFaces card={card} colors={colors} cheer={cheer} />
+          {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} cheer={cheer} />}
           <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
             {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
             {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
