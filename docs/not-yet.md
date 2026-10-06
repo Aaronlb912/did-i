@@ -13,6 +13,7 @@ Last worked through 2026-10-02.
 - **Web shows a gifted frame by name only.** No frame art on the web, and View in collection there has no frames tab.
 - **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
+- **Frames have no wishlist and no "Remind me".** Looks, cheers, buddies and accessories can be wishlisted; frame sheets cannot (the wish list in `purse.js` only knows those four kinds). A seasonal frame that is not out yet says when it is back, with no reminder.
 
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 

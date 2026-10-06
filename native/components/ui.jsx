@@ -112,17 +112,19 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
 
 export function Row({ label, note, onPress, colors }) {
   return (
+    // No onPress: a plain info row, no chevron and no press state.
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={onPress ? 'button' : 'text'}
       onPress={onPress}
-      android_ripple={ripple(`${colors.on}33`)}
+      disabled={!onPress}
+      android_ripple={onPress ? ripple(`${colors.on}33`) : undefined}
       style={({ pressed }) => [styles.row, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       <View style={styles.rowText}>
         <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
         {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
       </View>
-      <Text style={[styles.rowChev, { color: colors.inkDim }]}>›</Text>
+      {onPress ? <Text style={[styles.rowChev, { color: colors.inkDim }]}>›</Text> : null}
     </Pressable>
   )
 }
@@ -203,10 +205,11 @@ const styles = StyleSheet.create({
   kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   title: { fontFamily: fonts.display, fontSize: 26, fontWeight: '700', lineHeight: 32 },
   meta: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
-  did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+  // overflow: the Android press ripple stays inside the round pill.
+  did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, overflow: 'hidden' },
   didSmall: { minHeight: 40 },
   didText: { fontFamily: fonts.uiBold, fontSize: 15 },
-  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1 },
+  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowText: { flex: 1, gap: 4 },

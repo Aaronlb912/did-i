@@ -108,9 +108,11 @@ function StatusTag({ status, colors }) {
 }
 
 // A small done card, so the frame in the sheet sits around something real.
-function MiniCard({ colors }) {
+// roomy: more inner space for frames with art over the corners (Frost), so
+// the crystals never touch the text.
+function MiniCard({ colors, roomy }) {
   return (
-    <View style={[...faceCardStyle(colors), styles.miniCard]}>
+    <View style={[...faceCardStyle(colors), styles.miniCard, roomy && styles.miniCardRoomy]}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>
         {t('tonight.doneTitle')}
@@ -126,6 +128,8 @@ function weekFor(frame, owned, ctx) {
   return [0, 1, 2, 3, 4, 5, 6].map((i) => i < n)
 }
 
+const CORNER_ART = new Set(['frost'])
+
 function FrameSheetPreview({ id, colors, ctx, weekLit }) {
   return (
     <View style={styles.sheetPreview}>
@@ -140,7 +144,7 @@ function FrameSheetPreview({ id, colors, ctx, weekLit }) {
         date={ctx.today}
         style={styles.sheetFrame}
       >
-        <MiniCard colors={colors} />
+        <MiniCard colors={colors} roomy={CORNER_ART.has(id)} />
       </CardFrame>
     </View>
   )
@@ -232,12 +236,14 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     }
   }
   const shortCoins = !owned && frame.coins && purse.coins < frame.coins
+  // Seasonal, not claimed yet: say it costs nothing and stays yours.
+  const seasonLine = !owned && frame.kind === 'season' ? `\n${t('frames.seasonFree')}` : ''
   publishSheet({
     preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} weekLit={weekFor(frame, owned, ctx)} />,
     title: frameName(id),
     body: shortCoins
       ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
-      : priceLine,
+      : `${priceLine}${seasonLine}`,
     ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => reopen(book)) } : {}),
     content: <FrameFacts frame={frame} owned={owned} colors={colors} />,
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
@@ -466,6 +472,7 @@ const styles = StyleSheet.create({
   sheetFrame: { width: 260 },
   // Extra inner padding keeps corner art (Frost's crystals) off the words.
   miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26 },
+  miniCardRoomy: { paddingHorizontal: 54, paddingVertical: 50 },
   facts: { gap: 6, paddingBottom: 4 },
   rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },

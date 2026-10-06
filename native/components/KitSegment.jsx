@@ -60,13 +60,13 @@ export function KitSegment({ items, selected, onSelect, colors }) {
             accessibilityRole="tab"
             accessibilityLabel={item.label}
             accessibilityState={{ selected: on }}
-            style={[styles.tab, on && !tabWidth && { backgroundColor: colors.on }]}
+            style={[styles.tab, items.length > 4 && styles.tabTight, on && !tabWidth && { backgroundColor: colors.on }]}
           >
             <Text
-              style={[styles.label, items.length > 3 && styles.labelTight, { color: on ? colors.bg : colors.inkSoft }]}
+              style={[styles.label, items.length > 3 && styles.labelTight, items.length > 4 && styles.labelTiny, { color: on ? colors.bg : colors.inkSoft }]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.8}
+              minimumFontScale={items.length > 4 ? 0.85 : 0.8}
             >
               {item.label}
             </Text>
@@ -104,4 +104,7 @@ const styles = StyleSheet.create({
   },
   label: { fontFamily: fonts.uiBold, fontSize: 14 },
   labelTight: { fontSize: 12 },
+  // Five tabs (gifts): one smaller size for all, so "Accessories" fits whole.
+  tabTight: { paddingHorizontal: 1 },
+  labelTiny: { fontSize: 11, letterSpacing: -0.2 },
 })

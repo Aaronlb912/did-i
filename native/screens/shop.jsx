@@ -171,14 +171,18 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children, l
   )
 }
 
-function BuddyPreviewCard({ id, colors }) {
+// cap: the label over the card ("On their card" for a gift).
+// room: Collection's padded box, so every tab's preview is the same size.
+function BuddyPreviewCard({ id, colors, cap, room }) {
   return (
     <View style={styles.buddyPreview}>
-      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
-      <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={id} alive />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+      <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
+      <View style={room ? styles.kitPreviewRoom : null}>
+        <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <BuddyHang id={id} alive />
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+        </View>
       </View>
     </View>
   )
@@ -186,13 +190,14 @@ function BuddyPreviewCard({ id, colors }) {
 
 // A look shown in its own colours, not the page's ambient ones, so it reads
 // true whether the page is peeking a coin look or a gem look.
-function LookPreviewCard({ id }) {
+function LookPreviewCard({ id, cap, room }) {
   const theme = useTheme()
   const colors = useLookColors(id)
   const gemCard = gemPanelStyle(id, theme)
   return (
     <View style={styles.buddyPreview}>
-      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
+      <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
+      <View style={room ? styles.kitPreviewRoom : null}>
       <View style={[styles.buddyPreviewGlow, gemGlowHostStyle(id, theme)]}>
         <View
           style={[
@@ -205,6 +210,7 @@ function LookPreviewCard({ id }) {
           <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
           <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
         </View>
+      </View>
       </View>
     </View>
   )
@@ -222,7 +228,7 @@ function FramePreviewCard({ lookId, frameId }) {
   return (
     <View style={styles.buddyPreview}>
       <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
-      <View style={styles.framePreviewRoom}>
+      <View style={styles.kitPreviewRoom}>
         <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={7} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
           <View
             style={[
@@ -314,7 +320,8 @@ function PriceTag({ tag, colors }) {
 
 // The label always sits on the tile's bottom edge: the art area above it is a
 // fixed height, so a short chip (Spark) and a tall one line up the same way.
-function ShopTile({ type, item, purse, colors, onTile, style }) {
+// dim: can't afford it yet. Still tappable, so the sheet can say how many more.
+function ShopTile({ type, item, purse, colors, onTile, style, dim }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
   return (
@@ -322,7 +329,7 @@ function ShopTile({ type, item, purse, colors, onTile, style }) {
       onPress={() => onTile(type, item)}
       accessibilityRole="button"
       accessibilityLabel={t('shop.see', { name })}
-      style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
+      style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, dim && styles.tileDim, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
         <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />
@@ -823,7 +830,7 @@ export function ShopScreen({ book, onChange }) {
   function done(type, item, next, bought) {
     if (shortOnGems(next, colors)) return
     if (next.miss) {
-      openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next))
+      openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next), wishFor(type, item))
       return
     }
     publishSheet(null)
@@ -918,9 +925,10 @@ export function ShopScreen({ book, onChange }) {
           confirmMiss(shopMiss(next))
           return
         }
-        onChange(next.book)
         const nextPurse = normalizePurse(next.book)
         const teased = isTeased(item)
+        // Flip the label first; the save re-renders the whole shop, so it
+        // waits a frame and the sheet answers the tap at once.
         openTilePreview(
           type,
           item,
@@ -931,6 +939,7 @@ export function ShopScreen({ book, onChange }) {
           teased ? teasedBody(item) : '',
           wishFor(type, item, next.book),
         )
+        requestAnimationFrame(() => setTimeout(() => onChange(next.book), 0))
       },
     }
   }
@@ -958,13 +967,25 @@ export function ShopScreen({ book, onChange }) {
         purse={purse}
         colors={colors}
         onTile={onTile}
-        foot={(slide) =>
-          slide?.kind === 'coming' && !prefs.dropPings ? (
-            <Pressable accessibilityRole="link" onPress={() => goHash('/pings')} hitSlop={8} style={styles.dropLink}>
+        // The link shows on the coming page only, but its space stays on
+        // every page so nothing below jumps on a swipe.
+        foot={(slide) => {
+          if (prefs.dropPings || !slides.some((item) => item.kind === 'coming')) return null
+          const shown = slide?.kind === 'coming'
+          return (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityElementsHidden={!shown}
+              importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}
+              disabled={!shown}
+              onPress={() => goHash('/pings')}
+              hitSlop={8}
+              style={[styles.dropLink, !shown && styles.dropLinkHidden]}
+            >
               <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
             </Pressable>
-          ) : null
-        }
+          )
+        }}
       />
 
       {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
@@ -1305,15 +1326,18 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
 // Your buddy (or the ant, if none is on) with what it has on, plus the item
 // being looked at, so you see the whole outfit before buying.
-function AccessoryPreviewCard({ id, purse, colors }) {
+function AccessoryPreviewCard({ id, purse, colors, cap, room }) {
   const item = accessoryById(id)
   const worn = item ? { ...purse.worn, [item.slot]: id } : purse.worn
   return (
     <View style={styles.buddyPreview}>
-      <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+      {cap || room ? <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap> : null}
+      <View style={room ? styles.kitPreviewRoom : null}>
+        <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{previewSample().tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewSample().question}</Text>
+        </View>
       </View>
     </View>
   )
@@ -1890,7 +1914,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
   const kinds = {
     looks: { art: <LookChip id={purse.lookOn} colors={colors} />, n: looks.length, of: LOOKS.length },
-    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
+    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, count: t('shop.ownedN', { n: frameInfo.n }) },
     cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
     buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
     accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
@@ -1909,7 +1933,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               key={item.id}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${t(item.key)}, ${t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
+              accessibilityLabel={`${t(item.key)}, ${kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
               onPress={() => setTab(item.id)}
               style={({ pressed }) => [
                 styles.kindTile,
@@ -1921,7 +1945,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               <View style={styles.kindCopy}>
                 <Text style={[styles.kindName, { color: colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
                 <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
-                  {t('kit.ownedOf', { n: kind.n, of: kind.of })}
+                  {kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}
                 </Text>
               </View>
             </Pressable>
@@ -1936,7 +1960,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'looks' ? (
         <>
-        <LookPreviewCard id={purse.lookOn} />
+        <LookPreviewCard id={purse.lookOn} room />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {looks.map((item) => (
             <KitTile
@@ -1955,7 +1979,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'buddies' ? (
         <>
-        <BuddyPreviewCard id={purse.buddyOn} colors={colors} />
+        <BuddyPreviewCard id={purse.buddyOn} colors={colors} room />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
@@ -1987,7 +2011,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'accessories' ? (
         <>
-          <AccessoryPreviewCard id="" purse={purse} colors={colors} />
+          <AccessoryPreviewCard id="" purse={purse} colors={colors} room />
           {purse.buddyOn ? null : <Meta colors={colors}>{t('kit.accOnAnt')}</Meta>}
           {!accessories.length ? (
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -2031,7 +2055,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'cheers' ? (
         <>
-          <LookPreviewCard id={purse.lookOn} />
+          <LookPreviewCard id={purse.lookOn} room />
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {cheers.map((item) => {
               const play = cheerPlayOf(book, item.id)
@@ -2249,7 +2273,8 @@ const styles = StyleSheet.create({
   },
   buddyPreview: { gap: 8, marginTop: 4 },
   // Frame art reaches past the card edge; leave it room so nothing is cut.
-  framePreviewRoom: { paddingHorizontal: 14, paddingVertical: 22 },
+  // Every Collection tab uses this box, so the preview never changes size.
+  kitPreviewRoom: { paddingHorizontal: 14, paddingVertical: 22, minHeight: 216, justifyContent: 'center' },
   filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
   filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
   filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
@@ -2286,6 +2311,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dropLink: { alignSelf: 'flex-start', marginTop: 4, marginBottom: 8 },
+  dropLinkHidden: { opacity: 0 },
   ownAllLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 6 },
   promoShelf: { gap: 8, marginTop: 4 },
   carousel: { gap: 8, marginTop: 4 },
@@ -2298,6 +2324,7 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4 },
   rowScroll: { gap: 8, paddingRight: 4 },
   rowTile: { width: 104 },
+  tileDim: { opacity: 0.5 },
   tile: {
     borderWidth: 1,
     borderRadius: 12,
@@ -2381,20 +2408,24 @@ const GIFT_TABS = [
   { id: 'looks', type: 'look', key: 'shop.looks' },
   { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
   { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
-  // A short label, so five tabs fit at one size.
-  { id: 'accessories', type: 'accessory', key: 'gift.tabAccessories' },
+  { id: 'accessories', type: 'accessory', key: 'shop.accessories' },
   { id: 'frames', type: 'frame', key: 'frames.title' },
 ]
 
 // Nobody's outfit: a gift's accessory shows on the ant, alone.
 const BARE = { worn: {}, buddyOn: '' }
 
-function giftArt(type, id, colors, coat, purse = BARE) {
-  if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} />
+// cap: "On their card" when sending, so the label says whose card it is.
+function giftArt(type, id, colors, coat, purse = BARE, cap) {
+  if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} cap={cap} />
   if (type === 'cheer') return <CheerSheetPreview id={id} coat={coat} colors={colors} />
-  if (type === 'look') return <LookPreviewCard id={id} />
+  if (type === 'look') return <LookPreviewCard id={id} cap={cap} />
   if (type === 'frame') return <FramePreview id={id} colors={colors} size={120} />
-  return <BuddyPreviewCard id={id} colors={colors} />
+  return <BuddyPreviewCard id={id} colors={colors} cap={cap} />
+}
+
+function canAfford(item, purse) {
+  return item.gems > 0 ? purse.gems >= item.gems : purse.coins >= (item.coins || 0)
 }
 
 function giftMiss(why) {
@@ -2468,16 +2499,35 @@ export function GiftScreen({ book, onChange, toId }) {
     setSent(t('gift.sent', { item: tileName(type, item.id), name }))
   }
 
+  // Short on coins or gems: the same need-more line as the Shop sheet, and
+  // Send stays off. The server checks the cost again either way.
   function openPick(type, item, miss = '') {
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
+    const short = !canAfford(item, purse)
+    const need = item.gems
+      ? `${t('shop.needMoreGems', { n: item.gems - purse.gems })}\n${t('shop.earnGems')}`
+      : `${t('shop.needMoreCoins', { n: (item.coins || 0) - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
     publishSheet({
-      preview: giftArt(type, item.id, colors, coat),
+      preview: giftArt(type, item.id, colors, coat, BARE, t('gift.preview')),
       kicker: t('gift.kicker', { name }),
       title: tileName(type, item.id),
-      body: miss || `${cost}\n${t('gift.howItWorks')}`,
+      body: short ? `${cost}\n${need}` : miss || `${cost}\n${t('gift.howItWorks')}`,
       quote: note.trim(),
       goLabel: t('gift.send'),
+      goDisabled: short,
       onGo: () => send(type, item),
+      ...(short && item.gems
+        ? {
+            moreLabel: t('gems.shortGo'),
+            onMore: () => {
+              publishSheet(null)
+              goHash('/gems')
+            },
+          }
+        : {}),
+      ...(short && !item.gems
+        ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openPick(type, item)) }
+        : {}),
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
@@ -2519,6 +2569,7 @@ export function GiftScreen({ book, onChange, toId }) {
           maxLength={60}
           placeholder={t('gift.notePlaceholder')}
           accessibilityLabel={t('gift.noteLabel')}
+          style={[giftStyles.input, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel2 }]}
           returnKeyType="done"
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
@@ -2540,6 +2591,7 @@ export function GiftScreen({ book, onChange, toId }) {
             colors={colors}
             onTile={(type, row) => person && openPick(type, row)}
             style={giftStyles.tile}
+            dim={!canAfford(item, purse)}
           />
         ))}
       </View>
@@ -2631,6 +2683,8 @@ export function GiftHost({ book, onChange }) {
 
 const giftStyles = StyleSheet.create({
   note: { gap: 4 },
+  // The same box as Field, so it reads as a place to type.
+  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.ui },
   to: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   toText: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1 },
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },

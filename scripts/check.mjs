@@ -827,7 +827,7 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   const nights = coinNights(shelf, now)
   assert.deepEqual(nights.slice(0, 4), [
     { night: '2026-10-04', coins: 6, reason: 'cap' },
-    { night: '2026-10-03', coins: 3, reason: '' },
+    { night: '2026-10-03', coins: 3, reason: 'late' },
     { night: '2026-10-02', coins: 0, reason: 'new' },
     { night: '2026-10-01', coins: 0, reason: 'none' },
   ])
@@ -838,6 +838,8 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
   assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
   assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
+  assert.match(coinNightLine(nights[1], 'Sat'), /late/i, 'a late Did explains 3 coins, not 4')
+  assert.match(coinNightLine(merged[1], 'Sat'), /\.$/, 'a line with no reason still ends in a period')
   // Nothing before the first question or answer.
   const young = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [lamp('y', { createdOn: '2026-10-03' })], answers: [] }] }
   assert.deepEqual(coinNights(young, now).map((row) => row.reason), ['open', 'none'])

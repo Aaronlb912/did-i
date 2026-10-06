@@ -972,14 +972,12 @@ function WeCardPage({ book, cardId, onChange }) {
       ) : null}
       {card.due ? (
         <View style={styles.acts}>
-          <DidButton
-            colors={colors}
-            small
-            dim={mine?.status === 'nope'}
-            label={mine?.status === 'did' ? t('we.youDid') : t('we.did')}
-            disabled={ans.busy === card.id}
-            onPress={() => ans.answer(card, 'did')}
-          />
+          {/* Not answered yet: Did and Nope look the same, so neither reads as picked. */}
+          {mine?.status === 'did' ? (
+            <DidButton colors={colors} small label={t('we.youDid')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+          ) : (
+            <KeyButton colors={colors} label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+          )}
           <KeyButton
             colors={colors}
             picked={mine?.status === 'nope'}
@@ -1137,7 +1135,7 @@ export function WeHomeList({ book, onChange }) {
         </View>
         {open ? (
           <View style={styles.weRowActs}>
-            <DidButton colors={colors} small label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+            <KeyButton colors={colors} label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
             <KeyButton colors={colors} label={t('we.nope')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'nope')} />
           </View>
         ) : null}
