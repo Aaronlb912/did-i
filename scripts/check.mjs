@@ -3268,8 +3268,9 @@ test('haptics speak one language on Tonight and do not switch off with Reduce Mo
   phone.feelTap('undo')
   phone.feelTap('tick')
   phone.feelTap('edge')
+  // No Did sound on the phone, so playClick adds nothing.
   phone.playClick()
-  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection', 'selection'])
+  assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
   writePrefs({ lessMotion: false })
 })
 
