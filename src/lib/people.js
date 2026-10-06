@@ -158,6 +158,8 @@ function togetherRow(row) {
     id: row.user_id,
     name: personName(row),
     initials: personInitials(row),
+    buddy: row.buddy_on || '',
+    avatar: row.avatar_url || '',
     shared,
     doneOn: shared ? row.done_on || '' : '',
   }
@@ -531,6 +533,16 @@ export async function giftCheer(toId, cheerId) {
   if (/gift cap/i.test(error.message || '')) return { miss: 'giftCap' }
   if (/not friends/i.test(error.message || '')) return { miss: 'notFriend' }
   return bad(error)
+}
+
+// A friend's last 7 nights, oldest first, as [{ night, cleared }]. Empty
+// when they do not share, are not a friend, or the server lacks it.
+export async function friendWeek(otherId, upto) {
+  const db = cloud()
+  if (!db || !otherId || !upto) return []
+  const { data, error } = await db.rpc('friend_week', { other: otherId, upto })
+  if (error || !Array.isArray(data)) return []
+  return data.map((row) => ({ night: String(row.night), cleared: Boolean(row.cleared) }))
 }
 
 // One friend or family member, by id, for the gift screen's heading.

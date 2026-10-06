@@ -66,6 +66,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { PersonAvatar } from '../components/PersonAvatar.jsx'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
@@ -2378,7 +2379,14 @@ export function GiftScreen({ book, onChange, toId }) {
 
   return (
     <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
-      <Meta colors={colors}>{person ? t('gift.to', { name }) : t('family.loading')}</Meta>
+      {person ? (
+        <View style={giftStyles.to}>
+          <PersonAvatar person={person} colors={colors} size={36} />
+          <Text style={[giftStyles.toText, { color: colors.inkSoft }]} numberOfLines={1}>{t('gift.to', { name })}</Text>
+        </View>
+      ) : (
+        <Meta colors={colors}>{t('family.loading')}</Meta>
+      )}
       <View style={giftStyles.note}>
         <AppTextInput
           colors={colors}
@@ -2499,6 +2507,8 @@ export function GiftHost({ book, onChange }) {
 
 const giftStyles = StyleSheet.create({
   note: { gap: 4 },
+  to: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  toText: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1 },
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
   sent: { fontFamily: fonts.uiBold, fontSize: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

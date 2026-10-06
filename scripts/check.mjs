@@ -107,6 +107,7 @@ import { authGated, clearAuthSkip, needsAuth, skipAuth } from '../src/lib/auth-g
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
 import { en } from '../src/locales/en.js'
+import { personTint, personTintIndex } from '../src/lib/person-tint.js'
 import { es } from '../src/locales/es.js'
 import { fr } from '../src/locales/fr.js'
 import { de } from '../src/locales/de.js'
@@ -4458,4 +4459,14 @@ test('a reminder answer for a night that has turned is dropped', () => {
   const saved = applyWidgetTapOnce('door', 'did', night, evening, evening.getTime())
   assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
   assert.equal(applyWidgetTapOnce('door', 'nope', night, evening, evening.getTime()), null, 'a did is not turned into a nope')
+test('friends: one color per person, and the product names take a plural', () => {
+  const id = '2f0c6a3e-1111-4222-8333-444455556666'
+  assert.equal(personTintIndex(id), personTintIndex(id), 'same id, same color')
+  for (const sample of ['a', 'b', id, '']) assert.ok(personTintIndex(sample) >= 1 && personTintIndex(sample) <= 6)
+  assert.equal(personTint({ we: 'w' }, id), 'w', 'falls back to a theme color')
+  const bad = Object.entries(en).filter(([, value]) => /Did (wes|yous)\b/.test(String(value)))
+  assert.deepEqual(bad.map(([key]) => key), [], "say Did we's and Did you's")
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
 })

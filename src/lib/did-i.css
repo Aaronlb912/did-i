@@ -28,6 +28,12 @@
   --di-we: #b69cff;
   --di-we-deep: #7d63d6;
   --di-veil: rgba(8, 10, 14, 0.55);
+  --di-person-1: #ff9f6b;
+  --di-person-2: #6fd0c4;
+  --di-person-3: #f27fb5;
+  --di-person-4: #ffd166;
+  --di-person-5: #8fb8ff;
+  --di-person-6: #c49bff;
   --di-display: 'Inter', ui-sans-serif, system-ui, 'Segoe UI Variable Display', 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
   --di-ui: 'Inter', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -673,6 +679,12 @@ html[data-theme='light'] .di-hall,
   --di-we: #6b4fc8;
   --di-we-deep: #4f3799;
   --di-veil: rgba(26, 29, 22, 0.4);
+  --di-person-1: #b8572a;
+  --di-person-2: #1f7f74;
+  --di-person-3: #a83a72;
+  --di-person-4: #8a6a00;
+  --di-person-5: #2f5fb0;
+  --di-person-6: #6d43b8;
 }
 
 html[data-theme='light'] .di-hall[data-look='ink'],
