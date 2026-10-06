@@ -154,7 +154,8 @@ export function moveLamps(books, picks, targetId) {
     }
   }
   if (dest === target) return []
-  changed.set(targetId, dest)
+  // An empty folder is parked (archived); a question moving in brings it back.
+  changed.set(targetId, { ...dest, archived: false })
   return [...changed.values()]
 }
 

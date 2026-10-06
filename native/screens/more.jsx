@@ -66,7 +66,7 @@ import { shareRecap } from '../components/WeekRecap.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
-import { weCardTitle } from '../../src/lib/did-we.js'
+import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -646,6 +646,14 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     return colors.open
   }
 
+  function cellLook(state) {
+    // Not due that night: a faint outline, not a color from the legend.
+    if (state === 'off') return { borderWidth: 1, borderColor: colors.lineSoft }
+    // Due tonight, not answered yet: a ring, so it never reads as a nope.
+    if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
+    return { backgroundColor: cellColor(state) }
+  }
+
   function weState(night, card) {
     const state = weCardState(night.iso, card)
     if (state === 'off') return 'off'
@@ -670,8 +678,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
         <View
           style={[
             styles.weekCell,
-            // Not due that night: an empty outline, not a color from the legend.
-            state === 'off' ? { borderWidth: 1, borderColor: colors.lineSoft } : { backgroundColor: cellColor(state) },
+            cellLook(state),
           ]}
         />
       </Pressable>
@@ -683,6 +690,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['skip', t('later.nope')],
     ['hole', t('later.missed')],
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
+    ['open', t('jewelKey.open')],
   ]
 
   return (
@@ -731,7 +739,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           {weCards.map((card) => (
             <View key={`we-${card}`} style={styles.weekRow}>
               <Text numberOfLines={1} style={[styles.weekName, styles.weekNameText, { color: colors.ink }]}>
-                {weCardTitle(card) || t('we.title')}
+                {weCardShort(card) || t('we.title')}
               </Text>
               {nights.map((night) => cell(night, weState(night, card)))}
             </View>
@@ -740,7 +748,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           <View style={styles.legend}>
             {legend.map(([state, label]) => (
               <View key={state} style={styles.legendItem}>
-                <View style={[styles.weekCell, { backgroundColor: cellColor(state) }]} />
+                <View style={[styles.weekCell, cellLook(state)]} />
                 <Text style={[styles.legendText, { color: colors.inkDim }]}>{label}</Text>
               </View>
             ))}

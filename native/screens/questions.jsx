@@ -563,8 +563,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     stopPicking()
   }
 
-  // Move only makes sense with somewhere else to go.
-  const folders = shelf.filter((item) => !item.archived)
+  // Move only makes sense with somewhere else to go. Empty folders are parked
+  // (archived) but are still places to move to.
+  const folders = shelf
 
   function moveTo(targetId) {
     if (!chosen.length || !onChangeBooks) return
@@ -682,7 +683,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                         onClose: () => publishSheet(null),
                         content: (
                           <View style={styles.editMenu}>
-                            <Row colors={colors} label={t('questions.pick')} note={t('questions.pickSub')} onPress={pick(setPicking)} />
+                            <Row colors={colors} label={t('questions.pick')} note={t(folders.length > 1 ? 'questions.pickSub' : 'questions.pickSubNoMove')} onPress={pick(setPicking)} />
                             <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(setOrdering)} />
                           </View>
                         ),
