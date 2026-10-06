@@ -36,6 +36,7 @@ import { useSwipeFly } from './SwipeFly.jsx'
 import { aimCheer } from '../lib/cheer-origin.js'
 import { fonts } from '../theme.js'
 import { CardFrame } from './frames/CardFrame.jsx'
+import { noteSwipe } from '../lib/swipe-wheels.js'
 
 const SPRING = { damping: 20, stiffness: 260 }
 
@@ -224,7 +225,10 @@ export function SwipeCard({
           glowStyle={glowStyle}
           blockDid={blockDid}
           blockNope={blockNope}
-          onAnswer={answer}
+          onAnswer={(way, from) => {
+            if (!demo) noteSwipe()
+            answer(way, from)
+          }}
           accessible={!demo}
           accessibilityLabel={title}
           accessibilityActions={demo ? undefined : actions}

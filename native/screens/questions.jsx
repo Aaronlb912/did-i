@@ -72,6 +72,7 @@ import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
+import { useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import {
   AppTextInput,
   ChipRow,
@@ -506,6 +507,21 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     setPicked(new Set())
   }
 
+  // Reorder saves as you go; Never mind puts the order back the way it was.
+  const orderBefore = useRef(null)
+  function startOrdering() {
+    orderBefore.current = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
+    setOrdering(true)
+  }
+  function cancelOrder() {
+    const ids = orderBefore.current
+    setOrdering(false)
+    if (!ids || !onChangeBooks) return
+    const next = setLampOrder(shelf, ids)
+    const changed = next.filter((item, at) => item !== shelf[at])
+    if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
+  }
+
   useEffect(() => {
     if (!picking && !ordering) return undefined
     function onBack(event) {
@@ -568,6 +584,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   // (archived) but are still places to move to.
   const folders = shelf
   const { overlayBottom } = useAppInsets()
+  const headerBottom = useHeaderBottom()
   // While picking, the top row and dot key stay (hidden) so nothing moves.
   const stillWhilePicking = picking
     ? { pointerEvents: 'none', style: styles.hiddenKeep, accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' }
@@ -670,15 +687,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {/* Select keeps this row's space (hidden) so the list never moves under a finger. */}
         {ordering ? null : (
           <View>
-          {/* The Select header sits in the row's own space, so nothing moves. */}
-          {picking ? (
-            <View style={[styles.pickTop, { borderColor: colors.on, backgroundColor: colors.panel }]}>
-              <Text style={[styles.pickCount, styles.flex1, { color: colors.ink }]} numberOfLines={1}>
-                {t('questions.pickedN', { n: chosen.length })}
-              </Text>
-              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
-            </View>
-          ) : null}
           <View {...stillWhilePicking}>
           <Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
@@ -716,7 +724,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                         content: (
                           <View style={styles.editMenu}>
                             <Row colors={colors} label={t('questions.pick')} note={t(folders.length > 1 ? 'questions.pickSub' : 'questions.pickSubNoMove')} onPress={pick(setPicking)} />
-                            <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(setOrdering)} />
+                            <Row colors={colors} label={t('questions.reorder')} note={t('questions.reorderHint')} onPress={pick(startOrdering)} />
                           </View>
                         ),
                       })
@@ -756,17 +764,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           </Reveal>
         ) : null}
 
-        {ordering ? (
-          <Reveal style={[styles.pickBar, { borderColor: colors.on, backgroundColor: colors.panel }]}>
-            <View style={styles.pickHead}>
-              <Text style={[styles.pickCount, { color: colors.ink }]}>{t('questions.reorderHint')}</Text>
-              <KeyButton colors={colors} label={t('questions.pickDone')} onPress={() => setOrdering(false)} />
-            </View>
-            {liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
-              <Reveal>
-                <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
-              </Reveal>
-            ) : null}
+        {/* Room under the pinned mode bar, so it never covers the first row. */}
+        {ordering ? <View style={styles.modeRoom} /> : null}
+        {ordering && liveRows.some((row) => /^\d\d:\d\d$/.test(String(row.lamp.askAfter || ''))) ? (
+          <Reveal>
+            <Text style={[styles.reorderTimed, { color: colors.inkSoft }]}>{t('questions.reorderTimed')}</Text>
           </Reveal>
         ) : null}
         {hung.length && !ordering ? (
@@ -855,6 +857,33 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {/* Room so the floating Select bar never covers the last rows. */}
         {picking ? <View style={styles.pickRoom} /> : null}
       </BoardShell>
+          {/* One pinned mode bar for Select and Reorder: what mode, Never mind, Done. */}
+          {picking || ordering ? (
+            <Reveal
+              style={[styles.modeBar, { top: headerBottom + 8, borderColor: colors.on, backgroundColor: colors.panel }]}
+              accessibilityRole="header"
+            >
+              <Pressable
+                accessibilityRole="button"
+                onPress={picking ? stopPicking : cancelOrder}
+                hitSlop={10}
+                style={styles.modeSide}
+              >
+                <Text style={[styles.modeCancel, { color: colors.inkSoft }]} numberOfLines={1}>{t('settings.neverMind')}</Text>
+              </Pressable>
+              <View style={styles.modeMid}>
+                <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>
+                  {picking ? t('questions.pick') : t('questions.reorder')}
+                </Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>
+                  {picking ? t('questions.pickedN', { n: chosen.length }) : t('questions.reorderHint')}
+                </Text>
+              </View>
+              <View style={[styles.modeSide, styles.modeEnd]}>
+                <DidButton label={t('questions.pickDone')} onPress={picking ? stopPicking : () => setOrdering(false)} colors={colors} small />
+              </View>
+            </Reveal>
+          ) : null}
           {picking ? (
             <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
               <View style={styles.pickHead}>
@@ -863,11 +892,6 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                   label={allOn ? t('questions.pickNone') : t('questions.pickAll')}
                   onPress={() => setPicked(allOn ? new Set() : new Set(shown.map(rowKey)))}
                 />
-                {/* The count and Done ride along here too, so they never scroll away. */}
-                <Text style={[styles.pickCount, styles.flex1, { color: colors.ink }]} numberOfLines={1}>
-                  {t('questions.pickedN', { n: chosen.length })}
-                </Text>
-                <KeyButton colors={colors} label={t('questions.pickDone')} onPress={stopPicking} />
               </View>
               <View style={styles.pickActions}>
                 <KeyButton
@@ -2042,6 +2066,28 @@ const styles = StyleSheet.create({
   pickBar: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
   pickFloat: { position: 'absolute', left: 12, right: 12, zIndex: 20, elevation: 12 },
   pickRoom: { height: 140 },
+  modeBar: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    zIndex: 21,
+    elevation: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeSide: { flexBasis: 96, flexShrink: 1, justifyContent: 'center' },
+  modeEnd: { alignItems: 'flex-end' },
+  modeMid: { flex: 1, alignItems: 'center' },
+  modeTitle: { fontFamily: fonts.uiBold, fontSize: 16 },
+  modeSub: { fontFamily: fonts.ui, fontSize: 13 },
+  modeCancel: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  modeRoom: { height: 64 },
   hiddenKeep: { opacity: 0 },
   // Covers the hidden top row exactly (its bottom margin left clear).
   pickTop: {
