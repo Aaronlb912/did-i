@@ -1,46 +1,13 @@
 import { useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Reveal } from '../lib/motion.jsx'
 import { t } from '../../src/lib/i18n.js'
-import { personInitials } from '../../src/lib/people.js'
 import { fonts } from '../theme.js'
+import { PersonAvatar } from './PersonAvatar.jsx'
 
-/** Their photo, or initials, in a rounded tile; the edge lights when they are done tonight. */
-export function Avatar({ person, done, colors, size = 46 }) {
-  const [broken, setBroken] = useState(false)
-  const url = !broken && typeof person?.avatar_url === 'string' ? person.avatar_url.trim() : ''
-  const radius = Math.round(size * 0.28)
-  return (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius,
-          backgroundColor: done ? colors.on : colors.panel2,
-          borderColor: done ? colors.on : colors.line,
-          borderWidth: url && done ? 2 : 1,
-        },
-      ]}
-    >
-      {url ? (
-        <Image
-          source={{ uri: url }}
-          style={{ width: '100%', height: '100%', borderRadius: radius - 1 }}
-          accessibilityIgnoresInvertColors
-          onError={() => setBroken(true)}
-        />
-      ) : (
-        <Text
-          style={[styles.initials, { color: done ? colors.bg : colors.ink, fontSize: Math.round(size * 0.36) }]}
-          numberOfLines={1}
-        >
-          {personInitials(person)}
-        </Text>
-      )}
-    </View>
-  )
+/** One person: photo, else buddy with a colored initial, else letters (PersonAvatar). */
+export function Avatar(props) {
+  return <PersonAvatar {...props} />
 }
 
 /** A small label on the right of a card: done tonight, a role, a streak. */
