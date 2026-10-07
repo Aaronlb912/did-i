@@ -858,7 +858,7 @@ test('a night says why it broke, by the same rules as the dots', () => {
   }
 })
 
-test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question', () => {
+test('coin history pays like coinsFor: 2, 1, 0, first 3, a new question too', () => {
   const now = new Date('2026-10-04T21:00:00')
   const old = ['a', 'b', 'c', 'd'].map((id) => lamp(id, { createdOn: '2026-09-01' }))
   const answers = [
@@ -877,7 +877,7 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   assert.deepEqual(nights.slice(0, 4), [
     { night: '2026-10-04', coins: 6, reason: 'cap' },
     { night: '2026-10-03', coins: 3, reason: 'late' },
-    { night: '2026-10-02', coins: 0, reason: 'new' },
+    { night: '2026-10-02', coins: 2, reason: '' },
     { night: '2026-10-01', coins: 0, reason: 'none' },
   ])
   assert.equal(nights.length, 7)
@@ -885,10 +885,9 @@ test('coin history pays like coinsFor: 2, 1, 0, first 3, not on a new question',
   const merged = mergeCoinNights(nights, [{ night: '2026-10-04', coins: 6 }, { night: '2026-10-03', coins: 2 }])
   assert.equal(merged.length, 7)
   assert.deepEqual(merged[1], { night: '2026-10-03', coins: 2, reason: '' })
-  assert.deepEqual(merged[2], { night: '2026-10-02', coins: 0, reason: 'new' })
+  assert.deepEqual(merged[2], { night: '2026-10-02', coins: 2, reason: '' })
   // Tonight stays on your own answers, like Home, whatever the server says.
   assert.deepEqual(mergeCoinNights(nights, [{ night: '2026-10-04', coins: 2 }], '2026-10-04')[0], nights[0])
-  assert.match(coinNightLine(merged[2], 'Fri'), /tomorrow/)
   assert.match(coinNightLine(nights[1], 'Sat'), /late/i, 'a late Did explains 3 coins, not 4')
   assert.match(coinNightLine(merged[1], 'Sat'), /\.$/, 'a line with no reason still ends in a period')
   // Nothing before the first question or answer.
