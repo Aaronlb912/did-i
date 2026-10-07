@@ -610,6 +610,36 @@ export async function sendGift(toId, kind, itemId, note = '') {
 }
 
 // Gifts you sent, newest first, with who they went to and what happened.
+// Paid gifts you sent that were not returned, for the Wrapped frame. Kept on
+// the phone so the frame check stays instant; refreshed when the Shop opens.
+const GIFTS_SENT_KEY = 'did-i-gifts-sent'
+export function readGiftsSent() {
+  try {
+    return Number(localStorage.getItem(GIFTS_SENT_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export async function refreshGiftsSent() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return readGiftsSent()
+  const { count, error } = await db
+    .from('cheer_gifts')
+    .select('id', { count: 'exact', head: true })
+    .eq('from_id', user.id)
+    .is('returned_at', null)
+    .or('gems.gt.0,coins.gt.0')
+  if (error || typeof count !== 'number') return readGiftsSent()
+  try {
+    localStorage.setItem(GIFTS_SENT_KEY, String(count))
+  } catch {
+    // Only the frame check reads it.
+  }
+  return count
+}
+
 export async function listSentGifts() {
   const db = cloud()
   if (!db) return { rows: [], miss: 'off' }
