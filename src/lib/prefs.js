@@ -112,7 +112,9 @@ function cleanPrefs(raw) {
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
-  // Answers given by swipe, counted to 3; then the Did and Nope buttons go (native/lib/swipe-wheels.js).
+  // The one-time "how to swipe" popup on Home (native/components/SwipeIntro.jsx).
+  if (raw?.swipeIntroSeen === true) next.swipeIntroSeen = true
+  // Answers given by swipe, counted to 3 (an older phone that got this far skips the popup).
   if (Number.isInteger(raw?.swipesLearned) && raw.swipesLearned > 0) next.swipesLearned = Math.min(raw.swipesLearned, 3)
   return next
 }

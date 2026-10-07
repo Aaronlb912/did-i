@@ -38,6 +38,7 @@ import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/boar
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
+import { SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
@@ -286,7 +287,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const tagsMixed = new Set(stack.dueWithWait.map((row) => row.tag || '')).size > 1
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
-  const showKey = !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
+  // How to swipe, once, the first time a card is up. The dots key waits until after it.
+  const introSeen = swipeIntroSeen(usePrefs())
+  const showIntro = !introSeen && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
+  const showKey = introSeen && !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
     () =>
@@ -938,6 +942,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </FadeScroll>
       ) : null}
 
+      {showIntro ? <SwipeIntro colors={colors} /> : null}
       {showKey ? (
         <JewelKey colors={colors} onDone={() => setKeySeen(true)} />
       ) : null}
