@@ -278,8 +278,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
-  // A picked card keeps its folder label in one place before and after its answer.
-  const pickedPanel = { ...(gemCard || {}), justifyContent: 'flex-start' }
+  // The question sits in the middle of the card, picked or not (owner call, 2026-10-06).
+  const pickedPanel = gemCard || {}
   // Folders and topics are the first chip of the question row, not a row of their own.
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
   // The folder name under each chip only helps when the chips come from more than one folder.
@@ -305,8 +305,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
   const wheels = useSwipeWheels()
-  const hadWheels = useRef(wheels.buttons)
-  if (wheels.buttons) hadWheels.current = true
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {
@@ -497,16 +495,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   let answerBar = null
   // Training wheels: they go after a few swipes (kept for screen readers and reduced motion).
   const withAnswerButtons = (card, onDid, onNope) => {
-    if (!wheels.buttons && !hadWheels.current) return card
-    // When the buttons go, their space stays until Home opens again, so the card does not jump.
-    const gone = !wheels.buttons
+    // Once they go, the card and the rows under it ease into the room (noteSwipe animates it).
+    if (!wheels.buttons) return card
     answerBar = (
-    <View
-      style={[styles.answerBar, gone ? styles.answerGone : null]}
-      pointerEvents={gone ? 'none' : 'auto'}
-      accessibilityElementsHidden={gone}
-      importantForAccessibility={gone ? 'no-hide-descendants' : 'auto'}
-    >
+    <View style={styles.answerBar}>
       <View style={styles.answerRow}>
         {onNope ? (
           <View style={styles.answerCell}>
@@ -517,7 +509,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
       </View>
-      {wheels.hint || gone ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
+      {wheels.hint ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
     </View>
     )
     return card
@@ -561,7 +553,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     face = (
       <SwipeCardHost
         key="face"
-        alignTop
         cardKey={cardKeyOf(faceRow)}
         colors={colors}
         panelStyle={gemCard}
@@ -971,14 +962,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         </Pressable>
       ) : null}
 
-      {/* A picked card keeps its top edge put; answering or a note only grows it downward.
-          The stack's card starts at that same line, with room where Back to tonight sits. */}
-      <SwipeFlyHost
-        style={[
-          styles.slot,
-          stack.pillPick || stack.waitPick ? styles.slotTop : doneFace || pickedWe ? null : [styles.slotTop, styles.slotRoom],
-        ]}
-      >
+      {/* The card sits in the middle of the space between the chips and the buttons (owner call, 2026-10-06). */}
+      <SwipeFlyHost style={styles.slot}>
         {stack.bodyKind === 'hall' && stack.nightDone ? (
           <Slot>
             <NightSky colors={colors} />
@@ -1074,7 +1059,6 @@ const styles = StyleSheet.create({
   weTurnGo: { fontFamily: fonts.uiSemi, fontSize: 13 },
   weTurnText: { fontFamily: fonts.uiSemi, fontSize: 14, textAlign: 'center', flexShrink: 1 },
   answerBar: { paddingBottom: 12 },
-  answerGone: { opacity: 0 },
   toastRoom: { height: TOAST_ROOM, flexShrink: 0 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },
@@ -1094,9 +1078,7 @@ const styles = StyleSheet.create({
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
-  slotTop: { justifyContent: 'flex-start' },
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
-  slotRoom: { paddingTop: 42 },
   pickBox: { flex: 1 },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },

@@ -7,8 +7,9 @@ const SHELL_PAD = 16
 const LABEL_W = 120
 const BOTTOM_TRIM = 56
 const RAIL_DROP = 0
-const FULL_RAIL_RATIO = 0.62
-const RAIL_W = 50
+// About the card's height, so the bar sits beside the card, not over the chips and buttons.
+const FULL_RAIL_RATIO = 0.26
+const RAIL_W = 40
 
 function EdgeRail({ pull, reduce, way, fill, label, ink, winH }) {
   const fullH = Math.round(winH * FULL_RAIL_RATIO)

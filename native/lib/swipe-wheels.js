@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo } from 'react-native'
+import { AccessibilityInfo, LayoutAnimation } from 'react-native'
 import { readPrefs, usePrefs, writePrefs } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
@@ -10,7 +10,11 @@ export const SWIPES_TO_LEARN = 3
 /** One answer by swipe (not a tap or a screen reader action). */
 export function noteSwipe() {
   const done = readPrefs().swipesLearned || 0
-  if (done < SWIPES_TO_LEARN) writePrefs({ swipesLearned: done + 1 })
+  if (done >= SWIPES_TO_LEARN) return
+  // The last one takes the buttons away: Home eases into the room they leave.
+  // (Reduced motion keeps the buttons, so this never animates for it.)
+  if (done + 1 === SWIPES_TO_LEARN) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  writePrefs({ swipesLearned: done + 1 })
 }
 
 function useScreenReader() {
