@@ -1655,7 +1655,7 @@ export const zh = {
   'legal.privacy.pay.body':
     '如果你购买宝石包，由 Apple 或 Google 处理付款。我们会收到你的用户 ID、宝石包 ID、宝石数量和购买状态，以便为你的列表加上宝石。我们不保存你的卡号。付款数据由应用商店依据其自己的隐私政策处理。',
   'legal.privacy.vendors.title': '服务提供方',
-  'legal.privacy.vendors.body': '我们使用 Supabase（托管、数据库、认证和头像存储）、Google Firebase Cloud Messaging（Android 和 iPhone 推送）、通过 Apple 登录和 Google 登录（如果你选择使用）、Expo（发送应用更新，会看到你的设备类型、应用版本和 IP 地址）、Vercel（托管 did-i.app），以及 Apple App Store / Google Play（应用内购买、安装来源）。它们依据各自条款代表我们处理数据。\n\n可选的崩溃报告只会发送到你配置的 URL（VITE_REPORT_URL）。应用中不使用第三方广告追踪。',
+  'legal.privacy.vendors.body': '我们使用 Supabase（托管、数据库、认证和头像存储）、Google Firebase Cloud Messaging（Android 和 iPhone 推送）、通过 Apple 登录和 Google 登录（如果你选择使用）、Expo（发送应用更新，会看到你的设备类型、应用版本和 IP 地址）、Vercel（托管 did-i.app），以及 Apple App Store / Google Play（应用内购买、安装来源）。它们依据各自条款代表我们处理数据。\n\n可选的崩溃报告只会发送到你配置的 URL（VITE_REPORT_URL）。应用中不使用第三方广告追踪。\n\n使用里程碑。应用会在以下情况各发送一次:首次打开、添加问题、首次回答、达到 1、3、7、14 晚、首次购买、添加好友、从小组件回答。随附一个专为此生成的随机安装 ID、平台和应用版本。它不与你的账户、手机 ID 或你的问题和回答关联。我们只用它来了解新用户在哪里卡住。',
   'legal.privacy.use.title': '我们如何使用数据',
   'legal.privacy.use.body':
     '我们用你的数据来运行应用：同步你的列表、提供社交功能、发送你要求的推送、处理购买、防止滥用、修复问题。\n\n我们不出售你的个人信息。',

@@ -1658,7 +1658,7 @@ export const ko = {
   'legal.privacy.pay.body':
     '젬 팩을 사면 결제는 Apple이나 Google이 처리해요. 내 목록에 젬을 넣어 주기 위해 사용자 ID, 팩 ID, 젬 수, 구매 상태를 받아요. 카드 번호는 저장하지 않아요. 결제 데이터는 스토어가 자체 개인정보 처리방침에 따라 다뤄요.',
   'legal.privacy.vendors.title': '서비스 제공업체',
-  'legal.privacy.vendors.body': 'Supabase(호스팅, 데이터베이스, 인증, 프로필 사진 저장), Google Firebase Cloud Messaging(Android와 iPhone 푸시), Apple로 로그인과 Google 로그인(선택한 경우), Expo(앱 업데이트 전달, 기기 종류, 앱 버전, IP 주소를 봄), Vercel(did-i.app 호스팅), Apple App Store / Google Play(인앱 구매, 설치 리퍼러)를 써요. 이들은 각자의 약관에 따라 우리를 대신해 데이터를 처리해요.\n\n선택 사항인 충돌 보고서는 설정한 URL(VITE_REPORT_URL)로만 가요. 앱에서 제3자 광고 추적기를 쓰지 않아요.',
+  'legal.privacy.vendors.body': 'Supabase(호스팅, 데이터베이스, 인증, 프로필 사진 저장), Google Firebase Cloud Messaging(Android와 iPhone 푸시), Apple로 로그인과 Google 로그인(선택한 경우), Expo(앱 업데이트 전달, 기기 종류, 앱 버전, IP 주소를 봄), Vercel(did-i.app 호스팅), Apple App Store / Google Play(인앱 구매, 설치 리퍼러)를 써요. 이들은 각자의 약관에 따라 우리를 대신해 데이터를 처리해요.\n\n선택 사항인 충돌 보고서는 설정한 URL(VITE_REPORT_URL)로만 가요. 앱에서 제3자 광고 추적기를 쓰지 않아요.\n\n사용 단계. 앱은 처음 열기, 질문 추가, 첫 답, 1·3·7·14일 달성, 첫 구매, 친구 추가, 위젯에서 답하기를 각각 한 번씩만 알려 줘요. 이 용도로만 만든 무작위 설치 ID, 플랫폼, 앱 버전과 함께 보내요. 계정, 휴대폰 ID, 질문과 답과는 연결되지 않아요. 새로 온 사람이 어디서 막히는지 보는 데만 써요.',
   'legal.privacy.use.title': '데이터 사용 방법',
   'legal.privacy.use.body':
     '데이터는 앱을 운영하는 데 써요: 목록 동기화, 소셜 기능 제공, 요청한 푸시 보내기, 구매 처리, 악용 방지, 버그 수정.\n\n개인정보를 팔지 않아요.',

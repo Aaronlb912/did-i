@@ -49,6 +49,7 @@ import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
 import { noteFrameTouch } from './components/frames/index.js'
 import { TabSlide } from './components/TabSlide.jsx'
+import { noteMilestone } from '../src/lib/milestones.js'
 
 // The shop module is big; gifts wait until the first frame is up.
 const GiftHost = lazyScreen(() => require('./screens/shop.jsx'), 'GiftHost')
@@ -141,6 +142,7 @@ function HallScreen() {
   // The hall mounts first, so a goHash from before the stack existed lands now.
   useEffect(() => {
     flushNavigation()
+    noteMilestone('opened')
   }, [])
   const options = useMemo(
     () => ({

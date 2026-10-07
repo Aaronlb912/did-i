@@ -4775,6 +4775,26 @@ test('friends: one color per person, and the product names take a plural', () =>
   assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
 })
 
+test('usage milestones stay anonymous and write-only', async () => {
+  const sql = readFileSync(new URL('../supabase/milestones.sql', import.meta.url), 'utf8')
+  assert.match(sql, /alter table public\.milestones enable row level security/)
+  assert.match(sql, /revoke all on public\.milestones from anon, authenticated/)
+  assert.doesNotMatch(sql, /grant (select|insert|update|delete)[^;]*public\.milestones/i)
+  assert.match(sql, /security definer\s+set search_path = public/)
+  assert.doesNotMatch(sql, /user_id/, 'no account id in milestones')
+  // Every event the app sends is allowed by the table.
+  const allowed = sql.match(/event in \(([^)]*)\)/)[1]
+  const app = readFileSync(new URL('../src/lib/milestones.js', import.meta.url), 'utf8') +
+    readFileSync(new URL('../src/lib/coin-shop.js', import.meta.url), 'utf8') +
+    readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8') +
+    readFileSync(new URL('../src/lib/widget-tonight.js', import.meta.url), 'utf8') +
+    readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8')
+  const sent = [...app.matchAll(/noteMilestone\('([a-z_0-9]+)'\)/g)].map((m) => m[1])
+  assert.ok(sent.length >= 4, 'found the app calls')
+  for (const n of [1, 3, 7, 14]) sent.push(`night_${n}`)
+  for (const e of new Set(sent)) assert.ok(allowed.includes(`'${e}'`), e)
+})
+
 // 2026-10-07: a dev phone with old saved data synced and zeroed a real account's coins.
 test('a shelf sync never lowers the server coin or gem balance', () => {
   const sql = readFileSync(new URL('../supabase/wallet.sql', import.meta.url), 'utf8')

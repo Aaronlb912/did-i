@@ -48,6 +48,8 @@ function storageBox() {
 globalThis.__didIPlatform = Platform.OS
 globalThis.__didIAppearance = Appearance
 globalThis.__didIExpoExtra = Constants.expoConfig?.extra || {}
+// The store version, sent with usage milestones (src/lib/milestones.js).
+globalThis.__didIAppVersion = Constants.expoConfig?.version || ''
 
 // The biggest accessibility text sizes (about 3x) broke fixed rows, chips and
 // labels mid-word. Cap every Text and TextInput at 1.4x unless a screen sets

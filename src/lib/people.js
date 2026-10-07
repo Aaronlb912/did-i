@@ -6,6 +6,7 @@ import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveTogetherPeople } from './together-widget.js'
+import { noteMilestone } from './milestones.js'
 
 const FAMILY_LAMP_FIELDS =
   'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
@@ -275,6 +276,7 @@ export async function listFriends() {
     }
   }
   friends.sort((a, b) => personName(a.person).localeCompare(personName(b.person)))
+  if (friends.length) noteMilestone('friend')
   return { friends, asked, sent }
 }
 
