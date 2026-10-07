@@ -25,6 +25,7 @@ export function framePalette(colors = {}) {
   return {
     accent: colors.on,
     card,
+    bg: colors.bg || '#0b0d11',
     line: colors.line,
     ink: colors.ink,
     freeze: colors.freeze || colors.on,
@@ -44,6 +45,9 @@ export function framePalette(colors = {}) {
  * Props: id, colors (app palette), active (animate or hold still), streak,
  * answered, total, weekLit [7 bools, Monday first], frozenRecently, date,
  * radius (the card's corner radius, default 24), children, style.
+ * Living frames also read skipped (Not yet tonight), evening (0 at 5 pm to 1
+ * at midnight), remind (0..1, the reminder on the same scale), buddy (id),
+ * and pull (the swipe card's drag, a shared value, top card only).
  */
 export function CardFrame(props) {
   return props.still ? <FrameBody {...props} clock={STILL_CLOCK} /> : <LiveFrame {...props} />
@@ -65,6 +69,11 @@ function FrameBody({
   weekLit,
   frozenRecently,
   date,
+  skipped = 0,
+  evening = 0.5,
+  remind = 0.57,
+  buddy = '',
+  pull = null,
   radius = 24,
   fixedSize,
   clock,
@@ -85,7 +94,7 @@ function FrameBody({
 
   const ready = size && size.w > 0 && size.h > 0 && svgAll()
   const f = ready
-    ? { w: size.w, h: size.h, R: radius, c, clock, active: animated, still: Boolean(clock.still), p: { streak, answered, total, weekLit, frozenRecently, date } }
+    ? { w: size.w, h: size.h, R: radius, c, clock, active: animated, still: Boolean(clock.still), pull, p: { streak, answered, total, weekLit, frozenRecently, date, skipped, evening, remind, buddy } }
     : null
   const Under = art.under
   const Over = art.over

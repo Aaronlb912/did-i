@@ -4582,8 +4582,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 35)
-  assert.equal(new Set(ids).size, 35)
+  assert.equal(ids.length, 56)
+  assert.equal(new Set(ids).size, 56)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])

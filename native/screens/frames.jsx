@@ -1,13 +1,14 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { hasLocaleKey, t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
-import { activeLook } from '../../src/lib/active-look.js'
+import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { NIGHT_COIN_CAP, normalizePurse } from '../../src/lib/purse.js'
 import { buyFrame } from '../../src/lib/coin-shop.js'
+import { readGiftsSent, refreshGiftsSent } from '../../src/lib/people.js'
 import {
   claimFrame,
   frameById,
@@ -41,8 +42,9 @@ import { fonts } from '../theme.js'
 export function frameCtxFor(boards, now = new Date()) {
   const list = Array.isArray(boards) ? boards : []
   const today = boardDate(now, list[0]?.dayFoldHour)
-  if (!list.length) return { bestStreak: 0, streak: 0, everFrozen: false, today }
+  if (!list.length) return { bestStreak: 0, streak: 0, everFrozen: false, today, giftsSent: readGiftsSent() }
   return {
+    giftsSent: readGiftsSent(),
     streak: shelfStreak(list, now),
     bestStreak: Math.max(shelfStreak(list, now), bestShelfStreak(list, now)),
     everFrozen: freezeState(list, now).frozen.size > 0,
@@ -161,6 +163,7 @@ function FrameSheetPreview({ id, colors, ctx, weekLit }) {
         total={3}
         weekLit={weekLit || [true, true, true, true, true, false, false]}
         date={ctx.today}
+        buddy={activeBuddy(readShelf().boards?.[0])}
         style={styles.sheetFrame}
       >
         <MiniCard colors={colors} roomy={CORNER_ART.has(id)} />
@@ -181,7 +184,9 @@ function FrameFacts({ frame, owned, colors }) {
               ? t('frames.howFreeze')
               : frame.earn === 'refer'
                 ? t('frames.howRefer', { n: frame.need })
-                : t('frames.howStreak', { n: frame.need })}
+                : frame.earn === 'gifts'
+                  ? t('frames.howGifts', { n: frame.need })
+                  : t('frames.howStreak', { n: frame.need })}
           </Text>
         </View>
       ) : (
@@ -392,6 +397,10 @@ export function ShopFramesScreen({ book, onChange }) {
   const purse = normalizePurse(book)
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
   const lists = allFramesLists(purse, ctx)
+  // Wrapped counts gifts you sent; ask the account once per visit.
+  useEffect(() => {
+    refreshGiftsSent().catch(() => {})
+  }, [])
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>

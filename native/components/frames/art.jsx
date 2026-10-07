@@ -23,6 +23,29 @@ import {
   vineLayout,
 } from './geometry.js'
 import { Moving, Particle, SvgLayer, svgAll, useSharedValue } from './runtime.jsx'
+import {
+  TicketOver,
+  NotebookOver,
+  PostageOver,
+  BambooOver,
+  ChalkOver,
+  QuiltOver,
+  RopeOver,
+  StreetOver,
+  LightsOver,
+  TrainOver,
+  GardenOver,
+  DuskOver,
+  GlobeOver,
+  DoodleOver,
+  SwipeOver,
+  HeartsOver,
+  CloverOver,
+  FireworksOver,
+  SunnyOver,
+  RoyalOver,
+  WrappedOver,
+} from './art-living.jsx'
 
 const { withTiming } = Reanimated
 
@@ -1605,6 +1628,27 @@ export const FRAME_ART = {
   snow: { over: SnowOver, animated: true },
   sakura: { over: SakuraOver, animated: true },
   bday: { over: BdayOver, animated: true },
+  ticket: { over: TicketOver },
+  notebook: { over: NotebookOver },
+  postage: { over: PostageOver },
+  bamboo: { over: BambooOver },
+  chalk: { over: ChalkOver },
+  quilt: { over: QuiltOver },
+  rope: { over: RopeOver },
+  street: { over: StreetOver, animated: true },
+  lights: { over: LightsOver, animated: true },
+  train: { over: TrainOver, animated: true },
+  garden: { over: GardenOver },
+  dusk: { over: DuskOver, animated: true },
+  globe: { over: GlobeOver, animated: true },
+  doodle: { over: DoodleOver, animated: true },
+  swipe: { over: SwipeOver, animated: true },
+  hearts: { over: HeartsOver, animated: true },
+  clover: { over: CloverOver },
+  fireworks: { over: FireworksOver, animated: true },
+  sunny: { over: SunnyOver, animated: true },
+  royal: { over: RoyalOver },
+  wrapped: { over: WrappedOver },
 }
 
 const styles = StyleSheet.create({

@@ -132,6 +132,20 @@ function useMinuteNow() {
 
 // The worn frame for Tonight's cards, or null. Every static card reads it.
 const CardFrameProps = createContext(null)
+// The evening as 0 (5 pm) to 1 (midnight), for frames that follow it. After
+// midnight it stays at 1; before 5 pm at 0.
+function eveningShare(clock) {
+  const d = clock instanceof Date ? clock : new Date()
+  const h = d.getHours() + d.getMinutes() / 60
+  return h < 5 ? 1 : Math.min(1, Math.max(0, (h - 17) / 7))
+}
+// The earliest evening reminder among tonight's questions on the same scale, 9 pm if none.
+function remindShare(due) {
+  const times = (due || []).map((row) => String(row.lamp?.askAfter || '')).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()
+  const at = times.find((v) => v >= '17:00') || '21:00'
+  const [hh, mm] = at.split(':').map(Number)
+  return Math.min(1, Math.max(0, (hh + mm / 60 - 17) / 7))
+}
 // Room around a framed card, so the frame never sits on the week dots or the pills.
 const FRAME_GAP = 8
 
@@ -264,6 +278,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         weekLit,
         frozenRecently: Boolean(frozen && stack.dateIso && frozen.has(addDaysIso(stack.dateIso, -1))),
         date: stack.dateIso,
+        skipped: (stack.due || []).filter((row) => row.answer?.status === 'skip').length,
+        evening: eveningShare(stack.clock),
+        remind: remindShare(stack.due),
+        buddy: activeBuddy(book),
       }
     : null
   // An earned frame is kept once reached, so a streak that ends later does not take it back.

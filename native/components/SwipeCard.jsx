@@ -448,7 +448,7 @@ function StackCard({
       ]}
     >
       {frame?.id ? (
-        <CardFrame {...frame} active={top && Boolean(frame.active)} style={top ? null : styles.behindFrame}>
+        <CardFrame {...frame} pull={top ? pull : null} active={top && Boolean(frame.active)} style={top ? null : styles.behindFrame}>
           {inner}
         </CardFrame>
       ) : (

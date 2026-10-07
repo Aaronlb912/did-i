@@ -57,6 +57,29 @@ const RAW = [
   earned('frost', 'freeze', 1),
   // The server gives it at 20 friends joined (claim_invites); never sold.
   earned('bloom', 'refer', 20),
+  coin('ticket', 80),
+  coin('notebook', 60),
+  coin('postage', 90),
+  coin('bamboo', 80),
+  coin('chalk', 70),
+  coin('quilt', 120),
+  coin('rope', 90),
+  // Living gem frames (2026-10-07): each reacts to tonight, the swipe, the
+  // streak or the evening (native/components/frames/art-living.jsx).
+  gem('street', 3),
+  gem('lights', 3),
+  gem('train', 3),
+  gem('garden', 3),
+  gem('dusk', 3),
+  gem('globe', 3),
+  gem('doodle', 3),
+  gem('swipe', 3),
+  earned('royal', 'streak', 100),
+  earned('wrapped', 'gifts', 10),
+  season('hearts', '02-01', '02-14'),
+  season('clover', '03-10', '03-20', { animated: false }),
+  season('fireworks', '12-31', '01-02', { also: { from: '07-01', until: '07-07' } }),
+  season('sunny', '06-21', '07-31'),
   season('web', '10-01', '10-31'),
   season('leaves', '11-01', '11-30'),
   season('snow', '12-01', '12-31'),
@@ -98,14 +121,19 @@ function monthDay(today) {
 
 // Open from `from` to `until`, both days included. A window that wraps the
 // new year (from > until) is open at either end.
+function inWindow(win, md) {
+  if (win.from <= win.until) return md >= win.from && md <= win.until
+  return md >= win.from || md <= win.until
+}
+
+// A frame may have a second window (`also`), e.g. fireworks at New Year and in July.
 export function seasonOpen(frame, today) {
   const win = frame?.season
   if (!win || frame.hidden) return false
   if (frame.firstYear && Number(String(today).slice(0, 4)) < frame.firstYear) return false
   const md = monthDay(today)
   if (!/^\d{2}-\d{2}$/.test(md)) return false
-  if (win.from <= win.until) return md >= win.from && md <= win.until
-  return md >= win.from || md <= win.until
+  return inWindow(win, md) || Boolean(frame.also && inWindow(frame.also, md))
 }
 
 // The next day a season opens, today or later, as YYYY-MM-DD.
@@ -115,7 +143,11 @@ export function seasonNextText(frame, today) {
   if (seasonOpen(frame, today)) return String(today).slice(0, 10)
   const year = Number(String(today).slice(0, 4)) || new Date().getFullYear()
   const md = monthDay(today)
-  return md < win.from ? `${year}-${win.from}` : `${year + 1}-${win.from}`
+  const next = (from) => (md < from ? `${year}-${from}` : `${year + 1}-${from}`)
+  const a = next(win.from)
+  if (!frame.also) return a
+  const b = next(frame.also.from)
+  return a < b ? a : b
 }
 
 // Only coin and gem frames are ever sold.
@@ -133,6 +165,7 @@ export function frameEarned(frame, ctx = {}) {
   if (!frame || frame.kind !== 'earned') return false
   if (frame.earn === 'streak') return (Number(ctx.bestStreak) || 0) >= frame.need
   if (frame.earn === 'freeze') return Boolean(ctx.everFrozen)
+  if (frame.earn === 'gifts') return (Number(ctx.giftsSent) || 0) >= frame.need
   // 'refer' is never earned here: claim_invites puts it on the owned list.
   return false
 }
@@ -146,6 +179,7 @@ export function frameProgress(frame, ctx = {}) {
     return { n: Math.min(frame.need, Math.max(0, Number(run) || 0)), of: frame.need }
   }
   if (frame.earn === 'refer') return { n: Math.min(frame.need, Math.max(0, Number(ctx.joined) || 0)), of: frame.need }
+  if (frame.earn === 'gifts') return { n: Math.min(frame.need, Math.max(0, Number(ctx.giftsSent) || 0)), of: frame.need }
   return { n: ctx.everFrozen ? 1 : 0, of: 1 }
 }
 
