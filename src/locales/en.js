@@ -2355,7 +2355,6 @@ export const en = {
   'settings.clearFolderSub': 'Questions and answers in {name}',
   'tonight.undoLate': 'Saved as late. Tap to undo',
   'tonight.graceLate': 'Counts as late: 1 coin',
-  'wait.settings': 'Question settings',
   'wait.didAlready': 'Did it already',
   'hang.kindHint': 'Words to filter by.',
   'hang.kindLabel': 'Topics (optional)',

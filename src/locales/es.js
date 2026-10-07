@@ -2368,7 +2368,6 @@ export const es = {
   'settings.clearFolderSub': 'Preguntas y respuestas en {name}',
   'tonight.undoLate': 'Guardado como tarde. Toca para deshacer',
   'tonight.graceLate': 'Cuenta como tarde: 1 moneda',
-  'wait.settings': 'Ajustes de la pregunta',
   'wait.didAlready': 'Ya lo hice',
   'hang.kindHint': 'Palabras para filtrar.',
   'hang.kindLabel': 'Temas (opcional)',

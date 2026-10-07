@@ -2307,7 +2307,6 @@ export const ko = {
   'settings.clearFolderSub': '{name}의 질문과 답',
   'tonight.undoLate': '늦음으로 저장됨. 탭하면 취소',
   'tonight.graceLate': '늦음으로 기록: 코인 1개',
-  'wait.settings': '질문 설정',
   'wait.didAlready': '이미 했어요',
   'hang.kindHint': '필터에 쓰는 단어예요.',
   'hang.kindLabel': '주제 (선택)',

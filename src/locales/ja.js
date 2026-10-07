@@ -2306,7 +2306,6 @@ export const ja = {
   'settings.clearFolderSub': '{name}の質問と答え',
   'tonight.undoLate': '遅れとして保存。タップで取り消し',
   'tonight.graceLate': '遅れとして記録: コイン1枚',
-  'wait.settings': '質問の設定',
   'wait.didAlready': 'もうやった',
   'hang.kindHint': '絞り込みに使う言葉。',
   'hang.kindLabel': 'トピック（任意）',
