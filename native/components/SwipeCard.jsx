@@ -426,7 +426,7 @@ function StackCard({
     <View
       style={[
         ...faceCardStyle(colors, panelStyle),
-        // Top-aligned, so a card with no week dots keeps its label on the pen and buddy row.
+        // The label and question sit in the middle of the card (owner call, 2026-10-06).
         top ? styles.topCard : styles.behindCard,
         { borderWidth: 1, borderColor: line },
       ]}
@@ -491,11 +491,11 @@ const styles = StyleSheet.create({
   behind: {
     ...StyleSheet.absoluteFill,
   },
-  topCard: { justifyContent: 'flex-start' },
+  topCard: { justifyContent: 'center' },
   behindCard: {
     flex: 1,
     minHeight: 0,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   origin: { transformOrigin: 'bottom' },
   // Room for the frame, so it stays clear of the pills and the week dots.
