@@ -18,7 +18,7 @@ export function coinNights(shelf, now = new Date(), days = 7) {
   const at = (night) => {
     let row = seen.get(night)
     if (!row) {
-      row = { coins: 0, paid: 0, late: 0, extra: 0, fresh: 0, nopes: 0 }
+      row = { coins: 0, paid: 0, late: 0, extra: 0, nopes: 0 }
       seen.set(night, row)
     }
     return row
@@ -42,11 +42,6 @@ export function coinNights(shelf, now = new Date(), days = 7) {
         continue
       }
       if (answer.status !== 'yes' && answer.status !== 'late') continue
-      const made = born.get(answer.lampId) || ''
-      if (made && made >= night) {
-        at(night).fresh += 1
-        continue
-      }
       const list = taps.get(night)
       if (list) list.push(answer)
       else taps.set(night, [answer])
@@ -67,10 +62,9 @@ export function coinNights(shelf, now = new Date(), days = 7) {
     if (!first || night < first) break
     const row = seen.get(night)
     let reason = ''
-    if (!row || (!row.paid && !row.fresh && !row.nopes)) reason = night === today ? 'open' : 'none'
+    if (!row || (!row.paid && !row.nopes)) reason = night === today ? 'open' : 'none'
     else if (row.extra) reason = row.late ? 'capLate' : 'cap'
     else if (row.late) reason = 'late'
-    else if (!row.paid && row.fresh) reason = 'new'
     else if (!row.paid) reason = 'nope'
     out.push({ night, coins: row?.coins || 0, reason })
   }
