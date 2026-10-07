@@ -200,6 +200,31 @@ export async function personById(id) {
   return who.get(id) || { user_id: id }
 }
 
+// A private note about a friend (supabase/friend-notes.sql). Only you see it.
+export const FRIEND_NOTE_MAX = 500
+
+export async function readFriendNote(friendId) {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user || !friendId) return ''
+  const { data, error } = await db.from('friend_notes').select('note').eq('owner_id', user.id).eq('friend_id', friendId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return String(data?.note || '')
+}
+
+/** Saves the note; an empty one is removed. Returns { miss } on failure. */
+export async function saveFriendNote(friendId, note) {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return { miss: 'people.off' }
+  const text = String(note || '').trim().slice(0, FRIEND_NOTE_MAX)
+  const query = text
+    ? db.from('friend_notes').upsert({ owner_id: user.id, friend_id: friendId, note: text, updated_at: new Date().toISOString() }, { onConflict: 'owner_id,friend_id' })
+    : db.from('friend_notes').delete().eq('owner_id', user.id).eq('friend_id', friendId)
+  const { error } = await query
+  return error ? bad(error) : { ok: true, note: text }
+}
+
 // Friends -------------------------------------------------------------
 
 export async function listFriends() {

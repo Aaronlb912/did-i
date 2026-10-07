@@ -57,6 +57,9 @@ import {
   unblockPerson,
   unsendAsk,
   usePeoplePulse,
+  FRIEND_NOTE_MAX,
+  readFriendNote,
+  saveFriendNote,
 } from '../../src/lib/people.js'
 import { keptProfileName } from '../../src/lib/cloud-sync.js'
 import {
@@ -1793,6 +1796,71 @@ function FriendCardPreview({ person, name, colors }) {
   )
 }
 
+// A private note about this friend. Kept on the phone too, so it shows at
+// once and offline; the account copy wins once it loads.
+function FriendNote({ friendId, name, colors }) {
+  const account = useAccount()
+  const [saved, setSaved] = useKept(`friend.note:${account.user?.id}:${friendId}`, '', KEEP)
+  const [draft, setDraft] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [miss, setMiss] = useState('')
+  useEffect(() => {
+    let live = true
+    readFriendNote(friendId)
+      .then((note) => live && setSaved(note))
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendId])
+  const editing = draft != null
+  async function save() {
+    setBusy(true)
+    setMiss('')
+    const res = await saveFriendNote(friendId, draft)
+    setBusy(false)
+    if (res.miss) {
+      setMiss(tMiss(res.miss))
+      return
+    }
+    setSaved(res.note)
+    setDraft(null)
+    confirmDone(res.note ? t('friendNote.saved') : t('friendNote.cleared'))
+  }
+  return (
+    <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendNote.title')}</Text>
+      {editing ? (
+        <>
+          <Field
+            colors={colors}
+            label={t('friendNote.label', { name })}
+            value={draft}
+            onChangeText={(value) => setDraft(value.slice(0, FRIEND_NOTE_MAX))}
+            placeholder={t('friendNote.ph')}
+            multiline
+          />
+          <Meta colors={colors}>{t('friendNote.private', { name })}</Meta>
+          <Miss colors={colors}>{miss}</Miss>
+          <DidButton colors={colors} small label={t('friendNote.save')} disabled={busy} onPress={save} />
+          <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => { setDraft(null); setMiss('') }} />
+        </>
+      ) : saved ? (
+        <Pressable onPress={() => setDraft(saved)} accessibilityRole="button" accessibilityHint={t('friendNote.editHint')}>
+          <Text selectable style={[styles.friendNoteText, { color: colors.ink }]}>{saved}</Text>
+          <Text style={[styles.friendSmall, { color: colors.on }]}>{t('friendNote.edit')}</Text>
+        </Pressable>
+      ) : (
+        <>
+          <Meta colors={colors}>{t('friendNote.empty', { name })}</Meta>
+          <KeyButton colors={colors} label={t('friendNote.add')} onPress={() => setDraft('')} />
+        </>
+      )}
+    </View>
+  )
+}
+
 export function FriendScreen({ book, onChange, route }) {
   const colors = useHallColors()
   const account = useAccount()
@@ -1986,6 +2054,7 @@ export function FriendScreen({ book, onChange, route }) {
           <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: otherId })} />
         </View>
       </View>
+      <FriendNote friendId={otherId} name={name} colors={colors} />
       {said ? <Meta colors={colors}>{said}</Meta> : null}
       {menu ? (
         <FriendMenu
@@ -2653,6 +2722,7 @@ const styles = StyleSheet.create({
   tileLabel: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   tileValue: { fontFamily: fonts.uiBold, fontSize: 16, lineHeight: 21 },
   tileNote: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17 },
+  friendNoteText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   friendIdCard: { gap: 6, alignItems: 'flex-start' },
   idButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   photoVeil: { alignItems: 'center', justifyContent: 'center', gap: 12 },
