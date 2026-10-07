@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Opening Ideas</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--line:#1f2632;--gold:#f2c45a;
+ --app:#0b0d11;--card:#16191f;--cardLine:#2b3140;--on:#8fb3e0;--did:#c9f24d;--skip:#6b7280;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:400 15px/1.55 var(--ui);background:radial-gradient(1200px 600px at 50% -10%,#16203a 0,transparent 60%),var(--bg)}
+.wrap{max-width:1200px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:28px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:20px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;display:grid;gap:10px;justify-items:center;align-content:start}
+.opt h3{margin:0;font:800 21px/1.1 var(--display);justify-self:start}
+.opt .tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase;justify-self:start}
+.opt p{margin:0;color:var(--soft);font-size:14px;justify-self:start}
+.opt button{font:700 13px/1 var(--ui);padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:var(--ink);color:var(--bg);cursor:pointer}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+/* phone */
+.phone{position:relative;width:230px;height:470px;border-radius:34px;border:6px solid #23283a;background:var(--app);overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.phone .notch{position:absolute;top:8px;left:50%;width:70px;height:18px;margin-left:-35px;border-radius:12px;background:#000;z-index:20}
+.layer{position:absolute;inset:0}
+/* the app behind: sign-in for a first open */
+.signin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;opacity:0}
+.signin .logo{font:800 34px/1 var(--display);color:var(--ink)}
+.signin .q{font:600 22px/1 var(--mono);color:var(--did);letter-spacing:2px}
+.signin .line{color:var(--soft);font-size:12.5px;text-align:center}
+.signin .btn{width:100%;padding:11px;border-radius:999px;text-align:center;font:700 13px/1 var(--ui)}
+.signin .b1{background:var(--ink);color:#111}.signin .b2{border:1px solid var(--cardLine);color:var(--ink)}
+/* the card */
+.card{position:absolute;left:22px;right:22px;top:150px;height:150px;border-radius:20px;background:var(--card);border:1px solid var(--cardLine);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.card .k{font:700 9px/1 var(--mono);letter-spacing:.18em;color:var(--on)}
+.card .t{font:800 20px/1.15 var(--ui)}
+.stamp{position:absolute;top:12px;left:14px;font:800 13px/1 var(--display);letter-spacing:1px;color:var(--did);opacity:0}
+.rail{position:absolute;right:-20px;top:150px;width:46px;height:150px;border-radius:46px 0 0 46px;background:var(--did);display:flex;align-items:center;justify-content:center;opacity:0}
+.rail span{transform:rotate(-90deg);font:800 10px/1 var(--display);letter-spacing:1.5px;color:#111}
+.hand{position:absolute;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:0 0 0 6px rgba(255,255,255,.18);top:240px;left:110px;opacity:0}
+
+/* 1. The first swipe */
+.p1 .card{animation:p1card 2.6s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes p1card{0%{transform:translateY(260px);opacity:0}22%{transform:translateY(0);opacity:1}40%{transform:translateY(0) rotate(0)}62%{transform:translateX(60px) rotate(8deg)}82%{transform:translateX(420px) rotate(22deg);opacity:1}100%{transform:translateX(420px) rotate(22deg);opacity:0}}
+.p1 .stamp{animation:p1stamp 2.6s forwards}
+@keyframes p1stamp{0%,45%{opacity:0}60%,80%{opacity:1}100%{opacity:0}}
+.p1 .rail{animation:p1rail 2.6s forwards}
+@keyframes p1rail{0%,45%{opacity:0;transform:translateX(30px)}62%{opacity:1;transform:translateX(0)}82%{opacity:1}100%{opacity:0}}
+.p1 .hand{animation:p1hand 2.6s forwards}
+@keyframes p1hand{0%,30%{opacity:0;transform:translate(0,0)}38%{opacity:1}62%{opacity:1;transform:translate(60px,4px)}70%{opacity:0;transform:translate(90px,6px)}100%{opacity:0}}
+.p1 .signin{animation:fadeIn .6s 2.2s forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+/* 2. The first swipe, answered */
+.p2 .card{animation:p2card 3.2s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes p2card{0%{transform:translateY(260px);opacity:0}18%{transform:translateY(0);opacity:1}62%{transform:translateY(0) rotate(0)}74%{transform:translateX(60px) rotate(8deg)}90%{transform:translateX(420px) rotate(22deg);opacity:1}100%{transform:translateX(420px);opacity:0}}
+.door{position:absolute;right:16px;top:16px;width:34px;height:44px}
+.door .frame{position:absolute;inset:0;border:2px solid var(--soft);border-radius:4px 4px 0 0}
+.door .leaf{position:absolute;inset:2px;background:#8a5f35;border-radius:2px;transform-origin:left center;transform:perspective(80px) rotateY(-70deg);animation:shut 3.2s forwards}
+@keyframes shut{0%,25%{transform:perspective(80px) rotateY(-70deg)}45%,100%{transform:perspective(80px) rotateY(0)}}
+.door .knob{position:absolute;right:5px;top:22px;width:4px;height:4px;border-radius:50%;background:#f2c45a;opacity:0;animation:fadeIn .1s .45s forwards;animation-delay:1.45s}
+.check{position:absolute;right:14px;bottom:14px;width:34px;height:34px}
+.check path{stroke:var(--did);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:drawck .5s 1.6s forwards}
+@keyframes drawck{to{stroke-dashoffset:0}}
+.p2 .stamp{animation:p2stamp 3.2s forwards}
+@keyframes p2stamp{0%,64%{opacity:0}74%,88%{opacity:1}100%{opacity:0}}
+.p2 .rail{animation:p2rail 3.2s forwards}
+@keyframes p2rail{0%,64%{opacity:0;transform:translateX(30px)}74%{opacity:1;transform:translateX(0)}90%{opacity:1}100%{opacity:0}}
+.p2 .signin{animation:fadeIn .6s 2.8s forwards}
+
+/* 3. Lights on */
+.sky{background:linear-gradient(#0b1236,#22306b 70%,#3a2a55)}
+.p3 .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0;animation:fadeIn .8s forwards}
+.street{position:absolute;left:0;right:0;bottom:0;height:150px}
+.house{position:absolute;bottom:0;background:#1a2036}
+.house::before{content:"";position:absolute;left:-4px;right:-4px;top:-14px;height:16px;background:#232a46;clip-path:polygon(0 100%,50% 0,100% 100%)}
+.win{position:absolute;width:12px;height:12px;border-radius:2px;background:#0e1222;animation:lit .4s forwards}
+@keyframes lit{to{background:#ffd166;box-shadow:0 0 14px 4px rgba(255,209,102,.45)}}
+.p3 .word{position:absolute;top:120px;left:0;right:0;text-align:center;font:800 40px/1 var(--display);color:#fff}
+.p3 .word span{opacity:0;animation:fadeIn .15s forwards}
+.p3 .moon{position:absolute;right:30px;top:70px;width:34px;height:34px;border-radius:50%;box-shadow:-8px 4px 0 0 #fff4cf;transform:translateY(40px);opacity:0;animation:moonup 1s 2.6s forwards}
+@keyframes moonup{to{transform:translateY(0);opacity:1}}
+.p3 .signin{background:linear-gradient(transparent 55%,rgba(11,13,17,.9));justify-content:flex-end;padding-bottom:30px;animation:fadeIn .7s 3.2s forwards}
+.p3 .signin .logo,.p3 .signin .q{display:none}
+
+/* 4. ??? becomes a check */
+.p4 .icon{position:absolute;left:50%;top:50%;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:26px;background:#2b2f38;display:flex;align-items:center;justify-content:center;gap:2px;animation:grow 2.4s cubic-bezier(.6,0,.2,1) forwards}
+.p4 .icon b{font:800 34px/1 var(--display);color:#c9f24d;display:inline-block;animation:wob .5s ease-in-out 2}
+.p4 .icon b:nth-child(2){animation-delay:.1s}.p4 .icon b:nth-child(3){animation-delay:.2s}
+@keyframes wob{0%,100%{transform:rotate(0)}50%{transform:rotate(-14deg) translateY(-4px)}}
+.p4 .icon b.last{animation:wob .5s ease-in-out .2s 2,toCheck .3s 1.1s forwards}
+@keyframes toCheck{to{opacity:0;transform:scale(.4)}}
+.p4 .ck{position:absolute;right:16px;top:36px;width:30px;height:30px}
+.p4 .ck path{stroke:#c9f24d;stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:drawck .35s 1.3s forwards}
+@keyframes grow{0%,70%{transform:scale(1);border-radius:26px;opacity:1}100%{transform:scale(6);border-radius:60px;opacity:0}}
+.p4 .signin{animation:fadeIn .5s 1.9s forwards}
+.p4 .home{position:absolute;inset:0;opacity:0}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
+.notes{color:var(--soft);font-size:14px;max-width:72ch;margin:0 auto}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Opening ideas · first time someone opens Did I</span>
+ <h1>Make the first two seconds count</h1>
+ <p class="lede">Four ways in. The phone's splash itself has to be still (it shows before the app has loaded), so each of these plays as the first screen right after it, starting from a matching picture so it feels like one piece. Each ends on the sign-in screen, which is what a first-time user sees. Tap anyone to skip.</p>
+</header>
+<div class="grid" id="grid"></div>
+<p class="notes">My pick: 1 or 2 the first time, and a short 4 on later opens so returning people are not slowed down. Reduced motion gets a plain fade. Timings here are close to what they would be in the app (1.5 to 3 seconds).</p>
+</div>
+<script>
+const signin=`<div class="layer signin"><div class="logo">Did I</div><div class="q">???</div><div class="line">One question at a time, every night.</div><div class="btn b1">Continue with Apple</div><div class="btn b2">Use without an account</div></div>`;
+const card=(extra='')=>`<div class="card"><span class="k">TONIGHT</span><div class="t">Did I lock the door?</div>${extra}<span class="stamp">DID</span></div><div class="rail"><span>DID</span></div><div class="hand"></div>`;
+const IDEAS=[
+ {cls:'p1',tag:'1 · your idea',name:'The first swipe',desc:'A card slides up with a real question. A thumb drags it right, the Did bar sweeps in from the edge, and the card flies off to reveal sign-in. It teaches the whole app before a word is read.',html:()=>`${signin}${card()}`},
+ {cls:'p2',tag:'2 · with the answer',name:'Answered, then swiped',desc:'Same as 1, but you see the answer happen: the little door on the card swings shut and a check draws itself, then the card flies right. Shows what Did I is for: knowing you did it.',html:()=>`${signin}${card('<div class="door"><div class="frame"></div><div class="leaf"></div><div class="knob"></div></div><svg class="check" viewBox="0 0 34 34"><path d="M7 18 l7 7 l13 -16"/></svg>')}`},
+ {cls:'p3 sky',tag:'3 · cozy',name:'Lights on',desc:'A sleepy street at night. "Did I" writes itself, the windows light up one by one, the moon rises, and the sign-in buttons come up over the scene. Matches the Night Street frame.',html:()=>{
+   let stars='';for(let i=0;i<26;i++)stars+=`<i style="left:${(i*37)%220+5}px;top:${(i*53)%150+20}px;animation-delay:${(i%9)*.1}s"></i>`;
+   const hs=[[8,38,60],[52,30,80],[88,46,52],[140,34,70],[182,40,58]];
+   const houses=hs.map(([l,w,h],i)=>`<div class="house" style="left:${l}px;width:${w}px;height:${h}px"><div class="win" style="left:${w/2-6}px;top:12px;animation-delay:${1.4+i*.25}s"></div></div>`).join('');
+   const word=[...'Did I'].map((c,i)=>`<span style="animation-delay:${.4+i*.15}s">${c===' '?'&nbsp;':c}</span>`).join('');
+   return `<div class="layer stars">${stars}</div><div class="moon"></div><div class="word">${word}</div><div class="street">${houses}</div>${signin}`}},
+ {cls:'p4',tag:'4 · every open',name:'??? becomes a check',desc:'The app icon sits in the middle. Its question marks wobble, the last one turns into a check, and the icon grows open into the app. Short enough for every launch.',html:()=>`${signin}<div class="icon"><b>?</b><b>?</b><b class="last">?</b><svg class="ck" viewBox="0 0 30 30"><path d="M5 16 l6 6 l14 -15"/></svg></div>`},
+];
+const grid=document.getElementById('grid');
+grid.innerHTML=IDEAS.map((d,i)=>`<article class="opt"><span class="tag">${d.tag}</span><h3>${d.name}</h3><p>${d.desc}</p><div class="phone" id="ph${i}"></div><button data-i="${i}">Replay</button></article>`).join('');
+function play(i){const ph=document.getElementById('ph'+i);ph.className='phone '+IDEAS[i].cls;ph.innerHTML='<div class="notch"></div>'+IDEAS[i].html()}
+IDEAS.forEach((_,i)=>play(i));
+grid.addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(b)play(+b.dataset.i)});
+</script>
+</body></html>

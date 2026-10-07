@@ -3157,4 +3157,6 @@ export const ja = {
   'refer.toGo': "あと {n} 人",
   'refer.buddyKicker': "友達を呼んだごほうび",
   'refer.buddyHow': "あなたのコードで友達が {n} 人参加するともらえます。ショップでは売っていません。",
+  'opening.question': '水を十分に飲んだ?',
+  'opening.tap': 'タップして続ける',
 }

@@ -3226,4 +3226,6 @@ export const fr = {
   'refer.toGo': "Encore {n}",
   'refer.buddyKicker': "Pour avoir amené des amis",
   'refer.buddyHow': "À toi quand {n} amis rejoignent avec ton code. Jamais vendu dans la boutique.",
+  'opening.question': 'J\'ai bu assez d\'eau ?',
+  'opening.tap': 'Touchez pour continuer',
 }

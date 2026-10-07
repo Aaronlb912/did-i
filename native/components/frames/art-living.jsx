@@ -308,29 +308,29 @@ export function LightsOver({ f }) {
   const n = q * 2
   const all = (f.p.total || 0) > 0 && (f.p.answered || 0) >= f.p.total
   // The wire follows the card's own curve, so it never cuts across a corner.
-  const pins = spots(f, 7, n, 0.5 / n)
+  const pins = spots(f, 12, n, 0.5 / n)
   const bulbs = pins.map((p, i) => {
     const k = Math.floor(i / 2)
     const on = k < (f.p.answered || 0)
     const sk = !on && k < (f.p.answered || 0) + (f.p.skipped || 0)
-    return { x: p.x + p.nx * 7, y: p.y + p.ny * 7, a: p.ang, on, sk, col: BULBS[k % 5], mode: all ? 2 : sk ? 1 : 0, ph: i * 0.37 }
+    return { x: p.x + p.nx * 6, y: p.y + p.ny * 6, a: p.ang, on, sk, col: BULBS[k % 5], mode: all ? 2 : sk ? 1 : 0, ph: i * 0.37 }
   })
-  const wire = ring(f, 7)
   return (
     <>
       <Layer f={f}>
-        <S.Path d={wire} fill="none" stroke="#3b3f2f" strokeWidth={1.6} />
+        <S.Path d={ring(f, 12)} fill="none" stroke="#6b7060" strokeWidth={1.4} />
         {bulbs.map((b, i) => (
           <S.G key={i}>
-            <S.Line x1={pins[i].x} y1={pins[i].y} x2={b.x} y2={b.y} stroke="#3b3f2f" strokeWidth={1.4} />
+            <S.Line x1={pins[i].x} y1={pins[i].y} x2={b.x} y2={b.y} stroke="#6b7060" strokeWidth={1.2} />
+            <S.Rect x={pins[i].x + pins[i].nx * 3 - 2.2} y={pins[i].y + pins[i].ny * 3 - 2.2} width={4.4} height={4.4} rx={1} fill="#8a8f9c" transform={`rotate(${(b.a * 180) / Math.PI} ${pins[i].x + pins[i].nx * 3} ${pins[i].y + pins[i].ny * 3})`} />
             {f.still && (b.on || b.sk) ? (
               <S.G>
-                <S.Circle cx={b.x} cy={b.y} r={12} fill={b.col} opacity={0.22} />
+                <S.Circle cx={b.x} cy={b.y} r={9} fill={b.col} opacity={0.3} />
                 <S.Ellipse cx={b.x} cy={b.y} rx={4.6} ry={6.4} transform={`rotate(${(b.a * 180) / Math.PI} ${b.x} ${b.y})`} fill={b.col} stroke="#ffffff" strokeWidth={0.8} />
               </S.G>
             ) : null}
             {!b.on && !b.sk ? (
-              <S.Ellipse cx={b.x} cy={b.y} rx={4.6} ry={6.4} transform={`rotate(${(b.a * 180) / Math.PI} ${b.x} ${b.y})`} fill="#2a2e38" stroke="#4a4f5c" strokeWidth={0.8} />
+              <S.Ellipse cx={b.x} cy={b.y} rx={4.6} ry={6.4} transform={`rotate(${(b.a * 180) / Math.PI} ${b.x} ${b.y})`} fill="#363b47" stroke="#5a606e" strokeWidth={0.8} />
             ) : null}
           </S.G>
         ))}
@@ -340,7 +340,7 @@ export function LightsOver({ f }) {
         .map((b, i) => (
           <Particle key={i} clock={f.clock} item={b} fn={bulbAt} w={f.w} h={f.h} size={26}>
             <S.Svg width={26} height={26} viewBox="-13 -13 26 26">
-              <S.Circle r={12} fill={b.col} opacity={0.22} />
+              <S.Circle r={9} fill={b.col} opacity={0.3} />
               <S.Ellipse rx={4.6} ry={6.4} fill={b.col} stroke="#ffffff" strokeWidth={0.8} />
             </S.Svg>
           </Particle>
@@ -418,13 +418,14 @@ export function GardenOver({ f }) {
         <S.Ellipse key={i} cx={p.x} cy={p.y} rx={4} ry={1.8} fill={i % 3 ? '#4f9a55' : '#6fc07a'} transform={`rotate(${(p.ang * 180) / Math.PI + (i % 2 ? 35 : -35)} ${p.x} ${p.y})`} />
       ))}
       {flowers.map((p, i) => {
-        const fx = p.x + p.nx * 9
-        const fy = p.y + p.ny * 9
+        const open = i < grown
+        const fx = p.x + p.nx * (open ? 9 : 5)
+        const fy = p.y + p.ny * (open ? 9 : 5)
         const deg = (p.ang * 180) / Math.PI
         return (
           <S.G key={i}>
             <S.Line x1={p.x} y1={p.y} x2={fx} y2={fy} stroke="#4f9a55" strokeWidth={1.8} />
-            {i < grown ? (
+            {open ? (
               <S.G transform={`translate(${fx} ${fy}) rotate(${deg})`}>
                 {[0, 72, 144, 216, 288].map((a) => (
                   <S.Path key={a} d="M0 0 L-6 -12 L0 -17 L6 -12Z" fill={PETALS[i % 7]} stroke="rgba(0,0,0,0.25)" strokeWidth={0.5} transform={`rotate(${a})`} />
@@ -433,7 +434,8 @@ export function GardenOver({ f }) {
               </S.G>
             ) : (
               <S.G transform={`translate(${fx} ${fy}) rotate(${deg})`}>
-                <S.Path d="M0 2 C-5 -3 -4 -9 0 -12 C4 -9 5 -3 0 2Z" fill="#d98aa6" stroke="#5fb36a" strokeWidth={1.2} />
+                <S.Path d="M0 1 C-3.4 -1.5 -3 -6.5 0 -8.5 C3 -6.5 3.4 -1.5 0 1Z" fill="#e79ab4" />
+                <S.Path d="M-3 0.5 Q0 -2.5 3 0.5" fill="none" stroke="#5fb36a" strokeWidth={1.4} strokeLinecap="round" />
               </S.G>
             )}
           </S.G>
@@ -661,10 +663,8 @@ export function SwipeOver({ f }) {
           <S.Stop offset="1" stopColor={col} stopOpacity="1" />
         </S.LinearGradient>
       </S.Defs>
-      {[14, 10, 6].map((o, i) => (
-        <S.Path key={o} d={ring(f, o)} fill="none" stroke={`url(#${id})`} strokeWidth={3 + i * 2} strokeOpacity={0.35 + i * 0.25} />
-      ))}
-      <S.Path d={ring(f, 4)} fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
+      <S.Path d={ring(f, 9)} fill="none" stroke={`url(#${id})`} strokeWidth={8} strokeOpacity={0.22} />
+      <S.Path d={ring(f, 5)} fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
     </Layer>
   )
   return (

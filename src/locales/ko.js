@@ -3158,4 +3158,6 @@ export const ko = {
   'refer.toGo': "{n}명 남음",
   'refer.buddyKicker': "친구를 데려온 보상",
   'refer.buddyHow': "내 코드로 친구 {n}명이 가입하면 받아요. 상점에서는 팔지 않아요.",
+  'opening.question': '물을 충분히 마셨나요?',
+  'opening.tap': '탭해서 계속하기',
 }

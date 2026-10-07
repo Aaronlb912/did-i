@@ -38,6 +38,7 @@ import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
+import { FirstSwipe } from './components/FirstSwipe.jsx'
 import { LegalPlain } from './screens/LegalScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
@@ -350,6 +351,7 @@ export function AppShell() {
             goHash(empty ? '/first' : '/tonight')
           }}
         />
+        <FirstSwipe colors={colors} />
       </View>
     )
   }

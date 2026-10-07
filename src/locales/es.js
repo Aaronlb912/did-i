@@ -3219,4 +3219,6 @@ export const es = {
   'refer.toGo': "Faltan {n}",
   'refer.buddyKicker': "Por traer amigos",
   'refer.buddyHow': "Tuyo cuando {n} amigos se unan con tu código. Nunca se vende en la tienda.",
+  'opening.question': '¿Bebí suficiente agua?',
+  'opening.tap': 'Toca para continuar',
 }

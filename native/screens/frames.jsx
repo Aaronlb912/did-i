@@ -551,12 +551,12 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridTile: { width: '31%', flexGrow: 0 },
   // Room for art that reaches past the card, then clipped so sparks stay in the sheet.
-  sheetPreview: { width: '100%', alignItems: 'center', paddingBottom: 20, overflow: 'hidden' },
+  sheetPreview: { width: '100%', alignItems: 'center', paddingHorizontal: 28, paddingBottom: 30, overflow: 'hidden' },
   // Bottom room so Polaroid's caption strip under the card is not cut off.
   sheetPreviewCaption: { paddingBottom: 50 },
-  sheetCap: { alignSelf: 'stretch', marginBottom: 32 },
+  sheetCap: { alignSelf: 'stretch', marginHorizontal: -28, marginBottom: 32 },
   howEarn: { gap: 2 },
-  sheetFrame: { width: 260 },
+  sheetFrame: { width: '100%', maxWidth: 260 },
   // Extra inner padding keeps corner art (Frost's crystals) off the words.
   miniCard: { minHeight: 132, paddingHorizontal: 30, paddingVertical: 26, alignItems: 'center', justifyContent: 'center' },
   miniTitle: { fontSize: 22, lineHeight: 28, textAlign: 'center' },
