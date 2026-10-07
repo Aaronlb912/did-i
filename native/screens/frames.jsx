@@ -326,22 +326,21 @@ function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
 const byPrice = (a, b) => (a.coins || a.gems || 0) - (b.coins || b.gems || 0) || frameName(a.id).localeCompare(frameName(b.id))
 const SALE_RANK = { season: 0, coin: 1, gem: 2 }
 
-// Things you can buy or claim first, then the ones you own.
+// What you can buy or claim now. Owned frames are worn from the Collection.
 function shopOrder(purse, ctx) {
   const owned = framesOwned(purse, ctx)
   const forSale = SHOWN_FRAMES
     .filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
     .sort((a, b) => SALE_RANK[a.kind] - SALE_RANK[b.kind] || byPrice(a, b))
-  const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
-  return { forSale, mine }
+  return { forSale }
 }
 
 // The Frames row in the Shop hub, like Looks or Cheers.
 export function FramesShopRow({ book, colors, onChange }) {
   const ctx = useFrameCtx(book)
   const purse = normalizePurse(book)
-  const { forSale, mine } = shopOrder(purse, ctx)
-  const list = [...forSale, ...mine]
+  const { forSale } = shopOrder(purse, ctx)
+  const list = forSale
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
   return (
     <View style={styles.promoShelf}>
@@ -361,40 +360,67 @@ export function FramesShopRow({ book, colors, onChange }) {
   )
 }
 
+// All frames lists only what you can still get: a season while it is on,
+// gem and coin frames you do not own, and earned frames still locked. What
+// you own is in the Collection; out-of-season frames are one line.
 const SECTIONS = [
-  { kind: 'free', key: 'frames.sec.free' },
   { kind: 'season', key: 'frames.sec.season' },
-  { kind: 'earned', key: 'frames.sec.earned' },
-  { kind: 'coin', key: 'frames.sec.coin' },
   { kind: 'gem', key: 'frames.sec.gem' },
+  { kind: 'coin', key: 'frames.sec.coin' },
+  { kind: 'earned', key: 'frames.sec.earned' },
 ]
+
+function allFramesLists(purse, ctx) {
+  const owned = framesOwned(purse, ctx)
+  const open = (f) => !owned.has(f.id) && (f.kind !== 'season' || seasonOpen(f, ctx.today))
+  const sections = SECTIONS.map((sec) => {
+    const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind && open(f))
+    if (sec.kind === 'coin' || sec.kind === 'gem') list.sort(byPrice)
+    return { ...sec, list }
+  }).filter((sec) => sec.list.length)
+  // The soonest season that is not on now, for the line under the list.
+  const next = SHOWN_FRAMES.filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
+    .map((f) => ({ f, on: seasonNextText(f, ctx.today) }))
+    .sort((a, b) => a.on.localeCompare(b.on))[0]
+  const mineCount = SHOWN_FRAMES.filter((f) => owned.has(f.id)).length
+  return { sections, next, mineCount }
+}
 
 export function ShopFramesScreen({ book, onChange }) {
   const colors = useLookColors(activeLook(book), true)
   const ctx = useFrameCtx(book)
   const purse = normalizePurse(book)
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
+  const lists = allFramesLists(purse, ctx)
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>
-      {SECTIONS.map((sec) => {
-        const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind)
-        // Paid sections go up by price, then by name.
-        if (sec.kind === 'coin' || sec.kind === 'gem') {
-          list.sort(byPrice)
-        }
-        return (
-          <View key={sec.kind}>
-            <Text style={[styles.cap, { color: colors.inkDim }]}>{t(sec.key)}</Text>
-            {sec.kind === 'earned' ? <Meta colors={colors}>{t('frames.earnHint')}</Meta> : null}
-            <View style={styles.grid}>
-              {list.map((frame) => (
-                <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.gridTile} />
-              ))}
-            </View>
+      {lists.mineCount ? (
+        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'frames' })} hitSlop={6}>
+          <Text style={[styles.mineLine, { color: colors.inkSoft }]}>
+            {lists.mineCount === 1 ? t('frames.mineOne') : t('frames.mine', { n: lists.mineCount })}{' '}
+            <Text style={{ color: colors.on }}>{t('frames.wearThem')} ›</Text>
+          </Text>
+        </Pressable>
+      ) : null}
+      {lists.sections.length ? null : <Meta colors={colors}>{t('frames.allOwned')}</Meta>}
+      {lists.sections.map((sec) => (
+        <View key={sec.kind}>
+          <Text style={[styles.cap, { color: colors.inkDim }]}>{t(sec.key)}</Text>
+          {sec.kind === 'season' ? <Meta colors={colors}>{t('frames.seasonNowHint')}</Meta> : null}
+          {sec.kind === 'earned' ? <Meta colors={colors}>{t('frames.earnHint')}</Meta> : null}
+          <View style={styles.grid}>
+            {sec.list.map((frame) => (
+              <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.gridTile} />
+            ))}
           </View>
-        )
-      })}
+        </View>
+      ))}
+      {lists.next ? (
+        <Meta colors={colors}>
+          {t('frames.nextSeason', { name: frameName(lists.next.f.id), date: formatBoardDate(lists.next.on) })}
+        </Meta>
+      ) : null}
     </BoardShell>
   )
 }
@@ -497,6 +523,7 @@ export function framesOwnedCount(book) {
 }
 
 const styles = StyleSheet.create({
+  mineLine: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 4 },
   promoShelf: { gap: 8, marginTop: 4 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   promoAll: { fontFamily: fonts.uiSemi, fontSize: 13 },
