@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frame Bank</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;
+ --card:#16191f;--cardLine:#2b3140;--cardInk:#f4f6fa;--cardSoft:#a3abb8;--cardDim:#5f6876;--accent:#c9f24d;--miss:#ef6a5b;--stage:#0d1119;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink);margin:0}
+body{font:400 15px/1.55 var(--ui);background:radial-gradient(1200px 600px at 50% -10%,#16203a 0,transparent 60%),var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 16px 80px;display:grid;gap:44px}
+header{text-align:center;display:grid;gap:14px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,58px)/1 var(--display);margin:0;letter-spacing:-.02em}
+h2{font:800 clamp(24px,4vw,34px)/1.1 var(--display);margin:0}
+.lede{color:var(--soft);margin:0;max-width:62ch}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+.app-light{--card:#ffffff;--cardLine:#d5dbe4;--cardInk:#141a22;--cardSoft:#56606e;--cardDim:#8a93a0;--miss:#d6503f;--accent:#5f8a00;--stage:#e9edf3}
+section{display:grid;gap:18px}
+.sechead p{margin:6px 0 0;color:var(--soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:18px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;display:grid;gap:10px;align-content:start}
+.opt h3{margin:0;font:800 21px/1.1 var(--display)}
+.opt .tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14px}
+.stage{flex-wrap:wrap;border-radius:18px;padding:10px 6px;background:var(--stage);display:flex;justify-content:center;align-items:center;gap:14px;transition:background .3s}
+.fwrap{position:relative;display:inline-block}
+.fwrap>svg.f{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.home{position:relative;margin:16px;width:188px;height:150px;background:var(--card);border:1px solid var(--cardLine);border-radius:20px;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:7px;color:var(--cardInk)}
+.home .k{font:700 9px/1 var(--mono);letter-spacing:.18em;color:var(--accent)}
+.home .t{font:800 17px/1.15 var(--ui)}
+.dots{display:flex;gap:9px;margin-top:4px}
+.dots b{width:9px;height:9px;border-radius:50%;background:var(--accent)} .dots b.m{background:var(--miss)} .dots b.o{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
+.tile{position:relative;margin:7px;width:52px;height:62px;border-radius:11px;background:var(--card);border:1px solid var(--cardLine)}
+.tile::after{content:"";position:absolute;left:8px;right:13px;top:11px;height:4px;border-radius:3px;background:var(--cardLine);box-shadow:0 9px 0 var(--cardLine)}
+.walk{animation:walk 6s linear infinite}
+@keyframes walk{to{stroke-dashoffset:-400}}
+.fall{animation:fall 2.6s linear infinite}
+@keyframes fall{0%{transform:translateY(-6px);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(60px);opacity:0}}
+.rise{animation:rise 3.4s ease-in infinite}
+@keyframes rise{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:.9}100%{transform:translateY(-70px) scale(1.1);opacity:0}}
+.beat{transform-box:fill-box;transform-origin:center;animation:beat 1.6s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.15)}}
+.pop{transform-box:fill-box;transform-origin:center;animation:pop 2.4s ease-out infinite}
+@keyframes pop{0%{transform:scale(.2);opacity:0}20%{opacity:1}70%{opacity:.9}100%{transform:scale(1.15);opacity:0}}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 14s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.slide{animation:slide 3s linear infinite}
+@keyframes slide{to{transform:translateX(-24px)}}
+@media (prefers-reduced-motion:reduce){.walk,.fall,.rise,.beat,.pop,.spin,.slide{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:72ch;margin:0 auto}
+.picks{font:600 13px/1.4 var(--mono);color:var(--soft);text-align:center}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame bank · for the next drops</span>
+ <h1>20 new frames</h1>
+ <p class="lede">Seven coin frames that stay still, seven gem frames that move, and six specials that come with a season or get earned. None of them repeats a frame already in the app. All art sits in the gap outside the card, so the question is never covered. Pick the ones to build, and each drop can take one of each kind.</p>
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+</header>
+
+<section><div class="sechead"><span class="kicker">Coin · still · 60 to 120 coins</span><h2>Coin frames</h2><p>Drawn once, no motion. Priced like the coin frames already in the shop.</p></div><div class="grid app" id="coin"></div></section>
+<section><div class="sechead"><span class="kicker">Gem · animated · 3 gems</span><h2>Gem frames</h2><p>Each one moves slowly and stops for reduced motion and low power, like the gem frames already in the shop.</p></div><div class="grid app" id="gem"></div></section>
+<section><div class="sechead"><span class="kicker">Special · seasonal or earned</span><h2>Specials</h2><p>Never sold. Seasonal ones come back each year for their dates; earned ones stay once you have them.</p></div><div class="grid app" id="special"></div></section>
+<p class="notes">To build one: art goes in native/components/frames/art.jsx, the id in geometry.js and frames.js, and its name in the 9 locale files. Gem frames use the same clock and particles as the ones there now.</p>
+</div>
+
+<script>
+// Every frame draws in a box that is the card plus a gap g on each side.
+const rr=(x,y,w,h,r)=>`M${x+r} ${y}H${x+w-r}A${r} ${r} 0 0 1 ${x+w} ${y+r}V${y+h-r}A${r} ${r} 0 0 1 ${x+w-r} ${y+h}H${x+r}A${r} ${r} 0 0 1 ${x} ${y+h-r}V${y+r}A${r} ${r} 0 0 1 ${x+r} ${y}Z`;
+const box=(w,h,r,g,k=.5)=>({x:g*k,y:g*k,W:w-2*g*k,H:h-2*g*k,R:r+g*(1-k)});
+const ring=(w,h,r,g,k,attrs)=>{const b=box(w,h,r,g,k);return `<path d="${rr(b.x,b.y,b.W,b.H,b.R)}" fill="none" ${attrs}/>`};
+let uid=0;const id=p=>p+(++uid);
+const heart=(cx,cy,s,fill,cls='')=>`<path class="${cls}" d="M${cx} ${cy+s*.9} C${cx-s*1.6} ${cy-s*.2} ${cx-s*.7} ${cy-s*1.3} ${cx} ${cy-s*.45} C${cx+s*.7} ${cy-s*1.3} ${cx+s*1.6} ${cy-s*.2} ${cx} ${cy+s*.9}Z" fill="${fill}"/>`;
+
+const COIN={
+ ticket:{name:'Ticket',price:'80 coins',desc:'An admit-one stub: a warm ring, a torn dotted line inside it, and a notch bitten out of each side.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),n=s?3:6,col='#f0b44a';
+  return `${ring(w,h,r,g,.5,`stroke="${col}" stroke-width="${s?2:3}"`)}${ring(w,h,r,g,.95,`stroke="${col}" stroke-opacity=".7" stroke-width="${s?1:1.4}" stroke-dasharray="${s?'2 2':'4 4'}"`)}
+  <circle cx="${b.x}" cy="${h/2}" r="${n}" fill="var(--stage)" stroke="${col}" stroke-width="${s?1.5:2.5}"/><circle cx="${b.x+b.W}" cy="${h/2}" r="${n}" fill="var(--stage)" stroke="${col}" stroke-width="${s?1.5:2.5}"/>`}},
+ notebook:{name:'Notebook',price:'60 coins',desc:'A spiral down the left side and the red margin line from a school notebook.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),step=s?9:16;let loops='';
+  for(let y=b.y+b.R+2;y<b.y+b.H-b.R-2;y+=step)loops+=`<ellipse cx="${b.x}" cy="${y}" rx="${s?3.2:6}" ry="${s?2:3.6}" fill="none" stroke="#c7ced8" stroke-width="${s?1:1.8}"/>`;
+  return `${ring(w,h,r,g,.5,`stroke="#7aa7e0" stroke-width="${s?1.5:2}"`)}<line x1="${b.x+(s?9:18)}" y1="${b.y}" x2="${b.x+(s?9:18)}" y2="${b.y+b.H}" stroke="#ef6a5b" stroke-opacity=".55" stroke-width="${s?.8:1.2}"/>${loops}`}},
+ postage:{name:'Postage',price:'90 coins',desc:'The edge of a stamp: a row of perforation dots, a thin frame inside, and a wavy postmark in the corner.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),col='#d9c6a3',x=b.x+b.W-(s?10:24),y=b.y+(s?2:4);
+  let wav='';for(let i=0;i<3;i++)wav+=`<path d="M${x-(s?10:26)} ${y+i*(s?3:6)} q${s?3:7} ${s?-2:-4} ${s?6:13} 0 t${s?6:13} 0 t${s?6:13} 0" fill="none" stroke="var(--cardSoft)" stroke-opacity=".7" stroke-width="${s?.7:1.2}"/>`;
+  return `${ring(w,h,r,g,.3,`stroke="${col}" stroke-width="${s?2.6:5}" stroke-linecap="round" stroke-dasharray="0.1 ${s?4:8}"`)}${ring(w,h,r,g,.85,`stroke="${col}" stroke-width="${s?1:1.5}"`)}${s?'':`<circle cx="${x+4}" cy="${y+6}" r="13" fill="none" stroke="var(--cardSoft)" stroke-opacity=".7" stroke-width="1.2"/>`}${wav}`}},
+ bamboo:{name:'Bamboo',price:'80 coins',desc:'A green stalk all the way round, with a ring at each joint and two small leaves at the top corner.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),pid=id('bb');
+  const leaf=(x,y,a)=>`<path transform="translate(${x} ${y}) rotate(${a})" d="M0 0 q${s?5:10} ${s?-4:-8} ${s?12:24} 0 q${s?-6:-12} ${s?4:8} ${s?-12:-24} 0z" fill="#5fb36a"/>`;
+  return `<defs><linearGradient id="${pid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9ccf6b"/><stop offset="1" stop-color="#4f9a55"/></linearGradient></defs>
+  ${ring(w,h,r,g,.5,`stroke="url(#${pid})" stroke-width="${s?3.5:6}"`)}${ring(w,h,r,g,.5,`stroke="#2f6b39" stroke-width="${s?3.5:6}" stroke-dasharray="${s?'1.2 22':'2 44'}"`)}
+  ${leaf(b.x+b.W-b.R*.4,b.y+2,-30)}${leaf(b.x+b.W-b.R*.4,b.y+2,10)}`}},
+ chalk:{name:'Chalk',price:'70 coins',desc:'Drawn on a blackboard: two shaky chalk lines that do not quite meet, and a little star and swirl.',draw(w,h,r,g,s){
+  const c='rgba(240,240,232,.82)',sw=s?1.2:2;
+  const star=(x,y,k)=>`<path d="M${x} ${y-k}L${x+k*.3} ${y-k*.3}L${x+k} ${y}L${x+k*.3} ${y+k*.3}L${x} ${y+k}L${x-k*.3} ${y+k*.3}L${x-k} ${y}L${x-k*.3} ${y-k*.3}Z" fill="none" stroke="${c}" stroke-width="${sw*.8}"/>`;
+  return `${ring(w,h,r,g,.45,`stroke="${c}" stroke-width="${sw}" stroke-dasharray="${s?'26 3 9 2':'70 5 22 4 40 3'}" stroke-linecap="round"`)}${ring(w,h,r,g,.65,`stroke="${c}" stroke-opacity=".55" stroke-width="${sw*.8}" stroke-dasharray="${s?'14 4 30 3':'40 8 90 6'}" stroke-linecap="round"`)}
+  ${s?'':star(w-g-6,g+4,8)+`<path d="M${g+2} ${h-g-2} c6 -6 14 -4 12 3 c-2 5 -9 4 -8 -1" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`}`}},
+ quilt:{name:'Quilt',price:'120 coins',desc:'A hand-stitched line round the edge and a patchwork square of four fabrics in each corner.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),k=s?6:12,cols=['#e9a07b','#7fb2d6','#f2d17a','#a5c98b'];
+  const patch=(x,y)=>[[0,0],[1,0],[0,1],[1,1]].map(([i,j],n)=>`<rect x="${x+i*k}" y="${y+j*k}" width="${k}" height="${k}" fill="${cols[(n+Math.round(x+y))%4]}" stroke="var(--stage)" stroke-width="${s?.6:1}"/>`).join('');
+  const o=s?2:4;
+  return `${ring(w,h,r,g,.5,`stroke="#e8dcc7" stroke-width="${s?1:1.6}" stroke-dasharray="${s?'3 2':'6 4'}"`)}${patch(o,o)}${patch(w-o-2*k,o)}${patch(o,h-o-2*k)}${patch(w-o-2*k,h-o-2*k)}`}},
+ rope:{name:'Rope',price:'90 coins',desc:'A twisted sailor rope, two strands wound round each other in tan and brown.',draw(w,h,r,g,s){
+  const sw=s?4:7,d=s?'3 3':'6 6';
+  return `${ring(w,h,r,g,.5,`stroke="#c99b62" stroke-width="${sw}"`)}${ring(w,h,r,g,.5,`stroke="#8a5f35" stroke-width="${sw}" stroke-dasharray="${d}"`)}${ring(w,h,r,g,.5,`stroke="#f0d3a6" stroke-opacity=".5" stroke-width="${sw*.3}" stroke-dasharray="${d}" stroke-dashoffset="${s?1.5:3}"`)}`}},
+};
+
+const GEM={
+ rain:{name:'Rain',desc:'A cool blue edge with raindrops that run down both sides, one after another.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5);let drops='';
+  if(!s)for(let i=0;i<4;i++)for(const x of [b.x,b.x+b.W])drops+=`<g class="fall" style="animation-delay:${(i*.65+(x>b.x?.3:0)).toFixed(2)}s"><path d="M${x+(x>b.x?4:-4)} ${b.y+b.R+i*14-6} c-4.5 7 -4.5 12 0 12 c4.5 0 4.5 -5 0 -12z" fill="#9fd3ff" stroke="#5aa9e6" stroke-width=".8"/></g>`;
+  return `${ring(w,h,r,g,.5,`stroke="#5aa9e6" stroke-width="${s?2:3}"`)}${ring(w,h,r,g,.15,`stroke="#5aa9e6" stroke-opacity=".25" stroke-width="${s?2:5}"`)}${drops}`}},
+ tide:{name:'Tide',desc:'Sea glass blue all round, and a wave that rolls along the bottom edge without stopping.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),y=b.y+b.H,cid=id('td');let p=`M${b.x-24} ${y}`;for(let x=b.x-24;x<b.x+b.W+24;x+=12)p+=` q3 -${s?3:6} 6 0 t6 0`;
+  return `<defs><clipPath id="${cid}"><rect x="${b.x+b.R}" y="${y-12}" width="${b.W-2*b.R}" height="24"/></clipPath></defs>${ring(w,h,r,g,.5,`stroke="#3fc1b6" stroke-width="${s?2:3}"`)}
+  <g clip-path="url(#${cid})"><path class="slide" d="${p}" fill="none" stroke="#bff3ec" stroke-width="${s?1.4:2.2}" stroke-linecap="round"/></g>`}},
+ lava:{name:'Lava',desc:'A slow molten ring: orange and red turning round the card like a lava lamp.',draw(w,h,r,g,s){
+  const gid=id('lv');
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".5" stop-color="#ff5e3a"/><stop offset="1" stop-color="#b3122e"/><animateTransform attributeName="gradientTransform" type="rotate" from="0 .5 .5" to="360 .5 .5" dur="10s" repeatCount="indefinite"/></linearGradient></defs>
+  ${ring(w,h,r,g,.5,`stroke="url(#${gid})" stroke-width="${s?3:5}"`)}${ring(w,h,r,g,.15,`stroke="url(#${gid})" stroke-opacity=".3" stroke-width="${s?3:8}"`)}`}},
+ prism:{name:'Prism',desc:'A thin rainbow edge, and a flash of white light that runs round it every few seconds.',draw(w,h,r,g,s){
+  const gid=id('pr'),b=box(w,h,r,g,.5);
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".2" stop-color="#ffd166"/><stop offset=".4" stop-color="#7bd389"/><stop offset=".6" stop-color="#4ecdc4"/><stop offset=".8" stop-color="#6c8cff"/><stop offset="1" stop-color="#c77dff"/></linearGradient></defs>
+  ${ring(w,h,r,g,.5,`stroke="url(#${gid})" stroke-width="${s?2:3}"`)}${s?'':`<path class="walk" d="${rr(b.x,b.y,b.W,b.H,b.R)}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" pathLength="400" stroke-dasharray="26 374"/>`}`}},
+ bubbles:{name:'Bubbles',desc:'Soap bubbles drift up both sides of the card and fade at the top.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5);let bub='';
+  if(!s)[[b.x-3,0,7],[b.x+2,1,5],[b.x-2,2,6],[b.x+3,2.8,4.5],[b.x+b.W+3,.5,6.5],[b.x+b.W-2,1.5,5],[b.x+b.W+2,2.4,7],[b.x+b.W-3,3,4.5]].forEach(([x,d,rad])=>bub+=`<g class="rise" style="animation-delay:${d}s"><circle cx="${x}" cy="${b.y+b.H-10}" r="${rad}" fill="rgba(180,230,255,.12)" stroke="#bfe6ff" stroke-width="1"/><circle cx="${x-rad*.35}" cy="${b.y+b.H-10-rad*.35}" r="${rad*.25}" fill="#fff" opacity=".8"/></g>`);
+  return `${ring(w,h,r,g,.5,`stroke="#8fd0f5" stroke-width="${s?1.6:2}" stroke-opacity=".8"`)}${s?'<circle cx="8" cy="20" r="3" fill="none" stroke="#bfe6ff"/><circle cx="58" cy="12" r="2.5" fill="none" stroke="#bfe6ff"/>':''}${bub}`}},
+ pulse:{name:'Pulse',desc:'A heartbeat line that blips along the top edge and keeps going round.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),y=b.y,mx=w/2;
+  const ecg=`M${b.x+b.R} ${y}H${mx-30}l6 -2 4 0 4 -12 5 22 5 -14 3 6 3 0H${b.x+b.W-b.R}`;
+  return `${ring(w,h,r,g,.5,`stroke="#ff5d7a" stroke-opacity=".35" stroke-width="${s?2:3}"`)}${s?ring(w,h,r,g,.5,`stroke="#ff5d7a" stroke-width="2" stroke-dasharray="10 30"`):`<path d="${ecg}" fill="none" stroke="#ff5d7a" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round"/><path class="walk" d="${ecg}" fill="none" stroke="#ff8fa3" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" pathLength="400" stroke-dasharray="60 340"/>`}`}},
+ orbit:{name:'Orbit',desc:'A tiny planet with a soft trail circles the card on a faint track.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),p=rr(b.x,b.y,b.W,b.H,b.R),pid=id('or');
+  return `${ring(w,h,r,g,.5,`stroke="#9fb7ff" stroke-opacity=".35" stroke-width="${s?1.2:1.5}" stroke-dasharray="${s?'2 3':'3 5'}"`)}<path id="${pid}" d="${p}" fill="none"/>
+  ${s?'<circle cx="60" cy="4" r="3" fill="#ffd166"/>':`<path class="walk" d="${p}" fill="none" stroke="#9fb7ff" stroke-width="3" stroke-linecap="round" pathLength="400" stroke-dasharray="30 370" opacity=".6"/><circle r="5" fill="#ffd166"><animateMotion dur="6s" repeatCount="indefinite"><mpath href="#${pid}"/></animateMotion></circle>`}`}},
+};
+
+const SPECIAL={
+ hearts:{name:'Sweethearts',tag:'Seasonal · Feb 1 to 14',desc:'A pink edge with a cluster of hearts in two corners that beat softly.',draw(w,h,r,g,s){
+  const k=s?4:10;
+  return `${ring(w,h,r,g,.5,`stroke="#ff8fb1" stroke-width="${s?2:3}"`)}${heart(g+2,g+2,k,'#ff5d8f','beat')}${heart(g+2+k*2.2,g+2-k*.3,k*.7,'#ffb3c9','beat')}${heart(w-g-2,h-g-2,k,'#ff5d8f','beat')}${heart(w-g-2-k*2.2,h-g-2+k*.3,k*.7,'#ffb3c9','beat')}`}},
+ clover:{name:'Lucky',tag:'Seasonal · Mar 10 to 20',desc:'A clover green edge and a four-leaf clover in each corner.',draw(w,h,r,g,s){
+  const k=s?4:10;const clv=(x,y)=>`<g transform="translate(${x} ${y})">${[0,90,180,270].map(a=>`<g transform="rotate(${a})">${heart(0,-k*.9,k*.62,'#3fa75a')}</g>`).join('')}<circle r="${k*.18}" fill="#2a7a40"/></g>`;
+  return `${ring(w,h,r,g,.5,`stroke="#5cc176" stroke-width="${s?2:3}"`)}${clv(g+1,g+1)}${clv(w-g-1,g+1)}${clv(g+1,h-g-1)}${clv(w-g-1,h-g-1)}`}},
+ fireworks:{name:'Fireworks',tag:'Seasonal · Dec 31 to Jan 2, Jul 1 to 7',desc:'Bursts of light go off over the top corners while a gold edge holds the card.',draw(w,h,r,g,s){
+  const burst=(x,y,col,d,k)=>`<g class="pop" style="animation-delay:${d}s">${Array.from({length:10},(_,i)=>{const a=i/10*Math.PI*2;return `<line x1="${x+Math.cos(a)*k*.35}" y1="${y+Math.sin(a)*k*.35}" x2="${x+Math.cos(a)*k}" y2="${y+Math.sin(a)*k}" stroke="${col}" stroke-width="${s?1:1.6}" stroke-linecap="round"/>`}).join('')}</g>`;
+  return `${ring(w,h,r,g,.5,`stroke="#f2c45a" stroke-width="${s?2:3}"`)}${burst(g+6,g+4,'#ffd166',0,s?7:16)}${burst(w-g-8,g+6,'#ff6b9a',1.1,s?6:14)}${s?'':burst(w/2,g-2,'#8ad1ff',1.8,10)}`}},
+ sunny:{name:'Sunny',tag:'Seasonal · Jun 21 to Jul 31',desc:'A warm yellow edge and half a sun rising over the top, its rays turning slowly.',draw(w,h,r,g,s){
+  const cx=w/2,cy=g*.5,k=s?7:14;
+  const rays=Array.from({length:12},(_,i)=>{const a=i/12*Math.PI*2;return `<line x1="${cx+Math.cos(a)*k*1.25}" y1="${cy+Math.sin(a)*k*1.25}" x2="${cx+Math.cos(a)*k*1.75}" y2="${cy+Math.sin(a)*k*1.75}" stroke="#ffc94d" stroke-width="${s?1.2:2}" stroke-linecap="round"/>`}).join('');
+  return `${ring(w,h,r,g,.5,`stroke="#ffb84d" stroke-width="${s?2:3}"`)}<g class="spin">${rays}</g><circle cx="${cx}" cy="${cy}" r="${k}" fill="#ffd166" stroke="#f29b30" stroke-width="${s?1:1.6}"/>`}},
+ crown:{name:'Royal',tag:'Earned · 100 night streak',desc:'A gold edge with laurel at both top corners and a small crown on top. Only for a 100 night streak.',draw(w,h,r,g,s){
+  const gid=id('cr'),cx=w/2,y=g*.5,k=s?6:12;
+  // A laurel sprig: leaves along a quarter arc that hugs the top corner.
+  const laurel=(cx0,cy0,dir)=>{const R0=s?10:22;let o=`<path d="M${cx0} ${cy0+R0} A${R0} ${R0} 0 0 ${dir>0?1:0} ${cx0+dir*R0} ${cy0}" fill="none" stroke="#b98a2f" stroke-width="${s?.8:1.4}"/>`;for(let i=0;i<5;i++){const t=i/4,px=cx0+dir*R0*Math.sin(Math.PI/2*t),py=cy0+R0*Math.cos(Math.PI/2*t);o+=`<ellipse cx="${px}" cy="${py}" rx="${s?2.6:5.5}" ry="${s?1.3:2.6}" transform="rotate(${dir*(90*t-60)} ${px} ${py})" fill="#e2b75a"/>`}return o};
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>
+  ${ring(w,h,r,g,.5,`stroke="url(#${gid})" stroke-width="${s?2.5:4}"`)}${laurel(g*.5,g*.5,1)}${laurel(w-g*.5,g*.5,-1)}
+  <path d="M${cx-k} ${y+k*.5}L${cx-k} ${y-k*.4}L${cx-k*.5} ${y}L${cx} ${y-k*.7}L${cx+k*.5} ${y}L${cx+k} ${y-k*.4}L${cx+k} ${y+k*.5}Z" fill="url(#${gid})" stroke="#6b4d14" stroke-width="${s?.8:1.2}"/><circle cx="${cx}" cy="${y-k*.7}" r="${k*.15}" fill="#ef6a5b"/>`}},
+ ribbon:{name:'Wrapped',tag:'Earned · send 10 gifts',desc:'Your card tied up like a present: a ribbon down the middle and a bow on top. For people who give.',draw(w,h,r,g,s){
+  const cx=w/2,b=box(w,h,r,g,.5),k=s?6:14,col='#ef6a5b',dark='#b8443a';
+  return `${ring(w,h,r,g,.5,`stroke="${col}" stroke-width="${s?2:3}"`)}<line x1="${cx}" y1="${b.y}" x2="${cx}" y2="${b.y+g*.5+(s?2:4)}" stroke="${col}" stroke-width="${s?3:6}"/><line x1="${cx}" y1="${b.y+b.H-g*.5-(s?2:4)}" x2="${cx}" y2="${b.y+b.H}" stroke="${col}" stroke-width="${s?3:6}"/>
+  <path d="M${cx} ${b.y} C${cx-k*2} ${b.y-k*1.4} ${cx-k*2.2} ${b.y+k*.8} ${cx} ${b.y}Z" fill="${col}" stroke="${dark}" stroke-width="${s?.6:1}"/><path d="M${cx} ${b.y} C${cx+k*2} ${b.y-k*1.4} ${cx+k*2.2} ${b.y+k*.8} ${cx} ${b.y}Z" fill="${col}" stroke="${dark}" stroke-width="${s?.6:1}"/>
+  <path d="M${cx} ${b.y} l${-k*.8} ${k*1.6} M${cx} ${b.y} l${k*.8} ${k*1.6}" stroke="${col}" stroke-width="${s?1.5:3}" stroke-linecap="round"/><circle cx="${cx}" cy="${b.y}" r="${k*.42}" fill="${dark}"/>`}},
+};
+
+const home=()=>`<div class="home"><span class="k">TONIGHT</span><div class="t">Did I take my vitamins?</div><div class="dots"><b></b><b></b><b class="m"></b><b></b><b class="o"></b></div></div>`;
+function framed(F,inner,cw,ch,cr,g,small){return `<div class="fwrap">${inner}<svg class="f" viewBox="0 0 ${cw+2*g} ${ch+2*g}" aria-hidden="true">${F.draw(cw+2*g,ch+2*g,cr,g,small)}</svg></div>`}
+function card(key,F,tag){return `<article class="opt"><span class="tag">${tag}</span><h3>${F.name}</h3><p>${F.desc}</p>
+ <div class="stage">${framed(F,home(),188,150,20,16,false)}${framed(F,'<div class="tile"></div>',52,62,11,7,true)}</div></article>`}
+function render(){
+ document.getElementById('coin').innerHTML=Object.entries(COIN).map(([k,F])=>card(k,F,`Coin · ${F.price}`)).join('');
+ document.getElementById('gem').innerHTML=Object.entries(GEM).map(([k,F])=>card(k,F,'Gem · 3 gems · animated')).join('');
+ document.getElementById('special').innerHTML=Object.entries(SPECIAL).map(([k,F])=>card(k,F,F.tag)).join('');
+}
+const theme=document.getElementById('theme');
+theme.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;theme.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));document.querySelectorAll('.app').forEach(n=>n.classList.toggle('app-light',b.dataset.v==='light'))});
+render();
+</script>
+</body></html>
