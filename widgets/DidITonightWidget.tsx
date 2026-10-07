@@ -1,4 +1,4 @@
-import { Button, Ellipse, HStack, Rectangle, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
+import { AccessoryWidgetBackground, Button, Ellipse, HStack, Rectangle, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
 import {
   allowsTightening,
   background,
@@ -505,13 +505,26 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
 
   const family = environment?.widgetFamily
 
+  // The lock screen circle draws in the system's own tint, so it uses the
+  // system disc and a centered number. The old top-left frame put the number
+  // in the corner the circle clips away, which left it blank.
   if (family === 'accessoryCircular') {
+    // No snapshot yet (the widget gallery): the app's question marks, not a check.
+    const glyph = left > 0 ? String(left) : items.length ? '✓' : '???'
     return (
-      <VStack modifiers={[containerBackground(gem ? c.bg : c.panel, 'widget'), fill]}>
-        <Text modifiers={[font({ weight: 'bold', size: 16 }), foregroundStyle(gem ? on : ink)]}>
-          {left > 0 ? String(left) : '✓'}
+      <ZStack modifiers={[containerBackground(c.panel, 'widget'), widgetURL(openUri), grow]}>
+        <AccessoryWidgetBackground />
+        <Text
+          modifiers={[
+            font({ weight: 'bold', size: left > 9 || !items.length ? 18 : 24 }),
+            foregroundStyle(ink),
+            lineLimit(1),
+            minimumScaleFactor(0.5),
+          ]}
+        >
+          {glyph}
         </Text>
-      </VStack>
+      </ZStack>
     )
   }
 
