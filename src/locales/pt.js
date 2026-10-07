@@ -163,7 +163,7 @@ export const pt = {
   'auth.body': 'Digite seu e-mail para receber um código único. Suas pastas, amigos e sequência vão com você em qualquer celular.',
   'auth.newHere': 'É novo aqui? Mesmos passos. Sua conta é criada quando você confirma o código.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Uma pergunta, uma vez por noite.',
+  'auth.tagline': 'Did I? Agora você vai saber.',
   'auth.apple': 'Entrar com a Apple',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Não deu para entrar com a Apple. Use o e-mail ou tente de novo em um minuto.',
@@ -1786,7 +1786,7 @@ export const pt = {
   'web.press.color.soft': 'Suave',
   'web.press.color.miss': 'Perdido',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? Agora você não precisa mais ficar pensando',
+  'web.landing.title': 'Did I? Agora você vai saber',
   'web.landing.lead':
     'Eu repetia as mesmas checagens indo dormir. Porta, fogão, remédios. Did I coloca uma pergunta no telefone. Deslize para a direita se fez. Para a esquerda se não. Compartilhe com amigos e família.',
   'web.landing.b1': 'Deslize em Esta noite. Início mostra o que ainda está aberto.',

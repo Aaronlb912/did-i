@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: 'Did I',
         short_name: 'Did I',
-        description: 'The unanswered question for tonight. Hit DID.',
+        description: 'Did I? Now you’ll know. One question a night.',
         theme_color: '#0e1014',
         background_color: '#0e1014',
         display: 'standalone',
