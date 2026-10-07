@@ -36,7 +36,6 @@ import { useSwipeFly } from './SwipeFly.jsx'
 import { aimCheer } from '../lib/cheer-origin.js'
 import { fonts } from '../theme.js'
 import { CardFrame } from './frames/CardFrame.jsx'
-import { noteSwipe } from '../lib/swipe-wheels.js'
 
 const SPRING = { damping: 20, stiffness: 260 }
 
@@ -227,12 +226,7 @@ export function SwipeCard({
           glowStyle={glowStyle}
           blockDid={blockDid}
           blockNope={blockNope}
-          onAnswer={(way, from) => {
-            answer(way, from)
-            // After the answer, not before: the prefs write re-renders the app
-            // and the first swipes lost their undo toast.
-            if (!demo) setTimeout(noteSwipe, 0)
-          }}
+          onAnswer={answer}
           accessible={!demo}
           accessibilityLabel={title}
           accessibilityActions={demo ? undefined : actions}

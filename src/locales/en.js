@@ -2385,7 +2385,6 @@ export const en = {
   'tonight.nopedChange': 'You can still change it until {time}. It counts as late.',
   'tonight.nopedMany': "You said not yet to {n} questions.",
   'tonight.nopedOne': "You said not yet to \"{question}\"",
-  'tonight.swipeHint': "Swipe right for Did, left for not yet.",
   'first.finishFirst': 'Finish the question first',
   'people.outComesAlong': 'Your questions and streak come with you.',
   'auth.newEmail': 'New? Enter your email and we’ll send you a code.',

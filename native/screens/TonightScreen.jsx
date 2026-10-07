@@ -45,7 +45,7 @@ import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/Freeze
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { TonightNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
-import { useSwipeWheels } from '../lib/swipe-wheels.js'
+import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -289,7 +289,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
-  const showIntro = !introSeen && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
+  const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
   const showKey = introSeen && !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
@@ -308,7 +308,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // New people see Did and Nope buttons and a swipe hint until they have
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
-  const wheels = useSwipeWheels()
+  const answerButtons = useAnswerButtons()
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {
@@ -495,12 +495,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // The done card grows (note, sign-in, recap). Centred in a fixed slot it
   // spilled under the meter and the tab bar, so it scrolls instead.
   let doneFace = false
-  // Did and Nope buttons under the card, for anyone who would rather tap.
+  // Did and Not yet buttons under the card, only for a screen reader.
   let answerBar = null
-  // Training wheels: they go after a few swipes (kept for screen readers and reduced motion).
   const withAnswerButtons = (card, onDid, onNope) => {
-    // Once they go, the card and the rows under it ease into the room (noteSwipe animates it).
-    if (!wheels.buttons) return card
+    if (!answerButtons) return card
     answerBar = (
     <View style={styles.answerBar}>
       <View style={styles.answerRow}>
@@ -513,7 +511,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
         </View>
       </View>
-      {wheels.hint ? <Text style={[faceCardStyles.meta, styles.swipeHint, { color: colors.inkSoft }]}>{t('tonight.swipeHint')}</Text> : null}
     </View>
     )
     return card
@@ -1067,7 +1064,6 @@ const styles = StyleSheet.create({
   toastRoom: { height: TOAST_ROOM, flexShrink: 0 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },
-  swipeHint: { textAlign: 'center', marginTop: 10 },
   jewels: { flexGrow: 0, marginBottom: 12 },
   jewelsRule: { width: StyleSheet.hairlineWidth * 2, height: 24, marginHorizontal: 2 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },

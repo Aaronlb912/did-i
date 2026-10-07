@@ -2409,7 +2409,6 @@ export const de = {
   'tonight.nopedChange': 'Du kannst es bis {time} noch ändern. Es zählt als spät.',
   'tonight.nopedMany': "Du hast bei {n} Fragen Noch nicht gesagt.",
   'tonight.nopedOne': "Du hast bei „{question}“ Noch nicht gesagt.",
-  'tonight.swipeHint': "Nach rechts wischen für Did, nach links für noch nicht.",
   'first.finishFirst': 'Schreib zuerst die Frage fertig',
   'people.outComesAlong': 'Deine Fragen und deine Serie kommen mit.',
   'auth.newEmail': 'Neu hier? Gib deine E-Mail ein, wir schicken dir einen Code.',

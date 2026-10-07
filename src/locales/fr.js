@@ -2405,7 +2405,6 @@ export const fr = {
   'tonight.nopedChange': 'Vous pouvez encore le changer jusqu’à {time}. Il compte en retard.',
   'tonight.nopedMany': "Tu as dit pas encore à {n} questions.",
   'tonight.nopedOne': "Tu as dit pas encore à « {question} »",
-  'tonight.swipeHint': "Glisse à droite pour Did, à gauche pour pas encore.",
   'first.finishFirst': 'Termine d’abord la question',
   'people.outComesAlong': 'Tes questions et ta série te suivent.',
   'auth.newEmail': 'Nouveau ? Saisis ton e-mail et on t’envoie un code.',
