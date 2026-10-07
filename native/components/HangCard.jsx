@@ -177,7 +177,10 @@ export const HangCard = forwardRef(function HangCard(
           styles.blank,
           { color: colors.ink, borderBottomColor: landed ? 'transparent' : focused ? colors.on : colors.line },
           lead ? styles.leadBlank : null,
-          mark && textW ? { flexGrow: 0, flexBasis: 'auto', minWidth: 0, width: textW + 4 } : null,
+          // The width is measured after each letter, so while typing it keeps one
+          // letter of room: a new letter used to land in a box too narrow for it,
+          // wrap for a frame, then jump back once measured (a flicker on iOS).
+          mark && textW ? { flexGrow: 0, flexBasis: 'auto', minWidth: 0, maxWidth: '100%', width: textW + (focused ? TYPE_ROOM : 4) } : null,
         ]}
       />
       {mark ? <Text style={[faceCardStyles.title, styles.mark, { color: colors.ink }]}>?</Text> : null}
@@ -190,6 +193,9 @@ export const HangCard = forwardRef(function HangCard(
     </Animated.View>
   )
 })
+
+// About one wide letter at the title size (26).
+const TYPE_ROOM = 28
 
 const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
