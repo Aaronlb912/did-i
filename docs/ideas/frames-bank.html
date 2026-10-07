@@ -49,8 +49,12 @@ section{display:grid;gap:18px}
 .spin{transform-box:fill-box;transform-origin:center;animation:spin 14s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .slide{animation:slide 3s linear infinite}
+.slideBack{animation:slideBack 4s linear infinite}
+@keyframes slideBack{from{transform:translateX(-16px)}to{transform:translateX(0)}}
+.twinkle{animation:tw 2.8s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.3}50%{opacity:1}}
 @keyframes slide{to{transform:translateX(-24px)}}
-@media (prefers-reduced-motion:reduce){.walk,.fall,.rise,.beat,.pop,.spin,.slide{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.walk,.fall,.rise,.beat,.pop,.spin,.slide,.slideBack,.twinkle{animation:none!important}}
 .notes{color:var(--soft);font-size:14px;max-width:72ch;margin:0 auto}
 .picks{font:600 13px/1.4 var(--mono);color:var(--soft);text-align:center}
 </style></head>
@@ -64,7 +68,7 @@ section{display:grid;gap:18px}
 </header>
 
 <section><div class="sechead"><span class="kicker">Coin · still · 60 to 120 coins</span><h2>Coin frames</h2><p>Drawn once, no motion. Priced like the coin frames already in the shop.</p></div><div class="grid app" id="coin"></div></section>
-<section><div class="sechead"><span class="kicker">Gem · animated · 3 gems</span><h2>Gem frames</h2><p>Each one moves slowly and stops for reduced motion and low power, like the gem frames already in the shop.</p></div><div class="grid app" id="gem"></div></section>
+<section><div class="sechead"><span class="kicker">Gem · animated · 3 gems</span><h2>Gem frames</h2><p>Each one is a band of material with a glow and layers of motion inside it, worth gems. Motion stops for reduced motion and low power, like the gem frames already in the shop.</p></div><div class="grid app" id="gem"></div></section>
 <section><div class="sechead"><span class="kicker">Special · seasonal or earned</span><h2>Specials</h2><p>Never sold. Seasonal ones come back each year for their dates; earned ones stay once you have them.</p></div><div class="grid app" id="special"></div></section>
 <p class="notes">To build one: art goes in native/components/frames/art.jsx, the id in geometry.js and frames.js, and its name in the 9 locale files. Gem frames use the same clock and particles as the ones there now.</p>
 </div>
@@ -111,35 +115,74 @@ const COIN={
   return `${ring(w,h,r,g,.5,`stroke="#c99b62" stroke-width="${sw}"`)}${ring(w,h,r,g,.5,`stroke="#8a5f35" stroke-width="${sw}" stroke-dasharray="${d}"`)}${ring(w,h,r,g,.5,`stroke="#f0d3a6" stroke-opacity=".5" stroke-width="${sw*.3}" stroke-dasharray="${d}" stroke-dashoffset="${s?1.5:3}"`)}`}},
 };
 
+// Gem frames are a band of material in the gap, with a glow outside it and
+// motion inside it (clipped to the band), not a thin line.
+const band=(w,h,r,g)=>`${rr(1,1,w-2,h-2,r+g-1)} ${rr(g-1,g-1,w-2*g+2,h-2*g+2,r+1)}`;
+const bandClip=(w,h,r,g,cid)=>`<clipPath id="${cid}"><path d="${band(w,h,r,g)}" fill-rule="evenodd" clip-rule="evenodd"/></clipPath>`;
+const glow=(w,h,r,g,col,o=.35)=>[3,6,9].map((d,i)=>`<path d="${rr(1-d,1-d,w-2+2*d,h-2+2*d,r+g-1+d)}" fill="none" stroke="${col}" stroke-opacity="${(o*(1-i/3)).toFixed(2)}" stroke-width="3"/>`).join('');
+const rand=(seed)=>{let x=seed;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+// Points spread round the band's middle line, for particles.
+function around(w,h,r,g,n,seed){const b=box(w,h,r,g,.5),R=rand(seed),out=[];for(let i=0;i<n;i++){const t=R(),side=Math.floor(R()*4);
+ const x=side===0?b.x+b.R+t*(b.W-2*b.R):side===1?b.x+b.W:side===2?b.x+b.R+t*(b.W-2*b.R):b.x,
+ y=side===0?b.y:side===1?b.y+b.R+t*(b.H-2*b.R):side===2?b.y+b.H:b.y+b.R+t*(b.H-2*b.R);out.push({x,y,side,d:(R()*3).toFixed(2),k:R()})}return out}
+
 const GEM={
- rain:{name:'Rain',desc:'A cool blue edge with raindrops that run down both sides, one after another.',draw(w,h,r,g,s){
-  const b=box(w,h,r,g,.5);let drops='';
-  if(!s)for(let i=0;i<4;i++)for(const x of [b.x,b.x+b.W])drops+=`<g class="fall" style="animation-delay:${(i*.65+(x>b.x?.3:0)).toFixed(2)}s"><path d="M${x+(x>b.x?4:-4)} ${b.y+b.R+i*14-6} c-4.5 7 -4.5 12 0 12 c4.5 0 4.5 -5 0 -12z" fill="#9fd3ff" stroke="#5aa9e6" stroke-width=".8"/></g>`;
-  return `${ring(w,h,r,g,.5,`stroke="#5aa9e6" stroke-width="${s?2:3}"`)}${ring(w,h,r,g,.15,`stroke="#5aa9e6" stroke-opacity=".25" stroke-width="${s?2:5}"`)}${drops}`}},
- tide:{name:'Tide',desc:'Sea glass blue all round, and a wave that rolls along the bottom edge without stopping.',draw(w,h,r,g,s){
-  const b=box(w,h,r,g,.5),y=b.y+b.H,cid=id('td');let p=`M${b.x-24} ${y}`;for(let x=b.x-24;x<b.x+b.W+24;x+=12)p+=` q3 -${s?3:6} 6 0 t6 0`;
-  return `<defs><clipPath id="${cid}"><rect x="${b.x+b.R}" y="${y-12}" width="${b.W-2*b.R}" height="24"/></clipPath></defs>${ring(w,h,r,g,.5,`stroke="#3fc1b6" stroke-width="${s?2:3}"`)}
-  <g clip-path="url(#${cid})"><path class="slide" d="${p}" fill="none" stroke="#bff3ec" stroke-width="${s?1.4:2.2}" stroke-linecap="round"/></g>`}},
- lava:{name:'Lava',desc:'A slow molten ring: orange and red turning round the card like a lava lamp.',draw(w,h,r,g,s){
-  const gid=id('lv');
-  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".5" stop-color="#ff5e3a"/><stop offset="1" stop-color="#b3122e"/><animateTransform attributeName="gradientTransform" type="rotate" from="0 .5 .5" to="360 .5 .5" dur="10s" repeatCount="indefinite"/></linearGradient></defs>
-  ${ring(w,h,r,g,.5,`stroke="url(#${gid})" stroke-width="${s?3:5}"`)}${ring(w,h,r,g,.15,`stroke="url(#${gid})" stroke-opacity=".3" stroke-width="${s?3:8}"`)}`}},
- prism:{name:'Prism',desc:'A thin rainbow edge, and a flash of white light that runs round it every few seconds.',draw(w,h,r,g,s){
-  const gid=id('pr'),b=box(w,h,r,g,.5);
-  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".2" stop-color="#ffd166"/><stop offset=".4" stop-color="#7bd389"/><stop offset=".6" stop-color="#4ecdc4"/><stop offset=".8" stop-color="#6c8cff"/><stop offset="1" stop-color="#c77dff"/></linearGradient></defs>
-  ${ring(w,h,r,g,.5,`stroke="url(#${gid})" stroke-width="${s?2:3}"`)}${s?'':`<path class="walk" d="${rr(b.x,b.y,b.W,b.H,b.R)}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" pathLength="400" stroke-dasharray="26 374"/>`}`}},
- bubbles:{name:'Bubbles',desc:'Soap bubbles drift up both sides of the card and fade at the top.',draw(w,h,r,g,s){
-  const b=box(w,h,r,g,.5);let bub='';
-  if(!s)[[b.x-3,0,7],[b.x+2,1,5],[b.x-2,2,6],[b.x+3,2.8,4.5],[b.x+b.W+3,.5,6.5],[b.x+b.W-2,1.5,5],[b.x+b.W+2,2.4,7],[b.x+b.W-3,3,4.5]].forEach(([x,d,rad])=>bub+=`<g class="rise" style="animation-delay:${d}s"><circle cx="${x}" cy="${b.y+b.H-10}" r="${rad}" fill="rgba(180,230,255,.12)" stroke="#bfe6ff" stroke-width="1"/><circle cx="${x-rad*.35}" cy="${b.y+b.H-10-rad*.35}" r="${rad*.25}" fill="#fff" opacity=".8"/></g>`);
-  return `${ring(w,h,r,g,.5,`stroke="#8fd0f5" stroke-width="${s?1.6:2}" stroke-opacity=".8"`)}${s?'<circle cx="8" cy="20" r="3" fill="none" stroke="#bfe6ff"/><circle cx="58" cy="12" r="2.5" fill="none" stroke="#bfe6ff"/>':''}${bub}`}},
- pulse:{name:'Pulse',desc:'A heartbeat line that blips along the top edge and keeps going round.',draw(w,h,r,g,s){
-  const b=box(w,h,r,g,.5),y=b.y,mx=w/2;
-  const ecg=`M${b.x+b.R} ${y}H${mx-30}l6 -2 4 0 4 -12 5 22 5 -14 3 6 3 0H${b.x+b.W-b.R}`;
-  return `${ring(w,h,r,g,.5,`stroke="#ff5d7a" stroke-opacity=".35" stroke-width="${s?2:3}"`)}${s?ring(w,h,r,g,.5,`stroke="#ff5d7a" stroke-width="2" stroke-dasharray="10 30"`):`<path d="${ecg}" fill="none" stroke="#ff5d7a" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round"/><path class="walk" d="${ecg}" fill="none" stroke="#ff8fa3" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" pathLength="400" stroke-dasharray="60 340"/>`}`}},
- orbit:{name:'Orbit',desc:'A tiny planet with a soft trail circles the card on a faint track.',draw(w,h,r,g,s){
-  const b=box(w,h,r,g,.5),p=rr(b.x,b.y,b.W,b.H,b.R),pid=id('or');
-  return `${ring(w,h,r,g,.5,`stroke="#9fb7ff" stroke-opacity=".35" stroke-width="${s?1.2:1.5}" stroke-dasharray="${s?'2 3':'3 5'}"`)}<path id="${pid}" d="${p}" fill="none"/>
-  ${s?'<circle cx="60" cy="4" r="3" fill="#ffd166"/>':`<path class="walk" d="${p}" fill="none" stroke="#9fb7ff" stroke-width="3" stroke-linecap="round" pathLength="400" stroke-dasharray="30 370" opacity=".6"/><circle r="5" fill="#ffd166"><animateMotion dur="6s" repeatCount="indefinite"><mpath href="#${pid}"/></animateMotion></circle>`}`}},
+ storm:{name:'Storm Glass',desc:'A thick band of frosted blue glass. Rain streaks down inside it, and now and then lightning flickers across the whole frame.',draw(w,h,r,g,s){
+  const gid=id('sg'),cid=id('sc'),b=box(w,h,r,g,.5);let rain='';
+  if(!s)around(w,h,r,g,22,7).forEach(p=>rain+=`<line class="fall" style="animation-delay:${p.d}s;animation-duration:${(1.1+p.k).toFixed(2)}s" x1="${p.x-3+p.k*6}" y1="${p.y-14}" x2="${p.x-5+p.k*6}" y2="${p.y-4}" stroke="#d6efff" stroke-width="1.3" stroke-linecap="round" opacity=".8"/>`);
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb7ff" stop-opacity=".55"/><stop offset="1" stop-color="#1d4f8f" stop-opacity=".75"/></linearGradient>${bandClip(w,h,r,g,cid)}</defs>
+  ${glow(w,h,r,g,'#5aa9e6',.4)}<path d="${band(w,h,r,g)}" fill="url(#${gid})" fill-rule="evenodd"/>
+  <g clip-path="url(#${cid})">${rain}${s?'':`<path d="${band(w,h,r,g)}" fill="#ffffff" fill-rule="evenodd" opacity="0"><animate attributeName="opacity" values="0;0;0;.75;0;.45;0;0" keyTimes="0;.7;.78;.8;.83;.85;.88;1" dur="6s" repeatCount="indefinite"/></path>`}</g>
+  ${ring(w,h,r,g,0,'stroke="#bfe2ff" stroke-opacity=".7" stroke-width="1"')}${ring(w,h,r,g,1,'stroke="#bfe2ff" stroke-opacity=".5" stroke-width="1"')}`}},
+ deep:{name:'Deep Sea',desc:'A band of ocean from bright surface to dark deep. Two waves roll round it in opposite directions, and bubbles drift up through the water.',draw(w,h,r,g,s){
+  const gid=id('ds'),cid=id('dc'),b=box(w,h,r,g,.5);
+  const wave=(y,amp,col,cls,op)=>{let p=`M${-30} ${y}`;for(let x=-30;x<w+30;x+=16)p+=` q4 -${amp} 8 0 t8 0`;return `<path class="${cls}" d="${p}" fill="none" stroke="${col}" stroke-width="${s?1:1.8}" stroke-opacity="${op}"/>`};
+  let waves='';for(const y of [g*.35,h-g*.6])waves+=wave(y,s?2:4,'#c9fff6','slide',.8)+wave(y+(s?2:5),s?2:3,'#6fe3d6','slideBack',.6);
+  let bub='';if(!s)around(w,h,r,g,14,3).forEach(p=>bub+=`<circle class="rise" style="animation-delay:${p.d}s" cx="${p.x}" cy="${p.y+6}" r="${1.5+p.k*2.5}" fill="none" stroke="#dffcff" stroke-width=".9"/>`);
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fd6c6"/><stop offset=".5" stop-color="#147a8f"/><stop offset="1" stop-color="#0a2f4f"/></linearGradient>${bandClip(w,h,r,g,cid)}</defs>
+  ${glow(w,h,r,g,'#2fb7c4',.35)}<path d="${band(w,h,r,g)}" fill="url(#${gid})" fill-rule="evenodd"/><g clip-path="url(#${cid})">${waves}${bub}</g>
+  ${ring(w,h,r,g,1,'stroke="#9ff3ea" stroke-opacity=".6" stroke-width="1"')}`}},
+ magma:{name:'Magma',desc:'Dark cooled rock with glowing cracks that pulse like breathing. Embers lift off the top edge and fade.',draw(w,h,r,g,s){
+  const gid=id('mg'),cid=id('mc'),R=rand(11);let cracks='';
+  for(let i=0;i<(s?8:18);i++){const p=around(w,h,r,g,1,i*13+5)[0],len=s?4:9;cracks+=`<path d="M${p.x} ${p.y} l${(R()-.5)*len} ${(R()-.5)*len} l${(R()-.5)*len} ${(R()-.5)*len}" fill="none" stroke="#ffb347" stroke-width="${s?.8:1.4}" stroke-linecap="round"/>`}
+  let emb='';if(!s)for(let i=0;i<10;i++){const x=g+R()*(w-2*g);emb+=`<circle class="rise" style="animation-delay:${(R()*3).toFixed(2)}s" cx="${x}" cy="${g*.4}" r="${1+R()*1.6}" fill="${R()>.5?'#ffd166':'#ff7a3d'}"/>`}
+  return `<defs><radialGradient id="${gid}" cx=".5" cy=".5" r=".75"><stop offset=".6" stop-color="#2a1410"/><stop offset="1" stop-color="#4a1d12"/></radialGradient>${bandClip(w,h,r,g,cid)}</defs>
+  <g opacity=".9">${glow(w,h,r,g,'#ff5e3a',.45)}<animate attributeName="opacity" values=".5;1;.5" dur="3.2s" repeatCount="indefinite"/></g>
+  <path d="${band(w,h,r,g)}" fill="url(#${gid})" fill-rule="evenodd"/><g clip-path="url(#${cid})"><g>${cracks}<animate attributeName="opacity" values=".45;1;.45" dur="3.2s" repeatCount="indefinite"/></g></g>
+  ${ring(w,h,r,g,1,'stroke="#ff7a3d" stroke-width="1.5"')}${emb}`}},
+ crystal:{name:'Crystal',desc:'A band cut into facets like a gem. A rainbow sheen sweeps round it, and the corners sparkle.',draw(w,h,r,g,s){
+  const cid=id('cc'),gid=id('cg'),b=box(w,h,r,g,.5),n=s?14:34;let facets='';
+  const pts=[];const per=2*(b.W+b.H);for(let i=0;i<n;i++)pts.push(i/n);
+  const at=t=>{let d=t*per;if(d<b.W)return[b.x+d,b.y];d-=b.W;if(d<b.H)return[b.x+b.W,b.y+d];d-=b.H;if(d<b.W)return[b.x+b.W-d,b.y+b.H];d-=b.W;return[b.x,b.y+b.H-d]};
+  for(let i=0;i<n;i++){const [x1,y1]=at(pts[i]),[x2,y2]=at((i+1)/n),cx=w/2,cy=h/2;facets+=`<path d="M${x1} ${y1}L${x2} ${y2}L${cx} ${cy}Z" fill="${i%2?'#d9e8ff':'#8fa8d6'}" opacity="${i%3===0?.55:.35}"/>`}
+  const spark=(x,y,k,d)=>`<path class="twinkle" style="animation-delay:${d}s" d="M${x} ${y-k}Q${x} ${y} ${x+k} ${y}Q${x} ${y} ${x} ${y+k}Q${x} ${y} ${x-k} ${y}Q${x} ${y} ${x} ${y-k}Z" fill="#fff"/>`;
+  return `<defs>${bandClip(w,h,r,g,cid)}<linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff6b6b" stop-opacity="0"/><stop offset=".3" stop-color="#ffd166" stop-opacity=".7"/><stop offset=".5" stop-color="#7bd389" stop-opacity=".8"/><stop offset=".7" stop-color="#6c8cff" stop-opacity=".7"/><stop offset="1" stop-color="#c77dff" stop-opacity="0"/><animateTransform attributeName="gradientTransform" type="translate" values="-1 0;1 0" dur="4s" repeatCount="indefinite"/></linearGradient></defs>
+  ${glow(w,h,r,g,'#b7c9ff',.3)}<g clip-path="url(#${cid})"><rect width="${w}" height="${h}" fill="#3a4a6e"/>${facets}<rect width="${w}" height="${h}" fill="url(#${gid})"/></g>
+  ${ring(w,h,r,g,0,'stroke="#eef4ff" stroke-width="1.2"')}${ring(w,h,r,g,1,'stroke="#eef4ff" stroke-width="1.2"')}
+  ${spark(4,4,s?4:9,0)}${spark(w-4,4,s?3:7,.9)}${spark(w-4,h-4,s?4:9,1.7)}${spark(4,h-4,s?3:7,2.3)}`}},
+ fizz:{name:'Fizz',desc:'A band of sparkling soda. Bubbles of every size stream up both sides and gather and pop along the top.',draw(w,h,r,g,s){
+  const gid=id('fz'),cid=id('fc'),b=box(w,h,r,g,.5),R=rand(5);let bub='';
+  const col=[b.x-g*.25,b.x,b.x+g*.25,b.x+b.W-g*.25,b.x+b.W,b.x+b.W+g*.25];
+  if(!s)for(let i=0;i<26;i++){const x=col[i%6]+(R()-.5)*3,rad=1+R()*3.2;bub+=`<g class="rise" style="animation-delay:${(R()*3.4).toFixed(2)}s;animation-duration:${(2.4+R()*2).toFixed(2)}s"><circle cx="${x}" cy="${b.y+b.H-4}" r="${rad}" fill="rgba(255,255,255,.18)" stroke="#fff6cf" stroke-width=".8"/></g>`}
+  else for(let i=0;i<8;i++)bub+=`<circle cx="${col[i%6]}" cy="${10+R()*(h-20)}" r="${.8+R()*1.4}" fill="none" stroke="#fff6cf" stroke-width=".6"/>`;
+  let top='';if(!s)for(let i=0;i<12;i++){const x=b.x+b.R+R()*(b.W-2*b.R);top+=`<circle class="pop" style="animation-delay:${(R()*2.4).toFixed(2)}s" cx="${x}" cy="${b.y+(R()-.5)*4}" r="${1.5+R()*2}" fill="none" stroke="#fff6cf" stroke-width=".8"/>`}
+  return `<defs><linearGradient id="${gid}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff9f43" stop-opacity=".8"/><stop offset="1" stop-color="#ffd86b" stop-opacity=".55"/></linearGradient>${bandClip(w,h,r,g,cid)}</defs>
+  ${glow(w,h,r,g,'#ffc35a',.3)}<path d="${band(w,h,r,g)}" fill="url(#${gid})" fill-rule="evenodd"/><g clip-path="url(#${cid})">${bub}${top}</g>
+  ${ring(w,h,r,g,0,'stroke="#fff1c2" stroke-opacity=".8" stroke-width="1"')}${ring(w,h,r,g,1,'stroke="#fff1c2" stroke-opacity=".6" stroke-width="1"')}`}},
+ neon:{name:'Neon Heart',desc:'A pink neon tube with a real glow. A heartbeat races all the way round it, and the heart at the top beats in time.',draw(w,h,r,g,s){
+  const b=box(w,h,r,g,.5),p=rr(b.x,b.y,b.W,b.H,b.R),k=s?4:8;
+  return `${glow(w,h,r,g,'#ff3d7f',.5)}${ring(w,h,r,g,.5,`stroke="#ff3d7f" stroke-opacity=".35" stroke-width="${s?5:10}"`)}${ring(w,h,r,g,.5,`stroke="#ff7aa8" stroke-width="${s?2:3.5}"`)}${ring(w,h,r,g,.5,'stroke="#ffe3ee" stroke-width="1"')}
+  ${s?'':`<path class="walk" style="animation-duration:2.4s" d="${p}" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" pathLength="400" stroke-dasharray="10 390" opacity=".9"/><path class="walk" style="animation-duration:2.4s" d="${p}" fill="none" stroke="#ff9cc0" stroke-width="3" stroke-linecap="round" pathLength="400" stroke-dasharray="60 340" stroke-dashoffset="12" opacity=".7"/>`}
+  ${heart(w/2,b.y,k*1.3,'#ff3d7f','beat')}${heart(w/2,b.y,k*.75,'#ffe3ee','beat')}`}},
+ galaxy:{name:'Galaxy',desc:'A band of deep space full of twinkling stars. A ringed planet circles the card with a comet tail behind it.',draw(w,h,r,g,s){
+  const gid=id('gx'),cid=id('gc'),b=box(w,h,r,g,.5),p=rr(b.x,b.y,b.W,b.H,b.R),pid=id('gp'),R=rand(9);let stars='';
+  for(let i=0;i<(s?16:46);i++){const q=around(w,h,r,g,1,i*7+1)[0];stars+=`<circle class="${R()>.5?'twinkle':''}" style="animation-delay:${(R()*2.8).toFixed(2)}s" cx="${q.x+(R()-.5)*g*.7}" cy="${q.y+(R()-.5)*g*.7}" r="${.4+R()*(s?.6:1.1)}" fill="#fff"/>`}
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b1a5e"/><stop offset=".5" stop-color="#14123a"/><stop offset="1" stop-color="#3a1550"/></linearGradient>${bandClip(w,h,r,g,cid)}</defs>
+  ${glow(w,h,r,g,'#8a6cff',.35)}<path d="${band(w,h,r,g)}" fill="url(#${gid})" fill-rule="evenodd"/><g clip-path="url(#${cid})">${stars}</g>
+  <path id="${pid}" d="${p}" fill="none"/>
+  ${s?'<circle cx="60" cy="3.5" r="2.6" fill="#ffd166"/>':`<path class="walk" d="${p}" fill="none" stroke="#c9b8ff" stroke-width="4" stroke-linecap="round" pathLength="400" stroke-dasharray="44 356" opacity=".55"/>
+  <g><circle r="6" fill="#ffd166"/><ellipse rx="10" ry="2.6" fill="none" stroke="#ffe9a8" stroke-width="1.4" transform="rotate(-20)"/><animateMotion dur="6s" repeatCount="indefinite" rotate="0"><mpath href="#${pid}"/></animateMotion></g>`}
+  ${ring(w,h,r,g,1,'stroke="#b9a6ff" stroke-opacity=".5" stroke-width="1"')}`}},
 };
 
 const SPECIAL={
