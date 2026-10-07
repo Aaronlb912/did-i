@@ -3,10 +3,11 @@ import { SHOP_BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook,
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
+import { noteMilestone } from './milestones.js'
 
 // Signed in, the server takes the coins or gems and keeps the frame, so it
 // cannot be added by editing the phone's saved data. Buying one puts it on.
-export async function buyFrame(book, id) {
+async function buyFrameRaw(book, id) {
   const frame = frameById(id)
   const purse = normalizePurse(book)
   if (!frame || !frameForSale(id)) return { book, miss: 'frames.miss.notSold' }
@@ -24,7 +25,7 @@ export async function buyFrame(book, id) {
   return { book: applyPurchaseToBook(book, remote, { frameOn: id }), miss: '' }
 }
 
-export async function buyLookWithCoins(book, id) {
+async function buyLookWithCoinsRaw(book, id) {
   const look = LOOKS.find((item) => item.id === id)
   if (!look) return { book, miss: 'shop.miss.lookGone' }
   const purse = normalizePurse(book)
@@ -41,7 +42,7 @@ export async function buyLookWithCoins(book, id) {
   return buyLook(book, id)
 }
 
-export async function buyCheerStageWithCoins(book, id) {
+async function buyCheerStageWithCoinsRaw(book, id) {
   if (accountSessionOn()) {
     const remote = await purchaseWithCoins('cheer_stage', id)
     if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
@@ -52,7 +53,7 @@ export async function buyCheerStageWithCoins(book, id) {
 
 // Signed in, the server takes the coins and keeps the accessory. Buying one
 // puts it on; tapping one you own puts it on or takes it off.
-export async function buyAccessoryWithCoins(book, id) {
+async function buyAccessoryWithCoinsRaw(book, id) {
   const item = accessoryById(id)
   if (!item) return { book, miss: 'shop.miss.accessoryGone' }
   const purse = normalizePurse(book)
@@ -74,7 +75,7 @@ const GEM_KINDS = {
 
 // Signed in, the server takes the gems and records the item, so it cannot be
 // added by editing the phone's saved data. Signed out, it stays on this phone.
-export async function buyWithGems(book, kind, id) {
+async function buyWithGemsRaw(book, kind, id) {
   const how = GEM_KINDS[kind]
   const item = how?.list.find((row) => row.id === id)
   const purse = normalizePurse(book)
@@ -84,3 +85,21 @@ export async function buyWithGems(book, kind, id) {
   if (remote.miss) return { book, miss: remote.miss, missN: item.gems }
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }
+
+// A buy counts as a milestone only when coins or gems actually went down,
+// so wearing something you already own does not.
+function counted(buy) {
+  return async (book, ...rest) => {
+    const before = normalizePurse(book)
+    const out = await buy(book, ...rest)
+    const after = out?.book ? normalizePurse(out.book) : before
+    if (!out?.miss && (after.coins < before.coins || after.gems < before.gems)) noteMilestone('bought')
+    return out
+  }
+}
+
+export const buyFrame = counted(buyFrameRaw)
+export const buyLookWithCoins = counted(buyLookWithCoinsRaw)
+export const buyCheerStageWithCoins = counted(buyCheerStageWithCoinsRaw)
+export const buyAccessoryWithCoins = counted(buyAccessoryWithCoinsRaw)
+export const buyWithGems = counted(buyWithGemsRaw)

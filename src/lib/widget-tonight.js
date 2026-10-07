@@ -34,6 +34,7 @@ import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
 import { settleTapEarnings } from './tap-earnings.js'
+import { noteMilestone } from './milestones.js'
 
 export function publishShelf(shelf) {
   try {
@@ -434,6 +435,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
   const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
+  noteMilestone('widget_used')
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
   const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
   const previous = readWidgetTonightProps()

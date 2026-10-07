@@ -4,6 +4,7 @@ import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
+import { noteShelfMilestones } from './milestones.js'
 
 export { readSavedAt, stampSavedAt }
 
@@ -108,6 +109,7 @@ export function writeShelf(shelf, savedAt) {
   if (savedAt) stampSavedAt(savedAt)
   else if (changed || !readSavedAt()) stampSavedAt()
   saveBoardForSw(currentBook(next))
+  noteShelfMilestones(next)
   return next
 }
 
