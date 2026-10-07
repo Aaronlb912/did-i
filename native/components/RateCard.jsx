@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { markRateAsked, noteClearedNight } from '../../src/lib/rate-ask.js'
-import { APP_STORE_URL, PLAY_STORE_URL } from '../../src/lib/store-skus.js'
+import { APP_STORE_REVIEW_URL, PLAY_STORE_URL } from '../../src/lib/store-skus.js'
 import { confirmMiss } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 
@@ -20,7 +20,7 @@ export function RateCard({ colors, nightDone, dateIso }) {
   }, [nightDone, dateIso, show])
 
   if (!show) return null
-  const url = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL
+  const url = Platform.OS === 'ios' ? APP_STORE_REVIEW_URL : PLAY_STORE_URL
   const open = () => {
     setShow(false)
     Linking.openURL(url).catch(() => confirmMiss(t('rate.miss')))

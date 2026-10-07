@@ -46,7 +46,7 @@ Last worked through 2026-10-02.
 
 - **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.
 - **Drop switch does not ask for notification permission.** Turning on "Tell me when a drop goes live" only saves the pref; a phone that never allowed notifications gets nothing.
-- **Rating is a store link, not the in-app sheet.** `expo-store-review` is not installed (native dep). The card shows once after the 7th cleared night counted on this phone.
+- **Rating is a store link, not the in-app sheet (for now, owner call 2026-10-07).** The card shows once after the 7th cleared night and opens the store (the App Store opens on the write-a-review sheet). Once the app is public on both stores, swap it for the real in-app prompt: add `expo-store-review` (native, needs a build) and call `requestReview()` where RateCard opens the link, keeping the link as the fallback when the prompt is not available.
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
 
 ## App PIN
