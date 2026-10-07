@@ -1080,7 +1080,8 @@ const styles = StyleSheet.create({
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
-  pickBox: { flex: 1 },
+  // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
+  pickBox: { flex: 1, justifyContent: 'center' },
   doneScroll: { flexGrow: 0, flexShrink: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })
