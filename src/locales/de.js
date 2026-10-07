@@ -165,7 +165,7 @@ export const de = {
   'auth.body': 'Gib deine E-Mail ein und bekomme einen Einmalcode. Deine Ordner, Freunde und Streak kommen auf jedes Handy mit.',
   'auth.newHere': 'Neu hier? Gleiche Schritte. Dein Konto wird erstellt, wenn du den Code bestätigst.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Eine Frage, einmal pro Nacht.',
+  'auth.tagline': 'Did I? Jetzt weißt du es.',
   'auth.apple': 'Mit Apple anmelden',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Die Anmeldung mit Apple hat nicht geklappt. Nimm E-Mail oder versuch es in einer Minute noch mal.',
@@ -1795,7 +1795,7 @@ export const de = {
   'web.press.color.soft': 'Sanft',
   'web.press.color.miss': 'Verpasst',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? Jetzt musst du nicht mehr grübeln',
+  'web.landing.title': 'Did I? Jetzt weißt du es',
   'web.landing.lead':
     'Ich habe unterwegs ins Bett dieselben Checks wiederholt. Tür, Herd, Pillen. Did I stellt eine Frage auf dein Handy. Nach rechts wischen, wenn erledigt. Nach links, wenn nicht. Teile es mit Freunden und Familie.',
   'web.landing.b1': 'Wische in Heute Nacht. Start zeigt, was noch offen ist.',
