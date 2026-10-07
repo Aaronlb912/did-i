@@ -16,6 +16,12 @@ Last worked through 2026-10-02.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
 - **Frames have no wishlist and no "Remind me".** Looks, cheers, buddies and accessories can be wishlisted; frame sheets cannot (the wish list in `purse.js` only knows those four kinds). A seasonal frame that is not out yet says when it is back, with no reminder.
 
+## Friend notes
+
+- **Phone only.** The website has no friend page, so notes are not shown or editable there. They are in `friend_notes` and would show if it gets one.
+- **Privacy policy does not name them yet.** A note is text you write about a friend, kept on your account, seen only by you. Add a line to `legal.privacy.social.body` in all 9 locales.
+- **Needs device testing:** add, edit, clear (Save with an empty box) on a friend page, offline save shows the miss line, the note is back on a second phone.
+
 ## Referral rewards (branch `feat/referral-rewards`)
 
 - **SQL not applied.** `supabase/referral-rewards.sql` (claim_invites lists the Hive buddy at 15 friends and the Bloom frame at 20) and the `bloom` id in `supabase/friends-week.sql`. Run `npm run db:apply:all`, then `node scripts/test-sql.mjs supabase/tests/referral-rewards.test.sql`. Until then nobody gets the two rewards and wearing Bloom fails the frame_on write quietly.
