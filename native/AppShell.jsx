@@ -47,6 +47,7 @@ import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
 import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
 import { noteFrameTouch } from './components/frames/index.js'
+import { TabSlide } from './components/TabSlide.jsx'
 
 // The shop module is big; gifts wait until the first frame is up.
 const GiftHost = lazyScreen(() => require('./screens/shop.jsx'), 'GiftHost')
@@ -109,6 +110,16 @@ function RouteScreen({ route }) {
   return <RouteBody route={routeFromScreen(route)} />
 }
 
+// The two tabs, in bar order, so a switch slides in from the side you moved to.
+const TAB_ORDER = ['/tonight', '/lamps']
+function TabRouteScreen({ route }) {
+  return (
+    <TabSlide index={TAB_ORDER.indexOf(route.name)}>
+      <RouteBody route={routeFromScreen(route)} />
+    </TabSlide>
+  )
+}
+
 // SF Symbols on iOS; on Android, Material-style glyphs tinted by the bar,
 // filled when the tab is on.
 const TONIGHT_ICON =
@@ -151,12 +162,12 @@ function HallScreen() {
     <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
       <Tab.Screen
         name="/tonight"
-        component={RouteScreen}
+        component={TabRouteScreen}
         options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON, headerLargeTitleEnabled: false }}
       />
       <Tab.Screen
         name="/lamps"
-        component={RouteScreen}
+        component={TabRouteScreen}
         options={{ tabBarLabel: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
       />
     </Tab.Navigator>
