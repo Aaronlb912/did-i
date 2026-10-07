@@ -121,6 +121,32 @@ For each type after selection: purposes **App Functionality** and **Account Mana
 
 Local-only use (no account) does not send data to you; the label still covers signed-in use.
 
+## Search and screenshots (written 2026-10-07)
+
+Positioning: a habit tracker you answer one question at a time. Lead with the
+"did I?" feeling, not with habits. Category: Productivity primary, Lifestyle
+secondary (Play: Productivity). Apple indexes the name, subtitle and keywords
+together, so no word below repeats another field.
+
+| Field | Value | Length |
+|-------|-------|--------|
+| Subtitle (30) | Habit tracker & daily check-in | 30 |
+| Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,meds,vitamins,adhd,forgetful,family | 100 |
+| Play short description (80) | Did I lock the door? One question a night. Your home screen remembers. | 70 |
+| Promotional text (170) | Did I lock the door? Did I take my pills? Swipe once a night and your home screen remembers. Streaks, widgets, family. | 118 |
+
+Screenshot captions, in order. Big line on top, small line under it, then the screen.
+
+| # | Big line | Small line | Screen |
+|---|----------|------------|--------|
+| 1 | Did I? Now you'll know. | One question at a time, every night. | Home with a question card |
+| 2 | Swipe right for Did. | Left for Not yet. That's the whole app. | The card mid-swipe with the Did bar |
+| 3 | Your home screen remembers. | Widgets show what's done tonight. | Home screen with the widgets |
+| 4 | Pills, plants, the back door. | Ask yourself anything. | Questions list |
+| 5 | Streaks that stay honest. | Every night on one calendar. | Streak and calendar |
+| 6 | Did we feed the dog? | Share questions with the people you live with. | Did we or family |
+| 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing Galaxy or Neon Heart |
+
 ## After IAPs
 
 1. **App Information** — category Lifestyle, age ratings questionnaire, content rights if prompted.
