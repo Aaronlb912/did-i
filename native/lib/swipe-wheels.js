@@ -1,20 +1,15 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, LayoutAnimation } from 'react-native'
-import { readPrefs, usePrefs, writePrefs } from '../../src/lib/prefs.js'
-import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { AccessibilityInfo } from 'react-native'
+import { readPrefs, writePrefs } from '../../src/lib/prefs.js'
 
-// The Did and Nope buttons under the card are training wheels: they go once
-// someone has answered by swiping this many times.
+// Swipes counted to this many; a phone that got there before SwipeIntro
+// existed does not see the popup.
 export const SWIPES_TO_LEARN = 3
 
 /** One answer by swipe (not a tap or a screen reader action). */
 export function noteSwipe() {
   const done = readPrefs().swipesLearned || 0
-  if (done >= SWIPES_TO_LEARN) return
-  // The last one takes the buttons away: Home eases into the room they leave.
-  // (Reduced motion keeps the buttons, so this never animates for it.)
-  if (done + 1 === SWIPES_TO_LEARN) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
-  writePrefs({ swipesLearned: done + 1 })
+  if (done < SWIPES_TO_LEARN) writePrefs({ swipesLearned: done + 1 })
 }
 
 function useScreenReader() {
@@ -32,13 +27,11 @@ function useScreenReader() {
 }
 
 /**
- * buttons: show Did and Nope under the card. hint: show the swipe hint.
- * Screen readers and reduced motion keep the buttons for good.
+ * buttons: show Did and Not yet under the card. Only for a screen reader,
+ * which cannot swipe; everyone else learns the swipe from SwipeIntro
+ * (owner call, 2026-10-06: nobody should get used to buttons).
  */
 export function useSwipeWheels() {
-  const prefs = usePrefs()
   const reader = useScreenReader()
-  const reduce = useReduceMotion()
-  const learning = (prefs.swipesLearned || 0) < SWIPES_TO_LEARN
-  return { buttons: learning || reader || reduce, hint: learning && !reader }
+  return { buttons: reader, hint: false }
 }
