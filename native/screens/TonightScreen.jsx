@@ -329,12 +329,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     markSignInNudgeSeen()
     setNudgeGone(true)
   }
-  // Questions made today earn no coins (coinsFor). Say when they start.
-  const coinsTomorrow = useMemo(() => {
-    if (!stack.nightDone) return false
-    const rows = stack.due || []
-    return rows.length > 0 && rows.every((row) => row.lamp?.createdOn && row.lamp.createdOn >= stack.dateIso)
-  }, [stack.nightDone, stack.due, stack.dateIso])
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
   // Undo joins the one toast line above the tab bar. Shake still undoes where
@@ -649,9 +643,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
           {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
-          {coinsTomorrow ? (
-            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsTomorrow')}</Text>
-          ) : null}
           {wish ? (
             <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>

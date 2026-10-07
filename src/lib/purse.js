@@ -458,20 +458,16 @@ export function nextCheerStage(stage) {
 
 export function coinsFor(status, book, row, clock = new Date()) {
   if (status !== 'yes' && status !== 'late') return 0
-  const today = boardDate(clock, book.dayFoldHour)
-  const born = row?.lamp?.createdOn || ''
-  if (born && born >= today) return 0
+  // A question added tonight pays too, one-night or not: the 3 paid taps a
+  // night (and the server's 6 a night) stop anyone adding questions for coins.
   if (tapsPaidTonight(book, clock) >= PAID_TAPS) return 0
   return status === 'yes' ? 2 : 1
 }
 
 function tapsPaidTonight(book, clock) {
   const today = boardDate(clock, book.dayFoldHour)
-  const lamps = book.lamps || []
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late') return false
-    const lamp = lamps.find((item) => item.id === answer.lampId)
-    if (lamp?.createdOn && lamp.createdOn >= today) return false
     const period = String(answer.periodKey || '')
     const at = String(answer.answeredAt || '')
     return period === today || period.startsWith(today) || at.startsWith(today)
