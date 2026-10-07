@@ -1134,6 +1134,8 @@ export const ja = {
   'marks.section.shop': 'ショップ',
   'marks.section.we': 'Did we',
   'marks.more': 'ほか{n}件',
+
+  "marks.alsoNew": "ほかにも：{names}",
   'ach.dids.name': 'did {n}回',
   'ach.dids.line': 'did と {n}回答えました。',
   'ach.dids.how': 'did と {n}回答える。',

@@ -5,13 +5,11 @@ import * as Reanimated from 'react-native-reanimated'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 // The system tab bar switches tabs with no animation, so a tab's screen slides
-// in itself: from the right when you move to a tab further right, from the
-// left when you move back. One child, so iOS still finds the scroll view down
+// in itself from the side its tab sits on. One child, so iOS still finds the scroll view down
 // the first-child chain for the large title.
 const Animated = Reanimated.default || Reanimated.Animated
 const { Easing, useAnimatedStyle, useSharedValue, withTiming } = Reanimated
 
-let lastTab = -1
 const SLIDE_MS = 240
 
 export function TabSlide({ index, children }) {
@@ -22,14 +20,19 @@ export function TabSlide({ index, children }) {
   const fade = useSharedValue(1)
   const was = useRef(focused)
 
+  // Set up while the tab is hidden, not on the first frame it shows: moving it
+  // after it was already drawn in place was a one-frame blink. With two tabs a
+  // tab always comes back from the same side (the first from the left, the
+  // rest from the right).
   useEffect(() => {
-    if (focused && !was.current && lastTab !== -1 && lastTab !== index && !reduce) {
-      x.value = (index > lastTab ? 1 : -1) * width * 0.22
+    if (!focused && was.current && !reduce) {
+      x.value = (index > 0 ? 1 : -1) * width * 0.22
       fade.value = 0.35
+    }
+    if (focused && !was.current) {
       x.value = withTiming(0, { duration: SLIDE_MS, easing: Easing.out(Easing.cubic) })
       fade.value = withTiming(1, { duration: SLIDE_MS })
     }
-    if (focused) lastTab = index
     was.current = focused
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focused])

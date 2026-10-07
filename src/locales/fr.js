@@ -1162,6 +1162,8 @@ export const fr = {
   'marks.section.shop': 'Boutique',
   'marks.section.we': 'Did we',
   'marks.more': 'et {n} de plus',
+
+  "marks.alsoNew": "Aussi nouveau : {names}",
   'ach.dids.name': 'Did {n} fois',
   'ach.dids.line': 'Tu as dit did {n} fois.',
   'ach.dids.how': 'Dis did {n} fois.',

@@ -1153,6 +1153,8 @@ export const en = {
   'marks.section.shop': 'Shop',
   'marks.section.we': 'Did we',
   'marks.more': 'and {n} more',
+
+  "marks.alsoNew": "Also new: {names}",
   'ach.dids.name': 'Did it {n} times',
   'ach.dids.line': 'You answered Did {n} times.',
   'ach.dids.how': 'Answer Did {n} times.',

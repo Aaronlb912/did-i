@@ -26,7 +26,10 @@ let items = []
 function keepNotice(toast) {
   if (toast.kind === 'mark') {
     const mark = toast.mark || {}
-    const text = [markLabel(mark.id, 'name'), mark.id ? markLabel(mark.id, 'line') : '', mark.more ? t('marks.more', { n: mark.more }) : '']
+    // Recent names every new mark, not "and 2 more" with no way to see them.
+    const rest = Array.isArray(mark.ids) ? mark.ids.slice(1).map((id) => markLabel(id, 'name')).filter(Boolean) : []
+    const also = rest.length ? t('marks.alsoNew', { names: rest.join(', ') }) : mark.more ? t('marks.more', { n: mark.more }) : ''
+    const text = [markLabel(mark.id, 'name'), mark.id ? markLabel(mark.id, 'line') : '', also]
       .filter(Boolean)
       .join('. ')
     addNotice({ id: toast.id, kind: 'mark', title: t('marks.new'), text, go: { path: '/marks' } })
