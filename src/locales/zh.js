@@ -3146,4 +3146,6 @@ export const zh = {
   'refer.toGo': "还差 {n}",
   'refer.buddyKicker': "带好友的奖励",
   'refer.buddyHow': "有 {n} 位好友用你的代码加入就归你。商店里从不出售。",
+  'opening.question': '今天喝够水了吗?',
+  'opening.tap': '轻触继续',
 }

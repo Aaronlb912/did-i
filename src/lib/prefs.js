@@ -114,6 +114,8 @@ function cleanPrefs(raw) {
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
   // The one-time "how to swipe" popup on Home (native/components/SwipeIntro.jsx).
   if (raw?.swipeIntroSeen === true) next.swipeIntroSeen = true
+  // The first-open card swipe before sign-in (native/components/FirstSwipe.jsx).
+  if (raw?.openingSeen === true) next.openingSeen = true
   // Swipes counted by older builds; a phone that reached 3 skips the popup. No longer written.
   if (Number.isInteger(raw?.swipesLearned) && raw.swipesLearned > 0) next.swipesLearned = Math.min(raw.swipesLearned, 3)
   return next
