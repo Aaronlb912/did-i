@@ -212,6 +212,16 @@ export async function readFriendNote(friendId) {
   return String(data?.note || '')
 }
 
+/** The ids of everyone you keep a note about, for the mark on lists. */
+export async function notedPeople() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return new Set()
+  const { data, error } = await db.from('friend_notes').select('friend_id').eq('owner_id', user.id)
+  if (error) throw new Error(error.message)
+  return new Set((data || []).map((row) => row.friend_id))
+}
+
 /** Saves the note; an empty one is removed. Returns { miss } on failure. */
 export async function saveFriendNote(friendId, note) {
   const db = cloud()
