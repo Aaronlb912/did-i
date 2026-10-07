@@ -102,6 +102,7 @@ import { FRAME_IDS, frameText } from '../../src/lib/frames.js'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
+import { useNoted } from '../hooks/useNoted.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { LOOK_IDS, fonts } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
@@ -1275,6 +1276,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   const [links, setLinks] = useKept(`friends.links:${account.user?.id}`, { friends: [], asked: [], sent: [] }, KEEP)
   const [blocks, setBlocks] = useKept(`friends.blocks:${account.user?.id}`, [], KEEP)
   const [autoAdds, setAutoAdds] = useKept(`friends.auto:${account.user?.id}`, () => new Set())
+  const noted = useNoted(account.user?.id)
   const [ready, setReady] = useKept(`friends.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
@@ -1552,6 +1554,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                 .join(' · ')}
               pill={done ? t('people.doneTonightShort') : ''}
               pillOn={done}
+              noted={noted.has(row.person.user_id)}
               onOpen={() => goHash('/friend', { id: row.person.user_id })}
               actions={
                 <>

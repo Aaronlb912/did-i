@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -58,6 +59,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const clock = new Date()
   const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null, KEEP)
   const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [], KEEP)
+  const noted = useNoted(account.user?.id)
   const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [], KEEP)
   const [night, setNight] = useState(() => boardDate(clock, book.dayFoldHour))
   const [nights, setNights] = useState([])
@@ -280,6 +282,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
             pill={done ? t('people.doneTonightShort') : ''}
             pillOn={done}
+            noted={!row.you && noted.has(row.user_id)}
             onOpen={row.you ? undefined : () => goHash('/friend', { id: row.user_id })}
             extra={
               <View style={styles.weekRow}>

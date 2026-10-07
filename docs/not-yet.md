@@ -19,7 +19,6 @@ Last worked through 2026-10-02.
 ## Friend notes
 
 - **Phone only.** The website has no friend page, so notes are not shown or editable there. They are in `friend_notes` and would show if it gets one.
-- **Privacy policy does not name them yet.** A note is text you write about a friend, kept on your account, seen only by you. Add a line to `legal.privacy.social.body` in all 9 locales.
 - **Needs device testing:** add, edit, clear (Save with an empty box) on a friend page, offline save shows the miss line, the note is back on a second phone.
 
 ## Referral rewards (branch `feat/referral-rewards`)

@@ -31,7 +31,7 @@ export function Pill({ label, on, colors }) {
  * One person: avatar, name, a line under it, quick actions, and an optional
  * fold with the rarer ones (switches, remove, block).
  */
-export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight, onOpen }) {
+export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight, onOpen, noted = false }) {
   const [open, setOpen] = useState(false)
   return (
     <View
@@ -54,6 +54,11 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
         <View style={styles.copy}>
           <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
             {name}
+            {noted ? (
+              <Text style={{ color: colors.inkDim }} accessibilityLabel={t('friendNote.has')}>
+                {'  ✎'}
+              </Text>
+            ) : null}
           </Text>
           {line ? (
             <Text style={[styles.line, { color: colors.inkDim }]} numberOfLines={2}>
