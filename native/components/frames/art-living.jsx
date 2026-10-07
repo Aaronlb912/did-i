@@ -472,8 +472,16 @@ export function DuskOver({ f }) {
     const H = f.h + 2 * o
     return rrPointAt(-o, -o, W, H, f.R + o, (((t + start) % 1) * rrLength(W, H, f.R + o)))
   }
-  const N = 56
-  const segs = Array.from({ length: N }, (_, i) => [at(i / N), at(Math.min(0.999, (i + 1.3) / N)), skyColor(i / N)])
+  // The band is drawn as joined pieces, each a quad between the inner and
+  // outer edge, so the colors meet without seams or ragged corners.
+  const N = 120
+  const quad = (i) => {
+    const a = at(i / N)
+    const b = at(Math.min(0.9999, (i + 1.15) / N))
+    const e = 9
+    return `M${a.x - a.nx * e} ${a.y - a.ny * e}L${a.x + a.nx * e} ${a.y + a.ny * e}L${b.x + b.nx * e} ${b.y + b.ny * e}L${b.x - b.nx * e} ${b.y - b.ny * e}Z`
+  }
+  const segs = Array.from({ length: N }, (_, i) => [quad(i), skyColor(i / N)])
   const sun = at(T)
   const bell = at(Math.min(1, Math.max(0, Number(f.p.remind) || 0.57)))
   // Hills over the bottom left corner, where night meets sunset.
@@ -489,10 +497,11 @@ export function DuskOver({ f }) {
   return (
     <>
       <Layer f={f}>
-        {segs.map(([a, b, c], i) => (
-          <S.Line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={c} strokeWidth={18} />
+        {segs.map(([d, c], i) => (
+          <S.Path key={i} d={d} fill={c} />
         ))}
-        <S.Path d={ring(f, o + 9)} fill="none" stroke="#ffffff" strokeOpacity={0.15} />
+        <S.Path d={ring(f, o + 9)} fill="none" stroke="#ffffff" strokeOpacity={0.18} strokeWidth={1} />
+        <S.Path d={ring(f, o - 9)} fill="none" stroke="#000000" strokeOpacity={0.25} strokeWidth={1} />
       </Layer>
       <Star f={f} items={stars} />
       <Layer f={f}>
@@ -860,5 +869,259 @@ export function WrappedOver({ f }) {
       <S.Path d={`M${cx} ${y} l${-k * 0.8} ${k * 1.4} M${cx} ${y} l${k * 0.8} ${k * 1.4}`} stroke={col} strokeWidth={3} strokeLinecap="round" />
       <S.Circle cx={cx} cy={y} r={k * 0.42} fill={dark} />
     </Layer>
+  )
+}
+
+/* ---------- Gem frames from the bank (2026-10-07): Galaxy, Neon Heart, Storm Glass ---------- */
+
+const FILL = { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }
+
+/** A body riding round the ring o px out, it.speed px a second. */
+function orbitAt(time, it, w, h) {
+  'worklet'
+  const o = it.o
+  const p = edgeAt(time * it.speed + it.start, -o, -o, w + 2 * o, h + 2 * o, it.R + o)
+  return { x: p.x, y: p.y, o: 1 }
+}
+
+// Galaxy: deep space in the band, soft nebula clouds, twinkling stars, three
+// planets circling at their own speeds and a shooting star now and then.
+function shootAt(time, it) {
+  'worklet'
+  const q = (time % 7) / 7
+  if (q > 0.1) return { x: it.x, y: it.y, o: 0, r: 0.24 }
+  const k = q / 0.1
+  return { x: it.x + k * 70, y: it.y + k * 16, o: Math.sin(k * Math.PI), r: 0.24 }
+}
+export function GalaxyOver({ f }) {
+  const S = svgAll()
+  const o = 22
+  const dust = useMemo(() => {
+    const r = seeded(9)
+    return spots(f, 11, 46).map((p) => ({ x: p.x + (r() - 0.5) * 16, y: p.y + (r() - 0.5) * 16, r: 0.4 + r() * 0.9 }))
+  }, [f.w, f.h, f.R])
+  const twinkle = useMemo(() => {
+    const r = seeded(21)
+    return spots(f, 11, 12, 0.04).map((p) => ({ x: p.x + (r() - 0.5) * 12, y: p.y + (r() - 0.5) * 12, r: 1.1, sp: 1 + r() * 2, ph: r() * 6 }))
+  }, [f.w, f.h, f.R])
+  const planets = [
+    { kind: 'ringed', speed: 14, start: 0 },
+    { kind: 'moon', speed: 9, start: (f.w + f.h) * 0.9 },
+    { kind: 'red', speed: 20, start: (f.w + f.h) * 1.5 },
+  ].map((p) => ({ ...p, o: 11, R: f.R }))
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="gxb" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor="#2b1a5e" />
+            <S.Stop offset="0.5" stopColor="#14123a" />
+            <S.Stop offset="1" stopColor="#3a1550" />
+          </S.LinearGradient>
+          {[
+            ['gxp', '#ff5fb8'],
+            ['gxv', '#8a6cff'],
+            ['gxc', '#5fb8ff'],
+          ].map(([id, col]) => (
+            <S.RadialGradient key={id} id={id} cx="0.5" cy="0.5" r="0.5">
+              <S.Stop offset="0" stopColor={col} stopOpacity="0.55" />
+              <S.Stop offset="1" stopColor={col} stopOpacity="0" />
+            </S.RadialGradient>
+          ))}
+          <S.ClipPath id="gxk">
+            <S.Path d={band(f, o)} clipRule="evenodd" />
+          </S.ClipPath>
+        </S.Defs>
+        <S.Path d={ring(f, o + 3)} fill="none" stroke="#8a6cff" strokeOpacity={0.25} strokeWidth={6} />
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#gxb)" />
+        <S.G clipPath="url(#gxk)">
+          <S.Circle cx={-6} cy={f.h * 0.3} r={34} fill="url(#gxp)" />
+          <S.Circle cx={f.w + 6} cy={f.h * 0.72} r={38} fill="url(#gxv)" />
+          <S.Circle cx={f.w * 0.62} cy={-10} r={30} fill="url(#gxc)" />
+          {dust.map((d, i) => (
+            <S.Circle key={i} cx={d.x} cy={d.y} r={d.r} fill="#ffffff" opacity={0.75} />
+          ))}
+        </S.G>
+        <S.Path d={ring(f, o)} fill="none" stroke="#b9a6ff" strokeOpacity={0.5} strokeWidth={1} />
+        {f.still ? (
+          <S.G>
+            <S.Circle cx={f.w * 0.3} cy={-11} r={5} fill="#ffd166" />
+            <S.Circle cx={-11} cy={f.h * 0.6} r={4} fill="#6fc3ff" />
+          </S.G>
+        ) : null}
+      </Layer>
+      <Star f={f} items={twinkle} />
+      <Particle clock={f.clock} item={{ x: f.w * 0.15, y: -16 }} fn={shootAt} w={f.w} h={f.h} size={26}>
+        <View style={{ position: 'absolute', left: 0, top: 12, width: 24, height: 2, borderRadius: 1, backgroundColor: '#ffffff' }} />
+      </Particle>
+      {planets.map((p) => (
+        <Particle key={p.kind} clock={f.clock} item={p} fn={orbitAt} w={f.w} h={f.h} size={28}>
+          <S.Svg width={28} height={28} viewBox="-14 -14 28 28">
+            {p.kind === 'ringed' ? (
+              <S.G>
+                <S.Circle r={6} fill="#ffd166" />
+                <S.Ellipse rx={11} ry={2.8} fill="none" stroke="#ffe9a8" strokeWidth={1.4} transform="rotate(-20)" />
+              </S.G>
+            ) : p.kind === 'moon' ? (
+              <S.G>
+                <S.Circle r={4.5} fill="#6fc3ff" />
+                <S.Circle cx={8} cy={-3} r={1.6} fill="#e6eefc" />
+              </S.G>
+            ) : (
+              <S.G>
+                <S.Circle r={3.5} fill="#ff7a5c" />
+                <S.Circle cx={-1} cy={-1} r={1} fill="#ffb59e" />
+              </S.G>
+            )}
+          </S.Svg>
+        </Particle>
+      ))}
+    </>
+  )
+}
+
+// Neon Heart: a pink tube and a blue tube with a real glow, a heartbeat racing
+// round the pink one, blinking neon stars and a heart sign that flickers on.
+function heartSign(time) {
+  'worklet'
+  const q = time % 5
+  // Off for a beat, a few stutters, then steady, like an old diner sign.
+  if (q < 0.25) return { opacity: 0.15 }
+  if (q < 0.35) return { opacity: 1 }
+  if (q < 0.45) return { opacity: 0.25 }
+  if (q < 0.55) return { opacity: 1 }
+  if (q < 0.62) return { opacity: 0.4 }
+  return { opacity: 1 }
+}
+function starBlink(ph) {
+  return (time) => {
+    'worklet'
+    return { opacity: 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(time * 2.2 + ph)) }
+  }
+}
+function starD(x, y, q) {
+  return `M${x} ${y - q}L${x + q * 0.3} ${y - q * 0.3}L${x + q} ${y}L${x + q * 0.3} ${y + q * 0.3}L${x} ${y + q}L${x - q * 0.3} ${y + q * 0.3}L${x - q} ${y}L${x - q * 0.3} ${y - q * 0.3}Z`
+}
+export function NeonHeartOver({ f }) {
+  const S = svgAll()
+  const pulse = { o: 6, R: f.R, speed: (rrLength(f.w + 12, f.h + 12, f.R + 6) / 2.4), start: 0 }
+  const stars = [
+    [-14, f.h + 14, 6, 0],
+    [f.w + 14, f.h + 14, 6, 2],
+    [-14, -14, 4, 4],
+  ]
+  const blinks = useMemo(() => stars.map((s) => starBlink(s[3])), [])
+  return (
+    <>
+      <Layer f={f}>
+        <S.Path d={ring(f, 6)} fill="none" stroke="#ff3d7f" strokeOpacity={0.3} strokeWidth={10} />
+        <S.Path d={ring(f, 6)} fill="none" stroke="#ff7aa8" strokeWidth={3.5} />
+        <S.Path d={ring(f, 6)} fill="none" stroke="#ffe3ee" strokeWidth={1} />
+        <S.Path d={ring(f, 15)} fill="none" stroke="#3dd9ff" strokeOpacity={0.3} strokeWidth={6} />
+        <S.Path d={ring(f, 15)} fill="none" stroke="#7af0ff" strokeWidth={2} />
+      </Layer>
+      <Particle clock={f.clock} item={pulse} fn={orbitAt} w={f.w} h={f.h} size={16}>
+        <View style={{ position: 'absolute', left: 2, top: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: '#ff7aa8', opacity: 0.45 }} />
+        <View style={{ position: 'absolute', left: 5, top: 5, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffffff' }} />
+      </Particle>
+      <Moving clock={f.clock} fn={heartSign} style={FILL}>
+        <Layer f={f}>
+          <S.Path d={heartD(f.w / 2, -7, 11)} fill="#ff3d7f" opacity={0.35} />
+          <S.Path d={heartD(f.w / 2, -7, 8)} fill="#ff3d7f" />
+          <S.Path d={heartD(f.w / 2, -7, 4.6)} fill="#ffe3ee" />
+        </Layer>
+      </Moving>
+      {stars.map(([x, y, q], i) => (
+        <Moving key={i} clock={f.clock} fn={blinks[i]} style={FILL}>
+          <Layer f={f}>
+            <S.Path d={starD(x, y, q)} fill="none" stroke="#7af0ff" strokeWidth={1.4} />
+          </Layer>
+        </Moving>
+      ))}
+    </>
+  )
+}
+
+// Storm Glass: frosted blue glass with rain streaking down inside, storm
+// clouds on the top corners, and every few seconds a lightning flash.
+function rainAt(time, it, w, h) {
+  'worklet'
+  const q = (((time + it.off) / it.life) % 1 + 1) % 1
+  const x = it.x + q * 3
+  const y = -20 + q * (h + 40)
+  // Rain stays in the glass, never over the card.
+  const onCard = x > -2 && x < w + 2 && y > -2 && y < h + 2
+  return { x, y, o: onCard ? 0 : 0.8, r: 0.18 }
+}
+function flash(time) {
+  'worklet'
+  const q = (time % 6) / 6
+  let o = 0
+  if (q >= 0.78 && q < 0.8) o = (q - 0.78) / 0.02
+  else if (q >= 0.8 && q < 0.83) o = 1 - (q - 0.8) / 0.03
+  else if (q >= 0.83 && q < 0.85) o = ((q - 0.83) / 0.02) * 0.6
+  else if (q >= 0.85 && q < 0.88) o = 0.6 * (1 - (q - 0.85) / 0.03)
+  return { opacity: o }
+}
+function Cloud({ S, x, y, k, col }) {
+  return (
+    <S.G>
+      <S.Circle cx={x} cy={y} r={k} fill={col} />
+      <S.Circle cx={x + k * 0.9} cy={y - k * 0.5} r={k * 1.1} fill={col} />
+      <S.Circle cx={x + k * 2} cy={y} r={k * 0.9} fill={col} />
+      <S.Rect x={x} y={y - k * 0.2} width={k * 2} height={k * 1.1} rx={k * 0.5} fill={col} />
+    </S.G>
+  )
+}
+export function StormOver({ f }) {
+  const S = svgAll()
+  const o = 20
+  const drops = useMemo(() => {
+    const r = seeded(17)
+    return Array.from({ length: 26 }, () => {
+      // Drops fall in the side bands, plus a few that cross the top and bottom.
+      const side = r()
+      const x = side < 0.4 ? -18 + r() * 16 : side < 0.8 ? f.w + 2 + r() * 16 : r() * f.w
+      return { x, off: r() * 6, life: 1 + r() * 0.8 }
+    })
+  }, [f.w])
+  const k = 8
+  const bolt = `M${f.w - 8} -14 l${-k * 0.6} ${k * 1.4} l${k * 0.55} 0 l${-k * 0.8} ${k * 1.7}`
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="stg" x1="0" y1="0" x2="0" y2="1">
+            <S.Stop offset="0" stopColor="#6fb7ff" stopOpacity="0.55" />
+            <S.Stop offset="1" stopColor="#1d4f8f" stopOpacity="0.8" />
+          </S.LinearGradient>
+        </S.Defs>
+        <S.Path d={ring(f, o + 3)} fill="none" stroke="#5aa9e6" strokeOpacity={0.3} strokeWidth={6} />
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#stg)" />
+      </Layer>
+      {drops.map((d, i) => (
+        <Particle key={i} clock={f.clock} item={d} fn={rainAt} w={f.w} h={f.h} size={12}>
+          <View style={{ position: 'absolute', left: 5.4, top: 1, width: 1.3, height: 10, borderRadius: 1, backgroundColor: '#d6efff' }} />
+        </Particle>
+      ))}
+      <Moving clock={f.clock} fn={flash} style={FILL}>
+        <Layer f={f}>
+          <S.Path d={band(f, o)} fillRule="evenodd" fill="#ffffff" opacity={0.7} />
+        </Layer>
+      </Moving>
+      <Layer f={f}>
+        <S.Path d={ring(f, o)} fill="none" stroke="#bfe2ff" strokeOpacity={0.7} strokeWidth={1} />
+        <S.Path d={ring(f, 1)} fill="none" stroke="#bfe2ff" strokeOpacity={0.5} strokeWidth={1} />
+        <Cloud S={S} x={-18} y={-8} k={k} col="#5d6f8f" />
+        <Cloud S={S} x={-10} y={-14} k={k * 0.8} col="#8193b3" />
+        <Cloud S={S} x={f.w - 22} y={-8} k={k} col="#5d6f8f" />
+        <Cloud S={S} x={f.w - 16} y={-14} k={k * 0.8} col="#8193b3" />
+      </Layer>
+      <Moving clock={f.clock} fn={flash} style={FILL}>
+        <Layer f={f}>
+          <S.Path d={bolt} fill="none" stroke="#fff6a8" strokeWidth={2.4} strokeLinejoin="round" />
+        </Layer>
+      </Moving>
+    </>
   )
 }

@@ -74,6 +74,10 @@ const RAW = [
   gem('globe', 3),
   gem('doodle', 3),
   gem('swipe', 3),
+  // From the frame bank (docs/ideas/frames-bank.html), 2026-10-07.
+  gem('galaxy', 3),
+  gem('neonheart', 3),
+  gem('storm', 3),
   earned('royal', 'streak', 100),
   earned('wrapped', 'gifts', 10),
   season('hearts', '02-01', '02-14'),
