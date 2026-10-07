@@ -188,7 +188,7 @@ function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
 
-test('a night pays 2 a did, 1 late, nothing for new questions or past 3 taps', () => {
+test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () => {
   const clock = new Date('2026-10-04T21:00:00')
   const old = lamp('a', { createdOn: '2026-10-01' })
   const fresh = lamp('n', { createdOn: '2026-10-04' })
@@ -196,8 +196,8 @@ test('a night pays 2 a did, 1 late, nothing for new questions or past 3 taps', (
   assert.equal(coinsFor('yes', book([old]), { lamp: old }, clock), 2)
   assert.equal(coinsFor('late', book([old]), { lamp: old }, clock), 1)
   assert.equal(coinsFor('skip', book([old]), { lamp: old }, clock), 0)
-  // Added today, even one just for tonight: coins start tomorrow night.
-  assert.equal(coinsFor('yes', book([fresh]), { lamp: fresh }, clock), 0)
+  // Added today, even one just for tonight: it pays like any other.
+  assert.equal(coinsFor('yes', book([fresh]), { lamp: fresh }, clock), 2)
   const paid = ['x', 'y', 'z'].map((id) => lamp(id, { createdOn: '2026-10-01' }))
   const answers = paid.map((item) => ({ lampId: item.id, periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' }))
   const fourth = lamp('w', { createdOn: '2026-10-01' })

@@ -18,4 +18,4 @@ export function nightWhyLines(why, { itemsShown = false, now = new Date() } = {}
   return lines
 }
 
-export const COIN_RULES = ['coins.rDid', 'coins.rFirst', 'coins.rNew', 'coins.rDeadline', 'coins.rGem']
+export const COIN_RULES = ['coins.rDid', 'coins.rFirst', 'coins.rDeadline', 'coins.rGem']
