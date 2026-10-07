@@ -2360,7 +2360,6 @@ export const it = {
   'settings.clearFolderSub': 'Domande e risposte in {name}',
   'tonight.undoLate': 'Salvato in ritardo. Tocca per annullare',
   'tonight.graceLate': 'Conta come in ritardo: 1 moneta',
-  'wait.settings': 'Impostazioni domanda',
   'wait.didAlready': 'Già fatto',
   'hang.kindHint': 'Parole per filtrare.',
   'hang.kindLabel': 'Argomenti (facoltativo)',

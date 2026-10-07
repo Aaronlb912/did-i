@@ -3,21 +3,25 @@ import { t } from '../../src/lib/i18n.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { goHash } from '../navigation/hash.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { DidButton, KeyButton } from './ui.jsx'
+import { DidButton } from './ui.jsx'
+import { EditPen } from './SwipeFace.jsx'
 
-export function WaitPlate({ row, colors, onDid, onClose }) {
+// Back to tonight sits above this card, so it has no Back of its own; the pen
+// edits the question like the pen on every other card.
+export function WaitPlate({ row, colors, onDid }) {
   if (!row) return null
   const after = row.lamp.askAfter ? clockWords(row.lamp.askAfter) : t('wait.later')
   return (
     <View style={faceCardStyle(colors)}>
+      <EditPen onPress={() => goHash('/hang', { id: row.lamp.id })} colors={colors} />
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('wait.kicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>{row.lamp.question}</Text>
       <Text style={[faceCardStyles.meta, styles.meta, { color: colors.inkSoft }]}>{t('wait.after', { time: after })}</Text>
-      <View style={[styles.actions, { borderTopColor: colors.lineSoft }]}>
-        {onDid ? <DidButton label={t('wait.didAlready')} colors={colors} small onPress={onDid} /> : null}
-        <KeyButton label={t('wait.settings')} colors={colors} onPress={() => goHash('/lamp', { id: row.lamp.id })} />
-        <KeyButton label={t('wait.sit')} colors={colors} onPress={onClose} />
-      </View>
+      {onDid ? (
+        <View style={[styles.actions, { borderTopColor: colors.lineSoft }]}>
+          <DidButton label={t('wait.didAlready')} colors={colors} small onPress={onDid} />
+        </View>
+      ) : null}
     </View>
   )
 }

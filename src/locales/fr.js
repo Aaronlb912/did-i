@@ -2375,7 +2375,6 @@ export const fr = {
   'settings.clearFolderSub': 'Questions et réponses dans {name}',
   'tonight.undoLate': 'Enregistré en retard. Touche pour annuler',
   'tonight.graceLate': 'Compte en retard : 1 pièce',
-  'wait.settings': 'Réglages de la question',
   'wait.didAlready': 'Déjà fait',
   'hang.kindHint': 'Des mots pour filtrer.',
   'hang.kindLabel': 'Thèmes (facultatif)',

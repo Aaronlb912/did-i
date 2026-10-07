@@ -2361,7 +2361,6 @@ export const pt = {
   'settings.clearFolderSub': 'Perguntas e respostas em {name}',
   'tonight.undoLate': 'Salvo como atrasado. Toque para desfazer',
   'tonight.graceLate': 'Conta como atrasado: 1 moeda',
-  'wait.settings': 'Ajustes da pergunta',
   'wait.didAlready': 'Já fiz',
   'hang.kindHint': 'Palavras para filtrar.',
   'hang.kindLabel': 'Tópicos (opcional)',

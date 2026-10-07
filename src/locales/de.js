@@ -2379,7 +2379,6 @@ export const de = {
   'settings.clearFolderSub': 'Fragen und Antworten in {name}',
   'tonight.undoLate': 'Als spät gespeichert. Tippen zum Rückgängigmachen',
   'tonight.graceLate': 'Zählt als spät: 1 Münze',
-  'wait.settings': 'Frage-Einstellungen',
   'wait.didAlready': 'Schon erledigt',
   'hang.kindHint': 'Wörter zum Filtern.',
   'hang.kindLabel': 'Themen (optional)',

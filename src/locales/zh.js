@@ -2295,7 +2295,6 @@ export const zh = {
   'settings.clearFolderSub': '{name}中的问题和回答',
   'tonight.undoLate': '已记为迟到。点按撤销',
   'tonight.graceLate': '算作迟到：1 枚金币',
-  'wait.settings': '问题设置',
   'wait.didAlready': '已经做了',
   'hang.kindHint': '用来筛选的词。',
   'hang.kindLabel': '话题（可选）',

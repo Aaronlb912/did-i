@@ -733,7 +733,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         row={stack.waitPick}
         colors={colors}
         onDid={() => stack.mark(stack.waitPick, 'yes')}
-        onClose={() => stack.closePlates()}
       />
     )
   } else if (stack.bodyKind === 'pillView' && stack.pillPick) {
