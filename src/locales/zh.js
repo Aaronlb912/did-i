@@ -2325,7 +2325,6 @@ export const zh = {
   'tonight.nopedChange': '{time}前仍可修改，算作迟到。',
   'tonight.nopedMany': "你对 {n} 个问题选了“还没”。",
   'tonight.nopedOne': "你对“{question}”选了“还没”。",
-  'tonight.swipeHint': "向右滑是 Did，向左滑是“还没”。",
   'first.finishFirst': '请先写完问题',
   'people.outComesAlong': '你的问题和连续记录都会保留。',
   'auth.newEmail': '新用户？输入邮箱，我们会发送验证码。',

@@ -2336,7 +2336,6 @@ export const ja = {
   'tonight.nopedChange': '{time}までまだ変えられます。遅れとして数えます。',
   'tonight.nopedMany': "{n}件の質問を「まだ」にしました。",
   'tonight.nopedOne': "「{question}」は「まだ」にしました。",
-  'tonight.swipeHint': "右にスワイプでDid、左で「まだ」。",
   'first.finishFirst': 'まず質問を書き終えてください',
   'people.outComesAlong': '質問と連続記録はそのまま引き継がれます。',
   'auth.newEmail': '初めての方はメールアドレスを入力してください。コードを送ります。',

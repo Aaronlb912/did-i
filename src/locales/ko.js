@@ -2337,7 +2337,6 @@ export const ko = {
   'tonight.nopedChange': '{time}까지 아직 바꿀 수 있어요. 늦게로 쳐요.',
   'tonight.nopedMany': "질문 {n}개에 아직을 눌렀어요.",
   'tonight.nopedOne': "\"{question}\"에 아직을 눌렀어요.",
-  'tonight.swipeHint': "오른쪽으로 밀면 Did, 왼쪽은 아직.",
   'first.finishFirst': '먼저 질문을 완성해 주세요',
   'people.outComesAlong': '질문과 연속 기록은 그대로 따라와요.',
   'auth.newEmail': '처음이신가요? 이메일을 입력하면 코드를 보내 드려요.',

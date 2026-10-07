@@ -2390,7 +2390,6 @@ export const it = {
   'tonight.nopedChange': 'Puoi ancora cambiarlo fino alle {time}. Conta come in ritardo.',
   'tonight.nopedMany': "Hai detto non ancora a {n} domande.",
   'tonight.nopedOne': "Hai detto non ancora a «{question}»",
-  'tonight.swipeHint': "Scorri a destra per Did, a sinistra per non ancora.",
   'first.finishFirst': 'Prima completa la domanda',
   'people.outComesAlong': 'Le tue domande e la tua serie vengono con te.',
   'auth.newEmail': 'Sei nuovo? Inserisci la tua email e ti mandiamo un codice.',
