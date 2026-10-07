@@ -127,8 +127,6 @@ as $$
 declare
   gbal integer;
   cbal integer;
-  gwant integer;
-  cwant integer;
 begin
   insert into public.profiles (user_id)
   values (NEW.user_id)
@@ -139,20 +137,10 @@ begin
   from public.profiles p
   where p.user_id = NEW.user_id;
 
-  gwant := public.shelf_gem_max(NEW.doc);
-  cwant := public.shelf_coin_max(NEW.doc);
-
-  if gwant < gbal then
-    gbal := greatest(0, gwant);
-  end if;
-  if cwant < cbal then
-    cbal := greatest(0, cwant);
-  end if;
-
-  update public.profiles
-  set gem_balance = gbal, coin_balance = cbal
-  where user_id = NEW.user_id;
-
+  -- The server balance always wins. A phone with old saved data (an old
+  -- install, a second device, a reload mid-sync) used to lower the real
+  -- balance here; every signed-in spend goes through a buy_* function, so a
+  -- lower number in the doc is never a real spend.
   NEW.doc := public.shelf_set_gems(public.shelf_set_coins(NEW.doc, cbal), gbal);
   return NEW;
 end;

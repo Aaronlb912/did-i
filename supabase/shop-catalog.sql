@@ -145,7 +145,10 @@ insert into public.shop_catalog (kind, item_id, coins, gems, live_from) values
   ('frame', 'dusk', null, 3, '2026-10-07'),
   ('frame', 'globe', null, 3, '2026-10-07'),
   ('frame', 'doodle', null, 3, '2026-10-07'),
-  ('frame', 'swipe', null, 3, '2026-10-07')
+  ('frame', 'swipe', null, 3, '2026-10-07'),
+  ('frame', 'galaxy', null, 3, '2026-10-07'),
+  ('frame', 'neonheart', null, 3, '2026-10-07'),
+  ('frame', 'storm', null, 3, '2026-10-07')
 on conflict (kind, item_id) do update
   set coins = excluded.coins, gems = excluded.gems, live_from = excluded.live_from;
 

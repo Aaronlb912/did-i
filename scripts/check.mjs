@@ -4582,8 +4582,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 56)
-  assert.equal(new Set(ids).size, 56)
+  assert.equal(ids.length, 59)
+  assert.equal(new Set(ids).size, 59)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])
@@ -4773,6 +4773,14 @@ test('friends: one color per person, and the product names take a plural', () =>
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
+})
+
+// 2026-10-07: a dev phone with old saved data synced and zeroed a real account's coins.
+test('a shelf sync never lowers the server coin or gem balance', () => {
+  const sql = readFileSync(new URL('../supabase/wallet.sql', import.meta.url), 'utf8')
+  const body = sql.slice(sql.indexOf('function public.clamp_shelf_gems()'), sql.indexOf('create trigger clamp_shelf_gems'))
+  assert.ok(body.length > 0)
+  assert.doesNotMatch(body, /updates+public.profiles/i)
 })
 
 test('earned frames use the best streak ever, not just tonight', async () => {

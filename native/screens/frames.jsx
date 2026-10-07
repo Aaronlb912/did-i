@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { hasLocaleKey, t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -149,7 +150,25 @@ export function leftAfter(purse, item) {
   return n === 1 ? t('shop.leftCoinOne') : t('shop.leftCoins', { n })
 }
 
+// Frames that react to the night look frozen with fixed sample numbers, so
+// the preview plays a short pretend night: answers land, the streak grows
+// and the evening moves on.
+const DEMO = new Set(['street', 'lights', 'train', 'garden', 'dusk', 'doodle'])
+function useDemoNight(id) {
+  const reduce = useReduceMotion()
+  const on = DEMO.has(id) && !reduce
+  const [step, setStep] = useState(0)
+  useEffect(() => {
+    if (!on) return undefined
+    const timer = setInterval(() => setStep((n) => (n + 1) % 15), 900)
+    return () => clearInterval(timer)
+  }, [on])
+  if (!on) return null
+  return { answered: Math.min(3, step % 5), streak: step, evening: step / 14 }
+}
+
 function FrameSheetPreview({ id, colors, ctx, weekLit }) {
+  const demo = useDemoNight(id)
   return (
     <View style={[styles.sheetPreview, id === 'polaroid' && styles.sheetPreviewCaption]}>
       {/* Same label and centered card as the look sheets. */}
@@ -158,9 +177,10 @@ function FrameSheetPreview({ id, colors, ctx, weekLit }) {
         id={id}
         colors={colors}
         active
-        streak={ctx.bestStreak}
-        answered={3}
+        streak={demo ? demo.streak : ctx.bestStreak}
+        answered={demo ? demo.answered : 3}
         total={3}
+        evening={demo ? demo.evening : undefined}
         weekLit={weekLit || [true, true, true, true, true, false, false]}
         date={ctx.today}
         buddy={activeBuddy(readShelf().boards?.[0])}

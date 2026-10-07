@@ -45,6 +45,9 @@ import {
   SunnyOver,
   RoyalOver,
   WrappedOver,
+  GalaxyOver,
+  NeonHeartOver,
+  StormOver,
 } from './art-living.jsx'
 
 const { withTiming } = Reanimated
@@ -1643,6 +1646,9 @@ export const FRAME_ART = {
   globe: { over: GlobeOver, animated: true },
   doodle: { over: DoodleOver, animated: true },
   swipe: { over: SwipeOver, animated: true },
+  galaxy: { over: GalaxyOver, animated: true },
+  neonheart: { over: NeonHeartOver, animated: true },
+  storm: { over: StormOver, animated: true },
   hearts: { over: HeartsOver, animated: true },
   clover: { over: CloverOver },
   fireworks: { over: FireworksOver, animated: true },
