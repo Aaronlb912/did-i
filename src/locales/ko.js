@@ -1133,6 +1133,8 @@ export const ko = {
   'marks.section.shop': '상점',
   'marks.section.we': 'Did we',
   'marks.more': '외 {n}개',
+
+  "marks.alsoNew": "이것도 새로 받았어요: {names}",
   'ach.dids.name': 'did {n}번',
   'ach.dids.line': 'did라고 {n}번 답했어요.',
   'ach.dids.how': 'did라고 {n}번 답하기.',

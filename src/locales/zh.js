@@ -1131,6 +1131,8 @@ export const zh = {
   'marks.section.shop': '商店',
   'marks.section.we': 'Did we',
   'marks.more': '还有 {n} 个',
+
+  "marks.alsoNew": "另外还有：{names}",
   'ach.dids.name': 'did {n} 次',
   'ach.dids.line': '你说了 {n} 次 did。',
   'ach.dids.how': '说 {n} 次 did。',

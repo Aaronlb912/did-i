@@ -4357,9 +4357,9 @@ test('an achievement toasts once per phone, even when it is earned again', () =>
   const kv = new Map([['did-i-ach-caught-up', '1']])
   try {
     globalThis.localStorage = { getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => kv.set(k, String(v)), removeItem: (k) => kv.delete(k) }
-    assert.deepEqual(marksToToast(['first-did']), [{ id: 'first-did', more: 0 }])
+    assert.deepEqual(marksToToast(['first-did']), [{ id: 'first-did', more: 0, ids: ['first-did'] }])
     assert.deepEqual(marksToToast(['first-did']), [])
-    assert.deepEqual(marksToToast(['first-did', 'honest-skip']), [{ id: 'honest-skip', more: 0 }])
+    assert.deepEqual(marksToToast(['first-did', 'honest-skip']), [{ id: 'honest-skip', more: 0, ids: ['honest-skip'] }])
   } finally {
     globalThis.localStorage = was
   }

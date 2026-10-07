@@ -400,5 +400,6 @@ export function marksToToast(news) {
   }
   if (!caughtUp) ids = ids.filter((id) => BY_ID.get(id)?.own)
   if (!ids.length) return []
-  return [{ id: ids[0], more: ids.length - 1 }]
+  // ids keeps every new one, so Recent can name them all, not just a count.
+  return [{ id: ids[0], more: ids.length - 1, ids }]
 }
