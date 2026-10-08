@@ -175,7 +175,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   )
 }
 
-export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId, focusKey }) {
+export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey }) {
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
@@ -462,7 +462,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     }
     const save = (keep) => () =>
       peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
-        confirmDone(keep ? t('famNight.did') : t('confirm.passed'))
+        // Like Keep in the inbox: a kept ask joins your own questions.
+        if (keep && row.kind === 'todo' && onKeep) onKeep(row)
+        confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
       })
     return {

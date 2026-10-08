@@ -3233,10 +3233,13 @@ export const de = {
   "ideas.charge.start": "Laden",
   "starter.charge.blank": "mein Handy laden",
   "starter.eat.blank": "etwas essen",
+  "ideas.eat.question": "Habe ich etwas gegessen?",
   "ideas.eat.start": "Essen",
   "starter.email.blank": "die E-Mail beantworten",
+  "ideas.email.question": "Habe ich die E-Mail beantwortet?",
   "ideas.email.start": "E-Mail",
   "starter.teeth.blank": "die Zähne putzen",
+  "ideas.teeth.question": "Habe ich die Zähne geputzt?",
   "ideas.teeth.start": "Zähne",
   "pack.admin": "Alltagskram",
 }

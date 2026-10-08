@@ -3214,10 +3214,13 @@ export const it = {
   "ideas.charge.start": "Ricarica",
   "starter.charge.blank": "caricare il telefono",
   "starter.eat.blank": "mangiare qualcosa",
+  "ideas.eat.question": "Ho mangiato qualcosa?",
   "ideas.eat.start": "Mangiare",
   "starter.email.blank": "rispondere a quella mail",
+  "ideas.email.question": "Ho risposto a quella mail?",
   "ideas.email.start": "Mail",
   "starter.teeth.blank": "lavarmi i denti",
+  "ideas.teeth.question": "Mi sono lavato i denti?",
   "ideas.teeth.start": "Denti",
   "pack.admin": "Commissioni",
 }

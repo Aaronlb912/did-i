@@ -3210,10 +3210,13 @@ export const en = {
   "ideas.charge.start": "Charge",
   "starter.charge.blank": "charge my phone",
   "starter.eat.blank": "eat something",
+  "ideas.eat.question": "Did I eat something?",
   "ideas.eat.start": "Eat",
   "starter.email.blank": "answer that email",
+  "ideas.email.question": "Did I answer that email?",
   "ideas.email.start": "Email",
   "starter.teeth.blank": "brush my teeth",
+  "ideas.teeth.question": "Did I brush my teeth?",
   "ideas.teeth.start": "Teeth",
   "pack.admin": "Life admin",
 }

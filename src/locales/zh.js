@@ -3151,10 +3151,13 @@ export const zh = {
   "ideas.charge.start": "充电",
   "starter.charge.blank": "给手机充电",
   "starter.eat.blank": "吃点东西",
+  "ideas.eat.question": "我吃东西了吗?",
   "ideas.eat.start": "吃饭",
   "starter.email.blank": "回那封邮件",
+  "ideas.email.question": "我回那封邮件了吗?",
   "ideas.email.start": "邮件",
   "starter.teeth.blank": "刷牙",
+  "ideas.teeth.question": "我刷牙了吗?",
   "ideas.teeth.start": "刷牙",
   "pack.admin": "生活杂事",
 }

@@ -3223,10 +3223,13 @@ export const es = {
   "ideas.charge.start": "Cargar",
   "starter.charge.blank": "cargar el móvil",
   "starter.eat.blank": "comer algo",
+  "ideas.eat.question": "¿Comí algo?",
   "ideas.eat.start": "Comer",
   "starter.email.blank": "contestar ese correo",
+  "ideas.email.question": "¿Contesté ese correo?",
   "ideas.email.start": "Correo",
   "starter.teeth.blank": "lavarme los dientes",
+  "ideas.teeth.question": "¿Me lavé los dientes?",
   "ideas.teeth.start": "Dientes",
   "pack.admin": "Trámites",
 }

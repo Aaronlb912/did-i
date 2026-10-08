@@ -26,7 +26,7 @@ export const STARTERS = [
 export function starterList() {
   return STARTERS.map((item) => ({
     ...item,
-    question: `Did I ${t(`starter.${item.idea}.blank`)}?`,
+    question: t(`ideas.${item.idea}.question`),
     short: t(`ideas.${item.idea}.start`),
   }))
 }
@@ -94,7 +94,7 @@ export function packList(book) {
     items: pack.items
       .map((item) => ({
         ...item,
-        question: `Did I ${t(`starter.${item.idea}.blank`)}?`,
+        question: t(`ideas.${item.idea}.question`),
         short: t(`ideas.${item.idea}.start`),
       }))
       .filter((item) => !hung.some((lamp) => lamp.short === item.short || lamp.question === item.question)),

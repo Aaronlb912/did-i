@@ -3230,10 +3230,13 @@ export const fr = {
   "ideas.charge.start": "Charger",
   "starter.charge.blank": "charger mon téléphone",
   "starter.eat.blank": "manger quelque chose",
+  "ideas.eat.question": "Ai-je mangé quelque chose ?",
   "ideas.eat.start": "Manger",
   "starter.email.blank": "répondre à ce mail",
+  "ideas.email.question": "Ai-je répondu à ce mail ?",
   "ideas.email.start": "Mail",
   "starter.teeth.blank": "me brosser les dents",
+  "ideas.teeth.question": "Me suis-je brossé les dents ?",
   "ideas.teeth.start": "Dents",
   "pack.admin": "Paperasse",
 }

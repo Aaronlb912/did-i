@@ -3162,10 +3162,13 @@ export const ja = {
   "ideas.charge.start": "充電",
   "starter.charge.blank": "スマホを充電する",
   "starter.eat.blank": "何か食べる",
+  "ideas.eat.question": "何か食べた?",
   "ideas.eat.start": "食事",
   "starter.email.blank": "あのメールに返信する",
+  "ideas.email.question": "あのメールに返信した?",
   "ideas.email.start": "メール",
   "starter.teeth.blank": "歯を磨く",
+  "ideas.teeth.question": "歯を磨いた?",
   "ideas.teeth.start": "歯みがき",
   "pack.admin": "生活の用事",
 }

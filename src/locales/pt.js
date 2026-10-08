@@ -3216,10 +3216,13 @@ export const pt = {
   "ideas.charge.start": "Carregar",
   "starter.charge.blank": "carregar o telemóvel",
   "starter.eat.blank": "comer alguma coisa",
+  "ideas.eat.question": "Comi alguma coisa?",
   "ideas.eat.start": "Comer",
   "starter.email.blank": "responder àquele email",
+  "ideas.email.question": "Respondi àquele email?",
   "ideas.email.start": "Email",
   "starter.teeth.blank": "escovar os dentes",
+  "ideas.teeth.question": "Escovei os dentes?",
   "ideas.teeth.start": "Dentes",
   "pack.admin": "Burocracias",
 }

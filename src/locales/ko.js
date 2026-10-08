@@ -3163,10 +3163,13 @@ export const ko = {
   "ideas.charge.start": "충전",
   "starter.charge.blank": "폰 충전하기",
   "starter.eat.blank": "뭐라도 먹기",
+  "ideas.eat.question": "뭐라도 먹었나?",
   "ideas.eat.start": "식사",
   "starter.email.blank": "그 메일에 답하기",
+  "ideas.email.question": "그 메일에 답했나?",
   "ideas.email.start": "메일",
   "starter.teeth.blank": "이 닦기",
+  "ideas.teeth.question": "이 닦았나?",
   "ideas.teeth.start": "양치",
   "pack.admin": "생활 일",
 }

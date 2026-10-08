@@ -218,6 +218,7 @@ export function ScreenRouter({
       tagId={tagId}
       onTag={setTag}
       onChange={change}
+      onKeep={keepSent}
       focusLampId={route.face}
       focusKey={route.focusAt}
     />
