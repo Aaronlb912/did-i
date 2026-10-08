@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -35,7 +36,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
   const prefs = usePrefs()
   const todayIso = boardDate(now, dayFoldHour)
   const todayDate = parseIsoDate(todayIso) || now
-  const [monthShift, setMonthShift] = useState(0)
+  const [monthShift, setMonthShift] = useLayoutState(0)
 
   const view = useMemo(() => {
     const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
@@ -84,16 +85,16 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     <View style={styles.wrap}>
       {monthly ? null : (
       <View style={styles.head}>
-        <Pressable onPress={() => setMonthShift((n) => n - 1)} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} onPress={() => setMonthShift((n) => n - 1)} hitSlop={8}>
           <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
         </Pressable>
         <Text style={[styles.label, { color: colors.ink }]}>{view.label}</Text>
-        <Pressable onPress={() => setMonthShift((n) => n + 1)} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} onPress={() => setMonthShift((n) => n + 1)} hitSlop={8}>
           <Text style={[styles.shift, { color: colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
       )}
-      <View style={styles.grid} onLayout={onGrid}>
+      <Reveal key={`m${monthShift}`} style={styles.grid} onLayout={onGrid} exiting={undefined} layout={false}>
         {monthly ? null : dows.map((day, i) => (
           <Text key={`dow-${i}`} style={[styles.dow, col, { color: colors.inkDim }]}>{day}</Text>
         ))}
@@ -103,6 +104,8 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
           ) : (
             <Pressable
               key={night.key}
+              accessibilityRole="button"
+              accessibilityLabel={night.iso ? t('cal.day', { date: night.iso }) : String(night.dayNum)}
               onPress={() => pickDay(night)}
               disabled={gone(night)}
               accessibilityState={{ disabled: gone(night), selected: isPick(night) }}
@@ -120,9 +123,11 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
             </Pressable>
           ),
         )}
-      </View>
+      </Reveal>
       {mode === 'monthly' ? (
         <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: value === 'last' }}
           onPress={() => onChange('last')}
           style={[
             styles.lastBtn,

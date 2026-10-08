@@ -1,8 +1,9 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { FadeScroll } from './FadeScroll.jsx'
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
+import { pressFx } from '../lib/motion.jsx'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
 
@@ -47,8 +48,18 @@ export function Title({ children, colors }) {
   return <Text style={[styles.title, { color: colors.ink }]}>{children}</Text>
 }
 
-export function Meta({ children, colors }) {
-  return <Text style={[styles.meta, { color: colors.inkSoft }]}>{children}</Text>
+export function Meta({ children, colors, style }) {
+  return <Text style={[styles.meta, { color: colors.inkSoft }, style]}>{children}</Text>
+}
+
+// A loading line that waits 300 ms, so a fast load never flashes it for one frame.
+export function LateMeta({ children, colors }) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 300)
+    return () => clearTimeout(timer)
+  }, [])
+  return show ? <Meta colors={colors}>{children}</Meta> : null
 }
 
 // `dim` looks disabled but still takes the press, so the screen can say why.
@@ -62,11 +73,12 @@ export function DidButton({ label, onPress, colors, small, disabled, dim, danger
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(off) }}
-      style={[
+      style={({ pressed }) => [
         styles.did,
         small && styles.didSmall,
         // danger: the red for actions that remove something.
         { backgroundColor: off ? colors.panel3 : danger ? colors.miss : colors.on },
+        pressFx(pressed),
       ]}
     >
       <Text style={[styles.didText, { color: off ? colors.inkDim : colors.bg }]}>{label}</Text>
@@ -74,7 +86,7 @@ export function DidButton({ label, onPress, colors, small, disabled, dim, danger
   )
 }
 
-export function KeyButton({ label, onPress, colors, picked, disabled }) {
+export function KeyButton({ label, onPress, colors, picked, disabled, danger }) {
   return (
     <Pressable
       disabled={disabled}
@@ -83,29 +95,48 @@ export function KeyButton({ label, onPress, colors, picked, disabled }) {
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
-      style={[
+      style={({ pressed }) => [
         styles.key,
         {
           borderColor: picked ? colors.onDeep : colors.line,
           backgroundColor: colors.panel2,
           opacity: disabled ? 0.5 : 1,
         },
+        pressFx(pressed),
       ]}
     >
-      <Text style={[styles.keyText, { color: picked ? colors.on : colors.ink }]}>{label}</Text>
+      <Text style={[styles.keyText, { color: danger ? colors.miss : picked ? colors.on : colors.ink }]}>{label}</Text>
     </Pressable>
   )
 }
 
-export function Row({ label, note, onPress, colors }) {
+// children: actions that belong to this row (Copy, Share), drawn inside its card.
+export function Row({ label, note, onPress, colors, children }) {
+  if (children && !onPress) {
+    return (
+      <View style={[styles.row, styles.rowStack, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
+          {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+        </View>
+        {children}
+      </View>
+    )
+  }
   return (
+    // No onPress: a plain info row, no chevron and no press state.
     <Pressable
+      accessibilityRole={onPress ? 'button' : 'text'}
       onPress={onPress}
-      android_ripple={ripple(`${colors.on}33`)}
-      style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel }]}
+      disabled={!onPress}
+      android_ripple={onPress ? ripple(`${colors.on}33`) : undefined}
+      style={({ pressed }) => [styles.row, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
-      <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
-      {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+      <View style={styles.rowText}>
+        <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
+        {note ? <Text style={[styles.rowNote, { color: colors.inkDim }]}>{note}</Text> : null}
+      </View>
+      {onPress ? <Text style={[styles.rowChev, { color: colors.inkDim }]}>›</Text> : null}
     </Pressable>
   )
 }
@@ -161,9 +192,11 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
     return (
       <Pressable
         key={item.id}
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
         onPress={() => onPick(item.id)}
         android_ripple={ripple(`${colors.on}33`)}
-        style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
+        style={({ pressed }) => [styles.chip, { borderColor: on ? colors.onDeep : colors.line }, pressFx(pressed)]}
       >
         <Text style={{ color: on ? colors.on : colors.ink }}>{item.label}</Text>
       </Pressable>
@@ -184,12 +217,16 @@ const styles = StyleSheet.create({
   kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   title: { fontFamily: fonts.display, fontSize: 26, fontWeight: '700', lineHeight: 32 },
   meta: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
-  did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+  // overflow: the Android press ripple stays inside the round pill.
+  did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, overflow: 'hidden' },
   didSmall: { minHeight: 40 },
   didText: { fontFamily: fonts.uiBold, fontSize: 15 },
-  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1 },
+  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
-  row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, gap: 4 },
+  row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowText: { flex: 1, gap: 4 },
+  rowStack: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
+  rowChev: { fontSize: 22, lineHeight: 24 },
   rowLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
   rowNote: { fontFamily: fonts.ui, fontSize: 13 },
   field: { gap: 6, marginBottom: 10 },

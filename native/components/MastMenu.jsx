@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { AppState, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -16,10 +16,11 @@ import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { setAppBadge } from '../../src/lib/push.js'
+import { useNotices } from '../../src/lib/notices.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { goHash, onRoute, readRoute } from '../navigation/hash.js'
+import { goFromMenu, onRoute, readRoute } from '../navigation/hash.js'
 import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
 import { ripple } from '../lib/ripple.js'
@@ -167,7 +168,8 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   // The safe-area anchor is a better guess than trusting that number.
   const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
-  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we)
+  const notices = useNotices()
+  const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we, notices.unseen)
   const on = menuIsOn(items)
   const reduce = useReduceMotion()
   const theme = useTheme()
@@ -257,7 +259,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
             pointerEvents="none"
             style={[styles.collapsed, { width: bw, height: bh }, iconStyle]}
           >
-            <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+            <MenuIcon name="grid" color={colors.on} size={16} />
           </Animated.View>
           <Animated.View
             style={[styles.panel, rowsStyle]}
@@ -275,10 +277,11 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   accessibilityRole="button"
                   accessibilityLabel={item.a11y || item.label}
                   onPress={() => {
-                    feelTap()
-                    // A new route drops the menu at once; the current one shrinks it home.
+                    // Navigate first so the screen starts at once; a new route
+                    // drops the menu, the current one shrinks it home.
+                    goFromMenu(item.path)
                     close()
-                    goHash(item.path)
+                    feelTap()
                   }}
                   android_ripple={ripple(colors.panel3)}
                   style={({ pressed }) => [
@@ -338,6 +341,16 @@ export function MastMenuCog() {
   useEffect(() => {
     setAppBadge(waiting)
   }, [waiting])
+  // A push sets the icon to 1 while the app is away; opening it sets it back.
+  const waitingNow = useRef(waiting)
+  waitingNow.current = waiting
+  useEffect(() => {
+    setAppBadge(waitingNow.current, true)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setAppBadge(waitingNow.current, true)
+    })
+    return () => sub.remove()
+  }, [])
   // (Did we's count shows through Friends and family.)
   const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we))
   const button = useRef(null)
@@ -360,7 +373,7 @@ export function MastMenuCog() {
       label={people.inbox ? t('didyou.menuButton', { n: people.inbox }) : t('mast.menu')}
       expanded={open}
     >
-      <MenuIcon name="grid" color={on ? colors.on : colors.inkSoft} size={16} />
+      <MenuIcon name="grid" color={colors.on} size={16} />
       {people.inbox > 0 ? (
         <View pointerEvents="none" style={[styles.menuCount, { backgroundColor: colors.on, borderColor: colors.bg }]}>
           <Text style={[styles.countText, styles.menuCountText, { color: colors.bg }]}>{countLabel(people.inbox)}</Text>

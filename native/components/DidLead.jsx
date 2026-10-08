@@ -120,14 +120,15 @@ export function WaveLead({ text, wave, colors, style }) {
 }
 
 // Starter ideas that fill the "Did I ___" blank. `tilt` comes from useWobble.
-export function IdeaPicks({ label, starters, picked, onPick, tilt, colors }) {
+// `isOn` lets more than one be picked (first run).
+export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors }) {
   if (!starters.length) return null
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: colors.inkSoft }]}>{label}</Text>
       <View style={styles.picks}>
         {starters.map((starter, index) => {
-          const on = picked === starter
+          const on = isOn ? isOn(starter) : picked === starter
           return (
             <Animated.View key={starter.short} style={{ transform: [{ rotate: tilt(index) }] }}>
               <Pressable

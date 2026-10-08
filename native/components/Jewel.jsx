@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { t } from '../../src/lib/i18n.js'
+import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fonts, radius } from '../theme.js'
 
 const GLASS = 9
 
 /** The chip's dot: when it fills with an answer it pops once. */
-function Glass({ answered, style }) {
+function Glass({ answered, style, children }) {
   const reduce = useReduceMotion()
   const scale = useSharedValue(1)
   const was = useRef(answered)
@@ -21,7 +23,7 @@ function Glass({ answered, style }) {
     )
   }, [answered, reduce, scale])
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
-  return <Animated.View style={[style, popStyle]} />
+  return <Animated.View style={[style, popStyle]}>{children}</Animated.View>
 }
 
 export function Jewel({
@@ -44,9 +46,10 @@ export function Jewel({
 }) {
   const glow = on && filament > 0
   const ink = on || face ? colors.ink : skip && !on ? colors.inkDim : colors.inkSoft
+  // Only the card on screen gets the strong ring; an answered pill just changes its dot.
   const rim =
-    on || face
-      ? colors.onDeep
+    face
+      ? colors.on
       : dueToday
         ? colors.miss
         : dueSoon
@@ -62,10 +65,15 @@ export function Jewel({
           ? colors.miss
           : dueSoon
             ? colors.late
-            : colors.open
+            : // open is too pale on a white pill in Light.
+              colors.openRing || colors.open
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={[label, tag, pillStatusLabel(late ? 'late' : on ? 'yes' : skip ? 'skip' : '')].filter(Boolean).join(', ')}
+      accessibilityHint={t('pill.openHint')}
+      accessibilityState={{ disabled, selected: Boolean(face), checked: Boolean(on) }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -75,6 +83,7 @@ export function Jewel({
           borderColor: hole ? colors.line : sit && on ? colors.on : rim,
           opacity: pressed ? 0.88 : hole ? 0.9 : 1,
         },
+        face && styles.face,
         waiting && styles.wait,
         optional && styles.optional,
         hole && styles.hole,
@@ -129,6 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     maxWidth: 220,
+  },
+  face: {
+    borderWidth: 2,
+    paddingHorizontal: 13,
   },
   wait: {
     borderStyle: 'dashed',

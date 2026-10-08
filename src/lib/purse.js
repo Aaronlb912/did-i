@@ -1,6 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
-import { ACCESSORY_IDS, accessoriesForSale, accessoryById, normalizeWorn } from './accessories.js'
+import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
+import { FRAMES, FRAME_IDS, frameById, normalizeFrames, normalizeWornFrame } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -52,7 +53,11 @@ const ALL_BUDDIES = [
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
+  // Never sold. The server gives it at 15 friends joined (claim_invites).
+  { id: 'hive', gems: 0, refer: 15 },
 ]
+
+export const REFER_BUDDY = 'hive'
 
 const ALL_LOOKS = [
   { id: 'lime', coins: 0, gems: 0 },
@@ -86,6 +91,12 @@ export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
 // Every cheer someone can own: the shop's plus the special ones.
 export const OWNABLE_CHEERS = [...CHEERS, ...SPECIAL_CHEERS]
 export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
+// What the shop sells: every buddy but the one earned by referring friends.
+export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer)
+
+export function isReferBuddy(id) {
+  return Boolean(ALL_BUDDIES.find((item) => item.id === id)?.refer)
+}
 export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
 
 // A drop shows as "Coming" for the week before its day, then goes on sale.
@@ -155,13 +166,24 @@ export function dropSlides(today = boardDate(new Date())) {
   return slides
 }
 
+// A drop that went live today or yesterday, for the one line on Home.
+export function freshDrop(today = boardDate(new Date())) {
+  const yesterday = daysBefore(today, 1)
+  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES].map((item) => item.from))]
+    .filter((date) => date && date >= yesterday && date <= today)
+    .sort()
+  const date = dates[dates.length - 1]
+  return date ? { date, items: slideItems(date) } : null
+}
+
 // What a tile says under its name: owned, or its price.
 export function shopTag(purse, type, item) {
   const owned =
     (type === 'look' && purse.looks.includes(item.id)) ||
     (type === 'cheer' && purse.cheers.includes(item.id)) ||
     (type === 'buddy' && purse.buddies.includes(item.id)) ||
-    (type === 'accessory' && purse.accessories.includes(item.id))
+    (type === 'accessory' && purse.accessories.includes(item.id)) ||
+    (type === 'frame' && (purse.frames || []).includes(item.id))
   if (owned) return { owned: true, gems: 0, coins: 0 }
   return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
 }
@@ -226,10 +248,10 @@ export function recentCheers(count = 2) {
 }
 
 export function recentBuddies(count = 2) {
-  const drop = newestDrop(BUDDIES)
+  const drop = newestDrop(SHOP_BUDDIES)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return BUDDIES.slice(-n)
+  return SHOP_BUDDIES.slice(-n)
 }
 
 export const FRIEND_CHEER_GEMS = 1
@@ -305,6 +327,8 @@ export function normalizePurse(book) {
     ? [...new Set(book.accessories.map((id) => String(id)).filter((id) => ACCESSORY_IDS.has(id)))]
     : []
   const worn = normalizeWorn(book?.worn, accessories)
+  const frames = normalizeFrames(book?.frames)
+  const frame = normalizeWornFrame(book?.frame, frames)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
   const cheerStage = cheerOn
@@ -323,11 +347,14 @@ export function normalizePurse(book) {
     buddyOn,
     accessories,
     worn,
+    frames,
+    frame,
     cheerUses,
     cheerStage,
     cheerStages: stages,
     cheerPlayStages,
     friendCheers: asFriendCheers(book?.friendCheers),
+    wish: asWish(book?.wish, { looks: lookOwned, cheers: owned, buddies, accessories }),
   }
 }
 
@@ -353,6 +380,8 @@ export function mergePurses(boards) {
     buddyOn: purses.find((item) => item.buddyOn)?.buddyOn || '',
     accessories: [...new Set(purses.flatMap((item) => item.accessories))],
     worn: purses.find((item) => Object.keys(item.worn).length)?.worn || {},
+    frames: [...new Set(purses.flatMap((item) => item.frames))],
+    frame: purses.find((item) => item.frame)?.frame || '',
     cheerUses: Math.max(...purses.map((item) => item.cheerUses)),
     cheerStage: Math.max(...purses.map((item) => item.cheerStage)),
     cheerStages: Object.fromEntries(
@@ -368,6 +397,7 @@ export function mergePurses(boards) {
       ]),
     ),
     friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
+    wish: [...new Set(purses.flatMap((item) => item.wish))].slice(0, WISH_MAX),
   }
 }
 
@@ -397,11 +427,14 @@ export function spreadPurseFrom(shelf, book) {
     cheerOn: from.cheerOn,
     buddyOn: from.buddyOn,
     worn: from.worn,
+    frame: from.frame,
     friendCheers: from.friendCheers,
+    wish: from.wish,
     looks: [...new Set([...merged.looks, ...from.looks])],
     cheers: [...new Set([...merged.cheers, ...from.cheers])],
     buddies: [...new Set([...merged.buddies, ...from.buddies])],
     accessories: [...new Set([...merged.accessories, ...from.accessories])],
+    frames: [...new Set([...merged.frames, ...from.frames])],
   }
   return {
     ...shelf,
@@ -425,20 +458,16 @@ export function nextCheerStage(stage) {
 
 export function coinsFor(status, book, row, clock = new Date()) {
   if (status !== 'yes' && status !== 'late') return 0
-  const today = boardDate(clock, book.dayFoldHour)
-  const born = row?.lamp?.createdOn || ''
-  if (born && born >= today) return 0
+  // A question added tonight pays too, one-night or not: the 3 paid taps a
+  // night (and the server's 6 a night) stop anyone adding questions for coins.
   if (tapsPaidTonight(book, clock) >= PAID_TAPS) return 0
   return status === 'yes' ? 2 : 1
 }
 
 function tapsPaidTonight(book, clock) {
   const today = boardDate(clock, book.dayFoldHour)
-  const lamps = book.lamps || []
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late') return false
-    const lamp = lamps.find((item) => item.id === answer.lampId)
-    if (lamp?.createdOn && lamp.createdOn >= today) return false
     const period = String(answer.periodKey || '')
     const at = String(answer.answeredAt || '')
     return period === today || period.startsWith(today) || at.startsWith(today)
@@ -608,8 +637,27 @@ export function addGems(book, gems) {
 export function applyInvitePayout(book, won) {
   const coins = Math.max(0, Math.floor(Number(won?.coins) || 0))
   const looks = Array.isArray(won?.looks) ? won.looks : []
-  if (!coins && !looks.length) return book
-  return giveCoins(book, coins, looks)
+  const paid = coins || looks.length ? giveCoins(book, coins, looks) : book
+  return giveReferRewards(paid, won)
+}
+
+// Rewards for friends who joined, as the server counted them (claim_invites
+// lists them every time, so a new phone gets them back). Kept once given.
+export function giveReferRewards(book, won) {
+  const purse = normalizePurse(book)
+  const buddies = (Array.isArray(won?.buddies) ? won.buddies : []).filter(
+    (id) => isReferBuddy(id) && BUDDY_IDS.has(id) && !purse.buddies.includes(id),
+  )
+  const frames = (Array.isArray(won?.frames) ? won.frames : []).filter(
+    (id) => frameById(id)?.earn === 'refer' && !purse.frames.includes(id),
+  )
+  if (!buddies.length && !frames.length) return book
+  return {
+    ...book,
+    ...purse,
+    buddies: [...purse.buddies, ...buddies],
+    frames: normalizeFrames([...purse.frames, ...frames]),
+  }
 }
 
 export function addGemsShelf(shelf, gems) {
@@ -771,7 +819,7 @@ export function buyCheerStage(book, id) {
 }
 
 export function buyBuddy(book, id) {
-  const buddy = BUDDIES.find((item) => item.id === id)
+  const buddy = SHOP_BUDDIES.find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!buddy) return { book, miss: 'shop.miss.buddyGone' }
   if (purse.buddies.includes(id)) {
@@ -829,13 +877,15 @@ export function buyCheer(book, id) {
 
 
 // What can be sent as a gift: anything in the shop that costs something.
-// Prices match gift_catalog in supabase/gifts.sql.
+// Prices match gift_catalog in supabase/gifts.sql; gem frames match
+// shop_catalog. Coin, earned, seasonal and free frames are not gifts.
 export function giftItems() {
   return {
     looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
     cheers: CHEERS.filter((item) => item.gems > 0),
     buddies: BUDDIES.filter((item) => item.gems > 0),
     accessories: accessoriesForSale(boardDate(new Date())),
+    frames: FRAMES.filter((item) => item.kind === 'gem'),
   }
 }
 
@@ -853,6 +903,11 @@ export function mergeGift(book, gift) {
     if (purse.accessories.includes(id)) return { book, had: true, known: true }
     return { book: { ...book, ...purse, accessories: [...purse.accessories, id] }, had: false, known: true }
   }
+  if (gift?.kind === 'frame') {
+    if (!FRAME_IDS.has(id)) return { book, had: false, known: false }
+    if (purse.frames.includes(id)) return { book, had: true, known: true }
+    return { book: { ...book, ...purse, frames: [...purse.frames, id] }, had: false, known: true }
+  }
   if (gift?.kind === 'buddy') {
     if (!BUDDY_IDS.has(id)) return { book, had: false, known: false }
     if (purse.buddies.includes(id)) return { book, had: true, known: true }
@@ -867,10 +922,128 @@ export function wearGift(book, kind, id) {
   const purse = normalizePurse(book)
   if (kind === 'look') return purse.looks.includes(id) ? { ...book, ...purse, lookOn: id } : book
   if (kind === 'buddy') return purse.buddies.includes(id) ? { ...book, ...purse, buddyOn: id } : book
+  if (kind === 'frame') return purse.frames.includes(id) ? { ...book, ...purse, frame: id } : book
   if (kind === 'accessory') {
     const slot = accessoryById(id)?.slot
     if (!slot || !purse.accessories.includes(id)) return book
     return { ...book, ...purse, worn: { ...purse.worn, [slot]: id }, buddyOn: purse.buddyOn || FREE_BUDDY }
   }
   return purse.cheers.includes(id) ? { ...book, ...purse, cheerOn: id } : book
+}
+
+// Wishlist: items someone hearted but cannot afford yet, as 'type:id'. It
+// rides on the purse so it syncs with the shelf. Anything owned drops off, so
+// a buy (here or on the server) clears its heart.
+export const WISH_MAX = 20
+
+export function wishItem(key) {
+  const [type, id] = String(key || '').split(':')
+  if (type === 'look') return ALL_LOOKS.find((item) => item.id === id) || null
+  if (type === 'cheer') return ALL_CHEERS.find((item) => item.id === id) || null
+  if (type === 'buddy') return ALL_BUDDIES.find((item) => item.id === id) || null
+  if (type === 'accessory') return accessoryById(id) || null
+  return null
+}
+
+function ownsKey(key, owned) {
+  const [type, id] = key.split(':')
+  const list = { look: owned.looks, cheer: owned.cheers, buddy: owned.buddies, accessory: owned.accessories }[type]
+  return Boolean(list?.includes(id))
+}
+
+function asWish(raw, owned) {
+  if (!Array.isArray(raw)) return []
+  const keys = [...new Set(raw.map((key) => String(key)))]
+  return keys.filter((key) => wishItem(key) && !ownsKey(key, owned)).slice(0, WISH_MAX)
+}
+
+export function isWished(purse, type, id) {
+  return purse.wish.includes(`${type}:${id}`)
+}
+
+// Hearts it, or takes the heart off. Full at WISH_MAX.
+export function toggleWish(book, type, id) {
+  const purse = normalizePurse(book)
+  const key = `${type}:${id}`
+  if (!wishItem(key)) return { book, miss: 'shop.miss.wishGone' }
+  if (purse.wish.includes(key)) {
+    return { book: { ...book, ...purse, wish: purse.wish.filter((k) => k !== key) }, miss: '' }
+  }
+  if (ownsKey(key, purse)) return { book, miss: '' }
+  if (purse.wish.length >= WISH_MAX) return { book, miss: 'shop.miss.wishFull', missN: WISH_MAX }
+  return { book: { ...book, ...purse, wish: [...purse.wish, key] }, miss: '' }
+}
+
+// The hearted item closest to reach, for one line on the done card. Coins
+// come at up to NIGHT_COIN_CAP a night, gems at one a week.
+export function wishGoal(purse) {
+  let best = null
+  for (const key of purse.wish) {
+    const item = wishItem(key)
+    if (!item) continue
+    const [type, id] = key.split(':')
+    const gems = Number(item.gems) || 0
+    const coins = Number(item.coins) || 0
+    const short = gems ? Math.max(0, gems - purse.gems) : Math.max(0, coins - purse.coins)
+    const n = gems ? short : Math.ceil(short / NIGHT_COIN_CAP)
+    const nights = gems ? short * 7 : n
+    if (!best || nights < best.nights) best = { type, id, kind: gems ? 'gems' : 'coins', n, nights }
+  }
+  return best
+}
+
+// A shop row: on sale today, not in a coming drop, not owned.
+export function shopRow(type, list, purse, today = boardDate(new Date())) {
+  return list.filter((item) => isLive(item, today) && !shopTag(purse, type, item).owned)
+}
+
+// Owned items go to the end of an All page.
+export function ownedLast(type, list, purse) {
+  return [...list].sort(
+    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
+  )
+}
+
+// Seasonal items (an `until` date) come back each year. The next day one
+// goes on sale, today or later: its `from`, moved on a year at a time.
+export function seasonNext(item, today = boardDate(new Date())) {
+  if (!item?.from) return ''
+  let from = item.from
+  let until = item.until || ''
+  while (until && until <= today) {
+    from = `${Number(from.slice(0, 4)) + 1}${from.slice(4)}`
+    until = `${Number(until.slice(0, 4)) + 1}${until.slice(4)}`
+  }
+  return from
+}
+
+export function isSeasonal(item) {
+  return Boolean(item?.until)
+}
+
+// Seasonal accessories not on sale today, split into what you own (back on
+// a date) and what you could get when they return.
+export function offSeason(purse, today = boardDate(new Date())) {
+  const off = ACCESSORIES.filter((item) => isSeasonal(item) && !accessoryOnSale(item, today))
+  const row = (item) => ({ item, date: seasonNext(item, today) })
+  return {
+    owned: off.filter((item) => purse.accessories.includes(item.id)).map(row),
+    coming: off.filter((item) => !purse.accessories.includes(item.id)).map(row),
+  }
+}
+
+// The done card's line for a wishlist goal: which key, the count, the name key.
+export function wishLine(goal) {
+  if (!goal) return null
+  const nameKey =
+    goal.type === 'look'
+      ? lookText(goal.id, 'name')
+      : goal.type === 'cheer'
+        ? cheerText(goal.id, 'name')
+        : goal.type === 'buddy'
+          ? buddyText(goal.id, 'name')
+          : `accessory.${goal.id}`
+  if (!goal.n) return { key: 'wish.ready', n: 0, nameKey }
+  if (goal.kind === 'gems') return { key: goal.n === 1 ? 'wish.gem' : 'wish.gems', n: goal.n, nameKey }
+  return { key: goal.n === 1 ? 'wish.night' : 'wish.nights', n: goal.n, nameKey }
 }

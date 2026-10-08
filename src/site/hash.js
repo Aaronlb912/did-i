@@ -19,6 +19,7 @@ const ROUTES = new Set([
   '/me',
   '/settings',
   '/settings/phone',
+  '/settings/more',
   '/add',
   '/hang',
   '/lamp',
@@ -73,7 +74,9 @@ export function parseHash() {
   const start = params.get('start') || ''
   const tag = params.get('tag') || ''
   const copy = params.get('copy') || ''
-  return { path, face, id, start, tag, copy }
+  // A Did we link code, from did-i.app/d/CODE, to join on the web.
+  const link = params.get('link') || ''
+  return { path, face, id, start, tag, copy, link }
 }
 
 export function readHash() {
@@ -97,6 +100,7 @@ function extrasToParams(extras) {
   if (extras.start) params.set('start', extras.start)
   if (extras.tag) params.set('tag', extras.tag)
   if (extras.copy) params.set('copy', extras.copy)
+  if (extras.link) params.set('link', extras.link)
   return params
 }
 

@@ -39,6 +39,8 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
   const account = useAccount()
   const sync = useSync()
   const stack = useTonightStack({ value, boards, tagId, onChange, now, focusLampId })
+  // The folder name under each chip only helps when the chips come from more than one folder.
+  const tagsMixed = new Set(stack.dueWithWait.map((row) => row.tag || '')).size > 1
   useTonightKeys(stack)
 
   const purse = mergePurses(stack.shelf)
@@ -307,7 +309,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
                       </span>
                       <span className="di-jewel-label">
                         {stack.shortLabel(row.lamp)}
-                        {row.tag && stack.shelf.length > 1 ? <i className="di-lamp-tag">{row.tag}</i> : null}
+                        {row.tag && tagsMixed ? <i className="di-lamp-tag">{row.tag}</i> : null}
                       </span>
                     </button>
                   </li>

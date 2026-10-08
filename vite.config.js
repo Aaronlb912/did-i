@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: 'Did I',
         short_name: 'Did I',
-        description: 'The unanswered question for tonight. Hit DID.',
+        description: 'Remember it. Then remember doing it.',
         theme_color: '#0e1014',
         background_color: '#0e1014',
         display: 'standalone',
@@ -38,6 +38,9 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // The app bundle passed the 2 MB default; without room it fails the
+        // build instead of being precached.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
       devOptions: {
         enabled: true,

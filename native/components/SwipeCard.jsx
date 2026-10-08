@@ -35,6 +35,7 @@ import { SwipeFace } from './SwipeFace.jsx'
 import { useSwipeFly } from './SwipeFly.jsx'
 import { aimCheer } from '../lib/cheer-origin.js'
 import { fonts } from '../theme.js'
+import { CardFrame } from './frames/CardFrame.jsx'
 
 const SPRING = { damping: 20, stiffness: 260 }
 
@@ -89,6 +90,10 @@ export function SwipeCard({
   behind = [],
   didLabel = '',
   nopeLabel = '',
+  // The worn card frame (CardFrame props) or null. Only the top card animates.
+  frame = null,
+  // Sit at the top of its box instead of the middle (Home's stack, so it lines up with a picked card).
+  alignTop = false,
   children,
 }) {
   const theme = useTheme()
@@ -187,10 +192,10 @@ export function SwipeCard({
 
   const depth = demo ? [] : behind.slice(0, DEPTH_SHOWN)
   const buttons = !demo && (didLabel || nopeLabel)
-  const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current }
+  const cardProps = { colors, panelStyle, line, reduce, winW, enter: shown.current, frame: demo ? null : frame }
 
   return (
-    <View style={styles.host} pointerEvents="box-none">
+    <View style={[styles.host, alignTop ? styles.hostTop : null]} pointerEvents="box-none">
       {/* The rails span the whole screen, so a demo card would draw them over the page it sits in. */}
       {demo ? null : (
         <View style={styles.railsHost} pointerEvents="none">
@@ -283,6 +288,7 @@ function StackCard({
   blockDid = false,
   blockNope = false,
   onAnswer,
+  frame = null,
   children,
   ...a11y
 }) {
@@ -410,6 +416,19 @@ function StackCard({
     }
   })
 
+  const inner = (
+    <View
+      style={[
+        ...faceCardStyle(colors, panelStyle),
+        // The label and question sit in the middle of the card (owner call, 2026-10-06).
+        top ? styles.topCard : styles.behindCard,
+        { borderWidth: 1, borderColor: line },
+      ]}
+    >
+      {top ? <SwipeFace x={faceX} colors={colors} {...face} /> : children}
+    </View>
+  )
+
   const card = (
     <Animated.View
       {...a11y}
@@ -422,19 +441,19 @@ function StackCard({
       style={[
         top ? styles.face : styles.behind,
         top ? glowStyle : null,
+        // The room for the frame goes outside the look's glow, so the glow hugs the card.
+        frame?.id ? styles.framed : null,
         styles.origin,
         moving,
       ]}
     >
-      <View
-        style={[
-          ...faceCardStyle(colors, panelStyle),
-          top ? null : styles.behindCard,
-          { borderWidth: 1, borderColor: line },
-        ]}
-      >
-        {top ? <SwipeFace x={faceX} colors={colors} {...face} /> : children}
-      </View>
+      {frame?.id ? (
+        <CardFrame {...frame} pull={top ? pull : null} active={top && Boolean(frame.active)} style={top ? null : styles.behindFrame}>
+          {inner}
+        </CardFrame>
+      ) : (
+        inner
+      )}
     </Animated.View>
   )
 
@@ -449,6 +468,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'visible',
   },
+  hostTop: { justifyContent: 'flex-start' },
   railsHost: {
     ...StyleSheet.absoluteFill,
     zIndex: 8,
@@ -465,12 +485,16 @@ const styles = StyleSheet.create({
   behind: {
     ...StyleSheet.absoluteFill,
   },
+  topCard: { justifyContent: 'center' },
   behindCard: {
     flex: 1,
     minHeight: 0,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   origin: { transformOrigin: 'bottom' },
+  // Room for the frame, so it stays clear of the pills and the week dots.
+  framed: { margin: 8 },
+  behindFrame: { flex: 1 },
   answers: { flexDirection: 'row', gap: 12, marginTop: 14 },
   answer: {
     flex: 1,

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { deviceKey, deviceLabel, devicePlatform, takeOldDeviceKey } from './account.js'
+import { recordAppError } from './app-errors.js'
+import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
 import { clearAuthSkip } from './auth-gate.js'
+import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readPrefs, writePrefs } from './prefs.js'
@@ -24,11 +26,13 @@ import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from '
 import { queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGift } from './purse.js'
+import { applyInvitePayout, mergeGift, mergePurses } from './purse.js'
+import { FRAME_IDS } from './frames.js'
 import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
+  grantWeeklyGem,
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
@@ -40,6 +44,7 @@ import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+const GEM_WEEK_ASKED_KEY = 'did-i-gem-week-asked'
 export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
 
@@ -122,6 +127,7 @@ export function signedOutSync() {
   forgetAnswerMarks()
   clearWeNights()
   const shelf = clearLocalShelf()
+  keepProfileName('')
   writeLastUser('')
   clearAuthSkip()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
@@ -169,7 +175,7 @@ function nightMark(shelf, now = new Date()) {
     (!we.due || we.clear) &&
     boards.every((book) => countedTonightRows(dueTonight(book, now)).length === 0 || allClearTonight(book, now))
   // The real streak, not the room's glow that stops at five.
-  return { streak: shelfStreak(boards, now), doneOn: clear ? night : null }
+  return { streak: shelfStreak(boards, now), doneOn: clear ? night : null, night }
 }
 
 async function putPrefs(db, user, shelf) {
@@ -186,7 +192,46 @@ async function putPrefs(db, user, shelf) {
     },
     { onConflict: 'user_id' },
   )
+  if (!error) {
+    markCleared(db, user, mark)
+    markCard(db, user, doc)
+  }
   return error || null
+}
+
+// The look and frame you wear, for the small card on a friend's page. Its
+// own write, sent only when it changes, so a server without frame_on yet
+// never stops the sync above.
+let cardSent = ''
+function markCard(db, user, shelf) {
+  const purse = mergePurses(shelf?.boards || [])
+  const look = /^[a-z0-9-]{1,24}$/.test(purse.lookOn || '') ? purse.lookOn : 'lime'
+  const frame = FRAME_IDS.has(purse.frame) ? purse.frame : ''
+  const key = `${user.id}:${look}:${frame}`
+  if (key === cardSent) return
+  cardSent = key
+  Promise.resolve(db.from('profiles').update({ look_on: look, frame_on: frame }).eq('user_id', user.id))
+    .then((res) => {
+      if (res?.error) cardSent = ''
+    })
+    .catch(() => {
+      cardSent = ''
+    })
+}
+
+// Tonight cleared or not, for a friend's week. Sent only when it changes.
+let clearedSent = ''
+function markCleared(db, user, mark) {
+  const key = `${user.id}:${mark.night}:${mark.doneOn ? 1 : 0}`
+  if (key === clearedSent) return
+  clearedSent = key
+  Promise.resolve(db.rpc('mark_cleared', { night: mark.night, cleared: Boolean(mark.doneOn) }))
+    .then((res) => {
+      if (res?.error) clearedSent = ''
+    })
+    .catch(() => {
+      clearedSent = ''
+    })
 }
 
 /** Lets push run while a session exists but sync UI still says signed out. */
@@ -208,7 +253,10 @@ export function bindAuthSync() {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
       return
     }
-    if (event === 'SIGNED_OUT') sessionMissing()
+    if (event === 'SIGNED_OUT') {
+      forgetAccountCaches()
+      sessionMissing()
+    }
   })
 }
 
@@ -290,12 +338,23 @@ async function pullAndMergeOnce() {
     const remoteSavedAt = shelfRow.data?.saved_at || ''
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
     const metaAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
+    // A delete or a tap made on this phone while the pull was out would be
+    // written over by the older shelf the pull started from. When the phone
+    // saved since, fold its newest copy in first (its gone list included).
+    let seenAt = readSavedAt()
+    const land = (next, at) => {
+      const nowAt = readSavedAt()
+      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, at) : next
+      const out = writeShelf(base, at)
+      seenAt = readSavedAt()
+      return out
+    }
 
     // Fold in every answer the account has that this phone has not seen.
     const pulled = await pullAnswers(merged)
     if (pulled.miss) throw new Error(pulled.miss)
 
-    let written = writeShelf(closeShelfPastNights(pulled.shelf), metaAt)
+    let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // Gifts go straight into the collection. One already owned goes back to
     // the giver; the rest wait for the pop-up.
     const { gifts } = await claimGifts()
@@ -310,18 +369,44 @@ async function pullAndMergeOnce() {
         boards = boards.map((book) => mergeGift(book, gift).book)
         fresh.push(gift)
       }
-      written = writeShelf({ ...written, boards }, metaAt)
+      written = land({ ...written, boards }, metaAt)
       queueGifts(fresh)
     }
     await claimGemPurchases()
     // A code saved from an invite link is used here, so the claim below pays it.
     await applyPendingInvite().catch(() => {})
     const invited = await claimInvites()
-    if (invited.gems > 0 || invited.looks.length) {
-      const boards = written.boards.map((item) =>
-        item.id === written.currentId ? applyInvitePayout(item, invited) : item,
-      )
-      written = writeShelf({ ...written, boards }, metaAt)
+    if (invited.gems > 0 || invited.looks.length || invited.buddies.length || invited.frames.length) {
+      let changed = false
+      const boards = written.boards.map((item) => {
+        if (item.id !== written.currentId) return item
+        const next = applyInvitePayout(item, invited)
+        if (next !== item) changed = true
+        return next
+      })
+      if (changed) written = land({ ...written, boards }, metaAt)
+    }
+
+    // A weekly gem earned signed out only lived on the phone, and the server
+    // balance below replaced it. Ask the server for that week once per
+    // account; it checks the week and pays each week at most once.
+    const gemWeek = String(written.gemWeek || '')
+    const gemAsk = `${user.id}:${gemWeek}`
+    let gemAsked = ''
+    try {
+      gemAsked = localStorage.getItem(GEM_WEEK_ASKED_KEY) || ''
+    } catch {
+      gemAsked = ''
+    }
+    if (gemWeek && gemAsked !== gemAsk) {
+      const paid = await grantWeeklyGem(gemWeek).catch(() => null)
+      if (paid != null) {
+        try {
+          localStorage.setItem(GEM_WEEK_ASKED_KEY, gemAsk)
+        } catch {
+          // Asks again next sync; the server still pays once.
+        }
+      }
     }
 
     const bal = await readGemBalance()
@@ -333,7 +418,7 @@ async function pullAndMergeOnce() {
 
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
-    written = writeShelf(written, uploadAt)
+    written = land(written, uploadAt)
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
@@ -357,6 +442,7 @@ async function pullAndMergeOnce() {
     return written
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    recordAppError('sync', error).catch(() => {})
     return null
   }
 }
@@ -391,6 +477,7 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    recordAppError('sync', error).catch(() => {})
   }
 }
 
@@ -430,16 +517,17 @@ export async function touchDevice() {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').upsert(
-    {
-      user_id: user.id,
-      device_key: deviceKey(),
-      label: deviceLabel(),
-      platform: devicePlatform(),
-      last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,device_key' },
-  )
+  const row = {
+    user_id: user.id,
+    device_key: deviceKey(),
+    label: deviceLabel(),
+    platform: devicePlatform(),
+    last_seen_at: new Date().toISOString(),
+  }
+  const model = deviceModel()
+  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
+  // Before supabase/device-names.sql is applied there is no model column.
+  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
   // This phone moved to its stable id: its old row is the same phone.
   const old = takeOldDeviceKey()
   if (old && old !== deviceKey()) {
@@ -447,8 +535,9 @@ export async function touchDevice() {
   }
 }
 
-// Phones seen in the last 30 days. Older rows are installs that are gone.
-export const DEVICE_FRESH_DAYS = 30
+// Phones seen in the last 90 days. The server removes older rows when a
+// phone checks in (supabase/reliability.sql).
+export const DEVICE_FRESH_DAYS = 90
 
 export async function listDevices() {
   const db = cloud()
@@ -456,13 +545,31 @@ export async function listDevices() {
   const user = await me()
   if (!user) return []
   const since = new Date(Date.now() - DEVICE_FRESH_DAYS * 86400000).toISOString()
-  const { data } = await db
-    .from('devices')
-    .select('device_key, label, platform, last_seen_at')
-    .eq('user_id', user.id)
-    .gt('last_seen_at', since)
-    .order('last_seen_at', { ascending: false })
+  const pick = (cols) =>
+    db
+      .from('devices')
+      .select(cols)
+      .eq('user_id', user.id)
+      .gt('last_seen_at', since)
+      .order('last_seen_at', { ascending: false })
+  const named = await pick('device_key, label, platform, last_seen_at, model, name')
+  if (!named.error) return named.data || []
+  // Older database: no model or name yet.
+  const { data } = await pick('device_key, label, platform, last_seen_at')
   return data || []
+}
+
+// The owner's own name for a phone. 40 characters, same as the server check.
+export const DEVICE_NAME_MAX = 40
+
+export async function renameDevice(key, name) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me()
+  if (!user) return { miss: 'out' }
+  const clean = String(name || '').trim().slice(0, DEVICE_NAME_MAX)
+  const { error } = await db.from('devices').update({ name: clean }).eq('user_id', user.id).eq('device_key', key)
+  return { miss: error ? error.message : '' }
 }
 
 // Every phone but this one. Their app signs in again on next open if still
@@ -483,6 +590,27 @@ export async function forgetDevice(key) {
   await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
 }
 
+// Your display name from the last profile load, so Account and Friends show
+// it right away instead of "Add your name" while the server answers.
+const NAME_KEY = 'did-i-profile-name'
+
+export function keptProfileName() {
+  try {
+    return localStorage.getItem(NAME_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+function keepProfileName(name) {
+  try {
+    if (name) localStorage.setItem(NAME_KEY, String(name))
+    else localStorage.removeItem(NAME_KEY)
+  } catch {
+    // Shows again after the next profile load.
+  }
+}
+
 export async function loadProfile() {
   const db = cloud()
   if (!db) return null
@@ -493,7 +621,10 @@ export async function loadProfile() {
     .select('display_name, look_on, badge_cheer, prefs, gem_balance, avatar_url')
     .eq('user_id', user.id)
     .maybeSingle()
-  if (data) noteAvatar(data.avatar_url)
+  if (data) {
+    noteAvatar(data.avatar_url)
+    keepProfileName(data.display_name || '')
+  }
   return data || null
 }
 
@@ -506,6 +637,7 @@ export async function saveProfile(patch) {
     { user_id: user.id, ...patch, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' },
   )
+  if (!error && typeof patch?.display_name === 'string') keepProfileName(patch.display_name)
   return { miss: error ? error.message : '' }
 }
 

@@ -6,6 +6,7 @@ import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveTogetherPeople } from './together-widget.js'
+import { noteMilestone } from './milestones.js'
 
 const FAMILY_LAMP_FIELDS =
   'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
@@ -158,6 +159,8 @@ function togetherRow(row) {
     id: row.user_id,
     name: personName(row),
     initials: personInitials(row),
+    buddy: row.buddy_on || '',
+    avatar: row.avatar_url || '',
     shared,
     doneOn: shared ? row.done_on || '' : '',
   }
@@ -196,6 +199,41 @@ export async function personById(id) {
   if (!db || !id) return { user_id: id }
   const who = await peopleByIds(db)
   return who.get(id) || { user_id: id }
+}
+
+// A private note about a friend (supabase/friend-notes.sql). Only you see it.
+export const FRIEND_NOTE_MAX = 500
+
+export async function readFriendNote(friendId) {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user || !friendId) return ''
+  const { data, error } = await db.from('friend_notes').select('note').eq('owner_id', user.id).eq('friend_id', friendId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return String(data?.note || '')
+}
+
+/** The ids of everyone you keep a note about, for the mark on lists. */
+export async function notedPeople() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return new Set()
+  const { data, error } = await db.from('friend_notes').select('friend_id').eq('owner_id', user.id)
+  if (error) throw new Error(error.message)
+  return new Set((data || []).map((row) => row.friend_id))
+}
+
+/** Saves the note; an empty one is removed. Returns { miss } on failure. */
+export async function saveFriendNote(friendId, note) {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return { miss: 'people.off' }
+  const text = String(note || '').trim().slice(0, FRIEND_NOTE_MAX)
+  const query = text
+    ? db.from('friend_notes').upsert({ owner_id: user.id, friend_id: friendId, note: text, updated_at: new Date().toISOString() }, { onConflict: 'owner_id,friend_id' })
+    : db.from('friend_notes').delete().eq('owner_id', user.id).eq('friend_id', friendId)
+  const { error } = await query
+  return error ? bad(error) : { ok: true, note: text }
 }
 
 // Friends -------------------------------------------------------------
@@ -238,6 +276,7 @@ export async function listFriends() {
     }
   }
   friends.sort((a, b) => personName(a.person).localeCompare(personName(b.person)))
+  if (friends.length) noteMilestone('friend')
   return { friends, asked, sent }
 }
 
@@ -533,6 +572,16 @@ export async function giftCheer(toId, cheerId) {
   return bad(error)
 }
 
+// A friend's last 7 nights, oldest first, as [{ night, cleared }]. Empty
+// when they do not share, are not a friend, or the server lacks it.
+export async function friendWeek(otherId, upto) {
+  const db = cloud()
+  if (!db || !otherId || !upto) return []
+  const { data, error } = await db.rpc('friend_week', { other: otherId, upto })
+  if (error || !Array.isArray(data)) return []
+  return data.map((row) => ({ night: String(row.night), cleared: Boolean(row.cleared) }))
+}
+
 // One friend or family member, by id, for the gift screen's heading.
 export async function readKnownPerson(id) {
   const db = cloud()
@@ -563,6 +612,36 @@ export async function sendGift(toId, kind, itemId, note = '') {
 }
 
 // Gifts you sent, newest first, with who they went to and what happened.
+// Paid gifts you sent that were not returned, for the Wrapped frame. Kept on
+// the phone so the frame check stays instant; refreshed when the Shop opens.
+const GIFTS_SENT_KEY = 'did-i-gifts-sent'
+export function readGiftsSent() {
+  try {
+    return Number(localStorage.getItem(GIFTS_SENT_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export async function refreshGiftsSent() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return readGiftsSent()
+  const { count, error } = await db
+    .from('cheer_gifts')
+    .select('id', { count: 'exact', head: true })
+    .eq('from_id', user.id)
+    .is('returned_at', null)
+    .or('gems.gt.0,coins.gt.0')
+  if (error || typeof count !== 'number') return readGiftsSent()
+  try {
+    localStorage.setItem(GIFTS_SENT_KEY, String(count))
+  } catch {
+    // Only the frame check reads it.
+  }
+  return count
+}
+
 export async function listSentGifts() {
   const db = cloud()
   if (!db) return { rows: [], miss: 'off' }
@@ -762,6 +841,16 @@ export async function takeBack(id) {
   return error ? bad(error) : { miss: '' }
 }
 
+// New words for a Did you you sent. Only while they have not answered it;
+// the server says no after that (supabase/hardening.sql edit_send).
+export async function editSend(id, question) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('edit_send', { send: id, question })
+  if (error) return /duplicate/i.test(error.message || '') ? { miss: 'sent.editSame' } : bad(error)
+  return data ? { miss: '' } : { miss: 'sent.editAnswered' }
+}
+
 // The last few nights on a family tag, for everyone in it.
 export async function familyHistory(familyId, nights) {
   const db = cloud()
@@ -832,6 +921,9 @@ export async function listBlocks() {
 
 export const INVITE_GEMS_CAP = 10
 export const INVITE_LOOK_AT = 3
+// Past the gems and the look (supabase/referral-rewards.sql holds the same).
+export const INVITE_BUDDY_AT = 15
+export const INVITE_FRAME_AT = 20
 
 export function inviteGemsFor(which) {
   const n = Math.floor(Number(which) || 0)
@@ -874,12 +966,15 @@ export async function useInvite(code) {
 // What the account owes you. Calling it twice pays once.
 export async function claimInvites() {
   const db = cloud()
-  if (!db) return { gems: 0, looks: [], joined: 0 }
+  if (!db) return { gems: 0, looks: [], joined: 0, buddies: [], frames: [] }
   const { data } = await db.rpc('claim_invites')
   return {
     gems: Number(data?.gems) || 0,
     looks: Array.isArray(data?.looks) ? data.looks : [],
     joined: Number(data?.joined) || 0,
+    // Earned by the server's friend count; listed on every claim.
+    buddies: Array.isArray(data?.buddies) ? data.buddies : [],
+    frames: Array.isArray(data?.frames) ? data.frames : [],
   }
 }
 
@@ -962,6 +1057,18 @@ export async function leaveFamily(familyId) {
     .eq('family_id', familyId)
     .eq('user_id', user.id)
   if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  return { miss: '' }
+}
+
+// Parents only (RLS "parents edit the family"); the name is 1 to 60 characters.
+export async function renameFamily(familyId, name) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const clean = String(name || '').trim().slice(0, 60)
+  if (!clean) return { miss: 'family.nameEmpty' }
+  const { data, error } = await db.from('families').update({ name: clean }).eq('id', familyId).select('id')
+  if (error) return { miss: error.message }
+  if (!data?.length) return { miss: 'family.renameMiss' }
   return { miss: '' }
 }
 

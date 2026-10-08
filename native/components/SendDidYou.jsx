@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, tMiss } from "../../src/lib/i18n.js";
-import { personName, sendDidI } from "../../src/lib/people.js";
+import { listFriends, personName, sendDidI } from "../../src/lib/people.js";
 import { repeatFrom } from "../../src/lib/send-repeat.js";
 import {
   makeDidYouLink,
@@ -14,9 +14,36 @@ import { DidButton, Field, KeyButton, Meta } from "./ui.jsx";
 import { KeyboardLift } from "./KeyboardLift.jsx";
 import { goHash } from "../navigation/hash.js";
 import { confirmDone } from "../lib/confirm.js";
+import { pressFx, Reveal } from "../lib/motion.jsx";
+import { Avatar } from "./PersonCard.jsx";
 
-/** Write a did you for a friend or someone in the family. */
-export function SendSheet({ person, family = false, colors, onClose, onSent }) {
+/**
+ * Write a did you for a friend or someone in the family. With `pick` and no
+ * person, it first asks who: a friend, or a link to text anyone.
+ */
+export function SendSheet({ person: given, pick = false, family = false, colors, onClose, onSent }) {
+  const [person, setPerson] = useState(given || null);
+  const [asLink, setAsLink] = useState(!pick);
+  const [friends, setFriends] = useState(null);
+  const [loadMiss, setLoadMiss] = useState("");
+  const picking = pick && !person && !asLink;
+  useEffect(() => {
+    if (!picking || friends) return undefined;
+    let live = true;
+    listFriends()
+      .then((out) => {
+        if (live) setFriends(out.friends);
+      })
+      .catch(() => {
+        if (live) {
+          setFriends([]);
+          setLoadMiss(t("people.reach"));
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [picking, friends]);
   const [question, setQuestion] = useState("");
   const [note, setNote] = useState("");
   const [miss, setMiss] = useState("");
@@ -89,6 +116,41 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
             ]}
             onPress={(event) => event.stopPropagation()}
           >
+            {picking ? (
+              <Reveal style={styles.pickList}>
+                <Text style={[styles.popKicker, { color: colors.on }]}>{t("people.sendTitle")}</Text>
+                <Meta colors={colors}>{t("didYouLink.pickWho")}</Meta>
+                {friends === null ? <Meta colors={colors}>{t("family.loading")}</Meta> : null}
+                {friends?.map((row) => (
+                  <Pressable
+                    key={row.person.user_id}
+                    onPress={() => setPerson(row.person)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [styles.pickRow, { borderColor: colors.line }, pressFx(pressed)]}
+                  >
+                    <Avatar person={row.person} colors={colors} />
+                    <Text style={[styles.pickName, { color: colors.ink }]} numberOfLines={1}>
+                      {personName(row.person) || t("people.someone")}
+                    </Text>
+                    <Text style={[styles.pickChev, { color: colors.inkDim }]}>›</Text>
+                  </Pressable>
+                ))}
+                {loadMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{loadMiss}</Text> : null}
+                <Pressable
+                  onPress={() => setAsLink(true)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.pickRow, { borderColor: colors.line }, pressFx(pressed)]}
+                >
+                  <View style={styles.pickCopy}>
+                    <Text style={[styles.pickName, { color: colors.on }]}>{t("didYouLink.asLink")}</Text>
+                    <Text style={[styles.pickSub, { color: colors.inkDim }]}>{t("didYouLink.asLinkSub")}</Text>
+                  </View>
+                  <Text style={[styles.pickChev, { color: colors.inkDim }]}>›</Text>
+                </Pressable>
+                <KeyButton colors={colors} label={t("settings.neverMind")} onPress={onClose} />
+              </Reveal>
+            ) : (
+            <Reveal key={person ? "to" : "link"} style={styles.pickList}>
             <Text style={[styles.popKicker, { color: colors.on }]}>
               {t(linkOnly ? "didYouLink.textTitle" : "people.sendTitle")}
             </Text>
@@ -169,7 +231,7 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
                   colors={colors}
                   small
                   label={t("didYouLink.share")}
-                  disabled={busy}
+                  disabled={busy || !question.trim()}
                   onPress={shareLink}
                 />
                 <KeyButton
@@ -185,19 +247,14 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
                     colors={colors}
                     small
                     label={t("people.send")}
-                    disabled={busy}
+                    disabled={busy || !question.trim()}
                     onPress={send}
-                  />
-                  <KeyButton
-                    colors={colors}
-                    label={t("settings.neverMind")}
-                    onPress={onClose}
                   />
                 </View>
                 <KeyButton
                   colors={colors}
                   label={t("didYouLink.share")}
-                  disabled={busy}
+                  disabled={busy || !question.trim()}
                   onPress={shareLink}
                 />
               </>
@@ -212,6 +269,12 @@ export function SendSheet({ person, family = false, colors, onClose, onSent }) {
                 }}
               />
             ) : null}
+            {/* Cancel goes last, after every way to send. */}
+            {linkOnly ? null : (
+              <KeyButton colors={colors} label={t("settings.neverMind")} onPress={onClose} />
+            )}
+            </Reveal>
+            )}
           </Pressable>
         </Pressable>
       </KeyboardLift>
@@ -230,4 +293,10 @@ const styles = StyleSheet.create({
   },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pickList: { gap: 10 },
+  pickRow: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
+  pickCopy: { flex: 1, gap: 2 },
+  pickName: { flex: 1, fontFamily: fonts.uiSemi, fontSize: 15 },
+  pickSub: { fontFamily: fonts.ui, fontSize: 13 },
+  pickChev: { fontSize: 18 },
 });

@@ -12,6 +12,7 @@ import {
   exportAll,
   forgetDevice,
   listDevices,
+  keptProfileName,
   loadProfile,
   pullAndMerge,
   saveProfile,
@@ -277,15 +278,20 @@ function SignedOut({ on }) {
 function SignedIn({ book, email, onChange }) {
   const sync = useSync()
   const purse = normalizePurse(book)
-  const [nameDraft, setNameDraft] = useState(book.keeperName || '')
+  const [nameDraft, setNameDraft] = useState(book.keeperName || keptProfileName())
+  const [nameMiss, setNameMiss] = useState('')
   const [devices, setDevices] = useState([])
+  // Until the list comes back, say nothing rather than "only this phone".
+  const [devicesIn, setDevicesIn] = useState(false)
   const [note, setNote] = useState(null)
   const here = deviceKey()
 
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
-      if (alive) setDevices(rows)
+      if (!alive) return
+      setDevices(rows)
+      setDevicesIn(true)
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book.keeperName) setNameDraft(row.display_name)
@@ -332,12 +338,27 @@ function SignedIn({ book, email, onChange }) {
           value={nameDraft}
           savedValue={book.keeperName || ''}
           onChange={(event) => setNameDraft(event.target.value)}
-          onSave={(keeperName) => {
+          onSave={async (keeperName) => {
             setNameDraft(keeperName)
+            setNameMiss('')
             onChange({ ...book, keeperName })
-            saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+            try {
+              const out = await saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+              if (out?.miss && out.miss !== 'out' && out.miss !== 'off') {
+                setNameMiss(tMiss(out.miss))
+                return false
+              }
+            } catch {
+              setNameMiss(t('confirm.miss'))
+              return false
+            }
           }}
         />
+        {nameMiss ? (
+          <p className="di-miss" role="alert">
+            {nameMiss}
+          </p>
+        ) : null}
         <SetRow label={t('account.look')} value={lookName} chevron onClick={() => goHash('/kit')} />
         <SetRow label={t('account.cheer')} value={cheerName} chevron onClick={() => goHash('/kit')} />
       </SetCard>
@@ -361,7 +382,7 @@ function SignedIn({ book, email, onChange }) {
             />
           ))
         ) : (
-          <p className="di-set-note">{t('account.noDevices')}</p>
+          devicesIn ? <p className="di-set-note">{t('account.noDevices')}</p> : null
         )}
       </SetCard>
 

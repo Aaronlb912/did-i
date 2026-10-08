@@ -4,10 +4,11 @@ import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
-  const [weekShift, setWeekShift] = useState(0)
+  const [weekShift, setWeekShift] = useLayoutState(0)
   useEffect(() => {
     setWeekShift(0)
   }, [tagId])
@@ -17,13 +18,16 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   return (
     <View style={[styles.wrap, { borderTopColor: colors.lineSoft }]}>
       <View style={styles.head}>
-        <Pressable onPress={() => setWeekShift((n) => n - 1)} hitSlop={8} style={styles.shiftBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('weekbar.prev')} onPress={() => setWeekShift((n) => n - 1)} hitSlop={8} style={styles.shiftBtn}>
           <Text style={[styles.shift, { color: colors.inkSoft }]}>‹</Text>
         </Pressable>
-        <Pressable onPress={() => goHash('/calendar')} style={styles.labelHit}>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/calendar')} style={styles.labelHit}>
           <Text style={[styles.open, { color: colors.inkSoft }]}>{label}</Text>
         </Pressable>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('weekbar.next')}
+          accessibilityState={{ disabled: weekShift >= 0 }}
           disabled={weekShift >= 0}
           onPress={() => setWeekShift((n) => Math.min(0, n + 1))}
           hitSlop={8}
@@ -32,7 +36,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
           <Text style={[styles.shift, { color: weekShift >= 0 ? colors.line : colors.inkSoft }]}>›</Text>
         </Pressable>
       </View>
-      <View style={styles.days}>
+      <Reveal key={`w${weekShift}`} style={styles.days} exiting={undefined} layout={false}>
         {nights.map((night) => (
           <View key={night.iso} style={styles.day}>
             <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{night.weekday[0]}</Text>
@@ -44,7 +48,9 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : night.miss ? colors.miss : colors.open,
+                    // A freeze is a ring, the same as the history legend.
+                    ...(night.freeze && !night.on ? { borderWidth: 1.5, borderColor: colors.freeze } : null),
                     opacity: night.empty ? 0.35 : 1,
                   },
                 ]}
@@ -52,7 +58,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
             </View>
           </View>
         ))}
-      </View>
+      </Reveal>
     </View>
   )
 }

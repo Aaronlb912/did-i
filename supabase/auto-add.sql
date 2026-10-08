@@ -66,7 +66,10 @@ create policy "send to a friend" on public.sends
 
 -- Marks every waiting did you that is allowed straight onto tonight as
 -- kept, and hands back what to add. Writes nothing when nothing is owed.
-create or replace function public.claim_auto_sends()
+-- did-you-repeat.sql later widens what this returns; drop first so a full
+-- re-apply in order does not stop here.
+drop function if exists public.claim_auto_sends();
+create function public.claim_auto_sends()
 returns table (send_id uuid, sender_id uuid, question text, note text, from_family boolean)
 language sql
 security definer

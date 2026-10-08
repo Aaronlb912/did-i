@@ -131,6 +131,34 @@ export function undoBulkLamps(books, before, picks) {
   return out
 }
 
+// Moves picked questions, with their answers and notes, into one folder.
+// Same steps as moving one from its edit form (saveLamp). Undo is the
+// same call with the picks pointing back. Hands back only changed folders.
+export function moveLamps(books, picks, targetId) {
+  const target = books.find((book) => book.id === targetId)
+  if (!target) return []
+  const changed = new Map()
+  const latest = (book) => changed.get(book.id) || book
+  let dest = target
+  for (const pick of picks) {
+    if (pick.boardId === targetId) continue
+    const source = books.find((book) => book.id === pick.boardId)
+    const lamp = source && (latest(source).lamps || []).find((item) => item.id === pick.lampId)
+    if (!lamp) continue
+    const from = latest(source)
+    const answers = (from.answers || []).filter((item) => item.lampId === lamp.id)
+    changed.set(source.id, takeDown(from, lamp))
+    dest = {
+      ...hangInto(dest, lamp, false),
+      answers: [...(dest.answers || []).filter((item) => item.lampId !== lamp.id), ...answers],
+    }
+  }
+  if (dest === target) return []
+  // An empty folder is parked (archived); a question moving in brings it back.
+  changed.set(targetId, { ...dest, archived: false })
+  return [...changed.values()]
+}
+
 export function toggleArchive(book, lamp) {
   if (!lamp) return book
   return {
@@ -149,3 +177,31 @@ export function hangCopy(book, lamp, clock = new Date()) {
   }
 }
 
+
+// A short line on one night's answer ("Charged it at work"). Saving it sets
+// noteAt and leaves answeredAt (the tap) alone. Sync keeps whichever copy
+// has the newer answerStamp. The server keeps up to 500; we keep less.
+export const NOTE_MAX = 120
+
+// The newest change to an answer: the tap or its note.
+export function answerStamp(answer) {
+  const tap = String(answer?.answeredAt || '')
+  const note = String(answer?.noteAt || '')
+  return note > tap ? note : tap
+}
+
+export function setAnswerNote(book, lampId, periodKey, note, clock = new Date()) {
+  const text = String(note || '').replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX)
+  const answers = book.answers || []
+  const at = answers.findIndex((item) => item.lampId === lampId && item.periodKey === periodKey)
+  if (at < 0 || (answers[at].note || '') === text) return book
+  const prev = answerStamp(answers[at])
+  let stamp = answeredAtIso(clock)
+  if (prev && stamp <= prev) {
+    const last = new Date(prev)
+    if (!Number.isNaN(last.getTime())) stamp = answeredAtIso(new Date(last.getTime() + 1000))
+  }
+  const next = [...answers]
+  next[at] = { ...answers[at], note: text, noteAt: stamp }
+  return { ...book, answers: next }
+}

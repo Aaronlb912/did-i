@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, Platform } from 'react-native'
 import { commitBook, marksToToast, unlockAchievements } from '../../src/lib/achievements.js'
 import { emptyBoard, normalizeBook } from '../../src/lib/board-json.js'
@@ -45,13 +45,15 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget } from '../widget-sync.js'
+import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
+import { runAfterLaunchReady } from '../lib/launch-ready.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
+import { useLocale } from '../../src/lib/i18n.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -83,6 +85,15 @@ export function useAppShelf() {
   const [shelf, setShelf] = useState(firstShelf)
   // Marks unlocked together wait their turn instead of only the first showing.
   const [marks, setMarks] = useState([])
+  // The General folder's name follows the app language. Reading the shelf
+  // again renames it, so a language change shows at once, not on next launch.
+  const locale = useLocale()
+  const lastLocale = useRef(locale)
+  useEffect(() => {
+    if (lastLocale.current === locale) return
+    lastLocale.current = locale
+    setShelf(readShelf())
+  }, [locale])
   const book = useMemo(() => currentBook(shelf), [shelf])
   const live = book || emptyBoard()
   const route = readRoute()
@@ -253,16 +264,20 @@ export function useAppShelf() {
       } catch {
         // ok
       }
-      pullAndMerge()
-        .then((result) => {
+      // Tonight paints from the stored shelf first; the cloud pull waits for that frame.
+      runAfterLaunchReady(() => {
+        if (cancelled) return undefined
+        return pullAndMerge().then((result) => {
           if (cancelled) return
-          const merged = result || readShelf()
+          // The stored shelf, not result: a delete made after the pull wrote
+          // is only there, and writing result back would undo it.
+          const merged = readShelf()
           const closed =
             Platform.OS === 'android' ? withNightsClosed(merged, new Date()) : merged
           if (closed !== merged) setShelf(writeShelf(closed))
-          else if (result) setShelf(result)
+          else if (result) setShelf(merged)
         })
-        .catch(() => {})
+      })
       afterNativeBridgeReady(() => {
         if (cancelled) return
         if (!nativeWidgetsEnabled()) return
@@ -277,7 +292,7 @@ export function useAppShelf() {
           .then(() => pullAndMerge())
           .then((result) => {
             if (cancelled) return
-            if (result) setShelf(result)
+            if (result) setShelf(readShelf())
           })
           .catch(() => {})
       })
@@ -296,7 +311,10 @@ export function useAppShelf() {
         })
     })
     function onShelfIn(event) {
-      if (event?.detail) setShelf(event.detail)
+      if (!event?.detail) return
+      setShelf(event.detail)
+      // Answers from another phone (sync): the widget shows them too.
+      syncTonightWidgetIfChanged(event.detail).catch(() => {})
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

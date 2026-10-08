@@ -17,9 +17,11 @@ import {
   TOGETHER_WIDGET_NAME,
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
+import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   androidWidgetCardStamp,
   applyPendingAndroidWidgetTap,
+  armAndroidWidgetAskTimes,
   loadAndroidWidgetCard,
   saveAndroidWidgetCard,
 } from './widget-tap.android.js'
@@ -67,6 +69,11 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   writeWidgetTonightProps(props)
   await saveAndroidWidgetCard(props)
   renderWidget(renderDidITonightAndroidWidget(props, widgetInfo))
+  // A redraw from an alarm (midnight, an ask time): set the next ones, so
+  // tomorrow night turns over even if the app is never opened.
+  if (!tappedShelf) {
+    await armAndroidWidgetAskTimes(widgetRedrawTimes((shelf?.boards || []).filter((b) => !b.archived), new Date()))
+  }
   if (stamp && later && later !== stamp) {
     if (tappedShelf) await syncTonightWidget(tappedShelf)
     return

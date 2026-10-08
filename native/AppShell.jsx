@@ -31,13 +31,14 @@ import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
-import { GiftHost } from './screens/shop.jsx'
+import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
+import { FirstSwipe } from './components/FirstSwipe.jsx'
 import { LegalPlain } from './screens/LegalScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
@@ -46,6 +47,12 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
 import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
+import { noteFrameTouch } from './components/frames/index.js'
+import { TabSlide } from './components/TabSlide.jsx'
+import { noteMilestone } from '../src/lib/milestones.js'
+
+// The shop module is big; gifts wait until the first frame is up.
+const GiftHost = lazyScreen(() => require('./screens/shop.jsx'), 'GiftHost')
 
 const Stack = createNativeStackNavigator()
 
@@ -57,15 +64,19 @@ const Stack = createNativeStackNavigator()
 // Add forms have no page title (BoardShell noTitle), so no large title either.
 const NO_TITLE = new Set(['/hang', '/we/new'])
 
+const GLASS_BAR = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26
+
 function barOptions(colors) {
   if (Platform.OS !== 'ios') return { headerShown: false }
   return {
     headerShown: true,
     headerTransparent: true,
-    headerBlurEffect: 'systemChromeMaterial',
-    // The material does the job of iOS 26's top edge blur; both at once overlap.
-    scrollEdgeEffects: { top: 'hidden' },
-    headerShadowVisible: true,
+    // iOS 26 fades the page out under the bar with its soft edge, like the
+    // system apps. Older iOS has no edge effect, so it keeps a thin material.
+    // (The chrome material read as a solid grey block in dark mode.)
+    ...(GLASS_BAR
+      ? { scrollEdgeEffects: { top: 'soft' }, headerShadowVisible: false }
+      : { headerBlurEffect: 'systemUltraThinMaterial', scrollEdgeEffects: { top: 'hidden' }, headerShadowVisible: false }),
     headerLargeStyle: { backgroundColor: 'transparent' },
     headerLargeTitleShadowVisible: false,
     headerTintColor: colors.on,
@@ -101,6 +112,16 @@ function RouteScreen({ route }) {
   return <RouteBody route={routeFromScreen(route)} />
 }
 
+// The two tabs, in bar order, so a switch slides in from the side you moved to.
+const TAB_ORDER = ['/tonight', '/lamps']
+function TabRouteScreen({ route }) {
+  return (
+    <TabSlide index={TAB_ORDER.indexOf(route.name)}>
+      <RouteBody route={routeFromScreen(route)} />
+    </TabSlide>
+  )
+}
+
 // SF Symbols on iOS; on Android, Material-style glyphs tinted by the bar,
 // filled when the tab is on.
 const TONIGHT_ICON =
@@ -121,6 +142,7 @@ function HallScreen() {
   // The hall mounts first, so a goHash from before the stack existed lands now.
   useEffect(() => {
     flushNavigation()
+    noteMilestone('opened')
   }, [])
   const options = useMemo(
     () => ({
@@ -143,12 +165,12 @@ function HallScreen() {
     <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
       <Tab.Screen
         name="/tonight"
-        component={RouteScreen}
+        component={TabRouteScreen}
         options={{ tabBarLabel: t('nav.home'), tabBarIcon: TONIGHT_ICON, headerLargeTitleEnabled: false }}
       />
       <Tab.Screen
         name="/lamps"
-        component={RouteScreen}
+        component={TabRouteScreen}
         options={{ tabBarLabel: t('nav.questions'), tabBarIcon: QUESTIONS_ICON }}
       />
     </Tab.Navigator>
@@ -177,6 +199,7 @@ export function AppShell() {
   const legalOut = (route.path === '/terms' || route.path === '/privacy') && authGated('/', account)
   const gated = legalOut || authGated(route.path, account)
   const [pingState, setPingState] = useState(pingSupport)
+  const [booted, setBooted] = useState(false)
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
   const leaveLegal = useCallback(() => goHash('/enter'), [])
@@ -229,6 +252,7 @@ export function AppShell() {
     let warm = null
     afterNativeBridgeReady(() => {
       // Connect the gem store in the background so the gem page has prices ready.
+      if (alive) setBooted(true)
       warm = setTimeout(() => initGemIap().catch(() => {}), 3000)
       captureInviteOnFirstLaunch()
       checkPings()
@@ -329,12 +353,14 @@ export function AppShell() {
             goHash(empty ? '/first' : '/tonight')
           }}
         />
+        <FirstSwipe colors={colors} />
       </View>
     )
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    // Any touch wakes a sleeping frame (battery rules in useFrameActive).
+    <View style={{ flex: 1, backgroundColor: colors.bg }} onTouchStart={noteFrameTouch}>
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>
           <Stack.Screen name={HALL} component={HallScreen} options={HALL_OPTIONS} />
@@ -363,7 +389,7 @@ export function AppShell() {
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
         <UpdatePrompt path={route.path} colors={colors} />
-        {app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
+        {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         <SheetHost />
         <CheerBurstHost />

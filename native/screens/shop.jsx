@@ -1,20 +1,20 @@
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
-import { startGemPurchase } from '../../src/lib/gem-buy.js'
+import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
 import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
-import { holdFor } from '../../src/lib/cheer-pops.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   BUDDIES,
+  SHOP_BUDDIES,
   BUDDY_GEMS,
   buyCheerStage,
   buyLook,
@@ -46,8 +46,16 @@ import {
   wearCheerStage,
   wearAccessory,
   NIGHT_COIN_CAP,
+  isLive,
+  isSeasonal,
+  isWished,
+  offSeason,
+  ownedLast,
+  shopRow,
+  toggleWish,
+  wishItem,
 } from '../../src/lib/purse.js'
-import { useTheme } from '../../src/lib/prefs.js'
+import { usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import {
   AccessoryChip,
   BuddyChip,
@@ -58,6 +66,8 @@ import {
 import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
+import { PersonAvatar } from '../components/PersonAvatar.jsx'
 import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
@@ -71,24 +81,23 @@ import {
 import { goHash } from '../navigation/hash.js'
 import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById } from '../../src/lib/accessories.js'
 import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { CoinIcon, GemFaceMark, GemIcon, GemStack } from '../components/PurseIcons.jsx'
+import { CoinIcon, GemFaceMark, GemIcon } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
+import { CardFrame, useFrameActive } from '../components/frames/index.js'
+import { useIsFocused } from '@react-navigation/native'
+import { FramesCollection, FramesShopRow, framesForSaleCount, framesOwnedCount, leftAfter } from './frames.jsx'
+import { openCoinsHow } from '../components/NightSheets.jsx'
+import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 import { flyToKit, kitArtRef, kitCount } from '../lib/kit-flight.js'
 import { launchFlight } from '../components/FlyHost.jsx'
 import { RollNumber } from '../components/RollNumber.jsx'
-import { readShelf } from '../../src/lib/board-shelf.js'
-
-// The preview card shows one of your own questions when there is one.
-function previewQuestion() {
-  for (const book of readShelf()?.boards || []) {
-    const lamp = (book.lamps || []).find((item) => !item.archived && item.question)
-    if (lamp) return lamp.question
-  }
-  return t('shop.buddyPreviewQ')
-}
+import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
+import { motionOff, pressFx, Reveal } from '../lib/motion.jsx'
 
 const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
 const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
@@ -133,7 +142,7 @@ const PRESS_IN_DELAY = 90
 // Pressing in (or hovering) already played it, so the tap that follows does not.
 const PRESS_DEDUPE_MS = 900
 
-function PreviewButton({ onPress, pressIn = false, selected, colors, children }) {
+function PreviewButton({ onPress, pressIn = false, selected, colors, children, label }) {
   const fired = useRef(0)
   const early = () => {
     fired.current = Date.now()
@@ -149,6 +158,8 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children })
       onHoverIn={pressIn ? early : undefined}
       unstable_pressDelay={pressIn ? PRESS_IN_DELAY : undefined}
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(selected) }}
       style={[
         styles.previewBtn,
         {
@@ -162,14 +173,39 @@ function PreviewButton({ onPress, pressIn = false, selected, colors, children })
   )
 }
 
-function BuddyPreviewCard({ id, colors }) {
+// A gift preview is someone else's card, so it never shows your own questions.
+function sampleFor(cap) {
+  return cap ? { question: t('shop.buddyPreviewQ'), tag: t('tags.general') } : previewSample()
+}
+
+// Collection draws the frame you wear around every preview, like your Home card.
+function WornFrame({ frameId, colors, children }) {
+  const active = useFrameActive(useIsFocused())
+  // Your real streak, so Polaroid's caption matches Home.
+  const streak = useMemo(() => shelfStreak(readShelf().boards, new Date()), [])
+  if (!frameId) return children
+  return (
+    <CardFrame id={frameId} colors={colors} active={active} radius={16} streak={streak} answered={3} total={4} weekLit={SAMPLE_WEEK} date={new Date()}>
+      {children}
+    </CardFrame>
+  )
+}
+
+// cap: the label over the card ("On their card" for a gift).
+// room: Collection's padded box, so every tab's preview is the same size.
+function BuddyPreviewCard({ id, colors, cap, room, frameId }) {
+  const sample = sampleFor(cap)
   return (
     <View style={styles.buddyPreview}>
-      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
-      <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={id} alive />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+      <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
+      <View style={room ? styles.kitPreviewRoom : null}>
+        <WornFrame frameId={frameId} colors={colors}>
+        <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <BuddyHang id={id} alive />
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
+        </View>
+        </WornFrame>
       </View>
     </View>
   )
@@ -177,13 +213,17 @@ function BuddyPreviewCard({ id, colors }) {
 
 // A look shown in its own colours, not the page's ambient ones, so it reads
 // true whether the page is peeking a coin look or a gem look.
-function LookPreviewCard({ id }) {
+// buddyId: Collection shows your buddy on every tab, like your Home card.
+function LookPreviewCard({ id, cap, room, frameId, buddyId }) {
+  const sample = sampleFor(cap)
   const theme = useTheme()
   const colors = useLookColors(id)
   const gemCard = gemPanelStyle(id, theme)
   return (
     <View style={styles.buddyPreview}>
-      <Cap colors={colors}>{t('shop.buddyPreview')}</Cap>
+      <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap>
+      <View style={room ? styles.kitPreviewRoom : null}>
+      <WornFrame frameId={frameId} colors={colors}>
       <View style={[styles.buddyPreviewGlow, gemGlowHostStyle(id, theme)]}>
         <View
           style={[
@@ -193,12 +233,25 @@ function LookPreviewCard({ id }) {
             gemCard,
           ]}
         >
-          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+          {buddyId ? <BuddyHang id={buddyId} alive /> : null}
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
         </View>
+      </View>
+      </WornFrame>
       </View>
     </View>
   )
+}
+
+// Your card in your look, wearing the frame you have on, like the other
+// Collection previews. It moves while this screen is in front.
+const SAMPLE_WEEK = [true, true, true, true, false, true, true]
+
+// The same card as the Looks and Cheers tabs, so the frame art (First
+// light's moon) and the buddy sit exactly as they do there.
+function FramePreviewCard({ lookId, frameId, buddyId }) {
+  return <LookPreviewCard id={lookId} room frameId={frameId} buddyId={buddyId} />
 }
 
 // The look being tried, or the one worn, as its own Tonight card. A new look
@@ -239,20 +292,23 @@ function LookStage({ id }) {
   )
 }
 
-// A look reads as the same chip as the Looks page, a cheer sits still, a
-// buddy blinks and sways.
+// A look reads as the same chip as the Looks page; a cheer and a buddy sit
+// still. A swaying buddy in every tile redrew its SVG each frame and held the
+// Shop at ~5 fps on Android, so only the open sheet animates.
 // buddy: who models an accessory, your buddy if one is on.
 function TileArt({ type, id, colors, buddy = '' }) {
   if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} tone={colors.on} />
   if (type === 'look') return <LookChip id={id} colors={colors} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} colors={colors} />
-  return <BuddyChip id={id} alive />
+  if (type === 'frame') return <FramePreview id={id} colors={colors} size={40} />
+  return <BuddyChip id={id} />
 }
 
 function tileName(type, id) {
   if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
+  if (type === 'frame') return t(frameText(id, 'name'))
   return t(buddyText(id, 'name'))
 }
 
@@ -272,15 +328,17 @@ function PriceTag({ tag, colors }) {
 
 // The label always sits on the tile's bottom edge: the art area above it is a
 // fixed height, so a short chip (Spark) and a tall one line up the same way.
-function ShopTile({ type, item, purse, colors, onTile, style }) {
+// dim: can't afford it yet. Still tappable, so the sheet can say how many more.
+function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
   return (
     <Pressable
       onPress={() => onTile(type, item)}
+      unstable_pressDelay={100}
       accessibilityRole="button"
       accessibilityLabel={t('shop.see', { name })}
-      style={[styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style]}
+      style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, dim && styles.tileDim, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
         <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />
@@ -290,9 +348,26 @@ function ShopTile({ type, item, purse, colors, onTile, style }) {
           {name}
         </Text>
         <PriceTag tag={tag} colors={colors} />
+        {note ? (
+          <Text style={[styles.tileNote, { color: colors.inkDim }]} numberOfLines={1}>
+            {note}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   )
+}
+
+// A wishlist tile's second line: can you buy it now, or how many more.
+function wishNeed(type, item, purse) {
+  const tag = shopTag(purse, type, item)
+  const short = tag.gems ? tag.gems - purse.gems : tag.coins - purse.coins
+  if (short <= 0) return t('shop.canBuy')
+  return t(tag.gems ? 'shop.moreGems' : 'shop.moreCoins', { n: short })
+}
+
+function wishRows(purse) {
+  return purse.wish.map((key) => ({ type: key.split(':')[0], item: wishItem(key) })).filter((row) => row.item)
 }
 
 function slideHead(slide) {
@@ -302,38 +377,83 @@ function slideHead(slide) {
       title: t('shop.coming', { date: formatBoardDate(slide.date) }),
     }
   }
-  if (slide.kind === 'drop') return { kicker: '', title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
-  return { kicker: '', title: t('shop.freshTitle') }
+  if (slide.kind === 'drop') return { kicker: t('shop.outNow'), title: t('shop.dropOn', { date: formatBoardDate(slide.date) }) }
+  return { kicker: t('shop.outNow'), title: t('shop.freshTitle') }
 }
 
 // The drop carousel: the Coming drop first, then recent drops. Swipe sideways.
-function DropCarousel({ slides, purse, colors, onTile }) {
-  const [width, setWidth] = useState(0)
+function DropCarousel({ slides, purse, colors, onTile, foot }) {
+  // A first guess at the width, so the banner draws on the first frame and
+  // the page below does not jump when the real width comes in.
+  const [width, setWidth] = useState(() => Math.max(0, Dimensions.get('window').width - 32))
   const [at, setAt] = useState(0)
+  const pager = useRef(null)
+  const dragFrom = useRef(0)
+  // Pass 6 wrapped this pager in a gesture-handler pan (minVelocityX 500).
+  // That pan began on every touch down and, once it saw sideways movement,
+  // claimed the touch for the gesture-handler root, which cancels the native
+  // horizontal ScrollView under it. Its own page math then only fired past
+  // 500 px/s, so slow left drags did nothing and fast ones were eaten too.
+  // Plain native paging owns the touch now, in both directions.
   if (!slides.length) return null
+  // A FlatList pager with plain pagingEnabled. The old ScrollView set the page
+  // on every scroll event, so the first drag re-rendered every slide and
+  // changed the height under the banner mid-gesture (the hidden push link),
+  // and snapToInterval + disableIntervalMomentum on top of paging made a
+  // short fast fling snap back. Now the page only changes when it settles.
+  const settle = (e) => {
+    const n = Math.round(e.nativeEvent.contentOffset.x / width)
+    if (n !== at) setAt(n)
+  }
+  // Native snapping (pagingEnabled, snapToInterval, snapToOffsets) nested in
+  // the page scroll on Android only paged forward: a swipe back from page 2
+  // settled at 379.05 of 379.43 and snapped to page 2 again. The page is
+  // picked here instead, from where the drag began and which way it went.
+  const release = (e) => {
+    const x = e.nativeEvent.contentOffset.x
+    const vx = e.nativeEvent.velocity?.x ?? 0
+    const from = Math.round(dragFrom.current / width)
+    const dx = x - dragFrom.current
+    let n = from
+    if (dx > width * 0.15 || (dx > 4 && vx < -0.2)) n = from + 1
+    else if (dx < -width * 0.15 || (dx < -4 && vx > 0.2)) n = from - 1
+    n = Math.max(0, Math.min(slides.length - 1, n))
+    pager.current?.scrollToOffset({ offset: n * width, animated: !motionOff() })
+    if (n !== at) setAt(n)
+  }
   return (
-    <View style={styles.carousel} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+    <View
+      style={styles.carousel}
+      onLayout={(e) => {
+        const next = e.nativeEvent.layout.width
+        if (Math.abs(next - width) > 1) setWidth(next)
+      }}
+    >
       {width ? (
-        <ScrollView
+        <FlatList
+          ref={pager}
+          data={slides}
           horizontal
-          pagingEnabled
-          nestedScrollEnabled
+          decelerationRate="fast"
+          onScrollBeginDrag={(e) => { dragFrom.current = e.nativeEvent.contentOffset.x }}
+          onScrollEndDrag={release}
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) => setAt(Math.round(e.nativeEvent.contentOffset.x / width))}
-        >
-          {slides.map((slide, i) => {
+          keyExtractor={(slide) => `${slide.kind}-${slide.date}`}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          initialNumToRender={slides.length}
+          onMomentumScrollEnd={settle}
+          renderItem={({ item: slide, index: i }) => {
             const head = slideHead(slide)
             const coming = slide.kind === 'coming'
             return (
               <View
-                key={`${slide.kind}-${slide.date}`}
                 accessibilityLabel={t('shop.slideN', { n: i + 1, total: slides.length })}
                 style={[
                   styles.slide,
                   { width, borderColor: coming ? colors.on : colors.line, backgroundColor: colors.panel },
                 ]}
               >
-                {head.kicker ? <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker}</Text> : null}
+                <Text style={[styles.slideKicker, { color: colors.on }]}>{head.kicker}</Text>
                 <Text style={[styles.slideTitle, { color: colors.ink }]}>{head.title}</Text>
                 <View style={styles.slideGrid}>
                   {slide.items.map(({ type, item }) => (
@@ -348,18 +468,29 @@ function DropCarousel({ slides, purse, colors, onTile }) {
                     />
                   ))}
                 </View>
+                {foot ? foot(slide) : null}
               </View>
             )
-          })}
-        </ScrollView>
+          }}
+        />
       ) : null}
       {slides.length > 1 ? (
         <View style={styles.dots}>
+          {/* A dot is a tap target too, so every page is reachable without a swipe. */}
           {slides.map((slide, i) => (
-            <View
+            <Pressable
               key={`dot-${slide.kind}-${slide.date}`}
-              style={[styles.dot, { backgroundColor: i === at ? colors.on : colors.line }]}
-            />
+              accessibilityRole="button"
+              accessibilityLabel={t('shop.slideN', { n: i + 1, total: slides.length })}
+              accessibilityState={{ selected: i === at }}
+              style={styles.dotHit}
+              onPress={() => {
+                setAt(i)
+                pager.current?.scrollToOffset({ offset: i * width, animated: !motionOff() })
+              }}
+            >
+              <View style={[styles.dot, { backgroundColor: i === at ? colors.on : colors.line }]} />
+            </Pressable>
           ))}
         </View>
       ) : null}
@@ -367,22 +498,47 @@ function DropCarousel({ slides, purse, colors, onTile }) {
   )
 }
 
-// Every item of one kind, side-scrolling, not-owned first.
+// One kind, side-scrolling: what you can buy first, then what you own (marked
+// Owned), so the row always shows what the shop has.
 function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
-  const sorted = [...list].sort(
-    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
-  )
+  const buy = shopRow(type, list, purse)
+  const sorted = [...buy, ...ownedLast(type, list.filter((item) => isLive(item) && !buy.includes(item)), purse)]
   return (
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Cap colors={colors}>{cap}</Cap>
-        <Pressable onPress={onAll} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={onAll} hitSlop={8}>
           <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
         </Pressable>
       </View>
+      {sorted.length ? (
+        <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
+          {sorted.map((item) => (
+            <ShopTile key={item.id} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} />
+          ))}
+        </FadeScroll>
+      ) : (
+        <Meta colors={colors}>{t(`shop.allOwned.${type}`)}</Meta>
+      )}
+    </View>
+  )
+}
+
+// Hearted items, right under the drop, so a goal is one tap away.
+function SavedRow({ purse, colors, onTile }) {
+  const saved = wishRows(purse)
+  if (!saved.length) return null
+  return (
+    <View style={styles.promoShelf}>
+      <View style={styles.promoHead}>
+        <Cap colors={colors}>{t('shop.wishTitle')}</Cap>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+          <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.wishTab')}</Text>
+        </Pressable>
+      </View>
       <FadeScroll fade={colors.bg} nestedScrollEnabled contentContainerStyle={styles.rowScroll}>
-        {sorted.map((item) => (
-          <ShopTile key={item.id} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} />
+        {saved.map(({ type, item }) => (
+          <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} colors={colors} onTile={onTile} style={styles.rowTile} note={wishNeed(type, item, purse)} />
         ))}
       </FadeScroll>
     </View>
@@ -400,8 +556,10 @@ function GemDoorChip({ colors }) {
 function ShopDoor({ preview, title, note, meta, onPress, colors }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={typeof title === 'string' ? title : undefined}
       onPress={onPress}
-      style={[styles.shopDoor, { borderBottomColor: colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.shopDoor, { borderBottomColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       <View style={styles.shopDoorChip}>{preview}</View>
       <View style={styles.shopCopy}>
@@ -472,12 +630,12 @@ function openInfo(name, info, colors) {
   })
 }
 
-function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn, previewPressIn, artKey }) {
+function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, primary, disabled, nested, preview, onPreview, previewOn, previewPressIn, artKey, extra }) {
   const artRef = useMemo(() => (artKey ? kitArtRef(artKey) : undefined), [artKey])
   const art = preview
     ? onPreview
       ? (
-        <PreviewButton onPress={onPreview} pressIn={previewPressIn} selected={previewOn} colors={colors}>
+        <PreviewButton onPress={onPreview} pressIn={previewPressIn} selected={previewOn} colors={colors} label={typeof name === 'string' ? t('a11y.preview', { name }) : undefined}>
           {preview}
         </PreviewButton>
       )
@@ -516,6 +674,7 @@ function ShopActionRow({ name, note, info, miss, actionLabel, onAction, colors, 
             {miss}
           </Text>
         ) : null}
+        {extra || null}
       </View>
       {primary ? (
         <DidButton small label={actionLabel} onPress={onAction} colors={colors} disabled={disabled} />
@@ -539,6 +698,9 @@ function StagePicks({ owned, play, on, onPick, colors }) {
         return (
           <Pressable
             key={n}
+            accessibilityRole="button"
+            accessibilityLabel={t('shop.stage', { n })}
+            accessibilityState={{ disabled: !have, selected: using }}
             disabled={!have}
             onPress={() => onPick(n)}
             style={[
@@ -577,7 +739,7 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       disabled={!onBuy}
       accessibilityRole={onBuy ? 'button' : 'text'}
       accessibilityLabel={`${title}, ${price}`}
-      style={[styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }]}
+      style={({ pressed }) => [styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
       {best ? (
         <View style={[styles.gemBestBadge, { backgroundColor: colors.on }]}>
@@ -591,7 +753,7 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       {bonusNote ? <Text style={[styles.gemFeaturedNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
       {onBuy ? (
         <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
-          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price}</Text>
+          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{t('gems.buyPrice', { price })}</Text>
         </View>
       ) : (
         <Text style={[styles.gemFeaturedTitle, { color: colors.inkDim }]}>{price}</Text>
@@ -609,15 +771,18 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
       </View>
       <View style={styles.shopCopy}>
         <Text style={[styles.shopName, { color: colors.ink }]}>{title}</Text>
-        <Text style={[styles.shopNote, { color: colors.inkDim }]}>
-          {bonusNote}
-          {bonusNote ? ' · ' : ''}
-          {price}
-        </Text>
+        {bonusNote ? <Text style={[styles.shopNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
+        {onBuy ? null : <Text style={[styles.shopNote, { color: colors.inkDim }]}>{price}</Text>}
       </View>
-      {onBuy ? <DidButton small label={t('gems.buy')} onPress={onBuy} colors={colors} /> : null}
+      {onBuy ? <DidButton small label={t('gems.buyPrice', { price })} onPress={onBuy} colors={colors} /> : null}
     </View>
   )
+}
+
+// A Coming item: when it goes on sale and what it will cost.
+function teasedBody(item) {
+  const cost = item.gems ? gemLine(item.gems) : item.coins ? coinLine(item.coins) : ''
+  return [t('shop.teasedBody', { date: formatBoardDate(item.from) }), cost].filter(Boolean).join('\n')
 }
 
 // coinsFor(): up to two paid taps of up to two coins each.
@@ -629,35 +794,69 @@ function previewBody(type, item, purse) {
   const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
-    const nights = Math.ceil(short / COINS_PER_NIGHT_CAP)
-    return `${base}\n${t('shop.needMoreCoins', { n: short })}\n${t('shop.earnCoins', { coins: short, nights })}`
+    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: COINS_PER_NIGHT_CAP })}`
   }
   if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}\n${t('shop.earnGems')}`
   return base
 }
 
-function CheerLoop({ id, coat }) {
+// Play shows a cheer once, owned or not. With less motion on it shows a
+// still frame and a line about what the cheer does instead of the burst.
+function CheerPlay({ id, coat, colors, stage = 1 }) {
+  const [still, setStill] = useState(false)
+  function play() {
+    if (motionOff()) {
+      setStill((on) => !on)
+      return
+    }
+    fireCheer(id, stage, coat, undefined, true)
+  }
+  return (
+    <View style={styles.cheerPlayWrap}>
+      <Pressable
+        onPress={play}
+        accessibilityRole="button"
+        accessibilityLabel={t('shop.cheerPlayA11y', { name: t(cheerText(id, 'name')) })}
+        hitSlop={6}
+        style={({ pressed }) => [styles.cheerPlay, { borderColor: colors.line, backgroundColor: colors.panel2 }, pressFx(pressed)]}
+      >
+        <Text style={[styles.cheerPlayText, { color: colors.ink }]}>{t('shop.cheerPlay')}</Text>
+      </Pressable>
+      {still ? (
+        <Reveal style={styles.cheerStill}>
+          <CheerChip id={id} stage={stage} colors={colors} />
+          <Text style={[styles.shopNote, styles.cheerStillText, { color: colors.inkDim }]}>{t('shop.cheerStill')}</Text>
+        </Reveal>
+      ) : null}
+    </View>
+  )
+}
+
+function CheerSheetPreview({ id, coat, colors }) {
+  // Opening the sheet plays it once; Play runs it again.
   useEffect(() => {
-    const play = () => fireCheer(id, 1, coat, undefined, true)
-    play()
-    const timer = setInterval(play, holdFor(id, 1) + 260)
-    return () => clearInterval(timer)
+    if (!motionOff()) fireCheer(id, 1, coat, undefined, true)
   }, [id, coat])
-  return null
+  return (
+    <View style={styles.cheerSheetPreview}>
+      <CheerPlay id={id} coat={coat} colors={colors} />
+    </View>
+  )
 }
 
 // Tapping any item opens the real thing at full size: the look's own card,
 // the buddy in its hang, or the cheer playing on a loop while the sheet is
 // open, plus its price and, when short on coins, how to earn the rest.
 // `action` is the item's own Buy or Use, so the preview is never a dead end.
-function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
+// `wish`: { on, toggle } shows a heart for an item not owned yet.
+function openTilePreview(type, item, purse, colors, coat, action, miss = '', wish = null) {
   const name = tileName(type, item.id)
   // Short on coins: keep the price and the earn line, not just the miss.
   const tag = shopTag(purse, type, item)
   const short = !tag.owned && tag.coins > 0 && purse.coins < tag.coins
   const body = miss && !action ? miss : short ? previewBody(type, item, purse) : miss || previewBody(type, item, purse)
   let preview = null
-  if (type === 'cheer') preview = <CheerLoop id={item.id} coat={coat} />
+  if (type === 'cheer') preview = <CheerSheetPreview id={item.id} coat={coat} colors={colors} />
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
   else if (type === 'accessory') preview = <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />
@@ -665,6 +864,10 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
     preview,
     title: name,
     body,
+    ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
+    ...(short
+      ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish)) }
+      : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -672,19 +875,14 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '') {
   })
 }
 
-export function ShopScreen({ book, onChange }) {
-  const colors = useShopColors(book)
-  const purse = normalizePurse(book)
-  const coat = activeLook(book)
-  const lookCount = purse.looks.length
-  const cheerCount = purse.cheers.length
-  const buddyCount = purse.buddies.length
-
+// A shop tile's tap: its sheet with Buy or Use and the wishlist heart. The
+// shop and Collection's wishlist share it.
+function useTileTap(book, onChange, colors, coat, purse) {
   // The preview already shows the price, so its Buy is the confirm step.
   function done(type, item, next, bought) {
     if (shortOnGems(next, colors)) return
     if (next.miss) {
-      openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next))
+      openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next), wishFor(type, item))
       return
     }
     publishSheet(null)
@@ -733,7 +931,7 @@ export function ShopScreen({ book, onChange }) {
         if (tag.coins > 0 && purse.coins < tag.coins) return done(type, item, await spend(), true)
         confirmBuy(colors, {
           title: tileName(type, item.id),
-          body: t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) }),
+          body: `${t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) })} ${leftAfter(purse, tag)}`,
           onGo: async () => done(type, item, await spend(), true),
         })
       },
@@ -768,14 +966,68 @@ export function ShopScreen({ book, onChange }) {
     return buy(() => buyWithGems(book, 'cheer', item.id))
   }
 
+  // The heart flips in place: save the book, then reopen the same sheet with it.
+  function wishFor(type, item, from = book) {
+    const on = isWished(normalizePurse(from), type, item.id)
+    return {
+      on,
+      toggle: () => {
+        const next = toggleWish(from, type, item.id)
+        if (next.miss) {
+          confirmMiss(shopMiss(next))
+          return
+        }
+        const nextPurse = normalizePurse(next.book)
+        const teased = isTeased(item)
+        // Flip the label first; the save re-renders the whole shop, so it
+        // waits a frame and the sheet answers the tap at once.
+        openTilePreview(
+          type,
+          item,
+          nextPurse,
+          colors,
+          coat,
+          teased ? null : tileAction(type, item),
+          teased ? teasedBody(item) : '',
+          wishFor(type, item, next.book),
+        )
+        requestAnimationFrame(() => setTimeout(() => onChange(next.book), 0))
+      },
+    }
+  }
+
   function onTile(type, item) {
     // A Coming item is a look only: say when it goes on sale, no Buy.
     if (isTeased(item)) {
-      openTilePreview(type, item, purse, colors, coat, null, t('shop.teasedBody', { date: formatBoardDate(item.from) }))
+      openTilePreview(type, item, purse, colors, coat, null, teasedBody(item), wishFor(type, item))
       return
     }
-    openTilePreview(type, item, purse, colors, coat, tileAction(type, item))
+    openTilePreview(type, item, purse, colors, coat, tileAction(type, item), '', wishFor(type, item))
   }
+
+  return onTile
+}
+
+export function ShopScreen({ book, onChange }) {
+  const colors = useShopColors(book)
+  const prefs = usePrefs()
+  const purse = normalizePurse(book)
+  const coat = activeLook(book)
+  const slides = dropSlides()
+  const accessoryList = accessoriesForSale(boardDate(new Date()))
+  const rows = [
+    { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
+    { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
+    { type: 'buddy', list: SHOP_BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
+    { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
+  ]
+  // Nothing left to buy anywhere: one line, not four empty rows.
+  const ownAll = rows.every((row) => !shopRow(row.type, row.list, purse).length) && !framesForSaleCount(book)
+  const lookCount = purse.looks.length
+  const cheerCount = purse.cheers.length
+  const buddyCount = purse.buddies.length
+
+  const onTile = useTileTap(book, onChange, colors, coat, purse)
 
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
@@ -784,12 +1036,35 @@ export function ShopScreen({ book, onChange }) {
         <Meta colors={colors}>{t('shop.howEarn', { cap: NIGHT_COIN_CAP })}</Meta>
       ) : null}
 
-      <DropCarousel slides={dropSlides()} purse={purse} colors={colors} onTile={onTile} />
+      <DropCarousel
+        slides={slides}
+        purse={purse}
+        colors={colors}
+        onTile={onTile}
+        // The link sits inside the coming page only. Pages share one height,
+        // so nothing below jumps on a swipe and other pages keep no blank strip.
+        foot={(slide) => {
+          if (prefs.dropPings || slide?.kind !== 'coming') return null
+          return (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => goHash('/pings')}
+              hitSlop={8}
+              style={styles.dropLink}
+            >
+              <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
+            </Pressable>
+          )
+        }}
+      />
 
-      <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} colors={colors} onTile={onTile} />
-      <KindRow type="accessory" list={accessoriesForSale(boardDate(new Date()))} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} colors={colors} onTile={onTile} />
+      <SavedRow purse={purse} colors={colors} onTile={onTile} />
+
+      {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
+      {rows.map((row) => (
+        <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
+      ))}
+      <FramesShopRow book={book} colors={colors} onChange={onChange} />
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
@@ -804,7 +1079,7 @@ export function ShopScreen({ book, onChange }) {
           preview={<LookChip id={purse.lookOn} colors={colors} />}
           title={t('shop.kit')}
           note={t('shop.kitDoor')}
-          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount + purse.accessories.length })}
+          meta={t('shop.ownedN', { n: lookCount + cheerCount + buddyCount + purse.accessories.length + framesOwnedCount(book).n })}
           onPress={() => goHash('/kit')}
         />
       </View>
@@ -871,13 +1146,13 @@ export function ShopLooksScreen({ book, onChange }) {
           }
           if (!item.gems && purse.coins < item.coins) {
             const short = item.coins - purse.coins
-            setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+            setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
             return
           }
           setMiss(NO_MISS)
           setConfirm({
             title: t(lookText(item.id, 'name')),
-            body: t('shop.buyLookBody', { cost }),
+            body: `${t('shop.buyLookBody', { cost })} ${leftAfter(purse, item)}`,
             go: async () => {
               const next = await buyLookWithCoins(book, item.id)
               take(next, item.id, true)
@@ -902,10 +1177,10 @@ export function ShopLooksScreen({ book, onChange }) {
       <LookStage id={peekLook || purse.lookOn} />
 
       <Cap colors={colors}>{t('shop.looksCoins')}</Cap>
-      {COIN_LOOKS.map(lookRow)}
+      {ownedLast('look', COIN_LOOKS, purse).map(lookRow)}
 
       <Cap colors={colors}>{t('shop.looksGems')}</Cap>
-      {GEM_LOOKS.map(lookRow)}
+      {ownedLast('look', GEM_LOOKS, purse).map(lookRow)}
 
       <BuyConfirm
         confirm={confirm}
@@ -953,7 +1228,7 @@ export function ShopCheersScreen({ book, onChange }) {
     <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</Meta>
 
-      {CHEERS.map((item) => {
+      {ownedLast('cheer', CHEERS, purse).map((item) => {
         const have = purse.cheers.includes(item.id)
         const stage = cheerStageOf(book, item.id)
         const next = have ? nextCheerStage(stage) : 0
@@ -966,7 +1241,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setMiss(NO_MISS)
           setConfirm({
             title: t(cheerText(item.id, 'name')),
-            body: t('shop.buyCheerBody', { cost: gemLine(item.gems) }),
+            body: `${t('shop.buyCheerBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
             go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id, true),
           })
         }
@@ -1001,8 +1276,11 @@ export function ShopCheersScreen({ book, onChange }) {
             colors={colors}
             preview={<CheerChip id={item.id} stage={have ? stage : 1} colors={colors} />}
             artKey={`cheer:${item.id}`}
-            onPreview={() => fireCheer(item.id, 1, coat, undefined, true)}
+            onPreview={() => {
+              if (!motionOff()) fireCheer(item.id, 1, coat, undefined, true)
+            }}
             previewPressIn
+            extra={<CheerPlay id={item.id} coat={coat} colors={colors} />}
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
             miss={miss.id === item.id ? miss.text : ''}
@@ -1063,7 +1341,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
 
-      {BUDDIES.map((item) => {
+      {ownedLast('buddy', SHOP_BUDDIES, purse).map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
         const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
@@ -1071,7 +1349,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
           <ShopActionRow
             key={item.id}
             colors={colors}
-            preview={<BuddyChip id={item.id} alive />}
+            preview={<BuddyChip id={item.id} alive={peekBuddy === item.id} />}
             artKey={`buddy:${item.id}`}
             previewOn={peekBuddy === item.id}
             onPreview={() => setPeekBuddy(item.id)}
@@ -1096,7 +1374,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setMiss(NO_MISS)
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
-                body: t('shop.buyBuddyBody', { cost: gemLine(item.gems) }),
+                body: `${t('shop.buyBuddyBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
                 go: async () => take(await buyWithGems(book, 'buddy', item.id), item.id, true),
               })
             }}
@@ -1120,15 +1398,21 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
 // Your buddy (or the ant, if none is on) with what it has on, plus the item
 // being looked at, so you see the whole outfit before buying.
-function AccessoryPreviewCard({ id, purse, colors }) {
+function AccessoryPreviewCard({ id, purse, colors, cap, room, frameId }) {
+  const sample = sampleFor(cap)
   const item = accessoryById(id)
   const worn = item ? { ...purse.worn, [item.slot]: id } : purse.worn
   return (
     <View style={styles.buddyPreview}>
-      <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
-        <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{t('shop.buddyPreviewTag')}</Text>
-        <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{previewQuestion()}</Text>
+      {cap || room ? <Cap colors={colors}>{cap || t('shop.buddyPreview')}</Cap> : null}
+      <View style={room ? styles.kitPreviewRoom : null}>
+        <WornFrame frameId={frameId} colors={colors}>
+        <View style={[styles.buddyPreviewCard, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <BuddyHang id={purse.buddyOn || 'ant'} alive worn={worn} tone={colors.on} />
+          <Text style={[styles.buddyPreviewTag, { color: colors.on }]}>{sample.tag}</Text>
+          <Text style={[styles.buddyPreviewQ, { color: colors.ink }]}>{sample.question}</Text>
+        </View>
+        </WornFrame>
       </View>
     </View>
   )
@@ -1187,6 +1471,12 @@ export function ShopAccessoriesScreen({ book, onChange }) {
   // The list grows every drop: pick one spot, or hide what you own.
   const [slotPick, setSlotPick] = useState('')
   const [notOwned, setNotOwned] = useState(false)
+  const allSeason = offSeason(purse)
+  const inSlot = (row) => !slotPick || row.item.slot === slotPick
+  const season = {
+    owned: notOwned ? [] : allSeason.owned.filter(inSlot),
+    coming: allSeason.coming.filter(inSlot),
+  }
   const shown = forSale.filter(
     (item) => (!slotPick || item.slot === slotPick) && (!notOwned || !purse.accessories.includes(item.id)),
   )
@@ -1230,7 +1520,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
       {(slotPick ? [slotPick] : ACCESSORY_SLOTS).map((slot) => shown.some((item) => item.slot === slot) ? (
         <View key={slot}>
           <Cap colors={colors}>{t(`shop.slot.${slot}`)}</Cap>
-          {shown.filter((item) => item.slot === slot).map((item) => {
+          {ownedLast('accessory', shown.filter((item) => item.slot === slot), purse).map((item) => {
             const have = purse.accessories.includes(item.id)
             const on = purse.worn[slot] === item.id
             const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
@@ -1241,7 +1531,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
               }
               if (purse.coins < item.coins) {
                 const short = item.coins - purse.coins
-                setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+                setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
                 return
               }
               setMiss(NO_MISS)
@@ -1289,6 +1579,47 @@ export function ShopAccessoriesScreen({ book, onChange }) {
           })}
         </View>
       ) : null)}
+
+      {/* Seasonal items come back each year. Owned ones still go on. */}
+      {season.owned.length ? (
+        <View>
+          <Cap colors={colors}>{t('shop.outOfSeason')}</Cap>
+          {season.owned.map(({ item, date }) => {
+            const on = purse.worn[item.slot] === item.id
+            return (
+              <ShopActionRow
+                key={item.id}
+                colors={colors}
+                preview={<AccessoryChip id={item.id} buddyId={buddy} tone={colors.on} />}
+                artKey={`accessory:${item.id}`}
+                name={t(`accessory.${item.id}`)}
+                note={`${on ? t('shop.on') : t('shop.owned')} · ${t('shop.seasonBack', { date: formatBoardDate(date) })}`}
+                miss={miss.id === item.id ? miss.text : ''}
+                actionLabel={on ? t('shop.takeOff') : t('shop.use')}
+                primary={on}
+                onAction={() => take(wearAccessory(book, item.id), item.id)}
+              />
+            )
+          })}
+        </View>
+      ) : null}
+      {season.coming.length ? (
+        <View>
+          <Cap colors={colors}>{t('shop.seasonComingCap')}</Cap>
+          {season.coming.map(({ item, date }) => (
+            <ShopActionRow
+              key={item.id}
+              colors={colors}
+              preview={<AccessoryChip id={item.id} buddyId={buddy} tone={colors.on} />}
+              artKey={`accessory:${item.id}`}
+              name={t(`accessory.${item.id}`)}
+              note={`${coinLine(item.coins)} · ${t('shop.seasonComing', { date: formatBoardDate(date) })}`}
+              actionLabel={t('shop.buy')}
+              disabled
+            />
+          ))}
+        </View>
+      ) : null}
 
       <BuyConfirm
         confirm={confirm}
@@ -1398,6 +1729,24 @@ export function GemShopScreen({ book }) {
   const [storeReady, setStoreReady] = useState(() => iapReady())
   const [storeChecked, setStoreChecked] = useState(() => iapReady())
   const [, setPriced] = useState(0)
+  const [restoring, setRestoring] = useState(false)
+
+  // Restore asks the store for paid packs not yet credited, then the server.
+  async function restore() {
+    if (restoring) return
+    setRestoring(true)
+    try {
+      const out = await restoreGemPurchases()
+      if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
+      else if (out.miss) confirmMiss(t('gems.restoreMiss'))
+      else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
+      else confirmDone(t('gems.restoreNone'))
+    } catch {
+      confirmMiss(t('gems.restoreMiss'))
+    } finally {
+      setRestoring(false)
+    }
+  }
 
   useEffect(() => {
     if (!isReactNative()) return undefined
@@ -1477,10 +1826,12 @@ export function GemShopScreen({ book }) {
         accessibilityLabel={t('gems.balance', { gems: purse.gems })}
         style={[styles.gemBalance, { borderColor: colors.line, backgroundColor: colors.panel2 }, stream.popping]}
       >
-        <GemStack count={stream.shown} max={10} />
+        <GemIcon size={16} />
         <RollNumber value={stream.shown} reduce={reduce} style={[styles.gemBalanceN, { color: colors.ink }]} />
       </Reanimated.View>
-      <Meta colors={colors}>{t('gems.hintNative')}</Meta>
+      <Meta colors={colors}>
+        {signedIn ? t('gems.hintAppIn') : t('gems.hintApp')} {Platform.OS === 'ios' ? t('gems.priceApple') : t('gems.priceGoogle')}
+      </Meta>
       {signedIn ? null : <DidButton small label={t('gems.signIn')} onPress={() => goHash('/account')} colors={colors} />}
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
       {banner ? (
@@ -1530,16 +1881,30 @@ export function GemShopScreen({ book }) {
         </Text>
         .
       </Meta>
-      <KeyButton label={t('gems.backShop')} onPress={() => goHash('/shop')} colors={colors} />
+      {isReactNative() ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={restoring}
+          onPress={restore}
+          hitSlop={8}
+          style={styles.restoreBtn}
+        >
+          <Text style={[styles.promoAll, { color: restoring ? colors.inkDim : colors.on }]}>
+            {restoring ? t('gems.restoring') : t('gems.restore')}
+          </Text>
+        </Pressable>
+      ) : null}
     </BoardShell>
   )
 }
 
 const KIT_TABS = [
   { id: 'looks', key: 'shop.looks' },
+  { id: 'frames', key: 'frames.title' },
   { id: 'cheers', key: 'shop.cheers' },
   { id: 'buddies', key: 'shop.buddies' },
   { id: 'accessories', key: 'shop.accessories' },
+  { id: 'wish', key: 'shop.wishTab' },
 ]
 
 function WornBadge({ colors }) {
@@ -1552,30 +1917,44 @@ function WornBadge({ colors }) {
 
 // One grid: the worn item carries a check badge instead of living twice, once
 // as a big card and again as a tile. A tap wears it.
-function KitTile({ label, worn, onPress, colors, children }) {
+function KitTile({ label, worn, onPress, colors, children, big = false, caption = '' }) {
   return (
-    <Pressable onPress={onPress} style={[styles.kitTile, { borderColor: colors.lineSoft }]}>
-      <View style={styles.kitTileChip}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(worn) }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.kitTile, { borderColor: colors.lineSoft }, worn && [styles.kitTileWorn, { borderColor: colors.on, backgroundColor: colors.panel2 }], pressFx(pressed)]}>
+      <View style={[styles.kitTileChip, big && styles.kitTileChipBig]}>
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
       </View>
-      <Text style={[styles.kitTileName, { color: colors.ink }]} numberOfLines={1}>
+      <Text style={[styles.kitTileName, { color: worn ? colors.on : colors.ink }]} numberOfLines={1}>
         {label}
       </Text>
+      {caption ? (
+        <Text style={[styles.kitTileCaption, { color: colors.inkDim }]} numberOfLines={1}>
+          {caption}
+        </Text>
+      ) : null}
     </Pressable>
   )
 }
 
 export function CollectionScreen({ book, onChange, startTab }) {
   const [tab, setTab] = useState(KIT_TABS.some((item) => item.id === startTab) ? startTab : 'looks')
+  const frameInfo = framesOwnedCount(book)
   const colors = useShopColors(book)
   const coat = activeLook(book)
   const purse = normalizePurse(book)
+  // Shop order, always: a tile never moves under your finger when you wear it.
   const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
   const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
   const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
+  const wished = wishRows(purse)
+  const onWish = useTileTap(book, onChange, colors, coat, purse)
 
   function wearOn(next, name) {
     onChange(next.book)
@@ -1594,15 +1973,94 @@ export function CollectionScreen({ book, onChange, startTab }) {
     }
   }
 
-  const segItems = KIT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))
+  const wornNames = ACCESSORY_SLOTS.map((slot) => purse.worn[slot]).filter(Boolean).map((id) => t(`accessory.${id}`))
+  const none = t('kit.nothingOn')
+  const wearingLine =
+    tab === 'looks'
+      ? t('kit.wearing', { names: t(lookText(purse.lookOn, 'name')) })
+      : tab === 'cheers'
+        ? t('kit.using', { name: purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : none })
+        : tab === 'buddies'
+          ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
+          : tab === 'frames'
+            ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
+            : tab === 'wish'
+              ? t('shop.wishTitle')
+              : t('kit.wearing', { names: wornNames.length ? wornNames.join(', ') : none })
+
+  // One tile per kind: what you wear in it and how many you own. A tap
+  // shows that kind below, so nothing is hidden behind a scrolling row.
+  const firstWorn = ACCESSORY_SLOTS.map((slot) => purse.worn[slot]).find(Boolean)
+  const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
+  const kinds = {
+    looks: { art: <LookChip id={purse.lookOn} colors={colors} plain={tab !== 'looks'} />, n: looks.length, of: LOOKS.length },
+    frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
+    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
+    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
+    accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
+    wish: { art: <Text style={[styles.kindHeart, { color: colors.on }]}>♥</Text>, count: t('kit.wishN', { n: wished.length }) },
+  }
 
   return (
-    <BoardShell book={book} title={t('kit.title')} date={shellDate(book)} colors={colors}>
+    <BoardShell book={book} title={t('kit.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('kit.hint')}</Meta>
 
-      <KitSegment items={segItems} selected={tab} onSelect={setTab} colors={colors} />
+      <View style={styles.kindGrid}>
+        {KIT_TABS.map((item) => {
+          const kind = kinds[item.id]
+          const on = tab === item.id
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`${t(item.key)}, ${kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}`}
+              onPress={() => setTab(item.id)}
+              style={({ pressed }) => [
+                styles.kindTile,
+                on ? [styles.kindTileOn, { borderColor: colors.on, backgroundColor: colors.panel2 }] : { borderColor: colors.line, backgroundColor: colors.panel },
+                pressFx(pressed),
+              ]}
+            >
+              <View style={styles.kindArt}>{kind.art}</View>
+              <View style={styles.kindCopy}>
+                <Text style={[styles.kindName, { color: on ? colors.on : colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
+                <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
+                  {kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}
+                </Text>
+              </View>
+            </Pressable>
+          )
+        })}
+      </View>
+      <Reveal key={tab}>
+      <Text style={[styles.kitWearing, { color: colors.ink }]}>{wearingLine}</Text>
+
+      {tab === 'wish' ? (
+        wished.length ? (
+          <View style={styles.wishGrid}>
+            {wished.map(({ type, item }) => (
+              <ShopTile key={`${type}-${item.id}`} type={type} item={item} purse={purse} colors={colors} onTile={onWish} style={styles.wishTile} note={wishNeed(type, item, purse)} />
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+            <View style={styles.kitEmpty}>
+              <Meta colors={colors}>{t('kit.wishEmpty')}</Meta>
+              <Pressable accessibilityRole="link" onPress={() => goHash('/shop')} hitSlop={8} style={styles.dropLink}>
+                <Text style={[styles.promoAll, { color: colors.on }]}>{t('help.shopGo')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )
+      ) : null}
+
+      {tab === 'frames' ? <FramePreviewCard lookId={purse.lookOn} frameId={frameInfo.worn} buddyId={purse.buddyOn} /> : null}
+      {tab === 'frames' ? <FramesCollection book={book} colors={colors} onChange={onChange} /> : null}
 
       {tab === 'looks' ? (
+        <>
+        <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} buddyId={purse.buddyOn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {looks.map((item) => (
             <KitTile
@@ -1616,9 +2074,12 @@ export function CollectionScreen({ book, onChange, startTab }) {
             </KitTile>
           ))}
         </View>
+        </>
       ) : null}
 
       {tab === 'buddies' ? (
+        <>
+        <BuddyPreviewCard id={purse.buddyOn} colors={colors} room frameId={frameInfo.worn} />
         <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
@@ -1633,7 +2094,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               colors={colors}
               onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
             >
-              <BuddyChip id={item.id} alive />
+              <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
           ))}
           <KitTile
@@ -1645,17 +2106,18 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
           </KitTile>
         </View>
+        </>
       ) : null}
 
       {tab === 'accessories' ? (
         <>
-          <AccessoryPreviewCard id="" purse={purse} colors={colors} />
+          <AccessoryPreviewCard id="" purse={purse} colors={colors} room frameId={frameInfo.worn} />
           {purse.buddyOn ? null : <Meta colors={colors}>{t('kit.accOnAnt')}</Meta>}
           {!accessories.length ? (
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.kitEmpty}>
                 <Meta colors={colors}>{t('kit.noAccessories')}</Meta>
-                <Pressable onPress={() => goHash('/shop/accessories')} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={() => goHash('/shop/accessories')} hitSlop={8}>
                   <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allAccessories')}</Text>
                 </Pressable>
               </View>
@@ -1675,11 +2137,13 @@ export function CollectionScreen({ book, onChange, startTab }) {
                       label={t(`accessory.${item.id}`)}
                       worn={purse.worn[item.slot] === item.id}
                       colors={colors}
+                      big
+                      caption={isSeasonal(item) ? t('kit.seasonal') : ''}
                       onPress={() =>
                         wearOn(wearAccessory(book, item.id), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
                       }
                     >
-                      <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} />
+                      <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} big />
                     </KitTile>
                   ))}
                 </View>
@@ -1691,6 +2155,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
 
       {tab === 'cheers' ? (
         <>
+          <LookPreviewCard id={purse.lookOn} room frameId={frameInfo.worn} buddyId={purse.buddyOn} />
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             {cheers.map((item) => {
               const play = cheerPlayOf(book, item.id)
@@ -1739,13 +2204,37 @@ export function CollectionScreen({ book, onChange, startTab }) {
           ) : null}
         </>
       ) : null}
+      </Reveal>
 
-      <KeyButton label={t('shop.title')} onPress={() => goHash('/shop')} colors={colors} />
     </BoardShell>
   )
 }
 
 const styles = StyleSheet.create({
+  kindGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 4 },
+  kindTile: {
+    width: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 60,
+  },
+  // Selected: a thicker accent border, so a glowing look chip never reads as picked.
+  kindTileOn: { borderWidth: 2, paddingHorizontal: 9, paddingVertical: 7 },
+  kindArt: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  kindCopy: { flex: 1, minWidth: 0 },
+  kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
+  kindCount: { fontFamily: fonts.ui, fontSize: 12 },
+  kitTileCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
+  restoreBtn: { alignSelf: 'center', paddingVertical: 10 },
+  kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
+  wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   cap: {
     fontFamily: fonts.mono,
     fontSize: 11,
@@ -1770,6 +2259,12 @@ const styles = StyleSheet.create({
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   shopCopy: { gap: 4, flex: 1 },
+  cheerPlayWrap: { gap: 8, alignSelf: 'stretch' },
+  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  cheerPlayText: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  cheerStill: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cheerStillText: { flex: 1 },
+  cheerSheetPreview: { alignItems: 'center', paddingVertical: 8 },
   shopName: { fontFamily: fonts.uiSemi, fontSize: 15 },
   shopNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   infoDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -1878,7 +2373,11 @@ const styles = StyleSheet.create({
     minWidth: 46,
     minHeight: 46,
   },
-  buddyPreview: { gap: 8, marginTop: 4 },
+  // Full sheet width, so a gift's card is the same size as the shop's.
+  buddyPreview: { gap: 8, marginTop: 4, alignSelf: 'stretch' },
+  // Frame art reaches past the card edge; leave it room so nothing is cut.
+  // Every Collection tab uses this box, so the preview never changes size.
+  kitPreviewRoom: { paddingHorizontal: 14, paddingVertical: 22, minHeight: 216, justifyContent: 'center' },
   filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
   filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
   filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
@@ -1914,17 +2413,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  dropLink: { alignSelf: 'flex-start', marginTop: 6 },
+  ownAllLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 6 },
   promoShelf: { gap: 8, marginTop: 4 },
   carousel: { gap: 8, marginTop: 4 },
   slide: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 4 },
   slideKicker: { fontFamily: fonts.uiBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   slideTitle: { fontFamily: fonts.uiBold, fontSize: 20, marginBottom: 6 },
-  slideGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Top-aligned, so every page's tiles start at the same height.
+  slideGrid: { flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap: 8 },
   slideTile: { width: '31%', flexGrow: 1 },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  // Each dot owns a 44pt box of its own (not hitSlop, which reached into the tiles above).
+  dots: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  dotHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   rowScroll: { gap: 8, paddingRight: 4 },
   rowTile: { width: 104 },
+  tileDim: { opacity: 0.5 },
   tile: {
     borderWidth: 1,
     borderRadius: 12,
@@ -1940,6 +2445,10 @@ const styles = StyleSheet.create({
   lookStageWas: { position: 'absolute', left: 0, right: 0, top: 0 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tagText: { fontFamily: fonts.uiSemi, fontSize: 12 },
+  tileNote: { fontFamily: fonts.ui, fontSize: 11, textAlign: 'center' },
+  wishGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  wishTile: { width: '31%' },
+  kindHeart: { fontSize: 22 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   promoAll: { fontFamily: fonts.uiSemi, fontSize: 13 },
 
@@ -1980,7 +2489,10 @@ const styles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  // The worn tile gets a ring in place, so a look that glows on its own is not mistaken for it.
+  kitTileWorn: { borderWidth: 2, borderRadius: 12 },
   kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  kitTileChipBig: { width: 72, height: 72 },
   wornBadge: {
     position: 'absolute',
     right: -4,
@@ -2000,22 +2512,29 @@ const styles = StyleSheet.create({
 
 // Gifts ------------------------------------------------------------------
 
-const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [] }
+const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [], frames: [] }
 const GIFT_TABS = [
   { id: 'looks', type: 'look', key: 'shop.looks' },
   { id: 'cheers', type: 'cheer', key: 'shop.cheers' },
   { id: 'buddies', type: 'buddy', key: 'shop.buddies' },
   { id: 'accessories', type: 'accessory', key: 'shop.accessories' },
+  { id: 'frames', type: 'frame', key: 'frames.title' },
 ]
 
 // Nobody's outfit: a gift's accessory shows on the ant, alone.
 const BARE = { worn: {}, buddyOn: '' }
 
-function giftArt(type, id, colors, coat, purse = BARE) {
-  if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} />
-  if (type === 'cheer') return <CheerLoop id={id} coat={coat} />
-  if (type === 'look') return <LookPreviewCard id={id} />
-  return <BuddyPreviewCard id={id} colors={colors} />
+// cap: "On their card" when sending, so the label says whose card it is.
+function giftArt(type, id, colors, coat, purse = BARE, cap) {
+  if (type === 'accessory') return <AccessoryPreviewCard id={id} purse={purse} colors={colors} cap={cap} />
+  if (type === 'cheer') return <CheerSheetPreview id={id} coat={coat} colors={colors} />
+  if (type === 'look') return <LookPreviewCard id={id} cap={cap} />
+  if (type === 'frame') return <FramePreview id={id} colors={colors} size={120} />
+  return <BuddyPreviewCard id={id} colors={colors} cap={cap} />
+}
+
+function canAfford(item, purse) {
+  return item.gems > 0 ? purse.gems >= item.gems : purse.coins >= (item.coins || 0)
 }
 
 function giftMiss(why) {
@@ -2026,7 +2545,7 @@ function giftMiss(why) {
   return tMiss(why)
 }
 
-// Send a look, cheer or buddy to a friend or family member (/gift?id=...).
+// Send a look, cheer, buddy, accessory or gem frame to a friend or family member (/gift?id=...).
 // The server takes the gems or coins; they get it next time they open the app.
 export function GiftScreen({ book, onChange, toId }) {
   const account = useAccount()
@@ -2089,16 +2608,35 @@ export function GiftScreen({ book, onChange, toId }) {
     setSent(t('gift.sent', { item: tileName(type, item.id), name }))
   }
 
+  // Short on coins or gems: the same need-more line as the Shop sheet, and
+  // Send stays off. The server checks the cost again either way.
   function openPick(type, item, miss = '') {
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
+    const short = !canAfford(item, purse)
+    const need = item.gems
+      ? `${t('shop.needMoreGems', { n: item.gems - purse.gems })}\n${t('shop.earnGems')}`
+      : `${t('shop.needMoreCoins', { n: (item.coins || 0) - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
     publishSheet({
-      preview: giftArt(type, item.id, colors, coat),
+      preview: giftArt(type, item.id, colors, coat, BARE, t('gift.preview')),
       kicker: t('gift.kicker', { name }),
       title: tileName(type, item.id),
-      body: miss || `${cost}\n${t('gift.howItWorks')}`,
+      body: short ? `${cost}\n${need}` : miss || `${cost}\n${leftAfter(purse, item)} ${t('gift.howItWorks')}`,
       quote: note.trim(),
       goLabel: t('gift.send'),
+      goDisabled: short,
       onGo: () => send(type, item),
+      ...(short && item.gems
+        ? {
+            moreLabel: t('gems.shortGo'),
+            onMore: () => {
+              publishSheet(null)
+              goHash('/gems')
+            },
+          }
+        : {}),
+      ...(short && !item.gems
+        ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openPick(type, item)) }
+        : {}),
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
@@ -2123,8 +2661,15 @@ export function GiftScreen({ book, onChange, toId }) {
   }
 
   return (
-    <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
-      <Meta colors={colors}>{person ? t('gift.to', { name }) : t('family.loading')}</Meta>
+    <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors} showPurse>
+      {person ? (
+        <View style={giftStyles.to}>
+          <PersonAvatar person={person} colors={colors} size={36} />
+          <Text style={[giftStyles.toText, { color: colors.inkSoft }]} numberOfLines={1}>{t('gift.to', { name })}</Text>
+        </View>
+      ) : (
+        <Meta colors={colors}>{t('family.loading')}</Meta>
+      )}
       <View style={giftStyles.note}>
         <AppTextInput
           colors={colors}
@@ -2133,6 +2678,7 @@ export function GiftScreen({ book, onChange, toId }) {
           maxLength={60}
           placeholder={t('gift.notePlaceholder')}
           accessibilityLabel={t('gift.noteLabel')}
+          style={[giftStyles.input, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel2 }]}
           returnKeyType="done"
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
@@ -2154,6 +2700,7 @@ export function GiftScreen({ book, onChange, toId }) {
             colors={colors}
             onTile={(type, row) => person && openPick(type, row)}
             style={giftStyles.tile}
+            dim={!canAfford(item, purse)}
           />
         ))}
       </View>
@@ -2245,6 +2792,10 @@ export function GiftHost({ book, onChange }) {
 
 const giftStyles = StyleSheet.create({
   note: { gap: 4 },
+  // The same box as Field, so it reads as a place to type.
+  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.ui },
+  to: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  toText: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1 },
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
   sent: { fontFamily: fonts.uiBold, fontSize: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -2259,7 +2810,8 @@ const giftStyles = StyleSheet.create({
 // /gifts: what you have sent, and whether it was opened or sent back.
 export function GiftsSentScreen({ book }) {
   const colors = useShopColors(book)
-  const [list, setList] = useState(null)
+  const account = useAccount()
+  const [list, setList] = useKept(`gifts.sent:${account.user?.id}`, null, KEEP)
   const [miss, setMiss] = useState('')
 
   useEffect(() => {
@@ -2280,17 +2832,17 @@ export function GiftsSentScreen({ book }) {
       {miss ? <Meta colors={colors}>{miss}</Meta> : null}
       {list === null ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
       {list && !list.length && !miss ? (
-        <>
+        <Reveal>
           <Meta colors={colors}>{t('gifts.none')}</Meta>
           <DidButton colors={colors} small label={t('people.friends')} onPress={() => goHash('/friends')} />
-        </>
+        </Reveal>
       ) : null}
       {(list || []).map((row) => {
         const type = sentGiftType(row)
         const name = personName(row.person) || t('people.someone')
         return (
+          <Reveal key={row.id}>
           <Pressable
-            key={row.id}
             onPress={() => goHash('/gift', { id: row.to_id })}
             accessibilityRole="button"
             accessibilityLabel={t('gifts.rowLabel', { item: tileName(type, row.cheer_id), name })}
@@ -2313,6 +2865,7 @@ export function GiftsSentScreen({ book }) {
               ) : null}
             </View>
           </Pressable>
+          </Reveal>
         )
       })}
     </BoardShell>

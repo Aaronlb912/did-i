@@ -9,8 +9,8 @@ import { MenuIcon } from './MenuIcon.jsx'
 import { KeyboardLift } from './KeyboardLift.jsx'
 import { AppTextInput } from './ui.jsx'
 
-export function SetCap({ children, colors }) {
-  return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
+export function SetCap({ children, colors, style }) {
+  return <Text style={[styles.cap, { color: colors.inkDim }, style]}>{children}</Text>
 }
 
 export function SetNote({ children, colors }) {
@@ -25,11 +25,11 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on }) {
+export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on, plain }) {
   const flat = !onPress
   // A row that does something right away (no ›) reads as a button: its words
   // take the accent, or its trailing word ("Remove") when it has one.
-  const action = !flat && !chevron && !danger
+  const action = !flat && !chevron && !danger && !plain
   const labelColor = danger ? colors.miss : action && !value ? colors.on : colors.ink
   const valueColor = action ? colors.on : colors.inkDim
   const tileColor = danger ? colors.miss : tint || colors.inkSoft
@@ -136,13 +136,14 @@ function M3Switch({ on, onPress, label, colors }) {
         styles.m3Track,
         on
           ? { backgroundColor: colors.on, borderColor: colors.on }
-          : { backgroundColor: colors.open, borderColor: colors.inkSoft },
+          : // Off: a pale track and a mid-grey thumb in both themes, so it never reads as on.
+            { backgroundColor: colors.panel2, borderColor: colors.openRing || colors.inkDim },
       ]}
     >
       <Animated.View
         style={[
           styles.m3Thumb,
-          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.inkSoft },
+          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.openRing || colors.inkDim },
         ]}
       />
     </Pressable>
@@ -177,6 +178,8 @@ export function SetField({ label, colors, ...inputProps }) {
 export function SetPick({ label, on, onPress, colors }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(on) }}
       onPress={onPress}
       android_ripple={ripple(colors.panel3)}
       style={({ pressed }) => [
@@ -209,7 +212,7 @@ export function SetSheet({ title, onClose, children, colors }) {
             <View style={[styles.grabber, { backgroundColor: colors.line }]} />
             <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
               <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
-              <Pressable onPress={onClose} accessibilityLabel={t('settings.close')} hitSlop={8}>
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('settings.close')} hitSlop={8}>
                 <Text style={[styles.sheetX, { color: colors.inkDim }]}>×</Text>
               </Pressable>
             </View>

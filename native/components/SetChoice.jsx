@@ -8,7 +8,9 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
 import { SetPick, SetRow, SetSheet } from './SetBits.jsx'
 
-// A short list opens as a pull-down menu on the row; a longer one as a sheet.
+// iOS: a short list opens as a pull-down menu on the row; a longer one as a
+// sheet. Android always uses the sheet: its dropdown opened at the far left,
+// away from the value on the right.
 const MENU_MAX = 5
 
 // The shims hand back a stand-in when the native views are missing from the
@@ -20,8 +22,7 @@ const androidReady = Platform.OS === 'android' && 'DropdownMenu' in Compose && '
  * A settings row that picks one of `options` ({ id, label }).
  *
  * iOS: a UIMenu from the row, or a form sheet with a grabber and medium and
- * large detents. Android: a Material dropdown menu under the row, or a modal
- * bottom sheet with a drag handle. Both sheets keep clear of the home
+ * large detents. Android: a modal bottom sheet with a drag handle. Both sheets keep clear of the home
  * indicator.
  */
 export function SetChoice({ label, sub, title, icon, tint, options, selected, onSelect, last, colors }) {
@@ -29,7 +30,7 @@ export function SetChoice({ label, sub, title, icon, tint, options, selected, on
   const kind = options.length <= MENU_MAX ? 'menu' : 'sheet'
   const props = { label, sub, title: title || label, icon, tint, value, options, selected, onSelect, last, colors }
   if (iosReady) return kind === 'menu' ? <IosMenu {...props} /> : <IosSheet {...props} />
-  if (androidReady) return kind === 'menu' ? <AndroidMenu {...props} /> : <AndroidSheet {...props} />
+  if (androidReady) return <AndroidSheet {...props} />
   return <PlainSheet {...props} />
 }
 
@@ -94,7 +95,8 @@ function IosSheet({ label, sub, title, icon, tint, value, options, selected, onS
         <BottomSheet isPresented={open} onIsPresentedChange={setOpen}>
           <Form
             modifiers={[
-              presentationDetents(['medium', 'large']),
+              // A long list (languages) opens tall, so every choice shows.
+              presentationDetents(options.length > 7 ? ['large'] : ['medium', 'large']),
               presentationDragIndicator('visible'),
               // The sheet is its own window: it takes the app's theme and surfaces
               // here, since the system glass would follow the phone instead.
@@ -126,50 +128,6 @@ function IosSheet({ label, sub, title, icon, tint, value, options, selected, onS
   )
 }
 
-function AndroidMenu({ label, sub, icon, tint, value, options, selected, onSelect, last, colors }) {
-  const { DropdownMenu, DropdownMenuItem, Host, Text: ComposeText } = Compose
-  const scheme = useScheme()
-  const [open, setOpen] = useState(false)
-  // The row stays a React Native row. The menu hangs from a one-pixel anchor
-  // along its bottom edge, so it opens under the row the way Material's do.
-  return (
-    <View>
-      <SetRow colors={colors} icon={icon} tint={tint} label={label} sub={sub} value={value} chevron last={last} onPress={() => setOpen(true)} />
-      <Host style={styles.menuAnchor} colorScheme={scheme} pointerEvents="none">
-        <DropdownMenu expanded={open} onDismissRequest={() => setOpen(false)} color={colors.panel2}>
-          <DropdownMenu.Items>
-            {options.map((option) => {
-              const on = option.id === selected
-              return (
-                <DropdownMenuItem
-                  key={option.id}
-                  onClick={() => {
-                    setOpen(false)
-                    onSelect(option.id)
-                  }}
-                >
-                  <DropdownMenuItem.Text>
-                    <ComposeText color={on ? colors.on : colors.ink} style={{ fontSize: 16 }}>
-                      {option.label}
-                    </ComposeText>
-                  </DropdownMenuItem.Text>
-                  {on ? (
-                    <DropdownMenuItem.TrailingIcon>
-                      <ComposeText color={colors.on} style={{ fontSize: 16 }}>
-                        ✓
-                      </ComposeText>
-                    </DropdownMenuItem.TrailingIcon>
-                  ) : null}
-                </DropdownMenuItem>
-              )
-            })}
-          </DropdownMenu.Items>
-        </DropdownMenu>
-      </Host>
-    </View>
-  )
-}
-
 function AndroidSheet({ label, sub, title, icon, tint, value, options, selected, onSelect, last, colors }) {
   const { Host, ModalBottomSheet, RNHostView } = Compose
   const scheme = useScheme()
@@ -177,6 +135,7 @@ function AndroidSheet({ label, sub, title, icon, tint, value, options, selected,
   // Hosted content sizes to itself, so give it the sheet's width (Material caps sheets at 640dp).
   const width = Math.min(useWindowDimensions().width, 640)
   const sheet = useRef(null)
+  const list = useRef(null)
   const [open, setOpen] = useState(false)
 
   async function pick(id) {
@@ -199,19 +158,26 @@ function AndroidSheet({ label, sub, title, icon, tint, value, options, selected,
             onDismissRequest={() => setOpen(false)}
             containerColor={colors.panel}
             showDragHandle
+            // Opens at full height, so a long list (languages) shows whole.
+            skipPartiallyExpanded
           >
             <RNHostView matchContents>
               <View style={[styles.sheetBody, { width, paddingBottom: insets.bottom + 8 }]}>
                 <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
-                <ScrollView style={styles.sheetList}>
+                <ScrollView ref={list} style={styles.sheetList}>
                   {options.map((option) => (
-                    <SetPick
+                    <View
                       key={option.id}
-                      colors={colors}
-                      label={option.label}
-                      on={option.id === selected}
-                      onPress={() => pick(option.id)}
-                    />
+                      // The checked row scrolls into view when the list is taller than the sheet.
+                      onLayout={option.id === selected ? (event) => list.current?.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 48), animated: false }) : undefined}
+                    >
+                      <SetPick
+                        colors={colors}
+                        label={option.label}
+                        on={option.id === selected}
+                        onPress={() => pick(option.id)}
+                      />
+                    </View>
                   ))}
                 </ScrollView>
               </View>
@@ -249,7 +215,6 @@ function PlainSheet({ label, sub, title, icon, tint, value, options, selected, o
 }
 
 const styles = StyleSheet.create({
-  menuAnchor: { position: 'absolute', left: 8, right: 8, bottom: 0, height: 1 },
   sheetHost: { position: 'absolute', width: 0, height: 0 },
   sheetBody: { paddingHorizontal: 8 },
   sheetTitle: { fontFamily: fonts.uiSemi, fontSize: 22, lineHeight: 28, paddingHorizontal: 16, paddingBottom: 12 },

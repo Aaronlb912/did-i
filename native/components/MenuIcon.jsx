@@ -22,9 +22,12 @@ const ICONS = {
   bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4',
   tag: 'M3 12V4h8l10 10-8 8-10-10ZM7.5 8h.01',
   flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
+  // Rising bars: how much a question matters (Priority). Not the flag, which means So far.
+  priority: 'M6 20v-5M12 20V10M18 20V4',
   pause: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 9v6M14 9v6',
   play: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18ZM10 8.5v7l5.5-3.5-5.5-3.5Z',
   trash: 'M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v5M14 11v5',
+  copy: 'M9 9h11v11H9V9ZM5 15H4V4h11v1',
   pen: 'M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4',
   note: 'M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM8.5 8h7M8.5 12h7M8.5 16h4',
   folder: 'M3 7a2 2 0 0 1 2-2h4.5l2 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
@@ -38,10 +41,23 @@ const ICONS = {
   filter: 'M4 5h16l-6 7.5V19l-4 2v-8.5L4 5Z',
   eye: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   shield: 'M12 3l7 3v6c0 4.8-3 7.8-7 9-4-1.2-7-4.2-7-9V6l7-3Z',
+  // Streak freezes: the same snowflake as the freeze chip.
+  snow: 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2 3-2M9 20.5l3-2 3 2',
   help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM9.3 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.5 2.2-2.5 4.1M12 17.2h.01',
   logout: 'M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9',
   warning: 'M12 3 22 20H2L12 3ZM12 10v5M12 17.5h.01',
   camera: 'M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1ZM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  chart: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
+  // Seven nights: one ring per night, four over three.
+  week: 'M3.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM8.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM13.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM18.5 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM6 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM11 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0ZM16 15a1 1 0 1 0 2 0a1 1 0 1 0-2 0Z',
+  // The night a run of nights broke: a line with a gap in it.
+  broke: 'M3 12h6M15 12h6M10 7l4 10',
+  // A spreadsheet: rows and a column.
+  table: 'M4 5h16v14H4V5ZM4 10h16M4 15h16M10 5v14',
+  // Colors: a painter's palette.
+  palette: 'M12 3a9 9 0 1 0 0 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8ZM7.5 11.5h.01M10 7.5h.01M14.5 7.5h.01',
+  // Send feedback: an envelope.
+  mail: 'M4 6h16v12H4V6ZM4 7l8 6 8-6',
   qr: 'M4 4h6v6H4V4ZM14 4h6v6h-6V4ZM4 14h6v6H4v-6ZM14 14h2v2h-2v-2ZM18 18h2v2h-2v-2ZM14 18h2M18 14h2',
   // Did we: two rings, linked. Draw with stroke.
   together: 'M4 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0ZM10 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z',

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { readShelf } from './board-shelf.js'
-import { saveProfile } from './cloud-sync.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
+import { weDueOn, weNextDue, weNextLabel } from './we-next.js'
 
 // Did we: one question two or more people answer together. The server
 // (supabase/did-we.sql) decides what counts as done and what each person may
@@ -51,6 +51,10 @@ export async function weTonight(night = tonightIso()) {
     for (const card of cards) if (totals.has(card.id)) card.total = totals.get(card.id)
   }
   for (const card of cards) {
+    // A paused card is not asked tonight: no pill, no swipe card, no reminder.
+    if (card.paused) card.due = false
+    // Older cards were saved without the "?"; show every one as a question.
+    card.question = weQuestion(card.question)
     if (card.total == null) card.total = (card.people || []).filter((p) => p.state === 'in').length
   }
   return { cards, miss: '' }
@@ -68,10 +72,17 @@ async function saveExtras(db, card, { askAfter, remind, note }) {
 }
 
 // alone: make it with nobody asked yet, to share as a link.
+// A Did we reads as a question, like Did I: add the "?" if it is missing.
+export function weQuestion(raw) {
+  const text = String(raw || '').trim()
+  if (!text || /[?？]$/.test(text)) return text
+  return `${text.slice(0, 199)}?`
+}
+
 export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics, alone = false }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const text = String(question || '').trim()
+  const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
   if (!ask?.length && !alone) return { miss: 'we.missNobody' }
   const { data, error } = await db.rpc('we_make', {
@@ -92,8 +103,9 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
 export async function weEdit(card, { question, mode, shows, cadence, weekdays, goal, askAfter, remind, note }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const text = String(question || '').trim()
+  const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
+  if (cadence === 'weekly' && !(weekdays || []).length) return { miss: 'we.missDays' }
   const { error } = await db.rpc('we_edit', {
     card,
     want_question: text.slice(0, 200),
@@ -146,7 +158,7 @@ export function weTimeReady(card, now = new Date()) {
 // and the reminder on. Tonight's is left out once you have answered or it is done.
 export function weReminders(cards, night = tonightIso()) {
   return (cards || [])
-    .filter((card) => card.myState === 'in' && card.remind !== false && card.askAfter)
+    .filter((card) => card.myState === 'in' && !card.paused && card.remind !== false && card.askAfter)
     .map((card) => ({
       id: card.id,
       question: card.question,
@@ -233,6 +245,15 @@ export async function weKnownPeople() {
 export const weAsk = (card, other) => call('we_ask', { card, other })
 export const weReply = (card, yes) => call('we_reply', { card, yes })
 export const weLeave = (card) => call('we_leave', { card })
+// Only the maker can close it; the server checks.
+export const weClose = (card) => call('we_close', { card })
+// A paused card (nobody answered 3 nights) asks again from tonight.
+export const weRestart = (card) => call('we_restart', { card })
+
+// Paused cards you are on, for the line with a restart button.
+export function wePausedCards(cards) {
+  return (cards || []).filter((card) => card.myState === 'in' && card.paused)
+}
 // Filed in reports with the question; nothing is sent to anyone.
 export const reportWe = (card, why = '') => call('report_we', { card, why })
 export const weNudge = (card, other, night = tonightIso()) => call('we_nudge', { card, other, on_night: night })
@@ -267,10 +288,12 @@ export function weNextNight(card, night = tonightIso()) {
   return ''
 }
 
-export function weDueOn(card, night) {
-  if (night < String(card.startsOn || '')) return false
-  if (card.cadence !== 'weekly') return true
-  return (card.weekdays || []).includes(new Date(`${night}T12:00:00`).getDay())
+export { weDueOn }
+
+// "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
+export function weNotTonightLine(card, locale, night = tonightIso()) {
+  const next = weNextLabel(weNextDue(card, night), locale)
+  return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
 }
 
 // The run of due nights done together, ending tonight, or last night while
@@ -379,11 +402,34 @@ const watchers = new Set()
 
 let sharedFor = ''
 
+// The last cards are stored per account and day, so a cold start shows them
+// while the fresh load runs. Another day's cards are stale (due changes).
+const CARDS_KEY = 'did-i-we-cards:'
+
+function storedCards(userId) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CARDS_KEY + userId) || 'null')
+    if (raw?.day === new Date().toDateString() && Array.isArray(raw.cards)) return { cards: raw.cards, miss: '' }
+  } catch {
+    // Loads fresh.
+  }
+  return EMPTY
+}
+
+function storeCards(userId, cards) {
+  try {
+    const raw = JSON.stringify({ day: new Date().toDateString(), cards })
+    if (raw.length < 200_000) localStorage.setItem(CARDS_KEY + userId, raw)
+  } catch {
+    // Memory still has them.
+  }
+}
+
 // Kept per account: after a sign-out and in, the last person's cards never show.
 function sharedFor_(userId) {
   if (sharedFor !== userId) {
     sharedFor = userId
-    shared = EMPTY
+    shared = storedCards(userId)
     loadedAt = 0
   }
   return shared
@@ -405,7 +451,10 @@ function shareMyBuddy(cards) {
       if (p.me) Object.assign(p, { buddy, cheer })
     }
   }
-  saveProfile({ buddy_on: buddy, badge_cheer: cheer }).catch(() => {})
+  // Loaded late: cloud-sync imports people.js, which imports this file.
+  import('./cloud-sync.js')
+    .then(({ saveProfile }) => saveProfile({ buddy_on: buddy, badge_cheer: cheer }))
+    .catch(() => {})
 }
 
 // A shared streak that just reached 7, 30, 100 or 365 plays a bigger cheer.
@@ -453,6 +502,34 @@ export function takeWeFinishes(cards, night = tonightIso()) {
   }))
 }
 
+// "You both did it": a card done tonight where you and someone else both
+// said did. Shown once a night on this device, for the first such card.
+const BOTH_KEY = 'did-i-we-both-seen'
+
+export function weBothDid(card) {
+  if (!card?.done) return false
+  const people = (card.people || []).filter((p) => p.state === 'in')
+  return people.some((p) => p.me && p.status === 'did') && people.some((p) => !p.me && p.status === 'did')
+}
+
+export function takeWeBoth(cards, night = tonightIso()) {
+  let seen = ''
+  try {
+    seen = localStorage.getItem(BOTH_KEY) || ''
+  } catch {
+    seen = ''
+  }
+  if (seen === night) return null
+  const card = (cards || []).find((item) => item.myState === 'in' && weBothDid(item))
+  if (!card) return null
+  try {
+    localStorage.setItem(BOTH_KEY, night)
+  } catch {
+    // Without storage it may show again; better than never.
+  }
+  return card
+}
+
 function loadShared(force, userId) {
   sharedFor_(userId)
   if (inflight) return inflight
@@ -463,6 +540,7 @@ function loadShared(force, userId) {
       shareMyBuddy(next.cards)
       shared = next
       loadedAt = Date.now()
+      if (!next.miss) storeCards(userId, next.cards || [])
       watchers.forEach((fn) => fn(next))
       return next
     })
@@ -470,6 +548,29 @@ function loadShared(force, userId) {
       inflight = null
     })
   return inflight
+}
+
+// A card from the last load, or undefined, so its page opens on it.
+export function weCardKept(id) {
+  return (shared.cards || []).find((card) => card.id === id)
+}
+
+// The question on a Did we card from the last load, or empty if not loaded.
+export function weCardTitle(id) {
+  return (shared.cards || []).find((card) => card.id === id)?.question || ''
+}
+
+// The card as a short name, like the Home pill: no "Did we", no "?". Lists
+// that also hold your own questions' short names use this.
+export function weCardShort(id) {
+  return weShort(weCardTitle(id))
+}
+
+// One name per Did we everywhere (pill, Seven nights, night sheet), the same
+// shape as shortLabel for your own: "Did we do X?" reads "Do X".
+export function weShort(question) {
+  const text = String(question || '').replace(/^did we\s+/i, '').replace(/\?+$/, '').trim()
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 export function useWeTonight(user) {

@@ -24,3 +24,5 @@ export function gemProductSku(packId) {
 /** Public store pages. They only load once each store has approved the app. */
 export const APP_STORE_URL = 'https://apps.apple.com/app/id6814688066'
 export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${PLAY_PACKAGE}`
+/** Opens the App Store straight on the write-a-review sheet. Play has no such link, so it uses the page. */
+export const APP_STORE_REVIEW_URL = `${APP_STORE_URL}?action=write-review`

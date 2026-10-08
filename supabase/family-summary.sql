@@ -1,5 +1,5 @@
 -- Nightly family summary push: "The Smiths: 3 of 4 done tonight."
--- Run after push.sql. At 9pm in each person's own time zone, one push per
+-- Run after push.sql. At 9pm (or profiles.family_hour) in each person's own time zone, one push per
 -- family they are in. Only members who share their streak are counted, so
 -- someone with sharing off is never shown as not done. Turned off with the
 -- 'family' switch (prefs.pingsOff, PING_KINDS in src/lib/prefs.js).
@@ -16,6 +16,13 @@ drop policy if exists family_summary_sent_none on public.family_summary_sent;
 create policy family_summary_sent_none on public.family_summary_sent
   for all to authenticated using (false) with check (false);
 
+-- The hour of the family summary on the person's own clock, 0 to 23. Set
+-- from Notifications; the row is theirs under "write own profile".
+alter table public.profiles add column if not exists family_hour smallint not null default 21;
+alter table public.profiles drop constraint if exists profiles_family_hour;
+alter table public.profiles add constraint profiles_family_hour
+  check (family_hour between 0 and 23);
+
 create or replace function public.queue_family_summaries()
 returns integer
 language plpgsql
@@ -26,13 +33,13 @@ declare
   made integer := 0;
 begin
   with due as (
-    -- People whose local clock is in the 9pm hour and who have not had
-    -- tonight's summary yet.
+    -- People whose local clock is in their chosen hour (9pm unless they
+    -- picked another) and who have not had tonight's summary yet.
     select p.user_id, (now() at time zone p.zone)::date as night
     from public.profiles p
     where p.zone <> ''
       and p.zone in (select name from pg_timezone_names)
-      and extract(hour from now() at time zone p.zone) = 21
+      and extract(hour from now() at time zone p.zone) = p.family_hour
       and public.push_wanted(p.user_id, 'family')
       and exists (select 1 from public.devices d where d.user_id = p.user_id and d.push_token is not null)
       and not exists (

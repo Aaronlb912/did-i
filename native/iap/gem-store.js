@@ -104,6 +104,19 @@ async function creditPurchase(purchase) {
     }
   }
   if (out.miss) return out
+  const claimed = await claimAndCredit()
+  if (mod?.finishTransaction) {
+    try {
+      await mod.finishTransaction({ purchase, isConsumable: true })
+    } catch {
+      // Already finished or store will retry.
+    }
+  }
+  return { ...out, gems: claimed.gems }
+}
+
+// Server-side gems not yet on this phone land on the shelf.
+async function claimAndCredit() {
   const claimed = await claimGemPurchases()
   if (claimed.gems > 0) {
     const shelf = writeShelf(addGemsShelf(readShelf(), claimed.gems))
@@ -113,14 +126,35 @@ async function creditPurchase(purchase) {
       // ok
     }
   }
-  if (mod?.finishTransaction) {
-    try {
-      await mod.finishTransaction({ purchase, isConsumable: true })
-    } catch {
-      // Already finished or store will retry.
+  return claimed
+}
+
+// Restore: credit any paid pack the store still holds open, then claim what
+// the server has. Gem packs are used up when credited, so most restores find
+// nothing. Returns the gems added, or a miss.
+export async function restoreGemPurchases() {
+  if (!iapPossible()) return { gems: 0, miss: 'app' }
+  if (!(await readUser())) return { gems: 0, miss: 'signin' }
+  const mod = await loadIap()
+  if (!mod) return { gems: 0, miss: 'setup' }
+  if (!linked) await initGemIap()
+  if (!linked) return { gems: 0, miss: 'setup' }
+  const api = iapApi(mod)
+  let gems = 0
+  try {
+    const open = (await api.getAvailablePurchases?.()) || []
+    for (const purchase of open) {
+      const id = String(purchase?.productId || purchase?.id || '')
+      if (!GEM_PACKS.some((row) => row.storeId === id)) continue
+      const out = await creditPurchase(purchase)
+      gems += out.gems || 0
     }
+  } catch (error) {
+    return { gems, miss: 'store', code: String(error?.code || error?.message || '').slice(0, 120) }
   }
-  return out
+  const claimed = await claimAndCredit()
+  if (claimed.miss && !gems) return { gems: 0, miss: claimed.miss }
+  return { gems: gems + claimed.gems, miss: '' }
 }
 
 // A buy that was paid but never credited (no signal, app closed) stays unfinished

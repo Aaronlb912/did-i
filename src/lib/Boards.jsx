@@ -16,6 +16,7 @@ export function Boards({
   onAdd,
   onRemove,
   onChange,
+  onStartEmpty,
 }) {
   usePrefs()
   const [addMiss, setAddMiss] = useState('')
@@ -209,6 +210,23 @@ export function Boards({
                 }
               >
                 {t('boards.remove')}
+              </button>
+            ) : null}
+            {onStartEmpty ? (
+              <button
+                className="di-key"
+                type="button"
+                onClick={() =>
+                  setConfirm({
+                    kicker: t('settings.startOver'),
+                    title: t('settings.clearFolderTitle', { name: book.title }),
+                    body: t('settings.clearFolderBody', { name: book.title }),
+                    yes: t('settings.clearYes'),
+                    go: onStartEmpty,
+                  })
+                }
+              >
+                {t('settings.emptyBoard')}
               </button>
             ) : null}
           </div>

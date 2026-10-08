@@ -9,6 +9,12 @@ const KEY = 'did-i-we-nights'
 const listeners = new Set()
 let rows = readStored()
 let byNight = null
+let stamp = 0
+
+// Bumps on every change, so a memo over Did we nights knows to redo itself.
+export function weNightsStamp() {
+  return stamp
+}
 
 function readStored() {
   try {
@@ -30,6 +36,7 @@ function store(next) {
 export function setWeNightRows(next) {
   rows = Array.isArray(next) ? next : []
   byNight = null
+  stamp += 1
   store(rows)
   listeners.forEach((fn) => {
     try {
@@ -62,6 +69,8 @@ function index() {
   if (byNight) return byNight
   byNight = new Map()
   for (const row of rows) {
+    // A paused night (nobody answered 3 due nights) counts for nothing.
+    if (row.paused) continue
     const list = byNight.get(row.night)
     if (list) list.push(row)
     else byNight.set(row.night, [row])
@@ -91,6 +100,7 @@ export async function refreshWeNights() {
       folder: String(row.folder || ''),
       night: String(row.night || '').slice(0, 10),
       status: String(row.status || ''),
+      paused: row.paused === true,
     })),
   )
 }
@@ -104,4 +114,34 @@ export function onWeNights(fn) {
 // Did we cards still open for you on a night (due, and no did from you yet).
 export function weOpenOn(nightIso) {
   return new Set((index().get(nightIso) || []).filter((row) => row.status !== 'did').map((row) => row.card))
+}
+
+// Every Did we card due for you on any of these nights, same tag rule as
+// weNight, in first-seen order. For the Seven nights grid's Did we rows.
+export function weCardsOn(nightIsos, tagId = '') {
+  const ids = tagIdsOf(tagId)
+  const out = []
+  for (const iso of nightIsos || []) {
+    for (const row of index().get(iso) || []) {
+      if (ids.length && !(row.folder && ids.includes(row.folder))) continue
+      if (!out.includes(row.card)) out.push(row.card)
+    }
+  }
+  return out
+}
+
+// One Did we on one night: off (not due), did, nope, or '' (due, no answer).
+export function weCardState(nightIso, card) {
+  const row = (index().get(nightIso) || []).find((item) => item.card === card)
+  if (!row) return 'off'
+  return row.status === 'did' || row.status === 'nope' ? row.status : ''
+}
+
+// Did we card ids not yet did on a night, with the same tag rule as weNight.
+export function weOpenIds(nightIso, tagId = '') {
+  const ids = tagIdsOf(tagId)
+  return (index().get(nightIso) || [])
+    .filter((row) => !ids.length || (row.folder && ids.includes(row.folder)))
+    .filter((row) => row.status !== 'did')
+    .map((row) => row.card)
 }

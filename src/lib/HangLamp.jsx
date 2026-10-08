@@ -8,7 +8,7 @@ import {
   isDeadlineMode,
   schedulePick,
 } from './hang-schedule.js'
-import { cadenceLine } from './board-json.js'
+import { cadenceLine, SHORT_MAX } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -47,6 +47,8 @@ export function HangLamp({
     tagTitle,
     onTagTitle,
   })
+  // A name saved under an older, longer limit still fits, so it can be edited.
+  const shortRoom = Math.max(SHORT_MAX, String(lamp?.short || '').length)
   const miss = missOut || hang.miss
 
   const schedule = schedulePick(hang.draft)
@@ -324,6 +326,7 @@ export function HangLamp({
               value={hang.draft.short}
               onChange={(event) => hang.change('short', event.target.value)}
               placeholder={t('hang.shortPh')}
+              maxLength={shortRoom}
             />
           </label>
           <label className="di-field">

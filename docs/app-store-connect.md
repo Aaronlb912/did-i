@@ -43,7 +43,7 @@ em dashes. Do not paste before 1.2 is live: it describes Did we.
 Did I lock the door? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
 
 **Short description (Google Play, 80 max):**
-One question at a time. Swipe did or nope. Share with friends and family.
+One question at a time. Swipe did or not yet. Share with friends and family.
 
 **Keywords (App Store, 100 max):**
 habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,together,widget,gifts
@@ -85,6 +85,13 @@ SAFE AND PRIVATE
 **What's new in 1.2:**
 Did we: questions you answer together with friends or family, with a shared streak. One Add screen: tap "Did I" to switch to Did we or Did you. A Did you can repeat every night. Tap the faces on a Did we to see everyone and their buddy. Send gifts: buy a look, cheer or buddy for a friend or family member, with a short note. They see it the next time they open the app. New privacy choices: hide what notifications say, and report and block.
 
+**What's new in 1.3.1:**
+Card frames: dress up your card with a frame. Some are free, some cost coins or gems, some you earn with a streak, and some come with the seasons. Bring friends to Did I and earn Hive, a new bee buddy, at 15 friends and the Bloom frame at 20. Swipe left now says Not yet, so you can still come back and say Did before the night ends. A wishlist in the Shop and Collection keeps track of what you want next. Undo after a swipe is easier to catch, deleted questions stay deleted, and the Shop is smoother. Frames rest in low power mode, and the launch screen matches your light or dark setting.
+
+**App Privacy labels for 1.3.1:** no new data types. The look and card
+frame you wear are shown to friends and family (Other User Content, already
+declared).
+
 **App Privacy labels for 1.2:** no new data types. A buddy shown to people
 on a shared card is Other User Content (already declared). Reports stay under
 Customer Support. A gift note is also Other User Content.
@@ -113,6 +120,32 @@ Privacy policy URL: `https://did-i.app/privacy` (also on iOS 1.0 listing).
 For each type after selection: purposes **App Functionality** and **Account Management** (add **Customer Support** for reports); **linked to identity** yes; **used for tracking** no.
 
 Local-only use (no account) does not send data to you; the label still covers signed-in use.
+
+## Search and screenshots (written 2026-10-07)
+
+Tagline: "Remember it. Then remember doing it." (changed 2026-10-08: it covers both jobs, the nudge to do it and the check that you did). Positioning: a habit tracker you answer one question at a time. Lead with the
+"did I?" feeling, not with habits. Category: Productivity primary, Lifestyle
+secondary (Play: Productivity). Apple indexes the name, subtitle and keywords
+together, so no word below repeats another field.
+
+| Field | Value | Length |
+|-------|-------|--------|
+| Subtitle (30) | Habit tracker & daily check-in | 30 |
+| Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,meds,vitamins,adhd,forgetful,family | 100 |
+| Play short description (80) | Remember it. Then remember doing it. One question a night, one swipe. | 69 |
+| Promotional text (170) | Remember it. Then remember doing it. Did I lock the door? Take my pills? Swipe once a night and your home screen remembers. | 123 |
+
+Screenshot captions, in order. Big line on top, small line under it, then the screen.
+
+| # | Big line | Small line | Screen |
+|---|----------|------------|--------|
+| 1 | Remember it. Then remember doing it. | One question at a time, every night. | Home with a question card |
+| 2 | Swipe right for Did. | Left for Not yet. That's the whole app. | The card mid-swipe with the Did bar |
+| 3 | Your home screen remembers. | Widgets show what's done tonight. | Home screen with the widgets |
+| 4 | Pills, plants, the back door. | Ask yourself anything. | Questions list |
+| 5 | Streaks that stay honest. | Every night on one calendar. | Streak and calendar |
+| 6 | Did we feed the dog? | Share questions with the people you live with. | Did we or family |
+| 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing Galaxy or Neon Heart |
 
 ## After IAPs
 

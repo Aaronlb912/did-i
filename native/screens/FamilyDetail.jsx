@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useKept } from '../hooks/useKept.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
+import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -13,6 +14,7 @@ import {
   familyHistory,
   familyLampMeta,
   leaveFamily,
+  renameFamily,
   listFamilyLamps,
   personName,
   readFamily,
@@ -33,9 +35,10 @@ import {
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
+import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { Reveal } from '../lib/motion.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
@@ -54,14 +57,15 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const myAvatar = useMyAvatar()
   const purse = normalizePurse(book)
   const clock = new Date()
-  const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null)
-  const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [])
-  const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [])
+  const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null, KEEP)
+  const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [], KEEP)
+  const noted = useNoted(account.user?.id)
+  const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [], KEEP)
   const [night, setNight] = useState(() => boardDate(clock, book.dayFoldHour))
   const [nights, setNights] = useState([])
   const [past, setPast] = useState([])
   const [edit, setEdit] = useState(null)
-  const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false)
+  const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false, KEEP)
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')
@@ -71,6 +75,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [showQr, setShowQr] = useState(false)
   const [sheet, setSheet] = useState(null)
   const [menu, setMenu] = useState(null)
+  const [naming, setNaming] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -215,25 +220,48 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
-          <Pressable
-            onPress={() => setCodeOpen(true)}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('people.joinCode')}
-          >
-            {({ pressed }) => <Text style={[styles.plus, { color: colors.on, opacity: pressed ? 0.6 : 1 }]}>+</Text>}
-          </Pressable>
+          <AddPill colors={colors} onPress={() => setCodeOpen(true)} label={t('people.joinCode')} />
         </View>
         <Text style={[styles.weekCount, { color: colors.inkDim }]}>
           {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
         </Text>
-        <Text style={[styles.glance, { color: colors.inkSoft }]}>
-          {t('family.doneOf', {
-            done: fam.members.filter((row) => doneTonight(row.person, night)).length,
-            n: fam.members.length,
-          })}
-        </Text>
+        {/* With nothing in the family folder, no one can be done. */}
+        {lamps.length ? (
+          <Text style={[styles.glance, { color: colors.inkSoft }]}>
+            {t('family.doneOf', {
+              done: fam.members.filter((row) => doneTonight(row.person, night)).length,
+              n: fam.members.length,
+            })}
+          </Text>
+        ) : null}
+        {fam.parent && naming == null ? (
+          <KeyButton colors={colors} label={t('family.rename')} onPress={() => setNaming(fam.name || '')} />
+        ) : null}
+        {naming != null ? (
+          <>
+            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus />
+            <View style={styles.rowActions}>
+              <DidButton
+                small
+                colors={colors}
+                label={t('settings.save')}
+                onPress={() =>
+                  once('fam-rename', async () => {
+                    const { miss: why } = await renameFamily(fam.id, naming)
+                    if (why) return setMiss(why)
+                    setMiss('')
+                    setNaming(null)
+                    confirmDone(t('confirm.familyRenamed'))
+                    return load()
+                  })
+                }
+              />
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setNaming(null)} />
+            </View>
+          </>
+        ) : null}
       </View>
+      {fam.members.length < 2 || !lamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
 
       <SectionHead colors={colors} label={t('family.people')} />
       {fam.members.map((row) => {
@@ -254,6 +282,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
             pill={done ? t('people.doneTonightShort') : ''}
             pillOn={done}
+            noted={!row.you && noted.has(row.user_id)}
             onOpen={row.you ? undefined : () => goHash('/friend', { id: row.user_id })}
             extra={
               <View style={styles.weekRow}>
@@ -465,10 +494,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                 onPress={() => setShowQr((on) => !on)}
               />
               {showQr ? (
-                <View style={{ alignItems: 'center', gap: 8 }}>
+                <Reveal style={{ alignItems: 'center', gap: 8 }}>
                   <QrCode value={familyQrLink(fam.code)} size={180} label={t('qr.familyLabel', { name: fam.name })} />
                   <Meta colors={colors}>{t('qr.familyHint')}</Meta>
-                </View>
+                </Reveal>
               ) : null}
               <DidButton
                 colors={colors}
@@ -559,7 +588,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 24, fontWeight: '700' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   titleText: { flex: 1 },
-  plus: { fontFamily: fonts.ui, fontSize: 28, lineHeight: 30, fontWeight: '500' },
   code: { fontFamily: fonts.mono, fontSize: 32, fontWeight: '700', letterSpacing: 4, textAlign: 'center', paddingVertical: 6 },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   rowTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },

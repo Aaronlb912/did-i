@@ -19,6 +19,7 @@ const AT = {
   frog: { ex: [16, 32], ey: 19, er: 5.4, crown: 16, neck: 38, side: 15, hat: { y: 13.2, scale: 1.3 } },
   penguin: { ex: [19.8, 28.2], ey: 26.5, er: 3.5, crown: 17, neck: 36.8, side: 14 },
   fox: { ex: [19.8, 28.2], ey: 27.5, er: 3.5, crown: 18, neck: 37, side: 14 },
+  hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
 }
 
 const INK = '#2d241c'
@@ -284,6 +285,16 @@ const SHAPES = {
       ['e', 29.5, top - 6.5, 1.3, 1.3, GOLD],
     ]
   },
+  rainbow: (a) => {
+    const y = mid(a) + 4
+    return [['#e2463c', 23], ['#f5a623', 20.6], ['#7cc65a', 18.2], ['#4a9be8', 15.8]].flatMap(([c, r]) =>
+      Array.from({ length: 12 }, (_, i) => {
+        const p = (k) => [24 - Math.cos((Math.PI * k) / 12) * r, y - Math.sin((Math.PI * k) / 12) * r]
+        const [x1, y1] = p(i)
+        const [x2, y2] = p(i + 1)
+        return ['l', x1, y1, x2, y2, c, 2.8]
+      }))
+  },
   // ---- held
   balloon: (a, t) => {
     const [x, y] = hand(a)
@@ -343,6 +354,10 @@ const SHAPES = {
   sparkles: (a) => [[-19, -7, 3.6], [19, -1, 3], [-17, 9, 2.4], [16, -15, 2.4]].flatMap(([dx, dy, r]) => sparkle(24 + dx, a.ey + dy, r, GOLD)),
   snow: (a) => [[-20, -11], [-19, 2], [19, -13], [20, 0], [-18, 13], [18, 11], [9, -20], [-7, -21]].map(([dx, dy], i) =>
     ['e', 24 + dx, a.ey + dy, i % 3 ? 1.3 : 1.8, i % 3 ? 1.3 : 1.8, '#ffffff']),
+  bubbles: (a) => [[-20, -9, 3.4], [20, -5, 2.6], [-18, 8, 2.2], [17, 10, 1.7]].flatMap(([dx, dy, r]) => [
+    ['e', 24 + dx, a.ey + dy, r, r, '#bfe6ff'],
+    ['e', 24 + dx - r * 0.35, a.ey + dy - r * 0.35, r * 0.3, r * 0.3, '#ffffff'],
+  ]),
   raincloud: (a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [

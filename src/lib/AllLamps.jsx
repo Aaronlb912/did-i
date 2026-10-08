@@ -90,7 +90,7 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
     const n = lampPicks.length
     const label =
       kind === 'delete'
-        ? t('questions.bulkDeleted', { n })
+        ? t(n === 1 ? 'questions.bulkDeletedOne' : 'questions.bulkDeleted', { n })
         : kind === 'stop'
           ? t('questions.bulkStopped', { n })
           : t('questions.bulkAsked', { n })

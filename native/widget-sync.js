@@ -1,14 +1,32 @@
 import { Platform } from 'react-native'
 import { nativeBridgeReady, queueWidgetSync } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
-import { widgetAskTimes, widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
-import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, WIDGET_NAME } from '../src/lib/widget-tonight.js'
+import { widgetRedrawTimes, widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
+import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, tonightWidgetKey, WIDGET_NAME } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { isoDate } from '../src/lib/recurrence.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
+
+// The native side takes plain records. undefined, functions or Dates in the
+// props can make the whole update throw, so send a JSON copy.
+function plainProps(props) {
+  try {
+    return JSON.parse(JSON.stringify(props ?? {}))
+  } catch {
+    return props
+  }
+}
+
+// One string, so the code and message survive in the device log too
+// (a second console argument is often dropped there).
+function warnWidget(where, error) {
+  const code = error?.code ? ` [${error.code}]` : ''
+  const text = error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
+  console.warn(`${where} failed${code}: ${text}`)
+}
 
 function snapshotColors(colors, look) {
   return {
@@ -36,6 +54,17 @@ export function enrichTonightWidgetProps(shelf, props) {
   return { ...props, colors, buddyShapes }
 }
 
+// Answers that came in from another phone (sync) or a shelf that changed
+// while the app sat open: redraw only when tonight's card would change.
+let lastTonightKey = ''
+
+export function syncTonightWidgetIfChanged(shelf) {
+  if (Platform.OS === 'web' || !nativeWidgetsEnabled()) return Promise.resolve()
+  const key = tonightWidgetKey(buildTonightWidgetProps(shelf))
+  if (key === lastTonightKey) return Promise.resolve()
+  return syncTonightWidget(shelf)
+}
+
 let widgetApiPromise = null
 
 function tonightWidgetApi() {
@@ -61,7 +90,9 @@ export async function syncTonightWidget(shelf) {
     queueWidgetSync(shelf)
     return
   }
-  const props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
+  const built = buildTonightWidgetProps(shelf)
+  lastTonightKey = tonightWidgetKey(built)
+  const props = enrichTonightWidgetProps(shelf, built)
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
     try {
@@ -69,15 +100,19 @@ export async function syncTonightWidget(shelf) {
       if (!api) return
       // One entry per ask time still to come tonight, so a question shows
       // up on the widget when its time comes without the app being open.
+      // Midnight and the end of last night's grace get an entry too.
       const boards = (shelf?.boards || []).filter((b) => !b.archived)
-      const later = widgetAskTimes(boards, new Date()).map((date) => ({
+      const times = widgetRedrawTimes(boards, new Date()).sort((a, b) => a - b)
+      const later = times.map((date) => ({
         date,
         props: enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf, date)),
       }))
-      if (later.length && api.updateTimeline) await api.updateTimeline([{ date: new Date(), props }, ...later])
-      else await api.updateSnapshot(props)
+      if (later.length && api.updateTimeline) {
+        const entries = [{ date: new Date(), props }, ...later]
+        await api.updateTimeline(entries.map((entry) => ({ date: entry.date, props: plainProps(entry.props) })))
+      } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
-      console.warn('widget updateSnapshot', error?.message || error)
+      warnWidget('widget updateSnapshot', error)
     }
     return
   }
@@ -92,7 +127,8 @@ export async function syncTonightWidget(shelf) {
       await saveAndroidWidgetCard(stored)
       const { armAndroidWidgetAskTimes } = await import('./widget-tap.android.js')
       const boards = (shelf?.boards || []).filter((b) => !b.archived)
-      await armAndroidWidgetAskTimes(widgetAskTimes(boards, new Date()))
+      // Alarms at each ask time, at midnight, and when last night's grace ends.
+      await armAndroidWidgetAskTimes(widgetRedrawTimes(boards, new Date()))
       await requestWidgetUpdate({
         widgetName: WIDGET_NAME,
         renderWidget: (info) => renderDidITonightAndroidWidget(stored, info),
@@ -148,12 +184,12 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
       )
       if (api.updateTimeline) {
         await api.updateTimeline([
-          { date: new Date(), props },
-          { date: midnight, props: tomorrow },
+          { date: new Date(), props: plainProps(props) },
+          { date: midnight, props: plainProps(tomorrow) },
         ])
-      } else await api.updateSnapshot(props)
+      } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
-      console.warn('together widget updateSnapshot', error?.message || error)
+      warnWidget('together widget updateSnapshot', error)
     }
     return
   }

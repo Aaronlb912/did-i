@@ -13,7 +13,9 @@ export const LOCALE_IDS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']
 // Notification kinds a person can turn off. The first three are scheduled on
 // the phone; the rest are pushes, and the server reads prefs.pingsOff too
 // (push_wanted in supabase/push.sql), so keep the names in step.
-export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'cheers', 'friends', 'family', 'didi']
+export const PING_KINDS = ['reminders', 'streakRisk', 'streakHit', 'sends', 'we', 'cheers', 'friends', 'family', 'didi']
+
+const QUIET_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 
 function blankPrefs() {
   return {
@@ -30,6 +32,17 @@ function blankPrefs() {
     pingsOff: [],
     // Pushes say who, not what (push_private in supabase/did-we-guard.sql).
     pingsPrivate: false,
+    // Quiet hours: no pushes or reminders from quietFrom to quietTo, in the
+    // person's own time. The server reads these too (push_quiet in supabase/push.sql).
+    quietOn: false,
+    quietFrom: '22:00',
+    quietTo: '07:00',
+    // One push the morning a shop drop goes live. Off until asked for in the
+    // shop; the server reads it (queue_drop_pushes in supabase/shop-drops.sql).
+    dropPings: false,
+    // Hour of the family summary push on the person's clock. The server reads
+    // profiles.family_hour (supabase/family-summary.sql); this mirrors it.
+    familyHour: 21,
   }
 }
 
@@ -92,8 +105,19 @@ function cleanPrefs(raw) {
   if (raw?.widgetOpenOnly === true) next.widgetOpenOnly = true
   if (Array.isArray(raw?.pingsOff)) next.pingsOff = PING_KINDS.filter((kind) => raw.pingsOff.includes(kind))
   if (raw?.pingsPrivate === true) next.pingsPrivate = true
+  if (raw?.quietOn === true) next.quietOn = true
+  if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
+  if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
+  if (raw?.dropPings === true) next.dropPings = true
+  if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
+  // The one-time "how to swipe" popup on Home (native/components/SwipeIntro.jsx).
+  if (raw?.swipeIntroSeen === true) next.swipeIntroSeen = true
+  // The first-open card swipe before sign-in (native/components/FirstSwipe.jsx).
+  if (raw?.openingSeen === true) next.openingSeen = true
+  // Swipes counted by older builds; a phone that reached 3 skips the popup. No longer written.
+  if (Number.isInteger(raw?.swipesLearned) && raw.swipesLearned > 0) next.swipesLearned = Math.min(raw.swipesLearned, 3)
   return next
 }
 
@@ -121,9 +145,12 @@ export function writePrefs(patch, fromCloud = false) {
   return next
 }
 
-function phoneUses24h() {
+// English follows the device (US 12h, UK 24h). Other app languages use
+// their own habit, so German shows 09:00, not "9:00 vorm."
+function phoneUses24h(locale) {
   try {
-    const opts = new Intl.DateTimeFormat([], { hour: 'numeric' }).resolvedOptions()
+    const tag = locale && locale !== 'en' ? [locale] : []
+    const opts = new Intl.DateTimeFormat(tag, { hour: 'numeric' }).resolvedOptions()
     if (opts.hourCycle) return opts.hourCycle === 'h23' || opts.hourCycle === 'h24'
     return opts.hour12 === false
   } catch {
@@ -136,14 +163,39 @@ let clockCache = null
 // 12 or 24 hour, from the clock setting. "Phone" follows the device.
 export function uses24h() {
   if (clockCache == null) {
-    const clock = readPrefs().clock
-    clockCache = clock === '24' || (clock === 'phone' && phoneUses24h())
+    const { clock, locale } = readPrefs()
+    clockCache = clock === '24' || (clock === 'phone' && phoneUses24h(locale))
   }
   return clockCache
 }
 
 export function pingOn(kind) {
   return !readPrefs().pingsOff.includes(kind)
+}
+
+function minutesOf(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+// A reminder that would land in quiet hours moves to when they end.
+export function afterQuiet(at, prefs = readPrefs()) {
+  if (!prefs.quietOn) return at
+  const from = minutesOf(prefs.quietFrom)
+  const to = minutesOf(prefs.quietTo)
+  if (from === to) return at
+  const now = at.getHours() * 60 + at.getMinutes()
+  const quiet = from < to ? now >= from && now < to : now >= from || now < to
+  if (!quiet) return at
+  const end = new Date(at.getFullYear(), at.getMonth(), at.getDate(), Math.floor(to / 60), to % 60, 0, 0)
+  if (end.getTime() <= at.getTime()) end.setDate(end.getDate() + 1)
+  return end
+}
+
+// Re-render prefs readers without saving, e.g. after a language file loads.
+export function bumpPrefs() {
+  const next = readPrefs()
+  listeners.forEach((fn) => fn(next))
 }
 
 export function onPrefs(fn) {

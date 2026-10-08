@@ -1,4 +1,4 @@
-import { hallHeat, shelfStreak } from './hall-feel.js'
+import { freezeState, hallHeat, shelfStreak } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -6,15 +6,18 @@ import {
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
+  isDueOn,
   isoDate,
   parseIsoDate,
+  periodKeyFor,
+  periodNight,
   rowDoneTonight,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
-import { weNight } from './we-nights.js'
+import { weNight, weOpenIds } from './we-nights.js'
 import { uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
@@ -85,6 +88,16 @@ function startNight(book) {
   return first
 }
 
+// A missed night a freeze covered reads as freeze, not missed. Freezes keep
+// the overall streak only, so with a tag picked there are none.
+function withFreeze(marks, iso, frozen) {
+  return marks.miss && frozen?.has(iso) ? { ...marks, miss: false, freeze: true } : marks
+}
+
+function frozenFor(boards, now, tagId) {
+  return tagId ? null : freezeState(boards, now).frozen
+}
+
 function nightMarks(books, iso, today, tagId = '') {
   // Future nights and nights before you started stay blank.
   if (iso > today) return { due: 0, on: false, miss: false, empty: true }
@@ -113,6 +126,54 @@ function nightMarks(books, iso, today, tagId = '') {
     miss: dueCount > 0 && !clear && iso < today,
     empty: dueCount === 0,
   }
+}
+
+// Why a night did or did not clear, with the same rules as nightMarks.
+// state: ahead | none | clear | open (tonight, not done yet) | missed.
+// noped and unanswered are question rows; weOpen is Did we card ids.
+export function nightWhy(boards, iso, now = new Date(), tagId = '') {
+  const scoped = scopedBooks(boards, tagId)
+  const fold = (scoped[0] || boards?.[0])?.dayFoldHour
+  const today = boardDate(now, fold)
+  const out = { iso, state: 'none', noped: [], unanswered: [], weOpen: [] }
+  if (iso > today) return { ...out, state: 'ahead' }
+  const books = scoped.filter((book) => {
+    const start = startNight(book)
+    return start ? iso >= start : iso === today
+  })
+  const at = noonOn(iso)
+  let due = 0
+  for (const book of books) {
+    const rows = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    due += rows.length
+    for (const row of rows) {
+      if (rowDoneTonight(row)) continue
+      if (row.answer?.status === 'skip') out.noped.push(row)
+      else out.unanswered.push(row)
+    }
+  }
+  const we = weNight(iso, tagId)
+  due += we.due
+  if (we.due && !we.clear) out.weOpen = weOpenIds(iso, tagId)
+  if (!due) return out
+  const clear = !out.noped.length && !out.unanswered.length && !out.weOpen.length
+  if (!clear && iso < today && frozenFor(boards, now, tagId)?.has(iso)) return { ...out, state: 'freeze' }
+  return { ...out, state: clear ? 'clear' : iso < today ? 'missed' : 'open' }
+}
+
+// The last night the overall streak broke, looking back `back` nights, with
+// the first thing that broke it. For "why is my streak lower than a question's?"
+export function streakBreak(boards, now = new Date(), tagId = '', back = 60) {
+  const scoped = scopedBooks(boards, tagId)
+  if (!scoped.length) return null
+  const today = boardDate(now, scoped[0].dayFoldHour)
+  for (let i = 1; i <= back; i += 1) {
+    const why = nightWhy(boards, addDaysIso(today, -i), now, tagId)
+    if (why.state !== 'missed') continue
+    const row = why.unanswered[0] || why.noped[0]
+    return { iso: why.iso, question: row ? shortLabel(row.lamp) : '', weId: row ? '' : why.weOpen[0] || '' }
+  }
+  return null
 }
 
 // What tomorrow night holds, for the done card: how many questions it asks
@@ -170,10 +231,11 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
   const end = addDaysIso(today, weekShift * 7)
+  const frozen = frozenFor(boards, now, tagId)
   const nights = []
   for (let i = 6; i >= 0; i -= 1) {
     const iso = addDaysIso(end, -i)
-    const marks = nightMarks(books, iso, today, tagId)
+    const marks = withFreeze(nightMarks(books, iso, today, tagId), iso, frozen)
     nights.push({
       iso,
       weekday: weekdayShort(iso),
@@ -193,6 +255,7 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
   const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
   const pad = start.getDay()
   const last = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+  const frozen = frozenFor(boards, now, tagId)
   const nights = []
   for (let i = 0; i < pad; i += 1) {
     nights.push({
@@ -212,7 +275,7 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
       pad: false,
       dayNum: String(day),
       isToday: iso === today,
-      ...nightMarks(books, iso, today, tagId),
+      ...withFreeze(nightMarks(books, iso, today, tagId), iso, frozen),
     })
   }
   while (nights.length % 7 !== 0) {
@@ -227,6 +290,122 @@ export function monthStripNights(boards, now = new Date(), tagId = '', monthShif
     })
   }
   return { start, nights }
+}
+
+// The year of the oldest answer (or question made), for how far back the
+// year view goes. Falls back to this year.
+export function firstAnswerYear(boards, now = new Date(), tagId = '') {
+  return Number(firstAnswerMonth(boards, now, tagId).slice(0, 4))
+}
+
+// 'YYYY-MM' of the oldest answer, or this month. The year view starts its
+// first year there, so someone who began in September sees no empty spring.
+export function firstAnswerMonth(boards, now = new Date(), tagId = '') {
+  let first = ''
+  for (const book of scopedBooks(boards, tagId)) {
+    for (const answer of book.answers || []) {
+      const key = String(answer?.periodKey || '')
+      if (/^\d{4}-\d{2}/.test(key) && (!first || key < first)) first = key
+    }
+  }
+  const here = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const month = first ? first.slice(0, 7) : here
+  return month < here ? month : here
+}
+
+// One pass over a book's answers: lampId -> (periodKey -> status), plus the
+// once questions already answered. Hangs off the answers array, so an edit
+// drops it on its own.
+const yearIndexMemo = new WeakMap()
+function yearIndex(book) {
+  const rows = book.answers || []
+  let found = yearIndexMemo.get(rows)
+  if (found) return found
+  const byLamp = new Map()
+  const onceDone = new Set()
+  for (const answer of rows) {
+    let nights = byLamp.get(answer.lampId)
+    if (!nights) byLamp.set(answer.lampId, (nights = new Map()))
+    if (!nights.has(answer.periodKey)) nights.set(answer.periodKey, answer.status)
+    if (answer.status === 'yes' || answer.status === 'skip' || answer.status === 'late') onceDone.add(answer.lampId)
+  }
+  found = { byLamp, onceDone }
+  yearIndexMemo.set(rows, found)
+  return found
+}
+
+// nightMarks for many nights at once, with the same rules, without
+// rebuilding the due list per book per night. Daily questions (most of them)
+// skip the date parse.
+function nightMarksMany(books, isos, today, tagId = '') {
+  const prepped = books.map((book) => ({
+    start: startNight(book),
+    lamps: (book.lamps || []).filter((lamp) => !lamp.archived),
+    index: yearIndex(book),
+  }))
+  const out = new Map()
+  for (const iso of isos) {
+    if (iso > today) {
+      out.set(iso, { due: 0, on: false, miss: false, empty: true })
+      continue
+    }
+    let dueCount = 0
+    let clear = true
+    for (const book of prepped) {
+      if (book.start ? iso < book.start : iso !== today) continue
+      for (const lamp of book.lamps) {
+        if (lamp.createdOn && lamp.createdOn > iso) continue
+        const daily = lamp.cadence === 'daily'
+        if (!daily && !isDueOn(lamp, iso)) continue
+        const key = daily ? iso : periodKeyFor(lamp, iso)
+        const status = book.index.byLamp.get(lamp.id)?.get(key)
+        if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
+        if (!mustSwipeDeadline(lamp, iso)) continue
+        dueCount += 1
+        if (status !== 'yes' && status !== 'late') clear = false
+      }
+    }
+    const we = weNight(iso, tagId)
+    dueCount += we.due
+    if (we.due && !we.clear) clear = false
+    out.set(iso, {
+      due: dueCount,
+      on: dueCount > 0 && clear,
+      miss: dueCount > 0 && !clear && iso < today,
+      empty: dueCount === 0,
+    })
+  }
+  return out
+}
+
+// Twelve month grids for one year, same shape as monthStripNights. Months
+// after this one are left out.
+export function yearMonths(boards, year, now = new Date(), tagId = '') {
+  const books = scopedBooks(boards, tagId)
+  const fold = (books[0] || boards?.[0])?.dayFoldHour
+  const today = boardDate(now, fold)
+  const todayDate = parseIsoDate(today) || now
+  const lastMonth = year < todayDate.getFullYear() ? 11 : year === todayDate.getFullYear() ? todayDate.getMonth() : -1
+  const isos = []
+  for (let m = 0; m <= lastMonth; m += 1) {
+    const last = new Date(year, m + 1, 0).getDate()
+    for (let day = 1; day <= last; day += 1) isos.push(isoDate(new Date(year, m, day)))
+  }
+  const marks = nightMarksMany(books, isos, today, tagId)
+  const months = []
+  for (let m = 0; m <= lastMonth; m += 1) {
+    const start = new Date(year, m, 1)
+    const nights = []
+    for (let i = 0; i < start.getDay(); i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    const last = new Date(year, m + 1, 0).getDate()
+    for (let day = 1; day <= last; day += 1) {
+      const iso = isoDate(new Date(year, m, day))
+      nights.push({ iso, pad: false, dayNum: String(day), isToday: iso === today, ...marks.get(iso) })
+    }
+    while (nights.length % 7 !== 0) nights.push({ iso: `pad-end-${nights.length}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    months.push({ start, nights })
+  }
+  return months
 }
 
 export function comingDays(book, now = new Date(), days = 7) {
@@ -291,6 +470,11 @@ export function shelfFeedRows(boards, tagId = '') {
     .sort((a, b) => String(b.answer.answeredAt).localeCompare(String(a.answer.answeredAt)))
 }
 
+// Every note across the folders in view, newest first. Notes on deleted questions drop out.
+export function shelfNoteRows(boards, tagId = '') {
+  return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
+}
+
 export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
   const books = scopedBooks(boards, tagId)
   const sum = { hung: 0, down: 0, did: 0, late: 0, skip: 0 }
@@ -303,6 +487,84 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
     sum.skip += answers.filter((answer) => answer.status === 'skip').length
   }
   return { ...sum, heat: books.length ? shelfStreak(books, now) : 0 }
+}
+
+// The week behind a night, for the Sunday recap and Stats. `week` is
+// weekStripNights for that night, so one walk feeds the dots and this.
+export function weekRecap(boards, week, tagId = '') {
+  const nights = week || []
+  let cleared = 0
+  let run = 0
+  let best = 0
+  for (const night of nights) {
+    run = night.on ? run + 1 : 0
+    if (night.on) cleared += 1
+    if (run > best) best = run
+  }
+  const from = nights[0]?.iso || ''
+  const to = nights[nights.length - 1]?.iso || ''
+  let dids = 0
+  let late = 0
+  let nopes = 0
+  if (from && to) {
+    for (const book of scopedBooks(boards, tagId)) {
+      let lamps = null
+      for (const answer of book.answers || []) {
+        const status = answer.status
+        if (status !== 'yes' && status !== 'late' && status !== 'skip') continue
+        let key = String(answer.periodKey || '')
+        // A once question counts on its own day.
+        if (key.startsWith('once:')) {
+          lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+          key = periodNight(lamps.get(answer.lampId), key)
+        }
+        if (key.length !== 10 || key < from || key > to) continue
+        if (status === 'skip') nopes += 1
+        else {
+          dids += 1
+          if (status === 'late') late += 1
+        }
+      }
+    }
+  }
+  // dids counts late ones too; late and nopes are for the week's own tiles.
+  return { cleared, nights: nights.length, dids, late, nopes, best }
+}
+
+// Sunday night closes the week.
+export function isRecapNight(dateIso) {
+  const at = parseIsoDate(dateIso)
+  return Boolean(at) && at.getDay() === 0
+}
+
+export function recapShareText(recap) {
+  return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
+}
+
+// The Sunday that closed the week before `dateIso`. Monday gives yesterday.
+export function lastWeekSunday(dateIso) {
+  const at = parseIsoDate(dateIso)
+  if (!at) return ''
+  return addDaysIso(dateIso, -(at.getDay() || 7))
+}
+
+const RECAP_SEEN_KEY = 'did-i-recap-seen'
+// Last week's recap shows once, on the first open of the new week.
+export function weekRecapDue(dateIso) {
+  const sunday = lastWeekSunday(dateIso)
+  if (!sunday) return ''
+  try {
+    return localStorage.getItem(RECAP_SEEN_KEY) === sunday ? '' : sunday
+  } catch {
+    return ''
+  }
+}
+export function markWeekRecapSeen(sunday) {
+  try {
+    localStorage.setItem(RECAP_SEEN_KEY, sunday)
+  } catch {
+    // Shows again next open; harmless.
+  }
 }
 
 // Streak goals in order: the two early marks, then the streak tiers.
@@ -319,6 +581,15 @@ export function feedRows(book) {
       answer,
       lamp: lamps.find((item) => item.id === answer.lampId) || null,
     }))
+}
+
+// Every answer search: question text, short name, or note, any case.
+export function feedSearch(rows, query) {
+  const want = String(query || '').trim().toLowerCase()
+  if (!want) return rows
+  return rows.filter((row) =>
+    [row.lamp?.question, row.lamp?.short, row.answer?.note].some((text) => String(text || '').toLowerCase().includes(want)),
+  )
 }
 
 export function statsCounts(book, now = new Date()) {

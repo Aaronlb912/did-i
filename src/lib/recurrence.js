@@ -1,5 +1,6 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
+import { readPrefs } from './prefs.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -49,6 +50,20 @@ export function graceFirst(now = new Date()) {
 // period, tonight otherwise.
 export function openFloorIso(now = new Date()) {
   return graceNightIso(now) || boardDate(now)
+}
+
+// A night can still take answers: tonight, or last night in its grace period.
+export function nightOpen(dateIso, now = new Date()) {
+  return Boolean(dateIso) && dateIso >= openFloorIso(now)
+}
+
+// The word for an answer: a skip reads "Not yet" while its night is open and
+// "Nope" once it closed. A closed night with no answer reads "Nope" too.
+// Returns 'notYet', 'nope', the status itself, or '' (open, not answered).
+export function answerWord(status, isOpen) {
+  if (status === 'skip') return isOpen ? 'notYet' : 'nope'
+  if (!status) return isOpen ? '' : 'nope'
+  return status
 }
 
 export function addDaysIso(iso, days) {
@@ -314,14 +329,46 @@ export function dueClearTonight(rows) {
   return required.every(rowDoneTonight)
 }
 
+// Dates read in the app's language, not always English.
+function dateTag() {
+  const code = readPrefs().locale
+  if (code === 'zh') return 'zh-CN'
+  return !code || code === 'en' ? 'en-US' : code
+}
+
 export function formatBoardDate(iso) {
   const date = parseIsoDate(iso)
   if (!date) return iso
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(dateTag(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   })
+}
+
+// The day an answer belongs to. Once questions key on the question id
+// ("once:abc"), so read the day off the question; monthly keys get the 1st.
+export function periodNight(lamp, periodKey) {
+  const key = String(periodKey || '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return key
+  if (/^\d{4}-\d{2}$/.test(key)) return `${key}-01`
+  if (key.startsWith('once:')) {
+    const day = String((lamp?.onceWhen === 'by' ? lamp?.dueBy : lamp?.onceOn) || lamp?.createdOn || '').slice(0, 10)
+    return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : ''
+  }
+  return ''
+}
+
+// An answer's night for people to read: "Thu, Oct 1", or "Oct 2026" for a
+// monthly one. Never the raw key.
+export function periodLabel(lamp, periodKey) {
+  const key = String(periodKey || '')
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    const date = parseIsoDate(`${key}-01`)
+    return date ? date.toLocaleDateString(dateTag(), { month: 'short', year: 'numeric' }) : ''
+  }
+  const night = periodNight(lamp, key)
+  return night ? formatBoardDate(night) : ''
 }
 
 export function recentPeriodKeys(lamp, dateIso, count = 7) {

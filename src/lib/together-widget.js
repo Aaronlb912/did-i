@@ -67,7 +67,12 @@ export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso 
   return {
     people: rows,
     title: say('together.widgetTitle', 'Together tonight'),
-    countLine: rows.length ? say('together.widgetCount', '{n} of {total} done', { n: done, total: rows.length }) : '',
+    // Same words as the Friends page when nobody is done yet.
+    countLine: !rows.length
+      ? ''
+      : done
+        ? say('together.widgetCount', '{n} of {total} done', { n: done, total: rows.length })
+        : say('together.noneYet', 'Nobody done yet'),
     emptyLabel: say('together.widgetEmpty', 'Add friends or family in Did I.'),
     openUri: TOGETHER_OPEN_URI,
   }

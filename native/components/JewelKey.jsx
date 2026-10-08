@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { DidButton } from './ui.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs, writePrefs } from '../../src/lib/prefs.js'
@@ -43,18 +43,26 @@ function markSeen() {
   writePrefs({ jewelKeySeen: true })
 }
 
-// What the dot on each question pill means. Shown once, on a night after the first.
+// What the dot on each question pill means. Shown once, on a night after the first,
+// as a popup over Home so it never pushes the card around.
 export function JewelKey({ colors, onDone }) {
   const rows = [
     { color: colors.on, label: t('jewelKey.did') },
     { color: colors.late, label: t('jewelKey.late') },
-    { color: colors.skip, label: t('jewelKey.nope') },
+    { color: colors.skip, label: t('jewelKey.notYet') },
     { color: colors.open, label: t('jewelKey.open') },
     { color: colors.miss, label: t('jewelKey.due') },
   ]
+  const done = () => {
+    markSeen()
+    onDone()
+  }
   return (
-    <View style={[styles.box, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+    <Modal visible transparent animationType="fade" onRequestClose={done}>
+    <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={done}>
+    <Pressable accessible={false} onPress={(e) => e.stopPropagation()} style={[styles.box, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('jewelKey.title')}</Text>
+      <Text style={[styles.label, styles.tap, { color: colors.inkSoft }]}>{t('pill.openHint')}</Text>
       <View style={styles.grid}>
         {rows.map((row) => (
           <View key={row.label} style={styles.row}>
@@ -67,28 +75,31 @@ export function JewelKey({ colors, onDone }) {
           <Text style={[styles.label, { color: colors.inkSoft }]}>{t('jewelKey.wait')}</Text>
         </View>
       </View>
+      <Text style={[styles.label, styles.why, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text>
       <View style={styles.ok}>
         <DidButton
           label={t('jewelKey.ok')}
           colors={colors}
           small
-          onPress={() => {
-            markSeen()
-            onDone()
-          }}
+          onPress={done}
         />
       </View>
-    </View>
+    </Pressable>
+    </Pressable>
+    </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  box: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 10 },
+  veil: { flex: 1, justifyContent: 'center', padding: 20 },
+  box: { borderWidth: 1, borderRadius: 16, padding: 18, width: '100%', maxWidth: 420, alignSelf: 'center' },
   title: { fontFamily: fonts.uiSemi, fontSize: 15, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '50%' },
   dot: { width: 9, height: 9, borderRadius: 5 },
+  tap: { marginTop: -4, marginBottom: 10 },
   dash: { width: 16, height: 10, borderRadius: 5, borderWidth: 1, borderStyle: 'dashed' },
   label: { fontFamily: fonts.ui, fontSize: 13 },
+  why: { marginTop: 10 },
   ok: { alignSelf: 'flex-start', marginTop: 12 },
 })

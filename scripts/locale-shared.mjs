@@ -63,6 +63,7 @@ const TEMPLATE_SAME = new Set([
   'hang.pm',
   'hang.timeDaypart',
   'hang.priority.normal',
+  'pill.markedWhat',
   'people.namePh',
   'people.addPh',
   'people.newFamilyPh',
@@ -71,6 +72,7 @@ const TEMPLATE_SAME = new Set([
   'tonight.purse',
   'title.home',
   'tags.general',
+  'we.pAnswer',
 ])
 
 export function isLegalKey(key) {

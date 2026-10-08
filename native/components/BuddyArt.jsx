@@ -12,6 +12,7 @@ const COAT = {
   possum: { body: '#9b98a3', belly: '#f4f1ec', ear: '#f2a7b4' },
   penguin: { body: '#344157', belly: '#f7f5f0', ear: '#344157' },
   fox: { body: '#e8743b', belly: '#fff6ea', ear: '#e8743b' },
+  hive: { body: '#f6c443', belly: '#2b2018', ear: '#dff3ff' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -70,6 +71,21 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
         <View style={spot(box, 22.3, 31.4, 3.4, 2.4, pupil)} />
         <View style={spot(box, 12.5, 42.2, 9, 5.6, '#3a2a22')} />
         <View style={spot(box, 26.5, 42.2, 9, 5.6, '#3a2a22')} />
+      </View>
+    )
+  }
+  if (id === 'hive') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 5, 10, 12, 16, coat.ear)} />
+        <View style={spot(box, 31, 10, 12, 16, coat.ear)} />
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 11, 35, 26, 4, coat.belly, 2)} />
+        <View style={spot(box, 14, 41.5, 20, 3, coat.belly, 2)} />
+        <View style={spot(box, 15.7, 23.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 27.7, 23.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 12.8, 44.2, 8.4, 5.6, coat.belly)} />
+        <View style={spot(box, 26.8, 44.2, 8.4, 5.6, coat.belly)} />
       </View>
     )
   }
@@ -163,6 +179,10 @@ const EYES = {
   fox: [
     [[19.8, 27.5, 2.2, 2.8, DARK], [20.5, 26.6, 0.7, 0.9, ...SHINE]],
     [[28.2, 27.5, 2.2, 2.8, DARK], [28.9, 26.6, 0.7, 0.9, ...SHINE]],
+  ],
+  hive: [
+    [[18, 27, 2.3, 3.1, DARK], [18.8, 26, 0.7, 0.9, ...SHINE]],
+    [[30, 27, 2.3, 3.1, DARK], [30.8, 26, 0.7, 0.9, ...SHINE]],
   ],
 }
 
@@ -421,6 +441,26 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="33.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
         <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
+      </Svg>
+    )
+  }
+
+  if (id === 'hive') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" strokeWidth="1" transform="rotate(-25 11 18)" />
+        <Ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" strokeWidth="1" transform="rotate(25 37 18)" />
+        <Path d="M19 17 Q16 10 13 8 M29 17 Q32 10 35 8" fill="none" stroke="#2b2018" strokeWidth="1.4" strokeLinecap="round" />
+        <Ellipse cx="13" cy="8" rx="2.2" ry="2.2" fill="#2b2018" />
+        <Ellipse cx="35" cy="8" rx="2.2" ry="2.2" fill="#2b2018" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#f6c443" />
+        <Path d="M10.5 35 Q24 40 37.5 35 V38.4 Q24 43.4 10.5 38.4 Z M12 41.5 Q24 45.5 36 41.5 L34 44.1 Q24 47.1 14 44.1 Z" fill="#2b2018" />
+        {eyes ? <EyesInline parts={parts} id="hive" /> : null}
+        <Ellipse cx="14" cy="32" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <Ellipse cx="34" cy="32" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <Path d="M22 31.5 Q24 33.3 26 31.5" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <Ellipse cx="17" cy="47" rx="4.2" ry="2.8" fill="#2b2018" />
+        <Ellipse cx="31" cy="47" rx="4.2" ry="2.8" fill="#2b2018" />
       </Svg>
     )
   }

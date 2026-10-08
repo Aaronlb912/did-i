@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import { markLabel } from '../../src/lib/achievements.js'
+import { t } from '../../src/lib/i18n.js'
+import { addNotice } from '../../src/lib/notices.js'
 
 // One line of toasts above the tab bar. Undo, marks and errors wait their
 // turn here and ToastHost shows the first. A toast is { id, kind, ... }:
-//   kind 'undo'  { label, hint, until, onPress }  one at a time; a newer undo
-//                                                  replaces the older and goes
-//                                                  next in line
+//   kind 'undo'  { label, hint, until, onPress, onShown }  one at a time; a newer undo
+//                                                  replaces the older. It goes
+//                                                  first in line, and ToastHost
+//                                                  sets aside any other toast
+//                                                  on screen for it
 //   kind 'mark'  { mark, ms, onGone }
 //   kind 'error' { text, ms }
 //   kind 'done'  { text, ms }                    an action worked (lib/confirm.js)
@@ -15,6 +20,23 @@ import { useEffect, useRef, useState } from 'react'
 // Showing the same id again updates it in place.
 
 let items = []
+
+// A new achievement or Did we moment also goes on the Recent list, so one
+// missed on screen can still be read in full.
+function keepNotice(toast) {
+  if (toast.kind === 'mark') {
+    const mark = toast.mark || {}
+    // Recent names every new mark, not "and 2 more" with no way to see them.
+    const rest = Array.isArray(mark.ids) ? mark.ids.slice(1).map((id) => markLabel(id, 'name')).filter(Boolean) : []
+    const also = rest.length ? t('marks.alsoNew', { names: rest.join(', ') }) : mark.more ? t('marks.more', { n: mark.more }) : ''
+    const text = [markLabel(mark.id, 'name'), mark.id ? markLabel(mark.id, 'line') : '', also]
+      .filter(Boolean)
+      .join('. ')
+    addNotice({ id: toast.id, kind: 'mark', title: t('marks.new'), text, go: { path: '/marks' } })
+  } else if (toast.kind === 'we') {
+    addNotice({ id: toast.id, kind: 'we', title: t('we.title'), text: toast.text || '', go: { path: '/we', id: toast.cardId } })
+  }
+}
 const listeners = new Set()
 
 function emit() {
@@ -30,13 +52,12 @@ export function showToast(toast) {
     emit()
     return
   }
+  keepNotice(toast)
   if (toast.kind === 'undo') {
-    // Only the latest answer can be undone; it goes right after the toast on
-    // screen, or on screen at once if the undo it replaces is showing.
-    const showing = items[0]
+    // Only the latest answer can be undone, and its clock is already running,
+    // so it shows at once. Whatever it pushes aside waits its turn again.
     const rest = items.filter((item) => item.kind !== 'undo')
-    if (!rest.length || (showing && showing.kind === 'undo')) items = [toast, ...rest]
-    else items = [rest[0], toast, ...rest.slice(1)]
+    items = [toast, ...rest]
     emit()
     return
   }
@@ -70,10 +91,12 @@ export function useToastQueue() {
  * Offer `undo` (anything with a `label`) as the undo toast while it is set.
  * `owner` keeps two screens' undos apart; a newer one still replaces an older.
  */
-export function useUndoToast(owner, undo, onUndo, total, hint) {
+export function useUndoToast(owner, undo, onUndo, total, hint, onShown) {
   const id = `undo:${owner}`
   const press = useRef(onUndo)
   press.current = onUndo
+  const shown = useRef(onShown)
+  shown.current = onShown
   useEffect(() => {
     if (!undo) {
       dropToast(id)
@@ -89,6 +112,13 @@ export function useUndoToast(owner, undo, onUndo, total, hint) {
       until: now + total,
       total,
       onPress: () => press.current?.(),
+      // Once it has slid in, its clock starts over: the time to undo counts
+      // from when it can be seen and tapped, not from the answer.
+      onShown: () => {
+        if (!toastQueue().some((item) => item.id === id && item.rev === now)) return
+        showToast({ id, until: Date.now() + total })
+        shown.current?.()
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [undo])

@@ -3,11 +3,12 @@ import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer } from './board-ops.js'
+import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
+import { markedToast } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
 import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
-import { t } from './i18n.js'
 import { feelTap, playClick } from './native.js'
 import {
   allClearTonight,
@@ -129,7 +130,7 @@ export function useTonightStack({
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, label: t('tonight.saved') })
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -260,10 +261,20 @@ export function useTonightStack({
     undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
   }
 
+  // The undo toast is on screen now: the window to undo starts over from here,
+  // so the whole of it can be tapped.
+  function holdUndo() {
+    if (!undo) return
+    if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+  }
+
   function applyUndo() {
     if (!undo) return
     setOverlay(undo.book)
     change(undo.book)
+    // The tap may already be on the account; without this the next pull brings it back.
+    takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
     setUndo(null)
     if (undoTimer.current) window.clearTimeout(undoTimer.current)
     feelTap('undo')
@@ -313,14 +324,17 @@ export function useTonightStack({
     change(next)
     setHolePick(null)
     setWaitPick(null)
-    setPillPick(null)
-    armUndo({ book, label: t('tonight.saved') })
+    // A picked card stays open in its answered state, with its note.
+    if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
     else if (!clears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
     if (clears) {
+      // The night just cleared: no card follows, so its cheer plays in full.
+      if (typeof window !== 'undefined') window.__didICheerFull = Date.now()
       feelTap('hall-on')
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)
@@ -526,6 +540,7 @@ export function useTonightStack({
     setTitleEdit,
     setTitleDraft,
     undo,
+    holdUndo,
     dateIso,
     mark,
     continueStack,

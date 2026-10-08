@@ -80,6 +80,7 @@ export class Boundary extends Component {
             </Text>
           ) : null}
           <Pressable
+            accessibilityRole="button"
             onPress={() => this.setState({ broke: null })}
             style={[styles.again, { backgroundColor: colors.on }]}
           >

@@ -7,6 +7,7 @@ const SHELL_PAD = 16
 const LABEL_W = 120
 const BOTTOM_TRIM = 56
 const RAIL_DROP = 0
+
 const FULL_RAIL_RATIO = 0.62
 const RAIL_W = 50
 

@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
+import { notificationAnswer } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -30,7 +31,6 @@ async function ensureNotificationHandler() {
     const Notifications = await notifications()
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldShowBanner: true,
         shouldShowList: true,
         shouldPlaySound: Platform.OS === 'ios',
@@ -48,11 +48,13 @@ export function pushPossible() {
 
 // Every push sets the icon to 1 and nothing cleared it, so the icon kept a
 // number after everything was read. The app sets it to what is really
-// waiting (0 clears it) whenever that count changes.
+// waiting (0 clears it) whenever that count changes. A push that came in
+// while away sets the icon behind the app's back, so `force` sets it again
+// each time the app comes to the front.
 let badgeShown = -1
-export async function setAppBadge(n) {
+export async function setAppBadge(n, force = false) {
   const next = Math.max(0, Math.floor(Number(n) || 0))
-  if (!pushPossible() || next === badgeShown) return
+  if (!pushPossible() || (next === badgeShown && !force)) return
   badgeShown = next
   try {
     const Notifications = await notifications()
@@ -116,12 +118,15 @@ async function bindResponseListener(handlers = {}) {
       const go = data.go ? String(data.go) : ''
       const sendId = data.sendId ? String(data.sendId) : ''
       const action = String(response?.actionIdentifier || '')
+      const answer = notificationAnswer(response)
+      // The buttons do not open the app, so the reminder is cleared here.
+      if (answer?.noteId) Notifications.dismissNotificationAsync?.(answer.noteId)?.catch?.(() => {})
       if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
         handlers.onSend(sendId, action === 'keep')
-      } else if (data.weId && (action === 'did' || action === 'nope') && typeof handlers.onWeAnswer === 'function') {
-        handlers.onWeAnswer(String(data.weId), action, data.night ? String(data.night) : '')
-      } else if (lampId && (action === 'did' || action === 'nope') && typeof handlers.onAnswer === 'function') {
-        handlers.onAnswer(lampId, action, data.night ? String(data.night) : '')
+      } else if (answer?.kind === 'we' && typeof handlers.onWeAnswer === 'function') {
+        handlers.onWeAnswer(answer.id, answer.action, answer.night)
+      } else if (answer?.kind === 'lamp' && typeof handlers.onAnswer === 'function') {
+        handlers.onAnswer(answer.id, answer.action, answer.night, answer.at)
       } else if (lampId && typeof onLamp === 'function') onLamp(lampId)
       else if (go && typeof onGo === 'function') onGo(go)
     }

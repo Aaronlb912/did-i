@@ -127,8 +127,6 @@ as $$
 declare
   gbal integer;
   cbal integer;
-  gwant integer;
-  cwant integer;
 begin
   insert into public.profiles (user_id)
   values (NEW.user_id)
@@ -139,20 +137,10 @@ begin
   from public.profiles p
   where p.user_id = NEW.user_id;
 
-  gwant := public.shelf_gem_max(NEW.doc);
-  cwant := public.shelf_coin_max(NEW.doc);
-
-  if gwant < gbal then
-    gbal := greatest(0, gwant);
-  end if;
-  if cwant < cbal then
-    cbal := greatest(0, cwant);
-  end if;
-
-  update public.profiles
-  set gem_balance = gbal, coin_balance = cbal
-  where user_id = NEW.user_id;
-
+  -- The server balance always wins. A phone with old saved data (an old
+  -- install, a second device, a reload mid-sync) used to lower the real
+  -- balance here; every signed-in spend goes through a buy_* function, so a
+  -- lower number in the doc is never a real spend.
   NEW.doc := public.shelf_set_gems(public.shelf_set_coins(NEW.doc, cbal), gbal);
   return NEW;
 end;
@@ -325,6 +313,33 @@ revoke all on function public.credit_night_coins(text, integer) from public;
 revoke all on function public.credit_night_coins(text, integer) from anon;
 grant execute on function public.credit_night_coins(text, integer) to authenticated;
 
+-- Your last 14 nights of coins and the last week a gem paid, for the
+-- "how coins work" sheet. Read only, your own rows.
+create or replace function public.read_coin_history()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'nights', coalesce((
+      select jsonb_agg(jsonb_build_object('night', g.night_iso, 'coins', g.coins) order by g.night_iso desc)
+      from (
+        select night_iso, coins from public.coin_night_grants
+        where user_id = (select auth.uid())
+        order by night_iso desc
+        limit 14
+      ) g
+    ), '[]'::jsonb),
+    'gem_week', coalesce((select p.gem_week from public.profiles p where p.user_id = (select auth.uid())), '')
+  );
+$$;
+
+revoke all on function public.read_coin_history() from public;
+revoke all on function public.read_coin_history() from anon;
+grant execute on function public.read_coin_history() to authenticated;
+
 -- Option C: every coin spend goes through here. Shelf coins are display-only.
 create or replace function public.coin_catalog_normalize(raw jsonb)
 returns jsonb
@@ -337,7 +352,8 @@ as $$
     'badges', coalesce(raw->'badges', '[]'::jsonb),
     'looks', coalesce(raw->'looks', '[]'::jsonb),
     'cheer_stages', coalesce(raw->'cheer_stages', '{}'::jsonb),
-    'accessories', coalesce(raw->'accessories', '[]'::jsonb)
+    'accessories', coalesce(raw->'accessories', '[]'::jsonb),
+    'frames', coalesce(raw->'frames', '[]'::jsonb)
   );
 $$;
 
@@ -356,7 +372,8 @@ as $$
         'badges', public.coin_catalog_normalize(p.coin_cosmetics)->'badges',
         'looks', public.coin_catalog_normalize(p.coin_cosmetics)->'looks',
         'cheer_stages', public.coin_catalog_normalize(p.coin_cosmetics)->'cheer_stages',
-        'accessories', public.coin_catalog_normalize(p.coin_cosmetics)->'accessories'
+        'accessories', public.coin_catalog_normalize(p.coin_cosmetics)->'accessories',
+        'frames', public.coin_catalog_normalize(p.coin_cosmetics)->'frames'
       )
       from public.profiles p
       where p.user_id = (select auth.uid())
@@ -367,7 +384,8 @@ as $$
       'badges', '[]'::jsonb,
       'looks', '[]'::jsonb,
       'cheer_stages', '{}'::jsonb,
-      'accessories', '[]'::jsonb
+      'accessories', '[]'::jsonb,
+      'frames', '[]'::jsonb
     )
   );
 $$;
@@ -413,6 +431,7 @@ declare
   looks jsonb;
   stages jsonb;
   accs jsonb;
+  frms jsonb;
   cur_stage integer;
   next_stage integer;
   bal integer;
@@ -449,6 +468,15 @@ begin
     if cost is null or cost < 1 then
       raise exception 'bad item';
     end if;
+  elsif k = 'frame' then
+    -- Coin frames only: gem, earned, seasonal and free frames have no coin price.
+    if not public.shop_item_live('frame', id) then
+      raise exception 'bad item';
+    end if;
+    select c.coins into cost from public.shop_catalog c where c.kind = 'frame' and c.item_id = id;
+    if cost is null or cost < 1 then
+      raise exception 'bad item';
+    end if;
   else
     raise exception 'bad kind';
   end if;
@@ -465,6 +493,7 @@ begin
   looks := cos->'looks';
   stages := cos->'cheer_stages';
   accs := cos->'accessories';
+  frms := cos->'frames';
 
   if k = 'stamp' and stamps @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
@@ -476,6 +505,9 @@ begin
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
   if k = 'accessory' and accs @> jsonb_build_array(id) then
+    return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
+  end if;
+  if k = 'frame' and frms @> jsonb_build_array(id) then
     return jsonb_build_object('coins', row.coin_balance, 'catalog', cos);
   end if;
 
@@ -492,11 +524,11 @@ begin
     update public.profiles
     set coin_balance = coin_balance - cost,
         coin_cosmetics = jsonb_build_object(
-          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
+          'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms
         )
     where user_id = who
     returning coin_balance into bal;
-    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
+    cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms);
     return jsonb_build_object('coins', bal, 'catalog', cos);
   end if;
 
@@ -510,6 +542,8 @@ begin
     badges := badges || to_jsonb(id);
   elsif k = 'accessory' then
     accs := accs || to_jsonb(id);
+  elsif k = 'frame' then
+    frms := frms || to_jsonb(id);
   else
     looks := looks || to_jsonb(id);
   end if;
@@ -518,12 +552,12 @@ begin
   set
     coin_balance = coin_balance - cost,
     coin_cosmetics = jsonb_build_object(
-      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs
+      'stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms
     )
   where user_id = who
   returning coin_balance into bal;
 
-  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs);
+  cos := jsonb_build_object('stamps', stamps, 'badges', badges, 'looks', looks, 'cheer_stages', stages, 'accessories', accs, 'frames', frms);
   return jsonb_build_object('coins', bal, 'catalog', cos);
 end;
 $$;

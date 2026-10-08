@@ -5,6 +5,50 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Card frames
+
+- **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
+- **Needs device testing (friends, gifts, low power):** a friend's page shows their card in their look and frame (and a plain card with no frame); a gem frame sent as a gift arrives, Wear it puts it on, a second copy goes back; frames hold still in low power mode (iPhone Low Power Mode, Android Battery Saver) and move again when it is off. Low power needs the next native build (bump to 1.3.1; expo-battery); a binary without it never pauses for it and does not crash.
+- **Needs device testing (pass 3a fixes):** Questions > Select > Move to a folder and its undo; the Home card and friends row move up while a toast shows (with and without the Did / Nope row); the done count changes with the left count during the cheer; the note sheet stays above the keyboard, and Remove note with undo; German shows 09:00 with the clock on Phone; the year view starts at the first month with answers.
+- **Supabase not applied yet for frame_on and frame gifts.** friends-week.sql and gifts.sql changed; run npm run db:apply:all and the frames-social test before the OTA. Until then the phone's look and frame write fails quietly and friends see no card.
+- **Web shows a gifted frame by name only.** No frame art on the web, and View in collection there has no frames tab.
+- **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
+- **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
+- **Frames have no wishlist and no "Remind me".** Looks, cheers, buddies and accessories can be wishlisted; frame sheets cannot (the wish list in `purse.js` only knows those four kinds). A seasonal frame that is not out yet says when it is back, with no reminder.
+
+## Friend notes
+
+- **Phone only.** The website has no friend page, so notes are not shown or editable there. They are in `friend_notes` and would show if it gets one.
+- **Needs device testing:** add, edit, clear (Save with an empty box) on a friend page, offline save shows the miss line, the note is back on a second phone.
+
+## Referral rewards (branch `feat/referral-rewards`)
+
+- **SQL not applied.** `supabase/referral-rewards.sql` (claim_invites lists the Hive buddy at 15 friends and the Bloom frame at 20) and the `bloom` id in `supabase/friends-week.sql`. Run `npm run db:apply:all`, then `node scripts/test-sql.mjs supabase/tests/referral-rewards.test.sql`. Until then nobody gets the two rewards and wearing Bloom fails the frame_on write quietly.
+- **Needs device testing:** the Refer ladder at 390px (dark, light, a gem look), the Hive chip sway and the sheets, Bloom on the top card only, still with Less motion and in tiles; Hive on the Android widget and wearing a hat between its antennae. The iPhone widget draws Hive from the next store build.
+- **Web Refer page draws Bloom from its own SVG.** The web has no frame renderer, so the ladder there uses a small copy of the art.
+
+## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
+
+- **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
+- **No tap feedback on the notification itself.** The reminder is cleared; a refused answer (night over, already answered) shows a toast the next time the app is open.
+- **Freezes are only on the phone screens.** The web Home dots, calendar and streaks page still show a covered night as missed (the streak number itself agrees, since it is shared night math).
+- **First streak walk is slower on long histories.** Freezes walk every night from the first one; about 85 ms on a laptop for two years of 8 daily questions, once per day per launch. Later walks reuse the settled nights.
+- **Freezes are not on the server.** The server stores the streak the app sends (`profiles.streak`), so friends see the frozen streak too. No coins are paid for freezes and per-question streaks ignore them.
+
+## Settings and social round 4 (branch `polish/settings-social-round4`)
+
+- **SQL not applied.** `supabase/family-summary.sql` (profiles.family_hour) and the new `supabase/device-names.sql` (devices.model, devices.name). Until applied, the family hour picker shows a save miss and phone rename fails; the app falls back to the old device columns. Test: `supabase/tests/settings-social.test.sql`.
+- **iOS phones show "iPhone · iOS 18.2", not the exact model.** No expo-device; Platform constants have no hardware model on iOS.
+- **The cheer line opens the friend page, not a one-tap cheer.** On purpose (no auto-send), but it is one more tap.
+- **New day start is fixed at midnight.** Shown as plain info; a picker for dayFoldHour would need night-math and server changes.
+
+## Settings polish (branch `polish/craft`)
+
+- **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.
+- **Drop switch does not ask for notification permission.** Turning on "Tell me when a drop goes live" only saves the pref; a phone that never allowed notifications gets nothing.
+- **Rating is a store link, not the in-app sheet (for now, owner call 2026-10-07).** The card shows once after the 7th cleared night and opens the store (the App Store opens on the write-a-review sheet). Once the app is public on both stores, swap it for the real in-app prompt: add `expo-store-review` (native, needs a build) and call `requestReview()` where RateCard opens the link, keeping the link as the fallback when the prompt is not available.
+- **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
+
 ## App PIN
 
 - **Forgot PIN.** Signed in: a code to the account email removes the PIN. Signed out: the only way past is to erase what is on the device.
@@ -46,7 +90,7 @@ None of these has run on a real phone yet. They need the 1.3.0 build.
 - **Keep and Pass on a friend's did you**: iPhone only; Android's system-drawn push has no buttons.
 - **Nightly family summary** (supabase/family-summary.sql, over the air): not applied yet. Apply it when the app with the 'family' notification switch ships, so people can turn it off. Counts only members who share their streak; English only, like the other server pushes.
 - **App icon shortcuts** (expo-quick-actions): Tonight, Add (iPhone only, since Android already has a fixed one), Friends and family, Scan. The labels are set when the app opens, so they follow a language change only on the next launch. Android shows no icons on these.
-- **Did and Nope on reminders**: these work over the air (expo-notifications was already in the app). Either button opens the app and saves the answer the way a widget tap does. Did we reminders have no buttons.
+- **Did and Nope on reminders**: over the air. The buttons no longer open the app (branch `feat/answer-freeze-r10`); JS saves the answer the way a widget tap does, clears the reminder and redraws the widget. Did we reminders carry the same buttons.
 
 ## Did we (branch `did-we`, after launch)
 
@@ -160,6 +204,9 @@ real phone are still open on both stores.
 - [ ] **After IAPs ship** — App-Specific Shared Secret → Supabase `APPLE_IAP_SHARED_SECRET` for `gem-iap`. Checked 23 Sep 2026 while signed in: Manage still shows **Generate**, so no secret exists. That name is not on the project, and `gem-iap` is not deployed (only `push` is). The six packs exist and are all **Prepare for Submission**. Version 1.0 has no In-App Purchases section and no build attached. `gems_1` still says the first consumable must go out with a new app version, and its review screenshot is empty.
 
 ## Decided, not building
+
+**Widgets never get frames.** A frame is for the card in the app. The
+home screen widgets stay as they are.
 
 **Kid accounts stay as they are.** A family is people sharing chores,
 and the parent and kid roles decide who can assign what. Did I is not a

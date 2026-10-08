@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default mergeConfig(
   base,
   defineConfig({
+    // react-native-svg reads Node's global on web.
+    define: { global: 'globalThis' },
     resolve: {
       alias: {
         'react-native-reanimated': path.join(__dirname, 'src/visual/mocks/reanimated.js'),

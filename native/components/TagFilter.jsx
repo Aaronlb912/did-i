@@ -10,15 +10,19 @@ import { fonts } from '../theme.js'
 // It floats over the page, so nothing below moves, and scrolls when the list
 // is long. Tap to add or remove; "All" clears a section. Done or a tap
 // outside closes it.
-export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false, noCount = false }) {
+export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topicPicks = [], onTopics, inline = false }) {
   const [open, setOpen] = useState(false)
   const [at, setAt] = useState(null)
   const button = useRef(null)
   const { height } = useWindowDimensions()
-  const live = (boards || []).filter((book) => !book.archived)
+  // Every folder, empty (parked) ones too, the same list the Move sheet shows.
+  const live = boards || []
   const ids = tagIdsOf(tagId)
-  const showFolders = live.length >= 2
   const showTopics = Boolean(onTopics) && topics.length > 0
+  const showFolders = live.length >= 2
+  // One folder: nothing to pick, but the menu still names it above the
+  // topics, so folders and topics read as two different things.
+  const oneFolder = !showFolders && showTopics && live.length === 1
   if (!showFolders && !showTopics) return null
 
   const clock = now || new Date()
@@ -29,7 +33,6 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const topicPart =
     topicPicks.length === 0 ? '' : topicPicks.length === 1 ? topicLabel(topicPicks[0]) : t('topics.some', { n: topicPicks.length })
   const label = topicPart ? (picked.length ? `${folderPart} · ${topicPart}` : topicPart) : folderPart
-  const count = picked.length ? leftoverOn(live, clock, tagId) : allLeft
   const filtering = Boolean(tagId) || topicPicks.length > 0
 
   function toggleTag(id) {
@@ -55,7 +58,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
 
   function Check({ on }) {
     return (
-      <View style={[styles.box, { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.on : 'transparent' }]}>
+      <View style={[styles.box, { borderColor: on ? colors.on : colors.inkDim, backgroundColor: on ? colors.on : 'transparent' }]}>
         {on ? <Text style={[styles.tick, { color: colors.bg }]}>✓</Text> : null}
       </View>
     )
@@ -107,7 +110,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         >
           {label}
         </Text>
-        {count && showFolders && !topicPicks.length && !noCount ? <Text style={[styles.count, { color: colors.on }]}>{count}</Text> : null}
+        {/* No count on the pill: it showed what is left tonight, not what the filter holds. */}
       </Pressable>
       {filtering ? (
         <Pressable
@@ -125,7 +128,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       ) : null}
       </View>
       <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel={t('settings.close')}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('settings.close')}>
           <Pressable
             style={[
               styles.menu,
@@ -148,9 +151,20 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
                   ))}
                 </>
               ) : null}
+              {oneFolder ? (
+                <>
+                  <Text style={[styles.cap, { color: colors.inkDim }]}>{t('nav.boards')}</Text>
+                  {/* Plain text: one folder is nothing to pick, so no checkbox. */}
+                  <View style={styles.row}>
+                    <Text style={{ color: colors.inkSoft, flexShrink: 1 }} numberOfLines={1}>
+                      {live[0].title}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
               {showTopics ? (
                 <>
-                  <Text style={[styles.cap, { color: colors.inkDim }, showFolders && styles.capGap]}>
+                  <Text style={[styles.cap, { color: colors.inkDim }, (showFolders || oneFolder) && styles.capGap]}>
                     {t('questions.topics')}
                   </Text>
                   <Row on={!topicPicks.length} name={t('tags.all')} onPress={() => onTopics([])} />
@@ -166,6 +180,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
               ) : null}
             </ScrollView>
             <Pressable
+              accessibilityRole="button"
               style={[styles.done, { borderTopColor: colors.line }]}
               onPress={() => setOpen(false)}
               android_ripple={ripple(colors.panel3)}
@@ -190,7 +205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  clearInline: { width: 40, height: 40, borderRadius: 20 },
+  clearInline: { width: 32, height: 32, borderRadius: 16 },
   clearText: { fontFamily: fonts.ui, fontSize: 18, lineHeight: 20 },
   pick: {
     flexDirection: 'row',
@@ -203,10 +218,10 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   // Same height as the question chips it sits in front of.
-  pickInline: { minHeight: 40, paddingHorizontal: 14 },
+  // Inline sits in the Questions top row: a long folder name truncates so Edit stays on the same line.
+  pickInline: { minHeight: 40, paddingHorizontal: 12, maxWidth: 120 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
-  count: { fontFamily: fonts.mono, fontSize: 11 },
   backdrop: { flex: 1 },
   menu: {
     position: 'absolute',

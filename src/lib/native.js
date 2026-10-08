@@ -1,4 +1,5 @@
 import { isAppForeground } from './app-foreground.js'
+import { t } from './i18n.js'
 import { streakHitCopy } from './streak-copy.js'
 import { pingOn } from './prefs.js'
 import { boardDate } from './recurrence.js'
@@ -25,6 +26,20 @@ export async function requestNativePings() {
 }
 
 export async function scheduleNativePings() {}
+
+// Web: a sample notification a few seconds out, while this tab stays open.
+export async function pingTest(seconds = 5) {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'off'
+  if (Notification.permission !== 'granted') return 'off'
+  window.setTimeout(() => {
+    try {
+      new Notification('Did I', { body: t('pings.testBody'), icon: './icon-192.png' })
+    } catch {
+      // ok
+    }
+  }, seconds * 1000)
+  return 'set'
+}
 
 export { isAppForeground }
 
@@ -107,6 +122,15 @@ export async function passAlong(text, title) {
   }
 }
 
+export async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text || ''))
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function shareShelf(shelf) {
   const stamp = boardDate(new Date(), 4)
   const text = JSON.stringify(shelf, null, 2)
@@ -119,6 +143,27 @@ export async function shareShelf(shelf) {
     }
   }
   throw new Error('share-unavailable')
+}
+
+// Answers as a spreadsheet file. Falls back to a download when the browser cannot share files.
+export async function shareCsv(text) {
+  const name = `did-i-answers-${boardDate(new Date(), 4)}.csv`
+  const blob = new Blob([text], { type: 'text/csv' })
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], name, { type: 'text/csv' })
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Did I' })
+      return
+    }
+  }
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
 export async function shareBook(book) {

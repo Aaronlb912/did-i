@@ -14,7 +14,8 @@ const HELP_MORE = [
   { id: 'people', title: 'help.people', body: ['help.peopleP'], go: '/people', goLabel: 'help.peopleGo' },
   { id: 'we', title: 'help.we', body: ['help.weP1', 'help.weP2'], go: '/we/new', goLabel: 'help.weGo' },
   { id: 'cheers', title: 'help.cheers', body: ['help.cheersP'] },
-  { id: 'coins', title: 'help.coins', body: ['help.coinsP'], go: '/shop', goLabel: 'help.shopGo' },
+  { id: 'freeze', title: 'freeze.howTitle', body: ['freeze.helpP'] },
+  { id: 'coins', title: 'help.coins', body: ['help.coinsP', 'help.wishP'], go: '/shop', goLabel: 'help.shopGo' },
 ]
 
 export function Help({ book, now }) {

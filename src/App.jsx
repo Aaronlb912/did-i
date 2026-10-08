@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Tonight, emptyBoard, normalizeBook } from './lib/index.js'
 import { marksToToast, unlockAchievements } from './lib/achievements.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from './lib/daily.js'
@@ -29,44 +29,10 @@ import {
 import { bootNative, isNativeHall, listenNativeShell, shareShelf } from './lib/native.js'
 import { startPush } from './lib/push.js'
 import { AllLamps } from './lib/AllLamps.jsx'
-import { Feed } from './lib/Feed.jsx'
-import { HangPage } from './lib/HangPage.jsx'
-import { LampPage } from './lib/LampPage.jsx'
-import { PingPlate } from './lib/PingPlate.jsx'
-import { Boards } from './lib/Boards.jsx'
-import { Profile } from './lib/Profile.jsx'
-import { SearchLamps } from './lib/SearchLamps.jsx'
-import { StatsPage } from './lib/StatsPage.jsx'
-import { Streaks } from './lib/Streaks.jsx'
-import { WeekGrid } from './lib/WeekGrid.jsx'
-import { Calendar } from './lib/Calendar.jsx'
-import { About } from './lib/About.jsx'
-import { Privacy, Terms } from './lib/LegalDoc.jsx'
-import { Help } from './lib/Help.jsx'
-import { Ideas } from './lib/Ideas.jsx'
-import { Later } from './lib/Later.jsx'
 import { Enter } from './lib/Enter.jsx'
 import { FirstNight } from './lib/FirstNight.jsx'
-import { Marks } from './lib/Marks.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
 import { Welcome } from './lib/Welcome.jsx'
-import { GemShop } from './lib/GemShop.jsx'
-import { Shop } from './lib/Shop.jsx'
-import { ShopCheers } from './lib/ShopCheers.jsx'
-import { ShopBuddies } from './lib/ShopBuddies.jsx'
-import { ShopAccessories } from './lib/ShopAccessories.jsx'
-import { ShopLooks } from './lib/ShopLooks.jsx'
-import { Account } from './lib/Account.jsx'
-import { PhoneSettings } from './lib/PhoneSettings.jsx'
-import { People } from './lib/People.jsx'
-import { PeopleConnect } from './lib/PeopleConnect.jsx'
-import { PeopleRefer } from './lib/PeopleRefer.jsx'
-import { Friends } from './lib/Friends.jsx'
-import { Family } from './lib/Family.jsx'
-import { Inbox } from './lib/Inbox.jsx'
-import { Sent } from './lib/Sent.jsx'
-import { WeCard, WeHome, WeNew } from './lib/DidWe.jsx'
-import { DidYou } from './lib/DidYou.jsx'
 import { DidYouBanner } from './lib/DidYouBanner.jsx'
 import { useAccount } from './lib/account.js'
 import { useAutoAdd } from './lib/people.js'
@@ -81,16 +47,12 @@ import {
   pushSoon,
 } from './lib/cloud-sync.js'
 import { stripDemoShelf } from './lib/demo-strip.js'
-import { Collection } from './lib/Collection.jsx'
-import { Gift, GiftArrived, GiftsSent } from './lib/Gift.jsx'
+import { GiftArrived } from './lib/Gift.jsx'
 import { CheerBurst } from './lib/CheerBurst.jsx'
 import { markWelcomeSeen, welcomeSeen } from './lib/hall-pages.js'
 import { needsEnter } from './lib/session.js'
-import { Door } from './site/Door.jsx'
-import { Into } from './site/Into.jsx'
-import { NameBoard } from './site/NameBoard.jsx'
-import { Read } from './site/Read.jsx'
 import { goFromPush, goHash, parseHash } from './site/hash.js'
+import { takeWebWeLink } from './lib/did-you-links.js'
 import { goBack, syncNav } from './site/nav.js'
 import { t } from './lib/i18n.js'
 import { DiagnosticsAsk } from './lib/DiagnosticsAsk.jsx'
@@ -117,6 +79,55 @@ import {
 } from './lib/wallet.js'
 import './lib/did-i.css'
 import './site/site.css'
+
+// Screens off Tonight load on first visit so the first bundle stays small.
+function screen(load, name) {
+  return lazy(() => load().then((mod) => ({ default: mod[name] })))
+}
+const Feed = screen(() => import('./lib/Feed.jsx'), 'Feed')
+const HangPage = screen(() => import('./lib/HangPage.jsx'), 'HangPage')
+const LampPage = screen(() => import('./lib/LampPage.jsx'), 'LampPage')
+const PingPlate = screen(() => import('./lib/PingPlate.jsx'), 'PingPlate')
+const Boards = screen(() => import('./lib/Boards.jsx'), 'Boards')
+const Profile = screen(() => import('./lib/Profile.jsx'), 'Profile')
+const SearchLamps = screen(() => import('./lib/SearchLamps.jsx'), 'SearchLamps')
+const StatsPage = screen(() => import('./lib/StatsPage.jsx'), 'StatsPage')
+const Streaks = screen(() => import('./lib/Streaks.jsx'), 'Streaks')
+const WeekGrid = screen(() => import('./lib/WeekGrid.jsx'), 'WeekGrid')
+const Calendar = screen(() => import('./lib/Calendar.jsx'), 'Calendar')
+const About = screen(() => import('./lib/About.jsx'), 'About')
+const Help = screen(() => import('./lib/Help.jsx'), 'Help')
+const Ideas = screen(() => import('./lib/Ideas.jsx'), 'Ideas')
+const Later = screen(() => import('./lib/Later.jsx'), 'Later')
+const Marks = screen(() => import('./lib/Marks.jsx'), 'Marks')
+const GemShop = screen(() => import('./lib/GemShop.jsx'), 'GemShop')
+const Shop = screen(() => import('./lib/Shop.jsx'), 'Shop')
+const ShopCheers = screen(() => import('./lib/ShopCheers.jsx'), 'ShopCheers')
+const ShopBuddies = screen(() => import('./lib/ShopBuddies.jsx'), 'ShopBuddies')
+const ShopAccessories = screen(() => import('./lib/ShopAccessories.jsx'), 'ShopAccessories')
+const ShopLooks = screen(() => import('./lib/ShopLooks.jsx'), 'ShopLooks')
+const Account = screen(() => import('./lib/Account.jsx'), 'Account')
+const PhoneSettings = screen(() => import('./lib/PhoneSettings.jsx'), 'PhoneSettings')
+const People = screen(() => import('./lib/People.jsx'), 'People')
+const PeopleConnect = screen(() => import('./lib/PeopleConnect.jsx'), 'PeopleConnect')
+const PeopleRefer = screen(() => import('./lib/PeopleRefer.jsx'), 'PeopleRefer')
+const Friends = screen(() => import('./lib/Friends.jsx'), 'Friends')
+const Family = screen(() => import('./lib/Family.jsx'), 'Family')
+const Inbox = screen(() => import('./lib/Inbox.jsx'), 'Inbox')
+const Sent = screen(() => import('./lib/Sent.jsx'), 'Sent')
+const DidYou = screen(() => import('./lib/DidYou.jsx'), 'DidYou')
+const Collection = screen(() => import('./lib/Collection.jsx'), 'Collection')
+const Privacy = screen(() => import('./lib/LegalDoc.jsx'), 'Privacy')
+const Terms = screen(() => import('./lib/LegalDoc.jsx'), 'Terms')
+const WeCard = screen(() => import('./lib/DidWe.jsx'), 'WeCard')
+const WeHome = screen(() => import('./lib/DidWe.jsx'), 'WeHome')
+const WeNew = screen(() => import('./lib/DidWe.jsx'), 'WeNew')
+const Door = screen(() => import('./site/Door.jsx'), 'Door')
+const Into = screen(() => import('./site/Into.jsx'), 'Into')
+const NameBoard = screen(() => import('./site/NameBoard.jsx'), 'NameBoard')
+const Read = screen(() => import('./site/Read.jsx'), 'Read')
+const Gift = screen(() => import('./lib/Gift.jsx'), 'Gift')
+const GiftsSent = screen(() => import('./lib/Gift.jsx'), 'GiftsSent')
 
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
@@ -178,6 +189,12 @@ export default function App() {
   )
   const showNav = !SITE.has(path) && showBottomNav(path)
   const account = useAccount()
+  // Signed in after opening a Did we link on the web: back to its join page.
+  useEffect(() => {
+    if (!account.user) return
+    const code = takeWebWeLink()
+    if (code) goHash('/we', { link: code })
+  }, [account.user])
 
   function persist(nextShelf) {
     const now = new Date()
@@ -607,7 +624,7 @@ export default function App() {
     inner = route.id ? (
       <WeCard book={live} cardId={route.id} onChange={change} />
     ) : (
-      <WeHome book={live} onChange={change} />
+      <WeHome book={live} onChange={change} link={route.link} />
     )
   } else if (path === '/add' || path === '/hang') {
     inner = (
@@ -669,11 +686,13 @@ export default function App() {
         onAdd={addBoard}
         onRemove={removeBoard}
         onChange={change}
+        onStartEmpty={hallProps.onStartEmpty}
       />
     )
-  } else if (path === '/settings') {
+  } else if (path === '/settings' || path === '/settings/more') {
     inner = (
       <Profile
+        page={path === '/settings/more' ? 'more' : ''}
         book={live}
         onChange={change}
         {...hallProps}
@@ -706,7 +725,7 @@ export default function App() {
 
   return (
     <>
-      {inner}
+      <Suspense fallback={<p className="di-set-note">{t('family.loading')}</p>}>{inner}</Suspense>
       {showNav ? <AppNav /> : null}
       {SITE.has(path) ? null : (
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />

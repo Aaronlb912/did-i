@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -41,6 +41,8 @@ export const HangCard = forwardRef(function HangCard(
   const slam = useRef(new Animated.Value(0)).current
   const jolt = useRef(new Animated.Value(0)).current
   const landed = Boolean(stamp)
+  const [textW, setTextW] = useState(0)
+  const mark = Boolean(lead && String(blank || '').trim() && !/[?？]$/.test(String(blank).trim()))
 
   useEffect(() => {
     if (!landed) return undefined
@@ -121,6 +123,19 @@ export const HangCard = forwardRef(function HangCard(
       >
         {tag}
       </Animated.Text>
+      {/* Did I, the question and its ? read as one line, as on Home. */}
+      <View style={lead ? styles.leadRow : null}>
+      {mark ? (
+        // Measures the typed words, so the blank ends where they do and the ? sits right after.
+        <Text
+          style={[faceCardStyles.title, styles.measure]}
+          onLayout={(event) => setTextW(event.nativeEvent.layout.width)}
+          accessible={false}
+          importantForAccessibility="no"
+        >
+          {String(blank)}
+        </Text>
+      ) : null}
       {lead && onLeadPress && !landed ? (
         // The first words are a button: Did I, Did we or Did you.
         <Pressable
@@ -139,7 +154,7 @@ export const HangCard = forwardRef(function HangCard(
           <Text style={[styles.leadChev, { color: leadColor || colors.on }]}>▾</Text>
         </Pressable>
       ) : lead ? (
-        <WaveLead text={leadText || t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
+        <WaveLead text={leadText || t('tonight.didI')} wave={wave} colors={colors} style={[faceCardStyles.title, styles.leadOnly]} />
       ) : null}
       <AppTextInput
         colors={colors}
@@ -161,8 +176,15 @@ export const HangCard = forwardRef(function HangCard(
           faceCardStyles.title,
           styles.blank,
           { color: colors.ink, borderBottomColor: landed ? 'transparent' : focused ? colors.on : colors.line },
+          lead ? styles.leadBlank : null,
+          // The width is measured after each letter, so while typing it keeps one
+          // letter of room: a new letter used to land in a box too narrow for it,
+          // wrap for a frame, then jump back once measured (a flicker on iOS).
+          mark && textW ? { flexGrow: 0, flexBasis: 'auto', minWidth: 0, maxWidth: '100%', width: textW + (focused ? TYPE_ROOM : 4) } : null,
         ]}
       />
+      {mark ? <Text style={[faceCardStyles.title, styles.mark, { color: colors.ink }]}>?</Text> : null}
+      </View>
       {meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
           {meta}
@@ -172,10 +194,20 @@ export const HangCard = forwardRef(function HangCard(
   )
 })
 
+// About one wide letter at the title size (26).
+const TYPE_ROOM = 28
+
 const styles = StyleSheet.create({
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
-  leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
+  // Lifts Did I onto the typed words' baseline (checked on Android).
+  leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingBottom: 3.5 },
+  leadOnly: { paddingBottom: 3.5 },
   leadChev: { fontSize: 26, marginTop: 2 },
+  leadRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', columnGap: 8 },
+  leadBlank: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 140 },
+  // Same bottom room as the blank's padding and underline, so the ? shares its baseline.
+  mark: { paddingBottom: 7.5, marginLeft: -6 },
+  measure: { position: 'absolute', opacity: 0, left: 0, top: 0 },
   // The underline says "you can type here"; it lights up while typing.
   blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },
   stampLayer: {

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Living Frames</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;
+ --card:#16191f;--cardLine:#2b3140;--cardInk:#f4f6fa;--accent:#c9f24d;--miss:#ef6a5b;--stage:#0d1119;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink);margin:0}
+body{font:400 15px/1.55 var(--ui);background:radial-gradient(1200px 600px at 50% -10%,#16203a 0,transparent 60%),var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:28px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:center}
+.controls label{display:grid;gap:4px;font:600 12px/1 var(--mono);color:var(--soft);min-width:150px}
+.controls input[type=range]{width:100%;accent-color:var(--accent)}
+.controls button{font:700 13px/1 var(--ui);padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.controls button.go{background:var(--accent);color:#111;border-color:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:18px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;display:grid;gap:10px;align-content:start}
+.opt h3{margin:0;font:800 22px/1.1 var(--display)}
+.opt .tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14px}
+.opt .reacts{font:600 12px/1.4 var(--mono);color:var(--accent)}
+.stage{border-radius:18px;padding:8px;background:var(--stage);display:flex;justify-content:center;align-items:center;min-height:300px;overflow:hidden}
+.fwrap{position:relative;display:inline-block;transition:transform .25s ease-out}
+.fwrap>svg.f{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.home{position:relative;margin:30px;width:230px;height:172px;background:var(--card);border:1px solid var(--cardLine);border-radius:22px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:8px;color:var(--cardInk)}
+.home .k{font:700 9.5px/1 var(--mono);letter-spacing:.18em;color:var(--accent)}
+.home .t{font:800 19px/1.15 var(--ui)}
+.home .n{font:600 12px/1 var(--mono);color:#a3abb8}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+.tw{animation:tw 2.6s ease-in-out infinite}
+@keyframes flick{0%,100%{opacity:.25}10%{opacity:.9}20%{opacity:.3}60%{opacity:.6}}
+.flick{animation:flick 1.4s steps(1) infinite}
+@keyframes rise{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.rise{animation:rise 1.6s ease-out both}
+@keyframes puff{0%{transform:translate(0,0) scale(.5);opacity:.7}100%{transform:translate(-6px,-26px) scale(1.6);opacity:0}}
+.puff{transform-box:fill-box;transform-origin:center;animation:puff 1.8s ease-out infinite}
+@keyframes bloom{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1) rotate(0)}}
+.bloom{transform-box:fill-box;transform-origin:50% 100%;animation:bloom .8s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 3.4s ease-in-out infinite}
+@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+.draw{animation:draw 1s ease-out both}
+@keyframes fallsnow{0%{transform:translate(0,-10px)}100%{transform:translate(var(--dx),var(--dy))}}
+.snow{animation:fallsnow linear infinite}
+@keyframes swirl{0%{transform:translate(0,0)}25%{transform:translate(var(--sx),calc(var(--sy) * -1))}50%{transform:translate(calc(var(--sx) * -1),var(--sy))}100%{transform:translate(0,0)}}
+.swirl{animation:swirl 1.6s ease-in-out 1}
+@keyframes burst{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.burst{transform-box:fill-box;transform-origin:center;animation:burst .7s ease-out both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:72ch;margin:0 auto}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Gem frames · back to the drawing board</span>
+ <h1>Frames that live your night</h1>
+ <p class="lede">Each of these reacts to something only Did I has: tonight's questions, your swipes, your streak, your buddy, the evening itself. Move the controls and watch them change.</p>
+</header>
+
+<div class="controls" role="group" aria-label="Pretend state">
+ <label>Answered tonight <span id="doneV"></span><input id="done" type="range" min="0" max="5" value="2"></label>
+ <label>Not yet tonight <span id="skipV"></span><input id="skip" type="range" min="0" max="5" value="1"></label>
+ <label>Streak <span id="streakV"></span><input id="streak" type="range" min="0" max="14" value="6"></label>
+ <label>Evening <span id="eveV"></span><input id="eve" type="range" min="0" max="100" value="45"></label>
+ <label>Swipe <span id="swipeV"></span><input id="swipe" type="range" min="-100" max="100" value="0"></label>
+ <button id="shake">Shake</button><button id="did" class="go">Swipe Did</button>
+</div>
+
+<div class="grid" id="grid"></div>
+<p class="notes">How they would work in the app: tonight's answered count, the swipe position (already a shared value on the swipe card), the streak and the clock are all known on Home. Each frame reads them and redraws only what changed. Motion stops for reduced motion and low power like today's gem frames.</p>
+</div>
+
+<script>
+const S={total:5,done:2,skip:1,streak:6,eve:.45,swipe:0,shake:0,did:0};
+const rr=(x,y,w,h,r)=>`M${x+r} ${y}H${x+w-r}A${r} ${r} 0 0 1 ${x+w} ${y+r}V${y+h-r}A${r} ${r} 0 0 1 ${x+w-r} ${y+h}H${x+r}A${r} ${r} 0 0 1 ${x} ${y+h-r}V${y+r}A${r} ${r} 0 0 1 ${x+r} ${y}Z`;
+// Card is cw x ch at (g,g) inside a w x h box.
+const CW=230,CH=172,CR=22,G=30,W=CW+2*G,H=CH+2*G;
+let n=0;const uid=p=>p+(++n);
+const R=seed=>{let x=seed;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+// A point t (0..1) round a rounded rect, clockwise from top-left straight.
+function along(x,y,w,h,r,t){const sh=w-2*r,sv=h-2*r,a=Math.PI*r/2,L=2*sh+2*sv+4*a;let d=((t%1)+1)%1*L;
+ const seg=[[sh,s=>[x+r+s,y,0]],[a,s=>{const q=-Math.PI/2+s/r;return[x+w-r+r*Math.cos(q),y+r+r*Math.sin(q),q+Math.PI/2]}],[sv,s=>[x+w,y+r+s,Math.PI/2]],[a,s=>{const q=s/r;return[x+w-r+r*Math.cos(q),y+h-r+r*Math.sin(q),q+Math.PI/2]}],
+ [sh,s=>[x+w-r-s,y+h,Math.PI]],[a,s=>{const q=Math.PI/2+s/r;return[x+r+r*Math.cos(q),y+h-r+r*Math.sin(q),q+Math.PI/2]}],[sv,s=>[x,y+h-r-s,-Math.PI/2]],[a,s=>{const q=Math.PI+s/r;return[x+r+r*Math.cos(q),y+r+r*Math.sin(q),q+Math.PI/2]}]];
+ for(const[l,f]of seg){if(d<=l)return f(d);d-=l}return[x+r,y,0]}
+const mouse=(x,y,k=1)=>`<g transform="translate(${x} ${y}) scale(${k})"><ellipse cx="-6" cy="-9" rx="4" ry="4" fill="#d9d9e3"/><ellipse cx="6" cy="-9" rx="4" ry="4" fill="#d9d9e3"/><ellipse cx="-6" cy="-9" rx="2" ry="2" fill="#f2a7b8"/><ellipse cx="6" cy="-9" rx="2" ry="2" fill="#f2a7b8"/><ellipse cx="0" cy="0" rx="9" ry="8" fill="#e8e8f0"/><circle cx="-3" cy="-1" r="1.4" fill="#1d1813"/><circle cx="3" cy="-1" r="1.4" fill="#1d1813"/><circle cx="0" cy="2" r="1" fill="#f28ba0"/></g>`;
+
+const F={
+ street:{name:'Night Street',reacts:'Lights up with each answer tonight',desc:'A row of tiny houses along the bottom. Every question you answer turns on a window. Answer them all and the whole street glows and the moon comes up.',draw(){
+  const all=S.done>=S.total,rnd=R(3);let houses='',x=G-6;const base=H-3;
+  const kinds=[[26,13,'roof'],[20,18,'tall'],[30,12,'wide'],[22,15,'roof'],[24,17,'tower']];
+  const step=(W-2*G-10)/S.total;
+  for(let i=0;i<S.total;i++){const[hw,hh,k]=kinds[i%5],cx=G+5+step*(i+.5),lit=i<S.done,top=base-hh;
+   const body=`<rect x="${cx-hw/2}" y="${top}" width="${hw}" height="${hh}" fill="#232a3d"/>`;
+   const roof=k==='roof'?`<path d="M${cx-hw/2-3} ${top} L${cx} ${top-7} L${cx+hw/2+3} ${top}Z" fill="#2e3650"/>`:k==='tower'?`<path d="M${cx-hw/2} ${top} L${cx} ${top-8} L${cx+hw/2} ${top}Z" fill="#2e3650"/>`:`<rect x="${cx-hw/2-2}" y="${top-4}" width="${hw+4}" height="5" fill="#2e3650"/>`;
+   const win=`<rect x="${cx-4}" y="${top+3}" width="8" height="6" rx="1.5" fill="${lit?'#ffd166':'#141826'}"/>${lit?`<rect x="${cx-11}" y="${top}" width="22" height="12" fill="#ffd166" opacity=".14"/>`:''}`;
+   const chim=k==='wide'?`<rect x="${cx+hw/4}" y="${top-6}" width="5" height="6" fill="#2e3650"/>${lit?`<circle class="puff" cx="${cx+hw/4+2.5}" cy="${top-8}" r="2.5" fill="#8a93a8"/>`:''}`:'';
+   houses+=chim+roof+body+win}
+  let stars='';const sr=R(9);for(let i=0;i<14;i++)stars+=`<circle class="tw" style="animation-delay:${(sr()*2.6).toFixed(2)}s" cx="${8+sr()*(W-16)}" cy="${4+sr()*(G-8)}" r="${.6+sr()}" fill="#fff" opacity="${all?1:.4}"/>`;
+  const glow=all?`<path d="${rr(2,2,W-4,H-4,CR+G-2)}" fill="none" stroke="#ffd166" stroke-opacity=".35" stroke-width="6"/>`:'';
+  const moon=all?`<g class="rise"><circle cx="${W-24}" cy="18" r="11" fill="#fff4cf"/><circle cx="${W-19}" cy="15" r="10" fill="var(--stage)"/></g>`:'';
+  return `<path d="${rr(2,2,W-4,H-4,CR+G-2)} ${rr(G-1,G-1,CW+2,CH+2,CR+1)}" fill-rule="evenodd" fill="#0f1424" stroke="#2e3650" stroke-width="1.5"/>${glow}${stars}${moon}<path d="M2 ${base} H${W-2}" stroke="#2e3650" stroke-width="2"/>${houses}`}},
+
+ lights:{name:'String Lights',reacts:'One bulb per question tonight',desc:'Fairy lights strung round the card, one bulb for each question tonight. A Did switches its bulb on, a Not yet makes it flicker, and when you finish they all twinkle together.',draw(){
+  const n2=S.total*2,all=S.done>=S.total;let wire='',bulbs='';const pins=10,pts=[];
+  for(let i=0;i<=pins;i++){const[x,y]=along(G*.28,G*.28,W-G*.56,H-G*.56,CR+G*.72,i/pins);pts.push([x,y])}
+  for(let i=0;i<pins;i++){const[a,b]=pts[i],[c,d]=pts[i+1],mx=(a+c)/2,my=(b+d)/2,cx=W/2,cy=H/2,ox=(mx-cx),oy=(my-cy),l=Math.hypot(ox,oy);wire+=`<path d="M${a} ${b} Q${mx+ox/l*7} ${my+oy/l*7} ${c} ${d}" fill="none" stroke="#3b3f2f" stroke-width="1.6"/>`}
+  const cols=['#ffd166','#ff6b9a','#7bd3ff','#9be36b','#c79bff'];
+  for(let i=0;i<n2;i++){const t=(i+.5)/n2,[x,y,a]=along(G*.28,G*.28,W-G*.56,H-G*.56,CR+G*.72,t),nx=Math.sin(a),ny=-Math.cos(a),bx=x+nx*4,by=y+ny*4;
+   const q=Math.floor(i/2),on=q<S.done,sk=!on&&q<S.done+S.skip,col=cols[q%5];
+   const cls=all?'tw':sk?'flick':'';
+   bulbs+=`<line x1="${x}" y1="${y}" x2="${bx}" y2="${by}" stroke="#3b3f2f" stroke-width="1.6"/><g class="${cls}" style="animation-delay:${(i*.3).toFixed(1)}s">${on||sk?`<circle cx="${bx+nx*5}" cy="${by+ny*5}" r="14" fill="${col}" opacity=".25"/>`:''}<ellipse cx="${bx+nx*5}" cy="${by+ny*5}" rx="5.6" ry="8" transform="rotate(${a*180/Math.PI} ${bx+nx*5} ${by+ny*5})" fill="${on||sk?col:'#2a2e38'}" stroke="${on?'#fff':'#4a4f5c'}" stroke-width=".8"/></g><rect x="${bx-2.4}" y="${by-2.4}" width="4.8" height="4.8" rx="1" fill="#5c6070" transform="rotate(${a*180/Math.PI} ${bx} ${by})"/>`}
+  return wire+bulbs}},
+
+ train:{name:'Buddy Train',reacts:'Speeds up when you swipe Did',desc:'A little toy train runs round the card on its own track, with your buddy riding in the last car. Swipe Did and it toots and picks up speed.',draw(){
+  const pid=uid('tp'),x=G*.5,y=G*.5,w=W-G,h=H-G,r=CR+G*.5,p=rr(x,y,w,h,r);
+  let ties='';for(let i=0;i<48;i++){const[tx,ty,a]=along(x,y,w,h,r,i/48);ties+=`<rect x="${tx-1.5}" y="${ty-6}" width="3" height="12" rx="1" fill="#6b4a2e" transform="rotate(${a*180/Math.PI} ${tx} ${ty})"/>`}
+  const rails=`<path d="${rr(x-3.5,y-3.5,w+7,h+7,r+3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/><path d="${rr(x+3.5,y+3.5,w-7,h-7,r-3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/>`;
+  const fast=S.did>0,dur=fast?5:11;
+  const car=(off,body)=>`<g>${body}<animateMotion dur="${dur}s" begin="${-(0.3+off)*dur}s" repeatCount="indefinite" rotate="auto"><mpath href="#${pid}"/></animateMotion></g>`;
+  const engine=`<rect x="-11" y="-7" width="22" height="13" rx="3" fill="#ef6a5b"/><rect x="2" y="-12" width="8" height="7" rx="1.5" fill="#c94a3c"/><rect x="-9" y="-11" width="5" height="5" fill="#333"/><circle cx="-6" cy="7" r="3" fill="#222"/><circle cx="6" cy="7" r="3" fill="#222"/><circle class="puff" cx="-6.5" cy="-14" r="3" fill="#cfd6e4"/>`;
+  const wagon=c=>`<rect x="-9" y="-6" width="18" height="11" rx="2.5" fill="${c}"/><circle cx="-5" cy="6" r="2.6" fill="#222"/><circle cx="5" cy="6" r="2.6" fill="#222"/>`;
+  const buddyCar=`${wagon('#ffd166')}${mouse(0,-8,.6)}`;
+  return `<path id="${pid}" d="${p}" fill="none"/>${ties}${rails}${car(.0,engine)}${car(-.028,wagon('#7bd3ff'))}${car(-.054,buddyCar)}${fast?`<text x="${W/2}" y="14" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="13" fill="#ffd166">toot toot!</text>`:''}`}},
+
+ garden:{name:'Paper Garden',reacts:'A flower for every night of your streak',desc:'Folded paper flowers grow along the edge, one for each night in your streak, in a new color each night. A missed night leaves a closed bud. Fourteen nights fills the garden.',draw(){
+  let out='';const spots=14,cols=['#ff8fb1','#ffd166','#7bd3ff','#c79bff','#9be36b','#ff9f43','#f7f7f7'];
+  for(let i=0;i<spots;i++){const t=.53+i/spots*.94,[x,y,a]=along(G*.55,G*.55,W-G*1.1,H-G*1.1,CR+G*.45,t%1),nx=Math.sin(a),ny=-Math.cos(a),deg=a*180/Math.PI;
+   const grown=i<S.streak,col=cols[i%7],stem=`<line x1="${x}" y1="${y}" x2="${x+nx*9}" y2="${y+ny*9}" stroke="#4f9a55" stroke-width="1.8"/>`;
+   const fx=x+nx*10,fy=y+ny*10;
+   const flower=grown?`<g class="bloom" style="animation-delay:${(i*.05).toFixed(2)}s"><g transform="translate(${fx} ${fy}) rotate(${deg})">${[0,72,144,216,288].map(q=>`<path d="M0 0 L-6 -12 L0 -17 L6 -12Z" fill="${col}" stroke="rgba(0,0,0,.25)" stroke-width=".5" transform="rotate(${q})"/>`).join('')}<circle r="3.4" fill="#fff4cf" stroke="#e2b75a" stroke-width=".8"/></g></g>`
+    :`<g transform="translate(${fx} ${fy}) rotate(${deg})"><path d="M0 2 C-5 -3 -4 -9 0 -12 C4 -9 5 -3 0 2Z" fill="#d98aa6" stroke="#5fb36a" stroke-width="1.2"/><path d="M-3 0 L0 -5 L3 0" fill="none" stroke="#5fb36a" stroke-width="1.2"/></g>`;
+   out+=stem+`<path d="M${x+nx*6} ${y+ny*6} l${-ny*5} ${nx*5} l${nx*3} ${ny*3}Z" fill="#5fb36a"/>`+flower}
+  let leaves='';for(let i=0;i<40;i++){const[lx,ly,la]=along(G*.55,G*.55,W-G*1.1,H-G*1.1,CR+G*.45,i/40);leaves+=`<ellipse cx="${lx}" cy="${ly}" rx="4" ry="1.8" transform="rotate(${la*180/Math.PI+(i%2?35:-35)} ${lx} ${ly})" fill="${i%3?'#4f9a55':'#6fc07a'}"/>`}
+  return `<path d="${rr(G*.55,G*.55,W-G*1.1,H-G*1.1,CR+G*.45)}" fill="none" stroke="#3f7d46" stroke-width="2"/>${leaves}${out}`}},
+
+ dusk:{name:'Night Sky Clock',start:.66,reacts:'Follows the evening; your reminder is marked',desc:'The border is the evening sky, from sunset at the bottom left round to deep night. The sun slides along as the evening goes and stars come out behind it. A small bell marks your reminder time.',draw(){
+  const gid=uid('dk'),x=G*.5,y=G*.5,w=W-G,h=H-G,r=CR+G*.5,p=rr(x,y,w,h,r),T=S.eve,o=.62,at=(t)=>along(x,y,w,h,r,(t+o)%1);
+  const stops=`<stop offset="0" stop-color="#ffb347"/><stop offset=".25" stop-color="#ff6b8a"/><stop offset=".5" stop-color="#7a4fb3"/><stop offset=".75" stop-color="#22306b"/><stop offset="1" stop-color="#0b1236"/>`;
+  // Round sweep: sunset at the start of the path, night at the end.
+  let segs='';const N=60;for(let i=0;i<N;i++){const[a1,b1]=at(i/N),[a2,b2]=at(Math.min(1,(i+1.2)/N));const c=mix(i/N);segs+=`<line x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}" stroke="${c}" stroke-width="${G*.85}" stroke-linecap="butt"/>`}
+  let stars='';const sr=R(4);for(let i=0;i<40;i++){const t=sr(),[sx,sy]=at(t);if(t<T-.05)stars+=`<circle class="tw" style="animation-delay:${(sr()*2.5).toFixed(2)}s" cx="${sx+(sr()-.5)*G*.6}" cy="${sy+(sr()-.5)*G*.6}" r="${.5+sr()*.9}" fill="#fff" opacity="${Math.min(1,(T-t)*4)}"/>`}
+  const[sx,sy]=at(T),sun=T<.55?`<circle cx="${sx}" cy="${sy}" r="9" fill="#ffd166"/><circle cx="${sx}" cy="${sy}" r="15" fill="#ffd166" opacity=".25"/>`:`<circle cx="${sx}" cy="${sy}" r="8" fill="#fff4cf"/><circle cx="${sx+4}" cy="${sy-3}" r="7" fill="${mix(T)}"/>`;
+  const[bx,by]=at(.62),bell=`<g transform="translate(${bx} ${by})"><path d="M-5 3 Q-5 -6 0 -6 Q5 -6 5 3 Z" fill="#f2c45a" stroke="#7a5a12" stroke-width=".8"/><circle cy="4.5" r="1.6" fill="#f2c45a"/></g>`;
+  const[hx,hy]=at(0),hills=`<path d="M${hx-34} ${H-2} Q${hx-22} ${hy-16} ${hx-8} ${hy-4} Q${hx+2} ${hy-18} ${hx+16} ${hy-6} Q${hx+26} ${hy-12} ${hx+38} ${H-2}Z" fill="#141a2e" stroke="#2a3352" stroke-width="1"/><rect x="${hx+4}" y="${hy-10}" width="7" height="6" fill="#ffd166" opacity=".9"/>`;
+  return `<g clip-path="url(#c${gid})"><clipPath id="c${gid}"><path d="${rr(1,1,W-2,H-2,CR+G-1)} ${rr(G-1,G-1,CW+2,CH+2,CR+1)}" clip-rule="evenodd"/></clipPath>${segs}${stars}</g>${sun}${hills}${bell}<path d="${rr(1,1,W-2,H-2,CR+G-1)}" fill="none" stroke="#ffffff" stroke-opacity=".15"/>`}},
+
+ globe:{name:'Snow Globe',reacts:'Swiping shakes it',desc:'Your card sits inside a glass globe on a little wooden base. Snow drifts down slowly, and every swipe shakes the globe so the snow swirls up and settles again.',draw(){
+  const sr=R(12);let snow='';const shaking=S.shake>0;
+  for(let i=0;i<46;i++){const x=6+sr()*(W-12),y=6+sr()*(H-30),dur=(5+sr()*5).toFixed(1);
+   snow+=`<g class="${shaking?'swirl':''}" style="--sx:${((sr()-.5)*60).toFixed(0)}px;--sy:${(20+sr()*40).toFixed(0)}px"><circle class="snow" style="--dx:${((sr()-.5)*10).toFixed(0)}px;--dy:${(20+sr()*30).toFixed(0)}px;animation-duration:${dur}s;animation-delay:${-(sr()*5).toFixed(1)}s" cx="${x}" cy="${y}" r="${.8+sr()*1.6}" fill="#fff" opacity=".9"/></g>`}
+  const gl=uid('gl');
+  const sc=uid('sc');
+  return `<defs><clipPath id="${sc}"><path d="${rr(3,3,W-6,H-16,CR+G-6)} ${rr(G-2,G-2,CW+4,CH+4,CR+2)}" clip-rule="evenodd"/></clipPath><radialGradient id="${gl}" cx=".3" cy=".25" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".18"/><stop offset=".6" stop-color="#9fd3ff" stop-opacity=".05"/><stop offset="1" stop-color="#9fd3ff" stop-opacity=".16"/></radialGradient></defs>
+  <path d="${rr(3,3,W-6,H-16,CR+G-6)}" fill="url(#${gl})" stroke="#cfe8ff" stroke-opacity=".6" stroke-width="1.5"/>
+  <path d="M${G*.8} ${14} Q${W*.3} 6 ${W*.5} 8" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+  <g clip-path="url(#${sc})">${snow}</g><path d="M${G*.4} ${H-14} H${W-G*.4} L${W-G*.8} ${H-1} H${G*.8}Z" fill="#7a4a2a" stroke="#4a2a14"/><rect x="${G*.4}" y="${H-16}" width="${W-G*.8}" height="4" rx="2" fill="#a06a40"/>`}},
+
+ doodle:{name:'Doodle Margin',reacts:'Draws a doodle for each answer',desc:'Like the edge of a school notebook. Every time you answer, a little doodle draws itself into the margin: a check, a star, a heart, a spiral, a sun. Each night the doodles come in a different order.',draw(){
+  const shapes=[
+   'M0 0 l5 6 l11 -14',
+   'M8 -10 L10.4 -3 L18 -3 L12 1.6 L14.4 9 L8 4.6 L1.6 9 L4 1.6 L-2 -3 L5.6 -3Z',
+   'M8 8 C-6 -2 2 -12 8 -4 C14 -12 22 -2 8 8Z',
+   'M8 0 a2 2 0 1 1 4 0 a5 5 0 1 1 -10 0 a8 8 0 1 1 16 0 a11 11 0 1 1 -22 0',
+   'M8 0 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0 M8 -10 v-4 M8 10 v4 M-2 0 h-4 M18 0 h4 M1 -7 l-3 -3 M15 7 l3 3 M15 -7 l3 -3 M1 7 l-3 3',
+   'M0 0 q8 -14 16 0 q-8 14 -16 0 M4 -2 v0 M12 -2 v0 M4 4 q4 4 8 0'];
+  const spots=[[10,40],[W-34,20],[14,H-46],[W-36,H-40],[W/2-8,10],[W/2+40,H-18]];
+  const cols=['#9be36b','#ffd166','#ff8fb1','#7bd3ff','#ffb347','#c79bff'];
+  let ruled='';for(let y=8;y<H;y+=9)ruled+=`<line x1="4" y1="${y}" x2="${W-4}" y2="${y}" stroke="#7aa7e0" stroke-opacity=".14" stroke-width=".8"/>`;
+  const pc=`<path d="M${G-6} 2 v22 a5 5 0 0 0 10 0 v-18 a3 3 0 0 0 -6 0 v16" fill="none" stroke="#c9cfdb" stroke-width="2" stroke-linecap="round"/>`;
+  const cup=`<circle cx="${W-20}" cy="${H-18}" r="13" fill="none" stroke="#8a5f35" stroke-opacity=".45" stroke-width="3" stroke-dasharray="60 6 12 4"/>`;
+  const dc=uid('dc');let out=`<clipPath id="${dc}"><path d="${rr(1,1,W-2,H-2,CR+G-1)} ${rr(G-1,G-1,CW+2,CH+2,CR+1)}" clip-rule="evenodd"/></clipPath><path d="${rr(1,1,W-2,H-2,CR+G-1)} ${rr(G-1,G-1,CW+2,CH+2,CR+1)}" fill-rule="evenodd" fill="#f4f1e8" opacity=".06"/><g clip-path="url(#${dc})">${ruled}</g>${cup}${pc}<path d="${rr(G*.5,G*.5,W-G,H-G,CR+G*.5)}" fill="none" stroke="#7aa7e0" stroke-opacity=".5" stroke-width="1.2"/><line x1="${G*.85}" y1="4" x2="${G*.85}" y2="${H-4}" stroke="#ef6a5b" stroke-opacity=".45" stroke-width="1"/>`;
+  for(let i=0;i<Math.min(S.done,6);i++){const[x,y]=spots[i];out+=`<path class="draw" style="--len:120;stroke-dasharray:120;animation-delay:${(i*.15).toFixed(2)}s" transform="translate(${x} ${y})" d="${shapes[i]}" fill="none" stroke="${cols[i]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`}
+  return out}},
+
+ lean:{name:'Swipe Glow',reacts:'Leans and glows toward your swipe',desc:'The frame follows your thumb. Drag right and it warms up and leans toward Did; drag left and it cools to grey toward Not yet. When the card lands, a ring of light bursts out.',draw(){
+  const s=S.swipe,gid=uid('lg'),warm=Math.max(0,s),cool=Math.max(0,-s);
+  const burst=S.did>0?`<path class="burst" d="${rr(4,4,W-8,H-8,CR+G-4)}" fill="none" stroke="#c9f24d" stroke-width="6"/>`:'';
+  return `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa3b5" stop-opacity="${(.15+cool*.85).toFixed(2)}"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".12"/><stop offset="1" stop-color="#c9f24d" stop-opacity="${(.15+warm*.85).toFixed(2)}"/></linearGradient></defs>
+  ${[10,7,4].map((d,i)=>`<path d="${rr(G-d-6,G-d-6,CW+2*(d+6),CH+2*(d+6),CR+d+6)}" fill="none" stroke="url(#${gid})" stroke-width="${3+i*2}" opacity="${(.35+i*.25).toFixed(2)}"/>`).join('')}
+  <path d="${rr(G-5,G-5,CW+10,CH+10,CR+5)}" fill="none" stroke="url(#${gid})" stroke-width="2.5"/>${burst}
+  ${warm>.15?`<text x="${W-8}" y="${H/2}" text-anchor="end" font-family="var(--mono)" font-weight="700" font-size="11" fill="#c9f24d" opacity="${warm}">DID</text>`:''}${cool>.15?`<text x="8" y="${H/2}" font-family="var(--mono)" font-weight="700" font-size="11" fill="#c9cfdb" opacity="${cool}">NOT YET</text>`:''}`}},
+};
+function mix(t){const c=[[255,179,71],[255,107,138],[122,79,179],[34,48,107],[11,18,54]];const k=Math.min(.999,Math.max(0,t))*4,i=Math.floor(k),f=k-i,a=c[i],b=c[i+1];return `rgb(${a.map((v,j)=>Math.round(v+(b[j]-v)*f)).join(',')})`}
+
+const card=()=>`<div class="home"><span class="k">TONIGHT · ${S.done} OF ${S.total}</span><div class="t">Did I take my vitamins?</div><span class="n">${S.streak} night streak</span></div>`;
+function render(){
+ document.getElementById('grid').innerHTML=Object.entries(F).map(([k,f])=>{const lean=k==='lean'?`style="transform:rotate(${S.swipe*4}deg) translateX(${S.swipe*10}px)"`:'';
+  return `<article class="opt"><span class="tag">Gem · 3 gems · alive</span><h3>${f.name}</h3><p class="reacts">${f.reacts}</p><p>${f.desc}</p>
+  <div class="stage"><div class="fwrap" ${lean}>${card()}<svg class="f" viewBox="0 0 ${W} ${H}" aria-hidden="true">${f.draw()}</svg></div></div></article>`}).join('');
+ doneV.textContent=S.done;skipV.textContent=S.skip;streakV.textContent=S.streak;eveV.textContent=Math.round(S.eve*100)+'%';swipeV.textContent=S.swipe.toFixed(1);
+}
+const bind=(id,fn)=>document.getElementById(id).addEventListener('input',e=>{fn(+e.target.value);render()});
+bind('done',v=>{S.done=v;S.skip=Math.min(S.skip,S.total-v)});bind('skip',v=>{S.skip=Math.min(v,S.total-S.done)});bind('streak',v=>S.streak=v);bind('eve',v=>S.eve=v/100);bind('swipe',v=>S.swipe=v/100);
+shake.onclick=()=>{S.shake=1;render();setTimeout(()=>{S.shake=0},1700)};
+did.onclick=()=>{S.did=1;S.shake=1;S.done=Math.min(S.total,S.done+1);document.getElementById('done').value=S.done;render();setTimeout(()=>{S.did=0;S.shake=0;render()},2200)};
+render();
+</script>
+</body></html>

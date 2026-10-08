@@ -7,15 +7,17 @@ import { confirmDone } from '../lib/confirm.js'
 import { showToast } from '../lib/toast-queue.js'
 
 function deleteNote(book, lamp) {
-  const taps = (book.answers || []).filter((item) => item.lampId === lamp.id).length
-  if (taps === 0) return t('lamp.deleteNone')
-  if (taps === 1) return t('lamp.deleteOne')
-  return t('lamp.deleteSome', { n: taps })
+  const mine = (book.answers || []).filter((item) => item.lampId === lamp.id)
+  if (mine.length === 0) return t('lamp.deleteNone')
+  const notes = mine.filter((item) => String(item.note || '').trim()).length
+  const answers = mine.length === 1 ? t('lamp.delAnswer1') : t('lamp.delAnswerN', { n: mine.length })
+  const noteLine = notes === 0 ? '' : notes === 1 ? t('lamp.delNote1') : t('lamp.delNoteN', { n: notes })
+  return [answers, noteLine, t('lamp.delUndo')].filter(Boolean).join(' ')
 }
 
 // Stop asking and Delete, shared by the question page and its edit page.
 // `onPaused` lets the edit page keep its unsaved draft in step with the pause.
-export function LampManage({ book, lamp, colors, onChange, onPaused }) {
+export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
   if (!lamp) return null
 
   function togglePause() {
@@ -80,12 +82,16 @@ export function LampManage({ book, lamp, colors, onChange, onPaused }) {
     <>
       <SetCap colors={colors}>{t('lamp.secManage')}</SetCap>
       <SetCard colors={colors}>
+        {onDuplicate ? (
+          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} onPress={onDuplicate} plain />
+        ) : null}
         <SetRow
           colors={colors}
           icon={lamp.archived ? 'play' : 'pause'}
           label={lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
           sub={lamp.archived ? t('lamp.askAgainSub') : t('lamp.stopSub')}
           onPress={togglePause}
+          plain
         />
         <SetRow
           colors={colors}

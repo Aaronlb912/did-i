@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { previewSample } from './board-shelf.js'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { AccessoryChip, BuddyChip, BuddyHang, CheerChip, LookChip } from './Cosmetic.jsx'
@@ -8,10 +9,11 @@ import { activeLook } from './active-look.js'
 import { CoinIcon, GemIcon } from './PurseIcons.jsx'
 import { LookPreviewCard, ShopDoor, ShopPurse } from './shop-bits.jsx'
 import { t } from './i18n.js'
+import { frameText } from './frames.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import {
-  BUDDIES,
+  SHOP_BUDDIES,
   CHEERS,
   LOOKS,
   buddyText,
@@ -29,6 +31,8 @@ export function tileChip(type, id, buddy = '') {
   if (type === 'accessory') return <AccessoryChip id={id} buddyId={buddy || 'ant'} />
   if (type === 'look') return <LookChip id={id} />
   if (type === 'cheer') return <CheerChip id={id} stage={1} />
+  // The web has no frame art yet; a gifted frame shows by name.
+  if (type === 'frame') return null
   return <BuddyChip id={id} />
 }
 
@@ -36,6 +40,7 @@ export function tileName(type, id) {
   if (type === 'accessory') return t(`accessory.${id}`)
   if (type === 'look') return t(lookText(id, 'name'))
   if (type === 'cheer') return t(cheerText(id, 'name'))
+  if (type === 'frame') return t(frameText(id, 'name'))
   return t(buddyText(id, 'name'))
 }
 
@@ -212,15 +217,15 @@ export function Shop({ book, now }) {
             <p className="di-set-cap">{t('shop.buddyPreview')}</p>
             <div className="di-buddy-preview-card di-face di-swipe">
               <BuddyHang id={peekBuddy} />
-              <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-              <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+              <p className="di-face-plate">{previewSample().tag}</p>
+              <h2 className="di-question">{previewSample().question}</h2>
             </div>
           </div>
         ) : null}
 
         <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} onTile={peekAt} />
         <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} onTile={peekAt} />
-        <KindRow type="buddy" list={BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
+        <KindRow type="buddy" list={SHOP_BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
         {peekAcc ? <AccessoryPreview id={peekAcc} purse={purse} /> : null}
         <KindRow type="accessory" list={accessoriesForSale(today)} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} onTile={peekAt} />
 

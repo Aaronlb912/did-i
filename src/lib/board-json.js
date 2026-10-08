@@ -63,13 +63,40 @@ function askKey(lamp) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(after) ? after : ''
 }
 
+// The order someone set by hand on Questions. Questions never moved have none
+// and come after the ones that were.
+export function lampOrder(lamp) {
+  const n = Number(lamp?.order)
+  return lamp?.order !== '' && lamp?.order != null && Number.isFinite(n) ? n : Infinity
+}
+
 // Tonight's order: questions with no set time first (they can be asked all
-// evening), then by ask time. Priority breaks ties.
+// evening), then by ask time. A hand-set order comes next, then priority.
 export function byAskTime(rows) {
   return byPriority(rows)
     .map((row, at) => ({ row, at }))
-    .sort((a, b) => askKey(a.row.lamp).localeCompare(askKey(b.row.lamp)) || a.at - b.at)
+    .sort((a, b) => {
+      const time = askKey(a.row.lamp).localeCompare(askKey(b.row.lamp))
+      if (time) return time
+      const ao = lampOrder(a.row.lamp)
+      const bo = lampOrder(b.row.lamp)
+      if (ao !== bo) return ao === Infinity ? 1 : bo === Infinity ? -1 : ao - bo
+      return a.at - b.at
+    })
     .map((item) => item.row)
+}
+
+// Sets the hand order for these lamps (ids in the new order) across books.
+export function setLampOrder(books, ids) {
+  const rank = new Map(ids.map((id, at) => [id, at]))
+  return books.map((book) => {
+    const lamps = book.lamps || []
+    if (!lamps.some((lamp) => rank.has(lamp.id) && lamp.order !== rank.get(lamp.id))) return book
+    return {
+      ...book,
+      lamps: lamps.map((lamp) => (rank.has(lamp.id) ? { ...lamp, order: rank.get(lamp.id) } : lamp)),
+    }
+  })
 }
 
 // Low never buzzes. High gets a second nudge late if it is still open.
@@ -208,6 +235,9 @@ export function normalizeLamp(raw) {
     priority: lampPriority(lamp),
     notify: lampNotifyOn(lamp),
     archived: asBool(lamp.archived),
+    ...(Number.isInteger(Number(lamp.order)) && lamp.order !== '' && lamp.order != null && Number(lamp.order) >= 0
+      ? { order: Math.min(Number(lamp.order), 9999) }
+      : {}),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
     // Put on your tonight for you (a Did you auto-added from family or a
     // friend you allow): a did counts, a nope or no answer does not count
@@ -234,6 +264,8 @@ export function normalizeAnswer(raw) {
     status,
     answeredAt: asString(answer.answeredAt),
     note: asString(answer.note),
+    // When the note was last saved; answeredAt stays the tap.
+    ...(asString(answer.noteAt) ? { noteAt: asString(answer.noteAt) } : {}),
   }
 }
 
@@ -290,6 +322,8 @@ export function normalizeBook(raw) {
     buddyOn: purse.buddyOn,
     accessories: purse.accessories,
     worn: purse.worn,
+    frames: purse.frames,
+    frame: purse.frame,
     friendCheers: purse.friendCheers,
   }
 }
@@ -361,7 +395,10 @@ export function didQuestion(raw) {
     .replace(/\?+$/, '')
     .trim()
   if (!text) return ''
-  const rest = /^[A-Z]{2}/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1)
+  // Only a plain word ("Lock") loses its capital, the one a phone adds at the
+  // start. Acronyms, names with digits or inner capitals stay as typed.
+  const first = text.split(' ')[0]
+  const rest = /^\p{Lu}\p{Ll}+$/u.test(first) ? text.charAt(0).toLowerCase() + text.slice(1) : text
   return `Did I ${rest}?`
 }
 

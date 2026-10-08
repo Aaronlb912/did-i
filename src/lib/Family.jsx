@@ -13,6 +13,7 @@ import {
   familyHistory,
   familyLampMeta,
   leaveFamily,
+  renameFamily,
   listFamilyLamps,
   personName,
   readFamily,
@@ -57,6 +58,7 @@ export function Family({ book, onChange, now, familyId }) {
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [miss, setMiss] = useState('')
+  const [naming, setNaming] = useState(null)
   const [gemShort, setGemShort] = useState(false)
   const [stock, setStock] = useState(null)
   const [sheet, setSheet] = useState(null)
@@ -186,10 +188,39 @@ export function Family({ book, onChange, now, familyId }) {
           +
         </button>
       </div>
+      {fam.parent && naming == null ? (
+        <button className="di-key" type="button" onClick={() => setNaming(fam.name || '')}>
+          {t('family.rename')}
+        </button>
+      ) : null}
+      {naming != null ? (
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const { miss: why } = await renameFamily(fam.id, naming)
+            if (why) return setMiss(why)
+            setMiss('')
+            setNaming(null)
+            return load()
+          }}
+        >
+          <label className="di-field">
+            <span>{t('family.rename')}</span>
+            <input value={naming} maxLength={60} autoFocus onChange={(event) => setNaming(event.target.value)} />
+          </label>
+          <button className="di-key" type="submit">
+            {t('settings.save')}
+          </button>{' '}
+          <button className="di-key" type="button" onClick={() => setNaming(null)}>
+            {t('settings.neverMind')}
+          </button>
+        </form>
+      ) : null}
+      {fam.members.length < 2 || !lamps.length ? <p className="di-set-note">{t('family.whatFor')}</p> : null}
 
       <SectionHead label={t('family.people')} count={fam.members.length} />
       <p className="di-set-note">
-        {t('people.doneOf', {
+        {t(fam.members.length === 1 ? 'people.doneOfOne' : 'people.doneOf', {
           done: fam.members.filter((row) => doneTonight(row.person, night)).length,
           n: fam.members.length,
         })}

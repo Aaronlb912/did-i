@@ -1,45 +1,13 @@
 import { useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Reveal } from '../lib/motion.jsx'
 import { t } from '../../src/lib/i18n.js'
-import { personInitials } from '../../src/lib/people.js'
 import { fonts } from '../theme.js'
+import { PersonAvatar } from './PersonAvatar.jsx'
 
-/** Their photo, or initials, in a rounded tile; the edge lights when they are done tonight. */
-export function Avatar({ person, done, colors, size = 46 }) {
-  const [broken, setBroken] = useState(false)
-  const url = !broken && typeof person?.avatar_url === 'string' ? person.avatar_url.trim() : ''
-  const radius = Math.round(size * 0.28)
-  return (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius,
-          backgroundColor: done ? colors.on : colors.panel2,
-          borderColor: done ? colors.on : colors.line,
-          borderWidth: url && done ? 2 : 1,
-        },
-      ]}
-    >
-      {url ? (
-        <Image
-          source={{ uri: url }}
-          style={{ width: '100%', height: '100%', borderRadius: radius - 1 }}
-          accessibilityIgnoresInvertColors
-          onError={() => setBroken(true)}
-        />
-      ) : (
-        <Text
-          style={[styles.initials, { color: done ? colors.bg : colors.ink, fontSize: Math.round(size * 0.36) }]}
-          numberOfLines={1}
-        >
-          {personInitials(person)}
-        </Text>
-      )}
-    </View>
-  )
+/** One person: photo, else buddy with a colored initial, else letters (PersonAvatar). */
+export function Avatar(props) {
+  return <PersonAvatar {...props} />
 }
 
 /** A small label on the right of a card: done tonight, a role, a streak. */
@@ -63,7 +31,7 @@ export function Pill({ label, on, colors }) {
  * One person: avatar, name, a line under it, quick actions, and an optional
  * fold with the rarer ones (switches, remove, block).
  */
-export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight, onOpen }) {
+export function PersonCard({ person, name, line, done, pill, pillOn, colors, extra, actions, more, highlight, onOpen, noted = false }) {
   const [open, setOpen] = useState(false)
   return (
     <View
@@ -86,6 +54,11 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
         <View style={styles.copy}>
           <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
             {name}
+            {noted ? (
+              <Text style={{ color: colors.inkDim }} accessibilityLabel={t('friendNote.has')}>
+                {'  ✎'}
+              </Text>
+            ) : null}
           </Text>
           {line ? (
             <Text style={[styles.line, { color: colors.inkDim }]} numberOfLines={2}>
@@ -118,12 +91,25 @@ export function PersonCard({ person, name, line, done, pill, pillOn, colors, ext
           ) : null}
         </View>
       ) : null}
-      {more && open ? <View style={[styles.fold, { borderTopColor: colors.lineSoft }]}>{more}</View> : null}
+      {more && open ? <Reveal style={[styles.fold, { borderTopColor: colors.lineSoft }]}>{more}</Reveal> : null}
     </View>
   )
 }
 
 /** Section heading with an optional count and a link on the right. */
+/** "+ Add" as an outlined pill, so it does not read as the same thing as See all. */
+export function AddPill({ colors, onPress, label }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
+      {({ pressed }) => (
+        <View style={[styles.addPill, { borderColor: colors.on, opacity: pressed ? 0.6 : 1 }]}>
+          <Text style={[styles.addPillText, { color: colors.on }]}>+ {t('tonight.add')}</Text>
+        </View>
+      )}
+    </Pressable>
+  )
+}
+
 export function SectionHead({ label, count, link, onLink, onAdd, addLabel, colors }) {
   return (
     <View style={styles.head}>
@@ -132,16 +118,7 @@ export function SectionHead({ label, count, link, onLink, onAdd, addLabel, color
         {count != null ? ` · ${count}` : ''}
       </Text>
       <View style={styles.headRight}>
-        {onAdd ? (
-          // An outlined button, so it does not read as the same thing as See all.
-          <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={addLabel}>
-            {({ pressed }) => (
-              <View style={[styles.addPill, { borderColor: colors.on, opacity: pressed ? 0.6 : 1 }]}>
-                <Text style={[styles.addPillText, { color: colors.on }]}>+ {t('tonight.add')}</Text>
-              </View>
-            )}
-          </Pressable>
-        ) : null}
+        {onAdd ? <AddPill colors={colors} onPress={onAdd} label={addLabel} /> : null}
         {link ? (
           <Pressable onPress={onLink} hitSlop={8} accessibilityRole="button">
             <Text style={[styles.headLink, { color: colors.inkSoft }]}>{link} ›</Text>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Axolotl Buddy</title>
+<style>
+:root{--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--line:#1f2632;--gold:#f2c45a;
+ --card:#16191f;--cardLine:#2b3140;--cardInk:#f4f6fa;--cardSoft:#a3abb8;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace}
+.app-light{--card:#ffffff;--cardLine:#d5dbe4;--cardInk:#141a22;--cardSoft:#56606e;--accent:#5f8a00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:400 15px/1.55 var(--ui);background:radial-gradient(1200px 600px at 50% -10%,#16203a 0,transparent 60%),var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 16px 80px;display:grid;gap:36px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+.lede{color:var(--soft);margin:0;max-width:62ch}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:12px;align-content:start}
+.opt h3{margin:0;font:800 22px/1.1 var(--display)}
+.opt .tag{font:700 10.5px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px}
+.bstage{display:flex;align-items:flex-end;justify-content:center;gap:14px;flex-wrap:wrap;border-radius:16px;padding:16px 8px;background:var(--card);border:1px solid var(--cardLine)}
+.bstage figure{margin:0;display:grid;justify-items:center;gap:6px;font:600 10.5px/1 var(--mono);color:var(--cardSoft)}
+.minicard{position:relative;width:150px;height:96px;border-radius:16px;background:var(--card);border:1px solid var(--cardLine);padding:12px;color:var(--cardInk);font:800 13px/1.2 var(--ui)}
+.minicard .k{font:700 8px/1 var(--mono);letter-spacing:.16em;color:var(--accent);display:block;margin-bottom:6px}
+.minicard svg{position:absolute;right:8px;top:8px}
+.sway{transform-origin:50% 90%;animation:sway 3.6s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.eye{transform-box:fill-box;transform-origin:center;animation:blink 4.2s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.gl{transform-box:fill-box;transform-origin:100% 50%;animation:wave 2.4s ease-in-out infinite}
+.gr{transform-box:fill-box;transform-origin:0% 50%;animation:wave2 2.4s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}
+@keyframes wave2{0%,100%{transform:rotate(0)}50%{transform:rotate(7deg)}}
+@media (prefers-reduced-motion:reduce){.sway,.eye,.gl,.gr{animation:none!important}}
+.peers{display:flex;gap:10px;align-items:flex-end}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Buddy idea</span>
+ <h1>Lotl the axolotl</h1>
+ <p class="lede">The chibi shape you picked: a big round head on a small round body, soft waving gills, big shiny eyes. Three colors, each big, wearing an accessory, next to the frog and possum, and at card size. Line idea: "Grows back stronger every time."</p>
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+</header>
+<div class="grid" id="opts"></div>
+</div>
+<script>
+const PALS=[{key:'Pink',tag:'Option A · classic',desc:'The well-known pink axolotl with ruby gills.',acc:'flower',body:'#ffc2d4',shade:'#f2a4bd',belly:'#ffe6ee',gill:'#ff6f91',gill2:'#e2426e',blush:'#ff6f91',ink:'#2d1a20'},{key:'Wild',tag:'Option B · wild',desc:'Olive with darker gills and a few freckles.',acc:'glasses',body:'#a3bd86',shade:'#86a26a',belly:'#dbe7c6',gill:'#5f7f48',gill2:'#466336',blush:'#e58a8a',ink:'#22301a',spots:'#3e5230'},{key:'Gold',tag:'Option C · gold',desc:'A rare golden one with peach gills.',acc:'crown',body:'#ffd98a',shade:'#f1bf55',belly:'#fff1c9',gill:'#ff9a6b',gill2:'#ec7346',blush:'#ff8a7a',ink:'#3a2414'}];let P=PALS[0];
+const eye=(x,y,r=2.3)=>`<g class="eye"><ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*1.18}" fill="#1f1a1e"/><ellipse cx="${x+r*.3}" cy="${y-r*.4}" rx="${r*.32}" ry="${r*.38}" fill="#fff" opacity=".95"/></g>`;
+const frond=(x,y,ang,len,w=3)=>`<g transform="translate(${x} ${y}) rotate(${ang})"><path d="M0 0 C${len*.3} -${w} ${len*.8} -${w} ${len} 0 C${len*.8} ${w} ${len*.3} ${w} 0 0z" fill="${P.gill}"/><path d="M1.2 0 L${len-1.8} 0" stroke="${P.gill2}" stroke-width="1" stroke-linecap="round" opacity=".75"/></g>`;
+const gills=(lx,rx,y,s=1)=>`<g class="gl">${frond(lx,y-5*s,-150,8*s)}${frond(lx-1,y,-178,8.5*s)}${frond(lx,y+5*s,152,7.5*s)}</g><g class="gr">${frond(rx,y-5*s,-30,8*s)}${frond(rx+1,y,-2,8.5*s)}${frond(rx,y+5*s,28,7.5*s)}</g>`;
+const smile=(x,y,w=3)=>`<path d="M${x-w} ${y} q${w/2} ${w*.55} ${w} 0 q${w/2} ${w*.55} ${w} 0" fill="none" stroke="${P.ink}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`;
+const cheeks=(a,b,y)=>`<ellipse cx="${a}" cy="${y}" rx="2.3" ry="1.4" fill="${P.blush}" opacity=".55"/><ellipse cx="${b}" cy="${y}" rx="2.3" ry="1.4" fill="${P.blush}" opacity=".55"/>`;
+const CHIBI={name:'Chibi',tag:'Option D · big head',desc:'A big round head on a small round body, like a sticker. Most baby-like, still reads as an axolotl from the gills.',art:()=>`
+  <ellipse cx="24" cy="43" rx="8.5" ry="6" fill="${P.body}"/>
+  <ellipse cx="24" cy="44" rx="5" ry="3.6" fill="${P.belly}"/>
+  <path d="M31 44 q6 0 8 -4 q.5 4 -3 6 q-2 1 -5 .5z" fill="${P.shade}"/>
+  ${gills(9.5,38.5,25,1.05)}
+  <ellipse cx="24" cy="26" rx="15.5" ry="13.5" fill="${P.body}"/>
+  <ellipse cx="24" cy="30.5" rx="10" ry="6.5" fill="${P.belly}" opacity=".6"/>
+  ${P.spots?'<g fill="'+P.spots+'" opacity=".45"><circle cx="12" cy="20" r=".9"/><circle cx="35" cy="19" r="1.1"/><circle cx="22" cy="15" r=".8"/><circle cx="27" cy="44" r=".9"/></g>':''}${eye(18,26,2.7)}${eye(30,26,2.7)}${smile(24,31)}${cheeks(12.5,35.5,31)}
+  <ellipse cx="19" cy="48.5" rx="3" ry="2" fill="${P.shade}"/><ellipse cx="29" cy="48.5" rx="3" ry="2" fill="${P.shade}"/>`}
+;
+const ACC={flower:`<g fill="#fff"><circle cx="24" cy="9.5" r="2.6"/><circle cx="28" cy="12.7" r="2.6"/><circle cx="26.5" cy="17.2" r="2.6"/><circle cx="21.5" cy="17.2" r="2.6"/><circle cx="20" cy="12.7" r="2.6"/></g><circle cx="24" cy="13.6" r="2.3" fill="#f2c45a"/>`,glasses:`<g fill="none" stroke="#2a2a30" stroke-width="1.3"><circle cx="18" cy="26" r="4.6"/><circle cx="30" cy="26" r="4.6"/><path d="M22.6 26 h2.8"/></g><g fill="#bfeaf7" opacity=".22"><circle cx="18" cy="26" r="4"/><circle cx="30" cy="26" r="4"/></g>`,crown:`<path d="M17 15.5 l1.8 -7.5 l3.4 4 l1.8 -6 l1.8 6 l3.4 -4 l1.8 7.5z" fill="#f2c45a"/><path d="M17.5 14 h13" stroke="#fff3c4" stroke-width=".9" opacity=".7"/><circle cx="24" cy="6.6" r="1.2" fill="#ef6a5b"/>`};
+const FROG=`<ellipse cx="16" cy="20" rx="7" ry="6.5" fill="#72c45e"/><ellipse cx="32" cy="20" rx="7" ry="6.5" fill="#72c45e"/><ellipse cx="24" cy="32" rx="16" ry="13" fill="#72c45e"/><ellipse cx="24" cy="37" rx="10" ry="7" fill="#e4f4c4"/><ellipse cx="16" cy="19" rx="4.6" ry="4.6" fill="#fff"/><ellipse cx="32" cy="19" rx="4.6" ry="4.6" fill="#fff"/><ellipse cx="16.6" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c"/><ellipse cx="31.4" cy="19.6" rx="2.2" ry="2.8" fill="#2d241c"/><path d="M17 30 Q24 35.5 31 30" fill="none" stroke="#2f5a28" stroke-width="1.3" stroke-linecap="round"/><ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#72c45e"/><ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#72c45e"/>`;
+const POSSUM=`<ellipse cx="13" cy="19" rx="5" ry="5.5" fill="#3a3438"/><ellipse cx="35" cy="19" rx="5" ry="5.5" fill="#3a3438"/><ellipse cx="13" cy="19.5" rx="3" ry="3.4" fill="#f2a7b4"/><ellipse cx="35" cy="19.5" rx="3" ry="3.4" fill="#f2a7b4"/><ellipse cx="24" cy="32" rx="15" ry="13.5" fill="#9b98a3"/><ellipse cx="24" cy="29" rx="10.5" ry="9" fill="#f4f1ec"/><ellipse cx="19" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e"/><ellipse cx="29" cy="28" rx="1.9" ry="2.3" fill="#1f1a1e"/><ellipse cx="24" cy="37.2" rx="1.9" ry="1.4" fill="#e07a8a"/><ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#9b98a3"/><ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#9b98a3"/>`;
+const svg=(inner,w,h,cls)=>`<svg viewBox="0 2 48 52" width="${w}" height="${h}" class="${cls||''}" aria-hidden="true">${inner}</svg>`;
+document.getElementById('opts').innerHTML=PALS.map(p=>{P=p;const art=CHIBI.art(),wear=art+ACC[p.acc];return `<article class="opt"><span class="tag">${p.tag}</span><h3>${p.key}</h3><p>${p.desc}</p><div class="bstage app"><figure>${svg(art,130,141,'sway')}<figcaption>LARGE</figcaption></figure><figure>${svg(wear,96,104,'sway')}<figcaption>${p.acc.toUpperCase()}</figcaption></figure></div><div class="bstage app"><figure><div class="peers">${svg(FROG,44,48)}${svg(art,44,48,'sway')}${svg(POSSUM,44,48)}</div><figcaption>WITH FROG AND POSSUM</figcaption></figure><div class="minicard"><span class="k">TONIGHT</span>Did I drink<br>8 glasses?${svg(art,28,30,'sway')}</div></div></article>`}).join('');
+document.getElementById('theme').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#theme button').forEach(x=>x.setAttribute('aria-pressed',x===b));document.querySelectorAll('.app').forEach(n=>n.classList.toggle('app-light',b.dataset.v==='light'))});
+</script>
+</body></html>

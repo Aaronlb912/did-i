@@ -56,6 +56,8 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
                 return (
                   <Pressable
                     key={opt.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
                     onPress={() => pick(opt.value)}
                     style={({ pressed }) => [
                       styles.opt,

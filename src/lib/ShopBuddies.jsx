@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { previewSample } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
 import { buyWithGems } from './coin-shop.js'
-import { BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
+import { SHOP_BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
 import { BuyConfirm, ShopPurse, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
 import { t } from './i18n.js'
@@ -92,13 +93,13 @@ export function ShopBuddies({ book, onChange, now }) {
             <p className="di-set-cap">{t('shop.buddyPreview')}</p>
             <div className="di-buddy-preview-card di-face di-swipe">
               <BuddyHang id={peekBuddy} />
-              <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-              <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+              <p className="di-face-plate">{previewSample().tag}</p>
+              <h2 className="di-question">{previewSample().question}</h2>
             </div>
           </div>
         ) : null}
 
-        <div className="di-set-card di-shop-card">{BUDDIES.map(buddyRow)}</div>
+        <div className="di-set-card di-shop-card">{SHOP_BUDDIES.map(buddyRow)}</div>
 
         {miss ? (
           <p className="di-miss" role="alert">

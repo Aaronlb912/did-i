@@ -1,18 +1,15 @@
 import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
-import { t } from './i18n.js'
-import { BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
+import { hasLocaleKey, t } from './i18n.js'
+import { questionStreak } from './lamp-record.js'
+import { SHOP_BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
 import {
   addDaysIso,
   allClearTonight,
-  answerFor,
   boardDate,
   countedTonightRows,
   dueTonight,
-  isDueOn,
   parseIsoDate,
-  periodKeyFor,
-  previousDueDate,
 } from './recurrence.js'
 
 // The first fourteen, each with its own words (mark.<id>.name / line / how).
@@ -145,7 +142,12 @@ export function markLabel(id, field) {
   const item = BY_ID.get(id)
   if (!item) return ''
   if (item.own) return t(`mark.${id}.${field}`)
-  if (item.group) return t(`ach.${item.group}.${field}`, { n: item.n.toLocaleString() })
+  if (item.group) {
+    // A tier of 1 uses its own words when the plural would read wrong ("1 nights").
+    const one = `ach.${item.group}.${field}One`
+    if (item.n === 1 && hasLocaleKey(one)) return t(one)
+    return t(`ach.${item.group}.${field}`, { n: item.n.toLocaleString() })
+  }
   return t(`ach.${id}.${field}`)
 }
 
@@ -166,20 +168,7 @@ export function nextMark(book) {
 
 export function streakLength(book, lamp, now) {
   if (!lamp) return 0
-  const today = boardDate(now, book.dayFoldHour)
-  let cursor = isDueOn(lamp, today) ? today : previousDueDate(lamp, today)
-  if (isDueOn(lamp, today) && !answerFor(book, lamp.id, periodKeyFor(lamp, today))) {
-    cursor = previousDueDate(lamp, today)
-  }
-  let count = 0
-  while (cursor && count < 40) {
-    const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    if (!answer) break
-    if (answer.status !== 'yes' && answer.status !== 'late' && answer.status !== 'skip') break
-    count += 1
-    cursor = previousDueDate(lamp, cursor)
-  }
-  return count
+  return questionStreak(book, lamp, boardDate(now, book.dayFoldHour))
 }
 
 function cameBackAfterHole(book, now = new Date()) {
@@ -298,7 +287,7 @@ export function shelfStats(boards, now = new Date()) {
   s.cheers = purse.cheers.filter((id) => id !== 'lime').length
   s.cheersAll = CHEERS.every((item) => purse.cheers.includes(item.id))
   s.buddies = purse.buddies.filter((id) => id !== FREE_BUDDY).length
-  s.buddiesAll = BUDDIES.every((item) => purse.buddies.includes(item.id))
+  s.buddiesAll = SHOP_BUDDIES.every((item) => purse.buddies.includes(item.id))
   s.plays = purse.cheerUses
   s.coins = purse.coins
   return s
@@ -390,6 +379,9 @@ export function commitBook(book, clock = new Date()) {
 // long list arrived catches up on tiers you already had, so those stay
 // quiet; the first fourteen still toast as before.
 const CATCH_UP_KEY = 'did-i-ach-caught-up'
+// Every achievement already toasted on this device. A sync or a Did we card
+// can earn one again after it was dropped from the book; it never toasts twice.
+const TOASTED_KEY = 'did-i-ach-toasted'
 
 export function marksToToast(news) {
   let ids = [...(news || [])]
@@ -397,10 +389,17 @@ export function marksToToast(news) {
   try {
     caughtUp = localStorage.getItem(CATCH_UP_KEY) === '1'
     if (!caughtUp) localStorage.setItem(CATCH_UP_KEY, '1')
+    const raw = JSON.parse(localStorage.getItem(TOASTED_KEY) || '[]')
+    const toasted = new Set(Array.isArray(raw) ? raw : [])
+    const fresh = ids.filter((id) => !toasted.has(id))
+    for (const id of ids) toasted.add(id)
+    localStorage.setItem(TOASTED_KEY, JSON.stringify([...toasted]))
+    ids = fresh
   } catch {
     caughtUp = true
   }
   if (!caughtUp) ids = ids.filter((id) => BY_ID.get(id)?.own)
   if (!ids.length) return []
-  return [{ id: ids[0], more: ids.length - 1 }]
+  // ids keeps every new one, so Recent can name them all, not just a count.
+  return [{ id: ids[0], more: ids.length - 1, ids }]
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
   Linking,
@@ -10,6 +10,9 @@ import {
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
+import { EmptyCard } from '../components/PersonCard.jsx'
+import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
+import { useUndoToast } from '../lib/toast-queue.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -23,15 +26,17 @@ import {
   useAccount,
 } from '../../src/lib/account.js'
 import {
+  DEVICE_NAME_MAX,
   exportAll,
   forgetDevice,
+  renameDevice,
   forgetOtherDevices,
   listDevices,
+  keptProfileName,
   loadProfile,
   saveProfile,
 } from '../../src/lib/cloud-sync.js'
 import {
-  blankLamp,
   didQuestion,
   isOnceBy,
   lampNotifyOn,
@@ -39,30 +44,42 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
-import { hangInto } from '../../src/lib/board-ops.js'
 import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
-import { hallHeat, shelfStreak } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
   comingDays,
   markWelcomeSeen,
   nextStreakGoal,
   shelfFeedRows,
+  shelfNoteRows,
   shelfStatsCounts,
   shelfWeekNights,
   stampWhen,
+  streakBreak,
   tapWhen,
   weekCell,
   weekLamps,
+  weekRecap,
+  weekStripNights,
+  feedSearch,
 } from '../../src/lib/hall-pages.js'
+import { shareRecap } from '../components/WeekRecap.jsx'
+import { openNightWhy } from '../components/NightSheets.jsx'
+import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
+import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
+import { weCardShort } from '../../src/lib/did-we.js'
+import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
+import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
-import { playClick, shareShelf } from '../../src/lib/native.js'
+import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
+import { syncLine } from '../../src/lib/sync-line.js'
 import {
   checkPin,
   clearPin,
@@ -72,15 +89,20 @@ import {
   openSession,
   setPin,
 } from '../../src/lib/session.js'
-import { armLampPings, upcomingPings } from '../../src/lib/notify.js'
-import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { hangStarter, starterBlank, unusedStarters } from '../../src/lib/starters.js'
+import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
+import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
+import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { packList, unusedStarters } from '../../src/lib/starters.js'
+import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
+import { cloudSetUp } from '../../src/lib/cloud.js'
+import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, sectionLabel, withAlpha } from '../theme.js'
-import { CalendarGrid } from '../components/CalendarGrid.jsx'
+import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
@@ -88,11 +110,13 @@ import { SavableSetField } from '../components/SavableSetField.jsx'
 import { Avatar } from '../components/PersonCard.jsx'
 import { removeAvatar, saveAvatar, useMyAvatar } from '../../src/lib/avatar.js'
 import { canPickAvatar, canTakePhoto, pickAvatarBytes } from '../lib/avatar-pick.js'
-import { AppTextInput, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
-import { SetCap, SetCard, SetNote, SetRow, SetSwitch } from '../components/SetBits.jsx'
+import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page, Row, Title } from '../components/ui.jsx'
+import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
+import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
+import { pressFx, Reveal } from '../lib/motion.jsx'
 
 const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
 
@@ -144,10 +168,11 @@ function foldClock(at) {
   return clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
 }
 
-function statusWord(status) {
+// A skip reads Not yet while its night is open, Nope once it closed.
+function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t('feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
   return status
 }
 
@@ -164,7 +189,8 @@ function answerLabel(row, nightIso) {
   }
   if (row.answer.status === 'yes') return t('later.did')
   if (row.answer.status === 'late') return t('later.late')
-  return t('later.nope')
+  // Tonight and the nights ahead are still open.
+  return t('jewelKey.notYet')
 }
 
 export function AboutScreen({ book }) {
@@ -203,7 +229,7 @@ function HelpFold({ colors, title, children }) {
         <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
         <Text style={[styles.slotChev, { color: colors.inkDim }]}>{open ? '▴' : '▾'}</Text>
       </Pressable>
-      {open ? children : null}
+      {open ? <Reveal style={styles.foldBody}>{children}</Reveal> : null}
     </View>
   )
 }
@@ -213,7 +239,7 @@ export function HelpScreen() {
   return (
     <ScreenShell title={t('settings.howDidIWorks')} colors={colors}>
       <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
-        <Meta colors={colors}>{t('help.lead')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.lead')}</Meta>
         <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
         <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
       </View>
@@ -223,25 +249,28 @@ export function HelpScreen() {
         <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
         <Meta colors={colors}>{t('help.streakP', { time: clockWords('09:00') })}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('freeze.howTitle')}</Text>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('freeze.helpP')}</Meta>
+        <KeyButton colors={colors} label={t('freeze.helpGo')} onPress={() => openFreezeHow(colors, readShelf()?.boards)} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
-        <Meta colors={colors}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
         <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.questions')}</Text>
-        <Meta colors={colors}>{t('help.questionsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.questionsP')}</Meta>
         <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
-        <Meta colors={colors}>{t('help.pingsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.pingsP')}</Meta>
         <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
         <Meta colors={colors}>{t('help.widgetP')}</Meta>
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupSocial')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.people')}</Text>
-        <Meta colors={colors}>{t('help.peopleP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.peopleP')}</Meta>
         <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.we')}</Text>
         <Meta colors={colors}>{t('help.weP1')}</Meta>
-        <Meta colors={colors}>{t('help.weP2')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.weP2')}</Meta>
         <KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.cheers')}</Text>
         <Meta colors={colors}>{t('help.cheersP')}</Meta>
@@ -249,17 +278,21 @@ export function HelpScreen() {
       <HelpFold colors={colors} title={t('help.groupShop')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
         <Meta colors={colors}>{t('help.coinsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.wishP')}</Meta>
         <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('frames.what')}</Text>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('frames.howBody')}</Meta>
+        <KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/shop/frames')} />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupApp')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
         <Meta colors={colors}>{t('help.phonePApp')}</Meta>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
-        <Meta colors={colors}>{t('help.legalP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.legalP')}</Meta>
         <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
         <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
-        <Meta colors={colors}>{t('help.feedbackP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.feedbackP')}</Meta>
         <DidButton
           colors={colors}
           label={t('feedback.send')}
@@ -320,8 +353,11 @@ export function LaterScreen({ book, now }) {
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const heat = hallHeat(book, clock)
-  const have = shelfMarks(boards.length ? boards : [book])
+  const dateIso = boardDate(clock, book?.dayFoldHour)
+  // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const best = useMemo(() => bestShelfStreak(boards.length ? boards : [book], clock), [boards, book, dateIso])
+  const have = useMemo(() => shelfMarks(boards.length ? boards : [book]), [boards, book])
 
   return (
     <ScreenShell book={book} title={t('marks.title')} colors={colors}>
@@ -331,7 +367,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('marks.streak', { n: heat })}</Meta>
+      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -360,25 +396,74 @@ export function IdeasScreen() {
   )
 }
 
-function StreakHero({ colors, n, label, line }) {
+// Recent: the last achievements and Did we moments, in full, newest first.
+// Opening it marks them seen, which clears the menu's count.
+export function RecentScreen() {
+  const colors = useHallColors()
+  const { list } = useNotices()
+  useEffect(() => {
+    markNoticesSeen()
+  }, [list.length])
+  const locale = readPrefs().locale
+  const [undo, setUndo] = useState(null)
+  useUndoToast('recent', undo, () => {
+    restoreNotices(undo?.list)
+    setUndo(null)
+  }, 6000)
+  function clearAll() {
+    setUndo({ label: t('recent.cleared'), list: clearNotices() })
+  }
+  return (
+    <ScreenShell title={t('recent.title')} colors={colors}>
+      {list.length ? <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} /> : null}
+      {list.length ? (
+        list.map((item) => (
+          <Pressable
+            key={item.id}
+            accessibilityRole={item.go?.path ? 'button' : undefined}
+            disabled={!item.go?.path}
+            onPress={() => goHash(item.go.path, item.go.id ? { id: item.go.id } : undefined)}
+            style={({ pressed }) => [styles.idea, { borderColor: colors.line, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+          >
+            <Kicker colors={colors}>{item.title}</Kicker>
+            {item.text ? <Text style={[styles.recentText, { color: colors.ink }]}>{item.text}</Text> : null}
+            <Meta colors={colors}>
+              {new Date(item.at).toLocaleString(locale, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+            </Meta>
+          </Pressable>
+        ))
+      ) : (
+        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
+      )}
+    </ScreenShell>
+  )
+}
+
+function StreakHero({ colors, n, label, line, chip }) {
   return (
     <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
       <Text style={[styles.heroCap, { color: colors.on }]}>{label}</Text>
-      <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <View style={styles.heroNumRow}>
+        <Text style={[styles.heroNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+        {chip || null}
+      </View>
       {line ? <Text style={[styles.heroLine, { color: colors.inkSoft }]}>{line}</Text> : null}
     </View>
   )
 }
 
-function NumberTile({ colors, label, n, onPress }) {
+function NumberTile({ colors, label, n, unit = '', onPress, third = false, half = false }) {
   return (
     <Pressable
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.line }]}
+      style={({ pressed }) => [styles.tile, third && styles.tileThird, half && styles.tileHalf, { backgroundColor: colors.panel, borderColor: colors.line }, pressFx(pressed)]}
     >
-      <Text style={[styles.tileNum, { color: colors.ink }]}>{String(n || 0)}</Text>
+      <Text style={[styles.tileNum, { color: colors.ink }]}>
+        {String(n || 0)}
+        {unit ? <Text style={[styles.tileUnit, { color: colors.inkSoft }]}>{` ${unit}`}</Text> : null}
+      </Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
     </Pressable>
   )
@@ -393,7 +478,8 @@ function inView(book, boards) {
 
 function FolderScope({ colors, boards, tagId, path }) {
   const ids = tagIdsOf(tagId)
-  if (!ids.length) return <Meta colors={colors}>{t('scope.all')}</Meta>
+  // No filter: say nothing. A plain "All folders" line looked like a picker and did nothing.
+  if (!ids.length) return null
   const names = (boards || []).filter((item) => ids.includes(item.id)).map((item) => item.title).join(', ')
   return (
     <View>
@@ -407,20 +493,57 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
+  const dateIso = boardDate(clock, book?.dayFoldHour)
+  // The last seven nights, walked once per night (the Sunday recap, any day).
+  const recap = useMemo(() => {
+    const books = inView(book, boards)
+    return weekRecap(books, weekStripNights(books, clock, tagId), tagId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book, boards, dateIso, tagId])
+  // The longest run any one question had (nope breaks it), walked once a night.
+  const bestRun = useMemo(() => {
+    let best = 0
+    for (const one of scopedBooks(inView(book, boards), tagId)) {
+      for (const lamp of one.lamps || []) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
+    }
+    return best
+  }, [book, boards, dateIso, tagId])
 
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-      <StreakHero colors={colors} n={counts.heat} label={t('home.streak')} />
+      {/* This week first, then everything since you started, each with the
+          same three tiles so the two read the same way. */}
+      <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
+      <StreakHero
+        colors={colors}
+        n={counts.heat}
+        label={t('home.streak')}
+        line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+        chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
+      />
       <View style={styles.tiles}>
-        <NumberTile colors={colors} label={t('stats.questions')} n={counts.hung} />
-        <NumberTile colors={colors} label={t('stats.did')} n={counts.did} />
-        <NumberTile colors={colors} label={t('stats.late')} n={counts.late} />
-        <NumberTile colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
+        <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
+        <NumberTile third colors={colors} label={t('stats.nope')} n={recap.nopes} />
       </View>
-      <KeyButton colors={colors} label={t('stats.marks')} onPress={() => goHash('/marks')} />
-      <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
-      <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
+      <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={() => shareRecap(recap)} />
+
+      <SetCap colors={colors}>{t('stats.allCap')}</SetCap>
+      <View style={styles.tiles}>
+        <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
+        <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
+        <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile half colors={colors} label={t('stats.questions')} n={counts.hung} />
+        <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />
+      </View>
+
+      <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -428,22 +551,29 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
 export function FeedScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const rows = shelfFeedRows(inView(book, boards), tagId)
+  const allRows = shelfFeedRows(inView(book, boards), tagId)
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/feed" />
-      {!rows.length ? (
+      {allRows.length ? (
+        <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('feed.searchPh')} />
+      ) : null}
+      {!allRows.length ? (
         <Meta colors={colors}>{t('feed.empty')}</Meta>
+      ) : !rows.length ? (
+        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
         rows.map((row) => (
           <Row
             key={row.answer.id}
             colors={colors}
             label={row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
-            note={`${statusWord(row.answer.status)}${
+            note={`${statusWord(row.answer.status, Boolean(row.lamp) && nightOpen(periodNight(row.lamp, row.answer.periodKey), clock))}${
               tapWhen(row.answer.answeredAt, clock) ? ` · ${tapWhen(row.answer.answeredAt, clock)}` : ''
-            }`}
+            }${row.answer.note ? `\n${row.answer.note}` : ''}`}
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
           />
         ))
@@ -452,16 +582,97 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
   )
 }
 
+// Every note, newest first, with a search over the note and its question.
+export function NotesScreen({ book, boards }) {
+  const colors = useHallColors()
+  const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
+  const [query, setQuery] = useState('')
+  const rows = feedSearch(allRows, query)
+
+  return (
+    <ScreenShell title={t('notes.title')} colors={colors}>
+      {allRows.length ? (
+        <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('notes.searchPh')} />
+      ) : null}
+      {!allRows.length ? (
+        <>
+          <Meta colors={colors}>{t('notes.empty')}</Meta>
+          <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
+        </>
+      ) : !rows.length ? (
+        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
+      ) : (
+        rows.map((row) => {
+          const night = periodLabel(row.lamp, row.answer.periodKey)
+          return (
+            <Row
+              key={row.answer.id || `${row.lamp.id}:${row.answer.periodKey}`}
+              colors={colors}
+              label={shortLabel(row.lamp)}
+              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status, nightOpen(periodNight(row.lamp, row.answer.periodKey)))}\n${row.answer.note}`}
+              onPress={() => goHash('/lamp', { id: row.lamp.id })}
+            />
+          )
+        })
+      )}
+    </ScreenShell>
+  )
+}
+
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
+  const [view, setView] = useState('month')
+  const [startShift, setStartShift] = useState(0)
 
   return (
-    <ScreenShell title={t('cal.aria')} colors={colors}>
-      <Meta colors={colors}>{t('cal.hint')}</Meta>
-      <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} />
-      <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
-      <KeyButton colors={colors} label={t('boards.week')} onPress={() => goHash('/week')} />
+    <ScreenShell title={t('settings.history')} colors={colors}>
+      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
+      <ChipRow
+        items={[
+          { id: 'month', label: t('cal.viewMonth') },
+          { id: 'year', label: t('cal.viewYear') },
+        ]}
+        value={view}
+        onPick={(next) => {
+          setStartShift(0)
+          setView(next)
+        }}
+        colors={colors}
+      />
+      {view === 'year' ? (
+        <YearGrid
+          book={book}
+          boards={boards}
+          tagId={tagId}
+          now={clock}
+          colors={colors}
+          onMonth={(shift) => {
+            setStartShift(Math.min(0, shift))
+            setView('month')
+          }}
+        />
+      ) : (
+        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} startShift={startShift} />
+      )}
+      <View style={styles.calKey}>
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.freeze }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
+        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.open }]} />
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('later.tonight')}</Text>
+      </View>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="pen" label={t('notes.title')} sub={t('notes.sub')} chevron onPress={() => goHash('/notes')} />
+        <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
+        <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
+        <SetRow colors={colors} icon="chart" label={t('stats.title')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -469,8 +680,19 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
-  const nights = shelfWeekNights(inView(book, boards), clock, tagId, 7)
+  const shelf = inView(book, boards)
+  const nights = shelfWeekNights(shelf, clock, tagId, 7)
   const lamps = weekLamps(nights)
+  // Same night rule as the Home dots and So far: every question and every Did
+  // we due that night answered Did (or late).
+  const strip = weekStripNights(shelf, clock, tagId)
+  const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
+  const doneNights = cleared.size
+  const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
+  const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
+  const anyOff =
+    lamps.some((lamp) => nights.some((night) => weekCell(night, lamp).state === 'off')) ||
+    weCards.some((card) => nights.some((night) => weCardState(night.iso, card) === 'off'))
 
   function cellColor(state) {
     if (state === 'yes') return colors.on
@@ -480,16 +702,57 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     return colors.open
   }
 
-  // A night counts once every question on it was answered Did or late.
-  const doneNights = nights.filter((night) => {
-    const states = lamps.map((lamp) => weekCell(night, lamp).state).filter((state) => state !== 'off')
-    return states.length > 0 && states.every((state) => state === 'yes' || state === 'late')
-  }).length
+  function cellLook(state) {
+    // Not due that night: a short dash, so it never reads as an empty "not answered yet" square.
+    if (state === 'off') return { ...styles.weekOff, backgroundColor: colors.line }
+    // The dot under a cleared date, for the legend.
+    if (state === 'cleared') return { ...styles.weekDot, marginTop: 0, backgroundColor: colors.on }
+    // Due tonight, not answered yet: a ring, so it never reads as a nope.
+    if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
+    // A night a freeze kept: a ring, as in the history legend.
+    if (state === 'freeze') return { borderWidth: 1.5, borderColor: colors.freeze }
+    return { backgroundColor: cellColor(state) }
+  }
+
+  function weState(night, card) {
+    const state = weCardState(night.iso, card)
+    if (state === 'off') return 'off'
+    if (state === 'did') return 'yes'
+    if (state === 'nope') return 'skip'
+    return night.isToday ? 'open' : 'hole'
+  }
+
+  function openNight(night) {
+    openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
+  }
+
+  function cell(night, state) {
+    return (
+      <Pressable
+        key={night.iso}
+        style={styles.weekHeadCell}
+        onPress={() => openNight(night)}
+        accessibilityRole="button"
+        accessibilityLabel={night.label}
+      >
+        <View
+          style={[
+            styles.weekCell,
+            cellLook(state),
+          ]}
+        />
+      </Pressable>
+    )
+  }
   const legend = [
     ['yes', t('later.did')],
     ['late', t('later.late')],
     ['skip', t('later.nope')],
     ['hole', t('later.missed')],
+    ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
+    ['open', t('jewelKey.open')],
+    ...(anyOff ? [['off', t('week.notAsked')]] : []),
+    ...(cleared.size ? [['cleared', t('week.clearedDot')]] : []),
   ]
 
   return (
@@ -507,12 +770,29 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           <View style={styles.weekRow}>
             <View style={styles.weekName} />
             {nights.map((night) => (
-              <View key={night.iso} style={styles.weekHeadCell}>
+              <Pressable
+                key={night.iso}
+                style={styles.weekHeadCell}
+                onPress={() => openNight(night)}
+                accessibilityRole="button"
+                accessibilityLabel={night.label}
+              >
                 <Text style={[styles.weekDow, { color: night.isToday ? colors.on : colors.inkDim }]}>
                   {night.weekday}
                 </Text>
                 <Text style={[styles.weekDay, { color: colors.inkSoft }]}>{night.dayNum}</Text>
-              </View>
+                {/* Cleared nights get a dot under the date, the same rule as Home. */}
+                <View
+                  style={[
+                    styles.weekDot,
+                    cleared.has(night.iso)
+                      ? { backgroundColor: colors.on }
+                      : frozen.has(night.iso)
+                        ? { borderWidth: 1, borderColor: colors.freeze }
+                        : null,
+                  ]}
+                />
+              </Pressable>
             ))}
           </View>
           {lamps.map((lamp) => (
@@ -524,35 +804,32 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               >
                 {shortLabel(lamp)}
               </Text>
-              {nights.map((night) => (
-                <View key={night.iso} style={styles.weekHeadCell}>
-                  <View
-                    style={[
-                      styles.weekCell,
-                      // Not due that night: an empty outline, not a color from the legend.
-                      weekCell(night, lamp).state === 'off'
-                        ? { borderWidth: 1, borderColor: colors.lineSoft }
-                        : { backgroundColor: cellColor(weekCell(night, lamp).state) },
-                    ]}
-                  />
-                </View>
-              ))}
+              {nights.map((night) => cell(night, weekCell(night, lamp).state))}
+            </View>
+          ))}
+          {weCards.map((card) => (
+            <View key={`we-${card}`} style={styles.weekRow}>
+              <Text numberOfLines={1} style={[styles.weekName, styles.weekNameText, { color: colors.ink }]}>
+                {weCardShort(card) || t('we.title')}
+              </Text>
+              {nights.map((night) => cell(night, weState(night, card)))}
             </View>
           ))}
         </View>
           <View style={styles.legend}>
             {legend.map(([state, label]) => (
               <View key={state} style={styles.legendItem}>
-                <View style={[styles.weekCell, { backgroundColor: cellColor(state) }]} />
+                <View style={[styles.weekCell, cellLook(state)]} />
                 <Text style={[styles.legendText, { color: colors.inkDim }]}>{label}</Text>
               </View>
             ))}
           </View>
+          <Meta colors={colors}>{t('week.tapHint')}</Meta>
         </View>
         </>
       )}
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="calendar" label={t('streaks.title')} chevron last onPress={() => goHash('/streaks')} />
+        <SetRow colors={colors} icon="priority" label={t('streaks.title')} chevron last onPress={() => goHash('/streaks')} />
       </SetCard>
     </ScreenShell>
   )
@@ -563,12 +840,25 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const clock = now || new Date()
   const books = scopedBooks(inView(book, boards), tagId)
   const heat = books.length ? shelfStreak(books, clock) : 0
+  // Freezes belong to the overall streak, whatever tag is picked.
+  const freezes = freezeState(inView(book, boards), clock)
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
       (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
     )
     .sort((a, b) => b.n - a.n)
+  // A question's run can be longer than the overall one: say which night broke it.
+  const longest = rows.length ? rows[0].n : 0
+  const breakNight = useMemo(
+    () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
+    [book, boards, tagId, longest, heat], // eslint-disable-line react-hooks/exhaustive-deps
+  )
+  const breakLine = breakNight
+    ? breakNight.question
+      ? t('streaks.broke', { date: formatBoardDate(breakNight.iso), what: breakNight.question })
+      : t('streaks.brokeWe', { date: formatBoardDate(breakNight.iso), what: weCardShort(breakNight.weId) || t('we.title') })
+    : ''
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>
@@ -577,8 +867,23 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         colors={colors}
         n={heat}
         label={t('streaks.aria')}
-        line={goal ? t('streaks.line', { n: heat, goal }) : null}
+        line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
+      {breakLine ? (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="broke"
+            label={breakLine}
+            chevron
+            last
+            onPress={() => openNightWhy({ colors, boards: inView(book, boards), iso: breakNight.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })}
+          />
+        </SetCard>
+      ) : null}
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+      </SetCard>
       {!rows.length ? (
         <Meta colors={colors}>{t('streaks.empty')}</Meta>
       ) : (
@@ -589,17 +894,20 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
               colors={colors}
               label={shortLabel(row.lamp)}
               n={row.n}
+              unit={row.n === 1 ? t('streaks.unitOne') : t('streaks.unit')}
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           ))}
         </View>
       )}
-      <KeyButton colors={colors} label={t('streaks.seven')} onPress={() => goHash('/week')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+      </SetCard>
     </ScreenShell>
   )
 }
 
-export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange }) {
+export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange, onStartEmpty }) {
   const colors = useHallColors()
   const [titleDraft, setTitleDraft] = useState(book?.title || '')
   const [addMiss, setAddMiss] = useState('')
@@ -726,10 +1034,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         </SetCard>
       )}
       {addMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{addMiss}</Text> : null}
-      <KeyButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
-      <KeyButton colors={colors} label={t('boards.calendar')} onPress={() => goHash('/calendar')} />
-      <KeyButton colors={colors} label={t('feed.title')} onPress={() => goHash('/feed')} />
-      <KeyButton colors={colors} label={t('boards.stats')} onPress={() => goHash('/stats')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="home" label={t('nav.home')} chevron onPress={() => goHash('/tonight')} />
+        <SetRow colors={colors} icon="calendar" label={t('settings.history')} sub={t('settings.calendarSub')} chevron onPress={() => goHash('/calendar')} />
+        <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
+        <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
+      </SetCard>
       {boards?.length > 1 && book ? (
         <KeyButton
           colors={colors}
@@ -751,6 +1061,38 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             })
           }
         />
+      ) : null}
+      {onStartEmpty && book ? (
+        <>
+          <SetCap colors={colors}>{t('settings.danger')}</SetCap>
+          <SetCard colors={colors}>
+            <SetRow
+              colors={colors}
+              icon="warning"
+              label={t('settings.emptyBoard')}
+              sub={t('settings.clearFolderSub', { name: book.title || '' })}
+              danger
+              last
+              onPress={() =>
+                publishSheet({
+                  kicker: t('settings.startOver'),
+                  title: t('settings.clearFolderTitle', { name: book.title || '' }),
+                  body: t('settings.clearFolderBody', { name: book.title || '' }),
+                  goLabel: t('settings.clearYes'),
+                  danger: true,
+                  closeLabel: t('settings.neverMind'),
+                  colors,
+                  onClose: () => publishSheet(null),
+                  onGo: () => {
+                    publishSheet(null)
+                    onStartEmpty()
+                    confirmDone(t('confirm.startedOver'))
+                  },
+                })
+              }
+            />
+          </SetCard>
+        </>
       ) : null}
     </ScreenShell>
   )
@@ -928,80 +1270,58 @@ export function WelcomeScreen({ book }) {
   )
 }
 
-// The first question is a sentence to finish, written on the card it becomes.
-// The first question comes up every day; the only choice here is from when.
-function timed(next, question, askAfter) {
-  if (!askAfter) return next
-  const lamps = (next.lamps || []).map((lamp) => (lamp.question === question ? { ...lamp, askAfter } : lamp))
-  return { ...next, lamps }
-}
-
+// First run: tap 2 or 3 questions (or a set), pick a time, done. The typed
+// card stays for anyone whose question is not on the list. No sign-in here.
 export function FirstNightScreen({ book, onChange, now }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const named = firstName(book)
   const [step, setStep] = useState(0)
-  const [person, setPerson] = useState(book?.keeperName || '')
+  const [picks, setPicks] = useState([])
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
-  const [askAfter, setAskAfter] = useState('')
+  const [askAfter, setAskAfter] = useState(FIRST_TIME)
   const reduce = useReduceMotion()
   const starters = unusedStarters(book, clock, true)
+  const packs = packList(book)
   const question = didQuestion(blank)
-  const picked = starters.find((starter) => starter.question === question)
-  const wobble = useWobble(starters.length, !blank.trim() && !focused, reduce)
-  const totalSteps = named ? 2 : 3
-
-  function withName(next) {
-    const keeperName = person.trim()
-    if (!keeperName) return next
-    return { ...next, keeperName }
-  }
-
-  function land(next, face = '') {
-    markWelcomeSeen()
-    onChange?.(withName(next))
-    goHash('/tonight', face ? { face } : '')
-    offerPingPrimer(askAfter, colors)
-  }
+  const ready = picks.length > 0 || Boolean(question)
+  const wobble = useWobble(starters.length, !ready && !focused, reduce)
+  const totalSteps = 2
 
   function pick(starter) {
-    setBlank(starterBlank(starter))
+    setPicks((list) => togglePick(list, starter))
+    setWave((count) => count + 1)
+    playClick()
+  }
+
+  function takePack(pack) {
+    setPicks(pickPack(pack))
     setWave((count) => count + 1)
     playClick()
   }
 
   function finish() {
-    if (picked) {
-      land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
-      return
-    }
-    const lamp = {
-      ...blankLamp(clock),
-      question,
-      short: shortFromQuestion(question, 24),
-      cadence: 'daily',
-      askAfter,
-      slot: 'whenever',
-    }
-    land(hangInto(book, lamp), lamp.id)
+    const own =
+      question && !picks.some((item) => item.question === question)
+        ? { question, short: shortFromQuestion(question, 24) }
+        : null
+    const made = firstRunBook(book, picks, own, askAfter, clock)
+    markWelcomeSeen()
+    onChange?.(made.book)
+    goHash('/tonight', made.faceId ? { face: made.faceId } : '')
+    offerPingPrimer(askAfter, colors)
   }
 
   function next() {
+    playClick()
     if (step === 0) {
-      if (!question) {
-        playClick()
+      if (!ready) {
         wobble.nudge()
         return
       }
-      playClick()
       setStep(1)
-      return
-    }
-    if (step === 1 && !named) {
-      playClick()
-      setStep(2)
       return
     }
     finish()
@@ -1009,7 +1329,7 @@ export function FirstNightScreen({ book, onChange, now }) {
 
   function back() {
     playClick()
-    setStep((current) => Math.max(0, current - 1))
+    setStep(0)
   }
 
   return (
@@ -1022,7 +1342,25 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Title colors={colors}>
             {named ? t('first.titleNamed', { name: named }) : t('first.title')}
           </Title>
-          <Meta colors={colors}>{t('first.body')}</Meta>
+          <Meta colors={colors}>{t('first.pickBody')}</Meta>
+          <IdeaPicks
+            label={t('first.pickLabel')}
+            starters={starters}
+            isOn={(starter) => picks.some((item) => item.question === starter.question)}
+            onPick={pick}
+            tilt={wobble.tilt}
+            colors={colors}
+          />
+          {packs.length ? (
+            <>
+              <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.packs')}</Text>
+              <View style={styles.firstPacks}>
+                {packs.map((pack) => (
+                  <KeyButton key={pack.id} colors={colors} label={pack.title} onPress={() => takePack(pack)} />
+                ))}
+              </View>
+            </>
+          ) : null}
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1042,7 +1380,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               placeholderTextColor={withAlpha(colors.ink, 0.45)}
               selectionColor={colors.on}
               cursorColor={colors.on}
-              accessibilityLabel={t('tonight.didI')}
+              accessibilityLabel={t('first.own')}
               autoCapitalize="none"
               returnKeyType="done"
               blurOnSubmit
@@ -1059,14 +1397,6 @@ export function FirstNightScreen({ book, onChange, now }) {
               <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
             </View>
           </View>
-          <IdeaPicks
-            label={t('first.picks')}
-            starters={starters}
-            picked={picked}
-            onPick={pick}
-            tilt={wobble.tilt}
-            colors={colors}
-          />
         </>
       ) : null}
       {step === 1 ? (
@@ -1084,40 +1414,35 @@ export function FirstNightScreen({ book, onChange, now }) {
           </SetCard>
         </>
       ) : null}
-      {step === 2 && !named ? (
-        <Field
-          colors={colors}
-          label={t('first.name')}
-          value={person}
-          onChangeText={setPerson}
-          placeholder={t('first.nameHint')}
-          autoCapitalize="words"
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={next}
-        />
-      ) : null}
       <View style={styles.stepNav}>
         {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
-          label={step === totalSteps - 1 ? t('first.add') : t('first.next')}
+          label={step === totalSteps - 1 ? t('first.done') : t('first.next')}
           onPress={next}
-          dim={step === 0 && !question}
+          dim={step === 0 && !ready}
         />
-        {step === 0 && !question ? (
-          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.finishFirst')}</Text>
+        {step === 0 && !ready ? (
+          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
         ) : null}
       </View>
+      {step === 0 && cloudSetUp() ? (
+        <View style={styles.firstPacks}>
+          <KeyButton colors={colors} label={t('first.haveAccount')} onPress={() => goHash('/account')} />
+        </View>
+      ) : null}
+      {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
   )
 }
 
 // Pushes come from the server, which reads these switches from the synced prefs.
-const PUSH_KINDS = new Set(['sends', 'cheers', 'friends', 'family', 'didi'])
+const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
+const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
 
 function PingKinds({ colors, on }) {
   const prefs = usePrefs()
+  const account = useAccount()
   const [miss, setMiss] = useState('')
 
   async function flip(kind) {
@@ -1137,6 +1462,33 @@ function PingKinds({ colors, on }) {
     }
   }
 
+  // Reminders are set on the phone; pushes wait on the server. Both read these.
+  async function saveQuiet(patch) {
+    const was = readPrefs()
+    writePrefs(patch)
+    setMiss('')
+    armLampPings(readShelf().boards).catch(() => {})
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ quietOn: was.quietOn, quietFrom: was.quietFrom, quietTo: was.quietTo })
+      armLampPings(readShelf().boards).catch(() => {})
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
+  // The server sends the family summary at profiles.family_hour.
+  async function saveFamilyHour(id) {
+    const hour = Number(id.slice(0, 2))
+    const was = readPrefs().familyHour
+    writePrefs({ familyHour: hour })
+    setMiss('')
+    const saved = await saveProfile({ family_hour: hour, prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ familyHour: was })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
   async function flipPrivate() {
     const was = readPrefs().pingsPrivate
     writePrefs({ pingsPrivate: !was })
@@ -1148,22 +1500,58 @@ function PingKinds({ colors, on }) {
     }
   }
 
+  // The shop drop push. Turning it on asks for notifications first.
+  async function flipDropPings() {
+    if (prefs.dropPings) {
+      writePrefs({ dropPings: false })
+      return
+    }
+    const state = await requestPings().catch(() => 'denied')
+    if (state !== 'granted') {
+      setMiss(t('pings.offNote'))
+      return
+    }
+    setMiss('')
+    writePrefs({ dropPings: true })
+    syncPushTokenIfAllowed().catch(() => {})
+  }
+
+  const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
+  const familyTime = clockWords(familyId)
+
   return (
     <>
       <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
       {on ? null : <SetNote colors={colors}>{t('pings.offNote')}</SetNote>}
       <SetCard colors={colors}>
         {PING_KINDS.map((kind, i) => (
-          <SetSwitch
-            key={kind}
-            colors={colors}
-            label={t(`pings.kind.${kind}`)}
-            sub={t(`pings.kind.${kind}Sub`)}
-            on={!prefs.pingsOff.includes(kind)}
-            last={i === PING_KINDS.length - 1}
-            onPress={() => flip(kind)}
-          />
+          <View key={kind}>
+            <SetSwitch
+              colors={colors}
+              label={t(`pings.kind.${kind}`)}
+              sub={kind === 'family' ? t('pings.kind.familySubAt', { time: familyTime }) : t(`pings.kind.${kind}Sub`)}
+              on={!prefs.pingsOff.includes(kind)}
+              onPress={() => flip(kind)}
+            />
+            {kind === 'family' && !prefs.pingsOff.includes('family') ? (
+              <SetChoice
+                colors={colors}
+                label={t('pings.familyAt')}
+                options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+                selected={familyId}
+                onSelect={saveFamilyHour}
+              />
+            ) : null}
+          </View>
         ))}
+        <SetSwitch
+          colors={colors}
+          label={t('shop.dropPing')}
+          sub={account.user ? t('shop.dropPingSub') : t('shop.dropPingOut')}
+          on={Boolean(prefs.dropPings)}
+          last
+          onPress={flipDropPings}
+        />
       </SetCard>
       <SetNote colors={colors}>{t('pings.kindsNote')}</SetNote>
       <SetCard colors={colors}>
@@ -1176,7 +1564,65 @@ function PingKinds({ colors, on }) {
           onPress={flipPrivate}
         />
       </SetCard>
+      <SetCap colors={colors}>{t('pings.quietCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetSwitch
+          colors={colors}
+          label={t('pings.quiet')}
+          sub={t('pings.quietSub')}
+          on={prefs.quietOn}
+          last={!prefs.quietOn}
+          onPress={() => saveQuiet({ quietOn: !prefs.quietOn })}
+        />
+        {prefs.quietOn ? (
+          <>
+            <SetChoice
+              colors={colors}
+              label={t('pings.quietFrom')}
+              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              selected={prefs.quietFrom}
+              onSelect={(id) => saveQuiet({ quietFrom: id })}
+            />
+            <SetChoice
+              colors={colors}
+              label={t('pings.quietTo')}
+              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              selected={prefs.quietTo}
+              onSelect={(id) => saveQuiet({ quietTo: id })}
+              last
+            />
+          </>
+        ) : null}
+      </SetCard>
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+    </>
+  )
+}
+
+// Sends one sample reminder a few seconds out. Permission off says so, with a way to settings.
+function PingTest({ colors }) {
+  const [state, setState] = useState('')
+
+  async function send() {
+    if (state === 'busy') return
+    setState('busy')
+    const out = await pingTest(5).catch(() => 'miss')
+    setState(out)
+    if (out === 'set') confirmDone(t('pings.testSet'))
+    else if (out === 'miss') confirmMiss(t('confirm.miss'))
+  }
+
+  return (
+    <>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} on={state === 'set'} last onPress={send} />
+      </SetCard>
+      {state === 'off' ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{t('pings.testOff')}</Text>
+          <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
+        </>
+      ) : null}
     </>
   )
 }
@@ -1206,17 +1652,35 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
   return (
     <ScreenShell title={t('pings.title')} colors={colors}>
       <Text style={[styles.subtitle, { color: colors.inkDim }]}>{t('pings.body')}</Text>
-      {onAskPings ? (
-        <DidButton
-          colors={colors}
-          label={on ? t('pings.on') : labelKey === 'pings.state.blocked' ? t('pings.openSettings') : t(labelKey)}
-          onPress={onAskPings}
-        />
-      ) : (
-        <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
-      )}
+      <SetCard colors={colors}>
+        {onAskPings && labelKey !== 'pings.state.blocked' ? (
+          // On: the phone owns the off switch, so tapping opens its settings.
+          <SetSwitch
+            colors={colors}
+            icon="bell"
+            tint={colors.on}
+            label={t('pings.rowTitle')}
+            sub={on ? t('pings.rowOn') : t('pings.rowAsk')}
+            on={on}
+            last
+            onPress={on ? () => Linking.openSettings().catch(() => {}) : onAskPings}
+          />
+        ) : (
+          <SetRow
+            colors={colors}
+            icon="bell"
+            tint={colors.miss}
+            label={t('pings.openSettings')}
+            sub={t('pings.rowBlocked')}
+            chevron
+            last
+            onPress={() => Linking.openSettings().catch(() => {})}
+          />
+        )}
+      </SetCard>
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
-      <Text style={[styles.slot, { color: colors.inkSoft }]}>{t('pings.waitingTonight')}</Text>
+      <PingTest colors={colors} />
+      <SetCap colors={colors}>{t('pings.waitingTonight')}</SetCap>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
       ) : (
@@ -1235,8 +1699,10 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
           ))}
         </SetCard>
       )}
-      <KeyButton colors={colors} label={t('pings.comingUp')} onPress={() => goHash('/later')} />
-      <KeyButton colors={colors} label={t('pings.help')} onPress={() => goHash('/help')} />
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="clock" label={t('pings.comingUp')} sub={t('pings.comingUpSub')} chevron onPress={() => goHash('/later')} />
+        <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help')} />
+      </SetCard>
     </ScreenShell>
   )
 }
@@ -1351,13 +1817,67 @@ function deviceSeen(iso) {
   })
 }
 
+// Your own name first, then what the phone calls itself.
+// The model beats the generic "Android app", so rows can be told apart.
+function phoneName(row, here) {
+  if (row.name) return row.name
+  return row.device_key === here ? t('account.thisPhone') : row.model || row.label || t('account.aPhone')
+}
+
+function phoneSub(row, here) {
+  const parts = []
+  const mine = row.device_key === here
+  if (row.name && mine) parts.push(t('account.thisPhone'))
+  // Whatever the name did not already say: the model, or the kind of phone.
+  if (row.model && (row.name || mine)) parts.push(row.model)
+  else if (row.model && row.label && row.label !== row.model) parts.push(row.label)
+  parts.push(t('account.seen', { date: deviceSeen(row.last_seen_at) }))
+  return parts.join(' · ')
+}
+
+function RenamePhone({ row, colors, onClose, onSaved }) {
+  const [draft, setDraft] = useState(row.name || '')
+  const [busy, setBusy] = useState(false)
+  async function save() {
+    if (busy) return
+    setBusy(true)
+    const out = await renameDevice(row.device_key, draft).catch(() => ({ miss: 'net' }))
+    setBusy(false)
+    if (out.miss) return confirmMiss(t('confirm.miss'))
+    confirmDone(t('account.renamed'))
+    onSaved()
+  }
+  return (
+    <SetSheet colors={colors} title={t('account.renameTitle')} onClose={onClose}>
+      <SetField
+        colors={colors}
+        label={t('account.renameLabel')}
+        value={draft}
+        onChangeText={setDraft}
+        placeholder={row.label || t('account.aPhone')}
+        maxLength={DEVICE_NAME_MAX}
+        autoFocus
+        returnKeyType="done"
+        onSubmitEditing={save}
+      />
+      <View style={styles.renameRow}>
+        <DidButton small colors={colors} label={t('account.renameSave')} onPress={save} />
+      </View>
+    </SetSheet>
+  )
+}
+
 function AccountSignedIn({ book, email, onChange }) {
   const colors = useHallColors()
   const sync = useSync()
   const purse = normalizePurse(book)
   const myAvatar = useMyAvatar()
-  const [nameDraft, setNameDraft] = useState(book?.keeperName || '')
-  const [devices, setDevices] = useState([])
+  const [nameDraft, setNameDraft] = useState(book?.keeperName || keptProfileName())
+  const account = useAccount()
+  // Last launch's list shows while the fresh one loads.
+  const [devices, setDevices] = useKept(`account.devices:${account.user?.id}`, [], KEEP)
+  // Until the list comes back, say nothing rather than "only this phone".
+  const [devicesIn, setDevicesIn] = useKept(`account.devicesIn:${account.user?.id}`, false, KEEP)
   const [sure, setSure] = useState(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoMiss, setPhotoMiss] = useState('')
@@ -1365,13 +1885,15 @@ function AccountSignedIn({ book, email, onChange }) {
   const canPhoto = canPickAvatar()
 
   useEffect(() => {
-    setNameDraft(book?.keeperName || '')
+    setNameDraft(book?.keeperName || keptProfileName())
   }, [book?.keeperName])
 
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
-      if (alive) setDevices(rows)
+      if (!alive) return
+      setDevices(rows)
+      setDevicesIn(true)
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
@@ -1381,14 +1903,8 @@ function AccountSignedIn({ book, email, onChange }) {
     }
   }, [book?.keeperName, sync.at])
 
-  const syncNote =
-    sync.how === 'busy'
-      ? t('account.syncBusy')
-      : sync.how === 'miss'
-        ? t('account.syncMiss')
-        : sync.how === 'saved'
-          ? t('account.syncSaved', { time: stampWhen(sync.at) })
-          : t('account.syncIdle')
+  const line = syncLine(sync)
+  const syncNote = line.at ? t(line.key, { time: stampWhen(line.at) }) : t(line.key)
 
   const lookName = purse.lookOn ? t(lookText(purse.lookOn, 'name')) : ''
   const cheerName = purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : t('kit.cheerOff')
@@ -1450,10 +1966,62 @@ function AccountSignedIn({ book, email, onChange }) {
     setPhotoBusy(false)
   }
 
+  // One row for both: pick from the library or take a new one.
+  function choosePhoto() {
+    if (photoBusy) return
+    if (!canTakePhoto()) {
+      pickPhoto('library')
+      return
+    }
+    publishSheet({
+      title: myAvatar ? t('avatar.change') : t('avatar.add'),
+      goLabel: t('avatar.choose'),
+      onGo: () => {
+        publishSheet(null)
+        pickPhoto('library')
+      },
+      moreLabel: t('avatar.takePhoto'),
+      onMore: () => {
+        publishSheet(null)
+        pickPhoto('camera')
+      },
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
+  const [renaming, setRenaming] = useState(null)
+
+  // Rename any phone; forget any but this one.
+  function phoneMenu(row) {
+    if (row.device_key === here) {
+      setRenaming(row)
+      return
+    }
+    publishSheet({
+      title: phoneName(row, here),
+      body: row.model || undefined,
+      goLabel: t('account.rename'),
+      onGo: () => {
+        publishSheet(null)
+        setRenaming(row)
+      },
+      moreLabel: t('account.forgetShort'),
+      onMore: () => {
+        publishSheet(null)
+        forgetOne(row)
+      },
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+
   function forgetOne(row) {
     setSure({
       title: t('account.forgetTitle'),
-      body: t('account.forgetBody', { phone: row.label || t('account.aPhone') }),
+      body: t('account.forgetBody', { phone: phoneName(row, here) }),
       yes: t('account.forgetYes'),
       go: async () => {
         try {
@@ -1473,7 +2041,7 @@ function AccountSignedIn({ book, email, onChange }) {
         {/* Tapping your own photo changes it, the way most apps work. */}
         <Pressable
           disabled={!canPhoto || photoBusy}
-          onPress={() => pickPhoto('library')}
+          onPress={choosePhoto}
           accessibilityRole="button"
           accessibilityLabel={myAvatar ? t('avatar.change') : t('avatar.add')}
         >
@@ -1504,17 +2072,7 @@ function AccountSignedIn({ book, email, onChange }) {
             label={myAvatar ? t('avatar.change') : t('avatar.add')}
             sub={photoBusy ? t('avatar.saving') : t('avatar.sub')}
             chevron
-            onPress={photoBusy ? undefined : () => pickPhoto('library')}
-          />
-        ) : null}
-        {canPhoto && canTakePhoto() ? (
-          <SetRow
-            colors={colors}
-            icon="camera"
-            tint={colors.on}
-            label={t('avatar.takePhoto')}
-            chevron
-            onPress={photoBusy ? undefined : () => pickPhoto('camera')}
+            onPress={photoBusy ? undefined : choosePhoto}
           />
         ) : null}
         {canPhoto ? null : (
@@ -1556,15 +2114,20 @@ function AccountSignedIn({ book, email, onChange }) {
           value={nameDraft}
           savedValue={book?.keeperName || ''}
           onChangeText={setNameDraft}
-          onSave={(keeperName) => {
+          onSave={async (keeperName) => {
             setNameDraft(keeperName)
             onChange({ ...book, keeperName })
-            saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
-              .then((out) => {
-                if (out?.miss && out.miss !== 'out' && out.miss !== 'off') confirmMiss(tMiss(out.miss))
-                else confirmDone(t('confirm.nameSaved'))
-              })
-              .catch(() => confirmMiss(t('confirm.miss')))
+            try {
+              const out = await saveProfile({ display_name: keeperName, look_on: purse.lookOn, badge_cheer: purse.cheerOn })
+              if (out?.miss && out.miss !== 'out' && out.miss !== 'off') {
+                confirmMiss(tMiss(out.miss))
+                return false
+              }
+              confirmDone(t('confirm.nameSaved'))
+            } catch {
+              confirmMiss(t('confirm.miss'))
+              return false
+            }
           }}
         />
         <SetRow colors={colors} icon="wallpaper" label={t('account.look')} value={lookName} chevron onPress={() => goHash('/kit')} />
@@ -1577,32 +2140,48 @@ function AccountSignedIn({ book, email, onChange }) {
         <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
         {phones.length ? (
           shownPhones.map((row, at) => (
+            <Reveal key={row.device_key}>
             <SetRow
-              key={row.device_key}
               colors={colors}
               icon={row.platform === 'web' ? 'globe' : 'person'}
               tint={row.device_key === here ? colors.on : colors.inkSoft}
-              label={row.device_key === here ? t('account.thisPhone') : row.label || t('account.aPhone')}
-              sub={t('account.seen', { date: deviceSeen(row.last_seen_at) })}
-              value={row.device_key === here ? '' : t('account.forgetShort')}
+              label={phoneName(row, here)}
+              sub={phoneSub(row, here)}
+              chevron
               last={at === shownPhones.length - 1 && !phonesHidden}
-              onPress={row.device_key === here ? undefined : () => forgetOne(row)}
+              onPress={() => phoneMenu(row)}
             />
+            </Reveal>
           ))
         ) : (
-          <SetRow colors={colors} label={t('account.noDevices')} last />
+          devicesIn ? <SetRow colors={colors} label={t('account.noDevices')} last /> : null
         )}
         {phonesHidden ? (
           <SetRow colors={colors} label={t('people.seeAll')} value={String(phones.length)} chevron last onPress={() => setAllPhones(true)} />
         ) : null}
       </SetCard>
       <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
+      {renaming ? (
+        <RenamePhone
+          row={renaming}
+          colors={colors}
+          onClose={() => setRenaming(null)}
+          onSaved={async () => {
+            setRenaming(null)
+            setDevices(await listDevices())
+          }}
+        />
+      ) : null}
       {sync.how === 'miss' && sync.miss ? (
         <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
       ) : null}
       {others.length > 1 ? (
-        <KeyButton
+        <SetCard colors={colors}>
+        <SetRow
           colors={colors}
+          icon="trash"
+          danger
+          last
           label={t('account.forgetOthers', { n: others.length })}
           onPress={() =>
             setSure({
@@ -1621,6 +2200,7 @@ function AccountSignedIn({ book, email, onChange }) {
             })
           }
         />
+        </SetCard>
       ) : null}
 
       <PhoneLockSection colors={colors} />
@@ -1638,7 +2218,7 @@ function AccountSignedIn({ book, email, onChange }) {
         />
       </SetCard>
       {dataOpen ? (
-        <>
+        <Reveal>
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
@@ -1681,7 +2261,7 @@ function AccountSignedIn({ book, email, onChange }) {
           }
         />
       </SetCard>
-        </>
+        </Reveal>
       ) : null}
       <SureModal
         sure={sure}
@@ -1706,6 +2286,12 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  calDot: { width: 8, height: 8, borderRadius: 4 },
+  // Year cells are small squares, so the key is too.
+  calSquare: { borderRadius: 2 },
+  calKeyText: { fontSize: 12, marginRight: 10 },
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   headCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 20 },
   dataGap: { height: 20 },
@@ -1715,7 +2301,10 @@ const styles = StyleSheet.create({
   heroLine: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   tile: { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: 18, padding: 16, gap: 4 },
+  // Three in a row: the week's DID, Late and Nope.
+  tileThird: { flexBasis: '30%' },
   tileNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700' },
+  tileUnit: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '400' },
   tileLabel: { fontFamily: fonts.ui, fontSize: 13 },
   subtitle: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginBottom: 16 },
   slotCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 10 },
@@ -1728,6 +2317,10 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendText: { fontFamily: fonts.ui, fontSize: 12 },
+  // Same gap as the lead card, so a button never sits on the paragraph above it.
+  foldBody: { gap: 8 },
+  // A little more room between a help paragraph and the buttons under it.
+  beforeBtn: { marginBottom: 6 },
   foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   tagName: { paddingHorizontal: 14, paddingBottom: 10 },
   addRow: { flexDirection: 'row', gap: 10 },
@@ -1779,11 +2372,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
+  firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
+  recentText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   miss: { fontFamily: fonts.ui, fontSize: 14 },
   saved: { fontFamily: fonts.uiSemi, fontSize: 12, marginTop: 6 },
   veil: { flex: 1, justifyContent: 'center', padding: 20 },
@@ -1792,6 +2387,7 @@ const styles = StyleSheet.create({
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   popBody: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 22 },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  renameRow: { flexDirection: 'row', padding: 16 },
   week: { gap: 6 },
   weekRow: { flexDirection: 'row', alignItems: 'center' },
   weekName: { width: 96, paddingRight: 8 },
@@ -1800,4 +2396,7 @@ const styles = StyleSheet.create({
   weekDow: { fontFamily: fonts.mono, fontSize: 10 },
   weekDay: { fontFamily: fonts.mono, fontSize: 10 },
   weekCell: { width: 14, height: 14, borderRadius: 4 },
+  weekDot: { width: 5, height: 5, borderRadius: 3, marginTop: 1 },
+  weekOff: { height: 2, borderRadius: 1, marginVertical: 6 },
+  tileHalf: { flexBasis: '45%' },
 })

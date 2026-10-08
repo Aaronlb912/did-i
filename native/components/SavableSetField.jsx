@@ -2,11 +2,10 @@ import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { useSavableField } from '../../src/lib/useSavableField.js'
 import { fonts } from '../theme.js'
-import { KeyButton } from './ui.jsx'
 import { SetField } from './SetBits.jsx'
 
 export function SavableSetField({ colors, label, value, savedValue, onSave, onChangeText, ...rest }) {
-  const { dirty, flash, save } = useSavableField({ value, saved: savedValue, onSave })
+  const { flash, save } = useSavableField({ value, saved: savedValue, onSave })
 
   return (
     <View style={styles.wrap}>
@@ -26,10 +25,8 @@ export function SavableSetField({ colors, label, value, savedValue, onSave, onCh
         {...rest}
       />
       <View style={[styles.foot, { borderBottomColor: colors.lineSoft }]}>
-        {dirty ? (
-          <KeyButton colors={colors} label={t('settings.save')} onPress={() => save()} />
-        ) : flash ? (
-          <Text style={[styles.saved, { color: colors.on }]}>{t('settings.saved')}</Text>
+        {flash ? (
+          <Text style={[styles.saved, { color: colors.on }]} accessibilityLiveRegion="polite">{`✓ ${t('settings.saved')}`}</Text>
         ) : (
           <Text style={[styles.hint, { color: colors.inkDim }]}>{t('settings.fieldHint')}</Text>
         )}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { previewSample } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { AccessoryChip, BuddyHang } from './Cosmetic.jsx'
 import { buyAccessoryWithCoins } from './coin-shop.js'
@@ -17,8 +18,8 @@ export function AccessoryPreview({ id, purse }) {
     <div className="di-buddy-preview">
       <div className="di-buddy-preview-card di-face di-swipe">
         <BuddyHang id={purse.buddyOn || 'ant'} worn={worn} />
-        <p className="di-face-plate">{t('shop.buddyPreviewTag')}</p>
-        <h2 className="di-question">{t('shop.buddyPreviewQ')}</h2>
+        <p className="di-face-plate">{previewSample().tag}</p>
+        <h2 className="di-question">{previewSample().question}</h2>
       </div>
     </div>
   )
@@ -55,7 +56,7 @@ export function ShopAccessories({ book, onChange, now }) {
     }
     if (purse.coins < item.coins) {
       const short = item.coins - purse.coins
-      setMiss({ id: item.id, text: t('shop.earnCoins', { coins: short, nights: Math.ceil(short / NIGHT_COIN_CAP) }) })
+      setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
       return
     }
     setMiss({ id: '', text: '' })

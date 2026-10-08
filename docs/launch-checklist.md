@@ -42,14 +42,14 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 
 **Test on the new build** (two accounts where it says so)
 - [ ] Sign in with email code (lands in inbox, not junk), Sign in with Apple, and Sign in with Google (web, iPhone, release-signed Android)
-- [ ] Add a question, Did / Nope, undo, streaks right
+- [ ] Add a question, Did / Not yet, undo, streaks right
 - [ ] Deadlines sit at the end and are not counted in "0 of N"
 - [ ] Reopen the app: no flash of the sign-in screen
 - [ ] Midnight: the night turns over, unanswered closes as nope
 - [ ] Same account on two phones stays in sync; phone-only use survives a restart
 - [ ] Android widget: tap Did on two questions fast with the app closed; both keep their answer, buddy stays on the card
 - [ ] `npm run update:internal` or `update:prod` with a small copy change reaches the build on the next two opens
-- [ ] Widget, small and medium, both phones: every tag shows, Did / Nope saves with the app closed, Next steps without answering, buddy and look match the app, nothing spills past the edge
+- [ ] Widget, small and medium, both phones: every tag shows, Did / Not yet saves with the app closed, Next steps without answering, buddy and look match the app, nothing spills past the edge
 - [ ] iPhone widget answer before midnight, app opened next day: answer kept
 - [ ] All 12 cheers on iPhone (Shop previews and a real Did); stage 5 looks right; Less motion turns them off
 - [ ] Cheer "i" opens the description; Upgrade buys the next stage

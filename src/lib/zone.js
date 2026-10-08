@@ -14,12 +14,21 @@ export const LOOKS_LATE = 4
 export const GRACE_END = 9
 export const GRACE_FIRST_UNTIL = 5
 
+// Night walks ask for the zone thousands of times; building the formatter
+// each time was most of the cost. Re-read at most once a second so a phone
+// that changes zone still picks it up.
+let zoneMemo = ''
+let zoneAt = -Infinity
 export function deviceZone() {
+  const now = Date.now()
+  if (now - zoneAt < 1000) return zoneMemo
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+    zoneMemo = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
   } catch {
-    return ''
+    zoneMemo = ''
   }
+  zoneAt = now
+  return zoneMemo
 }
 
 // Read off the phone, never picked in Settings. Sync copies it to the

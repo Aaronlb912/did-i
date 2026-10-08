@@ -20,10 +20,12 @@ const ROUTES = new Set([
   '/streaks',
   '/stats',
   '/feed',
+  '/notes',
   '/search',
   '/me',
   '/settings',
   '/settings/phone',
+  '/settings/more',
   '/add',
   '/hang',
   '/lamp',
@@ -41,6 +43,7 @@ const ROUTES = new Set([
   '/shop/cheers',
   '/shop/buddies',
   '/shop/accessories',
+  '/shop/frames',
   '/gems',
   '/kit',
   '/gift',
@@ -57,6 +60,7 @@ const ROUTES = new Set([
   '/sent',
   '/we',
   '/we/new',
+  '/recent',
 ])
 
 /** The root screen every other route is pushed over. */
@@ -113,6 +117,7 @@ function ready() {
 }
 
 let swapping = false
+let fromMenu = false
 
 function go(route) {
   if (!ready()) {
@@ -135,11 +140,31 @@ function go(route) {
   // Already on it: stay. Anything else opens fresh, so back always
   // retraces the path you took.
   const key = routeKey(route)
-  if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) return
+  if (routeKey(routeFromScreen(routes[routes.length - 1])) === key) {
+    if (fromMenu) navigationRef.dispatch(CommonActions.setParams({ menuAt: Date.now() }))
+    return
+  }
   // A done form going back to the screen right behind it is just back.
   if (swapping && routes.length > 1 && routeKey(routeFromScreen(routes[routes.length - 2])) === key) {
     navigationRef.dispatch(StackActions.pop())
     return
+  }
+  // A menu page goes on top of the page you were on, so back returns there.
+  // If it is already open further back, drop back to it instead of stacking a copy.
+  if (fromMenu) {
+    const at = routes.findIndex((screen, i) => i > 0 && routeKey(routeFromScreen(screen)) === key)
+    if (at > 0) {
+      navigationRef.dispatch(
+        CommonActions.reset({
+          ...state,
+          index: at,
+          routes: routes
+            .slice(0, at + 1)
+            .map((screen, i) => (i === at ? { ...screen, params: { ...screen.params, menuAt: Date.now() } } : screen)),
+        }),
+      )
+      return
+    }
   }
   const move = swapping && routes.length > 1 ? StackActions.replace : StackActions.push
   navigationRef.dispatch(move(route.path, paramsOf(route)))
@@ -163,6 +188,18 @@ export function syncFromNavigation() {
     notify()
   }
   for (const entry of [...redirects]) redirectIfAt(entry)
+}
+
+/** The path of the screen right under the current one ('' at the root). */
+export function behindPath() {
+  if (!ready()) return ''
+  const routes = navigationRef.getRootState()?.routes || []
+  if (routes.length < 2) return ''
+  const under = routes[routes.length - 2]
+  if (under.name !== HALL) return cleanPath(under.name)
+  // The hall: whichever tab was showing.
+  const tabs = under.state
+  return cleanPath(tabs?.routes?.[tabs.index ?? 0]?.name || '/tonight')
 }
 
 /** A screen is pushed over the hall. Switching tabs is not history to go back through. */
@@ -312,6 +349,16 @@ export function goHash(path, extras = '') {
     go(current)
   } catch {
     // The screen already moved. A navigator reject must not freeze the tap.
+  }
+}
+
+/** From the main menu: the stack becomes Home plus this screen. */
+export function goFromMenu(path, extras) {
+  fromMenu = true
+  try {
+    goHash(path, extras)
+  } finally {
+    fromMenu = false
   }
 }
 

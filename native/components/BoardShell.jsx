@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useIsFocused } from '@react-navigation/native'
+import { useIsFocused, useRoute } from '@react-navigation/native'
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
@@ -10,6 +10,8 @@ import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
 import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
+// Room under the last row so it never sits against the home indicator or nav bar.
+const END_ROOM = 24
 
 export function BoardShell({
   book,
@@ -33,10 +35,13 @@ export function BoardShell({
   noTitle = false,
   // Optional ref that gets the page's scroll view, for a form that scrolls a field into view.
   scrollHandle,
+  // Optional Animated.Value to share the scroll offset with bars pinned over the page.
+  scrollY: scrollYIn,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
-  const scrollY = useRef(new Animated.Value(0)).current
+  const ownScrollY = useRef(new Animated.Value(0)).current
+  const scrollY = scrollYIn || ownScrollY
   // KeyboardAvoidingView repositions the page, but a form shorter than the
   // full screen has no content to scroll past the keyboard on its own. This
   // adds scroll room for whatever part of the scroll view the keyboard still
@@ -45,6 +50,14 @@ export function BoardShell({
   const [keyboardTop, setKeyboardTop] = useState(null)
   const [scrollBottom, setScrollBottom] = useState(null)
   const focused = useIsFocused()
+  // Opened again from the menu while still open further back: start at the
+  // top, so a tap meant for the top of the page never lands on an old row.
+  const menuAt = useRoute()?.params?.menuAt
+  useEffect(() => {
+    if (!menuAt) return
+    scrollRef.current?.scrollTo?.({ y: 0, animated: false })
+    scrollY.setValue(0)
+  }, [menuAt, scrollY])
   useEffect(() => {
     if (!scroll || !focused) {
       setKeyboardTop(null)
@@ -57,7 +70,26 @@ export function BoardShell({
     const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
     return () => subs.forEach((sub) => sub.remove())
   }, [scroll, focused])
-  const onScrollLayout = useCallback(() => {
+  // When the page gets shorter (Select ends, rows go), the scroll view clamps
+  // its offset without an onScroll event, so the small bar title could stay up
+  // over the big one. Clamp our copy of the offset the same way.
+  const lastY = useRef(0)
+  const viewH = useRef(0)
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      lastY.current = value
+    })
+    return () => scrollY.removeListener(id)
+  }, [scrollY])
+  const onContentSize = useCallback(
+    (w, h) => {
+      const most = Math.max(0, h - viewH.current)
+      if (viewH.current && lastY.current > most) scrollY.setValue(most)
+    },
+    [scrollY],
+  )
+  const onScrollLayout = useCallback((event) => {
+    viewH.current = event?.nativeEvent?.layout?.height || viewH.current
     scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
   }, [])
   const keyboardPad =
@@ -90,7 +122,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad + keyboardPad }]}>
+    <View style={[styles.page, { paddingBottom: bottomPad + (scroll ? END_ROOM : 0) + keyboardPad }]}>
       {children}
     </View>
   )
@@ -115,6 +147,7 @@ export function BoardShell({
           if (scrollHandle) scrollHandle.current = node
         }}
         onLayout={onScrollLayout}
+        onContentSizeChange={onContentSize}
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"

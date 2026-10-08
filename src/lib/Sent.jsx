@@ -3,9 +3,9 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
-import { myDidYouLinks } from './did-you-links.js'
+import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from './did-you-links.js'
 import { t, tMiss } from './i18n.js'
-import { listSent, personName, takeBack } from './people.js'
+import { editSend, listSent, personName, takeBack } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCard } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
@@ -24,6 +24,10 @@ export function Sent({ book, now }) {
   const [links, setLinks] = useState([])
   const [ready, setReady] = useState(false)
   const [miss, setMiss] = useState('')
+  const [editing, setEditing] = useState(null)
+  const [stopping, setStopping] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -39,6 +43,39 @@ export function Sent({ book, now }) {
   useEffect(() => {
     load()
   }, [load])
+
+  async function saveEdit() {
+    if (busy || !editing) return
+    const { text, miss: why } = cleanSentEdit(editing.text)
+    if (why) {
+      setMiss(why)
+      return
+    }
+    setBusy(true)
+    setMiss('')
+    setNote('')
+    const out = await editSend(editing.id, text)
+    setBusy(false)
+    if (out.miss) setMiss(out.miss)
+    else {
+      setEditing(null)
+      setNote(t('sent.edited'))
+    }
+    load()
+  }
+
+  async function stopLink() {
+    if (busy || !stopping) return
+    setBusy(true)
+    setMiss('')
+    setNote('')
+    const out = await endDidYouLink(stopping)
+    setBusy(false)
+    setStopping('')
+    if (out.miss) setMiss(out.miss)
+    else setNote(t('sent.linkStopped'))
+    load()
+  }
 
   const shell = (children) => (
     <BoardShell
@@ -96,6 +133,11 @@ export function Sent({ book, now }) {
                 {howItWent(row.state)}
               </em>
             </span>
+            {canEditSent(row) ? (
+              <button className="di-key" type="button" onClick={() => setEditing({ id: row.id, text: row.question })}>
+                {t('sent.edit')}
+              </button>
+            ) : null}
             {row.state === 'sent' ? (
               <button
                 className="di-key"
@@ -125,12 +167,59 @@ export function Sent({ book, now }) {
                     {link.kept.length
                       ? t('sent.keptBy', { names: link.kept.map((row) => row.name || t('sent.keptAnon')).join(', ') })
                       : t('sent.keptNone')}
+                    {link.ended ? ` · ${t('sent.stoppedNote')}` : ''}
                   </em>
                 </span>
+                {link.ended ? null : (
+                  <button className="di-key" type="button" onClick={() => setStopping(link.code)}>
+                    {t('sent.stopLink')}
+                  </button>
+                )}
               </div>
             ))}
           </SetCard>
         </>
+      ) : null}
+      {editing ? (
+        <div className="di-we-sure" role="dialog" aria-label={t('sent.editTitle')}>
+          <label className="di-field">
+            <span>{t('sent.editTitle')}</span>
+            <input
+              value={editing.text}
+              maxLength={200}
+              onChange={(event) => setEditing({ ...editing, text: event.target.value })}
+            />
+          </label>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" disabled={busy} onClick={saveEdit}>
+              {t('sent.editSave')}
+            </button>
+            <button className="di-key" type="button" onClick={() => setEditing(null)}>
+              {t('settings.neverMind')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {stopping ? (
+        <div className="di-we-sure" role="alertdialog" aria-label={t('sent.stopTitle')}>
+          <p>
+            <strong>{t('sent.stopTitle')}</strong>
+          </p>
+          <p className="di-set-note">{t('sent.stopBody')}</p>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" disabled={busy} onClick={stopLink}>
+              {t('sent.stopLink')}
+            </button>
+            <button className="di-key" type="button" onClick={() => setStopping('')}>
+              {t('settings.neverMind')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {note && !miss ? (
+        <p className="di-set-note" role="status">
+          {note}
+        </p>
       ) : null}
       {miss ? (
         <p className="di-miss" role="alert">

@@ -6,6 +6,7 @@ import { goHash } from '../navigation/hash.js'
 import { usePop } from '../hooks/usePop.js'
 import { fonts } from '../theme.js'
 import { CoinIcon, GemIcon } from './PurseIcons.jsx'
+import { openCoinsHow } from './NightSheets.jsx'
 
 export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
   const reduce = useReduceMotion()
@@ -35,10 +36,16 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
 
   return (
     <Animated.View style={[styles.row, mast && styles.rowMast, { transform: [{ scale }] }]}>
-      <View style={styles.bit}>
+      <Pressable
+        onPress={() => openCoinsHow(colors)}
+        style={styles.bit}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={t('coins.tapAria')}
+      >
         <CoinIcon size={iconSize} />
         <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{coins}</Text>
-      </View>
+      </Pressable>
       {mast ? null : <Text style={[styles.sep, { color: colors.line }]}>·</Text>}
       {gemsLink ? (
         <Pressable

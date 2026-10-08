@@ -19,6 +19,8 @@ import {
   weGoal,
   weKnownPeople,
   weLeave,
+  weClose,
+  weNotTonightLine,
   weMake,
   noteAsked,
   reportWe,
@@ -27,7 +29,9 @@ import {
   weNextMilestone,
   weNextNight,
   weNudge,
+  weQuestion,
   weStreak,
+  weCardKept,
   weTonight,
   weWaiting,
   useWeTonight,
@@ -38,9 +42,10 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
+import { WeAnswers, WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
 import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
+import { KEEP, useKept } from '../hooks/useKept.js'
 import { canGoBack, goBack, goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
@@ -55,8 +60,10 @@ function Cap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
 }
 
-function usePeople() {
-  const [people, setPeople] = useState(null)
+// Friends and family to pick from: last launch's list first, then fresh.
+export function usePeople() {
+  const account = useAccount()
+  const [people, setPeople] = useKept(`we.people:${account.user?.id}`, null, KEEP)
   useEffect(() => {
     let alive = true
     weKnownPeople().then((rows) => {
@@ -438,6 +445,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       const who = names.length === 1 ? t('confirm.askedOne', { name: names[0] }) : t('confirm.askedMany', { n: picked.length })
       confirmDone(`${who} ${t('confirm.weStartsOnYes')}`)
     }
+    justMade = out.id
     feel.land(t('lead.sent'), () => goHash('/we', { id: out.id }))
   }
 
@@ -587,6 +595,9 @@ function WeMenu({ title, items, colors, onClose }) {
   )
 }
 
+// A Did we does nothing alone, so the card you just made opens on sharing.
+let justMade = ''
+
 export function WeCardScreen({ book, cardId, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
@@ -598,7 +609,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const colors = useHallColors(book)
   const cheer = useWeCheer(book, onChange)
   const people = usePeople()
-  const [card, setCard] = useState(undefined)
+  const [card, setCard] = useState(() => weCardKept(cardId))
   const [edit, setEdit] = useState(null)
   const [asking, setAsking] = useState([])
   const [busy, setBusy] = useState(false)
@@ -606,6 +617,10 @@ function WeCardPage({ book, cardId, onChange }) {
   // Your link for this card while it works, so you can turn it off.
   const [link, setLink] = useState('')
   const [linkSaid, setLinkSaid] = useState('')
+  const [fresh] = useState(() => justMade === cardId)
+  useEffect(() => {
+    if (justMade === cardId) justMade = ''
+  }, [cardId])
   useEffect(() => {
     let alive = true
     myWeLink(cardId)
@@ -758,6 +773,25 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  // The maker ends it for everyone. Past answers stay.
+  function close() {
+    publishSheet({
+      title: t('we.closeTitle'),
+      body: t('we.closeBody'),
+      goLabel: t('we.close'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const out = await weClose(card.id)
+        if (out.miss) return setMiss(tMiss(out.miss))
+        confirmDone(t('confirm.weClosed'))
+        goHash('/we')
+      },
+    })
+  }
+
   // Filed for Aaron to look at, with the question. Blocking stays on the
   // person's own sheet in Friends and family.
   function report() {
@@ -793,19 +827,91 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  // The rules and who is on it, kept off the page and shown from the ⋯ menu.
+  function openDetails() {
+    publishSheet({
+      title: t('we.details'),
+      colors,
+      closeLabel: t('settings.close'),
+      onClose: () => publishSheet(null),
+      content: (
+        <View>
+          <Meta colors={colors}>
+            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
+            {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
+          </Meta>
+          {goal ? (
+            <Meta colors={colors}>
+              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+            </Meta>
+          ) : null}
+          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
+          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
+          {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
+          <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
+            <Cap colors={colors}>{t('we.people')}</Cap>
+            {(card.people || []).map((p) => (
+              <Meta key={p.id} colors={colors}>
+                {p.me ? t('we.you') : p.name}
+                {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
+                {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
+              </Meta>
+            ))}
+          </View>
+        </View>
+      ),
+    })
+  }
+
   const menuItems = [
+    { key: 'details', label: t('we.details'), onPress: openDetails },
     card.mine && !edit ? { key: 'edit', label: t('we.edit'), onPress: startEdit } : null,
     link ? { key: 'link', label: t('weLink.off'), onPress: endLink } : null,
     { key: 'leave', label: t('we.leave'), onPress: leave, danger: true },
+    card.mine ? { key: 'close', label: t('we.close'), onPress: close, danger: true } : null,
     { key: 'report', label: t('we.report'), onPress: report, danger: true },
   ].filter(Boolean)
 
+  // Nobody else on it yet, or just made: sharing comes first.
+  const shareFirst = fresh || !(card.people || []).some((p) => !p.me && (p.state === 'in' || p.state === 'asked'))
+  const shareCard = (
+    <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <Cap colors={colors}>{t('we.askMore')}</Cap>
+      <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
+      <View style={styles.grid}>
+        {asking.length ? (
+          <View style={styles.gridCell}>
+            <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
+          </View>
+        ) : null}
+        <View style={styles.gridCell}>
+          <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
+        </View>
+      </View>
+      <Meta colors={colors}>{t('weLink.hint')}</Meta>
+      {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
+    </View>
+  )
+
+  // The swipe card below already shows the question in big type.
+  const bigCard = !card.due && early && !early.card.done && !weMine(early.card)?.status
+  const names = (card.people || [])
+    .filter((p) => p.state === 'in')
+    .map((p) => (p.me ? t('we.you') : p.name))
+    .join(', ')
+
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      {shareFirst ? shareCard : null}
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.headTop}>
           <View style={styles.headFaces}>
             <WeFaces card={card} colors={colors} cheer={cheer} />
+            {names ? (
+              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={2}>
+                {names}
+              </Text>
+            ) : null}
           </View>
           <Pressable
             onPress={() => setMenu(true)}
@@ -817,8 +923,9 @@ function WeCardPage({ book, cardId, onChange }) {
             <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
           </Pressable>
         </View>
-        <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
-        <Meta colors={colors}>{card.due ? weStatusLine(card) : t('we.notTonight')}</Meta>
+        {bigCard ? null : <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>}
+        <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
+        {card.due ? <WeAnswers card={card} colors={colors} /> : null}
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
       </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
@@ -836,6 +943,8 @@ function WeCardPage({ book, cardId, onChange }) {
             />
           </View>
         ) : (
+          <>
+          <Meta colors={colors}>{t('we.earlyOk')}</Meta>
           <SwipeFlyHost style={styles.earlySlot}>
             <SwipeCardHost
               key={`we-early:${card.id}`}
@@ -843,6 +952,7 @@ function WeCardPage({ book, cardId, onChange }) {
               colors={{ ...colors, on: colors.we || colors.on, line: colors.we || colors.line }}
               kicker={t('we.earlyKicker', { day: new Date(`${early.night}T12:00:00`).toLocaleDateString(readPrefs().locale, { weekday: 'long' }) })}
               title={card.question}
+              panelStyle={styles.earlyFace}
               stampDid={t('tonight.swipeDid')}
               stampNope={t('tonight.swipeNope')}
               behind={[]}
@@ -850,18 +960,25 @@ function WeCardPage({ book, cardId, onChange }) {
               onNope={() => ans.answer(early.card, 'nope', early.night)}
             />
           </SwipeFlyHost>
+          <View style={styles.earlyKeys}>
+            <View style={styles.earlyKey}>
+              <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={() => ans.answer(early.card, 'nope', early.night)} />
+            </View>
+            <View style={styles.earlyKey}>
+              <KeyButton label={t('tonight.answerDid')} colors={colors} onPress={() => ans.answer(early.card, 'did', early.night)} />
+            </View>
+          </View>
+          </>
         )
       ) : null}
       {card.due ? (
         <View style={styles.acts}>
-          <DidButton
-            colors={colors}
-            small
-            dim={mine?.status === 'nope'}
-            label={mine?.status === 'did' ? t('we.youDid') : t('we.did')}
-            disabled={ans.busy === card.id}
-            onPress={() => ans.answer(card, 'did')}
-          />
+          {/* Not answered yet: Did and Nope look the same, so neither reads as picked. */}
+          {mine?.status === 'did' ? (
+            <DidButton colors={colors} small label={t('we.youDid')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+          ) : (
+            <KeyButton colors={colors} label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+          )}
           <KeyButton
             colors={colors}
             picked={mine?.status === 'nope'}
@@ -869,7 +986,7 @@ function WeCardPage({ book, cardId, onChange }) {
             disabled={ans.busy === card.id}
             onPress={() => ans.answer(card, 'nope')}
           />
-          {mine?.status === 'did' && !card.done
+          {!card.done
             ? weWaiting(card)
                 .filter((p) => !p.nudged)
                 .map((p) => (
@@ -911,52 +1028,13 @@ function WeCardPage({ book, cardId, onChange }) {
         <Text style={[styles.big, { color: colors.ink }]}>{t('we.streak', { n: streak })}</Text>
         <Meta colors={colors}>
           {t('we.best', { n: best })}
-          {next ? ` · ${t('we.nextCoins', { n: next - streak })}` : ''}
+          {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
         </Meta>
-        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
-          <Meta colors={colors}>
-            {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
-            {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
-          </Meta>
-          {goal ? (
-            <Meta colors={colors}>
-              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
-            </Meta>
-          ) : null}
-          <Meta colors={colors}>{t('we.thisMonth', { n: month.done, due: month.due })}</Meta>
-          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
-          {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
-        </View>
-        <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
-          <Cap colors={colors}>{t('we.people')}</Cap>
-          {(card.people || []).map((p) => (
-            <Meta key={p.id} colors={colors}>
-              {p.me ? t('we.you') : p.name}
-              {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-              {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
-            </Meta>
-          ))}
-        </View>
       </View>
 
-      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Cap colors={colors}>{t('we.askMore')}</Cap>
-        <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
-        <View style={styles.grid}>
-          {asking.length ? (
-            <View style={styles.gridCell}>
-              <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
-            </View>
-          ) : null}
-          <View style={styles.gridCell}>
-            <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
-          </View>
-        </View>
-        <Meta colors={colors}>{t('weLink.hint')}</Meta>
-        {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
-      </View>
+      {shareFirst ? null : shareCard}
 
-      <SetCap colors={colors}>{t('we.yourFiling')}</SetCap>
+      <SetCap colors={colors} style={styles.listCap}>{t('we.yourFiling')}</SetCap>
       <SetCard colors={colors}>
         <FilingFolds
           folder={filing.folder}
@@ -1007,12 +1085,23 @@ const WE_IDEAS = ['we.idea.dog', 'we.idea.date', 'we.idea.gym', 'we.idea.call', 
 export function WeHomeScreen({ book, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
+  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
+  return (
+    <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <WeHomeList book={book} onChange={onChange} />
+    </ScreenShell>
+  )
+}
+
+// The Did we list itself: the Did we page and the Friends and family tab.
+export function WeHomeList({ book, onChange }) {
+  const account = useAccount()
+  const colors = useHallColors(book)
   const { cards, loaded, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
-  if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
 
-  const mine = cards.filter((card) => card.myState === 'in')
+  const mine =cards.filter((card) => card.myState === 'in')
   const tonight = mine.filter((card) => card.due)
   const later = mine.filter((card) => !card.due)
   const month = new Date().toISOString().slice(0, 7)
@@ -1037,17 +1126,17 @@ export function WeHomeScreen({ book, onChange }) {
         style={[styles.weRow, { borderColor: colors.we, backgroundColor: colors.panel }]}
       >
         <View style={styles.weRowCopy}>
-          <Text style={[styles.weQ, { color: colors.ink }]}>{card.question}</Text>
-          <WeFaces card={card} colors={colors} cheer={cheer} />
+          <Text style={[styles.weQ, { color: colors.ink }]}>{weQuestion(card.question)}</Text>
+          {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} cheer={cheer} />}
           <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
-            {card.due ? weStatusLine(card) : t('we.notTonight')}
+            {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
             {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
             {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
           </Text>
         </View>
         {open ? (
           <View style={styles.weRowActs}>
-            <DidButton colors={colors} small label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
+            <KeyButton colors={colors} label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
             <KeyButton colors={colors} label={t('we.nope')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'nope')} />
           </View>
         ) : null}
@@ -1056,7 +1145,7 @@ export function WeHomeScreen({ book, onChange }) {
   }
 
   return (
-    <ScreenShell book={book} title={t('we.title')} colors={colors}>
+    <>
       <Text style={[styles.weLead, { color: colors.inkSoft }]}>{t('we.homeLead')}</Text>
       <WeAsks colors={colors} />
 
@@ -1075,12 +1164,12 @@ export function WeHomeScreen({ book, onChange }) {
         </View>
       ) : null}
 
-      {tonight.length ? <SetCap colors={colors}>{t('we.tonightTogether')}</SetCap> : null}
+      {tonight.length ? <SetCap colors={colors} style={styles.listCap}>{t('we.tonightTogether')}</SetCap> : null}
       {tonight.map((card) => row(card, true))}
 
       {folders.map((folder) => (
         <View key={folder || '-'}>
-          <SetCap colors={colors}>{folder || t('we.yours')}</SetCap>
+          <SetCap colors={colors} style={styles.listCap}>{folder || t('we.yours')}</SetCap>
           {later.filter((card) => (card.folder || '') === folder).map((card) => row(card, false))}
         </View>
       ))}
@@ -1089,9 +1178,9 @@ export function WeHomeScreen({ book, onChange }) {
       {mine.length && nightsTogether > 0 ? (
         <View style={[styles.panel, { borderColor: colors.line, backgroundColor: colors.panel }]}>
           <Cap colors={colors}>{t('we.monthTogether')}</Cap>
-          <Text style={[styles.big, { color: colors.we }]}>{t('we.nightsDone', { n: nightsTogether })}</Text>
+          <Text style={[styles.big, { color: colors.we }]}>{t(nightsTogether === 1 ? 'we.nightsDoneOne' : 'we.nightsDone', { n: nightsTogether })}</Text>
           {longest?.streak ? (
-            <Meta colors={colors}>{t('we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
+            <Meta colors={colors}>{t(longest.streak === 1 ? 'we.longestOne' : 'we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
           ) : null}
         </View>
       ) : null}
@@ -1099,13 +1188,19 @@ export function WeHomeScreen({ book, onChange }) {
       {ans.note ? <Meta colors={colors}>{ans.note}</Meta> : null}
       {ans.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{ans.miss}</Text> : null}
       <DidButton colors={colors} label={t('we.new')} onPress={() => goHash('/we/new')} />
-    </ScreenShell>
+    </>
   )
 }
 
 const styles = StyleSheet.create({
-  earlySlot: { height: 250, justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
+  earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 0, marginBottom: 8 },
+  earlyKey: { flex: 1 },
+  earlyFace: { minHeight: 0, paddingTop: 18, paddingBottom: 18 },
+  // Sized to the card: the early note, question and keys read as one block.
+  earlySlot: { justifyContent: 'flex-start', position: 'relative', overflow: 'visible', marginVertical: 8 },
   weLead: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
+  // The list sits on the page edge, not in a settings card, so no inset.
+  listCap: { marginHorizontal: 0 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },
   weRowActs: { flexDirection: 'row', gap: 8 },
@@ -1121,7 +1216,8 @@ const styles = StyleSheet.create({
   panel: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
   card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
   headTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headFaces: { flex: 1 },
+  headFaces: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headNames: { flex: 1, fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
   moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },

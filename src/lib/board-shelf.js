@@ -4,6 +4,7 @@ import { stripDemoShelf } from './demo-strip.js'
 import { t } from './i18n.js'
 import { saveBoardForSw } from './board-store.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
+import { noteShelfMilestones } from './milestones.js'
 
 export { readSavedAt, stampSavedAt }
 
@@ -16,8 +17,14 @@ const OLD_KEY = 'did-i-board'
 // General so it folds into today's General folder on next mergeSameTitles.
 const OLD_DEFAULT_TITLE = 'Did I'
 
+// The General folder in every language the app speaks ('tags.general').
+// A folder made in one language reads in the language in use now.
+const DEFAULT_TITLES = new Set([OLD_DEFAULT_TITLE, 'General', 'Allgemein', 'Général', 'Generale', 'Geral', '一般', '일반', '常规'])
+
 function migrateDefaultTitle(book) {
-  return book.title === OLD_DEFAULT_TITLE ? { ...book, title: t('tags.general') } : book
+  if (!DEFAULT_TITLES.has(book.title)) return book
+  const title = t('tags.general')
+  return book.title === title ? book : { ...book, title }
 }
 
 export function currentBook(shelf) {
@@ -102,6 +109,7 @@ export function writeShelf(shelf, savedAt) {
   if (savedAt) stampSavedAt(savedAt)
   else if (changed || !readSavedAt()) stampSavedAt()
   saveBoardForSw(currentBook(next))
+  noteShelfMilestones(next)
   return next
 }
 
@@ -237,4 +245,14 @@ export function nextBoardTitle(boards) {
   let n = 2
   while (used.has(t('tags.defaultN', { n }))) n += 1
   return t('tags.defaultN', { n })
+}
+
+// The shop preview card shows one of your own questions, with its folder name
+// as the kicker the way the real card does. No questions yet: the sample.
+export function previewSample() {
+  for (const book of readShelf()?.boards || []) {
+    const lamp = (book.lamps || []).find((item) => !item.archived && item.question)
+    if (lamp) return { question: lamp.question, tag: book.title || t('shop.buddyPreviewTag') }
+  }
+  return { question: t('shop.buddyPreviewQ'), tag: t('shop.buddyPreviewTag') }
 }

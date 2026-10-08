@@ -16,9 +16,8 @@ import { feelTap } from '../../src/lib/native.js'
 import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
-import { useScreenRoute } from '../navigation/screen-route.js'
 import { goHash } from '../navigation/hash.js'
-import { dropToast, useToastQueue } from '../lib/toast-queue.js'
+import { dropToast, toastQueue, useToastQueue } from '../lib/toast-queue.js'
 import { launchFlight } from './FlyHost.jsx'
 import { fonts } from '../theme.js'
 import { RollNumber } from './RollNumber.jsx'
@@ -38,22 +37,18 @@ const RING = 26
 const RING_LINE = 2.5
 const RING_SIZE = 24.5
 
-// Home's header height below the status bar. The toast covers the count row
-// under it, the one strip of Home with nothing to tap.
-const HOME_TOP = 65
+// Home always keeps this much empty room at its bottom, under Did and Nope,
+// and the toast shows there. It never covers the card or the friends row,
+// and nothing moves when a toast comes or goes.
+export const TOAST_ROOM = 66
 
 /**
  * The one toast on screen, above the tab bar. The rest of the queue waits.
  */
 export function ToastHost({ colors }) {
   const items = useToastQueue()
-  const { insets, overlayBottom: tabBottom } = useAppInsets()
-  // Home has answer buttons from the middle down (Did, Nope, Did it now), so a
-  // tap on Undo just as the toast leaves could answer a question. There the
-  // toast sits at the top instead.
-  const homePath = useScreenRoute().path
-  const onHome = homePath === '/tonight' || homePath === '/'
-  const place = onHome ? { top: insets.top + HOME_TOP } : { bottom: tabBottom }
+  const { overlayBottom: tabBottom } = useAppInsets()
+  const place = { bottom: tabBottom }
   const [shown, setShown] = useState(null)
   const [pause, setPause] = useState(false)
   const [landed, setLanded] = useState('')
@@ -66,6 +61,13 @@ export function ToastHost({ colors }) {
     if (shown || pause || !head) return
     setShown(head)
   }, [head, pause, shown])
+
+  // A new undo never waits behind another toast. The one on screen steps
+  // aside, still in the queue, and comes back after the undo.
+  useEffect(() => {
+    if (!shown || shown.kind === 'undo' || head?.kind !== 'undo') return
+    setShown(null)
+  }, [head, shown])
 
   const gone = useCallback((id) => {
     dropToast(id)
@@ -124,6 +126,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   const y = useSharedValue(reduce ? 0 : FROM_Y)
   const fade = useSharedValue(reduce ? 0 : 1)
   const leaving = useRef(false)
+  const letGo = useRef(null)
 
   const finish = useCallback(() => onGone(item.id), [item.id, onGone])
 
@@ -134,7 +137,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       item.onGone?.()
       // The timer, not the animation callback, lets go of the toast, so a
       // fallback without native animation never leaves one on screen.
-      setTimeout(finish, OUT_MS + 40)
+      letGo.current = setTimeout(finish, OUT_MS + 40)
       const out = { duration: OUT_MS, easing: Easing.in(Easing.quad) }
       if (reduce) {
         fade.value = withTiming(0, { duration: 160 })
@@ -147,9 +150,29 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
     [fade, finish, item, reduce, x, y],
   )
 
+  // A toast taken off screen while it was leaving lets go of itself now. Its
+  // timer stops with it, so it never lets go of a newer toast with the same
+  // id (the next answer's undo).
+  const mine = useRef(item)
+  mine.current = item
+  useEffect(
+    () => () => {
+      clearTimeout(letGo.current)
+      if (!leaving.current) return
+      const gone = mine.current
+      const now = toastQueue().find((entry) => entry.id === gone.id)
+      if (now && (now.rev || 0) === (gone.rev || 0)) dropToast(gone.id)
+    },
+    [],
+  )
+
+  // Tells an undo it is on screen once it has come in, so its clock starts then.
+  const onShown = item.onShown
+  const arrived = useCallback(() => onShown?.(), [onShown])
   useEffect(() => {
-    if (reduce) fade.value = withTiming(1, { duration: 160 })
-    else y.value = withSpring(0, ENTER)
+    if (reduce) fade.value = withTiming(1, { duration: 160 }, () => scheduleOnRN(arrived))
+    else y.value = withSpring(0, ENTER, () => scheduleOnRN(arrived))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fade, reduce, y])
 
   // Undo lasts until its own clock runs out; the rest for their `ms`.
@@ -215,12 +238,25 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       goHash('/we', { id: item.cardId })
       leave(0, FROM_Y)
     }
+  } else if (item.kind === 'mark') {
+    // A new achievement opens the achievements page, where the rest wait too.
+    press = () => {
+      goHash('/marks')
+      leave(0, FROM_Y)
+    }
+  } else if (item.onPress) {
+    // A plain or done toast that opens something (a streak freeze sheet).
+    press = () => {
+      item.onPress()
+      leave(0, FROM_Y)
+    }
   }
 
   const aimAt = useCallback((rel) => onAim(item, rel, wrapWidth.current), [item, onAim])
   let label
   if (item.kind === 'undo') label = `${item.label} ${item.hint}`
   else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
+  else if (item.kind === 'mark') label = markA11y(item.mark)
   else if (item.kind === 'we' || item.kind === 'done' || !item.kind) label = item.text || t('confirm.done')
 
   return (
@@ -316,23 +352,31 @@ function CountdownRing({ until, total, colors, reduce }) {
   )
 }
 
+function markA11y(mark = {}) {
+  return [
+    t('marks.new'),
+    markLabel(mark.id, 'name'),
+    mark.id ? markLabel(mark.id, 'line') : '',
+    mark.more ? t('marks.more', { n: mark.more }) : '',
+  ]
+    .filter(Boolean)
+    .join('. ')
+}
+
+// Two lines, so it fits the toast room under Did and Nope. The line that says
+// what it is for waits on the achievements page, one tap away.
 function MarkBody({ item, colors, onOk }) {
   const mark = item.mark || {}
   return (
     <>
       <View style={styles.copy}>
-        <Text style={[styles.kicker, { color: colors.on }]}>{t('marks.new')}</Text>
+        <Text style={[styles.kicker, { color: colors.on }]} numberOfLines={1}>
+          {t('marks.new')}
+          {mark.more ? <Text style={{ color: colors.inkDim }}>{`  ·  ${t('marks.more', { n: mark.more })}`}</Text> : null}
+        </Text>
         <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
           {markLabel(mark.id, 'name')}
         </Text>
-        {mark.id ? (
-          <Text style={[styles.line, { color: colors.inkSoft }]} numberOfLines={2}>
-            {markLabel(mark.id, 'line')}
-          </Text>
-        ) : null}
-        {mark.more ? (
-          <Text style={[styles.line, { color: colors.inkDim }]}>{t('marks.more', { n: mark.more })}</Text>
-        ) : null}
       </View>
       <KeyButton label={t('marks.ok')} colors={colors} onPress={onOk} />
     </>
@@ -437,7 +481,7 @@ const styles = StyleSheet.create({
   error: { fontSize: 14, lineHeight: 19 },
   kitBadge: {
     minWidth: 30,
-    height: 30,
+    minHeight: 30,
     borderRadius: 15,
     paddingHorizontal: 8,
     alignItems: 'center',

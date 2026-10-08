@@ -27,6 +27,7 @@ import { fonts } from '../theme.js'
 const R = 16
 const CHIP = 2.4 * R
 const CHIP_R = 0.55 * R
+const CHIP_BIG = 72
 
 const LOOK_META = {
   lime: { on: '#c9f24d' },
@@ -100,18 +101,23 @@ function chipShell(colors, bg, glow, chipShadow, borderless = false) {
   return shell
 }
 
-export function LookChip({ id, colors }) {
+// plain: no glow or ring, for a tile that is not selected (a glow reads as selected).
+export function LookChip({ id, colors, plain = false }) {
   const theme = useTheme()
-  const meta = isGemLook(id) ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
-  const on = meta.on
   const premium = isGemLook(id)
+  const lookColors = useLookColors(id)
+  const base = premium ? gemLookChipMeta(id, theme) || LOOK_META[id] : LOOK_META[id] || LOOK_META.lime
+  // In Light, a coin look's chip takes the look's own Light card colors, so
+  // the tile matches the card preview (Ink is cream there, not black).
+  const meta = !premium && theme === 'light' ? { on: lookColors.on, bg: lookColors.panel } : base
+  const on = meta.on
   const dot = rem(0.34)
   const dotStyle = (i) => ({
     width: dot,
     height: dot,
     borderRadius: dot / 2,
     backgroundColor: on,
-    ...(meta.dotGlow
+    ...(meta.dotGlow && !plain
       ? {
           shadowColor: meta.dotGlow,
           shadowOffset: { width: 0, height: 0 },
@@ -121,7 +127,7 @@ export function LookChip({ id, colors }) {
       : null),
   })
   const chipBg = meta.bg
-  const chipGlow = meta.glow
+  const chipGlow = plain ? null : meta.glow
   const chip = (
     <View style={[styles.lookChip, chipShell(colors, chipBg, chipGlow, meta.chipShadow, id === 'glow')]}>
       {premium && meta.ring && id !== 'glow' ? (
@@ -133,7 +139,7 @@ export function LookChip({ id, colors }) {
     </View>
   )
 
-  if (!premium) return chip
+  if (!premium || plain) return chip
 
   if (id === 'glow') {
     return (
@@ -827,7 +833,7 @@ export function BuddyChip({ id, alive = false }) {
   if (!id) return null
   return (
     <View style={styles.buddyChip}>
-      <Animated.View style={[styles.buddySway, life.idle]}>
+      <Animated.View style={[styles.buddySway, life.idle]} renderToHardwareTextureAndroid={Boolean(life.idle)} shouldRasterizeIOS={Boolean(life.idle)}>
         <Slot fallback={<BuddyPlain id={id} width={28} height={34} />}>
           <BuddyArt id={id} width={28} height={34} blink={life.blink} />
         </Slot>
@@ -852,23 +858,25 @@ function Dressed({ id, worn, tone, width, height, blink }) {
 // A shop tile: the buddy wearing just this one item, small enough that wings
 // fit. Eye items are too small to read on a whole buddy, so those tiles show
 // the face up close instead.
-export function AccessoryChip({ id, buddyId = 'ant', tone }) {
+// big: the Collection grid, where a tiny buddy makes every hat look alike.
+export function AccessoryChip({ id, buddyId = 'ant', tone, big = false }) {
   const slot = accessoryById(id)?.slot || 'head'
+  const box = big ? CHIP_BIG : CHIP
   if (slot === 'eyes') {
-    const w = 72
+    const w = big ? 132 : 72
     const h = (w * 58) / 48
     const k = w / 48
     return (
-      <View style={[styles.accessoryChip, styles.accessoryChipZoom]}>
-        <View style={{ position: 'absolute', left: CHIP / 2 - 24 * k, top: CHIP / 2 - eyeLine(buddyId) * k, width: w, height: h }}>
+      <View style={[styles.accessoryChip, styles.accessoryChipZoom, big && styles.accessoryChipBig]}>
+        <View style={{ position: 'absolute', left: box / 2 - 24 * k, top: box / 2 - eyeLine(buddyId) * k, width: w, height: h }}>
           <Dressed id={buddyId} worn={{ eyes: id }} tone={tone} width={w} height={h} />
         </View>
       </View>
     )
   }
   return (
-    <View style={styles.accessoryChip}>
-      <Dressed id={buddyId} worn={{ [slot]: id }} tone={tone} width={28} height={34} />
+    <View style={[styles.accessoryChip, big && styles.accessoryChipBig]}>
+      <Dressed id={buddyId} worn={{ [slot]: id }} tone={tone} width={big ? 58 : 28} height={big ? 70 : 34} />
     </View>
   )
 }
@@ -897,7 +905,7 @@ export function BuddyHang({ id, inline = false, alive = false, worn = null, tone
     ? styles.buddyDropped
     : null
   return (
-    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none">
+    <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none" renderToHardwareTextureAndroid={Boolean(life.idle)} shouldRasterizeIOS={Boolean(life.idle)}>
       <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
         <Dressed id={id} worn={outfit} tone={tone || mine.tone} width={width} height={height} blink={life.blink} />
       </Slot>
@@ -1001,6 +1009,7 @@ const styles = StyleSheet.create({
   buddyChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   accessoryChip: { width: CHIP, height: CHIP, alignItems: 'center', justifyContent: 'center' },
   accessoryChipZoom: { overflow: 'hidden', borderRadius: CHIP_R },
+  accessoryChipBig: { width: CHIP_BIG, height: CHIP_BIG },
   buddyHang: { position: 'absolute', top: -8, right: 12, zIndex: 2 },
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
   buddyOwl: { marginTop: -6 },

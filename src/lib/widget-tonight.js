@@ -34,6 +34,7 @@ import { SHELF_IN } from './cloud-sync.js'
 import { pushShelfAfterWidgetAnswer } from './widget-cloud-sync.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from './widget-store.js'
 import { settleTapEarnings } from './tap-earnings.js'
+import { noteMilestone } from './milestones.js'
 
 export function publishShelf(shelf) {
   try {
@@ -121,8 +122,19 @@ function widgetOpenCount(props) {
 }
 
 /** Headless Android can rebuild before the shelf is warm; keep the fresher open stack. */
+// What the Tonight widget shows, as one string: which questions, which
+// night, and how each is answered. Two shelves with the same key draw the
+// same card, so a sync that changes nothing tonight skips the redraw.
+export function tonightWidgetKey(props) {
+  const items = (props?.items || []).map((item) => `${item.lampId}|${item.periodKey}|${item.status}`)
+  return [props?.leadLampId || '', props?.left ?? '', props?.footer || '', ...items].join('\n')
+}
+
 export function preferStoredTonightProps(built, stored) {
   if (!stored?.items?.length) return built
+  // A card saved on an earlier night is never kept past midnight.
+  if (stored.updatedAt && built.updatedAt &&
+      boardDate(new Date(stored.updatedAt)) !== boardDate(new Date(built.updatedAt))) return built
   // A saved card that still shows a question the shelf has answered is stale
   // (answered in the app, or by an earlier tap). Never bring it back.
   const builtStatus = new Map(
@@ -230,7 +242,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   if (nextLine && !openRows.length) footer = nextLine
   const colorBook = widgetColorBook(shelf)
   return {
-    tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.openApp'),
+    tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
     question,
     leadLampId: lead?.lamp.id || weItem?.lampId || '',
     items,
@@ -423,6 +435,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
   const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
+  noteMilestone('widget_used')
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
   const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
   const previous = readWidgetTonightProps()

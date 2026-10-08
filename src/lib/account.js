@@ -3,6 +3,7 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
+import { forgetAccountCaches } from './account-cache.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -54,6 +55,8 @@ export function devicePlatform() {
 
 export function deviceLabel() {
   const platform = devicePlatform()
+  const named = globalThis.__didIDeviceName
+  if (platform !== 'web' && typeof named === 'string' && named) return named.slice(0, 80)
   if (platform === 'android') return t('device.android')
   if (platform === 'ios') return t('device.ios')
   const agent = typeof navigator === 'undefined' ? '' : navigator.userAgent || ''
@@ -62,6 +65,11 @@ export function deviceLabel() {
   if (/Mac OS X/i.test(agent)) return t('device.browserMac')
   if (/Windows/i.test(agent)) return t('device.browserWindows')
   return t('device.browser')
+}
+
+export function deviceModel() {
+  const model = globalThis.__didIDeviceModel
+  return typeof model === 'string' ? model.slice(0, 80) : ''
 }
 
 function cleanEmail(value) {
@@ -148,6 +156,7 @@ export async function signOutHere() {
   await db.auth.signOut({ scope: 'local' })
   // The home screen widget must not keep showing this account's people.
   saveTogetherPeople([])
+  forgetAccountCaches()
 }
 
 export async function signOutEverywhere() {
@@ -157,6 +166,7 @@ export async function signOutEverywhere() {
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) throw error
   saveTogetherPeople([])
+  forgetAccountCaches()
 }
 
 export async function deleteAccount() {
@@ -168,6 +178,7 @@ export async function deleteAccount() {
   if (error) return { miss: error.message }
   await db.auth.signOut()
   saveTogetherPeople([])
+  forgetAccountCaches()
   return { miss: '' }
 }
 
