@@ -24,6 +24,7 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
+import { peopleTonightItems } from '../src/lib/people-tonight.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
   activeDeadline,
@@ -202,6 +203,20 @@ test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () 
   const answers = paid.map((item) => ({ lampId: item.id, periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' }))
   const fourth = lamp('w', { createdOn: '2026-10-01' })
   assert.equal(coinsFor('yes', book([...paid, fourth], answers), { lamp: fourth }, clock), 0)
+})
+
+test('tonight people cards: open family rows, then Did you asks due tonight, minus swiped ones', () => {
+  const fam = (id, answer = null) => ({ family: { id: 'f1', name: 'Home' }, lamp: { id, question: `q${id}` }, night: '2026-10-08', answer })
+  const ask = (id, extra = {}) => ({ id, kind: 'todo', state: 'sent', question: `ask${id}`, due_on: '2026-10-08', ...extra })
+  const items = peopleTonightItems({
+    familyRows: [fam('a'), fam('b', { status: 'yes' })],
+    asks: [ask('1'), ask('2', { due_on: '2026-10-09' }), ask('3', { kind: 'cheer' }), ask('app:4', { appSend: true }), ask('5', { state: 'kept' })],
+    night: '2026-10-08',
+  })
+  assert.deepEqual(items.map((item) => item.key), ['fam:f1:a:2026-10-08', 'ask:1'])
+  assert.deepEqual(items.map((item) => item.kind), ['family', 'ask'])
+  const left = peopleTonightItems({ familyRows: [fam('a')], asks: [ask('1')], night: '2026-10-08', gone: ['ask:1'] })
+  assert.deepEqual(left.map((item) => item.key), ['fam:f1:a:2026-10-08'])
 })
 
 test('a bulk delete across folders comes back whole on undo', () => {

@@ -405,6 +405,8 @@ export const ko = {
   'help.grace': '유예 시간',
   'help.graceP': '자정부터 {time}까지는 지난밤이 아직 열려 있어요. 놓친 걸 "했어"로 하면 지난밤으로 세요. 5시까지는 그 질문이 먼저, 그 뒤로는 오늘 질문 다음에 나와요. {time}에 지난밤이 닫혀요.',
   'tonight.swipeNope': "아직",
+  'tonight.peopleFrom': "{name}님이 보냄",
+  'tonight.peopleMiss': "저장되지 않았어요. 신호를 확인하고 다시 밀어 주세요.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'streak 주',

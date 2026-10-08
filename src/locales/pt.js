@@ -416,6 +416,8 @@ export const pt = {
   'help.grace': 'Período de graça',
   'help.graceP': 'Da meia-noite até {time}, a noite anterior ainda está aberta. O que você perdeu conta para ela, como feito. Até as 5 essas perguntas vêm primeiro; depois, atrás das de hoje. Às {time} a noite fecha.',
   'tonight.swipeNope': "ainda não",
+  'tonight.peopleFrom': "De {name}",
+  'tonight.peopleMiss': "Não salvou. Veja seu sinal e deslize de novo.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Semana de streak',

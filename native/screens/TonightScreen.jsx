@@ -74,7 +74,8 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
-import { FamilyTonight } from '../components/FamilyTonight.jsx'
+import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
+import { peopleTonightItems } from '../../src/lib/people-tonight.js'
 import { WeAnswered, WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
@@ -195,6 +196,25 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
   const [graceWeLeft, setGraceWeLeft] = useState([])
+  // Family questions and Did you asks from friends: cards after your own.
+  const family = useFamilyTonight(account.user)
+  const [asks, setAsks] = useState([])
+  const [peopleGone, setPeopleGone] = useState([])
+  const loadAsks = useCallback(async () => {
+    if (!account.user) return setAsks([])
+    try {
+      setAsks(await listInbox())
+    } catch {
+      // Offline: the cards wait for the next look.
+    }
+  }, [account.user])
+  useEffect(() => {
+    loadAsks()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') loadAsks()
+    })
+    return () => sub.remove()
+  }, [loadAsks])
   // A Did we pill tapped: its card comes up to swipe, ahead of your own.
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
@@ -411,6 +431,66 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         buddy={activeBuddy(book)}
       />
     ) : null
+  // After your own and Did we: family questions, then Did you asks. A swiped
+  // card leaves at once; a failed save brings it back with a toast.
+  const peopleAnswer = async (key, save, reload) => {
+    setPeopleGone((keys) => [...keys, key])
+    let why = ''
+    try {
+      why = (await save()).miss
+    } catch {
+      why = 'off'
+    }
+    if (why) {
+      setPeopleGone((keys) => keys.filter((k) => k !== key))
+      showToast({ id: `people-miss:${key}`, kind: 'error', text: t('tonight.peopleMiss'), ms: 5200 })
+      return
+    }
+    reload()
+  }
+  const peopleItems = peopleTonightItems({
+    familyRows: family.rows,
+    asks,
+    night: stack.dateIso,
+    gone: peopleGone,
+  }).map((item) => {
+    const { row } = item
+    if (item.kind === 'family') {
+      const save = (status) => () =>
+        peopleAnswer(item.key, () => answerFamilyLamp(row.family.id, row.lamp.id, row.night, status), family.reload)
+      return { ...item, kicker: row.family.name, onDid: save('yes'), onNope: save('skip') }
+    }
+    const save = (keep) => () =>
+      peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
+        confirmDone(keep ? t('famNight.did') : t('confirm.passed'))
+        loadAsks()
+      })
+    return {
+      ...item,
+      kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
+      onDid: save(true),
+      onNope: save(false),
+    }
+  })
+  const peopleTop = peopleItems[0] || null
+  const peopleSwipe =
+    weSwipe && peopleTop ? (
+      <SwipeCardHost
+        key="people"
+        cardKey={peopleTop.key}
+        colors={colors}
+        panelStyle={gemCard}
+        gemLook={premium ? look : ''}
+        kicker={peopleTop.kicker}
+        title={peopleTop.title}
+        stampDid={t('tonight.swipeDid')}
+        stampNope={t('tonight.swipeNope')}
+        behind={peopleItems.slice(1).map((item) => ({ key: item.key, kicker: item.kicker, title: item.title }))}
+        onDid={peopleTop.onDid}
+        onNope={peopleTop.onNope}
+        buddy={activeBuddy(book)}
+      />
+    ) : null
   // The grace period for the previous night: first until 5am, then after
   // tonight's own cards until 9am.
   // Your own open questions from last night, then last night's open Did wes.
@@ -547,6 +627,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
     face = weSwipe
+  } else if (peopleSwipe) {
+    face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
   } else if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (
       <GemFaceShell look={premium ? look : ''}
@@ -1004,16 +1086,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           </Slot>
         )}
         <Slot>
-          <FamilyTonight colors={colors} />
-        </Slot>
-        <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
         </Slot>
         <Slot>
           {stack.cheer ? null : <WeAnswered cards={weCards} colors={colors} />}
         </Slot>
         <Slot>
-          {social?.kind === 'we' && face !== weSwipe && !pickedWe ? (
+          {social?.kind === 'we' && face !== weSwipe && !(peopleSwipe && face === peopleSwipe) &&!pickedWe ? (
             <Pressable
               onPress={() => goHash('/we', { id: social.id })}
               accessibilityRole="button"

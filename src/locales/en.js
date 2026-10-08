@@ -415,6 +415,8 @@ export const en = {
   'help.grace': 'Grace period',
   'help.graceP': "From midnight to {time}, last night is still open. Swipe what you missed and it counts for last night, as a Did. Until 5:00 AM those questions come first; after that they wait behind today’s. At {time} the night closes.",
   'tonight.swipeNope': "not yet",
+  'tonight.peopleFrom': "From {name}",
+  'tonight.peopleMiss': "That did not save. Check your signal and swipe again.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Streak week',
