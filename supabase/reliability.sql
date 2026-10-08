@@ -41,11 +41,16 @@ create table if not exists public.app_errors (
   app_version text not null default '',
   platform text not null default '',
   created_at timestamptz not null default now(),
-  constraint app_errors_kind check (kind = any (array['sync', 'push'])),
+  constraint app_errors_kind check (kind = any (array['sync', 'push', 'widget'])),
   constraint app_errors_len check (
     length(code) <= 80 and length(app_version) <= 20 and length(platform) <= 20
   )
 );
+
+-- 'widget': the phone could not write the home screen widget.
+alter table public.app_errors drop constraint if exists app_errors_kind;
+alter table public.app_errors add constraint app_errors_kind
+  check (kind = any (array['sync', 'push', 'widget']));
 
 create index if not exists app_errors_made_idx on public.app_errors (created_at);
 

@@ -290,7 +290,7 @@ cheer skip under reduce-motion.
 - **iOS widget taps have no tap time.** Android now stamps each queued tap
   (`WidgetTapStore`, 27 Sep 2026) so a stale card tapped the next morning is
   dropped. iOS widget answers still land on their stored night.
-- **Shake to undo** is off (`SHAKE_ON = false` in `native/hooks/useShakeUndo.js`), so it no longer asks for motion permission. Tap to undo stays. `NSMotionUsageDescription` and expo-sensors are still in the native build; drop them at the next native build if shake stays off.
+- **Shake to undo** is off and out of the build from 1.3.2: no expo-sensors, no `NSMotionUsageDescription`. Tap to undo stays. `useShakeUndo` returns false; `src/lib/shake-undo.js` keeps the detection if it comes back.
 - **UX clarity pass (2026-10-08) needs a phone check:** Later on a question not open yet, Not yet / Missed wording on the calendar, stats and Did we, the Name and note page with no sign-out row, the one-line swipe hint on the first-question screen, and the folder vs topic line on Edit question.
 - **Did I tonight (the public list)** was removed from the app code on
   2026-09-26. If it comes back it will be its own product. The database

@@ -58,3 +58,24 @@ index 972fa4f..1abae0c 100644
        WidgetsStorage.set(newTimeline, forKey: "__expo_widgets_\(source)_timeline")
      }
  
+diff --git a/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift b/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
+index da0010a..962978b 100644
+--- a/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
++++ b/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
+@@ -31,6 +31,16 @@ public struct WidgetsTimelineProvider: TimelineProvider {
+ 
+     let entries = parseTimeline(identifier: groupIdentifier, name: name, family: context.family)
+ 
++    // Did I: an empty timeline with .atEnd is a blank widget for good. Draw
++    // one entry with no props (the widget's own "Open Did I" card) and ask
++    // again in 15 minutes.
++    if entries.isEmpty {
++      let now = Date()
++      let fallback = WidgetsTimelineEntry(date: now, name: name, props: nil, entryIndex: nil)
++      completion(Timeline(entries: [fallback], policy: .after(now.addingTimeInterval(15 * 60))))
++      return
++    }
++
+     let timeline = Timeline<WidgetsTimelineEntry>(entries: entries, policy: .atEnd)
+     completion(timeline)
+   }
