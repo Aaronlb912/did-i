@@ -5,7 +5,6 @@ import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { syncFailed } from '../../src/lib/sync-line.js'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
-import { confirmDone } from '../lib/confirm.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
   CLOCK_IDS,
@@ -24,7 +23,6 @@ import { legalEmail } from '../../src/lib/legal.js'
 import { shareCsv, shareShelf } from '../../src/lib/native.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
-import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -46,7 +44,6 @@ import {
 
 export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
-  const account = useAccount()
   const [keeperDraft, setKeeperDraft] = useState(book?.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book?.inkNote || '')
 
@@ -87,27 +84,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
           }}
         />
       </SetCard>
-
-      {/* Never signed in, there is nothing to sign out of. */}
-      {account.user ? (
-      <>
-      <SetCap colors={colors}>{t('settings.danger')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="logout"
-          label={t('settings.signOut')}
-          note={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
-          danger
-          onPress={() => {
-            closeSession()
-            confirmDone(t('confirm.signedOut'))
-            goHash('/enter')
-          }}
-        />
-      </SetCard>
-      </>
-      ) : null}
     </BoardShell>
   )
 }
@@ -259,7 +235,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="settings"
           tint={colors.inkSoft}
           label={t('settings.title')}
-          sub={account.user ? t('settings.phoneSub') : t('settings.phoneSubOut')}
+          sub={t('settings.phoneSubOut')}
           chevron
           last
           onPress={() => goHash('/settings/phone')}

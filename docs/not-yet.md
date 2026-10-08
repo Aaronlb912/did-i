@@ -133,8 +133,6 @@ buttons where the phone swipes.
 - **Errors on Friends sit at the bottom.** A failed save on the auto-add
   switch, a cheer, or a gift shows under the list, which can be off screen
   on a long list.
-- **Shake to undo in dev builds** opens the Expo dev menu instead. Tapping
-  the toast works. Store builds are not affected.
 
 ## Waiting on an account, not on code
 
@@ -292,8 +290,8 @@ cheer skip under reduce-motion.
 - **iOS widget taps have no tap time.** Android now stamps each queued tap
   (`WidgetTapStore`, 27 Sep 2026) so a stale card tapped the next morning is
   dropped. iOS widget answers still land on their stored night.
-- **Shake to undo** is still wired (`useShakeUndo`) but no longer promised on
-  screen; it was unreliable on test phones. Fix or remove.
+- **Shake to undo** is off (`SHAKE_ON = false` in `native/hooks/useShakeUndo.js`), so it no longer asks for motion permission. Tap to undo stays. `NSMotionUsageDescription` and expo-sensors are still in the native build; drop them at the next native build if shake stays off.
+- **UX clarity pass (2026-10-08) needs a phone check:** Later on a question not open yet, Not yet / Missed wording on the calendar, stats and Did we, the Name and note page with no sign-out row, the one-line swipe hint on the first-question screen, and the folder vs topic line on Edit question.
 - **Did I tonight (the public list)** was removed from the app code on
   2026-09-26. If it comes back it will be its own product. The database
   still has its tables and functions (`supabase/tonight.sql`,

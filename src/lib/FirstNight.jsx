@@ -111,10 +111,7 @@ export function FirstNight({ book, onChange, now }) {
             autoCapitalize="none"
             enterKeyHint="done"
           />
-          <span className="di-first-swipes" aria-hidden="true">
-            <span className="di-first-nope">{t('first.swipeNope')}</span>
-            <span className="di-first-did">{t('first.swipeDid')}</span>
-          </span>
+          <span className="di-first-swipes">{t('first.swipeLine')}</span>
         </label>
         {starters.length ? (
           <div className="di-first-picks">

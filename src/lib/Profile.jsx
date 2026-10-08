@@ -179,7 +179,7 @@ export function Profile({
               />
               <SetRow
                 label={t('settings.title')}
-                sub={t('settings.phoneSub')}
+                sub={t('settings.phoneSubOut')}
                 chevron
                 onClick={() => goHash('/settings/phone')}
               />

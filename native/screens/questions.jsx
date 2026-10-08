@@ -450,7 +450,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
-  // The undo toast joins the one line above the tab bar; shake still undoes.
+  // The undo toast joins the one line above the tab bar. Shake undo is off.
   useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
   useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
@@ -1754,6 +1754,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           >
             <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
             <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
+            <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderVsTopic')}</Text>
             <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tag')}>
               {hang.liveTags.map((item) => (
                 <Pill

@@ -3375,7 +3375,7 @@ await testAsync('the widget shows the open Did we once your own questions are do
   }
 })
 
-await testAsync('a skip reads Not yet while its night is open, Nope once it closed', async () => {
+await testAsync('a skip reads Not yet while its night is open, Said not yet once it closed', async () => {
   const { answerWord, nightOpen } = await import('../src/lib/recurrence.js')
   const { nightWhyLines } = await import('../src/lib/night-why.js')
   const { pillStatusLabel } = await import('../src/lib/pill-status.js')
@@ -3396,7 +3396,7 @@ await testAsync('a skip reads Not yet while its night is open, Nope once it clos
   assert.equal(pillStatusLabel('skip'), 'Marked not yet')
   const why = (iso, state) => ({ iso, state, noped: [{ lamp: { question: 'Did I read?', short: 'Read' } }], unanswered: [], weOpen: [] })
   assert.match(nightWhyLines(why(fri, 'missed'), { now: sat2am }).join(' '), /Not yet: Read/)
-  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Noped: Read/)
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said not yet: Read/)
 })
 
 await testAsync('the grace period for the previous night runs until 9am', async () => {

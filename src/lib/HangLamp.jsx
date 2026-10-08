@@ -233,6 +233,7 @@ export function HangLamp({
         <div className="di-field di-field-tag">
           <span id="di-hang-tag">{t('hang.tag')}</span>
           <p className="di-hang-tags-one">{t('hang.tagOne')}</p>
+          <p className="di-hang-tags-one">{t('hang.folderVsTopic')}</p>
           <div className="di-hang-tags" role="radiogroup" aria-labelledby="di-hang-tag">
             {hang.liveTags.map((item) => {
               const on = hang.isTagSelected(item.title)

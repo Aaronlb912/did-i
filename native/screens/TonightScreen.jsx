@@ -351,8 +351,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   }
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
-  // Undo joins the one toast line above the tab bar. Shake still undoes where
-  // the sensor works, but it was not reliable enough to promise.
+  // Undo joins the one toast line above the tab bar. Shake undo is off (see useShakeUndo).
   // Undo sends the card back the way it left.
   const applyUndo = stack.applyUndo
   const undoAnswer = useCallback(() => {

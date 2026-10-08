@@ -2773,23 +2773,14 @@ button.di-refer-rung {
 }
 
 .di-first-swipes {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: block;
+  color: var(--di-ink-soft);
   margin-top: 1.25rem;
   padding: 0.8rem 0;
   border-top: 1px solid var(--di-line-soft);
   font-family: var(--di-mono);
   font-size: 0.7rem;
   letter-spacing: 0.04em;
-}
-
-.di-first-nope {
-  color: var(--di-skip);
-}
-
-.di-first-did {
-  color: var(--di-on);
 }
 
 .di-first-picks {
