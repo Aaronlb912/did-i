@@ -3,6 +3,9 @@ import { emptyShake, shakeStep } from '../../src/lib/shake-undo.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 const QUIET_MS = 1500
+// Off: shake was not reliable and asked for motion permission on every undo.
+// The Tap to undo toast stays. Set to true to try it again.
+const SHAKE_ON = false
 
 function loadAccelerometer() {
   try {
@@ -24,7 +27,7 @@ export function useShakeUndo(active, onUndo) {
   undoRef.current = onUndo
 
   useEffect(() => {
-    if (!active || reduce) {
+    if (!SHAKE_ON || !active || reduce) {
       setShakeOk(false)
       return undefined
     }

@@ -1409,8 +1409,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               ]}
             />
             <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
-              <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
-              <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
+              <Text style={[styles.firstSwipe, { color: colors.inkSoft }]}>{t('first.swipeLine')}</Text>
             </View>
           </View>
         </>

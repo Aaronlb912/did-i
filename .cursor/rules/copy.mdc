@@ -5,11 +5,11 @@ alwaysApply: true
 
 # Copy
 
-Use: folder, question, tonight, Did I, coins, gems, shop, cheer, streak, not yet, nope.
+Use: folder, question, tonight, Did I, coins, gems, shop, cheer, streak, not yet, missed.
 
-Never in UI copy: board, hall, hang, heat, skip. The left button and swipe are "Not yet" (owner, 2026-10-06). A skip reads "Not yet" while its night is open (tonight, or last night until 9am). Once the night closes, a skip or an unanswered card reads "Nope". Pick the word with `answerWord` / `nightOpen` in `src/lib/recurrence.js`. The stored status stays `skip`.
+Never in UI copy: board, hall, hang, heat, skip. The left button and swipe are "Not yet" (owner, 2026-10-06). A skip reads "Not yet" while its night is open (tonight, or last night until 9am). An answer label stays "Not yet". A night that closed with something open or on Not yet is "Missed" (owner, 2026-10-08). "Nope" is a code name only, never user copy. The waiting state (a question not open yet) is "Later" or "Opens at {time}", never "Not yet". The stored status stays `skip`.
 
-- Plurals: "Did we's", "Did you's" (owner's call; scripts/check.mjs enforces it).
+- Plurals: "Did we's", "Did you's" (scripts/check.mjs bans "Did wes"). In plain sentences prefer "shared questions" and "asks from friends".
 - Did you questions are typed after a "Did you" label. Anything shown on its own (preview, push, share text) uses `didYouAsk` from `src/lib/link-preview.js`.
 - Shared links are full `https://` links (e.g. `https://did-i.app/d/CODE`).
 - Short sentences. Concrete nouns. No em dashes.
