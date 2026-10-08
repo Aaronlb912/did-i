@@ -113,12 +113,24 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     return items.filter((item) => item.status === 'skip').length
   }
 
-  const items = Array.isArray(props?.items) ? props.items : []
+  const items = Array.isArray(props?.items) ? props.items.filter((item) => item && typeof item === 'object') : []
   const tagTitle = String(props?.tagTitle || 'Tonight')
   const footer = String(props?.footer || 'No questions yet')
   const left = Number(props?.left) || 0
   const openUri = String(props?.openUri || 'didi://tonight')
-  const c = { ...FALLBACK, ...(props?.colors || {}) }
+  // A colour that is missing or not a string falls back, so a look (gem or
+  // not) can never take the whole card down.
+  const c: WidgetColors = { ...FALLBACK }
+  try {
+    const given = props?.colors && typeof props.colors === 'object' ? props.colors : {}
+    for (const key of Object.keys(FALLBACK) as (keyof WidgetColors)[]) {
+      const value = (given as Record<string, unknown>)[key]
+      if (typeof value === 'string' && value) (c as Record<string, unknown>)[key] = value
+    }
+    c.gem = Boolean((given as WidgetColors).gem)
+  } catch {
+    c.gem = false
+  }
   const mode = String(environment?.widgetRenderingMode || '')
   const tinted = mode.length > 0 && mode !== 'fullColor' && !mode.endsWith('fullColor')
   const ink = tinted ? { type: 'hierarchical' as const, style: 'primary' as const } : c.ink
@@ -439,19 +451,35 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     if (!parts) return null
     const w = compact ? 30 : 38
     const k = w / 48
-    return (
-      <ZStack
-        alignment="topLeading"
-        modifiers={[
-          frame({ width: w, height: 58 * k }),
-          offset({ x: compact ? -8 : -10, y: compact ? 8 : 9 }),
-        ]}
-      >
-        {(props?.buddyShapes?.behind || []).map((part) => buddyPart(part, k))}
-        {parts.map((part) => buddyPart(part, k))}
-        {(props?.buddyShapes?.front || []).map((part) => buddyPart(part, k))}
-      </ZStack>
-    )
+    // Accessories are drawn one by one; a bad one is left off.
+    const worn = (list: unknown) =>
+      (Array.isArray(list) ? list : [])
+        .map((part) => {
+          try {
+            return Array.isArray(part) ? buddyPart(part, k) : null
+          } catch {
+            return null
+          }
+        })
+        .filter(Boolean)
+    // If the buddy itself cannot be drawn, the card goes on without it.
+    try {
+      return (
+        <ZStack
+          alignment="topLeading"
+          modifiers={[
+            frame({ width: w, height: 58 * k }),
+            offset({ x: compact ? -8 : -10, y: compact ? 8 : 9 }),
+          ]}
+        >
+          {worn(props?.buddyShapes?.behind)}
+          {parts.map((part) => buddyPart(part, k))}
+          {worn(props?.buddyShapes?.front)}
+        </ZStack>
+      )
+    } catch {
+      return null
+    }
   }
 
   function openUriForLead(lampId: string) {
@@ -630,6 +658,28 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     </HStack>
   ) : null
 
+  // The Did we line is extra; if it cannot be drawn, the card goes on without it.
+  let weRow = null
+  try {
+    const weText = compact ? '' : String(props?.weLine || '').trim()
+    weRow = weText ? (
+      <Text
+        modifiers={[
+          font({ size: 11, weight: 'semibold' }),
+          foregroundStyle(on),
+          multilineTextAlignment('center'),
+          lineLimit(1),
+          minimumScaleFactor(0.6),
+          frame({ maxWidth: 10000 }),
+        ]}
+      >
+        {weText}
+      </Text>
+    ) : null
+  } catch {
+    weRow = null
+  }
+
   if (family === 'accessoryRectangular') {
     return (
       <VStack
@@ -688,20 +738,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           {question}
           <Spacer />
           {buttons}
-          {!compact && String(props?.weLine || '').trim() ? (
-            <Text
-              modifiers={[
-                font({ size: 11, weight: 'semibold' }),
-                foregroundStyle(on),
-                multilineTextAlignment('center'),
-                lineLimit(1),
-                minimumScaleFactor(0.6),
-                frame({ maxWidth: 10000 }),
-              ]}
-            >
-              {String(props?.weLine || '').trim()}
-            </Text>
-          ) : null}
+          {weRow}
         </VStack>
         {buddyMark(buddyId)}
       </ZStack>

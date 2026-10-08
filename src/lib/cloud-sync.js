@@ -44,6 +44,15 @@ import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+
+// Set when a SHELF_IN comes from a sign-in or sign-out, so the widget is
+// redrawn even when tonight's questions look the same (look, buddy, Did we).
+let accountChanged = false
+export function takeAccountChanged() {
+  const was = accountChanged
+  accountChanged = false
+  return was
+}
 const GEM_WEEK_ASKED_KEY = 'did-i-gem-week-asked'
 export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
@@ -132,6 +141,7 @@ export function signedOutSync() {
   clearAuthSkip()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
   if (typeof window !== 'undefined') {
+    accountChanged = true
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: shelf }))
   }
 }
@@ -419,6 +429,7 @@ async function pullAndMergeOnce() {
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
     written = land(written, uploadAt)
+    if (lastUser !== user.id) accountChanged = true
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs

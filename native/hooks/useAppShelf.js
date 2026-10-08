@@ -18,7 +18,7 @@ import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
-import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN } from '../../src/lib/cloud-sync.js'
+import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
 import { boardDate, isoDate } from '../../src/lib/recurrence.js'
 import {
@@ -313,8 +313,10 @@ export function useAppShelf() {
     function onShelfIn(event) {
       if (!event?.detail) return
       setShelf(event.detail)
-      // Answers from another phone (sync): the widget shows them too.
-      syncTonightWidgetIfChanged(event.detail).catch(() => {})
+      // Answers from another phone (sync): the widget shows them too. After a
+      // sign-in or sign-out it always redraws (new look, buddy, or nothing).
+      const redraw = takeAccountChanged() ? syncTonightWidget : syncTonightWidgetIfChanged
+      redraw(event.detail).catch(() => {})
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

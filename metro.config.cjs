@@ -16,7 +16,6 @@ const NATIVE_SHIMS = [
   ['react-native-safe-area-context', 'safe-area-safe.cjs'],
   ['expo-constants', 'constants-safe.cjs'],
   ['@react-native-community/netinfo', 'netinfo-safe.cjs'],
-  ['expo-sensors', 'sensors-safe.cjs'],
   ['expo-clipboard', 'clipboard-safe.cjs'],
   ['expo-haptics', 'haptics-safe.cjs'],
   ['expo-battery', 'battery-safe.cjs'],

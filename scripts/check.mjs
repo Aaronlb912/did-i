@@ -2567,7 +2567,6 @@ test('native metro shims are wired and pin default exports', () => {
     'react-native-safe-area-context',
     'expo-constants',
     '@react-native-community/netinfo',
-    'expo-sensors',
     'expo-clipboard',
     'expo-haptics',
     'expo-linking',
@@ -3078,7 +3077,7 @@ test('the honest did not line sits above the bottom bar', () => {
   assert.ok(mark.includes('useAppInsets'), 'the line clears the bar')
   assert.ok(mark.includes("zIndex: 90"), 'the line paints above the bar')
   const plist = readFileSync(path.join(root, 'app.config.js'), 'utf8')
-  assert.ok(plist.includes('NSMotionUsageDescription'), 'iOS can read a shake')
+  assert.ok(!plist.includes('NSMotionUsageDescription'), 'shake is off, so iOS never asks for motion')
 })
 
 test('the phone location has an origin, so import() chunk urls can be built', () => {
@@ -4123,6 +4122,105 @@ await testAsync('the widget draws what Tonight would ask, with buttons only when
   } finally {
     clearWeNights()
     saveWeOpen([], night)
+  }
+})
+
+// WidgetKit evaluates the widget function's source on its own, in a context
+// that holds only @expo/ui's exports and the jsx stub (expo-widgets/bundle).
+// A throw there is an empty box in a Release build. Run it the same way.
+await testAsync('the widget function draws on its own, with only what WidgetKit gives it', async () => {
+  const vm = await import('node:vm')
+  const require = createRequire(import.meta.url)
+  const babel = require('@babel/core')
+  const file = path.join(checkRoot, 'widgets/DidITonightWidget.tsx')
+  const code = babel.transformFileSync(file, { filename: file, caller: { name: 'metro', platform: 'ios' } })?.code || ''
+  const source = code.slice(code.indexOf('DidITonightWidget=`') + 'DidITonightWidget=`'.length, code.lastIndexOf('`;var widget'))
+  // What expo-widgets/bundle/index.ts puts on globalThis: every export of
+  // @expo/ui/swift-ui and its modifiers, following `export * from`.
+  const exported = new Set()
+  const seen = new Set()
+  const readExports = (file) => {
+    const found = ['', '.ts', '.tsx', '/index.ts', '/index.tsx'].map((end) => file + end).find((p) => existsSync(p) && statSync(p).isFile())
+    if (!found || seen.has(found)) return
+    seen.add(found)
+    const text = readFileSync(found, 'utf8')
+    for (const m of text.matchAll(/export (?:const|function|class) (\w+)/g)) exported.add(m[1])
+    for (const m of text.matchAll(/export \{([^}]*)\}/g)) {
+      for (const part of m[1].split(',')) {
+        const name = part.trim().split(/\s+as\s+/).pop()?.replace(/^type\s+/, '')
+        if (name) exported.add(name)
+      }
+    }
+    for (const m of text.matchAll(/export \* from '(\.[^']+)'/g)) readExports(path.join(path.dirname(found), m[1]))
+  }
+  readExports(path.join(checkRoot, 'node_modules/@expo/ui/src/swift-ui/index'))
+  readExports(path.join(checkRoot, 'node_modules/@expo/ui/src/swift-ui/modifiers/index'))
+  const ast = babel.parseSync(`(${source})`, { configFile: false, babelrc: false })
+  const free = new Set()
+  babel.traverse(ast, { Program(p) { for (const name of Object.keys(p.scope.globals)) free.add(name) } })
+  const builtins = new Set(['Array', 'Boolean', 'Math', 'Number', 'Object', 'String', 'JSON', 'encodeURIComponent', '_jsx', '_jsxs', '_Fragment'])
+  const missing = [...free].filter((name) => !builtins.has(name) && !exported.has(name))
+  assert.deepEqual(missing, [], `the widget uses names WidgetKit does not have: ${missing.join(', ')}`)
+  const sandbox = {}
+  for (const name of free) {
+    if (builtins.has(name)) continue
+    sandbox[name] = /^[A-Z]/.test(name) ? (props) => ({ type: `${name}View`, props: props || {} }) : (...args) => ({ $type: name, args })
+  }
+  sandbox._jsx = sandbox._jsxs = (type, props) => (typeof type === 'function' ? type(props) : { type, props })
+  const fn = vm.runInNewContext(`(${source})`, sandbox)
+
+  const { saveWeLine } = await import('../src/lib/we-widget.js')
+  const { wornShapes } = await import('../src/lib/accessory-shapes.js')
+  const { ACCESSORIES } = await import('../src/lib/accessories.js')
+  const clock = new Date(2026, 9, 3, 21, 0)
+  const night = boardDate(clock)
+  const slots = {}
+  for (const item of ACCESSORIES) if (!slots[item.slot]) slots[item.slot] = item.id
+  const worn = { ...slots }
+  const lamp = (id, question) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  const book = (answers, extra = {}) => ({
+    id: 'b1', title: 'General', dayFoldHour: 0,
+    lamps: [lamp('door', 'Did I lock the door?')], answers,
+    buddies: ['owl'], buddyOn: 'owl', accessories: Object.values(worn), worn, ...extra,
+  })
+  const gem = { bg: '#0a0e14', panel: '#111820', ink: '#e0e4f0', inkSoft: '#99a1b0', on: '#5ee8ff', skip: '#7d8694', miss: '#ff6f61', line: '#2b3140', look: 'glow', gem: true }
+  const families = ['systemSmall', 'systemMedium', 'systemLarge', 'accessoryCircular', 'accessoryRectangular', 'accessoryInline']
+  const drawAll = (props, label) => {
+    for (const widgetFamily of families) {
+      for (const widgetRenderingMode of ['fullColor', 'accented']) {
+        // Props go through JSON, as they do to the app group and back.
+        const out = JSON.stringify(fn(JSON.parse(JSON.stringify(props ?? null)), { widgetFamily, widgetRenderingMode }))
+        assert.ok(out && out !== 'null', `${label} draws on ${widgetFamily}`)
+      }
+    }
+  }
+  try {
+    saveWeLine('Did we · waiting on a friend', night)
+    const open = buildTonightWidgetProps({ currentId: 'b1', boards: [book([])] }, clock)
+    assert.equal(open.buddyId, 'owl')
+    assert.ok(open.weLine, 'the Did we line reaches the widget')
+    const dressed = { ...open, colors: gem, buddyShapes: wornShapes(open.buddyWorn, 'owl', gem.on) }
+    assert.ok(dressed.buddyShapes.front.length, 'the owl wears something')
+    drawAll(dressed, 'an owl in accessories on a gem look')
+    const medium = JSON.stringify(fn(dressed, { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }))
+    assert.ok(medium.includes('Did I lock the door?') && medium.includes('waiting on a friend') && medium.includes('#8b6b4a'))
+    const done = buildTonightWidgetProps({ currentId: 'b1', boards: [book([{ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00` }])] }, clock)
+    drawAll({ ...done, colors: gem, buddyShapes: wornShapes(done.buddyWorn, 'owl', gem.on) }, 'an all-done night')
+    drawAll(buildTonightWidgetProps({ boards: [] }, clock), 'an empty shelf')
+    drawAll(undefined, 'no snapshot yet')
+
+    // Bad decorations are dropped; the question still draws.
+    const broken = {
+      ...dressed,
+      colors: { ...gem, on: null, bg: 42 },
+      buddyShapes: { behind: 'oops', front: [null, ['e', 'x']] },
+      items: [null, ...dressed.items],
+      weLine: { not: 'a string' },
+    }
+    const kept = JSON.stringify(fn(broken, { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }))
+    assert.ok(kept.includes('Did I lock the door?'), 'a broken decoration never blanks the question')
+  } finally {
+    saveWeLine('', night)
   }
 })
 

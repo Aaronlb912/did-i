@@ -196,7 +196,6 @@ export default ({ config }) => ({
     infoPlist: {
       ...(config.ios?.infoPlist || {}),
       UIBackgroundModes: ['remote-notification'],
-      NSMotionUsageDescription: 'Did I uses a shake to undo the last tap.',
       ...(devApp ? { CFBundleDisplayName: 'Did I Dev' } : {}),
     },
   },
