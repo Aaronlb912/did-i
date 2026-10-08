@@ -417,6 +417,8 @@ export const de = {
   'help.grace': 'Nachfrist',
   'help.graceP': 'Von Mitternacht bis {time} ist der letzte Abend noch offen. Was du verpasst hast, zählt dann noch für ihn, als erledigt. Bis 5 Uhr kommen diese Fragen zuerst, danach nach den heutigen. Um {time} schließt der Abend.',
   'tonight.swipeNope': "noch nicht",
+  'tonight.peopleFrom': "Von {name}",
+  'tonight.peopleMiss': "Das wurde nicht gespeichert. Prüfe dein Netz und wische noch einmal.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} Coins, {gems} Gems',
   'weekbar.aria': 'Streak-Woche',

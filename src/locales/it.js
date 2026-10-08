@@ -415,6 +415,8 @@ export const it = {
   'help.grace': 'Periodo di grazia',
   'help.graceP': 'Da mezzanotte alle {time} la sera prima è ancora aperta. Quello che hai saltato conta per lei, come fatto. Fino alle 5 queste domande vengono prima, poi dopo quelle di oggi. Alle {time} la sera si chiude.',
   'tonight.swipeNope': "non ancora",
+  'tonight.peopleFrom': "Da {name}",
+  'tonight.peopleMiss': "Non è stato salvato. Controlla il segnale e scorri di nuovo.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Settimana dello streak',

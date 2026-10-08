@@ -420,6 +420,8 @@ export const fr = {
   'help.grace': 'Délai de grâce',
   'help.graceP': 'De minuit à {time}, la veille est encore ouverte. Ce que tu as manqué compte pour elle, comme fait. Jusqu’à 5 h ces questions passent en premier, ensuite après celles du jour. À {time} la soirée se ferme.',
   'tonight.swipeNope': "pas encore",
+  'tonight.peopleFrom': "De {name}",
+  'tonight.peopleMiss': "Ce n'est pas enregistré. Vérifie ton réseau et glisse encore.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Semaine de streak',

@@ -418,6 +418,8 @@ export const es = {
   'help.grace': 'Periodo de gracia',
   'help.graceP': 'Desde medianoche hasta las {time}, la noche anterior sigue abierta. Lo que te faltó cuenta para anoche, como hecho. Hasta las 5 esas preguntas van primero; después, detrás de las de hoy. A las {time} la noche se cierra.',
   'tonight.swipeNope': "aún no",
+  'tonight.peopleFrom': "De {name}",
+  'tonight.peopleMiss': "No se guardó. Revisa tu señal y desliza otra vez.",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} monedas, {gems} gemas',
   'weekbar.aria': 'Semana de racha',

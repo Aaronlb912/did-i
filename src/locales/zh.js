@@ -405,6 +405,8 @@ export const zh = {
   'help.grace': '宽限期',
   'help.graceP': '午夜到{time}之间，前一晚仍然开放。补上漏掉的会算在前一晚，记为“做了”。5点前这些问题排在前面，之后排在今天的后面。到{time}前一晚就关闭了。',
   'tonight.swipeNope': "还没",
+  'tonight.peopleFrom': "来自 {name}",
+  'tonight.peopleMiss': "没有保存。请检查信号后再滑一次。",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins，{gems} gems',
   'weekbar.aria': 'streak 周',

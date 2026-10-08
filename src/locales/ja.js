@@ -405,6 +405,8 @@ export const ja = {
   'help.grace': '猶予時間',
   'help.graceP': '夜中の0時から{time}までは、前の夜がまだ開いています。やり残した分を「やった」とすると前の夜に数えられます。5時まではその質問が先に、その後は今日の分のあとに出ます。{time}に前の夜は締め切られます。',
   'tonight.swipeNope': "まだ",
+  'tonight.peopleFrom': "{name}から",
+  'tonight.peopleMiss': "保存できませんでした。電波を確認して、もう一度スワイプしてください。",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins、{gems} gems',
   'weekbar.aria': 'streak の週',
