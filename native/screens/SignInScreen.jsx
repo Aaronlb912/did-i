@@ -1,4 +1,4 @@
-import { Platform, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { skipAuth } from '../../src/lib/auth-gate.js'
@@ -14,7 +14,8 @@ import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
 // Trying the app without an account is a real choice, so it gets a real
-// button. Reviewer sign-in stays behind a long-press on the mark.
+// button. App Review sign-in is a small link at the bottom (and still a
+// long-press on the mark); it only works with the review account's password.
 function LocalButton({ colors, onPress }) {
   return (
     <View style={styles.localWrap}>
@@ -90,6 +91,11 @@ export function SignInScreen({ onDone }) {
 
       <LocalButton colors={colors} onPress={useLocalOnly} />
       <AuthLegalNote colors={colors} />
+      {auth.step === 'start' ? (
+        <Pressable onPress={auth.showReviewer} accessibilityRole="button" hitSlop={8} style={styles.reviewerLink}>
+          <Text style={[styles.reviewerText, { color: colors.inkDim }]}>{t('auth.reviewer')}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 
@@ -162,5 +168,15 @@ const styles = StyleSheet.create({
   },
   localWrap: {
     marginTop: 14,
+  },
+  reviewerLink: {
+    alignSelf: 'center',
+    marginTop: 18,
+    paddingVertical: 6,
+  },
+  reviewerText: {
+    fontFamily: fonts.ui,
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 })

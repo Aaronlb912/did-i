@@ -2708,7 +2708,7 @@ test('native look ids match did-i.css', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
-test('a fresh phone opens the first night, a lost session shows sign-in', () => {
+test('a fresh phone opens on welcome, a phone already in use does not, a lost session shows sign-in', () => {
   const prev = globalThis.__didIPlatform
   globalThis.__didIPlatform = 'ios'
   clearAuthSkip()
@@ -2717,8 +2717,15 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
   const sign = readFileSync(path.join(root, 'native/screens/SignInScreen.jsx'), 'utf8')
   const actions = readFileSync(path.join(root, 'native/components/AuthSignInActions.jsx'), 'utf8')
   try {
+    localStorage.removeItem('did-i-welcome')
+    localStorage.removeItem('did-i-shelf')
     writeAccountUserId('')
-    assert.equal(needsAuth({ ready: false, user: null }), false, 'no sign-in wall before the first night')
+    assert.equal(needsAuth({ ready: false, user: null }), true, 'a fresh install starts on the welcome screen')
+    localStorage.setItem('did-i-shelf', JSON.stringify({ boards: [{ id: 'b', lamps: [{ id: 'l', question: 'Did I take my meds?' }] }] }))
+    assert.equal(needsAuth({ ready: true, user: null }), false, 'a phone already used without an account is not walled')
+    localStorage.removeItem('did-i-shelf')
+    localStorage.setItem('did-i-welcome', '1')
+    assert.equal(needsAuth({ ready: true, user: null }), false, 'a finished first night is not walled')
     writeAccountUserId('user-a')
     assert.equal(needsAuth({ ready: false, user: null }), false, 'a signed-in phone does not flash sign-in while the session loads')
     assert.equal(needsAuth({ ready: true, user: null }), true, 'no session after the check still gates')
@@ -2734,6 +2741,7 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
+    assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
     assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
     skipAuth()
@@ -2741,6 +2749,7 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
     assert.equal(authGated('/tonight', { ready: true, user: null }), false)
   } finally {
     clearAuthSkip()
+    localStorage.removeItem('did-i-welcome')
     if (prev == null) delete globalThis.__didIPlatform
     else globalThis.__didIPlatform = prev
   }

@@ -40,11 +40,24 @@ export function needsAuth(account) {
   // cold open does not flash sign-in. If the check finds no session, `ready`
   // flips with no user and the gate shows sign-in then.
   if (!account?.ready && readAccountUserId()) return false
-  // A fresh install goes straight to the first night. Sign-in is offered
-  // after night one and from Settings, not as a wall.
-  if (!readAccountUserId()) return false
+  // Never signed in: a fresh install starts on the welcome screen (sign in,
+  // or start without an account). Someone already using the app on this
+  // phone without an account is left alone.
+  if (!readAccountUserId()) return freshInstall()
   // Signed in before and the session is gone: ask again.
   return true
+}
+
+// Nothing on this phone yet: the first night was never finished and the
+// shelf has no questions.
+export function freshInstall() {
+  try {
+    if (localStorage.getItem('did-i-welcome') === '1') return false
+    const shelf = JSON.parse(localStorage.getItem('did-i-shelf') || 'null')
+    return !(shelf?.boards || []).some((board) => (board.lamps || []).length > 0)
+  } catch {
+    return false
+  }
 }
 
 const AUTH_FREE = new Set(['/privacy', '/terms'])

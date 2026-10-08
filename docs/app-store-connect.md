@@ -40,7 +40,7 @@ Paste when 1.2 (Did we) ships. Same text for both stores. Keep it plain; no
 em dashes. Do not paste before 1.2 is live: it describes Did we.
 
 **Promotional text (App Store, 170 max):**
-Did I lock the door? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
+Did I take my meds? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
 
 **Short description (Google Play, 80 max):**
 One question at a time. Swipe did or not yet. Share with friends and family.
@@ -50,7 +50,7 @@ habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,togeth
 
 **Description:**
 
-Did I lock the back door? Did I take my pills? Did I feed the cat?
+Did I take my meds? Did I text them back? Did I drink enough water?
 
 Did I asks you one question at a time, at night, on your phone. Swipe right if you did. Swipe left if you didn't. That's the whole answer for tonight.
 
@@ -133,7 +133,7 @@ together, so no word below repeats another field.
 | Subtitle (30) | Habit tracker & daily check-in | 30 |
 | Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,meds,vitamins,adhd,forgetful,family | 100 |
 | Play short description (80) | Remember it. Then remember doing it. One question a night, one swipe. | 69 |
-| Promotional text (170) | Remember it. Then remember doing it. Did I lock the door? Take my pills? Swipe once a night and your home screen remembers. | 123 |
+| Promotional text (170) | Remember it. Then remember doing it. Did I take my meds? Text them back? Swipe once a night and your home screen remembers. | 123 |
 
 Screenshot captions, in order. Big line on top, small line under it, then the screen.
 
@@ -142,7 +142,7 @@ Screenshot captions, in order. Big line on top, small line under it, then the sc
 | 1 | Remember it. Then remember doing it. | One question at a time, every night. | Home with a question card |
 | 2 | Swipe right for Did. | Left for Not yet. That's the whole app. | The card mid-swipe with the Did bar |
 | 3 | Your home screen remembers. | Widgets show what's done tonight. | Home screen with the widgets |
-| 4 | Pills, plants, the back door. | Ask yourself anything. | Questions list |
+| 4 | Meds, water, texting back. | Ask yourself anything. | Questions list |
 | 5 | Streaks that stay honest. | Every night on one calendar. | Streak and calendar |
 | 6 | Did we feed the dog? | Share questions with the people you live with. | Did we or family |
 | 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing Galaxy or Neon Heart |
