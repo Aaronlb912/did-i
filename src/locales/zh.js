@@ -1314,31 +1314,7 @@ export const zh = {
   'ideas.body': '这不是待办清单，也不是日历。放你事后总问的那个问题。用下面其中一个，或自己写以 Did I 开头的句子。',
   'ideas.use': '用这个',
   'ideas.writeOwn': '自己写',
-  'ideas.help': '帮助',
-  'ideas.pills.kind': '药',
-  'ideas.pills.question': 'Did I take the evening pills?',
-  'ideas.pills.body': '晚上 11 点靠记忆想不起来的那件事。',
-  'ideas.pills.start': '晚上的药',
-  'ideas.door.kind': '家里',
-  'ideas.door.question': 'Did I lock the back door?',
-  'ideas.door.body': '门锁、窗户、炉子。一个问题，不是清单。',
-  'ideas.door.start': '后门',
-  'ideas.keys.kind': '家里',
-  'ideas.keys.question': 'Did I put the keys on the hook?',
-  'ideas.keys.body': '用完之后东西该在的地方。',
-  'ideas.keys.start': '钥匙',
-  'ideas.bins.kind': '家里',
-  'ideas.bins.question': 'Did I put the bins out?',
-  'ideas.bins.body': "每周某一晚。还没做就点“还没”。",
-  'ideas.bins.start': '垃圾桶',
-  'ideas.water.kind': '钱',
-  'ideas.water.question': 'Did I pay the water bill?',
-  'ideas.water.body': '每月问一次。日期你自己定。',
-  'ideas.water.start': '水费',
-  'ideas.charge.kind': '其他',
-  'ideas.charge.question': 'Did I charge the phone?',
-  'ideas.charge.body': '如果没做会毁掉明天的无聊小事。',
-  'ideas.charge.start': '充电',
+  'ideas.help': '帮助',
   'wait.kicker': '还没',
   'wait.after': '{time} 之后。',
   'wait.later': '稍后',
@@ -2258,13 +2234,7 @@ export const zh = {
   'enter.eraseGo': '清除并重新开始',
   'enter.eraseBody': '你没有登录，所以 PIN 只保存在这台手机上。要移除它，需要清除这台手机上的 Did I：问题、回答、金币和外观。无法撤销。',
   'enter.forgotTitle': '忘记 PIN 了？',
-  'enter.forgot': '忘记 PIN？',
-  'starter.water.blank': '交水费',
-  'starter.charge.blank': '给手机充电',
-  'starter.bins.blank': '把垃圾桶拿出去',
-  'starter.keys.blank': '把钥匙挂到钩子上',
-  'starter.door.blank': '锁上后门',
-  'starter.pills.blank': '吃晚上的药',
+  'enter.forgot': '忘记 PIN？',
   'clock.pm': '下午{h}:{m}',
   'clock.am': '上午{h}:{m}',
   'shop.teasedBody': '还没上架。{date} 开售。',
@@ -2472,20 +2442,9 @@ export const zh = {
   'pack.count': '+{n} 个',
   'pack.bedtime': '睡前',
   'pack.meds': '吃药',
-  'pack.house': '家里',
   'pack.sureTitle': '添加 {n} 个问题？',
   'pack.sureGo': '添加',
-  'pack.added': '已添加 {n} 个问题',
-  'starter.teeth.blank': '刷牙',
-  'ideas.teeth.start': '刷牙',
-  'starter.alarm.blank': '定闹钟',
-  'ideas.alarm.start': '闹钟',
-  'starter.amPills.blank': '吃早上的药',
-  'ideas.amPills.start': '早上的药',
-  'starter.vitamins.blank': '吃维生素',
-  'ideas.vitamins.start': '维生素',
-  'starter.stove.blank': '关炉子',
-  'ideas.stove.start': '炉子',
+  'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',
   'note.hint': '点一个晚上来添加备注。',
   'note.ph': '添加一条简短备注',
@@ -3163,4 +3122,41 @@ export const zh = {
   "frame.storm.f1": "玻璃里的雨",
   "frame.storm.f2": "每隔几秒一道闪电",
   "frame.storm.f3": "顶部的暴风云",
+  "ideas.pills.kind": "药",
+  "ideas.pills.question": "我吃药了吗？",
+  "ideas.pills.body": "吃了，还是只是想吃。到晚上 11 点就记不清了。",
+  "ideas.pills.start": "吃药",
+  "starter.pills.blank": "吃药",
+  "ideas.water.kind": "身体",
+  "ideas.water.question": "我喝够水了吗？",
+  "ideas.water.body": "晚上答一句是或不是，比数杯子简单。",
+  "ideas.water.start": "喝水",
+  "starter.water.blank": "喝够水",
+  "ideas.text.kind": "人",
+  "ideas.text.question": "我回消息了吗？",
+  "ideas.text.body": "看了，心里回了，却没发出去。",
+  "ideas.text.start": "回消息",
+  "starter.text.blank": "回消息",
+  "ideas.skin.kind": "身体",
+  "ideas.skin.question": "我做护肤了吗？",
+  "ideas.skin.body": "每晚步骤一样，所以每晚都记混。",
+  "ideas.skin.start": "护肤",
+  "starter.skin.blank": "做护肤",
+  "ideas.bill.kind": "钱",
+  "ideas.bill.question": "我付账单了吗？",
+  "ideas.bill.body": "每月问一次。日期你定。",
+  "ideas.bill.start": "账单",
+  "starter.bill.blank": "付账单",
+  "ideas.charge.kind": "其他",
+  "ideas.charge.question": "我给手机充电了吗？",
+  "ideas.charge.body": "没做就会毁掉明天的小事。",
+  "ideas.charge.start": "充电",
+  "starter.charge.blank": "给手机充电",
+  "starter.eat.blank": "吃点东西",
+  "ideas.eat.start": "吃饭",
+  "starter.email.blank": "回那封邮件",
+  "ideas.email.start": "邮件",
+  "starter.teeth.blank": "刷牙",
+  "ideas.teeth.start": "刷牙",
+  "pack.admin": "生活杂事",
 }

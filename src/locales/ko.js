@@ -1317,31 +1317,7 @@ export const ko = {
     '할 일 목록도 캘린더도 아니야. 나중에 또 묻는 question을 두는 곳. 여기서 고르거나 Did I로 시작하는 문장을 직접 써.',
   'ideas.use': '이거 쓰기',
   'ideas.writeOwn': '직접 쓰기',
-  'ideas.help': '도움말',
-  'ideas.pills.kind': '약',
-  'ideas.pills.question': 'Did I take the evening pills?',
-  'ideas.pills.body': '11시에 기억으로 재구성 못 하는 것.',
-  'ideas.pills.start': '저녁 약',
-  'ideas.door.kind': '집',
-  'ideas.door.question': 'Did I lock the back door?',
-  'ideas.door.body': '잠금, 창문, 가스. question은 하나. 체크리스트 아님.',
-  'ideas.door.start': '뒷문',
-  'ideas.keys.kind': '집',
-  'ideas.keys.question': 'Did I put the keys on the hook?',
-  'ideas.keys.body': '끝난 뒤 그 물건이 있는 곳.',
-  'ideas.keys.start': '열쇠',
-  'ideas.bins.kind': '집',
-  'ideas.bins.question': 'Did I put the bins out?',
-  'ideas.bins.body': "주에 한 번 밤. 아직 안 했으면 아직.",
-  'ideas.bins.start': '쓰레기',
-  'ideas.water.kind': '돈',
-  'ideas.water.question': 'Did I pay the water bill?',
-  'ideas.water.body': '매월 question. 날짜는 네가 정해.',
-  'ideas.water.start': '수도',
-  'ideas.charge.kind': '기타',
-  'ideas.charge.question': 'Did I charge the phone?',
-  'ideas.charge.body': '안 하면 내일 망치는 지루한 것.',
-  'ideas.charge.start': '충전',
+  'ideas.help': '도움말',
   'wait.kicker': '아직',
   'wait.after': '{time} 이후.',
   'wait.later': '나중에',
@@ -2270,13 +2246,7 @@ export const ko = {
   'enter.eraseGo': '지우고 새로 시작',
   'enter.eraseBody': '로그인하지 않아서 PIN은 이 휴대폰에만 있어요. PIN을 없애려면 이 휴대폰의 Did I를 지워야 해요: 질문, 답, 코인, 룩. 되돌릴 수 없어요.',
   'enter.forgotTitle': 'PIN을 잊었나요?',
-  'enter.forgot': 'PIN을 잊었나요?',
-  'starter.water.blank': '수도 요금 내기',
-  'starter.charge.blank': '휴대폰 충전하기',
-  'starter.bins.blank': '쓰레기 내놓기',
-  'starter.keys.blank': '열쇠를 고리에 걸기',
-  'starter.door.blank': '뒷문 잠그기',
-  'starter.pills.blank': '저녁 약 먹기',
+  'enter.forgot': 'PIN을 잊었나요?',
   'clock.pm': '오후 {h}:{m}',
   'clock.am': '오전 {h}:{m}',
   'shop.teasedBody': '아직 나오지 않았어요. {date}에 판매 시작.',
@@ -2484,20 +2454,9 @@ export const ko = {
   'pack.count': '+{n}개',
   'pack.bedtime': '잠들기 전',
   'pack.meds': '약',
-  'pack.house': '집',
   'pack.sureTitle': '질문 {n}개를 추가할까요?',
   'pack.sureGo': '추가하기',
-  'pack.added': '질문 {n}개 추가됨',
-  'starter.teeth.blank': '이 닦기',
-  'ideas.teeth.start': '양치',
-  'starter.alarm.blank': '알람 맞추기',
-  'ideas.alarm.start': '알람',
-  'starter.amPills.blank': '아침 약 먹기',
-  'ideas.amPills.start': '아침 약',
-  'starter.vitamins.blank': '비타민 먹기',
-  'ideas.vitamins.start': '비타민',
-  'starter.stove.blank': '가스레인지 끄기',
-  'ideas.stove.start': '가스레인지',
+  'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',
   'note.hint': '밤을 탭해 메모를 추가하세요.',
   'note.ph': '짧은 메모 추가',
@@ -3175,4 +3134,41 @@ export const ko = {
   "frame.storm.f1": "유리 속의 비",
   "frame.storm.f2": "몇 초마다 번개",
   "frame.storm.f3": "위쪽의 먹구름",
+  "ideas.pills.kind": "약",
+  "ideas.pills.question": "약 먹었나?",
+  "ideas.pills.body": "먹었는지, 먹으려고만 했는지. 밤 11시엔 모른다.",
+  "ideas.pills.start": "약",
+  "starter.pills.blank": "약 먹기",
+  "ideas.water.kind": "몸",
+  "ideas.water.question": "물 충분히 마셨나?",
+  "ideas.water.body": "밤에 예 아니오 하나. 잔 세기보다 쉽다.",
+  "ideas.water.start": "물",
+  "starter.water.blank": "물 충분히 마시기",
+  "ideas.text.kind": "사람",
+  "ideas.text.question": "답장했나?",
+  "ideas.text.body": "읽고, 머릿속으로 답하고, 보내지 않았다.",
+  "ideas.text.start": "답장",
+  "starter.text.blank": "답장하기",
+  "ideas.skin.kind": "몸",
+  "ideas.skin.question": "스킨케어 했나?",
+  "ideas.skin.body": "매일 밤 같은 순서라 밤들이 다 비슷하다.",
+  "ideas.skin.start": "스킨케어",
+  "starter.skin.blank": "스킨케어 하기",
+  "ideas.bill.kind": "돈",
+  "ideas.bill.question": "요금 냈나?",
+  "ideas.bill.body": "한 달에 한 번 묻는다. 날짜는 내가 정한다.",
+  "ideas.bill.start": "요금",
+  "starter.bill.blank": "요금 내기",
+  "ideas.charge.kind": "기타",
+  "ideas.charge.question": "폰 충전했나?",
+  "ideas.charge.body": "안 하면 내일을 망치는 작은 일.",
+  "ideas.charge.start": "충전",
+  "starter.charge.blank": "폰 충전하기",
+  "starter.eat.blank": "뭐라도 먹기",
+  "ideas.eat.start": "식사",
+  "starter.email.blank": "그 메일에 답하기",
+  "ideas.email.start": "메일",
+  "starter.teeth.blank": "이 닦기",
+  "ideas.teeth.start": "양치",
+  "pack.admin": "생활 일",
 }

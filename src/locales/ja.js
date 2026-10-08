@@ -1317,31 +1317,7 @@ export const ja = {
   'ideas.body': 'To-do リストでもカレンダーでもない。あとから何度も聞く question を置く。ここから選ぶか、Did I で始まる文を自分で書く。',
   'ideas.use': 'これを使う',
   'ideas.writeOwn': '自分で書く',
-  'ideas.help': 'ヘルプ',
-  'ideas.pills.kind': '薬',
-  'ideas.pills.question': 'Did I take the evening pills?',
-  'ideas.pills.body': '23 時に記憶から再構成できないもの。',
-  'ideas.pills.start': '夜の薬',
-  'ideas.door.kind': '家',
-  'ideas.door.question': 'Did I lock the back door?',
-  'ideas.door.body': '錠、窓、コンロ。question は一つ。チェックリストではない。',
-  'ideas.door.start': '裏口',
-  'ideas.keys.kind': '家',
-  'ideas.keys.question': 'Did I put the keys on the hook?',
-  'ideas.keys.body': '終わったあとそのものがある場所。',
-  'ideas.keys.start': '鍵',
-  'ideas.bins.kind': '家',
-  'ideas.bins.question': 'Did I put the bins out?',
-  'ideas.bins.body': "週に一度の夜。まだなら「まだ」。",
-  'ideas.bins.start': 'ゴミ出し',
-  'ideas.water.kind': 'お金',
-  'ideas.water.question': 'Did I pay the water bill?',
-  'ideas.water.body': '毎月の question。日付は自分で決める。',
-  'ideas.water.start': '水道',
-  'ideas.charge.kind': 'その他',
-  'ideas.charge.question': 'Did I charge the phone?',
-  'ideas.charge.body': 'しなかったら明日を台無しにする地味なこと。',
-  'ideas.charge.start': '充電',
+  'ideas.help': 'ヘルプ',
   'wait.kicker': 'まだ',
   'wait.after': '{time} 以降。',
   'wait.later': 'あとで',
@@ -2269,13 +2245,7 @@ export const ja = {
   'enter.eraseGo': '消して最初から',
   'enter.eraseBody': 'ログインしていないので、PINはこのスマホにだけあります。外すには、このスマホのDid Iを消します（質問、回答、コイン、ルック）。元に戻せません。',
   'enter.forgotTitle': 'PINを忘れましたか？',
-  'enter.forgot': 'PINを忘れた？',
-  'starter.water.blank': '水道代を払う',
-  'starter.charge.blank': 'スマホを充電する',
-  'starter.bins.blank': 'ゴミを出す',
-  'starter.keys.blank': '鍵をフックに掛ける',
-  'starter.door.blank': '裏口に鍵をかける',
-  'starter.pills.blank': '夜の薬を飲む',
+  'enter.forgot': 'PINを忘れた？',
   'clock.pm': '午後{h}:{m}',
   'clock.am': '午前{h}:{m}',
   'shop.teasedBody': 'まだ発売前です。{date}に発売。',
@@ -2483,20 +2453,9 @@ export const ja = {
   'pack.count': '+{n}問',
   'pack.bedtime': '寝る前',
   'pack.meds': '薬',
-  'pack.house': '家',
   'pack.sureTitle': '{n} 個の質問を追加しますか？',
   'pack.sureGo': '追加する',
-  'pack.added': '{n} 個の質問を追加しました',
-  'starter.teeth.blank': '歯を磨く',
-  'ideas.teeth.start': '歯みがき',
-  'starter.alarm.blank': 'アラームをセットする',
-  'ideas.alarm.start': 'アラーム',
-  'starter.amPills.blank': '朝の薬を飲む',
-  'ideas.amPills.start': '朝の薬',
-  'starter.vitamins.blank': 'ビタミンを飲む',
-  'ideas.vitamins.start': 'ビタミン',
-  'starter.stove.blank': 'コンロを消す',
-  'ideas.stove.start': 'コンロ',
+  'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',
   'note.hint': '夜をタップしてメモを追加。',
   'note.ph': '短いメモを追加',
@@ -3174,4 +3133,41 @@ export const ja = {
   "frame.storm.f1": "ガラスの中の雨",
   "frame.storm.f2": "数秒ごとの稲妻",
   "frame.storm.f3": "上に嵐の雲",
+  "ideas.pills.kind": "薬",
+  "ideas.pills.question": "薬を飲んだ?",
+  "ideas.pills.body": "飲んだのか、飲むつもりだったのか。夜 11 時にはわからない。",
+  "ideas.pills.start": "薬",
+  "starter.pills.blank": "薬を飲む",
+  "ideas.water.kind": "からだ",
+  "ideas.water.question": "水を十分に飲んだ?",
+  "ideas.water.body": "夜に はい か いいえ。コップを数えるより楽。",
+  "ideas.water.start": "水",
+  "starter.water.blank": "水を十分に飲む",
+  "ideas.text.kind": "人",
+  "ideas.text.question": "返信した?",
+  "ideas.text.body": "読んで、頭の中で返して、送っていない。",
+  "ideas.text.start": "返信",
+  "starter.text.blank": "返信する",
+  "ideas.skin.kind": "からだ",
+  "ideas.skin.question": "スキンケアをした?",
+  "ideas.skin.body": "毎晩同じ手順だから、どの夜も同じに見える。",
+  "ideas.skin.start": "スキンケア",
+  "starter.skin.blank": "スキンケアをする",
+  "ideas.bill.kind": "お金",
+  "ideas.bill.question": "支払いをした?",
+  "ideas.bill.body": "月に一度の質問。日付は自分で決める。",
+  "ideas.bill.start": "支払い",
+  "starter.bill.blank": "支払いをする",
+  "ideas.charge.kind": "その他",
+  "ideas.charge.question": "スマホを充電した?",
+  "ideas.charge.body": "やっていないと明日が台無しになる小さなこと。",
+  "ideas.charge.start": "充電",
+  "starter.charge.blank": "スマホを充電する",
+  "starter.eat.blank": "何か食べる",
+  "ideas.eat.start": "食事",
+  "starter.email.blank": "あのメールに返信する",
+  "ideas.email.start": "メール",
+  "starter.teeth.blank": "歯を磨く",
+  "ideas.teeth.start": "歯みがき",
+  "pack.admin": "生活の用事",
 }

@@ -1338,31 +1338,7 @@ export const en = {
     'This is not a to-do list and not a calendar. Put the question you keep asking after the fact. Use one of these, or write your own sentence that starts with Did I.',
   'ideas.use': 'Use this',
   'ideas.writeOwn': 'Write your own',
-  'ideas.help': 'Help',
-  'ideas.pills.kind': 'Medicine',
-  'ideas.pills.question': 'Did I take the evening pills?',
-  'ideas.pills.body': 'The thing you cannot reconstruct from memory at 11.',
-  'ideas.pills.start': 'Evening pills',
-  'ideas.door.kind': 'The house',
-  'ideas.door.question': 'Did I lock the back door?',
-  'ideas.door.body': 'A latch, a window, the stove. One question, not a checklist.',
-  'ideas.door.start': 'Back door',
-  'ideas.keys.kind': 'The house',
-  'ideas.keys.question': 'Did I put the keys on the hook?',
-  'ideas.keys.body': 'Where the thing lives when you are done with it.',
-  'ideas.keys.start': 'Keys',
-  'ideas.bins.kind': 'The house',
-  'ideas.bins.question': 'Did I put the bins out?',
-  'ideas.bins.body': "A weekly night. Not yet if you have not done it yet.",
-  'ideas.bins.start': 'Bins',
-  'ideas.water.kind': 'Money',
-  'ideas.water.question': 'Did I pay the water bill?',
-  'ideas.water.body': 'A monthly ask. The date is yours.',
-  'ideas.water.start': 'Water',
-  'ideas.charge.kind': 'Something else',
-  'ideas.charge.question': 'Did I charge the phone?',
-  'ideas.charge.body': 'The boring thing that ruins tomorrow if it did not happen.',
-  'ideas.charge.start': 'Charge',
+  'ideas.help': 'Help',
   'wait.kicker': 'Not yet',
   'wait.after': 'After {time}.',
   'wait.later': 'later',
@@ -2318,13 +2294,7 @@ export const en = {
   'enter.eraseGo': 'Erase and start over',
   'enter.eraseBody': 'You are not signed in, so the PIN only lives on this phone. To remove it, erase Did I on this phone: questions, answers, coins and looks. This cannot be undone.',
   'enter.forgotTitle': 'Forgot your PIN?',
-  'enter.forgot': 'Forgot PIN?',
-  'starter.water.blank': 'pay the water bill',
-  'starter.charge.blank': 'charge the phone',
-  'starter.bins.blank': 'put the bins out',
-  'starter.keys.blank': 'put the keys on the hook',
-  'starter.door.blank': 'lock the back door',
-  'starter.pills.blank': 'take the evening pills',
+  'enter.forgot': 'Forgot PIN?',
   'clock.pm': '{h}:{m} PM',
   'clock.am': '{h}:{m} AM',
   'shop.teasedBody': 'Not out yet. It goes on sale {date}.',
@@ -2532,20 +2502,9 @@ export const en = {
   'pack.count': '+{n} questions',
   'pack.bedtime': 'Bedtime',
   'pack.meds': 'Meds',
-  'pack.house': 'House',
   'pack.sureTitle': 'Add {n} questions?',
   'pack.sureGo': 'Add them',
-  'pack.added': '{n} questions added',
-  'starter.teeth.blank': 'brush my teeth',
-  'ideas.teeth.start': 'Teeth',
-  'starter.alarm.blank': 'set the alarm',
-  'ideas.alarm.start': 'Alarm',
-  'starter.amPills.blank': 'take the morning pills',
-  'ideas.amPills.start': 'Morning pills',
-  'starter.vitamins.blank': 'take my vitamins',
-  'ideas.vitamins.start': 'Vitamins',
-  'starter.stove.blank': 'turn off the stove',
-  'ideas.stove.start': 'Stove',
+  'pack.added': '{n} questions added',
   'note.title': 'Notes',
   'note.hint': 'Tap a night to add a note.',
   'note.ph': 'Add a short note',
@@ -3223,4 +3182,41 @@ export const en = {
   "frame.storm.f1": "Rain in the glass",
   "frame.storm.f2": "Lightning every few seconds",
   "frame.storm.f3": "Storm clouds on top",
+  "ideas.pills.kind": "Meds",
+  "ideas.pills.question": "Did I take my meds?",
+  "ideas.pills.body": "You took them, or meant to. At 11 you cannot tell.",
+  "ideas.pills.start": "Meds",
+  "starter.pills.blank": "take my meds",
+  "ideas.water.kind": "Body",
+  "ideas.water.question": "Did I drink enough water?",
+  "ideas.water.body": "One yes or no at night beats counting glasses.",
+  "ideas.water.start": "Water",
+  "starter.water.blank": "drink enough water",
+  "ideas.text.kind": "People",
+  "ideas.text.question": "Did I text them back?",
+  "ideas.text.body": "You read it, answered in your head, and never sent it.",
+  "ideas.text.start": "Text back",
+  "starter.text.blank": "text them back",
+  "ideas.skin.kind": "Body",
+  "ideas.skin.question": "Did I do my skincare?",
+  "ideas.skin.body": "Same steps every night, so the nights blur.",
+  "ideas.skin.start": "Skincare",
+  "starter.skin.blank": "do my skincare",
+  "ideas.bill.kind": "Money",
+  "ideas.bill.question": "Did I pay the bill?",
+  "ideas.bill.body": "A monthly ask. The date is yours.",
+  "ideas.bill.start": "Bill",
+  "starter.bill.blank": "pay the bill",
+  "ideas.charge.kind": "Something else",
+  "ideas.charge.question": "Did I charge my phone?",
+  "ideas.charge.body": "The small thing that ruins tomorrow if it did not happen.",
+  "ideas.charge.start": "Charge",
+  "starter.charge.blank": "charge my phone",
+  "starter.eat.blank": "eat something",
+  "ideas.eat.start": "Eat",
+  "starter.email.blank": "answer that email",
+  "ideas.email.start": "Email",
+  "starter.teeth.blank": "brush my teeth",
+  "ideas.teeth.start": "Teeth",
+  "pack.admin": "Life admin",
 }
