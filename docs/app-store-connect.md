@@ -123,7 +123,7 @@ Local-only use (no account) does not send data to you; the label still covers si
 
 ## Search and screenshots (written 2026-10-07)
 
-Tagline: "Did I? Now you'll know". Positioning: a habit tracker you answer one question at a time. Lead with the
+Tagline: "Remember it. Then remember doing it." (changed 2026-10-08: it covers both jobs, the nudge to do it and the check that you did). Positioning: a habit tracker you answer one question at a time. Lead with the
 "did I?" feeling, not with habits. Category: Productivity primary, Lifestyle
 secondary (Play: Productivity). Apple indexes the name, subtitle and keywords
 together, so no word below repeats another field.
@@ -132,14 +132,14 @@ together, so no word below repeats another field.
 |-------|-------|--------|
 | Subtitle (30) | Habit tracker & daily check-in | 30 |
 | Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,meds,vitamins,adhd,forgetful,family | 100 |
-| Play short description (80) | Did I? Now you'll know. One question a night. Your home screen remembers. | 73 |
-| Promotional text (170) | Did I? Now you'll know. Did I lock the door? Take my pills? Swipe once a night and your home screen remembers. | 110 |
+| Play short description (80) | Remember it. Then remember doing it. One question a night, one swipe. | 69 |
+| Promotional text (170) | Remember it. Then remember doing it. Did I lock the door? Take my pills? Swipe once a night and your home screen remembers. | 123 |
 
 Screenshot captions, in order. Big line on top, small line under it, then the screen.
 
 | # | Big line | Small line | Screen |
 |---|----------|------------|--------|
-| 1 | Did I? Now you'll know. | One question at a time, every night. | Home with a question card |
+| 1 | Remember it. Then remember doing it. | One question at a time, every night. | Home with a question card |
 | 2 | Swipe right for Did. | Left for Not yet. That's the whole app. | The card mid-swipe with the Did bar |
 | 3 | Your home screen remembers. | Widgets show what's done tonight. | Home screen with the widgets |
 | 4 | Pills, plants, the back door. | Ask yourself anything. | Questions list |
