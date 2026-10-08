@@ -3,7 +3,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
-const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
+const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 export function Ideas({ book, now }) {
   const clock = now || new Date()

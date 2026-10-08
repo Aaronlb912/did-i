@@ -1047,14 +1047,14 @@ test('a question pack adds only what is missing, and undo takes them off for goo
     }
   }
   const empty = { id: 'b1', title: 'Tag', lamps: [], answers: [] }
-  const house = packList(empty).find((pack) => pack.id === 'house')
-  const { book, ids } = addPack(empty, house, new Date('2026-10-05T10:00:00'))
+  const admin = packList(empty).find((pack) => pack.id === 'admin')
+  const { book, ids } = addPack(empty, admin, new Date('2026-10-05T10:00:00'))
   assert.equal(ids.length, 3)
   assert.equal(new Set(ids).size, 3)
   assert.equal(book.lamps.length, 3)
-  assert.ok(!packList(book).some((pack) => pack.id === 'house'), 'a pack already on the tag is not offered again')
+  assert.ok(!packList(book).some((pack) => pack.id === 'admin'), 'a pack already on the tag is not offered again')
   const meds = packList({ ...empty, lamps: [{ ...lamp('p'), question: `Did I ${t('starter.pills.blank')}?` }] }).find((pack) => pack.id === 'meds')
-  assert.equal(meds.items.length, 2, 'the evening pills already there are left out')
+  assert.equal(meds.items.length, 2, 'the meds already there are left out')
   const undone = undoPack(book, ids, new Date('2026-10-05T10:00:05'))
   assert.equal(undone.lamps.length, 0)
   // An older copy still holding them does not bring them back.

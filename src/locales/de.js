@@ -1351,31 +1351,7 @@ export const de = {
     'Das ist keine To-do-Liste und kein Kalender. Stell die Frage, die du dir hinterher stellst. Nimm eine davon, oder schreib deinen Satz, der mit Did I anfängt.',
   'ideas.use': 'Diese nehmen',
   'ideas.writeOwn': 'Eigene schreiben',
-  'ideas.help': 'Hilfe',
-  'ideas.pills.kind': 'Medizin',
-  'ideas.pills.question': 'Habe ich die Abendpillen genommen?',
-  'ideas.pills.body': 'Das, was du um 23 Uhr nicht aus dem Kopf rekonstruieren kannst.',
-  'ideas.pills.start': 'Abendpillen',
-  'ideas.door.kind': 'Das Haus',
-  'ideas.door.question': 'Habe ich die Hintertür abgeschlossen?',
-  'ideas.door.body': 'Ein Riegel, ein Fenster, der Herd. Eine Frage, keine Checkliste.',
-  'ideas.door.start': 'Hintertür',
-  'ideas.keys.kind': 'Das Haus',
-  'ideas.keys.question': 'Habe ich die Schlüssel an den Haken gelegt?',
-  'ideas.keys.body': 'Wo die Sache lebt, wenn du fertig bist.',
-  'ideas.keys.start': 'Schlüssel',
-  'ideas.bins.kind': 'Das Haus',
-  'ideas.bins.question': 'Habe ich die Mülltonnen rausgestellt?',
-  'ideas.bins.body': "Eine wöchentliche Nacht. Noch nicht, wenn du es noch nicht getan hast.",
-  'ideas.bins.start': 'Tonnen',
-  'ideas.water.kind': 'Geld',
-  'ideas.water.question': 'Habe ich die Wasserrechnung bezahlt?',
-  'ideas.water.body': 'Eine monatliche Frage. Das Datum ist deins.',
-  'ideas.water.start': 'Wasser',
-  'ideas.charge.kind': 'Etwas anderes',
-  'ideas.charge.question': 'Habe ich das Handy geladen?',
-  'ideas.charge.body': 'Das Langweilige, das morgen ruiniert, wenn es nicht passiert ist.',
-  'ideas.charge.start': 'Laden',
+  'ideas.help': 'Hilfe',
   'wait.kicker': 'Noch nicht',
   'wait.after': 'Nach {time}.',
   'wait.later': 'später',
@@ -2342,13 +2318,7 @@ export const de = {
   'enter.eraseGo': 'Löschen und neu anfangen',
   'enter.eraseBody': 'Du bist nicht angemeldet, also gibt es die PIN nur auf diesem Handy. Um sie zu entfernen, lösch Did I auf diesem Handy: Fragen, Antworten, Münzen und Looks. Das geht nicht rückgängig.',
   'enter.forgotTitle': 'PIN vergessen?',
-  'enter.forgot': 'PIN vergessen?',
-  'starter.water.blank': 'die Wasserrechnung bezahlen',
-  'starter.charge.blank': 'das Handy laden',
-  'starter.bins.blank': 'die Mülltonnen rausstellen',
-  'starter.keys.blank': 'die Schlüssel an den Haken hängen',
-  'starter.door.blank': 'die Hintertür abschließen',
-  'starter.pills.blank': 'die Abendpillen nehmen',
+  'enter.forgot': 'PIN vergessen?',
   'clock.pm': '{h}:{m} nachm.',
   'clock.am': '{h}:{m} vorm.',
   'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
@@ -2556,20 +2526,9 @@ export const de = {
   'pack.count': '+{n} Fragen',
   'pack.bedtime': 'Schlafenszeit',
   'pack.meds': 'Medikamente',
-  'pack.house': 'Haus',
   'pack.sureTitle': '{n} Fragen hinzufügen?',
   'pack.sureGo': 'Hinzufügen',
-  'pack.added': '{n} Fragen hinzugefügt',
-  'starter.teeth.blank': 'die Zähne putzen',
-  'ideas.teeth.start': 'Zähne',
-  'starter.alarm.blank': 'den Wecker stellen',
-  'ideas.alarm.start': 'Wecker',
-  'starter.amPills.blank': 'die Morgenpillen nehmen',
-  'ideas.amPills.start': 'Morgenpillen',
-  'starter.vitamins.blank': 'meine Vitamine nehmen',
-  'ideas.vitamins.start': 'Vitamine',
-  'starter.stove.blank': 'den Herd ausmachen',
-  'ideas.stove.start': 'Herd',
+  'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',
   'note.hint': 'Tippe auf eine Nacht für eine Notiz.',
   'note.ph': 'Kurze Notiz hinzufügen',
@@ -3246,4 +3205,41 @@ export const de = {
   "frame.storm.f1": "Regen im Glas",
   "frame.storm.f2": "Blitz alle paar Sekunden",
   "frame.storm.f3": "Gewitterwolken oben",
+  "ideas.pills.kind": "Medikamente",
+  "ideas.pills.question": "Habe ich meine Medikamente genommen?",
+  "ideas.pills.body": "Genommen, oder nur gewollt. Um 23 Uhr weißt du es nicht mehr.",
+  "ideas.pills.start": "Medikamente",
+  "starter.pills.blank": "meine Medikamente nehmen",
+  "ideas.water.kind": "Körper",
+  "ideas.water.question": "Habe ich genug Wasser getrunken?",
+  "ideas.water.body": "Ein Ja oder Nein am Abend ist leichter als Gläser zählen.",
+  "ideas.water.start": "Wasser",
+  "starter.water.blank": "genug Wasser trinken",
+  "ideas.text.kind": "Menschen",
+  "ideas.text.question": "Habe ich zurückgeschrieben?",
+  "ideas.text.body": "Gelesen, im Kopf beantwortet, nie abgeschickt.",
+  "ideas.text.start": "Zurückschreiben",
+  "starter.text.blank": "zurückschreiben",
+  "ideas.skin.kind": "Körper",
+  "ideas.skin.question": "Habe ich meine Hautpflege gemacht?",
+  "ideas.skin.body": "Jeden Abend dieselben Schritte, also verschwimmen die Abende.",
+  "ideas.skin.start": "Hautpflege",
+  "starter.skin.blank": "meine Hautpflege machen",
+  "ideas.bill.kind": "Geld",
+  "ideas.bill.question": "Habe ich die Rechnung bezahlt?",
+  "ideas.bill.body": "Eine Frage pro Monat. Das Datum wählst du.",
+  "ideas.bill.start": "Rechnung",
+  "starter.bill.blank": "die Rechnung bezahlen",
+  "ideas.charge.kind": "Etwas anderes",
+  "ideas.charge.question": "Habe ich mein Handy geladen?",
+  "ideas.charge.body": "Die kleine Sache, die morgen ruiniert, wenn sie nicht passiert ist.",
+  "ideas.charge.start": "Laden",
+  "starter.charge.blank": "mein Handy laden",
+  "starter.eat.blank": "etwas essen",
+  "ideas.eat.start": "Essen",
+  "starter.email.blank": "die E-Mail beantworten",
+  "ideas.email.start": "E-Mail",
+  "starter.teeth.blank": "die Zähne putzen",
+  "ideas.teeth.start": "Zähne",
+  "pack.admin": "Alltagskram",
 }

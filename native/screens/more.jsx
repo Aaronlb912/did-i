@@ -119,7 +119,7 @@ import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 
-const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
+const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
 function SureModal({ sure, colors, onClose, onGo }) {
