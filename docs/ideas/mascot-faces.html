@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mascot Faces and Names</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--panel:#16191f;--line:#2b3140;--ink:#f4f6fa;--soft:#a3abb8;--on:#c9f24d;--page:#0a0c10}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:500 15px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:44px}
+.kick{font:700 11px 'JetBrains Mono';letter-spacing:.2em;color:var(--on);text-transform:uppercase}
+h1{font:800 clamp(32px,6vw,52px)/1.05 Inter;margin:8px 0}
+h2{font:800 26px Inter;margin-bottom:4px}.sub{color:var(--soft);max-width:72ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-top:16px}
+.t{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;display:grid;gap:8px}
+.pair{display:flex;gap:6px;justify-content:center}.pair svg{width:50%;max-width:130px;height:auto}
+.t .lbl{font:700 11px 'JetBrains Mono';letter-spacing:.14em;color:var(--on)}
+.t b{font:800 18px Inter}.t p{color:var(--soft);font-size:14px}
+.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px;margin-top:16px}
+.n{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:6px}
+.n b{font:800 26px Inter}.n p{color:var(--soft);font-size:14px}.n.pick{outline:2px solid var(--on)}
+.n .lbl{font:700 10px 'JetBrains Mono';letter-spacing:.14em;color:var(--on)}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="huhBody" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#e4ff7a"/><stop offset=".55" stop-color="#c9f24d"/><stop offset="1" stop-color="#9cc72a"/></linearGradient><radialGradient id="huhDot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#efffa6"/><stop offset=".5" stop-color="#c9f24d"/><stop offset="1" stop-color="#8fb51c"/></radialGradient></defs></svg>
+<div class="wrap">
+<header><span class="kick">Mascot · faces and names</span><h1>Pick a face, pick a name</h1><p class="sub">Same body, six ways to give it a face, each shown unsure (?) and done (✓). Then name options.</p></header>
+
+<section><h2>Faces</h2><div class="grid" id="faces"></div></section>
+<section><h2>Names</h2><p class="sub">Short, friendly, works in any language, never mocks the user, and not a person's name.</p><div class="names" id="names"></div></section>
+</div>
+<script>
+const SH = {
+  q: { d: 'M64 76 C64 30 136 30 136 76 C136 104 100 106 100 130', w: 36, dot: [100, 168, 18], a: [100, 45] },
+  c: { d: 'M40 108 L80 148 L160 58', w: 38, a: [126, 94] },
+}
+function body(s, inner) {
+  const dot = s.dot ? `<circle cx="${s.dot[0] + 2.5}" cy="${s.dot[1] + 3.5}" r="${s.dot[2]}" fill="#7fa21a"/><circle cx="${s.dot[0]}" cy="${s.dot[1]}" r="${s.dot[2]}" fill="url(#huhDot)"/><circle cx="${s.dot[0] - 6}" cy="${s.dot[1] - 6.5}" r="4.5" fill="#fff" opacity=".6"/>` : ''
+  return `<svg viewBox="0 0 200 200"><ellipse cx="100" cy="188" rx="40" ry="6" fill="#000" opacity=".35"/><path d="${s.d}" transform="translate(2.5 4)" fill="none" stroke="#7fa21a" stroke-width="${s.w}" stroke-linecap="round" stroke-linejoin="round"/><path d="${s.d}" fill="none" stroke="url(#huhBody)" stroke-width="${s.w}" stroke-linecap="round" stroke-linejoin="round"/>${dot}<g transform="translate(${s.a[0]} ${s.a[1]}) scale(1.4)">${inner}</g></svg>`
+}
+// Each style: [name, why, face(q?: boolean) -> svg in local units]
+const STYLES = [
+  ['Two dots', 'The simplest thing that still feels alive. Reads at any size, never looks off, works as an app icon. Mood comes from tilt and motion, not features.',
+    (done) => `<circle cx="-8" cy="${done ? 0 : 0}" r="4.6" fill="#111"/><circle cx="8" cy="0" r="4.6" fill="#111"/>`],
+  ['Big eyes', 'Large white eyes, no mouth. Expressive through where it looks, like many beloved app mascots. Friendly without being babyish.',
+    (done) => done ? `<path d="M-15 1 q6 -9 12 0 M3 1 q6 -9 12 0" fill="none" stroke="#111" stroke-width="3.4" stroke-linecap="round"/>` : `<circle cx="-9" cy="0" r="8.5" fill="#fff"/><circle cx="9" cy="0" r="8.5" fill="#fff"/><circle cx="-7.5" cy="-2" r="4.2" fill="#111"/><circle cx="10.5" cy="-2" r="4.2" fill="#111"/><circle cx="-6" cy="-3.6" r="1.4" fill="#fff"/><circle cx="12" cy="-3.6" r="1.4" fill="#fff"/>`],
+  ['One eye', 'A single big eye. Odd in a good way, very ownable, and a winking or closed eye says "done" clearly.',
+    (done) => done ? `<path d="M-9 0 q9 -10 18 0" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round"/>` : `<circle cx="0" cy="-1" r="11" fill="#fff"/><circle cx="1.5" cy="-2.5" r="5.6" fill="#111"/><circle cx="3.6" cy="-4.6" r="1.8" fill="#fff"/>`],
+  ['Line face', 'Drawn with a pen: two short lines for eyes and a tiny curve. Calm, grown-up, matches the app\'s quiet tone.',
+    (done) => done ? `<path d="M-11 -2 q4 -4 8 0 M3 -2 q4 -4 8 0" fill="none" stroke="#111" stroke-width="2.8" stroke-linecap="round"/><path d="M-4 6 q4 3 8 0" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round"/>` : `<path d="M-10 -3 v5 M10 -3 v5" stroke="#111" stroke-width="3.2" stroke-linecap="round"/><path d="M-4 8 h8" stroke="#111" stroke-width="2.6" stroke-linecap="round"/>`],
+  ['Current (cute)', 'Eyes with shine, mouth and blush. The most "character", but also the busiest, and the hardest to keep clean at small sizes.',
+    (done) => `<ellipse cx="-14" cy="6" rx="4.6" ry="2.8" fill="#ff8fb1" opacity=".6"/><ellipse cx="14" cy="6" rx="4.6" ry="2.8" fill="#ff8fb1" opacity=".6"/>` + (done ? `<path d="M-14 -3 q6 -8 12 0 M2 -3 q6 -8 12 0" fill="none" stroke="#111" stroke-width="3.2" stroke-linecap="round"/>` : `<circle cx="-8" cy="-4" r="7.5" fill="#fff"/><circle cx="8" cy="-4" r="7.5" fill="#fff"/><circle cx="-7" cy="-5" r="4" fill="#111"/><circle cx="9" cy="-5" r="4" fill="#111"/>`) + `<path d="M-6 ${done ? 7 : 9} Q0 ${done ? 13 : 12} 6 ${done ? 7 : 9}" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>`],
+  ['No face', 'The shape alone is the character, like a logo that moves. Mood comes only from how it wobbles, leans and stands up. Most brand-like, least cuddly.',
+    () => ''],
+]
+document.getElementById('faces').innerHTML = STYLES.map(([n, why, f], i) =>
+  `<div class="t"><span class="lbl">STYLE ${String.fromCharCode(65 + i)}</span><div class="pair">${body(SH.q, f(false))}${body(SH.c, f(true))}</div><b>${n}</b><p>${why}</p></div>`).join('')
+
+const NAMES = [
+  ['Tick', 'It turns into a tick (what the UK and Australia call a check mark). Also the tick of a clock, a reminder. Short, cheerful, easy in any language.', true],
+  ['Dot', 'The dot under the question mark is its foot. Small, warm, easy to say. Common word, so harder to search for.', false],
+  ['Iffy', 'Says "not sure" in a friendly way. Playful, a little cheeky. English-only meaning.', false],
+  ['Wonder', 'Soft and thoughtful, "I wonder if I did". Longer, and a bit dreamy for a reminder app.', false],
+  ['Q', 'As short as it gets, and a question mark in disguise. Hard to search, easy to forget.', false],
+  ['Sure', 'What it becomes after the swipe: not sure, then sure. Nice idea, but reads like a word, not a name.', false],
+]
+document.getElementById('names').innerHTML = NAMES.map(([n, why, pick]) => `<div class="n ${pick ? 'pick' : ''}">${pick ? '<span class="lbl">MY PICK</span>' : ''}<b>${n}</b><p>${why}</p></div>`).join('')
+</script>
+</body></html>

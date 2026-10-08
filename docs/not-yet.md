@@ -278,7 +278,7 @@ cheer skip under reduce-motion.
 
 ## Ideas parked (not built)
 
-- **Classes** (teachers post questions to a class; high school and college, 13+): plan in docs/classes-plan.md. Parked 2026-10-01.
+- **Did I Class** (teachers send questions; students 13+ or parents answer, no child involved): bookmarked 2026-10-08 for a release around April 2027. Spec docs/did-i-class-spec.md, plan docs/classes-plan.md, playground docs/ideas/class-play.html.
 - **Buddy accessories:** the iPhone widget draws them from simple shapes (src/lib/accessory-shapes.js), checked side by side with the real drawings in a browser but not yet seen on an iPhone. The seasonal dates are for this year; next year needs new rows in src/lib/accessories.js, shop-catalog.sql and gifts.sql.
 - **More coin sinks** from the brainstorm (undo token, preview gem looks, extra tag slot, streak stamps, tag badges) are still open. Signed-in **coin earns and spends** for looks and cheer stages go through `wallet.sql`; run `db:apply:all` after SQL edits.
 - **Add a question by voice, the rest of it.** Built (27 Sep 2026):

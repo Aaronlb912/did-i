@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iffy Character Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1014;--panel:#16191f;--panel2:#1c2028;--line:#2b3140;--ink:#f4f6fa;--soft:#a3abb8;--on:#c9f24d;--page:#0a0c10}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:500 15px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 90px;display:grid;grid-template-columns:minmax(0,1fr);gap:48px}
+header{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:760px){header{grid-template-columns:minmax(0,1fr)}}
+.kick{font:700 11px 'JetBrains Mono';letter-spacing:.2em;color:var(--on);text-transform:uppercase}
+h1{font:800 clamp(44px,8vw,84px)/1 Inter;letter-spacing:-.03em;margin:10px 0}
+h1 em{font-style:normal;color:var(--on)}
+.lede{color:var(--soft);font-size:17px;max-width:52ch}
+.hero{overflow:hidden;background:radial-gradient(400px 300px at 50% 40%,rgba(201,242,77,.12),transparent 70%),var(--panel);border:1px solid var(--line);border-radius:28px;display:flex;align-items:center;justify-content:center;gap:10px;padding:20px}
+.hero>div{flex:1;min-width:0;max-width:220px}.hero svg{width:100%;height:auto}
+h2{font:800 28px Inter;margin-bottom:6px}
+.sec>p{color:var(--soft);max-width:72ch}
+.grid{display:grid;gap:14px;margin-top:16px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.g5{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.t{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px;display:grid;gap:6px;justify-items:center;text-align:center}
+.t svg{width:100%;max-width:150px;height:auto}
+.t b{font:800 15px Inter}.t span{color:var(--soft);font-size:13px}
+.t.light{background:#f5f6f8;border-color:#e3e5ea}.t.light b{color:#14161b}.t.light span{color:#555}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:8px;align-content:start}
+.card h3{font:800 17px Inter}.card p,.card li{color:var(--soft);font-size:14px}.card ul{padding-left:18px;display:grid;gap:4px}
+.card b{color:var(--ink)}
+.lbl{font:700 10.5px 'JetBrains Mono';letter-spacing:.14em;color:var(--on);text-transform:uppercase}
+.sw{display:flex;gap:12px;flex-wrap:wrap}
+.sw div{display:grid;gap:4px;font:600 12px 'JetBrains Mono';color:var(--soft)}
+.sw i{display:block;width:84px;height:56px;border-radius:12px;border:1px solid var(--line)}
+.quote{background:var(--panel2);border-left:3px solid var(--on);border-radius:10px;padding:10px 14px;color:var(--ink);font-size:14px}
+.no{color:#ef6a5b}.yes{color:var(--on)}
+.seq{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;margin-top:16px}
+.seq figure{display:grid;gap:4px;justify-items:center;width:150px}
+.seq svg{width:130px;height:auto}.seq figcaption{font:600 12px 'JetBrains Mono';color:var(--soft)}
+.arrow{color:var(--soft);font:800 22px Inter}
+.names{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.names span{border:1px solid var(--line);border-radius:99px;padding:8px 14px;font:700 14px Inter}
+.names span.pick{border-color:var(--on);color:var(--on)}
+.anim{width:220px;height:220px}
+@media (prefers-reduced-motion:no-preference){.bob{animation:bob 2.6s ease-in-out infinite;transform-origin:50% 90%}@keyframes bob{50%{transform:translateY(-6px) rotate(-3deg)}}}
+</style></head>
+<body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="huhBody" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#e4ff7a"/><stop offset=".55" stop-color="#c9f24d"/><stop offset="1" stop-color="#9cc72a"/></linearGradient><radialGradient id="huhDot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#efffa6"/><stop offset=".5" stop-color="#c9f24d"/><stop offset="1" stop-color="#8fb51c"/></radialGradient></defs></svg><div class="wrap">
+
+<header>
+  <div>
+    <span class="kick">Did I · mascot character sheet</span>
+    <h1>Meet <em>Iffy.</em></h1>
+    <p class="lede">A little question mark who is never quite sure. Swipe Did, and Iffy stands up straight into a check. Iffy is the feeling of "did I?" turning into "I did", in one character.</p>
+  </div>
+  <div class="hero"><div id="hero-a" class="bob"></div><div id="hero-b"></div></div>
+</header>
+
+<section class="sec">
+  <h2>The name</h2>
+  <p><b>Iffy</b>: "not sure", said in a friendly way. That is exactly who he is before you swipe. Short, playful, never mocks the user, and it is not a person's name. Before using it in the App Store or ads, run a quick trademark search (the USPTO search tool) to be safe.</p>
+</section>
+
+<section class="sec">
+  <h2>How Iffy is built</h2>
+  <p>Two shapes and two big eyes. No mouth: the body shows the mood. Simple enough to draw in five seconds, to read at 16 pixels, and to animate from a question mark into a check.</p>
+  <div class="grid g3">
+    <div class="t"><div id="build"></div><b>Construction</b><span>One thick stroke (the hook) plus the dot. Stroke = 18% of the height. Ends round. The face lives on its own anchor.</span></div>
+    <div class="card">
+      <span class="lbl">Proportions</span>
+      <ul>
+        <li><b>Height:</b> 1 unit = the hook plus the dot.</li>
+        <li><b>Stroke:</b> 0.18 units, never thinner: the face must fit inside it.</li>
+        <li><b>Face anchor:</b> the top of the hook on the ?, the long arm on the ✓. The face turns with the stroke, so it always sits inside it.</li><li><b>Eyes:</b> big and white, 0.08 units across, nearly touching. Pupils show where Iffy looks; closed arcs show happy or asleep.</li><li><b>Body language:</b> the ? curls up small when worried, stretches tall when curious, hops when surprised, droops for Not yet. The ✓ stands taller when proud and lies down to sleep.</li>
+        <li><b>Dot:</b> 0.21 units, sits just below the hook. The dot is Iffy's foot: it bounces when Iffy walks.</li>
+        
+        <li><b>No arms, no legs, no outline.</b> Iffy acts with lean, eyes and the dot.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="lbl">Colors</span>
+      <div class="sw">
+        <div><i style="background:#c9f24d"></i>Body #c9f24d</div>
+        <div><i style="background:#ffffff"></i>Eyes #ffffff</div>
+        <div><i style="background:#111111"></i>Pupils #111111</div>
+        <div><i style="background:#0e1014"></i>Home #0e1014</div>
+      </div>
+      <p>Iffy is always lime, the same as the Did color in the app. On light backgrounds, use a slightly deeper lime (#a8d12a) so it keeps contrast. In a user's chosen look, Iffy takes that look's accent color.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>From "did I?" to "I did"</h2>
+  <p>Iffy's signature move. The top of the hook swings out, the curve straightens, the dot joins the stroke, and Iffy stands up into a check. Used for the first swipe, a cleared night and the cheers.</p>
+  <div class="seq" id="seq"></div>
+</section>
+
+<section class="sec">
+  <h2>Expressions</h2>
+  <p>Only the eyes change on the face; the body does the rest. Eight moods cover everything the app, the widget and videos need.</p>
+  <div class="grid g4" id="faces"></div>
+</section>
+
+<section class="sec">
+  <h2>Poses</h2>
+  <div class="grid g4" id="poses"></div>
+</section>
+
+<section class="sec">
+  <h2>On light and in small sizes</h2>
+  <div class="grid g4" id="sizes"></div>
+</section>
+
+<section class="sec">
+  <h2>Personality and voice</h2>
+  <div class="grid g3">
+    <div class="card"><span class="lbl">Who Iffy is</span>
+      <ul><li><b>Forgetful too.</b> Iffy gets it. Iffy is never the know-it-all.</li>
+      <li><b>Gentle.</b> Never shames, never guilt-trips, never says "you failed".</li>
+      <li><b>Quietly proud.</b> Celebrates small: a check, a sparkle, a nod.</li>
+      <li><b>Sleepy at night.</b> Once you're done, Iffy wants you to sleep, not scroll.</li>
+      <li><b>Plain-spoken.</b> Short sentences, no hype, no em dashes, same rules as the app.</li></ul></div>
+    <div class="card"><span class="lbl">Sounds like</span>
+      <div class="quote">Did you? No rush. Swipe when you know.</div>
+      <div class="quote">All clear. Go to bed.</div>
+      <div class="quote">Not yet is fine. It can still turn into Did.</div>
+      <div class="quote">Seven nights. Iffy is standing very straight.</div>
+      <div class="quote">No questions yet. What do you always forget?</div></div>
+    <div class="card"><span class="lbl">Never sounds like</span>
+      <p class="no">"You missed your pills again."</p>
+      <p class="no">"Don't break your streak!"</p>
+      <p class="no">"Iffy is sad you didn't come back."</p>
+      <p class="no">"Crush your goals tonight!"</p>
+      <p>Iffy can be playful, never pushy. The opposite of a guilt-trip owl.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Where Iffy lives</h2>
+  <div class="grid g3">
+    <div class="card"><span class="lbl">In the app</span><ul>
+      <li><b>App icon:</b> Iffy's face on the question mark.</li>
+      <li><b>First open:</b> the opening swipe ends with Iffy standing up into a check.</li>
+      <li><b>Empty states:</b> curious Iffy, "What do you always forget?"</li>
+      <li><b>All clear:</b> sleeping Iffy on Home and the widget.</li>
+      <li><b>Cheers:</b> a Did can end with a tiny Iffy hop.</li>
+      <li><b>Notifications:</b> Iffy's face as the small icon.</li></ul></div>
+    <div class="card"><span class="lbl">Outside the app</span><ul>
+      <li><b>Short videos:</b> Iffy in the corner reacting (unsure, then a check).</li>
+      <li><b>Store screenshots and the website.</b></li>
+      <li><b>Stickers:</b> the eight faces as a sticker pack (iMessage, WhatsApp).</li>
+      <li><b>Merch later:</b> a pin of the ? and the ✓.</li></ul></div>
+    <div class="card"><span class="lbl">Iffy and the buddies</span>
+      <p>Iffy is the face of Did I, not a buddy you buy. The buddies (cat, frog, owl and the rest) stay as collectibles. Iffy can appear next to your buddy in cheers, but never wears accessories or looks: Iffy always looks like Iffy, so people recognize it everywhere.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Rules</h2>
+  <div class="grid g3">
+    <div class="card"><span class="lbl yes">Do</span><ul>
+      <li>Keep the stroke thick and the ends round.</li>
+      <li>Leave clear space around Iffy of at least the dot's size.</li>
+      <li>Use one Iffy per screen.</li>
+      <li>Let Iffy react to the user, never the other way round.</li>
+      <li>Respect reduced motion: Iffy stays still.</li></ul></div>
+    <div class="card"><span class="lbl no">Don't</span><ul>
+      <li>Add arms, legs, clothes or an outline.</li>
+      <li>Stretch, squash or recolor Iffy outside the look accent.</li>
+      <li>Make Iffy sad, angry or disappointed at the user.</li>
+      <li>Put Iffy next to medical claims or health advice.</li>
+      <li>Use Iffy to push purchases.</li></ul></div>
+    <div class="card"><span class="lbl">Next steps</span><ul>
+      <li>An illustrator refines the shape and the morph (worth paying for: this becomes the brand).</li>
+      <li>Export: SVG master, app icon set, notification icon, sticker pack.</li>
+      <li>Animate the morph for the opening swipe and the cheer (Lottie or Reanimated).</li>
+      <li>Swap Iffy into the empty states and the all-clear widget.</li></ul></div>
+  </div>
+</section>
+
+</div>
+<script>
+// Iffy, drawn from one system so every pose shares the same construction.
+// Every shape has a face anchor (x, y, angle) on its thickest part; the face
+// is drawn in that local frame, so it always sits inside the stroke.
+const LIME = '#c9f24d'
+const DEEP = '#7fa21a'
+const fillOf = (c) => (c === LIME ? 'url(#huhBody)' : c)
+const dotOf = (c) => (c === LIME ? 'url(#huhDot)' : c)
+const shadeOf = (c) => (c === LIME ? DEEP : 'rgba(0,0,0,.28)')
+
+// Big eyes only. No mouth, no cheeks: the body does the rest of the acting.
+// Local units: eyes 17 apart, white r8, pupil r4 with a shine.
+function face({ e = 'normal' }) {
+  const eye = (x) => {
+    const W = (r = 8) => `<circle cx="${x}" cy="0" r="${r}" fill="#fff"/>`
+    const P = (dx = 0, dy = 0, r = 4) => `<circle cx="${x + dx}" cy="${dy}" r="${r}" fill="#111"/><circle cx="${x + dx + 1.5}" cy="${dy - 1.6}" r="1.4" fill="#fff"/>`
+    const arc = (up) => `<path d="M${x - 7} ${up ? 2 : -1} q7 ${up ? -9 : 7} 14 0" fill="none" stroke="#111" stroke-width="3.2" stroke-linecap="round"/>`
+    // Heavy lids: the top of the eye is covered by the body color.
+    // The lid is the top half of the eye's own circle, so it never pokes out.
+    const lid = () => `<path d="M${x - 8.4} 0.5 A8.4 8.4 0 0 1 ${x + 8.4} 0.5 Z" fill="#b9e43c"/><path d="M${x - 8} 0.5 H${x + 8}" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>`
+    switch (e) {
+      case 'up': return W() + P(0.6, -3)
+      case 'side': return W() + P(3.2, 0)
+      case 'down': return W() + P(0, 3)
+      case 'wide': return W(9.5) + P(0, 0, 3.6)
+      case 'happy': return arc(true)
+      case 'closed': return arc(false)
+      case 'wink': return x < 0 ? W() + P(1, 0) : arc(true)
+      case 'half': return W() + P(0, 3.2) + lid()
+      case 'worried': return W() + P(0, 2.5) + `<path d="M${x < 0 ? x - 8 : x + 8} -13 L${x < 0 ? x + 6 : x - 6} -9.5" stroke="#111" stroke-width="2.8" stroke-linecap="round"/>`
+      default: return W() + P(0.8, -0.5)
+    }
+  }
+  return eye(-8.5) + eye(8.5)
+}
+
+// A shape: its stroke path, width, optional dot, the face anchor and a gloss path.
+function draw({ d, w, dot, anchor, gloss, color = LIME, e, m, blush, tilt = 0, dx = 0, shadow = [100, 186, 38], extra = '', joinRound = true }) {
+  const [ax, ay, aa, sc = 1] = anchor
+  const j = joinRound ? ' stroke-linejoin="round"' : ''
+  const dotSvg = dot ? `<circle cx="${dot[0] + 2.5}" cy="${dot[1] + 3.5}" r="${dot[2]}" fill="${shadeOf(color)}"/><circle cx="${dot[0]}" cy="${dot[1]}" r="${dot[2]}" fill="${dotOf(color)}"/><circle cx="${dot[0] - dot[2] * 0.32}" cy="${dot[1] - dot[2] * 0.36}" r="${dot[2] * 0.26}" fill="#fff" opacity=".6"/>` : ''
+  return `<svg viewBox="0 0 200 200"><ellipse cx="${shadow[0] + dx}" cy="${shadow[1]}" rx="${shadow[2]}" ry="6" fill="#000" opacity=".35"/>
+  <g transform="translate(${dx} 0) rotate(${tilt} 100 120)">
+    <path d="${d}" transform="translate(2.5 4)" fill="none" stroke="${shadeOf(color)}" stroke-width="${w}" stroke-linecap="round"${j}/>
+    <path d="${d}" fill="none" stroke="${fillOf(color)}" stroke-width="${w}" stroke-linecap="round"${j}/>
+    ${gloss ? `<path d="${gloss}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="4.5" stroke-linecap="round"/>` : ''}
+    ${dotSvg}
+    <g transform="translate(${ax} ${ay}) rotate(${aa}) scale(${sc})">${face({ e, m, blush })}</g>
+  </g>${extra}</svg>`
+}
+
+// The shapes. Face anchors sit on the widest straight-ish part of each.
+const SHAPES = {
+  q: { d: 'M64 76 C64 30 136 30 136 76 C136 104 100 106 100 130', w: 36, dot: [100, 168, 18], anchor: [100, 45, 0, 1.4], gloss: 'M72 88 C68 70 70 58 77 50' },
+  check: { d: 'M40 108 L80 148 L160 58', w: 38, anchor: [126, 94, 0, 1.3], gloss: 'M50 101 L72 123' },
+  flat: { d: 'M28 146 L62 172 L162 146', w: 36, anchor: [128, 155, 0, 1.15], gloss: 'M38 140 L58 156', shadow: [96, 190, 64] },
+  swing: { d: 'M68 84 C70 42 142 38 140 78 C140 108 102 112 98 140', w: 36, dot: [97, 174, 17], anchor: [104, 47, 4, 1.4], gloss: 'M76 96 C72 76 76 62 84 54' },
+  straighten: { d: 'M54 112 Q72 136 86 152 Q118 104 154 64', w: 37, dot: [66, 176, 13], anchor: [125, 100, 0, 1.25] },
+  joins: { d: 'M42 110 L81 149 L158 60', w: 38, dot: [50, 158, 9], anchor: [126, 95, 0, 1.3] },
+  // Body language: the shape changes with the mood.
+  curl: { d: 'M74 86 C74 54 126 54 126 86 C126 106 100 108 100 124', w: 36, dot: [100, 156, 17], anchor: [100, 62, 0, 1.3], gloss: 'M80 94 C78 80 80 70 86 64', shadow: [100, 180, 30] },
+  tall: { d: 'M64 66 C64 16 136 16 136 66 C136 102 100 110 100 138', w: 34, dot: [100, 174, 17], anchor: [100, 33, 0, 1.35], gloss: 'M72 80 C68 58 70 46 77 38' },
+  hop: { d: 'M64 60 C64 14 136 14 136 60 C136 88 100 90 100 114', w: 36, dot: [100, 172, 18], anchor: [100, 29, 0, 1.4], gloss: 'M72 72 C68 54 70 42 77 34', shadow: [100, 192, 26] },
+  proud: { d: 'M36 112 L78 156 L170 34', w: 38, anchor: [132, 87, 0, 1.3], gloss: 'M46 105 L68 128', shadow: [100, 190, 46] },
+}
+const q = (o = {}) => draw({ ...SHAPES.q, ...o })
+const c = (o = {}) => draw({ ...SHAPES.check, m: 'smile', ...o })
+const sparkle = (x, y, s = 1) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -12 l3 9 l9 3 l-9 3 l-3 9 l-3 -9 l-9 -3 l9 -3z" fill="#ffd166"/>`
+const moon = '<circle cx="160" cy="40" r="17" fill="#fff4cf"/><circle cx="168" cy="34" r="15" fill="#16191f"/>'
+const zz = '<text x="104" y="118" font-family="Inter" font-weight="800" font-size="20" fill="#a3abb8">z</text><text x="120" y="100" font-family="Inter" font-weight="800" font-size="26" fill="#a3abb8">z</text>'
+const sleep = draw({ ...SHAPES.flat, e: 'closed', m: 'none', extra: moon + zz })
+
+document.getElementById('hero-a').innerHTML = q({ e: 'up', m: 'wobble', tilt: -8 })
+document.getElementById('hero-b').innerHTML = c({ e: 'happy', m: 'smile', extra: sparkle(176, 36) })
+
+// Construction drawing with guides and the face anchor.
+document.getElementById('build').innerHTML = q({ e: 'normal', m: 'smile', extra: `<g stroke="#3a4152" stroke-width="1" stroke-dasharray="4 4" fill="none"><line x1="0" y1="20" x2="200" y2="20"/><line x1="0" y1="187" x2="200" y2="187"/><line x1="46" y1="0" x2="46" y2="200"/><line x1="154" y1="0" x2="154" y2="200"/><circle cx="100" cy="44" r="22"/></g><text x="150" y="198" font-family="JetBrains Mono" font-size="9" fill="#a3abb8">1 unit</text><text x="124" y="30" font-family="JetBrains Mono" font-size="9" fill="#a3abb8">face</text>` })
+
+// The ? to ✓ morph in five frames; the face rides its anchor the whole way.
+const frames = [
+  ['? unsure', q({ e: 'up', m: 'wobble' })],
+  ['swing', draw({ ...SHAPES.swing, e: 'side', m: 'o' })],
+  ['straighten', draw({ ...SHAPES.straighten, e: 'wide', m: 'o' })],
+  ['dot joins', draw({ ...SHAPES.joins, e: 'normal', m: 'smile' })],
+  ['✓ did it', c({ e: 'happy', m: 'smile', extra: sparkle(176, 36) })],
+]
+document.getElementById('seq').innerHTML = frames.map(([cap, svg], i) => `${i ? '<span class="arrow">›</span>' : ''}<figure>${svg}<figcaption>${i + 1} · ${cap}</figcaption></figure>`).join('')
+
+// Expressions.
+const drop = '<path d="M152 46 q6 10 0 14 q-6 -4 0 -14z" fill="#7bd3ff"/>'
+const faces = [
+  ['Unsure', 'leans, looks up: did I…?', q({ e: 'up', tilt: -10 })],
+  ['Curious', 'stretches tall: what do you always forget?', draw({ ...SHAPES.tall, e: 'side', tilt: 6 })],
+  ['Worried', "curls up small: it's 11pm…", draw({ ...SHAPES.curl, e: 'worried', extra: drop })],
+  ['Surprised', 'hops, dot left behind: oh! that one', draw({ ...SHAPES.hop, e: 'wide', extra: '<path d="M58 120 h-14 M60 134 h-18 M140 120 h14 M138 134 h18" stroke="#5f6876" stroke-width="4" stroke-linecap="round"/>' })],
+  ['Not yet', "droops, half-lidded: that's okay", q({ e: 'half', tilt: 14 })],
+  ['Happy', 'stands up into a check', c({ e: 'happy' })],
+  ['Proud', 'stands extra tall: seven nights', draw({ ...SHAPES.proud, e: 'happy', extra: sparkle(182, 26) + sparkle(28, 60, 0.7) })],
+  ['Sleepy', 'lies down: all clear', sleep],
+]
+document.getElementById('faces').innerHTML = faces.map(([b, s, svg]) => `<div class="t">${svg}<b>${b}</b><span>${s}</span></div>`).join('')
+
+// Poses.
+const phone = '<rect x="142" y="100" width="40" height="72" rx="9" fill="#2b3140"/><rect x="147" y="107" width="30" height="52" rx="4" fill="#c9f24d" opacity=".85"/>'
+const wall = '<rect x="130" y="16" width="70" height="176" rx="10" fill="#1c2028"/>'
+const poses = [
+  ['Peeking', 'from the edge of an empty state', `<svg viewBox="0 0 200 200"><g transform="translate(14 8)">${q({ e: 'side', m: 'none' }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>${wall}</svg>`],
+  ['Checking the phone', 'the "just look" moment', q({ e: 'side', m: 'flat', tilt: 10, dx: -28, extra: phone })],
+  ['Hop', 'a tiny cheer on Did', c({ e: 'happy', m: 'grin', shadow: [96, 192, 30], extra: sparkle(34, 44, 0.8) })],
+  ['Waving the dot', 'hello, first open', draw({ ...SHAPES.q, dot: [146, 140, 18], e: 'happy', m: 'smile', tilt: -6, extra: '<path d="M170 118 q8 6 6 16 M178 106 q12 8 8 26" fill="none" stroke="#a3abb8" stroke-width="3" stroke-linecap="round"/>' })],
+]
+document.getElementById('poses').innerHTML = poses.map(([b, s, svg]) => `<div class="t">${svg}<b>${b}</b><span>${s}</span></div>`).join('')
+
+// Light background and small sizes.
+const deep = '#a8d12a'
+const sizes = [
+  ['On light', 'deeper lime #a8d12a', q({ e: 'normal', m: 'smile', color: deep }), 'light'],
+  ['On light, done', 'same rules', c({ e: 'happy', color: deep }), 'light'],
+  ['Small (32 px)', 'the eyes stay, even at 16px', `<div style="display:flex;gap:16px;align-items:flex-end"><div style="width:32px">${q({ e: 'normal', blush: false })}</div><div style="width:24px">${q({ e: 'normal', blush: false })}</div><div style="width:16px">${q({ e: 'normal', blush: false })}</div></div>`, ''],
+  ['In a look', 'takes the look accent', `<div style="display:flex;gap:6px">${['#7bd3ff', '#ff8fb1', '#ffd166'].map((col) => `<div style="width:44px">${q({ e: 'normal', m: 'smile', color: col })}</div>`).join('')}</div>`, ''],
+]
+document.getElementById('sizes').innerHTML = sizes.map(([b, s, svg, cls]) => `<div class="t ${cls}">${svg}<b>${b}</b><span>${s}</span></div>`).join('')
+</script>
+</body></html>

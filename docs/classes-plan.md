@@ -29,9 +29,9 @@ question, tonight, did, nope.
 3. **Post a question.** The teacher writes it, picks the night (or a due
    date) and an ask time. It uses deadline questions (`dueBy`) and `askAfter`,
    so it shows on Tonight, the widgets and reminders with no new parts.
-4. **Answer.** Same swipe as any question. A Did can be late, the same as
-   now.
-5. **Roster.** The teacher sees, per question: done, late, nope, not yet.
+4. **Answer.** Same swipe as any question. No Late for class questions:
+   did or didn't.
+5. **Roster.** The teacher sees, per question: did, didn't, excused, not yet.
    Students see only their own answers, never classmates'.
 6. **One way.** Students cannot post to the class or message each other.
    That removes most moderation and safety work.
@@ -69,3 +69,29 @@ Before full Classes, let a Did we card be marked as a **class card**:
 joined by link, the maker sees the roster, members cannot see each other,
 capped at about 40. It is a small change on top of Did we and shows whether
 teachers use it at all.
+
+## Decisions (2026-10-07)
+
+Mockup: `docs/ideas/did-i-class.html`.
+
+- **Name: Did I Class.** Not "Did you", which already means a friend's send
+  and the did-i.app/d/ links.
+- **Students on the phone.** Class questions land in Did I like any question
+  (tonight, widget, push at the teacher's chosen time) under the class's own
+  tag, which students can mute or leave.
+- **Teachers on the web and the phone.** Web (did-i.app/class) to plan;
+  a Teaching section in Did I, shown only to people who make a class, to ask,
+  check and remind.
+- **Teachers see status only:** Did, Didn't, Excused, Not yet. Never when a
+  student answered, never their own questions, tags or streak.
+- **Remind button: yes.** One push to students who have not answered, at most
+  once a night per question.
+- **Class size: up to 300** (college lectures). Free teachers: one class up to
+  50 students.
+- **Price:** students free. Teacher Pro $4.99 a month or $39 a school year
+  (unlimited classes). Schools later, about $30 per teacher a year. Bill on
+  the web first.
+- **Settled from the spec (section 12):** pictures and streak counting are
+  student opt-ins, the teacher morning summary is opt-in, the pilot is free
+  (Pro from v1), archived classes are kept 1 year. Full spec:
+  docs/did-i-class-spec.md.

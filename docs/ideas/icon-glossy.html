@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iffy App Icon</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<script src="iffy-draw.js"></script>
+<style>
+:root{--panel:#16191f;--line:#2b3140;--ink:#f4f6fa;--soft:#a3abb8;--on:#c9f24d;--page:#0a0c10}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:500 15px/1.5 Inter,system-ui,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:40px 16px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:28px}
+.kick{font:700 11px 'JetBrains Mono';letter-spacing:.2em;color:var(--on);text-transform:uppercase}
+h1{font:800 clamp(30px,6vw,48px)/1.05 Inter;margin:8px 0}.sub{color:var(--soft);max-width:72ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px}
+.t{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:12px}
+.t.pick{outline:2px solid var(--on)}
+.t b{font:800 18px Inter}.t p{color:var(--soft);font-size:14px}
+.sizes{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.ic{border-radius:22.5%;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.ic svg{display:block;width:100%;height:100%}
+.home{display:flex;gap:10px;align-items:center;background:radial-gradient(300px 200px at 30% 0%,#2a2350,#0b0d14 70%);border-radius:16px;padding:14px}
+.home i{width:52px;height:52px;border-radius:12px;display:block}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="huhBody" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#e4ff7a"/><stop offset=".55" stop-color="#c9f24d"/><stop offset="1" stop-color="#9cc72a"/></linearGradient><radialGradient id="huhDot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#efffa6"/><stop offset=".5" stop-color="#c9f24d"/><stop offset="1" stop-color="#8fb51c"/></radialGradient><radialGradient id="iconBg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#40465a"/><stop offset="1" stop-color="#2b3040"/></radialGradient></defs></svg>
+<div class="wrap">
+<header><span class="kick">App icon · in Iffy's style</span><h1>Three question marks, now with Iffy</h1><p class="sub">Same idea as today's icon (three lime question marks on slate), drawn in Iffy's glossy style. Each is shown big, at home-screen size, and tiny (Settings, notifications).</p></header>
+<div class="grid" id="grid"></div>
+</div>
+<script>
+// Place an Iffy drawing (200x200 viewBox) inside the 1024 icon.
+const place = (svg, x, y, size, opacity = 1) => svg.replace('<svg viewBox="0 0 200 200">', `<svg viewBox="0 0 200 200" x="${x}" y="${y}" width="${size}" height="${size}" opacity="${opacity}">`)
+// Plain glossy question marks (no face) for the side ones.
+const plainQ = (tilt) => draw({ ...SHAPES.q, e: 'none', tilt, shadow: [100, 186, 0] }).replace(/<g transform="translate\([^)]*\) rotate\(0\) scale\([^)]*\)">[\s\S]*?<\/g>\s*<\/g>/, '</g>')
+const noFace = (o) => draw({ ...SHAPES.q, shadow: [100, 186, 0], ...o }).replace(/<g transform="translate\(100 45\)[^>]*>[\s\S]*?<\/g>(\s*<\/g>)/, '$1')
+const bg = (inner) => `<svg viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="url(#iconBg)"/>${inner}</svg>`
+
+const ICONS = [
+  ['A · Three, Iffy in the middle', 'The closest to today: three glossy question marks, tilted like the hand-drawn ones; the middle one is Iffy. Reads as "???" from far away, as Iffy up close.', true,
+    bg(place(noFace({ tilt: -14 }), 70, 360, 360, 0.95) + place(noFace({ tilt: 16 }), 600, 360, 360, 0.95) + place(q({ e: "up", shadow: [100, 186, 0] }), 262, 250, 500))],
+  ['B · Iffy in front, two behind', 'Iffy big and centered, two softer question marks behind him like his thoughts. Strongest at small sizes.', false,
+    bg(place(noFace({ tilt: -16 }), 110, 170, 330, 0.45) + place(noFace({ tilt: 16 }), 590, 170, 330, 0.45) + place(q({ e: 'normal', shadow: [100, 186, 0] }), 182, 170, 660))],
+  ['C · Just Iffy', 'One big Iffy question mark. The simplest and boldest; loses the "three marks" idea.', false,
+    bg(place(q({ e: 'normal', shadow: [100, 186, 0] }), 132, 120, 760))],
+  ['D · Two ? and a ✓', 'Two question marks and Iffy already standing up as a check: the whole app (did I? → I did) in one icon.', false,
+    bg(place(noFace({ tilt: -14 }), 60, 310, 340, 0.9) + place(noFace({ tilt: 4 }), 330, 250, 360, 0.9) + place(c({ e: 'happy', shadow: [100, 186, 0] }), 540, 250, 440))],
+]
+const others = ['#3a2f4f', '#25403a', '#4a3a28']
+document.getElementById('grid').innerHTML = ICONS.map(([n, why, pick, svg], i) =>
+  `<div class="t ${pick ? 'pick' : ''}"><div class="sizes"><div class="ic" style="width:180px;height:180px">${svg}</div><div class="ic" style="width:60px;height:60px">${svg}</div><div class="ic" style="width:29px;height:29px">${svg}</div></div>
+   <div class="home">${others.map((c) => `<i style="background:${c}"></i>`).join('')}<div class="ic" style="width:52px;height:52px;border-radius:12px">${svg}</div></div>
+   <b>${n}${pick ? ' · my pick' : ''}</b><p>${why}</p></div>`).join('')
+window.ICON_SVGS = ICONS.map(([n, , , svg]) => [n[0], svg])
+</script>
+</body></html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iffy in the App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="iffy-draw.js"></script>
+<style>
+:root{--bg:#0e1014;--panel:#16191f;--panel2:#1c2028;--line:#2b3140;--ink:#f4f6fa;--soft:#a3abb8;--dim:#6b7484;--on:#c9f24d;--page:#0a0c10}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:500 15px/1.5 Inter,system-ui,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:40px}
+header{text-align:center;display:grid;gap:10px;justify-items:center}
+.kick{font:700 11px 'JetBrains Mono';letter-spacing:.2em;color:var(--on);text-transform:uppercase}
+h1{font:800 clamp(32px,6vw,54px)/1.05 Inter}h1 em{font-style:normal;color:var(--on)}
+.lede{color:var(--soft);max-width:62ch}
+.screens{display:flex;flex-wrap:wrap;gap:30px 26px;justify-content:center}
+figure{display:grid;gap:10px;justify-items:center;width:300px;max-width:100%}
+figcaption{text-align:center;display:grid;gap:2px}
+figcaption b{font:800 15px Inter}figcaption span{color:var(--soft);font-size:13px;max-width:30ch}
+.phone{width:290px;height:600px;border-radius:44px;background:var(--bg);border:9px solid #1d222d;overflow:hidden;position:relative;box-shadow:0 24px 50px rgba(0,0,0,.4)}
+.sb{height:38px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font:700 12px Inter;position:relative;z-index:2}
+.app{padding:6px 16px;display:grid;gap:12px;align-content:start;height:calc(100% - 38px);position:relative}
+.hd{display:flex;justify-content:space-between;align-items:center;font:700 10px 'JetBrains Mono';letter-spacing:.14em;color:var(--soft)}
+.count{font:800 30px Inter}.count span{font:700 10px 'JetBrains Mono';color:var(--soft);letter-spacing:.14em;margin-left:6px}
+.bar{height:7px;border-radius:9px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--on)}
+.chips{display:flex;gap:6px;overflow:hidden}
+.chip{border:1px solid var(--line);border-radius:99px;padding:5px 9px;font:600 10.5px Inter;white-space:nowrap;display:flex;gap:5px;align-items:center}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--on)}.chip.o i{background:var(--line)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:8px}
+.card .k{font:700 10px 'JetBrains Mono';letter-spacing:.16em;color:var(--on)}
+.card .q{font:800 22px/1.15 Inter}
+.dots{display:flex;gap:6px;margin-top:6px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--on)}.dots i.o{background:var(--line)}
+.btn{background:var(--on);color:#111;border-radius:99px;padding:12px;text-align:center;font:800 14px Inter}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.tabs{position:absolute;left:12px;right:12px;bottom:14px;height:54px;border-radius:30px;background:var(--panel);display:flex;padding:5px;gap:6px}
+.tabs b{flex:1;border-radius:26px;display:flex;align-items:center;justify-content:center;font:700 12px Inter;color:var(--soft)}.tabs b.on{background:var(--on);color:#111}
+.iffy{display:block;margin:0 auto}
+.center{text-align:center;display:grid;gap:8px;justify-items:center}
+.big{font:800 26px/1.15 Inter}.small{color:var(--soft);font-size:13px}
+.ideas{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ideas span{border:1px solid var(--line);border-radius:99px;padding:6px 10px;font:600 11px Inter}
+.toast{position:absolute;left:14px;right:14px;bottom:82px;background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.toast b{font:700 12.5px Inter;display:block}.toast span{font:500 11.5px Inter;color:var(--soft)}
+.fly{position:absolute;left:30px;right:30px;top:190px;transform:translateX(110px) rotate(12deg);opacity:.9}
+.stamp{position:absolute;top:14px;left:16px;background:var(--panel);font:800 18px Inter;color:var(--on);border:3px solid var(--on);border-radius:10px;padding:0 8px;transform:rotate(-8deg)}
+.rail{position:absolute;right:0;top:190px;width:46px;height:170px;border-radius:46px 0 0 46px;background:var(--on);color:#111;display:flex;align-items:center;justify-content:center;font:800 11px Inter;letter-spacing:.2em}
+.rail span{transform:rotate(-90deg)}
+/* Phone home screen */
+.wall{background:radial-gradient(500px 400px at 30% 10%,#2a2350,transparent 60%),radial-gradient(400px 400px at 90% 80%,#14324a,transparent 60%),#0b0d14}
+.home{padding:16px 18px;display:grid;gap:18px}
+.widget{border-radius:26px;background:var(--panel);border:3px solid var(--on);padding:14px;display:grid;justify-items:center;gap:2px;text-align:center}
+.widget .k{font:700 11px Inter;letter-spacing:.06em;color:var(--on);text-transform:uppercase}
+.widget b{font:800 17px Inter}
+.icons{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 12px}
+.icons div{display:grid;gap:4px;justify-items:center;font:500 10px Inter;color:#dfe3ea}
+.icons i{width:54px;height:54px;border-radius:14px;display:block}
+.icons .me i{background:#16191f;border:1px solid #2b3140;display:flex;align-items:center;justify-content:center}
+.lock{background:radial-gradient(500px 500px at 50% 0%,#2a2350,#0b0d14 70%)}
+.time{text-align:center;font:300 64px/1 Inter;margin-top:30px}.date{text-align:center;color:#dfe3ea;font:600 14px Inter}
+.note{margin:150px 10px 0;background:rgba(40,44,56,.92);border-radius:20px;padding:12px;display:grid;gap:6px}
+.note .top{display:flex;align-items:center;gap:8px;font:600 11px Inter;color:#cfd3dc}
+.note .top i{width:22px;height:22px;border-radius:6px;background:#16191f;display:flex;align-items:center;justify-content:center}
+.note b{font:700 13px Inter}.note .acts{display:flex;gap:8px}.note .acts span{flex:1;text-align:center;background:rgba(255,255,255,.12);border-radius:12px;padding:8px;font:700 12px Inter}
+.share{display:flex;gap:8px;width:100%}.share span{flex:1}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="huhBody" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#e4ff7a"/><stop offset=".55" stop-color="#c9f24d"/><stop offset="1" stop-color="#9cc72a"/></linearGradient><radialGradient id="huhDot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#efffa6"/><stop offset=".5" stop-color="#c9f24d"/><stop offset="1" stop-color="#8fb51c"/></radialGradient></defs></svg>
+<div class="wrap">
+<header><span class="kick">Iffy in Did I · mockup</span><h1>How <em>Iffy</em> shows up</h1><p class="lede">One Iffy per screen, only at moments that matter: starting out, finishing, and when something needs a gentle word. Never on top of a question you are answering.</p></header>
+<div class="screens" id="screens"></div>
+</div>
+<script>
+// Iffy at a given pixel size.
+const iffy = (svg, px) => svg.replace('<svg ', `<svg class="iffy" width="${px}" height="${px}" `)
+const card = (k, q, dots = 3) => `<div class="card"><span class="k">${k}</span><div class="q">${q}</div><div class="dots">${'<i></i>'.repeat(dots)}${'<i class="o"></i>'.repeat(6 - dots)}</div></div>`
+const head = (n, of) => `<div class="hd"><span>DID I · TONIGHT</span><span>● 42 ◆ 6</span></div><div class="count">${n}<span>OF ${of}</span></div><div class="bar"><i style="width:${(n / of) * 100}%"></i></div>`
+const tabs = '<div class="tabs"><b class="on">Home</b><b>Questions</b></div>'
+const sb = '<div class="sb"><span>9:41</span><span>●●●</span></div>'
+
+const SCREENS = [
+  ['Home screen', 'The app icon is Iffy\'s face. The widget sleeps once everything is done.',
+    `<div class="phone wall">${sb}<div class="home">
+      <div class="widget">${iffy(sleep, 92)}<span class="k">All clear</span><b>All clear for tonight</b></div>
+      <div class="icons">${['#3a2f4f', '#25403a', '#4a3a28', '#283a52', '#3d2a33', '#2f3a2a', '#40303f'].map((c, i) => i === 1 ? `<div class="me"><i>${iffy(q({ e: 'normal' }), 46)}</i>Did I</div>` : `<div><i style="background:${c}"></i>App</div>`).join('')}<div><i style="background:#2b3140"></i>App</div></div>
+    </div></div>`],
+  ['First open', 'Iffy waves hello under the tagline, then the sign-in buttons.',
+    `<div class="phone">${sb}<div class="app" style="align-content:center"><div class="center">${iffy(draw({ ...SHAPES.q, dot: [146, 140, 18], e: 'happy', tilt: -6, shadow: [100, 186, 30], extra: '<path d="M170 118 q8 6 6 16 M178 106 q12 8 8 26" fill="none" stroke="#a3abb8" stroke-width="3" stroke-linecap="round"/>' }), 170)}
+      <div class="big">Did I?<br><span style="color:var(--on)">Now you'll know.</span></div><div class="small">One question at a time, every night.</div></div>
+      <span class="btn" style="margin-top:14px"> Continue with Apple</span><span class="btn ghost">Continue with Google</span><span class="small" style="text-align:center">Use without an account</span></div></div>`],
+  ['No questions yet', 'Curious Iffy asks the one question that gets people started.',
+    `<div class="phone">${sb}<div class="app"><div class="hd"><span>DID I · TONIGHT</span><span>● 0 ◆ 0</span></div><div class="center" style="margin-top:26px">${iffy(draw({ ...SHAPES.tall, e: 'side', tilt: 6 }), 130)}<div class="big">What do you always forget?</div><div class="small">Add one question. Did I asks it each night.</div>
+      <div class="ideas"><span>Pills</span><span>Back door</span><span>Plants</span><span>Feed the cat</span><span>Stove</span></div></div><span class="btn">Add a question</span>${tabs}</div></div>`],
+  ['The swipe to Did', 'No Iffy on the card itself. A small Iffy hops into a check in the corner as it lands.',
+    `<div class="phone">${sb}<div class="app">${head(3, 5)}<div class="chips"><span class="chip"><i></i>Pills</span><span class="chip"><i></i>Back door</span><span class="chip o"><i></i>Plants</span></div>
+      <div class="fly">${card('HOME', 'Did I water the plants?', 3).replace('<div class="card">', '<div class="card" style="position:relative">').replace('</div></div>', '</div><span class="stamp">DID</span></div>')}</div>
+      <div class="rail"><span>DID</span></div>
+      <div style="position:absolute;left:16px;bottom:90px">${iffy(c({ e: 'happy', extra: sparkle(176, 36) }), 74)}</div>${tabs}</div></div>`],
+  ['Not yet', 'A gentle toast with drooping Iffy. No red, no shame.',
+    `<div class="phone">${sb}<div class="app">${head(3, 5)}<div class="chips"><span class="chip"><i></i>Pills</span><span class="chip"><i></i>Back door</span><span class="chip o"><i></i>Stove</span></div>
+      <div style="margin-top:40px">${card('HOME', 'Did I feed the cat?', 3)}</div>
+      <div class="toast">${iffy(q({ e: 'half', tilt: 14, shadow: [100, 186, 0] }), 46)}<div><b>Not yet is fine</b><span>It can still turn into Did tonight.</span></div></div>${tabs}</div></div>`],
+  ['All clear', 'Sleeping Iffy when the night is done. The app tells you to go to bed.',
+    `<div class="phone">${sb}<div class="app">${head(5, 5)}<div class="chips"><span class="chip"><i></i>Pills</span><span class="chip"><i></i>Back door</span><span class="chip"><i></i>Plants</span></div>
+      <div class="center" style="margin-top:60px">${iffy(sleep, 170)}<div class="big">All clear.</div><div class="small">Go to bed. See you tomorrow.</div></div>${tabs}</div></div>`],
+  ['Seven nights', 'Proud Iffy stands extra tall for a streak milestone.',
+    `<div class="phone">${sb}<div class="app" style="align-content:center"><div class="center">${iffy(draw({ ...SHAPES.proud, e: 'happy', extra: sparkle(182, 26) + sparkle(28, 60, 0.7) + sparkle(40, 150, 0.5) }), 190)}
+      <div class="big">Seven nights<br>in a row.</div><div class="small">Iffy is standing very straight.</div></div>
+      <div class="share" style="margin-top:14px"><span class="btn ghost">Share</span><span class="btn">Nice</span></div></div></div>`],
+  ['Lock screen', 'Iffy\'s face is the notification icon.',
+    `<div class="phone lock">${sb}<div class="time">9:41</div><div class="date">Tuesday, October 7</div>
+      <div class="note"><div class="top"><i>${iffy(q({ e: 'normal', shadow: [100, 186, 0] }), 20)}</i>DID I · now</div><b>Did I take my pills?</b><div class="acts"><span>Did</span><span>Not yet</span></div></div></div>`],
+]
+document.getElementById('screens').innerHTML = SCREENS.map(([t, s, html]) => `<figure>${html}<figcaption><b>${t}</b><span>${s}</span></figcaption></figure>`).join('')
+</script>
+</body></html>

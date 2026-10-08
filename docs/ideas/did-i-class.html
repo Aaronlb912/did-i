@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Did I Class</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1014;--panel:#16191f;--panel2:#1c2028;--line:#2b3140;--ink:#f4f6fa;--soft:#a3abb8;--dim:#6b7484;--on:#c9f24d;--late:#f2c45a;--miss:#ef6a5b;--you:#7bd3ff;--page:#0a0c10}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--page:#eef0f4}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:500 15px/1.5 Inter,system-ui,sans-serif}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]) body{color:#14161b}:root:not([data-theme=dark]) .lede,:root:not([data-theme=dark]) .note{color:#4a5160}}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:44px}
+header{display:grid;gap:12px;text-align:center;justify-items:center}
+.kick{font:700 11px/1 'JetBrains Mono';letter-spacing:.2em;text-transform:uppercase;color:var(--on);background:#16191f;padding:8px 12px;border-radius:99px}
+h1{font:800 clamp(34px,6vw,54px)/1.05 Inter;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--on)}
+.lede{color:var(--soft);max-width:66ch}
+h2{font:800 26px/1.2 Inter;margin-bottom:6px}
+.sec>p{color:var(--soft);max-width:72ch}
+.flip{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.flip div{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 20px;flex:1 1 240px;max-width:100%;color:var(--ink)}
+.flip b{display:block;font:700 11px 'JetBrains Mono';letter-spacing:.16em;color:var(--soft);margin-bottom:6px}
+.flip span{font:800 22px Inter}.flip .y{color:var(--you)}.flip .i{color:var(--on)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px;margin-top:18px}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;display:grid;gap:10px;align-content:start;color:var(--ink)}
+.opt .tag{font:700 10.5px 'JetBrains Mono';letter-spacing:.16em;color:var(--on)}
+.opt h3{font:800 20px Inter}.opt p{color:var(--soft);font-size:14px}
+.opt ul{padding-left:18px;color:var(--soft);font-size:14px}.opt li b{color:var(--ink)}
+.pick{outline:2px solid var(--on)}
+.screens{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:20px;align-items:flex-start}
+.cap{font:700 11px 'JetBrains Mono';letter-spacing:.16em;color:var(--soft);text-align:center;margin-top:10px;text-transform:uppercase}
+.phone{width:300px;height:620px;border-radius:44px;background:#05060a;border:9px solid #1d222d;overflow:hidden;position:relative;color:var(--ink);box-shadow:0 24px 50px rgba(0,0,0,.35)}
+.sb{height:40px;display:flex;justify-content:space-between;align-items:center;padding:0 24px;font:700 12px Inter}
+.app{padding:8px 16px;display:grid;gap:12px}
+.hd{display:flex;justify-content:space-between;align-items:center;font:700 10px 'JetBrains Mono';letter-spacing:.14em;color:var(--soft)}
+.ttl{font:800 24px Inter}
+.chips{display:flex;gap:6px;overflow:hidden}
+.chip{border:1px solid var(--line);border-radius:99px;padding:6px 10px;font:600 11px Inter;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--on)}.chip.o i{background:var(--line)}
+.chip.cls{border-color:var(--you);color:var(--you)}.chip.cls i{background:var(--you)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:8px;margin-top:40px}
+.card .k{font:700 10px 'JetBrains Mono';letter-spacing:.16em;color:var(--you)}
+.card .q{font:800 22px/1.15 Inter}.card .s{font:600 12px Inter;color:var(--soft)}
+.dots{display:flex;gap:6px;margin-top:6px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--on)}.dots i.o{background:var(--line)}
+.hint{font:600 11px Inter;color:var(--dim);text-align:center}
+.row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.row .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:800 13px Inter;background:var(--panel2);color:var(--you)}
+.row b{font:700 13px Inter;display:block}.row span{font:600 11px Inter;color:var(--soft)}
+.bar{height:8px;border-radius:9px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--on)}
+.btn{background:var(--on);color:#111;border-radius:99px;padding:10px;text-align:center;font:800 13px Inter}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.code{font:800 30px 'JetBrains Mono';letter-spacing:.12em;text-align:center;color:var(--on)}
+.qr{width:120px;height:120px;margin:0 auto;border-radius:14px;background:repeating-conic-gradient(var(--ink) 0 25%,#05060a 0 50%) 0 0/20px 20px;opacity:.9}
+.desk{width:min(100%,760px);border-radius:16px;background:var(--bg);border:1px solid var(--line);overflow:hidden;color:var(--ink);box-shadow:0 24px 50px rgba(0,0,0,.35)}
+.desk .top{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 12px}
+.desk .top i{width:10px;height:10px;border-radius:50%;background:#3a3f4b}
+.desk .url{margin-left:12px;font:600 11px 'JetBrains Mono';color:var(--soft);background:#0e1014;padding:4px 10px;border-radius:8px}
+.dash{display:grid;grid-template-columns:200px 1fr;min-height:420px}
+.side{border-right:1px solid var(--line);padding:16px;display:grid;gap:8px;align-content:start}
+.side b{font:700 10px 'JetBrains Mono';letter-spacing:.14em;color:var(--soft)}
+.side .c{padding:8px 10px;border-radius:10px;font:600 13px Inter}.side .c.on{background:var(--panel);color:var(--on)}
+.main{padding:18px;display:grid;gap:14px;align-content:start}
+.main h4{font:800 20px Inter}
+.post{display:flex;gap:8px}.post div{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--soft);font:600 13px Inter}
+.post .btn{flex:0 0 auto;padding:10px 16px}
+table{width:100%;border-collapse:collapse;font:600 13px Inter}
+th{font:700 10px 'JetBrains Mono';letter-spacing:.12em;color:var(--soft);text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line)}
+.p{display:inline-block;padding:2px 8px;border-radius:99px;font:700 11px Inter;white-space:nowrap}
+.p.d{background:rgba(201,242,77,.15);color:var(--on)}.p.l{background:rgba(242,196,90,.15);color:var(--late)}.p.n{background:rgba(239,106,91,.15);color:var(--miss)}.p.w{background:var(--panel2);color:var(--soft)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px;margin-top:14px}
+.rules div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--ink);font-size:14px}
+.rules b{display:block;color:var(--on);font:700 11px 'JetBrains Mono';letter-spacing:.12em;margin-bottom:4px}
+.note{color:var(--soft);font-size:14px;max-width:72ch}
+.phone.tall{height:720px}
+.desk .main{overflow-x:auto}.desk{max-width:100%}.screens>div{max-width:100%}
+.field{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:600 13px Inter}
+.seen{background:var(--panel2);border-radius:14px;padding:12px;font:500 12px/1.45 Inter;color:var(--soft)}
+.seen b{display:block;color:var(--ink);font:700 11px 'JetBrains Mono';letter-spacing:.08em;text-transform:uppercase}
+.tog{display:flex;justify-content:space-between;align-items:center;font:600 13px Inter;padding:4px 2px}
+.tog i{width:38px;height:22px;border-radius:99px;background:var(--line);position:relative}.tog i:after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tog i.on{background:var(--on)}.tog i.on:after{left:19px;background:#111}
+.chip.sel{border-color:var(--on);color:var(--on)}
+.sheet{background:var(--panel);border-radius:26px 26px 0 0;padding:12px 16px 16px;display:grid;gap:8px;margin:0 -16px}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 6px}
+.opt-row{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:12px;background:var(--panel2);font:600 13px Inter}
+.opt-row.on{outline:1px solid var(--on)}.opt-row.red{color:var(--miss)}
+.opt-row .sw{width:34px;height:20px;border-radius:99px;background:var(--line)}
+.lnk{font:700 12px Inter;color:var(--you)}
+.big{font:800 46px/1 Inter}.big span{font:700 14px Inter;color:var(--soft);margin-left:6px}
+.qrbox{display:grid;gap:8px;justify-items:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px}
+.qrbox .qr{width:100px;height:100px}
+table.grid td{text-align:left}
+.g{display:inline-block;width:18px;height:18px;border-radius:6px;vertical-align:middle}
+.g.d{background:var(--on)}.g.l{background:var(--late)}.g.n{background:var(--miss)}.g.w{background:var(--line)}.g.j{background:transparent;border:2px dashed var(--line)}.g.x{background:#8fb3ff}
+.g{font:800 11px/18px Inter;text-align:center;color:#111;font-style:normal}.g.d:after{content:"✓"}.g.l:after{content:"L"}.g.n:after{content:"✕"}.g.x:after{content:"E"}.g.w:after{content:"·";color:var(--soft)}
+.p.x{background:rgba(143,179,255,.15);color:#8fb3ff}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font:600 12px Inter;color:var(--soft)}.legend span{display:flex;gap:6px;align-items:center}
+.spec{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:28px clamp(18px,4vw,44px);color:var(--ink);display:block}
+.spec h2{font:800 32px/1.15 Inter;margin:14px 0 8px}.spec h3{font:800 22px/1.2 Inter;margin:30px 0 10px;color:var(--on)}.spec h4{font:800 16px Inter;margin:20px 0 8px}
+.spec p,.spec li{color:var(--soft);font-size:15px;line-height:1.6;max-width:78ch}.spec p{margin:8px 0}.spec b{color:var(--ink)}.spec em{color:var(--ink)}
+.spec ul,.spec ol{padding-left:22px;margin:8px 0;display:grid;gap:4px}
+.spec hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+.spec code{font:600 13px 'JetBrains Mono';background:var(--panel2);padding:1px 6px;border-radius:6px;color:var(--ink)}
+.spec blockquote{border-left:3px solid var(--on);padding:6px 14px;color:var(--ink);margin:10px 0}
+.spec .tw{overflow-x:auto;margin:12px 0}.spec table{min-width:520px}.spec td{color:var(--soft);vertical-align:top}
+.jump{display:inline-block;margin-top:6px;font:700 14px Inter;color:var(--on);text-decoration:none;border:1px solid var(--on);padding:8px 16px;border-radius:99px}
+.anon{font:700 12px Inter;color:#8fb3ff}
+.mini{display:flex;gap:6px;padding:4px 2px}
+.pickq{padding:12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font:700 13px Inter}.pickq.on{border-color:var(--on);color:var(--on)}
+.note-push{background:rgba(245,245,247,.95);color:#111;border-radius:18px;padding:12px 14px;display:grid;gap:4px;font:500 13px Inter}
+.note-push b{font:700 12px Inter}.note-push div{display:flex;gap:8px;margin-top:4px}.note-push em{font-style:normal;flex:1;text-align:center;background:#e4e4ea;border-radius:10px;padding:6px;font:700 12px Inter}
+.poster{width:300px;min-height:420px;background:#fff;color:#111;border-radius:16px;padding:26px 22px;display:grid;gap:12px;justify-items:center;text-align:center;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+.poster .kick{color:var(--on)}.poster .pt{font:800 26px Inter}.poster .pp{font:600 12px 'JetBrains Mono';color:#555}.poster .pf{font:500 12px/1.4 Inter;color:#444}
+.poster .code{color:#111}
+.tw{overflow-x:auto}
+@media (max-width:640px){.dash{grid-template-columns:1fr}.side{display:none}}
+</style></head>
+<body><div class="wrap">
+
+<header>
+  <span class="kick">Idea · mockup, not built</span>
+  <h1>Did I<br><em>Class</em></h1>
+  <a class="jump" href="#spec">Read the full spec ↓</a>
+  <p class="lede">A teacher asks once. Every student gets it on their own night as one question. The teacher sees who did it. Nobody sees anyone else.</p>
+  <div class="flip">
+    <div><b>THE TEACHER ASKS</b><span class="y">Did you finish the chapter 4 reading?</span></div>
+    <div><b>THE STUDENT SEES</b><span class="i">Did I finish the chapter 4 reading?</span></div>
+  </div>
+</header>
+
+<section class="sec">
+  <h2>Where it could live</h2>
+  <p>Three ways to place it. The student side is the same question card in each; what changes is where the teacher works and how close it sits to Did I.</p>
+  <div class="opts">
+    <div class="opt">
+      <span class="tag">A · INSIDE DID I</span>
+      <h3>A Classes section in the app</h3>
+      <p>Teachers and students both use Did I. Classes is one more menu item.</p>
+      <ul><li><b>Good:</b> one app, one account, it reuses everything.</li>
+      <li><b>Bad:</b> teacher tools crowd an app built to be calm. A teenager's own questions sit next to school ones, which can feel like school is watching.</li></ul>
+    </div>
+    <div class="opt">
+      <span class="tag">B · ITS OWN APP</span>
+      <h3>A separate Did I Class app</h3>
+      <p>Teachers and students download Did I Class. Did I stays personal.</p>
+      <ul><li><b>Good:</b> clean split, own store listing, can sell to schools without touching Did I.</li>
+      <li><b>Bad:</b> a second app to build, review and support. Students who already use Did I get school questions in a different place.</li></ul>
+    </div>
+    <div class="opt pick">
+      <span class="tag">C · RECOMMENDED</span>
+      <h3>Teachers on the web and phone, students in Did I</h3>
+      <p>Teachers plan on a laptop at did-i.app/class and can ask or check from a small Teaching section in Did I on their phone. Students join with a code and the questions land in Did I under their own "class" tag, which they can mute or leave.</p>
+      <ul><li><b>Good:</b> teachers live on laptops; no teacher tools in the app; students get one more tag, not a new app. Cheap to test.</li>
+      <li><b>Bad:</b> students need Did I installed; school stays a little inside the personal app (kept in its own tag).</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Teacher: the web dashboard (option C)</h2>
+  <p>Make a class, share the code, post a question for a night, see the roster. Students show as the name they choose; no emails or phone numbers.</p>
+  <div class="screens">
+    <div>
+      <div class="desk">
+        <div class="top"><i></i><i></i><i></i><span class="url">did-i.app/class</span></div>
+        <div class="dash">
+          <div class="side"><b>YOUR CLASSES</b><span class="c on">Period 3 · Biology</span><span class="c">Period 5 · Biology</span><span class="c">+ New class</span><b style="margin-top:14px">JOIN CODE</b><span class="c" style="font-family:'JetBrains Mono';color:var(--on)">BIO-4KX7</span></div>
+          <div class="main">
+            <h4>Period 3 · Biology <span style="font:600 13px Inter;color:var(--soft)">· 28 students</span></h4>
+            <div class="post"><div>Did you finish the chapter 4 reading?</div><div style="flex:0 0 130px">Tonight · 7 PM</div><span class="btn">Ask</span></div>
+            <table><tr><th>STUDENT</th><th>CH. 4 READING</th><th>QUIZ STUDY</th><th>LAB WRITE-UP</th></tr>
+              <tr><td>Student 1</td><td><span class="p d">Did</span></td><td><span class="p d">Did</span></td><td><span class="p l">Late</span></td></tr>
+              <tr><td>Student 2</td><td><span class="p d">Did</span></td><td><span class="p w">Not yet</span></td><td><span class="p d">Did</span></td></tr>
+              <tr><td>Student 3</td><td><span class="p n">Didn't</span></td><td><span class="p d">Did</span></td><td><span class="p d">Did</span></td></tr>
+              <tr><td>Student 4</td><td><span class="p d">Did</span></td><td><span class="p d">Did</span></td><td><span class="p w">Not yet</span></td></tr>
+              <tr><td style="color:var(--soft)">+ 24 more</td><td><span class="p d">22 of 28</span></td><td><span class="p d">19 of 28</span></td><td><span class="p d">25 of 28</span></td></tr></table>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Teacher · laptop</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Teacher: on the phone too</h2>
+  <p>A small <b>Teaching</b> section inside Did I. It only appears in the menu once you make or run a class, so nobody else ever sees it. The web is for planning a week of questions; the phone is for a quick one in the hallway and checking who did it. Same classes, same questions, both places.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>TEACHING</span><span>+ CLASS</span></div>
+          <div class="ttl">Your classes</div>
+          <div class="row"><span class="ic">B</span><div style="flex:1"><b>Period 3 · Biology</b><span>Tonight: 22 of 28 did it</span><div class="bar" style="margin-top:6px"><i style="width:79%"></i></div></div></div>
+          <div class="row"><span class="ic">B</span><div style="flex:1"><b>Period 5 · Biology</b><span>Tonight: 9 of 26 so far</span><div class="bar" style="margin-top:6px"><i style="width:35%"></i></div></div></div>
+          <div class="row"><span class="ic">+</span><div><b>New class</b><span>Get a join code and link</span></div></div>
+          <span class="btn" style="margin-top:150px">Ask a class something</span>
+        </div>
+      </div>
+      <div class="cap">Teaching home</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>ASK PERIOD 3</span><span>✕</span></div>
+          <div class="card" style="margin-top:6px"><span class="k">DID YOU…</span><div class="q">bring your permission slip?</div></div>
+          <div class="hd" style="margin-top:4px"><span>WHEN</span></div>
+          <div class="chips" style="flex-wrap:wrap"><span class="chip">Now</span><span class="chip" style="border-color:var(--on);color:var(--on)">Tomorrow · 7:30 AM</span><span class="chip">Tonight · 7 PM</span><span class="chip">Pick a time</span></div>
+          <div class="hd" style="margin-top:4px"><span>DUE</span></div>
+          <div class="chips"><span class="chip" style="border-color:var(--on);color:var(--on)">By Friday</span><span class="chip">Just that day</span></div>
+          <div class="note" style="font-size:12px">28 students get it on their phone at 7:30 AM, as "Did I bring my permission slip?"</div>
+          <span class="btn" style="margin-top:40px">Ask Period 3</span>
+        </div>
+      </div>
+      <div class="cap">Asking from the phone</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ PERIOD 3</span><span>⋯</span></div>
+          <div class="ttl" style="font-size:19px;line-height:1.2">Did you finish the chapter 4 reading?</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><span class="p d">22 Did</span><span class="p n">1 Didn't</span><span class="p w">3 Not yet</span></div>
+          <div class="row"><div style="flex:1"><b>Student 1</b></div><span class="p d">Did</span></div>
+          <div class="row"><div style="flex:1"><b>Student 2</b></div><span class="p d">Did</span></div>
+          <div class="row"><div style="flex:1"><b>Student 3</b></div><span class="p n">Didn't</span></div>
+          <div class="row"><div style="flex:1"><b>Student 4</b></div><span class="p w">Not yet</span></div>
+          <span class="btn ghost" style="margin-top:6px">Remind the 3 who haven't</span>
+        </div>
+      </div>
+      <div class="cap">Who did it</div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:16px">"Remind the 3 who haven't" sends one gentle push, once a night at most. Teachers see Did, Didn't, Excused or Not yet, never when a student answered. They never see a student's own questions, and a teacher who is also a student in someone else's class just sees both sections.</p>
+</section>
+
+<section class="sec">
+  <h2>Student: same app, one more tag</h2>
+  <p>The class question is a normal card with the class as its tag. Joining shows the class and teacher name first. They can mute the tag for a night or leave the class any time.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>DID I · TONIGHT</span><span>● 42</span></div>
+          <div class="ttl">3 <span style="font:700 11px 'JetBrains Mono';color:var(--soft)">OF 5</span></div>
+          <div class="bar"><i style="width:60%"></i></div>
+          <div class="chips"><span class="chip"><i></i>Pills</span><span class="chip"><i></i>Back door</span><span class="chip cls o"><i></i>Biology</span></div>
+          <div class="card"><span class="k">PERIOD 3 · BIOLOGY</span><div class="q">Did I finish the chapter 4 reading?</div><span class="s">Asked for tonight</span><div class="dots"><i></i><i></i><i></i><i class="o"></i><i class="o"></i></div></div>
+          <div class="hint">swipe right for Did · left for Not yet</div>
+        </div>
+      </div>
+      <div class="cap">Tonight, with a class question</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>JOIN A CLASS</span><span>✕</span></div>
+          <div class="ttl" style="margin-top:20px">Period 3 · Biology</div>
+          <div class="row"><span class="ic">T</span><div><b>Asked by your teacher</b><span>28 students · questions only</span></div></div>
+          <div class="note" style="font-size:13px;color:var(--soft)">Your teacher sees only your answers to class questions. Not your own questions, tags or streak. Classmates see nothing about you.</div>
+          <div class="code" style="margin-top:8px">BIO-4KX7</div>
+          <span class="btn">Join class</span><span class="btn ghost">Not now</span>
+        </div>
+      </div>
+      <div class="cap">Joining by code or link</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>CLASSES</span><span>+</span></div>
+          <div class="ttl">Your classes</div>
+          <div class="row"><span class="ic">B</span><div><b>Period 3 · Biology</b><span>2 questions this week</span></div></div>
+          <div class="row"><span class="ic">E</span><div><b>English 11</b><span>Muted tonight</span></div></div>
+          <div class="hint" style="margin-top:8px">Leave a class any time. Its questions leave your tonight.</div>
+          <span class="btn ghost" style="margin-top:200px">Leave Period 3 · Biology</span>
+        </div>
+      </div>
+      <div class="cap">Mute or leave</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Student: joining and staying in control</h2>
+  <p>Joining says exactly what the teacher sees, lets them pick their name for this class, and checks age once. Muting and quiet hours keep the phone theirs.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>JOIN A CLASS</span><span>✕</span></div>
+          <div class="ttl" style="font-size:21px;margin-top:6px">Period 3 · Biology</div>
+          <div class="row"><span class="ic">T</span><div><b>Asked by your teacher</b><span>48 students</span></div></div>
+          <div class="hd" style="margin-top:4px"><span>YOUR NAME IN THIS CLASS</span></div>
+          <div class="field">First name L.</div>
+          <div class="seen"><b>Your teacher sees</b>Did, Didn't, Excused or Not yet on class questions.<br><b style="margin-top:6px">Never</b>when you answered, your own questions, your streak. Classmates see nothing.</div>
+          <div class="tog"><span>I'm 13 or older</span><i class="on"></i></div>
+          <span class="btn">Join class</span>
+        </div>
+      </div>
+      <div class="cap">Join, with name and age</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app" style="padding-top:150px">
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="ttl" style="font-size:20px">Period 3 · Biology</div>
+            <div class="opt-row on">Mute tonight</div>
+            <div class="opt-row">Mute for a week</div>
+            <div class="opt-row">Count toward my streak <i class="sw"></i></div>
+            <div class="opt-row">Show my picture to the teacher <i class="sw"></i></div>
+            <div class="opt-row">Report this class</div>
+            <div class="opt-row red">Leave class</div>
+            <div class="hint">Your quiet hours apply: class reminders wait until they end.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Mute, streak, leave</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>DID I · TONIGHT</span><span>● 42</span></div>
+          <div class="card" style="margin-top:110px"><span class="k">PERIOD 3 · BIOLOGY · DUE FRIDAY</span><div class="q">Did I finish the lab write-up?</div><a class="lnk">↗ Lab 6 instructions</a><span class="s">Still open until Friday</span><div class="dots"><i></i><i></i><i class="o"></i><i class="o"></i><i class="o"></i></div></div>
+          <div class="hint">Not yet keeps it here each night until Friday</div>
+        </div>
+      </div>
+      <div class="cap">Due date and a link</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Teacher: asking, in full</h2>
+  <p>Pick one class or several, when it arrives, when it is due, whether it repeats, and an optional link. The preview says exactly what students get.</p>
+  <div class="screens">
+    <div>
+      <div class="phone tall"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>ASK</span><span>✕</span></div>
+          <div class="card" style="margin-top:0"><span class="k">DID YOU…</span><div class="q" style="font-size:19px">do the chapter 5 reading?</div></div>
+          <div class="hd"><span>CLASSES</span></div>
+          <div class="chips" style="flex-wrap:wrap"><span class="chip sel">Period 3</span><span class="chip sel">Period 5</span><span class="chip">Lecture A</span></div>
+          <div class="hd"><span>WHEN</span></div>
+          <div class="chips" style="flex-wrap:wrap"><span class="chip">Now</span><span class="chip sel">Tonight · 7 PM</span><span class="chip">Pick</span></div>
+          <div class="hd"><span>REPEAT</span></div>
+          <div class="chips" style="flex-wrap:wrap"><span class="chip">Once</span><span class="chip sel">Tue + Thu</span><span class="chip">Weekdays</span></div>
+          <div class="tog"><span>Due by Friday</span><i class="on"></i></div>
+          <div class="tog"><span>Late counts until Sunday</span><i></i></div>
+          <div class="field" style="color:var(--soft)">+ Add a link</div>
+          <div class="note" style="font-size:12px">74 students get "Did I do the chapter 5 reading?" Tue and Thu at 7 PM, until the term ends.</div>
+          <span class="btn">Ask 2 classes</span>
+        </div>
+      </div>
+      <div class="cap">Ask: classes, time, repeat, due</div>
+    </div>
+    <div>
+      <div class="phone tall"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ LECTURE A</span><span>⋯</span></div>
+          <div class="ttl" style="font-size:18px;line-height:1.2">Did you watch the week 6 lecture?</div>
+          <div class="big">241<span> of 300 did it</span></div>
+          <div class="bar" style="height:12px"><i style="width:80%"></i></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><span class="p d">241 Did</span><span class="p n">9 Didn't</span><span class="p x">3 Excused</span><span class="p w">35 Not yet</span></div>
+          <span class="btn">Remind the 35 who haven't</span>
+          <div class="field" style="color:var(--soft)">⌕ Search the class</div>
+          <div class="chips"><span class="chip">All</span><span class="chip sel">Not yet</span><span class="chip">Didn't</span><span class="chip">Late</span></div>
+          <div class="row"><div style="flex:1"><b>Student 12</b></div><span class="p w">Not yet</span></div>
+          <div class="row"><div style="flex:1"><b>Student 47</b></div><span class="p w">Not yet</span></div>
+          <div class="hint">33 more</div>
+        </div>
+      </div>
+      <div class="cap">A 300-person lecture</div>
+    </div>
+    <div>
+      <div class="phone tall"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ PERIOD 3 SETTINGS</span><span></span></div>
+          <div class="qrbox"><div class="qr"></div><div class="code" style="font-size:24px">BIO-4KX7</div><span class="hint">did-i.app/c/BIO-4KX7</span></div>
+          <div class="row"><div style="flex:1"><b>Show on the projector</b><span>Full-screen code and QR · or make a new code</span></div><span>›</span></div>
+          <div class="tog"><span>Approve who joins</span><i></i></div>
+          <div class="row"><div style="flex:1"><b>3 waiting to join</b><span>Approve or decline</span></div><span>›</span></div>
+          <div class="row"><div style="flex:1"><b>Co-teachers</b><span>1 TA · add by friend ID or link</span></div><span>›</span></div>
+          <div class="row"><div style="flex:1"><b>Term</b><span>Aug 25 to Dec 19 · 4 no-class days</span></div><span>›</span></div>
+                    <span class="btn ghost">Archive class</span>
+        </div>
+      </div>
+      <div class="cap">Class settings</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Web: the term at a glance (Pro)</h2>
+  <p>Every class question this term, every student, status only. Export to CSV for a participation grade in the teacher's own gradebook.</p>
+  <div class="screens">
+    <div>
+      <div class="desk" style="width:min(100%,900px)">
+        <div class="top"><i></i><i></i><i></i><span class="url">did-i.app/class/period-3/term</span></div>
+        <div class="main">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>Period 3 · Biology · Fall term</h4><div style="display:flex;gap:8px"><span class="btn ghost" style="padding:8px 14px">Question bank</span><span class="btn ghost" style="padding:8px 14px">Plan the week</span><span class="btn" style="padding:8px 14px">Export CSV</span></div></div>
+          <table class="grid"><tr><th>STUDENT</th><th>CH. 3</th><th>QUIZ 2</th><th>CH. 4</th><th>LAB 5</th><th>CH. 5</th><th>LAB 6</th><th>TERM</th></tr>
+            <tr><td>Student 1</td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g n"></i></td><td><i class="g d"></i></td><td><i class="g w"></i></td><td>5 of 6</td></tr>
+            <tr><td>Student 2</td><td><i class="g d"></i></td><td><i class="g n"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td>5 of 6</td></tr>
+            <tr><td>Student 3</td><td><i class="g j"></i></td><td><i class="g j"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g n"></i></td><td><i class="g w"></i></td><td>3 of 4</td></tr>
+            <tr><td>Student 4</td><td><i class="g d"></i></td><td><i class="g x"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td><i class="g d"></i></td><td>5 of 5</td></tr>
+          </table>
+          <div class="legend"><span><i class="g d"></i>Did</span><span><i class="g n"></i>Didn't</span><span><i class="g x"></i>Excused</span><span><i class="g w"></i>Not yet</span><span><i class="g j"></i>Joined later</span></div>
+        </div>
+      </div>
+      <div class="cap">Term grid · laptop</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Teacher: extensions and excuses</h2>
+  <p>Tap a student on the roster. A later due date for this question or the whole term (for students with accommodation plans), or mark them Excused. The student just sees their own due date; classmates see nothing.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app" style="padding-top:130px">
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="ttl" style="font-size:20px">Student 12</div>
+            <span class="s" style="color:var(--soft);font:600 12px Inter">Lab 6 write-up · due Friday</span>
+            <div class="opt-row on">Extend for this question <span style="color:var(--on)">Mon ›</span></div>
+            <div class="opt-row">Extend for the whole term <span style="color:var(--soft)">+3 days ›</span></div>
+            <div class="opt-row">Mark Excused</div>
+            <div class="seen" style="margin-top:4px"><b>They see</b>"Due Monday" on their own card. Inside the extension, Did counts as Did, not Late.</div>
+            <span class="btn">Save</span>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Extend or excuse one student</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ PERIOD 3</span><span>⋯</span></div>
+          <div class="ttl" style="font-size:19px;line-height:1.2">Did you finish the lab 6 write-up?</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><span class="p d">40 Did</span><span class="p x">1 Excused</span><span class="p w">5 Not yet</span></div>
+          <div class="row"><div style="flex:1"><b>Student 3</b></div><span class="p d">✓ Did</span></div>
+          <div class="row"><div style="flex:1"><b>Student 12</b><span>Extended to Mon</span></div><span class="p w">· Not yet</span></div>
+          <div class="row"><div style="flex:1"><b>Student 19</b></div><span class="p x">E Excused</span></div>
+          <div class="row"><div style="flex:1"><b>Student 25</b></div><span class="p l">L Late</span></div>
+          <span class="btn ghost">Remind the 4 who haven't</span>
+          <div class="hint">Students on an extension are left out of the remind until their own due date.</div>
+        </div>
+      </div>
+      <div class="cap">Roster with extension and Excused</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Anonymous check-ins</h2>
+  <p>For questions where honesty matters more than names. Students are told up front; the teacher only ever gets totals.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>DID I · TONIGHT</span><span>● 42</span></div>
+          <div class="card" style="margin-top:110px"><span class="k">PERIOD 3 · BIOLOGY</span><div class="q">Did today's lesson make sense?</div><span class="anon">◐ Anonymous: your teacher sees only totals</span><div class="dots"><i></i><i></i><i></i><i class="o"></i><i class="o"></i></div></div>
+          <div class="hint">swipe right for Did · left for Not yet</div>
+        </div>
+      </div>
+      <div class="cap">Student · anonymous question</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ PERIOD 3</span><span>⋯</span></div>
+          <div class="ttl" style="font-size:19px;line-height:1.2">Did today's lesson make sense?</div>
+          <span class="anon">◐ Anonymous check-in</span>
+          <div class="big">31<span> of 44 said Did</span></div>
+          <div class="bar" style="height:12px"><i style="width:70%"></i></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap"><span class="p d">31 Did</span><span class="p w">13 Not yet</span></div>
+          <div class="seen"><b>Names hidden</b>Answers are counted, never linked to a student. Remind still reaches everyone who hasn't answered, without showing who.</div>
+          <span class="btn ghost">Ask a follow-up</span>
+        </div>
+      </div>
+      <div class="cap">Teacher · totals only</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Student: their own record</h2>
+  <p>Students see the same statuses the teacher sees, and can check their own row exactly as it appears on the roster.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>‹ CLASSES</span><span></span></div>
+          <div class="ttl" style="font-size:21px">Period 3 · Biology</div>
+          <span class="s" style="color:var(--soft);font:600 12px Inter">This term · 8 class questions</span>
+          <div class="row"><div style="flex:1"><b>Lab 6 write-up</b><span>Due Monday (extended)</span></div><span class="p w">· Not yet</span></div>
+          <div class="row"><div style="flex:1"><b>Chapter 5 reading</b></div><span class="p d">✓ Did</span></div>
+          <div class="row"><div style="flex:1"><b>Lab 5 write-up</b></div><span class="p l">L Late</span></div>
+          <div class="row"><div style="flex:1"><b>Quiz 2 study</b></div><span class="p x">E Excused</span></div>
+          <div class="row"><div style="flex:1"><b>Chapter 4 reading</b></div><span class="p d">✓ Did</span></div>
+          <span class="btn ghost">What my teacher sees</span>
+        </div>
+      </div>
+      <div class="cap">Class history</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>WHAT MY TEACHER SEES</span><span>✕</span></div>
+          <div class="ttl" style="font-size:20px">Your row in Period 3</div>
+          <div class="row"><span class="ic">S</span><div style="flex:1"><b>First name L.</b><span>No picture (yours is hidden)</span></div></div>
+          <div class="mini"><i class="g d"></i><i class="g d"></i><i class="g x"></i><i class="g n"></i><i class="g d"></i><i class="g w"></i></div>
+          <div class="seen"><b>That's all</b>Statuses on class questions. Not when you answered, not your own questions, tags or streak, not other classes. Anonymous answers are never linked to you.</div>
+          <span class="btn ghost">Change my name in this class</span>
+        </div>
+      </div>
+      <div class="cap">What my teacher sees</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Teacher: getting started</h2>
+  <p>From sign-up to students joining in a few minutes: a three-step first class, starter questions, a preview as a student, and a poster for the wall.</p>
+  <div class="screens">
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>FIRST CLASS · 3 OF 3</span><span>✕</span></div>
+          <div class="ttl" style="font-size:21px">Pick a first question</div>
+          <div class="pickq on">Did you do the reading?</div>
+          <div class="pickq">Did you bring your lab notebook?</div>
+          <div class="pickq">Did you study for Friday's quiz?</div>
+          <div class="pickq">Did you finish the problem set?</div>
+          <div class="pickq">Did you watch the lecture?</div>
+          <div class="hint">+ 5 more · or write your own</div>
+          <span class="btn">Next: invite students</span>
+        </div>
+      </div>
+      <div class="cap">Starter questions</div>
+    </div>
+    <div>
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+        <div class="app">
+          <div class="hd"><span>TRY IT AS A STUDENT</span><span>✕</span></div>
+          <div class="seen"><b>This is what students get</b>at 7 PM tonight, on their phone.</div>
+          <div class="note-push"><b>Period 3 · Biology</b><span>Did I do the reading?</span><div><em>Did</em><em>Not yet</em></div></div>
+          <div class="card" style="margin-top:6px"><span class="k">PERIOD 3 · BIOLOGY</span><div class="q">Did I do the reading?</div><div class="dots"><i></i><i></i><i class="o"></i></div></div>
+          <span class="btn">Looks good</span>
+        </div>
+      </div>
+      <div class="cap">Preview as a student</div>
+    </div>
+    <div>
+      <div class="poster">
+        <span class="kick" style="background:var(--bg)">JOIN OUR CLASS ON DID I</span>
+        <div class="pt">Period 3 · Biology</div>
+        <div class="qr" style="width:150px;height:150px"></div>
+        <div class="code" style="font-size:30px">BIO-4KX7</div>
+        <div class="pp">did-i.app/c/BIO-4KX7</div>
+        <div class="pf">Your teacher sees only whether you answered class questions. Nothing else. Classmates see nothing.</div>
+      </div>
+      <div class="cap">Printable poster · projector slide</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Did I staff: reports and review</h2>
+  <p>A private page for you, never in the app. Reported classes freeze automatically at 3 reports from different students or 10% of members. Every action is logged.</p>
+  <div class="screens">
+    <div>
+      <div class="desk" style="width:min(100%,900px)">
+        <div class="top"><i></i><i></i><i></i><span class="url">did-i.app/admin/classes</span></div>
+        <div class="main">
+          <h4>Reported classes</h4>
+          <div class="tw"><table><tr><th>CLASS</th><th>MEMBERS</th><th>REPORTS</th><th>REASON</th><th>STATUS</th><th></th></tr>
+            <tr><td>"Free gems giveaway"</td><td>112</td><td>14</td><td>Not a real class</td><td><span class="p n">Frozen</span></td><td><span class="btn ghost" style="padding:6px 12px">Review</span></td></tr>
+            <tr><td>Chemistry 101</td><td>86</td><td>1</td><td>Too many questions</td><td><span class="p w">Open</span></td><td><span class="btn ghost" style="padding:6px 12px">Review</span></td></tr>
+          </table></div>
+          <div class="seen"><b>On review</b>See the class name, the teacher account, every question it asked, report reasons and counts. Never student answers. Actions: unfreeze, remove class, ban the teacher account. Each is logged with who and when.</div>
+        </div>
+      </div>
+      <div class="cap">Admin · laptop</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Rules that come with it</h2>
+  <div class="rules">
+    <div><b>13 AND UP</b>High school and college only. Middle school and younger brings extra child-privacy rules.</div>
+    <div><b>ONE WAY</b>Teachers ask. Students answer. No posting, no messages, no seeing classmates.</div>
+    <div><b>TEACHER SEES LITTLE</b>Only answers to class questions. Never a student's own questions, tags or streak. This needs your yes before building.</div>
+    <div><b>STUDENT IN CONTROL</b>Mute a night, leave a class, report a class. Leaving removes its questions.</div>
+    <div><b>CAPS</b>Up to 300 students a class (big college lectures), a few questions a day per class, enforced in the database.</div>
+    <div><b>PRICE</b>Students always free. Teachers: free for one class, Teacher Pro for more (see the pricing note).</div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Pricing</h2>
+  <p>Teachers usually pay for classroom tools out of their own pocket, so the price has to feel like a coffee a month, not a subscription decision.</p>
+  <div class="opts">
+    <div class="opt"><span class="tag">STUDENTS</span><h3>Free, always</h3><p>Joining, answering, reminders, the widget. A paywall on students kills the whole thing.</p></div>
+    <div class="opt"><span class="tag">TEACHER · FREE</span><h3>One class, up to 50 students</h3><p>Ask from phone or web, see who did it, the remind button. Enough to try it for real with one class.</p></div>
+    <div class="opt pick"><span class="tag">TEACHER PRO</span><h3>$4.99 a month, or $39 a school year</h3><p>Unlimited classes, up to 300 students each (lecture halls), scheduling a week of questions ahead, the full roster grid on the web.</p></div>
+    <div class="opt"><span class="tag">LATER · SCHOOLS</span><h3>About $30 per teacher a year</h3><p>A school buys Pro for its teachers on one invoice. Only once teachers are already asking for it.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>The name</h2>
+  <p><b>Did I Class.</b> It keeps the Did I name, says what it is, and avoids "Did you", which already means a friend's question and the did-i.app/d/ links. Teachers ask "Did you…?"; students see "Did I…?" on their own night.</p>
+</section>
+
+<!--SPEC-->
+<section class="sec spec" id="spec">
+<span class="kick">The full spec</span>
+<h2 id="spec-did-i-class-full-spec">Did I Class: full spec</h2>
+<p>Status: spec, not built (2026-10-07). Screens: <code>docs/ideas/did-i-class.html</code> (this spec is embedded at the bottom of that page; refresh it with <code>node docs/ideas/embed-spec.mjs</code>). Short history: <code>docs/classes-plan.md</code>.</p>
+<p>One line: <b>a teacher asks once, every student gets it on their phone as one question, the teacher sees who did it, and nobody sees anyone else.</b></p>
+<p>Contents: 1 Who · 2 Student · 3 Teacher · 4 Onboarding · 5 Privacy, age, safety · 6 Notifications · 7 Accessibility, language, states · 8 Plans, price, billing · 9 Support, help, marketing · 10 Admin and moderation · 11 How it is built · 12 Edge cases · 13 What it does not do · 14 Phases · 15 Pilot plan · 16 Measuring · 17 Risks · 18 Build checklist · 19 Decided</p>
+<hr>
+<h3 id="spec-1-who-it-is-for">1. Who it is for</h3>
+<div class="tw"><table><tr><th>Role</th><th>Who</th><th>Where they work</th></tr><tr><td><b>Student</b></td><td>13 and up: high school and college</td><td>Did I on their phone (tonight, widget, push)</td></tr><tr><td><b>Teacher</b></td><td>Owns the class, asks questions, sees the roster</td><td>Web (did-i.app/class) and a Teaching section in Did I</td></tr><tr><td><b>Co-teacher / TA</b></td><td>Invited by the teacher; can ask, remind, see the roster, give extensions; cannot delete the class, change billing or remove the owner</td><td>Same as teacher</td></tr><tr><td><b>School admin</b> (phase 3)</td><td>Buys Pro for teachers, sees which teachers have it, no student data</td><td>Web only</td></tr><tr><td><b>Did I staff</b> (you)</td><td>Reviews reports, freezes or removes classes</td><td>Private admin page</td></tr></table></div>
+<p>Anyone can hold more than one role: a college TA is a student in one class and a co-teacher in another. Each class shows in the right place.</p>
+<p><b>Not for:</b> under 13, parents watching their kids (that is Family), employers watching staff. Parents get no access to a student's classes. The sign-up, the join screen and the store listing say who it is for.</p>
+<hr>
+<h3 id="spec-2-the-student">2. The student</h3>
+<h4 id="spec-joining">Joining</h4>
+<ul><li><b>Three ways in:</b> a link (did-i.app/c/CODE), a QR code on the board or projector, or typing the code.</li><li><b>Codes:</b> 8 characters from letters and numbers that cannot be confused (no O/0, I/1), shown as <code>BIO-4KX7</code>. Wrong codes are limited per account per day (the family-code pattern) so codes cannot be guessed.</li><li><b>Before joining they see:</b> class name, the teacher's display name, number of students, and the plain promise: <em>"Your teacher sees only whether you answered class questions (Did, Didn't, Excused, Not yet). Not when, not your own questions, not your streak. Classmates see nothing about you."</em></li><li><b>Age check:</b> a one-time "I'm 13 or older" if the account has not confirmed it. Under 13 cannot join, and the app says so kindly.</li><li><b>Name in class:</b> they choose how they show up in each class (prefilled with their display name, for example first name and last initial). No email, phone or friend ID is ever shared.</li><li><b>No account yet:</b> the link opens the store, then the app picks the code up on first launch (the invite-link pickup already does this). Joining works signed in only, so answers follow them to a new phone.</li><li><b>Teacher approval (optional):</b> with "Approve who joins" on, joins wait; the student sees "Waiting for your teacher to let you in".</li><li><b>Reminders nudge:</b> if notifications are off, the join screen asks once to turn them on, and explains it is the only way to get class questions on time.</li></ul>
+<h4 id="spec-on-their-phone">On their phone</h4>
+<ul><li>Class questions are <b>normal Did I questions</b> under the class's own tag (class color, class name as the tag). Same swipe, widget, reminders, and "Not yet can still become Did".</li><li>They arrive at <b>the time the teacher picked</b>, with Did / Not yet buttons on the notification.</li><li><b>Due dates:</b> "by Friday" questions stay on tonight each night until answered or until the due date passes, then close as Didn't. There is no Late: a student either did it or didn't (decided 2026-10-08).</li><li><b>Repeating questions</b> use the existing weekday and every-N schedules.</li><li><b>A link</b> (optional) sits under the question. The domain shows before they tap ("opens docs.google.com"). Links open in the browser, never inside the app.</li><li><b>Anonymous check-ins</b> (v1): some questions say "Anonymous: your teacher sees only totals", for things like "Did today's lesson make sense?". The answer is never stored against their name on the teacher's side. The system still knows who has answered (so remind skips them) but never what they answered.</li><li><b>Streaks:</b> class questions count toward their own streak only if they turn on "Count toward my streak" for that class. Off by default.</li></ul>
+<h4 id="spec-their-own-record">Their own record</h4>
+<ul><li><b>Class history</b> (v1): per class, what they did, missed or were excused from this term, the same statuses the teacher sees.</li><li><b>"What my teacher sees"</b>: one tap shows their own row exactly as the teacher's roster shows it. No surprises.</li><li><b>Export:</b> their class answers are included in the existing "Save a copy".</li></ul>
+<h4 id="spec-control-the-student-is-always-in-charge-of-their-phone">Control (the student is always in charge of their phone)</h4>
+<ul><li><b>Mute a class</b> tonight or for a week (still answerable inside the tag; no pushes, not on the widget).</li><li><b>Quiet hours</b> always win; a class question asked inside them waits until they end.</li><li><b>Leave a class</b> any time. Its questions leave their tonight. The teacher sees "left", nothing more.</li><li><b>Report a class or a teacher</b> (spam, harassment, not a real class): it leaves the class and flags it for review.</li><li><b>Show my picture to the teacher:</b> off by default, per class.</li></ul>
+<hr>
+<h3 id="spec-3-the-teacher">3. The teacher</h3>
+<h4 id="spec-making-a-class">Making a class</h4>
+<ul><li>Name, optional section ("Period 3", "Lecture A"), subject color, term dates, time zone (ask times follow the class zone).</li><li><b>No-class days:</b> mark holidays and breaks by hand or start from a simple preset (US federal holidays); repeating questions skip them.</li><li><b>Duplicate a class</b> for a new term or section (questions and schedule copy; students do not).</li><li><b>Join material:</b> a link, a code, a QR, a full-screen <b>projector slide</b> and a <b>printable poster</b> (PDF, one page: class name, QR, code, the privacy promise in one line).</li></ul>
+<h4 id="spec-asking-phone-and-web">Asking (phone and web)</h4>
+<ul><li>Type the rest of "Did you…" (up to 120 characters).</li><li><b>Classes:</b> one or several at once.</li><li><b>When:</b> now, tonight 7 PM, tomorrow 7:30 AM, or pick a time.</li><li><b>Due:</b> just that night, or by a date.</li><li><b>Repeat:</b> none, weekdays, specific days, every N days, until a date or the end of term.</li><li><b>Anonymous</b> (v1): totals only.</li><li><b>Link:</b> optional, https only.</li><li><b>Preview line:</b> "<em>74 students get "Did I do the chapter 5 reading?" Tue and Thu at 7 PM, until the term ends.</em>"</li><li><b>Edit or take back:</b> before it is asked, anything; after, fix a typo or take it back (it leaves students' tonight; it never counts).</li><li><b>Question bank</b> (Pro): past questions, one tap to ask again, plus the starter questions.</li><li><b>Plan the week</b> (Pro): schedule a week of questions on the laptop.</li></ul>
+<h4 id="spec-seeing-who-did-it">Seeing who did it</h4>
+<ul><li><b>Statuses:</b> Did, Didn't, Excused, Not yet. Each has a word and an icon as well as a color.</li><li><b>Small classes (up to about 40):</b> a list of names with statuses.</li><li><b>Big classes:</b> totals first ("241 of 300 did it", a bar, the counts), the remind button, then names one tap away with search and filters.</li><li><b>Term grid</b> (web, Pro): each student across the term; "joined later" is its own mark, never Didn't.</li><li><b>Never shown:</b> when they answered, their own questions, tags, streak, other classes, whether they opened the app, anonymous answers by person.</li><li><b>Export</b> (web, Pro): CSV of the grid (class name of each student and statuses).</li></ul>
+<h4 id="spec-accommodations-and-excuses">Accommodations and excuses</h4>
+<ul><li><b>Extend for one student:</b> a later due date for a single student on a question or for the whole term (students with formal accommodation plans such as IEP or 504 plans need this). Their question stays open until their own due date. Only the teacher and co-teachers see that an extension exists; the student just sees their own due date.</li><li><b>Excuse:</b> mark a student Excused for a question (absent, special case). Excused never counts as Didn't.</li></ul>
+<h4 id="spec-reminding">Reminding</h4>
+<ul><li><b>Remind the ones who haven't:</b> one push to students still on Not yet. Once per question per night, never inside quiet hours, never to students who muted the class. The button says how many it reaches and greys out after.</li><li>Always "everyone who hasn't", never one student by name.</li></ul>
+<h4 id="spec-managing">Managing</h4>
+<ul><li><b>Approve joins</b>, <b>remove a student</b> (they get a quiet notice), <b>co-teachers</b> by friend ID or link, <b>new code</b> (old one stops working).</li><li><b>End of term:</b> archive. It leaves every student's tonight; the teacher keeps a read-only roster for 1 year, then it is deleted.</li><li><b>Delete class:</b> removes it and all its answers for everyone, after a confirm that says exactly that.</li><li><b>Teacher's own Did I</b> stays separate: their personal questions never mix with Teaching.</li></ul>
+<h4 id="spec-teaching-section-in-the-app">Teaching section in the app</h4>
+<ul><li>Shown in the menu only to people who teach a class.</li><li>Home: classes with tonight's progress; "Ask a class something".</li><li>Ask, Who did it, Remind, Extend/Excuse, Class settings (projector, approve joins, co-teachers, term, archive).</li><li>Heavier work (bank, week plan, grid, export, billing, poster) is on the web.</li></ul>
+<hr>
+<h3 id="spec-4-onboarding">4. Onboarding</h3>
+<h4 id="spec-teachers">Teachers</h4>
+<ol><li><b>Sign up</b> on the web or in the app (same account; email code, Apple or Google). One question: "Are you teaching a class?" opens Teaching.</li><li><b>Make your first class</b> in a three-step walkthrough: name, term, time zone.</li><li><b>Starter questions</b> to pick from: "Did you do the reading?", "Did you bring your lab notebook?", "Did you study for Friday's quiz?", "Did you turn in the permission slip?", "Did you finish the problem set?", "Did you watch the lecture?", "Did you check the class page?", "Did you sign up for a presentation slot?", "Did you charge your laptop for tomorrow?", "Did you read the feedback on your draft?".</li><li><b>Try it as a student:</b> a preview phone shows exactly what students get, including the join screen promise.</li><li><b>Get students in:</b> projector slide, poster, link to paste in the class page.</li><li><b>First result:</b> after the first question's night, an email and in-app card: "31 of 34 did it. Here is your roster."</li><li>Empty roster shows the join code and poster, not a blank table.</li></ol>
+<h4 id="spec-students">Students</h4>
+<ul><li>Joining is the onboarding: the class card appears on tonight right away with a one-time hint "Swipe right when you did it". People new to Did I also get the normal first-run (the first-swipe opening).</li></ul>
+<hr>
+<h3 id="spec-5-privacy-age-and-safety">5. Privacy, age and safety</h3>
+<p><b>The rule:</b> a teacher sees one thing about a student: the status of each class question. Everything follows from that.</p>
+<h4 id="spec-age-and-audience">Age and audience</h4>
+<ul><li><b>13+ only</b>; under 13 cannot join. Keeps clear of COPPA and the App Store Kids category. The App Store age rating questionnaire is answered again for the update.</li><li><b>One way:</b> students cannot post, reply, message or see classmates.</li><li><b>No parents in a student class:</b> a student class gives no one outside it any view of a student. Parents take part only through a parent class (below).</li></ul>
+<h4 id="spec-parent-classes-elementary-and-middle-school-added-2026-10-08">Parent classes (elementary and middle school, added 2026-10-08)</h4>
+<p>For grades where students are under 13, the teacher picks <b>"Parents and guardians answer"</b> when making the class. Built so that <b>no child is ever involved</b>:</p>
+<ul><li><b>Only adults join.</b> Joining asks "I'm a parent or guardian, 18 or older". No child account, no child sign-in, no child age, birthday or photo.</li><li><b>No child is named.</b> The parent joins under their own name ("your name, not your child's"). The teacher matches families to kids outside the app, the way they already know which parent is whose.</li><li><b>Questions are about the household:</b> the teacher writes "Did your family read together for 15 minutes?"; the parent sees "Did we read together for 15 minutes?" on Tonight, the widget and reminders.</li><li><b>The teacher sees one status per family:</b> Did, Didn't, Excused, Not yet. Never when. Remind, Excuse and "+ nights" work the same, aimed at parents.</li><li><b>Both parents can join;</b> the household is one row (shared through the existing Family link), and the first answer counts for both.</li><li><b>Middle school:</b> the teacher chooses per class, students (13+) or parents.</li><li><b>Why this keeps us clear:</b> nothing is collected from or about a named child, so COPPA's child rules do not apply; the lawyer review still covers FERPA and state student-privacy laws, since it is still a school use.</li><li><b>Fairness:</b> a family that never joined shows as "not joined", not Didn't. Excused stays one tap.</li></ul>
+<h4 id="spec-what-is-shared">What is shared</h4>
+<ul><li>Class display name (student's choice) and statuses. Picture only on the student's opt-in. Nothing else, ever.</li><li>Anonymous check-ins are stored without a link to the student on the teacher's side (counts only).</li></ul>
+<h4 id="spec-law-and-policy-lawyer-review-before-the-pilot">Law and policy (lawyer review before the pilot)</h4>
+<ul><li><b>US student records (FERPA):</b> a teacher signing up alone controls their class records; a school-bought plan needs a data agreement (phase 3).</li><li><b>US state student-privacy laws</b> (California and others) cover apps used in K-12. Have a lawyer check the pilot setup before any high school uses it.</li><li><b>GDPR / data rights:</b> students can delete their account (class answers go too); teachers can export and delete a class.</li><li><b>Terms of use:</b> a teacher section with acceptable use (real classes only, no harassment, no collecting data off-platform, no ads).</li><li><b>Privacy policy, App Store privacy labels and Play data safety</b> updated before launch.</li><li><b>Retention:</b> archived classes kept 1 year, then deleted. Students who leave are dropped from the teacher's view at archive.</li></ul>
+<h4 id="spec-safety-and-abuse">Safety and abuse</h4>
+<ul><li><b>Caps:</b> classes made per account per week, questions per class per day, 300 members, one remind per question per night, text lengths, wrong-code attempts per day.</li><li><b>Per-student push cap:</b> across all classes, at most 3 class pushes a day per student; more fold into one "3 class questions tonight" push.</li><li><b>Text and links:</b> questions up to 120 characters, a basic word filter, links https only with the domain shown, links to known bad sites blocked (Google Safe Browsing check when the question is saved).</li><li><b>Impersonation:</b> the join screen always shows the teacher's account name; students can report "not my teacher".</li><li><b>Reports:</b> a reported class over a threshold is frozen (no new questions) until reviewed; see section 10.</li><li><b>No teacher verification at launch;</b> caps, reports and one-way design are the protection. A verified-school badge comes with the school plan.</li></ul>
+<hr>
+<h3 id="spec-6-notifications">6. Notifications</h3>
+<div class="tw"><table><tr><th>To</th><th>When</th><th>Text</th></tr><tr><td>Student</td><td>Question's ask time</td><td>"Period 3 · Biology: Did I finish the chapter 4 reading?" with Did / Not yet</td></tr><tr><td>Student</td><td>Teacher's remind</td><td>Same question, once</td></tr><tr><td>Student</td><td>Due tomorrow, still Not yet</td><td>"Due tomorrow: …" (once)</td></tr><tr><td>Student</td><td>Several class questions at once</td><td>"3 class questions tonight" (the cap)</td></tr><tr><td>Student</td><td>Removed / archived / join approved</td><td>Quiet, no sound</td></tr><tr><td>Teacher</td><td>Joins waiting (approval on)</td><td>"3 students want to join Period 3" (batched)</td></tr><tr><td>Teacher</td><td>Morning after a question</td><td>"Chapter 4 reading: 241 of 300 did it" (opt-in)</td></tr><tr><td>Teacher</td><td>Class frozen after reports</td><td>"Period 3 is paused while we take a look"</td></tr><tr><td>Teacher (email)</td><td>Welcome, first result, July renewal, payment failed</td><td>Plain emails, unsubscribe from all but billing</td></tr></table></div>
+<p>Respects: quiet hours, mute, "Hide what it says" (shows "Period 3 · Biology asked something"), the per-student cap, and system settings.</p>
+<hr>
+<h3 id="spec-7-accessibility-language-and-states">7. Accessibility, language and states</h3>
+<h4 id="spec-accessibility">Accessibility</h4>
+<ul><li>Screen-reader labels on every control; the roster reads "Student 12, Not yet".</li><li>Statuses use a word and an icon, not color alone (color-blind safe).</li><li>Large text sizes reflow; nothing is cut off at the biggest size.</li><li>The swipe has the existing tap alternatives; reduced motion respected.</li></ul>
+<h4 id="spec-language">Language</h4>
+<ul><li>Every app and dashboard string in all 9 locales. Teachers' question text is shown as written (not translated).</li></ul>
+<h4 id="spec-states-each-designed-not-left-blank">States (each designed, not left blank)</h4>
+<ul><li>Class with no students yet: code, QR, poster, "share this".</li><li>Student with no classes: "Join a class" with code entry.</li><li>Wrong code, code from a deleted class, full class (300), archived class, waiting for approval, removed from a class, class frozen.</li><li>Offline: answers save on the phone and sync later (existing behaviour); the roster shows "last updated" when the teacher is offline.</li><li>Dark and light themes, every look.</li></ul>
+<hr>
+<h3 id="spec-8-plans-price-and-billing">8. Plans, price and billing</h3>
+<div class="tw"><table><tr><th></th><th>Students</th><th>Teacher Free</th><th>Teacher Pro</th><th>Schools (phase 3)</th></tr><tr><td>Price</td><td>Free</td><td>$0</td><td>$4.99/mo or $39/school year</td><td>~$30/teacher/year</td></tr><tr><td>Classes</td><td>join any</td><td>1</td><td>unlimited</td><td>unlimited</td></tr><tr><td>Size</td><td></td><td>up to 50</td><td>up to 300</td><td>up to 300</td></tr><tr><td>Ask (phone, web), roster, remind</td><td></td><td>yes</td><td>yes</td><td>yes</td></tr><tr><td>Repeat, due dates, links, extensions, excuse</td><td></td><td>yes</td><td>yes</td><td>yes</td></tr><tr><td>Anonymous check-ins</td><td></td><td>yes</td><td>yes</td><td>yes</td></tr><tr><td>Question bank, plan the week</td><td></td><td></td><td>yes</td><td>yes</td></tr><tr><td>Term grid, CSV export, co-teachers</td><td></td><td></td><td>yes</td><td>yes</td></tr><tr><td>One invoice, admin page, data agreement, verified badge</td><td></td><td></td><td></td><td>yes</td></tr></table></div>
+<ul><li><b>Pilot:</b> free for everyone. <b>Pro starts with v1.</b></li><li><b>Billing on the web</b> (Stripe, about 3%); Stripe Tax for sales tax; receipts by email. If Pro is sold in the iPhone app it goes through Apple (15% on the Small Business Program).</li><li><b>School year</b> runs August to July; renewal email in July.</li><li><b>Trial:</b> 30 days of Pro in a teacher's first term.</li><li><b>Failed payment:</b> 7 days of grace with emails, then back to Free.</li><li><b>Downgrade or cancel:</b> extra classes go read-only; nothing is deleted.</li><li><b>Refunds:</b> within 14 days, no questions.</li><li><b>Schools later:</b> pay by invoice or purchase order.</li><li><b>Teacher referral:</b> a teacher who brings another teacher gets a free month of Pro.</li></ul>
+<hr>
+<h3 id="spec-9-support-help-and-marketing">9. Support, help and marketing</h3>
+<ul><li><b>Help page for teachers</b> (did-i.app/class/help): getting started, what students see, privacy, extensions, billing, FAQ.</li><li><b>Contact:</b> a support email linked from the dashboard and the app; aim to answer within 2 school days.</li><li><b>Landing page</b> (did-i.app/class): what it is in one line, the privacy promise, the student view, free vs Pro, a demo class to click through, the poster.</li><li><b>Demo class:</b> a read-only sample class with a filled roster, so a teacher can see the product before making anything.</li><li><b>Store listings:</b> a screenshot and a line about classes once it ships.</li></ul>
+<hr>
+<h3 id="spec-10-admin-and-moderation-did-i-staff">10. Admin and moderation (Did I staff)</h3>
+<ul><li><b>Private admin page</b> (signed-in staff only, never in the app): reported classes with the reason, their questions, member count, report count; actions: unfreeze, remove class, ban teacher account.</li><li>Admin never sees student answers or names beyond what the report needs.</li><li>Every admin action is logged (who, when, what).</li><li><b>Thresholds:</b> a class is frozen automatically at 3 reports from different students or 10% of members, whichever comes first.</li></ul>
+<hr>
+<h3 id="spec-11-how-it-is-built-reusing-what-exists">11. How it is built (reusing what exists)</h3>
+<ul><li><b>Closest existing feature: Did we</b> (<code>supabase/did-we.sql</code>): shared cards, members, answers, nudges, join links. Classes are new tables built the same way, not a change to Did we.</li><li><b>Tables:</b> <code>classes</code>, <code>class_members</code> (role, class display name, muted until, left at, show picture, count toward streak), <code>class_questions</code> (text, ask time, schedule, due, link, anonymous, taken back), <code>class_answers</code> (status per question per night per student; answered-at kept for night math only, never returned to teachers), <code>class_extensions</code>, <code>class_excused</code>, <code>class_anon_counts</code>, <code>class_reminds</code> (the once-a-night cap), <code>class_reports</code>, <code>class_invites</code>, <code>class_code_misses</code>, <code>class_admin_log</code>.</li><li><b>RLS on every table</b>, <code>(select auth.uid())</code>, security definer helpers with pinned search_path ("am I teaching this class", the roster read). The roster function returns display name and status only.</li><li><b>Caps in the database</b> (triggers): members, classes per week, questions per day, reminds, text sizes, code misses, per-student daily pushes.</li><li><b>On the phone:</b> class questions are pulled like Did we cards and shown as lamps in the class tag; tonight, widget, reminders and notification buttons already handle them.</li><li><b>Push:</b> the existing push queue, sent in batches so a 300-student ask goes out within a minute without hitting provider limits.</li><li><b>Web dashboard:</b> a new area of the website, same account and sign-in.</li><li><b>Billing:</b> Stripe Checkout and the customer portal; a webhook updates the teacher's plan in the database.</li><li><b>Milestones</b> (<code>docs/milestones.md</code>): <code>class_made</code>, <code>class_joined</code>, <code>class_asked</code>, <code>class_reminded</code>.</li><li><b>Monitoring:</b> push delivery failures, roster query time, report rate, error reports, all on a simple admin view.</li><li><b>Locales:</b> all 9.</li><li><b>Tests:</b> RLS isolation (students never read rosters; a teacher never reads another class), caps, one remind a night, under-13 refused, answer times never returned to teachers, anonymous answers never linked, extension maths.</li></ul>
+<hr>
+<h3 id="spec-12-edge-cases-decided">12. Edge cases (decided)</h3>
+<ul><li>Student in two classes from the same teacher: two tags.</li><li>Same question to two sections: one ask, several classes.</li><li>Ask time changed after asking: students who already got it keep it.</li><li>Student changes phones: answers are on the account.</li><li>Notifications off: questions still show in the app and widget.</li><li>Joins mid-term: earlier questions show "joined later".</li><li>Time zones: ask times follow the class zone; never inside quiet hours.</li><li>Daylight saving and midnight: the same night math as the rest of Did I.</li><li>Teacher leaves or deletes their account: a co-teacher becomes owner; with none, the class archives.</li><li>Code leaked: new code, approval on, remove members.</li><li>Archived while a question is open: it closes with nothing recorded.</li><li>Taken-back question: never counts.</li><li>Student with two accounts joins twice: the teacher can remove one.</li><li>Student leaves and rejoins: their earlier statuses come back.</li><li>Teacher downgrades with 3 classes: 2 go read-only; students keep answering questions already scheduled until they end.</li><li>Anonymous question turned non-anonymous: not allowed after it is asked.</li><li>Class at 300: the join screen says the class is full and to ask the teacher.</li></ul>
+<hr>
+<h3 id="spec-13-what-it-deliberately-does-not-do">13. What it deliberately does not do</h3>
+<ul><li>No grades or gradebook, no assignments or file uploads.</li><li>No chat, comments or student posts.</li><li>No tracking when or how often a student opens the app.</li><li>No parent access.</li><li>No LMS sync at launch (Google Classroom / Canvas roster import is phase 3, if asked).</li><li>No ads, ever, and nothing sold about students.</li></ul>
+<hr>
+<h3 id="spec-14-phases">14. Phases</h3>
+<ol><li><b>Pilot (about 6 weeks of work):</b> make a class, join (link, code, QR, poster, projector), ask once or due by, tonight/widget/push, roster with statuses, remind, extend and excuse, mute, leave, report, archive, caps and RLS, 13+ check, onboarding with starter questions and student preview, per-student push cap, text and link limits, empty and error states, accessibility, admin review page, updated terms and privacy policy, lawyer check. Web dashboard and Teaching section. Free.</li><li><b>v1:</b> repeat schedules, links, co-teachers, anonymous check-ins, student class history, question bank, plan the week, term grid, CSV export, big lecture view, Pro billing, trial, help page, landing page, demo class, teacher referral.</li><li><b>Schools:</b> school plan, invoices, admin page, data agreement, verified badge, LMS roster import if asked.</li></ol>
+<p><b>Cheapest test before any of this:</b> a Did we card marked as a class card (join by link, the maker sees the roster, members cannot see each other).</p>
+<hr>
+<h3 id="spec-15-pilot-plan">15. Pilot plan</h3>
+<ul><li><b>Who:</b> 3 to 5 teachers: at least one high school class, one college lecture over 100, one small seminar.</li><li><b>How long:</b> 4 weeks of real use.</li><li><b>Check-ins:</b> a 15-minute call each week and a short form for students (5 questions, optional, anonymous).</li><li><b>Go to v1 if:</b> most teachers are still asking in week 4, students answer at least 70% of class questions, mute and leave rates stay under 10%, and no serious safety report.</li><li><b>Stop or rethink if:</b> teachers stop asking by week 2, or students mute most classes.</li></ul>
+<hr>
+<h3 id="spec-16-how-we-know-it-works">16. How we know it works</h3>
+<ul><li>Teachers: class made → first question within a day → still asking in week 3.</li><li>Students: joined → answered the first class question → still answering in week 3; mute and leave rates low.</li><li>Per question: share answered by the due date (a good class is above 80%).</li><li>Reports per 1,000 students near zero.</li><li>Teachers convert to Pro when they make a second class.</li></ul>
+<hr>
+<h3 id="spec-17-risks-and-how-they-are-handled">17. Risks and how they are handled</h3>
+<div class="tw"><table><tr><th>Risk</th><th>Handling</th></tr><tr><td>School feels like surveillance in a personal app</td><td>Own tag, mute, leave, quiet hours win, teacher sees status only, "what my teacher sees"</td></tr><tr><td>Spam or harassment through a "class"</td><td>One way, caps, word filter, link checks, reports, auto-freeze, admin review</td></tr><tr><td>Legal trouble with high schools</td><td>13+, lawyer check before the pilot, data agreement before selling to schools</td></tr><tr><td>Notification overload</td><td>Per-student daily cap, folding, mute, quiet hours</td></tr><tr><td>Teachers want grades and assignments</td><td>Stated up front; CSV export for their own gradebook</td></tr><tr><td>Big lectures overload the push service</td><td>Batched sends, tested at 300 before launch</td></tr><tr><td>Teachers will not pay</td><td>Free tier is real; Pro sells on more classes and planning; pilot proves value first</td></tr></table></div>
+<hr>
+<h3 id="spec-18-build-checklist-repo-rules">18. Build checklist (repo rules)</h3>
+<ul><li>RLS and policies in the same change as each table; <code>npm run db:audit</code> returns no rows.</li><li>Caps in the database, not only in the app.</li><li>Every string in all 9 locales; theme tokens, no new hard-coded colors.</li><li>Reduced motion respected; accessibility labels.</li><li>New routes reachable from the menu, with a way back.</li><li>Tests in <code>scripts/check.mjs</code> for the rules in section 11.</li><li><code>docs/not-yet.md</code> and <code>docs/launch-checklist.md</code> updated.</li><li>Device pass on iPhone and Android before the pilot.</li></ul>
+<hr>
+<h3 id="spec-19-decided-2026-10-07">19. Decided (2026-10-07)</h3>
+<ol><li><b>Name:</b> Did I Class.</li><li><b>Placement:</b> students in Did I; teachers on the web and in a Teaching section of the app.</li><li><b>Teachers see status only:</b> never answer times.</li><li><b>Remind button:</b> yes, once per question per night, to everyone who hasn't.</li><li><b>Class size:</b> up to 300; free teachers one class up to 50.</li><li><b>Price:</b> students free; Teacher Pro $4.99/month or $39/school year; schools later.</li><li><b>Profile pictures:</b> shown only if the student turns it on.</li><li><b>Streaks:</b> class questions count only if the student turns it on.</li><li><b>Morning summary:</b> opt-in.</li><li><b>Pilot free; Pro from v1.</b></li><li><b>Retention:</b> archived classes kept 1 year.</li><li><b>Parent classes (2026-10-08):</b> for under-13 grades, parents answer; no child account, no child named.</li><li><b>No Late (2026-10-08):</b> class questions are Did or Didn't. Once the night (or the due date) passes, it's closed.</li></ol>
+</section>
+<!--/SPEC-->
+</div></body></html>
