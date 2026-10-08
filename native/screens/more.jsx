@@ -95,6 +95,7 @@ import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from 
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -1334,9 +1335,24 @@ export function FirstNightScreen({ book, onChange, now }) {
 
   return (
     <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
-      <Text style={[styles.stepCap, { color: colors.inkDim }]}>
-        {t('first.stepOf', { n: step + 1, total: totalSteps })}
-      </Text>
+      <View style={styles.firstTop}>
+        <Text style={[styles.stepCap, { color: colors.inkDim }]}>
+          {t('first.stepOf', { n: step + 1, total: totalSteps })}
+        </Text>
+        {step === 0 && cloudSetUp() && authSkipped() ? (
+          // Back to the welcome screen to sign in instead.
+          <Pressable
+            onPress={() => {
+              clearAuthSkip()
+              goHash('/')
+            }}
+            accessibilityRole="button"
+            hitSlop={10}
+          >
+            <Text style={[styles.firstSignIn, { color: colors.on }]}>{t('first.haveAccount')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {step === 0 ? (
         <>
           <Title colors={colors}>
@@ -1426,11 +1442,6 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
         ) : null}
       </View>
-      {step === 0 && cloudSetUp() ? (
-        <View style={styles.firstPacks}>
-          <KeyButton colors={colors} label={t('first.haveAccount')} onPress={() => goHash('/account')} />
-        </View>
-      ) : null}
       {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
   )
@@ -2286,6 +2297,8 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  firstTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  firstSignIn: { fontFamily: fonts.uiBold, fontSize: 14 },
   heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },
