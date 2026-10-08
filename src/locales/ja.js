@@ -160,7 +160,7 @@ export const ja = {
   'auth.body': 'メールを入力すると、ワンタイムコードが届きます。フォルダ、友達、連続記録はどの端末にも引き継がれます。',
   'auth.newHere': 'はじめて？ 手順は同じです。コードを確認するとアカウントが作られます。',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Did I? これでもう分かる。',
+  'auth.tagline': '忘れずにやる。やったことも忘れない。',
   'auth.apple': 'Appleでサインイン',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Appleでのサインインがうまくいきませんでした。メールを使うか、少ししてからもう一度お試しください。',
@@ -1751,7 +1751,7 @@ export const ja = {
   'web.press.color.soft': 'ソフト',
   'web.press.color.miss': 'ミス',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? これでもう分かる',
+  'web.landing.title': 'Did I: 忘れずにやる。やったことも忘れない',
   'web.landing.lead':
     '寝る前に同じ確認を何度も繰り返していました。ドア、コンロ、薬。Did I はスマホに質問を1つだけ出します。やったなら右スワイプ。今夜はなら左。友だちや家族とも共有できます。',
   'web.landing.b1': '「今夜」でスワイプ。ホームにまだ開いているものが出ます。',

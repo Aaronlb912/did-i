@@ -163,7 +163,7 @@ export const it = {
   'auth.body': 'Inserisci la tua email per un codice monouso. Cartelle, amici e serie ti seguono su ogni telefono.',
   'auth.newHere': 'Sei nuovo? Stessi passaggi. L’account viene creato quando confermi il codice.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Did I? Ora lo saprai.',
+  'auth.tagline': 'Ricordalo. Poi ricorda di averlo fatto.',
   'auth.apple': 'Accedi con Apple',
   'auth.appleOr': 'or',
   'auth.appleFail': 'L’accesso con Apple non è riuscito. Prova con l’email o riprova tra un minuto.',
@@ -1785,7 +1785,7 @@ export const it = {
   'web.press.color.soft': 'Tenue',
   'web.press.color.miss': 'Mancato',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? Ora lo saprai',
+  'web.landing.title': 'Did I: Ricordalo. Poi ricorda di averlo fatto',
   'web.landing.lead':
     'Ripetevo gli stessi controlli andando a letto. Porta, fornello, pillole. Did I mette una domanda sul telefono. Scorri a destra se l’hai fatto. A sinistra se no. Condividilo con amici e famiglia.',
   'web.landing.b1': 'Scorri su Stasera. Home mostra cosa è ancora aperto.',

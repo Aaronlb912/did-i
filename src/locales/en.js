@@ -162,7 +162,7 @@ export const en = {
   'auth.body': 'Enter your email for a one-time code. Your folders, friends, and streak follow you on every phone.',
   'auth.newHere': 'New here? Same steps. Your account is created when you confirm the code.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Did I? Now you’ll know.',
+  'auth.tagline': 'Remember it. Then remember doing it.',
   'auth.apple': 'Sign in with Apple',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Apple sign-in did not work. Try email, or try again in a minute.',
@@ -1782,7 +1782,7 @@ export const en = {
   'web.press.color.soft': 'Soft',
   'web.press.color.miss': 'Miss',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? Now you’ll know',
+  'web.landing.title': 'Did I: Remember it. Then remember doing it',
   'web.landing.lead':
     'I kept replaying the same checks on the walk to bed. Door, stove, pills. One question on your phone. Swipe right if you did. Swipe left if you didn’t. Share it with friends and family.',
   'web.landing.b1': 'Swipe on Tonight. Home shows what’s still open.',

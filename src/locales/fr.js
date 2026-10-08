@@ -165,7 +165,7 @@ export const fr = {
   'auth.body': 'Entre ton e-mail pour recevoir un code à usage unique. Tes dossiers, tes amis et ta série te suivent sur chaque téléphone.',
   'auth.newHere': 'Nouveau ici ? Mêmes étapes. Ton compte est créé quand tu confirmes le code.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Did I? Maintenant, vous saurez.',
+  'auth.tagline': 'Souviens-t’en. Puis souviens-toi de l’avoir fait.',
   'auth.apple': 'Se connecter avec Apple',
   'auth.appleOr': 'or',
   'auth.appleFail': 'La connexion avec Apple n’a pas marché. Essaie l’e-mail, ou réessaie dans une minute.',
@@ -1792,7 +1792,7 @@ export const fr = {
   'web.press.color.soft': 'Doux',
   'web.press.color.miss': 'Manqué',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? Maintenant, vous saurez',
+  'web.landing.title': 'Did I: Souviens-t’en. Puis souviens-toi de l’avoir fait',
   'web.landing.lead':
     'Je repassais les mêmes vérifs en allant au lit. Porte, gaz, pilules. Did I met une question sur ton téléphone. Glisse à droite si tu l’as fait. À gauche si non. Partage-le avec tes amis et ta famille.',
   'web.landing.b1': 'Glisse sur Ce soir. Accueil montre ce qui reste ouvert.',

@@ -160,7 +160,7 @@ export const ko = {
   'auth.body': '이메일을 입력하면 일회용 코드를 보내드려요. 폴더, 친구, 연속 기록이 어느 폰에서나 따라와요.',
   'auth.newHere': '처음이세요? 방법은 같아요. 코드를 확인하면 계정이 만들어져요.',
   'auth.local': 'Use on this phone only',
-  'auth.tagline': 'Did I? 이제 알 수 있어요.',
+  'auth.tagline': '잊지 말고 하고, 한 것도 기억하세요.',
   'auth.apple': 'Apple로 로그인',
   'auth.appleOr': 'or',
   'auth.appleFail': 'Apple 로그인이 안 됐어요. 이메일로 하거나 잠시 후 다시 시도해 주세요.',
@@ -1752,7 +1752,7 @@ export const ko = {
   'web.press.color.soft': '소프트',
   'web.press.color.miss': '놓침',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I? 이제 알 수 있어요',
+  'web.landing.title': 'Did I: 잊지 말고 하고, 한 것도 기억하세요',
   'web.landing.lead':
     '잠자리에 가면서 같은 확인을 계속 반복했어요. 문, 가스, 약. Did I는 폰에 질문 하나만 띄웁니다. 했으면 오른쪽으로 스와이프. 오늘 밤 아니면 왼쪽. 친구, 가족과 함께 쓰세요.',
   'web.landing.b1': 'Tonight에서 스와이프. 홈에 아직 열린 것이 보여요.',

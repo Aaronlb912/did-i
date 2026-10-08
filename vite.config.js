@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: 'Did I',
         short_name: 'Did I',
-        description: 'Did I? Now you’ll know. One question a night.',
+        description: 'Did I: Remember it. Then remember doing it.',
         theme_color: '#0e1014',
         background_color: '#0e1014',
         display: 'standalone',
