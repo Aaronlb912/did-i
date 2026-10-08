@@ -1752,7 +1752,7 @@ export const ko = {
   'web.press.color.soft': '소프트',
   'web.press.color.miss': '놓침',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: 잊지 말고 하고, 한 것도 기억하세요',
+  'web.landing.title': '잊지 말고 하고, 한 것도 기억하세요',
   'web.landing.lead':
     '잠자리에 가면서 같은 확인을 계속 반복했어요. 문, 가스, 약. Did I는 폰에 질문 하나만 띄웁니다. 했으면 오른쪽으로 스와이프. 오늘 밤 아니면 왼쪽. 친구, 가족과 함께 쓰세요.',
   'web.landing.b1': 'Tonight에서 스와이프. 홈에 아직 열린 것이 보여요.',

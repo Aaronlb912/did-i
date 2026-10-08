@@ -1016,7 +1016,7 @@ export const de = {
   'people.invite': 'Dein Code',
   'people.yourCode': 'Code',
   'people.tapToSend': 'Tippen, um an jemanden zu senden',
-  'people.inviteLine': 'Mach mit bei Did I: {link} (mein Code ist {code})',
+  'people.inviteLine': 'Mach mit bei {link} (mein Code ist {code})',
   'invite.title': 'Du wurdest zu Did I eingeladen',
   'invite.lead':
     'Hol dir die App über diese Seite, dann bekommt deine Freundin oder dein Freund die Einladung angerechnet. Dein Code:',
@@ -1795,7 +1795,7 @@ export const de = {
   'web.press.color.soft': 'Sanft',
   'web.press.color.miss': 'Verpasst',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: Dran denken. Dann wissen, dass du es getan hast',
+  'web.landing.title': 'Dran denken. Dann wissen, dass du es getan hast',
   'web.landing.lead':
     'Ich habe unterwegs ins Bett dieselben Checks wiederholt. Tür, Herd, Pillen. Did I stellt eine Frage auf dein Handy. Nach rechts wischen, wenn erledigt. Nach links, wenn nicht. Teile es mit Freunden und Familie.',
   'web.landing.b1': 'Wische in Heute Nacht. Start zeigt, was noch offen ist.',
@@ -2588,7 +2588,7 @@ export const de = {
   'recap.cleared': '{cleared} von {n} Nächten geschafft',
   'recap.dids': 'Erledigt: {n}',
   'recap.best': 'Beste Serie: {n}',
-  'recap.share': 'Meine Woche mit Did I: {cleared} von {n} Nächten geschafft, {dids} erledigt, beste Serie {best}.',
+  'recap.share': 'Meine Woche mit {cleared} von {n} Nächten geschafft, {dids} erledigt, beste Serie {best}.',
   'recap.shareBtn': 'Woche teilen',
   'recap.copied': 'Kopiert',
   'recap.lastWeek': 'Letzte Woche',

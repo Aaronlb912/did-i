@@ -1744,7 +1744,7 @@ export const zh = {
   'web.press.color.soft': '柔灰',
   'web.press.color.miss': '错过',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: 记得去做，也记得做过',
+  'web.landing.title': '记得去做，也记得做过',
   'web.landing.lead': '上床前我总在脑子里重复同样的检查。门、炉子、药。Did I 在手机上只放一个问题。做了就右滑。今晚没做就左滑。和朋友、家人一起用。',
   'web.landing.b1': '在「今晚」里滑动。首页显示还没关上的项。',
   'web.landing.b2': '给朋友发问题，和家人分担家务。',

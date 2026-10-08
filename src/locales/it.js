@@ -1010,7 +1010,7 @@ export const it = {
   'people.invite': 'Il tuo codice',
   'people.yourCode': 'Codice',
   'people.tapToSend': 'Tocca per mandarlo a qualcuno',
-  'people.inviteLine': 'Unisciti a me su Did I: {link} (il mio codice è {code})',
+  'people.inviteLine': 'Unisciti a me su {link} (il mio codice è {code})',
   'invite.title': 'Sei stato invitato su Did I',
   'invite.lead':
     'Scarica l’app da questa pagina e il tuo amico riceve il merito. Il tuo codice:',
@@ -1785,7 +1785,7 @@ export const it = {
   'web.press.color.soft': 'Tenue',
   'web.press.color.miss': 'Mancato',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: Ricordalo. Poi ricorda di averlo fatto',
+  'web.landing.title': 'Ricordalo. Poi ricorda di averlo fatto',
   'web.landing.lead':
     'Ripetevo gli stessi controlli andando a letto. Porta, fornello, pillole. Did I mette una domanda sul telefono. Scorri a destra se l’hai fatto. A sinistra se no. Condividilo con amici e famiglia.',
   'web.landing.b1': 'Scorri su Stasera. Home mostra cosa è ancora aperto.',
@@ -2569,7 +2569,7 @@ export const it = {
   'recap.cleared': '{cleared} notti fatte su {n}',
   'recap.dids': 'Fatte: {n}',
   'recap.best': 'Serie migliore: {n}',
-  'recap.share': 'La mia settimana su Did I: {cleared} notti fatte su {n}, {dids} fatte, serie migliore {best}.',
+  'recap.share': 'La mia settimana su {cleared} notti fatte su {n}, {dids} fatte, serie migliore {best}.',
   'recap.shareBtn': 'Condividi settimana',
   'recap.copied': 'Copiato',
   'recap.lastWeek': 'La settimana scorsa',

@@ -1011,7 +1011,7 @@ export const pt = {
   'people.invite': 'O teu código',
   'people.yourCode': 'Código',
   'people.tapToSend': 'Toca para enviar a alguém',
-  'people.inviteLine': 'Junta-te a mim no Did I: {link} (o meu código é {code})',
+  'people.inviteLine': 'Junta-te a mim no {link} (o meu código é {code})',
   'invite.title': 'Foste convidado para o Did I',
   'invite.lead':
     'Instala a app a partir desta página e o teu amigo recebe o crédito. O teu código:',
@@ -1786,7 +1786,7 @@ export const pt = {
   'web.press.color.soft': 'Suave',
   'web.press.color.miss': 'Perdido',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: Lembre-se. Depois, lembre que fez',
+  'web.landing.title': 'Lembre-se. Depois, lembre que fez',
   'web.landing.lead':
     'Eu repetia as mesmas checagens indo dormir. Porta, fogão, remédios. Did I coloca uma pergunta no telefone. Deslize para a direita se fez. Para a esquerda se não. Compartilhe com amigos e família.',
   'web.landing.b1': 'Deslize em Esta noite. Início mostra o que ainda está aberto.',
@@ -2570,7 +2570,7 @@ export const pt = {
   'recap.cleared': '{cleared} de {n} noites completas',
   'recap.dids': 'Feitas: {n}',
   'recap.best': 'Melhor sequência: {n}',
-  'recap.share': 'Minha semana no Did I: {cleared} de {n} noites completas, {dids} feitas, melhor sequência {best}.',
+  'recap.share': 'Minha semana no {cleared} de {n} noites completas, {dids} feitas, melhor sequência {best}.',
   'recap.shareBtn': 'Compartilhar semana',
   'recap.copied': 'Copiado',
   'recap.lastWeek': 'Semana passada',

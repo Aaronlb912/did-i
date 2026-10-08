@@ -1792,7 +1792,7 @@ export const fr = {
   'web.press.color.soft': 'Doux',
   'web.press.color.miss': 'Manqué',
   'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Did I: Souviens-t’en. Puis souviens-toi de l’avoir fait',
+  'web.landing.title': 'Souviens-t’en. Puis souviens-toi de l’avoir fait',
   'web.landing.lead':
     'Je repassais les mêmes vérifs en allant au lit. Porte, gaz, pilules. Did I met une question sur ton téléphone. Glisse à droite si tu l’as fait. À gauche si non. Partage-le avec tes amis et ta famille.',
   'web.landing.b1': 'Glisse sur Ce soir. Accueil montre ce qui reste ouvert.',
