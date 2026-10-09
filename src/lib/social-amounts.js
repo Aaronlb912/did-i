@@ -252,3 +252,32 @@ export async function sharedNotesFrom(friendId, now = new Date()) {
     .limit(10)
   return error || !Array.isArray(data) ? [] : data
 }
+
+// Shared notes from many friends in one query: Map friendId -> rows, newest
+// first, at most `each` per friend. For the Friends list.
+export async function sharedNotesOf(friendIds, now = new Date(), each = 3) {
+  const ids = [...new Set((friendIds || []).filter(Boolean))].slice(0, 200)
+  const db = cloud()
+  if (!db || !ids.length) return new Map()
+  const since = new Date(now.getTime() - SHARED_NOTE_DAYS * 86400000).toISOString()
+  const { data, error } = await db
+    .from('shared_notes')
+    .select('user_id, lamp_id, period_key, question, note, made_at')
+    .in('user_id', ids)
+    .gte('made_at', since)
+    .order('made_at', { ascending: false })
+    .limit(200)
+  return error ? new Map() : notesByFriend(data, each)
+}
+
+export function notesByFriend(rows, each = 3) {
+  const out = new Map()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.user_id || !String(row.note || '').trim()) continue
+    const list = out.get(row.user_id) || []
+    if (list.length >= each) continue
+    list.push(row)
+    out.set(row.user_id, list)
+  }
+  return out
+}

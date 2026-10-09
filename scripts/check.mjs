@@ -5486,6 +5486,40 @@ await testAsync('did we amounts: weekly total math and week start', async () => 
   assert.ok(Number.isNaN(readAmount('100001')))
 })
 
+await testAsync('web social: shared notes and check-ons grouped per friend, web screens wired', async () => {
+  const { notesByFriend } = await import('../src/lib/social-amounts.js')
+  const { groupBy } = await import('../src/lib/check-on.js')
+  const notes = notesByFriend(
+    [
+      { user_id: 'a', note: 'one' },
+      { user_id: 'b', note: 'x' },
+      { user_id: 'a', note: '  ' },
+      { user_id: 'a', note: 'two' },
+      { user_id: 'a', note: 'three' },
+      { note: 'nobody' },
+    ],
+    2,
+  )
+  assert.deepEqual(notes.get('a').map((row) => row.note), ['one', 'two'], 'newest first, capped, blank dropped')
+  assert.equal(notes.get('b').length, 1)
+  assert.equal(notes.size, 2)
+  const asks = groupBy([{ id: 1, owner_id: 'a' }, { id: 2, owner_id: 'b' }, { id: 3, owner_id: 'a' }, { id: 4 }], 'owner_id')
+  assert.deepEqual(asks.get('a').map((row) => row.id), [1, 3])
+  assert.equal(asks.size, 2)
+  assert.equal(groupBy(null, 'x').size, 0)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('src/lib/Family.jsx'), /howOften === 'daily' \? 0 : Number\(howOften\)/, 'web family can add every so often')
+  assert.match(read('src/lib/FamilyTonight.jsx'), /sharedLastLine\(row\.last, row\.night, row\.lastName\)/)
+  assert.match(read('src/lib/SendDidYou.jsx'), /senderLastDid\(book, question/, 'web ask carries your last Did')
+  assert.match(read('src/lib/DidYou.jsx'), /senderLastDid\(book, question/)
+  assert.match(read('src/lib/Inbox.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/Sent.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/LampDetail.jsx'), /<CheckOnCard lamp=\{lamp\} \/>/)
+  assert.match(read('src/lib/DidWe.jsx'), /togetherLine\(sums\.get\(card\.id\)\)/)
+  assert.match(read('src/lib/Friends.jsx'), /sharedNotesOf\(ids\)/)
+})
+
 test('did we amounts: private question amounts never in the query', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')

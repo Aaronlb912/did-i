@@ -10996,3 +10996,37 @@ button.di-we-faces {
   place-items: center;
   text-align: center;
 }
+
+/* Check on me (question page) and shared notes (friends). */
+.di-check-on {
+  display: grid;
+  gap: 8px;
+}
+.di-check-on-share {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--di-line);
+  border-radius: 12px;
+  background: var(--di-panel-2);
+  color: var(--di-ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.di-shared-notes {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.di-shared-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.di-shared-note p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--di-ink);
+  overflow-wrap: anywhere;
+}

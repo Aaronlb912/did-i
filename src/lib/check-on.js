@@ -206,3 +206,31 @@ export async function checkOnsFrom(ownerId) {
   if (error) throw new Error(error.message)
   return data || []
 }
+
+/** Everyone's asks to you, one query: Map ownerId -> rows. For a list page. */
+export async function checkOnsForMe() {
+  const db = cloud()
+  const out = new Map()
+  if (!db) return out
+  const user = await me(db)
+  if (!user) return out
+  const { data, error } = await db
+    .from('check_ons')
+    .select('id, owner_id, question, at_minute')
+    .eq('buddy_id', user.id)
+    .limit(200)
+  if (error) throw new Error(error.message)
+  return groupBy(data, 'owner_id')
+}
+
+// Rows into a Map by one field, order kept.
+export function groupBy(rows, field) {
+  const out = new Map()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const id = row?.[field]
+    if (!id) continue
+    if (!out.has(id)) out.set(id, [])
+    out.get(id).push(row)
+  }
+  return out
+}

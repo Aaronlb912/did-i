@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
+import { togetherLine, weWeekTotals } from './social-amounts.js'
 import { BoardShell } from './BoardShell.jsx'
 import { pullAndMerge } from './cloud-sync.js'
 import {
@@ -742,6 +743,24 @@ function WePaused({ card, onDone }) {
   )
 }
 
+// This week's combined amounts for the cards on screen, one query. Only
+// cards that track an amount come back.
+function useWeTotals(ids) {
+  const key = ids.filter(Boolean).join(',')
+  const [sums, setSums] = useState(() => new Map())
+  useEffect(() => {
+    if (!key) return undefined
+    let alive = true
+    weWeekTotals(key.split(',')).then((res) => {
+      if (alive) setSums(res.totals)
+    })
+    return () => {
+      alive = false
+    }
+  }, [key])
+  return sums
+}
+
 export function WeHome({ book, onChange, link = '' }) {
   const account = useAccount()
   const { cards, reload } = useWeTonight(account.user)
@@ -757,6 +776,7 @@ export function WeHome({ book, onChange, link = '' }) {
   const month = new Date().toISOString().slice(0, 7)
   const nights = mine.reduce((sum, card) => sum + weMonth(card, month).done, 0)
   const longest = mine.map((card) => ({ card, n: weStreak(card) })).sort((a, b) => b.n - a.n)[0]
+  const sums = useWeTotals(mine.map((card) => card.id))
 
   return (
     <Shell book={book} title={t('we.title')}>
@@ -789,6 +809,7 @@ export function WeHome({ book, onChange, link = '' }) {
                 {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
                 {weStreak(card) > 0 ? ` · ${t('we.streak', { n: weStreak(card) })}` : ''}
               </em>
+              {togetherLine(sums.get(card.id)) ? <em>{togetherLine(sums.get(card.id))}</em> : null}
             </button>
             <WePaused card={card} onDone={reload} />
             {open ? (
@@ -846,6 +867,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
+  const sums = useWeTotals(card ? [card.id] : [])
   const [filing, setFiling] = useState({ folder: '', topics: '' })
   useEffect(() => {
     if (card) setFiling({ folder: card.folder || '', topics: card.topics || '' })
@@ -887,6 +909,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const lastIso = monthIso(1)
   const last = weMonth(card, lastIso, `${lastIso}-31`)
   const goal = weGoal(card)
+  const sum = sums.get(card.id) || null
 
   async function save() {
     setBusy(true)
@@ -944,6 +967,7 @@ function WeCardPage({ book, cardId, onChange }) {
         {t('we.best', { n: weBest(card) })}
         {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
       </p>
+      {sum ? <p className="di-set-note">{togetherLine(sum) || t('weAmount.none')}</p> : null}
       <p className="di-set-note">{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</p>
       {last.due ? <p className="di-set-note">{t('we.lastMonth', { n: last.done, due: last.due })}</p> : null}
       {goal ? (
