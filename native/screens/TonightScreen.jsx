@@ -35,7 +35,7 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
-import { lastTimeLine } from '../../src/lib/every-copy.js'
+import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
@@ -502,7 +502,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           },
           status,
         )
-      return { ...item, kicker: row.family.name, onDid: save('yes'), onNope: save('skip') }
+      return {
+        ...item,
+        kicker: row.family.name,
+        line: row.lamp.cadence === 'every' ? sharedLastLine(row.last, row.night, row.lastName) : '',
+        onDid: save('yes'),
+        onNope: save('skip'),
+      }
     }
     const save = (keep) => () =>
       peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
@@ -514,6 +520,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
+      line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso),
       onDid: save(true),
       onNope: save(false),
     }
@@ -535,7 +542,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onDid={peopleTop.onDid}
         onNope={peopleTop.onNope}
         buddy={activeBuddy(book)}
-      />
+      >
+        {peopleTop.line ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{peopleTop.line}</Text>
+        ) : null}
+      </SwipeCardHost>
     ) : null
   // The grace period for the previous night: first until 5am, then after
   // tonight's own cards until 9am.

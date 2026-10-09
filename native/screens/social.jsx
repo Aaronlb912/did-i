@@ -77,6 +77,7 @@ import { useOnline } from '../hooks/useOnline.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
+import { sendLastLine } from '../../src/lib/every-copy.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
@@ -1001,7 +1002,7 @@ export function PeopleScreen({ book, onChange }) {
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
       {sheet?.kind === 'send' ? (
-        <SendSheet person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
+        <SendSheet book={book} person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
       ) : null}
       {sheet?.kind === 'friend' ? (
         <AddFriendPop colors={colors} onClose={() => setSheet(null)} onAsked={(words) => { say(words); load() }} />
@@ -1655,7 +1656,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
       {sheet ? (
-        <SendSheet person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
+        <SendSheet book={book} person={sheet.person} colors={colors} onClose={() => setSheet(null)} onSent={say} />
       ) : null}
       {confirm ? (
         <BlockModal
@@ -2144,7 +2145,7 @@ export function FriendScreen({ book, onChange, route }) {
             key={send.id}
             colors={colors}
             title={askShown(send.question)}
-            note={[repeatLabel(send.repeat), theirSendState(send.state)].filter(Boolean).join(' · ')}
+            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), theirSendState(send.state)].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
               <KeyButton colors={colors} label={t('inbox.kicker')} onPress={() => goHash('/inbox')} />
@@ -2169,7 +2170,7 @@ export function FriendScreen({ book, onChange, route }) {
             key={send.id}
             colors={colors}
             title={askShown(send.question)}
-            note={[repeatLabel(send.repeat), sentState(send.state, personName(person) || '')].filter(Boolean).join(' · ')}
+            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), sentState(send.state, personName(person) || '')].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
               <KeyButton
@@ -2210,7 +2211,7 @@ export function FriendScreen({ book, onChange, route }) {
       ) : null}
 
       {sheet?.person ? (
-        <SendSheet
+        <SendSheet book={book}
           person={sheet.person}
           colors={colors}
           onClose={() => setSheet(null)}
@@ -2339,7 +2340,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSending(true)} />
         {miss ? <Miss colors={colors}>{miss}</Miss> : null}
         {sending ? (
-          <SendSheet person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
+          <SendSheet book={book} person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
         ) : null}
       </ScreenShell>
     )
@@ -2356,7 +2357,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           colors={colors}
           person={row.person}
           title={row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}
-          note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), row.note]
+          note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), row.note]
             .filter(Boolean)
             .join(' · ')}
         >
@@ -2498,7 +2499,7 @@ export function SentScreen({ book, onChange }) {
           ) : null}
         </EmptyCard>
         {texting ? (
-          <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+          <SendSheet book={book} person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
         ) : null}
       </ScreenShell>
     )
@@ -2511,7 +2512,7 @@ export function SentScreen({ book, onChange }) {
         <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
       </View>
       {texting ? (
-        <SendSheet person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
+        <SendSheet book={book} person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
       ) : null}
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.famName, { color: colors.ink }]}>{t('sent.count', { n: shownRows.length + shownLinks.length })}</Text>
@@ -2543,7 +2544,7 @@ export function SentScreen({ book, onChange }) {
           <View style={[styles.personCopy, styles.personCopyFlex]}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
-              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sentState(row.state)]
+              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state)]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>

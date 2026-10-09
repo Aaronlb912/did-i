@@ -3244,4 +3244,9 @@ export const ja = {
   'title.people': 'みんな · Did I',
   'every.badgeToday': '今日',
   'pack.countOne': '+1問',
+  'every.byToday': "{name}が今夜やった",
+  'every.byOne': "{name}が1日前にやった",
+  'every.byMany': "{name}が{n}日前にやった",
+  'family.everyHint': "誰かが最後にやってからその日数が過ぎると、みんなに出てきます。最初の Did で家族全員の分がリセットされます。まだはあなただけに数えられます。",
+  'people.sendEveryHint': "ときどき相手の質問に出てきます。自分の質問について聞くと、あなたが最後にやった日が相手に見えます。",
 }

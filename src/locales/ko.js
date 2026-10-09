@@ -3246,4 +3246,9 @@ export const ko = {
   'title.people': '사람들 · Did I',
   'every.badgeToday': '오늘',
   'pack.countOne': '+1개',
+  'every.byToday': "{name}님이 오늘 밤 했어요",
+  'every.byOne': "{name}님이 1일 전에 했어요",
+  'every.byMany': "{name}님이 {n}일 전에 했어요",
+  'family.everyHint': "누군가 마지막으로 한 뒤 그만큼 지나면 모두에게 나와요. 처음 Did 하면 가족 모두에게 다시 시작돼요. 아직은 나에게만 적용돼요.",
+  'people.sendEveryHint': "가끔씩 상대의 질문에 나와요. 내 질문에 대해 물으면 내가 마지막으로 한 날이 보여요.",
 }

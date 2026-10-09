@@ -3316,4 +3316,9 @@ export const de = {
   'title.people': 'Leute · Did I',
   'every.badgeToday': 'heute',
   'pack.countOne': '+1 Frage',
+  'every.byToday': "{name} hat es heute Abend gemacht",
+  'every.byOne': "{name} hat es vor 1 Tag gemacht",
+  'every.byMany': "{name} hat es vor {n} Tagen gemacht",
+  'family.everyHint': "Es kommt für alle, sobald so viel Zeit seit dem letzten Mal vergangen ist, egal wer es gemacht hat. Das erste Did setzt es für die Familie zurück. Noch nicht zählt nur für dich.",
+  'people.sendEveryHint': "Es kommt bei ihnen ab und zu. Fragst du nach einer deiner eigenen Fragen, sehen sie, wann du es zuletzt gemacht hast.",
 }

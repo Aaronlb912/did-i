@@ -5,11 +5,12 @@ import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
+import { sharedEveryDue } from './every-copy.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { noteMilestone } from './milestones.js'
 
 const FAMILY_LAMP_FIELDS =
-  'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
+  'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on, every_days'
 
 export function familyLampMeta(lamp) {
   return cadenceLine({
@@ -19,6 +20,7 @@ export function familyLampMeta(lamp) {
     dueBy: lamp.due_by || '',
     createdOn: lamp.made_on || '',
     weekdays: lamp.weekdays || [],
+    everyDays: lamp.every_days || '',
   })
 }
 
@@ -401,7 +403,7 @@ export async function weLeaveShared(other) {
 
 // Sending a did you to a friend ---------------------------------------
 
-export async function sendDidI(toId, question, note, dueOn, repeat = '') {
+export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDidOn = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -416,6 +418,8 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '') {
     note: String(note || '').trim(),
     due_on: dueOn || isoDate(new Date()),
     ...(repeat ? { repeat } : {}),
+    // Only an every so often ask carries the sender's last Did (shared-every.sql).
+    ...(repeat.startsWith('every:') && /^\d{4}-\d{2}-\d{2}$/.test(String(lastDidOn || '')) ? { last_did_on: lastDidOn } : {}),
   })
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { miss: 'already' }
@@ -721,7 +725,7 @@ export async function listInbox() {
   const [{ data }, fromDidI] = await Promise.all([
     db
       .from('sends')
-      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat')
+      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat, last_did_on')
       .eq('to_id', user.id)
       .eq('state', 'sent')
       .order('made_at', { ascending: false }),
@@ -801,7 +805,7 @@ export async function listSent() {
   if (!user) return []
   const { data } = await db
     .from('sends')
-    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat')
+    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat, last_did_on')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(100)
@@ -819,7 +823,7 @@ export async function sendsWith(otherId) {
   if (!user) return { ...empty, miss: 'off' }
   const { data, error } = await db
     .from('sends')
-    .select('id, from_id, to_id, kind, question, state, made_at, repeat')
+    .select('id, from_id, to_id, kind, question, state, made_at, repeat, last_did_on')
     .eq('kind', 'todo')
     .or(`and(from_id.eq.${user.id},to_id.eq.${otherId}),and(from_id.eq.${otherId},to_id.eq.${user.id})`)
     .order('made_at', { ascending: false })
@@ -1147,10 +1151,24 @@ export async function listFamilyLamps(familyId, periodKey) {
       .eq('family_id', familyId)
       .eq('period_key', periodKey || isoDate(new Date())),
   ])
-  return { lamps: lampRows.data || [], answers: answerRows.data || [] }
+  const lamps = lampRows.data || []
+  return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }
 
-export async function addFamilyLamp(familyId, tagId, question, forId) {
+// The newest Did on each every so often family question, by anyone:
+// Map lampId -> { on, by }. One call for all of them. Empty until
+// shared-every.sql is run.
+async function familyEveryLast(db, lamps) {
+  const ids = lamps.filter((lamp) => lamp.cadence === 'every').map((lamp) => lamp.id)
+  const out = new Map()
+  if (!ids.length) return out
+  const { data, error } = await db.rpc('family_every_last', { lamps: ids })
+  if (error) return out
+  for (const row of data || []) out.set(row.lamp_id, { on: row.last_on, by: row.last_by })
+  return out
+}
+
+export async function addFamilyLamp(familyId, tagId, question, forId, everyDays = 0) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -1164,6 +1182,7 @@ export async function addFamilyLamp(familyId, tagId, question, forId) {
     question: text,
     for_id: forId || null,
     made_by: user.id,
+    ...(Number(everyDays) >= 1 ? { cadence: 'every', every_days: Math.min(365, Math.round(Number(everyDays))) } : {}),
   })
   return error ? bad(error) : { miss: '' }
 }
@@ -1247,22 +1266,31 @@ export async function familyTonight() {
       .in('period_key', [...new Set(nights.values())]),
   ])
 
+  const lastDids = await familyEveryLast(db, lampRows.data || [])
   const out = []
   for (const lamp of lampRows.data || []) {
     const family = families.find((item) => item.id === lamp.family_id)
     if (!family) continue
     const night = nights.get(family.id)
-    if (!dueOnFamilyNight(lamp, night)) continue
+    const answer =
+      (answerRows.data || []).find(
+        (row) => row.lamp_id === lamp.id && row.period_key === night,
+      ) || null
+    const last = lastDids.get(lamp.id) || null
+    if (lamp.cadence === 'every') {
+      // Your own answer tonight keeps it on tonight; otherwise anyone's Did
+      // inside the gap takes it off for everyone.
+      if (!answer && !sharedEveryDue(lamp, last, night)) continue
+    } else if (!dueOnFamilyNight(lamp, night)) continue
     if (lamp.made_on && lamp.made_on > night) continue
-    out.push({
-      family,
-      lamp,
-      night,
-      answer:
-        (answerRows.data || []).find(
-          (row) => row.lamp_id === lamp.id && row.period_key === night,
-        ) || null,
-    })
+    out.push({ family, lamp, night, answer, last })
+  }
+  if (out.some((row) => row.last?.by)) {
+    const who = await peopleByIds(db)
+    for (const row of out) {
+      if (!row.last?.by) continue
+      row.lastName = row.last.by === user.id ? t('family.youAre') : personName(who.get(row.last.by)) || ''
+    }
   }
   return out
 }

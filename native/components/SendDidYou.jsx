@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, tMiss } from "../../src/lib/i18n.js";
 import { listFriends, personName, sendDidI } from "../../src/lib/people.js";
-import { repeatFrom } from "../../src/lib/send-repeat.js";
+import { repeatFrom, senderLastDid } from "../../src/lib/send-repeat.js";
+import { boardDate } from "../../src/lib/recurrence.js";
 import {
   makeDidYouLink,
   sharedDidYouLine,
@@ -17,11 +18,13 @@ import { confirmDone } from "../lib/confirm.js";
 import { pressFx, Reveal } from "../lib/motion.jsx";
 import { Avatar } from "./PersonCard.jsx";
 
+// Your own last Did of the same every so often question, if you have one,
+// so they see "Last time: 12 days ago" on the ask.
 /**
  * Write a did you for a friend or someone in the family. With `pick` and no
  * person, it first asks who: a friend, or a link to text anyone.
  */
-export function SendSheet({ person: given, pick = false, family = false, colors, onClose, onSent }) {
+export function SendSheet({ person: given, book = null, pick = false, family = false, colors, onClose, onSent }) {
   const [person, setPerson] = useState(given || null);
   const [asLink, setAsLink] = useState(!pick);
   const [friends, setFriends] = useState(null);
@@ -51,6 +54,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
   const [said, setSaid] = useState("");
   const [cadence, setCadence] = useState("once");
   const [days, setDays] = useState([]);
+  const [everyDays, setEveryDays] = useState(7);
   const name = personName(person) || t("people.someone");
   // No person: only a link, to text anyone, friend or not.
   const linkOnly = !person;
@@ -70,7 +74,8 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
       question,
       note,
       undefined,
-      repeatFrom(cadence, days),
+      repeatFrom(cadence, days, everyDays),
+      cadence === "every" ? senderLastDid(book, question, boardDate(new Date())) : "",
     );
     setBusy(false);
     if (why === "already") return setMiss(t("people.sendAlready"));
@@ -179,6 +184,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                     ["once", t("hang.once")],
                     ["daily", t("we.daily")],
                     ["weekly", t("we.someDays")],
+                    ["every", t("hang.every")],
                   ].map(([id, label]) => (
                     <Pill
                       key={id}
@@ -212,6 +218,25 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
                     })}
                   </View>
                 ) : null}
+                {cadence === "every" ? (
+                  <View style={styles.actions}>
+                    {[
+                      [7, t("hang.everyWeek")],
+                      [14, t("hang.every2Weeks")],
+                      [30, t("hang.everyMonth")],
+                    ].map(([n, label]) => (
+                      <Pill
+                        key={n}
+                        label={label}
+                        on={everyDays === n}
+                        onPress={() => setEveryDays(n)}
+                        colors={colors}
+                        radio
+                      />
+                    ))}
+                  </View>
+                ) : null}
+                {cadence === "every" ? <Meta colors={colors}>{t("people.sendEveryHint")}</Meta> : null}
                 <Field
                   colors={colors}
                   label={t("people.sendNote")}

@@ -3233,4 +3233,9 @@ export const zh = {
   'title.people': '好友和家人 · Did I',
   'every.badgeToday': '今天',
   'pack.countOne': '+1 个',
+  'every.byToday': "{name}今晚做了",
+  'every.byOne': "{name}1天前做了",
+  'every.byMany': "{name}{n}天前做了",
+  'family.everyHint': "距离任何人上次做过满这么多天后，会出现在每个人那里。第一个 Did 会为全家重新计时。还没只算你自己。",
+  'people.sendEveryHint': "它会时不时出现在对方的问题里。如果你问的是你自己的问题，对方能看到你上次做的时间。",
 }
