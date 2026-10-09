@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
-import { t, tMiss } from '../../src/lib/i18n.js'
+import { inEnglish, t, tMiss } from '../../src/lib/i18n.js'
+import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { listKnownPeople, personName } from '../../src/lib/people.js'
 import {
   CHECK_ON_DEFAULT,
   checkOnFits,
+  checkOnWhen,
   cleanMinute,
   minuteClock,
   readCheckOn,
@@ -49,6 +51,7 @@ export function CheckOnCard({ lamp, colors }) {
   }, [fits, lamp?.id])
 
   if (!fits) return null
+  const whenLine = whenText(checkOnWhen(lamp))
   const buddy = row ? (people || []).find((p) => p.user_id === row.buddy_id) : null
   const buddyName = personName(buddy) || t('people.someone')
 
@@ -83,6 +86,7 @@ export function CheckOnCard({ lamp, colors }) {
   return (
     <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('checkOn.title')}</Text>
+      {whenLine ? <Meta colors={colors}>{whenLine}</Meta> : null}
       {!open && row ? (
         <>
           <Meta colors={colors}>{t('checkOn.isOn', { name: buddyName, time: minuteClock(row.at_minute) })}</Meta>
@@ -137,6 +141,22 @@ export function CheckOnCard({ lamp, colors }) {
       {miss ? <Meta colors={colors}>{miss}</Meta> : null}
     </View>
   )
+}
+
+// "12th" in English, the plain number elsewhere.
+function monthDay(day) {
+  if (!inEnglish()) return String(day)
+  const tail = { one: 'st', two: 'nd', few: 'rd', other: 'th' }[new Intl.PluralRules('en-US', { type: 'ordinal' }).select(day)]
+  return `${day}${tail || 'th'}`
+}
+
+// Which night the friend can hear, for questions that are not every night.
+function whenText(when) {
+  if (!when) return ''
+  if (when.key === 'checkOn.whenMonthly') return t(when.key, { day: monthDay(when.day) })
+  if (when.date) return t(when.key, { date: formatBoardDate(when.date) })
+  if (when.n) return t(when.key, { n: when.n })
+  return t(when.key)
 }
 
 const styles = StyleSheet.create({

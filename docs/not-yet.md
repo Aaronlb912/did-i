@@ -96,9 +96,12 @@ Last worked through 2026-10-02.
 ## Check on me (branch `social-gentle`)
 
 - **Not applied yet.** supabase/social-gentle.sql adds `check_ons` (RLS: owner and friend read, owner writes, either deletes; 20 per person; buddy index), `queue_check_ons()` and a `check-ons` pg_cron job every 5 minutes. The existing drain-push job sends what it queues. Needs pg_cron, as family-summary.sql does.
-- **Phone only.** Set it on a question's page (daily and weekly questions). The friend's page lists what they asked you to check on, with Send a Did you and Turn off. The website has neither yet.
+- **Phone only.** Set it on a question's page (daily, weekly, monthly, Just once, deadline and every-so-often questions). The friend's page lists what they asked you to check on, with Send a Did you and Turn off. The website has neither yet.
 - **Uses the friend's "friends" notification switch,** not a kind of its own.
-- **Monthly, once and every-so-often questions cannot be checked on.** The server only knows a night's answer by date.
+- **New check-on columns not applied yet** (`kind`, `month_day`, `on_date`, `starts_on`, `every_days` on `check_ons`). Re-run social-gentle.sql before shipping the phone build: the card now sends them on every save.
+- **Every-so-often uses the question's set gap on the server,** not the gap the app learns from your last few Dids, so the nudge can land a little earlier or later than Tonight shows it.
+- **A deadline only nudges on its due night,** not on the nights before it.
+- **A question whose cadence changes keeps its old rule on the server** until the check-on is saved again from its page.
 - **Push text is in 9 languages in SQL (`check_on_text`),** separate from `push_text`.
 - **No SQL test in supabase/tests yet,** and the push tap to a prefilled Did you needs device testing (iPhone and Android, app closed and open).
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
