@@ -103,7 +103,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
-import { fonts, sectionLabel, withAlpha } from '../theme.js'
+import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -2461,7 +2461,7 @@ const styles = StyleSheet.create({
   },
   lockPanel: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.rSm,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 4,
@@ -2486,7 +2486,7 @@ const styles = StyleSheet.create({
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
+  firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },

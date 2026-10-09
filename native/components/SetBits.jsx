@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     minHeight: 49,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   check: { fontFamily: fonts.uiBold, fontSize: 18 },
   fieldRow: {
     gap: 6,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
   },

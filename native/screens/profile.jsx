@@ -210,6 +210,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
         </Pressable>
       ) : null}
+      <SetCap colors={colors}>{t('settings.account')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
@@ -239,6 +240,44 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           last
           onPress={() => goHash('/settings/phone')}
+        />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('settings.tonightCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="moon"
+          tint={colors.on}
+          label={t('settings.foldLine')}
+          sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
+        />
+        <SetChoice
+          colors={colors}
+          icon="clock"
+          tint={colors.on}
+          label={t('settings.clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
+        />
+        <SetRow
+          colors={colors}
+          icon="bell"
+          tint={colors.late}
+          label={t('settings.reminders')}
+          chevron
+          onPress={() => goHash('/pings')}
+        />
+        <SetRow
+          colors={colors}
+          icon="folder"
+          tint={colors.on}
+          label={t('tags.aria')}
+          sub={t('tags.openHint')}
+          chevron
+          onPress={() => goHash('/me')}
+          last
         />
       </SetCard>
 
@@ -279,44 +318,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           sub={t('settings.gentleSub')}
           on={prefs.gentle}
           onPress={() => writePrefs({ gentle: !prefs.gentle })}
-        />
-      </SetCard>
-
-      <SetCap colors={colors}>{t('settings.tonightCap')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="moon"
-          tint={colors.on}
-          label={t('settings.foldLine')}
-          sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
-        />
-        <SetChoice
-          colors={colors}
-          icon="clock"
-          tint={colors.on}
-          label={t('settings.clock')}
-          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
-          selected={prefs.clock}
-          onSelect={(id) => writePrefs({ clock: id })}
-        />
-        <SetRow
-          colors={colors}
-          icon="bell"
-          tint={colors.late}
-          label={t('settings.reminders')}
-          chevron
-          onPress={() => goHash('/pings')}
-        />
-        <SetRow
-          colors={colors}
-          icon="folder"
-          tint={colors.on}
-          label={t('tags.aria')}
-          sub={t('tags.openHint')}
-          chevron
-          onPress={() => goHash('/me')}
-          last
         />
       </SetCard>
 

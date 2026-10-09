@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { faceCardStyles } from '../lib/face-card.js'
-import { fonts } from '../theme.js'
+import { fonts, radius } from '../theme.js'
 
 /**
  * What is left after a nope: each noped question as a slim row with its own
@@ -62,7 +62,7 @@ export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
 
 const styles = StyleSheet.create({
   list: { gap: 10, marginTop: 16 },
-  row: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  row: { borderWidth: 1, borderRadius: radius.rSm, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   question: { flex: 1, fontFamily: fonts.uiSemi, fontSize: 16, lineHeight: 21 },
