@@ -5350,8 +5350,77 @@ await testAsync('check on me: due only past the time, on an asked night, unanswe
   assert.deepEqual(checkOnDays({ cadence: 'weekly', weekdays: [3, 1, 1, 9] }), [1, 3])
   assert.deepEqual(checkOnDays({ cadence: 'daily' }), [])
   assert.equal(checkOnFits({ cadence: 'daily' }), true)
-  assert.equal(checkOnFits({ cadence: 'monthly' }), false)
+  assert.equal(checkOnFits({ cadence: 'monthly' }), false, 'monthly with no day')
   assert.equal(checkOnFits({ cadence: 'daily', archived: true }), false)
+})
+
+test('check-on: monthly, once, deadline and every-so-often nights', async () => {
+  const { checkOnDue, checkOnFits, checkOnKind, checkOnShape, checkOnWhen } = await import('../src/lib/check-on.js')
+  const base = { at_minute: 1320, sent_on: null, days: [] }
+  const at = (night, more = {}) => ({ night, minute: 1330, weekday: 2, answered: false, ...more })
+  // Monthly: the day, clamped to short months; 0 is the last day.
+  const monthly = { ...base, kind: 'monthly', month_day: 12 }
+  assert.equal(checkOnDue(monthly, at('2026-10-12')), true)
+  assert.equal(checkOnDue(monthly, at('2026-10-13')), false)
+  assert.equal(checkOnDue(monthly, at('2026-10-12', { answered: true })), false)
+  assert.equal(checkOnDue({ ...monthly, month_day: 31 }, at('2027-02-28')), true, '31st falls on the last day')
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-31')), true)
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-30')), false)
+  // Just once, and a deadline: only that night, only once.
+  const once = { ...base, kind: 'once', on_date: '2026-10-20' }
+  assert.equal(checkOnDue(once, at('2026-10-20')), true)
+  assert.equal(checkOnDue(once, at('2026-10-21')), false)
+  assert.equal(checkOnDue({ ...once, sent_on: '2026-10-20' }, at('2026-10-20')), false)
+  const by = { ...base, kind: 'by', on_date: '2026-10-20', starts_on: '2026-10-01' }
+  assert.equal(checkOnDue(by, at('2026-10-15')), false, 'not before it is due')
+  assert.equal(checkOnDue(by, at('2026-10-20')), true)
+  // Every so often: never done, or every_days since the last Did.
+  const every = { ...base, kind: 'every', every_days: 7 }
+  assert.equal(checkOnDue(every, at('2026-10-09')), true, 'never done')
+  assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05' })), false)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05' })), true)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05', minute: 600 })), false, 'before the time')
+  // From the question to the row.
+  assert.equal(checkOnKind({ cadence: 'monthly', monthDay: 'last' }), 'monthly')
+  assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null })
+  assert.equal(checkOnShape({ cadence: 'monthly', monthDay: 'last' }).month_day, 0)
+  assert.equal(checkOnShape({ cadence: 'once', onceOn: '2026-10-20' }).on_date, '2026-10-20')
+  assert.equal(checkOnFits({ cadence: 'once' }), false, 'a once with no day')
+  const dl = checkOnShape({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20', createdOn: '2026-10-01' })
+  assert.deepEqual([dl.kind, dl.on_date, dl.starts_on], ['by', '2026-10-20', '2026-10-01'])
+  assert.equal(checkOnShape({ cadence: 'every', everyDays: 14 }).every_days, 14)
+  assert.equal(checkOnShape({ cadence: 'every' }).every_days, 7)
+  assert.equal(checkOnShape({ cadence: 'daily' }).kind, 'night')
+  assert.equal(checkOnWhen({ cadence: 'daily' }), null)
+  assert.deepEqual(checkOnWhen({ cadence: 'monthly', monthDay: 12 }), { key: 'checkOn.whenMonthly', day: 12 })
+  assert.deepEqual(checkOnWhen({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20' }), { key: 'checkOn.whenBy', date: '2026-10-20' })
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/CheckOnCard.jsx'), 'utf8')
+  assert.match(card, /checkOnWhen\(lamp\)/)
+})
+
+test('social-gentle.sql: queue_check_ons handles every kind in one statement', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8')
+  for (const col of ['kind text not null default \'night\'', 'month_day smallint', 'on_date date', 'starts_on date', 'every_days smallint']) {
+    assert.ok(sql.includes(`add column if not exists ${col}`), col)
+  }
+  assert.match(sql, /kind in \('night', 'monthly', 'once', 'by', 'every'\)/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days, kind, month_day, on_date, starts_on, every_days\)/)
+  const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
+  const body = job.slice(0, job.indexOf('$$;'))
+  assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(body), 'no per-row loop')
+  assert.match(body, /when 'monthly' then extract\(day from k\.local\)/)
+  assert.match(body, /when 'once' then k\.local::date = k\.on_date/)
+  assert.match(body, /when 'by' then k\.local::date = k\.on_date/)
+  assert.match(body, /when 'every' then coalesce\(k\.local::date - \(\s*select max\(a\.period_key\)::date from public\.answer_log a/)
+  assert.match(body, /a\.status in \('yes', 'late'\)/)
+  assert.match(body, /to_char\(k\.local, 'YYYY-MM'\)/)
+  assert.match(body, /'once:' \|\| k\.lamp_id/)
+  assert.match(body, /public\.push_wanted\(k\.buddy_id, 'friends'\)/)
+  assert.match(body, /push_token is not null/)
+  assert.match(body, /from public\.blocks b/)
+  assert.match(body, /k\.sent_on is null or k\.sent_on < k\.local::date/)
 })
 
 test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
@@ -5372,7 +5441,7 @@ test('social-gentle.sql: gentle streak hidden on the server, check_ons locked do
   assert.match(sql, /create index if not exists check_ons_buddy_idx on public\.check_ons \(buddy_id\)/)
   assert.match(sql, /unique \(owner_id, lamp_id\)/)
   assert.match(sql, /length\(btrim\(question\)\) between 1 and 200/)
-  assert.match(sql, /grant update \(buddy_id, question, at_minute, days\) on public\.check_ons to authenticated/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days[^)]*\) on public\.check_ons to authenticated/)
   // The job: one statement, answer_log, push_wanted, blocks, through push_queue on pg_cron.
   const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
   assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(job.slice(0, job.indexOf('$$;'))), 'no per-row loop')
@@ -5415,6 +5484,40 @@ await testAsync('did we amounts: weekly total math and week start', async () => 
   assert.equal(readAmount(''), null)
   assert.ok(Number.isNaN(readAmount('-1')))
   assert.ok(Number.isNaN(readAmount('100001')))
+})
+
+await testAsync('web social: shared notes and check-ons grouped per friend, web screens wired', async () => {
+  const { notesByFriend } = await import('../src/lib/social-amounts.js')
+  const { groupBy } = await import('../src/lib/check-on.js')
+  const notes = notesByFriend(
+    [
+      { user_id: 'a', note: 'one' },
+      { user_id: 'b', note: 'x' },
+      { user_id: 'a', note: '  ' },
+      { user_id: 'a', note: 'two' },
+      { user_id: 'a', note: 'three' },
+      { note: 'nobody' },
+    ],
+    2,
+  )
+  assert.deepEqual(notes.get('a').map((row) => row.note), ['one', 'two'], 'newest first, capped, blank dropped')
+  assert.equal(notes.get('b').length, 1)
+  assert.equal(notes.size, 2)
+  const asks = groupBy([{ id: 1, owner_id: 'a' }, { id: 2, owner_id: 'b' }, { id: 3, owner_id: 'a' }, { id: 4 }], 'owner_id')
+  assert.deepEqual(asks.get('a').map((row) => row.id), [1, 3])
+  assert.equal(asks.size, 2)
+  assert.equal(groupBy(null, 'x').size, 0)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('src/lib/Family.jsx'), /howOften === 'daily' \? 0 : Number\(howOften\)/, 'web family can add every so often')
+  assert.match(read('src/lib/FamilyTonight.jsx'), /sharedLastLine\(row\.last, row\.night, row\.lastName\)/)
+  assert.match(read('src/lib/SendDidYou.jsx'), /senderLastDid\(book, question/, 'web ask carries your last Did')
+  assert.match(read('src/lib/DidYou.jsx'), /senderLastDid\(book, question/)
+  assert.match(read('src/lib/Inbox.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/Sent.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/LampDetail.jsx'), /<CheckOnCard lamp=\{lamp\} \/>/)
+  assert.match(read('src/lib/DidWe.jsx'), /togetherLine\(sums\.get\(card\.id\)\)/)
+  assert.match(read('src/lib/Friends.jsx'), /sharedNotesOf\(ids\)/)
 })
 
 test('did we amounts: private question amounts never in the query', () => {
@@ -5519,6 +5622,55 @@ await testAsync('shared every so often: due across members, any Did resets it, c
   assert.ok(order.indexOf('shared-every.sql') > order.indexOf('did-you-repeat.sql'), 'after the repeat constraint it replaces')
   const lib = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
   assert.ok(lib.includes("rpc('family_every_last'"), 'one call for every question, not one per row')
+})
+
+await testAsync('shared notes sync across devices, and Did we group notes', async () => {
+  const { sharedKeysFrom, weNotesView } = await import('../src/lib/social-amounts.js')
+  assert.deepEqual(
+    sharedKeysFrom([{ lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'b' }, null]),
+    ['a|2026-10-09'],
+    'server rows become cache keys, no repeats or broken rows',
+  )
+  assert.deepEqual(sharedKeysFrom(null), [])
+  const people = [{ id: 'me', name: 'Me' }, { id: 'p', name: 'Pat' }]
+  const view = weNotesView(
+    [
+      { user_id: 'me', night: '2026-10-09', note: 'ran', shared: false },
+      { user_id: 'p', night: '2026-10-08', note: 'old', shared: true },
+      { user_id: 'p', night: '2026-10-09', note: 'new', shared: true },
+      { user_id: 'p', night: '2026-10-07', note: 'kept', shared: false },
+      { user_id: 'gone', night: '2026-10-09', note: 'left', shared: true },
+      { user_id: 'p', night: '2026-10-06', note: '  ', shared: true },
+    ],
+    'me',
+    people,
+  )
+  assert.deepEqual(view.mine.get('2026-10-09'), { note: 'ran', shared: false })
+  assert.deepEqual(view.shared.map((r) => r.note), ['new', 'old'], 'only shared, only people on the card, newest first')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const client = readFileSync(path.join(root, 'src/lib/social-amounts.js'), 'utf8')
+  assert.match(client, /\.from\('shared_notes'\)\s*\.select\('lamp_id, period_key'\)\s*\.eq\('user_id', user\.id\)/, 'one read of all your shared notes')
+  assert.match(client, /SYNC_MS/, 'cached, not per row')
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.match(notes, /noteSharedNow\(share\.lampId, share\.periodKey\)/, 'sheet asks the server on open')
+  const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
+  assert.match(web, /noteSharedNow\(target\.lampId, target\.periodKey\)/)
+  const we = readFileSync(path.join(root, 'native/components/WeNotes.jsx'), 'utf8')
+  assert.match(we, /useState\(Boolean\(initial\?\.shared\)\)/, 'share with the group starts off')
+  assert.match(we, /cheer\.cheer\(/, 'shared notes use the Did we cheer')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8').replace(/\r\n/g, '\n')
+  const part = sql.slice(sql.indexOf('create table if not exists public.we_notes'))
+  assert.match(part, /alter table public\.we_notes enable row level security/)
+  assert.match(part, /shared\s+and public\.we_note_in\(card_id, \(select auth\.uid\(\)\)\)\s+and public\.we_note_in\(card_id, user_id\)/, 'readers and writers must still be on the card')
+  assert.match(part, /m\.state = 'in' and not c\.archived/, 'leaving or closing ends access')
+  assert.match(part, /public\.we_note_did\(card_id, user_id, night\)/, 'only on a did night')
+  assert.match(part, /create index if not exists we_notes_card_night_idx on public\.we_notes \(card_id, night\)/)
+  assert.match(part, /create index if not exists we_notes_made_idx on public\.we_notes \(user_id, made_at\)/)
+  assert.match(part, /length\(note\) between 1 and 500/)
+  assert.match(part, />= 20 then\s+raise exception 'too many shared notes today'/)
+  assert.match(part, /before insert on public\.we_notes/)
+  assert.match(part, /revoke all on public\.we_notes from anon/)
+  assert.doesNotMatch(part.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

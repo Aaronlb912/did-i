@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
@@ -6,7 +6,7 @@ import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
-import { noteShared, setNoteShared } from '../../src/lib/social-amounts.js'
+import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
 import { SetSwitch } from './SetBits.jsx'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
@@ -90,6 +90,19 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
   const [count, setCount] = useState(amount?.initial || '')
   // Off unless this night's note is already shared.
   const [on, setOn] = useState(() => Boolean(share && noteShared(share.lampId, share.periodKey)))
+  // Then the server says, so Share matches what another phone set. A tap
+  // before the answer comes back wins.
+  const touched = useRef(false)
+  useEffect(() => {
+    if (!share) return undefined
+    let alive = true
+    noteSharedNow(share.lampId, share.periodKey).then((yes) => {
+      if (alive && !touched.current) setOn(yes)
+    })
+    return () => {
+      alive = false
+    }
+  }, [share?.lampId, share?.periodKey])
   const save = () => {
     onSave(draft, amount ? count : undefined)
     shareAfter(share, on, draft)
@@ -119,7 +132,10 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
         />
       ) : null}
       {share ? (
-        <SetSwitch colors={colors} label={t('sharedNote.toggle')} sub={t('sharedNote.who')} last on={on} onPress={() => setOn((was) => !was)} />
+        <SetSwitch colors={colors} label={t('sharedNote.toggle')} sub={t('sharedNote.who')} last on={on} onPress={() => {
+          touched.current = true
+          setOn((was) => !was)
+        }} />
       ) : null}
       <View style={styles.keys}>
         <DidButton small colors={colors} label={t('hang.save')} onPress={save} />

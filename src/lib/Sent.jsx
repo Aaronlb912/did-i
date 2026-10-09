@@ -7,6 +7,8 @@ import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from './did-
 import { t, tMiss } from './i18n.js'
 import { editSend, listSent, personName, takeBack } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { sendLastLine } from './every-copy.js'
+import { repeatLabel } from './send-repeat.js'
 import { SetCard } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
@@ -128,7 +130,9 @@ export function Sent({ book, now }) {
             <span className="di-people-who">
               <strong>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</strong>
               <em>
-                {t('sent.to', { name: personName(row.person) || t('people.someone') })}
+                {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate())]
+                  .filter(Boolean)
+                  .join(' · ')}
                 {' · '}
                 {howItWent(row.state)}
               </em>

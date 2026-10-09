@@ -103,9 +103,58 @@ function keepShared(list) {
   }
 }
 
-// Whether this night's note is shared, as last saved from this device.
+// Whether this night's note is shared, from the last server read (or the
+// last save on this device before that read). Only a starting place: the
+// server is the truth, see syncSharedNotes.
 export function noteShared(lampId, periodKey) {
   return readShared().includes(sharedKey(lampId, periodKey))
+}
+
+// Rows from shared_notes into the cache's keys, newest first, no repeats.
+export function sharedKeysFrom(rows) {
+  const out = []
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.lamp_id || !row?.period_key) continue
+    const key = sharedKey(row.lamp_id, row.period_key)
+    if (!out.includes(key)) out.push(key)
+  }
+  return out.slice(0, SHARED_KEEP)
+}
+
+// One read of every note you have shared, from any device, kept for a short
+// while so opening several note sheets is still one query. null: could not
+// read (offline, signed out), so the cache stays as it was.
+const SYNC_MS = 30000
+let syncing = null
+let syncedAt = 0
+
+export function syncSharedNotes(now = Date.now()) {
+  if (syncing && now - syncedAt < SYNC_MS) return syncing
+  syncedAt = now
+  syncing = (async () => {
+    const db = cloud()
+    if (!db) return null
+    const { data } = await db.auth.getSession()
+    const user = data?.session?.user
+    if (!user) return null
+    const res = await db
+      .from('shared_notes')
+      .select('lamp_id, period_key')
+      .eq('user_id', user.id)
+      .order('made_at', { ascending: false })
+      .limit(SHARED_KEEP)
+    if (res.error) return null
+    const keys = sharedKeysFrom(res.data)
+    keepShared(keys)
+    return keys
+  })().catch(() => null)
+  return syncing
+}
+
+// Whether this night's note is shared, asked of the server (cached).
+export async function noteSharedNow(lampId, periodKey) {
+  const keys = await syncSharedNotes()
+  return keys ? keys.includes(sharedKey(lampId, periodKey)) : noteShared(lampId, periodKey)
 }
 
 // Share (or update) a note. An empty note or share off removes it.
@@ -128,7 +177,64 @@ export async function setNoteShared({ lampId, periodKey, question = '', note = '
   }
   const rest = readShared().filter((item) => item !== key)
   keepShared(want ? [key, ...rest] : rest)
+  // The next sheet reads the server again.
+  syncing = null
   return { miss: '' }
+}
+
+// Notes on a Did we ------------------------------------------------------
+
+export const WE_NOTE_DAYS = 14
+
+// we_notes rows into what the card page shows: your own note per night, and
+// the notes others shared, newest night first. Names come from the card.
+export function weNotesView(rows, me, people = []) {
+  const names = new Map((people || []).map((p) => [p.id, p.name]))
+  const mine = new Map()
+  const shared = []
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.night || !row?.user_id || !String(row.note || '').trim()) continue
+    if (row.user_id === me) mine.set(row.night, { note: row.note, shared: Boolean(row.shared) })
+    else if (row.shared && names.has(row.user_id)) {
+      shared.push({ id: row.user_id, name: names.get(row.user_id) || '', night: row.night, note: row.note })
+    }
+  }
+  shared.sort((a, b) => (a.night < b.night ? 1 : a.night > b.night ? -1 : a.name.localeCompare(b.name)))
+  return { mine, shared }
+}
+
+// One read per card page: the last two weeks of notes RLS lets you see.
+export async function weNotes(cardId, night = boardDate()) {
+  const db = cloud()
+  if (!db || !cardId) return { rows: [], me: '', miss: db ? '' : 'off' }
+  const { data } = await db.auth.getSession()
+  const me = data?.session?.user?.id || ''
+  const { data: rows, error } = await db
+    .from('we_notes')
+    .select('user_id, night, note, shared')
+    .eq('card_id', cardId)
+    .gte('night', addDaysIso(night, -WE_NOTE_DAYS))
+    .order('night', { ascending: false })
+    .limit(80)
+  if (error) return { rows: [], me, ...bad(error) }
+  return { rows: rows || [], me, miss: '' }
+}
+
+// Save your note on a night you said did. Empty removes it.
+export async function putWeNote({ cardId, night, note = '', shared = false }) {
+  const db = cloud()
+  if (!db) return { miss: t('sharedNote.needAccount') }
+  const { data } = await db.auth.getSession()
+  const user = data?.session?.user
+  if (!user) return { miss: t('sharedNote.needAccount') }
+  const text = String(note || '').trim().slice(0, 500)
+  const where = { card_id: cardId, user_id: user.id, night }
+  const { error } = text
+    ? await db.from('we_notes').upsert({ ...where, note: text, shared: Boolean(shared) })
+    : await db.from('we_notes').delete().match(where)
+  if (!error) return { miss: '' }
+  if (/too many shared notes/i.test(error.message || '')) return { miss: t('sharedNote.cap') }
+  return { miss: t('weNote.failed') }
 }
 
 // A friend's shared notes from the last few nights, newest first. RLS
@@ -145,4 +251,33 @@ export async function sharedNotesFrom(friendId, now = new Date()) {
     .order('made_at', { ascending: false })
     .limit(10)
   return error || !Array.isArray(data) ? [] : data
+}
+
+// Shared notes from many friends in one query: Map friendId -> rows, newest
+// first, at most `each` per friend. For the Friends list.
+export async function sharedNotesOf(friendIds, now = new Date(), each = 3) {
+  const ids = [...new Set((friendIds || []).filter(Boolean))].slice(0, 200)
+  const db = cloud()
+  if (!db || !ids.length) return new Map()
+  const since = new Date(now.getTime() - SHARED_NOTE_DAYS * 86400000).toISOString()
+  const { data, error } = await db
+    .from('shared_notes')
+    .select('user_id, lamp_id, period_key, question, note, made_at')
+    .in('user_id', ids)
+    .gte('made_at', since)
+    .order('made_at', { ascending: false })
+    .limit(200)
+  return error ? new Map() : notesByFriend(data, each)
+}
+
+export function notesByFriend(rows, each = 3) {
+  const out = new Map()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.user_id || !String(row.note || '').trim()) continue
+    const list = out.get(row.user_id) || []
+    if (list.length >= each) continue
+    list.push(row)
+    out.set(row.user_id, list)
+  }
+  return out
 }

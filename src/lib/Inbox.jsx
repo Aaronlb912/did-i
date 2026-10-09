@@ -5,6 +5,7 @@ import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
 import { WeAsks } from './DidWe.jsx'
 import { t, tMiss } from './i18n.js'
+import { sendLastLine } from './every-copy.js'
 import { repeatLabel } from './send-repeat.js'
 import { answerSend, listInbox, personName, refreshPeople, reportSend } from './people.js'
 import { fireCheer } from './purse.js'
@@ -115,6 +116,7 @@ export function Inbox({ book, now, onKeep }) {
               <em>
                 {t('inbox.from', { name: personName(row.person) || t('people.someone') })}
                 {repeatLabel(row.repeat) ? ` · ${repeatLabel(row.repeat)}` : ''}
+                {sendLastLine(row.repeat, row.last_did_on, boardDate()) ? ` · ${sendLastLine(row.repeat, row.last_did_on, boardDate())}` : ''}
                 {row.note ? ` · ${row.note}` : ''}
               </em>
             </span>

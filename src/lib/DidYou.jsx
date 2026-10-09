@@ -6,7 +6,9 @@ import { Pick, Shell, usePeople } from './DidWe.jsx'
 import { t, tMiss } from './i18n.js'
 import { LeadSwitch } from './LeadSwitch.jsx'
 import { sendDidI } from './people.js'
-import { repeatFrom } from './send-repeat.js'
+import { boardDate } from './recurrence.js'
+import { EveryPick } from './SendDidYou.jsx'
+import { repeatFrom, senderLastDid } from './send-repeat.js'
 import { SetCap } from './set-bits.jsx'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -41,12 +43,15 @@ function DidYouForm({ book, start, withId }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
-  const repeat = repeatFrom(cadence, days)
+  const [everyDays, setEveryDays] = useState(7)
+  const repeat = repeatFrom(cadence, days, everyDays)
 
   async function send() {
     if (cadence === 'weekly' && !days.length) return setMiss(t('we.missDays'))
     setBusy(true)
-    const { miss: why } = await sendDidI(to, question, note, undefined, repeat)
+    // Your own last Did of the same question, so they see "Last time".
+    const last = cadence === 'every' ? senderLastDid(book, question, boardDate(new Date())) : ''
+    const { miss: why } = await sendDidI(to, question, note, undefined, repeat, last)
     setBusy(false)
     if (why) return setMiss(why === 'already' ? t('people.sendAlready') : tMiss(why))
     noteAsked(to)
@@ -89,6 +94,7 @@ function DidYouForm({ book, start, withId }) {
           { id: 'once', label: t('hang.once') },
           { id: 'daily', label: t('we.daily') },
           { id: 'weekly', label: t('we.someDays') },
+          { id: 'every', label: t('hang.every') },
         ]}
       />
       {cadence === 'weekly' ? (
@@ -100,7 +106,10 @@ function DidYouForm({ book, start, withId }) {
           items={DAYS.map((day) => ({ id: day, label: t(`we.day.${day}`) }))}
         />
       ) : null}
-      <p className="di-set-note">{cadence === 'once' ? t('lead.youOnceHint') : t('lead.youRepeatHint')}</p>
+      {cadence === 'every' ? <EveryPick value={everyDays} onPick={setEveryDays} /> : null}
+      <p className="di-set-note">
+        {cadence === 'once' ? t('lead.youOnceHint') : cadence === 'every' ? t('people.sendEveryHint') : t('lead.youRepeatHint')}
+      </p>
       <label className="di-field">
         <span>{t('people.sendNote')}</span>
         <textarea

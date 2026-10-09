@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { dueByUrgency, shortLabel } from './board-json.js'
 import { NOTE_MAX } from './board-ops.js'
 import { goHash } from '../site/hash.js'
@@ -28,7 +28,7 @@ import { FamilyTonight } from './FamilyTonight.jsx'
 import { WeFace, useWeAnswer, weOpenForMe } from './DidWe.jsx'
 import { takeWeFinishes, useWeTonight, weInFilter, weStats } from './did-we.js'
 import { shelfMarks, weMarksFor } from './achievements.js'
-import { noteShared, setNoteShared } from './social-amounts.js'
+import { noteShared, noteSharedNow, setNoteShared } from './social-amounts.js'
 
 // Where the stack has no card of your own to answer, so a Did we can have it.
 const WE_OVER = new Set(['hall', 'rest', 'off', 'waiting'])
@@ -43,6 +43,17 @@ function NoteBox({ target, shelf, onSave, onCancel }) {
   const [count, setCount] = useState(typeof answer?.amount === 'number' ? String(answer.amount) : '')
   // Off unless this night's note is already shared.
   const [share, setShare] = useState(() => noteShared(target.lampId, target.periodKey))
+  // Then the server says, so it matches another device. A click first wins.
+  const touched = useRef(false)
+  useEffect(() => {
+    let alive = true
+    noteSharedNow(target.lampId, target.periodKey).then((yes) => {
+      if (alive && !touched.current) setShare(yes)
+    })
+    return () => {
+      alive = false
+    }
+  }, [target.lampId, target.periodKey])
   if (!lamp || !answer) return null
   return (
     <form
@@ -64,7 +75,10 @@ function NoteBox({ target, shelf, onSave, onCancel }) {
         </label>
       ) : null}
       <label className="di-field di-we-check">
-        <input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} />
+        <input type="checkbox" checked={share} onChange={(event) => {
+          touched.current = true
+          setShare(event.target.checked)
+        }} />
         <span>{t('sharedNote.toggle')}</span>
       </label>
       {share ? <p className="di-sit-line">{t('sharedNote.who')}</p> : null}
