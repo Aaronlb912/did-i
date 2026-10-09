@@ -5499,11 +5499,11 @@ await testAsync('shared every so often: due across members, any Did resets it, c
   assert.equal(peopleTonightItems({ familyRows: [famRow(null)] }).length, 1)
   assert.equal(peopleTonightItems({ familyRows: [famRow({ status: 'skip' })] }).length, 0)
   // SQL
-  const sql = readFileSync(new URL('../supabase/shared-every.sql', import.meta.url), 'utf8')
+  const sql = readFileSync(new URL('../supabase/shared-every.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
   for (const bit of [
     "cadence in ('daily', 'weekly', 'once', 'every')",
     'every_days between 1 and 365',
-    'security definer\r\nset search_path = public',
+    'security definer\nset search_path = public',
     'public.in_family(l.family_id)',
     'lamps[1:200]',
     'revoke all on function public.family_every_last(uuid[]) from public, anon;',
