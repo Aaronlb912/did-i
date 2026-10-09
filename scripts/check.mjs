@@ -5521,6 +5521,55 @@ await testAsync('shared every so often: due across members, any Did resets it, c
   assert.ok(lib.includes("rpc('family_every_last'"), 'one call for every question, not one per row')
 })
 
+await testAsync('shared notes sync across devices, and Did we group notes', async () => {
+  const { sharedKeysFrom, weNotesView } = await import('../src/lib/social-amounts.js')
+  assert.deepEqual(
+    sharedKeysFrom([{ lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'b' }, null]),
+    ['a|2026-10-09'],
+    'server rows become cache keys, no repeats or broken rows',
+  )
+  assert.deepEqual(sharedKeysFrom(null), [])
+  const people = [{ id: 'me', name: 'Me' }, { id: 'p', name: 'Pat' }]
+  const view = weNotesView(
+    [
+      { user_id: 'me', night: '2026-10-09', note: 'ran', shared: false },
+      { user_id: 'p', night: '2026-10-08', note: 'old', shared: true },
+      { user_id: 'p', night: '2026-10-09', note: 'new', shared: true },
+      { user_id: 'p', night: '2026-10-07', note: 'kept', shared: false },
+      { user_id: 'gone', night: '2026-10-09', note: 'left', shared: true },
+      { user_id: 'p', night: '2026-10-06', note: '  ', shared: true },
+    ],
+    'me',
+    people,
+  )
+  assert.deepEqual(view.mine.get('2026-10-09'), { note: 'ran', shared: false })
+  assert.deepEqual(view.shared.map((r) => r.note), ['new', 'old'], 'only shared, only people on the card, newest first')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const client = readFileSync(path.join(root, 'src/lib/social-amounts.js'), 'utf8')
+  assert.match(client, /\.from\('shared_notes'\)\s*\.select\('lamp_id, period_key'\)\s*\.eq\('user_id', user\.id\)/, 'one read of all your shared notes')
+  assert.match(client, /SYNC_MS/, 'cached, not per row')
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.match(notes, /noteSharedNow\(share\.lampId, share\.periodKey\)/, 'sheet asks the server on open')
+  const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
+  assert.match(web, /noteSharedNow\(target\.lampId, target\.periodKey\)/)
+  const we = readFileSync(path.join(root, 'native/components/WeNotes.jsx'), 'utf8')
+  assert.match(we, /useState\(Boolean\(initial\?\.shared\)\)/, 'share with the group starts off')
+  assert.match(we, /cheer\.cheer\(/, 'shared notes use the Did we cheer')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8').replace(/\r\n/g, '\n')
+  const part = sql.slice(sql.indexOf('create table if not exists public.we_notes'))
+  assert.match(part, /alter table public\.we_notes enable row level security/)
+  assert.match(part, /shared\s+and public\.we_note_in\(card_id, \(select auth\.uid\(\)\)\)\s+and public\.we_note_in\(card_id, user_id\)/, 'readers and writers must still be on the card')
+  assert.match(part, /m\.state = 'in' and not c\.archived/, 'leaving or closing ends access')
+  assert.match(part, /public\.we_note_did\(card_id, user_id, night\)/, 'only on a did night')
+  assert.match(part, /create index if not exists we_notes_card_night_idx on public\.we_notes \(card_id, night\)/)
+  assert.match(part, /create index if not exists we_notes_made_idx on public\.we_notes \(user_id, made_at\)/)
+  assert.match(part, /length\(note\) between 1 and 500/)
+  assert.match(part, />= 20 then\s+raise exception 'too many shared notes today'/)
+  assert.match(part, /before insert on public\.we_notes/)
+  assert.match(part, /revoke all on public\.we_notes from anon/)
+  assert.doesNotMatch(part.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

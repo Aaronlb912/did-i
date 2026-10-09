@@ -177,3 +177,120 @@ create trigger cap_shared_notes
 
 revoke all on public.shared_notes from anon;
 grant select, insert, update, delete on public.shared_notes to authenticated;
+
+-- Notes on a Did we ------------------------------------------------------
+-- After a Did on a shared card you can add a note to that night. It stays
+-- yours unless you turn on Share; then everyone still on the card can read
+-- it and cheer you. Leaving the card (or the card closing) ends that: the
+-- read policy checks you are still on it, every time.
+
+create table if not exists public.we_notes (
+  card_id uuid not null references public.we_cards on delete cascade,
+  user_id uuid not null references auth.users on delete cascade,
+  night date not null,
+  note text not null,
+  shared boolean not null default false,
+  made_at timestamptz not null default now(),
+  primary key (card_id, user_id, night)
+);
+
+alter table public.we_notes drop constraint if exists we_notes_len;
+alter table public.we_notes add constraint we_notes_len check (length(note) between 1 and 500);
+
+-- The card page reads a card's recent nights; the cap reads by person and time.
+create index if not exists we_notes_card_night_idx on public.we_notes (card_id, night);
+create index if not exists we_notes_made_idx on public.we_notes (user_id, made_at);
+
+-- Is this person on the card right now (state in, card not closed)?
+create or replace function public.we_note_in(card uuid, who uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.we_members m
+    join public.we_cards c on c.id = m.card_id
+    where m.card_id = card and m.user_id = who and m.state = 'in' and not c.archived
+  );
+$$;
+
+-- A note only goes on a night you said did.
+create or replace function public.we_note_did(card uuid, who uuid, on_night date)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.we_answers
+    where card_id = card and user_id = who and night = on_night and status = 'did'
+  );
+$$;
+
+revoke all on function public.we_note_in(uuid, uuid) from public, anon;
+revoke all on function public.we_note_did(uuid, uuid, date) from public, anon;
+grant execute on function public.we_note_in(uuid, uuid) to authenticated;
+grant execute on function public.we_note_did(uuid, uuid, date) to authenticated;
+
+alter table public.we_notes enable row level security;
+
+-- Yours always. Someone else's only when shared, while you and they are both
+-- still on the card.
+drop policy if exists "read own or the group's shared we notes" on public.we_notes;
+create policy "read own or the group's shared we notes" on public.we_notes
+  for select using (
+    (select auth.uid()) = user_id
+    or (shared
+        and public.we_note_in(card_id, (select auth.uid()))
+        and public.we_note_in(card_id, user_id))
+  );
+
+drop policy if exists "write own we notes" on public.we_notes;
+create policy "write own we notes" on public.we_notes
+  for insert with check (
+    (select auth.uid()) = user_id
+    and public.we_note_in(card_id, user_id)
+    and public.we_note_did(card_id, user_id, night)
+  );
+
+drop policy if exists "change own we notes" on public.we_notes;
+create policy "change own we notes" on public.we_notes
+  for update using ((select auth.uid()) = user_id)
+  with check (
+    (select auth.uid()) = user_id
+    and public.we_note_in(card_id, user_id)
+    and public.we_note_did(card_id, user_id, night)
+  );
+
+drop policy if exists "remove own we notes" on public.we_notes;
+create policy "remove own we notes" on public.we_notes
+  for delete using ((select auth.uid()) = user_id);
+
+-- The same 20 a day as shared notes, counted across both tables.
+create or replace function public.cap_we_notes()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (select count(*) from public.we_notes
+      where user_id = new.user_id and made_at > now() - interval '1 day')
+     + (select count(*) from public.shared_notes
+      where user_id = new.user_id and made_at > now() - interval '1 day') >= 20 then
+    raise exception 'too many shared notes today';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists cap_we_notes on public.we_notes;
+create trigger cap_we_notes
+  before insert on public.we_notes
+  for each row execute function public.cap_we_notes();
+
+revoke all on public.we_notes from anon;
+grant select, insert, update, delete on public.we_notes to authenticated;
