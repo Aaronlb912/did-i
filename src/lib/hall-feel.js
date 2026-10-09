@@ -1,12 +1,13 @@
 import { weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, parseIsoDate } from './recurrence.js'
+import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
 // A question only counts on nights it existed: one added today must not make
 // last night look missed, or adding a new daily question cuts the streak.
+// Every so often questions have no streak, so they never count here.
 function dueThatNight(book, iso, at) {
-  return dueTonight(book, at).filter((row) => !row.lamp.createdOn || row.lamp.createdOn <= iso)
+  return dueTonight(book, at).filter((row) => !isEvery(row.lamp) && (!row.lamp.createdOn || row.lamp.createdOn <= iso))
 }
 
 function noonOn(iso) {
@@ -23,7 +24,7 @@ export function hallHeat(book, now = new Date()) {
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
     if (!at) break
-    const rows = dueTonight(book, at)
+    const rows = dueTonight(book, at).filter((row) => !isEvery(row.lamp))
     if (countedTonightRows(rows).length === 0) {
       cursor = addDaysIso(cursor, -1)
       continue

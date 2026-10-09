@@ -69,6 +69,8 @@ export type DidITonightWidgetProps = {
   buddyId?: string
   // Did we, one line: "Did we · waiting on Sam". Medium and large only.
   weLine?: string
+  // Gentle mode. The widget shows no streak numbers today; keep it that way when set.
+  gentle?: boolean
   // What the buddy has on, as shapes (src/lib/accessory-shapes.js).
   buddyShapes?: { behind?: (string | number)[][]; front?: (string | number)[][] } | null
   colors?: WidgetColors

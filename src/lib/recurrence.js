@@ -181,11 +181,106 @@ export function answerFor(book, lampId, periodKey) {
   return answerIndex(rows).get(`${lampId}\u0000${periodKey}`)
 }
 
+// "Every so often" questions (cadence 'every'): no fixed nights. One comes
+// up once everyDays (or the gap learned from its last few Dids) has passed
+// since the last Did, or right away if it was never done. isDueOn stays
+// false for them, so streak, catch-up and calendar walks leave them out.
+export const EVERY_PICKS = [7, 14, 30]
+
+export function isEvery(lamp) {
+  return lamp?.cadence === 'every'
+}
+
+// Each question's Did nights, oldest first. Hangs off the answers array like
+// answerIndex, so an edit drops it on its own.
+const didNightsMemo = new WeakMap()
+
+function didNightsOf(book, lampId) {
+  const rows = book?.answers
+  if (!rows || !rows.length) return []
+  let byLamp = didNightsMemo.get(rows)
+  if (!byLamp) {
+    byLamp = new Map()
+    for (const answer of rows) {
+      if (answer.status !== 'yes' && answer.status !== 'late') continue
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(answer.periodKey || ''))) continue
+      let list = byLamp.get(answer.lampId)
+      if (!list) byLamp.set(answer.lampId, (list = []))
+      list.push(answer.periodKey)
+    }
+    for (const list of byLamp.values()) list.sort()
+    didNightsMemo.set(rows, byLamp)
+  }
+  return byLamp.get(lampId) || []
+}
+
+// How many Did nights fall before dateIso (strictly, or on it with `upTo`).
+function didCountBefore(list, dateIso, upTo = false) {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (upTo ? list[mid] <= dateIso : list[mid] < dateIso) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+// The newest Did night before dateIso ('' if none). upTo includes dateIso.
+export function lastDidNight(book, lampId, dateIso, upTo = false) {
+  const list = didNightsOf(book, lampId)
+  const count = didCountBefore(list, dateIso, upTo)
+  return count ? list[count - 1] : ''
+}
+
+// The usual gap, learned from the last few Dids before dateIso: the median of
+// up to 5 gaps, once there are at least 3. 0 until then.
+const LEARN_GAPS = 5
+export function learnedGap(book, lampId, dateIso, upTo = false) {
+  const list = didNightsOf(book, lampId)
+  const count = didCountBefore(list, dateIso, upTo)
+  if (count < 4) return 0
+  const from = Math.max(0, count - LEARN_GAPS - 1)
+  const gaps = []
+  for (let i = from + 1; i < count; i += 1) gaps.push(daysBetween(list[i - 1], list[i]))
+  gaps.sort((a, b) => a - b)
+  const mid = gaps.length >> 1
+  const median = gaps.length % 2 ? gaps[mid] : Math.round((gaps[mid - 1] + gaps[mid]) / 2)
+  return median >= 1 ? median : 0
+}
+
+export function everyGap(book, lamp, dateIso) {
+  const days = Number(lamp?.everyDays)
+  return learnedGap(book, lamp?.id, dateIso) || (Number.isInteger(days) && days >= 1 ? days : 7)
+}
+
+// Due on dateIso: never done, or the gap has passed since the last Did.
+export function everyDueOn(book, lamp, dateIso) {
+  if (!isEvery(lamp) || lamp.archived) return false
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  if (created && dateIso < created) return false
+  const last = lastDidNight(book, lamp.id, dateIso)
+  if (!last) return true
+  return daysBetween(last, dateIso) >= everyGap(book, lamp, dateIso)
+}
+
+// Days since the last Did, counting dateIso itself; null if never done.
+export function daysSinceDid(book, lampId, dateIso, upTo = true) {
+  const last = lastDidNight(book, lampId, dateIso, upTo)
+  return last ? daysBetween(last, dateIso) : null
+}
+
 export function dueTonight(book, now = new Date()) {
   const dateIso = boardDate(now, book.dayFoldHour)
   const lamps = []
   for (const lamp of book.lamps || []) {
     if (lamp.archived) continue
+    if (isEvery(lamp)) {
+      // Answered tonight stays on tonight (Did shows done, Not yet asks again).
+      const answer = answerFor(book, lamp.id, dateIso) || null
+      if (answer || everyDueOn(book, lamp, dateIso)) lamps.push({ lamp, dateIso, periodKey: dateIso, answer })
+      continue
+    }
     if (!isDueOn(lamp, dateIso)) continue
     const periodKey = periodKeyFor(lamp, dateIso)
     const answer = answerFor(book, lamp.id, periodKey) || null
@@ -213,7 +308,7 @@ export function askAfterPassed(lamp, now = new Date()) {
 }
 
 export function previousDueDate(lamp, dateIso) {
-  if (!lamp || lamp.cadence === 'once') return ''
+  if (!lamp || lamp.cadence === 'once' || isEvery(lamp)) return ''
   for (let i = 1; i <= 62; i += 1) {
     const iso = addDaysIso(dateIso, -i)
     if (isDueOn(lamp, iso)) return iso
@@ -225,7 +320,7 @@ export function catchUpRows(book, now = new Date()) {
   const dateIso = boardDate(now, book.dayFoldHour)
   const rows = []
   for (const lamp of book.lamps || []) {
-    if (lamp.archived || lamp.cadence === 'once') continue
+    if (lamp.archived || lamp.cadence === 'once' || isEvery(lamp)) continue
     const prevIso = previousDueDate(lamp, dateIso)
     if (!prevIso) continue
     if (lamp.createdOn && prevIso < lamp.createdOn) continue
@@ -303,12 +398,14 @@ function requiredTonightRows(rows) {
 // but an unanswered optional one is like a night with nothing due.
 // One Did I put on a night's tonight never counts, did or nope. A deadline
 // question before its day is the same as an optional one: it counts once
-// answered, so adding one never clears the night by itself.
+// answered, so adding one never clears the night by itself. An every so
+// often question counts the same way: a Did helps, Not yet never holds the
+// night open.
 export function countedTonightRows(rows) {
   return (rows || []).filter(
     (row) =>
       !row?.lamp?.fromDidI &&
-      (!row?.lamp?.optional || rowDoneTonight(row)) &&
+      ((!row?.lamp?.optional && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
 }
@@ -373,6 +470,7 @@ export function periodLabel(lamp, periodKey) {
 
 export function recentPeriodKeys(lamp, dateIso, count = 7) {
   if (lamp.cadence === 'once') return [`once:${lamp.id}`]
+  if (isEvery(lamp)) return []
   const created = String(lamp.createdOn || '').trim()
   if (lamp.cadence === 'monthly') {
     const date = parseIsoDate(dateIso)

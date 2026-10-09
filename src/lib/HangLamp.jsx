@@ -173,6 +173,20 @@ export function HangLamp({
           <small className="di-field-hint">{t('hang.onceOnHint')}</small>
         </div>
       ) : null}
+      {!deadline && hang.draft.cadence === 'every' ? (
+        <label className="di-field">
+          <span>{t('hang.everyDays')}</span>
+          <input
+            className="di-hang-input"
+            inputMode="numeric"
+            value={hang.draft.everyDays}
+            onChange={(event) => hang.change('everyDays', event.target.value.replace(/\D/g, ''))}
+            placeholder="7"
+            maxLength={3}
+          />
+          <small className="di-field-hint">{t('hang.everyHint')}</small>
+        </label>
+      ) : null}
       {!deadline && hang.draft.cadence === 'every_n' ? (
         <>
           <label className="di-field">

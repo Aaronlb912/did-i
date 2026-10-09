@@ -1,7 +1,7 @@
 <resources>
   <string name="app_name">Did I</string>
   <!-- Same as "version" in app.json (runtimeVersion in app.config.js). -->
-  <string name="expo_runtime_version">1.3.2</string>
+  <string name="expo_runtime_version">1.3.3</string>
   <string name="widget_diditonight_description" translatable="false">Tonight questions for your tag. Settings → Widget.</string>
   <string name="widget_diditogether_description" translatable="false">Your friends and family, and who is done tonight.</string>
   <string name="shortcut_add_short">Add a question</string>

@@ -18,6 +18,7 @@ const NATIVE_SHIMS = [
   ['@react-native-community/netinfo', 'netinfo-safe.cjs'],
   ['expo-clipboard', 'clipboard-safe.cjs'],
   ['expo-haptics', 'haptics-safe.cjs'],
+  ['expo-store-review', 'store-review-safe.cjs'],
   ['expo-battery', 'battery-safe.cjs'],
   ['expo-linking', 'linking-safe.cjs'],
   ['expo-splash-screen', 'splash-safe.cjs'],

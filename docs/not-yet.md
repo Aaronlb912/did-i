@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Every so often questions and a note after Did (branch `long-gap`)
+
+- **Amount per answer is not built.** Answers sync through `answer_log` columns (`supabase/answers.sql`, `put_answers`), not a json blob, so an amount needs a new column and RPC change. Stopped there on purpose. The "Track an amount" toggle, the number field in the note sheet and the "last 5 times" list wait on that SQL.
+- **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
+- **Web shows less.** The website can add and edit an every so often question and its Tonight follows the same due rule, but its card has no "Last time" line and its question list and page have no days pill or usual gap.
+- **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).
+- **Calendar and stats leave it out.** The overall calendar, streaks and the 30-night tile skip these questions; the question's own month view shows only the nights it was done.
+
 ## Card frames
 
 - **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
@@ -46,7 +54,14 @@ Last worked through 2026-10-02.
 
 - **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.
 - **Drop switch does not ask for notification permission.** Turning on "Tell me when a drop goes live" only saves the pref; a phone that never allowed notifications gets nothing.
-- **Rating is a store link, not the in-app sheet (for now, owner call 2026-10-07).** The card shows once after the 7th cleared night and opens the store (the App Store opens on the write-a-review sheet). Once the app is public on both stores, swap it for the real in-app prompt: add `expo-store-review` (native, needs a build) and call `requestReview()` where RateCard opens the link, keeping the link as the fallback when the prompt is not available.
+- **Rating uses the in-app sheet from 1.3.3, not tried on a phone yet.** RateCard calls `expo-store-review` when the phone has it, else opens the store link. Builds before 1.3.3 and dev clients without the module get the link (shim `native/shim/store-review-safe.cjs`). Apple and Google decide whether the sheet shows; a draft or internal-test app may show nothing, and the card is already gone by then.
+
+## Gentle mode
+
+- **Phone only.** The switch is in phone Settings. The website still shows streak numbers (Home, Stats, Streaks pages), and the pref syncs, so a web visit shows them.
+- **Streak risk pushes still go out.** The local streak-hit notification is not sent in gentle mode; the server streak-risk push does not read `gentle`. Turn off "streakRisk" in notifications, or teach `push_wanted` about it.
+- **Widgets get a `gentle` flag but show no streak today,** so nothing changes on them.
+- **Shared streaks stay.** Did we streaks are shared with others and still show; friends and family see your streak as before.
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
 
 ## App PIN

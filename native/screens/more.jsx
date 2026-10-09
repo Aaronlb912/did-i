@@ -492,6 +492,7 @@ function FolderScope({ colors, boards, tagId, path }) {
 
 export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
   const dateIso = boardDate(clock, book?.dayFoldHour)
@@ -516,13 +517,17 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       {/* This week first, then everything since you started, each with the
           same three tiles so the two read the same way. */}
       <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
-      <StreakHero
-        colors={colors}
-        n={counts.heat}
-        label={t('home.streak')}
-        line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
-        chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
-      />
+      {gentle ? (
+        <Meta colors={colors}>{t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}</Meta>
+      ) : (
+        <StreakHero
+          colors={colors}
+          n={counts.heat}
+          label={t('home.streak')}
+          line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+          chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
+        />
+      )}
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
         <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
@@ -535,8 +540,8 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
         <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
-        <NumberTile half colors={colors} label={t('stats.questions')} n={counts.hung} />
-        <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />
+        <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
+        {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
@@ -838,6 +843,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
 
 export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const books = scopedBooks(inView(book, boards), tagId)
   const heat = books.length ? shelfStreak(books, clock) : 0
@@ -860,6 +866,17 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
       ? t('streaks.broke', { date: formatBoardDate(breakNight.iso), what: breakNight.question })
       : t('streaks.brokeWe', { date: formatBoardDate(breakNight.iso), what: weCardShort(breakNight.weId) || t('we.title') })
     : ''
+
+  if (gentle) {
+    return (
+      <ScreenShell title={t('streaks.title')} colors={colors}>
+        <Meta colors={colors}>{t('settings.gentleHidden')}</Meta>
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+        </SetCard>
+      </ScreenShell>
+    )
+  }
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>

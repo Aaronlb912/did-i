@@ -112,6 +112,8 @@ export function useUndoToast(owner, undo, onUndo, total, hint, onShown) {
       until: now + total,
       total,
       onPress: () => press.current?.(),
+      // A second, smaller action next to Undo (Add a note after a Did).
+      extra: undo.extra || null,
       // Once it has slid in, its clock starts over: the time to undo counts
       // from when it can be seen and tapped, not from the answer.
       onShown: () => {

@@ -7,6 +7,7 @@ import {
   faceReadyTonight,
   formatBoardDate,
   isDueOn,
+  isEvery,
   isoDate,
   parseIsoDate,
   periodKeyFor,
@@ -67,7 +68,7 @@ function noonOn(iso) {
 
 // A question you added on Friday was not something you missed on Monday.
 function dueOnNight(book, iso, at) {
-  return dueTonight(book, at).filter((row) => !row.lamp.createdOn || row.lamp.createdOn <= iso)
+  return dueTonight(book, at).filter((row) => !isEvery(row.lamp) && (!row.lamp.createdOn || row.lamp.createdOn <= iso))
 }
 
 // The first night anything happened: the oldest question's made date or the

@@ -31,7 +31,8 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
-import { answerFor } from '../../src/lib/recurrence.js'
+import { answerFor, isEvery } from '../../src/lib/recurrence.js'
+import { lastTimeLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
@@ -43,7 +44,7 @@ import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
-import { TonightNote } from '../components/NightNotes.jsx'
+import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -188,6 +189,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const [keySeen, setKeySeen] = useState(() => jewelKeySeen())
   // Account prefs land after a reinstall; seen there hides it too.
   const prefsSeen = usePrefs().jewelKeySeen === true
+  const gentle = usePrefs().gentle === true
   const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
@@ -379,7 +381,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     applyUndo()
   }, [applyUndo])
   // The toast's label says what was saved (Marked Did, nope or late).
-  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
+  // After a Did on your own question, the toast also offers a note for it.
+  // The sheet reads colors and onChange when tapped, so a new render never re-arms the toast.
+  const undoNow = stack.undo
+  const noteDeps = useRef({ colors, onChange })
+  noteDeps.current = { colors, onChange }
+  const undoToast = useMemo(() => {
+    if (!undoNow || (undoNow.status !== 'yes' && undoNow.status !== 'late')) return undoNow
+    const target = { boardId: undoNow.book?.id, lampId: undoNow.lampId, periodKey: undoNow.periodKey }
+    return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
+  }, [undoNow])
+  useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
@@ -674,6 +686,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onEdit={() => goHash('/hang', { id: faceRow.lamp.id })}
         frame={cardFrame}
       >
+        {isEvery(faceRow.lamp) ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{lastTimeLine(faceBook, faceRow.lamp, stack.dateIso)}</Text>
+        ) : null}
         {hasHistory ? (
           <NightStrip
             book={faceBook}
@@ -704,7 +719,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               </View>
             </>
           ) : null}
-          {stack.streak > 0 ? (
+          {stack.streak > 0 && !gentle ? (
             <View style={styles.streakRow}>
             <Pressable
               onPress={() => goHash('/stats')}
@@ -1127,6 +1142,7 @@ const frameStyles = StyleSheet.create({
 })
 
 const styles = StyleSheet.create({
+  everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },
   frame: { flex: 1, position: 'relative' },
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
   shell: { flex: 1, paddingHorizontal: 16, position: 'relative' },
