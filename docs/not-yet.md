@@ -60,11 +60,22 @@ Last worked through 2026-10-02.
 
 ## Gentle mode
 
-- **Phone and web.** The switch is in phone Settings and web Settings (next to Less motion). On the web it hides the Stats nights-on number, the Streaks page counts, the question page streak tile and streak popups. The web Home never showed a streak number. Friends and family views are unchanged.
+- **Phone and web.** The switch is in phone Settings and web Settings (next to Less motion). On the web it hides the Stats nights-on number, the Streaks page counts, the question page streak tile and streak popups. The web Home never showed a streak number.
 - **Web Calendar and Week still color missed nights.** Gentle mode hides numbers, not those dots, on both apps.
 - **Streak risk pushes still go out.** The local streak-hit notification is not sent in gentle mode; the server streak-risk push does not read `gentle`. Turn off "streakRisk" in notifications, or teach `push_wanted` about it.
 - **Widgets get a `gentle` flag but show no streak today,** so nothing changes on them.
-- **Shared streaks stay.** Did we streaks are shared with others and still show; friends and family see your streak as before.
+- **Shared streaks stay.** Did we streaks are shared with others and still show.
+- **Friends and family see "Done tonight ✓" or "Not yet", no number (branch `social-gentle`).** supabase/social-gentle.sql nulls the streak in `known_people` and the public tonight wall for anyone with gentle on, and the phone and web read it through `friendLine` / `friendStreak` in people.js. **Not applied yet:** run npm run db:apply:all. Until then the old `known_people` still sends the number and only the client hides it once the `gentle` column arrives.
+- **Gentle is read from `profiles.prefs`,** so it reaches friends only after the phone syncs prefs.
+
+## Check on me (branch `social-gentle`)
+
+- **Not applied yet.** supabase/social-gentle.sql adds `check_ons` (RLS: owner and friend read, owner writes, either deletes; 20 per person; buddy index), `queue_check_ons()` and a `check-ons` pg_cron job every 5 minutes. The existing drain-push job sends what it queues. Needs pg_cron, as family-summary.sql does.
+- **Phone only.** Set it on a question's page (daily and weekly questions). The friend's page lists what they asked you to check on, with Send a Did you and Turn off. The website has neither yet.
+- **Uses the friend's "friends" notification switch,** not a kind of its own.
+- **Monthly, once and every-so-often questions cannot be checked on.** The server only knows a night's answer by date.
+- **Push text is in 9 languages in SQL (`check_on_text`),** separate from `push_text`.
+- **No SQL test in supabase/tests yet,** and the push tap to a prefilled Did you needs device testing (iPhone and Android, app closed and open).
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
 
 ## App PIN

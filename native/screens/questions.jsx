@@ -88,6 +88,7 @@ import {
 } from '../components/ui.jsx'
 import { behindPath, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
+import { CheckOnCard } from '../components/CheckOnCard.jsx'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
@@ -2179,6 +2180,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           ) : null}
         </Pressable>
       </SetCard>
+      {lamp.fromName ? null : <CheckOnCard lamp={lamp} colors={colors} />}
       <LampManage
         book={lampBook}
         lamp={lamp}

@@ -45,6 +45,7 @@ const files = [
   'supabase/referral-rewards.sql',
   'supabase/friend-notes.sql',
   'supabase/milestones.sql',
+  'supabase/social-gentle.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
