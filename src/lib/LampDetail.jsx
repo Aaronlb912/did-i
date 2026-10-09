@@ -4,10 +4,11 @@ import { LampManage } from './LampManage.jsx'
 import { cadenceLine, lampBuzzes, lampNotifyOn, lampPriority } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { lampRecord } from './lamp-record.js'
+import { amountWords, lampRecord, lastDidTimes } from './lamp-record.js'
 import { pillStatusLabel } from './pill-status.js'
 import { usePrefs } from './prefs.js'
-import { recentPeriodKeys } from './recurrence.js'
+import { formatBoardDate, isEvery, recentPeriodKeys } from './recurrence.js'
+import { gapLine, lastTimeLine, sinceBadge } from './every-copy.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 
 function reminderLine(lamp) {
@@ -18,13 +19,14 @@ function reminderLine(lamp) {
 }
 
 export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, onArchive, onRemove }) {
-  usePrefs()
+  const gentle = usePrefs().gentle === true
   // A paused question keeps its recent nights on show.
   const keys = useMemo(
     () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
     [lamp, dateIso],
   )
   const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso])
+  const lastFive = useMemo(() => lastDidTimes(book, lamp, 5), [book, lamp])
   if (!lamp) return null
   const status = lamp.archived
     ? t('lamp.pausedLine')
@@ -44,19 +46,33 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
         <NightStrip book={book} lamp={lamp} keys={keys} />
       </div>
 
-      <div className="di-lamp-tiles">
-        <div className="di-lamp-tile">
-          <strong className="is-on">{record.streak}</strong>
-          <span>{t('lamp.streakCap')}</span>
+      {isEvery(lamp) ? (
+        <div className="di-lamp-tiles">
+          <div className="di-lamp-tile">
+            <strong className="is-on">{sinceBadge(book, lamp, dateIso) || '-'}</strong>
+            <span>{lastTimeLine(book, lamp, dateIso, true)}</span>
+          </div>
+          <div className="di-lamp-tile">
+            <span>{gapLine(book, lamp, dateIso)}</span>
+          </div>
         </div>
-        <div className="di-lamp-tile">
-          <strong>
-            {record.did}
-            <em> / {record.asked}</em>
-          </strong>
-          <span>{t('lamp.didCap', { n: 30 })}</span>
+      ) : (
+        <div className={gentle ? 'di-lamp-tiles is-one' : 'di-lamp-tiles'}>
+          {gentle ? null : (
+            <div className="di-lamp-tile">
+              <strong className="is-on">{record.streak}</strong>
+              <span>{t('lamp.streakCap')}</span>
+            </div>
+          )}
+          <div className="di-lamp-tile">
+            <strong>
+              {record.did}
+              <em> / {record.asked}</em>
+            </strong>
+            <span>{t('lamp.didCap', { n: 30 })}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={edit}>
@@ -69,6 +85,22 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
           {t('lamp.done')}
         </button>
       </div>
+
+      <SetCap>{t('lamp.lastFive')}</SetCap>
+      <SetCard>
+        {lastFive.length ? (
+          lastFive.map((row) => (
+            <SetRow
+              key={row.periodKey}
+              label={row.night ? formatBoardDate(row.night) : row.periodKey}
+              sub={row.note}
+              value={amountWords(row.amount, lamp.amountUnit)}
+            />
+          ))
+        ) : (
+          <SetRow label={t('lamp.lastFiveEmpty')} />
+        )}
+      </SetCard>
 
       <SetCap>{t('hang.secSchedule')}</SetCap>
       <SetCard>

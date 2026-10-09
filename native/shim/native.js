@@ -221,7 +221,7 @@ export async function scheduleNativePings(books, now = new Date()) {
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
     const book = list[0]
-    const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
+    const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -233,7 +233,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         trigger: when(new Date(risk.at)),
       })
     }
-    const grace = pingOn('streakRisk') ? graceRiskFire(book, now) : null
+    const grace = pingOn('streakRisk') && !gentleOn() ? graceRiskFire(book, now) : null
     if (grace) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),

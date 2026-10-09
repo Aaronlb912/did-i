@@ -8,7 +8,7 @@ import {
   isDeadlineMode,
   schedulePick,
 } from './hang-schedule.js'
-import { cadenceLine, SHORT_MAX } from './board-json.js'
+import { cadenceLine, SHORT_MAX, UNIT_MAX } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -362,6 +362,31 @@ export function HangLamp({
               placeholder={t('hang.notesPh')}
             />
           </label>
+          <div className="di-field">
+            <div className="di-hang-chips">
+              <button
+                className={hang.draft.trackAmount ? 'di-key is-pick' : 'di-key'}
+                type="button"
+                aria-pressed={Boolean(hang.draft.trackAmount)}
+                onClick={() => hang.change('trackAmount', !hang.draft.trackAmount)}
+              >
+                {t('hang.trackAmount')}
+              </button>
+            </div>
+            <small className="di-field-hint">{t('hang.trackAmountSub')}</small>
+          </div>
+          {hang.draft.trackAmount ? (
+            <label className="di-field">
+              <span>{t('hang.amountUnit')}</span>
+              <input
+                className="di-hang-input"
+                value={hang.draft.amountUnit || ''}
+                onChange={(event) => hang.change('amountUnit', event.target.value)}
+                placeholder={t('hang.amountUnitPh')}
+                maxLength={UNIT_MAX}
+              />
+            </label>
+          ) : null}
         </>
       ) : null}
       </div>

@@ -107,3 +107,27 @@ export function lampNights(book, lamp) {
     .map((answer) => ({ answer, night: periodNight(lamp, answer.periodKey) }))
     .sort((a, b) => b.night.localeCompare(a.night) || String(b.answer.periodKey).localeCompare(String(a.answer.periodKey)))
 }
+
+// The last few nights this question was Did (late Did too), newest first,
+// with the note and amount. Callers memoize it on [book, lamp].
+export function lastDidTimes(book, lamp, n = 5) {
+  const out = []
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!didStatus(answer.status)) continue
+    out.push({
+      night,
+      periodKey: answer.periodKey,
+      note: String(answer.note || ''),
+      amount: typeof answer.amount === 'number' ? answer.amount : null,
+    })
+    if (out.length >= n) break
+  }
+  return out
+}
+
+// "3 glasses", or just "3" when the question has no unit.
+export function amountWords(amount, unit = '') {
+  if (typeof amount !== 'number') return ''
+  const u = String(unit || '').trim()
+  return u ? `${amount} ${u}` : String(amount)
+}

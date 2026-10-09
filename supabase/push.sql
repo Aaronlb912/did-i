@@ -48,6 +48,8 @@ alter table public.push_queue add constraint push_queue_len
 -- The person's own notification switches (prefs.pingsOff, set in the app's
 -- Reminders screen). Kinds: sends, cheers, friends. Same names as
 -- PING_KINDS in src/lib/prefs.js.
+-- Gentle mode (prefs.gentle) hides streak numbers, so it also stops the
+-- streak pushes (streakRisk, streakHit) whatever pingsOff says.
 create or replace function public.push_wanted(who uuid, kind text)
 returns boolean
 language sql
@@ -56,7 +58,8 @@ security definer
 set search_path = public
 as $$
   select not coalesce(
-    (select jsonb_typeof(p.prefs -> 'pingsOff') = 'array' and (p.prefs -> 'pingsOff') ? kind
+    (select coalesce(jsonb_typeof(p.prefs -> 'pingsOff') = 'array' and (p.prefs -> 'pingsOff') ? kind, false)
+         or (kind in ('streakRisk', 'streakHit') and coalesce(p.prefs ->> 'gentle', '') = 'true')
      from public.profiles p where p.user_id = who),
     false
   );

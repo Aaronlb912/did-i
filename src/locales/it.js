@@ -3258,4 +3258,12 @@ export const it = {
   "ideas.fridge.body": "Torna circa ogni mese.",
   "ideas.fridge.start": "Frigo",
   "starter.fridge.blank": "pulire il frigo",
+  "hang.trackAmount": "Segna una quantità",
+  "hang.trackAmountSub": "Chiedi un numero con la nota dopo un Did.",
+  "hang.amountUnit": "Unità",
+  "hang.amountUnitPh": "bicchieri",
+  "note.amount": "Quantità",
+  "note.amountIn": "Quantità ({unit})",
+  "lamp.lastFive": "Le ultime 5 volte",
+  "lamp.lastFiveEmpty": "Ancora niente. Qui compaiono le ultime 5 sere con Did.",
 }

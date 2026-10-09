@@ -3267,4 +3267,12 @@ export const es = {
   "ideas.fridge.body": "Aparece más o menos cada mes.",
   "ideas.fridge.start": "Nevera",
   "starter.fridge.blank": "limpiar la nevera",
+  "hang.trackAmount": "Anotar una cantidad",
+  "hang.trackAmountSub": "Pide un número junto a la nota después de un Did.",
+  "hang.amountUnit": "Unidad",
+  "hang.amountUnitPh": "vasos",
+  "note.amount": "Cantidad",
+  "note.amountIn": "Cantidad ({unit})",
+  "lamp.lastFive": "Las últimas 5 veces",
+  "lamp.lastFiveEmpty": "Nada aún. Aquí salen las últimas 5 noches con Did.",
 }

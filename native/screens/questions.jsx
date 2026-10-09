@@ -35,6 +35,7 @@ import {
   shortFromQuestion,
   shortLabel,
   SHORT_MAX,
+  UNIT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
@@ -64,7 +65,7 @@ import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { bestQuestionStreak, lampRecord, lampWeeks } from '../../src/lib/lamp-record.js'
+import { amountWords, bestQuestionStreak, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -1327,7 +1328,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const [everyOwn, setEveryOwn] = useState(() => draft.cadence === 'every' && ![7, 14, 30].includes(Number(draft.everyDays)))
   const tagName = String(hang.tagTitle || '').trim() || book.title
   const ready = Boolean(draft.question.trim())
-  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length
+  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length + (draft.trackAmount ? 1 : 0)
   const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
   // The short name shows in full, filled with the one made from the question
@@ -1918,6 +1919,25 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               multiline
               colors={colors}
             />
+            <View style={styles.amountRow}>
+              <Pill
+                label={t('hang.trackAmount')}
+                on={Boolean(draft.trackAmount)}
+                onPress={() => hang.change('trackAmount', !draft.trackAmount)}
+                colors={colors}
+              />
+            </View>
+            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.trackAmountSub')}</Text>
+            {draft.trackAmount ? (
+              <FoldInput
+                label={t('hang.amountUnit')}
+                value={draft.amountUnit || ''}
+                onChangeText={(value) => hang.change('amountUnit', value)}
+                placeholder={t('hang.amountUnitPh')}
+                maxLength={UNIT_MAX}
+                colors={colors}
+              />
+            ) : null}
           </HangFold>
         </SetCard>
       </View>
@@ -1953,6 +1973,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
   const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
+  const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -2096,6 +2117,24 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       ) : null}
 
       <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
+
+      <View style={styles.lastFive}>
+        <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.lastFive')}</Text>
+        {!lastFive.length ? (
+          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
+        ) : null}
+        {lastFive.map((row) => (
+          <View key={row.periodKey} style={[styles.lastRow, { borderBottomColor: colors.lineSoft }]}>
+            <View style={styles.lastTop}>
+              <Text style={[styles.lastDate, { color: colors.ink }]}>{row.night ? formatBoardDate(row.night) : row.periodKey}</Text>
+              {row.amount !== null ? (
+                <Text style={[styles.lastAmount, { color: colors.on }]}>{amountWords(row.amount, lamp.amountUnit)}</Text>
+              ) : null}
+            </View>
+            {row.note ? <Text style={[styles.lastNote, { color: colors.inkSoft }]}>{row.note}</Text> : null}
+          </View>
+        ))}
+      </View>
 
       <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
 
@@ -2300,6 +2339,13 @@ const styles = StyleSheet.create({
   trendFill: { width: '100%' },
   trendNum: { fontFamily: fonts.mono, fontSize: 10 },
   trendDate: { fontFamily: fonts.mono, fontSize: 9 },
+  amountRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  lastFive: { gap: 6, marginBottom: 12 },
+  lastRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },
+  lastTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  lastDate: { fontFamily: fonts.uiSemi, fontSize: 14, flexShrink: 1 },
+  lastAmount: { fontFamily: fonts.mono, fontSize: 14 },
+  lastNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, fontStyle: 'italic' },
   hintLine: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, paddingHorizontal: 16, paddingTop: 2 },
   tonight: { gap: 8, marginTop: 4 },
   tonightRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

@@ -1,7 +1,7 @@
 import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
 import { answerStamp } from './board-ops.js'
-import { answeredAtIso } from './board-json.js'
+import { answeredAtIso, cleanAmount } from './board-json.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -46,6 +46,9 @@ function rowsOf(shelf) {
         a: answer.answeredAt || '',
         n: answer.note || '',
         e: answer.noteAt || '',
+        // Always sent, null when there is none, so the server can tell a
+        // cleared amount from an older app that never sends one.
+        m: cleanAmount(answer.amount),
       })
     }
   }
@@ -117,6 +120,8 @@ export function applyAnswers(shelf, rows) {
       answeredAt: row.answered_at || '',
       note: row.note || '',
       ...(row.note_at ? { noteAt: row.note_at } : {}),
+      // No amount column yet (answers.sql not applied) reads as no amount.
+      ...(cleanAmount(row.amount) !== null ? { amount: cleanAmount(row.amount) } : {}),
     }
     if (at >= 0) book.answers[at] = next
     else book.answers.push(next)

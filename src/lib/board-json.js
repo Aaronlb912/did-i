@@ -255,7 +255,30 @@ export function normalizeLamp(raw) {
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
+    // Track an amount: the note sheet asks for a number too. Only set when on.
+    ...(asBool(lamp.trackAmount)
+      ? { trackAmount: true, ...(amountUnitOf(lamp) ? { amountUnit: amountUnitOf(lamp) } : {}) }
+      : {}),
   }
+}
+
+// An amount on one night's answer, and the unit a question counts it in.
+// The server holds the same range (answer_log_amount in answers.sql).
+export const AMOUNT_MAX = 100000
+export const UNIT_MAX = 24
+
+export function amountUnitOf(lamp) {
+  return asString(lamp?.amountUnit).replace(/\s+/g, ' ').trim().slice(0, UNIT_MAX)
+}
+
+// A number from 0 to AMOUNT_MAX, two places at most, or null. A comma reads as a decimal point.
+export function cleanAmount(value) {
+  if (value === null || value === undefined) return null
+  const text = typeof value === 'number' ? String(value) : String(value).trim().replace(',', '.')
+  if (!text) return null
+  const n = Number(text)
+  if (!Number.isFinite(n) || n < 0 || n > AMOUNT_MAX) return null
+  return Math.round(n * 100) / 100
 }
 
 export function normalizeAnswer(raw) {
@@ -270,6 +293,7 @@ export function normalizeAnswer(raw) {
     note: asString(answer.note),
     // When the note was last saved; answeredAt stays the tap.
     ...(asString(answer.noteAt) ? { noteAt: asString(answer.noteAt) } : {}),
+    ...(cleanAmount(answer.amount) !== null ? { amount: cleanAmount(answer.amount) } : {}),
   }
 }
 

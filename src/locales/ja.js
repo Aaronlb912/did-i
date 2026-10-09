@@ -3206,4 +3206,12 @@ export const ja = {
   "ideas.fridge.body": "約1か月ごとに出てきます。",
   "ideas.fridge.start": "冷蔵庫",
   "starter.fridge.blank": "冷蔵庫を片づける",
+  "hang.trackAmount": "量を記録",
+  "hang.trackAmountSub": "Didのあと、メモと一緒に数を聞きます。",
+  "hang.amountUnit": "単位",
+  "hang.amountUnitPh": "杯",
+  "note.amount": "量",
+  "note.amountIn": "量（{unit}）",
+  "lamp.lastFive": "最近の5回",
+  "lamp.lastFiveEmpty": "まだありません。Didした最近の5晩がここに出ます。",
 }
