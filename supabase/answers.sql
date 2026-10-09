@@ -45,10 +45,22 @@ alter table public.answer_log add constraint answer_log_len check (
   and length(note_at) <= 32
 );
 
+-- An amount on one night (a question with Track an amount on). Null when
+-- there is none. Same range the app keeps (AMOUNT_MAX in board-json.js).
+alter table public.answer_log add column if not exists amount numeric;
+
+alter table public.answer_log drop constraint if exists answer_log_amount;
+alter table public.answer_log add constraint answer_log_amount
+  check (amount is null or (amount >= 0 and amount <= 100000));
+
 -- Writing a batch ------------------------------------------------------
 --
 -- A later tap wins. The where clause on the conflict is what makes two
 -- phones safe: an older answer arriving late cannot undo a newer one.
+--
+-- Amount is key m. A row without m comes from an app older than amounts, so
+-- the amount already stored stays. m null clears it; a number out of range
+-- or not a number reads as null.
 
 create or replace function public.put_answers(rows jsonb)
 returns integer
@@ -71,7 +83,7 @@ begin
   end if;
 
   insert into public.answer_log
-    (user_id, lamp_id, period_key, board_id, status, answered_at, note, note_at, updated_at)
+    (user_id, lamp_id, period_key, board_id, status, answered_at, note, note_at, amount, updated_at)
   select
     me,
     left(r->>'l', 64),
@@ -80,7 +92,19 @@ begin
     case when r->>'s' in ('yes', 'skip', 'late') then r->>'s' else 'yes' end,
     left(coalesce(r->>'a', ''), 32),
     left(coalesce(r->>'n', ''), 500),
-    left(coalesce(r->>'e', ''), 32)
+    left(coalesce(r->>'e', ''), 32),
+    case
+      when not (r ? 'm') then (
+        select o.amount from public.answer_log o
+        where o.user_id = me and o.lamp_id = left(r->>'l', 64) and o.period_key = left(r->>'p', 24)
+      )
+      -- Nested so the cast only runs on a json number.
+      when jsonb_typeof(r->'m') = 'number' then (
+        case when (r->'m')::numeric >= 0 and (r->'m')::numeric <= 100000
+          then round((r->'m')::numeric, 2) end
+      )
+      else null
+    end
   , now()
   from jsonb_array_elements(rows) r
   where r->>'l' is not null and r->>'p' is not null
@@ -89,6 +113,7 @@ begin
         answered_at = excluded.answered_at,
         note = excluded.note,
         note_at = excluded.note_at,
+        amount = excluded.amount,
         board_id = excluded.board_id,
         updated_at = now()
     where greatest(excluded.answered_at, excluded.note_at)

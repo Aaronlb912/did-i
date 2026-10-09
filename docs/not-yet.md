@@ -7,7 +7,9 @@ Last worked through 2026-10-02.
 
 ## Every so often questions and a note after Did (branch `long-gap`)
 
-- **Amount per answer is not built.** Answers sync through `answer_log` columns (`supabase/answers.sql`, `put_answers`), not a json blob, so an amount needs a new column and RPC change. Stopped there on purpose. The "Track an amount" toggle, the number field in the note sheet and the "last 5 times" list wait on that SQL.
+- **Supabase not applied yet for amounts and gentle pushes (branch `amounts`).** answers.sql (amount column, range check, put_answers) and push.sql (push_wanted skips streakRisk and streakHit when gentle is on) changed; run npm run db:apply:all. Until then an amount stays on the phone that saved it and does not reach a second phone. Nothing fails: the old put_answers ignores the amount.
+- **Needs device testing (amounts):** Track an amount and its unit on Add and Edit at 390px, the amount box in the note sheet from Add note in the undo toast (decimal keypad, comma reads as a point), Last 5 times on the question page with and without notes and amounts.
+- **Amount shows only on Last 5 times.** No totals, averages or chart yet, and the web has no note sheet, so amounts are entered on the phone only. Remove note clears the note, not the amount.
 - **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
 - **Web shows less.** The website can add and edit an every so often question and its Tonight follows the same due rule, but its card has no "Last time" line and its question list and page have no days pill or usual gap.
 - **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).

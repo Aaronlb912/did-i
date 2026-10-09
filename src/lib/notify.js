@@ -3,7 +3,7 @@ import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
-import { afterQuiet, pingOn } from './prefs.js'
+import { afterQuiet, gentleOn, pingOn } from './prefs.js'
 import { streakRiskFire } from './streak-risk.js'
 
 const timers = []
@@ -94,7 +94,7 @@ export async function armLampPings(book, now = new Date()) {
   if (isNativeHall()) return
   const reg = await readyWorker()
   const fires = pingOn('reminders') ? [...upcomingPings(book, now)] : []
-  const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
+  const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
   if (risk) {
     fires.push({ ...risk, question: t('streak.riskBody', { time: clockWords('09:00') }) })
   }

@@ -4,10 +4,10 @@ import { LampManage } from './LampManage.jsx'
 import { cadenceLine, lampBuzzes, lampNotifyOn, lampPriority } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { lampRecord } from './lamp-record.js'
+import { amountWords, lampRecord, lastDidTimes } from './lamp-record.js'
 import { pillStatusLabel } from './pill-status.js'
 import { usePrefs } from './prefs.js'
-import { recentPeriodKeys } from './recurrence.js'
+import { formatBoardDate, recentPeriodKeys } from './recurrence.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 
 function reminderLine(lamp) {
@@ -25,6 +25,7 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
     [lamp, dateIso],
   )
   const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso])
+  const lastFive = useMemo(() => lastDidTimes(book, lamp, 5), [book, lamp])
   if (!lamp) return null
   const status = lamp.archived
     ? t('lamp.pausedLine')
@@ -69,6 +70,22 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
           {t('lamp.done')}
         </button>
       </div>
+
+      <SetCap>{t('lamp.lastFive')}</SetCap>
+      <SetCard>
+        {lastFive.length ? (
+          lastFive.map((row) => (
+            <SetRow
+              key={row.periodKey}
+              label={row.night ? formatBoardDate(row.night) : row.periodKey}
+              sub={row.note}
+              value={amountWords(row.amount, lamp.amountUnit)}
+            />
+          ))
+        ) : (
+          <SetRow label={t('lamp.lastFiveEmpty')} />
+        )}
+      </SetCard>
 
       <SetCap>{t('hang.secSchedule')}</SetCap>
       <SetCard>

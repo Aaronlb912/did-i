@@ -52,9 +52,18 @@ function nightLine(lamp, answer) {
   return night ? `${night} · ${word}` : word
 }
 
-/** One note box with Save and Never mind. */
-function NoteEdit({ label, initial, colors, onSave, onCancel, onRemove }) {
+// The amount box only shows for a question that tracks one. undefined means
+// "leave the amount alone" to setAnswerNote, so other questions never touch it.
+function amountProps(lamp, answer) {
+  if (!lamp?.trackAmount) return null
+  return { initial: typeof answer?.amount === 'number' ? String(answer.amount) : '', unit: lamp.amountUnit || '' }
+}
+
+/** One note box (and, when the question tracks one, an amount box) with Save and Never mind. */
+function NoteEdit({ label, initial, amount = null, colors, onSave, onCancel, onRemove }) {
   const [draft, setDraft] = useState(initial || '')
+  const [count, setCount] = useState(amount?.initial || '')
+  const save = () => onSave(draft, amount ? count : undefined)
   return (
     <View style={styles.edit}>
       <Field
@@ -65,10 +74,22 @@ function NoteEdit({ label, initial, colors, onSave, onCancel, onRemove }) {
         placeholder={t('note.ph')}
         maxLength={NOTE_MAX}
         autoFocus
-        onSubmitEditing={() => onSave(draft)}
+        onSubmitEditing={save}
       />
+      {amount ? (
+        <Field
+          colors={colors}
+          label={amount.unit ? t('note.amountIn', { unit: amount.unit }) : t('note.amount')}
+          value={count}
+          onChangeText={(value) => setCount(value.replace(/[^\d.,]/g, '').slice(0, 9))}
+          placeholder="0"
+          keyboardType="decimal-pad"
+          maxLength={9}
+          onSubmitEditing={save}
+        />
+      ) : null}
       <View style={styles.keys}>
-        <DidButton small colors={colors} label={t('hang.save')} onPress={() => onSave(draft)} />
+        <DidButton small colors={colors} label={t('hang.save')} onPress={save} />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
         {initial && onRemove ? <KeyButton danger colors={colors} label={t('note.remove')} onPress={onRemove} /> : null}
       </View>
@@ -78,7 +99,7 @@ function NoteEdit({ label, initial, colors, onSave, onCancel, onRemove }) {
 
 // The one way to write a note: a sheet with the box, Save, Never mind and,
 // when there is a note, Remove note. Home and the question page both use it.
-function openNoteSheet({ title, label, initial, colors, onSave, onRemove }) {
+function openNoteSheet({ title, label, initial, amount = null, colors, onSave, onRemove }) {
   const close = () => publishSheet(null)
   publishSheet({
     title,
@@ -90,10 +111,11 @@ function openNoteSheet({ title, label, initial, colors, onSave, onRemove }) {
       <NoteEdit
         label={label}
         initial={initial}
+        amount={amount}
         colors={colors}
-        onSave={(draft) => {
+        onSave={(draft, count) => {
           close()
-          onSave(draft)
+          onSave(draft, count)
         }}
         onCancel={close}
         onRemove={
@@ -123,9 +145,10 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     title: answer.note ? t('note.edit') : t('note.add'),
     label: shortLabel(lamp),
     initial: answer.note,
+    amount: amountProps(lamp, answer),
     colors,
-    onSave: (draft) => {
-      onChange(setAnswerNote(live() || book, lampId, periodKey, draft))
+    onSave: (draft, count) => {
+      onChange(setAnswerNote(live() || book, lampId, periodKey, draft, undefined, count))
       confirmDone(t('note.saved'))
     },
     onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
@@ -148,9 +171,10 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       title: answer.note ? t('note.edit') : t('note.add'),
       label: nightLine(lamp, answer),
       initial: answer.note,
+      amount: amountProps(lamp, answer),
       colors,
-      onSave: (draft) => {
-        onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft))
+      onSave: (draft, count) => {
+        onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft, undefined, count))
         confirmDone(t('note.saved'))
       },
       onRemove: () => removeNote(book, lamp.id, answer.periodKey, answer.note, onChange),
@@ -235,8 +259,8 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
   if (!answered.length) return null
 
   const close = () => publishSheet(null)
-  const save = (row, draft) => {
-    onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft))
+  const save = (row, draft, count) => {
+    onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft, undefined, count))
     close()
     confirmDone(t('note.saved'))
   }
@@ -285,8 +309,9 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
         <NoteEdit
           label={shortLabel(row.lamp)}
           initial={row.answer.note}
+          amount={amountProps(row.lamp, row.answer)}
           colors={colors}
-          onSave={(draft) => onSave(row, draft)}
+          onSave={(draft, count) => onSave(row, draft, count)}
           onRemove={() => onRemove(row)}
           onCancel={only ? onCancel : () => setOpen(null)}
         />

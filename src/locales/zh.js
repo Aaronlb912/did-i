@@ -3195,4 +3195,12 @@ export const zh = {
   "ideas.fridge.body": "大约每月出现一次。",
   "ideas.fridge.start": "冰箱",
   "starter.fridge.blank": "清理冰箱",
+  "hang.trackAmount": "记录数量",
+  "hang.trackAmountSub": "Did 之后，和备注一起记一个数字。",
+  "hang.amountUnit": "单位",
+  "hang.amountUnitPh": "杯",
+  "note.amount": "数量",
+  "note.amountIn": "数量（{unit}）",
+  "lamp.lastFive": "最近 5 次",
+  "lamp.lastFiveEmpty": "还没有。最近 5 个 Did 的晚上会显示在这里。",
 }

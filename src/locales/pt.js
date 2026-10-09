@@ -3260,4 +3260,12 @@ export const pt = {
   "ideas.fridge.body": "Aparece mais ou menos todos os meses.",
   "ideas.fridge.start": "Frigorífico",
   "starter.fridge.blank": "limpar o frigorífico",
+  "hang.trackAmount": "Registrar uma quantidade",
+  "hang.trackAmountSub": "Pede um número junto da nota depois de um Did.",
+  "hang.amountUnit": "Unidade",
+  "hang.amountUnitPh": "copos",
+  "note.amount": "Quantidade",
+  "note.amountIn": "Quantidade ({unit})",
+  "lamp.lastFive": "Últimas 5 vezes",
+  "lamp.lastFiveEmpty": "Nada ainda. As últimas 5 noites com Did aparecem aqui.",
 }

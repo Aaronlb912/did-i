@@ -3254,4 +3254,12 @@ export const en = {
   "ideas.fridge.body": "Comes up about every month.",
   "ideas.fridge.start": "Fridge",
   "starter.fridge.blank": "clean out the fridge",
+  "hang.trackAmount": "Track an amount",
+  "hang.trackAmountSub": "Ask for a number with the note after a Did.",
+  "hang.amountUnit": "Unit",
+  "hang.amountUnitPh": "glasses",
+  "note.amount": "Amount",
+  "note.amountIn": "Amount ({unit})",
+  "lamp.lastFive": "Last 5 times",
+  "lamp.lastFiveEmpty": "Nothing yet. The last 5 nights you Did it show here.",
 }

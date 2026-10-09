@@ -3277,4 +3277,12 @@ export const de = {
   "ideas.fridge.body": "Kommt etwa jeden Monat.",
   "ideas.fridge.start": "Kühlschrank",
   "starter.fridge.blank": "den Kühlschrank ausräumen",
+  "hang.trackAmount": "Menge erfassen",
+  "hang.trackAmountSub": "Frag nach einer Zahl mit der Notiz nach einem Did.",
+  "hang.amountUnit": "Einheit",
+  "hang.amountUnitPh": "Gläser",
+  "note.amount": "Menge",
+  "note.amountIn": "Menge ({unit})",
+  "lamp.lastFive": "Die letzten 5 Male",
+  "lamp.lastFiveEmpty": "Noch nichts. Hier stehen die letzten 5 Abende mit Did.",
 }

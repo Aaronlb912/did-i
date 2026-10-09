@@ -3207,4 +3207,12 @@ export const ko = {
   "ideas.fridge.body": "약 한 달마다 나와요.",
   "ideas.fridge.start": "냉장고",
   "starter.fridge.blank": "냉장고 정리하기",
+  "hang.trackAmount": "양 기록하기",
+  "hang.trackAmountSub": "Did 후 메모와 함께 숫자를 물어봐요.",
+  "hang.amountUnit": "단위",
+  "hang.amountUnitPh": "잔",
+  "note.amount": "양",
+  "note.amountIn": "양 ({unit})",
+  "lamp.lastFive": "최근 5번",
+  "lamp.lastFiveEmpty": "아직 없어요. Did한 최근 5일이 여기에 보여요.",
 }

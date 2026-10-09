@@ -4833,6 +4833,76 @@ await testAsync('every so often: saved shape, pack, and the toast note action', 
   assert.ok(screen.includes('openAnswerNote(') && screen.includes("t('note.addShort')"), 'a Did offers a note from the undo toast')
 })
 
+await testAsync('amounts: saved on the answer, round trip through the answer log, last 5, SQL', async () => {
+  const { normalizeLamp, normalizeAnswer, cleanAmount, AMOUNT_MAX } = await import('../src/lib/board-json.js')
+  const { lastDidTimes, amountWords } = await import('../src/lib/lamp-record.js')
+  const lamp = normalizeLamp({ id: 'w', question: 'Did I drink water?', trackAmount: true, amountUnit: '  glasses  ' + 'x'.repeat(40) })
+  assert.equal(lamp.trackAmount, true)
+  assert.ok(lamp.amountUnit.startsWith('glasses') && lamp.amountUnit.length <= 24)
+  const plain = normalizeLamp({ id: 'p', question: 'Did I read?', amountUnit: 'pages' })
+  assert.ok(!('trackAmount' in plain) && !('amountUnit' in plain), 'off means nothing stored')
+  assert.equal(cleanAmount('2,5'), 2.5)
+  assert.equal(cleanAmount(''), null)
+  assert.equal(cleanAmount(-1), null)
+  assert.equal(cleanAmount(AMOUNT_MAX + 1), null)
+  assert.equal(cleanAmount('abc'), null)
+  assert.equal(normalizeAnswer({ lampId: 'w', periodKey: '2026-10-01', amount: 3 }).amount, 3)
+  assert.ok(!('amount' in normalizeAnswer({ lampId: 'w', periodKey: '2026-10-01', amount: 'x' })))
+
+  const answer = { id: 'a1', lampId: 'w', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T21:00:00.000Z', note: '' }
+  const book = { id: 'b1', lamps: [lamp], answers: [answer] }
+  const counted = setAnswerNote(book, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T09:00:00'), '6')
+  assert.equal(counted.answers[0].amount, 6)
+  assert.ok(counted.answers[0].noteAt > answer.answeredAt, 'an amount moves noteAt like a note')
+  // Leaving amount out keeps it; '' clears it.
+  assert.equal(setAnswerNote(counted, 'w', '2026-10-01', 'new words', new Date('2026-10-02T10:00:00')).answers[0].amount, 6)
+  assert.ok(!('amount' in setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), '').answers[0]))
+  // An amount-only change still saves.
+  assert.equal(setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), 8).answers[0].amount, 8)
+
+  // Up: m is always sent, null when there is none.
+  const shelf = { currentId: 'b1', boards: [counted] }
+  const sent = answersToSend(shelf, true)
+  assert.equal(sent[0].m, 6)
+  assert.equal(answersToSend({ boards: [book] }, true)[0].m, null)
+  // Down: a row with amount lands on the answer; a row from before the column has none.
+  const row = { lamp_id: 'w', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: sent[0].a, note: sent[0].n, note_at: sent[0].e, amount: '6' }
+  const pulled = applyAnswers({ currentId: 'b1', boards: [book] }, [row]).shelf.boards[0].answers[0]
+  assert.equal(pulled.amount, 6)
+  assert.equal(pulled.note, 'after the gym')
+  const { amount: _gone, ...oldRow } = row
+  assert.ok(!('amount' in applyAnswers({ currentId: 'b1', boards: [book] }, [oldRow]).shelf.boards[0].answers[0]))
+
+  // Last 5: only Did nights, newest first, with note and amount.
+  const answers = []
+  for (let day = 1; day <= 8; day += 1) {
+    const key = `2026-09-0${day}`
+    answers.push({ id: `n${day}`, lampId: 'w', periodKey: key, status: day === 7 ? 'skip' : day === 6 ? 'late' : 'yes', answeredAt: `${key}T21:00:00.000Z`, note: day === 8 ? 'big day' : '', ...(day === 8 ? { amount: 9 } : {}) })
+  }
+  answers.push({ id: 'other', lampId: 'z', periodKey: '2026-09-09', status: 'yes', answeredAt: '', note: '' })
+  const last = lastDidTimes({ answers }, lamp, 5)
+  assert.deepEqual(last.map((item) => item.periodKey), ['2026-09-08', '2026-09-06', '2026-09-05', '2026-09-04', '2026-09-03'])
+  assert.equal(last[0].note, 'big day')
+  assert.equal(last[0].amount, 9)
+  assert.equal(last[1].amount, null)
+  assert.equal(amountWords(9, 'glasses'), '9 glasses')
+  assert.equal(amountWords(null, 'glasses'), '')
+  assert.deepEqual(lastDidTimes({ answers }, null), [])
+
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/answers.sql'), 'utf8')
+  assert.ok(/add column if not exists amount numeric/.test(sql), 'amount column, idempotent')
+  assert.ok(/answer_log_amount\s+check \(amount is null or \(amount >= 0 and amount <= 100000\)\)/.test(sql), 'amount range check')
+  assert.ok(sql.includes("not (r ? 'm')") && sql.includes('amount = excluded.amount'), 'put_answers keeps the stored amount for an older app')
+  const push = readFileSync(path.join(root, 'supabase/push.sql'), 'utf8')
+  const wanted = push.slice(push.indexOf('function public.push_wanted'), push.indexOf('revoke all on function public.push_wanted'))
+  assert.ok(wanted.includes("prefs ->> 'gentle'") && wanted.includes("'streakRisk'"), 'push_wanted reads gentle for the streak-risk push')
+  const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
+  assert.ok(shim.includes("pingOn('streakRisk') && !gentleOn()"), 'the phone skips the streak-risk ping in gentle mode')
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.ok(notes.includes('trackAmount') && notes.includes('decimal-pad'), 'the note sheet asks for an amount')
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
 
