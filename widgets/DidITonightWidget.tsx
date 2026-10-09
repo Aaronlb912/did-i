@@ -36,6 +36,8 @@ type TonightItem = {
   question?: string
   periodKey?: string
   tag?: string
+  // Every so often: "Last time: 6 days ago" or "Never yet".
+  since?: string
   status: 'open' | 'yes' | 'skip'
 }
 
@@ -55,6 +57,8 @@ type WidgetColors = {
 export type DidITonightWidgetProps = {
   tagTitle: string
   question?: string
+  // The showing question's "Last time" line (every so often only), or ''.
+  sinceLine?: string
   leadLampId?: string
   items: TonightItem[]
   left: number
@@ -146,6 +150,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const didLabel = String(props?.didLabel || 'Did')
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
+  const sinceText = lead
+    ? String(lead.since || (lead.lampId === props?.leadLampId ? props?.sinceLine : '') || '').trim()
+    : ''
   const buddyId = String(props?.buddyId || '')
 
   // The app buddy SVG (native/components/BuddyArt.jsx, same markup as the
@@ -505,6 +512,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       leadLampId: nextLead ? nextLead.lampId : '',
       question: nextQuestion,
       tagTitle: String(nextLead?.tag || '').trim() || tagTitle,
+      sinceLine: String(nextLead?.since || ''),
       left: nextLeft,
       footer: nextFooter,
       openUri: openUriForLead(nextLead ? nextLead.lampId : ''),
@@ -529,6 +537,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       leadLampId: next.lampId,
       question: String(next.question || next.label || ''),
       tagTitle: String(next.tag || '').trim() || tagTitle,
+      sinceLine: String(next.since || ''),
       openUri: openUriForLead(next.lampId),
     }
   }
@@ -609,6 +618,21 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       {lead ? questionText : footer}
     </Text>
   )
+  // Under the question on home sizes: when an every so often question was last done.
+  const sinceRow = home && sinceText ? (
+    <Text
+      modifiers={[
+        font({ size: compact ? 10 : 12, weight: 'semibold' }),
+        foregroundStyle(tinted ? ink : c.inkSoft),
+        multilineTextAlignment('center'),
+        lineLimit(1),
+        minimumScaleFactor(0.6),
+        frame({ maxWidth: 10000 }),
+      ]}
+    >
+      {sinceText}
+    </Text>
+  ) : null
   const nextButton = showNext ? (
     <Button
       label={String(props?.nextLabel || 'Next') + ' ›'}
@@ -738,6 +762,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           </HStack>
           <Spacer />
           {question}
+          {sinceRow}
           <Spacer />
           {buttons}
           {weRow}
