@@ -4,9 +4,11 @@ import { shortLabel } from './board-json.js'
 import { streakLength } from './achievements.js'
 import { hallHeat } from './hall-feel.js'
 import { t } from './i18n.js'
+import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function Streaks({ book, now }) {
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const heat = hallHeat(book, clock)
   const lamps = (book.lamps || []).filter((lamp) => !lamp.archived)
@@ -24,6 +26,8 @@ export function Streaks({ book, now }) {
       <section className="di-page">
         <p className="di-face-plate">{t('streaks.kicker')}</p>
         <h2 className="di-page-title">{t('streaks.title')}</h2>
+        {gentle ? <p className="di-sit-line">{t('settings.gentleHidden')}</p> : (
+          <>
         <p className="di-streak-line">{t('streaks.line', { n: heat })}</p>
         <ol className="di-heat-row" aria-label={t('streaks.aria')}>
           {[1, 2, 3, 4, 5].map((n) => (
@@ -43,6 +47,8 @@ export function Streaks({ book, now }) {
               </li>
             ))}
           </ul>
+        )}
+          </>
         )}
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/week')}>

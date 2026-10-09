@@ -167,6 +167,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
         tag={faceRow.tag}
         keys={stack.recentPeriodKeys(faceRow.lamp, stack.dateIso, 7)}
         buddy={activeBuddy(stack.bookOf(faceRow))}
+        dateIso={stack.dateIso}
         onPickHole={stack.pickHole}
         onYes={() => stack.mark(faceRow, 'yes')}
         onSkip={() => stack.mark(faceRow, 'skip')}

@@ -12,6 +12,7 @@ import { commitBook } from './achievements.js'
 import { bulkLamps, undoBulkLamps } from './board-ops.js'
 import { filamentLevel } from './hall-feel.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { sinceBadge } from './every-copy.js'
 import { clockWords } from './hall-pages.js'
 import { questionAddsToName, rowId, searchRows, tonightStates } from './question-list.js'
 import { StarterPicks } from './StarterPicks.jsx'
@@ -163,6 +164,9 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
                       .join(' · ')}
                   </span>
                 </span>
+                {sinceBadge(row.book, row.lamp, dateIso) ? (
+                  <span className="di-every-pill">{sinceBadge(row.book, row.lamp, dateIso)}</span>
+                ) : null}
               </button>
             </li>
           ))}

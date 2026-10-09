@@ -10151,6 +10151,22 @@ html[data-reduce-motion] *::after,
   font-size: 0.78rem;
   color: var(--di-ink-dim);
 }
+
+.di-lamp-tiles.is-one {
+  grid-template-columns: 1fr;
+}
+
+/* Every so often: days since the last Did, on the Questions list. */
+.di-every-pill {
+  flex: none;
+  margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--di-pill);
+  background: var(--di-panel-2);
+  color: var(--di-ink-soft);
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+}
 /* Questions list: one line each for name, question and schedule, clipped. */
 .di-lamp-name,
 .di-lamp-q {
