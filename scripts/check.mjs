@@ -4834,7 +4834,7 @@ await testAsync('every so often: the gap is learned from 3+ gaps and shown as us
   assert.equal(gapLine(book, lamp, '2026-10-05'), 'Usually every 9 days')
   assert.equal(lastTimeLine(book, lamp, '2026-10-05'), 'Last time: 7 days ago')
   assert.equal(lastTimeLine(everyBook(), lamp, evDay(3)), 'Never yet')
-  assert.equal(sinceBadge(book, lamp, evDay(28)), '0d')
+  assert.equal(sinceBadge(book, lamp, evDay(28)), 'today', 'a Did tonight reads today, not 0d')
 })
 
 await testAsync('every so often: saved shape, pack, and the toast note action', async () => {
@@ -5194,6 +5194,19 @@ test('the rate card asks for the in-app review, with the store link as fallback'
   assert.ok(card.indexOf('requestReview()') < card.indexOf('Linking.openURL(url)'))
   const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
   assert.match(metro, /\['expo-store-review', 'store-review-safe\.cjs'\]/)
+})
+
+await testAsync('every so often made tonight: progress and the done card agree', async () => {
+  const { dueTonight, dueClearTonight } = await import('../src/lib/recurrence.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const book = everyBook([['d', evDay(5), 'yes']], [daily])
+  book.lamps[0].createdOn = evDay(5)
+  const due = dueTonight(book, evAt(5))
+  assert.ok(dueClearTonight(due), 'deck calls the night clear')
+  const meter = nightProgress(due)
+  assert.equal(meter.answered, meter.total, 'progress agrees: nothing left')
+  const did = everyBook([['d', evDay(5), 'yes'], ['sheets', evDay(5), 'yes']], [daily])
+  assert.equal(nightProgress(dueTonight(did, evAt(5))).total, 2, 'counts once done')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

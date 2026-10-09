@@ -14,7 +14,7 @@ export function WeekGrid({ book, now }) {
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('streaks.seven')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">

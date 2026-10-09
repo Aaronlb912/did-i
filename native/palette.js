@@ -44,7 +44,7 @@ const LIGHT = {
   ink: '#1a1d16',
   inkSoft: '#4a5240',
   inkDim: '#697060',
-  on: '#5a7a10',
+  on: '#567510',
   onDeep: '#3d5608',
   late: '#1e6bb8',
   skip: '#6a7164',

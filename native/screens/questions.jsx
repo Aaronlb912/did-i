@@ -295,7 +295,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
                   {shortLabel(row.lamp)}
                 </Text>
-                {sameWords(row.lamp) ? null : (
+                {sameWords(row.lamp) && !isEvery(row.lamp) ? null : (
                   <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
                     {row.lamp.question}
                   </Text>
@@ -312,7 +312,10 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               ) : picking ? null : (
                 <>
                   {isEvery(row.lamp) && sinceBadge(row.book, row.lamp, dateIso) ? (
-                    <Text style={[styles.everyPill, { color: colors.inkSoft, backgroundColor: colors.panel2 }]}>
+                    <Text
+                      accessibilityLabel={lastTimeLine(row.book, row.lamp, dateIso, true)}
+                      style={[styles.everyPill, { color: colors.inkSoft, backgroundColor: colors.panel2 }]}
+                    >
                       {sinceBadge(row.book, row.lamp, dateIso)}
                     </Text>
                   ) : null}
@@ -1598,7 +1601,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   colors={colors}
                   label={pack.title}
                   sub={pack.items.map((item) => shortLabel(item)).join(', ')}
-                  value={t('pack.count', { n: pack.items.length })}
+                  value={pack.items.length === 1 ? t('pack.countOne') : t('pack.count', { n: pack.items.length })}
                   chevron
                   last={at === packs.length - 1}
                   onPress={() => askPack(pack)}
@@ -1983,7 +1986,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       due: !lamp.archived && (Boolean(tonight) || everyDueOn(lampBook, lamp, dateIso)),
       tonight,
       last: lastTimeLine(lampBook, lamp, dateIso, true),
-      badge: sinceBadge(lampBook, lamp, dateIso),
+      badge: sinceBadge(lampBook, lamp, dateIso, false),
       gap: gapLine(lampBook, lamp, dateIso),
     }
   }, [lampBook, lamp, dateIso])

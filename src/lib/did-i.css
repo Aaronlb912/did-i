@@ -20,6 +20,8 @@
   --di-ink-dim: #7c838f;
   --di-on: #c9f24d;
   --di-on-deep: #8fae2c;
+  /* Text on a --di-on fill (Did buttons). */
+  --di-on-ink: #101208;
   --di-late: #6fb7ff;
   --di-skip: #7d8694;
   --di-open: #39404e;
@@ -670,7 +672,8 @@ html[data-theme='light'] .di-hall,
   --di-ink: #1a1d16;
   --di-ink-soft: #4a5240;
   --di-ink-dim: #697060;
-  --di-on: #5a7a10;
+  --di-on: #567510;
+  --di-on-ink: #ffffff;
   --di-on-deep: #3d5608;
   --di-late: #1e6bb8;
   --di-skip: #6a7164;
@@ -808,6 +811,7 @@ html[data-theme='light'] .di-hall[data-look='glow'],
   --di-line-soft: #cfe4ec;
   --di-on: #0891b2;
   --di-on-deep: #0e7490;
+  --di-on-ink: #101208;
   --di-late: #9a6418;
   --di-gem-bg: #e8f4f8;
   --di-gem-ring: rgba(8, 145, 178, 0.26);
@@ -936,6 +940,7 @@ html[data-theme='light'] .di-hall[data-look='frost'],
   --di-line-soft: #d4e4ec;
   --di-on: #2888b0;
   --di-on-deep: #186888;
+  --di-on-ink: #101208;
   --di-late: #9a6418;
   --di-gem-bg: #eef4f8;
   --di-gem-ring: rgba(40, 136, 176, 0.24);
@@ -3160,7 +3165,7 @@ button.di-refer-rung {
   letter-spacing: 0.02em;
   min-height: 3.5rem;
   padding: 0 1.4rem;
-  color: #101208;
+  color: var(--di-on-ink);
   background: var(--di-on);
   border: 0;
   border-radius: var(--di-r-sm);
@@ -6122,6 +6127,14 @@ button.di-refer-rung {
 .di-shop-promo-all {
   flex: 0 0 auto;
   font-size: 0.78rem;
+  margin-right: 0.5rem;
+}
+
+/* Same chip height for every item, so a smaller icon (a buddy) does not lift its label. */
+.di-shop-tile-chip {
+  display: grid;
+  place-items: center;
+  min-height: 2.7rem;
 }
 
 .di-shop-promo-grid {
@@ -9605,6 +9618,12 @@ html[data-reduce-motion] .di-hall:is(
   cursor: default;
 }
 
+/* Info only: the value reads as text, not a setting to tap. */
+.di-set-row.is-flat .di-set-val {
+  color: var(--di-ink-dim);
+  font-size: 0.85em;
+}
+
 .di-account .di-detail-meta {
   margin: 0.5rem 0.2rem 1rem;
 }
@@ -10905,4 +10924,30 @@ button.di-we-faces {
 
 .di-buddy-hang.is-tall {
   top: 0.8rem;
+}
+
+.di-undo .di-key + .di-key {
+  margin-left: 0;
+}
+
+/* Note on tonight's answer, opened from the undo toast */
+.di-note-box {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  background: var(--di-panel-3);
+  border: 1px solid var(--di-line);
+  border-radius: 0.9rem;
+}
+
+.di-note-box .di-sit-line {
+  margin: 0;
+}
+
+.di-page-loading {
+  min-height: 50vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
 }

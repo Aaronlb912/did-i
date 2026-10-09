@@ -92,7 +92,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -116,7 +116,6 @@ import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page,
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 
@@ -914,7 +913,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
-      (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
+      (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
     )
     .sort((a, b) => b.n - a.n)
   // A question's run can be longer than the overall one: say which night broke it.
@@ -1393,8 +1392,10 @@ export function FirstNightScreen({ book, onChange, now }) {
     const made = firstRunBook(book, picks, own, askAfter, clock)
     markWelcomeSeen()
     onChange?.(made.book)
+    // No notification ask from here: a sheet opened while /first was still on
+    // screen sent Not now back into step 1 with nothing saved. AppShell offers
+    // it once Tonight is up (offerFirstPingPrimer).
     goHash('/tonight', made.faceId ? { face: made.faceId } : '')
-    offerPingPrimer(askAfter, colors)
   }
 
   function next() {

@@ -453,7 +453,7 @@ export const it = {
   'streak.hitTitle': 'Sei una furia!',
   'streak.hitTitleClear': 'Serata completata',
   'streak.hitBody': '{n} sere di fila. Stasera hai finito tutto.',
-  'streak.hitBodyOne': 'Prima sera del tuo streak. Stasera hai finito tutto.',
+  'streak.hitBodyOne': 'Stasera hai finito tutto.',
   'streak.hitOk': 'Andiamo',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak interrotto',
@@ -527,7 +527,7 @@ export const it = {
   'feedback.send': 'Invia feedback',
   'feedback.sub': 'Bug, idee, spigoli. Scrivici.',
   'hang.tag': 'Cartella',
-  'hang.tagOne': 'Scegline una. Ogni domanda sta in una sola cartella.',
+  'hang.tagOne': 'Scegli una cartella.',
   'hang.tagPh': 'Home',
   'hang.tagNew': 'Nuova cartella',
   'hang.tagLater': 'Cartelle vuote',
@@ -543,7 +543,7 @@ export const it = {
   'hang.daily': 'Ogni giorno',
   'hang.weekly': 'Alcuni giorni',
   'hang.monthly': 'Una volta al mese',
-  'hang.everyN': 'Ogni pochi giorni',
+  'hang.everyN': 'Ogni N giorni',
   'hang.once': 'Solo una volta',
   'hang.weekdays': 'Giorni',
   'hang.day.0': 'Dom',
@@ -1360,7 +1360,7 @@ export const it = {
     'Non è una lista di cose da fare né un calendario. Metti la domanda che ti ripeti dopo. Usa una di queste, o scrivi la tua che inizia con Did I.',
   'ideas.use': 'Usa questa',
   'ideas.writeOwn': 'Scrivi la tua',
-  'ideas.help': 'Aiuto',
+  'ideas.help': 'Aiuto',
   'wait.kicker': 'Non ancora',
   'wait.after': 'Dopo {time}.',
   'wait.later': 'dopo',
@@ -2316,7 +2316,7 @@ export const it = {
   'enter.eraseGo': 'Cancella e ricomincia',
   'enter.eraseBody': 'Non hai effettuato l’accesso, quindi il PIN esiste solo su questo telefono. Per toglierlo, cancella Did I su questo telefono: domande, risposte, monete e look. Non si può annullare.',
   'enter.forgotTitle': 'Hai dimenticato il PIN?',
-  'enter.forgot': 'PIN dimenticato?',
+  'enter.forgot': 'PIN dimenticato?',
   'clock.pm': '{h}:{m} di sera',
   'clock.am': '{h}:{m} di mattina',
   'shop.teasedBody': 'Non è ancora uscito. In vendita dal {date}.',
@@ -2526,7 +2526,7 @@ export const it = {
   'pack.meds': 'Medicine',
   'pack.sureTitle': 'Aggiungere {n} domande?',
   'pack.sureGo': 'Aggiungile',
-  'pack.added': '{n} domande aggiunte',
+  'pack.added': '{n} domande aggiunte',
   'note.title': 'Note',
   'note.hint': 'Tocca una notte per aggiungere una nota.',
   'note.ph': 'Aggiungi una breve nota',
@@ -2632,7 +2632,7 @@ export const it = {
   'lamp.monthPrev': 'Mese precedente',
   'lamp.monthNext': 'Mese successivo',
   'hang.folderHint': 'Con più di una cartella, il filtro in Home e Domande può mostrarne solo una.',
-  'hang.folderVsTopic': 'Una cartella è dove vive una domanda. Gli argomenti sono etichette, quante ne vuoi.',
+  'hang.folderVsTopic': 'Gli argomenti sono etichette in più, quante ne vuoi.',
   'hang.topicsHint': 'Etichette in più per filtrare. Una domanda può averne più di una.',
   'hang.discardNewTitle': 'Scartare questa domanda?',
   'questions.reorder': 'Riordina',
@@ -3290,4 +3290,11 @@ export const it = {
   "swipeIntro.line": "Scorri a destra se l'hai fatto, a sinistra se non ancora",
   "stats.empty": "Ancora nessuna sera. Rispondi stasera e qui vedrai i tuoi numeri.",
   "empty.goTonight": "Vai a stasera",
+  'app.loading': 'Caricamento…',
+  'first.addHint': 'Scegli uno spunto o scrivine una.',
+  'title.homePage': 'Inizio · Did I',
+  'title.friends': 'Amici · Did I',
+  'title.people': 'Persone · Did I',
+  'every.badgeToday': 'oggi',
+  'pack.countOne': '+1 domanda',
 }

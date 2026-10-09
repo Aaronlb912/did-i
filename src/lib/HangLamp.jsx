@@ -8,7 +8,7 @@ import {
   isDeadlineMode,
   schedulePick,
 } from './hang-schedule.js'
-import { cadenceLine, SHORT_MAX, UNIT_MAX } from './board-json.js'
+import { cadenceLine, didQuestion, SHORT_MAX, UNIT_MAX } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -85,7 +85,7 @@ export function HangLamp({
       {head ? head(hang.draft.question) : <p className="di-hang-kicker">{hang.editing ? t('hang.edit') : t('hang.new')}</p>}
       <div className="di-hang-preview" aria-hidden="true">
         <p className="di-face-plate">{String(hang.tagTitle || '').trim() || book?.title || ''}</p>
-        <p className="di-hang-preview-q">{hang.draft.question.trim() || t('hang.questionPh')}</p>
+        <p className="di-hang-preview-q">{didQuestion(hang.draft.question) || t('hang.questionPh')}</p>
         {previewMeta ? <p className="di-hang-preview-meta">{previewMeta}</p> : null}
       </div>
       <label className="di-field">
@@ -218,7 +218,7 @@ export function HangLamp({
           value={hang.draft.askAfter}
           onChange={hang.changeAskAfter}
         />
-        <small className="di-field-hint">{t('hang.timeHint')}</small>
+        <small className="di-field-hint">{hang.draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</small>
       </div>
       <div className="di-field di-field-notify">
         <span id="di-hang-notify">{t('hang.notify')}</span>

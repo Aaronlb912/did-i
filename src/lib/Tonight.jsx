@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { dueByUrgency } from './board-json.js'
+import { dueByUrgency, shortLabel } from './board-json.js'
+import { NOTE_MAX } from './board-ops.js'
 import { goHash } from '../site/hash.js'
 import { FinishFace } from './FinishFace.jsx'
 import { LampFace } from './LampFace.jsx'
@@ -32,6 +33,41 @@ import { shelfMarks, weMarksFor } from './achievements.js'
 const WE_OVER = new Set(['hall', 'rest', 'off', 'waiting'])
 import './did-i.css'
 
+// A note and, when the question tracks one, an amount for tonight's answer.
+function NoteBox({ target, shelf, onSave, onCancel }) {
+  const book = shelf.find((item) => item.id === target.boardId)
+  const lamp = (book?.lamps || []).find((item) => item.id === target.lampId)
+  const answer = (book?.answers || []).find((item) => item.lampId === target.lampId && item.periodKey === target.periodKey)
+  const [note, setNote] = useState(answer?.note || '')
+  const [count, setCount] = useState(typeof answer?.amount === 'number' ? String(answer.amount) : '')
+  if (!lamp || !answer) return null
+  return (
+    <form
+      className="di-note-box di-screws-print-hide"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSave(note, lamp.trackAmount ? count : undefined)
+      }}
+    >
+      <p className="di-sit-line">{shortLabel(lamp)}</p>
+      <label className="di-field">
+        <span>{t('note.title')}</span>
+        <input value={note} maxLength={NOTE_MAX} placeholder={t('note.ph')} autoFocus onChange={(event) => setNote(event.target.value)} />
+      </label>
+      {lamp.trackAmount ? (
+        <label className="di-field">
+          <span>{lamp.amountUnit ? t('note.amountIn', { unit: lamp.amountUnit }) : t('note.amount')}</span>
+          <input value={count} inputMode="decimal" onChange={(event) => setCount(event.target.value)} />
+        </label>
+      ) : null}
+      <div className="di-page-keys">
+        <button className="di-key" type="submit">{t('settings.save')}</button>
+        <button className="di-key" type="button" onClick={onCancel}>{t('settings.neverMind')}</button>
+      </div>
+    </form>
+  )
+}
+
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
   usePrefs()
   const theme = useTheme()
@@ -48,6 +84,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
   const weAns = useWeAnswer(we.reload, value)
   // Someone else's did finished a card: play their cheer, once, with a line.
   const [weFinish, setWeFinish] = useState(null)
+  const [noteFor, setNoteFor] = useState(null)
   useEffect(() => {
     if (!account.user) return
     // Did we achievements come from the shared cards, so they unlock here.
@@ -336,7 +373,28 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
             <button className="di-key" type="button" onClick={stack.applyUndo}>
               {t('tonight.undo')}
             </button>
+            {stack.undo.status !== 'skip' ? (
+              <button
+                className="di-key"
+                type="button"
+                onClick={() => setNoteFor({ boardId: stack.undo.book.id, lampId: stack.undo.lampId, periodKey: stack.undo.periodKey })}
+              >
+                {t('note.add')}
+              </button>
+            ) : null}
           </p>
+        ) : null}
+
+        {noteFor ? (
+          <NoteBox
+            target={noteFor}
+            shelf={stack.shelf}
+            onSave={(note, amount) => {
+              stack.saveNote(noteFor, note, amount)
+              setNoteFor(null)
+            }}
+            onCancel={() => setNoteFor(null)}
+          />
         ) : null}
 
         <FamilyTonight />

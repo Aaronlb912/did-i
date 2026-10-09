@@ -49,7 +49,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={existing ? t('lamp.edit') : t('tonight.add')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       {confirmGone && existing && sourceBook ? (
