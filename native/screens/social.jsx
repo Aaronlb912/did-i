@@ -22,6 +22,8 @@ import {
   claimInvites,
   cleanCode,
   doneTonight,
+  friendLine,
+  friendStreak,
   friendAskNote,
   friendAskTitle,
   inboxCount,
@@ -85,6 +87,7 @@ import { ReferLadder } from '../components/ReferLadder.jsx'
 import { activeLook } from '../../src/lib/active-look.js'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
+import { checkOnsFrom, minuteClock, stopCheckOn } from '../../src/lib/check-on.js'
 import { askRemoveFriend } from '../components/removeFriend.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
@@ -348,16 +351,10 @@ function PersonRow({ title, note, colors, children, highlight, person }) {
   )
 }
 
-function friendLine(person) {
-  if (!person?.share_streak) return t('people.quiet')
-  if (person.done_on === isoDate(new Date())) return t('people.doneTonight')
-  if (person.streak > 0) return t('people.streakN', { n: person.streak })
-  return t('people.noStreak')
-}
-
 // The pill already says done tonight; the line under the name adds the streak.
 function streakOnly(person) {
-  return person?.streak > 0 ? t('people.streakN', { n: person.streak }) : ''
+  const n = friendStreak(person)
+  return n ? t('people.streakN', { n }) : ''
 }
 
 // What you sent: finished items you cleared stay hidden on this phone.
@@ -1801,6 +1798,54 @@ function FriendCardPreview({ person, name, colors }) {
 
 // A private note about this friend. Kept on the phone too, so it shows at
 // once and offline; the account copy wins once it loads.
+// Questions this person asked you to check on. You can stop any of them.
+// From their push (face 'checkon') the Did you opens with the words in.
+function CheckOnsFrom({ ownerId, name, face, colors, onAsk }) {
+  const [rows, setRows] = useState([])
+  const [miss, setMiss] = useState('')
+  const opened = useRef(false)
+  useEffect(() => {
+    let live = true
+    checkOnsFrom(ownerId)
+      .then((list) => {
+        if (!live) return
+        setRows(list)
+        if (face === 'checkon' && list.length && !opened.current) {
+          opened.current = true
+          onAsk(list[0].question)
+        }
+      })
+      .catch(() => live && setMiss(t('people.reach')))
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerId, face])
+  async function stop(row) {
+    const res = await stopCheckOn(row.id)
+    if (res.miss) return setMiss(tMiss(res.miss))
+    setRows((list) => list.filter((item) => item.id !== row.id))
+    confirmDone(t('checkOn.stopped'))
+  }
+  if (!rows.length && !miss) return null
+  return (
+    <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('checkOn.fromTitle', { name })}</Text>
+      {rows.map((row) => (
+        <View key={row.id} style={styles.checkOnRow}>
+          <Text style={[styles.tileNote, { color: colors.ink }]}>{row.question}</Text>
+          <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('checkOn.fromAt', { time: minuteClock(row.at_minute) })}</Text>
+          <View style={styles.checkOnKeys}>
+            <KeyButton colors={colors} label={t('friend.sendDidYou')} onPress={() => onAsk(row.question)} />
+            <KeyButton colors={colors} label={t('checkOn.stop')} onPress={() => once(`check-on:${row.id}`, () => stop(row))} />
+          </View>
+        </View>
+      ))}
+      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
+    </View>
+  )
+}
+
 function FriendNote({ friendId, name, colors }) {
   const account = useAccount()
   const [saved, setSaved] = useKept(`friend.note:${account.user?.id}:${friendId}`, '', KEEP)
@@ -2058,6 +2103,13 @@ export function FriendScreen({ book, onChange, route }) {
         </View>
       </View>
       <FriendNote friendId={otherId} name={name} colors={colors} />
+      <CheckOnsFrom
+        ownerId={otherId}
+        name={name}
+        face={route?.face || ''}
+        colors={colors}
+        onAsk={(question) => setSheet({ person, question })}
+      />
       {said ? <Meta colors={colors}>{said}</Meta> : null}
       {menu ? (
         <FriendMenu
@@ -2212,6 +2264,7 @@ export function FriendScreen({ book, onChange, route }) {
       {sheet?.person ? (
         <SendSheet
           person={sheet.person}
+          initialQuestion={sheet.question || ''}
           colors={colors}
           onClose={() => setSheet(null)}
           onSent={(words) => {
@@ -2708,6 +2761,8 @@ const styles = StyleSheet.create({
   friendPrimary: { marginBottom: 14 },
   friendMinor: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   friendWeRow: { marginBottom: 8 },
+  checkOnRow: { gap: 4 },
+  checkOnKeys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sentTop: { alignSelf: 'flex-end' },
   friendSmall: { fontFamily: fonts.ui, fontSize: 12, textAlign: 'center', marginTop: 6 },
   friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },

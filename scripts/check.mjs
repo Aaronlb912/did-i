@@ -5310,6 +5310,88 @@ await testAsync('every so often made tonight: progress and the done card agree',
   assert.equal(nightProgress(dueTonight(did, evAt(5))).total, 2, 'counts once done')
 })
 
+await testAsync('gentle mode hides a friend streak number, done tonight still shows', async () => {
+  const { friendLine, friendStreak } = await import('../src/lib/people.js')
+  const night = '2026-10-09'
+  const plain = { share_streak: true, streak: 12, done_on: '2026-10-08' }
+  const soft = { share_streak: true, streak: 12, done_on: '2026-10-08', gentle: true }
+  assert.equal(friendStreak(plain), 12)
+  assert.equal(friendStreak(soft), 0, 'no number for a gentle friend, even if one slipped through')
+  assert.equal(friendStreak({ ...soft, streak: null }), 0, 'the server sends null')
+  assert.match(friendLine(plain, night), /12/)
+  assert.ok(!/12/.test(friendLine(soft, night)), 'not yet, no number')
+  const done = friendLine({ ...soft, done_on: night }, night)
+  assert.ok(done.includes('✓') && !/12/.test(done), 'done tonight with a check')
+  assert.ok(!/\d/.test(friendLine({ ...soft, done_on: night }, night)))
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  for (const file of ['native/screens/social.jsx', 'src/lib/Friends.jsx', 'src/lib/People.jsx']) {
+    const src = read(file)
+    assert.ok(!/person\.streak\s*>|person\?\.streak\s*>|person\.streak\b(?!_)/.test(src.replace(/share_streak/g, '')), `${file} reads friend streaks only through friendStreak`)
+    assert.ok(!/function friendLine\(/.test(src) && !/function line\(/.test(src), `${file} uses the shared friendLine`)
+  }
+})
+
+await testAsync('check on me: due only past the time, on an asked night, unanswered, once', async () => {
+  const { checkOnDue, checkOnDays, checkOnFits, cleanMinute, minuteClock, CHECK_ON_DEFAULT } = await import('../src/lib/check-on.js')
+  assert.equal(CHECK_ON_DEFAULT, 1320)
+  assert.equal(minuteClock(1320), '22:00')
+  assert.equal(cleanMinute(-30), 0)
+  assert.equal(cleanMinute(2000), 1439)
+  const link = { at_minute: 1320, days: [], sent_on: null }
+  const at = { night: '2026-10-09', minute: 1325, weekday: 5, answered: false }
+  assert.equal(checkOnDue(link, at), true)
+  assert.equal(checkOnDue(link, { ...at, minute: 1319 }), false, 'before the time')
+  assert.equal(checkOnDue(link, { ...at, answered: true }), false, 'answered, Did or nope')
+  assert.equal(checkOnDue({ ...link, sent_on: '2026-10-09' }, at), false, 'one push a night')
+  assert.equal(checkOnDue({ ...link, sent_on: '2026-10-08' }, at), true, 'a new night')
+  assert.equal(checkOnDue({ ...link, days: [1, 3] }, at), false, 'not asked on a Friday')
+  assert.equal(checkOnDue({ ...link, days: [5] }, at), true)
+  assert.deepEqual(checkOnDays({ cadence: 'weekly', weekdays: [3, 1, 1, 9] }), [1, 3])
+  assert.deepEqual(checkOnDays({ cadence: 'daily' }), [])
+  assert.equal(checkOnFits({ cadence: 'daily' }), true)
+  assert.equal(checkOnFits({ cadence: 'monthly' }), false)
+  assert.equal(checkOnFits({ cadence: 'daily', archived: true }), false)
+})
+
+test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8').replace(/\r\n/g, '\n')
+  // known_people and the tonight wall null the number for gentle people.
+  assert.match(sql, /create or replace function public\.known_people\(\)[\s\S]*?case when coalesce\(p\.prefs ->> 'gentle', ''\) = 'true' then null else p\.streak end/)
+  assert.match(sql, /create or replace function public\.tonight_wall\(wanted date\)[\s\S]*?p\.prefs ->> 'gentle'[\s\S]*?then null else p\.streak end/)
+  assert.match(sql, /grant execute on function public\.known_people\(\) to authenticated/)
+  // check_ons: RLS, policies, cap, index, size checks.
+  assert.match(sql, /alter table public\.check_ons enable row level security/)
+  assert.match(sql, /for select using \(\(select auth\.uid\(\)\) in \(owner_id, buddy_id\)\)/)
+  assert.match(sql, /for insert with check \(\s*\(select auth\.uid\(\)\) = owner_id\s*and \(public\.are_friends\(buddy_id\) or \(public\.shares_family\(buddy_id\) and not public\.blocked_with\(buddy_id\)\)\)/)
+  assert.match(sql, /for update using \(\(select auth\.uid\(\)\) = owner_id\)/)
+  assert.match(sql, /for delete using \(\(select auth\.uid\(\)\) in \(owner_id, buddy_id\)\)/)
+  assert.ok(!/auth\.uid\(\) =/.test(sql.replace(/\(select auth\.uid\(\)\)/g, '')), 'no bare auth.uid() in policies')
+  assert.match(sql, /where owner_id = new\.owner_id\) >= 20 then\s*raise exception 'check-on cap'/)
+  assert.match(sql, /create index if not exists check_ons_buddy_idx on public\.check_ons \(buddy_id\)/)
+  assert.match(sql, /unique \(owner_id, lamp_id\)/)
+  assert.match(sql, /length\(btrim\(question\)\) between 1 and 200/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days\) on public\.check_ons to authenticated/)
+  // The job: one statement, answer_log, push_wanted, blocks, through push_queue on pg_cron.
+  const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
+  assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(job.slice(0, job.indexOf('$$;'))), 'no per-row loop')
+  assert.match(job, /from public\.answer_log a/)
+  assert.match(job, /public\.push_wanted\(k\.buddy_id, 'friends'\)/)
+  assert.match(job, /from public\.blocks b/)
+  assert.match(job, /insert into public\.push_queue/)
+  assert.match(job, /revoke all on function public\.queue_check_ons\(\) from public, anon, authenticated/)
+  assert.match(sql, /cron\.schedule\('check-ons', '\*\/5 \* \* \* \*'/)
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('friends-week.sql'), 'social-gentle redefines known_people after friends-week')
+  assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('dit-board.sql'))
+  // The push opens the friend page, which opens the Did you with the words in.
+  assert.match(sql, /'\/friend\?id=' \|\| m\.owner_id::text \|\| '&face=checkon'/)
+  const social = readFileSync(path.join(root, 'native/screens/social.jsx'), 'utf8')
+  assert.match(social, /face === 'checkon'/)
+  assert.match(social, /initialQuestion=\{sheet\.question \|\| ''\}/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

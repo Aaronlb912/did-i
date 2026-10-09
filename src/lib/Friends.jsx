@@ -8,6 +8,8 @@ import { t, tMiss } from './i18n.js'
 import {
   blockPerson,
   doneTonight,
+  friendLine,
+  friendStreak,
   dropFriend,
   friendAskNote,
   friendAskTitle,
@@ -38,13 +40,6 @@ import { SendSheet } from './SendDidYou.jsx'
 import { SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import { useOnline } from './useOnline.js'
-
-function line(person) {
-  if (!person?.share_streak) return t('people.quiet')
-  if (person.done_on === isoDate(new Date())) return t('people.doneTonight')
-  if (person.streak > 0) return t('people.streakN', { n: person.streak })
-  return t('people.noStreak')
-}
 
 export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const clock = now || new Date()
@@ -242,14 +237,14 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         links.friends.map((row) => {
           const done = doneTonight(row.person, isoDate(clock))
           const auto = autoAdds.has(row.person.user_id)
-          const streak = row.person?.streak > 0 ? t('people.streakN', { n: row.person.streak }) : ''
+          const streak = friendStreak(row.person) ? t('people.streakN', { n: friendStreak(row.person) }) : ''
           return (
             <PersonCard
               key={row.id}
               person={row.person}
               done={done}
               name={personName(row.person) || t('people.someone')}
-              line={[done ? streak : line(row.person), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
+              line={[done ? streak : friendLine(row.person, isoDate(clock)), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
               pill={done ? t('people.doneTonightShort') : ''}
               pillOn={done}
               actions={

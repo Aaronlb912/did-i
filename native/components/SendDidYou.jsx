@@ -21,7 +21,7 @@ import { Avatar } from "./PersonCard.jsx";
  * Write a did you for a friend or someone in the family. With `pick` and no
  * person, it first asks who: a friend, or a link to text anyone.
  */
-export function SendSheet({ person: given, pick = false, family = false, colors, onClose, onSent }) {
+export function SendSheet({ person: given, pick = false, family = false, initialQuestion = "", colors, onClose, onSent }) {
   const [person, setPerson] = useState(given || null);
   const [asLink, setAsLink] = useState(!pick);
   const [friends, setFriends] = useState(null);
@@ -44,7 +44,7 @@ export function SendSheet({ person: given, pick = false, family = false, colors,
       live = false;
     };
   }, [picking, friends]);
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(initialQuestion);
   const [note, setNote] = useState("");
   const [miss, setMiss] = useState("");
   const [busy, setBusy] = useState(false);

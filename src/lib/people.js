@@ -72,6 +72,23 @@ export function doneTonight(person, dateIso = isoDate(new Date())) {
   return Boolean(person?.share_streak !== false && person?.done_on && person.done_on === dateIso)
 }
 
+// A friend's streak number, or 0 when they hide it. Gentle mode hides it
+// (the server also sends null, supabase/social-gentle.sql).
+export function friendStreak(person) {
+  if (!person || person.gentle === true || person.share_streak === false) return 0
+  const n = Number(person.streak)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+// The line under a friend's name. Gentle mode: done tonight, or not yet.
+export function friendLine(person, dateIso = isoDate(new Date())) {
+  if (!person?.share_streak) return t('people.quiet')
+  if (person.done_on === dateIso) return person.gentle === true ? t('people.doneTonightCheck') : t('people.doneTonight')
+  if (person.gentle === true) return t('people.notYet')
+  const n = friendStreak(person)
+  return n ? t('people.streakN', { n }) : t('people.noStreak')
+}
+
 export function friendAskTitle(person) {
   const name = person?.display_name?.trim()
   return name || ''
@@ -191,6 +208,14 @@ export async function refreshTogether(now = Date.now()) {
   } catch {
     togetherAt = 0
   }
+}
+
+// Every friend and family member, by name. Blocked people are left out.
+export async function listKnownPeople() {
+  const db = cloud()
+  if (!db) return []
+  const who = await peopleByIds(db)
+  return [...who.values()].sort((a, b) => personName(a).localeCompare(personName(b)))
 }
 
 // One friend or family member by id, or a bare { user_id } if not known.
