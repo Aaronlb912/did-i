@@ -104,7 +104,7 @@ import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { useNoted } from '../hooks/useNoted.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
-import { LOOK_IDS, fonts } from '../theme.js'
+import { LOOK_IDS, fonts, radius } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
@@ -2642,14 +2642,14 @@ const styles = StyleSheet.create({
   // The 180 preview tile is 216 tall around a ~143 tall card; the box fits the
   // card plus frame overhang so the sheet has no empty band under it.
   cardBig: { width: '100%', height: 184, alignItems: 'center', justifyContent: 'center' },
-  groupCard: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
+  groupCard: { borderWidth: 1, borderRadius: radius.rSm, overflow: 'hidden', marginBottom: 12 },
   groupPad: { padding: 14, gap: 8 },
   editLift: { justifyContent: 'center' },
   groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   // Text wraps full width; buttons sit on their own line under it.
   sentRow: { gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   previewList:{ gap: 8, marginTop: 12, marginBottom: 4 },
-  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 12 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.rSm, padding: 12 },
   previewIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   previewCopy: { flex: 1, minWidth: 0, gap: 2 },
   previewTitle: { fontFamily: fonts.uiSemi, fontSize: 14 },

@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     minHeight: 52,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   start: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 0 },
@@ -92,5 +92,5 @@ const styles = StyleSheet.create({
   end: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
   value: { fontFamily: fonts.ui, fontSize: 15, flexShrink: 1, textAlign: 'right' },
   chev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24, width: 12, textAlign: 'center' },
-  body: { paddingHorizontal: 15, paddingTop: 2, paddingBottom: 16, gap: 10 },
+  body: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 16, gap: 10 },
 })
