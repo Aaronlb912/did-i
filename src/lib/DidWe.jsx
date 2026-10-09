@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
-import { togetherLine, weWeekTotals } from './social-amounts.js'
+import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from './social-amounts.js'
 import { BoardShell } from './BoardShell.jsx'
 import { pullAndMerge } from './cloud-sync.js'
 import {
@@ -745,7 +745,7 @@ function WePaused({ card, onDone }) {
 
 // This week's combined amounts for the cards on screen, one query. Only
 // cards that track an amount come back.
-function useWeTotals(ids) {
+function useWeTotals(ids, tick = 0) {
   const key = ids.filter(Boolean).join(',')
   const [sums, setSums] = useState(() => new Map())
   useEffect(() => {
@@ -757,8 +757,102 @@ function useWeTotals(ids) {
     return () => {
       alive = false
     }
-  }, [key])
+  }, [key, tick])
   return sums
+}
+
+// The maker turns an amount on (with a unit) or off; after a Did, anyone on
+// the card adds their own. Only the total is shown to the others.
+function WeAmount({ card, sum, didTonight, onDone }) {
+  const [open, setOpen] = useState('')
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [miss, setMiss] = useState('')
+  const [note, setNote] = useState('')
+
+  async function run(job, after) {
+    setBusy(true)
+    const out = await job()
+    setBusy(false)
+    if (out.miss) return setMiss(tMiss(out.miss))
+    setMiss('')
+    setOpen('')
+    setNote(after)
+    onDone()
+  }
+
+  function save() {
+    if (open === 'unit') return run(() => weTrackAmount(card.id, true, text.trim()), t('confirm.saved'))
+    const amount = readAmount(text)
+    if (Number.isNaN(amount)) return setMiss(t('weAmount.bad'))
+    return run(() => wePutAmount(card.id, amount), t('confirm.saved'))
+  }
+
+  if (!card.mine && !(sum && didTonight)) return null
+  return (
+    <>
+      {open ? (
+        <form
+          className="di-note-box"
+          onSubmit={(event) => {
+            event.preventDefault()
+            save()
+          }}
+        >
+          <label className="di-field">
+            <span>{open === 'unit' ? t('weAmount.unit') : t('weAmount.yoursLabel')}</span>
+            <input
+              value={text}
+              autoFocus
+              maxLength={open === 'unit' ? 24 : 9}
+              inputMode={open === 'unit' ? undefined : 'decimal'}
+              placeholder={open === 'unit' ? t('weAmount.unitPh') : '0'}
+              onChange={(event) => setText(event.target.value)}
+            />
+          </label>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="submit" disabled={busy}>
+              {t('we.save')}
+            </button>
+            <button className="di-key" type="button" onClick={() => setOpen('')}>
+              {t('settings.neverMind')}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="di-hang-actions">
+          {sum && didTonight ? (
+            <button
+              className="di-key"
+              type="button"
+              onClick={() => {
+                setText(sum.mine == null ? '' : String(sum.mine))
+                setOpen('amount')
+              }}
+            >
+              {sum.mine == null ? t('weAmount.add') : t('weAmount.yours', { n: sum.mine, unit: sum.unit })}
+            </button>
+          ) : null}
+          {card.mine ? (
+            <button
+              className="di-key"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (sum) return run(() => weTrackAmount(card.id, false), t('weAmount.stopped'))
+                setText('')
+                return setOpen('unit')
+              }}
+            >
+              {sum ? t('weAmount.stop') : t('weAmount.track')}
+            </button>
+          ) : null}
+        </div>
+      )}
+      {note ? <p className="di-set-note" role="status">{note}</p> : null}
+      {miss ? <p className="di-miss" role="alert">{miss}</p> : null}
+    </>
+  )
 }
 
 export function WeHome({ book, onChange, link = '' }) {
@@ -867,7 +961,8 @@ function WeCardPage({ book, cardId, onChange }) {
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
-  const sums = useWeTotals(card ? [card.id] : [])
+  const [sumTick, setSumTick] = useState(0)
+  const sums = useWeTotals(card ? [card.id] : [], sumTick)
   const [filing, setFiling] = useState({ folder: '', topics: '' })
   useEffect(() => {
     if (card) setFiling({ folder: card.folder || '', topics: card.topics || '' })
@@ -968,6 +1063,7 @@ function WeCardPage({ book, cardId, onChange }) {
         {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
       </p>
       {sum ? <p className="di-set-note">{togetherLine(sum) || t('weAmount.none')}</p> : null}
+      <WeAmount card={card} sum={sum} didTonight={card.due && weMine(card)?.status === 'did'} onDone={() => setSumTick((n) => n + 1)} />
       <p className="di-set-note">{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</p>
       {last.due ? <p className="di-set-note">{t('we.lastMonth', { n: last.done, due: last.due })}</p> : null}
       {goal ? (

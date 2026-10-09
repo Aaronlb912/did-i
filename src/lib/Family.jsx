@@ -21,8 +21,10 @@ import {
   cheerFamily,
   doneTonight,
   readFriendCheers,
+  listFriends,
   setRole,
 } from './people.js'
+import { checkOnsForMe, minuteClock, stopCheckOn } from './check-on.js'
 import { EmptyCard, PersonCard, SectionHead } from './PersonCard.jsx'
 import { SendSheet } from './SendDidYou.jsx'
 import { sharedLastLine } from './every-copy.js'
@@ -73,6 +75,8 @@ export function Family({ book, onChange, now, familyId }) {
   const [stock, setStock] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [codeOpen, setCodeOpen] = useState(false)
+  // What family members who are not friends asked you to check on.
+  const [checkOns, setCheckOns] = useState(() => new Map())
   const still = useReduceMotion()
   const online = useOnline()
   const cheersLeft = stock == null ? purse.friendCheers : stock
@@ -92,11 +96,19 @@ export function Family({ book, onChange, now, familyId }) {
       const back = []
       for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
       setNights(back)
-      const [tonightRows, pastRows, serverCheers] = await Promise.all([
+      const [tonightRows, pastRows, serverCheers, askRows, friendRows] = await Promise.all([
         listFamilyLamps(familyId, key),
         familyHistory(familyId, back),
         readFriendCheers(),
+        checkOnsForMe().catch(() => null),
+        listFriends().catch(() => null),
       ])
+      // Friends' asks are on the Friends list; here only the rest of the family.
+      if (askRows) {
+        const friendIds = new Set((friendRows?.friends || []).map((one) => one.person.user_id))
+        for (const id of friendIds) askRows.delete(id)
+        setCheckOns(askRows)
+      }
       if (typeof serverCheers === 'number') setStock(serverCheers)
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
@@ -271,6 +283,39 @@ export function Family({ book, onChange, now, familyId }) {
                   ))}
                 </span>
                 <em>{t('family.weekCount', { n: week.filter(Boolean).length })}</em>
+                {(checkOns.get(row.user_id) || []).length ? (
+                  <p className="di-set-note">{t('checkOn.fromTitle', { name })}</p>
+                ) : null}
+                {(checkOns.get(row.user_id) || []).map((ask) => (
+                  <div className="di-check-on" key={ask.id}>
+                    <p className="di-check-on-share">
+                      {ask.question}
+                      <br />
+                      <small>{t('checkOn.fromAt', { time: minuteClock(ask.at_minute) })}</small>
+                    </p>
+                    <div className="di-hang-actions">
+                      <button className="di-key" type="button" onClick={() => setSheet({ person: row.person, question: ask.question })}>
+                        {t('friend.sendDidYou')}
+                      </button>
+                      <button
+                        className="di-key"
+                        type="button"
+                        onClick={async () => {
+                          const { miss: why } = await stopCheckOn(ask.id)
+                          if (why) return setMiss(tMiss(why))
+                          setCheckOns((live) => {
+                            const next = new Map(live)
+                            next.set(row.user_id, (next.get(row.user_id) || []).filter((item) => item.id !== ask.id))
+                            return next
+                          })
+                          return setMiss(t('checkOn.stopped'))
+                        }}
+                      >
+                        {t('checkOn.stop')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             }
             actions={
@@ -354,6 +399,7 @@ export function Family({ book, onChange, now, familyId }) {
           family
           book={book}
           person={sheet.person}
+          initialQuestion={sheet.question || ''}
           still={still}
           onClose={() => setSheet(null)}
           onSent={(words) => setMiss(words)}

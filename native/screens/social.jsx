@@ -62,6 +62,7 @@ import {
   FRIEND_NOTE_MAX,
   readFriendNote,
   saveFriendNote,
+  cheerTitle,
 } from '../../src/lib/people.js'
 import { sharedNotesFrom } from '../../src/lib/social-amounts.js'
 import { keptProfileName } from '../../src/lib/cloud-sync.js'
@@ -1963,17 +1964,18 @@ export function FriendScreen({ book, onChange, route }) {
 
   // Same path and limits as the Friends list: one stored cheer per tap,
   // bought five for a gem. Family members go through the family cheer.
-  function cheer() {
+  // `about` is a shared note's question when the cheer is for that note.
+  function cheer(about) {
     if (cheersLeft < 1) {
       if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return
       if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
       return confirmFriendCheers(colors, () => once('buy-cheers', buyCheersNow))
     }
-    return once(`cheer:${otherId}`, cheerNow)
+    return once(`cheer:${otherId}`, () => cheerNow(typeof about === 'string' ? about : ''))
   }
 
-  async function cheerNow() {
-    let sent = await cheerFriend(book, otherId, purse.cheerOn)
+  async function cheerNow(about = '') {
+    let sent = await cheerFriend(book, otherId, purse.cheerOn, about)
     if (sent.miss === 'notFriend') sent = await cheerFamily(book, otherId, '', purse.cheerOn)
     const known = friendCheerMissKey(sent.miss)
     if (known) return setSaid(t(known.key, known.vars))
@@ -2117,7 +2119,7 @@ export function FriendScreen({ book, onChange, route }) {
                 {row.question ? `${row.question}: ` : ''}
                 {row.note}
               </Text>
-              <KeyButton colors={colors} label={t('sharedNote.cheer')} disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP} onPress={cheer} />
+              <KeyButton colors={colors} label={t('sharedNote.cheer')} disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP} onPress={() => cheer(row.question || '')} />
             </View>
           ))}
         </View>
@@ -2428,7 +2430,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <PersonRow
           colors={colors}
           person={row.person}
-          title={row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}
+          title={row.kind === 'cheer' ? cheerTitle(row) : askShown(row.question)}
           note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), row.note]
             .filter(Boolean)
             .join(' · ')}

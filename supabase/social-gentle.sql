@@ -150,8 +150,8 @@ create table if not exists public.check_ons (
 -- What the job needs to know "is this asked tonight" without the shelf.
 -- kind: 'night' (daily and weekly, uses days), 'monthly' (month_day, 0 is
 -- the last day), 'once' (on_date), 'by' (a deadline: starts_on to on_date,
--- the push only on the due night), 'every' (every_days since the last Did,
--- read from answer_log in the job so it never goes stale).
+-- every night in that window), 'every' (the learned gap, else every_days,
+-- since the last Did, read from answer_log in the job so it never goes stale).
 alter table public.check_ons add column if not exists kind text not null default 'night';
 alter table public.check_ons add column if not exists month_day smallint;
 alter table public.check_ons add column if not exists on_date date;
@@ -295,7 +295,7 @@ begin
   with clock as (
     select c.id, c.owner_id, c.buddy_id, c.question, c.lamp_id, c.at_minute, c.days, c.sent_on,
       c.kind, c.month_day, c.on_date, c.starts_on, c.every_days,
-      (now() at time zone p.zone) as local
+      p.zone, (now() at time zone p.zone) as local
     from public.check_ons c
     join public.profiles p on p.user_id = c.owner_id
     where p.zone <> '' and p.zone in (select name from pg_timezone_names)
@@ -303,6 +303,29 @@ begin
   due as (
     select k.id, k.owner_id, k.buddy_id, k.question, k.local::date as night
     from clock k
+    -- Every so often: the newest Did before tonight and the gap the app
+    -- learns (learnedGap in src/lib/recurrence.js): the median of the gaps
+    -- between the last 6 Did nights, once there are at least 4. One indexed
+    -- read of answer_log per every-so-often row, inside this statement.
+    left join lateral (
+      select max(n.night) as last_did,
+        case when count(*) >= 4
+          then nullif(round(percentile_cont(0.5) within group (order by n.gap))::int, 0)
+        end as learned
+      from (
+        select d.night, d.night - lag(d.night) over (order by d.night) as gap
+        from (
+          select a.period_key::date as night from public.answer_log a
+          where k.kind = 'every'
+            and a.user_id = k.owner_id and a.lamp_id = k.lamp_id
+            and a.status in ('yes', 'late')
+            and a.period_key ~ '^\d{4}-\d{2}-\d{2}$'
+            and a.period_key < k.local::date::text
+          order by a.period_key desc
+          limit 6
+        ) d
+      ) n
+    ) g on true
     where (k.sent_on is null or k.sent_on < k.local::date)
       and extract(hour from k.local) * 60 + extract(minute from k.local) >= k.at_minute
       -- Asked tonight, per kind. Same rule as checkOnDue in src/lib/check-on.js.
@@ -312,19 +335,14 @@ begin
           case when k.month_day = 0 then 31 else k.month_day end,
           extract(day from (date_trunc('month', k.local) + interval '1 month - 1 day'))::int)
         when 'once' then k.local::date = k.on_date
-        when 'by' then k.local::date = k.on_date
-        -- Never done, or every_days since the newest Did before tonight.
-        -- One lookup on the answer_log primary key per due row, inside this statement.
-        when 'every' then coalesce(k.local::date - (
-          select max(a.period_key)::date from public.answer_log a
-          where a.user_id = k.owner_id and a.lamp_id = k.lamp_id
-            and a.status in ('yes', 'late')
-            and a.period_key ~ '^\d{4}-\d{2}-\d{2}$'
-            and a.period_key < k.local::date::text
-        ) >= k.every_days, true)
+        -- A deadline is asked every night from its start to the due date.
+        when 'by' then k.local::date between coalesce(k.starts_on, k.on_date) and k.on_date
+        -- Never done, or the learned gap (else every_days) since the newest Did.
+        when 'every' then coalesce(k.local::date - g.last_did >= coalesce(g.learned, k.every_days), true)
         else false
       end
-      -- Not answered: the key the app writes for this period.
+      -- Not answered: the key the app writes for this period. A deadline
+      -- keeps one key for every night, so a Not yet only counts tonight.
       and not exists (
         select 1 from public.answer_log a
         where a.user_id = k.owner_id and a.lamp_id = k.lamp_id
@@ -333,6 +351,8 @@ begin
             when k.kind in ('once', 'by') then 'once:' || k.lamp_id
             else k.local::date::text
           end
+          and (k.kind <> 'by' or a.status in ('yes', 'late')
+            or (a.updated_at at time zone k.zone)::date = k.local::date)
       )
       and public.push_wanted(k.buddy_id, 'friends')
       and exists (select 1 from public.devices d where d.user_id = k.buddy_id and d.push_token is not null)

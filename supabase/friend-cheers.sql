@@ -99,7 +99,10 @@ revoke all on function public.buy_friend_cheers() from public;
 revoke all on function public.buy_friend_cheers() from anon;
 grant execute on function public.buy_friend_cheers() to authenticated;
 
-create or replace function public.send_friend_cheer(other uuid, note text, want text)
+-- `about` is the question of the shared note the cheer is for, so the push
+-- and the inbox can say which note. The 3 argument version is replaced.
+drop function if exists public.send_friend_cheer(uuid, text, text);
+create or replace function public.send_friend_cheer(other uuid, note text, want text, about text default '')
 returns jsonb
 language plpgsql
 security definer
@@ -111,12 +114,19 @@ declare
   held integer;
   cid text := left(btrim(coalesce(want, '')), 20);
   line text := left(btrim(coalesce(note, '')), 280);
+  topic text := left(btrim(coalesce(about, '')), 200);
 begin
   if who is null then
     raise exception 'not signed in';
   end if;
   if other is null or other = who or public.blocked_with(other) or not public.are_friends(other) then
     raise exception 'not friends';
+  end if;
+  -- Only the words of a note they really shared; anything else is a plain cheer.
+  if topic <> '' and not exists (
+    select 1 from public.shared_notes s where s.user_id = other and s.question = topic
+  ) then
+    topic := '';
   end if;
 
   select p.gem_balance, p.friend_cheers
@@ -140,15 +150,15 @@ begin
     returning gem_balance, friend_cheers into bal, held;
 
   insert into public.sends (from_id, to_id, kind, question, note, cheer_id)
-  values (who, other, 'cheer', '', line, cid);
+  values (who, other, 'cheer', topic, line, cid);
 
   return jsonb_build_object('gems', bal, 'cheers', held);
 end;
 $$;
 
-revoke all on function public.send_friend_cheer(uuid, text, text) from public;
-revoke all on function public.send_friend_cheer(uuid, text, text) from anon;
-grant execute on function public.send_friend_cheer(uuid, text, text) to authenticated;
+revoke all on function public.send_friend_cheer(uuid, text, text, text) from public;
+revoke all on function public.send_friend_cheer(uuid, text, text, text) from anon;
+grant execute on function public.send_friend_cheer(uuid, text, text, text) to authenticated;
 
 create or replace function public.read_friend_cheers()
 returns integer

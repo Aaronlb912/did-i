@@ -170,8 +170,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
     setMiss('')
   }
 
-  async function cheer(person) {
-    const sent = await cheerFriend(book, person.user_id, purse.cheerOn)
+  async function cheer(person, about = '') {
+    const sent = await cheerFriend(book, person.user_id, purse.cheerOn, about)
     const known = friendCheerMissKey(sent.miss)
     if (known) return setMiss(t(known.key, known.vars))
     if (sent.miss) return setMiss(tMiss(sent.miss))
@@ -278,7 +278,7 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
                   notes={notes.get(row.person.user_id) || []}
                   asks={checkOns.get(row.person.user_id) || []}
                   cheerOff={cheersLeft < 1}
-                  onCheer={() => cheer(row.person)}
+                  onCheer={(about) => cheer(row.person, about)}
                   onAsk={(question) => setSheet({ person: row.person, question })}
                   onStop={stopAsk}
                 />
@@ -471,7 +471,7 @@ function FriendExtras({ name, notes, asks, cheerOff, onCheer, onAsk, onStop }) {
             {row.question ? `${row.question}: ` : ''}
             {row.note}
           </p>
-          <button className="di-key" type="button" disabled={cheerOff} onClick={onCheer}>
+          <button className="di-key" type="button" disabled={cheerOff} onClick={() => onCheer(row.question || '')}>
             {t('sharedNote.cheer')}
           </button>
         </div>

@@ -85,7 +85,7 @@ function lastOfMonth(night) {
 }
 
 /** Is the question asked on this night, per kind? `lastDid` is the newest Did night before it (every). */
-export function checkOnAsked(link, { night, weekday, lastDid = '' }) {
+export function checkOnAsked(link, { night, weekday, lastDid = '', learned = 0 }) {
   const kind = link?.kind || 'night'
   if (kind === 'night') {
     const days = Array.isArray(link.days) ? link.days : []
@@ -95,10 +95,12 @@ export function checkOnAsked(link, { night, weekday, lastDid = '' }) {
     const want = Number(link.month_day) === 0 ? 31 : Number(link.month_day)
     return Number(night.slice(8, 10)) === Math.min(want, lastOfMonth(night))
   }
-  if (kind === 'once' || kind === 'by') return link.on_date === night
+  if (kind === 'once') return link.on_date === night
+  // A deadline is asked every night from its start to the due date.
+  if (kind === 'by') return night >= (link.starts_on || link.on_date) && night <= link.on_date
   if (kind === 'every') {
     if (!lastDid) return true
-    return daysBetween(lastDid, night) >= (Number(link.every_days) || 7)
+    return daysBetween(lastDid, night) >= (learned || Number(link.every_days) || 7)
   }
   return false
 }
@@ -129,11 +131,11 @@ export function minuteClock(minute) {
  * of the day, `weekday` 0 to 6, `answered` whether answer_log has this
  * period's key, `lastDid` the newest Did night before tonight (every kind).
  */
-export function checkOnDue(link, { night, minute, weekday, answered, lastDid = '' }) {
+export function checkOnDue(link, { night, minute, weekday, answered, lastDid = '', learned = 0 }) {
   if (!link || answered) return false
   if (link.sent_on && link.sent_on >= night) return false
   if (minute < cleanMinute(link.at_minute ?? CHECK_ON_DEFAULT)) return false
-  return checkOnAsked(link, { night, weekday, lastDid })
+  return checkOnAsked(link, { night, weekday, lastDid, learned })
 }
 
 async function me(db) {
