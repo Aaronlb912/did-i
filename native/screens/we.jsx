@@ -53,6 +53,7 @@ import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone } from '../lib/confirm.js'
+import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -598,6 +599,42 @@ function WeMenu({ title, items, colors, onClose }) {
 // A Did we does nothing alone, so the card you just made opens on sharing.
 let justMade = ''
 
+// One box and Save, in a sheet: the amount unit (maker) or tonight's amount.
+function AmountBox({ label, initial = '', placeholder = '', decimal = false, maxLength = 24, colors, onSave }) {
+  const [draft, setDraft] = useState(initial)
+  const save = () => onSave(draft)
+  return (
+    <View style={styles.amountBox}>
+      <Field
+        colors={colors}
+        label={label}
+        value={draft}
+        onChangeText={(value) => setDraft(decimal ? value.replace(/[^\d.,]/g, '').slice(0, 9) : value)}
+        placeholder={placeholder}
+        keyboardType={decimal ? 'decimal-pad' : 'default'}
+        maxLength={maxLength}
+        autoFocus
+        onSubmitEditing={save}
+      />
+      <View style={styles.acts}>
+        <DidButton small colors={colors} label={t('we.save')} onPress={save} />
+        <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => publishSheet(null)} />
+      </View>
+    </View>
+  )
+}
+
+function openAmountBox({ title, colors, ...rest }) {
+  publishSheet({
+    title,
+    colors,
+    closeLabel: t('settings.neverMind'),
+    onClose: () => publishSheet(null),
+    noClose: true,
+    content: <AmountBox colors={colors} {...rest} />,
+  })
+}
+
 export function WeCardScreen({ book, cardId, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
@@ -636,12 +673,17 @@ function WeCardPage({ book, cardId, onChange }) {
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
   const [early, setEarly] = useState(null)
+  // This week's combined amount, when the card tracks one. Missing: not tracked.
+  const [sum, setSum] = useState(null)
 
   async function load() {
     const out = await weTonight()
     if (out.miss) setMiss(tMiss(out.miss))
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)
+    if (found?.myState === 'in') {
+      weWeekTotals([found.id]).then((res) => setSum(res.totals.get(found.id) || null))
+    }
     const night = found && !found.due && found.myState === 'in' ? weNextNight(found) : ''
     if (!night) return setEarly(null)
     const later = await weTonight(night)
@@ -863,9 +905,56 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  // The maker turns the amount on (with a unit) or off. Amounts typed stay.
+  function trackAmount() {
+    if (sum) {
+      return weTrackAmount(card.id, false).then((out) => {
+        if (out.miss) return setMiss(tMiss(out.miss))
+        setSum(null)
+        confirmDone(t('weAmount.stopped'))
+      })
+    }
+    return openAmountBox({
+      title: t('weAmount.track'),
+      colors,
+      label: t('weAmount.unit'),
+      placeholder: t('weAmount.unitPh'),
+      onSave: async (unit) => {
+        publishSheet(null)
+        const out = await weTrackAmount(card.id, true, unit.trim())
+        if (out.miss) return setMiss(tMiss(out.miss))
+        confirmDone(t('confirm.saved'))
+        load()
+      },
+    })
+  }
+
+  function putAmount() {
+    openAmountBox({
+      title: sum.unit ? t('note.amountIn', { unit: sum.unit }) : t('note.amount'),
+      colors,
+      label: t('weAmount.yoursLabel'),
+      initial: sum.mine == null ? '' : String(sum.mine),
+      placeholder: '0',
+      decimal: true,
+      maxLength: 9,
+      onSave: async (raw) => {
+        const amount = readAmount(raw)
+        if (Number.isNaN(amount)) return setMiss(t('weAmount.bad'))
+        publishSheet(null)
+        const out = await wePutAmount(card.id, amount)
+        if (out.miss) return setMiss(tMiss(out.miss))
+        setMiss('')
+        confirmDone(t('confirm.saved'))
+        load()
+      },
+    })
+  }
+
   const menuItems = [
     { key: 'details', label: t('we.details'), onPress: openDetails },
     card.mine && !edit ? { key: 'edit', label: t('we.edit'), onPress: startEdit } : null,
+    card.mine ? { key: 'amount', label: sum ? t('weAmount.stop') : t('weAmount.track'), onPress: trackAmount } : null,
     link ? { key: 'link', label: t('weLink.off'), onPress: endLink } : null,
     { key: 'leave', label: t('we.leave'), onPress: leave, danger: true },
     card.mine ? { key: 'close', label: t('we.close'), onPress: close, danger: true } : null,
@@ -979,6 +1068,13 @@ function WeCardPage({ book, cardId, onChange }) {
           ) : (
             <KeyButton colors={colors} label={t('we.did')} disabled={ans.busy === card.id} onPress={() => ans.answer(card, 'did')} />
           )}
+          {sum && mine?.status === 'did' ? (
+            <KeyButton
+              colors={colors}
+              label={sum.mine == null ? t('weAmount.add') : t('weAmount.yours', { n: sum.mine, unit: sum.unit })}
+              onPress={putAmount}
+            />
+          ) : null}
           <KeyButton
             colors={colors}
             picked={mine?.status === 'nope'}
@@ -1026,6 +1122,7 @@ function WeCardPage({ book, cardId, onChange }) {
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Cap colors={colors}>{t('we.together')}</Cap>
         <Text style={[styles.big, { color: colors.ink }]}>{t('we.streak', { n: streak })}</Text>
+        {sum ? <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sum) || t('weAmount.none')}</Text> : null}
         <Meta colors={colors}>
           {t('we.best', { n: best })}
           {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
@@ -1102,6 +1199,19 @@ export function WeHomeList({ book, onChange }) {
   const cheer = useWeCheer(book, onChange)
 
   const mine =cards.filter((card) => card.myState === 'in')
+  // Combined amounts for every card on the list, in one read.
+  const [sums, setSums] = useState(() => new Map())
+  const ids = mine.map((card) => card.id).join(',')
+  useEffect(() => {
+    if (!ids) return undefined
+    let alive = true
+    weWeekTotals(ids.split(',')).then((res) => {
+      if (alive) setSums(res.totals)
+    })
+    return () => {
+      alive = false
+    }
+  }, [ids])
   const tonight = mine.filter((card) => card.due)
   const later = mine.filter((card) => !card.due)
   const month = new Date().toISOString().slice(0, 7)
@@ -1133,6 +1243,9 @@ export function WeHomeList({ book, onChange }) {
             {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
             {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
           </Text>
+          {togetherLine(sums.get(card.id)) ? (
+            <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sums.get(card.id))}</Text>
+          ) : null}
         </View>
         {open ? (
           <View style={styles.weRowActs}>
@@ -1203,6 +1316,7 @@ const styles = StyleSheet.create({
   listCap: { marginHorizontal: 0 },
   weRow: { borderWidth: 1.5, borderRadius: 16, padding: 14, gap: 10 },
   weRowCopy: { gap: 6 },
+  amountBox: { gap: 8, width: '100%' },
   weRowActs: { flexDirection: 'row', gap: 8 },
   weQ: { fontFamily: fonts.uiSemi, fontSize: 16 },
   tight: { marginTop: 0 },

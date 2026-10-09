@@ -28,6 +28,7 @@ import { FamilyTonight } from './FamilyTonight.jsx'
 import { WeFace, useWeAnswer, weOpenForMe } from './DidWe.jsx'
 import { takeWeFinishes, useWeTonight, weInFilter, weStats } from './did-we.js'
 import { shelfMarks, weMarksFor } from './achievements.js'
+import { noteShared, setNoteShared } from './social-amounts.js'
 
 // Where the stack has no card of your own to answer, so a Did we can have it.
 const WE_OVER = new Set(['hall', 'rest', 'off', 'waiting'])
@@ -40,13 +41,15 @@ function NoteBox({ target, shelf, onSave, onCancel }) {
   const answer = (book?.answers || []).find((item) => item.lampId === target.lampId && item.periodKey === target.periodKey)
   const [note, setNote] = useState(answer?.note || '')
   const [count, setCount] = useState(typeof answer?.amount === 'number' ? String(answer.amount) : '')
+  // Off unless this night's note is already shared.
+  const [share, setShare] = useState(() => noteShared(target.lampId, target.periodKey))
   if (!lamp || !answer) return null
   return (
     <form
       className="di-note-box di-screws-print-hide"
       onSubmit={(event) => {
         event.preventDefault()
-        onSave(note, lamp.trackAmount ? count : undefined)
+        onSave(note, lamp.trackAmount ? count : undefined, { share, question: shortLabel(lamp) })
       }}
     >
       <p className="di-sit-line">{shortLabel(lamp)}</p>
@@ -60,6 +63,11 @@ function NoteBox({ target, shelf, onSave, onCancel }) {
           <input value={count} inputMode="decimal" onChange={(event) => setCount(event.target.value)} />
         </label>
       ) : null}
+      <label className="di-field di-we-check">
+        <input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} />
+        <span>{t('sharedNote.toggle')}</span>
+      </label>
+      {share ? <p className="di-sit-line">{t('sharedNote.who')}</p> : null}
       <div className="di-page-keys">
         <button className="di-key" type="submit">{t('settings.save')}</button>
         <button className="di-key" type="button" onClick={onCancel}>{t('settings.neverMind')}</button>
@@ -85,6 +93,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
   // Someone else's did finished a card: play their cheer, once, with a line.
   const [weFinish, setWeFinish] = useState(null)
   const [noteFor, setNoteFor] = useState(null)
+  const [sharedMiss, setSharedMiss] = useState('')
   useEffect(() => {
     if (!account.user) return
     // Did we achievements come from the shared cards, so they unlock here.
@@ -389,13 +398,22 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           <NoteBox
             target={noteFor}
             shelf={stack.shelf}
-            onSave={(note, amount) => {
+            onSave={(note, amount, extra) => {
               stack.saveNote(noteFor, note, amount)
+              const target = noteFor
               setNoteFor(null)
+              setSharedMiss('')
+              // Off and never shared: nothing to send.
+              if (extra.share || noteShared(target.lampId, target.periodKey)) {
+                setNoteShared({ ...target, question: extra.question, note, on: extra.share }).then((out) => {
+                  if (out.miss) setSharedMiss(out.miss)
+                })
+              }
             }}
             onCancel={() => setNoteFor(null)}
           />
         ) : null}
+        {sharedMiss ? <p className="di-sit-line">{sharedMiss}</p> : null}
 
         <FamilyTonight />
       </div>

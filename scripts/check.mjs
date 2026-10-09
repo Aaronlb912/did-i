@@ -5209,6 +5209,70 @@ await testAsync('every so often made tonight: progress and the done card agree',
   assert.equal(nightProgress(dueTonight(did, evAt(5))).total, 2, 'counts once done')
 })
 
+await testAsync('did we amounts: weekly total math and week start', async () => {
+  const { readAmount, togetherLine, totalsById, weekStartIso } = await import('../src/lib/social-amounts.js')
+  assert.equal(weekStartIso('2026-10-09'), '2026-10-05', 'friday -> monday')
+  assert.equal(weekStartIso('2026-10-05'), '2026-10-05', 'monday stays')
+  assert.equal(weekStartIso('2026-10-11'), '2026-10-05', 'sunday ends the week')
+  const sums = totalsById([
+    { card_id: 'a', unit: 'glasses', total: '31', mine: '4' },
+    { card_id: 'b', unit: '', total: 2.345, mine: null },
+    { card_id: 'c', unit: 'km', total: 'x', mine: '' },
+    { unit: 'lost' },
+  ])
+  assert.deepEqual(sums.get('a'), { unit: 'glasses', total: 31, mine: 4 })
+  assert.equal(sums.get('b').total, 2.35)
+  assert.equal(sums.get('c').total, 0)
+  assert.equal(sums.get('c').mine, null)
+  assert.equal(sums.size, 3)
+  assert.equal(togetherLine(sums.get('a')), 'Together: 31 glasses this week')
+  assert.equal(togetherLine(sums.get('b')), 'Together: 2.35 this week')
+  assert.equal(togetherLine(sums.get('c')), '', 'nothing yet reads as nothing')
+  assert.equal(readAmount('3,5'), 3.5)
+  assert.equal(readAmount(''), null)
+  assert.ok(Number.isNaN(readAmount('-1')))
+  assert.ok(Number.isNaN(readAmount('100001')))
+})
+
+test('did we amounts: private question amounts never in the query', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')
+  const fn = sql.slice(sql.indexOf('function public.we_week_totals'), sql.indexOf('revoke all on function public.we_track_amount'))
+  assert.ok(fn.length > 100, 'we_week_totals found')
+  assert.doesNotMatch(fn, /answer_log/, 'totals never read your own questions')
+  assert.match(fn, /from public\.we_answers a/)
+  assert.match(fn, /m\.user_id = \(select auth\.uid\(\)\)\s+and m\.state = 'in'/, 'only cards you are on')
+  assert.match(fn, /c\.track_amount/, 'only cards that track an amount')
+  assert.doesNotMatch(fn, /returns table \([^)]*user_id/, 'no per-person rows')
+  const client = readFileSync(path.join(root, 'src/lib/social-amounts.js'), 'utf8')
+  assert.doesNotMatch(client.replace(/^\s*\/\/.*$/gm, ''), /answer_log|put_answers/, 'client never reads private amounts')
+  assert.match(client, /db\.rpc\('we_week_totals', \{ cards: ids/, 'one batched read for every card')
+})
+
+test('shared notes and we amounts: sql guards', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')
+  assert.match(sql, /alter table public\.shared_notes enable row level security/)
+  assert.match(sql, /for select using \(\(select auth\.uid\(\)\) = user_id or public\.are_friends\(user_id\)\)/)
+  assert.doesNotMatch(sql.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
+  assert.match(sql, /length\(note\) between 1 and 500/)
+  assert.match(sql, /length\(question\) <= 200/)
+  assert.match(sql, /amount_unit\) <= 24/)
+  assert.match(sql, />= 20 then\s+raise exception 'too many shared notes today'/)
+  assert.match(sql, /before insert on public\.shared_notes/)
+  assert.match(sql, /create index if not exists shared_notes_made_idx on public\.shared_notes \(user_id, made_at\)/)
+  assert.equal((sql.match(/security definer/g) || []).length, (sql.match(/set search_path = public/g) || []).length)
+  assert.match(sql, /revoke all on public\.shared_notes from anon/)
+  assert.match(sql, /where id = card and made_by = me/, 'only the maker turns amounts on')
+  assert.match(sql, /status = 'did'/, 'amounts only on a did')
+  const all = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.match(all, /'supabase\/social-amounts\.sql'/)
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.match(notes, /useState\(\(\) => Boolean\(share && noteShared/, 'share starts off unless already shared')
+  const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
+  assert.match(web, /sharedNote\.toggle/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
