@@ -26,6 +26,7 @@ const ROUTES = new Set([
   '/settings',
   '/settings/phone',
   '/settings/more',
+  '/settings/seen',
   '/add',
   '/hang',
   '/lamp',

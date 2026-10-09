@@ -22,7 +22,8 @@ import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { fireCheer, normalizePurse } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { feelTap } from '../../src/lib/native.js'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
@@ -276,7 +277,12 @@ export function useWeAnswer(reload, book) {
 
   async function run(id, job) {
     setBusy(id)
-    const out = await job()
+    let out
+    try {
+      out = await job()
+    } catch {
+      out = { miss: 'confirm.miss' }
+    }
     setBusy('')
     setMiss(out?.miss ? tMiss(out.miss) : '')
     reload()
@@ -288,7 +294,16 @@ export function useWeAnswer(reload, book) {
     const mine = weMine(card)
     const next = mine?.status === status ? null : status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
-    if (out.miss || !out.done || card.done) return
+    // A Did we answer has no undo: it says it was saved, or that it was not.
+    if (out?.miss) {
+      confirmMiss(tMiss(out.miss))
+      return
+    }
+    if (next) {
+      feelTap(next === 'nope' ? 'skip' : 'did')
+      confirmDone(t('tonight.weSaved'))
+    }
+    if (!out.done || card.done) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
     const paid = await weClaim(card.id, night || undefined)

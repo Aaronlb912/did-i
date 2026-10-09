@@ -3943,8 +3943,10 @@ test('every action that changes data on the server says so on the phone', () => 
     'cheerFriend', 'buyCheers', 'sendGift', 'answerSend', 'blockPerson', 'unblockPerson', 'makeFamily', 'joinFamily',
     'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
     'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
+    'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
+    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer',
   ]
-  const SEEN = /confirmDone|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
+  const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
   const files = []
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {

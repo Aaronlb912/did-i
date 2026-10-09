@@ -64,7 +64,7 @@ import {
   LookChip,
 } from '../components/Cosmetic.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
-import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
+import { AppTextInput, DidButton, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { PersonAvatar } from '../components/PersonAvatar.jsx'
@@ -2668,7 +2668,7 @@ export function GiftScreen({ book, onChange, toId }) {
           <Text style={[giftStyles.toText, { color: colors.inkSoft }]} numberOfLines={1}>{t('gift.to', { name })}</Text>
         </View>
       ) : (
-        <Meta colors={colors}>{t('family.loading')}</Meta>
+        <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       )}
       <View style={giftStyles.note}>
         <AppTextInput
@@ -2830,7 +2830,7 @@ export function GiftsSentScreen({ book }) {
   return (
     <BoardShell book={book} title={t('gifts.title')} date={shellDate(book)} colors={colors}>
       {miss ? <Meta colors={colors}>{miss}</Meta> : null}
-      {list === null ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {list === null ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
       {list && !list.length && !miss ? (
         <Reveal>
           <Meta colors={colors}>{t('gifts.none')}</Meta>

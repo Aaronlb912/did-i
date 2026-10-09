@@ -423,6 +423,26 @@ export const es = {
   'tonight.swipeNope': "aún no",
   'tonight.peopleFrom': "De {name}",
   'tonight.peopleMiss': "No se guardó. Revisa tu señal y desliza otra vez.",
+  'tonight.weSaved': "Guardado en tu Did we.",
+  'tonight.familySaved': "Guardado para {name}.",
+  'tonight.offlineSaved': "Guardado en este teléfono. Se sincroniza cuando vuelvas a tener conexión.",
+  'seen.title': "Lo que ven los demás",
+  'seen.sub': "Amigos y familia, en palabras sencillas",
+  'seen.streakOn': "Tu racha está compartida. Tus amigos ven tu racha y si terminaste esta noche.",
+  'seen.streakOff': "Tu racha está oculta. Tus amigos ven tu nombre, no tu racha.",
+  'seen.streakUnknown': "No se pudo comprobar tu ajuste de racha ahora.",
+  'seen.signedOut': "No has iniciado sesión. Nada sale de este teléfono.",
+  'seen.friendsTitle': "Amigos",
+  'seen.friends': "Tu nombre. Tu racha y si terminaste esta noche, cuando tu racha está compartida. Nunca tus propias preguntas ni respuestas.",
+  'seen.weTitle': "Preguntas compartidas",
+  'seen.we': "En una pregunta compartida, los dos ven las respuestas del otro a esa pregunta.",
+  'seen.familyTitle': "Familia",
+  'seen.family': "En las preguntas de familia, toda la familia ve quién respondió cada noche.",
+  'seen.asksTitle': "Peticiones de amigos",
+  'seen.asks': "El amigo que envió una petición ve si la guardaste.",
+  'seen.neverTitle': "Nunca compartido",
+  'seen.never': "Tus propias preguntas, notas y respuestas son tuyas. Solo se sincronizan con tu cuenta.",
+  'seen.back': "Volver a ajustes",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} monedas, {gems} gemas',
   'weekbar.aria': 'Semana de racha',
@@ -1343,7 +1363,7 @@ export const es = {
     'Esto no es una lista de tareas ni un calendario. Pon la pregunta que repites después del hecho. Usa una de estas, o escribe la tuya empezando con Did I.',
   'ideas.use': 'Usar esta',
   'ideas.writeOwn': 'Escribe la tuya',
-  'ideas.help': 'Ayuda',
+  'ideas.help': 'Ayuda',
   'wait.kicker': 'Todavía no',
   'wait.after': 'Después de {time}.',
   'wait.later': 'luego',
@@ -2306,7 +2326,7 @@ export const es = {
   'enter.eraseGo': 'Borrar y empezar de nuevo',
   'enter.eraseBody': 'No has iniciado sesión, así que el PIN solo existe en este teléfono. Para quitarlo, borra Did I en este teléfono: preguntas, respuestas, monedas y looks. No se puede deshacer.',
   'enter.forgotTitle': '¿Olvidaste tu PIN?',
-  'enter.forgot': '¿Olvidaste el PIN?',
+  'enter.forgot': '¿Olvidaste el PIN?',
   'clock.pm': '{h}:{m} p. m.',
   'clock.am': '{h}:{m} a. m.',
   'shop.teasedBody': 'Aún no ha salido. Sale a la venta el {date}.',
@@ -2516,7 +2536,7 @@ export const es = {
   'pack.meds': 'Medicinas',
   'pack.sureTitle': '¿Añadir {n} preguntas?',
   'pack.sureGo': 'Añadirlas',
-  'pack.added': '{n} preguntas añadidas',
+  'pack.added': '{n} preguntas añadidas',
   'note.title': 'Notas',
   'note.hint': 'Toca una noche para añadir una nota.',
   'note.ph': 'Añade una nota corta',

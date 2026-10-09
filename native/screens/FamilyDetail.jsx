@@ -37,7 +37,7 @@ import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
-import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
@@ -152,7 +152,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   }
 
   if (!ready) {
-    return <Meta colors={colors}>{t('family.loading')}</Meta>
+    return <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
   }
 
   if (!fam) {

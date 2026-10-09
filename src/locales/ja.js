@@ -410,6 +410,26 @@ export const ja = {
   'tonight.swipeNope': "まだ",
   'tonight.peopleFrom': "{name}から",
   'tonight.peopleMiss': "保存できませんでした。電波を確認して、もう一度スワイプしてください。",
+  'tonight.weSaved': "Did we に保存しました。",
+  'tonight.familySaved': "{name} に保存しました。",
+  'tonight.offlineSaved': "このスマホに保存しました。オンラインに戻ると同期します。",
+  'seen.title': "ほかの人に見えるもの",
+  'seen.sub': "友だちと家族について、わかりやすく",
+  'seen.streakOn': "ストリークは共有中です。友だちにはストリークと今夜終えたかどうかが見えます。",
+  'seen.streakOff': "ストリークは非表示です。友だちには名前だけが見え、ストリークは見えません。",
+  'seen.streakUnknown': "今はストリークの設定を確認できません。",
+  'seen.signedOut': "サインインしていません。このスマホの外には何も送られません。",
+  'seen.friendsTitle': "友だち",
+  'seen.friends': "名前。ストリークを共有しているときは、ストリークと今夜終えたかどうか。自分の質問や答えは見えません。",
+  'seen.weTitle': "共有の質問",
+  'seen.we': "共有している質問では、その質問へのお互いの答えが見えます。",
+  'seen.familyTitle': "家族",
+  'seen.family': "家族の質問では、毎晩だれが答えたかを家族全員が見られます。",
+  'seen.asksTitle': "友だちからの依頼",
+  'seen.asks': "依頼を送った友だちには、あなたがそれを残したかどうかが見えます。",
+  'seen.neverTitle': "共有されないもの",
+  'seen.never': "自分の質問、メモ、答えはあなただけのものです。同期先はあなたのアカウントだけです。",
+  'seen.back': "設定に戻る",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins、{gems} gems',
   'weekbar.aria': 'streak の週',
@@ -1317,7 +1337,7 @@ export const ja = {
   'ideas.body': 'To-do リストでもカレンダーでもない。あとから何度も聞く question を置く。ここから選ぶか、Did I で始まる文を自分で書く。',
   'ideas.use': 'これを使う',
   'ideas.writeOwn': '自分で書く',
-  'ideas.help': 'ヘルプ',
+  'ideas.help': 'ヘルプ',
   'wait.kicker': 'まだ',
   'wait.after': '{time} 以降。',
   'wait.later': 'あとで',
@@ -2245,7 +2265,7 @@ export const ja = {
   'enter.eraseGo': '消して最初から',
   'enter.eraseBody': 'ログインしていないので、PINはこのスマホにだけあります。外すには、このスマホのDid Iを消します（質問、回答、コイン、ルック）。元に戻せません。',
   'enter.forgotTitle': 'PINを忘れましたか？',
-  'enter.forgot': 'PINを忘れた？',
+  'enter.forgot': 'PINを忘れた？',
   'clock.pm': '午後{h}:{m}',
   'clock.am': '午前{h}:{m}',
   'shop.teasedBody': 'まだ発売前です。{date}に発売。',
@@ -2455,7 +2475,7 @@ export const ja = {
   'pack.meds': '薬',
   'pack.sureTitle': '{n} 個の質問を追加しますか？',
   'pack.sureGo': '追加する',
-  'pack.added': '{n} 個の質問を追加しました',
+  'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',
   'note.hint': '夜をタップしてメモを追加。',
   'note.ph': '短いメモを追加',

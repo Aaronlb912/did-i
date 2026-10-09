@@ -52,14 +52,24 @@ export function Meta({ children, colors, style }) {
   return <Text style={[styles.meta, { color: colors.inkSoft }, style]}>{children}</Text>
 }
 
-// A loading line that waits 300 ms, so a fast load never flashes it for one frame.
+const SKEL_ROWS = ['92%', '74%', '84%']
+
+// A loading skeleton that waits 300 ms, so a fast load never flashes it for one frame.
 export function LateMeta({ children, colors }) {
   const [show, setShow] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => setShow(true), 300)
     return () => clearTimeout(timer)
   }, [])
-  return show ? <Meta colors={colors}>{children}</Meta> : null
+  if (!show) return null
+  // A soft, still skeleton in place of a blank screen. The words stay for screen readers.
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityLabel={String(children || '')} style={styles.skel}>
+      {SKEL_ROWS.map((width, i) => (
+        <View key={i} style={[styles.skelRow, { width, backgroundColor: colors.panel3 }]} />
+      ))}
+    </View>
+  )
 }
 
 // `dim` looks disabled but still takes the press, so the screen can say why.
@@ -213,6 +223,8 @@ export function ChipRow({ items, value, onPick, colors, scroll }) {
 }
 
 const styles = StyleSheet.create({
+  skel: { gap: 12, paddingVertical: 8, alignSelf: 'stretch' },
+  skelRow: { height: 52, borderRadius: 14, opacity: 0.7 },
   page: { gap: 12 },
   kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
   title: { fontFamily: fonts.display, fontSize: 26, fontWeight: '700', lineHeight: 32 },

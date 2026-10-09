@@ -422,6 +422,26 @@ export const de = {
   'tonight.swipeNope': "noch nicht",
   'tonight.peopleFrom': "Von {name}",
   'tonight.peopleMiss': "Das wurde nicht gespeichert. Prüfe dein Netz und wische noch einmal.",
+  'tonight.weSaved': "In deinem Did we gespeichert.",
+  'tonight.familySaved': "Für {name} gespeichert.",
+  'tonight.offlineSaved': "Auf diesem Handy gespeichert. Wird synchronisiert, sobald du wieder online bist.",
+  'seen.title': "Was andere sehen",
+  'seen.sub': "Freunde und Familie, ganz einfach erklärt",
+  'seen.streakOn': "Deine Serie ist geteilt. Freunde sehen deine Serie und ob du heute Abend fertig bist.",
+  'seen.streakOff': "Deine Serie ist verborgen. Freunde sehen deinen Namen, nicht deine Serie.",
+  'seen.streakUnknown': "Deine Einstellung zur Serie lässt sich gerade nicht prüfen.",
+  'seen.signedOut': "Du bist nicht angemeldet. Nichts verlässt dieses Handy.",
+  'seen.friendsTitle': "Freunde",
+  'seen.friends': "Dein Name. Deine Serie und ob du heute Abend fertig bist, wenn deine Serie geteilt ist. Nie deine eigenen Fragen oder Antworten.",
+  'seen.weTitle': "Geteilte Fragen",
+  'seen.we': "Bei einer geteilten Frage seht ihr beide die Antworten des anderen auf diese Frage.",
+  'seen.familyTitle': "Familie",
+  'seen.family': "Bei Familienfragen sieht die ganze Familie, wer jeden Abend geantwortet hat.",
+  'seen.asksTitle': "Anfragen von Freunden",
+  'seen.asks': "Wer dir eine Anfrage schickt, sieht, ob du sie behalten hast.",
+  'seen.neverTitle': "Nie geteilt",
+  'seen.never': "Deine eigenen Fragen, Notizen und Antworten bleiben deine. Sie synchronisieren nur mit deinem Konto.",
+  'seen.back': "Zurück zu den Einstellungen",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} Coins, {gems} Gems',
   'weekbar.aria': 'Streak-Woche',
@@ -1351,7 +1371,7 @@ export const de = {
     'Das ist keine To-do-Liste und kein Kalender. Stell die Frage, die du dir hinterher stellst. Nimm eine davon, oder schreib deinen Satz, der mit Did I anfängt.',
   'ideas.use': 'Diese nehmen',
   'ideas.writeOwn': 'Eigene schreiben',
-  'ideas.help': 'Hilfe',
+  'ideas.help': 'Hilfe',
   'wait.kicker': 'Noch nicht',
   'wait.after': 'Nach {time}.',
   'wait.later': 'später',
@@ -2317,7 +2337,7 @@ export const de = {
   'enter.eraseGo': 'Löschen und neu anfangen',
   'enter.eraseBody': 'Du bist nicht angemeldet, also gibt es die PIN nur auf diesem Handy. Um sie zu entfernen, lösch Did I auf diesem Handy: Fragen, Antworten, Münzen und Looks. Das geht nicht rückgängig.',
   'enter.forgotTitle': 'PIN vergessen?',
-  'enter.forgot': 'PIN vergessen?',
+  'enter.forgot': 'PIN vergessen?',
   'clock.pm': '{h}:{m} nachm.',
   'clock.am': '{h}:{m} vorm.',
   'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
@@ -2527,7 +2547,7 @@ export const de = {
   'pack.meds': 'Medikamente',
   'pack.sureTitle': '{n} Fragen hinzufügen?',
   'pack.sureGo': 'Hinzufügen',
-  'pack.added': '{n} Fragen hinzugefügt',
+  'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',
   'note.hint': 'Tippe auf eine Nacht für eine Notiz.',
   'note.ph': 'Kurze Notiz hinzufügen',

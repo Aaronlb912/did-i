@@ -74,6 +74,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { readMine } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
@@ -211,6 +212,47 @@ export function AboutScreen({ book }) {
         <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
         <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
         <AppVersion colors={colors} />
+      </View>
+    </ScreenShell>
+  )
+}
+
+// What friends and family can see, in plain words. The streak line reads the
+// real share_streak on your profile; the rest follows from how people.js shares.
+const SEEN_ROWS = ['friends', 'we', 'family', 'asks', 'never']
+
+export function SeenScreen({ book }) {
+  const colors = useHallColors()
+  const account = useAccount()
+  const [streakOn, setStreakOn] = useState(null)
+  useEffect(() => {
+    if (!account.user) return undefined
+    let alive = true
+    readMine()
+      .then((mine) => alive && setStreakOn(mine?.share_streak !== false))
+      .catch(() => alive && setStreakOn(null))
+    return () => {
+      alive = false
+    }
+  }, [account.user])
+  let streakLine = t('seen.streakUnknown')
+  if (!account.user) streakLine = t('seen.signedOut')
+  else if (streakOn === true) streakLine = t('seen.streakOn')
+  else if (streakOn === false) streakLine = t('seen.streakOff')
+  return (
+    <ScreenShell book={book} title={t('seen.title')} colors={colors}>
+      <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
+        <Text style={[styles.cardBody, { color: colors.ink }]}>{streakLine}</Text>
+      </View>
+      {SEEN_ROWS.map((id) => (
+        <View key={id} style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <Text style={[styles.cardTitle, { color: colors.ink }]}>{t(`seen.${id}Title`)}</Text>
+          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`seen.${id}`)}</Text>
+        </View>
+      ))}
+      <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
+        <KeyButton colors={colors} label={t('seen.back')} onPress={() => goHash('/settings')} />
       </View>
     </ScreenShell>
   )
@@ -2234,6 +2276,14 @@ function AccountSignedIn({ book, email, onChange }) {
 
       <View style={styles.dataGap} />
       <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
         <SetRow
           colors={colors}
           icon="shield"

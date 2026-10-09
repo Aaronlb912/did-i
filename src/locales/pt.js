@@ -421,6 +421,26 @@ export const pt = {
   'tonight.swipeNope': "ainda não",
   'tonight.peopleFrom': "De {name}",
   'tonight.peopleMiss': "Não salvou. Veja seu sinal e deslize de novo.",
+  'tonight.weSaved': "Salvo no seu Did we.",
+  'tonight.familySaved': "Salvo para {name}.",
+  'tonight.offlineSaved': "Salvo neste telefone. Sincroniza quando você voltar a ficar online.",
+  'seen.title': "O que os outros veem",
+  'seen.sub': "Amigos e família, em palavras simples",
+  'seen.streakOn': "Sua sequência está compartilhada. Amigos veem sua sequência e se você terminou hoje à noite.",
+  'seen.streakOff': "Sua sequência está oculta. Amigos veem seu nome, não sua sequência.",
+  'seen.streakUnknown': "Não foi possível verificar sua configuração de sequência agora.",
+  'seen.signedOut': "Você não está conectado. Nada sai deste telefone.",
+  'seen.friendsTitle': "Amigos",
+  'seen.friends': "Seu nome. Sua sequência e se você terminou hoje à noite, quando a sequência está compartilhada. Nunca suas próprias perguntas ou respostas.",
+  'seen.weTitle': "Perguntas compartilhadas",
+  'seen.we': "Numa pergunta compartilhada, vocês dois veem as respostas um do outro a essa pergunta.",
+  'seen.familyTitle': "Família",
+  'seen.family': "Nas perguntas da família, toda a família vê quem respondeu a cada noite.",
+  'seen.asksTitle': "Pedidos de amigos",
+  'seen.asks': "O amigo que enviou um pedido vê se você ficou com ele.",
+  'seen.neverTitle': "Nunca compartilhado",
+  'seen.never': "Suas próprias perguntas, notas e respostas são suas. Só sincronizam com a sua conta.",
+  'seen.back': "Voltar aos ajustes",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Semana de streak',
@@ -1342,7 +1362,7 @@ export const pt = {
     'Isto não é uma lista de tarefas nem um calendário. Põe a pergunta que repetires depois do facto. Usa uma destas, ou escreve a tua que começa por Did I.',
   'ideas.use': 'Usar esta',
   'ideas.writeOwn': 'Escreve a tua',
-  'ideas.help': 'Ajuda',
+  'ideas.help': 'Ajuda',
   'wait.kicker': 'Ainda não',
   'wait.after': 'Depois de {time}.',
   'wait.later': 'mais tarde',
@@ -2299,7 +2319,7 @@ export const pt = {
   'enter.eraseGo': 'Apagar e começar de novo',
   'enter.eraseBody': 'Você não entrou na conta, então o PIN só existe neste celular. Para tirar, apague o Did I neste celular: perguntas, respostas, moedas e looks. Não dá para desfazer.',
   'enter.forgotTitle': 'Esqueceu seu PIN?',
-  'enter.forgot': 'Esqueceu o PIN?',
+  'enter.forgot': 'Esqueceu o PIN?',
   'clock.pm': '{h}:{m} da tarde',
   'clock.am': '{h}:{m} da manhã',
   'shop.teasedBody': 'Ainda não saiu. Fica à venda em {date}.',
@@ -2509,7 +2529,7 @@ export const pt = {
   'pack.meds': 'Remédios',
   'pack.sureTitle': 'Adicionar {n} perguntas?',
   'pack.sureGo': 'Adicionar',
-  'pack.added': '{n} perguntas adicionadas',
+  'pack.added': '{n} perguntas adicionadas',
   'note.title': 'Notas',
   'note.hint': 'Toque numa noite para adicionar uma nota.',
   'note.ph': 'Adicione uma nota curta',

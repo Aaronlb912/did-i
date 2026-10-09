@@ -410,6 +410,26 @@ export const zh = {
   'tonight.swipeNope': "还没",
   'tonight.peopleFrom': "来自 {name}",
   'tonight.peopleMiss': "没有保存。请检查信号后再滑一次。",
+  'tonight.weSaved': "已保存到你的 Did we。",
+  'tonight.familySaved': "已为 {name} 保存。",
+  'tonight.offlineSaved': "已保存在这部手机上。恢复联网后会同步。",
+  'seen.title': "别人能看到什么",
+  'seen.sub': "朋友和家人，简单说明",
+  'seen.streakOn': "你的连续记录已共享。朋友能看到你的连续记录，以及你今晚是否完成。",
+  'seen.streakOff': "你的连续记录已隐藏。朋友能看到你的名字，看不到连续记录。",
+  'seen.streakUnknown': "暂时无法查看你的连续记录设置。",
+  'seen.signedOut': "你没有登录。任何内容都不会离开这部手机。",
+  'seen.friendsTitle': "朋友",
+  'seen.friends': "你的名字。共享连续记录时，还有连续记录和今晚是否完成。永远看不到你自己的问题或回答。",
+  'seen.weTitle': "共享的问题",
+  'seen.we': "在共享的问题上，你们都能看到对方对这个问题的回答。",
+  'seen.familyTitle': "家人",
+  'seen.family': "在家庭问题上，全家人都能看到每晚谁回答了。",
+  'seen.asksTitle': "朋友的请求",
+  'seen.asks': "发送请求的朋友能看到你是否保留了它。",
+  'seen.neverTitle': "从不共享",
+  'seen.never': "你自己的问题、笔记和回答只属于你，只会同步到你的账户。",
+  'seen.back': "返回设置",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins，{gems} gems',
   'weekbar.aria': 'streak 周',
@@ -1314,7 +1334,7 @@ export const zh = {
   'ideas.body': '这不是待办清单，也不是日历。放你事后总问的那个问题。用下面其中一个，或自己写以 Did I 开头的句子。',
   'ideas.use': '用这个',
   'ideas.writeOwn': '自己写',
-  'ideas.help': '帮助',
+  'ideas.help': '帮助',
   'wait.kicker': '还没',
   'wait.after': '{time} 之后。',
   'wait.later': '稍后',
@@ -2234,7 +2254,7 @@ export const zh = {
   'enter.eraseGo': '清除并重新开始',
   'enter.eraseBody': '你没有登录，所以 PIN 只保存在这台手机上。要移除它，需要清除这台手机上的 Did I：问题、回答、金币和外观。无法撤销。',
   'enter.forgotTitle': '忘记 PIN 了？',
-  'enter.forgot': '忘记 PIN？',
+  'enter.forgot': '忘记 PIN？',
   'clock.pm': '下午{h}:{m}',
   'clock.am': '上午{h}:{m}',
   'shop.teasedBody': '还没上架。{date} 开售。',
@@ -2444,7 +2464,7 @@ export const zh = {
   'pack.meds': '吃药',
   'pack.sureTitle': '添加 {n} 个问题？',
   'pack.sureGo': '添加',
-  'pack.added': '已添加 {n} 个问题',
+  'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',
   'note.hint': '点一个晚上来添加备注。',
   'note.ph': '添加一条简短备注',

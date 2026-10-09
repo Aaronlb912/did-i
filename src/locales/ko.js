@@ -410,6 +410,26 @@ export const ko = {
   'tonight.swipeNope': "아직",
   'tonight.peopleFrom': "{name}님이 보냄",
   'tonight.peopleMiss': "저장되지 않았어요. 신호를 확인하고 다시 밀어 주세요.",
+  'tonight.weSaved': "Did we에 저장했어요.",
+  'tonight.familySaved': "{name}에 저장했어요.",
+  'tonight.offlineSaved': "이 휴대폰에 저장했어요. 다시 온라인이 되면 동기화돼요.",
+  'seen.title': "다른 사람에게 보이는 것",
+  'seen.sub': "친구와 가족, 쉬운 말로",
+  'seen.streakOn': "연속 기록을 공유하고 있어요. 친구는 연속 기록과 오늘 밤 끝냈는지를 볼 수 있어요.",
+  'seen.streakOff': "연속 기록을 숨겼어요. 친구는 이름만 보고 연속 기록은 못 봐요.",
+  'seen.streakUnknown': "지금은 연속 기록 설정을 확인할 수 없어요.",
+  'seen.signedOut': "로그인하지 않았어요. 이 휴대폰 밖으로 나가는 것은 없어요.",
+  'seen.friendsTitle': "친구",
+  'seen.friends': "이름. 연속 기록을 공유하면 연속 기록과 오늘 밤 끝냈는지. 내 질문과 답은 절대 보이지 않아요.",
+  'seen.weTitle': "함께 쓰는 질문",
+  'seen.we': "함께 쓰는 질문에서는 그 질문에 대한 서로의 답을 볼 수 있어요.",
+  'seen.familyTitle': "가족",
+  'seen.family': "가족 질문에서는 가족 모두가 매일 밤 누가 답했는지 볼 수 있어요.",
+  'seen.asksTitle': "친구의 요청",
+  'seen.asks': "요청을 보낸 친구는 내가 그것을 남겼는지 볼 수 있어요.",
+  'seen.neverTitle': "공유되지 않는 것",
+  'seen.never': "내 질문, 메모, 답은 나만의 것이에요. 내 계정에만 동기화돼요.",
+  'seen.back': "설정으로 돌아가기",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'streak 주',
@@ -1317,7 +1337,7 @@ export const ko = {
     '할 일 목록도 캘린더도 아니야. 나중에 또 묻는 question을 두는 곳. 여기서 고르거나 Did I로 시작하는 문장을 직접 써.',
   'ideas.use': '이거 쓰기',
   'ideas.writeOwn': '직접 쓰기',
-  'ideas.help': '도움말',
+  'ideas.help': '도움말',
   'wait.kicker': '아직',
   'wait.after': '{time} 이후.',
   'wait.later': '나중에',
@@ -2246,7 +2266,7 @@ export const ko = {
   'enter.eraseGo': '지우고 새로 시작',
   'enter.eraseBody': '로그인하지 않아서 PIN은 이 휴대폰에만 있어요. PIN을 없애려면 이 휴대폰의 Did I를 지워야 해요: 질문, 답, 코인, 룩. 되돌릴 수 없어요.',
   'enter.forgotTitle': 'PIN을 잊었나요?',
-  'enter.forgot': 'PIN을 잊었나요?',
+  'enter.forgot': 'PIN을 잊었나요?',
   'clock.pm': '오후 {h}:{m}',
   'clock.am': '오전 {h}:{m}',
   'shop.teasedBody': '아직 나오지 않았어요. {date}에 판매 시작.',
@@ -2456,7 +2476,7 @@ export const ko = {
   'pack.meds': '약',
   'pack.sureTitle': '질문 {n}개를 추가할까요?',
   'pack.sureGo': '추가하기',
-  'pack.added': '질문 {n}개 추가됨',
+  'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',
   'note.hint': '밤을 탭해 메모를 추가하세요.',
   'note.ph': '짧은 메모 추가',

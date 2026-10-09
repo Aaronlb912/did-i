@@ -43,7 +43,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAnswers, WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
-import { AppTextInput, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { canGoBack, goBack, goHash } from '../navigation/hash.js'
@@ -663,7 +663,7 @@ function WeCardPage({ book, cardId, onChange }) {
   if (card === undefined) {
     return (
       <ScreenShell book={book} title={t('we.title')} colors={colors}>
-        <Meta colors={colors}>{t('we.loading')}</Meta>
+        <LateMeta colors={colors}>{t('we.loading')}</LateMeta>
       </ScreenShell>
     )
   }
@@ -1149,7 +1149,7 @@ export function WeHomeList({ book, onChange }) {
       <Text style={[styles.weLead, { color: colors.inkSoft }]}>{t('we.homeLead')}</Text>
       <WeAsks colors={colors} />
 
-      {!loaded ? <Meta colors={colors}>{t('family.loading')}</Meta> : null}
+      {!loaded ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
       {loaded && !mine.length ? (
         <View style={[styles.weEmpty, { borderColor: colors.we, backgroundColor: colors.panel }]}>
           <MenuIcon name="together" color={colors.we} size={36} stroke />
