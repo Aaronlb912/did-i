@@ -13,6 +13,7 @@ import {
   widgetTonightUri,
 } from './widget-config.js'
 import { t } from './i18n.js'
+import { gentleOn } from './prefs.js'
 import { normalizePurse } from './purse.js'
 import { readWeLine, readWeOpen } from './we-widget.js'
 import {
@@ -258,6 +259,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),
+    // Gentle mode: the widgets draw no streak numbers.
+    gentle: gentleOn(),
     updatedAt: now.getTime(),
   }
 }

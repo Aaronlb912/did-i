@@ -80,6 +80,9 @@ export const pt = {
   'settings.motion': 'Movimento',
   'settings.motionHint': 'Sem cheer voando. Desligado quer dizer seguir o telefone.',
   'settings.lessMotion': 'Menos movimento',
+  'settings.gentle': 'Modo suave',
+  'settings.gentleSub': 'Oculta os números da sequência. As noites continuam contando.',
+  'settings.gentleHidden': 'O modo suave está ativado, então os números da sequência estão ocultos. Suas noites continuam contando. Desative em Ajustes para vê-los.',
   'settings.matchWallpaper': 'Combinar com o papel de parede',
   'settings.matchWallpaperSub':
     'Usa as cores que o Android tira do teu papel de parede, em vez do look habitual.',

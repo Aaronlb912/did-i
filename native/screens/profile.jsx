@@ -266,10 +266,19 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="motion"
           tint={colors.on}
-          last
           label={t('settings.lessMotion')}
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="moon"
+          tint={colors.on}
+          last
+          label={t('settings.gentle')}
+          sub={t('settings.gentleSub')}
+          on={prefs.gentle}
+          onPress={() => writePrefs({ gentle: !prefs.gentle })}
         />
       </SetCard>
 

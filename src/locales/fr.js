@@ -81,6 +81,9 @@ export const fr = {
   'settings.motion': 'Mouvement',
   'settings.motionHint': 'Pas de cheer qui vole. Désactivé veut dire suivre le téléphone.',
   'settings.lessMotion': 'Moins de mouvement',
+  'settings.gentle': 'Mode doux',
+  'settings.gentleSub': 'Masque les chiffres de série. Les nuits comptent toujours.',
+  'settings.gentleHidden': 'Le mode doux est activé, les chiffres de série sont masqués. Tes nuits comptent toujours. Désactive-le dans Réglages pour les voir.',
   'settings.matchWallpaper': 'Assortir au fond d’écran',
   'settings.matchWallpaperSub':
     'Utilise les couleurs qu’Android tire de votre fond d’écran, au lieu du look habituel.',

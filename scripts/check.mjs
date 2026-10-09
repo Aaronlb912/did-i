@@ -4958,3 +4958,69 @@ test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', 
   for (const dir of ['native', 'src', 'widgets']) walk(path.join(root, dir))
   assert.deepEqual(bad, [], 'files with mangled characters')
 })
+
+test('gentle mode is off by default and only true when set', async () => {
+  const { readPrefs, writePrefs, gentleOn } = await import('../src/lib/prefs.js')
+  const before = readPrefs()
+  try {
+    localStorage.removeItem('did-i-prefs')
+    assert.equal(readPrefs().gentle, false)
+    writePrefs({ gentle: 'yes' })
+    assert.equal(gentleOn(), false)
+    writePrefs({ gentle: true })
+    assert.equal(gentleOn(), true)
+  } finally {
+    writePrefs(before)
+  }
+})
+
+test('gentle mode tells the widgets to hide streak numbers, and the stack is unchanged', async () => {
+  const { writePrefs } = await import('../src/lib/prefs.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  }
+  const clock = new Date('2026-09-23T20:00:00')
+  try {
+    writePrefs({ gentle: false })
+    const plain = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(plain.gentle, false)
+    writePrefs({ gentle: true })
+    const soft = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(soft.gentle, true)
+    assert.equal(soft.left, plain.left)
+    assert.equal(soft.leadLampId, plain.leadLampId)
+    assert.ok(!/streak/i.test(JSON.stringify(soft)), 'no streak text in widget props')
+  } finally {
+    writePrefs({ gentle: false })
+  }
+})
+
+test('gentle mode hides own streak counts on the phone, not what others see', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  assert.match(read('native/screens/TonightScreen.jsx'), /stack\.streak > 0 && !gentle/)
+  assert.match(read('native/components/StreakMoment.jsx'), /gentleOn\(\)/)
+  assert.match(read('native/screens/questions.jsx'), /gentle \? null/)
+  const more = read('native/screens/more.jsx')
+  assert.match(more, /if \(gentle\) \{/)
+  assert.match(more, /gentle \? null : <NumberTile half colors=\{colors\} label=\{t\('stats\.bestRun'\)\}/)
+  assert.match(read('native/shim/native.js'), /pingOn\('streakHit'\) \|\| gentleOn\(\)/)
+  assert.ok(!/gentle/.test(read('native/screens/social.jsx')), 'friends and family views stay as they are')
+})
+
+test('the rate card asks for the in-app review, with the store link as fallback', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/RateCard.jsx'), 'utf8')
+  assert.match(card, /from 'expo-store-review'/)
+  assert.match(card, /StoreReview\.isAvailableAsync\(\)/)
+  assert.match(card, /StoreReview\.hasAction\(\)/)
+  assert.match(card, /StoreReview\.requestReview\(\)/)
+  assert.match(card, /markRateAsked\(\)/)
+  assert.ok(card.indexOf('requestReview()') < card.indexOf('Linking.openURL(url)'))
+  const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
+  assert.match(metro, /\['expo-store-review', 'store-review-safe\.cjs'\]/)
+})

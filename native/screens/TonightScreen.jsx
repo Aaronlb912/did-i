@@ -188,6 +188,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const [keySeen, setKeySeen] = useState(() => jewelKeySeen())
   // Account prefs land after a reinstall; seen there hides it too.
   const prefsSeen = usePrefs().jewelKeySeen === true
+  const gentle = usePrefs().gentle === true
   const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
@@ -704,7 +705,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               </View>
             </>
           ) : null}
-          {stack.streak > 0 ? (
+          {stack.streak > 0 && !gentle ? (
             <View style={styles.streakRow}>
             <Pressable
               onPress={() => goHash('/stats')}
