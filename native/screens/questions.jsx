@@ -44,7 +44,7 @@ import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
-import { readPrefs } from '../../src/lib/prefs.js'
+import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -1965,6 +1965,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       gap: gapLine(lampBook, lamp, dateIso),
     }
   }, [lampBook, lamp, dateIso])
+  const gentle = usePrefs().gentle === true
   const phone = usePhoneQuiet()
 
   function change(next) {
@@ -2052,11 +2053,13 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       ) : (
       <View style={styles.tiles}>
-        <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
-          <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
-          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
-          {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
-        </View>
+        {gentle ? null : (
+          <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+            <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
+            {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
+          </View>
+        )}
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
           <Text style={[styles.tileNum, { color: colors.ink }]}>{t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>

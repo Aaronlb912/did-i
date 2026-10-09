@@ -81,6 +81,9 @@ export const es = {
   'settings.motion': 'Movimiento',
   'settings.motionHint': 'Sin el estallido al marcar. Si está apagado, sigue el teléfono.',
   'settings.lessMotion': 'Menos movimiento',
+  'settings.gentle': 'Modo suave',
+  'settings.gentleSub': 'Oculta los números de racha. Las noches siguen contando.',
+  'settings.gentleHidden': 'El modo suave está activado, así que los números de racha están ocultos. Tus noches siguen contando. Desactívalo en Ajustes para verlos.',
   'settings.matchWallpaper': 'Igualar el fondo de pantalla',
   'settings.matchWallpaperSub':
     'Usa los colores que Android saca de tu fondo de pantalla, en vez del look habitual.',

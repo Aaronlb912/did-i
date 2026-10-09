@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { markStreakSeen, takePendingStreakMoment } from '../../src/lib/streak-moments.js'
+import { gentleOn } from '../../src/lib/prefs.js'
 import { t } from '../../src/lib/i18n.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -32,7 +33,9 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
 
   useEffect(() => {
     const pending = takePendingStreakMoment()
-    if (pending) setMoment(pending)
+    // Gentle mode: no streak cards, so no count and no broken-streak note.
+    if (pending && gentleOn()) markStreakSeen(pending.kind, pending.dateIso || boardDate(new Date()))
+    else if (pending) setMoment(pending)
   }, [])
 
   useEffect(() => {
@@ -41,8 +44,8 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
       if (!detail?.kind) return
       // A night cleared with the app open is celebrated on Tonight's done
       // card; a second card on top of it would only crowd the moment.
-      if (detail.kind === 'hit') {
-        markStreakSeen('hit', detail.dateIso || boardDate(new Date()))
+      if (detail.kind === 'hit' || gentleOn()) {
+        markStreakSeen(detail.kind, detail.dateIso || boardDate(new Date()))
         return
       }
       setMoment(detail)

@@ -80,6 +80,9 @@ export const de = {
   'settings.motion': 'Bewegung',
   'settings.motionHint': 'Kein fliegender Cheer. Aus heißt, dem Telefon folgen.',
   'settings.lessMotion': 'Weniger Bewegung',
+  'settings.gentle': 'Sanfter Modus',
+  'settings.gentleSub': 'Serienzahlen ausblenden. Nächte zählen weiter.',
+  'settings.gentleHidden': 'Der sanfte Modus ist an, Serienzahlen sind ausgeblendet. Deine Nächte zählen weiter. Schalte ihn in den Einstellungen aus, um sie zu sehen.',
   'settings.matchWallpaper': 'An Hintergrundbild anpassen',
   'settings.matchWallpaperSub':
     'Nutzt die Farben, die Android aus deinem Hintergrundbild zieht, statt des üblichen Looks.',

@@ -7,7 +7,7 @@ import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
-import { afterQuiet, pingOn } from '../../src/lib/prefs.js'
+import { afterQuiet, gentleOn, pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -41,7 +41,8 @@ async function notifications() {
 }
 
 export async function pingStreakHit(hit, dateIso) {
-  if (!hit || !pingOn('streakHit')) return false
+  // Gentle mode: the count is the point of this one, so it is not sent.
+  if (!hit || !pingOn('streakHit') || gentleOn()) return false
   const allowed = await checkNativePings()
   if (allowed !== 'granted') return false
   try {
