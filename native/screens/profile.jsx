@@ -474,6 +474,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         />
         <SetRow
           colors={colors}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetRow
+          colors={colors}
           icon="mail"
           tint={colors.late}
           label={t('feedback.send')}
