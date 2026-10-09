@@ -15,7 +15,6 @@ const ADD_ON = ['/add', '/hang']
 
 const ICONS = {
   add: 'M12 5v14M5 12h14',
-  stats: 'M5 20V12M12 20V5M19 20v-9',
   inbox: 'M4 13h4l1.5 3h5l1.5-3h4M5.5 5h13L20 13v6H4v-6L5.5 5Z',
   people:
     'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.33 0-7 1.67-7 4v2h14v-2c0-2.33-3.67-4-7-4Zm8.25.5c-.6 0-1.17.05-1.7.14 1.2.84 1.95 1.94 1.95 3.36V19h5v-1.75c0-2.07-3.1-3.75-5.25-3.75Z',
@@ -116,14 +115,6 @@ function mastMenuItems(showAdd, inbox, asks, signedIn) {
       label: t('kit.cog'),
       on: path === '/kit',
       icon: 'collection',
-    },
-    {
-      key: 'stats',
-      href: '#/stats',
-      label: t('stats.title'),
-      on: path === '/stats' || path === '/streaks' || path === '/week',
-      icon: 'stats',
-      stroke: true,
     },
     {
       key: 'settings',
