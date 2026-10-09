@@ -3223,4 +3223,9 @@ export const zh = {
   "note.amountIn": "数量（{unit}）",
   "lamp.lastFive": "最近 5 次",
   "lamp.lastFiveEmpty": "还没有。最近 5 个 Did 的晚上会显示在这里。",
+  "auth.getStarted": "开始",
+  "auth.haveAccount": "已有账号？登录",
+  "swipeIntro.line": "做了就右滑，还没就左滑",
+  "stats.empty": "还没有记录。今晚回答后，这里会显示你的数字。",
+  "empty.goTonight": "去今晚",
 }

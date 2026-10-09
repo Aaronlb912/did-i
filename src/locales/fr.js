@@ -3302,4 +3302,9 @@ export const fr = {
   "note.amountIn": "Quantité ({unit})",
   "lamp.lastFive": "Les 5 dernières fois",
   "lamp.lastFiveEmpty": "Rien encore. Les 5 derniers soirs avec Did s’affichent ici.",
+  "auth.getStarted": "Commencer",
+  "auth.haveAccount": "Déjà un compte ? Se connecter",
+  "swipeIntro.line": "Glisse à droite si c'est fait, à gauche si pas encore",
+  "stats.empty": "Pas encore de soirées. Réponds ce soir et tes chiffres s'afficheront ici.",
+  "empty.goTonight": "Aller à ce soir",
 }

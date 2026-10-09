@@ -3305,4 +3305,9 @@ export const de = {
   "note.amountIn": "Menge ({unit})",
   "lamp.lastFive": "Die letzten 5 Male",
   "lamp.lastFiveEmpty": "Noch nichts. Hier stehen die letzten 5 Abende mit Did.",
+  "auth.getStarted": "Los geht's",
+  "auth.haveAccount": "Schon ein Konto? Anmelden",
+  "swipeIntro.line": "Nach rechts, wenn du es getan hast, nach links für Noch nicht",
+  "stats.empty": "Noch keine Abende. Beantworte heute Abend, dann stehen hier deine Zahlen.",
+  "empty.goTonight": "Zu heute Abend",
 }

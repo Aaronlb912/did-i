@@ -13,8 +13,8 @@ import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
-// Trying the app without an account is a real choice, so it gets a real
-// button. App Review sign-in is a small link at the bottom (and still a
+// "Get started" (no account) is the main button on Welcome. Once someone is
+// mid email sign-in, staying without an account is a plain button. App Review sign-in is a small link at the bottom (and still a
 // long-press on the mark); it only works with the review account's password.
 function LocalButton({ colors, onPress }) {
   return (
@@ -47,7 +47,14 @@ export function SignInScreen({ onDone }) {
         <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
       ) : null}
 
-      {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
+      {auth.step === 'start' ? (
+        <>
+          {/* One way in leads: start on this phone. Signing in sits under it. */}
+          <DidButton colors={colors} label={t('auth.getStarted')} onPress={useLocalOnly} />
+          <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>
+          <AuthSignInActions colors={colors} auth={auth} />
+        </>
+      ) : null}
 
       <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
         {auth.step === 'start' ? (
@@ -89,7 +96,7 @@ export function SignInScreen({ onDone }) {
         )}
       </View>
 
-      <LocalButton colors={colors} onPress={useLocalOnly} />
+      {auth.step !== 'start' ? <LocalButton colors={colors} onPress={useLocalOnly} /> : null}
       <AuthLegalNote colors={colors} />
       {auth.step === 'start' ? (
         <Pressable onPress={auth.showReviewer} accessibilityRole="button" hitSlop={8} style={styles.reviewerLink}>
@@ -148,6 +155,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 14,
+  },
+  or: {
+    fontFamily: fonts.ui,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 22,
+    marginBottom: 10,
   },
   emailBlock: {
     gap: 4,
