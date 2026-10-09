@@ -7,7 +7,7 @@ import { WeAsks } from './DidWe.jsx'
 import { t, tMiss } from './i18n.js'
 import { sendLastLine } from './every-copy.js'
 import { repeatLabel } from './send-repeat.js'
-import { answerSend, listInbox, personName, refreshPeople, reportSend } from './people.js'
+import { answerSend, cheerTitle, listInbox, personName, refreshPeople, reportSend } from './people.js'
 import { fireCheer } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCard } from './set-bits.jsx'
@@ -112,7 +112,7 @@ export function Inbox({ book, now, onKeep }) {
         {rows.map((row) => (
           <div className="di-people-row di-family-row" key={row.id}>
             <span className="di-people-who">
-              <strong>{row.kind === 'cheer' ? t('inbox.aCheer') : row.question}</strong>
+              <strong>{row.kind === 'cheer' ? cheerTitle(row) : row.question}</strong>
               <em>
                 {t('inbox.from', { name: personName(row.person) || t('people.someone') })}
                 {repeatLabel(row.repeat) ? ` · ${repeatLabel(row.repeat)}` : ''}

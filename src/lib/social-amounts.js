@@ -203,21 +203,41 @@ export function weNotesView(rows, me, people = []) {
   return { mine, shared }
 }
 
-// One read per card page: the last two weeks of notes RLS lets you see.
+// The past nights you said Did on a card that can still take a note: inside
+// the last WE_NOTE_DAYS, before tonight, newest first. Tonight has its own button.
+export function weNoteNights(didRows, night = boardDate()) {
+  const from = addDaysIso(night, -WE_NOTE_DAYS)
+  const out = new Set()
+  for (const row of Array.isArray(didRows) ? didRows : []) {
+    const day = String(row?.night || '')
+    if (row?.status && row.status !== 'did') continue
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day) && day >= from && day < night) out.add(day)
+  }
+  return [...out].sort().reverse()
+}
+
+// One read per card page: the last two weeks of notes RLS lets you see, and
+// the nights you said Did in that time (only your own answers come back).
 export async function weNotes(cardId, night = boardDate()) {
   const db = cloud()
-  if (!db || !cardId) return { rows: [], me: '', miss: db ? '' : 'off' }
+  if (!db || !cardId) return { rows: [], me: '', did: [], miss: db ? '' : 'off' }
   const { data } = await db.auth.getSession()
   const me = data?.session?.user?.id || ''
-  const { data: rows, error } = await db
-    .from('we_notes')
-    .select('user_id, night, note, shared')
-    .eq('card_id', cardId)
-    .gte('night', addDaysIso(night, -WE_NOTE_DAYS))
-    .order('night', { ascending: false })
-    .limit(80)
-  if (error) return { rows: [], me, ...bad(error) }
-  return { rows: rows || [], me, miss: '' }
+  const since = addDaysIso(night, -WE_NOTE_DAYS)
+  const [notes, dids] = await Promise.all([
+    db
+      .from('we_notes')
+      .select('user_id, night, note, shared')
+      .eq('card_id', cardId)
+      .gte('night', since)
+      .order('night', { ascending: false })
+      .limit(80),
+    me
+      ? db.from('we_answers').select('night, status').eq('card_id', cardId).eq('user_id', me).eq('status', 'did').gte('night', since).limit(40)
+      : Promise.resolve({ data: [] }),
+  ])
+  if (notes.error) return { rows: [], me, did: [], ...bad(notes.error) }
+  return { rows: notes.data || [], me, did: weNoteNights(dids.data, night), miss: '' }
 }
 
 // Save your note on a night you said did. Empty removes it.

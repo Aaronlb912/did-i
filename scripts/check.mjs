@@ -4977,7 +4977,7 @@ await testAsync('amounts: saved on the answer, round trip through the answer log
   assert.ok(removed.note === '' && !('amount' in removed), 'remove note clears both')
   const notesSrc = readFileSync(path.join(checkRoot, 'native/components/NightNotes.jsx'), 'utf8')
   assert.ok(/function removeNote[\s\S]{0,400}setAnswerNote\(book, lampId, periodKey, '', undefined, ''\)/.test(notesSrc), 'phone Remove note clears the amount')
-  assert.ok(readFileSync(path.join(checkRoot, 'src/lib/Tonight.jsx'), 'utf8').includes("onSave('', '')"), 'web Remove note clears the amount')
+  assert.ok(readFileSync(path.join(checkRoot, 'src/lib/Tonight.jsx'), 'utf8').includes("onSave('', '', { share: false"), 'web Remove note clears the amount and unshares it')
 
   // Up: m is always sent, null when there is none.
   const shelf = { currentId: 'b1', boards: [counted] }
@@ -5372,14 +5372,19 @@ test('check-on: monthly, once, deadline and every-so-often nights', async () => 
   assert.equal(checkOnDue(once, at('2026-10-21')), false)
   assert.equal(checkOnDue({ ...once, sent_on: '2026-10-20' }, at('2026-10-20')), false)
   const by = { ...base, kind: 'by', on_date: '2026-10-20', starts_on: '2026-10-01' }
-  assert.equal(checkOnDue(by, at('2026-10-15')), false, 'not before it is due')
+  assert.equal(checkOnDue(by, at('2026-10-15')), true, 'a night inside the window')
   assert.equal(checkOnDue(by, at('2026-10-20')), true)
+  assert.equal(checkOnDue(by, at('2026-09-30')), false, 'before the window')
+  assert.equal(checkOnDue(by, at('2026-10-21')), false, 'after the due date')
+  assert.equal(checkOnDue({ ...by, starts_on: null }, at('2026-10-15')), false, 'no start: the due night only')
   // Every so often: never done, or every_days since the last Did.
   const every = { ...base, kind: 'every', every_days: 7 }
   assert.equal(checkOnDue(every, at('2026-10-09')), true, 'never done')
   assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05' })), false)
   assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05' })), true)
   assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05', minute: 600 })), false, 'before the time')
+  // The learned gap wins over the set one, as on Tonight.
+  assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05', learned: 3 })), true)
   // From the question to the row.
   assert.equal(checkOnKind({ cadence: 'monthly', monthDay: 'last' }), 'monthly')
   assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null })
@@ -5412,8 +5417,19 @@ test('social-gentle.sql: queue_check_ons handles every kind in one statement', (
   assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(body), 'no per-row loop')
   assert.match(body, /when 'monthly' then extract\(day from k\.local\)/)
   assert.match(body, /when 'once' then k\.local::date = k\.on_date/)
-  assert.match(body, /when 'by' then k\.local::date = k\.on_date/)
-  assert.match(body, /when 'every' then coalesce\(k\.local::date - \(\s*select max\(a\.period_key\)::date from public\.answer_log a/)
+  assert.match(body, /when 'by' then k\.local::date between coalesce\(k\.starts_on, k\.on_date\) and k\.on_date/)
+  // A Not yet on a deadline only holds tonight; a Did ends it.
+  assert.match(body, /k\.kind <> 'by' or a\.status in \('yes', 'late'\)\s*or \(a\.updated_at at time zone k\.zone\)::date = k\.local::date/)
+  // Every so often uses the gap the app learns: median of the last 6 Did nights' gaps, from 4 Dids.
+  assert.match(body, /left join lateral \(/)
+  assert.match(body, /case when count\(\*\) >= 4/)
+  assert.match(body, /percentile_cont\(0\.5\) within group \(order by n\.gap\)/)
+  assert.match(body, /limit 6/)
+  assert.match(body, /when 'every' then coalesce\(k\.local::date - g\.last_did >= coalesce\(g\.learned, k\.every_days\), true\)/)
+  // Same numbers as learnedGap: 6 nights, 4 Dids, median rounded half up.
+  const src = readFileSync(path.join(root, 'src/lib/recurrence.js'), 'utf8')
+  assert.match(src, /const LEARN_GAPS = 5/)
+  assert.match(src, /if \(count < 4\) return 0/)
   assert.match(body, /a\.status in \('yes', 'late'\)/)
   assert.match(body, /to_char\(k\.local, 'YYYY-MM'\)/)
   assert.match(body, /'once:' \|\| k\.lamp_id/)
@@ -5671,6 +5687,90 @@ await testAsync('shared notes sync across devices, and Did we group notes', asyn
   assert.match(part, /before insert on public\.we_notes/)
   assert.match(part, /revoke all on public\.we_notes from anon/)
   assert.doesNotMatch(part.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
+})
+
+test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks', async () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n')
+  // Past Did nights that can take a note: inside 14 nights, before tonight, Did only, newest first, no repeats.
+  const { weNoteNights } = await import('../src/lib/social-amounts.js')
+  assert.deepEqual(
+    weNoteNights(
+      [
+        { night: '2026-10-09', status: 'did' },
+        { night: '2026-10-07', status: 'did' },
+        { night: '2026-10-08', status: 'nope' },
+        { night: '2026-09-20', status: 'did' },
+        { night: '2026-09-25', status: 'did' },
+        { night: '2026-10-07', status: 'did' },
+        { night: 'bad', status: 'did' },
+      ],
+      '2026-10-09',
+    ),
+    ['2026-10-07', '2026-09-25'],
+  )
+  assert.deepEqual(weNoteNights(null, '2026-10-09'), [])
+  const weNotesUi = read('native/components/WeNotes.jsx')
+  assert.match(weNotesUi, /putWeNote\(\{ cardId: card\.id, night: on,/, 'a past night saves on that night')
+  assert.match(weNotesUi, /didNights\.map/)
+
+  // A cheer for a note names the note, in the inbox and the banner.
+  const { cheerTitle, didYouNewsLines } = await import('../src/lib/people.js')
+  const { t } = await import('../src/lib/i18n.js')
+  assert.equal(cheerTitle({ kind: 'cheer', question: 'Did I take my meds?' }), t('inbox.cheerNote', { q: 'Did I take my meds?' }))
+  assert.ok(cheerTitle({ kind: 'cheer', question: 'Did I take my meds?' }).includes('Did I take my meds?'))
+  assert.equal(cheerTitle({ kind: 'cheer', question: '' }), t('inbox.aCheer'))
+  assert.ok(didYouNewsLines({ kind: 'cheer', n: 1, name: 'A', question: 'Water' }).title.includes('Water'))
+  assert.equal(didYouNewsLines({ kind: 'cheer', n: 2, name: 'A', question: 'Water' }).title, t('didyou.newCheer', { name: 'A' }))
+  assert.match(read('src/lib/Inbox.jsx'), /cheerTitle\(row\)/)
+  assert.match(read('native/screens/social.jsx'), /cheer\(row\.question \|\| ''\)/, 'phone note cheer passes the note')
+  assert.match(read('src/lib/Friends.jsx'), /onCheer\(row\.question \|\| ''\)/, 'web note cheer passes the note')
+  const cheers = read('supabase/friend-cheers.sql')
+  assert.match(cheers, /drop function if exists public\.send_friend_cheer\(uuid, text, text\);/)
+  assert.match(cheers, /send_friend_cheer\(other uuid, note text, want text, about text default ''\)/)
+  assert.match(cheers, /select 1 from public\.shared_notes s where s\.user_id = other and s\.question = topic/, 'only a note they really shared')
+  assert.match(cheers, /values \(who, other, 'cheer', topic, line, cid\)/)
+  assert.match(cheers, /grant execute on function public\.send_friend_cheer\(uuid, text, text, text\) to authenticated/)
+  const push = read('supabase/push.sql')
+  const wordsAt = push.indexOf("words jsonb := '") + "words jsonb := '".length
+  const words = JSON.parse(push.slice(wordsAt, push.indexOf("}'", wordsAt) + 1).replace(/''/g, "'"))
+  for (const lang of Object.keys(words)) assert.ok(words[lang].send_cheer_note.includes('{q}'), `push words parse, ${lang}`)
+  for (const lang of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    assert.match(push, new RegExp(`"${lang}": \\{[^\\n]*"send_cheer_note": "(?:[^"\\\\\\n]|\\\\.)*\\{q\\}`), `push text ${lang}`)
+  }
+  assert.match(push, /when new\.kind = 'cheer' and btrim\(coalesce\(new\.question, ''\)\) <> ''\s+then left\(public\.push_text\(new\.to_id, 'send_cheer_note'/)
+
+  // Web Did we card: maker turns amounts on or off; after a Did you add yours.
+  const we = read('src/lib/DidWe.jsx')
+  assert.match(we, /function WeAmount\(/)
+  assert.match(we, /weTrackAmount\(card\.id, true, text\.trim\(\)\)/)
+  assert.match(we, /weTrackAmount\(card\.id, false\)/)
+  assert.match(we, /wePutAmount\(card\.id, amount\)/)
+  assert.match(we, /if \(!card\.mine && !\(sum && didTonight\)\) return null/, 'only the maker turns it on')
+  assert.match(we, /<WeAmount card=\{card\}/)
+
+  // Web Family page: asks from family members who are not friends (friends' are on Friends).
+  const fam = read('src/lib/Family.jsx')
+  assert.match(fam, /checkOnsForMe\(\)/)
+  assert.match(fam, /for \(const id of friendIds\) askRows\.delete\(id\)/)
+  assert.match(fam, /stopCheckOn\(ask\.id\)/)
+  assert.match(fam, /initialQuestion=\{sheet\.question \|\| ''\}/)
+
+  // An edit that changes words or schedule moves the check-on with it; anything else sends nothing.
+  const { checkOnRule, followCheckOn } = await import('../src/lib/check-on.js')
+  const daily = { id: 'q1', question: 'Water', cadence: 'daily' }
+  assert.equal(checkOnRule(daily), checkOnRule({ ...daily, note: 'x', short: 'W' }), 'other fields do not count')
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, cadence: 'weekly', weekdays: [1] }))
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, question: 'Water plants' }))
+  assert.equal(checkOnRule({ ...daily, cadence: 'nope' }), '', 'no rule for a question the server cannot check')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, note: 'x' }), { miss: '' }, 'unchanged: no write')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, id: 'q2', cadence: 'weekly' }), { miss: '' }, 'another question: no write')
+  assert.match(read('native/screens/questions.jsx'), /if \(existing\) followCheckOn\(existing, next\)/)
+  assert.match(read('src/lib/HangPage.jsx'), /if \(existing\) followCheckOn\(existing, lamp\)/)
+
+  // Web Friends: the result line sticks in view instead of sitting under a long list.
+  assert.match(read('src/lib/Friends.jsx'), /<div className="di-people-said">/)
+  assert.match(read('src/lib/did-i.css'), /\.di-people-said \{\s*position: sticky;/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

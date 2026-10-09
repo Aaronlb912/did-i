@@ -38,6 +38,8 @@ function WeNoteEdit({ initial, colors, onSave, onCancel }) {
  */
 export function WeNotes({ card, mine, colors, cheer }) {
   const [view, setView] = useState({ mine: new Map(), shared: [] })
+  // Past nights you said Did, inside the note window, so a note can go on them too.
+  const [didNights, setDidNights] = useState([])
   const [miss, setMiss] = useState('')
   const night = boardDate()
   const people = (card.people || []).filter((p) => p.state === 'in')
@@ -46,6 +48,7 @@ export function WeNotes({ card, mine, colors, cheer }) {
     const out = await weNotes(card.id, night)
     if (out.miss && out.miss !== 'off') setMiss(t('weNote.failed'))
     setView(weNotesView(out.rows, out.me, people))
+    setDidNights(out.did || [])
   }
 
   useEffect(() => {
@@ -55,22 +58,23 @@ export function WeNotes({ card, mine, colors, cheer }) {
   const own = view.mine.get(night) || null
   const canWrite = card.due && mine?.status === 'did'
 
-  function open() {
+  function open(on = night) {
     const close = () => publishSheet(null)
+    const was = view.mine.get(on) || null
     publishSheet({
-      title: own ? t('note.edit') : t('note.add'),
+      title: `${was ? t('note.edit') : t('note.add')} · ${nightWord(on)}`,
       colors,
       closeLabel: t('settings.neverMind'),
       onClose: close,
       noClose: true,
       content: (
         <WeNoteEdit
-          initial={own}
+          initial={was}
           colors={colors}
           onCancel={close}
           onSave={async (draft, shared) => {
             close()
-            const out = await putWeNote({ cardId: card.id, night, note: draft, shared })
+            const out = await putWeNote({ cardId: card.id, night: on, note: draft, shared })
             if (out.miss) return setMiss(out.miss)
             setMiss('')
             confirmDone(t(draft.trim() ? 'note.saved' : 'note.removed'))
@@ -81,16 +85,30 @@ export function WeNotes({ card, mine, colors, cheer }) {
     })
   }
 
-  if (!canWrite && !view.shared.length && !own) return null
+  if (!canWrite && !view.shared.length && !own && !didNights.length) return null
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: colors.inkSoft }]}>{t('weNote.title')}</Text>
       {own ? <Meta colors={colors}>{`${t('we.you')}: ${own.note}${own.shared ? '' : ` · ${t('weNote.justYou')}`}`}</Meta> : null}
       {canWrite ? (
         <View style={styles.keys}>
-          <KeyButton colors={colors} label={own ? t('note.edit') : t('note.add')} onPress={open} />
+          <KeyButton colors={colors} label={own ? t('note.edit') : t('note.add')} onPress={() => open(night)} />
         </View>
       ) : null}
+      {didNights.length ? <Meta colors={colors}>{t('weNote.earlier')}</Meta> : null}
+      {didNights.map((on) => {
+        const was = view.mine.get(on) || null
+        return (
+          <View key={`did:${on}`} style={styles.row}>
+            <Meta colors={colors}>
+              {was ? `${nightWord(on)}: ${was.note}${was.shared ? '' : ` · ${t('weNote.justYou')}`}` : nightWord(on)}
+            </Meta>
+            <View style={styles.keys}>
+              <KeyButton colors={colors} label={was ? t('note.edit') : t('note.add')} onPress={() => open(on)} />
+            </View>
+          </View>
+        )
+      })}
       {view.shared.map((row) => (
         <View key={`${row.id}:${row.night}`} style={styles.row}>
           <Meta colors={colors}>{`${row.name} · ${nightWord(row.night)}`}</Meta>

@@ -94,6 +94,7 @@ import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
+import { followCheckOn } from '../../src/lib/check-on.js'
 import { pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -1503,6 +1504,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    // A check-on follows the question's new words and schedule.
+    if (existing) followCheckOn(existing, next).catch(() => {})
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
       playClick()

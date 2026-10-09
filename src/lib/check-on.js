@@ -85,7 +85,7 @@ function lastOfMonth(night) {
 }
 
 /** Is the question asked on this night, per kind? `lastDid` is the newest Did night before it (every). */
-export function checkOnAsked(link, { night, weekday, lastDid = '' }) {
+export function checkOnAsked(link, { night, weekday, lastDid = '', learned = 0 }) {
   const kind = link?.kind || 'night'
   if (kind === 'night') {
     const days = Array.isArray(link.days) ? link.days : []
@@ -95,10 +95,12 @@ export function checkOnAsked(link, { night, weekday, lastDid = '' }) {
     const want = Number(link.month_day) === 0 ? 31 : Number(link.month_day)
     return Number(night.slice(8, 10)) === Math.min(want, lastOfMonth(night))
   }
-  if (kind === 'once' || kind === 'by') return link.on_date === night
+  if (kind === 'once') return link.on_date === night
+  // A deadline is asked every night from its start to the due date.
+  if (kind === 'by') return night >= (link.starts_on || link.on_date) && night <= link.on_date
   if (kind === 'every') {
     if (!lastDid) return true
-    return daysBetween(lastDid, night) >= (Number(link.every_days) || 7)
+    return daysBetween(lastDid, night) >= (learned || Number(link.every_days) || 7)
   }
   return false
 }
@@ -129,11 +131,11 @@ export function minuteClock(minute) {
  * of the day, `weekday` 0 to 6, `answered` whether answer_log has this
  * period's key, `lastDid` the newest Did night before tonight (every kind).
  */
-export function checkOnDue(link, { night, minute, weekday, answered, lastDid = '' }) {
+export function checkOnDue(link, { night, minute, weekday, answered, lastDid = '', learned = 0 }) {
   if (!link || answered) return false
   if (link.sent_on && link.sent_on >= night) return false
   if (minute < cleanMinute(link.at_minute ?? CHECK_ON_DEFAULT)) return false
-  return checkOnAsked(link, { night, weekday, lastDid })
+  return checkOnAsked(link, { night, weekday, lastDid, learned })
 }
 
 async function me(db) {
@@ -181,6 +183,39 @@ export async function saveCheckOn(lamp, buddyId, atMinute = CHECK_ON_DEFAULT) {
   // Always sent, so a question that changes cadence never keeps an old rule.
   Object.assign(row, checkOnShape(lamp))
   const { error } = await db.from('check_ons').upsert(row, { onConflict: 'owner_id,lamp_id' })
+  return error ? { miss: missOf(error) } : { miss: '' }
+}
+
+// What the server's rule is built from, to tell whether an edit changed it.
+export function checkOnRule(lamp) {
+  if (!checkOnFits(lamp)) return ''
+  return JSON.stringify({
+    question: String(lamp.question || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+    days: checkOnDays(lamp),
+    ...checkOnShape(lamp),
+  })
+}
+
+/**
+ * After a question is edited: if its words or schedule changed, update a
+ * check-on that already exists so the server follows the new rule. One
+ * update, no read; with no check-on it touches nothing. Fire and forget:
+ * the card shows the saved rule next time it opens.
+ */
+export async function followCheckOn(before, after) {
+  if (!before || !after || before.id !== after.id) return { miss: '' }
+  const rule = checkOnRule(after)
+  if (!rule || rule === checkOnRule(before)) return { miss: '' }
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me(db)
+  if (!user) return { miss: 'out' }
+  const { question, days, ...shape } = JSON.parse(rule)
+  const { error } = await db
+    .from('check_ons')
+    .update({ question, days, ...shape })
+    .eq('owner_id', user.id)
+    .eq('lamp_id', String(after.id))
   return error ? { miss: missOf(error) } : { miss: '' }
 }
 

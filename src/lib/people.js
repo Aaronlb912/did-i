@@ -512,16 +512,23 @@ export async function readFriendCheers() {
   return Number.isFinite(n) ? Math.max(0, n) : null
 }
 
-export async function sendFriendCheer(toId, note, cheerId = '') {
+// `about` is the question of the shared note the cheer is for ('' for none).
+export async function sendFriendCheer(toId, note, cheerId = '', about = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'out' }
-  const { data, error } = await db.rpc('send_friend_cheer', {
+  const args = {
     other: toId,
     note: String(note || '').trim(),
     want: String(cheerId || '').trim().slice(0, 20),
-  })
+  }
+  const words = String(about || '').trim().slice(0, 200)
+  let { data, error } = await db.rpc('send_friend_cheer', words ? { ...args, about: words } : args)
+  // A server without the note words yet: the plain cheer still goes.
+  if (error && words && (error.code === 'PGRST202' || /send_friend_cheer/i.test(error.message || ''))) {
+    ;({ data, error } = await db.rpc('send_friend_cheer', args))
+  }
   if (!error) return { miss: '', ...stockFromRpc(data) }
   const message = error.message || ''
   if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return { miss: 'setup' }
@@ -548,8 +555,14 @@ export async function buyCheers(book) {
 }
 
 /** Spends one stored cheer. The gem was spent when the cheers were bought. */
-export async function cheerFriend(book, otherId, cheerId = '') {
-  const sent = await sendFriendCheer(otherId, '', cheerId)
+// A cheer's title: which note it was for, when it was for one.
+export function cheerTitle(row) {
+  const q = String(row?.question || '').trim()
+  return q ? t('inbox.cheerNote', { q }) : t('inbox.aCheer')
+}
+
+export async function cheerFriend(book, otherId, cheerId = '', about = '') {
+  const sent = await sendFriendCheer(otherId, '', cheerId, about)
   if (sent.miss === 'setup') {
     if (takeFriendCheer(book).miss) return { miss: 'cheers', book }
     const { miss } = await sendCheer(otherId, '', cheerId)
@@ -1541,7 +1554,10 @@ export function didYouNewsLines(news) {
       go: '/tonight',
     }
   }
-  if (news.kind === 'cheer') return { title: t('didyou.newCheer', { name }), body: '', go: '/inbox' }
+  if (news.kind === 'cheer') {
+    const q = news.n > 1 ? '' : String(news.question || '').trim()
+    return { title: q ? t('didyou.newCheerNote', { name, q }) : t('didyou.newCheer', { name }), body: '', go: '/inbox' }
+  }
   return {
     title: news.n > 1 ? t('didyou.newSome', { n: news.n }) : t('didyou.newOne', { name }),
     body: news.n > 1 ? '' : news.question,
