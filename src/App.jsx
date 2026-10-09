@@ -32,7 +32,8 @@ import { AllLamps } from './lib/AllLamps.jsx'
 import { Enter } from './lib/Enter.jsx'
 import { FirstNight } from './lib/FirstNight.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
-import { Welcome } from './lib/Welcome.jsx'
+import { FirstWelcome, Welcome } from './lib/Welcome.jsx'
+import { authSkipped } from './lib/auth-gate.js'
 import { DidYouBanner } from './lib/DidYouBanner.jsx'
 import { useAccount } from './lib/account.js'
 import { useAutoAdd } from './lib/people.js'
@@ -565,6 +566,9 @@ export default function App() {
         returnFace={route.face}
       />
     )
+  } else if (HALL.has(path) && emptyHall && !welcomeSeen() && cloudSetUp() && !account.user && !accountSessionOn() && !authSkipped()) {
+    // A fresh web visit: Get started, or sign in, as on the phone's welcome.
+    inner = <FirstWelcome book={live} />
   } else if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
     // Move to /first itself so the tab bar stays hidden until the first question is in.
     if (path !== '/first') queueMicrotask(() => goHash('/first'))

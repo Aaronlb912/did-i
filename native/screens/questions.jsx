@@ -65,7 +65,7 @@ import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountWords, bestQuestionStreak, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -88,6 +88,7 @@ import {
 } from '../components/ui.jsx'
 import { behindPath, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
+import { CheckOnCard } from '../components/CheckOnCard.jsx'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
@@ -1978,6 +1979,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
+  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso])
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -2122,6 +2124,40 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
 
+      {lamp.trackAmount ? (
+        <View style={styles.amounts}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('amounts.title')}</Text>
+          {amounts.count ? (
+            <>
+              <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text>
+              <View style={styles.amountBars}>
+                {amounts.bars.map((bar) => (
+                  <View
+                    key={bar.night}
+                    style={[styles.amountBar, { backgroundColor: colors.lineSoft }]}
+                    accessible
+                    accessibilityLabel={
+                      bar.amount === null
+                        ? t('amounts.barNone', { date: formatBoardDate(bar.night) })
+                        : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp.amountUnit) })
+                    }
+                  >
+                    {bar.amount ? (
+                      <View
+                        style={{ backgroundColor: colors.on, height: `${Math.max(4, Math.round((bar.amount / amounts.max) * 100))}%` }}
+                      />
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.cap')}</Text>
+            </>
+          ) : (
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.empty')}</Text>
+          )}
+        </View>
+      ) : null}
+
       <View style={styles.lastFive}>
         <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.lastFive')}</Text>
         {!lastFive.length ? (
@@ -2179,6 +2215,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           ) : null}
         </Pressable>
       </SetCard>
+      {lamp.fromName ? null : <CheckOnCard lamp={lamp} colors={colors} />}
       <LampManage
         book={lampBook}
         lamp={lamp}
@@ -2349,6 +2386,10 @@ const styles = StyleSheet.create({
   trendNum: { fontFamily: fonts.mono, fontSize: 10 },
   trendDate: { fontFamily: fonts.mono, fontSize: 9 },
   amountRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  amounts: { gap: 6, marginBottom: 12 },
+  amountAvg: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  amountBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 64 },
+  amountBar: { flex: 1, height: '100%', borderRadius: 3, overflow: 'hidden', justifyContent: 'flex-end' },
   lastFive: { gap: 6, marginBottom: 12 },
   lastRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },
   lastTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },

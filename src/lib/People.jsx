@@ -12,6 +12,7 @@ import {
   cleanCode,
   joinFamily,
   doneTonight,
+  friendLine,
   friendAskNote,
   friendAskTitle,
   inboxCount,
@@ -29,13 +30,6 @@ import { SendSheet } from './SendDidYou.jsx'
 import { SetCap, SetCard, SetField, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 import { useReduceMotion } from './useReduceMotion.js'
-
-function friendLine(person) {
-  if (!person?.share_streak) return t('people.quiet')
-  if (person.done_on === isoDate(new Date())) return t('people.doneTonight')
-  if (person.streak > 0) return t('people.streakN', { n: person.streak })
-  return t('people.noStreak')
-}
 
 // Join code right under the family list, so a second family is easy to join.
 function JoinFamilyCard({ bare = false }) {

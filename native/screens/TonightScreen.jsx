@@ -10,7 +10,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
-import { useSync } from '../../src/lib/cloud-sync.js'
+import { firstPullWaiting, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
 import {
@@ -35,9 +35,9 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
-import { lastTimeLine } from '../../src/lib/every-copy.js'
+import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
-import { DidButton, KeyButton } from '../components/ui.jsx'
+import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
@@ -422,7 +422,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       dropToast('sync-miss')
       return
     }
-    showToast({ id: 'sync-miss', kind: 'error', text: syncMiss, ms: 5200 })
+    // Tap to try now rather than wait for the next wake.
+    showToast({ id: 'sync-miss', kind: 'error', text: `${syncMiss} ${t('toast.tapRetry')}`, ms: 5200, onPress: () => pullAndMerge() })
   }, [syncMiss])
   useEffect(() => {
     if (!stack.cheer) return undefined
@@ -502,7 +503,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           },
           status,
         )
-      return { ...item, kicker: row.family.name, onDid: save('yes'), onNope: save('skip') }
+      return {
+        ...item,
+        kicker: row.family.name,
+        line: row.lamp.cadence === 'every' ? sharedLastLine(row.last, row.night, row.lastName) : '',
+        onDid: save('yes'),
+        onNope: save('skip'),
+      }
     }
     const save = (keep) => () =>
       peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
@@ -514,6 +521,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
+      line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso),
       onDid: save(true),
       onNope: save(false),
     }
@@ -535,7 +543,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onDid={peopleTop.onDid}
         onNope={peopleTop.onNope}
         buddy={activeBuddy(book)}
-      />
+      >
+        {peopleTop.line ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{peopleTop.line}</Text>
+        ) : null}
+      </SwipeCardHost>
     ) : null
   // The grace period for the previous night: first until 5am, then after
   // tonight's own cards until 9am.
@@ -634,6 +646,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
+  const pullWait = Boolean(account.user) && firstPullWaiting(sync) && !stack.cheer && stack.bodyKind !== 'face'
   let face = null
   // The done card grows (note, sign-in, recap). Centred in a fixed slot it
   // spilled under the meter and the tab bar, so it scrolls instead.
@@ -658,7 +671,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     )
     return card
   }
-  if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
+  if (pullWait) {
+    // Just signed in and the account's shelf is still on its way: loading
+    // rows, never a blank card or "That is everything for tonight".
+    face = <LateMeta colors={colors}>{t('app.loading')}</LateMeta>
+  } else if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     face = (
@@ -1113,7 +1130,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
 
       {/* The card sits in the middle of the space between the chips and the buttons (owner call, 2026-10-06). */}
       <SwipeFlyHost style={styles.slot}>
-        {stack.bodyKind === 'hall' && stack.nightDone ? (
+        {stack.bodyKind === 'hall' && stack.nightDone && !pullWait ? (
           <Slot>
             <NightSky colors={colors} />
           </Slot>

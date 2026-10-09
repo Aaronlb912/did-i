@@ -107,7 +107,7 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
                 className={[
                   'di-cal-day',
                   night.on ? 'is-on' : '',
-                  night.miss ? 'is-miss' : '',
+                  night.miss && prefs.gentle !== true ? 'is-miss' : '',
                   night.empty ? 'is-empty' : '',
                   night.isToday ? 'is-today' : '',
                   picked === night.iso ? 'is-pick' : '',

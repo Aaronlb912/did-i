@@ -10149,6 +10149,51 @@ html[data-reduce-motion] *::after,
   border-radius: var(--di-r);
 }
 
+.di-amounts {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--di-panel);
+  border: 1px solid var(--di-line-soft);
+  border-radius: var(--di-r);
+}
+
+.di-amounts-avg {
+  margin: 0;
+  font-weight: 600;
+  color: var(--di-ink);
+}
+
+.di-amounts-bars {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 3px;
+  align-items: end;
+  height: 64px;
+}
+
+.di-amounts-bar {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  background: var(--di-line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.di-amounts-bar i {
+  display: block;
+  width: 100%;
+  background: var(--di-on);
+}
+
+.di-amounts-cap {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--di-ink-dim);
+}
+
 .di-lamp-tile strong {
   font-family: var(--di-mono);
   font-size: 1.6rem;
