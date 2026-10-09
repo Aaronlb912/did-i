@@ -2619,6 +2619,8 @@ export const ko = {
   'gems.restored': '구매를 복원했어요. 젬 {n}개 추가.',
   'gems.restoreNone': '복원할 항목이 없어요.',
   'gems.restoreMiss': '복원하지 못했어요. 다시 해 보세요.',
+  'gems.creditMiss': "젬 결제는 됐지만 아직 들어오지 않았어요.",
+  'toast.tapRetry': "탭해서 다시 시도해요.",
   'gems.restoreSignIn': '구매를 복원하려면 로그인하세요.',
   'wish.night': '{name}까지 1밤 남았어요',
   'wish.nights': '{name}까지 {n}밤 남았어요',

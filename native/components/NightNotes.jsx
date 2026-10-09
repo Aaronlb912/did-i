@@ -18,7 +18,9 @@ import { showToast } from '../lib/toast-queue.js'
 // Clears a note, with Undo in the toast like other removals. Undo writes the
 // note back onto the folder as it is then, so nothing done since is lost.
 function removeNote(book, lampId, periodKey, note, onChange) {
-  onChange(setAnswerNote(book, lampId, periodKey, ''))
+  const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
+  const amount = typeof was?.amount === 'number' ? was.amount : ''
+  onChange(setAnswerNote(book, lampId, periodKey, '', undefined, ''))
   const now = Date.now()
   showToast({
     id: 'undo:note',
@@ -30,7 +32,7 @@ function removeNote(book, lampId, periodKey, note, onChange) {
     total: UNDO_MS,
     onPress: () => {
       const live = (readShelf().boards || []).find((item) => item.id === book.id) || book
-      onChange(setAnswerNote(live, lampId, periodKey, note))
+      onChange(setAnswerNote(live, lampId, periodKey, note, undefined, amount))
     },
   })
 }

@@ -2606,6 +2606,8 @@ export const zh = {
   'gems.restored': '已恢复购买，增加 {n} 颗宝石。',
   'gems.restoreNone': '没有可恢复的购买。',
   'gems.restoreMiss': '无法恢复，请再试一次。',
+  'gems.creditMiss': "宝石已付款，但还没到账。",
+  'toast.tapRetry': "点按重试。",
   'gems.restoreSignIn': '登录后即可恢复购买。',
   'wish.night': '再过 1 晚可得 {name}',
   'wish.nights': '再过 {n} 晚可得 {name}',

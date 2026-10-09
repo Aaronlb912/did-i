@@ -3,10 +3,13 @@ import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { weekCell, weekLamps, weekNights } from './hall-pages.js'
 import { t } from './i18n.js'
+import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function WeekGrid({ book, now }) {
   const clock = now || new Date()
+  // Gentle mode: a missed night looks like any unlit night.
+  const gentle = usePrefs().gentle === true
   const nights = weekNights(book, clock, 7)
   const lamps = weekLamps(nights)
 
@@ -51,7 +54,7 @@ export function WeekGrid({ book, now }) {
                   return (
                     <span
                       key={night.iso}
-                      className={`di-week-cell is-${cell.state}`}
+                      className={`di-week-cell is-${gentle && cell.state === 'hole' ? 'open' : cell.state}`}
                       title={`${shortLabel(lamp)} ${night.label}`}
                     />
                   )

@@ -688,6 +688,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const clock = now || new Date()
   const [view, setView] = useState('month')
   const [startShift, setStartShift] = useState(0)
+  const gentle = usePrefs().gentle === true
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
@@ -722,8 +723,12 @@ export function CalendarScreen({ book, boards, tagId, now }) {
       <View style={styles.calKey}>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
-        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
-        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+        {gentle ? null : (
+          <>
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
+            <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+          </>
+        )}
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.open }]} />
@@ -744,6 +749,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
+  const gentle = usePrefs().gentle === true
   const shelf = inView(book, boards)
   const nights = shelfWeekNights(shelf, clock, tagId, 7)
   const lamps = weekLamps(nights)
@@ -762,7 +768,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'yes') return colors.on
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
-    if (state === 'hole') return colors.miss
+    // Gentle mode: a missed night is plain, not a warning.
+    if (state === 'hole') return gentle ? colors.open : colors.miss
     return colors.open
   }
 
@@ -812,7 +819,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['yes', t('later.did')],
     ['late', t('later.late')],
     ['skip', t('later.nope')],
-    ['hole', t('later.missed')],
+    ...(gentle ? [] : [['hole', t('later.missed')]]),
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],
     ...(anyOff ? [['off', t('week.notAsked')]] : []),

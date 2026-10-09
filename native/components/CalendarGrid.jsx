@@ -55,6 +55,8 @@ function markOf(answer, when = 0, open = when === 0) {
 
 export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0 }) {
   const prefs = usePrefs()
+  // Gentle mode: a missed night reads like any other unlit night, never a warning.
+  const missTone = prefs.gentle === true ? colors.open : colors.miss
   const clock = now || new Date()
   const [monthShift, setMonthShift] = useLayoutState(startShift)
   const [picked, setPicked] = useState('')
@@ -84,7 +86,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
     const rows = nightDueRows(shelf, iso, tagId)
     const sorted = [...rows.filter((row) => !done(row)), ...rows.filter(done)]
     const weOpen = why.weOpen || []
-    const weMark = when < 0 ? { label: t('cal.notAnswered'), tone: colors.miss } : { label: upFirst(t('cal.open')), tone: colors.open }
+    const weMark = when < 0 ? { label: t('cal.notAnswered'), tone: missTone } : { label: upFirst(t('cal.open')), tone: colors.open }
     const close = () => {
       setPicked('')
       publishSheet(null)
@@ -108,7 +110,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             const mark = markOf(row.answer, when, nightOpen(iso, clock))
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
-                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' ? 'miss' : 'open'] }]} />
+                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
@@ -181,7 +183,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                       ? { backgroundColor: colors.on }
                       : night.freeze
                         ? { borderWidth: 1.5, borderColor: colors.freeze }
-                        : { backgroundColor: night.miss ? colors.miss : colors.open },
+                        : { backgroundColor: night.miss ? missTone : colors.open },
                   ]}
                 />
               )}
@@ -199,6 +201,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
 // Arrows go back to the year of the first answer. A day opens its sheet.
 export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const prefs = usePrefs()
+  const missTone = prefs.gentle === true ? colors.open : colors.miss
   const clock = now || new Date()
   const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
   const thisYear = clock.getFullYear()
@@ -280,7 +283,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                       style={[
                         styles.miniDot,
                         {
-                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? missTone : colors.open,
                           borderColor: night.isToday ? colors.ink : 'transparent',
                         },
                       ]}

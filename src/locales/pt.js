@@ -2672,6 +2672,8 @@ export const pt = {
   'gems.restored': 'Compras restauradas. {n} gemas adicionadas.',
   'gems.restoreNone': 'Nada para restaurar.',
   'gems.restoreMiss': 'Não foi possível restaurar. Tente de novo.',
+  'gems.creditMiss': "As tuas gems estão pagas, mas ainda não chegaram.",
+  'toast.tapRetry': "Toca para tentar de novo.",
   'gems.restoreSignIn': 'Entre para restaurar compras.',
   'wish.night': 'Falta 1 noite para {name}',
   'wish.nights': 'Faltam {n} noites para {name}',

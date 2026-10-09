@@ -7,6 +7,8 @@ import { SHELF_IN } from '../../src/lib/cloud-sync.js'
 import { readUser } from '../../src/lib/account.js'
 import { submitGemPurchase } from '../../src/lib/gem-verify.js'
 import { addGemsShelf } from '../../src/lib/purse.js'
+import { t } from '../../src/lib/i18n.js'
+import { showToast } from '../lib/toast-queue.js'
 
 let connected = false
 let linked = false
@@ -115,6 +117,23 @@ async function creditPurchase(purchase) {
   return { ...out, gems: claimed.gems }
 }
 
+function creditMissToast() {
+  showToast({
+    id: 'gems-credit-miss',
+    kind: 'error',
+    text: `${t('gems.creditMiss')} ${t('toast.tapRetry')}`,
+    ms: 8000,
+    onPress: () => {
+      restoreGemPurchases()
+        .then((out) => {
+          if (out.miss) creditMissToast()
+          else if (out.gems > 0) showToast({ id: 'gems-credit-done', kind: 'done', text: t('gems.restored', { n: out.gems }), ms: 4200 })
+        })
+        .catch(() => creditMissToast())
+    },
+  })
+}
+
 // Server-side gems not yet on this phone land on the shelf.
 async function claimAndCredit() {
   const claimed = await claimGemPurchases()
@@ -214,7 +233,15 @@ async function connectStore() {
     purchaseSub?.remove()
     errorSub?.remove()
     purchaseSub = purchaseUpdatedListener(async (purchase) => {
-      await creditPurchase(purchase)
+      let out
+      try {
+        out = await creditPurchase(purchase)
+      } catch {
+        out = { miss: 'credit' }
+      }
+      // Paid but not credited: say so, with a tap that tries again. The store
+      // keeps the buy open, so the next connect retries too.
+      if (out?.miss && out.miss !== 'test') creditMissToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return

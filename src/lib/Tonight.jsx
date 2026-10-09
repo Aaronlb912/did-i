@@ -63,6 +63,9 @@ function NoteBox({ target, shelf, onSave, onCancel }) {
       <div className="di-page-keys">
         <button className="di-key" type="submit">{t('settings.save')}</button>
         <button className="di-key" type="button" onClick={onCancel}>{t('settings.neverMind')}</button>
+        {answer.note || typeof answer.amount === 'number' ? (
+          <button className="di-key" type="button" onClick={() => onSave('', '')}>{t('note.remove')}</button>
+        ) : null}
       </div>
     </form>
   )

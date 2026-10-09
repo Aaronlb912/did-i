@@ -3990,6 +3990,36 @@ test('every action that changes data on the server says so on the phone', () => 
   assert.deepEqual(silent, [], 'these actions change data and show nothing after')
   const toast = readFileSync(path.join(checkRoot, 'native/components/ToastHost.jsx'), 'utf8')
   assert.ok(toast.includes("item.text || t('confirm.done')"), 'a toast without text says Done, never a blank box')
+  // Buys, gem credits and sync: a throw or a miss shows something, with a retry where one helps.
+  const coinShop = readFileSync(path.join(checkRoot, 'src/lib/coin-shop.js'), 'utf8')
+  assert.ok(/function counted[\s\S]{0,400}catch[\s\S]{0,200}shop\.miss\.buyFail/.test(coinShop), 'a thrown buy returns buyFail, not a dead tap')
+  const gemStore = readFileSync(path.join(checkRoot, 'native/iap/gem-store.js'), 'utf8')
+  assert.ok(/purchaseUpdatedListener\([\s\S]{0,400}creditMissToast\(\)/.test(gemStore), 'a paid pack that does not credit says so')
+  assert.ok(/function creditMissToast[\s\S]{0,300}onPress/.test(gemStore), 'the credit miss toast retries on tap')
+  assert.ok(/startGemPurchase\(packId\)\s*\}\s*catch/.test(readFileSync(path.join(checkRoot, 'src/lib/GemShop.jsx'), 'utf8')), 'web gem buy shows a store error')
+  const tonightSrc = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(/id: 'sync-miss'[^\n]*onPress: \(\) => pullAndMerge\(\)/.test(tonightSrc), 'the sync miss toast retries on tap')
+  // After sign-in, loading rows until the first pull lands; never the done card.
+  assert.ok(/if \(pullWait\) \{[\s\S]{0,300}<LateMeta/.test(tonightSrc), 'Tonight shows loading rows while the first pull is out')
+  assert.ok(tonightSrc.indexOf('if (pullWait)') < tonightSrc.indexOf("t('tonight.doneTitle')"), 'loading comes before the done card')
+  const syncSrc = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(/firstPull: true/.test(syncSrc) && /pulling = null\s*\n?\s*if \(state\.firstPull\) setState\(\{ firstPull: false \}\)/.test(syncSrc.replace(/\r/g, '')), 'the first pull flag always clears')
+})
+
+test('gentle mode: missed nights are plain on the calendar and week', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  assert.ok(read('src/lib/Calendar.jsx').includes("night.miss && prefs.gentle !== true ? 'is-miss'"), 'web calendar')
+  assert.ok(read('src/lib/WeekGrid.jsx').includes("gentle && cell.state === 'hole' ? 'open'"), 'web week')
+  const grid = read('native/components/CalendarGrid.jsx')
+  assert.ok(grid.includes('prefs.gentle === true ? colors.open : colors.miss') && !/night\.miss \? colors\.miss/.test(grid), 'phone calendar and year')
+  assert.ok(read('native/screens/more.jsx').includes("if (state === 'hole') return gentle ? colors.open : colors.miss"), 'phone week')
+})
+
+test('web first run: a welcome with Get started and sign in', () => {
+  const app = readFileSync(path.join(checkRoot, 'src/App.jsx'), 'utf8')
+  assert.ok(app.indexOf('<FirstWelcome') > 0 && app.indexOf('<FirstWelcome') < app.indexOf('<FirstNight'), 'welcome comes before /first')
+  const welcome = readFileSync(path.join(checkRoot, 'src/lib/Welcome.jsx'), 'utf8')
+  for (const key of ['auth.getStarted', 'auth.haveAccount', 'legal.signInLead']) assert.ok(welcome.includes(`t('${key}')`), key)
 })
 
 test('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
@@ -4877,6 +4907,12 @@ await testAsync('amounts: saved on the answer, round trip through the answer log
   assert.ok(!('amount' in setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), '').answers[0]))
   // An amount-only change still saves.
   assert.equal(setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), 8).answers[0].amount, 8)
+  // Remove note clears the note and the amount, on the phone and the web.
+  const removed = setAnswerNote(counted, 'w', '2026-10-01', '', new Date('2026-10-02T10:00:00'), '').answers[0]
+  assert.ok(removed.note === '' && !('amount' in removed), 'remove note clears both')
+  const notesSrc = readFileSync(path.join(checkRoot, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.ok(/function removeNote[\s\S]{0,400}setAnswerNote\(book, lampId, periodKey, '', undefined, ''\)/.test(notesSrc), 'phone Remove note clears the amount')
+  assert.ok(readFileSync(path.join(checkRoot, 'src/lib/Tonight.jsx'), 'utf8').includes("onSave('', '')"), 'web Remove note clears the amount')
 
   // Up: m is always sent, null when there is none.
   const shelf = { currentId: 'b1', boards: [counted] }

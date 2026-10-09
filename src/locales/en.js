@@ -2667,6 +2667,8 @@ export const en = {
   'gems.restored': 'Purchases restored. {n} gems added.',
   'gems.restoreNone': 'Nothing to restore.',
   'gems.restoreMiss': 'Could not restore. Try again.',
+  'gems.creditMiss': "Your gems are paid for but not in yet.",
+  'toast.tapRetry': "Tap to try again.",
   'gems.restoreSignIn': 'Sign in to restore purchases.',
   'wish.night': '1 more night to {name}',
   'wish.nights': '{n} more nights to {name}',

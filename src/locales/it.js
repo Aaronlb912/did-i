@@ -2670,6 +2670,8 @@ export const it = {
   'gems.restored': 'Acquisti ripristinati. {n} gemme aggiunte.',
   'gems.restoreNone': 'Niente da ripristinare.',
   'gems.restoreMiss': 'Ripristino non riuscito. Riprova.',
+  'gems.creditMiss': "Le tue gems sono pagate ma non ancora arrivate.",
+  'toast.tapRetry': "Tocca per riprovare.",
   'gems.restoreSignIn': 'Accedi per ripristinare gli acquisti.',
   'wish.night': 'Ancora 1 notte per {name}',
   'wish.nights': 'Ancora {n} notti per {name}',

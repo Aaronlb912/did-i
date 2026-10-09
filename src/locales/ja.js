@@ -2617,6 +2617,8 @@ export const ja = {
   'gems.restored': '購入を復元しました。ジェム{n}個を追加。',
   'gems.restoreNone': '復元するものはありません。',
   'gems.restoreMiss': '復元できませんでした。もう一度お試しください。',
+  'gems.creditMiss': "ジェムの支払いは済んでいますが、まだ届いていません。",
+  'toast.tapRetry': "タップしてもう一度試す。",
   'gems.restoreSignIn': '購入を復元するにはサインインしてください。',
   'wish.night': '{name}まであと1晩',
   'wish.nights': '{name}まであと{n}晩',

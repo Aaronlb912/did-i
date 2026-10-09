@@ -2690,6 +2690,8 @@ export const de = {
   'gems.restored': 'Käufe wiederhergestellt. {n} Edelsteine dazu.',
   'gems.restoreNone': 'Nichts wiederherzustellen.',
   'gems.restoreMiss': 'Wiederherstellen ging nicht. Versuch es noch mal.',
+  'gems.creditMiss': "Deine Gems sind bezahlt, aber noch nicht da.",
+  'toast.tapRetry': "Tippen, um es noch mal zu versuchen.",
   'gems.restoreSignIn': 'Melde dich an, um Käufe wiederherzustellen.',
   'wish.night': 'Noch 1 Nacht bis {name}',
   'wish.nights': 'Noch {n} Nächte bis {name}',
