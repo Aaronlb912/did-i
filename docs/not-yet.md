@@ -8,8 +8,8 @@ Last worked through 2026-10-02.
 ## Did we amounts and shared notes (branch `social-amounts`)
 
 - **Supabase not applied yet.** Run npm run db:apply:all (or supabase/social-amounts.sql after did-we.sql, blocks.sql). Until then the total line, Track an amount and the Share switch stay hidden or show "Could not share the note".
-- **Track an amount on a Did we is in the card's more menu, maker only.** Not on the New Did we form yet. The web has no Did we card page, so totals and amounts are phone only.
-- **Shared notes show on a friend's page only (phone).** Not on the Friends list, not in the group for a Did we (Did we nights have no note box), not on the website. Cheer on a shared note is the normal friend cheer; it does not say which note.
+- **Track an amount on a Did we is in the card's more menu, maker only.** Not on the New Did we form yet. The website shows the Together line on its Did we list and card page (branch `web-social`), but tracking and entering amounts are phone only.
+- **Shared notes show on a friend's page (phone) and under each friend on the web Friends list (branch `web-social`).** Not in the group for a Did we (Did we nights have no note box). The web cannot share a note yet; it has no Share switch. Cheer on a shared note is the normal friend cheer; it does not say which note.
 - **Share starts off on a new device.** Whether a note is shared is kept on the device that shared it, so another phone shows the switch off. Turning it off there still removes it on the server only if this device shared it.
 - **Needs device testing:** Share switch in the note sheet at 390px, a friend sees the note and cheers it, Remove note takes it back, Together line on the Did we list and card, amount sheet after Did, 21st shared note in a day shows the cap line.
 
@@ -35,7 +35,7 @@ Last worked through 2026-10-02.
 - **Supabase not applied yet.** Run `supabase/shared-every.sql` (or `npm run db:apply:all`, it is last in the list) before this ships. Until then the family and Did you lists select `every_days` and `last_did_on`, which do not exist yet, so those reads fail.
 - **Family questions only.** A family question can come up every so often (about a week, 2 weeks, a month; no Other box). It is due for everyone it is for once that long has passed since anyone's last Did; the first Did resets it for the family; Not yet only counts for you, that night. No streak. Did we cards stay nightly or weekly.
 - **Did you asks** can be every so often too. If the question matches one of the sender's own every so often questions, the ask carries the sender's last Did and both sides see "Last time: 12 days ago". Matching is by the words, so a reworded ask shows "Never yet".
-- **Phone only.** The website's Family page, family Tonight panel and Did you sheet do not offer every so often yet, and do not show the last-time line.
+- **On the website too (branch `web-social`).** The web Family page has the When chips and the last-time line, the family panel on Tonight shows it, and both web Did you forms offer Every so often; the inbox and Sent show "Last time". Clicked through signed out only at 390px; signed-in screens checked with tests and `vite build`.
 - **Needs device testing:** the When chips on a family page at 390px, the "Sam did it 2 days ago" line on the Tonight people card and the family page, the every so often pills in the Did you sheet, and the last-time line in the inbox and Sent.
 - **Not on the widget.** The widget does not show people cards, so these do not appear there.
 
@@ -95,7 +95,7 @@ Last worked through 2026-10-02.
 ## Check on me (branch `social-gentle`)
 
 - **Not applied yet.** supabase/social-gentle.sql adds `check_ons` (RLS: owner and friend read, owner writes, either deletes; 20 per person; buddy index), `queue_check_ons()` and a `check-ons` pg_cron job every 5 minutes. The existing drain-push job sends what it queues. Needs pg_cron, as family-summary.sql does.
-- **Phone only.** Set it on a question's page (daily and weekly questions). The friend's page lists what they asked you to check on, with Send a Did you and Turn off. The website has neither yet.
+- **Phone and web.** Set it on a question's page (daily and weekly questions; the web uses a time box, the phone +30/-30). The phone friend page lists what they asked you to check on, with Send a Did you and Turn off; the web shows the same under each friend on the Friends list (branch `web-social`). Family members who are not friends: the web Family page does not show their asks yet. Web not tried signed in.
 - **Uses the friend's "friends" notification switch,** not a kind of its own.
 - **Monthly, once and every-so-often questions cannot be checked on.** The server only knows a night's answer by date.
 - **Push text is in 9 languages in SQL (`check_on_text`),** separate from `push_text`.

@@ -40,6 +40,8 @@ import { SendSheet } from './SendDidYou.jsx'
 import { SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import { useOnline } from './useOnline.js'
+import { checkOnsForMe, minuteClock, stopCheckOn } from './check-on.js'
+import { sharedNotesOf } from './social-amounts.js'
 
 export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const clock = now || new Date()
@@ -56,6 +58,9 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const [autoAdds, setAutoAdds] = useState(() => new Set())
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
+  // Notes friends chose to share lately, and what they asked you to check on.
+  const [notes, setNotes] = useState(() => new Map())
+  const [checkOns, setCheckOns] = useState(() => new Map())
   const still = useReduceMotion()
   const pickRef = useRef(null)
   const online = useOnline()
@@ -75,6 +80,14 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       listAutoAdds(),
     ])
     setLinks(friendRows)
+    const ids = friendRows.friends.map((row) => row.person.user_id)
+    const [noteRows, askRows] = await Promise.all([
+      sharedNotesOf(ids).catch(() => new Map()),
+      checkOnsForMe().catch(() => null),
+    ])
+    setNotes(noteRows)
+    if (askRows) setCheckOns(askRows)
+    else setMiss('people.reach')
     setBlocks(blockRows)
     setAutoAdds(autoRows)
     if (typeof serverCheers === 'number') setStock(serverCheers)
@@ -173,6 +186,18 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
     goHash('/gift', { id: person.user_id })
   }
 
+  async function stopAsk(row) {
+    const { miss: why } = await stopCheckOn(row.id)
+    if (why) return setMiss(why)
+    setCheckOns((live) => {
+      const next = new Map(live)
+      next.set(row.owner_id, (next.get(row.owner_id) || []).filter((item) => item.id !== row.id))
+      return next
+    })
+    setMiss('')
+    return setSaid(t('checkOn.stopped'))
+  }
+
   async function answerAsk(id, yes) {
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) setMiss(why)
@@ -247,6 +272,17 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
               line={[done ? streak : friendLine(row.person, isoDate(clock)), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
               pill={done ? t('people.doneTonightShort') : ''}
               pillOn={done}
+              extra={
+                <FriendExtras
+                  name={personName(row.person) || t('people.someone')}
+                  notes={notes.get(row.person.user_id) || []}
+                  asks={checkOns.get(row.person.user_id) || []}
+                  cheerOff={cheersLeft < 1}
+                  onCheer={() => cheer(row.person)}
+                  onAsk={(question) => setSheet({ person: row.person, question })}
+                  onStop={stopAsk}
+                />
+              }
               actions={
                 <>
                   <button className="di-did di-did-small" type="button" onClick={() => setSheet({ person: row.person })}>
@@ -342,6 +378,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       {sheet ? (
         <SendSheet
           person={sheet.person}
+          book={book}
+          initialQuestion={sheet.question || ''}
           still={still}
           onClose={() => setSheet(null)}
           onSent={(words) => {
@@ -417,5 +455,45 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </button>
       </div>
     </>,
+  )
+}
+
+// Under a friend: notes they shared lately (with the normal friend cheer)
+// and the questions they asked you to check on.
+function FriendExtras({ name, notes, asks, cheerOff, onCheer, onAsk, onStop }) {
+  if (!notes.length && !asks.length) return null
+  return (
+    <div className="di-shared-notes">
+      {notes.length ? <p className="di-set-note">{t('sharedNote.fromFriend', { name })}</p> : null}
+      {notes.map((row) => (
+        <div className="di-shared-note" key={`${row.lamp_id}:${row.period_key}`}>
+          <p>
+            {row.question ? `${row.question}: ` : ''}
+            {row.note}
+          </p>
+          <button className="di-key" type="button" disabled={cheerOff} onClick={onCheer}>
+            {t('sharedNote.cheer')}
+          </button>
+        </div>
+      ))}
+      {asks.length ? <p className="di-set-note">{t('checkOn.fromTitle', { name })}</p> : null}
+      {asks.map((row) => (
+        <div className="di-check-on" key={row.id}>
+          <p className="di-check-on-share">
+            {row.question}
+            <br />
+            <small>{t('checkOn.fromAt', { time: minuteClock(row.at_minute) })}</small>
+          </p>
+          <div className="di-hang-actions">
+            <button className="di-key" type="button" onClick={() => onAsk(row.question)}>
+              {t('friend.sendDidYou')}
+            </button>
+            <button className="di-key" type="button" onClick={() => onStop(row)}>
+              {t('checkOn.stop')}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

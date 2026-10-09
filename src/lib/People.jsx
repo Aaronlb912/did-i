@@ -395,7 +395,7 @@ export function People({ book, onChange, now }) {
       {said ? <p className="di-set-note">{said}</p> : null}
 
       {sheet?.kind === 'send' ? (
-        <SendSheet person={sheet.person} still={still} onClose={() => setSheet(null)} onSent={say} />
+        <SendSheet person={sheet.person} book={book} still={still} onClose={() => setSheet(null)} onSent={say} />
       ) : null}
       {sheet?.kind === 'friend' ? (
         <AddFriendPop

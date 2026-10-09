@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
+import { sharedLastLine } from './every-copy.js'
 import { t } from './i18n.js'
 import { answerFamilyLamp, familyLampMeta, useFamilyTonight } from './people.js'
 
@@ -60,6 +61,7 @@ export function FamilyTonight() {
                 <em>
                   {row.family.name}
                   {row.lamp.cadence !== 'daily' ? ` · ${familyLampMeta(row.lamp)}` : ''}
+                  {row.lamp.cadence === 'every' ? ` · ${sharedLastLine(row.last, row.night, row.lastName)}` : ''}
                 </em>
               </span>
               {/* Both stay tappable after an answer, so a mistake is one

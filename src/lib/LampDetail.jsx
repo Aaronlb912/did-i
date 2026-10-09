@@ -10,6 +10,7 @@ import { usePrefs } from './prefs.js'
 import { formatBoardDate, isEvery, recentPeriodKeys } from './recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from './every-copy.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
+import { CheckOnCard } from './CheckOnCard.jsx'
 
 function reminderLine(lamp) {
   if (!lampNotifyOn(lamp)) return t('hang.remindOff')
@@ -148,6 +149,8 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
         />
         <SetRow label={t('hang.reminder')} sub={reminderLine(lamp)} />
       </SetCard>
+
+      <CheckOnCard lamp={lamp} />
 
       <SetCap>{t('hang.secOrganize')}</SetCap>
       <SetCard>
