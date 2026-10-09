@@ -130,7 +130,7 @@ export function useTonightStack({
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -326,7 +326,7 @@ export function useTonightStack({
     setWaitPick(null)
     // A picked card stays open in its answered state, with its note.
     if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
-    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')

@@ -83,6 +83,15 @@ export const PACKS = [
       { idea: 'bill', kind: 'money', cadence: 'monthly', monthDay: 12, askAfter: '', slot: 'whenever' },
     ],
   },
+  {
+    // Every so often: each comes up once its gap has passed since the last Did.
+    id: 'home',
+    items: [
+      { idea: 'plants', kind: 'other', cadence: 'every', everyDays: 7, askAfter: '', slot: 'whenever' },
+      { idea: 'sheets', kind: 'other', cadence: 'every', everyDays: 14, askAfter: '', slot: 'whenever' },
+      { idea: 'fridge', kind: 'other', cadence: 'every', everyDays: 30, askAfter: '', slot: 'whenever' },
+    ],
+  },
 ]
 
 // Each pack in the app's language, with only the questions this tag lacks.

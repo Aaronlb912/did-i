@@ -4748,6 +4748,91 @@ test('every card frame id has art, and the vine and moon math hold', () => {
   assert.equal(frameGeo.ringProgress(3, 0), 0)
 })
 
+// Every so often questions (cadence 'every'): due by the last Did, no streak.
+function everyBook(answers = [], extra = []) {
+  return {
+    id: 'ev',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'sheets', question: 'Did I change the sheets?', cadence: 'every', everyDays: 7, archived: false, createdOn: '2026-09-01' }, ...extra],
+    answers: answers.map(([lampId, periodKey, status]) => ({ lampId, periodKey, status, answeredAt: `${periodKey}T21:00:00` })),
+  }
+}
+const evAt = (d) => new Date(2026, 8, d, 12, 0)
+const evDay = (d) => `2026-09-${String(d).padStart(2, '0')}`
+
+await testAsync('every so often: due when never done or once the gap passed; Did resets, Not yet asks again', async () => {
+  const { dueTonight, everyDueOn } = await import('../src/lib/recurrence.js')
+  const has = (book, d) => dueTonight(book, evAt(d)).some((row) => row.lamp.id === 'sheets')
+  assert.ok(has(everyBook(), 1), 'never done: due right away')
+  const did5 = everyBook([['sheets', evDay(5), 'yes']])
+  assert.ok(has(did5, 5), 'answered tonight stays on tonight')
+  assert.ok(!has(did5, 6) && !has(did5, 11), 'not due inside the gap')
+  assert.ok(has(did5, 12), 'due 7 days after the last Did')
+  const noped = everyBook([['sheets', evDay(5), 'yes'], ['sheets', evDay(12), 'skip']])
+  assert.ok(has(noped, 13), 'Not yet asks again the next night')
+  assert.ok(!isDueOn(noped.lamps[0], evDay(12)), 'isDueOn stays false, so walks leave it out')
+  assert.ok(!everyDueOn(noped, noped.lamps[0], '2026-08-30'), 'not before it was made')
+})
+
+await testAsync('every so often: no streak, never breaks a night, counts once done', async () => {
+  const { shelfStreak, lastBrokenNight } = await import('../src/lib/hall-feel.js')
+  const { allClearTonight } = await import('../src/lib/recurrence.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const rows = []
+  for (let d = 1; d <= 10; d += 1) rows.push(['d', evDay(d), 'yes'])
+  rows.push(['sheets', evDay(9), 'skip'])
+  const book = everyBook(rows, [daily])
+  assert.equal(shelfStreak([book], evAt(10)), 10, 'an open or Not yet every so often question never breaks the streak')
+  assert.equal(lastBrokenNight([book], evAt(11)), null)
+  assert.equal(questionStreak(book, book.lamps[0], evDay(10)), 0)
+  assert.equal(bestQuestionStreak(book, book.lamps[0], evDay(10)), 0)
+  assert.ok(allClearTonight(book, evAt(10)), 'tonight is clear with the every question still open')
+  const onlyEvery = everyBook([['sheets', evDay(3), 'yes']])
+  assert.equal(shelfStreak([onlyEvery], evAt(3)), 0, 'a Did on it alone is not a streak night')
+  assert.ok(allClearTonight(onlyEvery, evAt(3)), 'but it does count for that night once done')
+})
+
+test('every so often: the widget shows it only when Tonight does', () => {
+  const at = evAt(8)
+  const notDue = everyBook([['sheets', evDay(5), 'yes']])
+  const props = buildTonightWidgetProps(writeShelf({ currentId: 'ev', boards: [notDue] }), at)
+  assert.ok(!(props.items || []).some((item) => item.lampId === 'sheets'), 'not due: not on the widget')
+  const due = everyBook([['sheets', evDay(1), 'yes']])
+  const props2 = buildTonightWidgetProps(writeShelf({ currentId: 'ev', boards: [due] }), at)
+  assert.ok((props2.items || []).some((item) => item.lampId === 'sheets' && item.status === 'open'), 'due: on the widget')
+})
+
+await testAsync('every so often: the gap is learned from 3+ gaps and shown as usually', async () => {
+  const { learnedGap, everyDueOn } = await import('../src/lib/recurrence.js')
+  const { gapLine, lastTimeLine, sinceBadge } = await import('../src/lib/every-copy.js')
+  const two = everyBook([1, 10, 19].map((d) => ['sheets', evDay(d), 'yes']))
+  assert.equal(learnedGap(two, 'sheets', evDay(25)), 0, 'two gaps are not enough')
+  const book = everyBook([1, 10, 19, 28].map((d) => ['sheets', evDay(d), 'yes']))
+  const lamp = { ...book.lamps[0], everyDays: 3 }
+  assert.equal(learnedGap(book, 'sheets', '2026-10-05'), 9)
+  assert.ok(!everyDueOn(book, lamp, '2026-10-06'), 'the learned 9 wins over the set 3')
+  assert.ok(everyDueOn(book, lamp, '2026-10-07'))
+  assert.equal(gapLine(book, lamp, '2026-10-05'), 'Usually every 9 days')
+  assert.equal(lastTimeLine(book, lamp, '2026-10-05'), 'Last time: 7 days ago')
+  assert.equal(lastTimeLine(everyBook(), lamp, evDay(3)), 'Never yet')
+  assert.equal(sinceBadge(book, lamp, evDay(28)), '0d')
+})
+
+await testAsync('every so often: saved shape, pack, and the toast note action', async () => {
+  const { normalizeLamp, missLamp } = await import('../src/lib/board-json.js')
+  const lamp = normalizeLamp({ id: 'x', question: 'Did I water the plants?', cadence: 'every', everyDays: '14' })
+  assert.equal(lamp.cadence, 'every')
+  assert.equal(lamp.everyDays, 14)
+  assert.equal(normalizeLamp({ id: 'y', question: 'Q?', cadence: 'daily', everyDays: 5 }).everyDays, '')
+  if (missLamp) assert.equal(missLamp({ question: 'Did I?', cadence: 'every', everyDays: 0 }), 'hang.miss.everyDays')
+  const home = PACKS.find((pack) => pack.id === 'home')
+  assert.ok(home && home.items.every((item) => item.cadence === 'every' && item.everyDays >= 7))
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const screen = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(screen.includes('openAnswerNote(') && screen.includes("t('note.addShort')"), 'a Did offers a note from the undo toast')
+})
+
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
 

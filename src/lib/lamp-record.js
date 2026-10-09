@@ -1,4 +1,4 @@
-import { addDaysIso, answerFor, isDueOn, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 
 function didStatus(status) {
   return status === 'yes' || status === 'late'
@@ -9,7 +9,7 @@ function didStatus(status) {
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
 export function questionStreak(book, lamp, dateIso, cap = 400) {
-  if (!lamp || !dateIso) return 0
+  if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
   const live = { ...lamp, archived: false }
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
@@ -26,7 +26,7 @@ export function questionStreak(book, lamp, dateIso, cap = 400) {
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
 export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
-  if (!lamp || !dateIso) return 0
+  if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
   const live = { ...lamp, archived: false }
   let first = String(lamp.createdOn || '').slice(0, 10)
@@ -75,7 +75,7 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
 // were DID. Tonight only counts once it is answered. Once and monthly
 // questions have no weekly shape, so they get none.
 export function lampWeeks(book, lamp, dateIso, weeks = 8) {
-  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || !dateIso) return []
+  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp) || !dateIso) return []
   const live = { ...lamp, archived: false }
   const created = String(lamp.createdOn || '').slice(0, 10)
   const out = []

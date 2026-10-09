@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Every so often questions and a note after Did (branch `long-gap`)
+
+- **Amount per answer is not built.** Answers sync through `answer_log` columns (`supabase/answers.sql`, `put_answers`), not a json blob, so an amount needs a new column and RPC change. Stopped there on purpose. The "Track an amount" toggle, the number field in the note sheet and the "last 5 times" list wait on that SQL.
+- **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
+- **Web shows less.** The website can add and edit an every so often question and its Tonight follows the same due rule, but its card has no "Last time" line and its question list and page have no days pill or usual gap.
+- **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).
+- **Calendar and stats leave it out.** The overall calendar, streaks and the 30-night tile skip these questions; the question's own month view shows only the nights it was done.
+
 ## Card frames
 
 - **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
@@ -29,7 +29,11 @@ export function lampMonthCells(book, lamp, dateIso, y, m) {
   for (let d = 1; d <= days; d += 1) {
     const iso = `${y}-${pad(m + 1)}-${pad(d)}`
     let state = ''
-    if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
+    // Every so often: only the nights it was done show; nothing reads missed.
+    if (isEvery(lamp)) {
+      const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
+      state = status === 'yes' ? 'did' : status === 'late' ? 'late' : ''
+    } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
       const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status
       state =
         status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : iso === dateIso ? 'open' : 'missed'

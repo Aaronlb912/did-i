@@ -5,6 +5,7 @@ export const CADENCE_OPTIONS = [
   { value: 'weekly', labelKey: 'hang.weekly' },
   { value: 'monthly', labelKey: 'hang.monthly' },
   { value: 'every_n', labelKey: 'hang.everyN' },
+  { value: 'every', labelKey: 'hang.every' },
   { value: 'once', labelKey: 'hang.once' },
 ]
 
@@ -46,6 +47,8 @@ export function applySchedulePick(draft, pick, today) {
   // Every few days starts at the number the field shows, so it is never blank.
   if (pick === 'every_n' && !(Number(next.everyN) >= 2)) next.everyN = 3
   if (pick === 'every_n' && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.everyNAnchor || ''))) next.everyNAnchor = today
+  // Every so often starts at about a week.
+  if (pick === 'every' && !(Number(next.everyDays) >= 1)) next.everyDays = 7
   // Some weekdays starts on today's weekday.
   if (pick === 'weekly' && !(Array.isArray(next.weekdays) && next.weekdays.length)) {
     next.weekdays = [new Date(`${today}T12:00:00`).getDay()]

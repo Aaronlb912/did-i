@@ -109,6 +109,29 @@ function openNoteSheet({ title, label, initial, colors, onSave, onRemove }) {
   })
 }
 
+/**
+ * The note for one answer, straight from the toast after a Did. Reads the
+ * folder as it is now, since the answer was saved a moment ago.
+ */
+export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange }) {
+  const live = () => (readShelf().boards || []).find((item) => item.id === boardId)
+  const book = live()
+  const lamp = (book?.lamps || []).find((item) => item.id === lampId)
+  const answer = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
+  if (!book || !lamp || !answer) return
+  openNoteSheet({
+    title: answer.note ? t('note.edit') : t('note.add'),
+    label: shortLabel(lamp),
+    initial: answer.note,
+    colors,
+    onSave: (draft) => {
+      onChange(setAnswerNote(live() || book, lampId, periodKey, draft))
+      confirmDone(t('note.saved'))
+    },
+    onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
+  })
+}
+
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
 export function NightNotes({ book, lamp, colors, onChange }) {
   const [picking, setPicking] = useLayoutState(false)

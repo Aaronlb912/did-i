@@ -122,6 +122,7 @@ export function useHangDraft({
       dueBy: draft.cadence === 'once' && draft.onceWhen === 'by' ? draft.dueBy : '',
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
+      everyDays: draft.cadence === 'every' ? Number(draft.everyDays) || draft.everyDays : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
       priority,
       notify: notifyOn,
