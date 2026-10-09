@@ -6,6 +6,7 @@ import { faceCardStyle } from '../lib/face-card.js'
 import { SwipeFace } from './SwipeFace.jsx'
 
 const FlyContext = createContext(null)
+const NO_STAMP = { stampDid: '', stampNope: '' }
 
 export function useSwipeFly() {
   return useContext(FlyContext)
@@ -74,7 +75,8 @@ function FlyCard({ card, onGone }) {
       style={[styles.card, { left: frame.left, top: frame.top, width: frame.width, height: frame.height }, glowStyle, moving]}
     >
       <View style={[...faceCardStyle(colors, panelStyle), styles.fill, { borderWidth: 1, borderColor: line }]}>
-        <SwipeFace x={x} colors={colors} {...face} />
+        {/* Under reduced motion the card fades where it is, with no Did or not yet stamp. */}
+        <SwipeFace x={x} colors={colors} {...face} {...(reduce ? NO_STAMP : null)} />
       </View>
     </Animated.View>
   )

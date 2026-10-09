@@ -2756,6 +2756,10 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
     assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
+    assert.ok(
+      sign.indexOf("t('auth.getStarted')") > -1 && sign.indexOf("t('auth.getStarted')") < sign.indexOf('<AuthSignInActions'),
+      'Get started is the first button on Welcome, sign-in options sit under it',
+    )
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
     assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
     skipAuth()
@@ -2767,6 +2771,18 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     if (prev == null) delete globalThis.__didIPlatform
     else globalThis.__didIPlatform = prev
   }
+})
+
+test('first five minutes: first run can go back to Welcome, the swipe hint is one line cleared by the first answer', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const intro = readFileSync(path.join(root, 'native/components/SwipeIntro.jsx'), 'utf8')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(more.includes('step > 0 || canLeave'), 'step one of the first run has Back')
+  assert.ok(more.includes("t('first.haveAccount')"), 'the first run keeps the I have an account link')
+  assert.ok(!intro.includes('<Modal'), 'the swipe hint is not a popup')
+  assert.ok(intro.includes("t('swipeIntro.line')"), 'the swipe hint is one line')
+  assert.ok(tonight.includes('markSwipeIntroSeen()'), 'the first answer clears the swipe hint')
 })
 
 test('first run picks 2 or 3, adds them with one time, face is the first', () => {
@@ -3943,8 +3959,10 @@ test('every action that changes data on the server says so on the phone', () => 
     'cheerFriend', 'buyCheers', 'sendGift', 'answerSend', 'blockPerson', 'unblockPerson', 'makeFamily', 'joinFamily',
     'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
     'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
+    'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
+    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer',
   ]
-  const SEEN = /confirmDone|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
+  const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
   const files = []
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -4816,7 +4834,7 @@ await testAsync('every so often: the gap is learned from 3+ gaps and shown as us
   assert.equal(gapLine(book, lamp, '2026-10-05'), 'Usually every 9 days')
   assert.equal(lastTimeLine(book, lamp, '2026-10-05'), 'Last time: 7 days ago')
   assert.equal(lastTimeLine(everyBook(), lamp, evDay(3)), 'Never yet')
-  assert.equal(sinceBadge(book, lamp, evDay(28)), '0d')
+  assert.equal(sinceBadge(book, lamp, evDay(28)), 'today', 'a Did tonight reads today, not 0d')
 })
 
 await testAsync('every so often: saved shape, pack, and the toast note action', async () => {
@@ -5176,6 +5194,19 @@ test('the rate card asks for the in-app review, with the store link as fallback'
   assert.ok(card.indexOf('requestReview()') < card.indexOf('Linking.openURL(url)'))
   const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
   assert.match(metro, /\['expo-store-review', 'store-review-safe\.cjs'\]/)
+})
+
+await testAsync('every so often made tonight: progress and the done card agree', async () => {
+  const { dueTonight, dueClearTonight } = await import('../src/lib/recurrence.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const book = everyBook([['d', evDay(5), 'yes']], [daily])
+  book.lamps[0].createdOn = evDay(5)
+  const due = dueTonight(book, evAt(5))
+  assert.ok(dueClearTonight(due), 'deck calls the night clear')
+  const meter = nightProgress(due)
+  assert.equal(meter.answered, meter.total, 'progress agrees: nothing left')
+  const did = everyBook([['d', evDay(5), 'yes'], ['sheets', evDay(5), 'yes']], [daily])
+  assert.equal(nightProgress(dueTonight(did, evAt(5))).total, 2, 'counts once done')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

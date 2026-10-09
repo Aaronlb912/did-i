@@ -74,6 +74,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { readMine } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
@@ -91,7 +92,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -102,7 +103,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
-import { fonts, sectionLabel, withAlpha } from '../theme.js'
+import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -115,7 +116,6 @@ import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page,
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 
@@ -211,6 +211,47 @@ export function AboutScreen({ book }) {
         <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
         <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
         <AppVersion colors={colors} />
+      </View>
+    </ScreenShell>
+  )
+}
+
+// What friends and family can see, in plain words. The streak line reads the
+// real share_streak on your profile; the rest follows from how people.js shares.
+const SEEN_ROWS = ['friends', 'we', 'family', 'asks', 'never']
+
+export function SeenScreen({ book }) {
+  const colors = useHallColors()
+  const account = useAccount()
+  const [streakOn, setStreakOn] = useState(null)
+  useEffect(() => {
+    if (!account.user) return undefined
+    let alive = true
+    readMine()
+      .then((mine) => alive && setStreakOn(mine?.share_streak !== false))
+      .catch(() => alive && setStreakOn(null))
+    return () => {
+      alive = false
+    }
+  }, [account.user])
+  let streakLine = t('seen.streakUnknown')
+  if (!account.user) streakLine = t('seen.signedOut')
+  else if (streakOn === true) streakLine = t('seen.streakOn')
+  else if (streakOn === false) streakLine = t('seen.streakOff')
+  return (
+    <ScreenShell book={book} title={t('seen.title')} colors={colors}>
+      <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
+        <Text style={[styles.cardBody, { color: colors.ink }]}>{streakLine}</Text>
+      </View>
+      {SEEN_ROWS.map((id) => (
+        <View key={id} style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <Text style={[styles.cardTitle, { color: colors.ink }]}>{t(`seen.${id}Title`)}</Text>
+          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`seen.${id}`)}</Text>
+        </View>
+      ))}
+      <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
+        <KeyButton colors={colors} label={t('seen.back')} onPress={() => goHash('/settings')} />
       </View>
     </ScreenShell>
   )
@@ -320,7 +361,10 @@ export function LaterScreen({ book, now }) {
     <ScreenShell book={book} title={t('later.title')} colors={colors}>
       <Meta colors={colors}>{t('later.body')}</Meta>
       {!hung.length ? (
-        <Meta colors={colors}>{t('later.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('later.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : !nights.length ? (
         <Meta colors={colors}>{t('later.emptyWeek')}</Meta>
       ) : (
@@ -514,6 +558,17 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
+      {!counts.hung ? (
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
+      ) : !(counts.did + counts.late + counts.skip) ? (
+        <>
+          <Meta colors={colors}>{t('stats.empty')}</Meta>
+          <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
+      ) : null}
       {/* This week first, then everything since you started, each with the
           same three tiles so the two read the same way. */}
       <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
@@ -568,7 +623,10 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
         <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('feed.searchPh')} />
       ) : null}
       {!allRows.length ? (
-        <Meta colors={colors}>{t('feed.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('feed.empty')}</Meta>
+          <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
@@ -765,7 +823,10 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     <ScreenShell title={t('streaks.seven')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/week" />
       {!lamps.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <>
         <View style={styles.tiles}>
@@ -852,7 +913,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
-      (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
+      (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
     )
     .sort((a, b) => b.n - a.n)
   // A question's run can be longer than the overall one: say which night broke it.
@@ -903,7 +964,10 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
       </SetCard>
       {!rows.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <View style={styles.tiles}>
           {rows.map((row) => (
@@ -1328,8 +1392,10 @@ export function FirstNightScreen({ book, onChange, now }) {
     const made = firstRunBook(book, picks, own, askAfter, clock)
     markWelcomeSeen()
     onChange?.(made.book)
+    // No notification ask from here: a sheet opened while /first was still on
+    // screen sent Not now back into step 1 with nothing saved. AppShell offers
+    // it once Tonight is up (offerFirstPingPrimer).
     goHash('/tonight', made.faceId ? { face: made.faceId } : '')
-    offerPingPrimer(askAfter, colors)
   }
 
   function next() {
@@ -1345,8 +1411,19 @@ export function FirstNightScreen({ book, onChange, now }) {
     finish()
   }
 
+  // Step one goes back to Welcome, when there is one to go back to.
+  const canLeave = cloudSetUp() && authSkipped()
+  function toWelcome() {
+    clearAuthSkip()
+    goHash('/')
+  }
+
   function back() {
     playClick()
+    if (step === 0) {
+      toWelcome()
+      return
+    }
     setStep(0)
   }
 
@@ -1356,13 +1433,10 @@ export function FirstNightScreen({ book, onChange, now }) {
         <Text style={[styles.stepCap, { color: colors.inkDim }]}>
           {t('first.stepOf', { n: step + 1, total: totalSteps })}
         </Text>
-        {step === 0 && cloudSetUp() && authSkipped() ? (
+        {step === 0 && canLeave ? (
           // Back to the welcome screen to sign in instead.
           <Pressable
-            onPress={() => {
-              clearAuthSkip()
-              goHash('/')
-            }}
+            onPress={toWelcome}
             accessibilityRole="button"
             hitSlop={10}
           >
@@ -1377,6 +1451,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           </Title>
           <Meta colors={colors}>{t('first.pickBody')}</Meta>
           <IdeaPicks
+            grid
             label={t('first.pickLabel')}
             starters={starters}
             isOn={(starter) => picks.some((item) => item.question === starter.question)}
@@ -1394,6 +1469,8 @@ export function FirstNightScreen({ book, onChange, now }) {
               </View>
             </>
           ) : null}
+          {/* Typing is the second choice: a small cap, then the card. */}
+          <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.own')}</Text>
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1447,7 +1524,7 @@ export function FirstNightScreen({ book, onChange, now }) {
         </>
       ) : null}
       <View style={styles.stepNav}>
-        {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
           label={step === totalSteps - 1 ? t('first.done') : t('first.next')}
@@ -2237,6 +2314,14 @@ function AccountSignedIn({ book, email, onChange }) {
         <SetRow
           colors={colors}
           icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
           label={t('account.privacyRow')}
           sub={t('account.privacySub')}
           chevron={!dataOpen}
@@ -2377,7 +2462,7 @@ const styles = StyleSheet.create({
   },
   lockPanel: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.rSm,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 4,
@@ -2402,7 +2487,7 @@ const styles = StyleSheet.create({
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
+  firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },

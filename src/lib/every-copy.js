@@ -12,11 +12,14 @@ export function lastTimeLine(book, lamp, dateIso, upTo = false) {
   return t('every.lastMany', { n: days })
 }
 
-// The small pill on the Questions list: "12d", or "" if never done.
-export function sinceBadge(book, lamp, dateIso) {
+// The small pill on the Questions list: "12d", "today", or "Never yet".
+// lastTimeLine(..., true) is its spoken label.
+export function sinceBadge(book, lamp, dateIso, never = true) {
   if (!isEvery(lamp)) return ''
   const days = daysSinceDid(book, lamp.id, dateIso, true)
-  return days == null ? '' : t('every.badge', { n: days })
+  if (days == null) return never ? t('every.never') : ''
+  if (days === 0) return t('every.badgeToday')
+  return t('every.badge', { n: days })
 }
 
 // "Usually every 9 days" once enough Dids taught it; the set gap otherwise.

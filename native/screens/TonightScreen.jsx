@@ -7,6 +7,7 @@ import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { useSync } from '../../src/lib/cloud-sync.js'
@@ -26,6 +27,8 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { feelTap } from '../../src/lib/native.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
@@ -39,7 +42,7 @@ import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/boar
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
-import { SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
+import { markSwipeIntroSeen, SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
@@ -50,6 +53,7 @@ import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
+import { useOnline } from '../hooks/useOnline.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -330,6 +334,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
+  // The first answer while the hint is up means the swipe is learned.
+  const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
+  const answeredAtStart = useRef(answeredNow)
+  useEffect(() => {
+    if (!introSeen && answeredNow > answeredAtStart.current) markSwipeIntroSeen()
+  }, [introSeen, answeredNow])
   const showKey = introSeen && !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
@@ -393,6 +403,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [undoNow])
   useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
   useShakeUndo(Boolean(stack.undo), undoAnswer)
+  // An answer saved with no signal says where it is, once per offline stretch.
+  const online = useOnline()
+  const offlineNoted = useRef(false)
+  useEffect(() => {
+    if (online) {
+      offlineNoted.current = false
+      return
+    }
+    if (!undoNow || offlineNoted.current) return
+    offlineNoted.current = true
+    showToast({ id: 'offline-saved', kind: 'done', text: t('tonight.offlineSaved'), ms: 4200 })
+  }, [online, undoNow])
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
   useEffect(() => {
@@ -445,8 +467,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     ) : null
   // After your own and Did we: family questions, then Did you asks. A swiped
   // card leaves at once; a failed save brings it back with a toast.
-  const peopleAnswer = async (key, save, reload) => {
+  // People cards have no undo, so a family answer says it was saved instead.
+  const peopleAnswer = async (key, save, reload, kind) => {
     setPeopleGone((keys) => [...keys, key])
+    feelTap(kind === 'skip' ? 'skip' : 'did')
     let why = ''
     try {
       why = (await save()).miss
@@ -469,7 +493,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const { row } = item
     if (item.kind === 'family') {
       const save = (status) => () =>
-        peopleAnswer(item.key, () => answerFamilyLamp(row.family.id, row.lamp.id, row.night, status), family.reload)
+        peopleAnswer(
+          item.key,
+          () => answerFamilyLamp(row.family.id, row.lamp.id, row.night, status),
+          () => {
+            confirmDone(t('tonight.familySaved', { name: row.family.name }))
+            family.reload()
+          },
+          status,
+        )
       return { ...item, kicker: row.family.name, onDid: save('yes'), onNope: save('skip') }
     }
     const save = (keep) => () =>
@@ -478,7 +510,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         if (keep && row.kind === 'todo' && onKeep) onKeep(row)
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
-      })
+      }, keep ? 'yes' : 'skip')
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
@@ -1092,7 +1124,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             contentContainerStyle={styles.doneScrollIn}
             showsVerticalScrollIndicator={false}
           >
-            <Slot>{face}</Slot>
+            <Slot>
+              <DoneIn>{face}</DoneIn>
+            </Slot>
           </ScrollView>
         ) : (
           <Slot>
@@ -1140,6 +1174,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
 const frameStyles = StyleSheet.create({
   gap: { margin: FRAME_GAP },
 })
+
+// The done card settles in: a short fade and a small scale, no confetti.
+// Reduced motion shows it as it is.
+function DoneIn({ children }) {
+  const reduce = useReduceMotion()
+  const grow = useSharedValue(reduce ? 1 : 0)
+  useEffect(() => {
+    if (!reduce) grow.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
+  }, [grow, reduce])
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.2 + grow.value * 0.8,
+    transform: [{ scale: 0.97 + grow.value * 0.03 }],
+  }))
+  if (reduce) return children
+  return <Animated.View style={style}>{children}</Animated.View>
+}
 
 const styles = StyleSheet.create({
   everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },

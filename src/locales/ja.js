@@ -158,7 +158,7 @@ export const ja = {
   'auth.title': "ログイン",
   'auth.body': 'メールを入力すると、ワンタイムコードが届きます。フォルダ、友達、連続記録はどの端末にも引き継がれます。',
   'auth.newHere': 'はじめて？ 手順は同じです。コードを確認するとアカウントが作られます。',
-  'auth.local': 'Use on this phone only',
+  'auth.local': 'このスマホだけで使う',
   'auth.tagline': '忘れずにやる。やったことも忘れない。',
   'auth.apple': 'Appleでサインイン',
   'auth.appleOr': 'or',
@@ -410,6 +410,26 @@ export const ja = {
   'tonight.swipeNope': "まだ",
   'tonight.peopleFrom': "{name}から",
   'tonight.peopleMiss': "保存できませんでした。電波を確認して、もう一度スワイプしてください。",
+  'tonight.weSaved': "Did we に保存しました。",
+  'tonight.familySaved': "{name} に保存しました。",
+  'tonight.offlineSaved': "このスマホに保存しました。オンラインに戻ると同期します。",
+  'seen.title': "ほかの人に見えるもの",
+  'seen.sub': "友だちと家族について、わかりやすく",
+  'seen.streakOn': "ストリークは共有中です。友だちにはストリークと今夜終えたかどうかが見えます。",
+  'seen.streakOff': "ストリークは非表示です。友だちには名前だけが見え、ストリークは見えません。",
+  'seen.streakUnknown': "今はストリークの設定を確認できません。",
+  'seen.signedOut': "サインインしていません。このスマホの外には何も送られません。",
+  'seen.friendsTitle': "友だち",
+  'seen.friends': "名前。ストリークを共有しているときは、ストリークと今夜終えたかどうか。自分の質問や答えは見えません。",
+  'seen.weTitle': "共有の質問",
+  'seen.we': "共有している質問では、その質問へのお互いの答えが見えます。",
+  'seen.familyTitle': "家族",
+  'seen.family': "家族の質問では、毎晩だれが答えたかを家族全員が見られます。",
+  'seen.asksTitle': "友だちからの依頼",
+  'seen.asks': "依頼を送った友だちには、あなたがそれを残したかどうかが見えます。",
+  'seen.neverTitle': "共有されないもの",
+  'seen.never': "自分の質問、メモ、答えはあなただけのものです。同期先はあなたのアカウントだけです。",
+  'seen.back': "設定に戻る",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins、{gems} gems',
   'weekbar.aria': 'streak の週',
@@ -423,7 +443,7 @@ export const ja = {
   'streak.hitTitle': '絶好調！',
   'streak.hitTitleClear': '今夜は完了',
   'streak.hitBody': '{n}晩連続。今夜も全部できた。',
-  'streak.hitBodyOne': 'streak の1晩目。今夜も全部できた。',
+  'streak.hitBodyOne': '今夜も全部できた。',
   'streak.hitOk': 'いいね',
   'streak.missKicker': 'streak',
   'streak.missTitle': 'streak が途切れた',
@@ -453,7 +473,7 @@ export const ja = {
   'boards.name': '名前',
   'boards.badgeHint': 'フォルダのバッジ',
   'boards.badgeNone': 'None',
-  'boards.badgeWhere': 'Shows beside this name in the folder picker at the top.',
+  'boards.badgeWhere': '上のフォルダ選択で、この名前の横に表示されます。',
   'boards.new': '新規',
   'boards.add': 'フォルダを足す',
   'boards.addHint': '名前をつけて、質問を追加しましょう。',
@@ -495,7 +515,7 @@ export const ja = {
   'feedback.send': 'フィードバックを送る',
   'feedback.sub': 'バグ、アイデア、気になる点。メールで。',
   'hang.tag': 'フォルダ',
-  'hang.tagOne': '1つ選んでください。質問は1つのフォルダにだけ入ります。',
+  'hang.tagOne': 'フォルダを1つ選んでください。',
   'hang.tagPh': 'ホーム',
   'hang.tagNew': '新しいフォルダ',
   'hang.tagLater': '空のフォルダ',
@@ -511,7 +531,7 @@ export const ja = {
   'hang.daily': '毎日',
   'hang.weekly': 'いくつかの曜日',
   'hang.monthly': '月に一度',
-  'hang.everyN': '数日ごと',
+  'hang.everyN': 'N日ごと',
   'hang.once': '一度だけ',
   'hang.weekdays': '曜日',
   'hang.day.0': '日',
@@ -524,7 +544,7 @@ export const ja = {
   'hang.monthDay': '月の何日',
   'hang.monthCalHint': '毎月この日に。',
   'hang.onceWhen': 'When',
-  'hang.onceOnPick': 'On a night',
+  'hang.onceOnPick': 'ある夜に',
   'hang.dueByPick': '期限までに',
   'hang.onceOn': '夜を選ぶ',
   'hang.onceOnHint': 'この質問はその夜だけ出ます。',
@@ -703,22 +723,21 @@ export const ja = {
   'kit.noAccessories': 'アクセサリーはまだありません。ショップでコインを使って買えます。',
   'shop.stamps': 'Streak stamps',
   'shop.badges': 'Folder badges',
-  'shop.stampsDoor': 'Marks cleared nights on the calendar. Dot is free.',
-  'shop.badgesDoor': 'Small icons on folder chips in the picker.',
-  'shop.badgesOnTag': 'On a folder',
-  'shop.stampsHint':
-    'When you finish tonight, the calendar cell gets your stamp. Extra shapes are {coins} coins each.',
-  'shop.stampsPaid': 'Star, check, and moon are {coins} coins.',
-  'shop.badgesHint': 'Each badge costs {coins} coins. You keep it after you buy.',
-  'shop.badgesAssign': 'Buy here, then Folders → open a folder → pick a badge under the name.',
-  'shop.buyStampBody': '{cost}. Used on nights you clear from now on.',
-  'shop.buyBadgeBody': '{cost}. Assign it on the Folders screen.',
+  'shop.stampsDoor': '終えた夜をカレンダーに記します。ドットは無料です。',
+  'shop.badgesDoor': '選択画面のフォルダにつく小さなアイコン。',
+  'shop.badgesOnTag': 'フォルダにつける',
+  'shop.stampsHint': '今夜を終えると、カレンダーのマスにスタンプがつきます。ほかの形はそれぞれ {coins} コインです。',
+  'shop.stampsPaid': '星、チェック、月は {coins} コインです。',
+  'shop.badgesHint': 'バッジは1つ {coins} コイン。買えばずっと使えます。',
+  'shop.badgesAssign': 'ここで買って、フォルダ → フォルダを開く → 名前の下でバッジを選びます。',
+  'shop.buyStampBody': '{cost}。これから終える夜に使われます。',
+  'shop.buyBadgeBody': '{cost}。フォルダ画面で選びます。',
   'shop.buddiesHint': 'buddy をタップして質問カードで見る。1 体 {n} gems。',
-  'shop.buddiesDoor': 'A little friend on the corner of your card.',
+  'shop.buddiesDoor': 'カードの角にいる小さな仲間。',
   'shop.buddyPreview': 'カードに表示',
   'shop.buddyPreviewTag': 'Did I',
   'shop.buddyPreviewQ': 'Did I feed the cat?',
-  'shop.buyBuddyBody': '{cost}. Hangs on your question cards after you buy it.',
+  'shop.buyBuddyBody': '{cost}。買うと質問カードにいてくれます。',
   'shop.cheerHint': 'chip で見る。cheer は {cheer} gems。段階アップは {stage} coins。',
   'shop.cheerStageLine': '段階 {n}/{max}。{line}',
   'shop.stageUp': '段階 {n} · {cost}',
@@ -772,11 +791,11 @@ export const ja = {
   'kit.added': 'コレクションに入りました',
   'kit.try': '試す',
   'kit.hint': 'アイテムをタップすると身につけます。',
-  'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',
+  'kit.noBuddies': 'まだ仲間はいません。ショップに猫と犬がいます。',
   'kit.buddyOff': 'No buddy',
-  'kit.buddyOffLine': 'Cards go back to plain.',
+  'kit.buddyOffLine': 'カードは元のシンプルな姿に戻ります。',
   'kit.cheerOff': 'No cheer',
-  'kit.cheerOffLine': 'Did taps stay quiet.',
+  'kit.cheerOffLine': 'Did をタップしても静かなままです。',
   'kit.stages': '段階',
   'kit.useStage': '段階 {n} を使う',
   'kit.stageLocked': '段階 {n} はまだ未所持',
@@ -873,7 +892,7 @@ export const ja = {
   'people.asks': '返事待ち',
   'people.askBanner': '友達リクエスト（{n}）',
   'people.wantsIn': '友達になりたい',
-  'people.wantsFromName': '{name} wants to be friends',
+  'people.wantsFromName': '{name} さんが友達になりたがっています',
   'people.connect': '招待して追加',
   'people.connectSub': 'フレンドIDで追加、ファミリーを作るか参加',
   'people.refer': '友達と家族を紹介',
@@ -1317,7 +1336,7 @@ export const ja = {
   'ideas.body': 'To-do リストでもカレンダーでもない。あとから何度も聞く question を置く。ここから選ぶか、Did I で始まる文を自分で書く。',
   'ideas.use': 'これを使う',
   'ideas.writeOwn': '自分で書く',
-  'ideas.help': 'ヘルプ',
+  'ideas.help': 'ヘルプ',
   'wait.kicker': 'まだ',
   'wait.after': '{time} 以降。',
   'wait.later': 'あとで',
@@ -1455,36 +1474,36 @@ export const ja = {
   'shop.miss.needGems': 'ジェムが {n} 個必要です。',
   'shop.miss.needCoins': 'コインが {n} 枚必要です。',
   'shop.miss.buyFail': '購入できませんでした。もう一度お試しください。',
-  'shop.miss.stampGone': 'That stamp is gone.',
-  'shop.miss.badgeGone': 'That badge is gone.',
-  'shop.miss.buyStampFirst': 'Buy that stamp first.',
-  'shop.miss.buyBadgeFirst': 'Buy that badge first.',
+  'shop.miss.stampGone': 'そのスタンプはもうありません。',
+  'shop.miss.badgeGone': 'そのバッジはもうありません。',
+  'shop.miss.buyStampFirst': '先にそのスタンプを買ってください。',
+  'shop.miss.buyBadgeFirst': '先にそのバッジを買ってください。',
   'stamp.dot.name': 'Dot',
-  'stamp.dot.line': 'The plain pip you start with.',
+  'stamp.dot.line': '最初からあるシンプルな点。',
   'stamp.star.name': 'Star',
-  'stamp.star.line': 'A small star on cleared nights.',
+  'stamp.star.line': '終えた夜に小さな星。',
   'stamp.check.name': 'Check',
-  'stamp.check.line': 'A tick on cleared nights.',
+  'stamp.check.line': '終えた夜にチェック。',
   'stamp.moon.name': 'Moon',
-  'stamp.moon.line': 'A quiet crescent.',
-  'badge.fit': 'Fits folders like “{sample}”.',
+  'stamp.moon.line': '静かな三日月。',
+  'badge.fit': '「{sample}」のようなフォルダに合います。',
   'badge.briefcase.name': 'Briefcase',
-  'badge.briefcase.line': 'Work and job folders.',
+  'badge.briefcase.line': '仕事のフォルダに。',
   'badge.briefcase.sample': 'Work',
   'badge.leaf.name': 'Leaf',
   'badge.leaf.line': 'For health or outside.',
   'badge.leaf.sample': 'Gym',
   'badge.home.name': 'Home',
-  'badge.home.line': 'Chores and house folders.',
+  'badge.home.line': '家事や家のフォルダに。',
   'badge.home.sample': 'Kitchen',
   'badge.heart.name': 'Heart',
-  'badge.heart.line': 'People and care folders.',
+  'badge.heart.line': '人やケアのフォルダに。',
   'badge.heart.sample': 'Family',
   'badge.bolt.name': 'Bolt',
-  'badge.bolt.line': 'Quick errand folders.',
+  'badge.bolt.line': 'ちょっとした用事のフォルダに。',
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
-  'push.channelDesc': 'Did I s and friend requests from people you know',
+  'push.channelDesc': '知り合いからの Did I の質問と友達リクエスト',
   'cheer.lime.name': '波紋',
   'cheer.lime.line': 'タップしたところから輪が広がる。',
   'cheer.tape.name': 'Tape',
@@ -1518,47 +1537,47 @@ export const ja = {
   'cheer.sun.name': '太陽',
   'cheer.sun.line': '太陽が昇り、光線がくるりと回る。',
   'buddy.cat.name': 'Cat',
-  'buddy.cat.line': 'Orange tabby. Hangs on the corner.',
+  'buddy.cat.line': '茶トラ猫。角にいます。',
   'buddy.dog.name': 'Dog',
-  'buddy.dog.line': 'Brown pup. Hangs on the corner.',
+  'buddy.dog.line': '茶色の子犬。角にいます。',
   'buddy.rabbit.name': 'Rabbit',
-  'buddy.rabbit.line': 'Gray bunny. Hangs on the corner.',
+  'buddy.rabbit.line': '灰色のうさぎ。角にいます。',
   'buddy.ant.name': 'アリ',
   'buddy.ant.line': '小さな赤いアリ。みんな無料。',
   'buddy.possum.name': 'オポッサム',
   'buddy.possum.line': 'ぼさぼさの灰色オポッサム。すみっこにいる。',
   'buddy.owl.name': 'Owl',
-  'buddy.owl.line': 'Little brown owl. Hangs on the corner.',
+  'buddy.owl.line': '小さな茶色のフクロウ。角にいます。',
   'buddy.frog.name': 'カエル',
   'buddy.frog.line': '緑のカエル。角にぶら下がる。',
   'buddy.penguin.name': 'ペンギン',
   'buddy.penguin.line': 'タキシードの小さなペンギン。角に座る。',
   'look.lime.name': 'Lime',
-  'look.lime.line': 'The one you start with.',
+  'look.lime.line': '最初から使えるもの。',
   'look.ink.name': 'Ink',
-  'look.ink.line': 'Quieter green.',
+  'look.ink.line': '落ち着いた緑。',
   'look.brass.name': 'Brass',
-  'look.brass.line': 'Warm pips.',
+  'look.brass.line': 'あたたかい点。',
   'look.night.name': 'Night',
-  'look.night.line': 'Darker plate.',
+  'look.night.line': 'より暗い背景。',
   'look.moss.name': 'Moss',
-  'look.moss.line': 'Forest plates, soft sage.',
+  'look.moss.line': '森の背景、やわらかなセージ。',
   'look.plum.name': 'Plum',
-  'look.plum.line': 'Violet tint, lilac pip.',
+  'look.plum.line': '紫の色味、ライラックの点。',
   'look.rose.name': 'Rose',
-  'look.rose.line': 'Blush panels, quiet pink.',
+  'look.rose.line': '淡いピンクのパネル、落ち着いたピンク。',
   'look.steel.name': 'Steel',
-  'look.steel.line': 'Cool gray, steel trim.',
+  'look.steel.line': '冷たいグレー、スチールの縁。',
   'look.wine.name': 'Wine',
-  'look.wine.line': 'Dark red plate, burgundy pip.',
+  'look.wine.line': '暗い赤の背景、ボルドーの点。',
   'look.glow.name': 'Glow',
-  'look.glow.line': 'Cool plates, cyan accent.',
+  'look.glow.line': '涼しい背景、シアンのアクセント。',
   'look.ember.name': 'Ember',
-  'look.ember.line': 'Warm plates, ember accent.',
+  'look.ember.line': 'あたたかい背景、残り火のアクセント。',
   'look.frost.name': 'Frost',
-  'look.frost.line': 'Icy plates, pale bloom.',
+  'look.frost.line': '氷の背景、淡い光。',
   'look.pulse.name': 'Pulse',
-  'look.pulse.line': 'Deep violet, hot magenta pip.',
+  'look.pulse.line': '深い紫、鮮やかなマゼンタの点。',
   'look.jade.name': 'ジェード',
   'look.jade.line': '深い緑のプレート、ミントの点。',
   'look.indigo.name': 'インディゴ',
@@ -1584,10 +1603,9 @@ export const ja = {
   'look.oat.name': 'オーツ',
   'look.oat.line': 'やわらかなオーツのプレート、焼き色の点。',
   'people.reach': 'アカウントに接続できませんでした。',
-  'gems.webHint':
-    'Gem checkout opens in the browser. Come back here and sync to claim them.',
-  'gems.openWeb': 'Buy gems on the web',
-  'gems.webReturn': 'Finish checkout in the browser, then come back here.',
+  'gems.webHint': 'ジェムの購入はブラウザで開きます。ここに戻って同期すると受け取れます。',
+  'gems.openWeb': 'ウェブでジェムを買う',
+  'gems.webReturn': 'ブラウザで購入を終えたら、ここに戻ってください。',
   'title.privacy': 'プライバシー',
   'title.terms': '利用規約',
   'legal.privacyShort': 'プライバシーポリシー',
@@ -1808,18 +1826,18 @@ export const ja = {
   'widget.tonight.nextAt': '次の質問は {time}',
   'widget.tonight.clear': '今夜はすべて完了',
   'widget.tonight.oneLeft': '今夜あと1つ',
-  'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.left': '今夜あと {n} 個',
   'widget.tonight.lastNight': '昨夜',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "まだ",
   'widget.tonight.openApp': '開く',
   'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
-  'widget.settings.tag': 'Folder',
-  'widget.settings.tagSub': 'Which folder the home screen widget follows.',
+  'widget.settings.tag': 'フォルダ',
+  'widget.settings.tagSub': 'ホーム画面のウィジェットが表示するフォルダ。',
   'widget.settings.tagActive': 'Active folder',
-  'widget.settings.tagMissing': 'Pick a folder',
-  'widget.settings.noTags': 'Add a question in a folder first.',
+  'widget.settings.tagMissing': 'フォルダを選ぶ',
+  'widget.settings.noTags': 'まずフォルダに質問を追加してください。',
   "widget.settings.look": "見た目",
   'widget.settings.lookSub': 'ウィジェットの色。持っているルックだけです。',
   'widget.settings.lookTag': '今の見た目に合わせる',
@@ -2245,7 +2263,7 @@ export const ja = {
   'enter.eraseGo': '消して最初から',
   'enter.eraseBody': 'ログインしていないので、PINはこのスマホにだけあります。外すには、このスマホのDid Iを消します（質問、回答、コイン、ルック）。元に戻せません。',
   'enter.forgotTitle': 'PINを忘れましたか？',
-  'enter.forgot': 'PINを忘れた？',
+  'enter.forgot': 'PINを忘れた？',
   'clock.pm': '午後{h}:{m}',
   'clock.am': '午前{h}:{m}',
   'shop.teasedBody': 'まだ発売前です。{date}に発売。',
@@ -2455,7 +2473,7 @@ export const ja = {
   'pack.meds': '薬',
   'pack.sureTitle': '{n} 個の質問を追加しますか？',
   'pack.sureGo': '追加する',
-  'pack.added': '{n} 個の質問を追加しました',
+  'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',
   'note.hint': '夜をタップしてメモを追加。',
   'note.ph': '短いメモを追加',
@@ -2561,7 +2579,7 @@ export const ja = {
   'lamp.monthPrev': '前の月',
   'lamp.monthNext': '次の月',
   'hang.folderHint': 'フォルダが2つ以上あると、ホームと質問の絞り込みでひとつだけ表示できます。',
-  'hang.folderVsTopic': 'フォルダは質問の置き場所。トピックは好きなだけ付けられるラベルです。',
+  'hang.folderVsTopic': 'トピックは追加のラベルで、いくつでも付けられます。',
   'hang.topicsHint': '絞り込み用の追加ラベル。ひとつの質問に複数つけられます。',
   'hang.discardNewTitle': 'この質問を破棄しますか？',
   'questions.reorder': '並べ替え',
@@ -3214,4 +3232,16 @@ export const ja = {
   "note.amountIn": "量（{unit}）",
   "lamp.lastFive": "最近の5回",
   "lamp.lastFiveEmpty": "まだありません。Didした最近の5晩がここに出ます。",
+  "auth.getStarted": "はじめる",
+  "auth.haveAccount": "アカウントをお持ちの方はログイン",
+  "swipeIntro.line": "できたら右へ、まだなら左へスワイプ",
+  "stats.empty": "まだ記録がありません。今夜答えるとここに数字が出ます。",
+  "empty.goTonight": "今夜へ",
+  'app.loading': '読み込み中…',
+  'first.addHint': '候補を選ぶか、入力してください。',
+  'title.homePage': 'ホーム · Did I',
+  'title.friends': '友だち · Did I',
+  'title.people': 'みんな · Did I',
+  'every.badgeToday': '今日',
+  'pack.countOne': '+1問',
 }

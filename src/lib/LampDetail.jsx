@@ -49,7 +49,7 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
       {isEvery(lamp) ? (
         <div className="di-lamp-tiles">
           <div className="di-lamp-tile">
-            <strong className="is-on">{sinceBadge(book, lamp, dateIso) || '-'}</strong>
+            <strong className="is-on">{sinceBadge(book, lamp, dateIso, false) || '-'}</strong>
             <span>{lastTimeLine(book, lamp, dateIso, true)}</span>
           </div>
           <div className="di-lamp-tile">
@@ -82,7 +82,7 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
           {t('lamp.copy')}
         </button>
         <button className="di-key" type="button" onClick={onClose}>
-          {t('lamp.done')}
+          {t('nav.back')}
         </button>
       </div>
 

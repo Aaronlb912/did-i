@@ -16,7 +16,7 @@ export function StatsPage({ book, now }) {
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('stats.title')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">

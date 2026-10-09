@@ -158,7 +158,7 @@ export const zh = {
   'auth.title': "登录",
   'auth.body': '输入邮箱获取一次性验证码。你的文件夹、好友和连续记录会跟着你到每部手机。',
   'auth.newHere': '第一次来？步骤一样。确认验证码后就会创建账户。',
-  'auth.local': 'Use on this phone only',
+  'auth.local': '只在这部手机上使用',
   'auth.tagline': '记得去做，也记得做过。',
   'auth.apple': '通过 Apple 登录',
   'auth.appleOr': 'or',
@@ -410,6 +410,26 @@ export const zh = {
   'tonight.swipeNope': "还没",
   'tonight.peopleFrom': "来自 {name}",
   'tonight.peopleMiss': "没有保存。请检查信号后再滑一次。",
+  'tonight.weSaved': "已保存到你的 Did we。",
+  'tonight.familySaved': "已为 {name} 保存。",
+  'tonight.offlineSaved': "已保存在这部手机上。恢复联网后会同步。",
+  'seen.title': "别人能看到什么",
+  'seen.sub': "朋友和家人，简单说明",
+  'seen.streakOn': "你的连续记录已共享。朋友能看到你的连续记录，以及你今晚是否完成。",
+  'seen.streakOff': "你的连续记录已隐藏。朋友能看到你的名字，看不到连续记录。",
+  'seen.streakUnknown': "暂时无法查看你的连续记录设置。",
+  'seen.signedOut': "你没有登录。任何内容都不会离开这部手机。",
+  'seen.friendsTitle': "朋友",
+  'seen.friends': "你的名字。共享连续记录时，还有连续记录和今晚是否完成。永远看不到你自己的问题或回答。",
+  'seen.weTitle': "共享的问题",
+  'seen.we': "在共享的问题上，你们都能看到对方对这个问题的回答。",
+  'seen.familyTitle': "家人",
+  'seen.family': "在家庭问题上，全家人都能看到每晚谁回答了。",
+  'seen.asksTitle': "朋友的请求",
+  'seen.asks': "发送请求的朋友能看到你是否保留了它。",
+  'seen.neverTitle': "从不共享",
+  'seen.never': "你自己的问题、笔记和回答只属于你，只会同步到你的账户。",
+  'seen.back': "返回设置",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins，{gems} gems',
   'weekbar.aria': 'streak 周',
@@ -423,7 +443,7 @@ export const zh = {
   'streak.hitTitle': '你状态火热！',
   'streak.hitTitleClear': '今晚完成了',
   'streak.hitBody': '连续 {n} 晚。今晚都完成了。',
-  'streak.hitBodyOne': 'streak 的第一晚。今晚都完成了。',
+  'streak.hitBodyOne': '今晚都完成了。',
   'streak.hitOk': '继续',
   'streak.missKicker': 'streak',
   'streak.missTitle': 'streak 中断了',
@@ -453,7 +473,7 @@ export const zh = {
   'boards.name': '名称',
   'boards.badgeHint': '文件夹徽章',
   'boards.badgeNone': 'None',
-  'boards.badgeWhere': 'Shows beside this name in the folder picker at the top.',
+  'boards.badgeWhere': '显示在顶部文件夹选择里这个名字旁边。',
   'boards.new': '新建',
   'boards.add': '加一个文件夹',
   'boards.addHint': '先起个名字，再添加问题。',
@@ -495,7 +515,7 @@ export const zh = {
   'feedback.send': '发送反馈',
   'feedback.sub': 'Bug、想法、不顺手的地方。发邮件给我们。',
   'hang.tag': '文件夹',
-  'hang.tagOne': '选一个。一个问题只放在一个文件夹里。',
+  'hang.tagOne': '选一个文件夹。',
   'hang.tagPh': '首页',
   'hang.tagNew': '新文件夹',
   'hang.tagLater': '空文件夹',
@@ -511,7 +531,7 @@ export const zh = {
   'hang.daily': '每天',
   'hang.weekly': '某些工作日',
   'hang.monthly': '每月一次',
-  'hang.everyN': '隔几天',
+  'hang.everyN': '每 N 天',
   'hang.once': '只一次',
   'hang.weekdays': '星期',
   'hang.day.0': '日',
@@ -524,7 +544,7 @@ export const zh = {
   'hang.monthDay': '几号',
   'hang.monthCalHint': '每月的这一天。',
   'hang.onceWhen': 'When',
-  'hang.onceOnPick': 'On a night',
+  'hang.onceOnPick': '在某一晚',
   'hang.dueByPick': '在截止日前',
   'hang.onceOn': '选一个晚上',
   'hang.onceOnHint': '这个问题只在那晚出现。',
@@ -701,22 +721,21 @@ export const zh = {
   'kit.noAccessories': '还没有配饰。可以在商店用金币购买。',
   'shop.stamps': 'Streak stamps',
   'shop.badges': 'Folder badges',
-  'shop.stampsDoor': 'Marks cleared nights on the calendar. Dot is free.',
-  'shop.badgesDoor': 'Small icons on folder chips in the picker.',
-  'shop.badgesOnTag': 'On a folder',
-  'shop.stampsHint':
-    'When you finish tonight, the calendar cell gets your stamp. Extra shapes are {coins} coins each.',
-  'shop.stampsPaid': 'Star, check, and moon are {coins} coins.',
-  'shop.badgesHint': 'Each badge costs {coins} coins. You keep it after you buy.',
-  'shop.badgesAssign': 'Buy here, then Folders → open a folder → pick a badge under the name.',
-  'shop.buyStampBody': '{cost}. Used on nights you clear from now on.',
-  'shop.buyBadgeBody': '{cost}. Assign it on the Folders screen.',
+  'shop.stampsDoor': '在日历上标出完成的夜晚。圆点免费。',
+  'shop.badgesDoor': '选择器里文件夹上的小图标。',
+  'shop.badgesOnTag': '在一个文件夹上',
+  'shop.stampsHint': '今晚完成后，日历格子会盖上你的印章。其他形状每个 {coins} 金币。',
+  'shop.stampsPaid': '星星、对勾和月亮要 {coins} 金币。',
+  'shop.badgesHint': '每个徽章 {coins} 金币。买了就一直是你的。',
+  'shop.badgesAssign': '在这里购买，然后 文件夹 → 打开一个文件夹 → 在名字下方选徽章。',
+  'shop.buyStampBody': '{cost}。从现在起用在你完成的夜晚。',
+  'shop.buyBadgeBody': '{cost}。在文件夹页面选用。',
   'shop.buddiesHint': '点 buddy 在问题卡上看。每个 {n} gems。',
-  'shop.buddiesDoor': 'A little friend on the corner of your card.',
+  'shop.buddiesDoor': '卡片角上的小伙伴。',
   'shop.buddyPreview': '在你的卡片上',
   'shop.buddyPreviewTag': 'Did I',
   'shop.buddyPreviewQ': 'Did I feed the cat?',
-  'shop.buyBuddyBody': '{cost}. Hangs on your question cards after you buy it.',
+  'shop.buyBuddyBody': '{cost}。买了以后会待在你的问题卡片上。',
   'shop.cheerHint': '点 chip 查看。cheer {cheer} gems。升级 {stage} coins。',
   'shop.cheerStageLine': '第 {n} 阶段，共 {max}。{line}',
   'shop.stageUp': '第 {n} 阶段 · {cost}',
@@ -770,11 +789,11 @@ export const zh = {
   'kit.added': '已放进收藏',
   'kit.try': '试用',
   'kit.hint': '点一下物品即可穿戴。',
-  'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',
+  'kit.noBuddies': '还没有小伙伴。商店里有猫和狗。',
   'kit.buddyOff': 'No buddy',
-  'kit.buddyOffLine': 'Cards go back to plain.',
+  'kit.buddyOffLine': '卡片恢复成普通样子。',
   'kit.cheerOff': 'No cheer',
-  'kit.cheerOffLine': 'Did taps stay quiet.',
+  'kit.cheerOffLine': '点 Did 时保持安静。',
   'kit.stages': '阶段',
   'kit.useStage': '使用第 {n} 阶段',
   'kit.stageLocked': '尚未拥有第 {n} 阶段',
@@ -871,7 +890,7 @@ export const zh = {
   'people.asks': '等你回复',
   'people.askBanner': '好友请求（{n}）',
   'people.wantsIn': '想加为好友',
-  'people.wantsFromName': '{name} wants to be friends',
+  'people.wantsFromName': '{name} 想加你为好友',
   'people.connect': '邀请并添加',
   'people.connectSub': '通过好友 ID 添加、创建或加入家庭',
   'people.refer': '推荐好友和家人',
@@ -1314,7 +1333,7 @@ export const zh = {
   'ideas.body': '这不是待办清单，也不是日历。放你事后总问的那个问题。用下面其中一个，或自己写以 Did I 开头的句子。',
   'ideas.use': '用这个',
   'ideas.writeOwn': '自己写',
-  'ideas.help': '帮助',
+  'ideas.help': '帮助',
   'wait.kicker': '还没',
   'wait.after': '{time} 之后。',
   'wait.later': '稍后',
@@ -1451,36 +1470,36 @@ export const zh = {
   'shop.miss.needGems': '需要 {n} 颗宝石。',
   'shop.miss.needCoins': '需要 {n} 枚金币。',
   'shop.miss.buyFail': '购买没有成功，请再试一次。',
-  'shop.miss.stampGone': 'That stamp is gone.',
-  'shop.miss.badgeGone': 'That badge is gone.',
-  'shop.miss.buyStampFirst': 'Buy that stamp first.',
-  'shop.miss.buyBadgeFirst': 'Buy that badge first.',
+  'shop.miss.stampGone': '这个印章已经没有了。',
+  'shop.miss.badgeGone': '这个徽章已经没有了。',
+  'shop.miss.buyStampFirst': '请先买这个印章。',
+  'shop.miss.buyBadgeFirst': '请先买这个徽章。',
   'stamp.dot.name': 'Dot',
-  'stamp.dot.line': 'The plain pip you start with.',
+  'stamp.dot.line': '一开始就有的普通圆点。',
   'stamp.star.name': 'Star',
-  'stamp.star.line': 'A small star on cleared nights.',
+  'stamp.star.line': '完成的夜晚上一颗小星星。',
   'stamp.check.name': 'Check',
-  'stamp.check.line': 'A tick on cleared nights.',
+  'stamp.check.line': '完成的夜晚上一个对勾。',
   'stamp.moon.name': 'Moon',
-  'stamp.moon.line': 'A quiet crescent.',
-  'badge.fit': 'Fits folders like “{sample}”.',
+  'stamp.moon.line': '一弯安静的月牙。',
+  'badge.fit': '适合“{sample}”这样的文件夹。',
   'badge.briefcase.name': 'Briefcase',
-  'badge.briefcase.line': 'Work and job folders.',
+  'badge.briefcase.line': '工作类文件夹。',
   'badge.briefcase.sample': 'Work',
   'badge.leaf.name': 'Leaf',
   'badge.leaf.line': 'For health or outside.',
   'badge.leaf.sample': 'Gym',
   'badge.home.name': 'Home',
-  'badge.home.line': 'Chores and house folders.',
+  'badge.home.line': '家务和家里的文件夹。',
   'badge.home.sample': 'Kitchen',
   'badge.heart.name': 'Heart',
-  'badge.heart.line': 'People and care folders.',
+  'badge.heart.line': '家人和关心的文件夹。',
   'badge.heart.sample': 'Family',
   'badge.bolt.name': 'Bolt',
-  'badge.bolt.line': 'Quick errand folders.',
+  'badge.bolt.line': '跑腿小事的文件夹。',
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
-  'push.channelDesc': 'Did I s and friend requests from people you know',
+  'push.channelDesc': '认识的人发来的 Did I 问题和好友请求',
   'cheer.lime.name': '涟漪',
   'cheer.lime.line': '圆环从你点的地方荡开。',
   'cheer.tape.name': 'Tape',
@@ -1514,47 +1533,47 @@ export const zh = {
   'cheer.sun.name': '太阳',
   'cheer.sun.line': '太阳升起，光芒慢慢转动。',
   'buddy.cat.name': 'Cat',
-  'buddy.cat.line': 'Orange tabby. Hangs on the corner.',
+  'buddy.cat.line': '橘色虎斑猫。待在角上。',
   'buddy.dog.name': 'Dog',
-  'buddy.dog.line': 'Brown pup. Hangs on the corner.',
+  'buddy.dog.line': '棕色小狗。待在角上。',
   'buddy.rabbit.name': 'Rabbit',
-  'buddy.rabbit.line': 'Gray bunny. Hangs on the corner.',
+  'buddy.rabbit.line': '灰色小兔。待在角上。',
   'buddy.ant.name': '蚂蚁',
   'buddy.ant.line': '红色小蚂蚁。人人免费。',
   'buddy.possum.name': '负鼠',
   'buddy.possum.line': '毛茸茸的灰色负鼠。挂在角落。',
   'buddy.owl.name': 'Owl',
-  'buddy.owl.line': 'Little brown owl. Hangs on the corner.',
+  'buddy.owl.line': '棕色小猫头鹰。待在角上。',
   'buddy.frog.name': '青蛙',
   'buddy.frog.line': '绿色青蛙。挂在角上。',
   'buddy.penguin.name': '企鹅',
   'buddy.penguin.line': '穿燕尾服的小企鹅。坐在角上。',
   'look.lime.name': 'Lime',
-  'look.lime.line': 'The one you start with.',
+  'look.lime.line': '一开始就有的那个。',
   'look.ink.name': 'Ink',
-  'look.ink.line': 'Quieter green.',
+  'look.ink.line': '更安静的绿色。',
   'look.brass.name': 'Brass',
-  'look.brass.line': 'Warm pips.',
+  'look.brass.line': '暖色圆点。',
   'look.night.name': 'Night',
-  'look.night.line': 'Darker plate.',
+  'look.night.line': '更深的底色。',
   'look.moss.name': 'Moss',
-  'look.moss.line': 'Forest plates, soft sage.',
+  'look.moss.line': '森林底色，柔和鼠尾草绿。',
   'look.plum.name': 'Plum',
-  'look.plum.line': 'Violet tint, lilac pip.',
+  'look.plum.line': '紫色调，丁香色圆点。',
   'look.rose.name': 'Rose',
-  'look.rose.line': 'Blush panels, quiet pink.',
+  'look.rose.line': '淡粉面板，安静的粉色。',
   'look.steel.name': 'Steel',
-  'look.steel.line': 'Cool gray, steel trim.',
+  'look.steel.line': '冷灰色，钢色边。',
   'look.wine.name': 'Wine',
-  'look.wine.line': 'Dark red plate, burgundy pip.',
+  'look.wine.line': '深红底色，酒红圆点。',
   'look.glow.name': 'Glow',
-  'look.glow.line': 'Cool plates, cyan accent.',
+  'look.glow.line': '冷色底，青色点缀。',
   'look.ember.name': 'Ember',
-  'look.ember.line': 'Warm plates, ember accent.',
+  'look.ember.line': '暖色底，余烬色点缀。',
   'look.frost.name': 'Frost',
-  'look.frost.line': 'Icy plates, pale bloom.',
+  'look.frost.line': '冰色底，淡淡光晕。',
   'look.pulse.name': 'Pulse',
-  'look.pulse.line': 'Deep violet, hot magenta pip.',
+  'look.pulse.line': '深紫色，亮洋红圆点。',
   'look.jade.name': '翡翠',
   'look.jade.line': '深绿面板，薄荷色圆点。',
   'look.indigo.name': '靛蓝',
@@ -1580,10 +1599,9 @@ export const zh = {
   'look.oat.name': '燕麦',
   'look.oat.line': '柔和的燕麦色面板，烘烤色圆点。',
   'people.reach': '无法连接到账户。',
-  'gems.webHint':
-    'Gem checkout opens in the browser. Come back here and sync to claim them.',
-  'gems.openWeb': 'Buy gems on the web',
-  'gems.webReturn': 'Finish checkout in the browser, then come back here.',
+  'gems.webHint': '宝石结账会在浏览器里打开。回到这里同步即可领取。',
+  'gems.openWeb': '在网页上买宝石',
+  'gems.webReturn': '在浏览器里完成结账，然后回到这里。',
   'title.privacy': '隐私',
   'title.terms': '条款',
   'legal.privacyShort': '隐私政策',
@@ -1800,18 +1818,18 @@ export const zh = {
   'widget.tonight.nextAt': '下一个问题：{time}',
   'widget.tonight.clear': '今晚全部完成',
   'widget.tonight.oneLeft': '今晚还剩一个',
-  'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.left': '今晚还剩 {n} 个',
   'widget.tonight.lastNight': '昨晚',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "还没",
   'widget.tonight.openApp': '打开',
   'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
-  'widget.settings.tag': 'Folder',
-  'widget.settings.tagSub': 'Which folder the home screen widget follows.',
+  'widget.settings.tag': '文件夹',
+  'widget.settings.tagSub': '主屏幕小组件跟随哪个文件夹。',
   'widget.settings.tagActive': 'Active folder',
-  'widget.settings.tagMissing': 'Pick a folder',
-  'widget.settings.noTags': 'Add a question in a folder first.',
+  'widget.settings.tagMissing': '选一个文件夹',
+  'widget.settings.noTags': '先在文件夹里添加一个问题。',
   "widget.settings.look": "外观",
   'widget.settings.lookSub': '小组件的颜色。只能用你拥有的外观。',
   'widget.settings.lookTag': '跟随当前外观',
@@ -2234,7 +2252,7 @@ export const zh = {
   'enter.eraseGo': '清除并重新开始',
   'enter.eraseBody': '你没有登录，所以 PIN 只保存在这台手机上。要移除它，需要清除这台手机上的 Did I：问题、回答、金币和外观。无法撤销。',
   'enter.forgotTitle': '忘记 PIN 了？',
-  'enter.forgot': '忘记 PIN？',
+  'enter.forgot': '忘记 PIN？',
   'clock.pm': '下午{h}:{m}',
   'clock.am': '上午{h}:{m}',
   'shop.teasedBody': '还没上架。{date} 开售。',
@@ -2444,7 +2462,7 @@ export const zh = {
   'pack.meds': '吃药',
   'pack.sureTitle': '添加 {n} 个问题？',
   'pack.sureGo': '添加',
-  'pack.added': '已添加 {n} 个问题',
+  'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',
   'note.hint': '点一个晚上来添加备注。',
   'note.ph': '添加一条简短备注',
@@ -2550,7 +2568,7 @@ export const zh = {
   'lamp.monthPrev': '上个月',
   'lamp.monthNext': '下个月',
   'hang.folderHint': '有不止一个文件夹时，主页和“问题”页的筛选可以只显示其中一个。',
-  'hang.folderVsTopic': '文件夹是问题所在的地方。话题是标签，想加多少都行。',
+  'hang.folderVsTopic': '话题是额外的标签，想加多少都行。',
   'hang.topicsHint': '用于筛选的额外标签。一个问题可以有多个。',
   'hang.discardNewTitle': '放弃这个问题？',
   'questions.reorder': '排序',
@@ -3203,4 +3221,16 @@ export const zh = {
   "note.amountIn": "数量（{unit}）",
   "lamp.lastFive": "最近 5 次",
   "lamp.lastFiveEmpty": "还没有。最近 5 个 Did 的晚上会显示在这里。",
+  "auth.getStarted": "开始",
+  "auth.haveAccount": "已有账号？登录",
+  "swipeIntro.line": "做了就右滑，还没就左滑",
+  "stats.empty": "还没有记录。今晚回答后，这里会显示你的数字。",
+  "empty.goTonight": "去今晚",
+  'app.loading': '加载中…',
+  'first.addHint': '选一个推荐，或自己输入一个。',
+  'title.homePage': '首页 · Did I',
+  'title.friends': '好友 · Did I',
+  'title.people': '好友和家人 · Did I',
+  'every.badgeToday': '今天',
+  'pack.countOne': '+1 个',
 }

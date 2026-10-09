@@ -468,14 +468,15 @@ export default function App() {
 
   useEffect(() => {
     applyPrefsToDocument(prefs)
-    const board = book?.title || 'Did I'
     const titles = {
       '/door': t('title.door'),
       '/name': t('title.name'),
       '/read': t('title.read'),
       '/into': t('title.into'),
-      '/home': t('title.home', { board }),
-      '/tonight': t('title.home', { board }),
+      '/home': t('title.homePage'),
+      '/tonight': t('title.homePage'),
+      '/friends': t('title.friends'),
+      '/people': t('title.people'),
       '/enter': t('title.enter'),
       '/about': t('title.about'),
       '/lamps': t('title.questions'),
@@ -511,7 +512,7 @@ export default function App() {
       '/we/new': t('we.newTitle'),
       '/you': t('lead.youTitle'),
     }
-    document.title = titles[view] || t('title.home', { board })
+    document.title = titles[view] || 'Did I'
   }, [view, book, prefs])
 
   const pingLabel = pingButtonLabel(pingState)
@@ -725,7 +726,7 @@ export default function App() {
 
   return (
     <>
-      <Suspense fallback={<p className="di-set-note">{t('family.loading')}</p>}>{inner}</Suspense>
+      <Suspense fallback={<p className="di-set-note di-page-loading" role="status">{t('app.loading')}</p>}>{inner}</Suspense>
       {showNav ? <AppNav /> : null}
       {SITE.has(path) ? null : (
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
@@ -733,7 +734,8 @@ export default function App() {
       {SITE.has(path) ? null : <DidYouBanner path={path} />}
       {SITE.has(path) || !live ? null : <GiftArrived book={live} onChange={change} />}
       <CheerBurst />
-      <DiagnosticsAsk />
+      {/* Asked only once first run is done and a question is in. */}
+      {emptyHall || path === '/first' || SITE.has(path) ? null : <DiagnosticsAsk />}
       <StreakMomentHost />
     </>
   )

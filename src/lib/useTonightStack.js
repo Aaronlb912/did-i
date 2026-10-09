@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
-import { putAnswer } from './board-ops.js'
+import { putAnswer, setAnswerNote } from './board-ops.js'
 import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
 import { markedToast } from './pill-status.js'
@@ -22,6 +22,7 @@ import {
   formatBoardDate,
   recentPeriodKeys,
   shouldFinishAfterNope,
+  isEvery,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
@@ -159,6 +160,9 @@ export function useTonightStack({
     [shelf, tagId, dateIso, hallOn, weTonight.due, weTonight.done],
   )
   const openReady = ready.filter((row) => !row.answer)
+  // An every so often question never holds the night open, but while it is
+  // due and unanswered it is still dealt as a card, after the night is clear.
+  const deckClear = hallOn && !openReady.some((row) => isEvery(row.lamp))
   const finishCount = useMemo(() => {
     const books = boards.length ? boards : [value]
     const persistedReady = scopedBooks(books, tagId)
@@ -167,7 +171,7 @@ export function useTonightStack({
     return finishStackCount(persistedReady)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boards, value, tagId, topicKey, dateIso, minute])
-  const onFinish = faceId === FINISH_FACE && finishCount > 0 && !hallOn
+  const onFinish = faceId === FINISH_FACE && finishCount > 0 && !deckClear
   const hour = hallHour(clock)
   const empty = scopedBooks(shelf, tagId).every(
     (book) => (book.lamps || []).filter((lamp) => !lamp.archived).length === 0,
@@ -179,7 +183,7 @@ export function useTonightStack({
         ready.find((row) => rowKey(row) === faceId)
       : null
   const faceRow =
-    hallOn || faceId === FINISH_FACE
+    deckClear || faceId === FINISH_FACE
       ? null
       : openReady.length > 0
         ? skipReview && pickedRow?.answer?.status === 'skip'
@@ -198,21 +202,23 @@ export function useTonightStack({
   }, [focusLampId, focusKey])
 
   useEffect(() => {
-    if (skipReview || faceId === FINISH_FACE || hallOn || !openReady.length) return
+    if (skipReview || faceId === FINISH_FACE || deckClear || !openReady.length) return
     const picked = ready.find((row) => row.lamp.id === faceId)
     if (picked?.answer?.status === 'skip') setFaceId(openReady[0].lamp.id)
-  }, [faceId, hallOn, openReady, ready, skipReview])
+  }, [faceId, deckClear, openReady, ready, skipReview])
 
   useEffect(() => {
-    if (hallOn || restNight || skipReview) return
+    if (deckClear || restNight || skipReview) return
     if (faceId === FINISH_FACE || openReady.length || !finishCount) return
     setFaceId(FINISH_FACE)
-  }, [faceId, finishCount, hallOn, openReady.length, restNight, skipReview])
+  }, [faceId, finishCount, deckClear, openReady.length, restNight, skipReview])
 
   useEffect(() => {
     if (faceId !== FINISH_FACE) return
-    if (hallOn || !finishCount) setFaceId('')
-  }, [faceId, finishCount, hallOn])
+    // A question added after the last nope (or a due every so often one) is
+    // dealt as a card instead of the still-open list.
+    if (deckClear || !finishCount || openReady.length) setFaceId('')
+  }, [faceId, finishCount, deckClear, openReady.length])
 
   useEffect(() => {
     setRestNight(false)
@@ -249,6 +255,16 @@ export function useTonightStack({
 
   function change(next) {
     onChange(unlockAchievements(next, clock))
+  }
+
+  // A note (and amount) on an answer from the undo toast.
+  function saveNote(target, note, amount) {
+    const book = shelf.find((item) => item.id === target?.boardId)
+    if (!book) return
+    const next = setAnswerNote(book, target.lampId, target.periodKey, note, clock, amount)
+    if (next === book) return
+    setOverlay(next)
+    change(next)
   }
 
   function bookOf(row) {
@@ -499,7 +515,7 @@ export function useTonightStack({
   else if (activePillPick) bodyKind = 'pill'
   else if (empty) bodyKind = 'empty'
   else if (onFinish) bodyKind = 'finish'
-  else if (hallOn) bodyKind = 'hall'
+  else if (deckClear) bodyKind = 'hall'
   else if (restNight && finishCount > 0) bodyKind = 'rest'
   else if (faceRow) bodyKind = 'face'
   else if (waiting.length) bodyKind = 'waiting'
@@ -553,6 +569,7 @@ export function useTonightStack({
     pickHole,
     saveTitle,
     applyUndo,
+    saveNote,
     closePlates,
     moveFace,
     bookOf,

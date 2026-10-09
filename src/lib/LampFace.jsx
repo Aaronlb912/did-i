@@ -51,7 +51,8 @@ export function LampFace({
   const liveDx = demoFly === 'did' ? 460 : demoFly === 'nope' ? -460 : demoOn ? demoPull * THRESHOLD : dx
   const liveMode = demoFly ? 'fly' : demoOn && demoPull > 0.08 ? 'drag' : mode
   const pull = swipePull(liveDx)
-  useSwipePullReport(pull)
+  // Edges are for the drag only: once the card is thrown they clear.
+  useSwipePullReport(liveMode === 'fly' ? 0 : pull)
 
   function finish(way) {
     if (mode === 'fly') return

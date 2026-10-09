@@ -158,7 +158,7 @@ export const ko = {
   'auth.title': "로그인",
   'auth.body': '이메일을 입력하면 일회용 코드를 보내드려요. 폴더, 친구, 연속 기록이 어느 폰에서나 따라와요.',
   'auth.newHere': '처음이세요? 방법은 같아요. 코드를 확인하면 계정이 만들어져요.',
-  'auth.local': 'Use on this phone only',
+  'auth.local': '이 폰에서만 사용',
   'auth.tagline': '잊지 말고 하고, 한 것도 기억하세요.',
   'auth.apple': 'Apple로 로그인',
   'auth.appleOr': 'or',
@@ -410,6 +410,26 @@ export const ko = {
   'tonight.swipeNope': "아직",
   'tonight.peopleFrom': "{name}님이 보냄",
   'tonight.peopleMiss': "저장되지 않았어요. 신호를 확인하고 다시 밀어 주세요.",
+  'tonight.weSaved': "Did we에 저장했어요.",
+  'tonight.familySaved': "{name}에 저장했어요.",
+  'tonight.offlineSaved': "이 휴대폰에 저장했어요. 다시 온라인이 되면 동기화돼요.",
+  'seen.title': "다른 사람에게 보이는 것",
+  'seen.sub': "친구와 가족, 쉬운 말로",
+  'seen.streakOn': "연속 기록을 공유하고 있어요. 친구는 연속 기록과 오늘 밤 끝냈는지를 볼 수 있어요.",
+  'seen.streakOff': "연속 기록을 숨겼어요. 친구는 이름만 보고 연속 기록은 못 봐요.",
+  'seen.streakUnknown': "지금은 연속 기록 설정을 확인할 수 없어요.",
+  'seen.signedOut': "로그인하지 않았어요. 이 휴대폰 밖으로 나가는 것은 없어요.",
+  'seen.friendsTitle': "친구",
+  'seen.friends': "이름. 연속 기록을 공유하면 연속 기록과 오늘 밤 끝냈는지. 내 질문과 답은 절대 보이지 않아요.",
+  'seen.weTitle': "함께 쓰는 질문",
+  'seen.we': "함께 쓰는 질문에서는 그 질문에 대한 서로의 답을 볼 수 있어요.",
+  'seen.familyTitle': "가족",
+  'seen.family': "가족 질문에서는 가족 모두가 매일 밤 누가 답했는지 볼 수 있어요.",
+  'seen.asksTitle': "친구의 요청",
+  'seen.asks': "요청을 보낸 친구는 내가 그것을 남겼는지 볼 수 있어요.",
+  'seen.neverTitle': "공유되지 않는 것",
+  'seen.never': "내 질문, 메모, 답은 나만의 것이에요. 내 계정에만 동기화돼요.",
+  'seen.back': "설정으로 돌아가기",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'streak 주',
@@ -423,7 +443,7 @@ export const ko = {
   'streak.hitTitle': '불타오르고 있어요!',
   'streak.hitTitleClear': '오늘 밤 완료',
   'streak.hitBody': '{n}일 밤 연속. 오늘 밤을 다 끝냈어요.',
-  'streak.hitBodyOne': 'streak 첫날 밤. 오늘 밤을 다 끝냈어요.',
+  'streak.hitBodyOne': '오늘 밤을 다 끝냈어요.',
   'streak.hitOk': '좋아요',
   'streak.missKicker': 'streak',
   'streak.missTitle': 'streak이 끊겼어요',
@@ -453,7 +473,7 @@ export const ko = {
   'boards.name': '이름',
   'boards.badgeHint': '폴더 배지',
   'boards.badgeNone': 'None',
-  'boards.badgeWhere': 'Shows beside this name in the folder picker at the top.',
+  'boards.badgeWhere': '위쪽 폴더 선택에서 이 이름 옆에 보여요.',
   'boards.new': '새로',
   'boards.add': '폴더 추가',
   'boards.addHint': '이름을 정한 뒤 질문을 추가하세요.',
@@ -495,7 +515,7 @@ export const ko = {
   'feedback.send': '피드백 보내기',
   'feedback.sub': '버그, 아이디어, 거친 부분. 이메일로.',
   'hang.tag': '폴더',
-  'hang.tagOne': '하나만 골라. 질문은 폴더 하나에만 들어가.',
+  'hang.tagOne': '폴더 하나를 골라.',
   'hang.tagPh': '홈',
   'hang.tagNew': '새 폴더',
   'hang.tagLater': '빈 폴더',
@@ -511,7 +531,7 @@ export const ko = {
   'hang.daily': '매일',
   'hang.weekly': '특정 요일',
   'hang.monthly': '한 달에 한 번',
-  'hang.everyN': '며칠마다',
+  'hang.everyN': 'N일마다',
   'hang.once': '한 번만',
   'hang.weekdays': '요일',
   'hang.day.0': '일',
@@ -524,7 +544,7 @@ export const ko = {
   'hang.monthDay': '며칠',
   'hang.monthCalHint': '매달 이 날에.',
   'hang.onceWhen': 'When',
-  'hang.onceOnPick': 'On a night',
+  'hang.onceOnPick': '어느 날 밤',
   'hang.dueByPick': '마감일까지',
   'hang.onceOn': '밤 고르기',
   'hang.onceOnHint': '이 질문은 그날 밤에만 나와요.',
@@ -702,22 +722,21 @@ export const ko = {
   'kit.noAccessories': '아직 액세서리가 없어요. 상점에서 코인으로 사세요.',
   'shop.stamps': 'Streak stamps',
   'shop.badges': 'Folder badges',
-  'shop.stampsDoor': 'Marks cleared nights on the calendar. Dot is free.',
-  'shop.badgesDoor': 'Small icons on folder chips in the picker.',
-  'shop.badgesOnTag': 'On a folder',
-  'shop.stampsHint':
-    'When you finish tonight, the calendar cell gets your stamp. Extra shapes are {coins} coins each.',
-  'shop.stampsPaid': 'Star, check, and moon are {coins} coins.',
-  'shop.badgesHint': 'Each badge costs {coins} coins. You keep it after you buy.',
-  'shop.badgesAssign': 'Buy here, then Folders → open a folder → pick a badge under the name.',
-  'shop.buyStampBody': '{cost}. Used on nights you clear from now on.',
-  'shop.buyBadgeBody': '{cost}. Assign it on the Folders screen.',
+  'shop.stampsDoor': '끝낸 밤을 달력에 표시해요. 점은 무료예요.',
+  'shop.badgesDoor': '선택 화면의 폴더에 붙는 작은 아이콘.',
+  'shop.badgesOnTag': '폴더에 붙이기',
+  'shop.stampsHint': '오늘 밤을 끝내면 달력 칸에 스탬프가 찍혀요. 다른 모양은 하나에 {coins} 코인이에요.',
+  'shop.stampsPaid': '별, 체크, 달은 {coins} 코인이에요.',
+  'shop.badgesHint': '배지는 하나에 {coins} 코인. 사면 계속 내 거예요.',
+  'shop.badgesAssign': '여기서 사고, 폴더 → 폴더 열기 → 이름 아래에서 배지를 고르세요.',
+  'shop.buyStampBody': '{cost}. 지금부터 끝내는 밤에 쓰여요.',
+  'shop.buyBadgeBody': '{cost}. 폴더 화면에서 골라요.',
   'shop.buddiesHint': 'buddy를 탭해서 질문 카드에서 보기. 각 {n} gems.',
-  'shop.buddiesDoor': 'A little friend on the corner of your card.',
+  'shop.buddiesDoor': '카드 모서리의 작은 친구.',
   'shop.buddyPreview': '내 카드에서',
   'shop.buddyPreviewTag': 'Did I',
   'shop.buddyPreviewQ': 'Did I feed the cat?',
-  'shop.buyBuddyBody': '{cost}. Hangs on your question cards after you buy it.',
+  'shop.buyBuddyBody': '{cost}. 사면 질문 카드에 앉아 있어요.',
   'shop.cheerHint': 'chip으로 보기. cheer는 {cheer} gems. 단계 업은 {stage} coins.',
   'shop.cheerStageLine': '단계 {n}/{max}. {line}',
   'shop.stageUp': '단계 {n} · {cost}',
@@ -771,11 +790,11 @@ export const ko = {
   'kit.added': '컬렉션에 들어왔어요',
   'kit.try': '해 보기',
   'kit.hint': '아이템을 탭하면 착용해요.',
-  'kit.noBuddies': 'No buddies yet. Shop has cat and dog.',
+  'kit.noBuddies': '아직 친구가 없어요. 샵에 고양이와 강아지가 있어요.',
   'kit.buddyOff': 'No buddy',
-  'kit.buddyOffLine': 'Cards go back to plain.',
+  'kit.buddyOffLine': '카드가 기본 모습으로 돌아가요.',
   'kit.cheerOff': 'No cheer',
-  'kit.cheerOffLine': 'Did taps stay quiet.',
+  'kit.cheerOffLine': 'Did를 눌러도 조용해요.',
   'kit.stages': '단계',
   'kit.useStage': '단계 {n} 사용',
   'kit.stageLocked': '단계 {n} 아직 없음',
@@ -873,7 +892,7 @@ export const ko = {
   'people.asks': '답 기다림',
   'people.askBanner': '친구 요청 ({n})',
   'people.wantsIn': '친구 되고 싶어',
-  'people.wantsFromName': '{name} wants to be friends',
+  'people.wantsFromName': '{name} 님이 친구가 되고 싶어 해요',
   'people.connect': '초대하고 추가',
   'people.connectSub': '친구 ID로 추가, 가족 만들기 또는 참여',
   'people.refer': '친구와 가족 추천',
@@ -1317,7 +1336,7 @@ export const ko = {
     '할 일 목록도 캘린더도 아니야. 나중에 또 묻는 question을 두는 곳. 여기서 고르거나 Did I로 시작하는 문장을 직접 써.',
   'ideas.use': '이거 쓰기',
   'ideas.writeOwn': '직접 쓰기',
-  'ideas.help': '도움말',
+  'ideas.help': '도움말',
   'wait.kicker': '아직',
   'wait.after': '{time} 이후.',
   'wait.later': '나중에',
@@ -1455,33 +1474,33 @@ export const ko = {
   'shop.miss.needGems': 'gem {n}개 필요.',
   'shop.miss.needCoins': 'coin {n}개 필요.',
   'shop.miss.buyFail': '구매가 안 됐어. 다시 해 봐.',
-  'shop.miss.stampGone': 'That stamp is gone.',
-  'shop.miss.badgeGone': 'That badge is gone.',
-  'shop.miss.buyStampFirst': 'Buy that stamp first.',
-  'shop.miss.buyBadgeFirst': 'Buy that badge first.',
+  'shop.miss.stampGone': '그 스탬프는 이제 없어요.',
+  'shop.miss.badgeGone': '그 배지는 이제 없어요.',
+  'shop.miss.buyStampFirst': '먼저 그 스탬프를 사세요.',
+  'shop.miss.buyBadgeFirst': '먼저 그 배지를 사세요.',
   'stamp.dot.name': 'Dot',
-  'stamp.dot.line': 'The plain pip you start with.',
+  'stamp.dot.line': '처음부터 있는 기본 점.',
   'stamp.star.name': 'Star',
-  'stamp.star.line': 'A small star on cleared nights.',
+  'stamp.star.line': '끝낸 밤에 작은 별.',
   'stamp.check.name': 'Check',
-  'stamp.check.line': 'A tick on cleared nights.',
+  'stamp.check.line': '끝낸 밤에 체크 표시.',
   'stamp.moon.name': 'Moon',
-  'stamp.moon.line': 'A quiet crescent.',
-  'badge.fit': 'Fits folders like “{sample}”.',
+  'stamp.moon.line': '조용한 초승달.',
+  'badge.fit': '“{sample}” 같은 폴더에 어울려요.',
   'badge.briefcase.name': 'Briefcase',
-  'badge.briefcase.line': 'Work and job folders.',
+  'badge.briefcase.line': '일과 직장 폴더.',
   'badge.briefcase.sample': 'Work',
   'badge.leaf.name': 'Leaf',
   'badge.leaf.line': 'For health or outside.',
   'badge.leaf.sample': 'Gym',
   'badge.home.name': 'Home',
-  'badge.home.line': 'Chores and house folders.',
+  'badge.home.line': '집안일과 집 폴더.',
   'badge.home.sample': 'Kitchen',
   'badge.heart.name': 'Heart',
-  'badge.heart.line': 'People and care folders.',
+  'badge.heart.line': '사람과 돌봄 폴더.',
   'badge.heart.sample': 'Family',
   'badge.bolt.name': 'Bolt',
-  'badge.bolt.line': 'Quick errand folders.',
+  'badge.bolt.line': '빠른 심부름 폴더.',
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': '아는 사람의 Did I와 친구 요청',
@@ -1518,17 +1537,17 @@ export const ko = {
   'cheer.sun.name': '해',
   'cheer.sun.line': '해가 떠오르고 햇살이 돎.',
   'buddy.cat.name': 'Cat',
-  'buddy.cat.line': 'Orange tabby. Hangs on the corner.',
+  'buddy.cat.line': '주황 줄무늬 고양이. 모서리에 앉아 있어요.',
   'buddy.dog.name': 'Dog',
-  'buddy.dog.line': 'Brown pup. Hangs on the corner.',
+  'buddy.dog.line': '갈색 강아지. 모서리에 앉아 있어요.',
   'buddy.rabbit.name': 'Rabbit',
-  'buddy.rabbit.line': 'Gray bunny. Hangs on the corner.',
+  'buddy.rabbit.line': '회색 토끼. 모서리에 앉아 있어요.',
   'buddy.ant.name': '개미',
   'buddy.ant.line': '작은 빨간 개미. 모두 무료.',
   'buddy.possum.name': '주머니쥐',
   'buddy.possum.line': '부스스한 회색 주머니쥐. 모서리에 매달려 있어.',
   'buddy.owl.name': 'Owl',
-  'buddy.owl.line': 'Little brown owl. Hangs on the corner.',
+  'buddy.owl.line': '작은 갈색 부엉이. 모서리에 앉아 있어요.',
   'buddy.frog.name': '개구리',
   'buddy.frog.line': '초록 개구리. 모서리에 매달림.',
   'buddy.penguin.name': '펭귄',
@@ -1809,18 +1828,18 @@ export const ko = {
   'widget.tonight.nextAt': '다음 질문은 {time}에',
   'widget.tonight.clear': '오늘 밤은 다 끝났어요',
   'widget.tonight.oneLeft': '오늘 밤 하나 남았어요',
-  'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.left': '오늘 밤 {n}개 남음',
   'widget.tonight.lastNight': '어젯밤',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "아직",
   'widget.tonight.openApp': '열기',
   'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
-  'widget.settings.tag': 'Folder',
-  'widget.settings.tagSub': 'Which folder the home screen widget follows.',
+  'widget.settings.tag': '폴더',
+  'widget.settings.tagSub': '홈 화면 위젯이 따라가는 폴더.',
   'widget.settings.tagActive': 'Active folder',
-  'widget.settings.tagMissing': 'Pick a folder',
-  'widget.settings.noTags': 'Add a question in a folder first.',
+  'widget.settings.tagMissing': '폴더 고르기',
+  'widget.settings.noTags': '먼저 폴더에 질문을 추가하세요.',
   "widget.settings.look": "모양",
   'widget.settings.lookSub': '위젯 색상이에요. 가진 룩만 쓸 수 있어요.',
   'widget.settings.lookTag': '내 룩과 같게',
@@ -2246,7 +2265,7 @@ export const ko = {
   'enter.eraseGo': '지우고 새로 시작',
   'enter.eraseBody': '로그인하지 않아서 PIN은 이 휴대폰에만 있어요. PIN을 없애려면 이 휴대폰의 Did I를 지워야 해요: 질문, 답, 코인, 룩. 되돌릴 수 없어요.',
   'enter.forgotTitle': 'PIN을 잊었나요?',
-  'enter.forgot': 'PIN을 잊었나요?',
+  'enter.forgot': 'PIN을 잊었나요?',
   'clock.pm': '오후 {h}:{m}',
   'clock.am': '오전 {h}:{m}',
   'shop.teasedBody': '아직 나오지 않았어요. {date}에 판매 시작.',
@@ -2456,7 +2475,7 @@ export const ko = {
   'pack.meds': '약',
   'pack.sureTitle': '질문 {n}개를 추가할까요?',
   'pack.sureGo': '추가하기',
-  'pack.added': '질문 {n}개 추가됨',
+  'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',
   'note.hint': '밤을 탭해 메모를 추가하세요.',
   'note.ph': '짧은 메모 추가',
@@ -2562,7 +2581,7 @@ export const ko = {
   'lamp.monthPrev': '지난달',
   'lamp.monthNext': '다음 달',
   'hang.folderHint': '폴더가 둘 이상이면 홈과 질문의 필터로 하나만 볼 수 있어요.',
-  'hang.folderVsTopic': '폴더는 질문이 있는 곳이에요. 주제는 원하는 만큼 붙일 수 있는 라벨이에요.',
+  'hang.folderVsTopic': '주제는 추가 라벨이라 원하는 만큼 붙일 수 있어요.',
   'hang.topicsHint': '걸러 보기용 추가 라벨이에요. 질문 하나에 여러 개 붙일 수 있어요.',
   'hang.discardNewTitle': '이 질문을 버릴까요?',
   'questions.reorder': '순서 바꾸기',
@@ -3215,4 +3234,16 @@ export const ko = {
   "note.amountIn": "양 ({unit})",
   "lamp.lastFive": "최근 5번",
   "lamp.lastFiveEmpty": "아직 없어요. Did한 최근 5일이 여기에 보여요.",
+  "auth.getStarted": "시작하기",
+  "auth.haveAccount": "계정이 있나요? 로그인",
+  "swipeIntro.line": "했으면 오른쪽, 아직이면 왼쪽으로 밀기",
+  "stats.empty": "아직 기록이 없어요. 오늘 밤 답하면 여기에 숫자가 보여요.",
+  "empty.goTonight": "오늘 밤으로",
+  'app.loading': '불러오는 중…',
+  'first.addHint': '추천을 고르거나 직접 써 주세요.',
+  'title.homePage': '홈 · Did I',
+  'title.friends': '친구 · Did I',
+  'title.people': '사람들 · Did I',
+  'every.badgeToday': '오늘',
+  'pack.countOne': '+1개',
 }

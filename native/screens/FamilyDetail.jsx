@@ -37,7 +37,7 @@ import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
-import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
@@ -152,7 +152,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   }
 
   if (!ready) {
-    return <Meta colors={colors}>{t('family.loading')}</Meta>
+    return <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
   }
 
   if (!fam) {
@@ -481,7 +481,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {codeOpen ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
-          <Pressable accessible={false} style={styles.veil} onPress={() => setCodeOpen(false)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setCodeOpen(false)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
               <Text style={[styles.code, { color: colors.ink }]} selectable>
@@ -558,7 +558,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
         <KeyboardLift>
-          <Pressable accessible={false} style={styles.veil} onPress={() => setEdit(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEdit(null)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
               <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />

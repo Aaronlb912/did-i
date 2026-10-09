@@ -24,7 +24,7 @@ import { goFromMenu, onRoute, readRoute } from '../navigation/hash.js'
 import { HEADER_BAR, useHeaderBottom } from '../hooks/useHeaderSpace.js'
 import { blurNativeReady } from '../lib/blur-ready.js'
 import { ripple } from '../lib/ripple.js'
-import { fonts } from '../theme.js'
+import { fonts, sectionLabel } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
 import { menuIsOn, menuItems } from './mast-menu-items.js'
 import { MenuIcon } from './MenuIcon.jsx'
@@ -269,7 +269,11 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
             }}
           >
             {items.map((item) =>
-              item.divider ? (
+              item.section ? (
+                <View key={item.key} style={[styles.section, { borderTopColor: colors.lineSoft }]}>
+                  <Text style={[styles.sectionText, { color: colors.inkSoft }]}>{item.label}</Text>
+                </View>
+              ) : item.divider ? (
                 <View key={item.key} style={[styles.divider, { backgroundColor: colors.lineSoft }]} />
               ) : (
                 <Pressable
@@ -413,6 +417,14 @@ const styles = StyleSheet.create({
     transformOrigin: 'top right',
   },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14, marginVertical: 4 },
+  section: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: 14,
+    marginTop: 4,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  sectionText: { ...sectionLabel },
   row: {
     paddingHorizontal: 14,
     paddingVertical: 12,

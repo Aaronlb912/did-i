@@ -109,7 +109,7 @@ export const it = {
   'settings.hideMarks': 'Nascondi traguardi',
   'settings.showMarks': 'Mostra traguardi',
   'settings.install': 'Installa l’app',
-  'settings.lock': 'App PIN on this phone',
+  'settings.lock': 'PIN dell’app su questo telefono',
   'settings.lockOn': 'C’è un blocco a numeri. Resta su questo telefono. Non è una password di internet.',
   'settings.lockOff': 'Facoltativo. Da 4 a 8 cifre. Solo questo telefono lo chiede.',
   'settings.number': 'PIN',
@@ -161,7 +161,7 @@ export const it = {
   'auth.title': 'Sign in',
   'auth.body': 'Inserisci la tua email per un codice monouso. Cartelle, amici e serie ti seguono su ogni telefono.',
   'auth.newHere': 'Sei nuovo? Stessi passaggi. L’account viene creato quando confermi il codice.',
-  'auth.local': 'Use on this phone only',
+  'auth.local': 'Usa solo su questo telefono',
   'auth.tagline': 'Ricordalo. Poi ricorda di averlo fatto.',
   'auth.apple': 'Accedi con Apple',
   'auth.appleOr': 'or',
@@ -420,6 +420,26 @@ export const it = {
   'tonight.swipeNope': "non ancora",
   'tonight.peopleFrom': "Da {name}",
   'tonight.peopleMiss': "Non è stato salvato. Controlla il segnale e scorri di nuovo.",
+  'tonight.weSaved': "Salvato nel tuo Did we.",
+  'tonight.familySaved': "Salvato per {name}.",
+  'tonight.offlineSaved': "Salvato su questo telefono. Si sincronizza quando torni online.",
+  'seen.title': "Cosa vedono gli altri",
+  'seen.sub': "Amici e famiglia, in parole semplici",
+  'seen.streakOn': "La tua serie è condivisa. Gli amici vedono la tua serie e se hai finito stasera.",
+  'seen.streakOff': "La tua serie è nascosta. Gli amici vedono il tuo nome, non la tua serie.",
+  'seen.streakUnknown': "Ora non è possibile controllare l’impostazione della serie.",
+  'seen.signedOut': "Non hai effettuato l’accesso. Niente lascia questo telefono.",
+  'seen.friendsTitle': "Amici",
+  'seen.friends': "Il tuo nome. La tua serie e se hai finito stasera, quando la serie è condivisa. Mai le tue domande o risposte.",
+  'seen.weTitle': "Domande condivise",
+  'seen.we': "Su una domanda condivisa, vedete entrambi le risposte dell’altro a quella domanda.",
+  'seen.familyTitle': "Famiglia",
+  'seen.family': "Sulle domande di famiglia, tutta la famiglia vede chi ha risposto ogni sera.",
+  'seen.asksTitle': "Richieste dagli amici",
+  'seen.asks': "L’amico che ha inviato una richiesta vede se l’hai tenuta.",
+  'seen.neverTitle': "Mai condiviso",
+  'seen.never': "Le tue domande, note e risposte restano tue. Si sincronizzano solo con il tuo account.",
+  'seen.back': "Torna alle impostazioni",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} coins, {gems} gems',
   'weekbar.aria': 'Settimana dello streak',
@@ -433,7 +453,7 @@ export const it = {
   'streak.hitTitle': 'Sei una furia!',
   'streak.hitTitleClear': 'Serata completata',
   'streak.hitBody': '{n} sere di fila. Stasera hai finito tutto.',
-  'streak.hitBodyOne': 'Prima sera del tuo streak. Stasera hai finito tutto.',
+  'streak.hitBodyOne': 'Stasera hai finito tutto.',
   'streak.hitOk': 'Andiamo',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak interrotto',
@@ -464,7 +484,7 @@ export const it = {
   'boards.name': 'Nome',
   'boards.badgeHint': 'Badge della cartella',
   'boards.badgeNone': 'None',
-  'boards.badgeWhere': 'Shows beside this name in the folder picker at the top.',
+  'boards.badgeWhere': 'Appare accanto a questo nome nella scelta della cartella, in alto.',
   'boards.new': 'Nuovo',
   'boards.add': 'Aggiungi una cartella',
   'boards.addHint': 'Dagli un nome. Poi aggiungi domande.',
@@ -507,7 +527,7 @@ export const it = {
   'feedback.send': 'Invia feedback',
   'feedback.sub': 'Bug, idee, spigoli. Scrivici.',
   'hang.tag': 'Cartella',
-  'hang.tagOne': 'Scegline una. Ogni domanda sta in una sola cartella.',
+  'hang.tagOne': 'Scegli una cartella.',
   'hang.tagPh': 'Home',
   'hang.tagNew': 'Nuova cartella',
   'hang.tagLater': 'Cartelle vuote',
@@ -523,7 +543,7 @@ export const it = {
   'hang.daily': 'Ogni giorno',
   'hang.weekly': 'Alcuni giorni',
   'hang.monthly': 'Una volta al mese',
-  'hang.everyN': 'Ogni pochi giorni',
+  'hang.everyN': 'Ogni N giorni',
   'hang.once': 'Solo una volta',
   'hang.weekdays': 'Giorni',
   'hang.day.0': 'Dom',
@@ -717,16 +737,15 @@ export const it = {
   'kit.noAccessories': 'Ancora nessun accessorio. Comprali con le monete nel negozio.',
   'shop.stamps': 'Streak stamps',
   'shop.badges': 'Folder badges',
-  'shop.stampsDoor': 'Marks cleared nights on the calendar. Dot is free.',
-  'shop.badgesDoor': 'Small icons on folder chips in the picker.',
-  'shop.badgesOnTag': 'On a folder',
-  'shop.stampsHint':
-    'When you finish tonight, the calendar cell gets your stamp. Extra shapes are {coins} coins each.',
-  'shop.stampsPaid': 'Star, check, and moon are {coins} coins.',
-  'shop.badgesHint': 'Each badge costs {coins} coins. You keep it after you buy.',
-  'shop.badgesAssign': 'Buy here, then Folders → open a folder → pick a badge under the name.',
-  'shop.buyStampBody': '{cost}. Used on nights you clear from now on.',
-  'shop.buyBadgeBody': '{cost}. Assign it on the Folders screen.',
+  'shop.stampsDoor': 'Segna le notti completate sul calendario. Il punto è gratis.',
+  'shop.badgesDoor': 'Piccole icone sulle cartelle nella scelta.',
+  'shop.badgesOnTag': 'Su una cartella',
+  'shop.stampsHint': 'Quando finisci stasera, la casella del calendario riceve il tuo timbro. Le altre forme costano {coins} coins l’una.',
+  'shop.stampsPaid': 'Stella, spunta e luna costano {coins} coins.',
+  'shop.badgesHint': 'Ogni badge costa {coins} coins. Resta tuo dopo l’acquisto.',
+  'shop.badgesAssign': 'Compra qui, poi Cartelle → apri una cartella → scegli un badge sotto il nome.',
+  'shop.buyStampBody': '{cost}. Usato sulle notti che completi da ora in poi.',
+  'shop.buyBadgeBody': '{cost}. Sceglilo nella schermata Cartelle.',
   'shop.buddiesHint': 'Tocca un buddy per vederlo sulla scheda domanda. {n} gems ciascuno.',
   'shop.buddiesDoor': 'Un amico piccolo nell’angolo della scheda.',
   'shop.buddyPreview': 'Sulla tua scheda',
@@ -892,7 +911,7 @@ export const it = {
   'people.asks': 'Aspettano te',
   'people.askBanner': 'Richieste di amicizia ({n})',
   'people.wantsIn': 'vuole essere amico',
-  'people.wantsFromName': '{name} wants to be friends',
+  'people.wantsFromName': '{name} vuole essere tuo amico',
   'people.connect': 'Invita e aggiungi',
   'people.connectSub': 'Aggiungi per ID amico, crea o unisciti a una famiglia',
   'people.refer': 'Invita amici e famiglia',
@@ -1341,7 +1360,7 @@ export const it = {
     'Non è una lista di cose da fare né un calendario. Metti la domanda che ti ripeti dopo. Usa una di queste, o scrivi la tua che inizia con Did I.',
   'ideas.use': 'Usa questa',
   'ideas.writeOwn': 'Scrivi la tua',
-  'ideas.help': 'Aiuto',
+  'ideas.help': 'Aiuto',
   'wait.kicker': 'Non ancora',
   'wait.after': 'Dopo {time}.',
   'wait.later': 'dopo',
@@ -1482,33 +1501,33 @@ export const it = {
   'shop.miss.needGems': 'Servono {n} gems.',
   'shop.miss.needCoins': 'Servono {n} coins.',
   'shop.miss.buyFail': 'L’acquisto non è andato. Riprova.',
-  'shop.miss.stampGone': 'That stamp is gone.',
-  'shop.miss.badgeGone': 'That badge is gone.',
-  'shop.miss.buyStampFirst': 'Buy that stamp first.',
-  'shop.miss.buyBadgeFirst': 'Buy that badge first.',
+  'shop.miss.stampGone': 'Quel timbro non c’è più.',
+  'shop.miss.badgeGone': 'Quel badge non c’è più.',
+  'shop.miss.buyStampFirst': 'Compra prima quel timbro.',
+  'shop.miss.buyBadgeFirst': 'Compra prima quel badge.',
   'stamp.dot.name': 'Dot',
-  'stamp.dot.line': 'The plain pip you start with.',
+  'stamp.dot.line': 'Il punto semplice da cui parti.',
   'stamp.star.name': 'Star',
-  'stamp.star.line': 'A small star on cleared nights.',
+  'stamp.star.line': 'Una piccola stella sulle notti completate.',
   'stamp.check.name': 'Check',
-  'stamp.check.line': 'A tick on cleared nights.',
+  'stamp.check.line': 'Una spunta sulle notti completate.',
   'stamp.moon.name': 'Moon',
-  'stamp.moon.line': 'A quiet crescent.',
-  'badge.fit': 'Fits folders like “{sample}”.',
+  'stamp.moon.line': 'Una falce di luna discreta.',
+  'badge.fit': 'Sta bene su cartelle come “{sample}”.',
   'badge.briefcase.name': 'Briefcase',
-  'badge.briefcase.line': 'Work and job folders.',
+  'badge.briefcase.line': 'Cartelle di lavoro.',
   'badge.briefcase.sample': 'Work',
   'badge.leaf.name': 'Leaf',
   'badge.leaf.line': 'For health or outside.',
   'badge.leaf.sample': 'Gym',
   'badge.home.name': 'Home',
-  'badge.home.line': 'Chores and house folders.',
+  'badge.home.line': 'Cartelle di casa e faccende.',
   'badge.home.sample': 'Kitchen',
   'badge.heart.name': 'Heart',
-  'badge.heart.line': 'People and care folders.',
+  'badge.heart.line': 'Cartelle di persone e cura.',
   'badge.heart.sample': 'Family',
   'badge.bolt.name': 'Bolt',
-  'badge.bolt.line': 'Quick errand folders.',
+  'badge.bolt.line': 'Cartelle di commissioni veloci.',
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I e richieste di amicizia da persone che conosci',
@@ -1567,17 +1586,17 @@ export const it = {
   'look.brass.name': 'Brass',
   'look.brass.line': 'Puntini caldi.',
   'look.night.name': 'Night',
-  'look.night.line': 'Darker plate.',
+  'look.night.line': 'Fondo più scuro.',
   'look.moss.name': 'Moss',
-  'look.moss.line': 'Forest plates, soft sage.',
+  'look.moss.line': 'Fondo foresta, salvia tenue.',
   'look.plum.name': 'Plum',
-  'look.plum.line': 'Violet tint, lilac pip.',
+  'look.plum.line': 'Tinta viola, punto lilla.',
   'look.rose.name': 'Rose',
-  'look.rose.line': 'Blush panels, quiet pink.',
+  'look.rose.line': 'Pannelli cipria, rosa calmo.',
   'look.steel.name': 'Steel',
-  'look.steel.line': 'Cool gray, steel trim.',
+  'look.steel.line': 'Grigio freddo, bordo acciaio.',
   'look.wine.name': 'Wine',
-  'look.wine.line': 'Dark red plate, burgundy pip.',
+  'look.wine.line': 'Fondo rosso scuro, punto bordeaux.',
   'look.glow.name': 'Glow',
   'look.glow.line': 'Piastre fresche, accento ciano.',
   'look.ember.name': 'Ember',
@@ -1845,18 +1864,18 @@ export const it = {
   'widget.tonight.nextAt': 'Prossima domanda alle {time}',
   'widget.tonight.clear': 'Tutto fatto per stasera',
   'widget.tonight.oneLeft': 'Ne manca una stasera',
-  'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.left': 'Ne restano {n} stasera',
   'widget.tonight.lastNight': 'Ieri sera',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Non ancora",
   'widget.tonight.openApp': 'Apri',
   'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
-  'widget.settings.tag': 'Folder',
-  'widget.settings.tagSub': 'Which folder the home screen widget follows.',
+  'widget.settings.tag': 'Cartella',
+  'widget.settings.tagSub': 'La cartella che segue il widget della schermata Home.',
   'widget.settings.tagActive': 'Active folder',
-  'widget.settings.tagMissing': 'Pick a folder',
-  'widget.settings.noTags': 'Add a question in a folder first.',
+  'widget.settings.tagMissing': 'Scegli una cartella',
+  'widget.settings.noTags': 'Aggiungi prima una domanda in una cartella.',
   "widget.settings.look": "Aspetto",
   'widget.settings.lookSub': 'Colori del widget. Solo i look che possiedi.',
   'widget.settings.lookTag': 'Come il tuo stile',
@@ -2297,7 +2316,7 @@ export const it = {
   'enter.eraseGo': 'Cancella e ricomincia',
   'enter.eraseBody': 'Non hai effettuato l’accesso, quindi il PIN esiste solo su questo telefono. Per toglierlo, cancella Did I su questo telefono: domande, risposte, monete e look. Non si può annullare.',
   'enter.forgotTitle': 'Hai dimenticato il PIN?',
-  'enter.forgot': 'PIN dimenticato?',
+  'enter.forgot': 'PIN dimenticato?',
   'clock.pm': '{h}:{m} di sera',
   'clock.am': '{h}:{m} di mattina',
   'shop.teasedBody': 'Non è ancora uscito. In vendita dal {date}.',
@@ -2507,7 +2526,7 @@ export const it = {
   'pack.meds': 'Medicine',
   'pack.sureTitle': 'Aggiungere {n} domande?',
   'pack.sureGo': 'Aggiungile',
-  'pack.added': '{n} domande aggiunte',
+  'pack.added': '{n} domande aggiunte',
   'note.title': 'Note',
   'note.hint': 'Tocca una notte per aggiungere una nota.',
   'note.ph': 'Aggiungi una breve nota',
@@ -2613,7 +2632,7 @@ export const it = {
   'lamp.monthPrev': 'Mese precedente',
   'lamp.monthNext': 'Mese successivo',
   'hang.folderHint': 'Con più di una cartella, il filtro in Home e Domande può mostrarne solo una.',
-  'hang.folderVsTopic': 'Una cartella è dove vive una domanda. Gli argomenti sono etichette, quante ne vuoi.',
+  'hang.folderVsTopic': 'Gli argomenti sono etichette in più, quante ne vuoi.',
   'hang.topicsHint': 'Etichette in più per filtrare. Una domanda può averne più di una.',
   'hang.discardNewTitle': 'Scartare questa domanda?',
   'questions.reorder': 'Riordina',
@@ -3266,4 +3285,16 @@ export const it = {
   "note.amountIn": "Quantità ({unit})",
   "lamp.lastFive": "Le ultime 5 volte",
   "lamp.lastFiveEmpty": "Ancora niente. Qui compaiono le ultime 5 sere con Did.",
+  "auth.getStarted": "Inizia",
+  "auth.haveAccount": "Hai già un account? Accedi",
+  "swipeIntro.line": "Scorri a destra se l'hai fatto, a sinistra se non ancora",
+  "stats.empty": "Ancora nessuna sera. Rispondi stasera e qui vedrai i tuoi numeri.",
+  "empty.goTonight": "Vai a stasera",
+  'app.loading': 'Caricamento…',
+  'first.addHint': 'Scegli uno spunto o scrivine una.',
+  'title.homePage': 'Inizio · Did I',
+  'title.friends': 'Amici · Did I',
+  'title.people': 'Persone · Did I',
+  'every.badgeToday': 'oggi',
+  'pack.countOne': '+1 domanda',
 }

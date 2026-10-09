@@ -121,7 +121,8 @@ export function WaveLead({ text, wave, colors, style }) {
 
 // Starter ideas that fill the "Did I ___" blank. `tilt` comes from useWobble.
 // `isOn` lets more than one be picked (first run).
-export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors }) {
+// `grid` (first run) shows big two-column tiles with the short name on top.
+export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors, grid = false }) {
   if (!starters.length) return null
   return (
     <View style={styles.wrap}>
@@ -130,22 +131,34 @@ export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors 
         {starters.map((starter, index) => {
           const on = isOn ? isOn(starter) : picked === starter
           return (
-            <Animated.View key={starter.short} style={{ transform: [{ rotate: tilt(index) }] }}>
+            <Animated.View key={starter.short} style={[grid && styles.cell, { transform: [{ rotate: tilt(index) }] }]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
+                accessibilityLabel={starter.question}
                 onPress={() => onPick(starter)}
                 style={[
-                  styles.pick,
+                  grid ? styles.tile : styles.pick,
                   {
                     borderColor: on ? colors.onDeep : colors.line,
                     backgroundColor: on ? colors.panel3 : colors.panel2,
                   },
                 ]}
               >
-                <Text style={[styles.pickText, { color: on ? colors.on : colors.ink }]}>
-                  {starterBlank(starter)}
-                </Text>
+                {grid ? (
+                  <>
+                    <Text style={[styles.tileName, { color: on ? colors.on : colors.ink }]} numberOfLines={1}>
+                      {starter.short}
+                    </Text>
+                    <Text style={[styles.tileSub, { color: colors.inkSoft }]} numberOfLines={2}>
+                      {starterBlank(starter)}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={[styles.pickText, { color: on ? colors.on : colors.ink }]}>
+                    {starterBlank(starter)}
+                  </Text>
+                )}
               </Pressable>
             </Animated.View>
           )
@@ -168,4 +181,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pickText: { fontFamily: fonts.ui, fontSize: 15, fontWeight: '500' },
+  cell: { width: '48%', flexGrow: 1 },
+  tile: { borderWidth: 1, borderRadius: 16, minHeight: 76, paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center', gap: 2 },
+  tileName: { fontFamily: fonts.display, fontSize: 19, fontWeight: '700' },
+  tileSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 17 },
 })

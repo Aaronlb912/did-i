@@ -110,7 +110,7 @@ export const de = {
   'settings.hideMarks': 'Erfolge ausblenden',
   'settings.showMarks': 'Erfolge zeigen',
   'settings.install': 'App installieren',
-  'settings.lock': 'App PIN on this phone',
+  'settings.lock': 'App-PIN auf diesem Handy',
   'settings.lockOn': 'An. Did I fragt nach dieser PIN, wenn du die App auf diesem Handy öffnest. Nicht dein Anmeldepasswort.',
   'settings.lockOff': 'Optional. 4 bis 8 Ziffern. Did I fragt danach, wenn du die App auf diesem Handy öffnest. Nicht dein Handy-Code oder Anmeldepasswort.',
   'settings.number': 'PIN',
@@ -163,7 +163,7 @@ export const de = {
   'auth.title': 'Sign in',
   'auth.body': 'Gib deine E-Mail ein und bekomme einen Einmalcode. Deine Ordner, Freunde und Streak kommen auf jedes Handy mit.',
   'auth.newHere': 'Neu hier? Gleiche Schritte. Dein Konto wird erstellt, wenn du den Code bestätigst.',
-  'auth.local': 'Use on this phone only',
+  'auth.local': 'Nur auf diesem Handy nutzen',
   'auth.tagline': 'Dran denken. Dann wissen, dass du es getan hast.',
   'auth.apple': 'Mit Apple anmelden',
   'auth.appleOr': 'or',
@@ -422,6 +422,26 @@ export const de = {
   'tonight.swipeNope': "noch nicht",
   'tonight.peopleFrom': "Von {name}",
   'tonight.peopleMiss': "Das wurde nicht gespeichert. Prüfe dein Netz und wische noch einmal.",
+  'tonight.weSaved': "In deinem Did we gespeichert.",
+  'tonight.familySaved': "Für {name} gespeichert.",
+  'tonight.offlineSaved': "Auf diesem Handy gespeichert. Wird synchronisiert, sobald du wieder online bist.",
+  'seen.title': "Was andere sehen",
+  'seen.sub': "Freunde und Familie, ganz einfach erklärt",
+  'seen.streakOn': "Deine Serie ist geteilt. Freunde sehen deine Serie und ob du heute Abend fertig bist.",
+  'seen.streakOff': "Deine Serie ist verborgen. Freunde sehen deinen Namen, nicht deine Serie.",
+  'seen.streakUnknown': "Deine Einstellung zur Serie lässt sich gerade nicht prüfen.",
+  'seen.signedOut': "Du bist nicht angemeldet. Nichts verlässt dieses Handy.",
+  'seen.friendsTitle': "Freunde",
+  'seen.friends': "Dein Name. Deine Serie und ob du heute Abend fertig bist, wenn deine Serie geteilt ist. Nie deine eigenen Fragen oder Antworten.",
+  'seen.weTitle': "Geteilte Fragen",
+  'seen.we': "Bei einer geteilten Frage seht ihr beide die Antworten des anderen auf diese Frage.",
+  'seen.familyTitle': "Familie",
+  'seen.family': "Bei Familienfragen sieht die ganze Familie, wer jeden Abend geantwortet hat.",
+  'seen.asksTitle': "Anfragen von Freunden",
+  'seen.asks': "Wer dir eine Anfrage schickt, sieht, ob du sie behalten hast.",
+  'seen.neverTitle': "Nie geteilt",
+  'seen.never': "Deine eigenen Fragen, Notizen und Antworten bleiben deine. Sie synchronisieren nur mit deinem Konto.",
+  'seen.back': "Zurück zu den Einstellungen",
   'tonight.purse': '{coins} · {gems}',
   'purse.aria': '{coins} Coins, {gems} Gems',
   'weekbar.aria': 'Streak-Woche',
@@ -435,7 +455,7 @@ export const de = {
   'streak.hitTitle': 'Du bist nicht zu bremsen!',
   'streak.hitTitleClear': 'Abend geschafft',
   'streak.hitBody': '{n} Abende in Folge. Heute ist alles erledigt.',
-  'streak.hitBodyOne': 'Der erste Abend deines Streaks. Heute ist alles erledigt.',
+  'streak.hitBodyOne': 'Heute ist alles erledigt.',
   'streak.hitOk': 'Weiter so',
   'streak.missKicker': 'Streak',
   'streak.missTitle': 'Streak gerissen',
@@ -467,7 +487,7 @@ export const de = {
   'boards.name': 'Name',
   'boards.badgeHint': 'Ordner badge',
   'boards.badgeNone': 'None',
-  'boards.badgeWhere': 'Shows beside this name in the folder picker at the top.',
+  'boards.badgeWhere': 'Steht oben in der Ordnerauswahl neben diesem Namen.',
   'boards.new': 'Neu',
   'boards.add': 'Ordner hinzufügen',
   'boards.addHint': 'Gib ihm einen Namen. Dann füge Fragen hinzu.',
@@ -511,7 +531,7 @@ export const de = {
   'feedback.send': 'Feedback senden',
   'feedback.sub': 'Bugs, Ideen, Kanten. Schreib uns.',
   'hang.tag': 'Ordner',
-  'hang.tagOne': 'Wähl eins. Eine Frage gehört zu genau einem Ordner.',
+  'hang.tagOne': 'Wähl einen Ordner.',
   'hang.tagPh': 'Start',
   'hang.tagNew': 'Neuer Ordner',
   'hang.tagLater': 'Leere Ordner',
@@ -527,7 +547,7 @@ export const de = {
   'hang.daily': 'Jeden Tag',
   'hang.weekly': 'Manche Wochentage',
   'hang.monthly': 'Einmal im Monat',
-  'hang.everyN': 'Alle paar Tage',
+  'hang.everyN': 'Alle N Tage',
   'hang.once': 'Nur einmal',
   'hang.weekdays': 'Wochentage',
   'hang.day.0': 'So',
@@ -721,16 +741,15 @@ export const de = {
   'kit.noAccessories': 'Noch keine Accessoires. Kauf sie im Shop mit Münzen.',
   'shop.stamps': 'Streak stamps',
   'shop.badges': 'Ordner badges',
-  'shop.stampsDoor': 'Marks cleared nights on the calendar. Dot is free.',
-  'shop.badgesDoor': 'Small icons on folder chips in the picker.',
-  'shop.badgesOnTag': 'On a folder',
-  'shop.stampsHint':
-    'When you finish tonight, the calendar cell gets your stamp. Extra shapes are {coins} coins each.',
-  'shop.stampsPaid': 'Star, check, and moon are {coins} coins.',
-  'shop.badgesHint': 'Each badge costs {coins} coins. You keep it after you buy.',
-  'shop.badgesAssign': 'Buy here, then Folders → open a folder → pick a badge under the name.',
-  'shop.buyStampBody': '{cost}. Used on nights you clear from now on.',
-  'shop.buyBadgeBody': '{cost}. Assign it on the Folders screen.',
+  'shop.stampsDoor': 'Markiert erledigte Nächte im Kalender. Der Punkt ist gratis.',
+  'shop.badgesDoor': 'Kleine Symbole an Ordnern in der Auswahl.',
+  'shop.badgesOnTag': 'An einem Ordner',
+  'shop.stampsHint': 'Wenn du heute Abend fertig bist, bekommt das Kalenderfeld deinen Stempel. Weitere Formen kosten je {coins} Coins.',
+  'shop.stampsPaid': 'Stern, Haken und Mond kosten {coins} Coins.',
+  'shop.badgesHint': 'Jedes Abzeichen kostet {coins} Coins. Es bleibt dir nach dem Kauf.',
+  'shop.badgesAssign': 'Hier kaufen, dann Ordner → Ordner öffnen → unter dem Namen ein Abzeichen wählen.',
+  'shop.buyStampBody': '{cost}. Gilt ab jetzt für erledigte Nächte.',
+  'shop.buyBadgeBody': '{cost}. Wähle es im Bereich Ordner.',
   'shop.buddiesHint':
     'Tippe einen Buddy, um ihn auf einer Fragekarte zu sehen. {n} Gems je Buddy.',
   'shop.buddiesDoor': 'Ein kleiner Freund in der Ecke deiner Karte.',
@@ -897,7 +916,7 @@ export const de = {
   'people.asks': 'Warten auf dich',
   'people.askBanner': 'Freundschaftsanfragen ({n})',
   'people.wantsIn': 'will Freund sein',
-  'people.wantsFromName': '{name} wants to be friends',
+  'people.wantsFromName': '{name} möchte befreundet sein',
   'people.connect': 'Einladen und hinzufügen',
   'people.connectSub': 'Per Freundes-ID hinzufügen, Familie starten oder beitreten',
   'people.refer': 'Freunde und Familie einladen',
@@ -1351,7 +1370,7 @@ export const de = {
     'Das ist keine To-do-Liste und kein Kalender. Stell die Frage, die du dir hinterher stellst. Nimm eine davon, oder schreib deinen Satz, der mit Did I anfängt.',
   'ideas.use': 'Diese nehmen',
   'ideas.writeOwn': 'Eigene schreiben',
-  'ideas.help': 'Hilfe',
+  'ideas.help': 'Hilfe',
   'wait.kicker': 'Noch nicht',
   'wait.after': 'Nach {time}.',
   'wait.later': 'später',
@@ -1492,33 +1511,33 @@ export const de = {
   'shop.miss.needGems': 'Brauchst {n} Gems.',
   'shop.miss.needCoins': 'Brauchst {n} Coins.',
   'shop.miss.buyFail': 'Der Kauf hat nicht geklappt. Versuch es nochmal.',
-  'shop.miss.stampGone': 'That stamp is gone.',
-  'shop.miss.badgeGone': 'That badge is gone.',
-  'shop.miss.buyStampFirst': 'Buy that stamp first.',
-  'shop.miss.buyBadgeFirst': 'Buy that badge first.',
+  'shop.miss.stampGone': 'Diesen Stempel gibt es nicht mehr.',
+  'shop.miss.badgeGone': 'Dieses Abzeichen gibt es nicht mehr.',
+  'shop.miss.buyStampFirst': 'Kauf zuerst diesen Stempel.',
+  'shop.miss.buyBadgeFirst': 'Kauf zuerst dieses Abzeichen.',
   'stamp.dot.name': 'Dot',
-  'stamp.dot.line': 'The plain pip you start with.',
+  'stamp.dot.line': 'Der schlichte Punkt vom Start.',
   'stamp.star.name': 'Star',
-  'stamp.star.line': 'A small star on cleared nights.',
+  'stamp.star.line': 'Ein kleiner Stern an erledigten Nächten.',
   'stamp.check.name': 'Check',
-  'stamp.check.line': 'A tick on cleared nights.',
+  'stamp.check.line': 'Ein Haken an erledigten Nächten.',
   'stamp.moon.name': 'Moon',
-  'stamp.moon.line': 'A quiet crescent.',
-  'badge.fit': 'Fits folders like “{sample}”.',
+  'stamp.moon.line': 'Eine leise Mondsichel.',
+  'badge.fit': 'Passt zu Ordnern wie „{sample}“.',
   'badge.briefcase.name': 'Briefcase',
-  'badge.briefcase.line': 'Work and job folders.',
+  'badge.briefcase.line': 'Ordner für Arbeit und Job.',
   'badge.briefcase.sample': 'Work',
   'badge.leaf.name': 'Leaf',
   'badge.leaf.line': 'For health or outside.',
   'badge.leaf.sample': 'Gym',
   'badge.home.name': 'Home',
-  'badge.home.line': 'Chores and house folders.',
+  'badge.home.line': 'Ordner für Haushalt und Zuhause.',
   'badge.home.sample': 'Kitchen',
   'badge.heart.name': 'Heart',
-  'badge.heart.line': 'People and care folders.',
+  'badge.heart.line': 'Ordner für Menschen und Fürsorge.',
   'badge.heart.sample': 'Family',
   'badge.bolt.name': 'Bolt',
-  'badge.bolt.line': 'Quick errand folders.',
+  'badge.bolt.line': 'Ordner für schnelle Besorgungen.',
   'badge.bolt.sample': 'Errands',
   'push.channelName': 'Did I',
   'push.channelDesc': 'Did I und Freundschaftsanfragen von Leuten, die du kennst',
@@ -1577,17 +1596,17 @@ export const de = {
   'look.brass.name': 'Brass',
   'look.brass.line': 'Warme Pips.',
   'look.night.name': 'Night',
-  'look.night.line': 'Darker plate.',
+  'look.night.line': 'Dunklere Fläche.',
   'look.moss.name': 'Moss',
-  'look.moss.line': 'Forest plates, soft sage.',
+  'look.moss.line': 'Waldflächen, sanfter Salbei.',
   'look.plum.name': 'Plum',
-  'look.plum.line': 'Violet tint, lilac pip.',
+  'look.plum.line': 'Violetter Ton, lila Punkt.',
   'look.rose.name': 'Rose',
-  'look.rose.line': 'Blush panels, quiet pink.',
+  'look.rose.line': 'Zartrosa Flächen, ruhiges Pink.',
   'look.steel.name': 'Steel',
-  'look.steel.line': 'Cool gray, steel trim.',
+  'look.steel.line': 'Kühles Grau, Stahlrand.',
   'look.wine.name': 'Wine',
-  'look.wine.line': 'Dark red plate, burgundy pip.',
+  'look.wine.line': 'Dunkelrote Fläche, bordeauxfarbener Punkt.',
   'look.glow.name': 'Glow',
   'look.glow.line': 'Kühle Platten, cyan Akzent.',
   'look.ember.name': 'Ember',
@@ -1860,7 +1879,7 @@ export const de = {
   'widget.tonight.nextAt': 'Nächste Frage um {time}',
   'widget.tonight.clear': 'Für heute Abend alles erledigt',
   'widget.tonight.oneLeft': 'Heute Abend noch eine',
-  'widget.tonight.left': '{n} left tonight',
+  'widget.tonight.left': 'Heute Abend noch {n}',
   'widget.tonight.lastNight': 'Gestern Abend',
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Noch nicht",
@@ -1868,10 +1887,10 @@ export const de = {
   'widget.tonight.next': 'Next',
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Ordner',
-  'widget.settings.tagSub': 'Which folder the home screen widget follows.',
+  'widget.settings.tagSub': 'Welchem Ordner das Widget auf dem Homescreen folgt.',
   'widget.settings.tagActive': 'Active folder',
-  'widget.settings.tagMissing': 'Pick a folder',
-  'widget.settings.noTags': 'Add a question in a folder first.',
+  'widget.settings.tagMissing': 'Wähle einen Ordner',
+  'widget.settings.noTags': 'Füge zuerst eine Frage in einem Ordner hinzu.',
   "widget.settings.look": "Aussehen",
   'widget.settings.lookSub': 'Farben im Widget. Nur Looks, die dir gehören.',
   'widget.settings.lookTag': 'Wie dein Look',
@@ -2317,7 +2336,7 @@ export const de = {
   'enter.eraseGo': 'Löschen und neu anfangen',
   'enter.eraseBody': 'Du bist nicht angemeldet, also gibt es die PIN nur auf diesem Handy. Um sie zu entfernen, lösch Did I auf diesem Handy: Fragen, Antworten, Münzen und Looks. Das geht nicht rückgängig.',
   'enter.forgotTitle': 'PIN vergessen?',
-  'enter.forgot': 'PIN vergessen?',
+  'enter.forgot': 'PIN vergessen?',
   'clock.pm': '{h}:{m} nachm.',
   'clock.am': '{h}:{m} vorm.',
   'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
@@ -2527,7 +2546,7 @@ export const de = {
   'pack.meds': 'Medikamente',
   'pack.sureTitle': '{n} Fragen hinzufügen?',
   'pack.sureGo': 'Hinzufügen',
-  'pack.added': '{n} Fragen hinzugefügt',
+  'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',
   'note.hint': 'Tippe auf eine Nacht für eine Notiz.',
   'note.ph': 'Kurze Notiz hinzufügen',
@@ -2633,7 +2652,7 @@ export const de = {
   'lamp.monthPrev': 'Letzter Monat',
   'lamp.monthNext': 'Nächster Monat',
   'hang.folderHint': 'Mit mehr als einem Ordner kann der Filter auf Start und in Fragen nur einen zeigen.',
-  'hang.folderVsTopic': 'Ein Ordner ist, wo eine Frage wohnt. Themen sind Etiketten, so viele du willst.',
+  'hang.folderVsTopic': 'Themen sind zusätzliche Etiketten, so viele du willst.',
   'hang.topicsHint': 'Zusätzliche Stichworte zum Filtern. Eine Frage kann mehrere haben.',
   'hang.discardNewTitle': 'Diese Frage verwerfen?',
   'questions.reorder': 'Ordnen',
@@ -3285,4 +3304,16 @@ export const de = {
   "note.amountIn": "Menge ({unit})",
   "lamp.lastFive": "Die letzten 5 Male",
   "lamp.lastFiveEmpty": "Noch nichts. Hier stehen die letzten 5 Abende mit Did.",
+  "auth.getStarted": "Los geht's",
+  "auth.haveAccount": "Schon ein Konto? Anmelden",
+  "swipeIntro.line": "Nach rechts, wenn du es getan hast, nach links für Noch nicht",
+  "stats.empty": "Noch keine Abende. Beantworte heute Abend, dann stehen hier deine Zahlen.",
+  "empty.goTonight": "Zu heute Abend",
+  'app.loading': 'Lädt…',
+  'first.addHint': 'Wähl einen Vorschlag oder tipp eine Frage.',
+  'title.homePage': 'Start · Did I',
+  'title.friends': 'Freunde · Did I',
+  'title.people': 'Leute · Did I',
+  'every.badgeToday': 'heute',
+  'pack.countOne': '+1 Frage',
 }

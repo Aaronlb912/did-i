@@ -152,9 +152,10 @@ export function FirstNight({ book, onChange, now }) {
           </label>
         ) : null}
         <div className="di-hang-actions">
-          <button className="di-did" type="submit" aria-disabled={!question}>
+          <button className="di-did" type="submit" aria-disabled={!question} aria-describedby={question ? undefined : 'di-first-add-hint'}>
             {t('first.add')}
           </button>
+          {!question ? <small id="di-first-add-hint" className="di-field-hint">{t('first.addHint')}</small> : null}
         </div>
       </form>
     </BoardShell>
