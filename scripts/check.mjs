@@ -5350,8 +5350,77 @@ await testAsync('check on me: due only past the time, on an asked night, unanswe
   assert.deepEqual(checkOnDays({ cadence: 'weekly', weekdays: [3, 1, 1, 9] }), [1, 3])
   assert.deepEqual(checkOnDays({ cadence: 'daily' }), [])
   assert.equal(checkOnFits({ cadence: 'daily' }), true)
-  assert.equal(checkOnFits({ cadence: 'monthly' }), false)
+  assert.equal(checkOnFits({ cadence: 'monthly' }), false, 'monthly with no day')
   assert.equal(checkOnFits({ cadence: 'daily', archived: true }), false)
+})
+
+test('check-on: monthly, once, deadline and every-so-often nights', async () => {
+  const { checkOnDue, checkOnFits, checkOnKind, checkOnShape, checkOnWhen } = await import('../src/lib/check-on.js')
+  const base = { at_minute: 1320, sent_on: null, days: [] }
+  const at = (night, more = {}) => ({ night, minute: 1330, weekday: 2, answered: false, ...more })
+  // Monthly: the day, clamped to short months; 0 is the last day.
+  const monthly = { ...base, kind: 'monthly', month_day: 12 }
+  assert.equal(checkOnDue(monthly, at('2026-10-12')), true)
+  assert.equal(checkOnDue(monthly, at('2026-10-13')), false)
+  assert.equal(checkOnDue(monthly, at('2026-10-12', { answered: true })), false)
+  assert.equal(checkOnDue({ ...monthly, month_day: 31 }, at('2027-02-28')), true, '31st falls on the last day')
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-31')), true)
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-30')), false)
+  // Just once, and a deadline: only that night, only once.
+  const once = { ...base, kind: 'once', on_date: '2026-10-20' }
+  assert.equal(checkOnDue(once, at('2026-10-20')), true)
+  assert.equal(checkOnDue(once, at('2026-10-21')), false)
+  assert.equal(checkOnDue({ ...once, sent_on: '2026-10-20' }, at('2026-10-20')), false)
+  const by = { ...base, kind: 'by', on_date: '2026-10-20', starts_on: '2026-10-01' }
+  assert.equal(checkOnDue(by, at('2026-10-15')), false, 'not before it is due')
+  assert.equal(checkOnDue(by, at('2026-10-20')), true)
+  // Every so often: never done, or every_days since the last Did.
+  const every = { ...base, kind: 'every', every_days: 7 }
+  assert.equal(checkOnDue(every, at('2026-10-09')), true, 'never done')
+  assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05' })), false)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05' })), true)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05', minute: 600 })), false, 'before the time')
+  // From the question to the row.
+  assert.equal(checkOnKind({ cadence: 'monthly', monthDay: 'last' }), 'monthly')
+  assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null })
+  assert.equal(checkOnShape({ cadence: 'monthly', monthDay: 'last' }).month_day, 0)
+  assert.equal(checkOnShape({ cadence: 'once', onceOn: '2026-10-20' }).on_date, '2026-10-20')
+  assert.equal(checkOnFits({ cadence: 'once' }), false, 'a once with no day')
+  const dl = checkOnShape({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20', createdOn: '2026-10-01' })
+  assert.deepEqual([dl.kind, dl.on_date, dl.starts_on], ['by', '2026-10-20', '2026-10-01'])
+  assert.equal(checkOnShape({ cadence: 'every', everyDays: 14 }).every_days, 14)
+  assert.equal(checkOnShape({ cadence: 'every' }).every_days, 7)
+  assert.equal(checkOnShape({ cadence: 'daily' }).kind, 'night')
+  assert.equal(checkOnWhen({ cadence: 'daily' }), null)
+  assert.deepEqual(checkOnWhen({ cadence: 'monthly', monthDay: 12 }), { key: 'checkOn.whenMonthly', day: 12 })
+  assert.deepEqual(checkOnWhen({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20' }), { key: 'checkOn.whenBy', date: '2026-10-20' })
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/CheckOnCard.jsx'), 'utf8')
+  assert.match(card, /checkOnWhen\(lamp\)/)
+})
+
+test('social-gentle.sql: queue_check_ons handles every kind in one statement', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8')
+  for (const col of ['kind text not null default \'night\'', 'month_day smallint', 'on_date date', 'starts_on date', 'every_days smallint']) {
+    assert.ok(sql.includes(`add column if not exists ${col}`), col)
+  }
+  assert.match(sql, /kind in \('night', 'monthly', 'once', 'by', 'every'\)/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days, kind, month_day, on_date, starts_on, every_days\)/)
+  const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
+  const body = job.slice(0, job.indexOf('$$;'))
+  assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(body), 'no per-row loop')
+  assert.match(body, /when 'monthly' then extract\(day from k\.local\)/)
+  assert.match(body, /when 'once' then k\.local::date = k\.on_date/)
+  assert.match(body, /when 'by' then k\.local::date = k\.on_date/)
+  assert.match(body, /when 'every' then coalesce\(k\.local::date - \(\s*select max\(a\.period_key\)::date from public\.answer_log a/)
+  assert.match(body, /a\.status in \('yes', 'late'\)/)
+  assert.match(body, /to_char\(k\.local, 'YYYY-MM'\)/)
+  assert.match(body, /'once:' \|\| k\.lamp_id/)
+  assert.match(body, /public\.push_wanted\(k\.buddy_id, 'friends'\)/)
+  assert.match(body, /push_token is not null/)
+  assert.match(body, /from public\.blocks b/)
+  assert.match(body, /k\.sent_on is null or k\.sent_on < k\.local::date/)
 })
 
 test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
@@ -5372,7 +5441,7 @@ test('social-gentle.sql: gentle streak hidden on the server, check_ons locked do
   assert.match(sql, /create index if not exists check_ons_buddy_idx on public\.check_ons \(buddy_id\)/)
   assert.match(sql, /unique \(owner_id, lamp_id\)/)
   assert.match(sql, /length\(btrim\(question\)\) between 1 and 200/)
-  assert.match(sql, /grant update \(buddy_id, question, at_minute, days\) on public\.check_ons to authenticated/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days[^)]*\) on public\.check_ons to authenticated/)
   // The job: one statement, answer_log, push_wanted, blocks, through push_queue on pg_cron.
   const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
   assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(job.slice(0, job.indexOf('$$;'))), 'no per-row loop')

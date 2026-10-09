@@ -147,6 +147,17 @@ create table if not exists public.check_ons (
   unique (owner_id, lamp_id)
 );
 
+-- What the job needs to know "is this asked tonight" without the shelf.
+-- kind: 'night' (daily and weekly, uses days), 'monthly' (month_day, 0 is
+-- the last day), 'once' (on_date), 'by' (a deadline: starts_on to on_date,
+-- the push only on the due night), 'every' (every_days since the last Did,
+-- read from answer_log in the job so it never goes stale).
+alter table public.check_ons add column if not exists kind text not null default 'night';
+alter table public.check_ons add column if not exists month_day smallint;
+alter table public.check_ons add column if not exists on_date date;
+alter table public.check_ons add column if not exists starts_on date;
+alter table public.check_ons add column if not exists every_days smallint;
+
 alter table public.check_ons drop constraint if exists check_ons_ok;
 alter table public.check_ons add constraint check_ons_ok check (
   length(lamp_id) between 1 and 80
@@ -155,6 +166,11 @@ alter table public.check_ons add constraint check_ons_ok check (
   and cardinality(days) <= 7
   and days <@ array[0, 1, 2, 3, 4, 5, 6]::smallint[]
   and owner_id <> buddy_id
+  and kind in ('night', 'monthly', 'once', 'by', 'every')
+  and (kind <> 'monthly' or month_day between 0 and 31)
+  and (kind not in ('once', 'by') or on_date is not null)
+  and (kind <> 'by' or starts_on is null or starts_on <= on_date)
+  and (kind <> 'every' or every_days between 1 and 366)
 );
 
 -- owner_id leads the unique key; buddy_id needs its own for reads and the cascade.
@@ -190,9 +206,9 @@ create policy "check_ons stop" on public.check_ons
 revoke all on public.check_ons from anon;
 revoke all on public.check_ons from authenticated;
 grant select, delete on public.check_ons to authenticated;
-grant insert (owner_id, buddy_id, lamp_id, question, at_minute, days) on public.check_ons to authenticated;
+grant insert (owner_id, buddy_id, lamp_id, question, at_minute, days, kind, month_day, on_date, starts_on, every_days) on public.check_ons to authenticated;
 -- sent_on is the job's; nobody signed in moves it.
-grant update (buddy_id, question, at_minute, days) on public.check_ons to authenticated;
+grant update (buddy_id, question, at_minute, days, kind, month_day, on_date, starts_on, every_days) on public.check_ons to authenticated;
 
 -- A friend changed: the night starts fresh for the new one.
 create or replace function public.check_ons_reset()
@@ -278,6 +294,7 @@ declare
 begin
   with clock as (
     select c.id, c.owner_id, c.buddy_id, c.question, c.lamp_id, c.at_minute, c.days, c.sent_on,
+      c.kind, c.month_day, c.on_date, c.starts_on, c.every_days,
       (now() at time zone p.zone) as local
     from public.check_ons c
     join public.profiles p on p.user_id = c.owner_id
@@ -288,10 +305,34 @@ begin
     from clock k
     where (k.sent_on is null or k.sent_on < k.local::date)
       and extract(hour from k.local) * 60 + extract(minute from k.local) >= k.at_minute
-      and (cardinality(k.days) = 0 or extract(dow from k.local)::smallint = any (k.days))
+      -- Asked tonight, per kind. Same rule as checkOnDue in src/lib/check-on.js.
+      and case k.kind
+        when 'night' then cardinality(k.days) = 0 or extract(dow from k.local)::smallint = any (k.days)
+        when 'monthly' then extract(day from k.local)::int = least(
+          case when k.month_day = 0 then 31 else k.month_day end,
+          extract(day from (date_trunc('month', k.local) + interval '1 month - 1 day'))::int)
+        when 'once' then k.local::date = k.on_date
+        when 'by' then k.local::date = k.on_date
+        -- Never done, or every_days since the newest Did before tonight.
+        -- One lookup on the answer_log primary key per due row, inside this statement.
+        when 'every' then coalesce(k.local::date - (
+          select max(a.period_key)::date from public.answer_log a
+          where a.user_id = k.owner_id and a.lamp_id = k.lamp_id
+            and a.status in ('yes', 'late')
+            and a.period_key ~ '^\d{4}-\d{2}-\d{2}$'
+            and a.period_key < k.local::date::text
+        ) >= k.every_days, true)
+        else false
+      end
+      -- Not answered: the key the app writes for this period.
       and not exists (
         select 1 from public.answer_log a
-        where a.user_id = k.owner_id and a.lamp_id = k.lamp_id and a.period_key = k.local::date::text
+        where a.user_id = k.owner_id and a.lamp_id = k.lamp_id
+          and a.period_key = case
+            when k.kind = 'monthly' then to_char(k.local, 'YYYY-MM')
+            when k.kind in ('once', 'by') then 'once:' || k.lamp_id
+            else k.local::date::text
+          end
       )
       and public.push_wanted(k.buddy_id, 'friends')
       and exists (select 1 from public.devices d where d.user_id = k.buddy_id and d.push_token is not null)
