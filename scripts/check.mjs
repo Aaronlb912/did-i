@@ -5514,7 +5514,7 @@ await testAsync('shared every so often: due across members, any Did resets it, c
   assert.doesNotMatch(sql, /create table/i, 'no new table, so no new policies to keep')
   assert.doesNotMatch(sql, /[^(]auth\.uid\(\)/, 'no bare auth.uid()')
   const people = readFileSync(new URL('../supabase/people.sql', import.meta.url), 'utf8')
-  assert.ok(people.includes('on public.family_answers\r\n  for select using (public.in_family(family_id));'), 'members already see family answers')
+  assert.ok(people.replace(/\r\n/g, '\n').includes('on public.family_answers\n  for select using (public.in_family(family_id));'), 'members already see family answers')
   const order = readFileSync(new URL('../scripts/apply-all-sql.mjs', import.meta.url), 'utf8')
   assert.ok(order.indexOf('shared-every.sql') > order.indexOf('did-you-repeat.sql'), 'after the repeat constraint it replaces')
   const lib = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
