@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { daysSinceDid, everyGap, isEvery, learnedGap } from './recurrence.js'
+import { daysBetween, daysSinceDid, everyGap, isEvery, learnedGap } from './recurrence.js'
 
 // "Last time: 12 days ago" under an every so often question. upTo counts a
 // Did tonight (the question page); the card leaves tonight out.
@@ -28,4 +28,53 @@ export function gapLine(book, lamp, dateIso) {
   const learned = learnedGap(book, lamp.id, dateIso, true)
   if (learned) return t('every.usually', { n: learned })
   return t('cadence.every', { n: everyGap(book, lamp, dateIso) })
+}
+
+// Shared every so often (family questions): due for everyone once every_days
+// have passed since anyone's last Did. last is { on, by } from
+// family_every_last, or null when nobody has done it yet.
+export function sharedEveryDue(lamp, last, night) {
+  if (!lamp || lamp.cadence !== 'every' || lamp.archived) return false
+  if (lamp.made_on && night < lamp.made_on) return false
+  const on = String(last?.on || '')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(on)) return true
+  const gap = Number(lamp.every_days)
+  return daysBetween(on, night) >= (Number.isInteger(gap) && gap >= 1 ? gap : 7)
+}
+
+// The newest Did from a list of family answers, any member: { on, by }.
+// Nope (skip) never counts, so it only answers for the one who said it.
+export function newestDid(rows = []) {
+  let best = null
+  for (const row of rows) {
+    if (row.status !== 'yes' && row.status !== 'late') continue
+    if (!best || row.period_key > best.on) best = { on: row.period_key, by: row.user_id }
+  }
+  return best
+}
+
+// "Last time: Sam, 2 days ago" or "Never yet". name is their display name.
+export function sharedLastLine(last, night, name = '') {
+  const on = String(last?.on || '')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('every.never')
+  const days = Math.max(0, daysBetween(on, night))
+  if (!name) return sinceLine(days)
+  if (days === 0) return t('every.byToday', { name })
+  if (days === 1) return t('every.byOne', { name })
+  return t('every.byMany', { name, n: days })
+}
+
+// "Last time: 12 days ago" on a Did you that comes up every so often. ''
+// when it is not one; "Never yet" when the sender has not done it.
+export function sendLastLine(repeat, lastDidOn, night) {
+  if (!/^every:\d+$/.test(String(repeat || ''))) return ''
+  const on = String(lastDidOn || '')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('every.never')
+  return sinceLine(Math.max(0, daysBetween(on, night)))
+}
+
+function sinceLine(days) {
+  if (days === 0) return t('every.today')
+  if (days === 1) return t('every.lastOne')
+  return t('every.lastMany', { n: days })
 }

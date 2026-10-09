@@ -3341,4 +3341,9 @@ export const en = {
   'sharedNote.cap': 'That is 20 shared notes today. Try again tomorrow.',
   'sharedNote.fromFriend': 'Notes {name} shared',
   'sharedNote.cheer': 'Cheer',
+  'every.byToday': "{name} did it tonight",
+  'every.byOne': "{name} did it 1 day ago",
+  'every.byMany': "{name} did it {n} days ago",
+  'family.everyHint': "It comes up for everyone once that long has passed since anyone last did it. The first Did resets it for the family. Not yet only counts for you.",
+  'people.sendEveryHint': "It joins their questions every so often. If you ask about one of your own, they see when you last did it.",
 }

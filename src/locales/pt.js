@@ -3346,4 +3346,9 @@ export const pt = {
   'sharedNote.cap': 'Já são 20 notas compartilhadas hoje. Tente amanhã.',
   'sharedNote.fromFriend': 'Notas que {name} compartilhou',
   'sharedNote.cheer': 'Torcer',
+  'every.byToday': "{name} fez hoje à noite",
+  'every.byOne': "{name} fez há 1 dia",
+  'every.byMany': "{name} fez há {n} dias",
+  'family.everyHint': "Aparece para todos quando passa esse tempo desde a última vez que alguém fez. O primeiro Did reinicia para a família. Ainda não só conta para você.",
+  'people.sendEveryHint': "Entra nas perguntas da pessoa de vez em quando. Se você perguntar sobre uma das suas, ela vê quando você fez pela última vez.",
 }

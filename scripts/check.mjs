@@ -5456,6 +5456,71 @@ test('shared notes and we amounts: sql guards', () => {
   assert.match(web, /sharedNote\.toggle/)
 })
 
+await testAsync('shared every so often: due across members, any Did resets it, copy, SQL', async () => {
+  const { sharedEveryDue, newestDid, sharedLastLine, sendLastLine } = await import('../src/lib/every-copy.js')
+  const { repeatFrom, readRepeat, keptLamp, senderLastDid } = await import('../src/lib/send-repeat.js')
+  const { peopleTonightItems } = await import('../src/lib/people-tonight.js')
+  const lamp = { id: 'w', cadence: 'every', every_days: 7, made_on: '2026-09-01', archived: false }
+  assert.ok(sharedEveryDue(lamp, null, '2026-09-01'), 'never done: due for everyone')
+  assert.ok(!sharedEveryDue(lamp, null, '2026-08-31'), 'not before it was made')
+  const answers = [
+    { lamp_id: 'w', user_id: 'sam', period_key: '2026-09-03', status: 'yes' },
+    { lamp_id: 'w', user_id: 'ana', period_key: '2026-09-08', status: 'skip' },
+  ]
+  const last = newestDid(answers)
+  assert.deepEqual(last, { on: '2026-09-03', by: 'sam' }, 'a nope never counts as the last Did')
+  assert.ok(!sharedEveryDue(lamp, last, '2026-09-09'), 'Sam did it 6 nights ago: not due for anyone')
+  assert.ok(sharedEveryDue(lamp, last, '2026-09-10'), 'due for everyone 7 nights after Sam')
+  const reset = newestDid([...answers, { lamp_id: 'w', user_id: 'ana', period_key: '2026-09-10', status: 'yes' }])
+  assert.equal(reset.by, 'ana', 'the newest Did wins, whoever said it')
+  assert.ok(!sharedEveryDue(lamp, reset, '2026-09-11'), 'one Did resets it for the whole family')
+  assert.ok(!sharedEveryDue({ ...lamp, cadence: 'daily' }, null, '2026-09-10'), 'only every so often questions')
+  assert.equal(sharedLastLine(null, '2026-09-10', 'Sam'), en['every.never'])
+  assert.equal(sharedLastLine(last, '2026-09-05', 'Sam'), 'Sam did it 2 days ago')
+  assert.equal(sharedLastLine(last, '2026-09-04', 'Sam'), 'Sam did it 1 day ago')
+  assert.equal(sharedLastLine(last, '2026-09-03', 'Sam'), 'Sam did it tonight')
+  assert.equal(sharedLastLine(last, '2026-09-05', ''), 'Last time: 2 days ago')
+  // Did you asks
+  assert.equal(repeatFrom('every', [], 14), 'every:14')
+  assert.equal(repeatFrom('every', [], 0), '')
+  assert.equal(readRepeat('every:14').everyDays, 14)
+  assert.equal(readRepeat('every:999').cadence, 'once', 'out of range falls back')
+  const kept = keptLamp({ question: 'Did I water the plants?', repeat: 'every:7' }, new Date('2026-09-10T20:00:00'))
+  assert.equal(kept.cadence, 'every')
+  assert.equal(kept.everyDays, 7)
+  assert.equal(sendLastLine('every:7', '2026-08-29', '2026-09-10'), 'Last time: 12 days ago')
+  assert.equal(sendLastLine('every:7', null, '2026-09-10'), en['every.never'])
+  assert.equal(sendLastLine('daily', '2026-08-29', '2026-09-10'), '', 'only every so often asks')
+  const book = { lamps: [{ id: 'p', question: 'Did I water the plants?', cadence: 'every', everyDays: 7 }], answers: [{ lampId: 'p', periodKey: '2026-08-29', status: 'yes' }] }
+  assert.equal(senderLastDid(book, 'Did you water the plants', '2026-09-10'), '2026-08-29', 'matches your own question')
+  assert.equal(senderLastDid(book, 'Did you feed the cat?', '2026-09-10'), '')
+  // Not yet only affects you: your nope takes the card off your tonight only.
+  const famRow = (answer) => ({ family: { id: 'f' }, lamp: { id: 'w', question: 'Did we water the plants?' }, night: '2026-09-10', answer })
+  assert.equal(peopleTonightItems({ familyRows: [famRow(null)] }).length, 1)
+  assert.equal(peopleTonightItems({ familyRows: [famRow({ status: 'skip' })] }).length, 0)
+  // SQL
+  const sql = readFileSync(new URL('../supabase/shared-every.sql', import.meta.url), 'utf8')
+  for (const bit of [
+    "cadence in ('daily', 'weekly', 'once', 'every')",
+    'every_days between 1 and 365',
+    'security definer\r\nset search_path = public',
+    'public.in_family(l.family_id)',
+    'lamps[1:200]',
+    'revoke all on function public.family_every_last(uuid[]) from public, anon;',
+    "status in ('yes', 'late')",
+    'create index if not exists family_answers_last_did_idx',
+    "'^every:[1-9][0-9]{0,2}$'",
+  ]) assert.ok(sql.includes(bit), bit)
+  assert.doesNotMatch(sql, /create table/i, 'no new table, so no new policies to keep')
+  assert.doesNotMatch(sql, /[^(]auth\.uid\(\)/, 'no bare auth.uid()')
+  const people = readFileSync(new URL('../supabase/people.sql', import.meta.url), 'utf8')
+  assert.ok(people.includes('on public.family_answers\r\n  for select using (public.in_family(family_id));'), 'members already see family answers')
+  const order = readFileSync(new URL('../scripts/apply-all-sql.mjs', import.meta.url), 'utf8')
+  assert.ok(order.indexOf('shared-every.sql') > order.indexOf('did-you-repeat.sql'), 'after the repeat constraint it replaces')
+  const lib = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
+  assert.ok(lib.includes("rpc('family_every_last'"), 'one call for every question, not one per row')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

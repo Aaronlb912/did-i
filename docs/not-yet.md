@@ -30,6 +30,15 @@ Last worked through 2026-10-02.
 - **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).
 - **Calendar and stats leave it out.** The overall calendar, streaks and the 30-night tile skip these questions; the question's own month view shows only the nights it was done.
 
+## Shared every so often (branch `social-every`)
+
+- **Supabase not applied yet.** Run `supabase/shared-every.sql` (or `npm run db:apply:all`, it is last in the list) before this ships. Until then the family and Did you lists select `every_days` and `last_did_on`, which do not exist yet, so those reads fail.
+- **Family questions only.** A family question can come up every so often (about a week, 2 weeks, a month; no Other box). It is due for everyone it is for once that long has passed since anyone's last Did; the first Did resets it for the family; Not yet only counts for you, that night. No streak. Did we cards stay nightly or weekly.
+- **Did you asks** can be every so often too. If the question matches one of the sender's own every so often questions, the ask carries the sender's last Did and both sides see "Last time: 12 days ago". Matching is by the words, so a reworded ask shows "Never yet".
+- **Phone only.** The website's Family page, family Tonight panel and Did you sheet do not offer every so often yet, and do not show the last-time line.
+- **Needs device testing:** the When chips on a family page at 390px, the "Sam did it 2 days ago" line on the Tonight people card and the family page, the every so often pills in the Did you sheet, and the last-time line in the inbox and Sent.
+- **Not on the widget.** The widget does not show people cards, so these do not appear there.
+
 ## Card frames
 
 - **Needs device testing:** frame on the Home done card and the swipe stack (top card moves, cards behind stay still), nothing clipped and the week dots and friends pill clear of the frame, animation stops off screen, in the background, after a while without a touch and with Less motion; the Collection tiles at 390px wide; a coin buy and a gem buy while signed in.
