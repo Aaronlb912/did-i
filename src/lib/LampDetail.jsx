@@ -4,7 +4,7 @@ import { LampManage } from './LampManage.jsx'
 import { cadenceLine, lampBuzzes, lampNotifyOn, lampPriority } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { amountWords, lampRecord, lastDidTimes } from './lamp-record.js'
+import { amountAverageLine, amountWords, lampAmounts, lampRecord, lastDidTimes } from './lamp-record.js'
 import { pillStatusLabel } from './pill-status.js'
 import { usePrefs } from './prefs.js'
 import { formatBoardDate, isEvery, recentPeriodKeys } from './recurrence.js'
@@ -27,6 +27,7 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
   )
   const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso])
   const lastFive = useMemo(() => lastDidTimes(book, lamp, 5), [book, lamp])
+  const amounts = useMemo(() => lampAmounts(book, lamp, dateIso, 14, 30), [book, lamp, dateIso])
   if (!lamp) return null
   const status = lamp.archived
     ? t('lamp.pausedLine')
@@ -85,6 +86,40 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
           {t('nav.back')}
         </button>
       </div>
+
+      {lamp.trackAmount ? (
+        <>
+          <SetCap>{t('amounts.title')}</SetCap>
+          <div className="di-amounts">
+            {amounts.count ? (
+              <>
+                <p className="di-amounts-avg">{amountAverageLine(amounts.average, lamp.amountUnit)}</p>
+                <div className="di-amounts-bars" role="list" aria-label={t('amounts.cap')}>
+                  {amounts.bars.map((bar) => (
+                    <span
+                      key={bar.night}
+                      role="listitem"
+                      className="di-amounts-bar"
+                      title={
+                        bar.amount === null
+                          ? t('amounts.barNone', { date: formatBoardDate(bar.night) })
+                          : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp.amountUnit) })
+                      }
+                    >
+                      {bar.amount ? (
+                        <i style={{ height: `${Math.max(4, Math.round((bar.amount / amounts.max) * 100))}%` }} />
+                      ) : null}
+                    </span>
+                  ))}
+                </div>
+                <p className="di-amounts-cap">{t('amounts.cap')}</p>
+              </>
+            ) : (
+              <p className="di-amounts-cap">{t('amounts.empty')}</p>
+            )}
+          </div>
+        </>
+      ) : null}
 
       <SetCap>{t('lamp.lastFive')}</SetCap>
       <SetCard>

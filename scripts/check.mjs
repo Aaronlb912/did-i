@@ -4252,6 +4252,29 @@ await testAsync('the widget function draws on its own, with only what WidgetKit 
     }
     const kept = JSON.stringify(fn(broken, { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }))
     assert.ok(kept.includes('Did I lock the door?'), 'a broken decoration never blanks the question')
+
+    // Every so often lead: "Last time" line under it, a plain string prop.
+    assert.equal(open.sinceLine, '', 'a daily lead has no last time line')
+    const every = { id: 'sheets', question: 'Did I wash the sheets?', cadence: 'every', everyDays: 3, archived: false, createdOn: '2026-01-01' }
+    const ago = addDaysIso(night, -6)
+    const everyBook = book([{ lampId: 'sheets', periodKey: ago, status: 'yes', answeredAt: `${ago}T20:00:00` }], { lamps: [every] })
+    const due = buildTonightWidgetProps({ currentId: 'b1', boards: [everyBook] }, clock)
+    assert.equal(due.leadLampId, 'sheets')
+    assert.equal(typeof due.sinceLine, 'string')
+    assert.equal(due.sinceLine, t('every.lastMany', { n: 6 }))
+    assert.equal(due.items[0].since, due.sinceLine)
+    drawAll(due, 'an every so often lead')
+    for (const widgetFamily of ['systemSmall', 'systemMedium', 'systemLarge']) {
+      const drawn = JSON.stringify(fn(JSON.parse(JSON.stringify(due)), { widgetFamily, widgetRenderingMode: 'fullColor' }))
+      assert.ok(drawn.includes(due.sinceLine), `the last time line draws on ${widgetFamily}`)
+    }
+    const never = buildTonightWidgetProps({ currentId: 'b1', boards: [book([], { lamps: [every] })] }, clock)
+    assert.equal(never.sinceLine, t('every.never'))
+    drawAll({ ...due, sinceLine: 42, items: due.items.map((item) => ({ ...item, since: null })) }, 'a bad last time line')
+    const android = readFileSync(path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
+    assert.ok(android.includes('text={sinceText}') && android.includes('p.sinceLine'), 'Android draws the last time line too')
+    // Next and a tap move the line with the card.
+    assert.equal(peekNextTonightCard({ ...due, items: [...due.items, { lampId: 'x', question: 'Q', status: 'open' }] }).sinceLine, '')
   } finally {
     saveWeLine('', night)
   }
@@ -4849,6 +4872,48 @@ await testAsync('every so often: saved shape, pack, and the toast note action', 
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const screen = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
   assert.ok(screen.includes('openAnswerNote(') && screen.includes("t('note.addShort')"), 'a Did offers a note from the undo toast')
+})
+
+await testAsync('amounts: average over 30 nights, 14 night chart, rounding', async () => {
+  const { lampAmounts, roundAmount, amountAverageLine } = await import('../src/lib/lamp-record.js')
+  const lamp = { id: 'w', question: 'Did I drink water?', cadence: 'daily', trackAmount: true, amountUnit: 'glasses' }
+  const today = '2026-10-09'
+  const at = (back, status, amount) => {
+    const key = addDaysIso(today, -back)
+    return { lampId: 'w', periodKey: key, status, answeredAt: `${key}T21:00:00.000Z`, ...(amount == null ? {} : { amount }) }
+  }
+  const answers = [
+    at(0, 'yes', 6), at(1, 'late', 5), at(2, 'skip', 99), at(3, 'yes'), at(13, 'yes', 7),
+    at(14, 'yes', 6), at(29, 'yes', 6), at(30, 'yes', 100), { lampId: 'z', periodKey: today, status: 'yes', amount: 50 },
+  ]
+  const out = lampAmounts({ answers }, lamp, today)
+  assert.equal(out.count, 5, 'only Did nights with an amount in the last 30')
+  assert.equal(out.average, 6)
+  assert.equal(out.bars.length, 14)
+  assert.equal(out.bars[0].night, addDaysIso(today, -13))
+  assert.equal(out.bars[0].amount, 7)
+  assert.equal(out.bars[13].night, today)
+  assert.equal(out.bars[13].amount, 6)
+  assert.equal(out.bars[11].amount, null, 'a nope amount is not charted')
+  assert.equal(out.bars[10].amount, null, 'a Did with no amount is a gap')
+  assert.equal(out.max, 7)
+  assert.equal(roundAmount(2.46), 2.5)
+  assert.equal(roundAmount(12.6), 13)
+  assert.equal(roundAmount(NaN), null)
+  assert.equal(amountAverageLine(6, 'glasses'), t('amounts.avg', { n: 6, unit: 'glasses' }))
+  assert.equal(amountAverageLine(6, ''), t('amounts.avgPlain', { n: 6 }))
+  assert.equal(amountAverageLine(null, 'glasses'), '')
+  const none = lampAmounts({ answers: [] }, lamp, today)
+  assert.equal(none.count, 0)
+  assert.equal(none.average, null)
+  assert.ok(none.bars.every((bar) => bar.amount === null))
+  assert.deepEqual(lampAmounts({ answers }, { ...lamp, trackAmount: false }, today).bars, [])
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  for (const file of ['native/screens/questions.jsx', 'src/lib/LampDetail.jsx']) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    assert.ok(/useMemo\(\(\) => lampAmounts\(/.test(src), `${file} memoizes the amounts walk`)
+    assert.ok(src.includes("t('amounts.empty')"), `${file} has an empty state`)
+  }
 })
 
 await testAsync('amounts: saved on the answer, round trip through the answer log, last 5, SQL', async () => {

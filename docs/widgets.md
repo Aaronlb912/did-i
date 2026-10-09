@@ -111,6 +111,10 @@ The iOS card matches Android. The look-color ring is a `ContainerRelativeShape` 
 
 Dev client only: tapping the widget right after a force-stop can start the widget task before the dev launcher loads the app ("App react context shouldn't be created before"). Open the app first. Release builds have no dev launcher. On the emulator, a force-stop makes Android send `PACKAGE_UNSTOPPED` on the next launch, which wakes the widget worker first and trips this every time. Use `adb shell am kill com.aaronbryant.didi` from the home screen instead of `am force-stop`, then open the app.
 
+An every so often question shows one small line under it on both platforms: "Last time: 6 days ago" or "Never yet" (`lastTimeLine` in `src/lib/every-copy.js`, tonight left out). `buildTonightWidgetProps` puts it on each item as `since` and on the card as `sinceLine`; Next and a tap move it with the card. Hidden on the tightest Android size and on lock screen sizes.
+
+The iOS layout is not compiled into the widget extension. `createWidget` hands the function's source to native code, which saves it in the app group (`__expo_widgets_DidITonight_layout`), and WidgetKit evaluates that string. So a layout change that only uses `@expo/ui` views and modifiers the installed build already has ships over the air: the new layout lands the first time the updated app opens and calls `createWidget`. A new native modifier or view needs a build.
+
 ## Code map
 
 - `src/lib/widget-tonight.js` — snapshot + merge answers from the widget
