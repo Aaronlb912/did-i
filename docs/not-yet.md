@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-02.
 
+## Did we amounts and shared notes (branch `social-amounts`)
+
+- **Supabase not applied yet.** Run npm run db:apply:all (or supabase/social-amounts.sql after did-we.sql, blocks.sql). Until then the total line, Track an amount and the Share switch stay hidden or show "Could not share the note".
+- **Track an amount on a Did we is in the card's more menu, maker only.** Not on the New Did we form yet. The web has no Did we card page, so totals and amounts are phone only.
+- **Shared notes show on a friend's page only (phone).** Not on the Friends list, not in the group for a Did we (Did we nights have no note box), not on the website. Cheer on a shared note is the normal friend cheer; it does not say which note.
+- **Share starts off on a new device.** Whether a note is shared is kept on the device that shared it, so another phone shows the switch off. Turning it off there still removes it on the server only if this device shared it.
+- **Needs device testing:** Share switch in the note sheet at 390px, a friend sees the note and cheers it, Remove note takes it back, Together line on the Did we list and card, amount sheet after Did, 21st shared note in a day shows the cap line.
+
 ## Every so often questions and a note after Did (branch `long-gap`)
 
 - **Supabase not applied yet for amounts and gentle pushes (branch `amounts`).** answers.sql (amount column, range check, put_answers) and push.sql (push_wanted skips streakRisk and streakHit when gentle is on) changed; run npm run db:apply:all. Until then an amount stays on the phone that saved it and does not reach a second phone. Nothing fails: the old put_answers ignores the amount.

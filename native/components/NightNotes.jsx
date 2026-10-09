@@ -5,7 +5,9 @@ import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { noteShared, setNoteShared } from '../../src/lib/social-amounts.js'
+import { SetSwitch } from './SetBits.jsx'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
 import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
@@ -21,6 +23,12 @@ function removeNote(book, lampId, periodKey, note, onChange) {
   const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const amount = typeof was?.amount === 'number' ? was.amount : ''
   onChange(setAnswerNote(book, lampId, periodKey, '', undefined, ''))
+  // A removed note is no longer shared either.
+  if (noteShared(lampId, periodKey)) {
+    setNoteShared({ lampId, periodKey, on: false }).then((out) => {
+      if (out.miss) confirmMiss(out.miss)
+    })
+  }
   const now = Date.now()
   showToast({
     id: 'undo:note',
@@ -54,6 +62,21 @@ function nightLine(lamp, answer) {
   return night ? `${night} · ${word}` : word
 }
 
+// Share is offered only on a Did night. null means no switch.
+function shareProps(lamp, answer) {
+  if (!lamp || !answer || answer.status === 'skip') return null
+  return { lampId: lamp.id, periodKey: answer.periodKey, question: shortLabel(lamp) }
+}
+
+// Sends the note to friends when Share is on; takes it back when it was on
+// and now is off. Nothing goes out for a note that was never shared.
+function shareAfter(share, on, note) {
+  if (!share || (!on && !noteShared(share.lampId, share.periodKey))) return
+  setNoteShared({ ...share, note, on }).then((out) => {
+    if (out.miss) confirmMiss(out.miss)
+  })
+}
+
 // The amount box only shows for a question that tracks one. undefined means
 // "leave the amount alone" to setAnswerNote, so other questions never touch it.
 function amountProps(lamp, answer) {
@@ -62,10 +85,15 @@ function amountProps(lamp, answer) {
 }
 
 /** One note box (and, when the question tracks one, an amount box) with Save and Never mind. */
-function NoteEdit({ label, initial, amount = null, colors, onSave, onCancel, onRemove }) {
+function NoteEdit({ label, initial, amount = null, share = null, colors, onSave, onCancel, onRemove }) {
   const [draft, setDraft] = useState(initial || '')
   const [count, setCount] = useState(amount?.initial || '')
-  const save = () => onSave(draft, amount ? count : undefined)
+  // Off unless this night's note is already shared.
+  const [on, setOn] = useState(() => Boolean(share && noteShared(share.lampId, share.periodKey)))
+  const save = () => {
+    onSave(draft, amount ? count : undefined)
+    shareAfter(share, on, draft)
+  }
   return (
     <View style={styles.edit}>
       <Field
@@ -90,6 +118,9 @@ function NoteEdit({ label, initial, amount = null, colors, onSave, onCancel, onR
           onSubmitEditing={save}
         />
       ) : null}
+      {share ? (
+        <SetSwitch colors={colors} label={t('sharedNote.toggle')} sub={t('sharedNote.who')} last on={on} onPress={() => setOn((was) => !was)} />
+      ) : null}
       <View style={styles.keys}>
         <DidButton small colors={colors} label={t('hang.save')} onPress={save} />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
@@ -101,7 +132,7 @@ function NoteEdit({ label, initial, amount = null, colors, onSave, onCancel, onR
 
 // The one way to write a note: a sheet with the box, Save, Never mind and,
 // when there is a note, Remove note. Home and the question page both use it.
-function openNoteSheet({ title, label, initial, amount = null, colors, onSave, onRemove }) {
+function openNoteSheet({ title, label, initial, amount = null, share = null, colors, onSave, onRemove }) {
   const close = () => publishSheet(null)
   publishSheet({
     title,
@@ -114,6 +145,7 @@ function openNoteSheet({ title, label, initial, amount = null, colors, onSave, o
         label={label}
         initial={initial}
         amount={amount}
+        share={share}
         colors={colors}
         onSave={(draft, count) => {
           close()
@@ -148,6 +180,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     label: shortLabel(lamp),
     initial: answer.note,
     amount: amountProps(lamp, answer),
+    share: shareProps(lamp, answer),
     colors,
     onSave: (draft, count) => {
       onChange(setAnswerNote(live() || book, lampId, periodKey, draft, undefined, count))
@@ -174,6 +207,7 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       label: nightLine(lamp, answer),
       initial: answer.note,
       amount: amountProps(lamp, answer),
+      share: shareProps(lamp, answer),
       colors,
       onSave: (draft, count) => {
         onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft, undefined, count))
@@ -312,6 +346,7 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
           label={shortLabel(row.lamp)}
           initial={row.answer.note}
           amount={amountProps(row.lamp, row.answer)}
+          share={shareProps(row.lamp, row.answer)}
           colors={colors}
           onSave={(draft, count) => onSave(row, draft, count)}
           onRemove={() => onRemove(row)}

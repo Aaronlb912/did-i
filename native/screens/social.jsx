@@ -63,6 +63,7 @@ import {
   readFriendNote,
   saveFriendNote,
 } from '../../src/lib/people.js'
+import { sharedNotesFrom } from '../../src/lib/social-amounts.js'
 import { keptProfileName } from '../../src/lib/cloud-sync.js'
 import {
   FRIEND_CHEER_CAP,
@@ -1930,18 +1931,22 @@ export function FriendScreen({ book, onChange, route }) {
   const [gone, setGone] = useState(false)
   const [tab, setTab] = useState('')
   const [week, setWeek] = useKept(`friend.week:${account.user?.id}:${otherId}`, [], KEEP)
+  // Notes they chose to share in the last few nights.
+  const [notes, setNotes] = useState([])
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked, made, serverCheers, nights] = await Promise.all([
+    const [who, both, linked, made, serverCheers, nights, shared] = await Promise.all([
       personById(otherId),
       sendsWith(otherId),
       stillLinked(otherId),
       myDidYouLinks().catch(() => []),
       readFriendCheers().catch(() => null),
       friendWeek(otherId, boardDate(new Date())).catch(() => []),
+      sharedNotesFrom(otherId).catch(() => []),
     ])
+    setNotes(shared)
     if (typeof serverCheers === 'number') setStock(serverCheers)
     setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
@@ -2102,6 +2107,20 @@ export function FriendScreen({ book, onChange, route }) {
           <KeyButton colors={colors} label={t('gift.button')} onPress={() => goHash('/gift', { id: otherId })} />
         </View>
       </View>
+      {notes.length ? (
+        <View style={[styles.sharedList, { borderColor: colors.lineSoft }]}>
+          <Cap colors={colors}>{t('sharedNote.fromFriend', { name })}</Cap>
+          {notes.map((row) => (
+            <View key={`${row.lamp_id}:${row.period_key}`} style={styles.sharedNote}>
+              <Text style={[styles.friendSmall, styles.sharedNoteText, { color: colors.ink }]}>
+                {row.question ? `${row.question}: ` : ''}
+                {row.note}
+              </Text>
+              <KeyButton colors={colors} label={t('sharedNote.cheer')} disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP} onPress={cheer} />
+            </View>
+          ))}
+        </View>
+      ) : null}
       <FriendNote friendId={otherId} name={name} colors={colors} />
       <CheckOnsFrom
         ownerId={otherId}
@@ -2768,6 +2787,9 @@ const styles = StyleSheet.create({
   friendWeek: { flexDirection: 'row', gap: 5, marginTop: 6 },
   friendWeekDot: { width: 8, height: 8, borderRadius: 4 },
   friendAction: { flex: 1, flexBasis: 0 },
+  sharedList: { gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  sharedNote: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sharedNoteText: { flex: 1, textAlign: 'left', marginTop: 0 },
   friendTabs: { marginBottom: 12 },
   friendHint: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 8, paddingHorizontal: 4 },
   confirmCopy: { flex: 1, minWidth: 0, gap: 2 },
