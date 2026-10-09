@@ -10926,6 +10926,17 @@ button.di-we-faces {
   width: 1.45rem;
 }
 
+/* Friends list: the last result line stays in view on a long list. */
+.di-people-said {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 5;
+  padding: 0.25rem 0.75rem;
+  background: var(--di-bg);
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-r);
+}
+
 .di-acc-stick {
   position: sticky;
   top: 0.5rem;

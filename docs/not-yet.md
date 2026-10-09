@@ -8,13 +8,10 @@ Last worked through 2026-10-02.
 ## Did we amounts and shared notes (branch `social-amounts`)
 
 - **Supabase not applied yet.** Run npm run db:apply:all (or supabase/social-amounts.sql after did-we.sql, blocks.sql). Until then the total line, Track an amount and the Share switch stay hidden or show "Could not share the note".
-- **Track an amount on a Did we is in the card's more menu, maker only.** Not on the New Did we form yet. The web has no Did we card page, so totals and amounts are phone only.
-- **Shared notes show on a friend's page only (phone).** Not on the Friends list, not on the website. Cheer on a shared note is the normal friend cheer; it does not say which note.
-- **Did we notes (branch `notes-groups`) are phone only, on the card page.** A note goes on tonight after your Did; Share with the group is off by default. Others on the card see shared ones for the last 14 nights and can cheer you. No note box for an early answer or a past night, nothing on the Did we list or the website, and the cheer does not say which note. Needs the SQL (`we_notes` in social-amounts.sql) and a device pass.
+- **Track an amount on a Did we: card page only, maker only.** The phone has it in the card's more menu; the web card page has Track an amount (maker) and Add your amount after a Did (branch `gaps-1`). Not on the New Did we form yet.
+- **Did we notes (branch `notes-groups`) are phone only, on the card page.** A note goes on tonight after your Did, or on any night you said Did in the last 14 (the Earlier nights list, branch `gaps-1`); Share with the group is off by default. Others on the card see shared ones for the last 14 nights and can cheer you. No note box for an early answer, nothing on the Did we list or the website, and the Did we cheer does not say which note. Needs the SQL (`we_notes` in social-amounts.sql) and a device pass.
 - **Share now follows the server.** The note sheet asks the server (one cached read of all your shared notes) when it opens, so another phone shows the right switch. Offline it falls back to what this device last knew.
-- **Track an amount on a Did we is in the card's more menu, maker only.** Not on the New Did we form yet. The website shows the Together line on its Did we list and card page (branch `web-social`), but tracking and entering amounts are phone only.
-- **Shared notes show on a friend's page (phone) and under each friend on the web Friends list (branch `web-social`).** Not in the group for a Did we (Did we nights have no note box). The web cannot share a note yet; it has no Share switch. Cheer on a shared note is the normal friend cheer; it does not say which note.
-- **Share starts off on a new device.** Whether a note is shared is kept on the device that shared it, so another phone shows the switch off. Turning it off there still removes it on the server only if this device shared it.
+- **Shared notes show on a friend's page (phone) and under each friend on the web Friends list (branch `web-social`).** Not in the group for a Did we. Both apps have the Share switch in the note box. A cheer on a shared note names it ("A cheer for your note on ...") in the push, the inbox and the banner; it needs friend-cheers.sql and push.sql applied, and until then it goes out as a plain cheer.
 - **Needs device testing:** Share switch in the note sheet at 390px, a friend sees the note and cheers it, Remove note takes it back, Together line on the Did we list and card, amount sheet after Did, 21st shared note in a day shows the cap line.
 
 ## Every so often questions and a note after Did (branch `long-gap`)
@@ -28,7 +25,7 @@ Last worked through 2026-10-02.
 - **Needs device testing:** sign in on a fresh install and watch Tonight: loading rows until the first pull lands, no "That is everything for tonight" flash. A failed pull drops the rows and shows the sync miss toast, which now retries on tap.
 - **Needs device testing:** a gem pack that is paid but does not credit shows "Your gems are paid for but not in yet. Tap to try again." (tap runs Restore). Hard to force; a server miss on submit_gem_purchase does it.
 - **Web welcome not clicked through.** A fresh web visit (cloud set up, never signed in, no questions) shows Get started, "Have an account? Sign in" (opens Account) and the legal line. Checked with tests and `vite build` only.- **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
-- **Amounts: average and a 14 night chart only.** The question page shows "About 6 glasses a night" (Did nights, last 30) and bars for the last 14 nights. No totals, goals or longer ranges yet. Not tried on a phone yet. The web has no note sheet, so amounts are entered on the phone only. Remove note clears the note, not the amount.
+- **Amounts: average and a 14 night chart only.** The question page shows "About 6 glasses a night" (Did nights, last 30) and bars for the last 14 nights. No totals, goals or longer ranges yet. Not tried on a phone yet. The web has no note sheet outside the undo toast, so amounts are mostly entered on the phone.
 - **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
 - **Web matches the phone in a build only.** The website card shows "Last time", the Questions list the days pill, and the question page the last-time and usual-gap tiles; checked with `vite build`, not yet clicked through with a real every so often question.
 - **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).
@@ -83,14 +80,12 @@ Last worked through 2026-10-02.
 ## Settings polish (branch `polish/craft`)
 
 - **Drop push needs SQL applied.** `supabase/shop-drops.sql` (after push.sql) and the new `drop_live` text in push.sql are not applied yet. New drop dates in `src/lib/purse.js` need a row in `shop_drop_days` too; `npm test` fails until they match.
-- **Drop switch does not ask for notification permission.** Turning on "Tell me when a drop goes live" only saves the pref; a phone that never allowed notifications gets nothing.
 - **Rating uses the in-app sheet from 1.3.3, not tried on a phone yet.** RateCard calls `expo-store-review` when the phone has it, else opens the store link. Builds before 1.3.3 and dev clients without the module get the link (shim `native/shim/store-review-safe.cjs`). Apple and Google decide whether the sheet shows; a draft or internal-test app may show nothing, and the card is already gone by then.
 
 ## Gentle mode
 
 - **Phone and web.** The switch is in phone Settings and web Settings (next to Less motion). On the web it hides the Stats nights-on number, the Streaks page counts, the question page streak tile and streak popups. The web Home never showed a streak number.
 - **Web Calendar and Week still color missed nights.** Gentle mode hides numbers, not those dots, on both apps.
-- **Streak risk pushes still go out.** The local streak-hit notification is not sent in gentle mode; the server streak-risk push does not read `gentle`. Turn off "streakRisk" in notifications, or teach `push_wanted` about it.
 - **Widgets get a `gentle` flag but show no streak today,** so nothing changes on them.
 - **Shared streaks stay.** Did we streaks are shared with others and still show.
 - **Friends and family see "Done tonight ✓" or "Not yet", no number (branch `social-gentle`).** supabase/social-gentle.sql nulls the streak in `known_people` and the public tonight wall for anyone with gentle on, and the phone and web read it through `friendLine` / `friendStreak` in people.js. **Not applied yet:** run npm run db:apply:all. Until then the old `known_people` still sends the number and only the client hides it once the `gentle` column arrives.
@@ -99,13 +94,10 @@ Last worked through 2026-10-02.
 ## Check on me (branch `social-gentle`)
 
 - **Not applied yet.** supabase/social-gentle.sql adds `check_ons` (RLS: owner and friend read, owner writes, either deletes; 20 per person; buddy index), `queue_check_ons()` and a `check-ons` pg_cron job every 5 minutes. The existing drain-push job sends what it queues. Needs pg_cron, as family-summary.sql does.
-- **Phone only.** Set it on a question's page (daily, weekly, monthly, Just once, deadline and every-so-often questions). The friend's page lists what they asked you to check on, with Send a Did you and Turn off. The website has neither yet.
-- **Phone and web.** Set it on a question's page (daily and weekly questions; the web uses a time box, the phone +30/-30). The phone friend page lists what they asked you to check on, with Send a Did you and Turn off; the web shows the same under each friend on the Friends list (branch `web-social`). Family members who are not friends: the web Family page does not show their asks yet. Web not tried signed in.
+- **Phone and web.** Set it on a question's page (daily, weekly, monthly, Just once, deadline and every so often questions; the web uses a time box, the phone +30/-30). The phone friend page lists what they asked you to check on, with Send a Did you and Turn off; the web shows the same under each friend on the Friends list (branch `web-social`) and, for family members who are not friends, under them on the Family page (branch `gaps-1`). Web not tried signed in.
 - **Uses the friend's "friends" notification switch,** not a kind of its own.
-- **New check-on columns not applied yet** (`kind`, `month_day`, `on_date`, `starts_on`, `every_days` on `check_ons`). Re-run social-gentle.sql before shipping the phone build: the card now sends them on every save.
-- **Every-so-often uses the question's set gap on the server,** not the gap the app learns from your last few Dids, so the nudge can land a little earlier or later than Tonight shows it.
-- **A deadline only nudges on its due night,** not on the nights before it.
-- **A question whose cadence changes keeps its old rule on the server** until the check-on is saved again from its page.
+- **New check-on columns not applied yet** (`kind`, `month_day`, `on_date`, `starts_on`, `every_days` on `check_ons`). Re-run social-gentle.sql before shipping the phone build: the card now sends them on every save. The job (branch `gaps-1`) nudges a deadline on every night of its window, and an every so often question on the gap the app learns (median of the last Dids), the same as Tonight.
+- **An edit updates the check-on** (words and schedule) from Edit question on both apps (branch `gaps-1`). A question changed some other way (a copy loaded from a file, another device's old build) keeps the old rule until its page saves again.
 - **Push text is in 9 languages in SQL (`check_on_text`),** separate from `push_text`.
 - **No SQL test in supabase/tests yet,** and the push tap to a prefilled Did you needs device testing (iPhone and Android, app closed and open).
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
@@ -191,9 +183,6 @@ buttons where the phone swipes.
 - **Web people screens signed in.** Friends, family, and the did you banner
   on the website were checked at 390px with fixture data, not a signed-in
   session.
-- **Errors on Friends sit at the bottom.** A failed save on the auto-add
-  switch, a cheer, or a gift shows under the list, which can be off screen
-  on a long list.
 
 ## Waiting on an account, not on code
 

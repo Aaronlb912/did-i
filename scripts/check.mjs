@@ -5755,6 +5755,22 @@ test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks'
   assert.match(fam, /for \(const id of friendIds\) askRows\.delete\(id\)/)
   assert.match(fam, /stopCheckOn\(ask\.id\)/)
   assert.match(fam, /initialQuestion=\{sheet\.question \|\| ''\}/)
+
+  // An edit that changes words or schedule moves the check-on with it; anything else sends nothing.
+  const { checkOnRule, followCheckOn } = await import('../src/lib/check-on.js')
+  const daily = { id: 'q1', question: 'Water', cadence: 'daily' }
+  assert.equal(checkOnRule(daily), checkOnRule({ ...daily, note: 'x', short: 'W' }), 'other fields do not count')
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, cadence: 'weekly', weekdays: [1] }))
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, question: 'Water plants' }))
+  assert.equal(checkOnRule({ ...daily, cadence: 'nope' }), '', 'no rule for a question the server cannot check')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, note: 'x' }), { miss: '' }, 'unchanged: no write')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, id: 'q2', cadence: 'weekly' }), { miss: '' }, 'another question: no write')
+  assert.match(read('native/screens/questions.jsx'), /if \(existing\) followCheckOn\(existing, next\)/)
+  assert.match(read('src/lib/HangPage.jsx'), /if \(existing\) followCheckOn\(existing, lamp\)/)
+
+  // Web Friends: the result line sticks in view instead of sitting under a long list.
+  assert.match(read('src/lib/Friends.jsx'), /<div className="di-people-said">/)
+  assert.match(read('src/lib/did-i.css'), /\.di-people-said \{\s*position: sticky;/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

@@ -186,6 +186,39 @@ export async function saveCheckOn(lamp, buddyId, atMinute = CHECK_ON_DEFAULT) {
   return error ? { miss: missOf(error) } : { miss: '' }
 }
 
+// What the server's rule is built from, to tell whether an edit changed it.
+export function checkOnRule(lamp) {
+  if (!checkOnFits(lamp)) return ''
+  return JSON.stringify({
+    question: String(lamp.question || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+    days: checkOnDays(lamp),
+    ...checkOnShape(lamp),
+  })
+}
+
+/**
+ * After a question is edited: if its words or schedule changed, update a
+ * check-on that already exists so the server follows the new rule. One
+ * update, no read; with no check-on it touches nothing. Fire and forget:
+ * the card shows the saved rule next time it opens.
+ */
+export async function followCheckOn(before, after) {
+  if (!before || !after || before.id !== after.id) return { miss: '' }
+  const rule = checkOnRule(after)
+  if (!rule || rule === checkOnRule(before)) return { miss: '' }
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const user = await me(db)
+  if (!user) return { miss: 'out' }
+  const { question, days, ...shape } = JSON.parse(rule)
+  const { error } = await db
+    .from('check_ons')
+    .update({ question, days, ...shape })
+    .eq('owner_id', user.id)
+    .eq('lamp_id', String(after.id))
+  return error ? { miss: missOf(error) } : { miss: '' }
+}
+
 /** Stops one. Works for the owner and for the friend. */
 export async function stopCheckOn(id) {
   const db = cloud()

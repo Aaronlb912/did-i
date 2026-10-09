@@ -231,6 +231,18 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </button>
       </div>
 
+      {/* Sticks to the top while you scroll, so a miss on a long list stays in view. */}
+      {said || miss ? (
+        <div className="di-people-said">
+          {said ? <p className="di-set-note" role="status">{said}</p> : null}
+          {miss ? (
+            <p className="di-miss" role="alert">
+              {tMiss(miss)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {links.asked.length ? (
         <>
           <SectionHead label={t('people.askBanner', { n: links.asked.length })} />
@@ -374,7 +386,6 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </>
       ) : null}
 
-      {said ? <p className="di-set-note">{said}</p> : null}
       {sheet ? (
         <SendSheet
           person={sheet.person}
@@ -387,12 +398,6 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
             setSaid(words)
           }}
         />
-      ) : null}
-
-      {miss ? (
-        <p className="di-miss" role="alert">
-          {tMiss(miss)}
-        </p>
       ) : null}
 
       {confirm ? (
