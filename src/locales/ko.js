@@ -3215,4 +3215,9 @@ export const ko = {
   "note.amountIn": "양 ({unit})",
   "lamp.lastFive": "최근 5번",
   "lamp.lastFiveEmpty": "아직 없어요. Did한 최근 5일이 여기에 보여요.",
+  "auth.getStarted": "시작하기",
+  "auth.haveAccount": "계정이 있나요? 로그인",
+  "swipeIntro.line": "했으면 오른쪽, 아직이면 왼쪽으로 밀기",
+  "stats.empty": "아직 기록이 없어요. 오늘 밤 답하면 여기에 숫자가 보여요.",
+  "empty.goTonight": "오늘 밤으로",
 }

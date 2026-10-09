@@ -39,7 +39,7 @@ import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/boar
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
-import { SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
+import { markSwipeIntroSeen, SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
@@ -330,6 +330,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
+  // The first answer while the hint is up means the swipe is learned.
+  const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
+  const answeredAtStart = useRef(answeredNow)
+  useEffect(() => {
+    if (!introSeen && answeredNow > answeredAtStart.current) markSwipeIntroSeen()
+  }, [introSeen, answeredNow])
   const showKey = introSeen && !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(

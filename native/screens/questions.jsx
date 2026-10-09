@@ -819,6 +819,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         ) : (
           <>
             <Meta colors={colors}>{t('questions.hint')}</Meta>
+            {allRows.length ? null : <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />}
             {starters.length && onChange ? (
               <View style={styles.starters}>
                 <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{t('first.picks')}</Text>
@@ -2121,7 +2122,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       <View style={styles.lastFive}>
         <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.lastFive')}</Text>
         {!lastFive.length ? (
-          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
+          <>
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
+            <Pressable accessibilityRole="link" onPress={() => goHash('/tonight')} hitSlop={8}>
+              <Text style={[styles.tileCap, { color: colors.on }]}>{t('empty.goTonight')}</Text>
+            </Pressable>
+          </>
         ) : null}
         {lastFive.map((row) => (
           <View key={row.periodKey} style={[styles.lastRow, { borderBottomColor: colors.lineSoft }]}>

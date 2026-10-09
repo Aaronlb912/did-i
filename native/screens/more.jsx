@@ -320,7 +320,10 @@ export function LaterScreen({ book, now }) {
     <ScreenShell book={book} title={t('later.title')} colors={colors}>
       <Meta colors={colors}>{t('later.body')}</Meta>
       {!hung.length ? (
-        <Meta colors={colors}>{t('later.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('later.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : !nights.length ? (
         <Meta colors={colors}>{t('later.emptyWeek')}</Meta>
       ) : (
@@ -514,6 +517,17 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
+      {!counts.hung ? (
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
+      ) : !(counts.did + counts.late + counts.skip) ? (
+        <>
+          <Meta colors={colors}>{t('stats.empty')}</Meta>
+          <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
+      ) : null}
       {/* This week first, then everything since you started, each with the
           same three tiles so the two read the same way. */}
       <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
@@ -568,7 +582,10 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
         <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('feed.searchPh')} />
       ) : null}
       {!allRows.length ? (
-        <Meta colors={colors}>{t('feed.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('feed.empty')}</Meta>
+          <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
@@ -765,7 +782,10 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     <ScreenShell title={t('streaks.seven')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/week" />
       {!lamps.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <>
         <View style={styles.tiles}>
@@ -903,7 +923,10 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
       </SetCard>
       {!rows.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <View style={styles.tiles}>
           {rows.map((row) => (
@@ -1345,8 +1368,19 @@ export function FirstNightScreen({ book, onChange, now }) {
     finish()
   }
 
+  // Step one goes back to Welcome, when there is one to go back to.
+  const canLeave = cloudSetUp() && authSkipped()
+  function toWelcome() {
+    clearAuthSkip()
+    goHash('/')
+  }
+
   function back() {
     playClick()
+    if (step === 0) {
+      toWelcome()
+      return
+    }
     setStep(0)
   }
 
@@ -1356,13 +1390,10 @@ export function FirstNightScreen({ book, onChange, now }) {
         <Text style={[styles.stepCap, { color: colors.inkDim }]}>
           {t('first.stepOf', { n: step + 1, total: totalSteps })}
         </Text>
-        {step === 0 && cloudSetUp() && authSkipped() ? (
+        {step === 0 && canLeave ? (
           // Back to the welcome screen to sign in instead.
           <Pressable
-            onPress={() => {
-              clearAuthSkip()
-              goHash('/')
-            }}
+            onPress={toWelcome}
             accessibilityRole="button"
             hitSlop={10}
           >
@@ -1377,6 +1408,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           </Title>
           <Meta colors={colors}>{t('first.pickBody')}</Meta>
           <IdeaPicks
+            grid
             label={t('first.pickLabel')}
             starters={starters}
             isOn={(starter) => picks.some((item) => item.question === starter.question)}
@@ -1394,6 +1426,8 @@ export function FirstNightScreen({ book, onChange, now }) {
               </View>
             </>
           ) : null}
+          {/* Typing is the second choice: a small cap, then the card. */}
+          <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.own')}</Text>
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1447,7 +1481,7 @@ export function FirstNightScreen({ book, onChange, now }) {
         </>
       ) : null}
       <View style={styles.stepNav}>
-        {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
           label={step === totalSteps - 1 ? t('first.done') : t('first.next')}

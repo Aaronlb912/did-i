@@ -3214,4 +3214,9 @@ export const ja = {
   "note.amountIn": "量（{unit}）",
   "lamp.lastFive": "最近の5回",
   "lamp.lastFiveEmpty": "まだありません。Didした最近の5晩がここに出ます。",
+  "auth.getStarted": "はじめる",
+  "auth.haveAccount": "アカウントをお持ちの方はログイン",
+  "swipeIntro.line": "できたら右へ、まだなら左へスワイプ",
+  "stats.empty": "まだ記録がありません。今夜答えるとここに数字が出ます。",
+  "empty.goTonight": "今夜へ",
 }

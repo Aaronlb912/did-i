@@ -2084,6 +2084,9 @@ export function CollectionScreen({ book, onChange, startTab }) {
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
               <Meta colors={colors}>{t('kit.noBuddies')}</Meta>
+              <Pressable accessibilityRole="link" onPress={() => goHash('/shop/buddies')} hitSlop={8}>
+                <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allBuddies')}</Text>
+              </Pressable>
             </View>
           ) : null}
           {buddies.map((item) => (

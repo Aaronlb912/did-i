@@ -2756,6 +2756,10 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
     assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
+    assert.ok(
+      sign.indexOf("t('auth.getStarted')") > -1 && sign.indexOf("t('auth.getStarted')") < sign.indexOf('<AuthSignInActions'),
+      'Get started is the first button on Welcome, sign-in options sit under it',
+    )
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
     assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
     skipAuth()
@@ -2767,6 +2771,18 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     if (prev == null) delete globalThis.__didIPlatform
     else globalThis.__didIPlatform = prev
   }
+})
+
+test('first five minutes: first run can go back to Welcome, the swipe hint is one line cleared by the first answer', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const intro = readFileSync(path.join(root, 'native/components/SwipeIntro.jsx'), 'utf8')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(more.includes('step > 0 || canLeave'), 'step one of the first run has Back')
+  assert.ok(more.includes("t('first.haveAccount')"), 'the first run keeps the I have an account link')
+  assert.ok(!intro.includes('<Modal'), 'the swipe hint is not a popup')
+  assert.ok(intro.includes("t('swipeIntro.line')"), 'the swipe hint is one line')
+  assert.ok(tonight.includes('markSwipeIntroSeen()'), 'the first answer clears the swipe hint')
 })
 
 test('first run picks 2 or 3, adds them with one time, face is the first', () => {

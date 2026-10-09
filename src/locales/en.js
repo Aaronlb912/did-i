@@ -3262,4 +3262,9 @@ export const en = {
   "note.amountIn": "Amount ({unit})",
   "lamp.lastFive": "Last 5 times",
   "lamp.lastFiveEmpty": "Nothing yet. The last 5 nights you Did it show here.",
+  "auth.getStarted": "Get started",
+  "auth.haveAccount": "Have an account? Sign in",
+  "swipeIntro.line": "Swipe right if you did, left if not yet",
+  "stats.empty": "No nights yet. Answer tonight and your numbers show here.",
+  "empty.goTonight": "Go to tonight",
 }

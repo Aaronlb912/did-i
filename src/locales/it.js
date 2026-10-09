@@ -3266,4 +3266,9 @@ export const it = {
   "note.amountIn": "Quantità ({unit})",
   "lamp.lastFive": "Le ultime 5 volte",
   "lamp.lastFiveEmpty": "Ancora niente. Qui compaiono le ultime 5 sere con Did.",
+  "auth.getStarted": "Inizia",
+  "auth.haveAccount": "Hai già un account? Accedi",
+  "swipeIntro.line": "Scorri a destra se l'hai fatto, a sinistra se non ancora",
+  "stats.empty": "Ancora nessuna sera. Rispondi stasera e qui vedrai i tuoi numeri.",
+  "empty.goTonight": "Vai a stasera",
 }
