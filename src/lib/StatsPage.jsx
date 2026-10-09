@@ -7,7 +7,7 @@ import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function StatsPage({ book, now }) {
-  usePrefs()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const counts = statsCounts(book, clock)
   const pips = ACHIEVEMENTS.filter((item) => (book.unlocked || []).includes(item.id))
@@ -39,10 +39,12 @@ export function StatsPage({ book, now }) {
             <dt>{t('stats.nope')}</dt>
             <dd>{counts.skip}</dd>
           </div>
-          <div>
-            <dt>{t('stats.nightsOn')}</dt>
-            <dd>{counts.heat}</dd>
-          </div>
+          {gentle ? null : (
+            <div>
+              <dt>{t('stats.nightsOn')}</dt>
+              <dd>{counts.heat}</dd>
+            </div>
+          )}
         </dl>
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/marks')}>

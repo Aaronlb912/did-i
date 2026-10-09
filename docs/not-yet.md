@@ -11,7 +11,7 @@ Last worked through 2026-10-02.
 - **Needs device testing (amounts):** Track an amount and its unit on Add and Edit at 390px, the amount box in the note sheet from Add note in the undo toast (decimal keypad, comma reads as a point), Last 5 times on the question page with and without notes and amounts.
 - **Amount shows only on Last 5 times.** No totals, averages or chart yet, and the web has no note sheet, so amounts are entered on the phone only. Remove note clears the note, not the amount.
 - **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
-- **Web shows less.** The website can add and edit an every so often question and its Tonight follows the same due rule, but its card has no "Last time" line and its question list and page have no days pill or usual gap.
+- **Web matches the phone in a build only.** The website card shows "Last time", the Questions list the days pill, and the question page the last-time and usual-gap tiles; checked with `vite build`, not yet clicked through with a real every so often question.
 - **Not yet on one is not a miss.** A due every so often question counts toward a cleared night only once it is Did; Not yet never holds the night open. No streak and no missed dots. Reminders follow the same due rule (scheduled from today's answers).
 - **Calendar and stats leave it out.** The overall calendar, streaks and the 30-night tile skip these questions; the question's own month view shows only the nights it was done.
 
@@ -60,7 +60,8 @@ Last worked through 2026-10-02.
 
 ## Gentle mode
 
-- **Phone only.** The switch is in phone Settings. The website still shows streak numbers (Home, Stats, Streaks pages), and the pref syncs, so a web visit shows them.
+- **Phone and web.** The switch is in phone Settings and web Settings (next to Less motion). On the web it hides the Stats nights-on number, the Streaks page counts, the question page streak tile and streak popups. The web Home never showed a streak number. Friends and family views are unchanged.
+- **Web Calendar and Week still color missed nights.** Gentle mode hides numbers, not those dots, on both apps.
 - **Streak risk pushes still go out.** The local streak-hit notification is not sent in gentle mode; the server streak-risk push does not read `gentle`. Turn off "streakRisk" in notifications, or teach `push_wanted` about it.
 - **Widgets get a `gentle` flag but show no streak today,** so nothing changes on them.
 - **Shared streaks stay.** Did we streaks are shared with others and still show; friends and family see your streak as before.

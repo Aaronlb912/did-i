@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { t } from './i18n.js'
+import { gentleOn } from './prefs.js'
 import { streakHitCopy } from './streak-copy.js'
 import { markStreakSeen, takePendingStreakMoment } from './streak-moments.js'
 import { boardDate } from './recurrence.js'
@@ -27,13 +28,19 @@ export function StreakMomentHost({ now }) {
 
   useEffect(() => {
     const pending = takePendingStreakMoment()
-    if (pending) setMoment(pending)
+    // Gentle mode: no streak cards, so no count and no broken-streak note.
+    if (pending && gentleOn()) markStreakSeen(pending.kind, pending.dateIso || boardDate(new Date()))
+    else if (pending) setMoment(pending)
   }, [])
 
   useEffect(() => {
     function onStreak(event) {
       const detail = event?.detail
       if (!detail?.kind) return
+      if (gentleOn()) {
+        markStreakSeen(detail.kind, detail.dateIso || boardDate(new Date()))
+        return
+      }
       setMoment(detail)
     }
     window.addEventListener('did-i-streak', onStreak)

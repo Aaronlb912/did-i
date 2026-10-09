@@ -4903,8 +4903,6 @@ await testAsync('amounts: saved on the answer, round trip through the answer log
   assert.ok(notes.includes('trackAmount') && notes.includes('decimal-pad'), 'the note sheet asks for an amount')
 })
 
-console.log(`\n${ran - failed} of ${ran} passed`)
-if (failed) process.exit(1)
 
 test('seasonal items say when they come back', () => {
   const cocoa = { id: 'cocoa', from: '2026-12-01', until: '2027-01-01' }
@@ -5179,3 +5177,7 @@ test('the rate card asks for the in-app review, with the store link as fallback'
   const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
   assert.match(metro, /\['expo-store-review', 'store-review-safe\.cjs'\]/)
 })
+
+// Keep this last: every test above counts, and any failure exits non-zero.
+console.log(`\n${ran - failed} of ${ran} passed`)
+if (failed) process.exit(1)

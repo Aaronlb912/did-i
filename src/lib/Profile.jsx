@@ -204,6 +204,12 @@ export function Profile({
                 on={prefs.lessMotion}
                 onClick={() => writePrefs({ lessMotion: !prefs.lessMotion })}
               />
+              <SetSwitch
+                label={t('settings.gentle')}
+                sub={t('settings.gentleSub')}
+                on={prefs.gentle}
+                onClick={() => writePrefs({ gentle: !prefs.gentle })}
+              />
             </SetCard>
 
             <SetCap>{t('settings.tonightCap')}</SetCap>
