@@ -217,7 +217,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="person"
           tint={colors.on}
           label={t('settings.account')}
-          sub={account.email || t('settings.accountOffSub')}
+          sub={account.email ? t('settings.accountOnSub', { email: account.email }) : t('settings.accountOffSub')}
           value={account.email ? '' : t('settings.accountOff')}
           chevron
           onPress={() => goHash('/account')}

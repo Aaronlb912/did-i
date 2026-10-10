@@ -2317,6 +2317,17 @@ function AccountSignedIn({ book, email, onChange }) {
       <PhoneLockSection colors={colors} />
 
       <View style={styles.dataGap} />
+      {/* Sign out stays in plain sight; the rarer ways to leave sit in the fold below. */}
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="logout"
+          label={t('account.out')}
+          last
+          onPress={busy ? undefined : () => leave('out', signOutHere)}
+        />
+      </SetCard>
+      <View style={styles.dataGap} />
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
@@ -2345,12 +2356,6 @@ function AccountSignedIn({ book, email, onChange }) {
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="logout"
-          label={t('account.out')}
-          onPress={busy ? undefined : () => leave('out', signOutHere)}
-        />
         <SetRow
           colors={colors}
           icon="logout"
