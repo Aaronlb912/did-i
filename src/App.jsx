@@ -129,6 +129,7 @@ const NameBoard = screen(() => import('./site/NameBoard.jsx'), 'NameBoard')
 const Read = screen(() => import('./site/Read.jsx'), 'Read')
 const Gift = screen(() => import('./lib/Gift.jsx'), 'Gift')
 const GiftsSent = screen(() => import('./lib/Gift.jsx'), 'GiftsSent')
+const AdminReports = screen(() => import('./lib/AdminReports.jsx'), 'AdminReports')
 
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
@@ -597,6 +598,8 @@ export default function App() {
     inner = <ShopBuddies book={live} onChange={change} />
   } else if (path === '/shop/accessories') {
     inner = <ShopAccessories book={live} onChange={change} />
+  } else if (path === '/admin/reports') {
+    inner = <AdminReports book={live} />
   } else if (path === '/gifts') {
     inner = <GiftsSent book={live} />
   } else if (path === '/gift') {

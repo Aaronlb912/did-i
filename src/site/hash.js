@@ -52,6 +52,7 @@ const ROUTES = new Set([
   '/we',
   '/we/new',
   '/you',
+  '/admin/reports',
 ])
 
 export function parseHash() {

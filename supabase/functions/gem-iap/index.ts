@@ -8,10 +8,15 @@
 //     GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
 // Without them the function refuses every purchase with miss 'setup'. There is no trust switch.
 //   IAP_TEST_USERS: comma-separated account ids whose test buys (Apple sandbox:
-//     TestFlight and App Review; Play license testers) credit gems. Anyone
-//     else's test buy is refused, so a public tester group can not mint gems.
+//     TestFlight and App Review; Play license testers) always credit gems.
+//     Keep the App Review account on it.
+//   IAP_LAUNCH_AT: launch date (ISO, e.g. 2026-11-01T00:00:00Z). Before it every
+//     test buy credits; from then on only IAP_TEST_USERS. Unset: list only.
+//     Anyone else's test buy is refused with miss 'test'. See gate.js.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+// @ts-ignore plain JS, shared with scripts/check.mjs
+import { testBuyCredits } from './gate.js'
 
 const APP_ID = 'com.aaronbryant.didi'
 
@@ -33,8 +38,10 @@ const admin = createClient(
 type Verified = { ok: true; ref: string; test: boolean } | { ok: false; miss: string }
 
 function testerAllowed(userId: string) {
-  const ids = (Deno.env.get('IAP_TEST_USERS') || '').split(',').map((id) => id.trim()).filter(Boolean)
-  return ids.includes(userId)
+  return testBuyCredits(userId, {
+    IAP_TEST_USERS: Deno.env.get('IAP_TEST_USERS') || '',
+    IAP_LAUNCH_AT: Deno.env.get('IAP_LAUNCH_AT') || '',
+  })
 }
 
 function json(body: Record<string, unknown>, status = 200) {

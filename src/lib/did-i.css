@@ -11085,3 +11085,48 @@ button.di-we-faces {
   color: var(--di-ink);
   overflow-wrap: anywhere;
 }
+
+/* Reports admin (#/admin/reports) */
+.di-admin-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.di-admin-row {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border: 1px solid var(--di-line);
+  border-radius: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.di-admin-row[data-status='dismissed'],
+.di-admin-row[data-status='removed'],
+.di-admin-row[data-status='banned'] {
+  opacity: 0.6;
+}
+
+.di-admin-row p {
+  margin: 0;
+}
+
+.di-admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.di-admin-head em,
+.di-admin-who {
+  color: var(--di-ink-soft);
+  font-size: 0.86rem;
+}
+
+.di-admin-row .di-hang-actions {
+  flex-wrap: wrap;
+}
