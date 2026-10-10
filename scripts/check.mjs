@@ -69,6 +69,7 @@ import {
   cleanCode,
   cleanInvite,
   inviteGemsDue,
+  safeAvatarPath,
 } from '../src/lib/people.js'
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
@@ -6044,6 +6045,45 @@ test('launch-safety: reports admin is server checked and off every menu', () => 
   for (const rel of ['src/lib/SettingsCog.jsx', 'src/lib/AppNav.jsx', 'native/AppShell.jsx']) {
     assert.doesNotMatch(read(rel), /admin\/reports/, `${rel} does not link the admin page`)
   }
+})
+
+test('report emails: queued by trigger, closed table, capped, sent by report-mail on a cron', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/admin-mail.sql')
+  assert.match(sql, /alter table public\.report_mail_queue enable row level security/)
+  assert.match(sql, /revoke all on public\.report_mail_queue from public, anon, authenticated/)
+  assert.match(sql, /create unique index if not exists report_mail_queue_report_idx on public\.report_mail_queue \(report_id\)/, 'one email per report')
+  assert.match(sql, /after insert on public\.reports/)
+  assert.match(sql, /least\(coalesce\(lim, 50\), 50\)/, 'at most 50 a run')
+  assert.match(sql, /left\(coalesce\(r\.reason, ''\), 300\)/)
+  assert.match(sql, /cron\.schedule\('report-mail', '\*\/5 \* \* \* \*'/)
+  for (const fn of ['report_mail_batch', 'admin_emails', 'report_mail_done']) {
+    assert.match(sql, new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`), fn)
+  }
+  assert.match(read('scripts/apply-all-sql.mjs'), /'supabase\/admin\.sql',\s+'supabase\/admin-mail\.sql'/)
+  const fn = read('supabase/functions/report-mail/index.ts')
+  assert.match(fn, /https:\/\/api\.resend\.com\/emails/)
+  assert.match(fn, /RESEND_API_KEY/)
+  assert.match(fn, /'Did I <support@did-i\.app>'/)
+  assert.match(fn, /claims\?\.role === 'service_role'/)
+  assert.match(fn, /https:\/\/did-i\.app\/app#\/admin\/reports/)
+  assert.doesNotMatch(fn, /—/)
+})
+
+test('admin photo remove: only avatars/<that user>/<file>, admin delete policy, path read before admin_act', () => {
+  const id = '0b7c2a4e-1111-4222-8333-444455556666'
+  assert.equal(safeAvatarPath(`${id}/1700000000.jpg`), `${id}/1700000000.jpg`)
+  for (const bad of [null, '', `${id}/../x.jpg`, `${id}/a/b.jpg`, 'other/x.jpg', `/${id}/x.jpg`, `${id}/`, 'avatars/' + id + '/x.jpg']) {
+    assert.equal(safeAvatarPath(bad), '', String(bad))
+  }
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/admin-mail.sql')
+  assert.match(sql, /"avatars admin delete" on storage\.objects\s+for delete to authenticated\s+using \(bucket_id = 'avatars' and \(select public\.is_admin\(\)\)\)/)
+  assert.match(sql, /obj !~ \('\^' \|\| r\.about_id::text \|\| '\/\[A-Za-z0-9\._-\]\+\$'\)/)
+  const js = read('src/lib/people.js')
+  const body = js.slice(js.indexOf('export async function adminAct('))
+  assert.ok(body.indexOf("rpc('admin_photo_path'") < body.indexOf("rpc('admin_act'"), 'path read before the link is cleared')
+  assert.ok(body.indexOf("rpc('admin_act'") < body.indexOf(".remove([path])"), 'file removed after the RPC')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
