@@ -61,5 +61,9 @@ install_profile_b64 "${IOS_PROVISIONING_PROFILE}" "IOS_MAIN_PROFILE"
 if [ -n "${IOS_WIDGET_PROVISIONING_PROFILE:-}" ]; then
   install_profile_b64 "${IOS_WIDGET_PROVISIONING_PROFILE}" "IOS_WIDGET_PROFILE"
 fi
+# Apple Watch app (com.aaronbryant.didi.watchkitapp), only when DIDI_WATCH=1.
+if [ -n "${IOS_WATCH_PROVISIONING_PROFILE:-}" ]; then
+  install_profile_b64 "${IOS_WATCH_PROVISIONING_PROFILE}" "IOS_WATCH_PROFILE"
+fi
 
 gha_env "EXPORT_OPTIONS_PLIST=${EXPORT_PLIST}"

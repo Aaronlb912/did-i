@@ -23,6 +23,8 @@ const devApp = process.env.DIDI_DEV === '1'
 const devClientBuild = devApp || buildProfile === 'development' || buildProfile === 'preview'
 // Widgets on by default. Set EAS_INCLUDE_WIDGETS=0 on a profile to skip the extension.
 const includeWidgets = !devApp && process.env.EAS_INCLUDE_WIDGETS !== '0'
+// DIDI_WATCH=1 adds the Apple Watch app (targets/watch).
+const includeWatch = !devApp && process.env.DIDI_WATCH === '1'
 
 const widgetPlugins = includeWidgets
   ? [
@@ -162,6 +164,9 @@ export default ({ config }) => ({
         },
       },
     ],
+    // Apple Watch app from targets/watch. Off until the watch App ID and
+    // provisioning profile exist (docs/watch.md); ios-watch-check.yml sets it.
+    ...(includeWatch ? ['@bacons/apple-targets'] : []),
     './plugins/with-ios-pod-bundles.cjs',
     './plugins/with-siri-add.cjs',
   ],

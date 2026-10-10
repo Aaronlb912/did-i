@@ -10,7 +10,11 @@ bundles = {
   # The store app, or com.aaronbryant.didi.dev when building the dev app.
   (ENV['IOS_MAIN_PROFILE_BUNDLE'] || 'com.aaronbryant.didi') => ENV['IOS_MAIN_PROFILE_UUID'],
   'com.aaronbryant.didi.widgets' => ENV['IOS_WIDGET_PROFILE_UUID'],
+  'com.aaronbryant.didi.watchkitapp' => ENV['IOS_WATCH_PROFILE_UUID'],
 }.compact
+
+# The watch app builds with the watchOS SDK, so its identity key differs.
+sdk_for = Hash.new('iphoneos').merge('com.aaronbryant.didi.watchkitapp' => 'watchos')
 
 data = File.read(project_path)
 team = '2ZUKFKSSV8'
@@ -22,7 +26,7 @@ bundles.each do |bundle, uuid|
   replacement = <<~SETTINGS
     \\1\t\t\t\tCODE_SIGN_STYLE = Manual;
     \t\t\t\tDEVELOPMENT_TEAM = #{team};
-    \t\t\t\t"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
+    \t\t\t\t"CODE_SIGN_IDENTITY[sdk=#{sdk_for[bundle]}*]" = "Apple Distribution";
     \t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "";
     \t\t\t\tPROVISIONING_PROFILE = #{uuid};
   SETTINGS
