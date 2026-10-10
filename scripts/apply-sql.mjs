@@ -1,6 +1,6 @@
 // Apply one SQL file through the Supabase Management API.
 // Usage: set SUPABASE_ACCESS_TOKEN=sbp_... then
-//   node scripts/apply-sql.mjs supabase/tonight.sql
+//   node scripts/apply-sql.mjs supabase/drop-tonight.sql
 
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'

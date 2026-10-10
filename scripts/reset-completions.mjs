@@ -42,9 +42,6 @@ with u as (
 gone as (
   delete from public.answer_log where user_id in (select id from u) returning 1
 ),
-tonight_gone as (
-  delete from public.tonight where user_id in (select id from u) returning 1
-),
 family_gone as (
   delete from public.family_answers where user_id in (select id from u) returning 1
 ),
@@ -73,7 +70,6 @@ shelf_fix as (
 select
   (select count(*) from u) as users_found,
   (select count(*) from gone) as answers_deleted,
-  (select count(*) from tonight_gone) as tonight_deleted,
   (select count(*) from family_gone) as family_answers_deleted,
   (select count(*) from profile_fix) as profiles_reset,
   (select count(*) from shelf_fix) as shelves_scrubbed;

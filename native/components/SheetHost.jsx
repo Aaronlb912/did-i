@@ -59,6 +59,22 @@ export function offerMoreGems(colors) {
   })
 }
 
+// Gem items belong to the account, so a signed-out gem buy asks to sign in.
+export function askSignIn(colors) {
+  publishSheet({
+    title: t('shop.signInTitle'),
+    body: t('shop.miss.signInGems'),
+    goLabel: t('we.signIn'),
+    closeLabel: t('account.stay'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => {
+      publishSheet(null)
+      goHash('/account')
+    },
+  })
+}
+
 export function SheetHost() {
   const [next, setSheet] = useState(current)
   const [live, setLive] = useState(false)

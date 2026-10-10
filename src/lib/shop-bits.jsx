@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { previewSample } from './board-shelf.js'
 import { goHash } from '../site/hash.js'
+import { SIGN_IN_MISS } from './coin-shop.js'
 import { useBackDismiss } from '../site/nav.js'
 import { PurseBits } from './PurseIcons.jsx'
 import { t } from './i18n.js'
@@ -34,6 +35,25 @@ export function shortGemConfirm() {
     body: t('gems.shortBody'),
     goLabel: t('gems.shortGo'),
   }
+}
+
+// Gem items belong to the account: signed out, Sign in or Not now.
+export function signInConfirm() {
+  return {
+    short: true,
+    to: '/account',
+    title: t('shop.signInTitle'),
+    body: t('shop.miss.signInGems'),
+    goLabel: t('we.signIn'),
+    closeLabel: t('account.stay'),
+  }
+}
+
+// A buy that needs a sheet instead of a miss line: short on gems, or signed out.
+export function gateConfirm(next) {
+  if (isGemShort(next)) return shortGemConfirm()
+  if (next?.miss === SIGN_IN_MISS) return signInConfirm()
+  return null
 }
 
 export function GemShort({ open, onClose }) {
@@ -143,7 +163,7 @@ export function BuyConfirm({ confirm, onClose, onGo }) {
             {confirm.goLabel || t('shop.buy')}
           </button>
           <button className="di-key" type="button" onClick={onClose}>
-            {t('settings.neverMind')}
+            {confirm.closeLabel || t('settings.neverMind')}
           </button>
         </div>
       </div>

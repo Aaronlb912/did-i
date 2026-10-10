@@ -4,7 +4,8 @@ import { LookChip } from './Cosmetic.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
 import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, LOOKS, buyLook, isGemLook, lookText, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
-import { BuyConfirm, LookPreviewCard, NO_MISS, ShopPurse, coinLine, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
+import { BuyConfirm, LookPreviewCard, NO_MISS, ShopPurse, coinLine, gemLine, gateConfirm, shopMiss, shortGemConfirm, signInConfirm } from './shop-bits.jsx'
+import { accountSessionOn } from './session-id.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -21,9 +22,10 @@ export function ShopLooks({ book, onChange, now }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next, id) {
-    if (isGemShort(next)) {
+    const gate = gateConfirm(next)
+    if (gate) {
       setMiss(NO_MISS)
-      setConfirm(shortGemConfirm())
+      setConfirm(gate)
       return
     }
     setMiss({ id, text: shopMiss(next) })
@@ -68,6 +70,10 @@ export function ShopLooks({ book, onChange, now }) {
           onClick={() => {
             if (have) {
               take(buyLook(book, item.id), item.id)
+              return
+            }
+            if (item.gems > 0 && !accountSessionOn()) {
+              setConfirm(signInConfirm())
               return
             }
             if (item.gems > 0 && purse.gems < item.gems) {
@@ -116,7 +122,7 @@ export function ShopLooks({ book, onChange, now }) {
         onGo={() => {
           if (confirm?.short) {
             setConfirm(null)
-            goHash('/gems')
+            goHash(confirm.to || '/gems')
             return
           }
           const go = confirm?.go

@@ -5,7 +5,8 @@ import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
 import { buyWithGems } from './coin-shop.js'
 import { SHOP_BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
-import { BuyConfirm, ShopPurse, gemLine, isGemShort, shopMiss, shortGemConfirm } from './shop-bits.jsx'
+import { BuyConfirm, ShopPurse, gemLine, gateConfirm, shopMiss, shortGemConfirm, signInConfirm } from './shop-bits.jsx'
+import { accountSessionOn } from './session-id.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
@@ -19,9 +20,10 @@ export function ShopBuddies({ book, onChange, now }) {
   const [confirm, setConfirm] = useState(null)
 
   function take(next) {
-    if (isGemShort(next)) {
+    const gate = gateConfirm(next)
+    if (gate) {
       setMiss('')
-      setConfirm(shortGemConfirm())
+      setConfirm(gate)
       return
     }
     setMiss(shopMiss(next))
@@ -56,6 +58,10 @@ export function ShopBuddies({ book, onChange, now }) {
           onClick={() => {
             if (have) {
               take(buyBuddy(book, item.id))
+              return
+            }
+            if (!accountSessionOn()) {
+              setConfirm(signInConfirm())
               return
             }
             if (purse.gems < item.gems) {
@@ -113,7 +119,7 @@ export function ShopBuddies({ book, onChange, now }) {
         onGo={() => {
           if (confirm?.short) {
             setConfirm(null)
-            goHash('/gems')
+            goHash(confirm.to || '/gems')
             return
           }
           const go = confirm?.go

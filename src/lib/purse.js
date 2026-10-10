@@ -1,7 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { FRAMES, FRAME_IDS, frameById, normalizeFrames, normalizeWornFrame } from './frames.js'
+import { FRAMES, FRAME_IDS, frameById, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -354,7 +354,7 @@ export function normalizePurse(book) {
     cheerStages: stages,
     cheerPlayStages,
     friendCheers: asFriendCheers(book?.friendCheers),
-    wish: asWish(book?.wish, { looks: lookOwned, cheers: owned, buddies, accessories }),
+    wish: asWish(book?.wish, { looks: lookOwned, cheers: owned, buddies, accessories, frames }),
   }
 }
 
@@ -942,12 +942,21 @@ export function wishItem(key) {
   if (type === 'cheer') return ALL_CHEERS.find((item) => item.id === id) || null
   if (type === 'buddy') return ALL_BUDDIES.find((item) => item.id === id) || null
   if (type === 'accessory') return accessoryById(id) || null
+  if (type === 'frame') return wishFrame(id)
   return null
+}
+
+// Frames you can buy, and seasonal ones (free, claimed while open). Earned
+// and hidden frames are not something to save up for.
+function wishFrame(id) {
+  const frame = frameById(id)
+  if (!frame || frame.hidden) return null
+  return ['coin', 'gem', 'season'].includes(frame.kind) ? frame : null
 }
 
 function ownsKey(key, owned) {
   const [type, id] = key.split(':')
-  const list = { look: owned.looks, cheer: owned.cheers, buddy: owned.buddies, accessory: owned.accessories }[type]
+  const list = { look: owned.looks, cheer: owned.cheers, buddy: owned.buddies, accessory: owned.accessories, frame: owned.frames }[type]
   return Boolean(list?.includes(id))
 }
 
@@ -975,13 +984,15 @@ export function toggleWish(book, type, id) {
 }
 
 // The hearted item closest to reach, for one line on the done card. Coins
-// come at up to NIGHT_COIN_CAP a night, gems at one a week.
-export function wishGoal(purse) {
+// come at up to NIGHT_COIN_CAP a night, gems at one a week. A seasonal
+// frame only counts while it is open, so its line is the reminder it is back.
+export function wishGoal(purse, today = boardDate(new Date())) {
   let best = null
   for (const key of purse.wish) {
     const item = wishItem(key)
     if (!item) continue
     const [type, id] = key.split(':')
+    if (type === 'frame' && item.kind === 'season' && !seasonOpen(item, today)) continue
     const gems = Number(item.gems) || 0
     const coins = Number(item.coins) || 0
     const short = gems ? Math.max(0, gems - purse.gems) : Math.max(0, coins - purse.coins)
@@ -1042,7 +1053,9 @@ export function wishLine(goal) {
         ? cheerText(goal.id, 'name')
         : goal.type === 'buddy'
           ? buddyText(goal.id, 'name')
-          : `accessory.${goal.id}`
+          : goal.type === 'frame'
+            ? frameText(goal.id, 'name')
+            : `accessory.${goal.id}`
   if (!goal.n) return { key: 'wish.ready', n: 0, nameKey }
   if (goal.kind === 'gems') return { key: goal.n === 1 ? 'wish.gem' : 'wish.gems', n: goal.n, nameKey }
   return { key: goal.n === 1 ? 'wish.night' : 'wish.nights', n: goal.n, nameKey }
