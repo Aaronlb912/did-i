@@ -65,5 +65,9 @@ fi
 if [ -n "${IOS_WATCH_PROVISIONING_PROFILE:-}" ]; then
   install_profile_b64 "${IOS_WATCH_PROVISIONING_PROFILE}" "IOS_WATCH_PROFILE"
 fi
+# Watch complication (com.aaronbryant.didi.watchkitapp.complication).
+if [ -n "${IOS_WATCH_WIDGET_PROVISIONING_PROFILE:-}" ]; then
+  install_profile_b64 "${IOS_WATCH_WIDGET_PROVISIONING_PROFILE}" "IOS_WATCH_WIDGET_PROFILE"
+fi
 
 gha_env "EXPORT_OPTIONS_PLIST=${EXPORT_PLIST}"

@@ -13,6 +13,7 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
 import { initWidgetsOnLaunch } from './widget-bridge.js'
 import { syncTonightWidget } from './widget-sync.js'
+import { listenForWatchTaps, resendWatchCards } from './watch-sync.js'
 import { installQuickActions } from './quick-actions.js'
 import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
@@ -75,6 +76,13 @@ export function NativeApp() {
         refreshTogether().catch(() => {})
         globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
         await initWidgetsOnLaunch(readShelf()).catch(() => {})
+        // Did or Not yet on the Apple Watch: saved like a widget tap, then
+        // the watch gets the cards again (also when the phone said no).
+        listenForWatchTaps((tap) => {
+          const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
+          resendWatchCards()
+          syncTonightWidget(shelf || readShelf()).catch(() => {})
+        })
       }
       preparePush({
         onGo: (where) => goFromPush(where),
