@@ -2609,6 +2609,7 @@ export const pt = {
   'first.haveAccount': "Já tenho conta",
   'nightOne.title': "Primeira noite feita",
   'nightOne.body': "Volte amanhã e a sequência começa a crescer.",
+  "nightOne.bodyGentle": "Volte amanhã para a próxima.",
   'nightOne.widget': "Adicionar o widget",
   'signInNudge.title': "Guarde suas perguntas: entre na conta.",
   'signInNudge.go': "Entrar",

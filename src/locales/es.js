@@ -2617,6 +2617,7 @@ export const es = {
   'first.haveAccount': "Ya tengo cuenta",
   'nightOne.title': "Primera noche hecha",
   'nightOne.body': "Vuelve mañana y la racha empieza a crecer.",
+  "nightOne.bodyGentle": "Vuelve mañana para la siguiente.",
   'nightOne.widget': "Añadir el widget",
   'signInNudge.title': "Guarda tus preguntas: inicia sesión.",
   'signInNudge.go': "Iniciar sesión",
