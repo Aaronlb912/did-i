@@ -1,0 +1,128 @@
+name: iOS watch check
+
+# Proves the Apple Watch app (targets/watch) still compiles next to the iPhone
+# app. Simulator builds with CODE_SIGNING_ALLOWED=NO: no secrets, no upload,
+# no build number bump.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'targets/**'
+      - 'app.json'
+      - 'app.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'plugins/**'
+      - 'patches/**'
+      - '.github/workflows/ios-watch-check.yml'
+
+concurrency:
+  group: ios-watch-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      EAS_INCLUDE_WIDGETS: '1'
+      DIDI_WATCH: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Xcode pick as ios-ipa.yml (Expo SDK 57 needs Xcode 26).
+      - name: Select Xcode
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i watch || true
+
+      - name: watchOS platform
+        run: |
+          if xcrun simctl list runtimes | grep -q watchOS; then
+            echo "watchOS simulator runtime present."
+          else
+            xcodebuild -downloadPlatform watchOS
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prebuild iOS (widgets + watch)
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Watch target is in the Xcode project
+        run: |
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.aaronbryant.didi.watchkitapp;' ios/DidI.xcodeproj/project.pbxproj
+          grep -q 'WATCHOS_DEPLOYMENT_TARGET' ios/DidI.xcodeproj/project.pbxproj
+          xcodebuild -list -project ios/DidI.xcodeproj
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: |
+          set -euo pipefail
+          if [ -d Pods ] && [ -f Podfile.lock ] && pod install --deployment; then
+            echo "Pods installed from cache (deployment)."
+          else
+            pod install
+          fi
+
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-watch-derived-${{ hashFiles('package-lock.json', 'app.config.js', 'ios/Podfile', 'ios/Podfile.lock') }}-${{ hashFiles('targets/**', 'src/**', 'native/**', 'widgets/**') }}
+          restore-keys: |
+            ${{ runner.os }}-watch-derived-${{ hashFiles('package-lock.json', 'app.config.js') }}-
+            ${{ runner.os }}-watch-derived-
+
+      - name: Build watch app (watchOS Simulator)
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project DidI.xcodeproj \
+            -target DidIWatch \
+            -configuration Debug \
+            -sdk watchsimulator \
+            build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build iPhone app with the watch app embedded (iOS Simulator)
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -workspace DidI.xcworkspace \
+            -scheme DidI \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/watch-check" \
+            build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Watch app is embedded in the iPhone app
+        run: |
+          APP="$(find "$HOME/Library/Developer/Xcode/DerivedData/watch-check/Build/Products" -maxdepth 2 -name 'DidI.app' -print -quit)"
+          echo "App: $APP"
+          ls -la "$APP/Watch"
+          test -d "$APP/Watch/DidIWatch.app"

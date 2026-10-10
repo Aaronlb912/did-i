@@ -29,6 +29,9 @@ jobs:
       # Turn on (repo variable DIDI_UNIVERSAL_LINKS=1) once the App ID has
       # Associated Domains and the provisioning profiles are remade.
       DIDI_UNIVERSAL_LINKS: ${{ vars.DIDI_UNIVERSAL_LINKS || '0' }}
+      # Apple Watch app (targets/watch). Turn on (repo variable DIDI_WATCH=1)
+      # once the watch App ID and IOS_WATCH_PROVISIONING_PROFILE exist (docs/watch.md).
+      DIDI_WATCH: ${{ !inputs.dev_app && vars.DIDI_WATCH || '0' }}
       # The dev client loads JS from Metro, so it builds Debug (Release strips the dev launcher).
       XCODE_CONFIG: ${{ inputs.dev_app && 'Debug' || 'Release' }}
     steps:
@@ -122,7 +125,13 @@ jobs:
           IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
           IOS_PROVISIONING_PROFILE: ${{ inputs.dev_app && secrets.IOS_DEV_PROVISIONING_PROFILE || secrets.IOS_PROVISIONING_PROFILE }}
           IOS_WIDGET_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WIDGET_PROVISIONING_PROFILE || '' }}
-        run: bash .github/scripts/ios-signing.sh
+          IOS_WATCH_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WATCH_PROVISIONING_PROFILE || '' }}
+        run: |
+          if [ "$DIDI_WATCH" = "1" ] && [ -n "$IOS_DIST_CERT_P12" ] && [ -z "$IOS_WATCH_PROVISIONING_PROFILE" ]; then
+            echo "DIDI_WATCH=1 but the IOS_WATCH_PROVISIONING_PROFILE secret is missing. See docs/watch.md."
+            exit 1
+          fi
+          bash .github/scripts/ios-signing.sh
 
       - name: Assert iOS build number (TestFlight)
         if: env.SIGNING == '1'

@@ -6115,6 +6115,27 @@ await testAsync('did we look: status line, face overflow, done rule, dots', asyn
   for (const key of ['we.ofDid', 'we.doneAll', 'we.yourTurnShort', 'we.rule.most', 'we.emptyFriend', 'we.newButton']) assert.ok(en.includes(`'${key}':`), key)
 })
 
+test('the watch app target exists and CI builds it without signing', () => {
+  const read = (p) => readFileSync(path.join(checkRoot, p), 'utf8')
+  const target = JSON.parse(read('targets/watch/expo-target.config.json'))
+  assert.equal(target.type, 'watch')
+  assert.equal(target.bundleIdentifier, '.watchkitapp')
+  assert.deepEqual(target.entitlements['com.apple.security.application-groups'], ['group.com.aaronbryant.didi'])
+  assert.ok(existsSync(path.join(checkRoot, target.icon.replace(/^\.\.\/\.\.\//, ''))), 'watch icon file exists')
+  assert.ok(read('targets/watch/DidIWatchApp.swift').includes('Open Did I on your iPhone'))
+  const plist = read('targets/watch/Info.plist')
+  const version = JSON.parse(read('app.json')).expo.version
+  assert.ok(plist.includes(`<string>${version}</string>`), 'watch CFBundleShortVersionString matches app.json version (App Store rejects a mismatch)')
+  assert.ok(/<key>WKApplication<\/key>\s*<true\/>/.test(plist))
+  assert.ok(read('app.config.js').includes("process.env.DIDI_WATCH === '1'"), 'watch target is opt-in')
+  const wf = read('.github/workflows/ios-watch-check.yml')
+  assert.ok(wf.includes("DIDI_WATCH: '1'"))
+  assert.ok(wf.includes('-target DidIWatch') && wf.includes('-scheme DidI '), 'builds the watch target and the app scheme')
+  assert.equal((wf.match(/^\s+CODE_SIGNING_ALLOWED=NO$/gm) || []).length, 2, 'both builds skip signing')
+  assert.ok(!/secrets\.|altool|ios-bump-build/.test(wf), 'no secrets, no upload, no build number bump')
+  assert.ok(read('.github/scripts/ios-apply-manual-signing.rb').includes('com.aaronbryant.didi.watchkitapp'))
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

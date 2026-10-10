@@ -1,0 +1,11 @@
+{
+  "type": "watch",
+  "name": "DidIWatch",
+  "displayName": "Did I",
+  "bundleIdentifier": ".watchkitapp",
+  "deploymentTarget": "10.0",
+  "icon": "../../public/icon-512.png",
+  "entitlements": {
+    "com.apple.security.application-groups": ["group.com.aaronbryant.didi"]
+  }
+}

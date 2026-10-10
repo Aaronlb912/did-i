@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Apple Watch (branch `watch-1`)
+
+- **Built:** step 1 only. An empty watch app in `targets/watch` ("Did I", "Open Did I on your iPhone"), opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.
+- **Not done:** the watch App ID, App Group and `IOS_WATCH_PROVISIONING_PROFILE` secret (steps in docs/watch.md); tonight's cards on the watch, the complication and a TestFlight pass (steps 2 to 4).
+
 ## Did we look (branch `we-polish`)
 
 - **Built:** a face row with a dot each for tonight (filled did, ring not yet, empty no answer, 5 then +N) on the Did we list, the Tonight swipe card (on top, folder or "Did we" as the kicker) and the card page; one status line ("2 of 3 did it tonight", "Your turn", "{name}'s turn tonight", "All of you did it tonight" / "Done together"), with streak, folder and Together total on a quieter second line; a soft Did we wash on a card done tonight; "How it counts" on the card page; a last 7 nights strip (done together, and your own answer); empty list says "Do something together with a friend or your family" with a New Did we button. Web list and card page match.
