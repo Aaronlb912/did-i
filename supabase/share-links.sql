@@ -288,3 +288,43 @@ drop trigger if exists queue_link_kept_push on public.did_you_link_claims;
 create trigger queue_link_kept_push
   after insert on public.did_you_link_claims
   for each row execute function public.queue_link_kept_push();
+
+-- Report a Did we link from its page or the app's join sheet. The same rules
+-- as report_did_you_link: signed in only, filed in public.reports (cap_reports
+-- keeps it to 20 a day) about whoever made it, who is then blocked. Once per
+-- person per link. The link stays up until someone looks at it.
+create or replace function public.report_we_link(code text, why text default '')
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := (select auth.uid());
+  c text := lower(btrim(coalesce(report_we_link.code, '')));
+  who uuid;
+  q text;
+  tag text;
+begin
+  if me is null then raise exception 'sign in first'; end if;
+  select l.made_by, wc.question into who, q
+  from public.we_links l join public.we_cards wc on wc.id = l.card_id
+  where l.code = c;
+  if not found then raise exception 'no such link'; end if;
+  if who = me then return false; end if;
+  tag := 'did we link ' || c || ': ';
+  if exists (select 1 from public.reports r where r.from_id = me and r.reason like tag || '%') then
+    return false;
+  end if;
+  insert into public.reports (from_id, about_id, reason)
+  values (me, who, left(tag || q || coalesce(' / ' || nullif(btrim(why), ''), ''), 500));
+  if who is not null then
+    perform public.block_person(who, '');
+  end if;
+  return true;
+end;
+$$;
+
+revoke all on function public.report_we_link(text, text) from public, anon;
+grant execute on function public.report_we_link(text, text) to authenticated;

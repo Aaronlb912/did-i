@@ -1439,3 +1439,14 @@ html[data-reduce-motion] .di-land-together {
 .di-scan-open .di-invite-store {
   width: min(100%, 20rem);
 }
+
+/* The maker's photo on a /d/ link page. */
+.di-link-avatar {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--di-line);
+}
