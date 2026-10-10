@@ -1,8 +1,8 @@
-// Drains report_mail_queue: one plain email per new report to every admin.
+// Drains report_mail_queue: one daily summary email to every admin, only when there are new reports.
 //
 // Deploy:   supabase functions deploy report-mail
 // Secrets:  supabase secrets set RESEND_API_KEY=... (REPORT_MAIL_FROM optional)
-// Schedule: the report-mail pg_cron job in supabase/admin-mail.sql, every 5 minutes.
+// Schedule: the report-mail pg_cron job in supabase/admin-mail.sql, daily at 13:00 UTC.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
@@ -60,29 +60,26 @@ Deno.serve(async (req) => {
   const batch = await db.rpc('report_mail_batch', { lim: 50 })
   if (batch.error) return new Response(batch.error.message, { status: 500 })
 
-  let sent = 0
-  let failed = 0
-  for (const row of (batch.data ?? []) as Row[]) {
-    let err = ''
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: sender,
-          to,
-          subject: `Did I report: ${row.kind}`,
-          text: message(row),
-        }),
-      })
-      if (!res.ok) err = `resend ${res.status}: ${(await res.text()).slice(0, 300)}`
-    } catch (e) {
-      err = String(e).slice(0, 300)
-    }
-    await db.rpc('report_mail_done', { row_id: row.id, err })
-    if (err) failed += 1
-    else sent += 1
+  // One summary email a day, and none on days without new reports.
+  const rows = (batch.data ?? []) as Row[]
+  if (!rows.length) return Response.json({ sent: 0 })
+  let err = ''
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: sender,
+        to,
+        subject: rows.length === 1 ? 'Did I: 1 new report' : `Did I: ${rows.length} new reports`,
+        text: rows.map(message).join('\n\n----\n\n'),
+      }),
+    })
+    if (!res.ok) err = `resend ${res.status}: ${(await res.text()).slice(0, 300)}`
+  } catch (e) {
+    err = String(e).slice(0, 300)
   }
+  for (const row of rows) await db.rpc('report_mail_done', { row_id: row.id, err })
 
-  return Response.json({ sent, failed })
+  return Response.json({ sent: err ? 0 : rows.length, failed: err ? rows.length : 0 })
 })

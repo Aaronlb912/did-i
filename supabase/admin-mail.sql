@@ -146,7 +146,7 @@ $$;
 revoke all on function public.sweep_report_mail() from public, anon, authenticated;
 
 select cron.unschedule('report-mail') where exists (select 1 from cron.job where jobname = 'report-mail');
-select cron.schedule('report-mail', '*/5 * * * *', $cron$
+select cron.schedule('report-mail', '0 13 * * *', $cron$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url') || '/functions/v1/report-mail',
     headers := jsonb_build_object(
