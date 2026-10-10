@@ -24,6 +24,7 @@ const DARK = {
   // Did we: its own accent, so a shared card reads apart from your own.
   we: '#b69cff',
   weDeep: '#7d63d6',
+  weSoft: 'rgba(182, 156, 255, 0.12)',
   veil: 'rgba(8, 10, 14, 0.55)',
   // Per-person badge tints (PersonAvatar), picked by a hash of their id.
   person1: '#ff9f6b',
@@ -54,6 +55,7 @@ const LIGHT = {
   freeze: '#2a86a8',
   we: '#6b4fc8',
   weDeep: '#4f3799',
+  weSoft: 'rgba(107, 79, 200, 0.08)',
   veil: 'rgba(26, 29, 22, 0.4)',
   person1: '#b8572a',
   person2: '#1f7f74',

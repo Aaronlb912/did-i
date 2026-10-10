@@ -42,7 +42,9 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { WeAnswers, WeAsks, WeFaces, useWeAnswer, weStatusLine } from '../components/WeTonight.jsx'
+import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
+import { weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
+import { boardDate } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -54,7 +56,7 @@ import { WeNotes } from '../components/WeNotes.jsx'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
-import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
+import { readAmount, togetherLine, weMyWeek, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -664,6 +666,55 @@ function openAmountBox({ title, colors, ...rest }) {
   })
 }
 
+// The last 7 nights: done together on top, your own answer below. Others'
+// past answers stay private (RLS), so only what the group already sees.
+function WeWeek({ card, colors }) {
+  const night = boardDate()
+  const [mine, setMine] = useState(() => new Map())
+  useEffect(() => {
+    let alive = true
+    weMyWeek(card.id, night)
+      .then((map) => {
+        if (alive) setMine(map)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [card.id, night, weMine(card)?.status])
+  const days = weWeekDots(card, night, mine)
+  const locale = readPrefs().locale
+  const tint = colors.we || colors.on
+  const fill = (on) => (on ? { backgroundColor: tint, borderColor: tint } : { backgroundColor: 'transparent', borderColor: colors.line })
+  return (
+    <View style={styles.factLine}>
+      <Cap colors={colors}>{t('we.lastWeek')}</Cap>
+      <View style={styles.week}>
+        {days.map((day) => (
+          <View
+            key={day.night}
+            style={styles.weekDay}
+            accessible
+            accessibilityLabel={`${day.night}: ${day.together ? t('we.doneTogether') : ''} ${t(`we.dot.${day.mine}`)}`}
+          >
+            <Text style={[styles.weekWord, { color: colors.inkDim }]} numberOfLines={1}>
+              {new Date(`${day.night}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })}
+            </Text>
+            <View style={[styles.weekDot, fill(day.together)]} />
+            <View
+              style={[
+                styles.weekDot,
+                day.mine === 'did' ? fill(true) : day.mine === 'notYet' ? { borderColor: tint } : fill(false),
+              ]}
+            />
+          </View>
+        ))}
+      </View>
+      <Meta colors={colors}>{t('we.weekKey')}</Meta>
+    </View>
+  )
+}
+
 export function WeCardScreen({ book, cardId, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
@@ -1021,12 +1072,13 @@ function WeCardPage({ book, cardId, onChange }) {
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
       {shareFirst ? shareCard : null}
-      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }, weDoneStyle(card, colors)]}>
         <View style={styles.headTop}>
           <View style={styles.headFaces}>
+            {bigCard ? null : <Text style={[styles.headQ, { color: colors.ink }]}>{card.question}</Text>}
             <WeFaces card={card} colors={colors} cheer={cheer} />
             {names ? (
-              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={2}>
+              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={1}>
                 {names}
               </Text>
             ) : null}
@@ -1041,10 +1093,12 @@ function WeCardPage({ book, cardId, onChange }) {
             <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
           </Pressable>
         </View>
-        {bigCard ? null : <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>}
-        <Meta colors={colors}>{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</Meta>
-        {card.due ? <WeAnswers card={card} colors={colors} /> : null}
+        <Text style={[styles.weStatus, { color: card.done && card.due ? colors.we : colors.ink }]}>
+          {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
+        </Text>
+        <Meta colors={colors}>{`${t('we.howCounts')}: ${t(weRuleKey(card.mode))}`}</Meta>
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
+        <WeWeek card={card} colors={colors} />
       </View>
       {/* Not asked tonight: swipe its next night early, the same card as Tonight. */}
       {!card.due && early && !early.card.done ? (
@@ -1263,19 +1317,26 @@ export function WeHomeList({ book, onChange }) {
         key={card.id}
         accessibilityRole="button"
         onPress={() => goHash('/we', { id: card.id })}
-        style={[styles.weRow, { borderColor: colors.we, backgroundColor: colors.panel }]}
+        style={[styles.weRow, { borderColor: colors.we, backgroundColor: colors.panel }, weDoneStyle(card, colors)]}
       >
         <View style={styles.weRowCopy}>
+          <WeFaces card={card} colors={colors} cheer={cheer} />
           <Text style={[styles.weQ, { color: colors.ink }]}>{weQuestion(card.question)}</Text>
-          {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} cheer={cheer} />}
-          <Text style={[styles.hint, styles.tight, { color: card.done ? colors.we : colors.inkSoft }]}>
+          <Text style={[styles.weStatus, { color: card.done && card.due ? colors.we : colors.ink }]} numberOfLines={1}>
             {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
-            {card.askAfter && !card.done ? ` · ${clockWords(card.askAfter)}` : ''}
-            {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
           </Text>
-          {togetherLine(sums.get(card.id)) ? (
-            <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sums.get(card.id))}</Text>
-          ) : null}
+          {(() => {
+            const quiet = [
+              card.askAfter && !card.done ? clockWords(card.askAfter) : '',
+              streak > 0 ? t('we.streak', { n: streak }) : '',
+              togetherLine(sums.get(card.id)) || '',
+            ].filter(Boolean)
+            return quiet.length ? (
+              <Text style={[styles.hint, styles.tight, { color: colors.inkDim }]} numberOfLines={2}>
+                {quiet.join(' · ')}
+              </Text>
+            ) : null
+          })()}
         </View>
         {open ? (
           <View style={styles.weRowActs}>
@@ -1296,8 +1357,9 @@ export function WeHomeList({ book, onChange }) {
       {loaded && !mine.length ? (
         <View style={[styles.weEmpty, { borderColor: colors.we, backgroundColor: colors.panel }]}>
           <MenuIcon name="together" color={colors.we} size={36} stroke />
-          <Text style={[styles.weEmptyTitle, { color: colors.ink }]}>{t('we.emptyTitle')}</Text>
+          <Text style={[styles.weEmptyTitle, { color: colors.ink }]}>{t('we.emptyFriend')}</Text>
           <Text style={[styles.hint, { color: colors.inkSoft, textAlign: 'center' }]}>{t('we.empty')}</Text>
+          <DidButton colors={colors} label={t('we.newButton')} onPress={() => goHash('/we/new')} />
           <Text style={[styles.cap, { color: colors.inkDim }]}>{t('first.picks')}</Text>
           <View style={[styles.pillRow, { justifyContent: 'center' }]}>
             {WE_IDEAS.map((key) => (
@@ -1330,7 +1392,7 @@ export function WeHomeList({ book, onChange }) {
 
       {ans.note ? <Meta colors={colors}>{ans.note}</Meta> : null}
       {ans.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{ans.miss}</Text> : null}
-      <DidButton colors={colors} label={t('we.new')} onPress={() => goHash('/we/new')} />
+      {loaded && !mine.length ? null : <DidButton colors={colors} label={t('we.new')} onPress={() => goHash('/we/new')} />}
     </>
   )
 }
@@ -1360,8 +1422,14 @@ const styles = StyleSheet.create({
   panel: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
   card: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
   headTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headFaces: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headNames: { flex: 1, fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
+  headFaces: { flex: 1, minWidth: 0, gap: 8 },
+  headQ: { fontFamily: fonts.display, fontSize: 24, fontWeight: '700', lineHeight: 30 },
+  weStatus: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  week: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  weekDay: { alignItems: 'center', gap: 4, flex: 1 },
+  weekWord: { fontFamily: fonts.ui, fontSize: 11 },
+  weekDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
+  headNames: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
   moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },

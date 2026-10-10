@@ -7,7 +7,7 @@ import { MenuIcon } from './MenuIcon.jsx'
 import { faceCardStyles } from '../lib/face-card.js'
 
 /** What a Tonight card shows. The stamps follow the card's x as it moves. */
-export function SwipeFace({ x, kicker, title, stampDid, stampNope, buddy, onEdit, colors, children }) {
+export function SwipeFace({ x, head, kicker, title, stampDid, stampNope, buddy, onEdit, colors, children }) {
   const didStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'did') }))
   const nopeStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'nope') }))
   const kickerStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.abs(swipePull(x.value)) }))
@@ -17,6 +17,7 @@ export function SwipeFace({ x, kicker, title, stampDid, stampNope, buddy, onEdit
       {onEdit ? <EditPen onPress={onEdit} colors={colors} beside={Boolean(buddy)} /> : null}
       <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
       <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
+      {head}
       {kicker ? (
         <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
       ) : null}

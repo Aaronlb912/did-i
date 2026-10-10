@@ -240,6 +240,24 @@ export async function weNotes(cardId, night = boardDate()) {
   return { rows: notes.data || [], me, did: weNoteNights(dids.data, night), miss: '' }
 }
 
+// Your own answers on a card for the last 7 nights, as a Map night -> status.
+// One read; RLS only returns your own rows.
+export async function weMyWeek(cardId, night = boardDate()) {
+  const db = cloud()
+  if (!db || !cardId) return new Map()
+  const { data } = await db.auth.getSession()
+  const me = data?.session?.user?.id || ''
+  if (!me) return new Map()
+  const res = await db
+    .from('we_answers')
+    .select('night, status')
+    .eq('card_id', cardId)
+    .eq('user_id', me)
+    .gte('night', addDaysIso(night, -6))
+    .limit(10)
+  return new Map((res.data || []).map((row) => [row.night, row.status]))
+}
+
 // Save your note on a night you said did. Empty removes it.
 export async function putWeNote({ cardId, night, note = '', shared = false }) {
   const db = cloud()

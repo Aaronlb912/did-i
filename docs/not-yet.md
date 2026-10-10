@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Did we look (branch `we-polish`)
+
+- **Built:** a face row with a dot each for tonight (filled did, ring not yet, empty no answer, 5 then +N) on the Did we list, the Tonight swipe card (on top, folder or "Did we" as the kicker) and the card page; one status line ("2 of 3 did it tonight", "Your turn", "{name}'s turn tonight", "All of you did it tonight" / "Done together"), with streak, folder and Together total on a quieter second line; a soft Did we wash on a card done tonight; "How it counts" on the card page; a last 7 nights strip (done together, and your own answer); empty list says "Do something together with a friend or your family" with a New Did we button. Web list and card page match.
+- **Not done:** the 7-night strip shows only done-together nights and your own answers. Each member's dot per night would need a new read of others' past answers (RLS only returns your own), which changes what others can see; needs a decision. Cheers are not in one feed with shared notes: cheers on a Did we are not stored per card, so there is nothing to merge yet. The swipe card kicker is your folder name; there is no group name on a card.
+- **Needs a signed-in phone look:** dots at 390px with 5 faces plus +N, long German status lines (they truncate), the done wash in light and dark, the face row above the swipe card title.
+
 ## Did we amounts and shared notes (branch `social-amounts`)
 
 - **Supabase not applied yet.** Run npm run db:apply:all (or supabase/social-amounts.sql after did-we.sql, blocks.sql). Until then the total line, Track an amount and the Share switch stay hidden or show "Could not share the note".

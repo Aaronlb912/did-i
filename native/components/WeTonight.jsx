@@ -13,10 +13,10 @@ import {
   weReply,
   weStreak,
   weTimeReady,
-  weWaiting,
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
+import { weFaceRow, weStatus } from '../../src/lib/we-look.js'
 import { SwipeCardHost } from './SwipeCardHost.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -63,12 +63,28 @@ function personLine(person, card) {
 // Everyone on the card as a row of faces (first five, then +N). Tap to see
 // the whole list: who, their buddy, and where they are tonight. With cheer
 // (useWeCheer), anyone who said did tonight gets a Cheer button.
-export function WeFaces({ card, colors, cheer }) {
+// Under each face a dot for tonight: filled = did, ring = not yet, empty = no answer.
+function WeDot({ dot, colors }) {
+  const tint = colors.we || colors.on
+  return (
+    <View
+      style={[
+        styles.dot,
+        dot === 'did'
+          ? { backgroundColor: tint, borderColor: tint }
+          : dot === 'notYet'
+            ? { backgroundColor: 'transparent', borderColor: tint }
+            : { backgroundColor: 'transparent', borderColor: colors.line },
+      ]}
+    />
+  )
+}
+
+export function WeFaces({ card, colors, cheer, dots = true }) {
   const [open, setOpen] = useState(false)
-  const people = (card.people || []).filter((p) => p.state === 'in')
-  const shown = people.slice(0, FACES_SHOWN)
-  const more = Math.max(0, (card.total || people.length) - shown.length)
+  const { shown, more } = weFaceRow(card, FACES_SHOWN)
   const listed = card.people || []
+  const showDots = dots && card.due
   return (
     <>
       <Pressable
@@ -78,12 +94,19 @@ export function WeFaces({ card, colors, cheer }) {
         hitSlop={6}
         style={styles.faces}
       >
-        {shown.map((person) => (
-          <WeFace key={person.id} person={person} card={card} colors={colors} />
+        {shown.map(({ person, dot }) => (
+          <View key={person.id} style={styles.slot}>
+            <WeFace person={person} card={card} colors={colors} />
+            {showDots ? <WeDot dot={dot} colors={colors} /> : null}
+          </View>
         ))}
         {more ? (
-          <View style={[styles.face, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
-            <Text style={[styles.faceText, { color: colors.inkSoft }]}>{t('we.more', { n: more })}</Text>
+          <View style={styles.slot}>
+            <View style={[styles.face, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+              <Text style={[styles.faceText, { color: colors.inkSoft }]} numberOfLines={1}>
+                {t('we.more', { n: more })}
+              </Text>
+            </View>
           </View>
         ) : null}
       </Pressable>
@@ -208,17 +231,13 @@ export function WeAnswered({ cards, colors, hide = '' }) {
 }
 
 export function weStatusLine(card) {
-  if (card.done) return t('we.doneTogether')
-  const waiting = weWaiting(card)
-  if (card.mode === 'turns') {
-    const whose = (card.people || []).find((p) => p.id === card.turn)
-    if (!whose) return t('we.countLine', { n: card.dids, total: card.total })
-    return whose.me ? t('we.yourTurn') : t('we.theirTurn', { name: whose.name })
-  }
-  if (card.shows !== 'count' && waiting.length) {
-    return t('we.waitingOn', { names: waiting.map((p) => p.name).join(', ') })
-  }
-  return t('we.countLine', { n: card.dids, total: card.total })
+  const { key, vars } = weStatus(card)
+  return t(key, vars)
+}
+
+// Done for tonight: a soft wash of the Did we color on the card.
+export function weDoneStyle(card, colors) {
+  return card.due && card.done ? { backgroundColor: colors.weSoft || colors.panel2, borderColor: colors.we || colors.on } : null
 }
 
 // Did we asks waiting on you, for the inbox. Nothing when there are none.
@@ -329,7 +348,7 @@ export function weOpenForMe(cards, now = new Date(), { early = false } = {}) {
 }
 
 function weKicker(card) {
-  return weTimeReady(card) ? t('we.title') : t('we.asksAt', { time: clockWords(card.askAfter) })
+  return weTimeReady(card) ? card.folder || t('we.title') : t('we.asksAt', { time: clockWords(card.askAfter) })
 }
 
 // The Tonight card for a Did we: swipe right for did, left for nope, the
@@ -347,6 +366,11 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       colors={weColors}
       panelStyle={panelStyle}
       gemLook={gemLook}
+      head={
+        <View style={styles.swipeHead}>
+          <WeFaces card={card} colors={colors} />
+        </View>
+      }
       kicker={weKicker(card)}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
@@ -357,10 +381,11 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       buddy={buddy}
     >
       <View style={styles.swipeFoot}>
-        <WeAnswers card={card} colors={colors} />
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>{weStatusLine(card)}</Text>
+        <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={1}>
+          {weStatusLine(card)}
+        </Text>
         {weStreak(card) > 0 ? (
-          <Text style={[styles.meta, { color: colors.we || colors.on }]}>{t('we.streak', { n: weStreak(card) })}</Text>
+          <Text style={[styles.meta, { color: colors.inkDim }]}>{t('we.streak', { n: weStreak(card) })}</Text>
         ) : null}
       </View>
     </SwipeCardHost>
@@ -426,17 +451,21 @@ export function WeList({ colors }) {
             key={card.id}
             accessibilityRole="button"
             onPress={() => goHash('/we', { id: card.id })}
-            style={[styles.row, at ? { borderTopColor: colors.line } : { borderTopWidth: 0 }]}
+            style={[styles.row, at ? { borderTopColor: colors.line } : { borderTopWidth: 0 }, weDoneStyle(card, colors)]}
           >
             <View style={styles.copy}>
+              <WeFaces card={card} colors={colors} />
               <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
-              {card.due ? <WeAnswers card={card} colors={colors} /> : <WeFaces card={card} colors={colors} />}
-              <Text style={[styles.meta, { color: card.done ? colors.on : colors.inkSoft }]}>
-                {card.folder ? `${card.folder} · ` : ''}
+              <Text style={[styles.status, { color: card.done && card.due ? colors.we || colors.on : colors.ink }]} numberOfLines={1}>
                 {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : t('we.notTonight')}
-                {streak > 0 ? ` · ${t('we.streak', { n: streak })}` : ''}
-                {goal ? ` · ${t('we.goalLine', { n: goal.done, goal: goal.goal })}` : ''}
               </Text>
+              {card.folder || streak > 0 || goal ? (
+                <Text style={[styles.meta, { color: colors.inkDim }]} numberOfLines={1}>
+                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t('we.goalLine', { n: goal.done, goal: goal.goal }) : '']
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+              ) : null}
             </View>
           </Pressable>
         )
@@ -454,7 +483,11 @@ const styles = StyleSheet.create({
   copy: { flexBasis: '100%', gap: 6 },
   question: { fontFamily: fonts.uiSemi, fontSize: 15 },
   meta: { fontFamily: fonts.ui, fontSize: 12 },
-  faces: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignSelf: 'flex-start' },
+  faces: { flexDirection: 'row', flexWrap: 'nowrap', gap: 4, alignSelf: 'flex-start' },
+  slot: { alignItems: 'center', gap: 3 },
+  dot: { width: 7, height: 7, borderRadius: 4, borderWidth: 1.5 },
+  status: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  swipeHead: { marginBottom: 10 },
   face: {
     width: 30,
     height: 30,
