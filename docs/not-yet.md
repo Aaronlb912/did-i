@@ -119,20 +119,21 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 
 - **Links**: "Share as a link" on the send sheet makes did-i.app/d/CODE (20 a day). Opening it on a phone needs the next native build for the Android `/d/` App Link and the updated AASA on the site; didi://d/CODE and the page's Open button work over the air. Not tried on a phone yet.
 - **Ending a link** works from Sent (phone and web, "Shared as a link"). An ended link says "This link has ended" on the page, in the app and in the preview, and the server refuses the add. There is still no way to delete a link outright.
-- **Reporting a link** (`report_did_you_link`, in `supabase/did-you-links.sql`, not applied yet): a Report on the /d/CODE page and under the phone's add sheet. Signed in only, once per link, inside the 20 a day report cap. It files a report and blocks the maker. The link stays up; nobody reviews link reports yet and there is no takedown.
+- **Reporting a link** (`report_did_you_link`, in `supabase/did-you-links.sql`, not applied yet): a Report on the /d/CODE page and under the phone's add sheet. Signed in only, once per link, inside the 20 a day report cap. It files a report and blocks the maker. The link stays up until an admin ends it from the reports page (see Reports admin below).
 - **Sends from Did I** (`scripts/send-from-did-i.mjs`, max 4 in 30 days) reach signed-in accounts only. Inbox ones show for 30 days. `--tonight` ones are added on the next sync for that night (or the night after, by date), while the app or web app is open.
 - **The site page shows the maker's photo** when they have one (branch `gaps-2`); no photo as the preview image yet.
 - **Did we links** (did-i.app/d/ with a 12 letter code, `supabase/share-links.sql`) last 7 days, 10 new a day per person, and can be turned off from the Did we page. Opening one offers "Join and add {name}", "Just join" or "No thanks"; a Did you link now offers "Keep it and add {name}" too. Friends are only made on that tap. Not tried on a phone yet; the sheet needs the OTA.
 - **Link previews** come from `api/link-preview.js` (a Vercel function on /d/CODE). The fixed words follow Accept-Language across the 9 app languages (cached per language); the question stays as written. Text only (no sender photo as the preview image yet).
-- **Did we links can be reported** (branch `gaps-2`) from the join sheet and the /d/ page, the same rules as Did you links (`report_we_link` in `supabase/share-links.sql`, not applied yet). Nobody reviews them yet either.
+- **Did we links can be reported** (branch `gaps-2`) from the join sheet and the /d/ page, the same rules as Did you links (`report_we_link` in `supabase/share-links.sql`, not applied yet). The reports page can end them.
 
 ## Profile pictures (2026-10-02)
 
 - Picking a photo needs the 1.3.0 build (expo-image-picker and
   expo-image-manipulator). Older builds show "comes with the next update".
 - The website shows initials, not photos, and cannot set one.
-- Report photo blocks the person and files a report; nobody reviews the
-  `reports` table yet, and there is no way to take a photo down for someone.
+- Report photo blocks the person and files a report. Remove on the reports
+  page clears the photo from the profile; the old file stays in the avatars
+  bucket (SQL can not delete storage files) until they upload a new one.
 - Phones already listed twice under Account stay until they age out (30
   days) or "Remove the other phones" is used; new installs no longer add rows.
 
@@ -165,6 +166,26 @@ buttons where the phone swipes.
   unchanged: sign-in keeps them. Needs a device pass signed out.
 - **TestFlight gem buys credit real gems** (the receipt check accepts Apple's
   sandbox so App Review can buy). Fine for testers; revisit if it gets abused.
+- **Gem items bought while signed out stay on that phone only.** Since gem
+  items moved to the server (`buy_with_gems`, `gem_cosmetics` in `gifts.sql`),
+  signing in replaces the phone's gem items with the account's list, the same
+  way signing in already replaced signed-out gems. Nobody signed in has lost
+  anything: existing shelves were copied to the server once.
+- **Test gem buys after launch** (branch `launch-safety`, `gem-iap` not deployed
+  yet). Apple sandbox and Play license-tester buys credit only ids in
+  `IAP_TEST_USERS` once `IAP_LAUNCH_AT` has passed; before it every test buy
+  credits. With no `IAP_LAUNCH_AT` the list always applies (as before).
+  Others see "Test purchases don't add gems." Keep the App Review account on
+  the list. The toast needs the next OTA.
+- **Reports admin** (branch `launch-safety`, `supabase/admin.sql` not applied):
+  did-i.app/app#/admin/reports, in no menu. Only ids in `public.admins`
+  (added by hand in SQL) can read reports or act. Dismiss, Remove (photo,
+  Did you link, Did we link) and Ban (Supabase Auth `banned_until`: no
+  sign-in or token refresh; lift it in SQL). Every action is logged in
+  `report_actions`. No email on a new report yet: Resend SMTP only serves
+  Auth mail, so a report mail needs an edge function or webhook with a
+  Resend API key. Lines on the shared list and plain person reports have
+  no Remove; Ban covers them.
 
 ## Found in the 2026-09-26 people pass
 

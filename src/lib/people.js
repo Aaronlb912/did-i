@@ -711,6 +711,28 @@ export async function listSentGifts() {
   return { rows, miss: '' }
 }
 
+// Reports admin (supabase/admin.sql). The server refuses anyone not in admins.
+export async function adminReports() {
+  const db = cloud()
+  if (!db) return { rows: [], miss: 'off' }
+  const user = await me()
+  if (!user) return { rows: [], miss: 'out' }
+  const { data, error } = await db.rpc('admin_reports', { lim: 200 })
+  if (error) {
+    if (notRunYet(error)) return { rows: [], miss: 'setup' }
+    if (/not allowed/i.test(error.message || '')) return { rows: [], miss: 'admin' }
+    return { rows: [], ...bad(error) }
+  }
+  return { rows: Array.isArray(data) ? data : [], miss: '' }
+}
+
+export async function adminAct(reportId, act, note = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('admin_act', { report: reportId, act, note })
+  return error ? bad(error) : { status: data, miss: '' }
+}
+
 export async function claimGifts() {
   const db = cloud()
   if (!db) return { gifts: [], miss: 'off' }

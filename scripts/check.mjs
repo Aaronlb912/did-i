@@ -4,6 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
+import { testBuyCredits } from '../supabase/functions/gem-iap/gate.js'
 import { createRequire, registerHooks } from 'node:module'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -6000,6 +6001,49 @@ test('wishlist knows frames: buyable and seasonal, not earned; a seasonal one co
   const frames = readFileSync(new URL('../native/screens/frames.jsx', import.meta.url), 'utf8')
   assert.match(frames, /toggleWish\(book, 'frame', id\)/)
   assert.match(frames, /t\('shop\.remindMe'\)/)
+})
+
+test('launch-safety: test buys credit only listed ids after the launch date', () => {
+  const review = 'review-id'
+  const env = { IAP_TEST_USERS: ` ${review}, tester-2 `, IAP_LAUNCH_AT: '2026-11-01T00:00:00Z' }
+  const before = Date.parse('2026-10-20T00:00:00Z')
+  const after = Date.parse('2026-11-02T00:00:00Z')
+  assert.equal(testBuyCredits('stranger', env, before), true, 'anyone before launch')
+  assert.equal(testBuyCredits('stranger', env, after), false, 'stranger after launch')
+  assert.equal(testBuyCredits(review, env, after), true, 'App Review account after launch')
+  assert.equal(testBuyCredits('tester-2', env, after), true)
+  assert.equal(testBuyCredits('stranger', { IAP_TEST_USERS: review }, before), false, 'no date: list only, as before')
+  assert.equal(testBuyCredits(review, { IAP_TEST_USERS: review }, before), true)
+  assert.equal(testBuyCredits('stranger', { IAP_LAUNCH_AT: 'soon' }, before), false, 'bad date: list only')
+  const iap = readFileSync(path.join(checkRoot, 'supabase/functions/gem-iap/index.ts'), 'utf8')
+  assert.match(iap, /import \{ testBuyCredits \} from '\.\/gate\.js'/)
+  assert.match(iap, /IAP_LAUNCH_AT: Deno\.env\.get\('IAP_LAUNCH_AT'\)/)
+  assert.match(iap, /if \(verified\.test && !testerAllowed\(userId\)\) return json\(\{ miss: 'test' \}, 403\)/)
+  const store = readFileSync(path.join(checkRoot, 'native/iap/gem-store.js'), 'utf8')
+  assert.match(store, /out\?\.miss === 'test'\) testBuyToast\(\)/)
+  assert.match(store, /function testBuyToast\(\) \{\s*showToast\(\{[^}]*t\('gems\.testMiss'\)/)
+  assert.equal(en['gems.testMiss'], "Test purchases don't add gems.")
+})
+
+test('launch-safety: reports admin is server checked and off every menu', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/admin.sql')
+  assert.match(sql, /alter table public\.admins enable row level security/)
+  assert.match(sql, /alter table public\.report_actions enable row level security/)
+  assert.match(sql, /create or replace function public\.is_admin\(\)[\s\S]*?security definer\s+set search_path = public/)
+  assert.match(sql, /for select to authenticated using \(\(select public\.is_admin\(\)\)\)/)
+  for (const fn of ['admin_reports', 'admin_act']) {
+    const body = sql.slice(sql.indexOf(`function public.${fn}(`))
+    assert.match(body.slice(0, 1200), /if not public\.is_admin\(\) then raise exception 'not allowed'/, fn)
+  }
+  assert.match(sql, /insert into public\.report_actions/)
+  assert.doesNotMatch(sql, /^insert into public\.admins/m, 'no admin ids shipped')
+  assert.match(read('scripts/apply-all-sql.mjs'), /'supabase\/admin\.sql'/)
+  assert.ok(existsSync(path.join(checkRoot, 'supabase/tests/admin.test.sql')))
+  assert.match(read('src/site/hash.js'), /'\/admin\/reports'/)
+  for (const rel of ['src/lib/SettingsCog.jsx', 'src/lib/AppNav.jsx', 'native/AppShell.jsx']) {
+    assert.doesNotMatch(read(rel), /admin\/reports/, `${rel} does not link the admin page`)
+  }
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
