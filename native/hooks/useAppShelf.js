@@ -216,11 +216,13 @@ export function useAppShelf() {
     (id) => {
       const first = tagIdsOf(id)[0]
       if (first) persist(selectBook(shelf, first))
-      const path = route.path
+      // The route is read on tap, not kept as a dependency: a new setTag on
+      // every navigation re-rendered every mounted screen mid-transition.
+      const { path, face } = readRoute()
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
-      goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face, keepFocus: true })
+      goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face, keepFocus: true })
     },
-    [persist, route.face, route.path, shelf],
+    [persist, shelf],
   )
 
   const switchBoard = useCallback((id) => persist(selectBook(shelf, id)), [persist, shelf])
@@ -236,12 +238,13 @@ export function useAppShelf() {
   const removeBoard = useCallback(
     (id) => {
       persist(dropBook(shelf, id))
-      if (tagIdsOf(route.tag).includes(id)) {
-        const rest = joinTagIds(tagIdsOf(route.tag).filter((other) => other !== id))
-        goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
+      const now = readRoute()
+      if (tagIdsOf(now.tag).includes(id)) {
+        const rest = joinTagIds(tagIdsOf(now.tag).filter((other) => other !== id))
+        goHash(now.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
       }
     },
-    [persist, route.path, route.tag, shelf, tagId],
+    [persist, shelf],
   )
 
   useEffect(() => {

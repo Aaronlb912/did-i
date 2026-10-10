@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { useIsFocused } from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
 import { keepEarnedFrames, wornFrame } from '../../src/lib/frames.js'
@@ -261,18 +261,27 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
   const wish = wishLine(wishGoal(purse))
-  // Card frame: the top card animates only while this screen is in front
-  // (useFrameActive holds the battery rules); cards behind stay still.
-  const focused = useIsFocused()
-  const frameAwake = useFrameActive(focused)
+  // Focus comes from navigation events, not useIsFocused: that re-rendered
+  // this whole screen as a page opened over it and again as it came back,
+  // both mid-transition.
+  const navigation = useNavigation()
   // Back on tonight (or back on this screen, or a pill gone): the pill row
   // starts at the left again, so the filter chip is in view.
   const pillScroll = useRef(null)
   const pillPicked = Boolean(stack.pillPick || stack.waitPick || wePick)
+  const pillPickedNow = useRef(pillPicked)
+  pillPickedNow.current = pillPicked
   const pillCount = stack.dueWithWait.length
   useEffect(() => {
-    if (focused && !pillPicked) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
-  }, [focused, pillPicked, pillCount])
+    if (!pillPicked && navigation.isFocused()) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
+  }, [navigation, pillPicked, pillCount])
+  useEffect(
+    () =>
+      navigation.addListener('focus', () => {
+        if (!pillPickedNow.current) pillScroll.current?.scrollTo?.({ x: 0, animated: false })
+      }),
+    [navigation],
+  )
   // A picked card keeps the height it had before its answer, so the rows under it stay put.
   const pickKey = stack.pillPick ? stack.rowKey(stack.pillPick) : ''
   const [pickTall, setPickTall] = useState({ key: '', h: 0 })
@@ -287,6 +296,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
   const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), streak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
+  // Card frame: the top card animates only while this screen is in front
+  // (useFrameActive holds the battery rules); cards behind stay still. Only
+  // a worn frame follows focus, so no frame means no extra renders.
+  const framed = Boolean(wornId)
+  const [focused, setFocused] = useState(true)
+  useEffect(() => {
+    if (!framed) return undefined
+    setFocused(navigation.isFocused())
+    const offFocus = navigation.addListener('focus', () => setFocused(true))
+    const offBlur = navigation.addListener('blur', () => setFocused(false))
+    return () => {
+      offFocus()
+      offBlur()
+    }
+  }, [navigation, framed])
+  const frameAwake = useFrameActive(framed && focused)
   const weekLit = useMemo(
     () => (wornId && stack.shelf ? weekStripNights(stack.shelf, stack.clock, tagId).map((night) => Boolean(night.on)) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
