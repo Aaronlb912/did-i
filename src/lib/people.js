@@ -729,8 +729,24 @@ export async function adminReports() {
 export async function adminAct(reportId, act, note = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
+  // Read the photo's file path first: admin_act clears the link.
+  let photo = null
+  if (act === 'remove') {
+    const got = await db.rpc('admin_photo_path', { report: reportId })
+    if (!got.error) photo = got.data || null
+  }
   const { data, error } = await db.rpc('admin_act', { report: reportId, act, note })
-  return error ? bad(error) : { status: data, miss: '' }
+  if (error) return bad(error)
+  // The report stands handled even if the file stays; it is no longer linked.
+  const path = safeAvatarPath(photo)
+  if (path) await db.storage.from('avatars').remove([path]).catch(() => {})
+  return { status: data, miss: '' }
+}
+
+// '<user id>/<file>' only, one level deep, no '..'.
+export function safeAvatarPath(path) {
+  if (typeof path !== 'string') return ''
+  return /^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/i.test(path) && !path.includes('..') ? path : ''
 }
 
 export async function claimGifts() {

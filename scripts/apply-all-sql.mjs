@@ -47,6 +47,7 @@ const files = [
   'supabase/social-amounts.sql',
   'supabase/shared-every.sql',
   'supabase/admin.sql',
+  'supabase/admin-mail.sql',
   'supabase/drop-tonight.sql',
 ]
 

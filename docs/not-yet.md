@@ -182,9 +182,11 @@ buttons where the phone swipes.
   (added by hand in SQL) can read reports or act. Dismiss, Remove (photo,
   Did you link, Did we link) and Ban (Supabase Auth `banned_until`: no
   sign-in or token refresh; lift it in SQL). Every action is logged in
-  `report_actions`. No email on a new report yet: Resend SMTP only serves
-  Auth mail, so a report mail needs an edge function or webhook with a
-  Resend API key. Lines on the shared list and plain person reports have
+  `report_actions`. Report emails (branch `admin-mail`, `supabase/admin-mail.sql`
+  not applied, `report-mail` function not deployed): every admin gets one
+  plain email per report through Resend. Needs RESEND_API_KEY and the Vault
+  secrets project_url and service_role_key. Removing a photo also deletes the
+  file. Lines on the shared list and plain person reports have
   no Remove; Ban covers them.
 
 ## Found in the 2026-09-26 people pass
