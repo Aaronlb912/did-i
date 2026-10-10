@@ -2554,6 +2554,7 @@ export const ja = {
   'first.haveAccount': "アカウントがあります",
   'nightOne.title': "最初の夜、完了",
   'nightOne.body': "明日また来ると、連続記録が伸びはじめます。",
+  "nightOne.bodyGentle": "また明日、次の夜に。",
   'nightOne.widget': "ウィジェットを追加",
   'signInNudge.title': "質問を守るためにサインインしましょう。",
   'signInNudge.go': "サインイン",

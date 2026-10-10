@@ -2607,6 +2607,7 @@ export const it = {
   'first.haveAccount': "Ho già un account",
   'nightOne.title': "Prima sera fatta",
   'nightOne.body': "Torna domani e la serie inizia a crescere.",
+  "nightOne.bodyGentle": "Torna domani per la prossima.",
   'nightOne.widget': "Aggiungi il widget",
   'signInNudge.title': "Tieni al sicuro le tue domande: accedi.",
   'signInNudge.go': "Accedi",

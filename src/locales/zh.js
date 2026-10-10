@@ -2543,6 +2543,7 @@ export const zh = {
   'first.haveAccount': "我有账号",
   'nightOne.title': "第一晚完成",
   'nightOne.body': "明天再来，连续记录就开始增长。",
+  "nightOne.bodyGentle": "明天再来，迎接下一晚。",
   'nightOne.widget': "添加小组件",
   'signInNudge.title': "登录，保护好你的问题。",
   'signInNudge.go': "登录",

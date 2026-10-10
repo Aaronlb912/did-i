@@ -2556,6 +2556,7 @@ export const ko = {
   'first.haveAccount': "계정이 있어요",
   'nightOne.title': "첫날 밤 완료",
   'nightOne.body': "내일 다시 오면 연속 기록이 자라기 시작해요.",
+  "nightOne.bodyGentle": "내일 다음 밤에 또 만나요.",
   'nightOne.widget': "위젯 추가",
   'signInNudge.title': "질문을 안전하게 지키려면 로그인하세요.",
   'signInNudge.go': "로그인",

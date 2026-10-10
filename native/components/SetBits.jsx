@@ -83,8 +83,14 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
 export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors }) {
   const tileColor = tint || (on ? colors.on : colors.inkSoft)
   const tileBg = tint ? `${tint}1f` : colors.panel2
+  // The whole row flips the switch, not just the switch itself. The switch
+  // keeps its own label for screen readers, so the row stays out of the tree.
   return (
-    <View style={[styles.row, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}>
+    <Pressable
+      accessible={false}
+      onPress={() => onPress?.(!on)}
+      style={[styles.row, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}
+    >
       {icon ? (
         <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
           <MenuIcon name={icon} color={tileColor} size={17} stroke />
@@ -105,7 +111,7 @@ export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors })
           ios_backgroundColor={colors.open}
         />
       )}
-    </View>
+    </Pressable>
   )
 }
 

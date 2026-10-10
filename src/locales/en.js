@@ -2604,6 +2604,7 @@ export const en = {
   'first.haveAccount': "I have an account",
   'nightOne.title': "That’s night one",
   'nightOne.body': "Come back tomorrow and the streak starts to grow.",
+  "nightOne.bodyGentle": "Come back tomorrow for the next one.",
   'nightOne.widget': "Add the widget",
   'signInNudge.title': "Keep your questions safe: sign in.",
   'signInNudge.go': "Sign in",

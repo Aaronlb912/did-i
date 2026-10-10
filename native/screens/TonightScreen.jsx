@@ -762,7 +762,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           </Text>
           {nightOne ? (
             <>
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('nightOne.body')}</Text>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(gentle ? 'nightOne.bodyGentle' : 'nightOne.body')}</Text>
               <View style={styles.actions}>
                 <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
               </View>

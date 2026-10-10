@@ -2623,6 +2623,7 @@ export const fr = {
   'first.haveAccount': "J’ai un compte",
   'nightOne.title': "Premier soir fait",
   'nightOne.body': "Reviens demain et ta série commence à grandir.",
+  "nightOne.bodyGentle": "Reviens demain pour la suivante.",
   'nightOne.widget': "Ajouter le widget",
   'signInNudge.title': "Garde tes questions : connecte-toi.",
   'signInNudge.go': "Se connecter",
