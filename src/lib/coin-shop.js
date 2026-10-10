@@ -5,6 +5,10 @@ import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWi
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
 import { noteMilestone } from './milestones.js'
 
+// Signed out, a gem item would live on this phone only and be replaced by
+// the account's list at sign in, so gem buys ask to sign in first.
+export const SIGN_IN_MISS = 'shop.miss.signInGems'
+
 // Signed in, the server takes the coins or gems and keeps the frame, so it
 // cannot be added by editing the phone's saved data. Buying one puts it on.
 async function buyFrameRaw(book, id) {
@@ -12,7 +16,7 @@ async function buyFrameRaw(book, id) {
   const purse = normalizePurse(book)
   if (!frame || !frameForSale(id)) return { book, miss: 'frames.miss.notSold' }
   if (purse.frames.includes(id)) return { book: { ...book, ...purse, frame: id }, miss: '' }
-  if (!accountSessionOn()) return buyFrameLocal({ ...book, ...purse }, id)
+  if (!accountSessionOn()) return frame.gems ? { book, miss: SIGN_IN_MISS } : buyFrameLocal({ ...book, ...purse }, id)
   if (frame.coins && purse.coins < frame.coins) return { book, miss: 'shop.miss.needCoins', missN: frame.coins }
   if (frame.gems && purse.gems < frame.gems) return { book, miss: 'shop.miss.needGems', missN: frame.gems }
   if (frame.gems) {
@@ -74,12 +78,14 @@ const GEM_KINDS = {
 }
 
 // Signed in, the server takes the gems and records the item, so it cannot be
-// added by editing the phone's saved data. Signed out, it stays on this phone.
+// added by editing the phone's saved data. Signed out, it asks to sign in.
 async function buyWithGemsRaw(book, kind, id) {
   const how = GEM_KINDS[kind]
   const item = how?.list.find((row) => row.id === id)
   const purse = normalizePurse(book)
-  if (!item || !accountSessionOn() || purse[how.owned].includes(id)) return how ? how.local(book, id) : { book, miss: 'shop.miss.buyFail' }
+  if (!how) return { book, miss: 'shop.miss.buyFail' }
+  if (!item || purse[how.owned].includes(id)) return how.local(book, id)
+  if (!accountSessionOn()) return item.gems > 0 ? { book, miss: SIGN_IN_MISS } : how.local(book, id)
   if (purse.gems < item.gems) return { book, miss: 'shop.miss.needGems', missN: item.gems }
   const remote = await purchaseWithGems(kind, id)
   if (remote.miss) return { book, miss: remote.miss, missN: item.gems }

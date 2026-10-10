@@ -72,7 +72,8 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
-import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal, wishLine, CHEERS as SHOP_CHEERS } from '../src/lib/purse.js'
+const CHEERS_FOR_SIGN_IN = () => SHOP_CHEERS.find((item) => item.gems > 0).id
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
@@ -5443,9 +5444,8 @@ test('social-gentle.sql: queue_check_ons handles every kind in one statement', (
 test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8').replace(/\r\n/g, '\n')
-  // known_people and the tonight wall null the number for gentle people.
+  // known_people nulls the number for gentle people.
   assert.match(sql, /create or replace function public\.known_people\(\)[\s\S]*?case when coalesce\(p\.prefs ->> 'gentle', ''\) = 'true' then null else p\.streak end/)
-  assert.match(sql, /create or replace function public\.tonight_wall\(wanted date\)[\s\S]*?p\.prefs ->> 'gentle'[\s\S]*?then null else p\.streak end/)
   assert.match(sql, /grant execute on function public\.known_people\(\) to authenticated/)
   // check_ons: RLS, policies, cap, index, size checks.
   assert.match(sql, /alter table public\.check_ons enable row level security/)
@@ -5470,7 +5470,6 @@ test('social-gentle.sql: gentle streak hidden on the server, check_ons locked do
   assert.match(sql, /cron\.schedule\('check-ons', '\*\/5 \* \* \* \*'/)
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('friends-week.sql'), 'social-gentle redefines known_people after friends-week')
-  assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('dit-board.sql'))
   // The push opens the friend page, which opens the Did you with the words in.
   assert.match(sql, /'\/friend\?id=' \|\| m\.owner_id::text \|\| '&face=checkon'/)
   const social = readFileSync(path.join(root, 'native/screens/social.jsx'), 'utf8')
@@ -5918,6 +5917,89 @@ test('gaps-2: web calendar and week strip show a freeze ring', () => {
   const css = read('src/lib/did-i.css')
   assert.match(css, /\.di-cal-day\.is-freeze \.di-cal-pip,\s*\.di-weekbar-days li\.is-freeze \.di-weekbar-pip \{[^}]*var\(--di-freeze\)/)
   assert.ok(existsSync(path.join(checkRoot, 'supabase/tests/check-ons.test.sql')), 'check-ons has a SQL test')
+})
+
+test('drop-tonight.sql: old public tonight list is gone and delete_me still works', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/drop-tonight.sql'), 'utf8').replace(/\r\n/g, '\n')
+  assert.ok(!existsSync(path.join(root, 'supabase/tonight.sql')), 'tonight.sql would recreate the tables')
+  assert.ok(!existsSync(path.join(root, 'supabase/dit-board.sql')), 'dit-board.sql would recreate the wall')
+  for (const fn of ['tonight_wall(date)', 'tonight_tally(date)', 'sync_tonight(date, text[])', 'set_public_tonight(boolean)', 'cheer_on(uuid, date)', 'report_tonight(uuid, text)', 'sweep_tonight()', 'cap_tonight()', 'queue_cheer_push()']) {
+    assert.ok(sql.includes('drop function if exists public.' + fn + ';'), fn)
+  }
+  assert.match(sql, /drop table if exists public\.tonight cascade;/)
+  assert.match(sql, /drop table if exists public\.cheers cascade;/)
+  assert.match(sql, /alter table public\.profiles drop column if exists public_tonight;/)
+  // Idempotent: no bare create table or drop without if exists.
+  assert.ok(!/drop (table|function|index) (?!if exists)/.test(sql))
+  const del = sql.slice(sql.indexOf('create or replace function public.delete_me()'))
+  assert.match(del, /security definer\nset search_path = public, auth/)
+  assert.match(del, /me uuid := \(select auth\.uid\(\)\);/)
+  assert.match(del, /update public\.family_members set role = 'parent'/)
+  assert.match(del, /delete from auth\.users where id = me;/)
+  assert.ok(!/public\.(tonight|cheers)\b/.test(del.slice(0, del.indexOf('$;'))), 'delete_me no longer names dropped tables')
+  assert.match(del, /grant execute on function public\.delete_me\(\) to authenticated;/)
+  // Runs last, so nothing applied after it can bring delete_me or the tables back.
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
+  assert.equal(files.at(-1), 'drop-tonight.sql')
+  assert.ok(!files.includes('tonight.sql') && !files.includes('dit-board.sql'))
+  // No other SQL or client code reaches the dropped tables or functions.
+  const dropped = /public\.tonight\b|public\.cheers\b|public_tonight|tonight_wall|tonight_tally|sync_tonight|set_public_tonight|report_tonight|sweep_tonight|rpc\(\s*['"]cheer_on['"]|from\(\s*['"](tonight|cheers)['"]/
+  const walk = (dir) => readdirSync(dir).flatMap((n) => {
+    const p = path.join(dir, n)
+    return statSync(p).isDirectory() ? walk(p) : [p]
+  })
+  const hits = [...walk(path.join(root, 'supabase')), ...walk(path.join(root, 'src')), ...walk(path.join(root, 'native')), ...walk(path.join(root, 'widgets'))]
+    .filter((p) => /\.(sql|js|jsx|ts|tsx|mjs)$/.test(p) && !p.endsWith('drop-tonight.sql') && !p.includes('drop-tonight.test'))
+    .filter((p) => dropped.test(readFileSync(p, 'utf8')))
+  assert.deepEqual(hits, [])
+})
+
+await testAsync('signed out: gem buys ask to sign in, coin buys stay on the phone', async () => {
+  const { SIGN_IN_MISS, buyFrame, buyWithGems, buyLookWithCoins } = await import('../src/lib/coin-shop.js')
+  const book = { coins: 500, gems: 50 }
+  for (const [kind, id] of [['buddy', 'cat'], ['cheer', CHEERS_FOR_SIGN_IN()]]) {
+    const out = await buyWithGems(book, kind, id)
+    assert.equal(out.miss, SIGN_IN_MISS, kind)
+    assert.equal(out.book, book, 'nothing spent')
+  }
+  const gemLook = LOOKS.find((item) => item.gems > 0)
+  assert.equal((await buyLookWithCoins(book, gemLook.id)).miss, SIGN_IN_MISS)
+  assert.equal((await buyFrame(book, 'glow')).miss, SIGN_IN_MISS)
+  // Coin items still buy on this phone.
+  const coinFrame = await buyFrame(book, 'thin')
+  assert.equal(coinFrame.miss, '')
+  assert.ok(normalizePurse(coinFrame.book).frames.includes('thin'))
+  const coinLook = LOOKS.find((item) => item.coins > 0 && !item.gems)
+  assert.equal((await buyLookWithCoins(book, coinLook.id)).miss, '')
+  // Owned gem items can still be worn.
+  assert.equal((await buyWithGems({ ...book, buddies: ['ant', 'cat'] }, 'buddy', 'cat')).miss, '')
+  for (const lang of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const text = readFileSync(new URL('../src/locales/' + lang + '.js', import.meta.url), 'utf8')
+    assert.match(text, /'shop\.miss\.signInGems'/, lang)
+  }
+  const host = readFileSync(new URL('../native/components/SheetHost.jsx', import.meta.url), 'utf8')
+  assert.match(host, /export function askSignIn[\s\S]*?goLabel: t\('we\.signIn'\)[\s\S]*?closeLabel: t\('account\.stay'\)[\s\S]*?goHash\('\/account'\)/)
+})
+
+test('wishlist knows frames: buyable and seasonal, not earned; a seasonal one counts only while open', () => {
+  let book = toggleWish({ coins: 0 }, 'frame', 'thin').book
+  assert.deepEqual(normalizePurse(book).wish, ['frame:thin'])
+  assert.equal(toggleWish({}, 'frame', 'vine').miss, 'shop.miss.wishGone', 'earned frames are not wishable')
+  // Owning it takes the heart off.
+  assert.deepEqual(normalizePurse({ ...book, frames: ['thin'] }).wish, [])
+  // A gem frame: gems to go.
+  assert.deepEqual(wishGoal(normalizePurse(toggleWish({ gems: 1 }, 'frame', 'glow').book)), { type: 'frame', id: 'glow', kind: 'gems', n: 2, nights: 14 })
+  // Seasonal: closed is skipped, open says you can get it now.
+  const hearts = normalizePurse(toggleWish({}, 'frame', 'hearts').book)
+  assert.equal(wishGoal(hearts, '2027-06-01'), null)
+  const open = wishGoal(hearts, '2027-02-05')
+  assert.equal(open.n, 0)
+  assert.deepEqual(wishLine(open), { key: 'wish.ready', n: 0, nameKey: 'frame.hearts.name' })
+  const frames = readFileSync(new URL('../native/screens/frames.jsx', import.meta.url), 'utf8')
+  assert.match(frames, /toggleWish\(book, 'frame', id\)/)
+  assert.match(frames, /t\('shop\.remindMe'\)/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

@@ -77,17 +77,19 @@ import {
   buyCheerStageWithCoins,
   buyLookWithCoins,
   buyWithGems,
+  SIGN_IN_MISS,
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
 import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById } from '../../src/lib/accessories.js'
-import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { accountSessionOn } from '../../src/lib/session-id.js'
 import { CoinIcon, GemFaceMark, GemIcon } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, framesForSaleCount, framesOwnedCount, leftAfter } from './frames.jsx'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, openFrameSheet } from './frames.jsx'
 import { openCoinsHow } from '../components/NightSheets.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
@@ -123,6 +125,10 @@ function shopMiss(next) {
 const NO_MISS = { id: '', text: '' }
 
 function shortOnGems(next, colors) {
+  if (next?.miss === SIGN_IN_MISS) {
+    askSignIn(colors)
+    return true
+  }
   if (next?.miss !== 'shop.miss.needGems' && next?.miss !== 'gems') return false
   offerMoreGems(colors)
   return true
@@ -360,6 +366,8 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
 
 // A wishlist tile's second line: can you buy it now, or how many more.
 function wishNeed(type, item, purse) {
+  // A seasonal frame is free: say when it is back, or that it is out now.
+  if (type === 'frame' && item.kind === 'season') return frameStatus(item, purse, frameCtxFor(readShelf().boards)).text
   const tag = shopTag(purse, type, item)
   const short = tag.gems ? tag.gems - purse.gems : tag.coins - purse.coins
   if (short <= 0) return t('shop.canBuy')
@@ -926,6 +934,11 @@ function useTileTap(book, onChange, colors, coat, purse) {
     const buyNow = (spend) => ({
       label: t('shop.buy'),
       go: async () => {
+        if (tag.gems > 0 && !accountSessionOn()) {
+          publishSheet(null)
+          askSignIn(colors)
+          return
+        }
         if (needGems()) return
         // Short on coins: the buy turns itself down and the preview says why.
         if (tag.coins > 0 && purse.coins < tag.coins) return done(type, item, await spend(), true)
@@ -1954,7 +1967,10 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const wished = wishRows(purse)
-  const onWish = useTileTap(book, onChange, colors, coat, purse)
+  const onWishTile = useTileTap(book, onChange, colors, coat, purse)
+  // Frames open their own sheet, the same one the Frames pages use.
+  const onWish = (type, item) =>
+    type === 'frame' ? openFrameSheet({ id: item.id, book, colors, ctx: frameCtxFor(readShelf().boards), onChange }) : onWishTile(type, item)
 
   function wearOn(next, name) {
     onChange(next.book)

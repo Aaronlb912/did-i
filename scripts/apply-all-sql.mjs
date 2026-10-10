@@ -16,8 +16,6 @@ const files = [
   'supabase/blocks.sql',
   'supabase/push.sql',
   'supabase/family-summary.sql',
-  'supabase/tonight.sql',
-  'supabase/dit-board.sql',
   'supabase/gems-social.sql',
   'supabase/gem-purchases.sql',
   'supabase/shop-catalog.sql',
@@ -48,6 +46,7 @@ const files = [
   'supabase/social-gentle.sql',
   'supabase/social-amounts.sql',
   'supabase/shared-every.sql',
+  'supabase/drop-tonight.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

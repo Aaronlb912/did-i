@@ -21,14 +21,16 @@ db:apply:all` uses this same list (`scripts/apply-all-sql.mjs`).
    one-document shelf
 8. `supabase/blocks.sql` blocking and reporting
 9. `supabase/push.sql` push tokens and the nudge queue
-10. `supabase/tonight.sql` `delete_me()`, plus tables from the removed public list
-11. `supabase/dit-board.sql` unused since the public list was removed
-12. `supabase/gems-social.sql` cheer sends, gifts
-13. `supabase/gem-purchases.sql` real-money gem packs
-14. `supabase/wallet.sql` server-owned gem balance
-15. `supabase/waitlist.sql` landing-page waitlist
-16. `supabase/friend-cheers.sql` five stored cheers for one gem
-17. `supabase/auto-add.sql` family did yous and allowed friends go straight onto tonight
+10. `supabase/gems-social.sql` cheer sends, gifts
+11. `supabase/gem-purchases.sql` real-money gem packs
+12. `supabase/wallet.sql` server-owned gem balance
+13. `supabase/waitlist.sql` landing-page waitlist
+14. `supabase/friend-cheers.sql` five stored cheers for one gem
+15. `supabase/auto-add.sql` family did yous and allowed friends go straight onto tonight
+
+The full list is in `scripts/apply-all-sql.mjs`. It ends with
+`supabase/drop-tonight.sql`, which drops the old public tonight list and
+owns `delete_me()`.
 
 After any change to any of them, run `supabase/audit.sql`. It has to come
 back with no rows.
@@ -36,7 +38,7 @@ back with no rows.
 To apply one file from the terminal, put a personal access token in
 `.env.local` as `SUPABASE_ACCESS_TOKEN`, then:
 
-    npm run db:apply -- supabase/tonight.sql
+    npm run db:apply -- supabase/drop-tonight.sql
 
 To apply every file in order:
 

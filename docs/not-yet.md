@@ -49,7 +49,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 - **Web shows a gifted frame by name only.** No frame art on the web, and View in collection there has no frames tab.
 - **Birthday frame waits for the launch date.** It is Did I's birthday, free for a week each year from the first anniversary. Set `APP_LAUNCH` in `src/lib/frames.js` to the App Store release day (YYYY-MM-DD) and ship an OTA; until then it stays hidden.
 - **Web app has no frames.** The website's Shop and Collection do not list them; only the phone does.
-- **Frames have no wishlist and no "Remind me".** Looks, cheers, buddies and accessories can be wishlisted; frame sheets cannot (the wish list in `purse.js` only knows those four kinds). A seasonal frame that is not out yet says when it is back, with no reminder.
+- **Frame wishlist is phone only, and Remind me is not a push (branch `owner-picks-c`).** Coin, gem and seasonal frames have the wishlist heart; a seasonal frame that is closed says Remind me, and once it is back the done card says you can get it now. No push when it opens. Needs a device pass: the heart on a frame sheet, the frame tile on the Collection wishlist opens the frame sheet.
 
 ## Friend notes
 
@@ -158,11 +158,11 @@ buttons where the phone swipes.
 
 ## Found in the 2026-09-30 security check
 
-- **Gem items bought while signed out stay on that phone only.** Since gem
-  items moved to the server (`buy_with_gems`, `gem_cosmetics` in `gifts.sql`),
-  signing in replaces the phone's gem items with the account's list, the same
-  way signing in already replaced signed-out gems. Nobody signed in has lost
-  anything: existing shelves were copied to the server once.
+- **Signed out, a gem item buy asks to sign in first (branch `owner-picks-c`).**
+  Looks, cheers, buddies and frames bought with gems show Sign in / Not now,
+  phone and web, so nothing is bought that sign-in would replace. Gem items
+  bought on a phone before this change still go at sign in. Coin items are
+  unchanged: sign-in keeps them. Needs a device pass signed out.
 - **TestFlight gem buys credit real gems** (the receipt check accepts Apple's
   sandbox so App Review can buy). Fine for testers; revisit if it gets abused.
 
@@ -340,11 +340,13 @@ cheer skip under reduce-motion.
   dropped. iOS widget answers still land on their stored night.
 - **Shake to undo** is off and out of the build from 1.3.2: no expo-sensors, no `NSMotionUsageDescription`. Tap to undo stays. `useShakeUndo` returns false; `src/lib/shake-undo.js` keeps the detection if it comes back.
 - **UX clarity pass (2026-10-08) needs a phone check:** Later on a question not open yet, Not yet / Missed wording on the calendar, stats and Did we, the Name and note page with no sign-out row, the one-line swipe hint on the first-question screen, and the folder vs topic line on Edit question.
-- **Did I tonight (the public list)** was removed from the app code on
-  2026-09-26. If it comes back it will be its own product. The database
-  still has its tables and functions (`supabase/tonight.sql`,
-  `supabase/dit-board.sql`); dropping them needs a migration that keeps
-  `delete_me()`, which lives in `tonight.sql`.
+- **Did I tonight (the public list) drop is not applied (branch `owner-picks-c`).**
+  `supabase/drop-tonight.sql` drops the tables (`tonight`, `cheers`), their
+  functions and `profiles.public_tonight`, and now owns `delete_me()` (with
+  the family hand-off from people.sql, which the old tonight.sql copy had
+  lost). tonight.sql and dit-board.sql are deleted. Run `npm run db:apply:all`
+  (or `npm run db:apply -- supabase/drop-tonight.sql`). `reports.line_id`
+  stays as a plain column.
 
 ## Done (2026-09-26 people pass)
 

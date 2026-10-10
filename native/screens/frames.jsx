@@ -7,8 +7,9 @@ import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
-import { NIGHT_COIN_CAP, normalizePurse } from '../../src/lib/purse.js'
-import { buyFrame } from '../../src/lib/coin-shop.js'
+import { NIGHT_COIN_CAP, isWished, normalizePurse, toggleWish } from '../../src/lib/purse.js'
+import { SIGN_IN_MISS, buyFrame } from '../../src/lib/coin-shop.js'
+import { accountSessionOn } from '../../src/lib/session-id.js'
 import { readGiftsSent, refreshGiftsSent } from '../../src/lib/people.js'
 import {
   claimFrame,
@@ -22,7 +23,7 @@ import {
   wearFrame,
   wornFrame,
 } from '../../src/lib/frames.js'
-import { confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { openCoinsHow } from '../components/NightSheets.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
@@ -265,12 +266,18 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
             offerMoreGems(colors)
             return
           }
+          if (frame.gems && !accountSessionOn()) {
+            publishSheet(null)
+            askSignIn(colors)
+            return
+          }
           confirmBuy(colors, {
             title: frameName(id),
             body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
               const next = await buyFrame(book, id)
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
+              if (next.miss === SIGN_IN_MISS) return askSignIn(colors)
               if (next.miss) return confirmMiss(frameMiss(next))
               onChange(next.book)
               confirmDone(t('confirm.wearing', { name: frameName(id) }))
@@ -294,6 +301,26 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
   const shortCoins = !owned && frame.coins && purse.coins < frame.coins
   // Seasonal, not claimed yet: say it costs nothing and stays yours.
   const seasonLine = !owned && frame.kind === 'season' ? `\n${t('frames.seasonFree')}` : ''
+  // The wishlist heart. A seasonal frame that is closed gets Remind me: the
+  // done card names it once it is back.
+  const wishable = !owned && ['coin', 'gem', 'season'].includes(frame.kind) && !frame.hidden
+  const remind = frame.kind === 'season' && !seasonOpen(frame, ctx.today)
+  const wished = isWished(purse, 'frame', id)
+  const wishLabels = remind
+    ? [`♥ ${t('shop.remindOn')}`, `♡ ${t('shop.remindMe')}`]
+    : [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`]
+  const wish = wishable
+    ? {
+        moreLabel: wished ? wishLabels[0] : wishLabels[1],
+        moreSizeLabels: wishLabels,
+        onMore: () => {
+          const next = toggleWish(book, 'frame', id)
+          if (next.miss) return confirmMiss(t(next.miss, { n: next.missN }))
+          reopen(next.book)
+          requestAnimationFrame(() => setTimeout(() => onChange(next.book), 0))
+        },
+      }
+    : {}
   publishSheet({
     preview: <FrameSheetPreview id={id} colors={colors} ctx={ctx} weekLit={weekFor(frame, owned, ctx)} />,
     title: frameName(id),
@@ -307,6 +334,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
       ? { footLabel: t('gems.title'), onFoot: () => { publishSheet(null); goHash('/gems') } }
       : {}),
     content: <FrameFacts frame={frame} owned={owned} colors={colors} />,
+    ...wish,
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
