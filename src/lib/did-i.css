@@ -30,6 +30,7 @@
   --di-freeze: #7fd4f0;
   --di-we: #b69cff;
   --di-we-deep: #7d63d6;
+  --di-we-soft: rgba(182, 156, 255, 0.12);
   --di-veil: rgba(8, 10, 14, 0.55);
   --di-person-1: #ff9f6b;
   --di-person-2: #6fd0c4;
@@ -683,6 +684,7 @@ html[data-theme='light'] .di-hall,
   --di-freeze: #2a86a8;
   --di-we: #6b4fc8;
   --di-we-deep: #4f3799;
+  --di-we-soft: rgba(107, 79, 200, 0.08);
   --di-veil: rgba(26, 29, 22, 0.4);
   --di-person-1: #b8572a;
   --di-person-2: #1f7f74;
@@ -9236,7 +9238,7 @@ html[data-reduce-motion] .di-hall:is(
 
 .di-we-faces {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.25rem;
   margin: 0.2rem 0;
 }
@@ -9262,6 +9264,50 @@ html[data-reduce-motion] .di-hall:is(
 }
 
 .di-we-face.is-turn {
+  border-color: var(--di-we);
+}
+
+/* A dot under each face for tonight: filled did, ring not yet, empty no answer. */
+.di-we-slot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.di-we-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--di-line);
+}
+
+.di-we-dot.is-did {
+  background: var(--di-we);
+  border-color: var(--di-we);
+}
+
+.di-we-dot.is-notYet {
+  border-color: var(--di-we);
+}
+
+.di-we-status {
+  display: block;
+  font-weight: 600;
+  color: var(--di-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.di-we-status.is-done,
+.is-done > .di-we-open .di-we-status {
+  color: var(--di-we);
+}
+
+.di-we-home-row.is-done,
+.di-we-row.is-done {
+  background: var(--di-we-soft);
   border-color: var(--di-we);
 }
 

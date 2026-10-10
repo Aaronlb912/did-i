@@ -36,6 +36,7 @@ import {
 import { WE_LINK_MISS, joinWeLink, lookUpWeLink, saveWebWeLink } from './did-you-links.js'
 import { refreshWeNights } from './we-nights.js'
 import { readPrefs } from './prefs.js'
+import { weFaceRow, weRuleKey, weStatus } from './we-look.js'
 import { clockWords } from './hall-pages.js'
 import { shelfTopics } from './board-json.js'
 import { readShelf } from './board-shelf.js'
@@ -87,10 +88,9 @@ function personLine(person, card) {
 // The first five faces, then +N. Click for everyone on the card.
 export function WeFaces({ card, cheer }) {
   const [open, setOpen] = useState(false)
-  const people = (card.people || []).filter((p) => p.state === 'in')
-  const shown = people.slice(0, FACES_SHOWN)
-  const more = Math.max(0, (card.total || people.length) - shown.length)
+  const { shown, more } = weFaceRow(card, FACES_SHOWN)
   const listed = card.people || []
+
   return (
     <>
       <button
@@ -102,10 +102,13 @@ export function WeFaces({ card, cheer }) {
           setOpen(true)
         }}
       >
-        {shown.map((p) => (
-          <WePerson key={p.id} person={p} card={card} />
+        {shown.map(({ person: p, dot }) => (
+          <span key={p.id} className="di-we-slot">
+            <WePerson person={p} card={card} />
+            {card.due ? <span className={`di-we-dot is-${dot}`} aria-hidden="true" /> : null}
+          </span>
         ))}
-        {more ? <span className="di-we-face">{t('we.more', { n: more })}</span> : null}
+        {more ? <span className="di-we-slot"><span className="di-we-face">{t('we.more', { n: more })}</span></span> : null}
       </button>
       {open ? (
         <SetSheet title={t('we.onCard')} onClose={() => setOpen(false)}>
@@ -143,17 +146,8 @@ export function WeFaces({ card, cheer }) {
 }
 
 export function weStatusLine(card) {
-  if (card.done) return t('we.doneTogether')
-  if (card.mode === 'turns') {
-    const whose = (card.people || []).find((p) => p.id === card.turn)
-    if (!whose) return t('we.countLine', { n: card.dids, total: card.total })
-    return whose.me ? t('we.yourTurn') : t('we.theirTurn', { name: whose.name })
-  }
-  const waiting = weWaiting(card)
-  if (card.shows !== 'count' && waiting.length) {
-    return t('we.waitingOn', { names: waiting.map((p) => p.name).join(', ') })
-  }
-  return t('we.countLine', { n: card.dids, total: card.total })
+  const { key, vars } = weStatus(card)
+  return t(key, vars)
 }
 
 // Did we asks waiting on you, for the inbox. Nothing when there are none.
@@ -293,7 +287,7 @@ export function WeList() {
           <li className={card.done ? 'di-fam-row di-we-row is-done' : 'di-fam-row di-we-row'} key={card.id}>
             <button className="di-fam-copy di-we-open" type="button" onClick={() => goHash('/we', { id: card.id })}>
               <strong>{card.question}</strong>
-              <WeFaces card={card} cheer={cheer} />
+              <WeFaces card={card} />
               <em>
                 {card.folder ? `${card.folder} · ` : ''}
                 {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
@@ -913,8 +907,13 @@ export function WeHome({ book, onChange, link = '' }) {
       <WeAsks />
       {!mine.length ? (
         <div className="di-we-face-card di-we-home-row">
-          <h3>{t('we.emptyTitle')}</h3>
+          <h3>{t('we.emptyFriend')}</h3>
           <p className="di-set-note">{t('we.empty')}</p>
+          <div className="di-hang-actions">
+            <button className="di-did di-did-small" type="button" onClick={() => goHash('/we/new')}>
+              {t('we.newButton')}
+            </button>
+          </div>
           <div className="di-we-ideas">
             {WE_IDEAS.map((key) => (
               <button key={key} className="di-key" type="button" onClick={() => goHash('/we/new', { start: t(key) })}>
@@ -928,16 +927,20 @@ export function WeHome({ book, onChange, link = '' }) {
         const me = weMine(card)
         const open = card.due && !card.done && !me?.status && weTimeReady(card)
         return (
-          <div className="di-we-home-row" key={card.id}>
+          <div className={card.due && card.done ? 'di-we-home-row is-done' : 'di-we-home-row'} key={card.id}>
             <button className="di-fam-copy di-we-open" type="button" onClick={() => goHash('/we', { id: card.id })}>
-              <strong>{card.question}</strong>
               <WeFaces card={card} />
-              <em>
-                {card.folder ? `${card.folder} · ` : ''}
+              <strong>{card.question}</strong>
+              <span className="di-we-status">
                 {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
-                {weStreak(card) > 0 ? ` · ${t('we.streak', { n: weStreak(card) })}` : ''}
-              </em>
-              {togetherLine(sums.get(card.id)) ? <em>{togetherLine(sums.get(card.id))}</em> : null}
+              </span>
+              {card.folder || weStreak(card) > 0 || togetherLine(sums.get(card.id)) ? (
+                <em>
+                  {[card.folder, weStreak(card) > 0 ? t('we.streak', { n: weStreak(card) }) : '', togetherLine(sums.get(card.id))]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </em>
+              ) : null}
             </button>
             <WePaused card={card} onDone={reload} />
             {open ? (
@@ -968,11 +971,13 @@ export function WeHome({ book, onChange, link = '' }) {
           {ans.miss}
         </p>
       ) : null}
-      <div className="di-hang-actions">
-        <button className="di-did di-did-small" type="button" onClick={() => goHash('/we/new')}>
-          {t('we.new')}
-        </button>
-      </div>
+      {mine.length ? (
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="button" onClick={() => goHash('/we/new')}>
+            {t('we.new')}
+          </button>
+        </div>
+      ) : null}
     </Shell>
   )
 }
@@ -1081,10 +1086,12 @@ function WeCardPage({ book, cardId, onChange }) {
     <Shell book={book} title={t('we.title')}>
       <h2 className="di-page-title">{card.question}</h2>
       <WeFaces card={card} cheer={cheer} />
-      <p className="di-set-note">{card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}</p>
+      <p className={card.due && card.done ? 'di-we-status is-done' : 'di-we-status'}>
+        {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
+      </p>
       <WePaused card={card} onDone={load} />
       <p className="di-set-note">
-        {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
+        {t('we.howCounts')}: {t(weRuleKey(card.mode))} · {t(`we.shows.${card.shows}`)}
         {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
       </p>
       {card.note ? <p className="di-set-note">{card.note}</p> : null}

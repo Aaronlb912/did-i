@@ -2,10 +2,11 @@ import { StyleSheet, Text, View } from 'react-native'
 import { fonts } from '../theme.js'
 
 /** Same face if the swipe card throws. No answer buttons. The line stays. */
-export function SwipeCardStub({ kicker, title, colors, children }) {
+export function SwipeCardStub({ head, kicker, title, colors, children }) {
   const line = colors?.line || '#2b3140'
   return (
     <View style={[styles.card, { backgroundColor: colors?.panel, borderColor: line }]}>
+      {head}
       {kicker ? <Text style={[styles.kicker, { color: colors?.on }]}>{kicker}</Text> : null}
       <Text style={[styles.title, { color: colors?.ink || '#f4f6fa' }]}>{title}</Text>
       {children}
