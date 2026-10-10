@@ -96,6 +96,13 @@ insert into public.shop_catalog (kind, item_id, coins, live_from, live_until) va
 on conflict (kind, item_id) do update
   set coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 
+-- Dated drops: on sale from live_from, no end.
+insert into public.shop_catalog (kind, item_id, coins, live_from) values
+  ('accessory', 'icecream', 25, '2026-10-23'),
+  ('accessory', 'glasses3d', 40, '2026-10-23'),
+  ('accessory', 'rainbow', 40, '2026-10-23'),
+  ('accessory', 'bubbles', 15, '2026-10-23')
+on conflict (kind, item_id) do update set coins = excluded.coins, live_from = excluded.live_from;
 
 -- Card frames (src/lib/frames.js, a test keeps prices equal). Still frames
 -- cost coins (buy_with_coins), animated ones cost gems (buy_with_gems, gifts.sql).

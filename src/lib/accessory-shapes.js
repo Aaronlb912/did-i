@@ -175,6 +175,19 @@ const SHAPES = {
     ['o', a.ex[1], a.ey, a.er + 0.3, a.er + 0.3, GOLD, 1.8],
     ['l', a.ex[1] + a.er * 0.75, a.ey + a.er * 0.75, a.ex[1] + 2.5, a.ey + 12, GOLD, 1.1],
   ],
+  glasses3d: (a) => {
+    const [l, r] = a.ex
+    const s = Math.min(a.er + 1, (r - l) / 2 - 0.7)
+    const ry = s * 0.9
+    return [
+      ['r', l - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, CREAM, 1.6],
+      ['r', r - s - 0.8, a.ey - ry - 0.8, s * 2 + 1.6, ry * 2 + 1.6, CREAM, 1.6],
+      ['r', l - s, a.ey - ry, s * 2, ry * 2, '#e2463c', 1],
+      ['r', r - s, a.ey - ry, s * 2, ry * 2, '#2fb8e8', 1],
+      ['r', l + s + 0.6, a.ey - 1.2, r - l - s * 2 - 1.2, 1.4, CREAM, 0],
+      ['r', l - s + 1, a.ey - ry + 0.9, s * 0.7, 0.8, '#ffffff', 0.4],
+    ]
+  },
   // ---- back
   angelwings: (a) => {
     const y = mid(a) - 2
@@ -272,6 +285,16 @@ const SHAPES = {
       ['e', 29.5, top - 6.5, 1.3, 1.3, GOLD],
     ]
   },
+  rainbow: (a) => {
+    const y = mid(a) + 4
+    return [['#e2463c', 23], ['#f5a623', 20.6], ['#7cc65a', 18.2], ['#4a9be8', 15.8]].flatMap(([c, r]) =>
+      Array.from({ length: 12 }, (_, i) => {
+        const p = (k) => [24 - Math.cos((Math.PI * k) / 12) * r, y - Math.sin((Math.PI * k) / 12) * r]
+        const [x1, y1] = p(i)
+        const [x2, y2] = p(i + 1)
+        return ['l', x1, y1, x2, y2, c, 2.8]
+      }))
+  },
   // ---- held
   balloon: (a, t) => {
     const [x, y] = hand(a)
@@ -299,6 +322,19 @@ const SHAPES = {
       ...[-6, 0, 6].map((dx) => ['e', x + dx, y - 14.6, 3, 1.1, t]),
     ]
   },
+  icecream: (a, t) => {
+    const [x, y] = hand(a)
+    return [
+      ['t', x, y - 8.5, 3.6, -11, '#e0a860'],
+      ['l', x - 2.2, y - 6.2, x + 1.3, y - 1, '#a8702f', 0.7],
+      ['l', x + 2.2, y - 6.2, x - 1.3, y - 1, '#a8702f', 0.7],
+      ['e', x, y - 9, 4.8, 2.2, CREAM],
+      ['e', x, y - 13, 4, 4, t],
+      ['e', x - 1.4, y - 14.2, 1, 1.5, '#ffffff', 0, 0.5],
+      ['l', x + 0.6, y - 18.4, x + 2.6, y - 21.2, '#3f8a3a', 0.8],
+      ['e', x + 0.6, y - 17.4, 1.6, 1.6, '#e2463c'],
+    ]
+  },
   cocoa: (a, t) => {
     const [x, y] = hand(a)
     return [
@@ -318,6 +354,10 @@ const SHAPES = {
   sparkles: (a) => [[-19, -7, 3.6], [19, -1, 3], [-17, 9, 2.4], [16, -15, 2.4]].flatMap(([dx, dy, r]) => sparkle(24 + dx, a.ey + dy, r, GOLD)),
   snow: (a) => [[-20, -11], [-19, 2], [19, -13], [20, 0], [-18, 13], [18, 11], [9, -20], [-7, -21]].map(([dx, dy], i) =>
     ['e', 24 + dx, a.ey + dy, i % 3 ? 1.3 : 1.8, i % 3 ? 1.3 : 1.8, '#ffffff']),
+  bubbles: (a) => [[-20, -9, 3.4], [20, -5, 2.6], [-18, 8, 2.2], [17, 10, 1.7]].flatMap(([dx, dy, r]) => [
+    ['e', 24 + dx, a.ey + dy, r, r, '#bfe6ff'],
+    ['e', 24 + dx - r * 0.35, a.ey + dy - r * 0.35, r * 0.3, r * 0.3, '#ffffff'],
+  ]),
   raincloud: (a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [
