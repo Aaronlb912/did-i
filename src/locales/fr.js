@@ -160,6 +160,7 @@ export const fr = {
   'settings.accountOff': 'Pas connecté',
   'settings.accountSub': 'Tes dossiers te suivent sur un nouveau téléphone.',
   'settings.accountOffSub': 'Tout est seulement sur ce téléphone.',
+  'settings.accountOnSub': '{email}. Se déconnecter ici.',
   'auth.title': 'Sign in',
   'auth.body': 'Entre ton e-mail pour recevoir un code à usage unique. Tes dossiers, tes amis et ta série te suivent sur chaque téléphone.',
   'auth.newHere': 'Nouveau ici ? Mêmes étapes. Ton compte est créé quand tu confirmes le code.',

@@ -157,6 +157,7 @@ export const en = {
   'settings.accountOff': 'Not signed in',
   'settings.accountSub': 'Your folders follow you to a new phone.',
   'settings.accountOffSub': 'Everything is on this phone only.',
+  'settings.accountOnSub': '{email}. Sign out here.',
   'auth.title': 'Sign in or start',
   'auth.body': 'Enter your email for a one-time code. Your folders, friends, and streak follow you on every phone.',
   'auth.newHere': 'New here? Same steps. Your account is created when you confirm the code.',

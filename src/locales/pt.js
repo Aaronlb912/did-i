@@ -158,6 +158,7 @@ export const pt = {
   'settings.accountOff': 'Sem sessão',
   'settings.accountSub': 'As tuas pastas seguem-te para um telefone novo.',
   'settings.accountOffSub': 'Tudo está só neste telefone.',
+  'settings.accountOnSub': '{email}. Saia da conta aqui.',
   'auth.title': 'Sign in',
   'auth.body': 'Digite seu e-mail para receber um código único. Suas pastas, amigos e sequência vão com você em qualquer celular.',
   'auth.newHere': 'É novo aqui? Mesmos passos. Sua conta é criada quando você confirma o código.',

@@ -155,6 +155,7 @@ export const ja = {
   'settings.accountOff': '未ログイン',
   'settings.accountSub': 'フォルダは新しいスマホについてくる。',
   'settings.accountOffSub': '全部このスマホだけ。',
+  'settings.accountOnSub': '{email}。ここからログアウト。',
   'auth.title': "ログイン",
   'auth.body': 'メールを入力すると、ワンタイムコードが届きます。フォルダ、友達、連続記録はどの端末にも引き継がれます。',
   'auth.newHere': 'はじめて？ 手順は同じです。コードを確認するとアカウントが作られます。',

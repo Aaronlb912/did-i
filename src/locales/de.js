@@ -160,6 +160,7 @@ export const de = {
   'settings.accountOff': 'Nicht angemeldet',
   'settings.accountSub': 'Deine Ordner folgen dir auf ein neues Telefon.',
   'settings.accountOffSub': 'Alles ist nur auf diesem Telefon.',
+  'settings.accountOnSub': '{email}. Hier abmelden.',
   'auth.title': 'Sign in',
   'auth.body': 'Gib deine E-Mail ein und bekomme einen Einmalcode. Deine Ordner, Freunde und Streak kommen auf jedes Handy mit.',
   'auth.newHere': 'Neu hier? Gleiche Schritte. Dein Konto wird erstellt, wenn du den Code bestätigst.',

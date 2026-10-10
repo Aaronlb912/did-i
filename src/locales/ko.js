@@ -155,6 +155,7 @@ export const ko = {
   'settings.accountOff': '로그인 안 됨',
   'settings.accountSub': '폴더는 새 폰으로 따라와.',
   'settings.accountOffSub': '전부 이 폰에만 있어.',
+  'settings.accountOnSub': '{email}. 여기서 로그아웃해요.',
   'auth.title': "로그인",
   'auth.body': '이메일을 입력하면 일회용 코드를 보내드려요. 폴더, 친구, 연속 기록이 어느 폰에서나 따라와요.',
   'auth.newHere': '처음이세요? 방법은 같아요. 코드를 확인하면 계정이 만들어져요.',

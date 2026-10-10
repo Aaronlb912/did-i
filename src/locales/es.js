@@ -159,6 +159,7 @@ export const es = {
   'settings.accountOff': 'Sin cuenta',
   'settings.accountSub': 'Tus carpetas te siguen a otro teléfono.',
   'settings.accountOffSub': 'Todo está solo en este teléfono.',
+  'settings.accountOnSub': '{email}. Cierra sesión aquí.',
   'auth.title': 'Entrar o empezar',
   'auth.body': 'Escribe tu correo para un código de un solo uso. Tus carpetas, amigos y racha te siguen en cada teléfono.',
   'auth.newHere': '¿Nuevo? Mismos pasos. Tu cuenta se crea cuando confirmas el código.',

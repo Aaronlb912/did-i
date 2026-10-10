@@ -158,6 +158,7 @@ export const it = {
   'settings.accountOff': 'Non connesso',
   'settings.accountSub': 'Le tue cartelle ti seguono su un telefono nuovo.',
   'settings.accountOffSub': 'Tutto è solo su questo telefono.',
+  'settings.accountOnSub': '{email}. Esci da qui.',
   'auth.title': 'Sign in',
   'auth.body': 'Inserisci la tua email per un codice monouso. Cartelle, amici e serie ti seguono su ogni telefono.',
   'auth.newHere': 'Sei nuovo? Stessi passaggi. L’account viene creato quando confermi il codice.',
