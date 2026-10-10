@@ -6056,7 +6056,7 @@ test('report emails: queued by trigger, closed table, capped, sent by report-mai
   assert.match(sql, /after insert on public\.reports/)
   assert.match(sql, /least\(coalesce\(lim, 50\), 50\)/, 'at most 50 a run')
   assert.match(sql, /left\(coalesce\(r\.reason, ''\), 300\)/)
-  assert.match(sql, /cron\.schedule\('report-mail', '\*\/5 \* \* \* \*'/)
+  assert.match(sql, /cron\.schedule\('report-mail', '0 13 \* \* \*'/, 'one summary a day, not one email per report')
   for (const fn of ['report_mail_batch', 'admin_emails', 'report_mail_done']) {
     assert.match(sql, new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`), fn)
   }
