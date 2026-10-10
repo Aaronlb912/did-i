@@ -24,7 +24,8 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
-import { peopleTonightItems } from '../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine } from '../src/lib/people-tonight.js'
+import { nightWhyLines } from '../src/lib/night-why.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
   activeDeadline,
@@ -3960,7 +3961,7 @@ test('every action that changes data on the server says so on the phone', () => 
     'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
     'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
     'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
-    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer',
+    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer', 'reportDidYouLink',
   ]
   const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
   const files = []
@@ -5771,6 +5772,124 @@ test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks'
   // Web Friends: the result line sticks in view instead of sitting under a long list.
   assert.match(read('src/lib/Friends.jsx'), /<div className="di-people-said">/)
   assert.match(read('src/lib/did-i.css'), /\.di-people-said \{\s*position: sticky;/)
+})
+
+// Owner picks A: family chip, gentle blanks, Track an amount on the form, web friend notes.
+const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const readSrc = (file) => readFileSync(path.join(srcRoot, file), 'utf8').split(String.fromCharCode(13)).join('')
+
+test('family and asks show as a chip beside your count and never add to it', () => {
+  const items = peopleTonightItems({
+    familyRows: [
+      { family: { id: 'f' }, lamp: { id: 'a', question: 'Feed the cat?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'b', question: 'Trash?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'c', question: 'Done one' }, night: '2026-10-09', answer: { status: 'yes' } },
+    ],
+    asks: [{ id: 's1', kind: 'todo', state: 'sent', question: 'Call mom?' }],
+    night: '2026-10-09',
+  })
+  assert.equal(peopleWaitingLine(items), `${t('tonight.meterFamily', { n: 2 })} · ${t('tonight.meterAsks', { n: 1 })}`)
+  assert.equal(peopleWaitingLine(items.filter((item) => item.kind === 'family')), t('tonight.meterFamily', { n: 2 }))
+  assert.equal(peopleWaitingLine([]), '', 'gone once all are answered')
+  const own = [{ lamp: lamp('mine'), dateIso: '2026-10-09', answer: null }]
+  assert.equal(nightProgress(own).total, 1, 'own total is only your own rows')
+  assert.match(readSrc('native/screens/TonightScreen.jsx'), /waiting=\{peopleWaitingLine\(peopleItems\)\}/)
+  const web = readSrc('src/lib/Tonight.jsx')
+  assert.match(web, /waiting=\{peopleWaitingLine\(peopleTonightItems\(\{ familyRows: family\.rows \}\)\)\}/)
+  assert.match(web, /getElementById\('di-fam-strip'\)\?\.scrollIntoView\(\{ behavior: reduce \? 'auto' : 'smooth'/)
+  assert.match(readSrc('src/lib/FamilyTonight.jsx'), /id="di-fam-strip"/)
+  assert.doesNotMatch(readSrc('src/lib/FamilyTonight.jsx'), /useFamilyTonight[(]/, 'one family read, shared with the chip')
+})
+
+test('gentle mode: a missed night is blank on Home, week, month, list and why sheet', () => {
+  const why = { state: 'missed', iso: '2026-10-01', noped: [], unanswered: [{ lamp: lamp('Water') }], weOpen: [] }
+  writePrefs({ gentle: false })
+  assert.equal(nightWhyLines(why)[0], t('why.missed'))
+  writePrefs({ gentle: true })
+  const lines = nightWhyLines(why)
+  assert.ok(!lines.includes(t('why.missed')), 'no streak broke line')
+  assert.ok(lines.some((line) => line.includes('Water')), 'still names what was left')
+  writePrefs({ gentle: false })
+  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('native/components/WeekStrip.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
+  const month = readSrc('native/components/LampMonth.jsx')
+  assert.match(month, /iso === dateIso \? 'open' : gentle \? '' : 'missed'/)
+  assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
+  const list = readSrc('native/screens/questions.jsx')
+  assert.match(list, /earlierStates\(earlier, gentle\)/)
+  assert.match(list, /const missed = gentle \? '' : 'missed'/)
+  assert.match(readSrc('native/components/CalendarGrid.jsx'), /t\(gentleOn\(\) \? 'jewelKey\.open' : 'cal\.notAnswered'\)/)
+  assert.match(readSrc('src/lib/Calendar.jsx'), /prefs\.gentle === true \? 'cal\.hintGentle' : 'cal\.hint'/)
+  assert.match(readSrc('native/screens/more.jsx'), /gentle \? 'cal\.hintGentle' : 'cal\.hint'/)
+})
+
+test('new Did we form: Track an amount with a unit, saved right after the card is made', () => {
+  const phone = readSrc('native/screens/we.jsx')
+  assert.match(phone, /if \(track\) \{\s+const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)\s+if \(tracked\.miss\) confirmMiss\(t\('weAmount\.trackLater'\)\)/)
+  assert.ok(phone.indexOf('weTrackAmount(out.id') > phone.indexOf('await weMake('), 'after the card exists')
+  const web = readSrc('src/lib/DidWe.jsx')
+  assert.match(web, /const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)/)
+  assert.match(web, /setMadeId\(out\.id\)/, 'a failed amount never makes the card twice')
+  assert.match(web, /<SetSwitch label=\{t\('weAmount\.track'\)\}/)
+  for (const src of [phone, web]) assert.match(src, /maxLength=\{24\}/, 'same unit limit as the server')
+  assert.match(readSrc('supabase/social-amounts.sql'), /left\(btrim\(regexp_replace\(coalesce\(want_unit, ''\), '\\s\+', ' ', 'g'\)\), 24\)/)
+})
+
+test('web Friends: your private friend note, view, edit, remove, one read for the list', () => {
+  const people = readSrc('src/lib/people.js')
+  assert.match(people, /export async function friendNotesAll\(\)/)
+  assert.match(people, /from\('friend_notes'\)\.select\('friend_id, note'\)\.eq\('owner_id', user\.id\)/)
+  const web = readSrc('src/lib/Friends.jsx')
+  assert.match(web, /friendNotesAll\(\)\.catch\(\(\) => null\)/, 'loaded once with the list, not per friend')
+  assert.match(web, /<FriendNoteBox/)
+  assert.match(web, /maxLength=\{FRIEND_NOTE_MAX\}/)
+  assert.match(web, /onClick=\{\(\) => save\(''\)\}/, 'remove clears it')
+  assert.match(web, /t\('friendNote\.private', \{ name \}\)/)
+  assert.doesNotMatch(web, /readFriendNote\(/, 'no read per friend')
+})
+
+test('an ended Did you link is refused, says so, and can be reported', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/did-you-links.sql')
+  // Ended: no lookup, no add count, and the preview and page can tell.
+  assert.match(sql, /look_up_did_you_link[\s\S]*?and not l\.ended/)
+  assert.match(sql, /claim_did_you_link[\s\S]*?not l\.ended and l\.made_by is distinct from me/)
+  assert.match(sql, /grant execute on function public\.did_you_link_stopped\(text\) to anon, authenticated/)
+  assert.match(t('didYouLink.stopped'), /^This link has ended/)
+  const api = read('api/link-preview.js')
+  assert.match(api, /did_you_link_stopped[\s\S]*endedPreviewText\(lang\)/)
+  // Report: signed in only, capped by cap_reports, once per person per link, no takedown.
+  const report = /create or replace function public\.report_did_you_link[\s\S]*?\$\$;/.exec(sql)?.[0] || ''
+  assert.match(report, /if me is null then raise exception 'sign in first'/)
+  assert.match(report, /insert into public\.reports/)
+  assert.match(report, /r\.from_id = me and r\.reason like tag/)
+  assert.doesNotMatch(report, /ended = true|delete from public\.did_you_links/, 'a report does not take the link down')
+  assert.match(sql, /revoke all on function public\.report_did_you_link\(text, text\) from public, anon/)
+  assert.match(read('supabase/did-we-guard.sql'), /cap_reports[\s\S]*>= 20/)
+  assert.match(read('src/site/DidYouLanding.jsx'), /reportDidYouLink\(code\)/)
+  assert.match(read('native/components/DidYouLinkHost.jsx'), /onFoot:[\s\S]*reportDidYouLink\(code\)/)
+  assert.match(read('src/lib/did-you-links.js'), /report_did_you_link/)
+})
+
+test('link previews pick the visitor language, question as written', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const { PREVIEW_LANGS, endedPreviewText, linkPreviewText, previewLang } = await import('../src/lib/link-preview.js')
+  assert.deepEqual([...PREVIEW_LANGS].sort(), readdirSync(path.join(checkRoot, 'src/locales')).map((f) => f.replace('.js', '')).sort())
+  assert.equal(previewLang(''), 'en')
+  assert.equal(previewLang('de-DE,de;q=0.9,en;q=0.8'), 'de')
+  assert.equal(previewLang('nl-NL,nl;q=0.9,fr;q=0.5'), 'fr')
+  assert.equal(previewLang('en;q=0.4, ja;q=0.9'), 'ja')
+  assert.equal(previewLang('sv, nl'), 'en')
+  assert.equal(previewLang('ko;q=0, es'), 'es')
+  const de = linkPreviewText({ question: 'call mom', name: 'Sam' }, false, 'de')
+  assert.equal(de.title, 'Sam hat dir ein Did you geschickt')
+  assert.equal(de.description, 'Did you call mom', 'the question stays as written')
+  assert.equal(linkPreviewText({ question: 'call mom' }, false, 'xx').title, 'A Did you from Did I')
+  assert.equal(endedPreviewText('es').title, 'Este enlace terminó')
+  const api = read('api/link-preview.js')
+  assert.match(api, /previewLang\(req\.headers\?\.\['accept-language'\]\)/)
+  assert.match(api, /'Vary', 'Accept-Language'/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

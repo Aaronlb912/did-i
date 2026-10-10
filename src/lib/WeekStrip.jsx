@@ -5,7 +5,7 @@ import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 
 export function WeekStrip({ boards = [], tagId = '', now }) {
-  usePrefs()
+  const prefs = usePrefs()
   const clock = now || new Date()
   const [weekShift, setWeekShift] = useState(0)
 
@@ -51,7 +51,7 @@ export function WeekStrip({ boards = [], tagId = '', now }) {
             key={night.iso}
             className={[
               night.on ? 'is-on' : '',
-              night.miss ? 'is-miss' : '',
+              night.miss && prefs.gentle !== true ? 'is-miss' : '',
               night.empty ? 'is-empty' : '',
               night.isToday ? 'is-today' : '',
             ]

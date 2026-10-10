@@ -25,6 +25,8 @@ import { TagRail } from './TagRail.jsx'
 import { SwipePullSlot } from './SwipePull.jsx'
 import { EdgeScroll } from './EdgeScroll.jsx'
 import { FamilyTonight } from './FamilyTonight.jsx'
+import { useFamilyTonight } from './people.js'
+import { peopleTonightItems, peopleWaitingLine } from './people-tonight.js'
 import { WeFace, useWeAnswer, weOpenForMe } from './DidWe.jsx'
 import { takeWeFinishes, useWeTonight, weInFilter, weStats } from './did-we.js'
 import { shelfMarks, weMarksFor } from './achievements.js'
@@ -106,6 +108,8 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
   const purse = mergePurses(stack.shelf)
   const we = useWeTonight(account.user)
+  // One read for the family panel and the chip by the count.
+  const family = useFamilyTonight(account.user)
   const weAns = useWeAnswer(we.reload, value)
   // Someone else's did finished a card: play their cheer, once, with a line.
   const [weFinish, setWeFinish] = useState(null)
@@ -333,7 +337,13 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           </button>
         ) : null}
 
-        <NightMeter due={stack.due} />
+        <NightMeter
+          due={stack.due}
+          waiting={peopleWaitingLine(peopleTonightItems({ familyRows: family.rows }))}
+          onWaiting={() =>
+            document.getElementById('di-fam-strip')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+          }
+        />
 
         {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
           <div className="di-edge-wrap">
@@ -432,7 +442,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
         ) : null}
         {sharedMiss ? <p className="di-sit-line">{sharedMiss}</p> : null}
 
-        <FamilyTonight />
+        <FamilyTonight family={family} />
       </div>
 
       <ol className="di-print-slip">

@@ -24,7 +24,8 @@ const FILL_MS = 420
 // The bar springs to each new width, passing it by a hair.
 const FILL_SPRING = { damping: 14, stiffness: 180, mass: 1 }
 
-export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '', celebrate = false }) {
+// waiting: the "+2 family" chip (peopleWaitingLine), shown beside the count only.
+export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '', celebrate = false, waiting = '' }) {
   const theme = useTheme()
   const gemMeter = gemLook ? gemMeterStyle(gemLook, theme) : null
   const reduce = useReduceMotion()
@@ -80,7 +81,7 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
       accessibilityRole="button"
       accessibilityHint={t('stats.title')}
       style={styles.wrap}
-      accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}`}>
+      accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}${waiting ? `, ${waiting}` : ''}`}>
       <View style={styles.top}>
         {/* Plain text, not RollNumber: its digit moves on the UI thread, which
             the cheer keeps busy, so done lagged the left count by a second. */}
@@ -88,6 +89,11 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
           {answered}
         </Text>
         <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
+        {waiting ? (
+          <View style={[styles.chip, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
+            <Text style={[styles.chipText, { color: colors.inkSoft }]} numberOfLines={1}>{waiting}</Text>
+          </View>
+        ) : null}
       </View>
       <View style={styles.barWrap}>
         <Reanimated.View
@@ -144,6 +150,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     paddingBottom: 8,
   },
+  chip: {
+    marginLeft: 'auto',
+    marginBottom: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexShrink: 1,
+  },
+  chipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   barWrap: { position: 'relative' },
   glow: { ...StyleSheet.absoluteFill, borderRadius: 999 },
   bar: { height: 7, borderRadius: 999, overflow: 'hidden' },

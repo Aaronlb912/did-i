@@ -2171,6 +2171,24 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='wine']) bod
   color: var(--di-ink-dim);
 }
 
+.di-meter-chip {
+  margin-left: auto;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--di-line);
+  border-radius: var(--di-pill);
+  background: var(--di-panel);
+  color: var(--di-ink-soft);
+  font-family: var(--di-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.di-meter-chip:disabled {
+  cursor: default;
+}
+
 .di-meter-bar {
   display: block;
   width: 100%;
@@ -11006,6 +11024,25 @@ button.di-we-faces {
   display: grid;
   place-items: center;
   text-align: center;
+}
+
+/* Your private note about a friend (web Friends list). */
+.di-friend-note {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.di-friend-note .di-set-note,
+.di-friend-note-text {
+  margin: 0;
+}
+
+.di-friend-note-text {
+  color: var(--di-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Check on me (question page) and shared notes (friends). */

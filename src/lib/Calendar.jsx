@@ -91,7 +91,7 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
             ›
           </button>
         </div>
-        <p className="di-detail-meta">{t('cal.hint')}</p>
+        <p className="di-detail-meta">{t(prefs.gentle === true ? 'cal.hintGentle' : 'cal.hint')}</p>
         <div className="di-cal-grid" role="grid" aria-label={t('cal.aria')}>
           {dows.map((day, i) => (
             <span className="di-cal-dow" role="columnheader" key={`dow-${i}`}>

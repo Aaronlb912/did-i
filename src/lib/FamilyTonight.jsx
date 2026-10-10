@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { goHash } from '../site/hash.js'
-import { useAccount } from './account.js'
 import { sharedLastLine } from './every-copy.js'
 import { t } from './i18n.js'
-import { answerFamilyLamp, familyLampMeta, useFamilyTonight } from './people.js'
+import { answerFamilyLamp, familyLampMeta } from './people.js'
 
 // What a family put on you, sitting on your own tonight. Answering here
 // writes to the family, not to your shelf, so it never touches your
 // streak or your coins.
-export function FamilyTonight() {
-  const account = useAccount()
-  const { rows, reload } = useFamilyTonight(account.user)
+// family: useFamilyTonight from Tonight, so the count chip shares the read.
+export function FamilyTonight({ family }) {
+  const { rows, reload } = family
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
 
@@ -34,7 +33,7 @@ export function FamilyTonight() {
   }
 
   return (
-    <section className="di-fam-strip">
+    <section className="di-fam-strip" id="di-fam-strip">
       <div className="di-fam-bar">
         <p className="di-face-plate">
           {open.length ? t('famNight.left', { n: open.length }) : t('famNight.clear')}
