@@ -3576,6 +3576,13 @@ button.di-refer-rung {
   border-color: var(--di-skip);
 }
 
+/* A night a streak freeze covered: a ring, so it never reads as cleared. */
+.di-cal-day.is-freeze .di-cal-pip,
+.di-weekbar-days li.is-freeze .di-weekbar-pip {
+  background: transparent;
+  border: 1.5px solid var(--di-freeze);
+}
+
 .di-cal-day.is-empty .di-cal-pip {
   opacity: 0.35;
 }

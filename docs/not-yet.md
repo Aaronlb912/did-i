@@ -3,7 +3,7 @@
 A review of the app as it stands, not a wish list. When one gets built,
 delete it from here.
 
-Last worked through 2026-10-02.
+Last worked through 2026-10-09 (branch `gaps-2`).
 
 ## Did we amounts and shared notes (branch `social-amounts`)
 
@@ -24,7 +24,7 @@ Last worked through 2026-10-02.
 
 - **Needs device testing:** sign in on a fresh install and watch Tonight: loading rows until the first pull lands, no "That is everything for tonight" flash. A failed pull drops the rows and shows the sync miss toast, which now retries on tap.
 - **Needs device testing:** a gem pack that is paid but does not credit shows "Your gems are paid for but not in yet. Tap to try again." (tap runs Restore). Hard to force; a server miss on submit_gem_purchase does it.
-- **Web welcome not clicked through.** A fresh web visit (cloud set up, never signed in, no questions) shows Get started, "Have an account? Sign in" (opens Account) and the legal line. Checked with tests and `vite build` only.- **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
+- **Web welcome not clicked through.** A fresh web visit (cloud set up, never signed in, no questions) shows Get started, "Have an account? Sign in" (opens Account) and the legal line. Checked with tests and `vite build` only.
 - **Amounts: average and a 14 night chart only.** The question page shows "About 6 glasses a night" (Did nights, last 30) and bars for the last 14 nights. No totals, goals or longer ranges yet. Not tried on a phone yet. The web has no note sheet outside the undo toast, so amounts are mostly entered on the phone.
 - **Needs device testing:** the Every so often pills on Add and Edit (about a week, 2 weeks, a month, Other with a number), the "Last time" line on the swipe card, the "12d" pill on the Questions list at 390px, the question page tiles, and Add note in the undo toast after a Did (opens the note sheet, the toast still undoes).
 - **Web matches the phone in a build only.** The website card shows "Last time", the Questions list the days pill, and the question page the last-time and usual-gap tiles; checked with `vite build`, not yet clicked through with a real every so often question.
@@ -71,7 +71,7 @@ Last worked through 2026-10-02.
 
 - **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
 - **No tap feedback on the notification itself.** The reminder is cleared; a refused answer (night over, already answered) shows a toast the next time the app is open.
-- **Freezes are only on the phone screens.** The web Home dots, calendar and streaks page still show a covered night as missed (the streak number itself agrees, since it is shared night math).
+- **Freezes on the web (branch `gaps-2`).** The web calendar and week strip draw a covered night as the freeze ring, from the same night data as the phone. Checked with tests and `vite build` only.
 - **First streak walk is slower on long histories.** Freezes walk every night from the first one; about 85 ms on a laptop for two years of 8 daily questions, once per day per launch. Later walks reuse the settled nights.
 - **Freezes are not on the server.** The server stores the streak the app sends (`profiles.streak`), so friends see the frozen streak too. No coins are paid for freezes and per-question streaks ignore them.
 
@@ -90,7 +90,6 @@ Last worked through 2026-10-02.
 ## Gentle mode
 
 - **Phone and web.** The switch is in phone Settings and web Settings (next to Less motion). On the web it hides the Stats nights-on number, the Streaks page counts, the question page streak tile and streak popups. The web Home never showed a streak number.
-- **Web Calendar and Week still color missed nights.** Gentle mode hides numbers, not those dots, on both apps.
 - **Widgets get a `gentle` flag but show no streak today,** so nothing changes on them.
 - **Shared streaks stay.** Did we streaks are shared with others and still show.
 - **Friends and family see "Done tonight ✓" or "Not yet", no number (branch `social-gentle`).** supabase/social-gentle.sql nulls the streak in `known_people` and the public tonight wall for anyone with gentle on, and the phone and web read it through `friendLine` / `friendStreak` in people.js. **Not applied yet:** run npm run db:apply:all. Until then the old `known_people` still sends the number and only the client hides it once the `gentle` column arrives.
@@ -104,7 +103,7 @@ Last worked through 2026-10-02.
 - **New check-on columns not applied yet** (`kind`, `month_day`, `on_date`, `starts_on`, `every_days` on `check_ons`). Re-run social-gentle.sql before shipping the phone build: the card now sends them on every save. The job (branch `gaps-1`) nudges a deadline on every night of its window, and an every so often question on the gap the app learns (median of the last Dids), the same as Tonight.
 - **An edit updates the check-on** (words and schedule) from Edit question on both apps (branch `gaps-1`). A question changed some other way (a copy loaded from a file, another device's old build) keeps the old rule until its page saves again.
 - **Push text is in 9 languages in SQL (`check_on_text`),** separate from `push_text`.
-- **No SQL test in supabase/tests yet,** and the push tap to a prefilled Did you needs device testing (iPhone and Android, app closed and open).
+- **SQL test:** `node scripts/test-sql.mjs supabase/tests/check-ons.test.sql` (friends only, owner writes, friend reads and turns off, 20 cap; branch `gaps-2`). The push tap to a prefilled Did you needs device testing (iPhone and Android, app closed and open).
 - **Accessibility is code-level only.** Labels and roles added, inkDim raised to 4.5:1 on panel in every look. Not tried with TalkBack, VoiceOver, or 200% font on a phone. Modal backdrops still have no label.
 
 ## App PIN
@@ -122,10 +121,10 @@ Last worked through 2026-10-02.
 - **Ending a link** works from Sent (phone and web, "Shared as a link"). An ended link says "This link has ended" on the page, in the app and in the preview, and the server refuses the add. There is still no way to delete a link outright.
 - **Reporting a link** (`report_did_you_link`, in `supabase/did-you-links.sql`, not applied yet): a Report on the /d/CODE page and under the phone's add sheet. Signed in only, once per link, inside the 20 a day report cap. It files a report and blocks the maker. The link stays up; nobody reviews link reports yet and there is no takedown.
 - **Sends from Did I** (`scripts/send-from-did-i.mjs`, max 4 in 30 days) reach signed-in accounts only. Inbox ones show for 30 days. `--tonight` ones are added on the next sync for that night (or the night after, by date), while the app or web app is open.
-- **The site page shows no avatar** yet, only the name.
+- **The site page shows the maker's photo** when they have one (branch `gaps-2`); no photo as the preview image yet.
 - **Did we links** (did-i.app/d/ with a 12 letter code, `supabase/share-links.sql`) last 7 days, 10 new a day per person, and can be turned off from the Did we page. Opening one offers "Join and add {name}", "Just join" or "No thanks"; a Did you link now offers "Keep it and add {name}" too. Friends are only made on that tap. Not tried on a phone yet; the sheet needs the OTA.
 - **Link previews** come from `api/link-preview.js` (a Vercel function on /d/CODE). The fixed words follow Accept-Language across the 9 app languages (cached per language); the question stays as written. Text only (no sender photo as the preview image yet).
-- **Did we links cannot be reported** from the join sheet, the same gap as Did you links.
+- **Did we links can be reported** (branch `gaps-2`) from the join sheet and the /d/ page, the same rules as Did you links (`report_we_link` in `supabase/share-links.sql`, not applied yet). Nobody reviews them yet either.
 
 ## Profile pictures (2026-10-02)
 
@@ -169,12 +168,6 @@ buttons where the phone swipes.
 
 ## Found in the 2026-09-26 people pass
 
-- **Family questions do not reach Tonight.** `FamilyTonight` sat behind the
-  public-list flag (off in every build) and went with it on 2026-09-26, so
-  a question a parent puts in the family folder only shows on the family
-  page. The family page still says "It shows up on their tonight." Decide:
-  bring a family block back to Tonight, or change that line. Family
-  did yous (sends) are not affected; they now land on tonight.
 - **Auto-add runs while the app is open.** A family did you, or one from a
   friend allowed to add, is claimed on the next app open or focus, not
   the moment it is sent. The push still arrives. The widget shows it only
@@ -215,8 +208,8 @@ End-to-end nudge still unconfirmed.
 secrets (`docs/native-rebuild.md`). EAS fallback (`docs/app-store-connect.md`).
 No committed `ios/` folder; GHA runs `expo prebuild` on `macos-latest`. App Store
 Connect API upload is wired (key ID **S7K3PW29JF** in GitHub secrets; verified on a
-GHA run). `app.json` **`ios.buildNumber` is 55** so the next signed upload can beat
-TestFlight **52**; the workflow fails fast if the number is still **1** or ≤ **52**.
+GHA run). `scripts/ios-bump-build.mjs` takes and pushes the next `ios.buildNumber` before
+each build (78 as of 2026-10-09).
 
 **Android test APK.** GitHub Actions builds it. Actions tab, workflow
 **android-apk**, **Run workflow**. Download the **did-i-android-apk**

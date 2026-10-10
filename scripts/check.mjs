@@ -5892,6 +5892,34 @@ test('link previews pick the visitor language, question as written', async () =>
   assert.match(api, /'Vary', 'Accept-Language'/)
 })
 
+test('gaps-2: Did we links can be reported, the same as Did you links', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/share-links.sql')
+  const report = /create or replace function public\.report_we_link[\s\S]*?\$\$;/.exec(sql)?.[0] || ''
+  assert.match(report, /if me is null then raise exception 'sign in first'/)
+  assert.match(report, /r\.from_id = me and r\.reason like tag/, 'once per person per link')
+  assert.match(report, /perform public\.block_person\(who, ''\)/)
+  assert.doesNotMatch(report, /ended = true|delete from public\.we_links/, 'a report does not take the link down')
+  assert.match(sql, /revoke all on function public\.report_we_link\(text, text\) from public, anon/)
+  const lib = read('src/lib/did-you-links.js')
+  assert.match(lib, /clean\.length === 12 \? 'report_we_link' : 'report_did_you_link'/)
+  const host = read('native/components/DidYouLinkHost.jsx')
+  assert.match(host, /if \(we\) \{[\s\S]*?\.\.\.\(found\.name \? reportFoot\(name\) : \{\}\)/, 'the Did we join sheet has Report')
+  const page = read('src/site/DidYouLanding.jsx')
+  assert.match(page, /we && !found\.name \? null : \(\s*<ReportLink/)
+  assert.match(page, /found\.avatarUrl \? <img className="di-link-avatar"/, 'the link page shows the maker photo')
+})
+
+test('gaps-2: web calendar and week strip show a freeze ring', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  for (const file of ['src/lib/Calendar.jsx', 'src/lib/WeekStrip.jsx']) {
+    assert.match(read(file), /night\.freeze \? 'is-freeze' : ''/, file)
+  }
+  const css = read('src/lib/did-i.css')
+  assert.match(css, /\.di-cal-day\.is-freeze \.di-cal-pip,\s*\.di-weekbar-days li\.is-freeze \.di-weekbar-pip \{[^}]*var\(--di-freeze\)/)
+  assert.ok(existsSync(path.join(checkRoot, 'supabase/tests/check-ons.test.sql')), 'check-ons has a SQL test')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

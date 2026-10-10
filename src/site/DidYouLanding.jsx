@@ -6,7 +6,7 @@ import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
 import { webAppPublic } from './web-app.js'
 
-// A small Report under a Did you link. Asks first, since it also blocks.
+// A small Report under a Did you or Did we link. Asks first, since it also blocks.
 function ReportLink({ code, name }) {
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -107,6 +107,7 @@ export function DidYouLanding({ code }) {
     <MarketingShell path="/download">
       <div className="di-download">
         <p className="di-face-plate">{t('web.download.kicker')}</p>
+        {ready && found.avatarUrl ? <img className="di-link-avatar" src={found.avatarUrl} alt="" width="56" height="56" /> : null}
         <h1 className="di-question">{title}</h1>
         {ready ? (
           <>
@@ -146,7 +147,7 @@ export function DidYouLanding({ code }) {
                 {t('scanPage.copied')}
               </p>
             ) : null}
-            {we ? null : (
+            {we && !found.name ? null : (
               <ReportLink code={code} name={found.name || 'Did I'} />
             )}
           </>

@@ -52,6 +52,7 @@ export function WeekStrip({ boards = [], tagId = '', now }) {
             className={[
               night.on ? 'is-on' : '',
               night.miss && prefs.gentle !== true ? 'is-miss' : '',
+              night.freeze ? 'is-freeze' : '',
               night.empty ? 'is-empty' : '',
               night.isToday ? 'is-today' : '',
             ]
