@@ -2325,7 +2325,7 @@ export const fr = {
   'didYouLink.no': 'Non merci',
   'didYouLink.added': 'C’est sur ton ce soir.',
   'didYouLink.bad': 'Ce lien a expiré ou n’est pas bon. Demande-en un nouveau à la personne qui l’a envoyé.',
-  'didYouLink.stopped': 'Ce lien a été arrêté. Demande-en un nouveau à la personne qui l’a envoyé.',
+  'didYouLink.stopped': "Ce lien a pris fin. Demande-en un nouveau à la personne qui l’a envoyé.",
   'didYouLink.reach': 'Impossible de charger ce lien. Vérifie ta connexion. Il reviendra la prochaine fois que tu ouvres Did I.',
   'didYouLink.noApp': 'Pas encore Did I ? Installe-le, ouvre-le, et cette question s’affiche.',
   'enter.forgotResend': 'Envoyer un nouveau code',
@@ -3379,4 +3379,8 @@ export const fr = {
   'every.byMany': "{name} l'a fait il y a {n} jours",
   'family.everyHint': "Elle revient pour tout le monde une fois ce délai passé depuis la dernière fois, peu importe qui. Le premier Did la remet à zéro pour la famille. Pas encore ne compte que pour toi.",
   'people.sendEveryHint': "Elle rejoint leurs questions de temps en temps. Si tu demandes une de tes questions, ils voient quand tu l'as faite pour la dernière fois.",
+  'didYouLink.report': "Signaler ce lien",
+  'didYouLink.reportTitle': "Signaler ce lien ?",
+  'didYouLink.reportBody': "Cela bloque aussi {name}. La personne n’est pas prévenue. Le lien reste actif jusqu’à son examen.",
+  'didYouLink.reportSignIn': "Connecte-toi pour signaler ce lien.",
 }

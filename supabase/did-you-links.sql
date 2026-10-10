@@ -321,3 +321,42 @@ $$;
 
 revoke all on function public.did_you_link_stopped(text) from public;
 grant execute on function public.did_you_link_stopped(text) to anon, authenticated;
+
+-- Report a Did you link from its page or the app's link sheet. Signed in
+-- only, like every other report. Filed in public.reports (cap_reports keeps
+-- it to 20 a day) about whoever made it, and that person is blocked, the
+-- same as reporting a Did you. The link stays up until someone looks at it.
+-- Once per person per link.
+create or replace function public.report_did_you_link(code text, why text default '')
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := (select auth.uid());
+  c text := lower(btrim(coalesce(report_did_you_link.code, '')));
+  who uuid;
+  q text;
+  tag text;
+begin
+  if me is null then raise exception 'sign in first'; end if;
+  select l.made_by, l.question into who, q from public.did_you_links l where l.code = c;
+  if not found then raise exception 'no such link'; end if;
+  if who = me then return false; end if;
+  tag := 'did you link ' || c || ': ';
+  if exists (select 1 from public.reports r where r.from_id = me and r.reason like tag || '%') then
+    return false;
+  end if;
+  insert into public.reports (from_id, about_id, reason)
+  values (me, who, left(tag || q || coalesce(' / ' || nullif(btrim(why), ''), ''), 500));
+  if who is not null then
+    perform public.block_person(who, '');
+  end if;
+  return true;
+end;
+$$;
+
+revoke all on function public.report_did_you_link(text, text) from public, anon;
+grant execute on function public.report_did_you_link(text, text) to authenticated;

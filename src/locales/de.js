@@ -2329,7 +2329,7 @@ export const de = {
   'didYouLink.no': 'Nein danke',
   'didYouLink.added': 'Für heute Abend dabei.',
   'didYouLink.bad': 'Dieser Link ist abgelaufen oder stimmt nicht. Bitte die Person um einen neuen.',
-  'didYouLink.stopped': 'Dieser Link wurde gestoppt. Bitte die Person um einen neuen.',
+  'didYouLink.stopped': "Dieser Link ist beendet. Bitte die Person um einen neuen.",
   'didYouLink.reach': 'Der Link konnte nicht geladen werden. Prüfe deine Verbindung. Er kommt beim nächsten Öffnen von Did I wieder.',
   'didYouLink.noApp': 'Noch kein Did I? Hol es dir, öffne es, und die Frage erscheint.',
   'enter.forgotResend': 'Neuen Code senden',
@@ -3382,4 +3382,8 @@ export const de = {
   'every.byMany': "{name} hat es vor {n} Tagen gemacht",
   'family.everyHint': "Es kommt für alle, sobald so viel Zeit seit dem letzten Mal vergangen ist, egal wer es gemacht hat. Das erste Did setzt es für die Familie zurück. Noch nicht zählt nur für dich.",
   'people.sendEveryHint': "Es kommt bei ihnen ab und zu. Fragst du nach einer deiner eigenen Fragen, sehen sie, wann du es zuletzt gemacht hast.",
+  'didYouLink.report': "Diesen Link melden",
+  'didYouLink.reportTitle': "Diesen Link melden?",
+  'didYouLink.reportBody': "Damit blockierst du auch {name}. Die Person erfährt es nicht. Der Link bleibt, bis jemand ihn prüft.",
+  'didYouLink.reportSignIn': "Melde dich an, um diesen Link zu melden.",
 }

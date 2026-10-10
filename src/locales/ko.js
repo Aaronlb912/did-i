@@ -2258,7 +2258,7 @@ export const ko = {
   'didYouLink.no': '괜찮아요',
   'didYouLink.added': '오늘 밤에 추가했어요.',
   'didYouLink.bad': '이 링크는 끝났거나 올바르지 않아요. 보낸 사람에게 새 링크를 부탁하세요.',
-  'didYouLink.stopped': '이 링크는 멈춰졌어요. 보낸 사람에게 새 링크를 부탁하세요.',
+  'didYouLink.stopped': "이 링크는 끝났어요. 보낸 사람에게 새 링크를 부탁하세요.",
   'didYouLink.reach': '링크를 불러올 수 없어요. 연결을 확인하세요. 다음에 Did I를 열면 다시 나와요.',
   'didYouLink.noApp': '아직 Did I가 없나요? 설치하고 열면 이 질문이 나와요.',
   'enter.forgotResend': '새 코드 보내기',
@@ -3312,4 +3312,8 @@ export const ko = {
   'every.byMany': "{name}님이 {n}일 전에 했어요",
   'family.everyHint': "누군가 마지막으로 한 뒤 그만큼 지나면 모두에게 나와요. 처음 Did 하면 가족 모두에게 다시 시작돼요. 아직은 나에게만 적용돼요.",
   'people.sendEveryHint': "가끔씩 상대의 질문에 나와요. 내 질문에 대해 물으면 내가 마지막으로 한 날이 보여요.",
+  'didYouLink.report': "이 링크 신고",
+  'didYouLink.reportTitle': "이 링크를 신고할까요?",
+  'didYouLink.reportBody': "{name}님도 차단돼요. 상대에게 알리지 않아요. 링크는 확인될 때까지 남아 있어요.",
+  'didYouLink.reportSignIn': "이 링크를 신고하려면 로그인하세요.",
 }

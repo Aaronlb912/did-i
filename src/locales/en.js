@@ -2306,7 +2306,7 @@ export const en = {
   'didYouLink.no': 'No thanks',
   'didYouLink.added': 'On your tonight.',
   'didYouLink.bad': 'That link has ended or is not right. Ask whoever sent it for a new one.',
-  'didYouLink.stopped': 'This link was stopped. Ask whoever sent it for a new one.',
+  'didYouLink.stopped': "This link has ended. Ask whoever sent it for a new one.",
   'didYouLink.reach': 'Could not load that link. Check your connection. It comes up again next time you open Did I.',
   'didYouLink.noApp': 'No Did I yet? Get it, open it, and this question comes up.',
   'enter.forgotResend': 'Send a new code',
@@ -3360,4 +3360,8 @@ export const en = {
   'every.byMany': "{name} did it {n} days ago",
   'family.everyHint': "It comes up for everyone once that long has passed since anyone last did it. The first Did resets it for the family. Not yet only counts for you.",
   'people.sendEveryHint': "It joins their questions every so often. If you ask about one of your own, they see when you last did it.",
+  'didYouLink.report': "Report this link",
+  'didYouLink.reportTitle': "Report this link?",
+  'didYouLink.reportBody': "This also blocks {name}. They are not told. The link stays up until it is looked at.",
+  'didYouLink.reportSignIn': "Sign in to report this link.",
 }
