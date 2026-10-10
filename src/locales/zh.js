@@ -2245,7 +2245,7 @@ export const zh = {
   'didYouLink.no': '不用了',
   'didYouLink.added': '已加到今晚。',
   'didYouLink.bad': '这个链接已失效或不正确。请让发送的人重新发一个。',
-  'didYouLink.stopped': '这个链接已被停用。请让发送的人重新发一个。',
+  'didYouLink.stopped': "这个链接已结束。请让发送的人重新发一个。",
   'didYouLink.reach': '无法加载这个链接。请检查网络。下次打开 Did I 时会再次出现。',
   'didYouLink.noApp': '还没有 Did I？下载并打开，这个问题就会出现。',
   'enter.forgotResend': '重新发送验证码',
@@ -3304,4 +3304,8 @@ export const zh = {
   'every.byMany': "{name}{n}天前做了",
   'family.everyHint': "距离任何人上次做过满这么多天后，会出现在每个人那里。第一个 Did 会为全家重新计时。还没只算你自己。",
   'people.sendEveryHint': "它会时不时出现在对方的问题里。如果你问的是你自己的问题，对方能看到你上次做的时间。",
+  'didYouLink.report': "举报这个链接",
+  'didYouLink.reportTitle': "举报这个链接？",
+  'didYouLink.reportBody': "这也会屏蔽 {name}。对方不会收到通知。链接会保留到被查看为止。",
+  'didYouLink.reportSignIn': "登录后才能举报这个链接。",
 }

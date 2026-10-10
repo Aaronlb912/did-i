@@ -119,12 +119,12 @@ Last worked through 2026-10-02.
 ## Did you links and sends from Did I (branch `did-you-links`)
 
 - **Links**: "Share as a link" on the send sheet makes did-i.app/d/CODE (20 a day). Opening it on a phone needs the next native build for the Android `/d/` App Link and the updated AASA on the site; didi://d/CODE and the page's Open button work over the air. Not tried on a phone yet.
-- **No way to end a link in the app.** `did_you_links.ended` is set by hand in SQL. People cannot see or delete links they made.
-- **No report on a link.** A link with a bad question can be passed around; the add sheet only offers Add or No thanks.
+- **Ending a link** works from Sent (phone and web, "Shared as a link"). An ended link says "This link has ended" on the page, in the app and in the preview, and the server refuses the add. There is still no way to delete a link outright.
+- **Reporting a link** (`report_did_you_link`, in `supabase/did-you-links.sql`, not applied yet): a Report on the /d/CODE page and under the phone's add sheet. Signed in only, once per link, inside the 20 a day report cap. It files a report and blocks the maker. The link stays up; nobody reviews link reports yet and there is no takedown.
 - **Sends from Did I** (`scripts/send-from-did-i.mjs`, max 4 in 30 days) reach signed-in accounts only. Inbox ones show for 30 days. `--tonight` ones are added on the next sync for that night (or the night after, by date), while the app or web app is open.
 - **The site page shows no avatar** yet, only the name.
 - **Did we links** (did-i.app/d/ with a 12 letter code, `supabase/share-links.sql`) last 7 days, 10 new a day per person, and can be turned off from the Did we page. Opening one offers "Join and add {name}", "Just join" or "No thanks"; a Did you link now offers "Keep it and add {name}" too. Friends are only made on that tap. Not tried on a phone yet; the sheet needs the OTA.
-- **Link previews** come from `api/link-preview.js` (a Vercel function on /d/CODE). English only, text only (no sender photo as the preview image yet).
+- **Link previews** come from `api/link-preview.js` (a Vercel function on /d/CODE). The fixed words follow Accept-Language across the 9 app languages (cached per language); the question stays as written. Text only (no sender photo as the preview image yet).
 - **Did we links cannot be reported** from the join sheet, the same gap as Did you links.
 
 ## Profile pictures (2026-10-02)

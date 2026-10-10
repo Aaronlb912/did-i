@@ -177,6 +177,19 @@ export async function endDidYouLink(code) {
   return data ? { miss: '' } : { miss: 'people.reach' }
 }
 
+// Report a Did you link. Signed in only; it also blocks whoever made it.
+// { miss: 'signIn' } when signed out, a locale key on any other miss.
+export async function reportDidYouLink(code, why = '') {
+  const db = cloud()
+  const clean = cleanCode(code)
+  if (!db || clean.length !== 10) return { miss: 'people.reach' }
+  const { data: session } = await db.auth.getSession()
+  if (!session?.session?.user) return { miss: 'signIn' }
+  const { error } = await db.rpc('report_did_you_link', { code: clean, why })
+  if (error) return { miss: /too many reports/i.test(error.message || '') ? 'we.missReports' : 'people.reach' }
+  return { miss: '' }
+}
+
 // Which line a link that did not open gets: stopped by its maker, or bad.
 export function deadLinkKey(stopped) {
   return stopped ? 'didYouLink.stopped' : 'didYouLink.bad'

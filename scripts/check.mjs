@@ -3961,7 +3961,7 @@ test('every action that changes data on the server says so on the phone', () => 
     'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
     'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
     'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
-    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer',
+    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer', 'reportDidYouLink',
   ]
   const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
   const files = []
@@ -5847,6 +5847,49 @@ test('web Friends: your private friend note, view, edit, remove, one read for th
   assert.match(web, /onClick=\{\(\) => save\(''\)\}/, 'remove clears it')
   assert.match(web, /t\('friendNote\.private', \{ name \}\)/)
   assert.doesNotMatch(web, /readFriendNote\(/, 'no read per friend')
+})
+
+test('an ended Did you link is refused, says so, and can be reported', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/did-you-links.sql')
+  // Ended: no lookup, no add count, and the preview and page can tell.
+  assert.match(sql, /look_up_did_you_link[\s\S]*?and not l\.ended/)
+  assert.match(sql, /claim_did_you_link[\s\S]*?not l\.ended and l\.made_by is distinct from me/)
+  assert.match(sql, /grant execute on function public\.did_you_link_stopped\(text\) to anon, authenticated/)
+  assert.match(t('didYouLink.stopped'), /^This link has ended/)
+  const api = read('api/link-preview.js')
+  assert.match(api, /did_you_link_stopped[\s\S]*endedPreviewText\(lang\)/)
+  // Report: signed in only, capped by cap_reports, once per person per link, no takedown.
+  const report = /create or replace function public\.report_did_you_link[\s\S]*?\$\$;/.exec(sql)?.[0] || ''
+  assert.match(report, /if me is null then raise exception 'sign in first'/)
+  assert.match(report, /insert into public\.reports/)
+  assert.match(report, /r\.from_id = me and r\.reason like tag/)
+  assert.doesNotMatch(report, /ended = true|delete from public\.did_you_links/, 'a report does not take the link down')
+  assert.match(sql, /revoke all on function public\.report_did_you_link\(text, text\) from public, anon/)
+  assert.match(read('supabase/did-we-guard.sql'), /cap_reports[\s\S]*>= 20/)
+  assert.match(read('src/site/DidYouLanding.jsx'), /reportDidYouLink\(code\)/)
+  assert.match(read('native/components/DidYouLinkHost.jsx'), /onFoot:[\s\S]*reportDidYouLink\(code\)/)
+  assert.match(read('src/lib/did-you-links.js'), /report_did_you_link/)
+})
+
+test('link previews pick the visitor language, question as written', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const { PREVIEW_LANGS, endedPreviewText, linkPreviewText, previewLang } = await import('../src/lib/link-preview.js')
+  assert.deepEqual([...PREVIEW_LANGS].sort(), readdirSync(path.join(checkRoot, 'src/locales')).map((f) => f.replace('.js', '')).sort())
+  assert.equal(previewLang(''), 'en')
+  assert.equal(previewLang('de-DE,de;q=0.9,en;q=0.8'), 'de')
+  assert.equal(previewLang('nl-NL,nl;q=0.9,fr;q=0.5'), 'fr')
+  assert.equal(previewLang('en;q=0.4, ja;q=0.9'), 'ja')
+  assert.equal(previewLang('sv, nl'), 'en')
+  assert.equal(previewLang('ko;q=0, es'), 'es')
+  const de = linkPreviewText({ question: 'call mom', name: 'Sam' }, false, 'de')
+  assert.equal(de.title, 'Sam hat dir ein Did you geschickt')
+  assert.equal(de.description, 'Did you call mom', 'the question stays as written')
+  assert.equal(linkPreviewText({ question: 'call mom' }, false, 'xx').title, 'A Did you from Did I')
+  assert.equal(endedPreviewText('es').title, 'Este enlace terminó')
+  const api = read('api/link-preview.js')
+  assert.match(api, /previewLang\(req\.headers\?\.\['accept-language'\]\)/)
+  assert.match(api, /'Vary', 'Accept-Language'/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

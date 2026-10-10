@@ -1,10 +1,58 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { APP_STORE_URL, betaLinkFor } from '../lib/invite-link.js'
-import { deadDidYouLinkKey, didYouAsk, didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink } from '../lib/did-you-links.js'
+import { deadDidYouLinkKey, didYouAsk, didYouLink, isWeLinkCode, lookUpDidYouLink, lookUpWeLink, reportDidYouLink } from '../lib/did-you-links.js'
 import { AppleMark, PlayMark } from './Invite.jsx'
 import { MarketingShell } from './MarketingShell.jsx'
 import { webAppPublic } from './web-app.js'
+
+// A small Report under a Did you link. Asks first, since it also blocks.
+function ReportLink({ code, name }) {
+  const [asking, setAsking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
+
+  async function report() {
+    if (busy) return
+    setBusy(true)
+    const out = await reportDidYouLink(code)
+    setBusy(false)
+    setAsking(false)
+    setNote(out.miss === 'signIn' ? 'didYouLink.reportSignIn' : out.miss || 'we.reported')
+  }
+
+  if (note) {
+    return (
+      <p className="di-detail-meta" role="status">
+        {t(note)}
+      </p>
+    )
+  }
+  if (!asking) {
+    return (
+      <div className="di-scan-open">
+        <button className="di-key" type="button" onClick={() => setAsking(true)}>
+          {t('didYouLink.report')}
+        </button>
+      </div>
+    )
+  }
+  return (
+    <>
+      <p className="di-land-lead">
+        <strong>{t('didYouLink.reportTitle')}</strong> {t('didYouLink.reportBody', { name })}
+      </p>
+      <div className="di-scan-open">
+        <button className="di-key" type="button" disabled={busy} onClick={report}>
+          {t('gift.reportGo')}
+        </button>
+        <button className="di-key" type="button" disabled={busy} onClick={() => setAsking(false)}>
+          {t('settings.neverMind')}
+        </button>
+      </div>
+    </>
+  )
+}
 
 // did-i.app/d/CODE: a Did you link. With Did I installed, Open asks to add
 // the question to tonight. Without it, the store buttons copy the link
@@ -98,6 +146,9 @@ export function DidYouLanding({ code }) {
                 {t('scanPage.copied')}
               </p>
             ) : null}
+            {we ? null : (
+              <ReportLink code={code} name={found.name || 'Did I'} />
+            )}
           </>
         ) : null}
       </div>

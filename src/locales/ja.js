@@ -2256,7 +2256,7 @@ export const ja = {
   'didYouLink.no': '追加しない',
   'didYouLink.added': '今夜に追加しました。',
   'didYouLink.bad': 'このリンクは終了したか正しくありません。送った人に新しいリンクを頼んでください。',
-  'didYouLink.stopped': 'このリンクは止められました。送った人に新しいリンクを頼んでください。',
+  'didYouLink.stopped': "このリンクは終了しました。送った人に新しいリンクを頼んでください。",
   'didYouLink.reach': 'リンクを読み込めませんでした。接続を確認してください。次にDid Iを開くともう一度表示されます。',
   'didYouLink.noApp': 'Did I をまだ持っていませんか？入手して開くと、この質問が表示されます。',
   'enter.forgotResend': '新しいコードを送る',
@@ -3315,4 +3315,8 @@ export const ja = {
   'every.byMany': "{name}が{n}日前にやった",
   'family.everyHint': "誰かが最後にやってからその日数が過ぎると、みんなに出てきます。最初の Did で家族全員の分がリセットされます。まだはあなただけに数えられます。",
   'people.sendEveryHint': "ときどき相手の質問に出てきます。自分の質問について聞くと、あなたが最後にやった日が相手に見えます。",
+  'didYouLink.report': "このリンクを報告",
+  'didYouLink.reportTitle': "このリンクを報告しますか？",
+  'didYouLink.reportBody': "{name}もブロックされます。相手には通知されません。リンクは確認されるまで残ります。",
+  'didYouLink.reportSignIn': "このリンクを報告するにはサインインしてください。",
 }

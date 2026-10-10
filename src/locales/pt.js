@@ -2311,7 +2311,7 @@ export const pt = {
   'didYouLink.no': 'Não, obrigado',
   'didYouLink.added': 'Está na sua noite.',
   'didYouLink.bad': 'Esse link acabou ou não está certo. Peça um novo para quem enviou.',
-  'didYouLink.stopped': 'Este link foi parado. Peça um novo para quem enviou.',
+  'didYouLink.stopped': "Este link terminou. Peça um novo para quem enviou.",
   'didYouLink.reach': 'Não foi possível carregar o link. Confira sua conexão. Ele aparece de novo na próxima vez que você abrir o Did I.',
   'didYouLink.noApp': 'Ainda sem Did I? Baixe, abra e esta pergunta aparece.',
   'enter.forgotResend': 'Enviar outro código',
@@ -3370,4 +3370,8 @@ export const pt = {
   'every.byMany': "{name} fez há {n} dias",
   'family.everyHint': "Aparece para todos quando passa esse tempo desde a última vez que alguém fez. O primeiro Did reinicia para a família. Ainda não só conta para você.",
   'people.sendEveryHint': "Entra nas perguntas da pessoa de vez em quando. Se você perguntar sobre uma das suas, ela vê quando você fez pela última vez.",
+  'didYouLink.report': "Denunciar este link",
+  'didYouLink.reportTitle': "Denunciar este link?",
+  'didYouLink.reportBody': "Isso também bloqueia {name}. A pessoa não fica sabendo. O link continua até ser analisado.",
+  'didYouLink.reportSignIn': "Entre para denunciar este link.",
 }
