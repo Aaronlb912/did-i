@@ -4,12 +4,15 @@ import { shortLabel } from './board-json.js'
 import { streakLength } from './achievements.js'
 import { hallHeat } from './hall-feel.js'
 import { t } from './i18n.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { usePrefs } from './prefs.js'
+import { nextStreakGoal } from './hall-pages.js'
+import { boardDate, formatBoardDate, isEvery } from './recurrence.js'
 
 export function Streaks({ book, now }) {
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const heat = hallHeat(book, clock)
-  const lamps = (book.lamps || []).filter((lamp) => !lamp.archived)
+  const lamps = (book.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp))
   const rows = lamps
     .map((lamp) => ({ lamp, n: streakLength(book, lamp, clock) }))
     .sort((a, b) => b.n - a.n)
@@ -18,13 +21,15 @@ export function Streaks({ book, now }) {
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('streaks.title')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className="di-page">
         <p className="di-face-plate">{t('streaks.kicker')}</p>
         <h2 className="di-page-title">{t('streaks.title')}</h2>
-        <p className="di-streak-line">{t('streaks.line', { n: heat })}</p>
+        {gentle ? <p className="di-set-note">{t('settings.gentleHidden')}</p> : (
+          <>
+        <p className="di-streak-line">{t('streaks.line', { n: heat, goal: nextStreakGoal(heat) || heat })}</p>
         <ol className="di-heat-row" aria-label={t('streaks.aria')}>
           {[1, 2, 3, 4, 5].map((n) => (
             <li key={n} className={n <= heat ? 'is-on' : undefined} />
@@ -43,6 +48,8 @@ export function Streaks({ book, now }) {
               </li>
             ))}
           </ul>
+        )}
+          </>
         )}
         <div className="di-page-keys">
           <button className="di-key" type="button" onClick={() => goHash('/week')}>

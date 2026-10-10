@@ -44,6 +44,15 @@ import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 export const SHELF_IN = 'did-i-shelf-in'
+
+// Set when a SHELF_IN comes from a sign-in or sign-out, so the widget is
+// redrawn even when tonight's questions look the same (look, buddy, Did we).
+let accountChanged = false
+export function takeAccountChanged() {
+  const was = accountChanged
+  accountChanged = false
+  return was
+}
 const GEM_WEEK_ASKED_KEY = 'did-i-gem-week-asked'
 export { accountSessionOn } from './session-id.js'
 const SYNC_KEY = 'did-i-sync'
@@ -130,8 +139,9 @@ export function signedOutSync() {
   keepProfileName('')
   writeLastUser('')
   clearAuthSkip()
-  setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '' })
+  setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '', firstPull: false })
   if (typeof window !== 'undefined') {
+    accountChanged = true
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: shelf }))
   }
 }
@@ -145,7 +155,7 @@ export function sessionMissing() {
     signedOutSync()
     return
   }
-  if (state.how !== 'out') setState({ how: 'out', miss: '' })
+  if (state.how !== 'out' || state.firstPull) setState({ how: 'out', miss: '', firstPull: false })
 }
 
 // Structure only. Answers go through answer-log.js, one at a time,
@@ -237,7 +247,14 @@ function markCleared(db, user, mark) {
 /** Lets push run while a session exists but sync UI still says signed out. */
 export function armSyncForUser() {
   if (!cloudSetUp() || state.how === 'off') return
-  if (state.how === 'out') setState({ how: 'busy', miss: '' })
+  // Just signed in: until the first pull lands, Tonight shows loading rows,
+  // not an empty "all clear" from a shelf that has not arrived yet.
+  if (state.how === 'out') setState({ how: 'busy', miss: '', firstPull: true })
+}
+
+/** True from sign-in until the first pull has landed (or failed). */
+export function firstPullWaiting(sync = state) {
+  return sync.firstPull === true
 }
 
 /** Pull when the account session appears or returns. */
@@ -355,6 +372,8 @@ async function pullAndMergeOnce() {
     if (pulled.miss) throw new Error(pulled.miss)
 
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
+    // The account's questions are on the phone now; Tonight can draw them.
+    if (state.firstPull) setState({ firstPull: false })
     // Gifts go straight into the collection. One already owned goes back to
     // the giver; the rest wait for the pop-up.
     const { gifts } = await claimGifts()
@@ -419,6 +438,7 @@ async function pullAndMergeOnce() {
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
     written = land(written, uploadAt)
+    if (lastUser !== user.id) accountChanged = true
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
@@ -451,6 +471,7 @@ export function pullAndMerge() {
   if (pulling) return pulling
   pulling = pullAndMergeOnce().finally(() => {
     pulling = null
+    if (state.firstPull) setState({ firstPull: false })
   })
   return pulling
 }

@@ -3,7 +3,8 @@ import { BuddyHang } from './Cosmetic.jsx'
 import { NightStrip } from './NightStrip.jsx'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { answerFor } from './recurrence.js'
+import { answerFor, boardDate, isEvery } from './recurrence.js'
+import { lastTimeLine } from './every-copy.js'
 import {
   SWIPE_THRESHOLD as THRESHOLD,
   SWIPE_WAKE,
@@ -27,6 +28,7 @@ export function LampFace({
   demoQuiet = false,
   questionId = 'di-question',
   buddy = '',
+  dateIso = '',
 }) {
   usePrefs()
   const reduce = useReduceMotion()
@@ -49,7 +51,8 @@ export function LampFace({
   const liveDx = demoFly === 'did' ? 460 : demoFly === 'nope' ? -460 : demoOn ? demoPull * THRESHOLD : dx
   const liveMode = demoFly ? 'fly' : demoOn && demoPull > 0.08 ? 'drag' : mode
   const pull = swipePull(liveDx)
-  useSwipePullReport(pull)
+  // Edges are for the drag only: once the card is thrown they clear.
+  useSwipePullReport(liveMode === 'fly' ? 0 : pull)
 
   function finish(way) {
     if (mode === 'fly') return
@@ -137,6 +140,11 @@ export function LampFace({
       <h2 id={questionId} className="di-question">
         {lamp.question}
       </h2>
+      {isEvery(lamp) && book ? (
+        <p className="di-detail-meta">
+          {lastTimeLine(book, lamp, dateIso || boardDate(new Date(), book.dayFoldHour))}
+        </p>
+      ) : null}
       {hasHistory ? (
         <NightStrip
           book={book}

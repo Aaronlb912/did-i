@@ -74,6 +74,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { readMine } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
@@ -91,17 +92,18 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
-import { boardDate, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList, unusedStarters } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash } from '../navigation/hash.js'
-import { fonts, sectionLabel, withAlpha } from '../theme.js'
+import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -114,11 +116,10 @@ import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page,
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { offerPingPrimer } from '../lib/ping-primer.js'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 
-const IDEA_IDS = ['pills', 'door', 'keys', 'bins', 'water', 'charge']
+const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
 function SureModal({ sure, colors, onClose, onGo }) {
@@ -210,6 +211,47 @@ export function AboutScreen({ book }) {
         <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
         <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
         <AppVersion colors={colors} />
+      </View>
+    </ScreenShell>
+  )
+}
+
+// What friends and family can see, in plain words. The streak line reads the
+// real share_streak on your profile; the rest follows from how people.js shares.
+const SEEN_ROWS = ['friends', 'we', 'family', 'asks', 'never']
+
+export function SeenScreen({ book }) {
+  const colors = useHallColors()
+  const account = useAccount()
+  const [streakOn, setStreakOn] = useState(null)
+  useEffect(() => {
+    if (!account.user) return undefined
+    let alive = true
+    readMine()
+      .then((mine) => alive && setStreakOn(mine?.share_streak !== false))
+      .catch(() => alive && setStreakOn(null))
+    return () => {
+      alive = false
+    }
+  }, [account.user])
+  let streakLine = t('seen.streakUnknown')
+  if (!account.user) streakLine = t('seen.signedOut')
+  else if (streakOn === true) streakLine = t('seen.streakOn')
+  else if (streakOn === false) streakLine = t('seen.streakOff')
+  return (
+    <ScreenShell book={book} title={t('seen.title')} colors={colors}>
+      <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
+        <Text style={[styles.cardBody, { color: colors.ink }]}>{streakLine}</Text>
+      </View>
+      {SEEN_ROWS.map((id) => (
+        <View key={id} style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+          <Text style={[styles.cardTitle, { color: colors.ink }]}>{t(`seen.${id}Title`)}</Text>
+          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`seen.${id}`)}</Text>
+        </View>
+      ))}
+      <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+        <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
+        <KeyButton colors={colors} label={t('seen.back')} onPress={() => goHash('/settings')} />
       </View>
     </ScreenShell>
   )
@@ -319,7 +361,10 @@ export function LaterScreen({ book, now }) {
     <ScreenShell book={book} title={t('later.title')} colors={colors}>
       <Meta colors={colors}>{t('later.body')}</Meta>
       {!hung.length ? (
-        <Meta colors={colors}>{t('later.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('later.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : !nights.length ? (
         <Meta colors={colors}>{t('later.emptyWeek')}</Meta>
       ) : (
@@ -491,6 +536,7 @@ function FolderScope({ colors, boards, tagId, path }) {
 
 export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
   const dateIso = boardDate(clock, book?.dayFoldHour)
@@ -512,16 +558,31 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
+      {!counts.hung ? (
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
+      ) : !(counts.did + counts.late + counts.skip) ? (
+        <>
+          <Meta colors={colors}>{t('stats.empty')}</Meta>
+          <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
+      ) : null}
       {/* This week first, then everything since you started, each with the
           same three tiles so the two read the same way. */}
       <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
-      <StreakHero
-        colors={colors}
-        n={counts.heat}
-        label={t('home.streak')}
-        line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
-        chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
-      />
+      {gentle ? (
+        <Meta colors={colors}>{t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}</Meta>
+      ) : (
+        <StreakHero
+          colors={colors}
+          n={counts.heat}
+          label={t('home.streak')}
+          line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
+          chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
+        />
+      )}
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
         <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
@@ -534,8 +595,8 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
         <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
-        <NumberTile half colors={colors} label={t('stats.questions')} n={counts.hung} />
-        <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />
+        <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
+        {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
@@ -562,7 +623,10 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
         <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('feed.searchPh')} />
       ) : null}
       {!allRows.length ? (
-        <Meta colors={colors}>{t('feed.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('feed.empty')}</Meta>
+          <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+        </>
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
@@ -624,10 +688,11 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   const clock = now || new Date()
   const [view, setView] = useState('month')
   const [startShift, setStartShift] = useState(0)
+  const gentle = usePrefs().gentle === true
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
-      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
+      {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
       <ChipRow
         items={[
           { id: 'month', label: t('cal.viewMonth') },
@@ -658,8 +723,12 @@ export function CalendarScreen({ book, boards, tagId, now }) {
       <View style={styles.calKey}>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
-        <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
-        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+        {gentle ? null : (
+          <>
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
+            <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
+          </>
+        )}
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.open }]} />
@@ -680,6 +749,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
+  const gentle = usePrefs().gentle === true
   const shelf = inView(book, boards)
   const nights = shelfWeekNights(shelf, clock, tagId, 7)
   const lamps = weekLamps(nights)
@@ -698,7 +768,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'yes') return colors.on
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
-    if (state === 'hole') return colors.miss
+    // Gentle mode: a missed night is plain, not a warning.
+    if (state === 'hole') return gentle ? colors.open : colors.miss
     return colors.open
   }
 
@@ -748,7 +819,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['yes', t('later.did')],
     ['late', t('later.late')],
     ['skip', t('later.nope')],
-    ['hole', t('later.missed')],
+    ...(gentle ? [] : [['hole', t('later.missed')]]),
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],
     ...(anyOff ? [['off', t('week.notAsked')]] : []),
@@ -759,7 +830,10 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     <ScreenShell title={t('streaks.seven')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/week" />
       {!lamps.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <>
         <View style={styles.tiles}>
@@ -837,6 +911,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
 
 export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const books = scopedBooks(inView(book, boards), tagId)
   const heat = books.length ? shelfStreak(books, clock) : 0
@@ -845,7 +920,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const goal = nextStreakGoal(heat)
   const rows = books
     .flatMap((one) =>
-      (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
+      (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
     )
     .sort((a, b) => b.n - a.n)
   // A question's run can be longer than the overall one: say which night broke it.
@@ -859,6 +934,17 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
       ? t('streaks.broke', { date: formatBoardDate(breakNight.iso), what: breakNight.question })
       : t('streaks.brokeWe', { date: formatBoardDate(breakNight.iso), what: weCardShort(breakNight.weId) || t('we.title') })
     : ''
+
+  if (gentle) {
+    return (
+      <ScreenShell title={t('streaks.title')} colors={colors}>
+        <Meta colors={colors}>{t('settings.gentleHidden')}</Meta>
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron last onPress={() => goHash('/week')} />
+        </SetCard>
+      </ScreenShell>
+    )
+  }
 
   return (
     <ScreenShell title={t('streaks.title')} colors={colors}>
@@ -885,7 +971,10 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
       </SetCard>
       {!rows.length ? (
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <>
+          <Meta colors={colors}>{t('streaks.empty')}</Meta>
+          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        </>
       ) : (
         <View style={styles.tiles}>
           {rows.map((row) => (
@@ -1310,8 +1399,10 @@ export function FirstNightScreen({ book, onChange, now }) {
     const made = firstRunBook(book, picks, own, askAfter, clock)
     markWelcomeSeen()
     onChange?.(made.book)
+    // No notification ask from here: a sheet opened while /first was still on
+    // screen sent Not now back into step 1 with nothing saved. AppShell offers
+    // it once Tonight is up (offerFirstPingPrimer).
     goHash('/tonight', made.faceId ? { face: made.faceId } : '')
-    offerPingPrimer(askAfter, colors)
   }
 
   function next() {
@@ -1327,16 +1418,39 @@ export function FirstNightScreen({ book, onChange, now }) {
     finish()
   }
 
+  // Step one goes back to Welcome, when there is one to go back to.
+  const canLeave = cloudSetUp() && authSkipped()
+  function toWelcome() {
+    clearAuthSkip()
+    goHash('/')
+  }
+
   function back() {
     playClick()
+    if (step === 0) {
+      toWelcome()
+      return
+    }
     setStep(0)
   }
 
   return (
     <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
-      <Text style={[styles.stepCap, { color: colors.inkDim }]}>
-        {t('first.stepOf', { n: step + 1, total: totalSteps })}
-      </Text>
+      <View style={styles.firstTop}>
+        <Text style={[styles.stepCap, { color: colors.inkDim }]}>
+          {t('first.stepOf', { n: step + 1, total: totalSteps })}
+        </Text>
+        {step === 0 && canLeave ? (
+          // Back to the welcome screen to sign in instead.
+          <Pressable
+            onPress={toWelcome}
+            accessibilityRole="button"
+            hitSlop={10}
+          >
+            <Text style={[styles.firstSignIn, { color: colors.on }]}>{t('first.haveAccount')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {step === 0 ? (
         <>
           <Title colors={colors}>
@@ -1344,6 +1458,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           </Title>
           <Meta colors={colors}>{t('first.pickBody')}</Meta>
           <IdeaPicks
+            grid
             label={t('first.pickLabel')}
             starters={starters}
             isOn={(starter) => picks.some((item) => item.question === starter.question)}
@@ -1361,6 +1476,8 @@ export function FirstNightScreen({ book, onChange, now }) {
               </View>
             </>
           ) : null}
+          {/* Typing is the second choice: a small cap, then the card. */}
+          <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.own')}</Text>
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1393,8 +1510,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               ]}
             />
             <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
-              <Text style={[styles.firstSwipe, { color: colors.skip }]}>{t('first.swipeNope')}</Text>
-              <Text style={[styles.firstSwipe, { color: colors.on }]}>{t('first.swipeDid')}</Text>
+              <Text style={[styles.firstSwipe, { color: colors.inkSoft }]}>{t('first.swipeLine')}</Text>
             </View>
           </View>
         </>
@@ -1415,7 +1531,7 @@ export function FirstNightScreen({ book, onChange, now }) {
         </>
       ) : null}
       <View style={styles.stepNav}>
-        {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
           label={step === totalSteps - 1 ? t('first.done') : t('first.next')}
@@ -1426,11 +1542,6 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
         ) : null}
       </View>
-      {step === 0 && cloudSetUp() ? (
-        <View style={styles.firstPacks}>
-          <KeyButton colors={colors} label={t('first.haveAccount')} onPress={() => goHash('/account')} />
-        </View>
-      ) : null}
       {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
   )
@@ -2210,6 +2321,14 @@ function AccountSignedIn({ book, email, onChange }) {
         <SetRow
           colors={colors}
           icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
           label={t('account.privacyRow')}
           sub={t('account.privacySub')}
           chevron={!dataOpen}
@@ -2286,6 +2405,8 @@ export function AccountScreen({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  firstTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  firstSignIn: { fontFamily: fonts.uiBold, fontSize: 14 },
   heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },
@@ -2348,7 +2469,7 @@ const styles = StyleSheet.create({
   },
   lockPanel: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.rSm,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 4,
@@ -2373,7 +2494,7 @@ const styles = StyleSheet.create({
   },
   firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  firstTime: { paddingHorizontal: 15, paddingTop: 4, paddingBottom: 14 },
+  firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },

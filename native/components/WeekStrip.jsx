@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { weekStripNights } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
+import { usePrefs } from '../../src/lib/prefs.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
+  const gentle = usePrefs().gentle === true
   const [weekShift, setWeekShift] = useLayoutState(0)
   useEffect(() => {
     setWeekShift(0)
@@ -48,7 +50,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : night.miss ? colors.miss : colors.open,
+                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : night.miss && !gentle ? colors.miss : colors.open,
                     // A freeze is a ring, the same as the history legend.
                     ...(night.freeze && !night.on ? { borderWidth: 1.5, borderColor: colors.freeze } : null),
                     opacity: night.empty ? 0.35 : 1,

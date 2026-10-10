@@ -1,4 +1,5 @@
-import { addDaysIso, answerFor, isDueOn, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { t } from './i18n.js'
+import { addDaysIso, answerFor, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 
 function didStatus(status) {
   return status === 'yes' || status === 'late'
@@ -9,7 +10,7 @@ function didStatus(status) {
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
 export function questionStreak(book, lamp, dateIso, cap = 400) {
-  if (!lamp || !dateIso) return 0
+  if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
   const live = { ...lamp, archived: false }
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
@@ -26,7 +27,7 @@ export function questionStreak(book, lamp, dateIso, cap = 400) {
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
 export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
-  if (!lamp || !dateIso) return 0
+  if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
   const live = { ...lamp, archived: false }
   let first = String(lamp.createdOn || '').slice(0, 10)
@@ -75,7 +76,7 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
 // were DID. Tonight only counts once it is answered. Once and monthly
 // questions have no weekly shape, so they get none.
 export function lampWeeks(book, lamp, dateIso, weeks = 8) {
-  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || !dateIso) return []
+  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp) || !dateIso) return []
   const live = { ...lamp, archived: false }
   const created = String(lamp.createdOn || '').slice(0, 10)
   const out = []
@@ -106,4 +107,72 @@ export function lampNights(book, lamp) {
     .filter((answer) => answer.lampId === lamp.id && answer.periodKey)
     .map((answer) => ({ answer, night: periodNight(lamp, answer.periodKey) }))
     .sort((a, b) => b.night.localeCompare(a.night) || String(b.answer.periodKey).localeCompare(String(a.answer.periodKey)))
+}
+
+// The last few nights this question was Did (late Did too), newest first,
+// with the note and amount. Callers memoize it on [book, lamp].
+export function lastDidTimes(book, lamp, n = 5) {
+  const out = []
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!didStatus(answer.status)) continue
+    out.push({
+      night,
+      periodKey: answer.periodKey,
+      note: String(answer.note || ''),
+      amount: typeof answer.amount === 'number' ? answer.amount : null,
+    })
+    if (out.length >= n) break
+  }
+  return out
+}
+
+// "3 glasses", or just "3" when the question has no unit.
+export function amountWords(amount, unit = '') {
+  if (typeof amount !== 'number') return ''
+  const u = String(unit || '').trim()
+  return u ? `${amount} ${u}` : String(amount)
+}
+
+// A friendly average: whole numbers from 10 up, one decimal under that.
+export function roundAmount(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return value >= 10 ? Math.round(value) : Math.round(value * 10) / 10
+}
+
+// "About 6 glasses a night" from lampAmounts().average; '' with none.
+export function amountAverageLine(average, unit = '') {
+  if (average == null) return ''
+  const u = String(unit || '').trim()
+  return u ? t('amounts.avg', { n: average, unit: u }) : t('amounts.avgPlain', { n: average })
+}
+
+// Amounts for a question's page: the average over Did nights with an amount
+// in the last avgDays nights, and one bar per night for the last chartDays,
+// oldest first (amount null when there is none). One pass over the answers;
+// callers memoize it on [book, lamp, dateIso].
+export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
+  const empty = { average: null, count: 0, bars: [], max: 0 }
+  if (!lamp || !lamp.trackAmount || !dateIso) return empty
+  const avgFrom = addDaysIso(dateIso, -(avgDays - 1))
+  const chartFrom = addDaysIso(dateIso, -(chartDays - 1))
+  const byNight = new Map()
+  let sum = 0
+  let count = 0
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!night || night > dateIso || night < avgFrom) continue
+    if (!didStatus(answer.status) || typeof answer.amount !== 'number') continue
+    if (byNight.has(night)) continue
+    byNight.set(night, answer.amount)
+    sum += answer.amount
+    count += 1
+  }
+  const bars = []
+  let max = 0
+  for (let d = 0; d < chartDays; d += 1) {
+    const night = d ? addDaysIso(chartFrom, d) : chartFrom
+    const amount = byNight.has(night) ? byNight.get(night) : null
+    if (amount !== null && amount > max) max = amount
+    bars.push({ night, amount })
+  }
+  return { average: count ? roundAmount(sum / count) : null, count, bars, max }
 }

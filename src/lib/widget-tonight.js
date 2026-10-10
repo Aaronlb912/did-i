@@ -13,6 +13,8 @@ import {
   widgetTonightUri,
 } from './widget-config.js'
 import { t } from './i18n.js'
+import { lastTimeLine } from './every-copy.js'
+import { gentleOn } from './prefs.js'
 import { normalizePurse } from './purse.js'
 import { readWeLine, readWeOpen } from './we-widget.js'
 import {
@@ -56,6 +58,8 @@ function rowStatus(row) {
 }
 
 function mapRow(row) {
+  // Every so often: "Last time: 6 days ago" under the question, tonight left out.
+  const since = row.book ? lastTimeLine(row.book, row.lamp, row.dateIso) : ''
   return {
     lampId: row.lamp.id,
     periodKey: row.periodKey,
@@ -64,7 +68,13 @@ function mapRow(row) {
     question: String(row.lamp.question || '').trim() || shortLabel(row.lamp),
     status: rowStatus(row),
     tag: String(row.graceTag || row.book?.title || '').trim(),
+    ...(since ? { since } : {}),
   }
+}
+
+// The line under the showing question: its own "Last time" line, or ''.
+function sinceFor(item) {
+  return String(item?.since || '')
 }
 
 function applyItemStatus(book, item, status, clock = new Date()) {
@@ -156,6 +166,7 @@ export function preferStoredTonightProps(built, stored) {
       leadLampId: hit.lampId,
       question: hit.question || hit.label || built.question,
       tagTitle: hit.tag || built.tagTitle,
+      sinceLine: sinceFor(hit),
     }
   }
   return {
@@ -164,6 +175,7 @@ export function preferStoredTonightProps(built, stored) {
     leadLampId: stored.leadLampId || built.leadLampId,
     question: stored.question || built.question,
     tagTitle: stored.tagTitle || built.tagTitle,
+    sinceLine: sinceFor(widgetLeadFromItems(stored.items, stored.leadLampId)),
     left: stored.left ?? built.left,
     footer: stored.footer || built.footer,
     openUri: stored.openUri || built.openUri,
@@ -244,6 +256,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
     question,
+    sinceLine: lead?.book ? lastTimeLine(lead.book, lead.lamp, lead.dateIso) : '',
     leadLampId: lead?.lamp.id || weItem?.lampId || '',
     items,
     left,
@@ -258,6 +271,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),
+    // Gentle mode: the widgets draw no streak numbers.
+    gentle: gentleOn(),
     updatedAt: now.getTime(),
   }
 }
@@ -306,6 +321,7 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
       items,
       leadLampId: '',
       question: '',
+      sinceLine: '',
       left,
       footer: line,
     }
@@ -318,6 +334,7 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
     leadLampId: nextLead.lampId,
     question,
     tagTitle: nextLead.tag || props.tagTitle,
+    sinceLine: sinceFor(nextLead),
     left,
     footer: props.footer,
   }
@@ -340,7 +357,7 @@ export function peekNextTonightCard(props, dir = 1) {
   const next = pool[(from + step + pool.length) % pool.length]
   const question = String(next.question || next.label || '').trim()
   if (!question) return null
-  return { ...props, leadLampId: next.lampId, question, tagTitle: next.tag || props.tagTitle }
+  return { ...props, leadLampId: next.lampId, question, tagTitle: next.tag || props.tagTitle, sinceLine: sinceFor(next) }
 }
 
 // Each item answers on whichever tag its own lamp lives on, since the card

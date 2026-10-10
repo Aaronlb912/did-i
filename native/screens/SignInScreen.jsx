@@ -1,4 +1,4 @@
-import { Platform, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { skipAuth } from '../../src/lib/auth-gate.js'
@@ -13,8 +13,9 @@ import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
 import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
-// Trying the app without an account is a real choice, so it gets a real
-// button. Reviewer sign-in stays behind a long-press on the mark.
+// "Get started" (no account) is the main button on Welcome. Once someone is
+// mid email sign-in, staying without an account is a plain button. App Review sign-in is a small link at the bottom (and still a
+// long-press on the mark); it only works with the review account's password.
 function LocalButton({ colors, onPress }) {
   return (
     <View style={styles.localWrap}>
@@ -46,7 +47,14 @@ export function SignInScreen({ onDone }) {
         <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
       ) : null}
 
-      {auth.step === 'start' ? <AuthSignInActions colors={colors} auth={auth} /> : null}
+      {auth.step === 'start' ? (
+        <>
+          {/* One way in leads: start on this phone. Signing in sits under it. */}
+          <DidButton colors={colors} label={t('auth.getStarted')} onPress={useLocalOnly} />
+          <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>
+          <AuthSignInActions colors={colors} auth={auth} />
+        </>
+      ) : null}
 
       <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
         {auth.step === 'start' ? (
@@ -88,8 +96,13 @@ export function SignInScreen({ onDone }) {
         )}
       </View>
 
-      <LocalButton colors={colors} onPress={useLocalOnly} />
+      {auth.step !== 'start' ? <LocalButton colors={colors} onPress={useLocalOnly} /> : null}
       <AuthLegalNote colors={colors} />
+      {auth.step === 'start' ? (
+        <Pressable onPress={auth.showReviewer} accessibilityRole="button" hitSlop={8} style={styles.reviewerLink}>
+          <Text style={[styles.reviewerText, { color: colors.inkDim }]}>{t('auth.reviewer')}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 
@@ -143,6 +156,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 14,
   },
+  or: {
+    fontFamily: fonts.ui,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 22,
+    marginBottom: 10,
+  },
   emailBlock: {
     gap: 4,
   },
@@ -162,5 +182,15 @@ const styles = StyleSheet.create({
   },
   localWrap: {
     marginTop: 14,
+  },
+  reviewerLink: {
+    alignSelf: 'center',
+    marginTop: 18,
+    paddingVertical: 6,
+  },
+  reviewerText: {
+    fontFamily: fonts.ui,
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 })

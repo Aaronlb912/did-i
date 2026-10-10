@@ -4,6 +4,7 @@ import { BoardShell } from './BoardShell.jsx'
 import {
   activeDeadline,
   cadenceLine,
+  didQuestion,
   dueByUrgency,
   prepQuestionRows,
   shortLabel,
@@ -11,7 +12,8 @@ import {
 import { commitBook } from './achievements.js'
 import { bulkLamps, undoBulkLamps } from './board-ops.js'
 import { filamentLevel } from './hall-feel.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { boardDate, formatBoardDate, isEvery } from './recurrence.js'
+import { lastTimeLine, sinceBadge } from './every-copy.js'
 import { clockWords } from './hall-pages.js'
 import { questionAddsToName, rowId, searchRows, tonightStates } from './question-list.js'
 import { StarterPicks } from './StarterPicks.jsx'
@@ -156,13 +158,18 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
                 </span>
                 <span className="di-lamp-copy">
                   <span className="di-lamp-name">{shortLabel(row.lamp)}</span>
-                  {questionAddsToName(row.lamp) ? <span className="di-lamp-q">{row.lamp.question}</span> : null}
+                  {questionAddsToName(row.lamp) || isEvery(row.lamp) ? <span className="di-lamp-q">{didQuestion(row.lamp.question)}</span> : null}
                   <span className="di-lamp-meta">
                     {[shelf.length > 1 ? row.tag : '', cadenceLine(row.lamp), row.lamp.askAfter ? clockWords(row.lamp.askAfter) : '']
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
                 </span>
+                {sinceBadge(row.book, row.lamp, dateIso) ? (
+                  <span className="di-every-pill" title={lastTimeLine(row.book, row.lamp, dateIso, true)} aria-label={lastTimeLine(row.book, row.lamp, dateIso, true)}>
+                    {sinceBadge(row.book, row.lamp, dateIso)}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}

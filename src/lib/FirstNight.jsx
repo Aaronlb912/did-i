@@ -111,10 +111,7 @@ export function FirstNight({ book, onChange, now }) {
             autoCapitalize="none"
             enterKeyHint="done"
           />
-          <span className="di-first-swipes" aria-hidden="true">
-            <span className="di-first-nope">{t('first.swipeNope')}</span>
-            <span className="di-first-did">{t('first.swipeDid')}</span>
-          </span>
+          <span className="di-first-swipes">{t('first.swipeLine')}</span>
         </label>
         {starters.length ? (
           <div className="di-first-picks">
@@ -155,9 +152,10 @@ export function FirstNight({ book, onChange, now }) {
           </label>
         ) : null}
         <div className="di-hang-actions">
-          <button className="di-did" type="submit" aria-disabled={!question}>
+          <button className="di-did" type="submit" aria-disabled={!question} aria-describedby={question ? undefined : 'di-first-add-hint'}>
             {t('first.add')}
           </button>
+          {!question ? <small id="di-first-add-hint" className="di-field-hint">{t('first.addHint')}</small> : null}
         </div>
       </form>
     </BoardShell>

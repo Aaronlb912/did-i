@@ -8,6 +8,7 @@ import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { isoDate } from '../src/lib/recurrence.js'
+import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
@@ -26,6 +27,8 @@ function warnWidget(where, error) {
   const code = error?.code ? ` [${error.code}]` : ''
   const text = error?.message || (typeof error === 'string' ? error : JSON.stringify(error))
   console.warn(`${where} failed${code}: ${text}`)
+  // Also to the crash reports (when on), so a blank widget shows up there.
+  recordAppError('widget', error).catch(() => {})
 }
 
 function snapshotColors(colors, look) {
@@ -135,7 +138,7 @@ export async function syncTonightWidget(shelf) {
         widgetNotFound: () => {},
       })
     } catch (error) {
-      console.warn('widget android update', error?.message || error)
+      warnWidget('widget android update', error)
     }
   }
 }

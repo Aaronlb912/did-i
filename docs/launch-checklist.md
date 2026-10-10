@@ -53,6 +53,8 @@ Batch these, then build both once: `npm run ios:build:store` and GitHub **androi
 - [ ] iPhone widget answer before midnight, app opened next day: answer kept
 - [ ] All 12 cheers on iPhone (Shop previews and a real Did); stage 5 looks right; Less motion turns them off
 - [ ] Cheer "i" opens the description; Upgrade buys the next stage
+- [ ] Gentle mode (Settings): no streak count on the done card, Stats, Your streaks, or a question page; no broken-streak card; off again brings the numbers back; a friend still sees your streak
+- [ ] Rate card (1.3.3 build, 7th cleared night): the in-app review sheet opens on iPhone and Android; a dev client without the module opens the store page
 - [ ] Invite link: share from Refer, open did-i.app/i/CODE on a phone with no app, install, sign up; the inviter gets the referral
 - [ ] Friends: own number required, ask by number and accept, a taken number is refused
 - [ ] Family: assign a question, the other sees it; block works

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { dueByUrgency } from './board-json.js'
+import { useEffect, useRef, useState } from 'react'
+import { dueByUrgency, shortLabel } from './board-json.js'
+import { NOTE_MAX } from './board-ops.js'
 import { goHash } from '../site/hash.js'
 import { FinishFace } from './FinishFace.jsx'
 import { LampFace } from './LampFace.jsx'
@@ -24,13 +25,75 @@ import { TagRail } from './TagRail.jsx'
 import { SwipePullSlot } from './SwipePull.jsx'
 import { EdgeScroll } from './EdgeScroll.jsx'
 import { FamilyTonight } from './FamilyTonight.jsx'
+import { useFamilyTonight } from './people.js'
+import { peopleTonightItems, peopleWaitingLine } from './people-tonight.js'
 import { WeFace, useWeAnswer, weOpenForMe } from './DidWe.jsx'
 import { takeWeFinishes, useWeTonight, weInFilter, weStats } from './did-we.js'
 import { shelfMarks, weMarksFor } from './achievements.js'
+import { noteShared, noteSharedNow, setNoteShared } from './social-amounts.js'
 
 // Where the stack has no card of your own to answer, so a Did we can have it.
 const WE_OVER = new Set(['hall', 'rest', 'off', 'waiting'])
 import './did-i.css'
+
+// A note and, when the question tracks one, an amount for tonight's answer.
+function NoteBox({ target, shelf, onSave, onCancel }) {
+  const book = shelf.find((item) => item.id === target.boardId)
+  const lamp = (book?.lamps || []).find((item) => item.id === target.lampId)
+  const answer = (book?.answers || []).find((item) => item.lampId === target.lampId && item.periodKey === target.periodKey)
+  const [note, setNote] = useState(answer?.note || '')
+  const [count, setCount] = useState(typeof answer?.amount === 'number' ? String(answer.amount) : '')
+  // Off unless this night's note is already shared.
+  const [share, setShare] = useState(() => noteShared(target.lampId, target.periodKey))
+  // Then the server says, so it matches another device. A click first wins.
+  const touched = useRef(false)
+  useEffect(() => {
+    let alive = true
+    noteSharedNow(target.lampId, target.periodKey).then((yes) => {
+      if (alive && !touched.current) setShare(yes)
+    })
+    return () => {
+      alive = false
+    }
+  }, [target.lampId, target.periodKey])
+  if (!lamp || !answer) return null
+  return (
+    <form
+      className="di-note-box di-screws-print-hide"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSave(note, lamp.trackAmount ? count : undefined, { share, question: shortLabel(lamp) })
+      }}
+    >
+      <p className="di-sit-line">{shortLabel(lamp)}</p>
+      <label className="di-field">
+        <span>{t('note.title')}</span>
+        <input value={note} maxLength={NOTE_MAX} placeholder={t('note.ph')} autoFocus onChange={(event) => setNote(event.target.value)} />
+      </label>
+      {lamp.trackAmount ? (
+        <label className="di-field">
+          <span>{lamp.amountUnit ? t('note.amountIn', { unit: lamp.amountUnit }) : t('note.amount')}</span>
+          <input value={count} inputMode="decimal" onChange={(event) => setCount(event.target.value)} />
+        </label>
+      ) : null}
+      <label className="di-field di-we-check">
+        <input type="checkbox" checked={share} onChange={(event) => {
+          touched.current = true
+          setShare(event.target.checked)
+        }} />
+        <span>{t('sharedNote.toggle')}</span>
+      </label>
+      {share ? <p className="di-sit-line">{t('sharedNote.who')}</p> : null}
+      <div className="di-page-keys">
+        <button className="di-key" type="submit">{t('settings.save')}</button>
+        <button className="di-key" type="button" onClick={onCancel}>{t('settings.neverMind')}</button>
+        {answer.note || typeof answer.amount === 'number' ? (
+          <button className="di-key" type="button" onClick={() => onSave('', '', { share: false, question: shortLabel(lamp) })}>{t('note.remove')}</button>
+        ) : null}
+      </div>
+    </form>
+  )
+}
 
 export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, focusLampId }) {
   usePrefs()
@@ -45,9 +108,13 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
 
   const purse = mergePurses(stack.shelf)
   const we = useWeTonight(account.user)
+  // One read for the family panel and the chip by the count.
+  const family = useFamilyTonight(account.user)
   const weAns = useWeAnswer(we.reload, value)
   // Someone else's did finished a card: play their cheer, once, with a line.
   const [weFinish, setWeFinish] = useState(null)
+  const [noteFor, setNoteFor] = useState(null)
+  const [sharedMiss, setSharedMiss] = useState('')
   useEffect(() => {
     if (!account.user) return
     // Did we achievements come from the shared cards, so they unlock here.
@@ -167,6 +234,7 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
         tag={faceRow.tag}
         keys={stack.recentPeriodKeys(faceRow.lamp, stack.dateIso, 7)}
         buddy={activeBuddy(stack.bookOf(faceRow))}
+        dateIso={stack.dateIso}
         onPickHole={stack.pickHole}
         onYes={() => stack.mark(faceRow, 'yes')}
         onSkip={() => stack.mark(faceRow, 'skip')}
@@ -269,7 +337,13 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
           </button>
         ) : null}
 
-        <NightMeter due={stack.due} />
+        <NightMeter
+          due={stack.due}
+          waiting={peopleWaitingLine(peopleTonightItems({ familyRows: family.rows }))}
+          onWaiting={() =>
+            document.getElementById('di-fam-strip')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+          }
+        />
 
         {stack.dueWithWait.length > 0 && !stack.holePick && !stack.waitPick ? (
           <div className="di-edge-wrap">
@@ -335,10 +409,40 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
             <button className="di-key" type="button" onClick={stack.applyUndo}>
               {t('tonight.undo')}
             </button>
+            {stack.undo.status !== 'skip' ? (
+              <button
+                className="di-key"
+                type="button"
+                onClick={() => setNoteFor({ boardId: stack.undo.book.id, lampId: stack.undo.lampId, periodKey: stack.undo.periodKey })}
+              >
+                {t('note.add')}
+              </button>
+            ) : null}
           </p>
         ) : null}
 
-        <FamilyTonight />
+        {noteFor ? (
+          <NoteBox
+            target={noteFor}
+            shelf={stack.shelf}
+            onSave={(note, amount, extra) => {
+              stack.saveNote(noteFor, note, amount)
+              const target = noteFor
+              setNoteFor(null)
+              setSharedMiss('')
+              // Off and never shared: nothing to send.
+              if (extra.share || noteShared(target.lampId, target.periodKey)) {
+                setNoteShared({ ...target, question: extra.question, note, on: extra.share }).then((out) => {
+                  if (out.miss) setSharedMiss(out.miss)
+                })
+              }
+            }}
+            onCancel={() => setNoteFor(null)}
+          />
+        ) : null}
+        {sharedMiss ? <p className="di-sit-line">{sharedMiss}</p> : null}
+
+        <FamilyTonight family={family} />
       </div>
 
       <ol className="di-print-slip">

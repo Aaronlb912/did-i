@@ -11,6 +11,7 @@ import { TonightScreen } from './TonightScreen.jsx'
 // Everything off the two tabs loads the first time it opens.
 const more = () => require('./more.jsx')
 const AboutScreen = lazyScreen(more, 'AboutScreen')
+const SeenScreen = lazyScreen(more, 'SeenScreen')
 const AccountScreen = lazyScreen(more, 'AccountScreen')
 const BoardsScreen = lazyScreen(more, 'BoardsScreen')
 const CalendarScreen = lazyScreen(more, 'CalendarScreen')
@@ -115,6 +116,7 @@ export function ScreenRouter({
   // Go to /first itself, not just its screen, so the tab bar stays hidden there.
   if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" from={path} />
   if (path === '/about') return <AboutScreen book={book} />
+  if (path === '/settings/seen') return <SeenScreen book={book} />
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />
   if (path === '/recent') return <RecentScreen />
@@ -218,6 +220,7 @@ export function ScreenRouter({
       tagId={tagId}
       onTag={setTag}
       onChange={change}
+      onKeep={keepSent}
       focusLampId={route.face}
       focusKey={route.focusAt}
     />

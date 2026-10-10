@@ -7,9 +7,10 @@ import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet } from '../components/SheetHost.jsx'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
-import { useSync } from '../../src/lib/cloud-sync.js'
+import { firstPullWaiting, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { BuddyHang } from '../components/Cosmetic.jsx'
 import {
@@ -26,29 +27,33 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { feelTap } from '../../src/lib/native.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
-import { answerFor } from '../../src/lib/recurrence.js'
+import { answerFor, isEvery } from '../../src/lib/recurrence.js'
+import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
-import { DidButton, KeyButton } from '../components/ui.jsx'
+import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
-import { SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
+import { markSwipeIntroSeen, SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
-import { TonightNote } from '../components/NightNotes.jsx'
+import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
+import { useOnline } from '../hooks/useOnline.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
 import { MastMenuRoot } from '../components/MastMenu.jsx'
@@ -74,7 +79,8 @@ import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
-import { FamilyTonight } from '../components/FamilyTonight.jsx'
+import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
+import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
 import { WeAnswered, WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
@@ -174,7 +180,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   )
 }
 
-export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampId, focusKey }) {
+export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey }) {
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
@@ -187,6 +193,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const [keySeen, setKeySeen] = useState(() => jewelKeySeen())
   // Account prefs land after a reinstall; seen there hides it too.
   const prefsSeen = usePrefs().jewelKeySeen === true
+  const gentle = usePrefs().gentle === true
   const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
@@ -195,6 +202,25 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
   const [graceWeLeft, setGraceWeLeft] = useState([])
+  // Family questions and Did you asks from friends: cards after your own.
+  const family = useFamilyTonight(account.user)
+  const [asks, setAsks] = useState([])
+  const [peopleGone, setPeopleGone] = useState([])
+  const loadAsks = useCallback(async () => {
+    if (!account.user) return setAsks([])
+    try {
+      setAsks(await listInbox())
+    } catch {
+      // Offline: the cards wait for the next look.
+    }
+  }, [account.user])
+  useEffect(() => {
+    loadAsks()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') loadAsks()
+    })
+    return () => sub.remove()
+  }, [loadAsks])
   // A Did we pill tapped: its card comes up to swipe, ahead of your own.
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
@@ -308,6 +334,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
+  // The first answer while the hint is up means the swipe is learned.
+  const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
+  const answeredAtStart = useRef(answeredNow)
+  useEffect(() => {
+    if (!introSeen && answeredNow > answeredAtStart.current) markSwipeIntroSeen()
+  }, [introSeen, answeredNow])
   const showKey = introSeen && !keySeen && !prefsSeen && keyNight && showChips && !stack.nightDone
   // The done card's night summary: the week behind and the night ahead.
   const summary = useMemo(
@@ -351,8 +383,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
   }
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
-  // Undo joins the one toast line above the tab bar. Shake still undoes where
-  // the sensor works, but it was not reliable enough to promise.
+  // Undo joins the one toast line above the tab bar. Shake undo is off (see useShakeUndo).
   // Undo sends the card back the way it left.
   const applyUndo = stack.applyUndo
   const undoAnswer = useCallback(() => {
@@ -360,8 +391,30 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     applyUndo()
   }, [applyUndo])
   // The toast's label says what was saved (Marked Did, nope or late).
-  useUndoToast('tonight', stack.undo, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
+  // After a Did on your own question, the toast also offers a note for it.
+  // The sheet reads colors and onChange when tapped, so a new render never re-arms the toast.
+  const undoNow = stack.undo
+  const noteDeps = useRef({ colors, onChange })
+  noteDeps.current = { colors, onChange }
+  const undoToast = useMemo(() => {
+    if (!undoNow || (undoNow.status !== 'yes' && undoNow.status !== 'late')) return undoNow
+    const target = { boardId: undoNow.book?.id, lampId: undoNow.lampId, periodKey: undoNow.periodKey }
+    return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
+  }, [undoNow])
+  useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
   useShakeUndo(Boolean(stack.undo), undoAnswer)
+  // An answer saved with no signal says where it is, once per offline stretch.
+  const online = useOnline()
+  const offlineNoted = useRef(false)
+  useEffect(() => {
+    if (online) {
+      offlineNoted.current = false
+      return
+    }
+    if (!undoNow || offlineNoted.current) return
+    offlineNoted.current = true
+    showToast({ id: 'offline-saved', kind: 'done', text: t('tonight.offlineSaved'), ms: 4200 })
+  }, [online, undoNow])
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
   useEffect(() => {
@@ -369,7 +422,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
       dropToast('sync-miss')
       return
     }
-    showToast({ id: 'sync-miss', kind: 'error', text: syncMiss, ms: 5200 })
+    // Tap to try now rather than wait for the next wake.
+    showToast({ id: 'sync-miss', kind: 'error', text: `${syncMiss} ${t('toast.tapRetry')}`, ms: 5200, onPress: () => pullAndMerge() })
   }, [syncMiss])
   useEffect(() => {
     if (!stack.cheer) return undefined
@@ -411,6 +465,89 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         gemLook={premium ? look : ''}
         buddy={activeBuddy(book)}
       />
+    ) : null
+  // After your own and Did we: family questions, then Did you asks. A swiped
+  // card leaves at once; a failed save brings it back with a toast.
+  // People cards have no undo, so a family answer says it was saved instead.
+  const peopleAnswer = async (key, save, reload, kind) => {
+    setPeopleGone((keys) => [...keys, key])
+    feelTap(kind === 'skip' ? 'skip' : 'did')
+    let why = ''
+    try {
+      why = (await save()).miss
+    } catch {
+      why = 'off'
+    }
+    if (why) {
+      setPeopleGone((keys) => keys.filter((k) => k !== key))
+      showToast({ id: `people-miss:${key}`, kind: 'error', text: t('tonight.peopleMiss'), ms: 5200 })
+      return
+    }
+    reload()
+  }
+  const peopleItems = peopleTonightItems({
+    familyRows: family.rows,
+    asks,
+    night: stack.dateIso,
+    gone: peopleGone,
+  }).map((item) => {
+    const { row } = item
+    if (item.kind === 'family') {
+      const save = (status) => () =>
+        peopleAnswer(
+          item.key,
+          () => answerFamilyLamp(row.family.id, row.lamp.id, row.night, status),
+          () => {
+            confirmDone(t('tonight.familySaved', { name: row.family.name }))
+            family.reload()
+          },
+          status,
+        )
+      return {
+        ...item,
+        kicker: row.family.name,
+        line: row.lamp.cadence === 'every' ? sharedLastLine(row.last, row.night, row.lastName) : '',
+        onDid: save('yes'),
+        onNope: save('skip'),
+      }
+    }
+    const save = (keep) => () =>
+      peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
+        // Like Keep in the inbox: a kept ask joins your own questions.
+        if (keep && row.kind === 'todo' && onKeep) onKeep(row)
+        confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
+        loadAsks()
+      }, keep ? 'yes' : 'skip')
+    return {
+      ...item,
+      kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
+      line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso),
+      onDid: save(true),
+      onNope: save(false),
+    }
+  })
+  const peopleTop = peopleItems[0] || null
+  const peopleSwipe =
+    weSwipe && peopleTop ? (
+      <SwipeCardHost
+        key="people"
+        cardKey={peopleTop.key}
+        colors={colors}
+        panelStyle={gemCard}
+        gemLook={premium ? look : ''}
+        kicker={peopleTop.kicker}
+        title={peopleTop.title}
+        stampDid={t('tonight.swipeDid')}
+        stampNope={t('tonight.swipeNope')}
+        behind={peopleItems.slice(1).map((item) => ({ key: item.key, kicker: item.kicker, title: item.title }))}
+        onDid={peopleTop.onDid}
+        onNope={peopleTop.onNope}
+        buddy={activeBuddy(book)}
+      >
+        {peopleTop.line ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{peopleTop.line}</Text>
+        ) : null}
+      </SwipeCardHost>
     ) : null
   // The grace period for the previous night: first until 5am, then after
   // tonight's own cards until 9am.
@@ -509,6 +646,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
+  const pullWait = Boolean(account.user) && firstPullWaiting(sync) && !stack.cheer && stack.bodyKind !== 'face'
   let face = null
   // The done card grows (note, sign-in, recap). Centred in a fixed slot it
   // spilled under the meter and the tab bar, so it scrolls instead.
@@ -533,7 +671,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
     return card
   }
-  if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
+  if (pullWait) {
+    // Just signed in and the account's shelf is still on its way: loading
+    // rows, never a blank card or "That is everything for tonight".
+    face = <LateMeta colors={colors}>{t('app.loading')}</LateMeta>
+  } else if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     face = (
@@ -548,6 +690,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
     )
   } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
     face = weSwipe
+  } else if (peopleSwipe) {
+    face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
   } else if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
     face = (
       <GemFaceShell look={premium ? look : ''}
@@ -591,6 +735,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         onEdit={() => goHash('/hang', { id: faceRow.lamp.id })}
         frame={cardFrame}
       >
+        {isEvery(faceRow.lamp) ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{lastTimeLine(faceBook, faceRow.lamp, stack.dateIso)}</Text>
+        ) : null}
         {hasHistory ? (
           <NightStrip
             book={faceBook}
@@ -621,7 +768,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
               </View>
             </>
           ) : null}
-          {stack.streak > 0 ? (
+          {stack.streak > 0 && !gentle ? (
             <View style={styles.streakRow}>
             <Pressable
               onPress={() => goHash('/stats')}
@@ -890,7 +1037,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
         ]}
       >
       <Slot>
-        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
+        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
 
       {showChips ? (
@@ -983,7 +1130,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
 
       {/* The card sits in the middle of the space between the chips and the buttons (owner call, 2026-10-06). */}
       <SwipeFlyHost style={styles.slot}>
-        {stack.bodyKind === 'hall' && stack.nightDone ? (
+        {stack.bodyKind === 'hall' && stack.nightDone && !pullWait ? (
           <Slot>
             <NightSky colors={colors} />
           </Slot>
@@ -994,7 +1141,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
             contentContainerStyle={styles.doneScrollIn}
             showsVerticalScrollIndicator={false}
           >
-            <Slot>{face}</Slot>
+            <Slot>
+              <DoneIn>{face}</DoneIn>
+            </Slot>
           </ScrollView>
         ) : (
           <Slot>
@@ -1005,16 +1154,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, focusLampI
           </Slot>
         )}
         <Slot>
-          <FamilyTonight colors={colors} />
-        </Slot>
-        <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
         </Slot>
         <Slot>
           {stack.cheer ? null : <WeAnswered cards={weCards} colors={colors} />}
         </Slot>
         <Slot>
-          {social?.kind === 'we' && face !== weSwipe && !pickedWe ? (
+          {social?.kind === 'we' && face !== weSwipe && !(peopleSwipe && face === peopleSwipe) &&!pickedWe ? (
             <Pressable
               onPress={() => goHash('/we', { id: social.id })}
               accessibilityRole="button"
@@ -1046,7 +1192,24 @@ const frameStyles = StyleSheet.create({
   gap: { margin: FRAME_GAP },
 })
 
+// The done card settles in: a short fade and a small scale, no confetti.
+// Reduced motion shows it as it is.
+function DoneIn({ children }) {
+  const reduce = useReduceMotion()
+  const grow = useSharedValue(reduce ? 1 : 0)
+  useEffect(() => {
+    if (!reduce) grow.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
+  }, [grow, reduce])
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.2 + grow.value * 0.8,
+    transform: [{ scale: 0.97 + grow.value * 0.03 }],
+  }))
+  if (reduce) return children
+  return <Animated.View style={style}>{children}</Animated.View>
+}
+
 const styles = StyleSheet.create({
+  everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },
   frame: { flex: 1, position: 'relative' },
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
   shell: { flex: 1, paddingHorizontal: 16, position: 'relative' },

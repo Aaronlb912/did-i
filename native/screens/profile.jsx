@@ -5,7 +5,6 @@ import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { syncFailed } from '../../src/lib/sync-line.js'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
-import { confirmDone } from '../lib/confirm.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
   CLOCK_IDS,
@@ -24,7 +23,6 @@ import { legalEmail } from '../../src/lib/legal.js'
 import { shareCsv, shareShelf } from '../../src/lib/native.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
 import { mergeShelves } from '../../src/lib/shelf-merge.js'
-import { closeSession, hasPin } from '../../src/lib/session.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -46,7 +44,6 @@ import {
 
 export function PhoneSettingsScreen({ book, onChange }) {
   const colors = useHallColors(book)
-  const account = useAccount()
   const [keeperDraft, setKeeperDraft] = useState(book?.keeperName || '')
   const [noteDraft, setNoteDraft] = useState(book?.inkNote || '')
 
@@ -87,27 +84,6 @@ export function PhoneSettingsScreen({ book, onChange }) {
           }}
         />
       </SetCard>
-
-      {/* Never signed in, there is nothing to sign out of. */}
-      {account.user ? (
-      <>
-      <SetCap colors={colors}>{t('settings.danger')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="logout"
-          label={t('settings.signOut')}
-          note={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
-          danger
-          onPress={() => {
-            closeSession()
-            confirmDone(t('confirm.signedOut'))
-            goHash('/enter')
-          }}
-        />
-      </SetCard>
-      </>
-      ) : null}
     </BoardShell>
   )
 }
@@ -234,6 +210,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
         </Pressable>
       ) : null}
+      <SetCap colors={colors}>{t('settings.account')}</SetCap>
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
@@ -259,41 +236,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="settings"
           tint={colors.inkSoft}
           label={t('settings.title')}
-          sub={account.user ? t('settings.phoneSub') : t('settings.phoneSubOut')}
+          sub={t('settings.phoneSubOut')}
           chevron
           last
           onPress={() => goHash('/settings/phone')}
-        />
-      </SetCard>
-
-      <SetCap colors={colors}>{t('settings.look')}</SetCap>
-      <SetCard colors={colors}>
-        <SetChoice
-          colors={colors}
-          icon={prefs.theme === 'light' ? 'sun' : prefs.theme === 'dark' ? 'moon' : 'phone'}
-          tint={colors.late}
-          label={t('settings.theme')}
-          options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
-          selected={prefs.theme}
-          onSelect={(id) => writePrefs({ theme: id })}
-        />
-        <SetChoice
-          colors={colors}
-          icon="globe"
-          tint={colors.late}
-          label={t('settings.language')}
-          options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
-          selected={prefs.locale}
-          onSelect={(id) => writePrefs({ locale: id })}
-        />
-        <SetSwitch
-          colors={colors}
-          icon="motion"
-          tint={colors.on}
-          last
-          label={t('settings.lessMotion')}
-          on={prefs.lessMotion}
-          onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
         />
       </SetCard>
 
@@ -332,6 +278,46 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => goHash('/me')}
           last
+        />
+      </SetCard>
+
+      <SetCap colors={colors}>{t('settings.look')}</SetCap>
+      <SetCard colors={colors}>
+        <SetChoice
+          colors={colors}
+          icon={prefs.theme === 'light' ? 'sun' : prefs.theme === 'dark' ? 'moon' : 'phone'}
+          tint={colors.late}
+          label={t('settings.theme')}
+          options={THEME_IDS.map((id) => ({ id, label: t(`theme.${id}`) }))}
+          selected={prefs.theme}
+          onSelect={(id) => writePrefs({ theme: id })}
+        />
+        <SetChoice
+          colors={colors}
+          icon="globe"
+          tint={colors.late}
+          label={t('settings.language')}
+          options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
+          selected={prefs.locale}
+          onSelect={(id) => writePrefs({ locale: id })}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="motion"
+          tint={colors.on}
+          label={t('settings.lessMotion')}
+          on={prefs.lessMotion}
+          onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="moon"
+          tint={colors.on}
+          last
+          label={t('settings.gentle')}
+          sub={t('settings.gentleSub')}
+          on={prefs.gentle}
+          onPress={() => writePrefs({ gentle: !prefs.gentle })}
         />
       </SetCard>
 
@@ -399,7 +385,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="calendar"
           tint={colors.on}
-          label={t('settings.history')}
+          label={t('home.calendar')}
           sub={t('settings.calendarSub')}
           chevron
           onPress={() => goHash('/calendar')}
@@ -485,6 +471,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.howDidIWorks')}
           chevron
           onPress={() => goHash('/help')}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
         />
         <SetRow
           colors={colors}

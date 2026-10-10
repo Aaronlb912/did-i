@@ -340,6 +340,10 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const buddyId = String(p.buddyId || '')
   const showBuddy = Boolean(buddyId) && !tight
   const question = questionLine(p, lead)
+  // Every so often: "Last time: 6 days ago" under the question (buildTonightWidgetProps).
+  const sinceText = lead
+    ? String(lead.since || (lead.lampId === p.leadLampId ? p.sinceLine : '') || '').trim()
+    : ''
   const radius = compact ? 16 : large ? 24 : 22
   const titleSize = lead
     ? tight
@@ -369,6 +373,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const sideGap = showBuddy ? (compact ? 28 : 34) : 4
   const stack = showBuddy && w > 0 && w - 2 * (outerPad + ringPad + panelPadH + sideGap) < 90
   const buddyDrop = stack ? (compact ? 24 : 30) : 0
+  const showSince = Boolean(sinceText) && !tight
+  const sinceH = showSince ? (compact ? 14 : 16) : 0
   const roomW = w - 2 * (outerPad + ringPad + panelPadH) - 2 * (stack ? 4 : sideGap)
   const roomH =
     h -
@@ -376,6 +382,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     15 -
     (tight ? 2 : 4) -
     buddyDrop -
+    sinceH -
     (lead ? actionGap * 2 + buttonH : actionGap + 16)
   const fit = lead ? fitQuestion(question, titleSize, roomW, roomH) : { fontSize: titleSize, lines: 2 }
   const questionSize = fit.fontSize
@@ -439,6 +446,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               style={{
                 flex: 1,
                 width: 'match_parent',
+                flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
                 paddingHorizontal: stack ? 4 : sideGap,
@@ -460,6 +468,20 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 }}
                 maxLines={questionLines}
               />
+              {showSince ? (
+                <TextWidget
+                  text={sinceText}
+                  style={{
+                    fontSize: compact ? 10 : 12,
+                    fontWeight: '600',
+                    color: C.inkSoft,
+                    textAlign: 'center',
+                    width: 'match_parent',
+                    marginTop: 2,
+                  }}
+                  maxLines={1}
+                />
+              ) : null}
             </FlexWidget>
             {lead
               ? [

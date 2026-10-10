@@ -282,7 +282,21 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
             },
           ]}
         >
-          {item.kind === 'undo' ? <UndoBody item={item} colors={colors} reduce={reduce} /> : null}
+          {item.kind === 'undo' ? (
+            <UndoBody
+              item={item}
+              colors={colors}
+              reduce={reduce}
+              onExtra={
+                item.extra
+                  ? () => {
+                      item.extra.onPress?.()
+                      leave(0, FROM_Y)
+                    }
+                  : null
+              }
+            />
+          ) : null}
           {item.kind === 'mark' ? <MarkBody item={item} colors={colors} onOk={() => leave(0, FROM_Y)} /> : null}
           {/* A plain toast (no kind) is just its text. */}
           {item.kind === 'error' || item.kind === 'we' || item.kind === 'done' || !item.kind ? <ErrorBody item={item} colors={colors} /> : null}
@@ -295,7 +309,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   )
 }
 
-function UndoBody({ item, colors, reduce }) {
+function UndoBody({ item, colors, reduce, onExtra }) {
   return (
     <>
       <CountdownRing until={item.until} total={item.total} colors={colors} reduce={reduce} />
@@ -303,6 +317,7 @@ function UndoBody({ item, colors, reduce }) {
         <Text style={[styles.saved, { color: colors.inkSoft }]}>{item.label}</Text>
         <Text style={[styles.hint, { color: colors.ink }]}>{item.hint}</Text>
       </View>
+      {onExtra ? <KeyButton label={item.extra.label} colors={colors} onPress={onExtra} /> : null}
     </>
   )
 }

@@ -14,6 +14,7 @@ import { useBackDismiss } from '../site/nav.js'
 import { findBookHoldingLamp } from './board-shelf.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { bookForTag } from './useHangDraft.js'
+import { followCheckOn } from './check-on.js'
 
 export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, copyId, start }) {
   const clock = now || new Date()
@@ -41,6 +42,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     if (onSaveTo) onSaveTo(target, lamp, sourceBook, clock)
     else onChange(commitBook(hangInto(target, lamp, Boolean(existing)), clock))
+    if (existing) followCheckOn(existing, lamp).catch(() => {})
     if (existing) goHash('/lamp', { id: lamp.id })
     else goHash(wasEmpty ? '/tonight' : '/lamps')
   }
@@ -49,7 +51,7 @@ export function HangPage({ book, boards = [], onChange, onSaveTo, now, lampId, c
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={existing ? t('lamp.edit') : t('tonight.add')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       {confirmGone && existing && sourceBook ? (

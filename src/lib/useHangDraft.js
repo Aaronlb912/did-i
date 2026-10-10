@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  amountUnitOf,
   blankLamp,
   didQuestion,
   emptyBoard,
@@ -16,7 +17,7 @@ import { starterList } from './starters.js'
 
 export function hasExtraFields(item) {
   return Boolean(
-    item && (item.short || item.askAfter || item.notes || String(item.kind || '').trim()),
+    item && (item.short || item.askAfter || item.notes || item.trackAmount || String(item.kind || '').trim()),
   )
 }
 
@@ -122,9 +123,18 @@ export function useHangDraft({
       dueBy: draft.cadence === 'once' && draft.onceWhen === 'by' ? draft.dueBy : '',
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
+      everyDays: draft.cadence === 'every' ? Number(draft.everyDays) || draft.everyDays : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
       priority,
       notify: notifyOn,
+    }
+    // Track an amount: only stored when on, with its unit cut to UNIT_MAX.
+    delete next.trackAmount
+    delete next.amountUnit
+    if (draft.trackAmount) {
+      next.trackAmount = true
+      const unit = amountUnitOf(draft)
+      if (unit) next.amountUnit = unit
     }
     return { lamp: next, problem: missLamp(next) }
   }

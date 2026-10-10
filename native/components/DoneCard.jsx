@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
+import { usePrefs } from '../../src/lib/prefs.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { streakNights, streakParts } from '../../src/lib/streak-copy.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -134,6 +135,8 @@ export function StreakCount({ n, from = null, colors }) {
 
 /** The last seven nights as dots, tonight last and ringed. A tap on one asks why. */
 export function NightWeek({ nights, colors, onNight }) {
+  // Gentle mode: a missed night looks like a blank one.
+  const gentle = usePrefs().gentle === true
   const done = nights.filter((night) => night.on).length
   return (
     <View style={styles.week} accessibilityLabel={t('tonight.weekAria', { n: done })}>
@@ -156,7 +159,7 @@ export function NightWeek({ nights, colors, onNight }) {
                 // empty on the light card too, not as a missing dot.
                 night.empty
                   ? { borderWidth: 1.5, borderColor: colors.line }
-                  : { backgroundColor: night.on ? colors.on : night.miss ? colors.miss : colors.open },
+                  : { backgroundColor: night.on ? colors.on : night.miss && !gentle ? colors.miss : colors.open },
               ]}
             />
           </View>

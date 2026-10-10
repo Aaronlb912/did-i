@@ -35,15 +35,17 @@ import {
   shortFromQuestion,
   shortLabel,
   SHORT_MAX,
+  UNIT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import { addDaysIso, boardDate, formatBoardDate, isDueOn } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
+import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
-import { readPrefs } from '../../src/lib/prefs.js'
+import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -63,7 +65,7 @@ import { LampManage } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { bestQuestionStreak, lampRecord, lampWeeks } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -86,11 +88,13 @@ import {
 } from '../components/ui.jsx'
 import { behindPath, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
+import { CheckOnCard } from '../components/CheckOnCard.jsx'
 import { usePeoplePulse } from '../../src/lib/people.js'
 import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
+import { followCheckOn } from '../../src/lib/check-on.js'
 import { pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -209,17 +213,19 @@ function sameWords(lamp) {
 }
 
 // Past one-time questions: how their night went, or missed when never answered.
-function earlierStates(rows) {
+// Gentle mode leaves a missed one blank.
+function earlierStates(rows, gentle = false) {
+  const missed = gentle ? '' : 'missed'
   const ids = new Set(rows.map(rowId))
   const books = new Map(rows.map((row) => [row.boardId, row.book]))
   const states = new Map()
-  for (const row of rows) states.set(rowId(row), 'missed')
+  for (const row of rows) states.set(rowId(row), missed)
   for (const [boardId, book] of books) {
     for (const answer of book?.answers || []) {
       const id = `${boardId}:${answer.lampId}`
       if (!ids.has(id)) continue
       const status = answer.status
-      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : 'missed')
+      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : missed)
     }
   }
   return states
@@ -293,7 +299,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampName, { color: colors.ink }]} numberOfLines={1}>
                   {shortLabel(row.lamp)}
                 </Text>
-                {sameWords(row.lamp) ? null : (
+                {sameWords(row.lamp) && !isEvery(row.lamp) ? null : (
                   <Text style={[styles.lampQ, { color: colors.inkSoft }]} numberOfLines={1}>
                     {row.lamp.question}
                   </Text>
@@ -308,7 +314,17 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                   <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
                 </View>
               ) : picking ? null : (
-                <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>
+                <>
+                  {isEvery(row.lamp) && sinceBadge(row.book, row.lamp, dateIso) ? (
+                    <Text
+                      accessibilityLabel={lastTimeLine(row.book, row.lamp, dateIso, true)}
+                      style={[styles.everyPill, { color: colors.inkSoft, backgroundColor: colors.panel2 }]}
+                    >
+                      {sinceBadge(row.book, row.lamp, dateIso)}
+                    </Text>
+                  ) : null}
+                  <Text style={[styles.lampChev, { color: colors.inkDim }]}>›</Text>
+                </>
               )}
             </Pressable>
           )
@@ -444,13 +460,14 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [query, setQuery] = useState('')
   const rows = searchRows(allRows, query)
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
+  const gentle = usePrefs().gentle === true
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useLayoutState(false)
   const [ordering, setOrdering] = useLayoutState(false)
   const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
-  // The undo toast joins the one line above the tab bar; shake still undoes.
+  // The undo toast joins the one line above the tab bar. Shake undo is off.
   useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
   useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
@@ -469,7 +486,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   )
   // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
-  const pastStates = earlierOpen ? earlierStates(earlier) : states
+  const pastStates = earlierOpen ? earlierStates(earlier, gentle) : states
   const starters = openStarters(book)
   const shown = [...hung, ...down, ...(earlierOpen ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
@@ -481,7 +498,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     const kinds = new Set()
     for (const row of hung) kinds.add(dotKind(states.get(rowId(row)) || '', dueByUrgency(row.lamp, dateIso)))
     // Open Earlier rows have dots too, so the key names theirs.
-    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || 'missed')
+    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || (gentle ? 'off' : 'missed'))
     return kinds
   })()
 
@@ -810,6 +827,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         ) : (
           <>
             <Meta colors={colors}>{t('questions.hint')}</Meta>
+            {allRows.length ? null : <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />}
             {starters.length && onChange ? (
               <View style={styles.starters}>
                 <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{t('first.picks')}</Text>
@@ -978,6 +996,7 @@ const SCHEDULES = [
   { id: 'weekly', labelKey: 'hang.weekly' },
   { id: 'monthly', labelKey: 'hang.monthly' },
   { id: 'every_n', labelKey: 'hang.everyN' },
+  { id: 'every', labelKey: 'hang.every' },
   { id: 'once_on', labelKey: 'hang.once' },
   { id: 'deadline', labelKey: 'hang.dueByPick' },
 ]
@@ -989,7 +1008,14 @@ const SCHEDULE_MISSES = new Set([
   'hang.miss.dueByBefore',
   'hang.miss.everyN',
   'hang.miss.everyNStart',
+  'hang.miss.everyDays',
 ])
+// Every so often: about a week, two weeks, a month, or any number of days.
+const EVERY_PILLS = [
+  { days: 7, labelKey: 'hang.everyWeek' },
+  { days: 14, labelKey: 'hang.every2Weeks' },
+  { days: 30, labelKey: 'hang.everyMonth' },
+]
 const LAND_HOLD = 1100
 let foldNext = ''
 const LAND_HOLD_STILL = 450
@@ -1046,6 +1072,7 @@ function autoShort(question) {
 
 function whenLine(draft) {
   if (draft.cadence === 'every_n' && !Number(draft.everyN)) return t('hang.everyN')
+  if (draft.cadence === 'every' && !Number(draft.everyDays)) return t('hang.every')
   if (draft.cadence === 'weekly' && !(draft.weekdays || []).length) return t('hang.weekly')
   return cadenceLine(draft)
 }
@@ -1307,9 +1334,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }
   const wobble = useWobble(starters.length, fresh && !blank.trim() && !focused && !stamp, reduce)
   const schedule = schedulePick(draft)
+  const [everyOwn, setEveryOwn] = useState(() => draft.cadence === 'every' && ![7, 14, 30].includes(Number(draft.everyDays)))
   const tagName = String(hang.tagTitle || '').trim() || book.title
   const ready = Boolean(draft.question.trim())
-  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length
+  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length + (draft.trackAmount ? 1 : 0)
   const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
   // The short name shows in full, filled with the one made from the question
@@ -1479,6 +1507,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    // A check-on follows the question's new words and schedule.
+    if (existing) followCheckOn(existing, next).catch(() => {})
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (hang.editing) {
       playClick()
@@ -1488,7 +1518,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       return
     }
     // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
-    setStamp(isDueOn(next, dateIso) ? t('hang.landTonight') : t('hang.landAdded'))
+    const landsTonight = isDueOn(next, dateIso) || everyDueOn(target, next, dateIso)
+    setStamp(landsTonight ? t('hang.landTonight') : t('hang.landAdded'))
     setWave((count) => count + 1)
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
@@ -1499,7 +1530,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     leave.current = setTimeout(
       () => {
         if (from === '/lamps') goHash('/lamps')
-        else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', isDueOn(next, dateIso) ? { face: next.id } : '')
+        else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', landsTonight ? { face: next.id } : '')
         else if (from && !wasEmpty) goBack()
         else goHash(wasEmpty ? '/tonight' : '/lamps')
         confirmDone(t('confirm.questionAdded'))
@@ -1577,7 +1608,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   colors={colors}
                   label={pack.title}
                   sub={pack.items.map((item) => shortLabel(item)).join(', ')}
-                  value={t('pack.count', { n: pack.items.length })}
+                  value={pack.items.length === 1 ? t('pack.countOne') : t('pack.count', { n: pack.items.length })}
                   chevron
                   last={at === packs.length - 1}
                   onPress={() => askPack(pack)}
@@ -1677,6 +1708,38 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               </View>
             ) : null}
 
+            {schedule === 'every' ? (
+              <>
+                <View style={styles.pillRow}>
+                  {EVERY_PILLS.map((item) => (
+                    <Pill
+                      key={item.days}
+                      label={t(item.labelKey)}
+                      on={!everyOwn && Number(draft.everyDays) === item.days}
+                      onPress={() => {
+                        setEveryOwn(false)
+                        hang.change('everyDays', item.days)
+                      }}
+                      colors={colors}
+                    />
+                  ))}
+                  <Pill label={t('hang.everyOwn')} on={everyOwn} onPress={() => setEveryOwn(true)} colors={colors} />
+                </View>
+                {everyOwn ? (
+                  <FoldInput
+                    label={t('hang.everyDays')}
+                    value={String(draft.everyDays || '')}
+                    onChangeText={(value) => hang.change('everyDays', value.replace(/\D/g, ''))}
+                    keyboardType="number-pad"
+                    placeholder="10"
+                    maxLength={3}
+                    colors={colors}
+                  />
+                ) : null}
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.everyHint')}</Text>
+              </>
+            ) : null}
+
             {schedule === 'every_n' ? (
               <>
                 <FoldInput
@@ -1754,6 +1817,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           >
             <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
             <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
+            <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderVsTopic')}</Text>
             <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tag')}>
               {hang.liveTags.map((item) => (
                 <Pill
@@ -1866,6 +1930,25 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               multiline
               colors={colors}
             />
+            <View style={styles.amountRow}>
+              <Pill
+                label={t('hang.trackAmount')}
+                on={Boolean(draft.trackAmount)}
+                onPress={() => hang.change('trackAmount', !draft.trackAmount)}
+                colors={colors}
+              />
+            </View>
+            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.trackAmountSub')}</Text>
+            {draft.trackAmount ? (
+              <FoldInput
+                label={t('hang.amountUnit')}
+                value={draft.amountUnit || ''}
+                onChangeText={(value) => hang.change('amountUnit', value)}
+                placeholder={t('hang.amountUnitPh')}
+                maxLength={UNIT_MAX}
+                colors={colors}
+              />
+            ) : null}
           </HangFold>
         </SetCard>
       </View>
@@ -1901,6 +1984,21 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
   const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
+  const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
+  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso])
+  // Every so often: no streak, so the tiles say when it was last done and the usual gap.
+  const every = useMemo(() => {
+    if (!isEvery(lamp)) return null
+    const tonight = answerFor(lampBook, lamp.id, dateIso)?.status || ''
+    return {
+      due: !lamp.archived && (Boolean(tonight) || everyDueOn(lampBook, lamp, dateIso)),
+      tonight,
+      last: lastTimeLine(lampBook, lamp, dateIso, true),
+      badge: sinceBadge(lampBook, lamp, dateIso, false),
+      gap: gapLine(lampBook, lamp, dateIso),
+    }
+  }, [lampBook, lamp, dateIso])
+  const gentle = usePrefs().gentle === true
   const phone = usePhoneQuiet()
 
   function change(next) {
@@ -1917,9 +2015,13 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
   const status = lamp.archived
     ? t('lamp.pausedLine')
-    : record.due
-      ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
-      : nextDueLine(lamp, dateIso)
+    : every
+      ? every.due
+        ? t('lamp.tonightIs', { status: pillStatusLabel(every.tonight) })
+        : every.last
+      : record.due
+        ? t('lamp.tonightIs', { status: pillStatusLabel(record.tonight) })
+        : nextDueLine(lamp, dateIso)
   const priority = lamp.priority || 'normal'
   const topics = topicsOf(lamp).map(topicLabel).join(', ')
   const notes = String(lamp.notes || '').trim()
@@ -1972,17 +2074,31 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </>
       ) : null}
 
-      <View style={styles.tiles}>
-        <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
-          <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
-          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
-          {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
+      {every ? (
+        <View style={styles.tiles}>
+          <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+            <Text style={[styles.tileNum, { color: colors.on }]}>{every.badge || '-'}</Text>
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{every.last}</Text>
+          </View>
+          <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+            <Text style={[styles.tileCap, { color: colors.ink }]}>{every.gap}</Text>
+          </View>
         </View>
+      ) : (
+      <View style={styles.tiles}>
+        {gentle ? null : (
+          <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+            <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
+            {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
+          </View>
+        )}
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
           <Text style={[styles.tileNum, { color: colors.ink }]}>{t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
         </View>
       </View>
+      )}
 
       {weeks.length > 1 ? (
         <View style={styles.trend}>
@@ -2013,6 +2129,63 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       ) : null}
 
       <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
+
+      {lamp.trackAmount ? (
+        <View style={styles.amounts}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('amounts.title')}</Text>
+          {amounts.count ? (
+            <>
+              <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text>
+              <View style={styles.amountBars}>
+                {amounts.bars.map((bar) => (
+                  <View
+                    key={bar.night}
+                    style={[styles.amountBar, { backgroundColor: colors.lineSoft }]}
+                    accessible
+                    accessibilityLabel={
+                      bar.amount === null
+                        ? t('amounts.barNone', { date: formatBoardDate(bar.night) })
+                        : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp.amountUnit) })
+                    }
+                  >
+                    {bar.amount ? (
+                      <View
+                        style={{ backgroundColor: colors.on, height: `${Math.max(4, Math.round((bar.amount / amounts.max) * 100))}%` }}
+                      />
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.cap')}</Text>
+            </>
+          ) : (
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.empty')}</Text>
+          )}
+        </View>
+      ) : null}
+
+      <View style={styles.lastFive}>
+        <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.lastFive')}</Text>
+        {!lastFive.length ? (
+          <>
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
+            <Pressable accessibilityRole="link" onPress={() => goHash('/tonight')} hitSlop={8}>
+              <Text style={[styles.tileCap, { color: colors.on }]}>{t('empty.goTonight')}</Text>
+            </Pressable>
+          </>
+        ) : null}
+        {lastFive.map((row) => (
+          <View key={row.periodKey} style={[styles.lastRow, { borderBottomColor: colors.lineSoft }]}>
+            <View style={styles.lastTop}>
+              <Text style={[styles.lastDate, { color: colors.ink }]}>{row.night ? formatBoardDate(row.night) : row.periodKey}</Text>
+              {row.amount !== null ? (
+                <Text style={[styles.lastAmount, { color: colors.on }]}>{amountWords(row.amount, lamp.amountUnit)}</Text>
+              ) : null}
+            </View>
+            {row.note ? <Text style={[styles.lastNote, { color: colors.inkSoft }]}>{row.note}</Text> : null}
+          </View>
+        ))}
+      </View>
 
       <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
 
@@ -2048,6 +2221,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           ) : null}
         </Pressable>
       </SetCard>
+      {lamp.fromName ? null : <CheckOnCard lamp={lamp} colors={colors} />}
       <LampManage
         book={lampBook}
         lamp={lamp}
@@ -2140,6 +2314,7 @@ const styles = StyleSheet.create({
   lampName: { fontFamily: fonts.uiSemi, fontSize: 15, lineHeight: 20 },
   lampQ: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   lampMeta: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.3 },
+  everyPill: { fontFamily: fonts.uiBold, fontSize: 12, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: 'hidden', marginRight: 6 },
   lampChev: { fontFamily: fonts.ui, fontSize: 22 },
   search: {
     flexDirection: 'row',
@@ -2216,6 +2391,17 @@ const styles = StyleSheet.create({
   trendFill: { width: '100%' },
   trendNum: { fontFamily: fonts.mono, fontSize: 10 },
   trendDate: { fontFamily: fonts.mono, fontSize: 9 },
+  amountRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  amounts: { gap: 6, marginBottom: 12 },
+  amountAvg: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  amountBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 64 },
+  amountBar: { flex: 1, height: '100%', borderRadius: 3, overflow: 'hidden', justifyContent: 'flex-end' },
+  lastFive: { gap: 6, marginBottom: 12 },
+  lastRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },
+  lastTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  lastDate: { fontFamily: fonts.uiSemi, fontSize: 14, flexShrink: 1 },
+  lastAmount: { fontFamily: fonts.mono, fontSize: 14 },
+  lastNote: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, fontStyle: 'italic' },
   hintLine: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, paddingHorizontal: 16, paddingTop: 2 },
   tonight: { gap: 8, marginTop: 4 },
   tonightRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

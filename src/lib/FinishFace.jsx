@@ -16,7 +16,7 @@ export function FinishFace({ count, onContinue, onRest }) {
   const [dx, setDx] = useState(0)
   const [mode, setMode] = useState('')
   const pull = swipePull(dx)
-  useSwipePullReport(pull)
+  useSwipePullReport(mode === 'fly' ? 0 : pull)
 
   function go(way) {
     if (mode === 'fly') return

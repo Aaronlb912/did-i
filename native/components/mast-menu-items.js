@@ -14,7 +14,7 @@ export const PEOPLE_ON = new Set([
 ])
 export const ADD_ON = new Set(['/add', '/hang'])
 export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
-export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/pings', '/about', '/help', '/privacy', '/terms'])
+export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 // Home and Questions already live in the system tab bar; the menu holds only
 // what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
@@ -30,9 +30,10 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
   const waiting = signedIn ? inbox + asks + we : asks
   // Home always leads, so every row stays in the same place on every screen.
   const home = [{ key: 'home', path: '/tonight', label: t('nav.home'), on: path === '/tonight' || path === '/', icon: 'home', stroke: true }]
+  // Top: Shop, Friends and family, Settings. Rarer rows sit under "More".
   return [
     ...home,
-    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
+    { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     {
       key: 'people',
       path: '/people',
@@ -43,10 +44,6 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
       count: waiting,
       icon: 'people',
     },
-    // Recent: achievements and Did we moments, in full. Its count is the unseen ones.
-    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
-    { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
-    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
     {
       key: 'settings',
       path: '/settings',
@@ -55,6 +52,11 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
       on: SETTINGS_ON.has(path) || HISTORY_ON.has(path),
       icon: 'settings',
     },
+    { key: 'more', section: true, label: t('mast.menu') },
+    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
+    // Recent: achievements and Did we moments, in full. Its count is the unseen ones.
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
+    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
   ]
 }
 

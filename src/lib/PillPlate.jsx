@@ -40,7 +40,7 @@ export function PillPlate({ row, onDid, onNope, buddy = '', readOnly = false }) 
   const optionalEarly =
     row.dateIso && row.lamp && !mustSwipeDeadline(row.lamp, row.dateIso)
   const pull = swipePull(dx)
-  useSwipePullReport(pull)
+  useSwipePullReport(mode === 'fly' ? 0 : pull)
 
   if (readOnly) {
     return (

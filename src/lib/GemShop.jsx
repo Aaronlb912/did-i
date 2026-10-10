@@ -48,7 +48,13 @@ export function GemShop({ book, now }) {
       setMiss(t('gems.appOnly'))
       return
     }
-    const out = await startGemPurchase(packId)
+    let out
+    try {
+      out = await startGemPurchase(packId)
+    } catch {
+      setMiss(t('gems.storeError'))
+      return
+    }
     if (out.miss === 'signin') {
       goHash('/account')
       return

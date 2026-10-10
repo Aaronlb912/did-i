@@ -4,6 +4,7 @@
 // if someone changed the wrong line.
 
 import { strict as assert } from 'node:assert'
+import { testBuyCredits } from '../supabase/functions/gem-iap/gate.js'
 import { createRequire, registerHooks } from 'node:module'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -24,6 +25,8 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
+import { peopleTonightItems, peopleWaitingLine } from '../src/lib/people-tonight.js'
+import { nightWhyLines } from '../src/lib/night-why.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
   activeDeadline,
@@ -202,6 +205,20 @@ test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () 
   const answers = paid.map((item) => ({ lampId: item.id, periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' }))
   const fourth = lamp('w', { createdOn: '2026-10-01' })
   assert.equal(coinsFor('yes', book([...paid, fourth], answers), { lamp: fourth }, clock), 0)
+})
+
+test('tonight people cards: open family rows, then Did you asks due tonight, minus swiped ones', () => {
+  const fam = (id, answer = null) => ({ family: { id: 'f1', name: 'Home' }, lamp: { id, question: `q${id}` }, night: '2026-10-08', answer })
+  const ask = (id, extra = {}) => ({ id, kind: 'todo', state: 'sent', question: `ask${id}`, due_on: '2026-10-08', ...extra })
+  const items = peopleTonightItems({
+    familyRows: [fam('a'), fam('b', { status: 'yes' })],
+    asks: [ask('1'), ask('2', { due_on: '2026-10-09' }), ask('3', { kind: 'cheer' }), ask('app:4', { appSend: true }), ask('5', { state: 'kept' })],
+    night: '2026-10-08',
+  })
+  assert.deepEqual(items.map((item) => item.key), ['fam:f1:a:2026-10-08', 'ask:1'])
+  assert.deepEqual(items.map((item) => item.kind), ['family', 'ask'])
+  const left = peopleTonightItems({ familyRows: [fam('a')], asks: [ask('1')], night: '2026-10-08', gone: ['ask:1'] })
+  assert.deepEqual(left.map((item) => item.key), ['fam:f1:a:2026-10-08'])
 })
 
 test('a bulk delete across folders comes back whole on undo', () => {
@@ -1047,14 +1064,14 @@ test('a question pack adds only what is missing, and undo takes them off for goo
     }
   }
   const empty = { id: 'b1', title: 'Tag', lamps: [], answers: [] }
-  const house = packList(empty).find((pack) => pack.id === 'house')
-  const { book, ids } = addPack(empty, house, new Date('2026-10-05T10:00:00'))
+  const admin = packList(empty).find((pack) => pack.id === 'admin')
+  const { book, ids } = addPack(empty, admin, new Date('2026-10-05T10:00:00'))
   assert.equal(ids.length, 3)
   assert.equal(new Set(ids).size, 3)
   assert.equal(book.lamps.length, 3)
-  assert.ok(!packList(book).some((pack) => pack.id === 'house'), 'a pack already on the tag is not offered again')
+  assert.ok(!packList(book).some((pack) => pack.id === 'admin'), 'a pack already on the tag is not offered again')
   const meds = packList({ ...empty, lamps: [{ ...lamp('p'), question: `Did I ${t('starter.pills.blank')}?` }] }).find((pack) => pack.id === 'meds')
-  assert.equal(meds.items.length, 2, 'the evening pills already there are left out')
+  assert.equal(meds.items.length, 2, 'the meds already there are left out')
   const undone = undoPack(book, ids, new Date('2026-10-05T10:00:05'))
   assert.equal(undone.lamps.length, 0)
   // An older copy still holding them does not bring them back.
@@ -2567,7 +2584,6 @@ test('native metro shims are wired and pin default exports', () => {
     'react-native-safe-area-context',
     'expo-constants',
     '@react-native-community/netinfo',
-    'expo-sensors',
     'expo-clipboard',
     'expo-haptics',
     'expo-linking',
@@ -2708,7 +2724,7 @@ test('native look ids match did-i.css', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
-test('a fresh phone opens the first night, a lost session shows sign-in', () => {
+test('a fresh phone opens on welcome, a phone already in use does not, a lost session shows sign-in', () => {
   const prev = globalThis.__didIPlatform
   globalThis.__didIPlatform = 'ios'
   clearAuthSkip()
@@ -2717,8 +2733,15 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
   const sign = readFileSync(path.join(root, 'native/screens/SignInScreen.jsx'), 'utf8')
   const actions = readFileSync(path.join(root, 'native/components/AuthSignInActions.jsx'), 'utf8')
   try {
+    localStorage.removeItem('did-i-welcome')
+    localStorage.removeItem('did-i-shelf')
     writeAccountUserId('')
-    assert.equal(needsAuth({ ready: false, user: null }), false, 'no sign-in wall before the first night')
+    assert.equal(needsAuth({ ready: false, user: null }), true, 'a fresh install starts on the welcome screen')
+    localStorage.setItem('did-i-shelf', JSON.stringify({ boards: [{ id: 'b', lamps: [{ id: 'l', question: 'Did I take my meds?' }] }] }))
+    assert.equal(needsAuth({ ready: true, user: null }), false, 'a phone already used without an account is not walled')
+    localStorage.removeItem('did-i-shelf')
+    localStorage.setItem('did-i-welcome', '1')
+    assert.equal(needsAuth({ ready: true, user: null }), false, 'a finished first night is not walled')
     writeAccountUserId('user-a')
     assert.equal(needsAuth({ ready: false, user: null }), false, 'a signed-in phone does not flash sign-in while the session loads')
     assert.equal(needsAuth({ ready: true, user: null }), true, 'no session after the check still gates')
@@ -2734,6 +2757,11 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
+    assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
+    assert.ok(
+      sign.indexOf("t('auth.getStarted')") > -1 && sign.indexOf("t('auth.getStarted')") < sign.indexOf('<AuthSignInActions'),
+      'Get started is the first button on Welcome, sign-in options sit under it',
+    )
     assert.ok(sign.includes('skipAuth()'), 'staying on this phone records the skip')
     assert.ok(sign.includes('onDone?.()'), 'staying on this phone opens the app')
     skipAuth()
@@ -2741,9 +2769,22 @@ test('a fresh phone opens the first night, a lost session shows sign-in', () => 
     assert.equal(authGated('/tonight', { ready: true, user: null }), false)
   } finally {
     clearAuthSkip()
+    localStorage.removeItem('did-i-welcome')
     if (prev == null) delete globalThis.__didIPlatform
     else globalThis.__didIPlatform = prev
   }
+})
+
+test('first five minutes: first run can go back to Welcome, the swipe hint is one line cleared by the first answer', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const intro = readFileSync(path.join(root, 'native/components/SwipeIntro.jsx'), 'utf8')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(more.includes('step > 0 || canLeave'), 'step one of the first run has Back')
+  assert.ok(more.includes("t('first.haveAccount')"), 'the first run keeps the I have an account link')
+  assert.ok(!intro.includes('<Modal'), 'the swipe hint is not a popup')
+  assert.ok(intro.includes("t('swipeIntro.line')"), 'the swipe hint is one line')
+  assert.ok(tonight.includes('markSwipeIntroSeen()'), 'the first answer clears the swipe hint')
 })
 
 test('first run picks 2 or 3, adds them with one time, face is the first', () => {
@@ -3069,7 +3110,7 @@ test('the honest did not line sits above the bottom bar', () => {
   assert.ok(mark.includes('useAppInsets'), 'the line clears the bar')
   assert.ok(mark.includes("zIndex: 90"), 'the line paints above the bar')
   const plist = readFileSync(path.join(root, 'app.config.js'), 'utf8')
-  assert.ok(plist.includes('NSMotionUsageDescription'), 'iOS can read a shake')
+  assert.ok(!plist.includes('NSMotionUsageDescription'), 'shake is off, so iOS never asks for motion')
 })
 
 test('the phone location has an origin, so import() chunk urls can be built', () => {
@@ -3366,7 +3407,7 @@ await testAsync('the widget shows the open Did we once your own questions are do
   }
 })
 
-await testAsync('a skip reads Not yet while its night is open, Nope once it closed', async () => {
+await testAsync('a skip reads Not yet while its night is open, Said not yet once it closed', async () => {
   const { answerWord, nightOpen } = await import('../src/lib/recurrence.js')
   const { nightWhyLines } = await import('../src/lib/night-why.js')
   const { pillStatusLabel } = await import('../src/lib/pill-status.js')
@@ -3387,7 +3428,7 @@ await testAsync('a skip reads Not yet while its night is open, Nope once it clos
   assert.equal(pillStatusLabel('skip'), 'Marked not yet')
   const why = (iso, state) => ({ iso, state, noped: [{ lamp: { question: 'Did I read?', short: 'Read' } }], unanswered: [], weOpen: [] })
   assert.match(nightWhyLines(why(fri, 'missed'), { now: sat2am }).join(' '), /Not yet: Read/)
-  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Noped: Read/)
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said not yet: Read/)
 })
 
 await testAsync('the grace period for the previous night runs until 9am', async () => {
@@ -3920,8 +3961,10 @@ test('every action that changes data on the server says so on the phone', () => 
     'cheerFriend', 'buyCheers', 'sendGift', 'answerSend', 'blockPerson', 'unblockPerson', 'makeFamily', 'joinFamily',
     'leaveFamily', 'setRole', 'dropMember', 'setAutoAdd', 'takeBack', 'saveName', 'askByFriendId', 'returnGift',
     'joinWeLink', 'befriendByLink', 'reportGift', 'cheerFamily', 'giftCheer',
+    'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
+    'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer', 'reportDidYouLink',
   ]
-  const SEEN = /confirmDone|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
+  const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
   const files = []
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -3949,6 +3992,36 @@ test('every action that changes data on the server says so on the phone', () => 
   assert.deepEqual(silent, [], 'these actions change data and show nothing after')
   const toast = readFileSync(path.join(checkRoot, 'native/components/ToastHost.jsx'), 'utf8')
   assert.ok(toast.includes("item.text || t('confirm.done')"), 'a toast without text says Done, never a blank box')
+  // Buys, gem credits and sync: a throw or a miss shows something, with a retry where one helps.
+  const coinShop = readFileSync(path.join(checkRoot, 'src/lib/coin-shop.js'), 'utf8')
+  assert.ok(/function counted[\s\S]{0,400}catch[\s\S]{0,200}shop\.miss\.buyFail/.test(coinShop), 'a thrown buy returns buyFail, not a dead tap')
+  const gemStore = readFileSync(path.join(checkRoot, 'native/iap/gem-store.js'), 'utf8')
+  assert.ok(/purchaseUpdatedListener\([\s\S]{0,400}creditMissToast\(\)/.test(gemStore), 'a paid pack that does not credit says so')
+  assert.ok(/function creditMissToast[\s\S]{0,300}onPress/.test(gemStore), 'the credit miss toast retries on tap')
+  assert.ok(/startGemPurchase\(packId\)\s*\}\s*catch/.test(readFileSync(path.join(checkRoot, 'src/lib/GemShop.jsx'), 'utf8')), 'web gem buy shows a store error')
+  const tonightSrc = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(/id: 'sync-miss'[^\n]*onPress: \(\) => pullAndMerge\(\)/.test(tonightSrc), 'the sync miss toast retries on tap')
+  // After sign-in, loading rows until the first pull lands; never the done card.
+  assert.ok(/if \(pullWait\) \{[\s\S]{0,300}<LateMeta/.test(tonightSrc), 'Tonight shows loading rows while the first pull is out')
+  assert.ok(tonightSrc.indexOf('if (pullWait)') < tonightSrc.indexOf("t('tonight.doneTitle')"), 'loading comes before the done card')
+  const syncSrc = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(/firstPull: true/.test(syncSrc) && /pulling = null\s*\n?\s*if \(state\.firstPull\) setState\(\{ firstPull: false \}\)/.test(syncSrc.replace(/\r/g, '')), 'the first pull flag always clears')
+})
+
+test('gentle mode: missed nights are plain on the calendar and week', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  assert.ok(read('src/lib/Calendar.jsx').includes("night.miss && prefs.gentle !== true ? 'is-miss'"), 'web calendar')
+  assert.ok(read('src/lib/WeekGrid.jsx').includes("gentle && cell.state === 'hole' ? 'open'"), 'web week')
+  const grid = read('native/components/CalendarGrid.jsx')
+  assert.ok(grid.includes('prefs.gentle === true ? colors.open : colors.miss') && !/night\.miss \? colors\.miss/.test(grid), 'phone calendar and year')
+  assert.ok(read('native/screens/more.jsx').includes("if (state === 'hole') return gentle ? colors.open : colors.miss"), 'phone week')
+})
+
+test('web first run: a welcome with Get started and sign in', () => {
+  const app = readFileSync(path.join(checkRoot, 'src/App.jsx'), 'utf8')
+  assert.ok(app.indexOf('<FirstWelcome') > 0 && app.indexOf('<FirstWelcome') < app.indexOf('<FirstNight'), 'welcome comes before /first')
+  const welcome = readFileSync(path.join(checkRoot, 'src/lib/Welcome.jsx'), 'utf8')
+  for (const key of ['auth.getStarted', 'auth.haveAccount', 'legal.signInLead']) assert.ok(welcome.includes(`t('${key}')`), key)
 })
 
 test('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
@@ -4114,6 +4187,128 @@ await testAsync('the widget draws what Tonight would ask, with buttons only when
   } finally {
     clearWeNights()
     saveWeOpen([], night)
+  }
+})
+
+// WidgetKit evaluates the widget function's source on its own, in a context
+// that holds only @expo/ui's exports and the jsx stub (expo-widgets/bundle).
+// A throw there is an empty box in a Release build. Run it the same way.
+await testAsync('the widget function draws on its own, with only what WidgetKit gives it', async () => {
+  const vm = await import('node:vm')
+  const require = createRequire(import.meta.url)
+  const babel = require('@babel/core')
+  const file = path.join(checkRoot, 'widgets/DidITonightWidget.tsx')
+  const code = babel.transformFileSync(file, { filename: file, caller: { name: 'metro', platform: 'ios' } })?.code || ''
+  const source = code.slice(code.indexOf('DidITonightWidget=`') + 'DidITonightWidget=`'.length, code.lastIndexOf('`;var widget'))
+  // What expo-widgets/bundle/index.ts puts on globalThis: every export of
+  // @expo/ui/swift-ui and its modifiers, following `export * from`.
+  const exported = new Set()
+  const seen = new Set()
+  const readExports = (file) => {
+    const found = ['', '.ts', '.tsx', '/index.ts', '/index.tsx'].map((end) => file + end).find((p) => existsSync(p) && statSync(p).isFile())
+    if (!found || seen.has(found)) return
+    seen.add(found)
+    const text = readFileSync(found, 'utf8')
+    for (const m of text.matchAll(/export (?:const|function|class) (\w+)/g)) exported.add(m[1])
+    for (const m of text.matchAll(/export \{([^}]*)\}/g)) {
+      for (const part of m[1].split(',')) {
+        const name = part.trim().split(/\s+as\s+/).pop()?.replace(/^type\s+/, '')
+        if (name) exported.add(name)
+      }
+    }
+    for (const m of text.matchAll(/export \* from '(\.[^']+)'/g)) readExports(path.join(path.dirname(found), m[1]))
+  }
+  readExports(path.join(checkRoot, 'node_modules/@expo/ui/src/swift-ui/index'))
+  readExports(path.join(checkRoot, 'node_modules/@expo/ui/src/swift-ui/modifiers/index'))
+  const ast = babel.parseSync(`(${source})`, { configFile: false, babelrc: false })
+  const free = new Set()
+  babel.traverse(ast, { Program(p) { for (const name of Object.keys(p.scope.globals)) free.add(name) } })
+  const builtins = new Set(['Array', 'Boolean', 'Math', 'Number', 'Object', 'String', 'JSON', 'encodeURIComponent', '_jsx', '_jsxs', '_Fragment'])
+  const missing = [...free].filter((name) => !builtins.has(name) && !exported.has(name))
+  assert.deepEqual(missing, [], `the widget uses names WidgetKit does not have: ${missing.join(', ')}`)
+  const sandbox = {}
+  for (const name of free) {
+    if (builtins.has(name)) continue
+    sandbox[name] = /^[A-Z]/.test(name) ? (props) => ({ type: `${name}View`, props: props || {} }) : (...args) => ({ $type: name, args })
+  }
+  sandbox._jsx = sandbox._jsxs = (type, props) => (typeof type === 'function' ? type(props) : { type, props })
+  const fn = vm.runInNewContext(`(${source})`, sandbox)
+
+  const { saveWeLine } = await import('../src/lib/we-widget.js')
+  const { wornShapes } = await import('../src/lib/accessory-shapes.js')
+  const { ACCESSORIES } = await import('../src/lib/accessories.js')
+  const clock = new Date(2026, 9, 3, 21, 0)
+  const night = boardDate(clock)
+  const slots = {}
+  for (const item of ACCESSORIES) if (!slots[item.slot]) slots[item.slot] = item.id
+  const worn = { ...slots }
+  const lamp = (id, question) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  const book = (answers, extra = {}) => ({
+    id: 'b1', title: 'General', dayFoldHour: 0,
+    lamps: [lamp('door', 'Did I lock the door?')], answers,
+    buddies: ['owl'], buddyOn: 'owl', accessories: Object.values(worn), worn, ...extra,
+  })
+  const gem = { bg: '#0a0e14', panel: '#111820', ink: '#e0e4f0', inkSoft: '#99a1b0', on: '#5ee8ff', skip: '#7d8694', miss: '#ff6f61', line: '#2b3140', look: 'glow', gem: true }
+  const families = ['systemSmall', 'systemMedium', 'systemLarge', 'accessoryCircular', 'accessoryRectangular', 'accessoryInline']
+  const drawAll = (props, label) => {
+    for (const widgetFamily of families) {
+      for (const widgetRenderingMode of ['fullColor', 'accented']) {
+        // Props go through JSON, as they do to the app group and back.
+        const out = JSON.stringify(fn(JSON.parse(JSON.stringify(props ?? null)), { widgetFamily, widgetRenderingMode }))
+        assert.ok(out && out !== 'null', `${label} draws on ${widgetFamily}`)
+      }
+    }
+  }
+  try {
+    saveWeLine('Did we · waiting on a friend', night)
+    const open = buildTonightWidgetProps({ currentId: 'b1', boards: [book([])] }, clock)
+    assert.equal(open.buddyId, 'owl')
+    assert.ok(open.weLine, 'the Did we line reaches the widget')
+    const dressed = { ...open, colors: gem, buddyShapes: wornShapes(open.buddyWorn, 'owl', gem.on) }
+    assert.ok(dressed.buddyShapes.front.length, 'the owl wears something')
+    drawAll(dressed, 'an owl in accessories on a gem look')
+    const medium = JSON.stringify(fn(dressed, { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }))
+    assert.ok(medium.includes('Did I lock the door?') && medium.includes('waiting on a friend') && medium.includes('#8b6b4a'))
+    const done = buildTonightWidgetProps({ currentId: 'b1', boards: [book([{ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00` }])] }, clock)
+    drawAll({ ...done, colors: gem, buddyShapes: wornShapes(done.buddyWorn, 'owl', gem.on) }, 'an all-done night')
+    drawAll(buildTonightWidgetProps({ boards: [] }, clock), 'an empty shelf')
+    drawAll(undefined, 'no snapshot yet')
+
+    // Bad decorations are dropped; the question still draws.
+    const broken = {
+      ...dressed,
+      colors: { ...gem, on: null, bg: 42 },
+      buddyShapes: { behind: 'oops', front: [null, ['e', 'x']] },
+      items: [null, ...dressed.items],
+      weLine: { not: 'a string' },
+    }
+    const kept = JSON.stringify(fn(broken, { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' }))
+    assert.ok(kept.includes('Did I lock the door?'), 'a broken decoration never blanks the question')
+
+    // Every so often lead: "Last time" line under it, a plain string prop.
+    assert.equal(open.sinceLine, '', 'a daily lead has no last time line')
+    const every = { id: 'sheets', question: 'Did I wash the sheets?', cadence: 'every', everyDays: 3, archived: false, createdOn: '2026-01-01' }
+    const ago = addDaysIso(night, -6)
+    const everyBook = book([{ lampId: 'sheets', periodKey: ago, status: 'yes', answeredAt: `${ago}T20:00:00` }], { lamps: [every] })
+    const due = buildTonightWidgetProps({ currentId: 'b1', boards: [everyBook] }, clock)
+    assert.equal(due.leadLampId, 'sheets')
+    assert.equal(typeof due.sinceLine, 'string')
+    assert.equal(due.sinceLine, t('every.lastMany', { n: 6 }))
+    assert.equal(due.items[0].since, due.sinceLine)
+    drawAll(due, 'an every so often lead')
+    for (const widgetFamily of ['systemSmall', 'systemMedium', 'systemLarge']) {
+      const drawn = JSON.stringify(fn(JSON.parse(JSON.stringify(due)), { widgetFamily, widgetRenderingMode: 'fullColor' }))
+      assert.ok(drawn.includes(due.sinceLine), `the last time line draws on ${widgetFamily}`)
+    }
+    const never = buildTonightWidgetProps({ currentId: 'b1', boards: [book([], { lamps: [every] })] }, clock)
+    assert.equal(never.sinceLine, t('every.never'))
+    drawAll({ ...due, sinceLine: 42, items: due.items.map((item) => ({ ...item, since: null })) }, 'a bad last time line')
+    const android = readFileSync(path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
+    assert.ok(android.includes('text={sinceText}') && android.includes('p.sinceLine'), 'Android draws the last time line too')
+    // Next and a tap move the line with the card.
+    assert.equal(peekNextTonightCard({ ...due, items: [...due.items, { lampId: 'x', question: 'Q', status: 'open' }] }).sinceLine, '')
+  } finally {
+    saveWeLine('', night)
   }
 })
 
@@ -4626,8 +4821,209 @@ test('every card frame id has art, and the vine and moon math hold', () => {
   assert.equal(frameGeo.ringProgress(3, 0), 0)
 })
 
-console.log(`\n${ran - failed} of ${ran} passed`)
-if (failed) process.exit(1)
+// Every so often questions (cadence 'every'): due by the last Did, no streak.
+function everyBook(answers = [], extra = []) {
+  return {
+    id: 'ev',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'sheets', question: 'Did I change the sheets?', cadence: 'every', everyDays: 7, archived: false, createdOn: '2026-09-01' }, ...extra],
+    answers: answers.map(([lampId, periodKey, status]) => ({ lampId, periodKey, status, answeredAt: `${periodKey}T21:00:00` })),
+  }
+}
+const evAt = (d) => new Date(2026, 8, d, 12, 0)
+const evDay = (d) => `2026-09-${String(d).padStart(2, '0')}`
+
+await testAsync('every so often: due when never done or once the gap passed; Did resets, Not yet asks again', async () => {
+  const { dueTonight, everyDueOn } = await import('../src/lib/recurrence.js')
+  const has = (book, d) => dueTonight(book, evAt(d)).some((row) => row.lamp.id === 'sheets')
+  assert.ok(has(everyBook(), 1), 'never done: due right away')
+  const did5 = everyBook([['sheets', evDay(5), 'yes']])
+  assert.ok(has(did5, 5), 'answered tonight stays on tonight')
+  assert.ok(!has(did5, 6) && !has(did5, 11), 'not due inside the gap')
+  assert.ok(has(did5, 12), 'due 7 days after the last Did')
+  const noped = everyBook([['sheets', evDay(5), 'yes'], ['sheets', evDay(12), 'skip']])
+  assert.ok(has(noped, 13), 'Not yet asks again the next night')
+  assert.ok(!isDueOn(noped.lamps[0], evDay(12)), 'isDueOn stays false, so walks leave it out')
+  assert.ok(!everyDueOn(noped, noped.lamps[0], '2026-08-30'), 'not before it was made')
+})
+
+await testAsync('every so often: no streak, never breaks a night, counts once done', async () => {
+  const { shelfStreak, lastBrokenNight } = await import('../src/lib/hall-feel.js')
+  const { allClearTonight } = await import('../src/lib/recurrence.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const rows = []
+  for (let d = 1; d <= 10; d += 1) rows.push(['d', evDay(d), 'yes'])
+  rows.push(['sheets', evDay(9), 'skip'])
+  const book = everyBook(rows, [daily])
+  assert.equal(shelfStreak([book], evAt(10)), 10, 'an open or Not yet every so often question never breaks the streak')
+  assert.equal(lastBrokenNight([book], evAt(11)), null)
+  assert.equal(questionStreak(book, book.lamps[0], evDay(10)), 0)
+  assert.equal(bestQuestionStreak(book, book.lamps[0], evDay(10)), 0)
+  assert.ok(allClearTonight(book, evAt(10)), 'tonight is clear with the every question still open')
+  const onlyEvery = everyBook([['sheets', evDay(3), 'yes']])
+  assert.equal(shelfStreak([onlyEvery], evAt(3)), 0, 'a Did on it alone is not a streak night')
+  assert.ok(allClearTonight(onlyEvery, evAt(3)), 'but it does count for that night once done')
+})
+
+test('every so often: the widget shows it only when Tonight does', () => {
+  const at = evAt(8)
+  const notDue = everyBook([['sheets', evDay(5), 'yes']])
+  const props = buildTonightWidgetProps(writeShelf({ currentId: 'ev', boards: [notDue] }), at)
+  assert.ok(!(props.items || []).some((item) => item.lampId === 'sheets'), 'not due: not on the widget')
+  const due = everyBook([['sheets', evDay(1), 'yes']])
+  const props2 = buildTonightWidgetProps(writeShelf({ currentId: 'ev', boards: [due] }), at)
+  assert.ok((props2.items || []).some((item) => item.lampId === 'sheets' && item.status === 'open'), 'due: on the widget')
+})
+
+await testAsync('every so often: the gap is learned from 3+ gaps and shown as usually', async () => {
+  const { learnedGap, everyDueOn } = await import('../src/lib/recurrence.js')
+  const { gapLine, lastTimeLine, sinceBadge } = await import('../src/lib/every-copy.js')
+  const two = everyBook([1, 10, 19].map((d) => ['sheets', evDay(d), 'yes']))
+  assert.equal(learnedGap(two, 'sheets', evDay(25)), 0, 'two gaps are not enough')
+  const book = everyBook([1, 10, 19, 28].map((d) => ['sheets', evDay(d), 'yes']))
+  const lamp = { ...book.lamps[0], everyDays: 3 }
+  assert.equal(learnedGap(book, 'sheets', '2026-10-05'), 9)
+  assert.ok(!everyDueOn(book, lamp, '2026-10-06'), 'the learned 9 wins over the set 3')
+  assert.ok(everyDueOn(book, lamp, '2026-10-07'))
+  assert.equal(gapLine(book, lamp, '2026-10-05'), 'Usually every 9 days')
+  assert.equal(lastTimeLine(book, lamp, '2026-10-05'), 'Last time: 7 days ago')
+  assert.equal(lastTimeLine(everyBook(), lamp, evDay(3)), 'Never yet')
+  assert.equal(sinceBadge(book, lamp, evDay(28)), 'today', 'a Did tonight reads today, not 0d')
+})
+
+await testAsync('every so often: saved shape, pack, and the toast note action', async () => {
+  const { normalizeLamp, missLamp } = await import('../src/lib/board-json.js')
+  const lamp = normalizeLamp({ id: 'x', question: 'Did I water the plants?', cadence: 'every', everyDays: '14' })
+  assert.equal(lamp.cadence, 'every')
+  assert.equal(lamp.everyDays, 14)
+  assert.equal(normalizeLamp({ id: 'y', question: 'Q?', cadence: 'daily', everyDays: 5 }).everyDays, '')
+  if (missLamp) assert.equal(missLamp({ question: 'Did I?', cadence: 'every', everyDays: 0 }), 'hang.miss.everyDays')
+  const home = PACKS.find((pack) => pack.id === 'home')
+  assert.ok(home && home.items.every((item) => item.cadence === 'every' && item.everyDays >= 7))
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const screen = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(screen.includes('openAnswerNote(') && screen.includes("t('note.addShort')"), 'a Did offers a note from the undo toast')
+})
+
+await testAsync('amounts: average over 30 nights, 14 night chart, rounding', async () => {
+  const { lampAmounts, roundAmount, amountAverageLine } = await import('../src/lib/lamp-record.js')
+  const lamp = { id: 'w', question: 'Did I drink water?', cadence: 'daily', trackAmount: true, amountUnit: 'glasses' }
+  const today = '2026-10-09'
+  const at = (back, status, amount) => {
+    const key = addDaysIso(today, -back)
+    return { lampId: 'w', periodKey: key, status, answeredAt: `${key}T21:00:00.000Z`, ...(amount == null ? {} : { amount }) }
+  }
+  const answers = [
+    at(0, 'yes', 6), at(1, 'late', 5), at(2, 'skip', 99), at(3, 'yes'), at(13, 'yes', 7),
+    at(14, 'yes', 6), at(29, 'yes', 6), at(30, 'yes', 100), { lampId: 'z', periodKey: today, status: 'yes', amount: 50 },
+  ]
+  const out = lampAmounts({ answers }, lamp, today)
+  assert.equal(out.count, 5, 'only Did nights with an amount in the last 30')
+  assert.equal(out.average, 6)
+  assert.equal(out.bars.length, 14)
+  assert.equal(out.bars[0].night, addDaysIso(today, -13))
+  assert.equal(out.bars[0].amount, 7)
+  assert.equal(out.bars[13].night, today)
+  assert.equal(out.bars[13].amount, 6)
+  assert.equal(out.bars[11].amount, null, 'a nope amount is not charted')
+  assert.equal(out.bars[10].amount, null, 'a Did with no amount is a gap')
+  assert.equal(out.max, 7)
+  assert.equal(roundAmount(2.46), 2.5)
+  assert.equal(roundAmount(12.6), 13)
+  assert.equal(roundAmount(NaN), null)
+  assert.equal(amountAverageLine(6, 'glasses'), t('amounts.avg', { n: 6, unit: 'glasses' }))
+  assert.equal(amountAverageLine(6, ''), t('amounts.avgPlain', { n: 6 }))
+  assert.equal(amountAverageLine(null, 'glasses'), '')
+  const none = lampAmounts({ answers: [] }, lamp, today)
+  assert.equal(none.count, 0)
+  assert.equal(none.average, null)
+  assert.ok(none.bars.every((bar) => bar.amount === null))
+  assert.deepEqual(lampAmounts({ answers }, { ...lamp, trackAmount: false }, today).bars, [])
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  for (const file of ['native/screens/questions.jsx', 'src/lib/LampDetail.jsx']) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    assert.ok(/useMemo\(\(\) => lampAmounts\(/.test(src), `${file} memoizes the amounts walk`)
+    assert.ok(src.includes("t('amounts.empty')"), `${file} has an empty state`)
+  }
+})
+
+await testAsync('amounts: saved on the answer, round trip through the answer log, last 5, SQL', async () => {
+  const { normalizeLamp, normalizeAnswer, cleanAmount, AMOUNT_MAX } = await import('../src/lib/board-json.js')
+  const { lastDidTimes, amountWords } = await import('../src/lib/lamp-record.js')
+  const lamp = normalizeLamp({ id: 'w', question: 'Did I drink water?', trackAmount: true, amountUnit: '  glasses  ' + 'x'.repeat(40) })
+  assert.equal(lamp.trackAmount, true)
+  assert.ok(lamp.amountUnit.startsWith('glasses') && lamp.amountUnit.length <= 24)
+  const plain = normalizeLamp({ id: 'p', question: 'Did I read?', amountUnit: 'pages' })
+  assert.ok(!('trackAmount' in plain) && !('amountUnit' in plain), 'off means nothing stored')
+  assert.equal(cleanAmount('2,5'), 2.5)
+  assert.equal(cleanAmount(''), null)
+  assert.equal(cleanAmount(-1), null)
+  assert.equal(cleanAmount(AMOUNT_MAX + 1), null)
+  assert.equal(cleanAmount('abc'), null)
+  assert.equal(normalizeAnswer({ lampId: 'w', periodKey: '2026-10-01', amount: 3 }).amount, 3)
+  assert.ok(!('amount' in normalizeAnswer({ lampId: 'w', periodKey: '2026-10-01', amount: 'x' })))
+
+  const answer = { id: 'a1', lampId: 'w', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T21:00:00.000Z', note: '' }
+  const book = { id: 'b1', lamps: [lamp], answers: [answer] }
+  const counted = setAnswerNote(book, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T09:00:00'), '6')
+  assert.equal(counted.answers[0].amount, 6)
+  assert.ok(counted.answers[0].noteAt > answer.answeredAt, 'an amount moves noteAt like a note')
+  // Leaving amount out keeps it; '' clears it.
+  assert.equal(setAnswerNote(counted, 'w', '2026-10-01', 'new words', new Date('2026-10-02T10:00:00')).answers[0].amount, 6)
+  assert.ok(!('amount' in setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), '').answers[0]))
+  // An amount-only change still saves.
+  assert.equal(setAnswerNote(counted, 'w', '2026-10-01', 'after the gym', new Date('2026-10-02T10:00:00'), 8).answers[0].amount, 8)
+  // Remove note clears the note and the amount, on the phone and the web.
+  const removed = setAnswerNote(counted, 'w', '2026-10-01', '', new Date('2026-10-02T10:00:00'), '').answers[0]
+  assert.ok(removed.note === '' && !('amount' in removed), 'remove note clears both')
+  const notesSrc = readFileSync(path.join(checkRoot, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.ok(/function removeNote[\s\S]{0,400}setAnswerNote\(book, lampId, periodKey, '', undefined, ''\)/.test(notesSrc), 'phone Remove note clears the amount')
+  assert.ok(readFileSync(path.join(checkRoot, 'src/lib/Tonight.jsx'), 'utf8').includes("onSave('', '', { share: false"), 'web Remove note clears the amount and unshares it')
+
+  // Up: m is always sent, null when there is none.
+  const shelf = { currentId: 'b1', boards: [counted] }
+  const sent = answersToSend(shelf, true)
+  assert.equal(sent[0].m, 6)
+  assert.equal(answersToSend({ boards: [book] }, true)[0].m, null)
+  // Down: a row with amount lands on the answer; a row from before the column has none.
+  const row = { lamp_id: 'w', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: sent[0].a, note: sent[0].n, note_at: sent[0].e, amount: '6' }
+  const pulled = applyAnswers({ currentId: 'b1', boards: [book] }, [row]).shelf.boards[0].answers[0]
+  assert.equal(pulled.amount, 6)
+  assert.equal(pulled.note, 'after the gym')
+  const { amount: _gone, ...oldRow } = row
+  assert.ok(!('amount' in applyAnswers({ currentId: 'b1', boards: [book] }, [oldRow]).shelf.boards[0].answers[0]))
+
+  // Last 5: only Did nights, newest first, with note and amount.
+  const answers = []
+  for (let day = 1; day <= 8; day += 1) {
+    const key = `2026-09-0${day}`
+    answers.push({ id: `n${day}`, lampId: 'w', periodKey: key, status: day === 7 ? 'skip' : day === 6 ? 'late' : 'yes', answeredAt: `${key}T21:00:00.000Z`, note: day === 8 ? 'big day' : '', ...(day === 8 ? { amount: 9 } : {}) })
+  }
+  answers.push({ id: 'other', lampId: 'z', periodKey: '2026-09-09', status: 'yes', answeredAt: '', note: '' })
+  const last = lastDidTimes({ answers }, lamp, 5)
+  assert.deepEqual(last.map((item) => item.periodKey), ['2026-09-08', '2026-09-06', '2026-09-05', '2026-09-04', '2026-09-03'])
+  assert.equal(last[0].note, 'big day')
+  assert.equal(last[0].amount, 9)
+  assert.equal(last[1].amount, null)
+  assert.equal(amountWords(9, 'glasses'), '9 glasses')
+  assert.equal(amountWords(null, 'glasses'), '')
+  assert.deepEqual(lastDidTimes({ answers }, null), [])
+
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/answers.sql'), 'utf8')
+  assert.ok(/add column if not exists amount numeric/.test(sql), 'amount column, idempotent')
+  assert.ok(/answer_log_amount\s+check \(amount is null or \(amount >= 0 and amount <= 100000\)\)/.test(sql), 'amount range check')
+  assert.ok(sql.includes("not (r ? 'm')") && sql.includes('amount = excluded.amount'), 'put_answers keeps the stored amount for an older app')
+  const push = readFileSync(path.join(root, 'supabase/push.sql'), 'utf8')
+  const wanted = push.slice(push.indexOf('function public.push_wanted'), push.indexOf('revoke all on function public.push_wanted'))
+  assert.ok(wanted.includes("prefs ->> 'gentle'") && wanted.includes("'streakRisk'"), 'push_wanted reads gentle for the streak-risk push')
+  const shim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
+  assert.ok(shim.includes("pingOn('streakRisk') && !gentleOn()"), 'the phone skips the streak-risk ping in gentle mode')
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.ok(notes.includes('trackAmount') && notes.includes('decimal-pad'), 'the note sheet asks for an amount')
+})
+
 
 test('seasonal items say when they come back', () => {
   const cocoa = { id: 'cocoa', from: '2026-12-01', until: '2027-01-01' }
@@ -4836,3 +5232,738 @@ test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', 
   for (const dir of ['native', 'src', 'widgets']) walk(path.join(root, dir))
   assert.deepEqual(bad, [], 'files with mangled characters')
 })
+
+test('gentle mode is off by default and only true when set', async () => {
+  const { readPrefs, writePrefs, gentleOn } = await import('../src/lib/prefs.js')
+  const before = readPrefs()
+  try {
+    localStorage.removeItem('did-i-prefs')
+    assert.equal(readPrefs().gentle, false)
+    writePrefs({ gentle: 'yes' })
+    assert.equal(gentleOn(), false)
+    writePrefs({ gentle: true })
+    assert.equal(gentleOn(), true)
+  } finally {
+    writePrefs(before)
+  }
+})
+
+test('gentle mode tells the widgets to hide streak numbers, and the stack is unchanged', async () => {
+  const { writePrefs } = await import('../src/lib/prefs.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  }
+  const clock = new Date('2026-09-23T20:00:00')
+  try {
+    writePrefs({ gentle: false })
+    const plain = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(plain.gentle, false)
+    writePrefs({ gentle: true })
+    const soft = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(soft.gentle, true)
+    assert.equal(soft.left, plain.left)
+    assert.equal(soft.leadLampId, plain.leadLampId)
+    assert.ok(!/streak/i.test(JSON.stringify(soft)), 'no streak text in widget props')
+  } finally {
+    writePrefs({ gentle: false })
+  }
+})
+
+test('gentle mode hides own streak counts on the phone, not what others see', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  assert.match(read('native/screens/TonightScreen.jsx'), /stack\.streak > 0 && !gentle/)
+  assert.match(read('native/components/StreakMoment.jsx'), /gentleOn\(\)/)
+  assert.match(read('native/screens/questions.jsx'), /gentle \? null/)
+  const more = read('native/screens/more.jsx')
+  assert.match(more, /if \(gentle\) \{/)
+  assert.match(more, /gentle \? null : <NumberTile half colors=\{colors\} label=\{t\('stats\.bestRun'\)\}/)
+  assert.match(read('native/shim/native.js'), /pingOn\('streakHit'\) \|\| gentleOn\(\)/)
+  assert.ok(!/gentle/.test(read('native/screens/social.jsx')), 'friends and family views stay as they are')
+})
+
+test('the rate card asks for the in-app review, with the store link as fallback', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/RateCard.jsx'), 'utf8')
+  assert.match(card, /from 'expo-store-review'/)
+  assert.match(card, /StoreReview\.isAvailableAsync\(\)/)
+  assert.match(card, /StoreReview\.hasAction\(\)/)
+  assert.match(card, /StoreReview\.requestReview\(\)/)
+  assert.match(card, /markRateAsked\(\)/)
+  assert.ok(card.indexOf('requestReview()') < card.indexOf('Linking.openURL(url)'))
+  const metro = readFileSync(path.join(root, 'metro.config.cjs'), 'utf8')
+  assert.match(metro, /\['expo-store-review', 'store-review-safe\.cjs'\]/)
+})
+
+await testAsync('every so often made tonight: progress and the done card agree', async () => {
+  const { dueTonight, dueClearTonight } = await import('../src/lib/recurrence.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const book = everyBook([['d', evDay(5), 'yes']], [daily])
+  book.lamps[0].createdOn = evDay(5)
+  const due = dueTonight(book, evAt(5))
+  assert.ok(dueClearTonight(due), 'deck calls the night clear')
+  const meter = nightProgress(due)
+  assert.equal(meter.answered, meter.total, 'progress agrees: nothing left')
+  const did = everyBook([['d', evDay(5), 'yes'], ['sheets', evDay(5), 'yes']], [daily])
+  assert.equal(nightProgress(dueTonight(did, evAt(5))).total, 2, 'counts once done')
+})
+
+await testAsync('gentle mode hides a friend streak number, done tonight still shows', async () => {
+  const { friendLine, friendStreak } = await import('../src/lib/people.js')
+  const night = '2026-10-09'
+  const plain = { share_streak: true, streak: 12, done_on: '2026-10-08' }
+  const soft = { share_streak: true, streak: 12, done_on: '2026-10-08', gentle: true }
+  assert.equal(friendStreak(plain), 12)
+  assert.equal(friendStreak(soft), 0, 'no number for a gentle friend, even if one slipped through')
+  assert.equal(friendStreak({ ...soft, streak: null }), 0, 'the server sends null')
+  assert.match(friendLine(plain, night), /12/)
+  assert.ok(!/12/.test(friendLine(soft, night)), 'not yet, no number')
+  const done = friendLine({ ...soft, done_on: night }, night)
+  assert.ok(done.includes('✓') && !/12/.test(done), 'done tonight with a check')
+  assert.ok(!/\d/.test(friendLine({ ...soft, done_on: night }, night)))
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  for (const file of ['native/screens/social.jsx', 'src/lib/Friends.jsx', 'src/lib/People.jsx']) {
+    const src = read(file)
+    assert.ok(!/person\.streak\s*>|person\?\.streak\s*>|person\.streak\b(?!_)/.test(src.replace(/share_streak/g, '')), `${file} reads friend streaks only through friendStreak`)
+    assert.ok(!/function friendLine\(/.test(src) && !/function line\(/.test(src), `${file} uses the shared friendLine`)
+  }
+})
+
+await testAsync('check on me: due only past the time, on an asked night, unanswered, once', async () => {
+  const { checkOnDue, checkOnDays, checkOnFits, cleanMinute, minuteClock, CHECK_ON_DEFAULT } = await import('../src/lib/check-on.js')
+  assert.equal(CHECK_ON_DEFAULT, 1320)
+  assert.equal(minuteClock(1320), '22:00')
+  assert.equal(cleanMinute(-30), 0)
+  assert.equal(cleanMinute(2000), 1439)
+  const link = { at_minute: 1320, days: [], sent_on: null }
+  const at = { night: '2026-10-09', minute: 1325, weekday: 5, answered: false }
+  assert.equal(checkOnDue(link, at), true)
+  assert.equal(checkOnDue(link, { ...at, minute: 1319 }), false, 'before the time')
+  assert.equal(checkOnDue(link, { ...at, answered: true }), false, 'answered, Did or nope')
+  assert.equal(checkOnDue({ ...link, sent_on: '2026-10-09' }, at), false, 'one push a night')
+  assert.equal(checkOnDue({ ...link, sent_on: '2026-10-08' }, at), true, 'a new night')
+  assert.equal(checkOnDue({ ...link, days: [1, 3] }, at), false, 'not asked on a Friday')
+  assert.equal(checkOnDue({ ...link, days: [5] }, at), true)
+  assert.deepEqual(checkOnDays({ cadence: 'weekly', weekdays: [3, 1, 1, 9] }), [1, 3])
+  assert.deepEqual(checkOnDays({ cadence: 'daily' }), [])
+  assert.equal(checkOnFits({ cadence: 'daily' }), true)
+  assert.equal(checkOnFits({ cadence: 'monthly' }), false, 'monthly with no day')
+  assert.equal(checkOnFits({ cadence: 'daily', archived: true }), false)
+})
+
+test('check-on: monthly, once, deadline and every-so-often nights', async () => {
+  const { checkOnDue, checkOnFits, checkOnKind, checkOnShape, checkOnWhen } = await import('../src/lib/check-on.js')
+  const base = { at_minute: 1320, sent_on: null, days: [] }
+  const at = (night, more = {}) => ({ night, minute: 1330, weekday: 2, answered: false, ...more })
+  // Monthly: the day, clamped to short months; 0 is the last day.
+  const monthly = { ...base, kind: 'monthly', month_day: 12 }
+  assert.equal(checkOnDue(monthly, at('2026-10-12')), true)
+  assert.equal(checkOnDue(monthly, at('2026-10-13')), false)
+  assert.equal(checkOnDue(monthly, at('2026-10-12', { answered: true })), false)
+  assert.equal(checkOnDue({ ...monthly, month_day: 31 }, at('2027-02-28')), true, '31st falls on the last day')
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-31')), true)
+  assert.equal(checkOnDue({ ...monthly, month_day: 0 }, at('2026-10-30')), false)
+  // Just once, and a deadline: only that night, only once.
+  const once = { ...base, kind: 'once', on_date: '2026-10-20' }
+  assert.equal(checkOnDue(once, at('2026-10-20')), true)
+  assert.equal(checkOnDue(once, at('2026-10-21')), false)
+  assert.equal(checkOnDue({ ...once, sent_on: '2026-10-20' }, at('2026-10-20')), false)
+  const by = { ...base, kind: 'by', on_date: '2026-10-20', starts_on: '2026-10-01' }
+  assert.equal(checkOnDue(by, at('2026-10-15')), true, 'a night inside the window')
+  assert.equal(checkOnDue(by, at('2026-10-20')), true)
+  assert.equal(checkOnDue(by, at('2026-09-30')), false, 'before the window')
+  assert.equal(checkOnDue(by, at('2026-10-21')), false, 'after the due date')
+  assert.equal(checkOnDue({ ...by, starts_on: null }, at('2026-10-15')), false, 'no start: the due night only')
+  // Every so often: never done, or every_days since the last Did.
+  const every = { ...base, kind: 'every', every_days: 7 }
+  assert.equal(checkOnDue(every, at('2026-10-09')), true, 'never done')
+  assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05' })), false)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05' })), true)
+  assert.equal(checkOnDue(every, at('2026-10-12', { lastDid: '2026-10-05', minute: 600 })), false, 'before the time')
+  // The learned gap wins over the set one, as on Tonight.
+  assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05', learned: 3 })), true)
+  // From the question to the row.
+  assert.equal(checkOnKind({ cadence: 'monthly', monthDay: 'last' }), 'monthly')
+  assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null })
+  assert.equal(checkOnShape({ cadence: 'monthly', monthDay: 'last' }).month_day, 0)
+  assert.equal(checkOnShape({ cadence: 'once', onceOn: '2026-10-20' }).on_date, '2026-10-20')
+  assert.equal(checkOnFits({ cadence: 'once' }), false, 'a once with no day')
+  const dl = checkOnShape({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20', createdOn: '2026-10-01' })
+  assert.deepEqual([dl.kind, dl.on_date, dl.starts_on], ['by', '2026-10-20', '2026-10-01'])
+  assert.equal(checkOnShape({ cadence: 'every', everyDays: 14 }).every_days, 14)
+  assert.equal(checkOnShape({ cadence: 'every' }).every_days, 7)
+  assert.equal(checkOnShape({ cadence: 'daily' }).kind, 'night')
+  assert.equal(checkOnWhen({ cadence: 'daily' }), null)
+  assert.deepEqual(checkOnWhen({ cadence: 'monthly', monthDay: 12 }), { key: 'checkOn.whenMonthly', day: 12 })
+  assert.deepEqual(checkOnWhen({ cadence: 'once', onceWhen: 'by', dueBy: '2026-10-20' }), { key: 'checkOn.whenBy', date: '2026-10-20' })
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const card = readFileSync(path.join(root, 'native/components/CheckOnCard.jsx'), 'utf8')
+  assert.match(card, /checkOnWhen\(lamp\)/)
+})
+
+test('social-gentle.sql: queue_check_ons handles every kind in one statement', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8')
+  for (const col of ['kind text not null default \'night\'', 'month_day smallint', 'on_date date', 'starts_on date', 'every_days smallint']) {
+    assert.ok(sql.includes(`add column if not exists ${col}`), col)
+  }
+  assert.match(sql, /kind in \('night', 'monthly', 'once', 'by', 'every'\)/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days, kind, month_day, on_date, starts_on, every_days\)/)
+  const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
+  const body = job.slice(0, job.indexOf('$$;'))
+  assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(body), 'no per-row loop')
+  assert.match(body, /when 'monthly' then extract\(day from k\.local\)/)
+  assert.match(body, /when 'once' then k\.local::date = k\.on_date/)
+  assert.match(body, /when 'by' then k\.local::date between coalesce\(k\.starts_on, k\.on_date\) and k\.on_date/)
+  // A Not yet on a deadline only holds tonight; a Did ends it.
+  assert.match(body, /k\.kind <> 'by' or a\.status in \('yes', 'late'\)\s*or \(a\.updated_at at time zone k\.zone\)::date = k\.local::date/)
+  // Every so often uses the gap the app learns: median of the last 6 Did nights' gaps, from 4 Dids.
+  assert.match(body, /left join lateral \(/)
+  assert.match(body, /case when count\(\*\) >= 4/)
+  assert.match(body, /percentile_cont\(0\.5\) within group \(order by n\.gap\)/)
+  assert.match(body, /limit 6/)
+  assert.match(body, /when 'every' then coalesce\(k\.local::date - g\.last_did >= coalesce\(g\.learned, k\.every_days\), true\)/)
+  // Same numbers as learnedGap: 6 nights, 4 Dids, median rounded half up.
+  const src = readFileSync(path.join(root, 'src/lib/recurrence.js'), 'utf8')
+  assert.match(src, /const LEARN_GAPS = 5/)
+  assert.match(src, /if \(count < 4\) return 0/)
+  assert.match(body, /a\.status in \('yes', 'late'\)/)
+  assert.match(body, /to_char\(k\.local, 'YYYY-MM'\)/)
+  assert.match(body, /'once:' \|\| k\.lamp_id/)
+  assert.match(body, /public\.push_wanted\(k\.buddy_id, 'friends'\)/)
+  assert.match(body, /push_token is not null/)
+  assert.match(body, /from public\.blocks b/)
+  assert.match(body, /k\.sent_on is null or k\.sent_on < k\.local::date/)
+})
+
+test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8').replace(/\r\n/g, '\n')
+  // known_people and the tonight wall null the number for gentle people.
+  assert.match(sql, /create or replace function public\.known_people\(\)[\s\S]*?case when coalesce\(p\.prefs ->> 'gentle', ''\) = 'true' then null else p\.streak end/)
+  assert.match(sql, /create or replace function public\.tonight_wall\(wanted date\)[\s\S]*?p\.prefs ->> 'gentle'[\s\S]*?then null else p\.streak end/)
+  assert.match(sql, /grant execute on function public\.known_people\(\) to authenticated/)
+  // check_ons: RLS, policies, cap, index, size checks.
+  assert.match(sql, /alter table public\.check_ons enable row level security/)
+  assert.match(sql, /for select using \(\(select auth\.uid\(\)\) in \(owner_id, buddy_id\)\)/)
+  assert.match(sql, /for insert with check \(\s*\(select auth\.uid\(\)\) = owner_id\s*and \(public\.are_friends\(buddy_id\) or \(public\.shares_family\(buddy_id\) and not public\.blocked_with\(buddy_id\)\)\)/)
+  assert.match(sql, /for update using \(\(select auth\.uid\(\)\) = owner_id\)/)
+  assert.match(sql, /for delete using \(\(select auth\.uid\(\)\) in \(owner_id, buddy_id\)\)/)
+  assert.ok(!/auth\.uid\(\) =/.test(sql.replace(/\(select auth\.uid\(\)\)/g, '')), 'no bare auth.uid() in policies')
+  assert.match(sql, /where owner_id = new\.owner_id\) >= 20 then\s*raise exception 'check-on cap'/)
+  assert.match(sql, /create index if not exists check_ons_buddy_idx on public\.check_ons \(buddy_id\)/)
+  assert.match(sql, /unique \(owner_id, lamp_id\)/)
+  assert.match(sql, /length\(btrim\(question\)\) between 1 and 200/)
+  assert.match(sql, /grant update \(buddy_id, question, at_minute, days[^)]*\) on public\.check_ons to authenticated/)
+  // The job: one statement, answer_log, push_wanted, blocks, through push_queue on pg_cron.
+  const job = sql.slice(sql.indexOf('function public.queue_check_ons'))
+  assert.ok(!/\bloop\b|\bfor \w+ in\b/i.test(job.slice(0, job.indexOf('$$;'))), 'no per-row loop')
+  assert.match(job, /from public\.answer_log a/)
+  assert.match(job, /public\.push_wanted\(k\.buddy_id, 'friends'\)/)
+  assert.match(job, /from public\.blocks b/)
+  assert.match(job, /insert into public\.push_queue/)
+  assert.match(job, /revoke all on function public\.queue_check_ons\(\) from public, anon, authenticated/)
+  assert.match(sql, /cron\.schedule\('check-ons', '\*\/5 \* \* \* \*'/)
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('friends-week.sql'), 'social-gentle redefines known_people after friends-week')
+  assert.ok(order.indexOf('social-gentle.sql') > order.indexOf('dit-board.sql'))
+  // The push opens the friend page, which opens the Did you with the words in.
+  assert.match(sql, /'\/friend\?id=' \|\| m\.owner_id::text \|\| '&face=checkon'/)
+  const social = readFileSync(path.join(root, 'native/screens/social.jsx'), 'utf8')
+  assert.match(social, /face === 'checkon'/)
+  assert.match(social, /initialQuestion=\{sheet\.question \|\| ''\}/)
+})
+
+await testAsync('did we amounts: weekly total math and week start', async () => {
+  const { readAmount, togetherLine, totalsById, weekStartIso } = await import('../src/lib/social-amounts.js')
+  assert.equal(weekStartIso('2026-10-09'), '2026-10-05', 'friday -> monday')
+  assert.equal(weekStartIso('2026-10-05'), '2026-10-05', 'monday stays')
+  assert.equal(weekStartIso('2026-10-11'), '2026-10-05', 'sunday ends the week')
+  const sums = totalsById([
+    { card_id: 'a', unit: 'glasses', total: '31', mine: '4' },
+    { card_id: 'b', unit: '', total: 2.345, mine: null },
+    { card_id: 'c', unit: 'km', total: 'x', mine: '' },
+    { unit: 'lost' },
+  ])
+  assert.deepEqual(sums.get('a'), { unit: 'glasses', total: 31, mine: 4 })
+  assert.equal(sums.get('b').total, 2.35)
+  assert.equal(sums.get('c').total, 0)
+  assert.equal(sums.get('c').mine, null)
+  assert.equal(sums.size, 3)
+  assert.equal(togetherLine(sums.get('a')), 'Together: 31 glasses this week')
+  assert.equal(togetherLine(sums.get('b')), 'Together: 2.35 this week')
+  assert.equal(togetherLine(sums.get('c')), '', 'nothing yet reads as nothing')
+  assert.equal(readAmount('3,5'), 3.5)
+  assert.equal(readAmount(''), null)
+  assert.ok(Number.isNaN(readAmount('-1')))
+  assert.ok(Number.isNaN(readAmount('100001')))
+})
+
+await testAsync('web social: shared notes and check-ons grouped per friend, web screens wired', async () => {
+  const { notesByFriend } = await import('../src/lib/social-amounts.js')
+  const { groupBy } = await import('../src/lib/check-on.js')
+  const notes = notesByFriend(
+    [
+      { user_id: 'a', note: 'one' },
+      { user_id: 'b', note: 'x' },
+      { user_id: 'a', note: '  ' },
+      { user_id: 'a', note: 'two' },
+      { user_id: 'a', note: 'three' },
+      { note: 'nobody' },
+    ],
+    2,
+  )
+  assert.deepEqual(notes.get('a').map((row) => row.note), ['one', 'two'], 'newest first, capped, blank dropped')
+  assert.equal(notes.get('b').length, 1)
+  assert.equal(notes.size, 2)
+  const asks = groupBy([{ id: 1, owner_id: 'a' }, { id: 2, owner_id: 'b' }, { id: 3, owner_id: 'a' }, { id: 4 }], 'owner_id')
+  assert.deepEqual(asks.get('a').map((row) => row.id), [1, 3])
+  assert.equal(asks.size, 2)
+  assert.equal(groupBy(null, 'x').size, 0)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('src/lib/Family.jsx'), /howOften === 'daily' \? 0 : Number\(howOften\)/, 'web family can add every so often')
+  assert.match(read('src/lib/FamilyTonight.jsx'), /sharedLastLine\(row\.last, row\.night, row\.lastName\)/)
+  assert.match(read('src/lib/SendDidYou.jsx'), /senderLastDid\(book, question/, 'web ask carries your last Did')
+  assert.match(read('src/lib/DidYou.jsx'), /senderLastDid\(book, question/)
+  assert.match(read('src/lib/Inbox.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/Sent.jsx'), /sendLastLine\(row\.repeat, row\.last_did_on/)
+  assert.match(read('src/lib/LampDetail.jsx'), /<CheckOnCard lamp=\{lamp\} \/>/)
+  assert.match(read('src/lib/DidWe.jsx'), /togetherLine\(sums\.get\(card\.id\)\)/)
+  assert.match(read('src/lib/Friends.jsx'), /sharedNotesOf\(ids\)/)
+})
+
+test('did we amounts: private question amounts never in the query', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')
+  const fn = sql.slice(sql.indexOf('function public.we_week_totals'), sql.indexOf('revoke all on function public.we_track_amount'))
+  assert.ok(fn.length > 100, 'we_week_totals found')
+  assert.doesNotMatch(fn, /answer_log/, 'totals never read your own questions')
+  assert.match(fn, /from public\.we_answers a/)
+  assert.match(fn, /m\.user_id = \(select auth\.uid\(\)\)\s+and m\.state = 'in'/, 'only cards you are on')
+  assert.match(fn, /c\.track_amount/, 'only cards that track an amount')
+  assert.doesNotMatch(fn, /returns table \([^)]*user_id/, 'no per-person rows')
+  const client = readFileSync(path.join(root, 'src/lib/social-amounts.js'), 'utf8')
+  assert.doesNotMatch(client.replace(/^\s*\/\/.*$/gm, ''), /answer_log|put_answers/, 'client never reads private amounts')
+  assert.match(client, /db\.rpc\('we_week_totals', \{ cards: ids/, 'one batched read for every card')
+})
+
+test('shared notes and we amounts: sql guards', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')
+  assert.match(sql, /alter table public\.shared_notes enable row level security/)
+  assert.match(sql, /for select using \(\(select auth\.uid\(\)\) = user_id or public\.are_friends\(user_id\)\)/)
+  assert.doesNotMatch(sql.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
+  assert.match(sql, /length\(note\) between 1 and 500/)
+  assert.match(sql, /length\(question\) <= 200/)
+  assert.match(sql, /amount_unit\) <= 24/)
+  assert.match(sql, />= 20 then\s+raise exception 'too many shared notes today'/)
+  assert.match(sql, /before insert on public\.shared_notes/)
+  assert.match(sql, /create index if not exists shared_notes_made_idx on public\.shared_notes \(user_id, made_at\)/)
+  assert.equal((sql.match(/security definer/g) || []).length, (sql.match(/set search_path = public/g) || []).length)
+  assert.match(sql, /revoke all on public\.shared_notes from anon/)
+  assert.match(sql, /where id = card and made_by = me/, 'only the maker turns amounts on')
+  assert.match(sql, /status = 'did'/, 'amounts only on a did')
+  const all = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.match(all, /'supabase\/social-amounts\.sql'/)
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.match(notes, /useState\(\(\) => Boolean\(share && noteShared/, 'share starts off unless already shared')
+  const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
+  assert.match(web, /sharedNote\.toggle/)
+})
+
+await testAsync('shared every so often: due across members, any Did resets it, copy, SQL', async () => {
+  const { sharedEveryDue, newestDid, sharedLastLine, sendLastLine } = await import('../src/lib/every-copy.js')
+  const { repeatFrom, readRepeat, keptLamp, senderLastDid } = await import('../src/lib/send-repeat.js')
+  const { peopleTonightItems } = await import('../src/lib/people-tonight.js')
+  const lamp = { id: 'w', cadence: 'every', every_days: 7, made_on: '2026-09-01', archived: false }
+  assert.ok(sharedEveryDue(lamp, null, '2026-09-01'), 'never done: due for everyone')
+  assert.ok(!sharedEveryDue(lamp, null, '2026-08-31'), 'not before it was made')
+  const answers = [
+    { lamp_id: 'w', user_id: 'sam', period_key: '2026-09-03', status: 'yes' },
+    { lamp_id: 'w', user_id: 'ana', period_key: '2026-09-08', status: 'skip' },
+  ]
+  const last = newestDid(answers)
+  assert.deepEqual(last, { on: '2026-09-03', by: 'sam' }, 'a nope never counts as the last Did')
+  assert.ok(!sharedEveryDue(lamp, last, '2026-09-09'), 'Sam did it 6 nights ago: not due for anyone')
+  assert.ok(sharedEveryDue(lamp, last, '2026-09-10'), 'due for everyone 7 nights after Sam')
+  const reset = newestDid([...answers, { lamp_id: 'w', user_id: 'ana', period_key: '2026-09-10', status: 'yes' }])
+  assert.equal(reset.by, 'ana', 'the newest Did wins, whoever said it')
+  assert.ok(!sharedEveryDue(lamp, reset, '2026-09-11'), 'one Did resets it for the whole family')
+  assert.ok(!sharedEveryDue({ ...lamp, cadence: 'daily' }, null, '2026-09-10'), 'only every so often questions')
+  assert.equal(sharedLastLine(null, '2026-09-10', 'Sam'), en['every.never'])
+  assert.equal(sharedLastLine(last, '2026-09-05', 'Sam'), 'Sam did it 2 days ago')
+  assert.equal(sharedLastLine(last, '2026-09-04', 'Sam'), 'Sam did it 1 day ago')
+  assert.equal(sharedLastLine(last, '2026-09-03', 'Sam'), 'Sam did it tonight')
+  assert.equal(sharedLastLine(last, '2026-09-05', ''), 'Last time: 2 days ago')
+  // Did you asks
+  assert.equal(repeatFrom('every', [], 14), 'every:14')
+  assert.equal(repeatFrom('every', [], 0), '')
+  assert.equal(readRepeat('every:14').everyDays, 14)
+  assert.equal(readRepeat('every:999').cadence, 'once', 'out of range falls back')
+  const kept = keptLamp({ question: 'Did I water the plants?', repeat: 'every:7' }, new Date('2026-09-10T20:00:00'))
+  assert.equal(kept.cadence, 'every')
+  assert.equal(kept.everyDays, 7)
+  assert.equal(sendLastLine('every:7', '2026-08-29', '2026-09-10'), 'Last time: 12 days ago')
+  assert.equal(sendLastLine('every:7', null, '2026-09-10'), en['every.never'])
+  assert.equal(sendLastLine('daily', '2026-08-29', '2026-09-10'), '', 'only every so often asks')
+  const book = { lamps: [{ id: 'p', question: 'Did I water the plants?', cadence: 'every', everyDays: 7 }], answers: [{ lampId: 'p', periodKey: '2026-08-29', status: 'yes' }] }
+  assert.equal(senderLastDid(book, 'Did you water the plants', '2026-09-10'), '2026-08-29', 'matches your own question')
+  assert.equal(senderLastDid(book, 'Did you feed the cat?', '2026-09-10'), '')
+  // Not yet only affects you: your nope takes the card off your tonight only.
+  const famRow = (answer) => ({ family: { id: 'f' }, lamp: { id: 'w', question: 'Did we water the plants?' }, night: '2026-09-10', answer })
+  assert.equal(peopleTonightItems({ familyRows: [famRow(null)] }).length, 1)
+  assert.equal(peopleTonightItems({ familyRows: [famRow({ status: 'skip' })] }).length, 0)
+  // SQL
+  const sql = readFileSync(new URL('../supabase/shared-every.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  for (const bit of [
+    "cadence in ('daily', 'weekly', 'once', 'every')",
+    'every_days between 1 and 365',
+    'security definer\nset search_path = public',
+    'public.in_family(l.family_id)',
+    'lamps[1:200]',
+    'revoke all on function public.family_every_last(uuid[]) from public, anon;',
+    "status in ('yes', 'late')",
+    'create index if not exists family_answers_last_did_idx',
+    "'^every:[1-9][0-9]{0,2}$'",
+  ]) assert.ok(sql.includes(bit), bit)
+  assert.doesNotMatch(sql, /create table/i, 'no new table, so no new policies to keep')
+  assert.doesNotMatch(sql, /[^(]auth\.uid\(\)/, 'no bare auth.uid()')
+  const people = readFileSync(new URL('../supabase/people.sql', import.meta.url), 'utf8')
+  assert.ok(people.replace(/\r\n/g, '\n').includes('on public.family_answers\n  for select using (public.in_family(family_id));'), 'members already see family answers')
+  const order = readFileSync(new URL('../scripts/apply-all-sql.mjs', import.meta.url), 'utf8')
+  assert.ok(order.indexOf('shared-every.sql') > order.indexOf('did-you-repeat.sql'), 'after the repeat constraint it replaces')
+  const lib = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
+  assert.ok(lib.includes("rpc('family_every_last'"), 'one call for every question, not one per row')
+})
+
+await testAsync('shared notes sync across devices, and Did we group notes', async () => {
+  const { sharedKeysFrom, weNotesView } = await import('../src/lib/social-amounts.js')
+  assert.deepEqual(
+    sharedKeysFrom([{ lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'a', period_key: '2026-10-09' }, { lamp_id: 'b' }, null]),
+    ['a|2026-10-09'],
+    'server rows become cache keys, no repeats or broken rows',
+  )
+  assert.deepEqual(sharedKeysFrom(null), [])
+  const people = [{ id: 'me', name: 'Me' }, { id: 'p', name: 'Pat' }]
+  const view = weNotesView(
+    [
+      { user_id: 'me', night: '2026-10-09', note: 'ran', shared: false },
+      { user_id: 'p', night: '2026-10-08', note: 'old', shared: true },
+      { user_id: 'p', night: '2026-10-09', note: 'new', shared: true },
+      { user_id: 'p', night: '2026-10-07', note: 'kept', shared: false },
+      { user_id: 'gone', night: '2026-10-09', note: 'left', shared: true },
+      { user_id: 'p', night: '2026-10-06', note: '  ', shared: true },
+    ],
+    'me',
+    people,
+  )
+  assert.deepEqual(view.mine.get('2026-10-09'), { note: 'ran', shared: false })
+  assert.deepEqual(view.shared.map((r) => r.note), ['new', 'old'], 'only shared, only people on the card, newest first')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const client = readFileSync(path.join(root, 'src/lib/social-amounts.js'), 'utf8')
+  assert.match(client, /\.from\('shared_notes'\)\s*\.select\('lamp_id, period_key'\)\s*\.eq\('user_id', user\.id\)/, 'one read of all your shared notes')
+  assert.match(client, /SYNC_MS/, 'cached, not per row')
+  const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
+  assert.match(notes, /noteSharedNow\(share\.lampId, share\.periodKey\)/, 'sheet asks the server on open')
+  const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
+  assert.match(web, /noteSharedNow\(target\.lampId, target\.periodKey\)/)
+  const we = readFileSync(path.join(root, 'native/components/WeNotes.jsx'), 'utf8')
+  assert.match(we, /useState\(Boolean\(initial\?\.shared\)\)/, 'share with the group starts off')
+  assert.match(we, /cheer\.cheer\(/, 'shared notes use the Did we cheer')
+  const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8').replace(/\r\n/g, '\n')
+  const part = sql.slice(sql.indexOf('create table if not exists public.we_notes'))
+  assert.match(part, /alter table public\.we_notes enable row level security/)
+  assert.match(part, /shared\s+and public\.we_note_in\(card_id, \(select auth\.uid\(\)\)\)\s+and public\.we_note_in\(card_id, user_id\)/, 'readers and writers must still be on the card')
+  assert.match(part, /m\.state = 'in' and not c\.archived/, 'leaving or closing ends access')
+  assert.match(part, /public\.we_note_did\(card_id, user_id, night\)/, 'only on a did night')
+  assert.match(part, /create index if not exists we_notes_card_night_idx on public\.we_notes \(card_id, night\)/)
+  assert.match(part, /create index if not exists we_notes_made_idx on public\.we_notes \(user_id, made_at\)/)
+  assert.match(part, /length\(note\) between 1 and 500/)
+  assert.match(part, />= 20 then\s+raise exception 'too many shared notes today'/)
+  assert.match(part, /before insert on public\.we_notes/)
+  assert.match(part, /revoke all on public\.we_notes from anon/)
+  assert.doesNotMatch(part.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
+})
+
+test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks', async () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n')
+  // Past Did nights that can take a note: inside 14 nights, before tonight, Did only, newest first, no repeats.
+  const { weNoteNights } = await import('../src/lib/social-amounts.js')
+  assert.deepEqual(
+    weNoteNights(
+      [
+        { night: '2026-10-09', status: 'did' },
+        { night: '2026-10-07', status: 'did' },
+        { night: '2026-10-08', status: 'nope' },
+        { night: '2026-09-20', status: 'did' },
+        { night: '2026-09-25', status: 'did' },
+        { night: '2026-10-07', status: 'did' },
+        { night: 'bad', status: 'did' },
+      ],
+      '2026-10-09',
+    ),
+    ['2026-10-07', '2026-09-25'],
+  )
+  assert.deepEqual(weNoteNights(null, '2026-10-09'), [])
+  const weNotesUi = read('native/components/WeNotes.jsx')
+  assert.match(weNotesUi, /putWeNote\(\{ cardId: card\.id, night: on,/, 'a past night saves on that night')
+  assert.match(weNotesUi, /didNights\.map/)
+
+  // A cheer for a note names the note, in the inbox and the banner.
+  const { cheerTitle, didYouNewsLines } = await import('../src/lib/people.js')
+  const { t } = await import('../src/lib/i18n.js')
+  assert.equal(cheerTitle({ kind: 'cheer', question: 'Did I take my meds?' }), t('inbox.cheerNote', { q: 'Did I take my meds?' }))
+  assert.ok(cheerTitle({ kind: 'cheer', question: 'Did I take my meds?' }).includes('Did I take my meds?'))
+  assert.equal(cheerTitle({ kind: 'cheer', question: '' }), t('inbox.aCheer'))
+  assert.ok(didYouNewsLines({ kind: 'cheer', n: 1, name: 'A', question: 'Water' }).title.includes('Water'))
+  assert.equal(didYouNewsLines({ kind: 'cheer', n: 2, name: 'A', question: 'Water' }).title, t('didyou.newCheer', { name: 'A' }))
+  assert.match(read('src/lib/Inbox.jsx'), /cheerTitle\(row\)/)
+  assert.match(read('native/screens/social.jsx'), /cheer\(row\.question \|\| ''\)/, 'phone note cheer passes the note')
+  assert.match(read('src/lib/Friends.jsx'), /onCheer\(row\.question \|\| ''\)/, 'web note cheer passes the note')
+  const cheers = read('supabase/friend-cheers.sql')
+  assert.match(cheers, /drop function if exists public\.send_friend_cheer\(uuid, text, text\);/)
+  assert.match(cheers, /send_friend_cheer\(other uuid, note text, want text, about text default ''\)/)
+  assert.match(cheers, /select 1 from public\.shared_notes s where s\.user_id = other and s\.question = topic/, 'only a note they really shared')
+  assert.match(cheers, /values \(who, other, 'cheer', topic, line, cid\)/)
+  assert.match(cheers, /grant execute on function public\.send_friend_cheer\(uuid, text, text, text\) to authenticated/)
+  const push = read('supabase/push.sql')
+  const wordsAt = push.indexOf("words jsonb := '") + "words jsonb := '".length
+  const words = JSON.parse(push.slice(wordsAt, push.indexOf("}'", wordsAt) + 1).replace(/''/g, "'"))
+  for (const lang of Object.keys(words)) assert.ok(words[lang].send_cheer_note.includes('{q}'), `push words parse, ${lang}`)
+  for (const lang of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    assert.match(push, new RegExp(`"${lang}": \\{[^\\n]*"send_cheer_note": "(?:[^"\\\\\\n]|\\\\.)*\\{q\\}`), `push text ${lang}`)
+  }
+  assert.match(push, /when new\.kind = 'cheer' and btrim\(coalesce\(new\.question, ''\)\) <> ''\s+then left\(public\.push_text\(new\.to_id, 'send_cheer_note'/)
+
+  // Web Did we card: maker turns amounts on or off; after a Did you add yours.
+  const we = read('src/lib/DidWe.jsx')
+  assert.match(we, /function WeAmount\(/)
+  assert.match(we, /weTrackAmount\(card\.id, true, text\.trim\(\)\)/)
+  assert.match(we, /weTrackAmount\(card\.id, false\)/)
+  assert.match(we, /wePutAmount\(card\.id, amount\)/)
+  assert.match(we, /if \(!card\.mine && !\(sum && didTonight\)\) return null/, 'only the maker turns it on')
+  assert.match(we, /<WeAmount card=\{card\}/)
+
+  // Web Family page: asks from family members who are not friends (friends' are on Friends).
+  const fam = read('src/lib/Family.jsx')
+  assert.match(fam, /checkOnsForMe\(\)/)
+  assert.match(fam, /for \(const id of friendIds\) askRows\.delete\(id\)/)
+  assert.match(fam, /stopCheckOn\(ask\.id\)/)
+  assert.match(fam, /initialQuestion=\{sheet\.question \|\| ''\}/)
+
+  // An edit that changes words or schedule moves the check-on with it; anything else sends nothing.
+  const { checkOnRule, followCheckOn } = await import('../src/lib/check-on.js')
+  const daily = { id: 'q1', question: 'Water', cadence: 'daily' }
+  assert.equal(checkOnRule(daily), checkOnRule({ ...daily, note: 'x', short: 'W' }), 'other fields do not count')
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, cadence: 'weekly', weekdays: [1] }))
+  assert.notEqual(checkOnRule(daily), checkOnRule({ ...daily, question: 'Water plants' }))
+  assert.equal(checkOnRule({ ...daily, cadence: 'nope' }), '', 'no rule for a question the server cannot check')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, note: 'x' }), { miss: '' }, 'unchanged: no write')
+  assert.deepEqual(await followCheckOn(daily, { ...daily, id: 'q2', cadence: 'weekly' }), { miss: '' }, 'another question: no write')
+  assert.match(read('native/screens/questions.jsx'), /if \(existing\) followCheckOn\(existing, next\)/)
+  assert.match(read('src/lib/HangPage.jsx'), /if \(existing\) followCheckOn\(existing, lamp\)/)
+
+  // Web Friends: the result line sticks in view instead of sitting under a long list.
+  assert.match(read('src/lib/Friends.jsx'), /<div className="di-people-said">/)
+  assert.match(read('src/lib/did-i.css'), /\.di-people-said \{\s*position: sticky;/)
+})
+
+// Owner picks A: family chip, gentle blanks, Track an amount on the form, web friend notes.
+const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const readSrc = (file) => readFileSync(path.join(srcRoot, file), 'utf8').split(String.fromCharCode(13)).join('')
+
+test('family and asks show as a chip beside your count and never add to it', () => {
+  const items = peopleTonightItems({
+    familyRows: [
+      { family: { id: 'f' }, lamp: { id: 'a', question: 'Feed the cat?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'b', question: 'Trash?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'c', question: 'Done one' }, night: '2026-10-09', answer: { status: 'yes' } },
+    ],
+    asks: [{ id: 's1', kind: 'todo', state: 'sent', question: 'Call mom?' }],
+    night: '2026-10-09',
+  })
+  assert.equal(peopleWaitingLine(items), `${t('tonight.meterFamily', { n: 2 })} · ${t('tonight.meterAsks', { n: 1 })}`)
+  assert.equal(peopleWaitingLine(items.filter((item) => item.kind === 'family')), t('tonight.meterFamily', { n: 2 }))
+  assert.equal(peopleWaitingLine([]), '', 'gone once all are answered')
+  const own = [{ lamp: lamp('mine'), dateIso: '2026-10-09', answer: null }]
+  assert.equal(nightProgress(own).total, 1, 'own total is only your own rows')
+  assert.match(readSrc('native/screens/TonightScreen.jsx'), /waiting=\{peopleWaitingLine\(peopleItems\)\}/)
+  const web = readSrc('src/lib/Tonight.jsx')
+  assert.match(web, /waiting=\{peopleWaitingLine\(peopleTonightItems\(\{ familyRows: family\.rows \}\)\)\}/)
+  assert.match(web, /getElementById\('di-fam-strip'\)\?\.scrollIntoView\(\{ behavior: reduce \? 'auto' : 'smooth'/)
+  assert.match(readSrc('src/lib/FamilyTonight.jsx'), /id="di-fam-strip"/)
+  assert.doesNotMatch(readSrc('src/lib/FamilyTonight.jsx'), /useFamilyTonight[(]/, 'one family read, shared with the chip')
+})
+
+test('gentle mode: a missed night is blank on Home, week, month, list and why sheet', () => {
+  const why = { state: 'missed', iso: '2026-10-01', noped: [], unanswered: [{ lamp: lamp('Water') }], weOpen: [] }
+  writePrefs({ gentle: false })
+  assert.equal(nightWhyLines(why)[0], t('why.missed'))
+  writePrefs({ gentle: true })
+  const lines = nightWhyLines(why)
+  assert.ok(!lines.includes(t('why.missed')), 'no streak broke line')
+  assert.ok(lines.some((line) => line.includes('Water')), 'still names what was left')
+  writePrefs({ gentle: false })
+  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('native/components/WeekStrip.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
+  const month = readSrc('native/components/LampMonth.jsx')
+  assert.match(month, /iso === dateIso \? 'open' : gentle \? '' : 'missed'/)
+  assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
+  const list = readSrc('native/screens/questions.jsx')
+  assert.match(list, /earlierStates\(earlier, gentle\)/)
+  assert.match(list, /const missed = gentle \? '' : 'missed'/)
+  assert.match(readSrc('native/components/CalendarGrid.jsx'), /t\(gentleOn\(\) \? 'jewelKey\.open' : 'cal\.notAnswered'\)/)
+  assert.match(readSrc('src/lib/Calendar.jsx'), /prefs\.gentle === true \? 'cal\.hintGentle' : 'cal\.hint'/)
+  assert.match(readSrc('native/screens/more.jsx'), /gentle \? 'cal\.hintGentle' : 'cal\.hint'/)
+})
+
+test('new Did we form: Track an amount with a unit, saved right after the card is made', () => {
+  const phone = readSrc('native/screens/we.jsx')
+  assert.match(phone, /if \(track\) \{\s+const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)\s+if \(tracked\.miss\) confirmMiss\(t\('weAmount\.trackLater'\)\)/)
+  assert.ok(phone.indexOf('weTrackAmount(out.id') > phone.indexOf('await weMake('), 'after the card exists')
+  const web = readSrc('src/lib/DidWe.jsx')
+  assert.match(web, /const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)/)
+  assert.match(web, /setMadeId\(out\.id\)/, 'a failed amount never makes the card twice')
+  assert.match(web, /<SetSwitch label=\{t\('weAmount\.track'\)\}/)
+  for (const src of [phone, web]) assert.match(src, /maxLength=\{24\}/, 'same unit limit as the server')
+  assert.match(readSrc('supabase/social-amounts.sql'), /left\(btrim\(regexp_replace\(coalesce\(want_unit, ''\), '\\s\+', ' ', 'g'\)\), 24\)/)
+})
+
+test('web Friends: your private friend note, view, edit, remove, one read for the list', () => {
+  const people = readSrc('src/lib/people.js')
+  assert.match(people, /export async function friendNotesAll\(\)/)
+  assert.match(people, /from\('friend_notes'\)\.select\('friend_id, note'\)\.eq\('owner_id', user\.id\)/)
+  const web = readSrc('src/lib/Friends.jsx')
+  assert.match(web, /friendNotesAll\(\)\.catch\(\(\) => null\)/, 'loaded once with the list, not per friend')
+  assert.match(web, /<FriendNoteBox/)
+  assert.match(web, /maxLength=\{FRIEND_NOTE_MAX\}/)
+  assert.match(web, /onClick=\{\(\) => save\(''\)\}/, 'remove clears it')
+  assert.match(web, /t\('friendNote\.private', \{ name \}\)/)
+  assert.doesNotMatch(web, /readFriendNote\(/, 'no read per friend')
+})
+
+test('an ended Did you link is refused, says so, and can be reported', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/did-you-links.sql')
+  // Ended: no lookup, no add count, and the preview and page can tell.
+  assert.match(sql, /look_up_did_you_link[\s\S]*?and not l\.ended/)
+  assert.match(sql, /claim_did_you_link[\s\S]*?not l\.ended and l\.made_by is distinct from me/)
+  assert.match(sql, /grant execute on function public\.did_you_link_stopped\(text\) to anon, authenticated/)
+  assert.match(t('didYouLink.stopped'), /^This link has ended/)
+  const api = read('api/link-preview.js')
+  assert.match(api, /did_you_link_stopped[\s\S]*endedPreviewText\(lang\)/)
+  // Report: signed in only, capped by cap_reports, once per person per link, no takedown.
+  const report = /create or replace function public\.report_did_you_link[\s\S]*?\$\$;/.exec(sql)?.[0] || ''
+  assert.match(report, /if me is null then raise exception 'sign in first'/)
+  assert.match(report, /insert into public\.reports/)
+  assert.match(report, /r\.from_id = me and r\.reason like tag/)
+  assert.doesNotMatch(report, /ended = true|delete from public\.did_you_links/, 'a report does not take the link down')
+  assert.match(sql, /revoke all on function public\.report_did_you_link\(text, text\) from public, anon/)
+  assert.match(read('supabase/did-we-guard.sql'), /cap_reports[\s\S]*>= 20/)
+  assert.match(read('src/site/DidYouLanding.jsx'), /reportDidYouLink\(code\)/)
+  assert.match(read('native/components/DidYouLinkHost.jsx'), /onFoot:[\s\S]*reportDidYouLink\(code\)/)
+  assert.match(read('src/lib/did-you-links.js'), /report_did_you_link/)
+})
+
+test('link previews pick the visitor language, question as written', async () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const { PREVIEW_LANGS, endedPreviewText, linkPreviewText, previewLang } = await import('../src/lib/link-preview.js')
+  assert.deepEqual([...PREVIEW_LANGS].sort(), readdirSync(path.join(checkRoot, 'src/locales')).map((f) => f.replace('.js', '')).sort())
+  assert.equal(previewLang(''), 'en')
+  assert.equal(previewLang('de-DE,de;q=0.9,en;q=0.8'), 'de')
+  assert.equal(previewLang('nl-NL,nl;q=0.9,fr;q=0.5'), 'fr')
+  assert.equal(previewLang('en;q=0.4, ja;q=0.9'), 'ja')
+  assert.equal(previewLang('sv, nl'), 'en')
+  assert.equal(previewLang('ko;q=0, es'), 'es')
+  const de = linkPreviewText({ question: 'call mom', name: 'Sam' }, false, 'de')
+  assert.equal(de.title, 'Sam hat dir ein Did you geschickt')
+  assert.equal(de.description, 'Did you call mom', 'the question stays as written')
+  assert.equal(linkPreviewText({ question: 'call mom' }, false, 'xx').title, 'A Did you from Did I')
+  assert.equal(endedPreviewText('es').title, 'Este enlace terminó')
+  const api = read('api/link-preview.js')
+  assert.match(api, /previewLang\(req\.headers\?\.\['accept-language'\]\)/)
+  assert.match(api, /'Vary', 'Accept-Language'/)
+})
+
+test('gaps-2: Did we links can be reported, the same as Did you links', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/share-links.sql')
+  const report = /create or replace function public\.report_we_link[\s\S]*?\$\$;/.exec(sql)?.[0] || ''
+  assert.match(report, /if me is null then raise exception 'sign in first'/)
+  assert.match(report, /r\.from_id = me and r\.reason like tag/, 'once per person per link')
+  assert.match(report, /perform public\.block_person\(who, ''\)/)
+  assert.doesNotMatch(report, /ended = true|delete from public\.we_links/, 'a report does not take the link down')
+  assert.match(sql, /revoke all on function public\.report_we_link\(text, text\) from public, anon/)
+  const lib = read('src/lib/did-you-links.js')
+  assert.match(lib, /clean\.length === 12 \? 'report_we_link' : 'report_did_you_link'/)
+  const host = read('native/components/DidYouLinkHost.jsx')
+  assert.match(host, /if \(we\) \{[\s\S]*?\.\.\.\(found\.name \? reportFoot\(name\) : \{\}\)/, 'the Did we join sheet has Report')
+  const page = read('src/site/DidYouLanding.jsx')
+  assert.match(page, /we && !found\.name \? null : \(\s*<ReportLink/)
+  assert.match(page, /found\.avatarUrl \? <img className="di-link-avatar"/, 'the link page shows the maker photo')
+})
+
+test('gaps-2: web calendar and week strip show a freeze ring', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  for (const file of ['src/lib/Calendar.jsx', 'src/lib/WeekStrip.jsx']) {
+    assert.match(read(file), /night\.freeze \? 'is-freeze' : ''/, file)
+  }
+  const css = read('src/lib/did-i.css')
+  assert.match(css, /\.di-cal-day\.is-freeze \.di-cal-pip,\s*\.di-weekbar-days li\.is-freeze \.di-weekbar-pip \{[^}]*var\(--di-freeze\)/)
+  assert.ok(existsSync(path.join(checkRoot, 'supabase/tests/check-ons.test.sql')), 'check-ons has a SQL test')
+})
+
+test('launch-safety: test buys credit only listed ids after the launch date', () => {
+  const review = 'review-id'
+  const env = { IAP_TEST_USERS: ` ${review}, tester-2 `, IAP_LAUNCH_AT: '2026-11-01T00:00:00Z' }
+  const before = Date.parse('2026-10-20T00:00:00Z')
+  const after = Date.parse('2026-11-02T00:00:00Z')
+  assert.equal(testBuyCredits('stranger', env, before), true, 'anyone before launch')
+  assert.equal(testBuyCredits('stranger', env, after), false, 'stranger after launch')
+  assert.equal(testBuyCredits(review, env, after), true, 'App Review account after launch')
+  assert.equal(testBuyCredits('tester-2', env, after), true)
+  assert.equal(testBuyCredits('stranger', { IAP_TEST_USERS: review }, before), false, 'no date: list only, as before')
+  assert.equal(testBuyCredits(review, { IAP_TEST_USERS: review }, before), true)
+  assert.equal(testBuyCredits('stranger', { IAP_LAUNCH_AT: 'soon' }, before), false, 'bad date: list only')
+  const iap = readFileSync(path.join(checkRoot, 'supabase/functions/gem-iap/index.ts'), 'utf8')
+  assert.match(iap, /import \{ testBuyCredits \} from '\.\/gate\.js'/)
+  assert.match(iap, /IAP_LAUNCH_AT: Deno\.env\.get\('IAP_LAUNCH_AT'\)/)
+  assert.match(iap, /if \(verified\.test && !testerAllowed\(userId\)\) return json\(\{ miss: 'test' \}, 403\)/)
+  const store = readFileSync(path.join(checkRoot, 'native/iap/gem-store.js'), 'utf8')
+  assert.match(store, /out\?\.miss === 'test'\) testBuyToast\(\)/)
+  assert.match(store, /function testBuyToast\(\) \{\s*showToast\(\{[^}]*t\('gems\.testMiss'\)/)
+  assert.equal(en['gems.testMiss'], "Test purchases don't add gems.")
+})
+
+test('launch-safety: reports admin is server checked and off every menu', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sql = read('supabase/admin.sql')
+  assert.match(sql, /alter table public\.admins enable row level security/)
+  assert.match(sql, /alter table public\.report_actions enable row level security/)
+  assert.match(sql, /create or replace function public\.is_admin\(\)[\s\S]*?security definer\s+set search_path = public/)
+  assert.match(sql, /for select to authenticated using \(\(select public\.is_admin\(\)\)\)/)
+  for (const fn of ['admin_reports', 'admin_act']) {
+    const body = sql.slice(sql.indexOf(`function public.${fn}(`))
+    assert.match(body.slice(0, 1200), /if not public\.is_admin\(\) then raise exception 'not allowed'/, fn)
+  }
+  assert.match(sql, /insert into public\.report_actions/)
+  assert.doesNotMatch(sql, /^insert into public\.admins/m, 'no admin ids shipped')
+  assert.match(read('scripts/apply-all-sql.mjs'), /'supabase\/admin\.sql'/)
+  assert.ok(existsSync(path.join(checkRoot, 'supabase/tests/admin.test.sql')))
+  assert.match(read('src/site/hash.js'), /'\/admin\/reports'/)
+  for (const rel of ['src/lib/SettingsCog.jsx', 'src/lib/AppNav.jsx', 'native/AppShell.jsx']) {
+    assert.doesNotMatch(read(rel), /admin\/reports/, `${rel} does not link the admin page`)
+  }
+})
+
+// Keep this last: every test above counts, and any failure exits non-zero.
+console.log(`\n${ran - failed} of ${ran} passed`)
+if (failed) process.exit(1)

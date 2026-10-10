@@ -120,7 +120,7 @@ export function Profile({
     <BoardShell
       book={book}
       now={clock}
-      title={book.title}
+      title={t('settings.kicker')}
       date={formatBoardDate(boardDate(clock, book.dayFoldHour))}
     >
       <section className={sheet ? 'di-page di-fuse di-set is-sheet' : 'di-page di-fuse di-set'}>
@@ -179,7 +179,7 @@ export function Profile({
               />
               <SetRow
                 label={t('settings.title')}
-                sub={t('settings.phoneSub')}
+                sub={t('settings.phoneSubOut')}
                 chevron
                 onClick={() => goHash('/settings/phone')}
               />
@@ -203,6 +203,12 @@ export function Profile({
                 label={t('settings.lessMotion')}
                 on={prefs.lessMotion}
                 onClick={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+              />
+              <SetSwitch
+                label={t('settings.gentle')}
+                sub={t('settings.gentleSub')}
+                on={prefs.gentle}
+                onClick={() => writePrefs({ gentle: !prefs.gentle })}
               />
             </SetCard>
 
@@ -258,7 +264,7 @@ export function Profile({
             <SetCap>{t('settings.history')}</SetCap>
             <SetCard>
               <SetRow label={t('marks.kicker')} chevron onClick={() => goHash('/marks')} />
-              <SetRow label={t('settings.history')} sub={t('settings.calendarSub')} chevron onClick={() => goHash('/calendar')} />
+              <SetRow label={t('home.calendar')} sub={t('settings.calendarSub')} chevron onClick={() => goHash('/calendar')} />
               <SetRow label={t('feed.title')} sub={t('settings.feedSub')} chevron onClick={() => goHash('/feed')} />
               <SetRow label={t('stats.title')} sub={t('settings.statsSub')} chevron onClick={() => goHash('/stats')} />
             </SetCard>

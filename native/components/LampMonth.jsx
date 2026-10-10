@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
-import { readPrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
+import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
+import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
@@ -20,7 +20,8 @@ function monthOf(iso, back) {
 
 // One month of nights for this question, laid out Sunday first. Each cell is
 // 'did', 'late', 'nope', 'missed', 'open' (tonight, not answered) or '' (not asked).
-export function lampMonthCells(book, lamp, dateIso, y, m) {
+// gentle: a missed night is blank, the same as a night it was not asked.
+export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
   const shown = { ...lamp, archived: false }
   const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.createdOn || '')) ? lamp.createdOn : ''
   const days = new Date(y, m + 1, 0, 12).getDate()
@@ -29,10 +30,14 @@ export function lampMonthCells(book, lamp, dateIso, y, m) {
   for (let d = 1; d <= days; d += 1) {
     const iso = `${y}-${pad(m + 1)}-${pad(d)}`
     let state = ''
-    if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
+    // Every so often: only the nights it was done show; nothing reads missed.
+    if (isEvery(lamp)) {
+      const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
+      state = status === 'yes' ? 'did' : status === 'late' ? 'late' : ''
+    } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
       const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status
       state =
-        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : iso === dateIso ? 'open' : 'missed'
+        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : iso === dateIso ? 'open' : gentle ? '' : 'missed'
     }
     cells.push({ iso, day: d, state })
   }
@@ -55,10 +60,11 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
   const first = monthOf(made, 0)
   const canBack = y > first.y || (y === first.y && m > first.m)
   const monthKey = `${y}-${m}`
+  const gentle = usePrefs().gentle === true
   const cells = useMemo(
-    () => (lamp && dateIso ? lampMonthCells(book, lamp, dateIso, y, m) : []),
+    () => (lamp && dateIso ? lampMonthCells(book, lamp, dateIso, y, m, gentle) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [book, lamp, dateIso, monthKey],
+    [book, lamp, dateIso, monthKey, gentle],
   )
   if (!lamp || !dateIso || lamp.cadence === 'once') return null
   const locale = readPrefs().locale || undefined
@@ -161,7 +167,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           { id: 'did', color: colors.on, label: t('jewelKey.did') },
           { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
           { id: 'nope', color: colors.skip || colors.inkDim, label: t('jewelKey.nope') },
-          { id: 'missed', color: colors.miss, label: t('later.missed') },
+          ...(gentle ? [] : [{ id: 'missed', color: colors.miss, label: t('later.missed') }]),
         ].map((item) => (
           <View key={item.id} style={styles.keyItem}>
             <View style={[styles.keyDot, { backgroundColor: item.color }]} />

@@ -8,6 +8,8 @@ import { t, tMiss } from './i18n.js'
 import {
   blockPerson,
   doneTonight,
+  friendLine,
+  friendStreak,
   dropFriend,
   friendAskNote,
   friendAskTitle,
@@ -22,6 +24,9 @@ import {
   buyCheers,
   cheerFriend,
   readFriendCheers,
+  FRIEND_NOTE_MAX,
+  friendNotesAll,
+  saveFriendNote,
 } from './people.js'
 import {
   FRIEND_CHEER_CAP,
@@ -38,13 +43,8 @@ import { SendSheet } from './SendDidYou.jsx'
 import { SetSwitch } from './set-bits.jsx'
 import { useReduceMotion } from './useReduceMotion.js'
 import { useOnline } from './useOnline.js'
-
-function line(person) {
-  if (!person?.share_streak) return t('people.quiet')
-  if (person.done_on === isoDate(new Date())) return t('people.doneTonight')
-  if (person.streak > 0) return t('people.streakN', { n: person.streak })
-  return t('people.noStreak')
-}
+import { checkOnsForMe, minuteClock, stopCheckOn } from './check-on.js'
+import { sharedNotesOf } from './social-amounts.js'
 
 export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const clock = now || new Date()
@@ -61,6 +61,11 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
   const [autoAdds, setAutoAdds] = useState(() => new Set())
   const [sheet, setSheet] = useState(null)
   const [said, setSaid] = useState('')
+  // Notes friends chose to share lately, and what they asked you to check on.
+  const [notes, setNotes] = useState(() => new Map())
+  const [checkOns, setCheckOns] = useState(() => new Map())
+  // Your own private note about each friend (friend_notes). Only you see it.
+  const [myNotes, setMyNotes] = useState(() => new Map())
   const still = useReduceMotion()
   const pickRef = useRef(null)
   const online = useOnline()
@@ -80,6 +85,16 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       listAutoAdds(),
     ])
     setLinks(friendRows)
+    const ids = friendRows.friends.map((row) => row.person.user_id)
+    const [noteRows, askRows, mine] = await Promise.all([
+      sharedNotesOf(ids).catch(() => new Map()),
+      checkOnsForMe().catch(() => null),
+      friendNotesAll().catch(() => null),
+    ])
+    setNotes(noteRows)
+    if (mine) setMyNotes(mine)
+    if (askRows) setCheckOns(askRows)
+    else setMiss('people.reach')
     setBlocks(blockRows)
     setAutoAdds(autoRows)
     if (typeof serverCheers === 'number') setStock(serverCheers)
@@ -162,8 +177,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
     setMiss('')
   }
 
-  async function cheer(person) {
-    const sent = await cheerFriend(book, person.user_id, purse.cheerOn)
+  async function cheer(person, about = '') {
+    const sent = await cheerFriend(book, person.user_id, purse.cheerOn, about)
     const known = friendCheerMissKey(sent.miss)
     if (known) return setMiss(t(known.key, known.vars))
     if (sent.miss) return setMiss(tMiss(sent.miss))
@@ -176,6 +191,18 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
 
   function gift(person) {
     goHash('/gift', { id: person.user_id })
+  }
+
+  async function stopAsk(row) {
+    const { miss: why } = await stopCheckOn(row.id)
+    if (why) return setMiss(why)
+    setCheckOns((live) => {
+      const next = new Map(live)
+      next.set(row.owner_id, (next.get(row.owner_id) || []).filter((item) => item.id !== row.id))
+      return next
+    })
+    setMiss('')
+    return setSaid(t('checkOn.stopped'))
   }
 
   async function answerAsk(id, yes) {
@@ -211,6 +238,18 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </button>
       </div>
 
+      {/* Sticks to the top while you scroll, so a miss on a long list stays in view. */}
+      {said || miss ? (
+        <div className="di-people-said">
+          {said ? <p className="di-set-note" role="status">{said}</p> : null}
+          {miss ? (
+            <p className="di-miss" role="alert">
+              {tMiss(miss)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {links.asked.length ? (
         <>
           <SectionHead label={t('people.askBanner', { n: links.asked.length })} />
@@ -242,16 +281,42 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         links.friends.map((row) => {
           const done = doneTonight(row.person, isoDate(clock))
           const auto = autoAdds.has(row.person.user_id)
-          const streak = row.person?.streak > 0 ? t('people.streakN', { n: row.person.streak }) : ''
+          const streak = friendStreak(row.person) ? t('people.streakN', { n: friendStreak(row.person) }) : ''
           return (
             <PersonCard
               key={row.id}
               person={row.person}
               done={done}
               name={personName(row.person) || t('people.someone')}
-              line={[done ? streak : line(row.person), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
+              line={[done ? streak : friendLine(row.person, isoDate(clock)), auto ? t('people.autoOnChip') : ''].filter(Boolean).join(' · ')}
               pill={done ? t('people.doneTonightShort') : ''}
               pillOn={done}
+              extra={
+                <>
+                  <FriendExtras
+                    name={personName(row.person) || t('people.someone')}
+                    notes={notes.get(row.person.user_id) || []}
+                    asks={checkOns.get(row.person.user_id) || []}
+                    cheerOff={cheersLeft < 1}
+                    onCheer={(about) => cheer(row.person, about)}
+                    onAsk={(question) => setSheet({ person: row.person, question })}
+                    onStop={stopAsk}
+                  />
+                  <FriendNoteBox
+                    friendId={row.person.user_id}
+                    name={personName(row.person) || t('people.someone')}
+                    saved={myNotes.get(row.person.user_id) || ''}
+                    onSaved={(note) =>
+                      setMyNotes((was) => {
+                        const next = new Map(was)
+                        if (note) next.set(row.person.user_id, note)
+                        else next.delete(row.person.user_id)
+                        return next
+                      })
+                    }
+                  />
+                </>
+              }
               actions={
                 <>
                   <button className="di-did di-did-small" type="button" onClick={() => setSheet({ person: row.person })}>
@@ -343,10 +408,11 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </>
       ) : null}
 
-      {said ? <p className="di-set-note">{said}</p> : null}
       {sheet ? (
         <SendSheet
           person={sheet.person}
+          book={book}
+          initialQuestion={sheet.question || ''}
           still={still}
           onClose={() => setSheet(null)}
           onSent={(words) => {
@@ -354,12 +420,6 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
             setSaid(words)
           }}
         />
-      ) : null}
-
-      {miss ? (
-        <p className="di-miss" role="alert">
-          {tMiss(miss)}
-        </p>
       ) : null}
 
       {confirm ? (
@@ -422,5 +482,128 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
         </button>
       </div>
     </>,
+  )
+}
+
+// Your private note about a friend, the same as the phone's friend page:
+// view, edit, remove. Empty Save removes it too. Only you ever see it.
+function FriendNoteBox({ friendId, name, saved, onSaved }) {
+  const [draft, setDraft] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [miss, setMiss] = useState('')
+  const [said, setSaid] = useState('')
+
+  async function save(text) {
+    setBusy(true)
+    setMiss('')
+    const res = await saveFriendNote(friendId, text)
+    setBusy(false)
+    if (res.miss) return setMiss(tMiss(res.miss))
+    onSaved(res.note)
+    setDraft(null)
+    setSaid(res.note ? t('friendNote.saved') : t('friendNote.cleared'))
+  }
+
+  if (draft != null) {
+    return (
+      <form
+        className="di-note-box"
+        onSubmit={(event) => {
+          event.preventDefault()
+          save(draft)
+        }}
+      >
+        <label className="di-field">
+          <span>{t('friendNote.label', { name })}</span>
+          <textarea
+            value={draft}
+            maxLength={FRIEND_NOTE_MAX}
+            placeholder={t('friendNote.ph')}
+            rows={3}
+            onChange={(event) => setDraft(event.target.value.slice(0, FRIEND_NOTE_MAX))}
+          />
+        </label>
+        <p className="di-set-note">{t('friendNote.private', { name })}</p>
+        {miss ? (
+          <p className="di-miss" role="alert">
+            {miss}
+          </p>
+        ) : null}
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="submit" disabled={busy}>
+            {t('friendNote.save')}
+          </button>
+          {saved ? (
+            <button className="di-key" type="button" disabled={busy} onClick={() => save('')}>
+              {t('note.remove')}
+            </button>
+          ) : null}
+          <button
+            className="di-key"
+            type="button"
+            onClick={() => {
+              setDraft(null)
+              setMiss('')
+            }}
+          >
+            {t('settings.neverMind')}
+          </button>
+        </div>
+      </form>
+    )
+  }
+  return (
+    <div className="di-friend-note">
+      <p className="di-set-note">{t('friendNote.title')}</p>
+      {saved ? <p className="di-friend-note-text">{saved}</p> : null}
+      {said ? (
+        <p className="di-set-note" role="status">
+          {said}
+        </p>
+      ) : null}
+      <button className="di-key" type="button" onClick={() => { setSaid(''); setDraft(saved) }}>
+        {saved ? t('friendNote.edit') : t('friendNote.add')}
+      </button>
+    </div>
+  )
+}
+
+// Under a friend: notes they shared lately (with the normal friend cheer)
+// and the questions they asked you to check on.
+function FriendExtras({ name, notes, asks, cheerOff, onCheer, onAsk, onStop }) {
+  if (!notes.length && !asks.length) return null
+  return (
+    <div className="di-shared-notes">
+      {notes.length ? <p className="di-set-note">{t('sharedNote.fromFriend', { name })}</p> : null}
+      {notes.map((row) => (
+        <div className="di-shared-note" key={`${row.lamp_id}:${row.period_key}`}>
+          <p>
+            {row.question ? `${row.question}: ` : ''}
+            {row.note}
+          </p>
+          <button className="di-key" type="button" disabled={cheerOff} onClick={() => onCheer(row.question || '')}>
+            {t('sharedNote.cheer')}
+          </button>
+        </div>
+      ))}
+      {asks.length ? <p className="di-set-note">{t('checkOn.fromTitle', { name })}</p> : null}
+      {asks.map((row) => (
+        <div className="di-check-on" key={row.id}>
+          <p className="di-check-on-share">
+            {row.question}
+            <br />
+            <small>{t('checkOn.fromAt', { time: minuteClock(row.at_minute) })}</small>
+          </p>
+          <div className="di-hang-actions">
+            <button className="di-key" type="button" onClick={() => onAsk(row.question)}>
+              {t('friend.sendDidYou')}
+            </button>
+            <button className="di-key" type="button" onClick={() => onStop(row)}>
+              {t('checkOn.stop')}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

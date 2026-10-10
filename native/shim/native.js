@@ -7,7 +7,7 @@ import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampNotifyOn } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
-import { afterQuiet, pingOn } from '../../src/lib/prefs.js'
+import { afterQuiet, gentleOn, pingOn } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -41,7 +41,8 @@ async function notifications() {
 }
 
 export async function pingStreakHit(hit, dateIso) {
-  if (!hit || !pingOn('streakHit')) return false
+  // Gentle mode: the count is the point of this one, so it is not sent.
+  if (!hit || !pingOn('streakHit') || gentleOn()) return false
   const allowed = await checkNativePings()
   if (allowed !== 'granted') return false
   try {
@@ -220,7 +221,7 @@ export async function scheduleNativePings(books, now = new Date()) {
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
     const book = list[0]
-    const risk = pingOn('streakRisk') ? streakRiskFire(book, now) : null
+    const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -232,7 +233,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         trigger: when(new Date(risk.at)),
       })
     }
-    const grace = pingOn('streakRisk') ? graceRiskFire(book, now) : null
+    const grace = pingOn('streakRisk') && !gentleOn() ? graceRiskFire(book, now) : null
     if (grace) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),

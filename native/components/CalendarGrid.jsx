@@ -4,7 +4,7 @@ import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
-import { usePrefs } from '../../src/lib/prefs.js'
+import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { weCardShort } from '../../src/lib/did-we.js'
@@ -18,7 +18,7 @@ function dateLocale(code) {
 }
 
 // What a screen reader hears for one day: "October 1, Cleared".
-function dayLabel(night, locale) {
+function dayLabel(night, locale, gentle = false) {
   const date = new Date(`${night.iso}T12:00:00`).toLocaleDateString(locale, { month: 'long', day: 'numeric' })
   const state = night.empty
     ? ''
@@ -27,7 +27,7 @@ function dayLabel(night, locale) {
       : night.freeze
         ? t('freeze.dot')
         : night.miss
-          ? t('cal.keyMissed')
+          ? gentle ? '' : t('cal.keyMissed')
           : t('later.tonight')
   return t('cal.day', { date: state ? `${date}, ${state}` : date })
 }
@@ -49,12 +49,15 @@ function markOf(answer, when = 0, open = when === 0) {
   if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
   if (status === 'skip') return { key: 'skip', label: t(open ? 'jewelKey.notYet' : 'jewelKey.nope') }
   if (when > 0) return { key: 'hole', label: t('cal.ahead') }
-  if (when < 0) return { key: 'miss', label: t('cal.notAnswered') }
+  // Gentle mode: a past night with no answer is not called missed.
+  if (when < 0) return { key: 'miss', label: t(gentleOn() ? 'jewelKey.open' : 'cal.notAnswered') }
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
 export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0 }) {
   const prefs = usePrefs()
+  // Gentle mode: a missed night reads like any other unlit night, never a warning.
+  const missTone = prefs.gentle === true ? colors.open : colors.miss
   const clock = now || new Date()
   const [monthShift, setMonthShift] = useLayoutState(startShift)
   const [picked, setPicked] = useState('')
@@ -84,7 +87,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
     const rows = nightDueRows(shelf, iso, tagId)
     const sorted = [...rows.filter((row) => !done(row)), ...rows.filter(done)]
     const weOpen = why.weOpen || []
-    const weMark = when < 0 ? { label: t('cal.notAnswered'), tone: colors.miss } : { label: upFirst(t('cal.open')), tone: colors.open }
+    const weMark = when < 0 ? { label: t(prefs.gentle === true ? 'jewelKey.open' : 'cal.notAnswered'), tone: missTone } : { label: upFirst(t('cal.open')), tone: colors.open }
     const close = () => {
       setPicked('')
       publishSheet(null)
@@ -108,7 +111,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             const mark = markOf(row.answer, when, nightOpen(iso, clock))
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
-                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' ? 'miss' : 'open'] }]} />
+                <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
@@ -157,7 +160,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             <Pressable
               key={night.iso}
               accessibilityRole="button"
-              accessibilityLabel={dayLabel(night, locale)}
+              accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)}
               onPress={() => openDay(night.iso)}
               style={[
                 styles.day,
@@ -181,7 +184,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                       ? { backgroundColor: colors.on }
                       : night.freeze
                         ? { borderWidth: 1.5, borderColor: colors.freeze }
-                        : { backgroundColor: night.miss ? colors.miss : colors.open },
+                        : { backgroundColor: night.miss ? missTone : colors.open },
                   ]}
                 />
               )}
@@ -199,6 +202,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
 // Arrows go back to the year of the first answer. A day opens its sheet.
 export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const prefs = usePrefs()
+  const missTone = prefs.gentle === true ? colors.open : colors.miss
   const clock = now || new Date()
   const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
   const thisYear = clock.getFullYear()
@@ -271,7 +275,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                   <Pressable
                     key={night.iso}
                     accessibilityRole="button"
-                    accessibilityLabel={dayLabel(night, locale)}
+                    accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)}
                     onPress={() => openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId })}
                     hitSlop={2}
                     style={styles.miniCell}
@@ -280,7 +284,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                       style={[
                         styles.miniDot,
                         {
-                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? colors.miss : colors.open,
+                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? missTone : colors.open,
                           borderColor: night.isToday ? colors.ink : 'transparent',
                         },
                       ]}

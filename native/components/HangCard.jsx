@@ -183,7 +183,8 @@ export const HangCard = forwardRef(function HangCard(
           mark && textW ? { flexGrow: 0, flexBasis: 'auto', minWidth: 0, maxWidth: '100%', width: textW + (focused ? TYPE_ROOM : 4) } : null,
         ]}
       />
-      {mark ? <Text style={[faceCardStyles.title, styles.mark, { color: colors.ink }]}>?</Text> : null}
+      {/* Sits right after the last letter: the row gap (8) and the box's spare room (4) are taken back. */}
+      {mark ? <Text style={[faceCardStyles.title, styles.mark, !focused && styles.markTight, { color: colors.ink }]}>?</Text> : null}
       </View>
       {meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
@@ -207,6 +208,7 @@ const styles = StyleSheet.create({
   leadBlank: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 140 },
   // Same bottom room as the blank's padding and underline, so the ? shares its baseline.
   mark: { paddingBottom: 7.5, marginLeft: -6 },
+  markTight: { marginLeft: -12 },
   measure: { position: 'absolute', opacity: 0, left: 0, top: 0 },
   // The underline says "you can type here"; it lights up while typing.
   blank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 1.5 },

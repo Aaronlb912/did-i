@@ -13,6 +13,7 @@ import {
   lookUpWeLink,
   onPendingDidYou,
   peekPendingDidYou,
+  reportDidYouLink,
   saveDidYouClaim,
   saveLinkFriend,
 } from '../../src/lib/did-you-links.js'
@@ -104,6 +105,34 @@ export function DidYouLinkHost({ colors, onKeep }) {
         return
       }
 
+      // Report sits under both sheets. Asks first: a report also blocks
+      // whoever made the link.
+      const reportFoot = (name) => ({
+        footLabel: t('didYouLink.report'),
+        onFoot: () => {
+          if (!userId) {
+            showToast({ id: 'did-you-link', text: t('didYouLink.reportSignIn'), ms: 5200 })
+            return
+          }
+          publishSheet({
+            title: t('didYouLink.reportTitle'),
+            body: t('didYouLink.reportBody', { name }),
+            quote: didYouAsk(found.question, t('people.sendWhat')),
+            goLabel: t('gift.reportGo'),
+            danger: true,
+            colors,
+            onClose: next,
+            onGo: async () => {
+              publishSheet(null)
+              const out = await reportDidYouLink(code)
+              const miss = out.miss === 'signIn' ? 'didYouLink.reportSignIn' : out.miss
+              showToast({ id: 'did-you-link', kind: miss ? 'error' : undefined, text: t(miss || 'we.reported'), ms: 4200 })
+              setTick((n) => n + 1)
+            },
+          })
+        },
+      })
+
       if (we) {
         const name = found.name || t('weLink.someone')
         const join = async (addFriend) => {
@@ -132,6 +161,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
           onClose: next,
           onGo: () => join(Boolean(found.name) && !found.friends),
           ...(found.name && !found.friends ? { onMore: () => join(false) } : {}),
+          ...(found.name ? reportFoot(name) : {}),
         })
         return
       }
@@ -186,6 +216,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
         onClose: next,
         onGo: () => add(Boolean(found.name) && !found.friends),
         ...(found.name && !found.friends ? { onMore: () => add(false) } : {}),
+        ...reportFoot(name),
       })
     })
     return () => {

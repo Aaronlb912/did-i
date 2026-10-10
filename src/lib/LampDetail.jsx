@@ -4,11 +4,13 @@ import { LampManage } from './LampManage.jsx'
 import { cadenceLine, lampBuzzes, lampNotifyOn, lampPriority } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { lampRecord } from './lamp-record.js'
+import { amountAverageLine, amountWords, lampAmounts, lampRecord, lastDidTimes } from './lamp-record.js'
 import { pillStatusLabel } from './pill-status.js'
 import { usePrefs } from './prefs.js'
-import { recentPeriodKeys } from './recurrence.js'
+import { formatBoardDate, isEvery, recentPeriodKeys } from './recurrence.js'
+import { gapLine, lastTimeLine, sinceBadge } from './every-copy.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
+import { CheckOnCard } from './CheckOnCard.jsx'
 
 function reminderLine(lamp) {
   if (!lampNotifyOn(lamp)) return t('hang.remindOff')
@@ -18,13 +20,15 @@ function reminderLine(lamp) {
 }
 
 export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, onArchive, onRemove }) {
-  usePrefs()
+  const gentle = usePrefs().gentle === true
   // A paused question keeps its recent nights on show.
   const keys = useMemo(
     () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
     [lamp, dateIso],
   )
   const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso])
+  const lastFive = useMemo(() => lastDidTimes(book, lamp, 5), [book, lamp])
+  const amounts = useMemo(() => lampAmounts(book, lamp, dateIso, 14, 30), [book, lamp, dateIso])
   if (!lamp) return null
   const status = lamp.archived
     ? t('lamp.pausedLine')
@@ -44,19 +48,33 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
         <NightStrip book={book} lamp={lamp} keys={keys} />
       </div>
 
-      <div className="di-lamp-tiles">
-        <div className="di-lamp-tile">
-          <strong className="is-on">{record.streak}</strong>
-          <span>{t('lamp.streakCap')}</span>
+      {isEvery(lamp) ? (
+        <div className="di-lamp-tiles">
+          <div className="di-lamp-tile">
+            <strong className="is-on">{sinceBadge(book, lamp, dateIso, false) || '-'}</strong>
+            <span>{lastTimeLine(book, lamp, dateIso, true)}</span>
+          </div>
+          <div className="di-lamp-tile">
+            <span>{gapLine(book, lamp, dateIso)}</span>
+          </div>
         </div>
-        <div className="di-lamp-tile">
-          <strong>
-            {record.did}
-            <em> / {record.asked}</em>
-          </strong>
-          <span>{t('lamp.didCap', { n: 30 })}</span>
+      ) : (
+        <div className={gentle ? 'di-lamp-tiles is-one' : 'di-lamp-tiles'}>
+          {gentle ? null : (
+            <div className="di-lamp-tile">
+              <strong className="is-on">{record.streak}</strong>
+              <span>{t('lamp.streakCap')}</span>
+            </div>
+          )}
+          <div className="di-lamp-tile">
+            <strong>
+              {record.did}
+              <em> / {record.asked}</em>
+            </strong>
+            <span>{t('lamp.didCap', { n: 30 })}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="di-hang-actions">
         <button className="di-did di-did-small" type="button" onClick={edit}>
@@ -66,9 +84,59 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
           {t('lamp.copy')}
         </button>
         <button className="di-key" type="button" onClick={onClose}>
-          {t('lamp.done')}
+          {t('nav.back')}
         </button>
       </div>
+
+      {lamp.trackAmount ? (
+        <>
+          <SetCap>{t('amounts.title')}</SetCap>
+          <div className="di-amounts">
+            {amounts.count ? (
+              <>
+                <p className="di-amounts-avg">{amountAverageLine(amounts.average, lamp.amountUnit)}</p>
+                <div className="di-amounts-bars" role="list" aria-label={t('amounts.cap')}>
+                  {amounts.bars.map((bar) => (
+                    <span
+                      key={bar.night}
+                      role="listitem"
+                      className="di-amounts-bar"
+                      title={
+                        bar.amount === null
+                          ? t('amounts.barNone', { date: formatBoardDate(bar.night) })
+                          : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp.amountUnit) })
+                      }
+                    >
+                      {bar.amount ? (
+                        <i style={{ height: `${Math.max(4, Math.round((bar.amount / amounts.max) * 100))}%` }} />
+                      ) : null}
+                    </span>
+                  ))}
+                </div>
+                <p className="di-amounts-cap">{t('amounts.cap')}</p>
+              </>
+            ) : (
+              <p className="di-amounts-cap">{t('amounts.empty')}</p>
+            )}
+          </div>
+        </>
+      ) : null}
+
+      <SetCap>{t('lamp.lastFive')}</SetCap>
+      <SetCard>
+        {lastFive.length ? (
+          lastFive.map((row) => (
+            <SetRow
+              key={row.periodKey}
+              label={row.night ? formatBoardDate(row.night) : row.periodKey}
+              sub={row.note}
+              value={amountWords(row.amount, lamp.amountUnit)}
+            />
+          ))
+        ) : (
+          <SetRow label={t('lamp.lastFiveEmpty')} />
+        )}
+      </SetCard>
 
       <SetCap>{t('hang.secSchedule')}</SetCap>
       <SetCard>
@@ -81,6 +149,8 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
         />
         <SetRow label={t('hang.reminder')} sub={reminderLine(lamp)} />
       </SetCard>
+
+      <CheckOnCard lamp={lamp} />
 
       <SetCap>{t('hang.secOrganize')}</SetCap>
       <SetCard>

@@ -4,62 +4,21 @@ import { t } from './i18n.js'
 import { boardDate, isDueOn } from './recurrence.js'
 
 export const STARTERS = [
+  { idea: 'pills', question: 'Did I take my meds?', short: 'Meds', kind: 'pills', cadence: 'daily', askAfter: '20:00', slot: 'night' },
+  { idea: 'water', question: 'Did I drink enough water?', short: 'Water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night' },
+  { idea: 'text', question: 'Did I text them back?', short: 'Text back', kind: 'people', cadence: 'daily', askAfter: '', slot: 'whenever' },
+  { idea: 'skin', question: 'Did I do my skincare?', short: 'Skincare', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
   {
-    idea: 'pills',
-    question: 'Did I take the evening pills?',
-    short: 'Pills',
-    kind: 'pills',
-    cadence: 'daily',
-    askAfter: '20:00',
-    slot: 'night',
-  },
-  {
-    idea: 'door',
-    question: 'Did I lock the back door?',
-    short: 'Back door',
-    kind: 'house',
-    cadence: 'daily',
-    askAfter: '21:00',
-    slot: 'night',
-  },
-  {
-    idea: 'keys',
-    question: 'Did I put the keys on the hook?',
-    short: 'Keys',
-    kind: 'house',
-    cadence: 'daily',
-    askAfter: '',
-    slot: 'whenever',
-  },
-  {
-    idea: 'bins',
-    question: 'Did I put the bins out?',
-    short: 'Bins',
-    kind: 'house',
-    cadence: 'weekly',
-    weekdays: [0],
-    askAfter: '18:00',
-    slot: 'night',
-  },
-  {
-    idea: 'charge',
-    question: 'Did I charge the phone?',
-    short: 'Charge',
-    kind: 'other',
-    cadence: 'daily',
-    askAfter: '22:00',
-    slot: 'night',
-  },
-  {
-    idea: 'water',
-    question: 'Did I pay the water bill?',
-    short: 'Water',
+    idea: 'bill',
+    question: 'Did I pay the bill?',
+    short: 'Bill',
     kind: 'money',
     cadence: 'monthly',
     monthDay: 12,
     askAfter: '',
     slot: 'whenever',
   },
+  { idea: 'charge', question: 'Did I charge my phone?', short: 'Charge', kind: 'other', cadence: 'daily', askAfter: '22:00', slot: 'night' },
 ]
 
 // The ideas in the app's language: "Did I" stays, the words after it and the
@@ -67,12 +26,12 @@ export const STARTERS = [
 export function starterList() {
   return STARTERS.map((item) => ({
     ...item,
-    question: `Did I ${t(`starter.${item.idea}.blank`)}?`,
+    question: t(`ideas.${item.idea}.question`),
     short: t(`ideas.${item.idea}.start`),
   }))
 }
 
-// The words that fill "Did I ___": "take the evening pills".
+// The words that fill "Did I ___": "take my meds".
 export function starterBlank(starter) {
   return String(starter?.question || '')
     .replace(/^did i\s+/i, '')
@@ -105,23 +64,32 @@ export const PACKS = [
     items: [
       { idea: 'charge', kind: 'other', cadence: 'daily', askAfter: '22:00', slot: 'night' },
       { idea: 'teeth', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
-      { idea: 'alarm', kind: 'other', cadence: 'daily', askAfter: '22:00', slot: 'night' },
+      { idea: 'skin', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
     ],
   },
   {
     id: 'meds',
     items: [
-      { idea: 'amPills', kind: 'pills', cadence: 'daily', askAfter: '', slot: 'whenever' },
       { idea: 'pills', kind: 'pills', cadence: 'daily', askAfter: '20:00', slot: 'night' },
-      { idea: 'vitamins', kind: 'pills', cadence: 'daily', askAfter: '', slot: 'whenever' },
+      { idea: 'water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night' },
+      { idea: 'eat', kind: 'other', cadence: 'daily', askAfter: '', slot: 'whenever' },
     ],
   },
   {
-    id: 'house',
+    id: 'admin',
     items: [
-      { idea: 'door', kind: 'house', cadence: 'daily', askAfter: '21:00', slot: 'night' },
-      { idea: 'stove', kind: 'house', cadence: 'daily', askAfter: '21:00', slot: 'night' },
-      { idea: 'keys', kind: 'house', cadence: 'daily', askAfter: '', slot: 'whenever' },
+      { idea: 'text', kind: 'people', cadence: 'daily', askAfter: '', slot: 'whenever' },
+      { idea: 'email', kind: 'people', cadence: 'daily', askAfter: '', slot: 'whenever' },
+      { idea: 'bill', kind: 'money', cadence: 'monthly', monthDay: 12, askAfter: '', slot: 'whenever' },
+    ],
+  },
+  {
+    // Every so often: each comes up once its gap has passed since the last Did.
+    id: 'home',
+    items: [
+      { idea: 'plants', kind: 'other', cadence: 'every', everyDays: 7, askAfter: '', slot: 'whenever' },
+      { idea: 'sheets', kind: 'other', cadence: 'every', everyDays: 14, askAfter: '', slot: 'whenever' },
+      { idea: 'fridge', kind: 'other', cadence: 'every', everyDays: 30, askAfter: '', slot: 'whenever' },
     ],
   },
 ]
@@ -135,7 +103,7 @@ export function packList(book) {
     items: pack.items
       .map((item) => ({
         ...item,
-        question: `Did I ${t(`starter.${item.idea}.blank`)}?`,
+        question: t(`ideas.${item.idea}.question`),
         short: t(`ideas.${item.idea}.start`),
       }))
       .filter((item) => !hung.some((lamp) => lamp.short === item.short || lamp.question === item.question)),

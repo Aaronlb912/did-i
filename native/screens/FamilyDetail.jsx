@@ -37,16 +37,24 @@ import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
-import { ChipRow, DidButton, Field, KeyButton, Meta } from '../components/ui.jsx'
+import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
+import { sharedLastLine } from '../../src/lib/every-copy.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
 import { QrCode } from '../components/QrCode.jsx'
 import { familyQrLink } from '../../src/lib/qr-links.js'
 
 const EVERYONE = 'everyone'
+// How often a new family question comes up: every night, or every so often.
+const HOW_OFTEN = [
+  { id: 'daily', labelKey: 'cadence.daily' },
+  { id: '7', labelKey: 'hang.everyWeek' },
+  { id: '14', labelKey: 'hang.every2Weeks' },
+  { id: '30', labelKey: 'hang.everyMonth' },
+]
 
 function Cap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
@@ -68,6 +76,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [ready, setReady] = useKept(`fam.ready:${account.user?.id}:${familyId}`, false, KEEP)
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
+  const [howOften, setHowOften] = useState('daily')
+  const [lastDids, setLastDids] = useState(() => new Map())
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [stock, setStock] = useState(null)
@@ -99,6 +109,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       if (typeof serverCheers === 'number') setStock(serverCheers)
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
+      setLastDids(tonightRows.last || new Map())
       setPast(pastRows)
     }
     setReady(true)
@@ -125,6 +136,14 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     return fam.members
   }
 
+  // "Sam did it 2 days ago": anyone's newest Did resets it for the family.
+  function everyLine(lamp) {
+    const last = lastDids.get(lamp.id) || null
+    const member = last?.by ? fam?.members.find((row) => row.user_id === last.by) : null
+    const name = member ? (member.you ? t('family.youAre') : personName(member.person)) : ''
+    return sharedLastLine(last, night, name)
+  }
+
   function mineToAnswer(lamp) {
     if (!fam) return false
     return !lamp.for_id || lamp.for_id === fam.youId
@@ -143,16 +162,18 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       fam.tag?.id,
       draft,
       forId === EVERYONE ? null : forId,
+      howOften === 'daily' ? 0 : Number(howOften),
     )
     if (why === 'notag') return setMiss(t('family.noTag'))
     if (why) return setMiss(why)
     setDraft('')
+    setHowOften('daily')
     setMiss('')
     return load()
   }
 
   if (!ready) {
-    return <Meta colors={colors}>{t('family.loading')}</Meta>
+    return <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
   }
 
   if (!fam) {
@@ -366,6 +387,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                 {' · '}
                 {t('family.doneCount', { done: done.length, all: crowd.length })}
               </Text>
+              {lamp.cadence === 'every' ? (
+                <Text style={{ color: colors.inkSoft, fontSize: 13 }}>{everyLine(lamp)}</Text>
+              ) : null}
               {mineToAnswer(lamp) ? (
                 <View style={styles.rowActions}>
                   <DidButton
@@ -420,6 +444,14 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           />
         </>
       ) : null}
+      <Text style={[styles.cap, { color: colors.inkDim }]}>{t('we.when')}</Text>
+      <ChipRow
+        colors={colors}
+        value={howOften}
+        onPick={setHowOften}
+        items={HOW_OFTEN.map((item) => ({ id: item.id, label: t(item.labelKey) }))}
+      />
+      {howOften !== 'daily' ? <Meta colors={colors}>{t('family.everyHint')}</Meta> : null}
       <DidButton colors={colors} label={t('family.put')} onPress={add} />
       <Meta colors={colors}>{fam.parent ? t('family.assignHint') : t('family.kidHint')}</Meta>
 
@@ -481,7 +513,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
       {codeOpen ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
-          <Pressable accessible={false} style={styles.veil} onPress={() => setCodeOpen(false)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setCodeOpen(false)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
               <Text style={[styles.code, { color: colors.ink }]} selectable>
@@ -543,7 +575,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       ) : null}
 
       {sheet ? (
-        <SendSheet
+        <SendSheet book={book}
           family
           person={sheet.person}
           colors={colors}
@@ -558,7 +590,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
         <KeyboardLift>
-          <Pressable accessible={false} style={styles.veil} onPress={() => setEdit(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEdit(null)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
               <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />

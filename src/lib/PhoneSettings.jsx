@@ -3,9 +3,8 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { t } from './i18n.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { closeSession, hasPin } from './session.js'
 import { SavableSetField } from './SavableSetField.jsx'
-import { SetCap, SetCard, SetRow } from './set-bits.jsx'
+import { SetCap, SetCard } from './set-bits.jsx'
 
 export function PhoneSettings({ book, onChange, now }) {
   const clock = now || new Date()
@@ -49,19 +48,6 @@ export function PhoneSettings({ book, onChange, now }) {
             onSave={(inkNote) => {
               setNoteDraft(inkNote)
               onChange({ ...book, inkNote })
-            }}
-          />
-        </SetCard>
-
-        <SetCap>{t('settings.danger')}</SetCap>
-        <SetCard>
-          <SetRow
-            label={t('settings.signOut')}
-            sub={hasPin() ? t('settings.signOutSubPin') : t('settings.signOutSub')}
-            danger
-            onClick={() => {
-              closeSession()
-              goHash('/enter')
             }}
           />
         </SetCard>

@@ -48,6 +48,8 @@ alter table public.push_queue add constraint push_queue_len
 -- The person's own notification switches (prefs.pingsOff, set in the app's
 -- Reminders screen). Kinds: sends, cheers, friends. Same names as
 -- PING_KINDS in src/lib/prefs.js.
+-- Gentle mode (prefs.gentle) hides streak numbers, so it also stops the
+-- streak pushes (streakRisk, streakHit) whatever pingsOff says.
 create or replace function public.push_wanted(who uuid, kind text)
 returns boolean
 language sql
@@ -56,7 +58,8 @@ security definer
 set search_path = public
 as $$
   select not coalesce(
-    (select jsonb_typeof(p.prefs -> 'pingsOff') = 'array' and (p.prefs -> 'pingsOff') ? kind
+    (select coalesce(jsonb_typeof(p.prefs -> 'pingsOff') = 'array' and (p.prefs -> 'pingsOff') ? kind, false)
+         or (kind in ('streakRisk', 'streakHit') and coalesce(p.prefs ->> 'gentle', '') = 'true')
      from public.profiles p where p.user_id = who),
     false
   );
@@ -79,7 +82,7 @@ as $$
 declare
   lang text := coalesce((select p.prefs ->> 'locale' from public.profiles p where p.user_id = who), 'en');
   words jsonb := '{
-    "en": {"a_friend": "A friend", "someone": "Someone", "send_cheer": "sent you a cheer.", "send_did": "sent you a Did I: {q}", "send_edit": "changed their Did I: {q}",
+    "en": {"a_friend": "A friend", "someone": "Someone", "send_cheer": "sent you a cheer.", "send_cheer_note": "cheered your note on \"{q}\".", "send_did": "sent you a Did I: {q}", "send_edit": "changed their Did I: {q}",
            "friend_title": "Friend request", "ask_named": "{name} wants to be friends.", "ask": "Someone wants to be friends.",
            "yes_named": "{name} said yes. You are friends now.", "yes": "Your friend request was accepted.",
            "family": "Your family", "family_all": "Everyone is done tonight. {total} of {total}.", "family_some": "{n} of {total} done tonight.",
@@ -87,7 +90,7 @@ declare
            "we_done": "Done together: {q}", "we_did": "{name} did it", "we_turn": "Your turn: {q}", "we_asked": "{name} asked you", "we_ask": "Did we: {q}",
            "didi_send": "Sent you a Did you: {q}",
            "link_kept": "{name} kept your Did you: {q}", "link_joined": "{name} joined your Did we: {q}", "drop_live": "New in the shop today. Open Did I to see it."},
-    "de": {"a_friend": "Ein Freund", "someone": "Jemand", "send_cheer": "hat dich angefeuert.", "send_did": "hat dir ein Did I geschickt: {q}", "send_edit": "hat sein Did I geändert: {q}",
+    "de": {"a_friend": "Ein Freund", "someone": "Jemand", "send_cheer": "hat dich angefeuert.", "send_cheer_note": "hat deine Notiz zu \"{q}\" angefeuert.", "send_did": "hat dir ein Did I geschickt: {q}", "send_edit": "hat sein Did I geändert: {q}",
            "friend_title": "Freundschaftsanfrage", "ask_named": "{name} möchte mit dir befreundet sein.", "ask": "Jemand möchte mit dir befreundet sein.",
            "yes_named": "{name} hat Ja gesagt. Ihr seid jetzt befreundet.", "yes": "Deine Freundschaftsanfrage wurde angenommen.",
            "family": "Deine Familie", "family_all": "Heute Abend sind alle fertig. {total} von {total}.", "family_some": "{n} von {total} heute Abend fertig.",
@@ -95,7 +98,7 @@ declare
            "we_done": "Gemeinsam erledigt: {q}", "we_did": "{name} hat es geschafft", "we_turn": "Du bist dran: {q}", "we_asked": "{name} hat dich gefragt", "we_ask": "Did we: {q}",
            "didi_send": "Hat dir ein Did you geschickt: {q}",
            "link_kept": "{name} hat dein Did you behalten: {q}", "link_joined": "{name} ist deinem Did we beigetreten: {q}", "drop_live": "Heute neu im Shop. Öffne Did I, um es zu sehen."},
-    "es": {"a_friend": "Un amigo", "someone": "Alguien", "send_cheer": "te mandó ánimos.", "send_did": "te envió un Did I: {q}", "send_edit": "cambió su Did I: {q}",
+    "es": {"a_friend": "Un amigo", "someone": "Alguien", "send_cheer": "te mandó ánimos.", "send_cheer_note": "animó tu nota sobre \"{q}\".", "send_did": "te envió un Did I: {q}", "send_edit": "cambió su Did I: {q}",
            "friend_title": "Solicitud de amistad", "ask_named": "{name} quiere ser tu amigo.", "ask": "Alguien quiere ser tu amigo.",
            "yes_named": "{name} dijo que sí. Ya son amigos.", "yes": "Aceptaron tu solicitud de amistad.",
            "family": "Tu familia", "family_all": "Todos terminaron esta noche. {total} de {total}.", "family_some": "{n} de {total} terminaron esta noche.",
@@ -103,7 +106,7 @@ declare
            "we_done": "Hecho juntos: {q}", "we_did": "{name} lo hizo", "we_turn": "Tu turno: {q}", "we_asked": "{name} te preguntó", "we_ask": "Did we: {q}",
            "didi_send": "Te envió un Did you: {q}",
            "link_kept": "{name} guardó tu Did you: {q}", "link_joined": "{name} se unió a tu Did we: {q}", "drop_live": "Hoy hay novedades en la tienda. Abre Did I para verlas."},
-    "fr": {"a_friend": "Un ami", "someone": "Quelqu''un", "send_cheer": "t''a encouragé.", "send_did": "t''a envoyé un Did I : {q}", "send_edit": "a modifié son Did I : {q}",
+    "fr": {"a_friend": "Un ami", "someone": "Quelqu''un", "send_cheer": "t''a encouragé.", "send_cheer_note": "a encouragé ta note sur « {q} ».", "send_did": "t''a envoyé un Did I : {q}", "send_edit": "a modifié son Did I : {q}",
            "friend_title": "Demande d''ami", "ask_named": "{name} veut être ton ami.", "ask": "Quelqu''un veut être ton ami.",
            "yes_named": "{name} a dit oui. Vous êtes amis.", "yes": "Ta demande d''ami a été acceptée.",
            "family": "Ta famille", "family_all": "Tout le monde a fini ce soir. {total} sur {total}.", "family_some": "{n} sur {total} ont fini ce soir.",
@@ -111,7 +114,7 @@ declare
            "we_done": "Fait ensemble : {q}", "we_did": "{name} l''a fait", "we_turn": "À toi : {q}", "we_asked": "{name} te l''a demandé", "we_ask": "Did we : {q}",
            "didi_send": "T''a envoyé un Did you : {q}",
            "link_kept": "{name} a gardé ton Did you : {q}", "link_joined": "{name} a rejoint ton Did we : {q}", "drop_live": "Nouveau dans la boutique aujourd''hui. Ouvre Did I pour voir."},
-    "it": {"a_friend": "Un amico", "someone": "Qualcuno", "send_cheer": "ti ha fatto il tifo.", "send_did": "ti ha inviato un Did I: {q}", "send_edit": "ha cambiato il suo Did I: {q}",
+    "it": {"a_friend": "Un amico", "someone": "Qualcuno", "send_cheer": "ti ha fatto il tifo.", "send_cheer_note": "ha fatto il tifo per la tua nota su \"{q}\".", "send_did": "ti ha inviato un Did I: {q}", "send_edit": "ha cambiato il suo Did I: {q}",
            "friend_title": "Richiesta di amicizia", "ask_named": "{name} vuole essere tuo amico.", "ask": "Qualcuno vuole essere tuo amico.",
            "yes_named": "{name} ha detto sì. Ora siete amici.", "yes": "La tua richiesta di amicizia è stata accettata.",
            "family": "La tua famiglia", "family_all": "Stasera hanno finito tutti. {total} su {total}.", "family_some": "{n} su {total} hanno finito stasera.",
@@ -119,7 +122,7 @@ declare
            "we_done": "Fatto insieme: {q}", "we_did": "{name} l''ha fatto", "we_turn": "Tocca a te: {q}", "we_asked": "{name} te l''ha chiesto", "we_ask": "Did we: {q}",
            "didi_send": "Ti ha inviato un Did you: {q}",
            "link_kept": "{name} ha tenuto il tuo Did you: {q}", "link_joined": "{name} si è unito al tuo Did we: {q}", "drop_live": "Oggi ci sono novità nello shop. Apri Did I per vederle."},
-    "ja": {"a_friend": "友だち", "someone": "だれか", "send_cheer": "応援が届きました。", "send_did": "Did I が届きました：{q}", "send_edit": "Did I が変更されました：{q}",
+    "ja": {"a_friend": "友だち", "someone": "だれか", "send_cheer": "応援が届きました。", "send_cheer_note": "「{q}」のメモを応援しました。", "send_did": "Did I が届きました：{q}", "send_edit": "Did I が変更されました：{q}",
            "friend_title": "友だちリクエスト", "ask_named": "{name}さんが友だちになりたがっています。", "ask": "だれかが友だちになりたがっています。",
            "yes_named": "{name}さんが承認しました。友だちになりました。", "yes": "友だちリクエストが承認されました。",
            "family": "あなたの家族", "family_all": "今夜は全員完了。{total}人中{total}人。", "family_some": "今夜は{total}人中{n}人が完了。",
@@ -127,7 +130,7 @@ declare
            "we_done": "一緒に達成：{q}", "we_did": "{name}さんが達成しました", "we_turn": "あなたの番：{q}", "we_asked": "{name}さんから誘いが届きました", "we_ask": "Did we：{q}",
            "didi_send": "Did you が届きました：{q}",
            "link_kept": "{name}さんがあなたの Did you を受け取りました：{q}", "link_joined": "{name}さんがあなたの Did we に参加しました：{q}", "drop_live": "今日ショップに新作が出ました。Did I を開いて見てみましょう。"},
-    "ko": {"a_friend": "친구", "someone": "누군가", "send_cheer": "응원을 보냈어요.", "send_did": "Did I를 보냈어요: {q}", "send_edit": "Did I를 바꿨어요: {q}",
+    "ko": {"a_friend": "친구", "someone": "누군가", "send_cheer": "응원을 보냈어요.", "send_cheer_note": "\"{q}\" 메모를 응원했어요.", "send_did": "Did I를 보냈어요: {q}", "send_edit": "Did I를 바꿨어요: {q}",
            "friend_title": "친구 요청", "ask_named": "{name}님이 친구가 되고 싶어 해요.", "ask": "누군가 친구가 되고 싶어 해요.",
            "yes_named": "{name}님이 수락했어요. 이제 친구예요.", "yes": "친구 요청이 수락되었어요.",
            "family": "우리 가족", "family_all": "오늘 밤 모두 끝냈어요. {total}명 중 {total}명.", "family_some": "오늘 밤 {total}명 중 {n}명이 끝냈어요.",
@@ -135,7 +138,7 @@ declare
            "we_done": "함께 해냄: {q}", "we_did": "{name}님이 해냈어요", "we_turn": "내 차례: {q}", "we_asked": "{name}님이 물어봤어요", "we_ask": "Did we: {q}",
            "didi_send": "Did you를 보냈어요: {q}",
            "link_kept": "{name}님이 내 Did you를 받았어요: {q}", "link_joined": "{name}님이 내 Did we에 참여했어요: {q}", "drop_live": "오늘 상점에 새 상품이 나왔어요. Did I를 열어 확인하세요."},
-    "pt": {"a_friend": "Um amigo", "someone": "Alguém", "send_cheer": "te mandou uma torcida.", "send_did": "te enviou um Did I: {q}", "send_edit": "mudou o Did I: {q}",
+    "pt": {"a_friend": "Um amigo", "someone": "Alguém", "send_cheer": "te mandou uma torcida.", "send_cheer_note": "torceu pela sua nota em \"{q}\".", "send_did": "te enviou um Did I: {q}", "send_edit": "mudou o Did I: {q}",
            "friend_title": "Pedido de amizade", "ask_named": "{name} quer ser seu amigo.", "ask": "Alguém quer ser seu amigo.",
            "yes_named": "{name} disse sim. Agora vocês são amigos.", "yes": "Seu pedido de amizade foi aceito.",
            "family": "Sua família", "family_all": "Todos terminaram hoje à noite. {total} de {total}.", "family_some": "{n} de {total} terminaram hoje à noite.",
@@ -143,7 +146,7 @@ declare
            "we_done": "Feito juntos: {q}", "we_did": "{name} fez", "we_turn": "Sua vez: {q}", "we_asked": "{name} te convidou", "we_ask": "Did we: {q}",
            "didi_send": "Te enviou um Did you: {q}",
            "link_kept": "{name} guardou seu Did you: {q}", "link_joined": "{name} entrou no seu Did we: {q}", "drop_live": "Novidades na loja hoje. Abra o Did I para ver."},
-    "zh": {"a_friend": "一位朋友", "someone": "有人", "send_cheer": "为你加油了。", "send_did": "给你发了一个 Did I：{q}", "send_edit": "修改了 Did I：{q}",
+    "zh": {"a_friend": "一位朋友", "someone": "有人", "send_cheer": "为你加油了。", "send_cheer_note": "为你在“{q}”上的笔记加油了。", "send_did": "给你发了一个 Did I：{q}", "send_edit": "修改了 Did I：{q}",
            "friend_title": "好友请求", "ask_named": "{name} 想加你为好友。", "ask": "有人想加你为好友。",
            "yes_named": "{name} 同意了。你们现在是好友了。", "yes": "你的好友请求已通过。",
            "family": "你的家人", "family_all": "今晚大家都完成了。{total}/{total}。", "family_some": "今晚 {total} 人中有 {n} 人完成。",
@@ -165,8 +168,8 @@ $$;
 
 revoke all on function public.push_text(uuid, text, jsonb) from public, anon, authenticated;
 
--- What the person sees on the lock screen. Never the question itself
--- for a cheer, and never anything about who else is involved.
+-- What the person sees on the lock screen. A cheer names only the
+-- question of their own shared note it is for, and never anything about who else is involved.
 create or replace function public.queue_send_push()
 returns trigger
 language plpgsql
@@ -188,6 +191,8 @@ begin
     new.to_id,
     coalesce(who, public.push_text(new.to_id, 'a_friend')),
     case
+      when new.kind = 'cheer' and btrim(coalesce(new.question, '')) <> ''
+        then left(public.push_text(new.to_id, 'send_cheer_note', jsonb_build_object('q', left(new.question, 120))), 200)
       when new.kind = 'cheer' then public.push_text(new.to_id, 'send_cheer')
       else left(public.push_text(new.to_id, 'send_did', jsonb_build_object('q', left(new.question, 120))), 200)
     end,

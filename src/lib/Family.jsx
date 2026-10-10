@@ -21,10 +21,13 @@ import {
   cheerFamily,
   doneTonight,
   readFriendCheers,
+  listFriends,
   setRole,
 } from './people.js'
+import { checkOnsForMe, minuteClock, stopCheckOn } from './check-on.js'
 import { EmptyCard, PersonCard, SectionHead } from './PersonCard.jsx'
 import { SendSheet } from './SendDidYou.jsx'
+import { sharedLastLine } from './every-copy.js'
 import { useReduceMotion } from './useReduceMotion.js'
 import {
   FRIEND_CHEER_CAP,
@@ -40,6 +43,13 @@ import { GemShort } from './shop-bits.jsx'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 const EVERYONE = 'everyone'
+// How often a new family question comes up: every night, or every so often.
+const HOW_OFTEN = [
+  { id: 'daily', labelKey: 'cadence.daily' },
+  { id: '7', labelKey: 'hang.everyWeek' },
+  { id: '14', labelKey: 'hang.every2Weeks' },
+  { id: '30', labelKey: 'hang.everyMonth' },
+]
 
 export function Family({ book, onChange, now, familyId }) {
   const clock = now || new Date()
@@ -57,12 +67,16 @@ export function Family({ book, onChange, now, familyId }) {
   const [ready, setReady] = useState(false)
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
+  const [howOften, setHowOften] = useState('daily')
+  const [lastDids, setLastDids] = useState(() => new Map())
   const [miss, setMiss] = useState('')
   const [naming, setNaming] = useState(null)
   const [gemShort, setGemShort] = useState(false)
   const [stock, setStock] = useState(null)
   const [sheet, setSheet] = useState(null)
   const [codeOpen, setCodeOpen] = useState(false)
+  // What family members who are not friends asked you to check on.
+  const [checkOns, setCheckOns] = useState(() => new Map())
   const still = useReduceMotion()
   const online = useOnline()
   const cheersLeft = stock == null ? purse.friendCheers : stock
@@ -82,14 +96,23 @@ export function Family({ book, onChange, now, familyId }) {
       const back = []
       for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
       setNights(back)
-      const [tonightRows, pastRows, serverCheers] = await Promise.all([
+      const [tonightRows, pastRows, serverCheers, askRows, friendRows] = await Promise.all([
         listFamilyLamps(familyId, key),
         familyHistory(familyId, back),
         readFriendCheers(),
+        checkOnsForMe().catch(() => null),
+        listFriends().catch(() => null),
       ])
+      // Friends' asks are on the Friends list; here only the rest of the family.
+      if (askRows) {
+        const friendIds = new Set((friendRows?.friends || []).map((one) => one.person.user_id))
+        for (const id of friendIds) askRows.delete(id)
+        setCheckOns(askRows)
+      }
       if (typeof serverCheers === 'number') setStock(serverCheers)
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
+      setLastDids(tonightRows.last || new Map())
       setPast(pastRows)
     }
     setReady(true)
@@ -117,6 +140,14 @@ export function Family({ book, onChange, now, familyId }) {
     return fam.members
   }
 
+  // "Sam did it 2 days ago": anyone's newest Did resets it for the family.
+  function everyLine(lamp) {
+    const last = lastDids.get(lamp.id) || null
+    const member = last?.by ? fam?.members.find((row) => row.user_id === last.by) : null
+    const name = member ? (member.you ? t('family.youAre') : personName(member.person)) : ''
+    return sharedLastLine(last, night, name)
+  }
+
   function mineToAnswer(lamp) {
     if (!fam) return false
     return !lamp.for_id || lamp.for_id === fam.youId
@@ -135,10 +166,12 @@ export function Family({ book, onChange, now, familyId }) {
       fam.tag?.id,
       draft,
       forId === EVERYONE ? null : forId,
+      howOften === 'daily' ? 0 : Number(howOften),
     )
     if (why === 'notag') return setMiss(t('family.noTag'))
     if (why) return setMiss(why)
     setDraft('')
+    setHowOften('daily')
     setMiss('')
     return load()
   }
@@ -250,6 +283,39 @@ export function Family({ book, onChange, now, familyId }) {
                   ))}
                 </span>
                 <em>{t('family.weekCount', { n: week.filter(Boolean).length })}</em>
+                {(checkOns.get(row.user_id) || []).length ? (
+                  <p className="di-set-note">{t('checkOn.fromTitle', { name })}</p>
+                ) : null}
+                {(checkOns.get(row.user_id) || []).map((ask) => (
+                  <div className="di-check-on" key={ask.id}>
+                    <p className="di-check-on-share">
+                      {ask.question}
+                      <br />
+                      <small>{t('checkOn.fromAt', { time: minuteClock(ask.at_minute) })}</small>
+                    </p>
+                    <div className="di-hang-actions">
+                      <button className="di-key" type="button" onClick={() => setSheet({ person: row.person, question: ask.question })}>
+                        {t('friend.sendDidYou')}
+                      </button>
+                      <button
+                        className="di-key"
+                        type="button"
+                        onClick={async () => {
+                          const { miss: why } = await stopCheckOn(ask.id)
+                          if (why) return setMiss(tMiss(why))
+                          setCheckOns((live) => {
+                            const next = new Map(live)
+                            next.set(row.user_id, (next.get(row.user_id) || []).filter((item) => item.id !== ask.id))
+                            return next
+                          })
+                          return setMiss(t('checkOn.stopped'))
+                        }}
+                      >
+                        {t('checkOn.stop')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             }
             actions={
@@ -331,7 +397,9 @@ export function Family({ book, onChange, now, familyId }) {
       {sheet ? (
         <SendSheet
           family
+          book={book}
           person={sheet.person}
+          initialQuestion={sheet.question || ''}
           still={still}
           onClose={() => setSheet(null)}
           onSent={(words) => setMiss(words)}
@@ -357,6 +425,7 @@ export function Family({ book, onChange, now, familyId }) {
                     {lamp.cadence !== 'daily' ? ` · ${familyLampMeta(lamp)}` : ''}
                     {' · '}
                     {t('family.doneCount', { done: done.length, all: crowd.length })}
+                    {lamp.cadence === 'every' ? ` · ${everyLine(lamp)}` : ''}
                   </em>
                 </span>
                 {mineToAnswer(lamp) ? (
@@ -448,6 +517,24 @@ export function Family({ book, onChange, now, familyId }) {
             </div>
           </div>
         ) : null}
+        <div className="di-field">
+          <span id="di-fam-when">{t('we.when')}</span>
+          <div className="di-hang-chips" role="radiogroup" aria-labelledby="di-fam-when">
+            {HOW_OFTEN.map((item) => (
+              <button
+                key={item.id}
+                className={howOften === item.id ? 'di-key is-pick' : 'di-key'}
+                type="button"
+                role="radio"
+                aria-checked={howOften === item.id}
+                onClick={() => setHowOften(item.id)}
+              >
+                {t(item.labelKey)}
+              </button>
+            ))}
+          </div>
+        </div>
+        {howOften !== 'daily' ? <p className="di-set-note">{t('family.everyHint')}</p> : null}
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={add}>
             {t('family.put')}

@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
-import { fonts } from '../theme.js'
+import { fonts, radius } from '../theme.js'
 import { MenuIcon } from './MenuIcon.jsx'
 
 // The three ways to start a question, picked by tapping its first words:
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   veil: { flex: 1, justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 20, padding: 14, gap: 8 },
   kicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: radius.rSm, padding: 12 },
   ico: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, gap: 2 },
   title: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },

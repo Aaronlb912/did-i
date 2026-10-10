@@ -1,4 +1,4 @@
-import { answeredAtIso, duplicateLamp, newAnswerId } from './board-json.js'
+import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 import { answerFor, openFloorIso, periodPassed } from './recurrence.js'
@@ -190,11 +190,16 @@ export function answerStamp(answer) {
   return note > tap ? note : tap
 }
 
-export function setAnswerNote(book, lampId, periodKey, note, clock = new Date()) {
+// amount: leave it out to keep the night's amount; '' or null clears it.
+// It travels with the note and moves noteAt the same way.
+export function setAnswerNote(book, lampId, periodKey, note, clock = new Date(), amount) {
   const text = String(note || '').replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX)
   const answers = book.answers || []
   const at = answers.findIndex((item) => item.lampId === lampId && item.periodKey === periodKey)
-  if (at < 0 || (answers[at].note || '') === text) return book
+  if (at < 0) return book
+  const was = cleanAmount(answers[at].amount)
+  const count = amount === undefined ? was : cleanAmount(amount)
+  if ((answers[at].note || '') === text && count === was) return book
   const prev = answerStamp(answers[at])
   let stamp = answeredAtIso(clock)
   if (prev && stamp <= prev) {
@@ -202,6 +207,7 @@ export function setAnswerNote(book, lampId, periodKey, note, clock = new Date())
     if (!Number.isNaN(last.getTime())) stamp = answeredAtIso(new Date(last.getTime() + 1000))
   }
   const next = [...answers]
-  next[at] = { ...answers[at], note: text, noteAt: stamp }
+  const { amount: _was, ...rest } = answers[at]
+  next[at] = { ...rest, note: text, noteAt: stamp, ...(count !== null ? { amount: count } : {}) }
   return { ...book, answers: next }
 }

@@ -32,7 +32,8 @@ import { AllLamps } from './lib/AllLamps.jsx'
 import { Enter } from './lib/Enter.jsx'
 import { FirstNight } from './lib/FirstNight.jsx'
 import { MarkToast } from './lib/MarkToast.jsx'
-import { Welcome } from './lib/Welcome.jsx'
+import { FirstWelcome, Welcome } from './lib/Welcome.jsx'
+import { authSkipped } from './lib/auth-gate.js'
 import { DidYouBanner } from './lib/DidYouBanner.jsx'
 import { useAccount } from './lib/account.js'
 import { useAutoAdd } from './lib/people.js'
@@ -128,6 +129,7 @@ const NameBoard = screen(() => import('./site/NameBoard.jsx'), 'NameBoard')
 const Read = screen(() => import('./site/Read.jsx'), 'Read')
 const Gift = screen(() => import('./lib/Gift.jsx'), 'Gift')
 const GiftsSent = screen(() => import('./lib/Gift.jsx'), 'GiftsSent')
+const AdminReports = screen(() => import('./lib/AdminReports.jsx'), 'AdminReports')
 
 const SITE = new Set(['/door', '/name', '/read', '/into'])
 const HOME = new Set(['/', '/home'])
@@ -468,14 +470,15 @@ export default function App() {
 
   useEffect(() => {
     applyPrefsToDocument(prefs)
-    const board = book?.title || 'Did I'
     const titles = {
       '/door': t('title.door'),
       '/name': t('title.name'),
       '/read': t('title.read'),
       '/into': t('title.into'),
-      '/home': t('title.home', { board }),
-      '/tonight': t('title.home', { board }),
+      '/home': t('title.homePage'),
+      '/tonight': t('title.homePage'),
+      '/friends': t('title.friends'),
+      '/people': t('title.people'),
       '/enter': t('title.enter'),
       '/about': t('title.about'),
       '/lamps': t('title.questions'),
@@ -511,7 +514,7 @@ export default function App() {
       '/we/new': t('we.newTitle'),
       '/you': t('lead.youTitle'),
     }
-    document.title = titles[view] || t('title.home', { board })
+    document.title = titles[view] || 'Did I'
   }, [view, book, prefs])
 
   const pingLabel = pingButtonLabel(pingState)
@@ -564,6 +567,9 @@ export default function App() {
         returnFace={route.face}
       />
     )
+  } else if (HALL.has(path) && emptyHall && !welcomeSeen() && cloudSetUp() && !account.user && !accountSessionOn() && !authSkipped()) {
+    // A fresh web visit: Get started, or sign in, as on the phone's welcome.
+    inner = <FirstWelcome book={live} />
   } else if (path === '/first' || (HALL.has(path) && emptyHall && !welcomeSeen())) {
     // Move to /first itself so the tab bar stays hidden until the first question is in.
     if (path !== '/first') queueMicrotask(() => goHash('/first'))
@@ -592,6 +598,8 @@ export default function App() {
     inner = <ShopBuddies book={live} onChange={change} />
   } else if (path === '/shop/accessories') {
     inner = <ShopAccessories book={live} onChange={change} />
+  } else if (path === '/admin/reports') {
+    inner = <AdminReports book={live} />
   } else if (path === '/gifts') {
     inner = <GiftsSent book={live} />
   } else if (path === '/gift') {
@@ -725,7 +733,7 @@ export default function App() {
 
   return (
     <>
-      <Suspense fallback={<p className="di-set-note">{t('family.loading')}</p>}>{inner}</Suspense>
+      <Suspense fallback={<p className="di-set-note di-page-loading" role="status">{t('app.loading')}</p>}>{inner}</Suspense>
       {showNav ? <AppNav /> : null}
       {SITE.has(path) ? null : (
         <MarkToast mark={markNote} onClose={() => setMarkNote(null)} />
@@ -733,7 +741,8 @@ export default function App() {
       {SITE.has(path) ? null : <DidYouBanner path={path} />}
       {SITE.has(path) || !live ? null : <GiftArrived book={live} onChange={change} />}
       <CheerBurst />
-      <DiagnosticsAsk />
+      {/* Asked only once first run is done and a question is in. */}
+      {emptyHall || path === '/first' || SITE.has(path) ? null : <DiagnosticsAsk />}
       <StreakMomentHost />
     </>
   )

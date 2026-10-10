@@ -5,11 +5,12 @@ import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
+import { sharedEveryDue } from './every-copy.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { noteMilestone } from './milestones.js'
 
 const FAMILY_LAMP_FIELDS =
-  'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on'
+  'id, family_id, question, short, cadence, weekdays, once_on, once_when, due_by, for_id, made_by, made_on, every_days'
 
 export function familyLampMeta(lamp) {
   return cadenceLine({
@@ -19,6 +20,7 @@ export function familyLampMeta(lamp) {
     dueBy: lamp.due_by || '',
     createdOn: lamp.made_on || '',
     weekdays: lamp.weekdays || [],
+    everyDays: lamp.every_days || '',
   })
 }
 
@@ -70,6 +72,23 @@ export function personInitials(person) {
 // Did they clear their own tonight? Only when they share it.
 export function doneTonight(person, dateIso = isoDate(new Date())) {
   return Boolean(person?.share_streak !== false && person?.done_on && person.done_on === dateIso)
+}
+
+// A friend's streak number, or 0 when they hide it. Gentle mode hides it
+// (the server also sends null, supabase/social-gentle.sql).
+export function friendStreak(person) {
+  if (!person || person.gentle === true || person.share_streak === false) return 0
+  const n = Number(person.streak)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+// The line under a friend's name. Gentle mode: done tonight, or not yet.
+export function friendLine(person, dateIso = isoDate(new Date())) {
+  if (!person?.share_streak) return t('people.quiet')
+  if (person.done_on === dateIso) return person.gentle === true ? t('people.doneTonightCheck') : t('people.doneTonight')
+  if (person.gentle === true) return t('people.notYet')
+  const n = friendStreak(person)
+  return n ? t('people.streakN', { n }) : t('people.noStreak')
 }
 
 export function friendAskTitle(person) {
@@ -193,6 +212,14 @@ export async function refreshTogether(now = Date.now()) {
   }
 }
 
+// Every friend and family member, by name. Blocked people are left out.
+export async function listKnownPeople() {
+  const db = cloud()
+  if (!db) return []
+  const who = await peopleByIds(db)
+  return [...who.values()].sort((a, b) => personName(a).localeCompare(personName(b)))
+}
+
 // One friend or family member by id, or a bare { user_id } if not known.
 export async function personById(id) {
   const db = cloud()
@@ -221,6 +248,16 @@ export async function notedPeople() {
   const { data, error } = await db.from('friend_notes').select('friend_id').eq('owner_id', user.id)
   if (error) throw new Error(error.message)
   return new Set((data || []).map((row) => row.friend_id))
+}
+
+/** Every note you keep, friend id to text, in one read (the web Friends list). */
+export async function friendNotesAll() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return new Map()
+  const { data, error } = await db.from('friend_notes').select('friend_id, note').eq('owner_id', user.id)
+  if (error) throw new Error(error.message)
+  return new Map((data || []).map((row) => [row.friend_id, String(row.note || '')]))
 }
 
 /** Saves the note; an empty one is removed. Returns { miss } on failure. */
@@ -401,7 +438,7 @@ export async function weLeaveShared(other) {
 
 // Sending a did you to a friend ---------------------------------------
 
-export async function sendDidI(toId, question, note, dueOn, repeat = '') {
+export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDidOn = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -416,6 +453,8 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '') {
     note: String(note || '').trim(),
     due_on: dueOn || isoDate(new Date()),
     ...(repeat ? { repeat } : {}),
+    // Only an every so often ask carries the sender's last Did (shared-every.sql).
+    ...(repeat.startsWith('every:') && /^\d{4}-\d{2}-\d{2}$/.test(String(lastDidOn || '')) ? { last_did_on: lastDidOn } : {}),
   })
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { miss: 'already' }
@@ -483,16 +522,23 @@ export async function readFriendCheers() {
   return Number.isFinite(n) ? Math.max(0, n) : null
 }
 
-export async function sendFriendCheer(toId, note, cheerId = '') {
+// `about` is the question of the shared note the cheer is for ('' for none).
+export async function sendFriendCheer(toId, note, cheerId = '', about = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'out' }
-  const { data, error } = await db.rpc('send_friend_cheer', {
+  const args = {
     other: toId,
     note: String(note || '').trim(),
     want: String(cheerId || '').trim().slice(0, 20),
-  })
+  }
+  const words = String(about || '').trim().slice(0, 200)
+  let { data, error } = await db.rpc('send_friend_cheer', words ? { ...args, about: words } : args)
+  // A server without the note words yet: the plain cheer still goes.
+  if (error && words && (error.code === 'PGRST202' || /send_friend_cheer/i.test(error.message || ''))) {
+    ;({ data, error } = await db.rpc('send_friend_cheer', args))
+  }
   if (!error) return { miss: '', ...stockFromRpc(data) }
   const message = error.message || ''
   if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return { miss: 'setup' }
@@ -519,8 +565,14 @@ export async function buyCheers(book) {
 }
 
 /** Spends one stored cheer. The gem was spent when the cheers were bought. */
-export async function cheerFriend(book, otherId, cheerId = '') {
-  const sent = await sendFriendCheer(otherId, '', cheerId)
+// A cheer's title: which note it was for, when it was for one.
+export function cheerTitle(row) {
+  const q = String(row?.question || '').trim()
+  return q ? t('inbox.cheerNote', { q }) : t('inbox.aCheer')
+}
+
+export async function cheerFriend(book, otherId, cheerId = '', about = '') {
+  const sent = await sendFriendCheer(otherId, '', cheerId, about)
   if (sent.miss === 'setup') {
     if (takeFriendCheer(book).miss) return { miss: 'cheers', book }
     const { miss } = await sendCheer(otherId, '', cheerId)
@@ -659,6 +711,28 @@ export async function listSentGifts() {
   return { rows, miss: '' }
 }
 
+// Reports admin (supabase/admin.sql). The server refuses anyone not in admins.
+export async function adminReports() {
+  const db = cloud()
+  if (!db) return { rows: [], miss: 'off' }
+  const user = await me()
+  if (!user) return { rows: [], miss: 'out' }
+  const { data, error } = await db.rpc('admin_reports', { lim: 200 })
+  if (error) {
+    if (notRunYet(error)) return { rows: [], miss: 'setup' }
+    if (/not allowed/i.test(error.message || '')) return { rows: [], miss: 'admin' }
+    return { rows: [], ...bad(error) }
+  }
+  return { rows: Array.isArray(data) ? data : [], miss: '' }
+}
+
+export async function adminAct(reportId, act, note = '') {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('admin_act', { report: reportId, act, note })
+  return error ? bad(error) : { status: data, miss: '' }
+}
+
 export async function claimGifts() {
   const db = cloud()
   if (!db) return { gifts: [], miss: 'off' }
@@ -721,7 +795,7 @@ export async function listInbox() {
   const [{ data }, fromDidI] = await Promise.all([
     db
       .from('sends')
-      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat')
+      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat, last_did_on')
       .eq('to_id', user.id)
       .eq('state', 'sent')
       .order('made_at', { ascending: false }),
@@ -801,7 +875,7 @@ export async function listSent() {
   if (!user) return []
   const { data } = await db
     .from('sends')
-    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat')
+    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat, last_did_on')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(100)
@@ -819,7 +893,7 @@ export async function sendsWith(otherId) {
   if (!user) return { ...empty, miss: 'off' }
   const { data, error } = await db
     .from('sends')
-    .select('id, from_id, to_id, kind, question, state, made_at, repeat')
+    .select('id, from_id, to_id, kind, question, state, made_at, repeat, last_did_on')
     .eq('kind', 'todo')
     .or(`and(from_id.eq.${user.id},to_id.eq.${otherId}),and(from_id.eq.${otherId},to_id.eq.${user.id})`)
     .order('made_at', { ascending: false })
@@ -1147,10 +1221,24 @@ export async function listFamilyLamps(familyId, periodKey) {
       .eq('family_id', familyId)
       .eq('period_key', periodKey || isoDate(new Date())),
   ])
-  return { lamps: lampRows.data || [], answers: answerRows.data || [] }
+  const lamps = lampRows.data || []
+  return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }
 
-export async function addFamilyLamp(familyId, tagId, question, forId) {
+// The newest Did on each every so often family question, by anyone:
+// Map lampId -> { on, by }. One call for all of them. Empty until
+// shared-every.sql is run.
+async function familyEveryLast(db, lamps) {
+  const ids = lamps.filter((lamp) => lamp.cadence === 'every').map((lamp) => lamp.id)
+  const out = new Map()
+  if (!ids.length) return out
+  const { data, error } = await db.rpc('family_every_last', { lamps: ids })
+  if (error) return out
+  for (const row of data || []) out.set(row.lamp_id, { on: row.last_on, by: row.last_by })
+  return out
+}
+
+export async function addFamilyLamp(familyId, tagId, question, forId, everyDays = 0) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -1164,6 +1252,7 @@ export async function addFamilyLamp(familyId, tagId, question, forId) {
     question: text,
     for_id: forId || null,
     made_by: user.id,
+    ...(Number(everyDays) >= 1 ? { cadence: 'every', every_days: Math.min(365, Math.round(Number(everyDays))) } : {}),
   })
   return error ? bad(error) : { miss: '' }
 }
@@ -1247,22 +1336,31 @@ export async function familyTonight() {
       .in('period_key', [...new Set(nights.values())]),
   ])
 
+  const lastDids = await familyEveryLast(db, lampRows.data || [])
   const out = []
   for (const lamp of lampRows.data || []) {
     const family = families.find((item) => item.id === lamp.family_id)
     if (!family) continue
     const night = nights.get(family.id)
-    if (!dueOnFamilyNight(lamp, night)) continue
+    const answer =
+      (answerRows.data || []).find(
+        (row) => row.lamp_id === lamp.id && row.period_key === night,
+      ) || null
+    const last = lastDids.get(lamp.id) || null
+    if (lamp.cadence === 'every') {
+      // Your own answer tonight keeps it on tonight; otherwise anyone's Did
+      // inside the gap takes it off for everyone.
+      if (!answer && !sharedEveryDue(lamp, last, night)) continue
+    } else if (!dueOnFamilyNight(lamp, night)) continue
     if (lamp.made_on && lamp.made_on > night) continue
-    out.push({
-      family,
-      lamp,
-      night,
-      answer:
-        (answerRows.data || []).find(
-          (row) => row.lamp_id === lamp.id && row.period_key === night,
-        ) || null,
-    })
+    out.push({ family, lamp, night, answer, last })
+  }
+  if (out.some((row) => row.last?.by)) {
+    const who = await peopleByIds(db)
+    for (const row of out) {
+      if (!row.last?.by) continue
+      row.lastName = row.last.by === user.id ? t('family.youAre') : personName(who.get(row.last.by)) || ''
+    }
   }
   return out
 }
@@ -1488,7 +1586,10 @@ export function didYouNewsLines(news) {
       go: '/tonight',
     }
   }
-  if (news.kind === 'cheer') return { title: t('didyou.newCheer', { name }), body: '', go: '/inbox' }
+  if (news.kind === 'cheer') {
+    const q = news.n > 1 ? '' : String(news.question || '').trim()
+    return { title: q ? t('didyou.newCheerNote', { name, q }) : t('didyou.newCheer', { name }), body: '', go: '/inbox' }
+  }
   return {
     title: news.n > 1 ? t('didyou.newSome', { n: news.n }) : t('didyou.newOne', { name }),
     body: news.n > 1 ? '' : news.question,

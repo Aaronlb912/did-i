@@ -3,16 +3,34 @@ import { t, tMiss } from './i18n.js'
 import { personName, sendDidI } from './people.js'
 import { SetCard, SetField, SetSheet } from './set-bits.jsx'
 import { Pick } from './DidWe.jsx'
-import { repeatFrom } from './send-repeat.js'
+import { boardDate } from './recurrence.js'
+import { repeatFrom, senderLastDid } from './send-repeat.js'
+
+/** About a week, 2 weeks, a month: the gap for an every so often ask. */
+export function EveryPick({ value, onPick }) {
+  return (
+    <Pick
+      label={t('hang.every')}
+      value={value}
+      onPick={onPick}
+      items={[
+        { id: 7, label: t('hang.everyWeek') },
+        { id: 14, label: t('hang.every2Weeks') },
+        { id: 30, label: t('hang.everyMonth') },
+      ]}
+    />
+  )
+}
 
 /** Write a did you for a friend or someone in the family. */
-export function SendSheet({ person, family = false, still, onClose, onSent }) {
-  const [question, setQuestion] = useState('')
+export function SendSheet({ person, book = null, family = false, initialQuestion = '', still, onClose, onSent }) {
+  const [question, setQuestion] = useState(initialQuestion)
   const [note, setNote] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
   const [cadence, setCadence] = useState('once')
   const [days, setDays] = useState([])
+  const [everyDays, setEveryDays] = useState(7)
   const name = personName(person) || t('people.someone')
 
   async function send() {
@@ -25,7 +43,8 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
       return
     }
     setBusy(true)
-    const { miss: why } = await sendDidI(person.user_id, question, note, undefined, repeatFrom(cadence, days))
+    const last = cadence === 'every' ? senderLastDid(book, question, boardDate(new Date())) : ''
+    const { miss: why } = await sendDidI(person.user_id, question, note, undefined, repeatFrom(cadence, days, everyDays), last)
     setBusy(false)
     if (why === 'already') {
       setMiss(t('people.sendAlready'))
@@ -66,6 +85,7 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
           { id: 'once', label: t('hang.once') },
           { id: 'daily', label: t('we.daily') },
           { id: 'weekly', label: t('we.someDays') },
+          { id: 'every', label: t('hang.every') },
         ]}
       />
       {cadence === 'weekly' ? (
@@ -77,6 +97,8 @@ export function SendSheet({ person, family = false, still, onClose, onSent }) {
           items={[0, 1, 2, 3, 4, 5, 6].map((day) => ({ id: day, label: t(`we.day.${day}`) }))}
         />
       ) : null}
+      {cadence === 'every' ? <EveryPick value={everyDays} onPick={setEveryDays} /> : null}
+      {cadence === 'every' ? <p className="di-set-note">{t('people.sendEveryHint')}</p> : null}
       {miss ? (
         <p className="di-miss" role="alert">
           {miss}

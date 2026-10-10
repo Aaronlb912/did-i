@@ -25,7 +25,7 @@ const LEGACY_KINDS = ['house', 'pills', 'money', 'people', 'other']
 // Topics live in lamp.kind as one comma-separated string ("Pets, Morning").
 const KIND_MAX = 160
 const TOPICS_MAX = 8
-const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n']
+const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n', 'every']
 const SLOTS = ['morning', 'whenever', 'night']
 
 export function slotFromAskAfter(askAfter) {
@@ -152,6 +152,7 @@ export function blankLamp(now = new Date()) {
     monthDay: '',
     everyN: '',
     everyNAnchor: '',
+    everyDays: '',
     onceOn: '',
     onceWhen: 'on',
     dueBy: '',
@@ -215,6 +216,8 @@ export function normalizeLamp(raw) {
   }
   const everyNRaw = Number(lamp.everyN)
   const everyN = Number.isInteger(everyNRaw) && everyNRaw >= 2 ? everyNRaw : ''
+  const everyDaysRaw = Number(lamp.everyDays)
+  const everyDays = cadence === 'every' && Number.isInteger(everyDaysRaw) && everyDaysRaw >= 1 && everyDaysRaw <= 365 ? everyDaysRaw : ''
   return {
     id: asString(lamp.id) || newLampId(),
     question: asString(lamp.question).trim(),
@@ -225,6 +228,7 @@ export function normalizeLamp(raw) {
     monthDay,
     everyN,
     everyNAnchor: asString(lamp.everyNAnchor).trim(),
+    everyDays,
     onceOn: asString(lamp.onceOn).trim(),
     onceWhen: cadence === 'once' && lamp.onceWhen === 'by' ? 'by' : cadence === 'once' ? 'on' : '',
     dueBy:
@@ -251,7 +255,30 @@ export function normalizeLamp(raw) {
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
+    // Track an amount: the note sheet asks for a number too. Only set when on.
+    ...(asBool(lamp.trackAmount)
+      ? { trackAmount: true, ...(amountUnitOf(lamp) ? { amountUnit: amountUnitOf(lamp) } : {}) }
+      : {}),
   }
+}
+
+// An amount on one night's answer, and the unit a question counts it in.
+// The server holds the same range (answer_log_amount in answers.sql).
+export const AMOUNT_MAX = 100000
+export const UNIT_MAX = 24
+
+export function amountUnitOf(lamp) {
+  return asString(lamp?.amountUnit).replace(/\s+/g, ' ').trim().slice(0, UNIT_MAX)
+}
+
+// A number from 0 to AMOUNT_MAX, two places at most, or null. A comma reads as a decimal point.
+export function cleanAmount(value) {
+  if (value === null || value === undefined) return null
+  const text = typeof value === 'number' ? String(value) : String(value).trim().replace(',', '.')
+  if (!text) return null
+  const n = Number(text)
+  if (!Number.isFinite(n) || n < 0 || n > AMOUNT_MAX) return null
+  return Math.round(n * 100) / 100
 }
 
 export function normalizeAnswer(raw) {
@@ -266,6 +293,7 @@ export function normalizeAnswer(raw) {
     note: asString(answer.note),
     // When the note was last saved; answeredAt stays the tap.
     ...(asString(answer.noteAt) ? { noteAt: asString(answer.noteAt) } : {}),
+    ...(cleanAmount(answer.amount) !== null ? { amount: cleanAmount(answer.amount) } : {}),
   }
 }
 
@@ -435,6 +463,10 @@ export function missLamp(lamp) {
       return 'hang.miss.everyNStart'
     }
   }
+  if (lamp.cadence === 'every') {
+    const n = Number(lamp.everyDays)
+    if (!Number.isInteger(n) || n < 1 || n > 365) return 'hang.miss.everyDays'
+  }
   const after = asString(lamp.askAfter).trim()
   if (after && !/^([01]\d|2[0-3]):[0-5]\d$/.test(after)) {
     return 'hang.miss.askAfter'
@@ -525,6 +557,7 @@ export function cadenceLine(lamp) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('cadence.onceOn', { date: formatBoardDate(on) })
     return t('cadence.once')
   }
+  if (lamp.cadence === 'every') return Number(lamp.everyDays) >= 1 ? t('cadence.every', { n: lamp.everyDays }) : t('hang.every')
   if (lamp.cadence === 'every_n') return Number(lamp.everyN) >= 2 ? t('cadence.everyN', { n: lamp.everyN }) : t('hang.everyN')
   return lamp.cadence
 }

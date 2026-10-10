@@ -23,6 +23,9 @@ function blankPrefs() {
     locale: 'en',
     clock: 'phone',
     lessMotion: false,
+    // Gentle mode: streak numbers hidden from the person themself. Streaks are
+    // still counted and stored, and friends and family see the same as before.
+    gentle: false,
     diagnosticsAsked: false,
     shareDiagnostics: false,
     matchWallpaper: false,
@@ -67,6 +70,7 @@ function cleanPrefs(raw) {
   if (LOCALES.has(raw?.locale)) next.locale = raw.locale
   if (CLOCKS.has(raw?.clock)) next.clock = raw.clock
   if (raw?.lessMotion === true) next.lessMotion = true
+  if (raw?.gentle === true) next.gentle = true
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
   if (raw?.matchWallpaper === true) next.matchWallpaper = true
@@ -167,6 +171,10 @@ export function uses24h() {
     clockCache = clock === '24' || (clock === 'phone' && phoneUses24h(locale))
   }
   return clockCache
+}
+
+export function gentleOn() {
+  return readPrefs().gentle === true
 }
 
 export function pingOn(kind) {

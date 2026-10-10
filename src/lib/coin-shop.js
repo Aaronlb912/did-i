@@ -91,7 +91,14 @@ async function buyWithGemsRaw(book, kind, id) {
 function counted(buy) {
   return async (book, ...rest) => {
     const before = normalizePurse(book)
-    const out = await buy(book, ...rest)
+    let out
+    try {
+      out = await buy(book, ...rest)
+    } catch {
+      // A dropped connection or a thrown call: the shop says the buy failed,
+      // never a tap that does nothing. Nothing was spent on this phone.
+      return { book, miss: 'shop.miss.buyFail' }
+    }
     const after = out?.book ? normalizePurse(out.book) : before
     if (!out?.miss && (after.coins < before.coins || after.gems < before.gems)) noteMilestone('bought')
     return out

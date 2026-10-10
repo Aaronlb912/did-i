@@ -8,7 +8,7 @@ import {
   isDeadlineMode,
   schedulePick,
 } from './hang-schedule.js'
-import { cadenceLine, SHORT_MAX } from './board-json.js'
+import { cadenceLine, didQuestion, SHORT_MAX, UNIT_MAX } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
@@ -85,7 +85,7 @@ export function HangLamp({
       {head ? head(hang.draft.question) : <p className="di-hang-kicker">{hang.editing ? t('hang.edit') : t('hang.new')}</p>}
       <div className="di-hang-preview" aria-hidden="true">
         <p className="di-face-plate">{String(hang.tagTitle || '').trim() || book?.title || ''}</p>
-        <p className="di-hang-preview-q">{hang.draft.question.trim() || t('hang.questionPh')}</p>
+        <p className="di-hang-preview-q">{didQuestion(hang.draft.question) || t('hang.questionPh')}</p>
         {previewMeta ? <p className="di-hang-preview-meta">{previewMeta}</p> : null}
       </div>
       <label className="di-field">
@@ -173,6 +173,20 @@ export function HangLamp({
           <small className="di-field-hint">{t('hang.onceOnHint')}</small>
         </div>
       ) : null}
+      {!deadline && hang.draft.cadence === 'every' ? (
+        <label className="di-field">
+          <span>{t('hang.everyDays')}</span>
+          <input
+            className="di-hang-input"
+            inputMode="numeric"
+            value={hang.draft.everyDays}
+            onChange={(event) => hang.change('everyDays', event.target.value.replace(/\D/g, ''))}
+            placeholder="7"
+            maxLength={3}
+          />
+          <small className="di-field-hint">{t('hang.everyHint')}</small>
+        </label>
+      ) : null}
       {!deadline && hang.draft.cadence === 'every_n' ? (
         <>
           <label className="di-field">
@@ -204,7 +218,7 @@ export function HangLamp({
           value={hang.draft.askAfter}
           onChange={hang.changeAskAfter}
         />
-        <small className="di-field-hint">{t('hang.timeHint')}</small>
+        <small className="di-field-hint">{hang.draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</small>
       </div>
       <div className="di-field di-field-notify">
         <span id="di-hang-notify">{t('hang.notify')}</span>
@@ -233,6 +247,7 @@ export function HangLamp({
         <div className="di-field di-field-tag">
           <span id="di-hang-tag">{t('hang.tag')}</span>
           <p className="di-hang-tags-one">{t('hang.tagOne')}</p>
+          <p className="di-hang-tags-one">{t('hang.folderVsTopic')}</p>
           <div className="di-hang-tags" role="radiogroup" aria-labelledby="di-hang-tag">
             {hang.liveTags.map((item) => {
               const on = hang.isTagSelected(item.title)
@@ -347,6 +362,31 @@ export function HangLamp({
               placeholder={t('hang.notesPh')}
             />
           </label>
+          <div className="di-field">
+            <div className="di-hang-chips">
+              <button
+                className={hang.draft.trackAmount ? 'di-key is-pick' : 'di-key'}
+                type="button"
+                aria-pressed={Boolean(hang.draft.trackAmount)}
+                onClick={() => hang.change('trackAmount', !hang.draft.trackAmount)}
+              >
+                {t('hang.trackAmount')}
+              </button>
+            </div>
+            <small className="di-field-hint">{t('hang.trackAmountSub')}</small>
+          </div>
+          {hang.draft.trackAmount ? (
+            <label className="di-field">
+              <span>{t('hang.amountUnit')}</span>
+              <input
+                className="di-hang-input"
+                value={hang.draft.amountUnit || ''}
+                onChange={(event) => hang.change('amountUnit', event.target.value)}
+                placeholder={t('hang.amountUnitPh')}
+                maxLength={UNIT_MAX}
+              />
+            </label>
+          ) : null}
         </>
       ) : null}
       </div>
