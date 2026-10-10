@@ -117,6 +117,11 @@ async function creditPurchase(purchase) {
   return { ...out, gems: claimed.gems }
 }
 
+// A test buy from an account the server does not credit (gem-iap gate.js).
+function testBuyToast() {
+  showToast({ id: 'gems-test-miss', kind: 'error', text: t('gems.testMiss'), ms: 6000 })
+}
+
 function creditMissToast() {
   showToast({
     id: 'gems-credit-miss',
@@ -241,7 +246,8 @@ async function connectStore() {
       }
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
-      if (out?.miss && out.miss !== 'test') creditMissToast()
+      if (out?.miss === 'test') testBuyToast()
+      else if (out?.miss) creditMissToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return
