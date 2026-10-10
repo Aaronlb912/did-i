@@ -250,6 +250,16 @@ export async function notedPeople() {
   return new Set((data || []).map((row) => row.friend_id))
 }
 
+/** Every note you keep, friend id to text, in one read (the web Friends list). */
+export async function friendNotesAll() {
+  const db = cloud()
+  const user = await me()
+  if (!db || !user) return new Map()
+  const { data, error } = await db.from('friend_notes').select('friend_id, note').eq('owner_id', user.id)
+  if (error) throw new Error(error.message)
+  return new Map((data || []).map((row) => [row.friend_id, String(row.note || '')]))
+}
+
 /** Saves the note; an empty one is removed. Returns { miss } on failure. */
 export async function saveFriendNote(friendId, note) {
   const db = cloud()

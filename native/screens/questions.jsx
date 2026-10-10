@@ -213,17 +213,19 @@ function sameWords(lamp) {
 }
 
 // Past one-time questions: how their night went, or missed when never answered.
-function earlierStates(rows) {
+// Gentle mode leaves a missed one blank.
+function earlierStates(rows, gentle = false) {
+  const missed = gentle ? '' : 'missed'
   const ids = new Set(rows.map(rowId))
   const books = new Map(rows.map((row) => [row.boardId, row.book]))
   const states = new Map()
-  for (const row of rows) states.set(rowId(row), 'missed')
+  for (const row of rows) states.set(rowId(row), missed)
   for (const [boardId, book] of books) {
     for (const answer of book?.answers || []) {
       const id = `${boardId}:${answer.lampId}`
       if (!ids.has(id)) continue
       const status = answer.status
-      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : 'missed')
+      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : missed)
     }
   }
   return states
@@ -458,6 +460,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [query, setQuery] = useState('')
   const rows = searchRows(allRows, query)
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
+  const gentle = usePrefs().gentle === true
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useLayoutState(false)
   const [ordering, setOrdering] = useLayoutState(false)
@@ -483,7 +486,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   )
   // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
-  const pastStates = earlierOpen ? earlierStates(earlier) : states
+  const pastStates = earlierOpen ? earlierStates(earlier, gentle) : states
   const starters = openStarters(book)
   const shown = [...hung, ...down, ...(earlierOpen ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
@@ -495,7 +498,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     const kinds = new Set()
     for (const row of hung) kinds.add(dotKind(states.get(rowId(row)) || '', dueByUrgency(row.lamp, dateIso)))
     // Open Earlier rows have dots too, so the key names theirs.
-    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || 'missed')
+    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || (gentle ? 'off' : 'missed'))
     return kinds
   })()
 

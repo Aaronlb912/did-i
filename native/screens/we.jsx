@@ -53,7 +53,7 @@ import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { WeNotes } from '../components/WeNotes.jsx'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -393,6 +393,9 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
   const feel = useAddFeel(book, inputRef)
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // Track an amount, the same switch as the card's more menu; saved once the card exists.
+  const [track, setTrack] = useState(false)
+  const [unit, setUnit] = useState('')
   const lead = t('we.title')
   const question = blank.trim() ? `${lead} ${blank.trim()}` : ''
   const names = (people || []).filter((p) => picked.includes(p.id)).map((p) => p.name)
@@ -435,6 +438,10 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       feel.buzz()
       setMiss(tMiss(out.miss))
       return
+    }
+    if (track) {
+      const tracked = await weTrackAmount(out.id, true, unit.trim())
+      if (tracked.miss) confirmMiss(t('weAmount.trackLater'))
     }
     if (share) {
       const link = await makeWeLink(out.id)
@@ -549,6 +556,27 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
             />
           }
         />
+
+        <SetCard colors={colors}>
+          <SetSwitch
+            label={t('weAmount.track')}
+            sub={t('weAmount.trackSub')}
+            last
+            on={track}
+            onPress={() => setTrack((on) => !on)}
+            colors={colors}
+          />
+        </SetCard>
+        {track ? (
+          <Field
+            colors={colors}
+            label={t('weAmount.unit')}
+            value={unit}
+            onChangeText={setUnit}
+            placeholder={t('weAmount.unitPh')}
+            maxLength={24}
+          />
+        ) : null}
       </View>
 
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>

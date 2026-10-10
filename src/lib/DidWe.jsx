@@ -42,7 +42,7 @@ import { readShelf } from './board-shelf.js'
 import { t, tMiss } from './i18n.js'
 import { fireCheer, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-import { SetCap, SetSheet } from './set-bits.jsx'
+import { SetCap, SetCard, SetField, SetSheet, SetSwitch } from './set-bits.jsx'
 import { BuddyArt } from './BuddyArt.jsx'
 import { LeadSwitch } from './LeadSwitch.jsx'
 import { useWeCheer } from './we-cheer.js'
@@ -590,14 +590,30 @@ function WeNewForm({ book, start = '', withId = '' }) {
   const [picked, setPicked] = useState(withId ? [withId] : [])
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // Track an amount, the same switch as the card page; saved once the card exists.
+  const [track, setTrack] = useState(false)
+  const [unit, setUnit] = useState('')
+  // Made, but the amount did not save: say so and offer the card, never make it twice.
+  const [madeId, setMadeId] = useState('')
 
   async function make() {
     if (draft.cadence === 'weekly' && !draft.weekdays.length) return setMiss(t('we.missDays'))
     setBusy(true)
     const out = await weMake({ ...draft, ask: picked })
-    setBusy(false)
-    if (out.miss) return setMiss(tMiss(out.miss))
+    if (out.miss) {
+      setBusy(false)
+      return setMiss(tMiss(out.miss))
+    }
     noteAsked(picked)
+    if (track) {
+      const tracked = await weTrackAmount(out.id, true, unit.trim())
+      if (tracked.miss) {
+        setBusy(false)
+        setMadeId(out.id)
+        return setMiss(t('weAmount.trackLater'))
+      }
+    }
+    setBusy(false)
     goHash('/we', { id: out.id })
   }
 
@@ -614,20 +630,38 @@ function WeNewForm({ book, start = '', withId = '' }) {
         onFolder={(folder) => setDraft((was) => ({ ...was, folder }))}
         onTopics={(topics) => setDraft((was) => ({ ...was, topics }))}
       />
+      <SetCard>
+        <SetSwitch label={t('weAmount.track')} sub={t('weAmount.trackSub')} on={track} onClick={() => setTrack((on) => !on)} />
+        {track ? (
+          <SetField
+            label={t('weAmount.unit')}
+            value={unit}
+            onChange={(event) => setUnit(event.target.value)}
+            placeholder={t('weAmount.unitPh')}
+            maxLength={24}
+          />
+        ) : null}
+      </SetCard>
       {miss ? (
         <p className="di-miss" role="alert">
           {miss}
         </p>
       ) : null}
       <div className="di-hang-actions">
-        <button
-          className="di-did di-did-small"
-          type="button"
-          disabled={busy || !draft.question.trim() || !picked.length}
-          onClick={make}
-        >
-          {t('we.make')}
-        </button>
+        {madeId ? (
+          <button className="di-did di-did-small" type="button" onClick={() => goHash('/we', { id: madeId })}>
+            {t('we.open')}
+          </button>
+        ) : (
+          <button
+            className="di-did di-did-small"
+            type="button"
+            disabled={busy || !draft.question.trim() || !picked.length}
+            onClick={make}
+          >
+            {t('we.make')}
+          </button>
+        )}
       </div>
     </Shell>
   )

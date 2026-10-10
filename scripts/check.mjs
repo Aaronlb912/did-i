@@ -24,7 +24,8 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
-import { peopleTonightItems } from '../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine } from '../src/lib/people-tonight.js'
+import { nightWhyLines } from '../src/lib/night-why.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
   activeDeadline,
@@ -5771,6 +5772,81 @@ test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks'
   // Web Friends: the result line sticks in view instead of sitting under a long list.
   assert.match(read('src/lib/Friends.jsx'), /<div className="di-people-said">/)
   assert.match(read('src/lib/did-i.css'), /\.di-people-said \{\s*position: sticky;/)
+})
+
+// Owner picks A: family chip, gentle blanks, Track an amount on the form, web friend notes.
+const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const readSrc = (file) => readFileSync(path.join(srcRoot, file), 'utf8').split(String.fromCharCode(13)).join('')
+
+test('family and asks show as a chip beside your count and never add to it', () => {
+  const items = peopleTonightItems({
+    familyRows: [
+      { family: { id: 'f' }, lamp: { id: 'a', question: 'Feed the cat?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'b', question: 'Trash?' }, night: '2026-10-09', answer: null },
+      { family: { id: 'f' }, lamp: { id: 'c', question: 'Done one' }, night: '2026-10-09', answer: { status: 'yes' } },
+    ],
+    asks: [{ id: 's1', kind: 'todo', state: 'sent', question: 'Call mom?' }],
+    night: '2026-10-09',
+  })
+  assert.equal(peopleWaitingLine(items), `${t('tonight.meterFamily', { n: 2 })} · ${t('tonight.meterAsks', { n: 1 })}`)
+  assert.equal(peopleWaitingLine(items.filter((item) => item.kind === 'family')), t('tonight.meterFamily', { n: 2 }))
+  assert.equal(peopleWaitingLine([]), '', 'gone once all are answered')
+  const own = [{ lamp: lamp('mine'), dateIso: '2026-10-09', answer: null }]
+  assert.equal(nightProgress(own).total, 1, 'own total is only your own rows')
+  assert.match(readSrc('native/screens/TonightScreen.jsx'), /waiting=\{peopleWaitingLine\(peopleItems\)\}/)
+  const web = readSrc('src/lib/Tonight.jsx')
+  assert.match(web, /waiting=\{peopleWaitingLine\(peopleTonightItems\(\{ familyRows: family\.rows \}\)\)\}/)
+  assert.match(web, /getElementById\('di-fam-strip'\)\?\.scrollIntoView\(\{ behavior: reduce \? 'auto' : 'smooth'/)
+  assert.match(readSrc('src/lib/FamilyTonight.jsx'), /id="di-fam-strip"/)
+  assert.doesNotMatch(readSrc('src/lib/FamilyTonight.jsx'), /useFamilyTonight[(]/, 'one family read, shared with the chip')
+})
+
+test('gentle mode: a missed night is blank on Home, week, month, list and why sheet', () => {
+  const why = { state: 'missed', iso: '2026-10-01', noped: [], unanswered: [{ lamp: lamp('Water') }], weOpen: [] }
+  writePrefs({ gentle: false })
+  assert.equal(nightWhyLines(why)[0], t('why.missed'))
+  writePrefs({ gentle: true })
+  const lines = nightWhyLines(why)
+  assert.ok(!lines.includes(t('why.missed')), 'no streak broke line')
+  assert.ok(lines.some((line) => line.includes('Water')), 'still names what was left')
+  writePrefs({ gentle: false })
+  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('native/components/WeekStrip.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
+  const month = readSrc('native/components/LampMonth.jsx')
+  assert.match(month, /iso === dateIso \? 'open' : gentle \? '' : 'missed'/)
+  assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
+  const list = readSrc('native/screens/questions.jsx')
+  assert.match(list, /earlierStates\(earlier, gentle\)/)
+  assert.match(list, /const missed = gentle \? '' : 'missed'/)
+  assert.match(readSrc('native/components/CalendarGrid.jsx'), /t\(gentleOn\(\) \? 'jewelKey\.open' : 'cal\.notAnswered'\)/)
+  assert.match(readSrc('src/lib/Calendar.jsx'), /prefs\.gentle === true \? 'cal\.hintGentle' : 'cal\.hint'/)
+  assert.match(readSrc('native/screens/more.jsx'), /gentle \? 'cal\.hintGentle' : 'cal\.hint'/)
+})
+
+test('new Did we form: Track an amount with a unit, saved right after the card is made', () => {
+  const phone = readSrc('native/screens/we.jsx')
+  assert.match(phone, /if \(track\) \{\s+const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)\s+if \(tracked\.miss\) confirmMiss\(t\('weAmount\.trackLater'\)\)/)
+  assert.ok(phone.indexOf('weTrackAmount(out.id') > phone.indexOf('await weMake('), 'after the card exists')
+  const web = readSrc('src/lib/DidWe.jsx')
+  assert.match(web, /const tracked = await weTrackAmount\(out\.id, true, unit\.trim\(\)\)/)
+  assert.match(web, /setMadeId\(out\.id\)/, 'a failed amount never makes the card twice')
+  assert.match(web, /<SetSwitch label=\{t\('weAmount\.track'\)\}/)
+  for (const src of [phone, web]) assert.match(src, /maxLength=\{24\}/, 'same unit limit as the server')
+  assert.match(readSrc('supabase/social-amounts.sql'), /left\(btrim\(regexp_replace\(coalesce\(want_unit, ''\), '\\s\+', ' ', 'g'\)\), 24\)/)
+})
+
+test('web Friends: your private friend note, view, edit, remove, one read for the list', () => {
+  const people = readSrc('src/lib/people.js')
+  assert.match(people, /export async function friendNotesAll\(\)/)
+  assert.match(people, /from\('friend_notes'\)\.select\('friend_id, note'\)\.eq\('owner_id', user\.id\)/)
+  const web = readSrc('src/lib/Friends.jsx')
+  assert.match(web, /friendNotesAll\(\)\.catch\(\(\) => null\)/, 'loaded once with the list, not per friend')
+  assert.match(web, /<FriendNoteBox/)
+  assert.match(web, /maxLength=\{FRIEND_NOTE_MAX\}/)
+  assert.match(web, /onClick=\{\(\) => save\(''\)\}/, 'remove clears it')
+  assert.match(web, /t\('friendNote\.private', \{ name \}\)/)
+  assert.doesNotMatch(web, /readFriendNote\(/, 'no read per friend')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

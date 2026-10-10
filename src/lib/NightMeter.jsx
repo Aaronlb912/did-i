@@ -5,7 +5,8 @@ import { usePrefs } from './prefs.js'
 
 export { nightProgress } from './night-progress.js'
 
-export function NightMeter({ due = [] }) {
+// waiting: the "+2 family" chip (peopleWaitingLine); onWaiting jumps to those cards.
+export function NightMeter({ due = [], waiting = '', onWaiting }) {
   usePrefs()
   const { total, answered, ratio } = nightProgress(due)
   const pop = usePop(answered)
@@ -17,6 +18,11 @@ export function NightMeter({ due = [] }) {
           {answered}
         </span>
         <span className="di-meter-label">{t('tonight.meter', { n: total })}</span>
+        {waiting ? (
+          <button className="di-meter-chip" type="button" onClick={onWaiting} disabled={!onWaiting}>
+            {waiting}
+          </button>
+        ) : null}
       </p>
       <div
         className="di-meter-bar"

@@ -8,7 +8,7 @@ Last worked through 2026-10-02.
 ## Did we amounts and shared notes (branch `social-amounts`)
 
 - **Supabase not applied yet.** Run npm run db:apply:all (or supabase/social-amounts.sql after did-we.sql, blocks.sql). Until then the total line, Track an amount and the Share switch stay hidden or show "Could not share the note".
-- **Track an amount on a Did we: card page only, maker only.** The phone has it in the card's more menu; the web card page has Track an amount (maker) and Add your amount after a Did (branch `gaps-1`). Not on the New Did we form yet.
+- **Track an amount on a Did we: card page only, maker only.** The phone has it in the card's more menu; the web card page has Track an amount (maker) and Add your amount after a Did (branch `gaps-1`). The New Did we form has the switch and a unit box on both (branch `owner-picks-a`), saved right after the card is made; if that save fails the card is still made and the form says to turn it on from the card. Not clicked through on a phone or signed in on the web yet.
 - **Did we notes (branch `notes-groups`) are phone only, on the card page.** A note goes on tonight after your Did, or on any night you said Did in the last 14 (the Earlier nights list, branch `gaps-1`); Share with the group is off by default. Others on the card see shared ones for the last 14 nights and can cheer you. No note box for an early answer, nothing on the Did we list or the website, and the Did we cheer does not say which note. Needs the SQL (`we_notes` in social-amounts.sql) and a device pass.
 - **Share now follows the server.** The note sheet asks the server (one cached read of all your shared notes) when it opens, so another phone shows the right switch. Offline it falls back to what this device last knew.
 - **Shared notes show on a friend's page (phone) and under each friend on the web Friends list (branch `web-social`).** Not in the group for a Did we. Both apps have the Share switch in the note box. A cheer on a shared note names it ("A cheer for your note on ...") in the push, the inbox and the banner; it needs friend-cheers.sql and push.sql applied, and until then it goes out as a plain cheer.
@@ -53,8 +53,13 @@ Last worked through 2026-10-02.
 
 ## Friend notes
 
-- **Phone only.** The website has no friend page, so notes are not shown or editable there. They are in `friend_notes` and would show if it gets one.
+- **On the web Friends list too (branch `owner-picks-a`).** Each friend card has Your note: add, edit, Remove note (or Save empty), 500 characters, one read for the whole list. Checked with tests and `vite build` only, not signed in. Family members who are not friends have no note box on the web.
 - **Needs device testing:** add, edit, clear (Save with an empty box) on a friend page, offline save shows the miss line, the note is back on a second phone.
+
+## Family chip and gentle blanks (branch `owner-picks-a`)
+
+- **Family chip by your count.** Phone Home shows "+2 family" (and "+1 from friends" for Did you asks) beside done and left; your own count never includes them. The web shows the family part only (the web Tonight has no ask cards) and a tap scrolls to the family panel. On the phone it is a label only. Hidden when you have nothing of your own tonight, since the meter is hidden then. Needs a phone pass at 390px with a long German label.
+- **Gentle mode blanks missed nights** on the Home dots, the week strip (phone and web), the question month view and its key, past one-time questions on the Questions list, the history day labels and sheets, and the why sheet (no "streak broke" line). Achievements like Come back still name a missed night. Needs a phone pass.
 
 ## Referral rewards (branch `feat/referral-rewards`)
 

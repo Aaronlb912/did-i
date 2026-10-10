@@ -80,7 +80,7 @@ import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky } from '../components/NightSky.jsx'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
-import { peopleTonightItems } from '../../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
 import { WeAnswered, WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
@@ -1037,7 +1037,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ]}
       >
       <Slot>
-        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} />
+        <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
 
       {showChips ? (

@@ -692,7 +692,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
-      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hint')}</Meta> : null}
+      {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
       <ChipRow
         items={[
           { id: 'month', label: t('cal.viewMonth') },
