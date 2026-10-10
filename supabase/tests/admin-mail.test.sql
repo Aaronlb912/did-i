@@ -63,8 +63,8 @@ begin
   if n <> 0 then raise exception 'FAIL: a sent row came back'; end if;
 
   -- Photo path: only inside avatars/<Bea>/.
-  update public.profiles set avatar_url = 'https://abc.supabase.co/storage/v1/object/public/avatars/' || b || '/1.jpg?t=1'
-  where user_id = b;
+  insert into public.profiles (user_id, avatar_url) values (b, 'https://abc.supabase.co/storage/v1/object/public/avatars/' || b || '/1.jpg?t=1')
+  on conflict (user_id) do update set avatar_url = excluded.avatar_url;
   perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   p := public.admin_photo_path(rid);
