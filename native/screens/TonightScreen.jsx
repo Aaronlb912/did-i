@@ -206,10 +206,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const family = useFamilyTonight(account.user)
   const [asks, setAsks] = useState([])
   const [peopleGone, setPeopleGone] = useState([])
+  // Same asks again keep the old array, so a wake with nothing new does not redraw tonight.
+  const asksKey = useRef('[]')
   const loadAsks = useCallback(async () => {
-    if (!account.user) return setAsks([])
+    const keep = (next) => {
+      const key = JSON.stringify(next)
+      if (key === asksKey.current) return
+      asksKey.current = key
+      setAsks(next)
+    }
+    if (!account.user) return keep([])
     try {
-      setAsks(await listInbox())
+      keep(await listInbox())
     } catch {
       // Offline: the cards wait for the next look.
     }

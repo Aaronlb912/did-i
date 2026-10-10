@@ -1662,14 +1662,23 @@ export function useAutoAdd(user, add) {
 
 export function useFamilyTonight(user) {
   const [rows, setRows] = useState([])
+  // The same rows again (a wake with nothing new) keep the old array, so
+  // Tonight does not redraw for nothing.
+  const seen = useRef('[]')
+  const keep = useCallback((next) => {
+    const key = JSON.stringify(next)
+    if (key === seen.current) return
+    seen.current = key
+    setRows(next)
+  }, [])
 
   const look = useCallback(async () => {
     if (!cloudSetUp() || !user) {
-      setRows([])
+      keep([])
       return
     }
-    setRows(await familyTonight())
-  }, [user])
+    keep(await familyTonight())
+  }, [user, keep])
 
   useEffect(() => {
     look()
