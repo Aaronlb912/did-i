@@ -60,7 +60,8 @@ import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
-import { MenuIcon } from '../components/MenuIcon.jsx'
+import { PickSheet } from '../components/PickSheet.jsx'
+import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage, lampActions } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
@@ -1220,42 +1221,6 @@ export function TopicPick({ value, known, onChange, colors }) {
   )
 }
 
-// The line under the card: when it repeats and at what time, with Change.
-function WhenSummary({ words, open, onPress, colors }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-      accessibilityLabel={`${t('hang.when')}: ${words}`}
-      android_ripple={ripple(colors.panel3)}
-      style={({ pressed }) => [styles.whenLine, { backgroundColor: pressed ? colors.panel2 : 'transparent' }]}
-    >
-      <MenuIcon name="calendar" color={colors.inkSoft} size={16} stroke />
-      <Text style={[styles.whenWords, { color: colors.inkSoft }]} numberOfLines={2}>
-        {words}
-      </Text>
-      <Text style={[styles.whenChange, { color: colors.on }]}>{open ? t('hang.less') : t('checkOn.change')}</Text>
-    </Pressable>
-  )
-}
-
-function ScheduleTile({ label, on, onPress, colors }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: Boolean(on) }}
-      style={[
-        styles.schedTile,
-        { borderColor: on ? colors.on : colors.line, backgroundColor: on ? colors.panel3 : colors.panel },
-      ]}
-    >
-      <Text style={[styles.schedTileText, { color: on ? colors.on : colors.ink }]}>{label}</Text>
-    </Pressable>
-  )
-}
-
 const EVERY_N_MAX = 999
 const STEP_NIGHTS = 7
 
@@ -1648,8 +1613,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }
 
   // The card keeps to the extras; the line under it says when it repeats.
-  const meta = [hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
   const whenWords = [whenLine(draft), draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')].join(' · ')
+  const meta = [whenWords, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
   // Topics stay out of the way until someone uses them.
   const topicsShown = topicsOn || topicCount > 0 || shelfTopics(boards.length ? boards : [book]).length > 0
   // Shown in the main rows, and in When next to the time while that is open.
@@ -1701,6 +1666,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         blank={blank}
         onBlank={changeBlank}
         meta={meta}
+        metaAction={{ label: t('checkOn.change'), a11y: `${t('hang.when')}: ${whenWords}`, onPress: () => fold('when') }}
         wave={wave}
         stamp={stamp}
         shake={shake}
@@ -1716,23 +1682,21 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       />
       {below}
 
-      <WhenSummary words={whenWords} open={open === 'when'} onPress={() => fold('when')} colors={colors} />
-
-      {open === 'when' ? (
-        <Reveal>
+      <PickSheet open={open === 'when'} title={t('hang.when')} onClose={() => open === 'when' && fold('when')} colors={colors}>
           <SetCard colors={colors}>
             <View style={styles.whenBody}>
-              <View style={styles.schedTiles} accessibilityRole="radiogroup" accessibilityLabel={t('hang.when')}>
+              <ScheduleTiles label={t('hang.when')}>
                 {SCHEDULES.map((item) => (
                   <ScheduleTile
                     key={item.id}
                     label={t(item.labelKey)}
+                    sub={t(`hang.tileSub.${item.id}`)}
                     on={schedule === item.id}
                     onPress={() => hang.changeSchedule(item.id)}
                     colors={colors}
                   />
                 ))}
-              </View>
+              </ScheduleTiles>
             {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
             {SCHEDULE_MISSES.has(hang.miss) ? (
               <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -1841,7 +1805,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
                 setTimeOpen((was) => !was)
               }}
-              onShown={showFold}
               colors={colors}
             >
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
@@ -1849,8 +1812,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             </HangFold>
           {reminderRow(true)}
           </SetCard>
-        </Reveal>
-      ) : null}
+      </PickSheet>
 
       <View
         style={styles.settings}
@@ -1859,7 +1821,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         }}
       >
         <SetCard colors={colors}>
-          {open === 'when' ? null : reminderRow(false)}
+          {reminderRow(false)}
           {ideasShown ? (
             <SetRow
               colors={colors}
@@ -2575,15 +2537,9 @@ const styles = StyleSheet.create({
   summary: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, paddingHorizontal: 16, paddingTop: 12 },
   settings: { marginTop: 4 },
   editBtn: { marginTop: 16, marginBottom: 8 },
-  whenLine: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 6, marginTop: 6, marginBottom: 6, borderRadius: 10 },
-  whenWords: { flex: 1, fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
-  whenChange: { fontFamily: fonts.uiSemi, fontSize: 14 },
-  whenBody: { padding: 14, gap: 12 },
-  schedTiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
-  schedTile: { width: '48%', minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center' },
-  schedTileText: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  whenBody: { padding: 16, gap: 12 },
   stepWrap: { gap: 8 },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
   stepBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   stepGlyph: { fontFamily: fonts.uiSemi, fontSize: 22, lineHeight: 26 },
   stepNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700', minWidth: 48, textAlign: 'center' },

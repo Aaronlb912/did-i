@@ -33,6 +33,8 @@ export const HangCard = forwardRef(function HangCard(
     // Tapping the first words picks Did I, Did we or Did you.
     onLeadPress,
     leadColor,
+    // The schedule line's Change: { label, onPress, a11y }. Opens the When sheet.
+    metaAction,
   },
   inputRef,
 ) {
@@ -186,7 +188,22 @@ export const HangCard = forwardRef(function HangCard(
       {/* Sits right after the last letter: the row gap (8) and the box's spare room (4) are taken back. */}
       {mark ? <Text style={[faceCardStyles.title, styles.mark, !focused && styles.markTight, { color: colors.ink }]}>?</Text> : null}
       </View>
-      {meta ? (
+      {meta && metaAction ? (
+        <View style={styles.metaRow}>
+          <Text style={[styles.meta, styles.metaGrow, { color: colors.inkSoft }]} numberOfLines={2}>
+            {meta}
+          </Text>
+          <Pressable
+            onPress={metaAction.onPress}
+            accessibilityRole="button"
+            accessibilityLabel={metaAction.a11y || metaAction.label}
+            hitSlop={8}
+            style={({ pressed }) => [styles.metaGo, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={[styles.metaGoText, { color: leadColor || colors.on }]}>{metaAction.label}</Text>
+          </Pressable>
+        </View>
+      ) : meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
           {meta}
         </Text>
@@ -199,6 +216,10 @@ export const HangCard = forwardRef(function HangCard(
 const TYPE_ROOM = 28
 
 const styles = StyleSheet.create({
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4, marginBottom: -12 },
+  metaGrow: { flex: 1, marginTop: 0 },
+  metaGo: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
+  metaGoText: { fontFamily: fonts.uiSemi, fontSize: 15 },
   card: { justifyContent: 'flex-start', minHeight: 0, marginTop: 4 },
   // Lifts Did I onto the typed words' baseline (checked on Android).
   leadHit: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingBottom: 3.5 },
