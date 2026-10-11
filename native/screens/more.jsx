@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
+  Keyboard,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -148,7 +150,7 @@ function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -158,6 +160,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       showAdd={showAdd}
       back={locked ? false : undefined}
       showCogs={!locked}
+      scrollHandle={scrollHandle}
     >
       {children}
     </BoardShell>
@@ -1005,6 +1008,9 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const [addMiss, setAddMiss] = useState('')
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
+  const reduce = useReduceMotion()
+  const scrollHandle = useRef(null)
+  const addRef = useRef(null)
   const renameDirty = Boolean(titleDraft.trim()) && titleDraft.trim() !== (book?.title || '')
 
   function saveName() {
@@ -1036,8 +1042,45 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setTitleDraft(book?.title || '')
   }, [book?.title, book?.id])
 
+  // The keyboard covers Add and Cancel. Once it is up, scroll so they sit above it.
+  useEffect(() => {
+    if (!adding) return undefined
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    let timer = null
+    const lift = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const scroller = scrollHandle.current
+        const block = addRef.current
+        const keyTop = Keyboard.metrics?.()?.screenY
+        const inner = scroller?.getInnerViewRef?.()
+        if (!scroller?.scrollTo || !inner || !block?.measureLayout || !keyTop) return
+        block.measureLayout(
+          inner,
+          (_x, top) => {
+            block.measureInWindow((_bx, blockTop, _bw, blockH) => {
+              scroller.measureInWindow?.((_sx, viewTop) => {
+                const now = top - (blockTop - viewTop)
+                const need = blockTop + blockH + 16 - keyTop
+                if (need <= 0) return
+                scroller.scrollTo({ y: now + need, animated: !reduce })
+              })
+            })
+          },
+          () => {},
+        )
+      }, Platform.OS === 'ios' ? 300 : 60)
+    }
+    const sub = Keyboard.addListener(event, lift)
+    if (Keyboard.isVisible?.()) lift()
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+  }, [adding, reduce])
+
   return (
-    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
+    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd scrollHandle={scrollHandle}>
       <SetCard colors={colors}>
       {live.map((item, at) => {
         const left = leftoverOn(boards, new Date(), item.id)
@@ -1081,7 +1124,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       </SetCard>
       <View style={styles.dataGap} />
       {adding ? (
-        <View style={styles.tagName}>
+        <View ref={addRef} collapsable={false} style={styles.tagName}>
           <Field
             colors={colors}
             label={t('boards.addName')}
