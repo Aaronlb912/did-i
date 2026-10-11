@@ -19,7 +19,7 @@ import {
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
-import { uses24h } from './prefs.js'
+import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
 export { streakLength } from './achievements.js'
@@ -758,16 +758,36 @@ export function matchLamps(book, query) {
   })
 }
 
-function weekdayLong(iso) {
+// One formatter per app locale and style, never built in a loop.
+const weekdayFormats = new Map()
+function weekdayFormat(locale, style) {
+  const code = locale === 'zh' ? 'zh-CN' : locale || 'en'
+  const key = `${code}:${style}`
+  let format = weekdayFormats.get(key)
+  if (!format) {
+    try {
+      format = new Intl.DateTimeFormat(code, { weekday: style })
+    } catch {
+      format = new Intl.DateTimeFormat('en', { weekday: style })
+    }
+    weekdayFormats.set(key, format)
+  }
+  return format
+}
+
+/** The weekday of `iso` in the app's language: 'long' (Monday) or 'narrow' (M). */
+export function weekdayName(iso, style = 'narrow', locale = readPrefs().locale) {
   const date = parseIsoDate(iso)
   if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'long' })
+  return weekdayFormat(locale, style).format(date)
+}
+
+function weekdayLong(iso) {
+  return weekdayName(iso, 'long')
 }
 
 function weekdayShort(iso) {
-  const date = parseIsoDate(iso)
-  if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'narrow' })
+  return weekdayName(iso, 'narrow')
 }
 
 function dayNumber(iso) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { weekStripNights } from '../../src/lib/hall-pages.js'
+import { weekStripNights, weekdayName } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { goHash } from '../navigation/hash.js'
@@ -9,7 +9,9 @@ import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
-  const gentle = usePrefs().gentle === true
+  const prefs = usePrefs()
+  const gentle = prefs.gentle === true
+  const locale = prefs.locale
   const [weekShift, setWeekShift] = useLayoutState(0)
   useEffect(() => {
     setWeekShift(0)
@@ -41,7 +43,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
       <Reveal key={`w${weekShift}`} style={styles.days} exiting={undefined} layout={false}>
         {nights.map((night) => (
           <View key={night.iso} style={styles.day}>
-            <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{night.weekday[0]}</Text>
+            <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{weekdayName(night.iso, 'narrow', locale)}</Text>
             <View style={styles.dotWrap}>
               {night.isToday && night.on ? (
                 <View style={[styles.todayRing, { borderColor: colors.on }]} />

@@ -140,7 +140,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, weekdayName, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
@@ -1106,6 +1106,17 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
   const gentleText = recapShareText(recap, true)
   assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
+})
+
+test('weekday initials follow the app language, not English', () => {
+  // 2026-10-06 is a Tuesday: T in English, D (Dienstag) in German.
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'en'), 'T')
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'de'), 'D')
+  assert.equal(weekdayName('2026-10-06', 'long', 'de'), 'Dienstag')
+  assert.equal(weekdayName('', 'narrow', 'de'), '')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'native/components/DoneCard.jsx'), 'utf8')
+  assert.ok(!src.includes('night.weekday.slice'), 'the done card draws initials from weekdayName')
 })
 
 test('a question deleted on one phone stays deleted when an older phone syncs', () => {
