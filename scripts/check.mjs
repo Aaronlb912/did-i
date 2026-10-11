@@ -130,7 +130,7 @@ import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from 
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
-import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
+import { dropToast, nextToast, showToast, toastQueue, undoUp } from '../native/lib/toast-queue.js'
 import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
@@ -140,7 +140,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, weekdayName, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
@@ -1123,6 +1123,50 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.equal(isRecapNight(''), false)
   const text = recapShareText(recap)
   assert.ok(text.includes('5') && text.includes('3') && !text.includes('{'), 'share text is filled in')
+  // Gentle mode: no streak numbers in the recap line or the share text.
+  const best = t('recap.best', { n: 3 })
+  assert.ok(recapLine(recap).includes(best), 'recap line has the best streak')
+  assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
+  const gentleText = recapShareText(recap, true)
+  assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
+})
+
+test('an achievement never takes the undo toast spot while an undo is up', () => {
+  for (const item of toastQueue()) dropToast(item.id)
+  showToast({ id: 'mark:t', kind: 'mark', mark: { id: 'first' }, ms: 5200 })
+  assert.equal(nextToast().id, 'mark:t')
+  showToast({ id: 'undo:t', kind: 'undo', rev: 1, label: 'x', hint: 'y', until: Date.now() + 5000, total: 5000 })
+  assert.equal(nextToast().id, 'undo:t', 'undo shows first')
+  assert.equal(undoUp(), true, 'marks wait while the undo is up')
+  assert.equal(typeof toastQueue()[0].onShown, 'function', 'a plain undo gets a clock that starts when shown')
+  dropToast('undo:t')
+  assert.equal(undoUp(), false)
+  assert.equal(nextToast().id, 'mark:t', 'the mark comes after')
+  dropToast('mark:t')
+  const shell = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'native/AppShell.jsx'), 'utf8')
+  assert.ok(/marksHeld \|\| undoUp\(/.test(shell), 'AppShell holds new marks while an undo is up')
+})
+
+test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const times = readFileSync(path.join(root, 'src/lib/undo-times.js'), 'utf8')
+  assert.ok(/ANSWER_UNDO_MS = 5000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
+  for (const file of ['src/lib/useTonightStack.js', 'src/lib/AllLamps.jsx', 'native/screens/questions.jsx', 'native/components/LampManage.jsx', 'native/components/NightNotes.jsx', 'native/screens/more.jsx']) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    assert.ok(src.includes('undo-times.js'), `${file} reads undo-times.js`)
+    assert.ok(!/UNDO_MS = \d|until: now \+ \d|useUndoToast\([^)]*\}, \d{4}\)/.test(src), `${file} has no undo time of its own`)
+  }
+})
+
+test('weekday initials follow the app language, not English', () => {
+  // 2026-10-06 is a Tuesday: T in English, D (Dienstag) in German.
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'en'), 'T')
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'de'), 'D')
+  assert.equal(weekdayName('2026-10-06', 'long', 'de'), 'Dienstag')
+  assert.equal(weekdayName('', 'narrow', 'de'), '')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'native/components/DoneCard.jsx'), 'utf8')
+  assert.ok(!src.includes('night.weekday.slice'), 'the done card draws initials from weekdayName')
 })
 
 test('a question deleted on one phone stays deleted when an older phone syncs', () => {

@@ -2586,6 +2586,7 @@ export const de = {
   'recap.dids': 'Erledigt: {n}',
   'recap.best': 'Beste Serie: {n}',
   'recap.share': 'Meine Woche mit {cleared} von {n} Nächten geschafft, {dids} erledigt, beste Serie {best}.',
+  'recap.shareGentle': "Meine Woche mit {cleared} von {n} Nächten geschafft, {dids} erledigt.",
   'recap.shareBtn': 'Woche teilen',
   'recap.copied': 'Kopiert',
   'recap.lastWeek': 'Letzte Woche',

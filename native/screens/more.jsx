@@ -13,6 +13,7 @@ import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
 import { useUndoToast } from '../lib/toast-queue.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -398,6 +399,7 @@ export function LaterScreen({ book, now }) {
 
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
@@ -413,7 +415,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
+      {gentle ? null : <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>}
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -455,7 +457,7 @@ export function RecentScreen() {
   useUndoToast('recent', undo, () => {
     restoreNotices(undo?.list)
     setUndo(null)
-  }, 6000)
+  }, DELETE_UNDO_MS)
   function clearAll() {
     setUndo({ label: t('recent.cleared'), list: clearNotices() })
   }

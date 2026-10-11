@@ -4,14 +4,14 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { svgParts } from '../lib/svg-parts.js'
-import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../lib/night-sky.js'
+import { SKY_FPS, SKY_RUN_MS, STARS, moonAt, moonPath, moonPhase, starAt } from '../lib/night-sky.js'
 
 const MOON_R = 20
 
 /**
  * A quiet night behind the done card: a few stars drift and twinkle while
  * tonight's moon phase crosses slowly, stepping a handful of times a second.
- * Off with Less motion and the phone's Reduce Motion.
+ * It holds still after SKY_RUN_MS. Off with Less motion and the phone's Reduce Motion.
  */
 export function NightSky({ colors }) {
   const reduce = useReduceMotion()
@@ -23,7 +23,11 @@ export function NightSky({ colors }) {
     const timer = setInterval(() => {
       if (AppState.currentState === 'active') tick.value += 1
     }, 1000 / SKY_FPS)
-    return () => clearInterval(timer)
+    const stop = setTimeout(() => clearInterval(timer), SKY_RUN_MS)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(stop)
+    }
   }, [reduce, tick])
 
   if (reduce) return null

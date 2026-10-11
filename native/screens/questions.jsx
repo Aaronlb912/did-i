@@ -1,3 +1,4 @@
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
@@ -368,7 +369,7 @@ export function SearchBox({ value, onChange, colors, placeholder = t('questions.
   )
 }
 
-const UNDO_MS = 6000
+const UNDO_MS = DELETE_UNDO_MS
 
 // A row that opens another screen.
 function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
@@ -471,7 +472,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
   // The undo toast joins the one line above the tab bar. Shake undo is off.
-  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
+  // Its clock starts over once the toast is on screen, like an answer's.
+  const [undoSeen, setUndoSeen] = useState(0)
+  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'), () => setUndoSeen(Date.now()))
   useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
@@ -573,7 +576,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (!undo) return undefined
     const timer = setTimeout(() => setUndo(null), UNDO_MS)
     return () => clearTimeout(timer)
-  }, [undo])
+  }, [undo, undoSeen])
 
   function pick(row) {
     feelTap()
@@ -1367,12 +1370,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const fewSoFar = (book?.lamps || []).filter((lamp) => !lamp.archived).length < 3
   const packs = fresh && fewSoFar ? packList(book) : []
   const [packUndo, setPackUndo] = useState(null)
-  useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'))
+  const [packSeen, setPackSeen] = useState(0)
+  useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'), () => setPackSeen(Date.now()))
   useEffect(() => {
     if (!packUndo) return undefined
     const timer = setTimeout(() => setPackUndo(null), UNDO_MS)
     return () => clearTimeout(timer)
-  }, [packUndo])
+  }, [packUndo, packSeen])
 
   function takePackBack() {
     if (!packUndo) return

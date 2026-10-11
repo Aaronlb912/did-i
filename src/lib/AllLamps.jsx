@@ -1,3 +1,4 @@
+import { DELETE_UNDO_MS } from './undo-times.js'
 import { useEffect, useMemo, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
@@ -22,7 +23,7 @@ import { usePrefs } from './prefs.js'
 import { rowKey, taggedLamps } from './tags.js'
 import { TagRail } from './TagRail.jsx'
 
-const UNDO_MS = 6000
+const UNDO_MS = DELETE_UNDO_MS
 
 export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen, now }) {
   usePrefs()

@@ -17,7 +17,7 @@ import { markLabel } from '../../src/lib/achievements.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { goHash } from '../navigation/hash.js'
-import { dropToast, toastQueue, useToastQueue } from '../lib/toast-queue.js'
+import { dropToast, nextToast, toastQueue, useToastQueue } from '../lib/toast-queue.js'
 import { launchFlight } from './FlyHost.jsx'
 import { fonts } from '../theme.js'
 import { RollNumber } from './RollNumber.jsx'
@@ -32,6 +32,8 @@ const SWIPE_DOWN = 36
 const FLING = 800
 // A beat between toasts, so the next reads as a new one.
 const GAP_MS = 140
+// Taps this soon after a toast appears are ignored.
+const FRESH_MS = 350
 const POP = { damping: 9, stiffness: 320, mass: 1 }
 const RING = 26
 const RING_LINE = 2.5
@@ -54,7 +56,7 @@ export function ToastHost({ colors }) {
   const [landed, setLanded] = useState('')
   const layerRef = useRef(null)
 
-  const head = items[0] || null
+  const head = nextToast(items)
   const live = shown ? items.find((item) => item.id === shown.id) || null : null
 
   useEffect(() => {
@@ -126,6 +128,8 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   const y = useSharedValue(reduce ? 0 : FROM_Y)
   const fade = useSharedValue(reduce ? 0 : 1)
   const leaving = useRef(false)
+  // A tap in the first moment after a toast swaps in was aimed at the one before.
+  const born = useRef(Date.now())
   const letGo = useRef(null)
 
   const finish = useCallback(() => onGone(item.id), [item.id, onGone])
@@ -249,6 +253,14 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
     press = () => {
       item.onPress()
       leave(0, FROM_Y)
+    }
+  }
+
+  if (press) {
+    const act = press
+    press = () => {
+      if (Date.now() - born.current < FRESH_MS) return
+      act()
     }
   }
 

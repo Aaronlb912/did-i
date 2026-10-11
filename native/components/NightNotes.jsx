@@ -14,7 +14,7 @@ import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { goHash } from '../navigation/hash.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { UNDO_MS } from '../../src/lib/useTonightStack.js'
+import { DELETE_UNDO_MS as UNDO_MS } from '../../src/lib/undo-times.js'
 import { showToast } from '../lib/toast-queue.js'
 
 // Clears a note, with Undo in the toast like other removals. Undo writes the
@@ -343,9 +343,9 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   if (quiet) {
     return (
-      <Pressable onPress={openSheet} accessibilityRole="button" hitSlop={10} style={({ pressed }) => pressFx(pressed)}>
-        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${label}`}</Text>
-      </Pressable>
+      <View style={styles.keys}>
+        <KeyButton colors={colors} label={`✎ ${label}`} onPress={openSheet} />
+      </View>
     )
   }
   const note = answered.length === 1 ? answered[0].answer.note : ''

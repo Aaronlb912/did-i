@@ -1,5 +1,6 @@
 import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { t } from '../../src/lib/i18n.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
@@ -36,8 +37,8 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
       rev: now,
       label: t('confirm.questionPaused'),
       hint: t('tonight.undoTap'),
-      until: now + 6000,
-      total: 6000,
+      until: now + DELETE_UNDO_MS,
+      total: DELETE_UNDO_MS,
       onPress: () => {
         onChange(before)
         onPaused?.(false)
@@ -68,8 +69,8 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
           rev: now,
           label: t('confirm.questionRemoved'),
           hint: t('tonight.undoTap'),
-          until: now + 6000,
-          total: 6000,
+          until: now + DELETE_UNDO_MS,
+          total: DELETE_UNDO_MS,
           // Clears the delete's tombstone too, or sync would drop it again.
           onPress: () => onChange(undoBulkLamps([after], [before], [{ lampId: lamp.id }])[0] || before),
         })

@@ -2568,6 +2568,7 @@ export const pt = {
   'recap.dids': 'Feitas: {n}',
   'recap.best': 'Melhor sequência: {n}',
   'recap.share': 'Minha semana no {cleared} de {n} noites completas, {dids} feitas, melhor sequência {best}.',
+  'recap.shareGentle': "Minha semana no {cleared} de {n} noites completas, {dids} feitas.",
   'recap.shareBtn': 'Compartilhar semana',
   'recap.copied': 'Copiado',
   'recap.lastWeek': 'Semana passada',

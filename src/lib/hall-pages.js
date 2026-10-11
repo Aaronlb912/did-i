@@ -19,7 +19,7 @@ import {
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
 import { t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
-import { uses24h } from './prefs.js'
+import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
 
 export { streakLength } from './achievements.js'
@@ -538,8 +538,15 @@ export function isRecapNight(dateIso) {
   return Boolean(at) && at.getDay() === 0
 }
 
-export function recapShareText(recap) {
-  return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
+// Gentle mode hides streak numbers, so the recap line and share text leave out the best streak.
+export function recapShareText(recap, gentle = false) {
+  const values = { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best }
+  return t(gentle ? 'recap.shareGentle' : 'recap.share', values)
+}
+
+export function recapLine(recap, gentle = false) {
+  const dids = t('recap.dids', { n: recap.dids })
+  return gentle ? dids : `${dids} · ${t('recap.best', { n: recap.best })}`
 }
 
 // The Sunday that closed the week before `dateIso`. Monday gives yesterday.
@@ -751,16 +758,43 @@ export function matchLamps(book, query) {
   })
 }
 
-function weekdayLong(iso) {
+// The seven names per app locale and style, worked out once and kept.
+// toLocaleDateString, not Intl.DateTimeFormat: Hermes on Android gave
+// English from a DateTimeFormat, while toLocaleDateString follows the locale.
+const weekdayNames = new Map()
+function weekdayList(locale, style) {
+  const code = locale === 'zh' ? 'zh-CN' : locale || 'en'
+  const key = `${code}:${style}`
+  let names = weekdayNames.get(key)
+  if (!names) {
+    names = []
+    // 2026-10-04 is a Sunday, so index 0 is Sunday like getDay().
+    for (let day = 0; day < 7; day += 1) {
+      const at = new Date(2026, 9, 4 + day, 12)
+      try {
+        names.push(at.toLocaleDateString(code, { weekday: style }))
+      } catch {
+        names.push(at.toLocaleDateString('en', { weekday: style }))
+      }
+    }
+    weekdayNames.set(key, names)
+  }
+  return names
+}
+
+/** The weekday of `iso` in the app's language: 'long' (Monday) or 'narrow' (M). */
+export function weekdayName(iso, style = 'narrow', locale = readPrefs().locale) {
   const date = parseIsoDate(iso)
   if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'long' })
+  return weekdayList(locale, style)[date.getDay()]
+}
+
+function weekdayLong(iso) {
+  return weekdayName(iso, 'long')
 }
 
 function weekdayShort(iso) {
-  const date = parseIsoDate(iso)
-  if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'narrow' })
+  return weekdayName(iso, 'narrow')
 }
 
 function dayNumber(iso) {

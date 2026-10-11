@@ -9,7 +9,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { clockWords } from '../../src/lib/hall-pages.js'
+import { clockWords, weekdayName } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
@@ -136,7 +136,8 @@ export function StreakCount({ n, from = null, colors }) {
 /** The last seven nights as dots, tonight last and ringed. A tap on one asks why. */
 export function NightWeek({ nights, colors, onNight }) {
   // Gentle mode: a missed night looks like a blank one.
-  const gentle = usePrefs().gentle === true
+  const prefs = usePrefs()
+  const gentle = prefs.gentle === true
   const done = nights.filter((night) => night.on).length
   return (
     <View style={styles.week} accessibilityLabel={t('tonight.weekAria', { n: done })}>
@@ -148,7 +149,7 @@ export function NightWeek({ nights, colors, onNight }) {
           onPress={() => onNight?.(night.iso)}
           hitSlop={4}
           accessibilityRole="button"
-          accessibilityLabel={night.weekday}
+          accessibilityLabel={weekdayName(night.iso, 'long', prefs.locale)}
         >
           <View style={styles.dotWrap}>
             {night.isToday ? <View style={[styles.ring, { borderColor: night.on ? colors.on : colors.line }]} /> : null}
@@ -164,7 +165,7 @@ export function NightWeek({ nights, colors, onNight }) {
             />
           </View>
           <Text style={[styles.weekday, { color: night.isToday ? colors.ink : colors.inkDim }]}>
-            {night.weekday.slice(0, 1)}
+            {weekdayName(night.iso, 'narrow', prefs.locale)}
           </Text>
         </Pressable>
       ))}
