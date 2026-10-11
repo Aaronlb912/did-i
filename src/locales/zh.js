@@ -2502,6 +2502,7 @@ export const zh = {
   'recap.dids': '做了：{n}',
   'recap.best': '最长连续：{n}',
   'recap.share': '我在 Did I 的一周：{n} 晚中完成 {cleared} 晚，做了 {dids} 次，最长连续 {best} 晚。',
+  'recap.shareGentle': "我在 Did I 的一周：{n} 晚中完成 {cleared} 晚，做了 {dids} 次。",
   'recap.shareBtn': '分享本周',
   'recap.copied': '已复制',
   'recap.lastWeek': '上周',

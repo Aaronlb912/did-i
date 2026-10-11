@@ -398,6 +398,7 @@ export function LaterScreen({ book, now }) {
 
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
@@ -413,7 +414,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
+      {gentle ? null : <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>}
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )

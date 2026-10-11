@@ -2576,6 +2576,7 @@ export const es = {
   'recap.dids': 'Hechas: {n}',
   'recap.best': 'Mejor racha: {n}',
   'recap.share': 'Mi semana en {cleared} de {n} noches completas, {dids} hechas, mejor racha {best}.',
+  'recap.shareGentle': "Mi semana en {cleared} de {n} noches completas, {dids} hechas.",
   'recap.shareBtn': 'Compartir semana',
   'recap.copied': 'Copiado',
   'recap.lastWeek': 'La semana pasada',

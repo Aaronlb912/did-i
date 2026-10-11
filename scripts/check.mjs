@@ -140,7 +140,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
@@ -1100,6 +1100,12 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.equal(isRecapNight(''), false)
   const text = recapShareText(recap)
   assert.ok(text.includes('5') && text.includes('3') && !text.includes('{'), 'share text is filled in')
+  // Gentle mode: no streak numbers in the recap line or the share text.
+  const best = t('recap.best', { n: 3 })
+  assert.ok(recapLine(recap).includes(best), 'recap line has the best streak')
+  assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
+  const gentleText = recapShareText(recap, true)
+  assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
 })
 
 test('a question deleted on one phone stays deleted when an older phone syncs', () => {

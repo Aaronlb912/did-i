@@ -19,6 +19,7 @@ import {
   isRecapNight,
   markGraceExplained,
   markWeekRecapSeen,
+  recapLine,
   recapShareText,
   tomorrowPreview,
   weekRecap,
@@ -632,14 +633,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     publishSheet({
       kicker: t('recap.lastWeek'),
       title: t('recap.cleared', { cleared: recap.cleared, n: recap.nights }),
-      body: `${t('recap.dids', { n: recap.dids })} · ${t('recap.best', { n: recap.best })}`,
+      body: recapLine(recap, gentle),
       goLabel: t('recap.shareBtn'),
       closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
       onGo: async () => {
         publishSheet(null)
-        const how = await passAlong(recapShareText(recap), t('recap.lastWeek'))
+        const how = await passAlong(recapShareText(recap, gentle), t('recap.lastWeek'))
         if (how === 'copied') confirmDone(t('recap.copied'))
         else if (!how) confirmMiss(t('confirm.shareMiss'))
       },

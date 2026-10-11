@@ -538,8 +538,15 @@ export function isRecapNight(dateIso) {
   return Boolean(at) && at.getDay() === 0
 }
 
-export function recapShareText(recap) {
-  return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
+// Gentle mode hides streak numbers, so the recap line and share text leave out the best streak.
+export function recapShareText(recap, gentle = false) {
+  const values = { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best }
+  return t(gentle ? 'recap.shareGentle' : 'recap.share', values)
+}
+
+export function recapLine(recap, gentle = false) {
+  const dids = t('recap.dids', { n: recap.dids })
+  return gentle ? dids : `${dids} · ${t('recap.best', { n: recap.best })}`
 }
 
 // The Sunday that closed the week before `dateIso`. Monday gives yesterday.

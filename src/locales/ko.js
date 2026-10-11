@@ -2515,6 +2515,7 @@ export const ko = {
   'recap.dids': '했어요: {n}',
   'recap.best': '최장 연속: {n}',
   'recap.share': 'Did I의 이번 주: {n}밤 중 {cleared}밤 완료, {dids}번 했어요, 최장 연속 {best}.',
+  'recap.shareGentle': "Did I의 이번 주: {n}밤 중 {cleared}밤 완료, {dids}번 했어요.",
   'recap.shareBtn': '이번 주 공유',
   'recap.copied': '복사됨',
   'recap.lastWeek': '지난주',

@@ -2563,6 +2563,7 @@ export const en = {
   'recap.dids': 'Dids: {n}',
   'recap.best': 'Best streak: {n}',
   'recap.share': 'My week on {cleared} of {n} nights cleared, {dids} dids, best streak {best}.',
+  'recap.shareGentle': "My week on {cleared} of {n} nights cleared, {dids} dids.",
   'recap.shareBtn': 'Share week',
   'recap.copied': 'Copied',
   'recap.lastWeek': 'Last week',

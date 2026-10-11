@@ -2513,6 +2513,7 @@ export const ja = {
   'recap.dids': 'できた：{n}',
   'recap.best': '最長連続：{n}',
   'recap.share': 'Did I での今週：{n} 夜中 {cleared} 夜クリア、できた {dids} 回、最長連続 {best}。',
+  'recap.shareGentle': "Did I での今週：{n} 夜中 {cleared} 夜クリア、できた {dids} 回。",
   'recap.shareBtn': '今週をシェア',
   'recap.copied': 'コピーしました',
   'recap.lastWeek': '先週',

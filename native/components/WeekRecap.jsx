@@ -1,14 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { recapShareText } from '../../src/lib/hall-pages.js'
+import { recapLine, recapShareText } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { passAlong } from '../../src/lib/native.js'
+import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { KeyButton } from './ui.jsx'
 import { fonts, sectionLabel } from '../theme.js'
 
 /** Shares the week as text, with a visible copied or failed note. */
 export async function shareRecap(recap) {
-  const how = await passAlong(recapShareText(recap), t('recap.kicker'))
+  const how = await passAlong(recapShareText(recap, gentleOn()), t('recap.kicker'))
   if (how === 'copied') confirmDone(t('recap.copied'))
   else if (!how) confirmMiss(t('confirm.shareMiss'))
 }
@@ -24,7 +25,7 @@ export function WeekRecap({ recap, colors }) {
       <Text style={[styles.kicker, { color: colors.inkSoft }]}>{t('recap.kicker')}</Text>
       <Text style={[styles.big, { color: colors.ink }]}>{t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}</Text>
       <Text style={[styles.line, { color: colors.inkSoft }]}>
-        {t('recap.dids', { n: recap.dids })} · {t('recap.best', { n: recap.best })}
+        {recapLine(recap, gentle)}
       </Text>
       <View style={styles.keys}>
         <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={share} />

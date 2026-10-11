@@ -2582,6 +2582,7 @@ export const fr = {
   'recap.dids': 'Faits : {n}',
   'recap.best': 'Meilleure série : {n}',
   'recap.share': 'Ma semaine sur Did I : {cleared} nuits faites sur {n}, {dids} faits, meilleure série {best}.',
+  'recap.shareGentle': "Ma semaine sur Did I : {cleared} nuits faites sur {n}, {dids} faits.",
   'recap.shareBtn': 'Partager la semaine',
   'recap.copied': 'Copié',
   'recap.lastWeek': 'La semaine dernière',
