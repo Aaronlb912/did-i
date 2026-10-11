@@ -11,6 +11,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
+import { Reveal } from '../lib/motion.jsx'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
@@ -224,6 +225,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
               ))}
             </ScheduleTiles>
             {cadence === 'weekly' ? (
+<Reveal>
               <View style={[styles.pillRow, styles.dayRow]}>
                 {[0, 1, 2, 3, 4, 5, 6].map((day) => {
                   const on = days.includes(day)
@@ -238,7 +240,8 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
                   )
                 })}
               </View>
-            ) : null}
+            </Reveal>
+) : null}
             <Text style={[styles.hint, { color: colors.inkDim }]}>
               {cadence === 'once' ? t('lead.youOnceHint') : t('lead.youRepeatHint')}
             </Text>

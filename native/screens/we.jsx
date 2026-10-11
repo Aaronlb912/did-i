@@ -351,6 +351,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
             <ScheduleTile label={t('we.someDays')} sub={t('hang.tileSub.weekly')} accent={colors.we} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} />
           </ScheduleTiles>
           {draft.cadence === 'weekly' ? (
+<Reveal>
             <View style={styles.pillRow}>
               {DAYS.map((day) => {
                 const on = draft.weekdays.includes(day)
@@ -365,7 +366,8 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
                 )
               })}
             </View>
-          ) : null}
+          </Reveal>
+) : null}
         </View>
         <SetCard colors={colors}>
           {part.time(false)}

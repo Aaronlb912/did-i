@@ -61,6 +61,7 @@ import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
+import Reanimated, { FadeIn } from 'react-native-reanimated'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage, lampActions } from '../components/LampManage.jsx'
@@ -1226,6 +1227,7 @@ const STEP_NIGHTS = 7
 
 // Every few days: − n + and the next week with the nights it asks lit.
 function EveryNStep({ draft, dateIso, onChange, colors }) {
+  const reduce = useReduceMotion()
   const n = Number(draft.everyN) || 0
   const step = (by) => onChange(String(Math.min(EVERY_N_MAX, Math.max(2, (n || 2) + by))))
   const shown = { ...draft, cadence: 'every_n', archived: false }
@@ -1247,9 +1249,9 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
         >
           <Text style={[styles.stepGlyph, { color: colors.ink }]}>−</Text>
         </Pressable>
-        <Text style={[styles.stepNum, { color: colors.ink }]} accessibilityLiveRegion="polite">
+        <Reanimated.Text key={n} entering={reduce ? undefined : FadeIn.duration(150)} style={[styles.stepNum, { color: colors.ink }]} accessibilityLiveRegion="polite">
           {n || '–'}
-        </Text>
+        </Reanimated.Text>
         <Pressable
           onPress={() => step(1)}
           disabled={n >= EVERY_N_MAX}
@@ -1697,6 +1699,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   />
                 ))}
               </ScheduleTiles>
+            <Reveal key={schedule} style={styles.whenDetail}>
             {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
             {SCHEDULE_MISSES.has(hang.miss) ? (
               <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -1794,6 +1797,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 />
               </>
             ) : null}
+            </Reveal>
             </View>
 
             <HangFold
@@ -1985,6 +1989,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           </HangFold>
 
           {topicsShown ? (
+          <Reveal key="topics">
           <HangFold
             label={t('hang.kind')}
             value={topicCount ? topicsOf({ kind: draft.kind }).map(topicLabel).join(', ') : t('hang.detailsNone')}
@@ -2001,6 +2006,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               colors={colors}
             />
           </HangFold>
+          </Reveal>
           ) : (
             <SetRow
               colors={colors}
@@ -2538,6 +2544,7 @@ const styles = StyleSheet.create({
   settings: { marginTop: 4 },
   editBtn: { marginTop: 16, marginBottom: 8 },
   whenBody: { padding: 16, gap: 12 },
+  whenDetail: { gap: 12 },
   stepWrap: { gap: 8 },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
   stepBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

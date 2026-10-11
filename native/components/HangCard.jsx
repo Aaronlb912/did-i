@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native'
+import Reanimated, { FadeIn } from 'react-native-reanimated'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -190,9 +191,10 @@ export const HangCard = forwardRef(function HangCard(
       </View>
       {meta && metaAction ? (
         <View style={styles.metaRow}>
-          <Text style={[styles.meta, styles.metaGrow, { color: colors.inkSoft }]} numberOfLines={2}>
+          {/* A new schedule crossfades in, so the line never just snaps. */}
+          <Reanimated.Text key={meta} entering={reduce ? undefined : FadeIn.duration(150)} style={[styles.meta, styles.metaGrow, { color: colors.inkSoft }]} numberOfLines={2}>
             {meta}
-          </Text>
+          </Reanimated.Text>
           <Pressable
             onPress={metaAction.onPress}
             accessibilityRole="button"
