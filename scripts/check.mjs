@@ -4613,7 +4613,12 @@ test('the error log keeps no personal content and is capped', async () => {
 test('a sheet that pops up on Tonight catches the next tap', () => {
   const sheet = readFileSync(path.join(checkRoot, 'native/components/SheetHost.jsx'), 'utf8')
   assert.ok(!sheet.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the veil never lets a tap through to Did or Nope')
-  assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
+  assert.ok(sheet.includes('if (live) once(sheet, sheet.onClose)'))
+  // A double tap on Done runs the close once, not twice (a toggle would reopen it).
+  assert.ok(sheet.includes('fired.current === of'), 'a sheet acts on its first Done or close only')
+  assert.ok(!/onPress=\{\(\) => sheet\.on(Go|Close)/.test(sheet), 'every sheet button goes through once')
+  // A closing sheet drops the keyboard while its text box is still mounted.
+  assert.ok(sheet.includes('if (wasOpen.current) Keyboard.dismiss()'), 'closing a sheet drops the keyboard')
 })
 
 test('an achievement toasts once per phone, even when it is earned again', () => {
