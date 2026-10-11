@@ -1364,10 +1364,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const fresh = !hang.editing && !copySource
   const starters = fresh ? unusedStarters(book, clock) : []
   const picked = starters.find((starter) => starter.question === draft.question) || null
-  // Packs help someone getting started; once a folder has a few questions they
-  // would just be in the way every time, so they go.
-  const fewSoFar = (book?.lamps || []).filter((lamp) => !lamp.archived).length < 3
-  const packs = fresh && fewSoFar ? packList(book) : []
+  // Packs sit behind Need an idea?, so they never get in the way; each one
+  // lists only the questions this folder lacks.
+  const packs = fresh ? packList(book) : []
   const [packUndo, setPackUndo] = useState(null)
   const [packSeen, setPackSeen] = useState(0)
   useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'), () => setPackSeen(Date.now()))
@@ -1692,7 +1691,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         colors={colors}
       />
     )
-  const ideasShown = fresh && (starters.length > 0 || packs.length > 0)
+  // The row only shows when opening it adds something: packs, or ideas the
+  // typed words have hidden. Once open it stays, so it can close again.
+  const ideasShown = fresh && (ideasOpen || packs.length > 0 || (starters.length > 0 && Boolean(blank.trim()) && !picked))
 
   return (
     <>
