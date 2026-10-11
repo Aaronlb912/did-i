@@ -40,7 +40,7 @@ import {
   emptyBoard,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
-import { PACKS, STARTERS, addPack, packList, starterBlank, starterList, undoPack } from '../src/lib/starters.js'
+import { PACKS, STARTERS, addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../src/lib/starters.js'
 import {
   FIRST_PICKS_MAX,
   answeredNights,
@@ -330,6 +330,19 @@ test('times follow the clock setting, 12 or 24 hour', () => {
     assert.equal(joinTime({ hour: '9', minute: '15', meridiem: 'pm' }, false), '21:15')
   } finally {
     writePrefs({ clock: 'phone' })
+  }
+})
+
+test('an idea you already have stays hidden in any language, whatever its case', () => {
+  const book = { lamps: [{ id: 'a', question: 'Did I take my meds?', short: 'meds' }] }
+  try {
+    for (const locale of ['en', 'ko', 'fr', 'es']) {
+      writePrefs({ locale })
+      assert.ok(!unusedStarters(book).some((s) => s.idea === 'pills'), `meds idea shown in ${locale}`)
+      assert.ok(!packList(book).some((p) => p.items.some((i) => i.idea === 'pills')), `meds pack item shown in ${locale}`)
+    }
+  } finally {
+    writePrefs({ locale: 'en' })
   }
 })
 
