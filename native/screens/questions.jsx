@@ -467,6 +467,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useLayoutState(false)
   const [ordering, setOrdering] = useLayoutState(false)
+  const [pickBarH, setPickBarH] = useState(0)
   const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
@@ -883,7 +884,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           />
         )}
         {/* Room so the floating Select bar never covers the last rows. */}
-        {picking ? <View style={styles.pickRoom} /> : null}
+        {picking ? <View style={[styles.pickRoom, pickBarH ? { height: pickBarH + 24 } : null]} /> : null}
       </BoardShell>
           {/* Pinned Reorder bar: Never mind puts the order back, Done keeps it. */}
           {ordering ? (
@@ -930,7 +931,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             </Animated.View>
           ) : null}
           {picking ? (
-            <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
+            <Reveal
+              onLayout={(e) => setPickBarH(Math.ceil(e.nativeEvent.layout.height))}
+              style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}
+            >
               <View style={styles.pickActions}>
                 <KeyButton
                   colors={colors}

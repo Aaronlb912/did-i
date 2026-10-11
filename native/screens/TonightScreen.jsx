@@ -1177,7 +1177,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       </SwipeFlyHost>
       {answerBar}
       {/* Toasts show in this room, so they never cover a card and nothing jumps. */}
-      <View style={styles.toastRoom} pointerEvents="none" />
+      {/* The done card has no answer buttons to keep clear, so it takes this room too. */}
+      {doneFace ? null : <View style={styles.toastRoom} pointerEvents="none" />}
     </View>
     </View>
     </MastMenuRoot>
