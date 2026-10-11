@@ -281,7 +281,7 @@ export const pt = {
   'first.name': 'Como devemos te chamar?',
   'first.nameHint': 'Opcional',
   'first.own': 'Ou digite uma',
-  'first.ownHint': 'responder a mensagem',
+  'first.ownHint': 'respondi à mensagem',
   'first.whenLater': 'Podes mudar depois.',
   'first.add': 'Adicionar minha primeira pergunta',
   'first.next': 'Continuar',

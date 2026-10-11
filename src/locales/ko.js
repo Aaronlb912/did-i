@@ -271,7 +271,7 @@ export const ko = {
   'first.name': '뭐라고 불러 드릴까요?',
   'first.nameHint': '선택',
   'first.own': '또는 직접 입력',
-  'first.ownHint': '답장하기',
+  'first.ownHint': '답장했나',
   'first.whenLater': '나중에 바꿀 수 있어요.',
   'first.add': '첫 질문 추가',
   'first.next': '계속',

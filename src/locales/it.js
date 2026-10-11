@@ -279,7 +279,7 @@ export const it = {
   'first.name': 'Come ti chiamiamo?',
   'first.nameHint': 'Facoltativo',
   'first.own': 'O scrivine una',
-  'first.ownHint': 'rispondere al messaggio',
+  'first.ownHint': 'risposto al messaggio',
   'first.whenLater': 'Puoi cambiarlo dopo.',
   'first.add': 'Aggiungi la mia prima domanda',
   'first.next': 'Continua',

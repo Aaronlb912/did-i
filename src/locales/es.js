@@ -282,7 +282,7 @@ export const es = {
   'first.name': '¿Cómo te llamamos?',
   'first.nameHint': 'Opcional',
   'first.own': 'O escribe una',
-  'first.ownHint': 'contestar el mensaje',
+  'first.ownHint': 'contesté el mensaje',
   'first.whenLater': 'Puedes cambiarlo después.',
   'first.add': 'Añadir mi primera pregunta',
   'first.next': 'Continuar',

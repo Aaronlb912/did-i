@@ -271,7 +271,7 @@ export const zh = {
   'first.name': '我们该怎么称呼你？',
   'first.nameHint': '可选',
   'first.own': '或者打一个',
-  'first.ownHint': '回复消息',
+  'first.ownHint': '回消息了吗',
   'first.whenLater': '之后可以改。',
   'first.add': '添加我的第一个问题',
   'first.next': '继续',

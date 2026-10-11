@@ -271,7 +271,7 @@ export const ja = {
   'first.name': '何とお呼びしましょう？',
   'first.nameHint': '任意',
   'first.own': 'または打つ',
-  'first.ownHint': '返信する',
+  'first.ownHint': '返信した',
   'first.whenLater': 'あとで変えられます。',
   'first.add': '最初の質問を追加',
   'first.next': '続ける',

@@ -284,7 +284,7 @@ export const fr = {
   'first.name': 'Comment vous appeler ?',
   'first.nameHint': 'Facultatif',
   'first.own': 'Ou tapes-en une',
-  'first.ownHint': 'répondre au message',
+  'first.ownHint': 'répondu au message',
   'first.whenLater': 'Tu peux le changer après.',
   'first.add': 'Ajouter ma première question',
   'first.next': 'Continuer',
