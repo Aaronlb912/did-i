@@ -7,7 +7,8 @@ import { publishSheet } from './SheetHost.jsx'
 // with a schedule. It draws through SheetHost, in the page's own tree, so it
 // also works inside Add when Add is a native sheet on iPhone. The rows inside
 // stay live: each render hands SheetHost the current children.
-export function PickSheet({ open, title, onClose, colors, children }) {
+// scrollRef: the sheet's scroll view, so a form can bring what just opened into view.
+export function PickSheet({ open, title, onClose, colors, children, scrollRef }) {
   const shown = useRef(false)
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export function PickSheet({ open, title, onClose, colors, children }) {
       bottom: true,
       title,
       content: children,
+      scrollRef,
       goLabel: t('tags.done'),
       onGo: onClose,
       onClose,

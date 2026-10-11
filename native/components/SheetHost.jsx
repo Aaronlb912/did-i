@@ -172,7 +172,7 @@ export function SheetHost() {
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
         {sheet.body ? <Text style={[styles.body, sheet.center && styles.mid, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
-        {sheet.content ? <ScrollView style={sheet.bottom ? styles.contentBottom : styles.content} keyboardShouldPersistTaps="handled">{sheet.content}</ScrollView> : null}
+        {sheet.content ? <ScrollView ref={sheet.scrollRef} style={sheet.bottom ? styles.contentBottom : styles.content} keyboardShouldPersistTaps="handled">{sheet.content}</ScrollView> : null}
         {sheet.quote ? (
           <Text style={[styles.quote, sheet.center ? styles.quoteMid : { borderLeftWidth: 3, paddingLeft: 10, borderColor: colors.on }, { color: colors.ink }]}>{sheet.quote}</Text>
         ) : null}

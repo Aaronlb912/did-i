@@ -1413,6 +1413,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const shortAuto = !shortTyped && !String(draft.short || '').trim()
   const shortShown = shortAuto ? autoShort(draft.question) : draft.short
   const scrollHandle = useRef(null)
+  const whenScroll = useRef(null)
+  const whenDetail = useRef(null)
+  const whenPicked = useRef(false)
   const picksH = useRef(0)
 
   useEffect(() => () => clearTimeout(leave.current), [])
@@ -1486,8 +1489,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   // An opened section that ends below the screen scrolls up just enough to
   // show it, keeping its top row in sight.
-  function showFold(node) {
-    const scroller = scrollHandle.current
+  function showWhenDetail() {
+    if (!whenPicked.current) return
+    whenPicked.current = false
+    // After the details fade in, so it measures where they settle.
+    setTimeout(() => showFold(whenDetail.current, whenScroll.current), reduce ? 0 : 260)
+  }
+
+  function showFold(node, scroller = scrollHandle.current) {
     const inner = scroller?.getInnerViewRef?.()
     if (!scroller?.scrollTo || !inner || !node?.measureLayout) return
     node.measureLayout(
@@ -1684,7 +1693,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       />
       {below}
 
-      <PickSheet open={open === 'when'} title={t('hang.whenAsk')} onClose={() => open === 'when' && fold('when')} colors={colors}>
+      <PickSheet open={open === 'when'} scrollRef={whenScroll} title={t('hang.whenAsk')} onClose={() => open === 'when' && fold('when')} colors={colors}>
           <SetCard colors={colors}>
             <View style={styles.whenBody}>
               <ScheduleTiles label={t('hang.when')}>
@@ -1692,14 +1701,20 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   <ScheduleTile
                     key={item.id}
                     label={t(item.labelKey)}
-                    sub={t(`hang.tileSub.${item.id}`)}
+                    // Picked weekdays name the days on the tile, so today's preselected day shows at once.
+                    sub={item.id === 'weekly' && schedule === 'weekly' && (draft.weekdays || []).length ? whenLine(draft) : t(`hang.tileSub.${item.id}`)}
                     on={schedule === item.id}
-                    onPress={() => hang.changeSchedule(item.id)}
+                    onPress={() => {
+                      whenPicked.current = true
+                      hang.changeSchedule(item.id)
+                    }}
                     colors={colors}
                   />
                 ))}
               </ScheduleTiles>
-            <Reveal key={schedule} style={styles.whenDetail}>
+            <Reveal key={schedule}>
+            {/* A picked schedule's options open below the tiles; the sheet scrolls them into view. */}
+            <View ref={whenDetail} style={styles.whenDetail} onLayout={showWhenDetail}>
             {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
             {SCHEDULE_MISSES.has(hang.miss) ? (
               <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -1797,6 +1812,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 />
               </>
             ) : null}
+            </View>
             </Reveal>
             </View>
 
@@ -1833,7 +1849,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               colors={colors}
               icon="help"
               label={t('first.picks')}
-              sub={packs.length ? t('pack.label') : ''}
               chevron={!ideasOpen}
               plain
               onPress={() => {
@@ -1857,8 +1872,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           />
         </SetCard>
 
+        {/* The row above already asks Need an idea?, so the chips need no second heading. */}
         <IdeaPicks
-          label={t('first.picks')}
           starters={ideasOpen ? starters : blank.trim() && !picked ? [] : starters}
           picked={picked}
           onPick={pickIdea}
