@@ -538,6 +538,7 @@ export const ko = {
   'hang.weekly': '특정 요일',
   'hang.monthly': '한 달에 한 번',
   'hang.everyN': '며칠마다',
+  'hang.whenAsk': '언제 물어볼까요?',
   'hang.tileSub.daily': '매일 밤, 평소처럼',
   'hang.tileSub.weekly': '요일 선택',
   'hang.tileSub.every_n': '예: 3일 밤마다',

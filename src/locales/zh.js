@@ -538,6 +538,7 @@ export const zh = {
   'hang.weekly': '某些工作日',
   'hang.monthly': '每月一次',
   'hang.everyN': '每隔几天',
+  'hang.whenAsk': '什么时候问？',
   'hang.tileSub.daily': '每晚，照常',
   'hang.tileSub.weekly': '选择日子',
   'hang.tileSub.every_n': '比如每 3 晚一次',

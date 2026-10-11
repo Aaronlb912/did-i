@@ -344,7 +344,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
   const set = (key) => (value) => setDraft((was) => ({ ...was, [key]: value }))
   return (
     <>
-      <PickSheet open={sheet === 'when'} title={t('we.when')} onClose={() => setSheet('')} colors={colors}>
+      <PickSheet open={sheet === 'when'} title={t('hang.whenAsk')} onClose={() => setSheet('')} colors={colors}>
         <View style={styles.countsBody}>
           <ScheduleTiles label={t('we.when')}>
             <ScheduleTile label={t('we.daily')} sub={t('hang.tileSub.daily')} accent={colors.we} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} />

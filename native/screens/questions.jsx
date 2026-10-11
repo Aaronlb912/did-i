@@ -98,7 +98,7 @@ import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
 import { checkOnFits, followCheckOn } from '../../src/lib/check-on.js'
-import { pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
+import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -1684,7 +1684,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       />
       {below}
 
-      <PickSheet open={open === 'when'} title={t('hang.when')} onClose={() => open === 'when' && fold('when')} colors={colors}>
+      <PickSheet open={open === 'when'} title={t('hang.whenAsk')} onClose={() => open === 'when' && fold('when')} colors={colors}>
           <SetCard colors={colors}>
             <View style={styles.whenBody}>
               <ScheduleTiles label={t('hang.when')}>
@@ -1800,6 +1800,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             </Reveal>
             </View>
 
+            <Glide>
             <HangFold
               label={t('hang.timeRow')}
               value={draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')}
@@ -1815,10 +1816,11 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
             </HangFold>
           {reminderRow(true)}
+            </Glide>
           </SetCard>
       </PickSheet>
 
-      <View
+      <Glide
         style={styles.settings}
         onLayout={(event) => {
           picksH.current = event.nativeEvent.layout.height
@@ -1883,7 +1885,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             </SetCard>
           </View>
         ) : null}
-      </View>
+      </Glide>
 
       {moreOpen ? (
         <Reveal>
@@ -2117,7 +2119,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const [notesOpen, setNotesOpen] = useState(false)
   const [checkOpen, setCheckOpen] = useState(false)
   const [notePick, setNotePick] = useState(0)
-  const [menu, setMenu] = useState(false)
 
   function flip(set) {
     if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
@@ -2126,8 +2127,45 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
   // Close the menu first, so a sheet it opens is not under it.
   function menuGo(run) {
-    setMenu(false)
+    publishSheet(null)
     setTimeout(run, 250)
+  }
+
+  // The ⋯ menu: the app's centered sheet, which fades and rises in.
+  function openMenu() {
+    publishSheet({
+      title: t('lamp.secManage'),
+      content: (
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="pen" label={t('hang.edit')} chevron onPress={() => menuGo(() => goHash('/hang', { id: lamp.id }))} />
+          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} plain onPress={() => menuGo(() => goHash('/hang', { copy: lamp.id }))} />
+          <SetRow
+            colors={colors}
+            icon="note"
+            label={t('note.add')}
+            plain
+            onPress={() =>
+              menuGo(() => {
+                setNotesOpen(true)
+                setNotePick((n) => n + 1)
+              })
+            }
+          />
+          <SetRow
+            colors={colors}
+            icon={lamp.archived ? 'play' : 'pause'}
+            label={lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
+            sub={lamp.archived ? t('lamp.askAgainSub') : t('lamp.stopSub')}
+            plain
+            onPress={() => menuGo(actions.togglePause)}
+          />
+          <SetRow colors={colors} icon="trash" label={t('lamp.delete')} sub={t('lamp.deleteSub')} danger last onPress={() => menuGo(actions.askDelete)} />
+        </SetCard>
+      ),
+      closeLabel: t('settings.neverMind'),
+      onClose: () => publishSheet(null),
+      colors,
+    })
   }
 
   function change(next) {
@@ -2172,7 +2210,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       noTitle
       date={shellDate(lampBook, clock)}
       colors={colors}
-      rightAction={{ label: '⋯', onPress: () => setMenu(true) }}
+      rightAction={{ label: '⋯', onPress: openMenu }}
     >
       <View style={[...faceCardStyle(colors), styles.lampCard, lamp.archived && { opacity: 0.75 }]}>
         <EditPen onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
@@ -2361,7 +2399,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} pickSignal={notePick} />
         </Reveal>
       ) : null}
-      {checkOpen && !lamp.fromName ? <CheckOnCard lamp={lamp} colors={colors} /> : null}
+      {checkOpen && !lamp.fromName ? (
+        <Reveal>
+          <CheckOnCard lamp={lamp} colors={colors} />
+        </Reveal>
+      ) : null}
+      <Glide>
 
       <SetCard colors={colors}>
         {/* The whole card opens Edit question, like the pen at the top. */}
@@ -2398,33 +2441,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       <View style={styles.editBtn}>
         <DidButton label={t('hang.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
       </View>
-      {menu ? (
-        <SetSheet title={t('lamp.secManage')} onClose={() => setMenu(false)} colors={colors}>
-          <SetRow colors={colors} icon="pen" label={t('hang.edit')} chevron onPress={() => menuGo(() => goHash('/hang', { id: lamp.id }))} />
-          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} plain onPress={() => menuGo(() => goHash('/hang', { copy: lamp.id }))} />
-          <SetRow
-            colors={colors}
-            icon="note"
-            label={t('note.add')}
-            plain
-            onPress={() =>
-              menuGo(() => {
-                setNotesOpen(true)
-                setNotePick((n) => n + 1)
-              })
-            }
-          />
-          <SetRow
-            colors={colors}
-            icon={lamp.archived ? 'play' : 'pause'}
-            label={lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
-            sub={lamp.archived ? t('lamp.askAgainSub') : t('lamp.stopSub')}
-            plain
-            onPress={() => menuGo(actions.togglePause)}
-          />
-          <SetRow colors={colors} icon="trash" label={t('lamp.delete')} sub={t('lamp.deleteSub')} danger last onPress={() => menuGo(actions.askDelete)} />
-        </SetSheet>
-      ) : null}
+      </Glide>
     </BoardShell>
   )
 }

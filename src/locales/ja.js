@@ -538,6 +538,7 @@ export const ja = {
   'hang.weekly': 'いくつかの曜日',
   'hang.monthly': '月に一度',
   'hang.everyN': '数日ごと',
+  'hang.whenAsk': 'いつたずねますか？',
   'hang.tileSub.daily': '毎晩、いつもどおり',
   'hang.tileSub.weekly': '曜日を選ぶ',
   'hang.tileSub.every_n': 'たとえば3晩ごと',

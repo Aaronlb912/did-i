@@ -213,7 +213,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
         </SetCard>
       </View>
 
-      <PickSheet open={sheet} title={t('we.when')} onClose={() => setSheet(false)} colors={colors}>
+      <PickSheet open={sheet} title={t('hang.whenAsk')} onClose={() => setSheet(false)} colors={colors}>
           <View style={styles.sheetBody}>
             <ScheduleTiles label={t('we.when')}>
               {[

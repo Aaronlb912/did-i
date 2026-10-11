@@ -550,6 +550,7 @@ export const en = {
   'hang.weekly': 'Some weekdays',
   'hang.monthly': 'Once a month',
   'hang.everyN': 'Every few days',
+  'hang.whenAsk': 'When should it ask?',
   'hang.tileSub.daily': 'Every night, the usual',
   'hang.tileSub.weekly': 'Pick the days',
   'hang.tileSub.every_n': 'Like every 3rd night',

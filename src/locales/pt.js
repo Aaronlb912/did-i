@@ -552,6 +552,7 @@ export const pt = {
   'hang.weekly': 'Alguns dias da semana',
   'hang.monthly': 'Uma vez por mês',
   'hang.everyN': 'A cada alguns dias',
+  'hang.whenAsk': 'Quando deve perguntar?',
   'hang.tileSub.daily': 'Toda noite, o de sempre',
   'hang.tileSub.weekly': 'Escolha os dias',
   'hang.tileSub.every_n': 'Por exemplo, a cada 3 noites',
