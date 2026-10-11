@@ -180,7 +180,7 @@ export const ko = {
   'account.offBody': '이 빌드에는 계정 서버가 없어. 전부 폰에 남고 어디에도 안 보내.',
   'account.offTester': '다른 사람은 로그인이 된다면, 이 설치본은 Supabase 키로 다시 빌드해야 해요. EAS 빌드는 .env.local을 읽지 않아요. 또는 브라우저에서 did-i.app에 로그인하세요.',
   'account.outTitle': '로그인해서 질문 유지',
-  'account.outBody': 'questions, 답, streak, coins, gems, 가진 cheers가 새 폰으로 따라와. 다른 사람은 못 봐.',
+  'account.outBody': '질문, 답, 연속 기록, coins, gems, 가진 cheers가 새 폰으로 따라와. 다른 사람은 못 봐.',
   'account.email': '이메일',
   'account.emailHint': 'you@example.com',
   'account.send': '코드 보내기',

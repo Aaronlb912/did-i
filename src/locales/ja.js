@@ -180,7 +180,7 @@ export const ja = {
   'account.offBody': 'このビルドにアカウントサーバーなし。全部スマホに残り、送らない。',
   'account.offTester': 'ほかの人はサインインできるなら、このインストールはSupabaseキー付きで再ビルドが必要です。EASビルドは.env.localを読み込みません。またはブラウザでdid-i.appにサインインしてください。',
   'account.outTitle': 'ログインして質問を残す',
-  'account.outBody': 'questions、回答、streak、coins、gems、持ってる cheers は新しいスマホについてくる。他の人には見えない。',
+  'account.outBody': '質問、回答、連続記録、coins、gems、持ってる cheers は新しいスマホについてくる。他の人には見えない。',
   'account.email': 'メール',
   'account.emailHint': 'you@example.com',
   'account.send': 'コードを送る',

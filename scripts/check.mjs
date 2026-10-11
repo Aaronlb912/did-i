@@ -347,6 +347,14 @@ test('the first question finishes "Did I ___" once', () => {
   }
 })
 
+test('the account page intro reads in the language, past the shop names', () => {
+  // coins, gems and cheers stay English across the app; questions and streak do not here.
+  for (const [lang, strings] of Object.entries({ zh, ja, ko })) {
+    const left = (strings['account.outBody'].match(/[A-Za-z]+/g) || []).filter((w) => !['coins', 'gems', 'cheers'].includes(w))
+    assert.deepEqual(left, [], `${lang} account.outBody`)
+  }
+})
+
 test('idea questions read "Did I ___?" in every language, so the chip fills the lead', () => {
   // The form shows a fixed "Did I" lead and the chip as the words after it.
   const subject = { de: /^(habe|hab) ich\b/i, fr: /^(ai-je|me suis-je)\b/i, es: /^¿/, it: /^ho\b/i, pt: /^eu\b/i, zh: /^我/, ja: /^私/, ko: /^나/ }
