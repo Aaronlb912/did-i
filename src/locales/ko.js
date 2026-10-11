@@ -532,7 +532,7 @@ export const ko = {
   'hang.daily': '매일',
   'hang.weekly': '특정 요일',
   'hang.monthly': '한 달에 한 번',
-  'hang.everyN': 'N일마다',
+  'hang.everyN': '며칠마다',
   'hang.once': '한 번만',
   'hang.weekdays': '요일',
   'hang.day.0': '일',

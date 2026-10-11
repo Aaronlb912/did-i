@@ -207,7 +207,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
 }
 
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
-export function NightNotes({ book, lamp, colors, onChange }) {
+export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   const [picking, setPicking] = useLayoutState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
   const noted = nights.filter((row) => row.answer.note)
@@ -232,6 +232,14 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       onRemove: () => removeNote(book, lamp.id, answer.periodKey, answer.note, onChange),
     })
   }
+
+  // "Add note" from the question page's menu: same as tapping Add a note here.
+  useEffect(() => {
+    if (!pickSignal || !picks.length) return
+    if (picks.length === 1) edit(picks[0].answer)
+    else setPicking(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickSignal])
 
   return (
     <View style={styles.wrap}>

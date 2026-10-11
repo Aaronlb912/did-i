@@ -532,7 +532,7 @@ export const zh = {
   'hang.daily': '每天',
   'hang.weekly': '某些工作日',
   'hang.monthly': '每月一次',
-  'hang.everyN': '每 N 天',
+  'hang.everyN': '每隔几天',
   'hang.once': '只一次',
   'hang.weekdays': '星期',
   'hang.day.0': '日',

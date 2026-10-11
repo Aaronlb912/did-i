@@ -118,6 +118,7 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
+import { leaveAccount } from '../lib/leave-account.js'
 
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
@@ -1884,6 +1885,37 @@ function PhoneLockSection({ colors }) {
   )
 }
 
+// Name and note for this phone, and People: they sat on the first Settings
+// page before it was grouped, so they live with the account now.
+function AccountLinks({ colors }) {
+  return (
+    <>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="settings"
+          tint={colors.inkSoft}
+          label={t('settings.title')}
+          sub={t('settings.phoneSubOut')}
+          chevron
+          onPress={() => goHash('/settings/phone')}
+        />
+        <SetRow
+          colors={colors}
+          icon="people"
+          tint={colors.late}
+          label={t('people.kicker')}
+          sub={t('people.rowSub')}
+          chevron
+          last
+          onPress={() => goHash('/people')}
+        />
+      </SetCard>
+    </>
+  )
+}
+
 function AccountSignedOut({ on }) {
   const colors = useHallColors()
   const auth = useAuthSignIn({})
@@ -1893,6 +1925,7 @@ function AccountSignedOut({ on }) {
       <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
         <Meta colors={colors}>{t('account.offTester')}</Meta>
+        <AccountLinks colors={colors} />
       </ScreenShell>
     )
   }
@@ -1911,6 +1944,7 @@ function AccountSignedOut({ on }) {
       <View style={[styles.lockPanel, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
         <PhoneLockSection colors={colors} />
       </View>
+      <AccountLinks colors={colors} />
     </ScreenShell>
   )
 }
@@ -2046,18 +2080,7 @@ function AccountSignedIn({ book, email, onChange }) {
   async function leave(kind, run) {
     if (busy) return
     setBusy(kind)
-    try {
-      const out = await run()
-      if (out?.miss) {
-        confirmMiss(tMiss(out.miss))
-        setBusy('')
-        return
-      }
-      confirmDone(t(kind === 'delete' ? 'confirm.deleted' : 'confirm.signedOut'))
-      signedOutSync()
-    } catch {
-      confirmMiss(t('confirm.miss'))
-    }
+    await leaveAccount(kind, run)
     setBusy('')
   }
 
@@ -2246,6 +2269,43 @@ function AccountSignedIn({ book, email, onChange }) {
       </SetCard>
       {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
 
+      <AccountLinks colors={colors} />
+
+      <PhoneLockSection colors={colors} />
+
+      <View style={styles.dataGap} />
+      {/* Sign out stays in plain sight; the rarer ways to leave sit in the fold below. */}
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="logout"
+          label={t('account.out')}
+          last
+          onPress={busy ? undefined : () => leave('out', signOutHere)}
+        />
+      </SetCard>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('account.privacyRow')}
+          sub={t('account.privacySub')}
+          chevron={!dataOpen}
+          last
+          onPress={() => setDataOpen((open) => !open)}
+        />
+      </SetCard>
+      {dataOpen ? (
+        <Reveal>
       <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
@@ -2313,42 +2373,6 @@ function AccountSignedIn({ book, email, onChange }) {
         />
         </SetCard>
       ) : null}
-
-      <PhoneLockSection colors={colors} />
-
-      <View style={styles.dataGap} />
-      {/* Sign out stays in plain sight; the rarer ways to leave sit in the fold below. */}
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="logout"
-          label={t('account.out')}
-          last
-          onPress={busy ? undefined : () => leave('out', signOutHere)}
-        />
-      </SetCard>
-      <View style={styles.dataGap} />
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="shield"
-          label={t('seen.title')}
-          sub={t('seen.sub')}
-          chevron
-          onPress={() => goHash('/settings/seen')}
-        />
-        <SetRow
-          colors={colors}
-          icon="shield"
-          label={t('account.privacyRow')}
-          sub={t('account.privacySub')}
-          chevron={!dataOpen}
-          last
-          onPress={() => setDataOpen((open) => !open)}
-        />
-      </SetCard>
-      {dataOpen ? (
-        <Reveal>
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />

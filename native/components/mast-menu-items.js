@@ -14,7 +14,7 @@ export const PEOPLE_ON = new Set([
 ])
 export const ADD_ON = new Set(['/add', '/hang'])
 export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
-export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
+export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/look', '/settings/nights', '/settings/privacy', '/settings/help', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
 
 // Home and Questions already live in the system tab bar; the menu holds only
 // what the tabs don't: Add, Friends and family, Shop, Collection, Settings.

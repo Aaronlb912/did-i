@@ -17,9 +17,8 @@ function deleteNote(book, lamp) {
 
 // Stop asking and Delete, shared by the question page and its edit page.
 // `onPaused` lets the edit page keep its unsaved draft in step with the pause.
-export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
-  if (!lamp) return null
-
+// The question page's ⋯ menu uses the same two actions.
+export function lampActions({ book, lamp, colors, onChange, onPaused }) {
   function togglePause() {
     const next = toggleArchive(book, lamp)
     onChange(next)
@@ -78,6 +77,12 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
     })
   }
 
+  return { togglePause, askDelete }
+}
+
+export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
+  if (!lamp) return null
+  const { togglePause, askDelete } = lampActions({ book, lamp, colors, onChange, onPaused })
   return (
     <>
       <SetCap colors={colors}>{t('lamp.secManage')}</SetCap>

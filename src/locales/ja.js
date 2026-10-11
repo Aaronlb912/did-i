@@ -532,7 +532,7 @@ export const ja = {
   'hang.daily': '毎日',
   'hang.weekly': 'いくつかの曜日',
   'hang.monthly': '月に一度',
-  'hang.everyN': 'N日ごと',
+  'hang.everyN': '数日ごと',
   'hang.once': '一度だけ',
   'hang.weekdays': '曜日',
   'hang.day.0': '日',

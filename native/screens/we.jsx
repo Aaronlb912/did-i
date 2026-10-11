@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
-import { SetCap, SetCard, SetSwitch } from '../components/SetBits.jsx'
+import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
+import { Reveal } from '../lib/motion.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { Pill, TopicPick, useAddFeel } from './questions.jsx'
@@ -184,145 +185,209 @@ function FilingFolds({ folder, topics, onFolder, onTopics, open, fold, last, col
   )
 }
 
-function RulesFolds({ draft, setDraft, open, fold, colors, filing = null }) {
+// Each rule row on its own, so the new form and the edit form can lay them out differently.
+function ruleParts({ draft, setDraft, open, fold, colors }) {
   const set = (key) => (value) => setDraft({ ...draft, [key]: value })
+  return {
+    mode: (last) => (
+          <HangFold
+            label={t('we.howDone')}
+            value={t(`we.mode.${draft.mode}`)}
+            icon="filter"
+            open={open === 'mode'}
+            onToggle={() => fold('mode')}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              {['all', 'any', 'most', 'turns'].map((id) => (
+                <Pill key={id} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} radio />
+              ))}
+            </View>
+            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+          </HangFold>
+    ),
+    shows: (last) => (
+          <HangFold
+            label={t('we.whatShows')}
+            value={t(`we.shows.${draft.shows}`)}
+            icon="eye"
+            open={open === 'shows'}
+            onToggle={() => fold('shows')}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              {['waiting', 'all', 'count'].map((id) => (
+                <Pill key={id} label={t(`we.shows.${id}`)} on={draft.shows === id} onPress={() => set('shows')(id)} colors={colors} radio />
+              ))}
+            </View>
+            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.showsNote.${draft.shows}`)}</Text>
+          </HangFold>
+    ),
+    when: (last) => (
+          <HangFold
+            label={t('we.when')}
+            value={whenValue(draft)}
+            icon="calendar"
+            open={open === 'when'}
+            onToggle={() => fold('when')}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              <Pill label={t('we.daily')} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} radio />
+              <Pill label={t('we.someDays')} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} radio />
+            </View>
+            {draft.cadence === 'weekly' ? (
+              <View style={styles.pillRow}>
+                {DAYS.map((day) => {
+                  const on = draft.weekdays.includes(day)
+                  return (
+                    <Pill
+                      key={day}
+                      label={t(`we.day.${day}`)}
+                      on={on}
+                      onPress={() =>
+                        set('weekdays')(on ? draft.weekdays.filter((d) => d !== day) : [...draft.weekdays, day].sort())
+                      }
+                      colors={colors}
+                    />
+                  )
+                })}
+              </View>
+            ) : null}
+          </HangFold>
+    ),
+    goal: (last) => (
+          <HangFold
+            label={t('we.challenge')}
+            value={draft.goal ? t('we.nights', { n: draft.goal }) : t('we.noEnd')}
+            icon="flag"
+            open={open === 'goal'}
+            onToggle={() => fold('goal')}
+            last={last}
+            colors={colors}
+          >
+            <View style={styles.pillRow}>
+              <Pill label={t('we.noEnd')} on={!draft.goal} onPress={() => set('goal')(null)} colors={colors} radio />
+              {WE_GOALS.map((n) => (
+                <Pill key={n} label={t('we.nights', { n })} on={draft.goal === n} onPress={() => set('goal')(n)} colors={colors} radio />
+              ))}
+            </View>
+          </HangFold>
+    ),
+    time: (last) => (
+          <HangFold
+            label={t('hang.timeRow')}
+            value={draft.askAfter ? clockWords(draft.askAfter) : t('hang.askAny')}
+            icon="clock"
+            open={open === 'time'}
+            onToggle={() => fold('time')}
+            colors={colors}
+          >
+            <HangTimePick value={draft.askAfter} onChange={set('askAfter')} colors={colors} />
+            <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.timeHint')}</Text>
+          </HangFold>
+    ),
+    remind: (last) => (
+          <SetSwitch
+            label={t('hang.reminder')}
+            sub={
+              draft.remind === false
+                ? t('hang.remindOff')
+                : draft.askAfter
+                  ? t('hang.remindAt', { time: clockWords(draft.askAfter) })
+                  : t('we.remindNeedsTime')
+            }
+            icon="bell"
+            last={last}
+            on={draft.remind !== false}
+            onPress={() => set('remind')(draft.remind === false)}
+            colors={colors}
+          />
+    ),
+    details: (last) => (
+          <HangFold
+            label={t('hang.details')}
+            value={String(draft.note || '').trim() || t('hang.detailsNone')}
+            icon="note"
+            open={open === 'details'}
+            onToggle={() => fold('details')}
+            last={last}
+            colors={colors}
+          >
+            <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('hang.notes')}</Text>
+            <AppTextInput
+              colors={colors}
+              value={draft.note || ''}
+              onChangeText={set('note')}
+              placeholder={t('we.notePh')}
+              multiline
+              maxLength={300}
+              accessibilityLabel={t('hang.notes')}
+              style={[styles.noteInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.bg }]}
+            />
+          </HangFold>
+    ),
+  }
+}
+
+// How it counts: the four ways it is done as tiles, then what everyone sees.
+function HowCountsSheet({ draft, setDraft, colors, onClose }) {
+  const set = (key) => (value) => setDraft((was) => ({ ...was, [key]: value }))
+  return (
+    <SetSheet title={t('we.secRules')} onClose={onClose} colors={colors}>
+      <ScrollView contentContainerStyle={styles.countsBody}>
+        <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('we.howDone')}</Text>
+        <View style={styles.tiles} accessibilityRole="radiogroup" accessibilityLabel={t('we.howDone')}>
+          {['all', 'any', 'most', 'turns'].map((id) => {
+            const on = draft.mode === id
+            return (
+              <Pressable
+                key={id}
+                onPress={() => set('mode')(id)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                style={[styles.tile, { borderColor: on ? colors.we || colors.on : colors.line, backgroundColor: on ? colors.panel3 : colors.panel }]}
+              >
+                <Text style={[styles.tileText, { color: on ? colors.we || colors.on : colors.ink }]}>{t(`we.mode.${id}`)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+        <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+        <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('we.whatShows')}</Text>
+        <View style={styles.pillRow}>
+          {['waiting', 'all', 'count'].map((id) => (
+            <Pill key={id} label={t(`we.shows.${id}`)} on={draft.shows === id} onPress={() => set('shows')(id)} colors={colors} radio />
+          ))}
+        </View>
+        <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.showsNote.${draft.shows}`)}</Text>
+      </ScrollView>
+    </SetSheet>
+  )
+}
+
+function RulesFolds({ draft, setDraft, open, fold, colors, filing = null }) {
+  const part = ruleParts({ draft, setDraft, open, fold, colors })
   return (
     <>
       <SetCap colors={colors}>{t('we.secRules')}</SetCap>
       <SetCard colors={colors}>
-        <HangFold
-          label={t('we.howDone')}
-          value={t(`we.mode.${draft.mode}`)}
-          icon="filter"
-          open={open === 'mode'}
-          onToggle={() => fold('mode')}
-          colors={colors}
-        >
-          <View style={styles.pillRow}>
-            {['all', 'any', 'most', 'turns'].map((id) => (
-              <Pill key={id} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} radio />
-            ))}
-          </View>
-          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
-        </HangFold>
-        <HangFold
-          label={t('we.whatShows')}
-          value={t(`we.shows.${draft.shows}`)}
-          icon="eye"
-          open={open === 'shows'}
-          onToggle={() => fold('shows')}
-          colors={colors}
-        >
-          <View style={styles.pillRow}>
-            {['waiting', 'all', 'count'].map((id) => (
-              <Pill key={id} label={t(`we.shows.${id}`)} on={draft.shows === id} onPress={() => set('shows')(id)} colors={colors} radio />
-            ))}
-          </View>
-          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.showsNote.${draft.shows}`)}</Text>
-        </HangFold>
-        <HangFold
-          label={t('we.when')}
-          value={whenValue(draft)}
-          icon="calendar"
-          open={open === 'when'}
-          onToggle={() => fold('when')}
-          colors={colors}
-        >
-          <View style={styles.pillRow}>
-            <Pill label={t('we.daily')} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} radio />
-            <Pill label={t('we.someDays')} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} radio />
-          </View>
-          {draft.cadence === 'weekly' ? (
-            <View style={styles.pillRow}>
-              {DAYS.map((day) => {
-                const on = draft.weekdays.includes(day)
-                return (
-                  <Pill
-                    key={day}
-                    label={t(`we.day.${day}`)}
-                    on={on}
-                    onPress={() =>
-                      set('weekdays')(on ? draft.weekdays.filter((d) => d !== day) : [...draft.weekdays, day].sort())
-                    }
-                    colors={colors}
-                  />
-                )
-              })}
-            </View>
-          ) : null}
-        </HangFold>
-        <HangFold
-          label={t('we.challenge')}
-          value={draft.goal ? t('we.nights', { n: draft.goal }) : t('we.noEnd')}
-          icon="flag"
-          open={open === 'goal'}
-          onToggle={() => fold('goal')}
-          last
-          colors={colors}
-        >
-          <View style={styles.pillRow}>
-            <Pill label={t('we.noEnd')} on={!draft.goal} onPress={() => set('goal')(null)} colors={colors} radio />
-            {WE_GOALS.map((n) => (
-              <Pill key={n} label={t('we.nights', { n })} on={draft.goal === n} onPress={() => set('goal')(n)} colors={colors} radio />
-            ))}
-          </View>
-        </HangFold>
+        {part.mode(false)}
+        {part.shows(false)}
+        {part.when(false)}
+        {part.goal(true)}
       </SetCard>
 
       <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
       <SetCard colors={colors}>
-        <HangFold
-          label={t('hang.timeRow')}
-          value={draft.askAfter ? clockWords(draft.askAfter) : t('hang.askAny')}
-          icon="clock"
-          open={open === 'time'}
-          onToggle={() => fold('time')}
-          colors={colors}
-        >
-          <HangTimePick value={draft.askAfter} onChange={set('askAfter')} colors={colors} />
-          <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.timeHint')}</Text>
-        </HangFold>
-        <SetSwitch
-          label={t('hang.reminder')}
-          sub={
-            draft.remind === false
-              ? t('hang.remindOff')
-              : draft.askAfter
-                ? t('hang.remindAt', { time: clockWords(draft.askAfter) })
-                : t('we.remindNeedsTime')
-          }
-          icon="bell"
-          last
-          on={draft.remind !== false}
-          onPress={() => set('remind')(draft.remind === false)}
-          colors={colors}
-        />
+        {part.time(false)}
+        {part.remind(true)}
       </SetCard>
 
       <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
       <SetCard colors={colors}>
         {filing}
-        <HangFold
-          label={t('hang.details')}
-          value={String(draft.note || '').trim() || t('hang.detailsNone')}
-          icon="note"
-          open={open === 'details'}
-          onToggle={() => fold('details')}
-          last
-          colors={colors}
-        >
-          <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('hang.notes')}</Text>
-          <AppTextInput
-            colors={colors}
-            value={draft.note || ''}
-            onChangeText={set('note')}
-            placeholder={t('we.notePh')}
-            multiline
-            maxLength={300}
-            accessibilityLabel={t('hang.notes')}
-            style={[styles.noteInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.bg }]}
-          />
-        </HangFold>
+        {part.details(true)}
       </SetCard>
     </>
   )
@@ -397,6 +462,9 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
   const [miss, setMiss] = useState('')
   // Track an amount, the same switch as the card's more menu; saved once the card exists.
   const [track, setTrack] = useState(false)
+  const [more, setMore] = useState(false)
+  const [counts, setCounts] = useState(false)
+  const part = ruleParts({ draft, setDraft, open, fold, colors })
   const [unit, setUnit] = useState('')
   const lead = t('we.title')
   const question = blank.trim() ? `${lead} ${blank.trim()}` : ''
@@ -503,7 +571,6 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       />
 
       <View style={styles.settings}>
-        <SetCap colors={colors}>{t('we.who')}</SetCap>
         <SetCard colors={colors}>
           <HangFold
             label={t('we.people')}
@@ -511,7 +578,6 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
             icon="people"
             open={open === 'who'}
             onToggle={() => fold('who')}
-            last
             colors={colors}
           >
             {people === null ? (
@@ -538,49 +604,72 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
               </>
             )}
           </HangFold>
-        </SetCard>
-
-        <RulesFolds
-          draft={draft}
-          setDraft={setDraft}
-          open={open}
-          fold={fold}
-          colors={colors}
-          filing={
-            <FilingFolds
-              folder={draft.folder}
-              topics={draft.topics}
-              onFolder={(folder) => setDraft((was) => ({ ...was, folder }))}
-              onTopics={(topics) => setDraft((was) => ({ ...was, topics }))}
-              open={open}
-              fold={fold}
-              colors={colors}
-            />
-          }
-        />
-
-        <SetCard colors={colors}>
-          <SetSwitch
-            label={t('weAmount.track')}
-            sub={t('weAmount.trackSub')}
+          <SetRow
+            colors={colors}
+            icon="filter"
+            label={t('we.secRules')}
+            value={t(`we.mode.${draft.mode}`)}
+            chevron
+            onPress={() => {
+              Keyboard.dismiss()
+              setCounts(true)
+            }}
+          />
+          {part.when(false)}
+          {part.time(false)}
+          {part.remind(false)}
+          <SetRow
+            colors={colors}
+            icon="note"
+            label={more ? t('hang.less') : t('hang.more')}
+            chevron={!more}
+            plain
             last
-            on={track}
-            onPress={() => setTrack((on) => !on)}
-            colors={colors}
+            onPress={() => {
+              feel.ease()
+              setMore((was) => !was)
+            }}
           />
         </SetCard>
-        {track ? (
-          <Field
-            colors={colors}
-            label={t('weAmount.unit')}
-            value={unit}
-            onChangeText={setUnit}
-            placeholder={t('weAmount.unitPh')}
-            maxLength={24}
-          />
+
+        {more ? (
+          <Reveal>
+            <View style={styles.moreGap} />
+            <SetCard colors={colors}>
+              {part.goal(false)}
+              <FilingFolds
+                folder={draft.folder}
+                topics={draft.topics}
+                onFolder={(folder) => setDraft((was) => ({ ...was, folder }))}
+                onTopics={(topics) => setDraft((was) => ({ ...was, topics }))}
+                open={open}
+                fold={fold}
+                colors={colors}
+              />
+              {part.details(false)}
+              <SetSwitch
+                label={t('weAmount.track')}
+                sub={t('weAmount.trackSub')}
+                last
+                on={track}
+                onPress={() => setTrack((on) => !on)}
+                colors={colors}
+              />
+            </SetCard>
+            {track ? (
+              <Field
+                colors={colors}
+                label={t('weAmount.unit')}
+                value={unit}
+                onChangeText={setUnit}
+                placeholder={t('weAmount.unitPh')}
+                maxLength={24}
+              />
+            ) : null}
+          </Reveal>
         ) : null}
       </View>
-
+      {counts ? <HowCountsSheet draft={draft} setDraft={setDraft} colors={colors} onClose={() => setCounts(false)} /> : null}
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
       <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
@@ -1444,6 +1533,11 @@ const styles = StyleSheet.create({
   acts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   settings: { marginTop: 4 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  countsBody: { padding: 16, gap: 10 },
+  moreGap: { height: 12 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
+  tile: { width: '48%', minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center' },
+  tileText: { fontFamily: fonts.uiSemi, fontSize: 15 },
   hint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   lineInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, marginTop: 8 },
   noteInput: { borderWidth: 1, borderRadius: 12, padding: 10, minHeight: 80, fontSize: 15, textAlignVertical: 'top' },

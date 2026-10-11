@@ -544,7 +544,7 @@ export const it = {
   'hang.daily': 'Ogni giorno',
   'hang.weekly': 'Alcuni giorni',
   'hang.monthly': 'Una volta al mese',
-  'hang.everyN': 'Ogni N giorni',
+  'hang.everyN': 'Ogni qualche giorno',
   'hang.once': 'Solo una volta',
   'hang.weekdays': 'Giorni',
   'hang.day.0': 'Dom',

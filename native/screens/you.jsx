@@ -159,7 +159,6 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       />
 
       <View style={styles.settings}>
-        <SetCap colors={colors}>{t('we.who')}</SetCap>
         <SetCard colors={colors}>
           <HangFold
             label={t('we.people')}
