@@ -1417,6 +1417,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const shortShown = shortAuto ? autoShort(draft.question) : draft.short
   const scrollHandle = useRef(null)
   const whenScroll = useRef(null)
+  const timeDetail = useRef(null)
   const whenDetail = useRef(null)
   const whenPicked = useRef(false)
   const picksH = useRef(0)
@@ -1524,6 +1525,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     whenPicked.current = false
     // After the details fade in, so it measures where they settle.
     setTimeout(() => showFold(whenDetail.current, whenScroll.current), reduce ? 0 : 260)
+  }
+
+  // The time pickers open at the foot of the When sheet: bring them into view,
+  // so the first tap meant for them never lands on Done.
+  function showTimeDetail() {
+    // Also when At a time adds the hour and minute pickers below.
+    setTimeout(() => showFold(timeDetail.current, whenScroll.current), reduce ? 0 : 260)
   }
 
   function showFold(node, scroller = scrollHandle.current) {
@@ -1858,8 +1866,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               }}
               colors={colors}
             >
+              <View ref={timeDetail} onLayout={showTimeDetail}>
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              </View>
             </HangFold>
           {reminderRow(true)}
             </Glide>
