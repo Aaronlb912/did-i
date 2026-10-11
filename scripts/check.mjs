@@ -347,6 +347,21 @@ test('the first question finishes "Did I ___" once', () => {
   }
 })
 
+test('idea questions read "Did I ___?" in every language, so the chip fills the lead', () => {
+  // The form shows a fixed "Did I" lead and the chip as the words after it.
+  const subject = { de: /^(habe|hab) ich\b/i, fr: /^(ai-je|me suis-je)\b/i, es: /^¿/, it: /^ho\b/i, pt: /^eu\b/i, zh: /^我/, ja: /^私/, ko: /^나/ }
+  for (const [lang, strings] of Object.entries({ en, es, fr, de, pt, it, zh, ja, ko })) {
+    for (const key of Object.keys(en).filter((k) => /^ideas\.\w+\.question$/.test(k))) {
+      const question = strings[key]
+      assert.ok(question.startsWith('Did I '), `${lang} ${key} starts with Did I`)
+      const blank = starterBlank({ question })
+      assert.ok(blank && !/[?？]$/.test(blank), `${lang} ${key} chip has no ?`)
+      assert.ok(!/^did i\b/i.test(blank) && !subject[lang]?.test(blank), `${lang} ${key} chip does not repeat the lead`)
+      assert.equal(didQuestion(blank), question, `${lang} ${key} saves the same shape as a typed one`)
+    }
+  }
+})
+
 test('once by deadline shows every night until due', () => {
   const item = lamp('tax', {
     cadence: 'once',

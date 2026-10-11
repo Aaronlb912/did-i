@@ -35,7 +35,7 @@ export function starterList() {
 export function starterBlank(starter) {
   return String(starter?.question || '')
     .replace(/^did i\s+/i, '')
-    .replace(/\?+$/, '')
+    .replace(/\s*[?？]+$/, '')
     .trim()
 }
 
