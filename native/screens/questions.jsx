@@ -1273,7 +1273,8 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
                 night.on ? { backgroundColor: colors.on, borderColor: colors.on } : { borderColor: colors.line },
               ]}
             />
-            <Text style={[styles.stepDay, { color: night.on ? colors.ink : colors.inkDim }]} numberOfLines={1}>
+            <Text style={[styles.stepDay, { color: night.on ? colors.ink : colors.inkDim }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              {/* Shrinks to fit at large text sizes, so Tonight never cuts to Tonig.. */}
               {night.label}
             </Text>
           </View>
@@ -2634,7 +2635,7 @@ const styles = StyleSheet.create({
   stepNights: { flexDirection: 'row', justifyContent: 'space-between' },
   stepNight: { flex: 1, alignItems: 'center', gap: 4 },
   stepDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
-  stepDay: { fontFamily: fonts.ui, fontSize: 11 },
+  stepDay: { fontFamily: fonts.ui, fontSize: 11, alignSelf: 'stretch', textAlign: 'center' },
   goRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   goText: { flex: 1, gap: 2 },
   goLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
