@@ -202,9 +202,9 @@ export function SheetHost() {
           )}
         </View>
         {sheet.onFoot ? (
-          <Pressable onPress={() => sheet.onFoot()} accessibilityRole="button" hitSlop={8} style={[styles.foot, sheet.center && styles.footMid]}>
-            <Text style={[styles.footText, { color: colors.inkDim }]}>{sheet.footLabel}</Text>
-          </Pressable>
+          <View style={[styles.foot, sheet.center && styles.footMid]}>
+            <KeyButton colors={colors} label={sheet.footLabel} onPress={() => sheet.onFoot()} />
+          </View>
         ) : null}
       </Animated.View>
       </KeyboardLift>
@@ -285,5 +285,4 @@ const styles = StyleSheet.create({
   rowMid: { justifyContent: 'center' },
   footMid: { alignSelf: 'center' },
   foot: { alignSelf: 'flex-start' },
-  footText: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline' },
 })

@@ -343,9 +343,9 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   if (quiet) {
     return (
-      <Pressable onPress={openSheet} accessibilityRole="button" hitSlop={10} style={({ pressed }) => pressFx(pressed)}>
-        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${label}`}</Text>
-      </Pressable>
+      <View style={styles.keys}>
+        <KeyButton colors={colors} label={`✎ ${label}`} onPress={openSheet} />
+      </View>
     )
   }
   const note = answered.length === 1 ? answered[0].answer.note : ''
