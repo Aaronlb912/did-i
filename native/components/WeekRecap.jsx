@@ -16,6 +16,7 @@ export async function shareRecap(recap) {
 
 /** The week in three lines, with a share. `recap` comes from weekRecap. */
 export function WeekRecap({ recap, colors }) {
+  const gentle = usePrefs().gentle === true
   if (!recap) return null
 
   const share = () => shareRecap(recap)

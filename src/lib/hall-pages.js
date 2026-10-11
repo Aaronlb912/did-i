@@ -758,28 +758,35 @@ export function matchLamps(book, query) {
   })
 }
 
-// One formatter per app locale and style, never built in a loop.
-const weekdayFormats = new Map()
-function weekdayFormat(locale, style) {
+// The seven names per app locale and style, worked out once and kept.
+// toLocaleDateString, not Intl.DateTimeFormat: Hermes on Android gave
+// English from a DateTimeFormat, while toLocaleDateString follows the locale.
+const weekdayNames = new Map()
+function weekdayList(locale, style) {
   const code = locale === 'zh' ? 'zh-CN' : locale || 'en'
   const key = `${code}:${style}`
-  let format = weekdayFormats.get(key)
-  if (!format) {
-    try {
-      format = new Intl.DateTimeFormat(code, { weekday: style })
-    } catch {
-      format = new Intl.DateTimeFormat('en', { weekday: style })
+  let names = weekdayNames.get(key)
+  if (!names) {
+    names = []
+    // 2026-10-04 is a Sunday, so index 0 is Sunday like getDay().
+    for (let day = 0; day < 7; day += 1) {
+      const at = new Date(2026, 9, 4 + day, 12)
+      try {
+        names.push(at.toLocaleDateString(code, { weekday: style }))
+      } catch {
+        names.push(at.toLocaleDateString('en', { weekday: style }))
+      }
     }
-    weekdayFormats.set(key, format)
+    weekdayNames.set(key, names)
   }
-  return format
+  return names
 }
 
 /** The weekday of `iso` in the app's language: 'long' (Monday) or 'narrow' (M). */
 export function weekdayName(iso, style = 'narrow', locale = readPrefs().locale) {
   const date = parseIsoDate(iso)
   if (!date) return ''
-  return weekdayFormat(locale, style).format(date)
+  return weekdayList(locale, style)[date.getDay()]
 }
 
 function weekdayLong(iso) {
