@@ -85,6 +85,16 @@ export function toastQueue() {
   return items
 }
 
+/** True while an undo is waiting or on screen; new achievements wait until it is gone. */
+export function undoUp(list = items) {
+  return list.some((item) => item.kind === 'undo')
+}
+
+/** The toast to show: an undo always, else the first in line. */
+export function nextToast(list = items) {
+  return list.find((item) => item.kind === 'undo') || list[0] || null
+}
+
 export function useToastQueue() {
   const [now, setNow] = useState(items)
   useEffect(() => {

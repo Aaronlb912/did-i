@@ -130,7 +130,7 @@ import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from 
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
-import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
+import { dropToast, nextToast, showToast, toastQueue, undoUp } from '../native/lib/toast-queue.js'
 import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
@@ -1106,6 +1106,22 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
   const gentleText = recapShareText(recap, true)
   assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
+})
+
+test('an achievement never takes the undo toast spot while an undo is up', () => {
+  for (const item of toastQueue()) dropToast(item.id)
+  showToast({ id: 'mark:t', kind: 'mark', mark: { id: 'first' }, ms: 5200 })
+  assert.equal(nextToast().id, 'mark:t')
+  showToast({ id: 'undo:t', kind: 'undo', rev: 1, label: 'x', hint: 'y', until: Date.now() + 5000, total: 5000 })
+  assert.equal(nextToast().id, 'undo:t', 'undo shows first')
+  assert.equal(undoUp(), true, 'marks wait while the undo is up')
+  assert.equal(typeof toastQueue()[0].onShown, 'function', 'a plain undo gets a clock that starts when shown')
+  dropToast('undo:t')
+  assert.equal(undoUp(), false)
+  assert.equal(nextToast().id, 'mark:t', 'the mark comes after')
+  dropToast('mark:t')
+  const shell = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'native/AppShell.jsx'), 'utf8')
+  assert.ok(/marksHeld \|\| undoUp\(/.test(shell), 'AppShell holds new marks while an undo is up')
 })
 
 test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
