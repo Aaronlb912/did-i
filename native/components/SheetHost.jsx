@@ -85,6 +85,15 @@ export function SheetHost() {
   const fade = useRef(new Animated.Value(0)).current
   const insets = useSafeAreaInsets()
   const wasOpen = useRef(false)
+  // A sheet acts on its first Done or close only. A second quick tap lands
+  // before the sheet is gone and would run the close again (and a toggle
+  // would open it back up).
+  const fired = useRef(null)
+  const once = (of, run) => {
+    if (!run || fired.current === of) return
+    fired.current = of
+    run()
+  }
 
   useEffect(() => {
     if (next?.title) {
@@ -139,7 +148,7 @@ export function SheetHost() {
   useEffect(() => {
     if (!next?.title) return undefined
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      next.onClose?.()
+      once(next, next.onClose)
       return true
     })
     return () => sub.remove()
@@ -158,7 +167,7 @@ export function SheetHost() {
       <Pressable
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]}
         onPress={() => {
-          if (live) sheet.onClose?.()
+          if (live) once(sheet, sheet.onClose)
         }}
         accessibilityRole="button"
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
@@ -174,7 +183,7 @@ export function SheetHost() {
           { backgroundColor: colors.panel, borderColor: colors.line, opacity: fade, transform: [{ translateY: reduce ? 0 : lift }] },
         ]}
       >
-        {sheet.bottom ? <Grabber colors={colors} onDown={() => sheet.onClose?.()} /> : null}
+        {sheet.bottom ? <Grabber colors={colors} onDown={() => once(sheet, sheet.onClose)} /> : null}
         {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
@@ -188,20 +197,20 @@ export function SheetHost() {
         <View style={[styles.row, sheet.center && styles.rowMid]}>
           {sheet.danger && sheet.onGo && !sheet.noClose ? (
             <>
-              <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => sheet.onClose?.()} colors={colors} />
+              <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => once(sheet, sheet.onClose)} colors={colors} />
               {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
-              <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+              <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => once(sheet, sheet.onGo)} colors={colors} />
             </>
           ) : (
             <>
               {sheet.onGo ? (
-                <DidButton small danger={sheet.danger} disabled={Boolean(sheet.goDisabled)} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+                <DidButton small danger={sheet.danger} disabled={Boolean(sheet.goDisabled)} label={sheet.goLabel || t('shop.buy')} onPress={() => once(sheet, sheet.onGo)} colors={colors} />
               ) : null}
               {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
               {sheet.noClose ? null : (
                 <KeyButton
                   label={sheet.closeLabel || t('settings.neverMind')}
-                  onPress={() => sheet.onClose?.()}
+                  onPress={() => once(sheet, sheet.onClose)}
                   colors={colors}
                 />
               )}
