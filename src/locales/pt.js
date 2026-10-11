@@ -160,7 +160,7 @@ export const pt = {
   'settings.accountOffSub': 'Tudo está só neste telefone.',
   'settings.lookRowSub': 'Tema, idioma, widget',
   'settings.remindersRowSub': 'Horários de lembrete, horas de silêncio',
-  'settings.nightsRowSub': 'Modo suave, calendário, conquistas',
+  'settings.nightsRowSub': 'Modo suave, pastas, calendário',
   'settings.privacyRowSub': 'O que os outros veem, relatórios de falhas',
   'settings.helpRowSub': 'Como o Did I funciona, feedback',
   'settings.accountOnSub': '{email}. Saia da conta aqui.',

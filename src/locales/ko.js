@@ -157,7 +157,7 @@ export const ko = {
   'settings.accountOffSub': '전부 이 폰에만 있어.',
   'settings.lookRowSub': '테마, 언어, 위젯',
   'settings.remindersRowSub': '알림 시간, 방해 금지 시간',
-  'settings.nightsRowSub': '부드러운 모드, 달력, 업적',
+  'settings.nightsRowSub': '부드러운 모드, 폴더, 달력',
   'settings.privacyRowSub': '다른 사람에게 보이는 것, 오류 보고서',
   'settings.helpRowSub': 'Did I 사용법, 의견 보내기',
   'settings.accountOnSub': '{email}. 여기서 로그아웃해요.',

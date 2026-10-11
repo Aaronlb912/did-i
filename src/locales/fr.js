@@ -162,7 +162,7 @@ export const fr = {
   'settings.accountOffSub': 'Tout est seulement sur ce téléphone.',
   'settings.lookRowSub': 'Thème, langue, widget',
   'settings.remindersRowSub': 'Heures de rappel, heures calmes',
-  'settings.nightsRowSub': 'Mode doux, calendrier, succès',
+  'settings.nightsRowSub': 'Mode doux, dossiers, calendrier',
   'settings.privacyRowSub': 'Ce que voient les autres, rapports de plantage',
   'settings.helpRowSub': 'Fonctionnement de Did I, avis',
   'settings.accountOnSub': '{email}. Se déconnecter ici.',

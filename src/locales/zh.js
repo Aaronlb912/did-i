@@ -157,7 +157,7 @@ export const zh = {
   'settings.accountOffSub': '所有内容仅在此手机上。',
   'settings.lookRowSub': '主题、语言、小组件',
   'settings.remindersRowSub': '提醒时间、免打扰时段',
-  'settings.nightsRowSub': '温和模式、日历、成就',
+  'settings.nightsRowSub': '温和模式、文件夹、日历',
   'settings.privacyRowSub': '别人能看到什么、崩溃报告',
   'settings.helpRowSub': 'Did I 怎么用、反馈',
   'settings.accountOnSub': '{email}。在这里退出登录。',

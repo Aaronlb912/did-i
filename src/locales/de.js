@@ -162,7 +162,7 @@ export const de = {
   'settings.accountOffSub': 'Alles ist nur auf diesem Telefon.',
   'settings.lookRowSub': 'Design, Sprache, Widget',
   'settings.remindersRowSub': 'Erinnerungszeiten, Ruhezeiten',
-  'settings.nightsRowSub': 'Sanfter Modus, Kalender, Erfolge',
+  'settings.nightsRowSub': 'Sanfter Modus, Ordner, Kalender',
   'settings.privacyRowSub': 'Was andere sehen, Absturzberichte',
   'settings.helpRowSub': 'So funktioniert Did I, Feedback',
   'settings.accountOnSub': '{email}. Hier abmelden.',

@@ -161,7 +161,7 @@ export const es = {
   'settings.accountOffSub': 'Todo está solo en este teléfono.',
   'settings.lookRowSub': 'Tema, idioma, widget',
   'settings.remindersRowSub': 'Horas de aviso, horas de silencio',
-  'settings.nightsRowSub': 'Modo suave, calendario, logros',
+  'settings.nightsRowSub': 'Modo suave, carpetas, calendario',
   'settings.privacyRowSub': 'Lo que ven los demás, informes de fallos',
   'settings.helpRowSub': 'Cómo funciona Did I, comentarios',
   'settings.accountOnSub': '{email}. Cierra sesión aquí.',

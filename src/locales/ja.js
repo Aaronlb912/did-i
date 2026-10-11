@@ -157,7 +157,7 @@ export const ja = {
   'settings.accountOffSub': '全部このスマホだけ。',
   'settings.lookRowSub': 'テーマ、言語、ウィジェット',
   'settings.remindersRowSub': 'リマインダーの時刻、おやすみ時間',
-  'settings.nightsRowSub': 'やさしいモード、カレンダー、実績',
+  'settings.nightsRowSub': 'やさしいモード、フォルダ、カレンダー',
   'settings.privacyRowSub': 'ほかの人に見えるもの、クラッシュレポート',
   'settings.helpRowSub': 'Did I の使い方、フィードバック',
   'settings.accountOnSub': '{email}。ここからログアウト。',

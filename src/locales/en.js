@@ -159,7 +159,7 @@ export const en = {
   'settings.accountOffSub': 'Everything is on this phone only.',
   'settings.lookRowSub': 'Theme, language, widget',
   'settings.remindersRowSub': 'Reminder times, quiet hours',
-  'settings.nightsRowSub': 'Gentle mode, calendar, achievements',
+  'settings.nightsRowSub': 'Gentle mode, folders, calendar',
   'settings.privacyRowSub': 'What others see, crash reports',
   'settings.helpRowSub': 'How Did I works, feedback',
   'settings.accountOnSub': '{email}. Sign out here.',
