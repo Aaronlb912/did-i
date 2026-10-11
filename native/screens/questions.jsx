@@ -13,7 +13,6 @@ import {
   StyleSheet,
   Text,
   View,
-  findNodeHandle,
 } from 'react-native'
 import { checkPings } from '../../src/lib/notify.js'
 import {
@@ -1421,6 +1420,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const whenDetail = useRef(null)
   const whenPicked = useRef(false)
   const picksH = useRef(0)
+  const picksRef = useRef(null)
+  const relift = useRef(null)
 
   useEffect(() => () => clearTimeout(leave.current), [])
 
@@ -1463,21 +1464,46 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     if (!focused) return undefined
     const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
     let timer = null
+    // Scrolls just enough that the ideas end above the keyboard, but never so
+    // far that the question itself goes under the header.
     const lift = () => {
+      clearTimeout(timer)
       timer = setTimeout(() => {
         const scroller = scrollHandle.current
-        const field = findNodeHandle(inputRef.current)
-        if (!scroller?.scrollResponderScrollNativeHandleToKeyboard || !field) return
-        scroller.scrollResponderScrollNativeHandleToKeyboard(field, picksH.current + 16, true)
+        const picks = picksRef.current
+        const field = inputRef.current
+        const keyTop = Keyboard.metrics?.()?.screenY
+        const inner = scroller?.getInnerViewRef?.()
+        if (!scroller?.scrollTo || !inner || !picks?.measureLayout || !field?.measureInWindow || !keyTop) return
+        picks.measureLayout(
+          inner,
+          (_x, top) => {
+            picks.measureInWindow((_px, picksTop, _pw, picksH) => {
+              field.measureInWindow((_fx, fieldTop) => {
+                scroller.measureInWindow?.((_sx, viewTop) => {
+                  const now = top - (picksTop - viewTop)
+                  const need = picksTop + picksH + 16 - keyTop
+                  if (need <= 0) return
+                  const room = Math.max(0, fieldTop - viewTop - 8)
+                  scroller.scrollTo({ y: now + Math.min(need, room), animated: !reduce })
+                })
+              })
+            })
+          },
+          () => {},
+        )
       }, Platform.OS === 'ios' ? 300 : 60)
     }
     const sub = Keyboard.addListener(event, lift)
     if (Keyboard.isVisible?.()) lift()
+    // The ideas can lay out after the keyboard is up, so lift again when they do.
+    relift.current = () => Keyboard.isVisible?.() && lift()
     return () => {
+      relift.current = null
       clearTimeout(timer)
       sub.remove()
     }
-  }, [focused])
+  }, [focused, reduce])
 
   // The time sits in When, so asking for it opens When with the time open.
   function openTime() {
@@ -1841,9 +1867,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       </PickSheet>
 
       <Glide
+        ref={picksRef}
         style={styles.settings}
         onLayout={(event) => {
-          picksH.current = event.nativeEvent.layout.height
+          const h = event.nativeEvent.layout.height
+          if (Math.abs(h - picksH.current) < 1) return
+          picksH.current = h
+          relift.current?.()
         }}
       >
         <SetCard colors={colors}>
