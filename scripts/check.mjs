@@ -1129,6 +1129,10 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
   const gentleText = recapShareText(recap, true)
   assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
+  // Shared outside the app, so every language names Did I.
+  for (const [code, table] of Object.entries({ en, es, fr, de, pt, it, zh, ja, ko })) {
+    for (const key of ['recap.share', 'recap.shareGentle']) assert.ok(table[key].includes('Did I'), `${code} ${key} names Did I`)
+  }
 })
 
 test('an achievement never takes the undo toast spot while an undo is up', () => {
