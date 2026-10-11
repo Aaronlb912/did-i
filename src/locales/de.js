@@ -155,7 +155,7 @@ export const de = {
   'settings.leaveHintOff':
     'Deine Fragen bleiben hier. Beim nächsten Öffnen fragt es wieder nach dir.',
   'settings.leaveBoard': 'Gehen',
-  'settings.neverMind': 'Egal',
+  'settings.neverMind': 'Doch nicht',
   'settings.account': 'Konto',
   'settings.accountOff': 'Nicht angemeldet',
   'settings.accountSub': 'Deine Ordner folgen dir auf ein neues Handy.',

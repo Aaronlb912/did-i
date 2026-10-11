@@ -1909,7 +1909,7 @@ export const fr = {
   'widget.settings.lookSub': 'Couleurs du widget. Seulement les looks que tu possèdes.',
   'widget.settings.lookTag': 'Comme ton style',
   'widget.settings.openOnly': 'Questions ouvertes seulement',
-  'widget.settings.openOnlySub': "Masquer les lignes Did et pas encore une fois répondu.",
+  'widget.settings.openOnlySub': "Masquer les lignes Did et Pas encore après ta réponse.",
   'didyou.menuWaiting': 'Envoyés pour toi, {n} en attente',
   'didyou.menuButton': 'Menu, {n} demandes d’amis',
   'didyou.newOne': '{name} t’a envoyé une question',
