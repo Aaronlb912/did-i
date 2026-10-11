@@ -14,7 +14,7 @@ import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { goHash } from '../navigation/hash.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { UNDO_MS } from '../../src/lib/useTonightStack.js'
+import { DELETE_UNDO_MS as UNDO_MS } from '../../src/lib/undo-times.js'
 import { showToast } from '../lib/toast-queue.js'
 
 // Clears a note, with Undo in the toast like other removals. Undo writes the

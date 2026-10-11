@@ -1108,6 +1108,17 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
 })
 
+test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const times = readFileSync(path.join(root, 'src/lib/undo-times.js'), 'utf8')
+  assert.ok(/ANSWER_UNDO_MS = 5000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
+  for (const file of ['src/lib/useTonightStack.js', 'src/lib/AllLamps.jsx', 'native/screens/questions.jsx', 'native/components/LampManage.jsx', 'native/components/NightNotes.jsx', 'native/screens/more.jsx']) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    assert.ok(src.includes('undo-times.js'), `${file} reads undo-times.js`)
+    assert.ok(!/UNDO_MS = \d|until: now \+ \d|useUndoToast\([^)]*\}, \d{4}\)/.test(src), `${file} has no undo time of its own`)
+  }
+})
+
 test('weekday initials follow the app language, not English', () => {
   // 2026-10-06 is a Tuesday: T in English, D (Dienstag) in German.
   assert.equal(weekdayName('2026-10-06', 'narrow', 'en'), 'T')

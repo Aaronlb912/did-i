@@ -13,6 +13,7 @@ import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
 import { useUndoToast } from '../lib/toast-queue.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -456,7 +457,7 @@ export function RecentScreen() {
   useUndoToast('recent', undo, () => {
     restoreNotices(undo?.list)
     setUndo(null)
-  }, 6000)
+  }, DELETE_UNDO_MS)
   function clearAll() {
     setUndo({ label: t('recent.cleared'), list: clearNotices() })
   }

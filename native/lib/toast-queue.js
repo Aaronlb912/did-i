@@ -54,6 +54,16 @@ export function showToast(toast) {
   }
   keepNotice(toast)
   if (toast.kind === 'undo') {
+    // Every undo's clock counts from when it has slid in and can be tapped.
+    if (!toast.onShown && toast.total) {
+      const { id, rev, total } = toast
+      toast = {
+        ...toast,
+        onShown: () => {
+          if (items.some((item) => item.id === id && item.rev === rev)) showToast({ id, until: Date.now() + total })
+        },
+      }
+    }
     // Only the latest answer can be undone, and its clock is already running,
     // so it shows at once. Whatever it pushes aside waits its turn again.
     const rest = items.filter((item) => item.kind !== 'undo')
