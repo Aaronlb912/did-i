@@ -797,6 +797,8 @@ export function CheerChip({ id, stage = 1, colors }) {
 // A shop buddy is alive: it blinks now and then and sways a little from
 // where it hangs. Still under Less motion and the phone's Reduce Motion.
 const SWAY_MS = 1800
+const LIFE_SWAYS = 8
+const LIFE_BLINKS = 5
 function useBuddyLife(alive) {
   const reduce = useReduceMotion()
   const on = alive && !reduce
@@ -805,9 +807,16 @@ function useBuddyLife(alive) {
   useEffect(() => {
     if (!on) return undefined
     sway.value = 0
-    sway.value = withRepeat(withTiming(1, { duration: SWAY_MS, easing: Easing.inOut(Easing.sin) }), -1, true)
+    // A few sways and blinks, then it rests, so it is not animating all night.
+    sway.value = withSequence(
+      withRepeat(withTiming(1, { duration: SWAY_MS, easing: Easing.inOut(Easing.sin) }), LIFE_SWAYS, true),
+      withTiming(0.5, { duration: SWAY_MS / 2, easing: Easing.out(Easing.sin) }),
+    )
     let timer = null
+    let blinks = 0
     const later = () => {
+      if (blinks >= LIFE_BLINKS) return
+      blinks += 1
       timer = setTimeout(() => {
         blink.value = withSequence(withTiming(1, { duration: 70 }), withTiming(0, { duration: 120 }))
         later()

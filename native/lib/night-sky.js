@@ -2,6 +2,9 @@
 
 // A handful of frames per second: the sky steps rather than glides.
 export const SKY_FPS = 6
+// The sky moves this long after the done card shows, then holds still, so it
+// is not drawing frames all night (battery, and test tools that wait for idle).
+export const SKY_RUN_MS = 30000
 
 // Where each star starts, as a share of the sky, its size, and its twinkle.
 export const STARS = [
