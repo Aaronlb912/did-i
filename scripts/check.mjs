@@ -341,6 +341,9 @@ test('an idea you already have stays hidden in any language, whatever its case',
       assert.ok(!unusedStarters(book).some((s) => s.idea === 'pills'), `meds idea shown in ${locale}`)
       assert.ok(!packList(book).some((p) => p.items.some((i) => i.idea === 'pills')), `meds pack item shown in ${locale}`)
     }
+    const added = { lamps: [{ id: 'b', question: 'Did I スキンケアをした?', short: 'スキンケア' }] }
+    writePrefs({ locale: 'en' })
+    assert.ok(!unusedStarters(added).some((s) => s.idea === 'skin'), 'a skincare idea added in Japanese shows again in English')
   } finally {
     writePrefs({ locale: 'en' })
   }

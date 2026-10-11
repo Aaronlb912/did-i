@@ -1,6 +1,6 @@
 import { blankLamp } from './board-json.js'
 import { hangInto, takeDown } from './board-ops.js'
-import { localePack, t } from './i18n.js'
+import { loadedPacks, t } from './i18n.js'
 import { boardDate, isDueOn } from './recurrence.js'
 
 export const STARTERS = [
@@ -36,12 +36,12 @@ function plain(text) {
   return String(text || '').toLowerCase().replace(/^did i\s+/, '').replace(/\s*[?？]+$/, '').trim()
 }
 
-// True when a question on the shelf is this idea, in the app's language or in
-// English (a question added before a language switch keeps its English words).
+// True when a question on the shelf is this idea in any loaded language: a
+// question keeps the words it was added in after a language switch.
 export function ideaTaken(hung, idea) {
-  const en = localePack('en')
   const words = new Set(
-    [t(`ideas.${idea}.question`), t(`ideas.${idea}.start`), en[`ideas.${idea}.question`], en[`ideas.${idea}.start`]]
+    loadedPacks()
+      .flatMap((pack) => [pack[`ideas.${idea}.question`], pack[`ideas.${idea}.start`]])
       .map(plain)
       .filter(Boolean),
   )

@@ -15,6 +15,11 @@ export function hasLocale(code) {
   return Boolean(packs[code])
 }
 
+// Every language loaded so far: all 9 on the phone and in tests.
+export function loadedPacks() {
+  return Object.values(packs)
+}
+
 export function localePack(locale = readPrefs().locale) {
   return packs[locale] ?? packs.en
 }
