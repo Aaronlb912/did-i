@@ -19,7 +19,7 @@ saves the answer, the same way a widget tap is saved.
   `npm test` checks this, so bump both together.
 - Complication: `targets/watch-widget/` (WidgetKit, type `watch-widget`,
   product `DidIWatchWidget`, bundle id
-  `com.aaronbryant.didi.watchkitapp.complication`, embedded in the watch app).
+  `com.aaronbryant.didi.watchkitapp.widget`, embedded in the watch app).
   Its `Info.plist` version must match `app.json` too.
 - The App Group on the watch is shared by the watch app and the complication.
   It does not move data between iPhone and watch: they are separate devices.
@@ -73,7 +73,7 @@ App Store provisioning profile per bundle id. The watch app needs its own.
    and save it as the GitHub secret `IOS_WATCH_PROVISIONING_PROFILE`
    (Settings > Secrets and variables > Actions).
 5. Same again for the complication: App ID `Did I Watch Complication`,
-   bundle id `com.aaronbryant.didi.watchkitapp.complication`, App Groups on
+   bundle id `com.aaronbryant.didi.watchkitapp.widget`, App Groups on
    with `group.com.aaronbryant.didi`; App Store profile `Did I Watch
    Complication App Store` with the same certificate; base64 it into the
    secret `IOS_WATCH_WIDGET_PROVISIONING_PROFILE`.

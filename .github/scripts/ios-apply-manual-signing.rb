@@ -11,13 +11,13 @@ bundles = {
   (ENV['IOS_MAIN_PROFILE_BUNDLE'] || 'com.aaronbryant.didi') => ENV['IOS_MAIN_PROFILE_UUID'],
   'com.aaronbryant.didi.widgets' => ENV['IOS_WIDGET_PROFILE_UUID'],
   'com.aaronbryant.didi.watchkitapp' => ENV['IOS_WATCH_PROFILE_UUID'],
-  'com.aaronbryant.didi.watchkitapp.complication' => ENV['IOS_WATCH_WIDGET_PROFILE_UUID'],
+  'com.aaronbryant.didi.watchkitapp.widget' => ENV['IOS_WATCH_WIDGET_PROFILE_UUID'],
 }.compact
 
 # The watch app and its complication build with the watchOS SDK, so their identity key differs.
 sdk_for = Hash.new('iphoneos').merge(
   'com.aaronbryant.didi.watchkitapp' => 'watchos',
-  'com.aaronbryant.didi.watchkitapp.complication' => 'watchos',
+  'com.aaronbryant.didi.watchkitapp.widget' => 'watchos',
 )
 
 data = File.read(project_path)
