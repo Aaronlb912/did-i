@@ -1137,15 +1137,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           </Slot>
         ) : null}
         {doneFace ? (
-          <ScrollView
-            style={styles.doneScroll}
-            contentContainerStyle={styles.doneScrollIn}
-            showsVerticalScrollIndicator={false}
-          >
+          <DoneScroll fade={colors.bg}>
             <Slot>
               <DoneIn>{face}</DoneIn>
             </Slot>
-          </ScrollView>
+          </DoneScroll>
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
@@ -1195,6 +1191,38 @@ const frameStyles = StyleSheet.create({
 
 // The done card settles in: a short fade and a small scale, no confetti.
 // Reduced motion shows it as it is.
+const DONE_FADE = [0.2, 0.45, 0.7, 0.9]
+
+// The done card scrolls when it is taller than the room. With more below, the
+// bottom edge fades out instead of stopping at a hard line, so it reads as "scroll".
+function DoneScroll({ fade, children }) {
+  const [box, setBox] = useState(0)
+  const [inner, setInner] = useState(0)
+  const [y, setY] = useState(0)
+  const more = inner - box - y > 4
+  return (
+    <View style={styles.doneScroll}>
+      <ScrollView
+        contentContainerStyle={styles.doneScrollIn}
+        showsVerticalScrollIndicator={inner > box + 4}
+        scrollEventThrottle={32}
+        onScroll={(e) => setY(e.nativeEvent.contentOffset.y)}
+        onLayout={(e) => setBox(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_, h) => setInner(h)}
+      >
+        {children}
+      </ScrollView>
+      {more ? (
+        <View pointerEvents="none" style={styles.doneFade}>
+          {DONE_FADE.map((opacity) => (
+            <View key={opacity} style={[styles.doneFadeStep, { backgroundColor: fade, opacity }]} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
 function DoneIn({ children }) {
   const reduce = useReduceMotion()
   const grow = useSharedValue(reduce ? 1 : 0)
@@ -1263,6 +1291,8 @@ const styles = StyleSheet.create({
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
   pickBox: { flex: 1, justifyContent: 'center' },
-  doneScroll: { flexGrow: 0, flexShrink: 1 },
+  doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
+  doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
+  doneFadeStep: { flex: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })
