@@ -10,6 +10,7 @@ import { readShelf } from '../src/lib/board-shelf.js'
 import { isoDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
+import { sendWatchCards } from './watch-sync.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
 // props can make the whole update throw, so send a JSON copy.
@@ -98,6 +99,8 @@ export async function syncTonightWidget(shelf) {
   const props = enrichTonightWidgetProps(shelf, built)
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
+    // Same cards to the Apple Watch, when one is paired (native/watch-sync.js).
+    sendWatchCards(props)
     try {
       const api = await tonightWidgetApi()
       if (!api) return

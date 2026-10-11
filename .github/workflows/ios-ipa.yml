@@ -126,9 +126,14 @@ jobs:
           IOS_PROVISIONING_PROFILE: ${{ inputs.dev_app && secrets.IOS_DEV_PROVISIONING_PROFILE || secrets.IOS_PROVISIONING_PROFILE }}
           IOS_WIDGET_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WIDGET_PROVISIONING_PROFILE || '' }}
           IOS_WATCH_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WATCH_PROVISIONING_PROFILE || '' }}
+          IOS_WATCH_WIDGET_PROVISIONING_PROFILE: ${{ !inputs.dev_app && secrets.IOS_WATCH_WIDGET_PROVISIONING_PROFILE || '' }}
         run: |
           if [ "$DIDI_WATCH" = "1" ] && [ -n "$IOS_DIST_CERT_P12" ] && [ -z "$IOS_WATCH_PROVISIONING_PROFILE" ]; then
             echo "DIDI_WATCH=1 but the IOS_WATCH_PROVISIONING_PROFILE secret is missing. See docs/watch.md."
+            exit 1
+          fi
+          if [ "$DIDI_WATCH" = "1" ] && [ -n "$IOS_DIST_CERT_P12" ] && [ -z "$IOS_WATCH_WIDGET_PROVISIONING_PROFILE" ]; then
+            echo "DIDI_WATCH=1 but the IOS_WATCH_WIDGET_PROVISIONING_PROFILE secret is missing. See docs/watch.md."
             exit 1
           fi
           bash .github/scripts/ios-signing.sh

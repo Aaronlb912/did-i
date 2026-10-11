@@ -6134,6 +6134,24 @@ test('the watch app target exists and CI builds it without signing', () => {
   assert.equal((wf.match(/^\s+CODE_SIGNING_ALLOWED=NO$/gm) || []).length, 2, 'both builds skip signing')
   assert.ok(!/secrets\.|altool|ios-bump-build/.test(wf), 'no secrets, no upload, no build number bump')
   assert.ok(read('.github/scripts/ios-apply-manual-signing.rb').includes('com.aaronbryant.didi.watchkitapp'))
+  // Complication: nested under the watch app's bundle id, same version, same App Group.
+  const comp = JSON.parse(read('targets/watch-widget/expo-target.config.json'))
+  assert.equal(comp.type, 'watch-widget')
+  assert.ok(comp.bundleIdentifier.startsWith('com.aaronbryant.didi.watchkitapp.'), 'complication id sits under the watch app id')
+  assert.deepEqual(comp.entitlements['com.apple.security.application-groups'], ['group.com.aaronbryant.didi'])
+  assert.ok(read('targets/watch-widget/Info.plist').includes(`<string>${version}</string>`), 'complication CFBundleShortVersionString matches app.json version')
+  assert.ok(wf.includes('DidIWatchWidget.appex'), 'CI checks the complication is embedded in the watch app')
+  assert.ok(read('.github/scripts/ios-apply-manual-signing.rb').includes(comp.bundleIdentifier))
+  assert.ok(read('.github/scripts/ios-signing.sh').includes('IOS_WATCH_WIDGET_PROVISIONING_PROFILE'))
+  // Watch sync: iOS only, and the cards ride the Tonight widget push.
+  assert.ok(read('native/widget-sync.js').includes('sendWatchCards(props)'))
+  assert.ok(read('native/watch-sync.js').includes("Platform.OS !== 'ios'"))
+  // Watch words come from the phone in its language; the watch fills the numbers.
+  for (const key of ['watch.allDone', 'watch.notYet', 'watch.count', 'watch.openPhone']) {
+    assert.ok(read('native/watch-sync.js').includes(`'${key}'`), `${key} is sent to the watch`)
+  }
+  assert.ok(read('targets/watch/DidIWatchApp.swift').includes('notYetLabel'))
+  assert.ok(read('targets/watch-widget/DidIWatchWidget.swift').includes('countLabel'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

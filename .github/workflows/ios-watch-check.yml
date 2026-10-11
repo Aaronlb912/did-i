@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - 'targets/**'
+      - 'modules/didi-watch/**'
       - 'app.json'
       - 'app.config.js'
       - 'package.json'
@@ -65,6 +66,7 @@ jobs:
         run: |
           grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.aaronbryant.didi.watchkitapp;' ios/DidI.xcodeproj/project.pbxproj
           grep -q 'WATCHOS_DEPLOYMENT_TARGET' ios/DidI.xcodeproj/project.pbxproj
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.aaronbryant.didi.watchkitapp.widget;' ios/DidI.xcodeproj/project.pbxproj
           xcodebuild -list -project ios/DidI.xcodeproj
 
       - name: Cache CocoaPods
@@ -127,3 +129,5 @@ jobs:
           echo "App: $APP"
           ls -la "$APP/Watch"
           test -d "$APP/Watch/DidIWatch.app"
+          ls -la "$APP/Watch/DidIWatch.app/PlugIns"
+          test -d "$APP/Watch/DidIWatch.app/PlugIns/DidIWatchWidget.appex"
