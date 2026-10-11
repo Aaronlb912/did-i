@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, BackHandler, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Animated, BackHandler, Keyboard, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
@@ -84,15 +84,22 @@ export function SheetHost() {
   const [sheet, setShown] = useState(current)
   const fade = useRef(new Animated.Value(0)).current
   const insets = useSafeAreaInsets()
+  const wasOpen = useRef(false)
 
   useEffect(() => {
     if (next?.title) {
+      wasOpen.current = true
       setShown(next)
       fade.stopAnimation()
       if (reduce) fade.setValue(1)
       else Animated.timing(fade, { toValue: 1, duration: MOTION_MS, easing: easeOut, useNativeDriver: true }).start()
       return undefined
     }
+    // Drop the keyboard while the closing sheet's text box is still mounted.
+    // Unmounting a focused box on Android leaves the keyboard up with nothing
+    // behind it, and the next note box then ignores every key.
+    if (wasOpen.current) Keyboard.dismiss()
+    wasOpen.current = false
     if (reduce) {
       fade.setValue(0)
       setShown(null)
