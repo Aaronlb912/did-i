@@ -513,9 +513,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       ) : null}
       <View style={styles.gap} />
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="palette" tint={colors.late} label={t('settings.look')} value={lookWords} chevron onPress={() => goHash('/settings/look')} />
-        <SetRow colors={colors} icon="bell" tint={colors.late} label={t('settings.reminders')} chevron onPress={() => goHash('/pings')} />
-        <SetRow colors={colors} icon="moon" tint={colors.on} label={t('marks.section.nights')} chevron onPress={() => goHash('/settings/nights')} />
+        <SetRow colors={colors} icon="palette" tint={colors.late} label={t('settings.look')} sub={t('settings.lookRowSub')} value={lookWords} chevron onPress={() => goHash('/settings/look')} />
+        <SetRow colors={colors} icon="bell" tint={colors.late} label={t('settings.reminders')} sub={t('settings.remindersRowSub')} chevron onPress={() => goHash('/pings')} />
+        <SetRow colors={colors} icon="moon" tint={colors.on} label={t('marks.section.nights')} sub={t('settings.nightsRowSub')} chevron onPress={() => goHash('/settings/nights')} />
         <SetRow
           colors={colors}
           icon="person"
@@ -526,8 +526,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => goHash('/account')}
         />
-        <SetRow colors={colors} icon="shield" tint={colors.inkSoft} label={t('settings.privacyChoices')} chevron onPress={() => goHash('/settings/privacy')} />
-        <SetRow colors={colors} icon="help" tint={colors.on} label={t('settings.help')} chevron last onPress={() => goHash('/settings/help')} />
+        <SetRow colors={colors} icon="shield" tint={colors.inkSoft} label={t('settings.privacyChoices')} sub={t('settings.privacyRowSub')} chevron onPress={() => goHash('/settings/privacy')} />
+        <SetRow colors={colors} icon="help" tint={colors.on} label={t('settings.help')} sub={t('settings.helpRowSub')} chevron last onPress={() => goHash('/settings/help')} />
       </SetCard>
 
       {account.user ? (
