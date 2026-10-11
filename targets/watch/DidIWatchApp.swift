@@ -29,6 +29,21 @@ struct WatchCards: Codable, Equatable {
   var nopeLabel: String
   var clearLabel: String
   var updatedAt: Double
+  // Words in the phone's language (t() in src/locales). Optional so cards
+  // stored by an older phone build still decode.
+  var emptyLabel: String?
+  var leftLabel: String?
+  var allDoneLabel: String?
+  var notYetLabel: String?
+  var countLabel: String?
+  var openPhoneLabel: String?
+}
+
+// "{n} left" from the phone, with the number put in.
+func fill(_ template: String?, _ vars: [String: Int]) -> String? {
+  guard var text = nonEmpty(template) else { return nil }
+  for (key, value) in vars { text = text.replacingOccurrences(of: "{\(key)}", with: String(value)) }
+  return text
 }
 
 // Last cards from the iPhone, kept in the App Group so the complication
@@ -113,15 +128,28 @@ struct ContentView: View {
   @EnvironmentObject var store: CardStore
 
   var body: some View {
-    if store.cards == nil || (store.cards?.items.isEmpty ?? true) {
-      MessageView(title: String(localized: "Did I"), text: String(localized: "Open Did I on your iPhone"))
-    } else if let card = store.openCards.first {
-      CardView(card: card)
+    if let cards = store.cards {
+      if cards.items.isEmpty {
+        MessageView(title: "Did I", text: nonEmpty(cards.emptyLabel) ?? String(localized: "Open Did I on your iPhone"))
+      } else if let card = store.openCards.first {
+        CardView(card: card)
+      } else {
+        // Said Not yet to some: they are not done, so do not say all clear.
+        let notYet = cards.items.filter { $0.status == "nope" }.count
+        if notYet > 0 {
+          MessageView(
+            title: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet"),
+            text: nonEmpty(cards.openPhoneLabel) ?? String(localized: "Open Did I on your iPhone")
+          )
+        } else {
+          MessageView(
+            title: nonEmpty(cards.allDoneLabel) ?? String(localized: "All done"),
+            text: nonEmpty(cards.clearLabel) ?? String(localized: "Nothing left tonight")
+          )
+        }
+      }
     } else {
-      MessageView(
-        title: String(localized: "All done"),
-        text: nonEmpty(store.cards?.clearLabel) ?? String(localized: "Nothing left tonight")
-      )
+      MessageView(title: "Did I", text: String(localized: "Open Did I on your iPhone"))
     }
   }
 }
@@ -174,7 +202,7 @@ struct CardView: View {
           store.answer(card, did: false)
         }
         if open > 1 {
-          Text(String(localized: "\(open) left"))
+          Text(fill(store.cards?.leftLabel, ["n": open]) ?? String(localized: "\(open) left"))
             .font(.caption2)
             .foregroundStyle(.secondary)
         }

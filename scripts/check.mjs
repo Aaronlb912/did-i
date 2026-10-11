@@ -6146,6 +6146,12 @@ test('the watch app target exists and CI builds it without signing', () => {
   // Watch sync: iOS only, and the cards ride the Tonight widget push.
   assert.ok(read('native/widget-sync.js').includes('sendWatchCards(props)'))
   assert.ok(read('native/watch-sync.js').includes("Platform.OS !== 'ios'"))
+  // Watch words come from the phone in its language; the watch fills the numbers.
+  for (const key of ['watch.allDone', 'watch.notYet', 'watch.count', 'watch.openPhone']) {
+    assert.ok(read('native/watch-sync.js').includes(`'${key}'`), `${key} is sent to the watch`)
+  }
+  assert.ok(read('targets/watch/DidIWatchApp.swift').includes('notYetLabel'))
+  assert.ok(read('targets/watch-widget/DidIWatchWidget.swift').includes('countLabel'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 import { requireOptionalNativeModule } from 'expo'
+import { t } from '../src/lib/i18n.js'
 
 // Apple Watch (modules/didi-watch, targets/watch). The iPhone sends the same
 // cards the Tonight widget gets; the watch sends taps back. Android, web and
@@ -28,6 +29,13 @@ export function watchCardsFromProps(props) {
     didLabel: String(props?.didLabel || ''),
     nopeLabel: String(props?.nopeLabel || ''),
     clearLabel: String(props?.clearLabel || ''),
+    emptyLabel: String(props?.emptyLabel || ''),
+    // The watch fills {n}, {a} and {b} itself, in the phone's language.
+    leftLabel: t('widget.tonight.left', { n: '{n}' }),
+    allDoneLabel: t('watch.allDone'),
+    notYetLabel: t('watch.notYet', { n: '{n}' }),
+    countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
+    openPhoneLabel: t('watch.openPhone'),
     updatedAt: Number(props?.updatedAt) || Date.now(),
   }
 }

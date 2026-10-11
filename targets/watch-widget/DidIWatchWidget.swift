@@ -7,20 +7,25 @@ struct CountEntry: TimelineEntry {
   let date: Date
   let answered: Int
   let total: Int
+  // "{a} of {b}" in the phone's language, from the cards.
+  var countLabel: String? = nil
 }
 
 private struct StoredCards: Decodable {
   struct Item: Decodable { let status: String }
   let items: [Item]
+  let countLabel: String?
 }
 
-private func readCount() -> (Int, Int) {
+private func readCount() -> CountEntry {
   let defaults = UserDefaults(suiteName: "group.com.aaronbryant.didi")
   guard let json = defaults?.string(forKey: "didi.watch.cards"),
         let data = json.data(using: .utf8),
-        let cards = try? JSONDecoder().decode(StoredCards.self, from: data) else { return (0, 0) }
+        let cards = try? JSONDecoder().decode(StoredCards.self, from: data) else {
+    return CountEntry(date: Date(), answered: 0, total: 0)
+  }
   let answered = cards.items.filter { $0.status != "open" }.count
-  return (answered, cards.items.count)
+  return CountEntry(date: Date(), answered: answered, total: cards.items.count, countLabel: cards.countLabel)
 }
 
 struct CountProvider: TimelineProvider {
@@ -29,13 +34,11 @@ struct CountProvider: TimelineProvider {
   }
 
   func getSnapshot(in context: Context, completion: @escaping (CountEntry) -> Void) {
-    let (answered, total) = readCount()
-    completion(CountEntry(date: Date(), answered: answered, total: total))
+    completion(readCount())
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<CountEntry>) -> Void) {
-    let (answered, total) = readCount()
-    let entry = CountEntry(date: Date(), answered: answered, total: total)
+    let entry = readCount()
     // The watch app reloads this on every change; this is only a fallback.
     let next = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
     completion(Timeline(entries: [entry], policy: .after(next)))
@@ -47,7 +50,12 @@ struct CountView: View {
   let entry: CountEntry
 
   private var line: String {
-    String(localized: "\(entry.answered) of \(entry.total)")
+    if let label = entry.countLabel, !label.isEmpty {
+      return label
+        .replacingOccurrences(of: "{a}", with: String(entry.answered))
+        .replacingOccurrences(of: "{b}", with: String(entry.total))
+    }
+    return String(localized: "\(entry.answered) of \(entry.total)")
   }
 
   var body: some View {

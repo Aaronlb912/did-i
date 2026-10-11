@@ -8,7 +8,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 ## Apple Watch (branches `watch-1`, `watch-2`)
 
 - **Built:** steps 1 to 3. Watch app in `targets/watch` shows tonight's cards one at a time with Did and Not yet, a done state and "Open Did I on your iPhone" when it has no cards; taps go back to the phone and save like a widget tap (`modules/didi-watch`, `native/watch-sync.js`). Complication "1 of 3" in `targets/watch-widget`. Opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.
-- **Not done:** the watch and complication App IDs, App Group and the `IOS_WATCH_PROVISIONING_PROFILE` / `IOS_WATCH_WIDGET_PROVISIONING_PROFILE` secrets (steps in docs/watch.md); a TestFlight pass on a real watch (step 4). Watch-only words ("All done", "Nothing left tonight", "{n} left", "{a} of {b}") are English only (`String(localized:)`, no Localizable strings yet); Did and Not yet come from the phone in its language. Cards from last night stay on the watch until the phone sends new ones. Did we cards are not on the watch.
+- **Not done:** the watch and complication App IDs, App Group and the `IOS_WATCH_PROVISIONING_PROFILE` / `IOS_WATCH_WIDGET_PROVISIONING_PROFILE` secrets (steps in docs/watch.md); a TestFlight pass on a real watch (step 4). Watch words come from the phone in its language; before the first cards, the complication gallery text and the "Open Did I on your iPhone" fallback are English only. Cards from last night stay on the watch until the phone sends new ones. Did we cards are not on the watch.
 
 ## Did we look (branch `we-polish`)
 

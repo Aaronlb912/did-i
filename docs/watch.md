@@ -30,8 +30,10 @@ saves the answer, the same way a widget tap is saved.
   back with `transferUserInfo`; `native/NativeApp.jsx` saves it with
   `applyWidgetTapOnce` (same as a widget tap) and sends the cards again.
   Did we cards stay off the watch.
-- Watch strings: button words come from the phone (`widget.tonight.did` /
-  `nope`). The few watch-only words use `String(localized:)`, English only.
+- Watch strings: every word on the watch and the complication comes from the
+  phone in its language (`widget.tonight.*` and `watch.*` keys, sent with the
+  cards; the watch fills `{n}`, `{a}`, `{b}`). Before the first cards arrive
+  the watch shows English fallbacks (`String(localized:)`).
 
 ## CI
 
