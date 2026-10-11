@@ -68,7 +68,7 @@ import { LampManage, lampActions } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -2178,6 +2178,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const [notesOpen, setNotesOpen] = useState(false)
   const [checkOpen, setCheckOpen] = useState(false)
   const [notePick, setNotePick] = useState(0)
+  // Add a note needs an answered night without a note yet.
+  const canNote = useMemo(() => lampNights(lampBook, lamp).some((row) => !row.answer.note), [lampBook, lamp])
 
   function flip(set) {
     if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
@@ -2198,6 +2200,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         <SetCard colors={colors}>
           <SetRow colors={colors} icon="pen" label={t('hang.edit')} chevron onPress={() => menuGo(() => goHash('/hang', { id: lamp.id }))} />
           <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} plain onPress={() => menuGo(() => goHash('/hang', { copy: lamp.id }))} />
+          {canNote ? (
           <SetRow
             colors={colors}
             icon="note"
@@ -2209,7 +2212,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
                 setNotePick((n) => n + 1)
               })
             }
-          />
+          />          ) : null}
+
           <SetRow
             colors={colors}
             icon={lamp.archived ? 'play' : 'pause'}

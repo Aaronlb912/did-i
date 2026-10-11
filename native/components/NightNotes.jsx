@@ -9,7 +9,6 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
 import { SetSwitch } from './SetBits.jsx'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
-import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { goHash } from '../navigation/hash.js'
@@ -243,7 +242,6 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.inkSoft }]}>{t('note.title')}</Text>
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
       {shown.map(({ answer }) => (
         <Reveal key={answer.periodKey}>
@@ -400,7 +398,6 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 8, marginTop: 8 },
-  label: { ...sectionLabel },
   // Full width, so in a row of buttons the open note drops to its own line.
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
