@@ -427,7 +427,7 @@ export const ko = {
   'seen.signedOut': "로그인하지 않았어요. 이 휴대폰 밖으로 나가는 것은 없어요.",
   'seen.friendsTitle': "친구",
   'seen.friends': "이름. 연속 기록을 공유하면 연속 기록과 오늘 밤 끝냈는지. 내 질문과 답은 절대 보이지 않아요.",
-  'seen.weTitle': "함께 쓰는 질문",
+  'seen.weTitle': "Did we 질문",
   'seen.we': "함께 쓰는 질문에서는 그 질문에 대한 서로의 답을 볼 수 있어요.",
   'seen.familyTitle': "가족",
   'seen.family': "가족 질문에서는 가족 모두가 매일 밤 누가 답했는지 볼 수 있어요.",

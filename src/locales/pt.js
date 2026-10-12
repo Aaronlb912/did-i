@@ -438,7 +438,7 @@ export const pt = {
   'seen.signedOut': "Você não está conectado. Nada sai deste telefone.",
   'seen.friendsTitle': "Amigos",
   'seen.friends': "Seu nome. Sua sequência e se você terminou hoje à noite, quando a sequência está compartilhada. Nunca suas próprias perguntas ou respostas.",
-  'seen.weTitle': "Perguntas compartilhadas",
+  'seen.weTitle': "Perguntas Did we",
   'seen.we': "Numa pergunta compartilhada, vocês dois veem as respostas um do outro a essa pergunta.",
   'seen.familyTitle': "Família",
   'seen.family': "Nas perguntas da família, toda a família vê quem respondeu a cada noite.",

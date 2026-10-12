@@ -437,7 +437,7 @@ export const it = {
   'seen.signedOut': "Non hai effettuato l’accesso. Niente lascia questo telefono.",
   'seen.friendsTitle': "Amici",
   'seen.friends': "Il tuo nome. La tua serie e se hai finito stasera, quando la serie è condivisa. Mai le tue domande o risposte.",
-  'seen.weTitle': "Domande condivise",
+  'seen.weTitle': "Domande Did we",
   'seen.we': "Su una domanda condivisa, vedete entrambi le risposte dell’altro a quella domanda.",
   'seen.familyTitle': "Famiglia",
   'seen.family': "Sulle domande di famiglia, tutta la famiglia vede chi ha risposto ogni sera.",

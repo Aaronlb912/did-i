@@ -439,7 +439,7 @@ export const de = {
   'seen.signedOut': "Du bist nicht angemeldet. Nichts verlässt dieses Handy.",
   'seen.friendsTitle': "Freunde",
   'seen.friends': "Dein Name. Deine Serie und ob du heute Abend fertig bist, wenn deine Serie geteilt ist. Nie deine eigenen Fragen oder Antworten.",
-  'seen.weTitle': "Geteilte Fragen",
+  'seen.weTitle': "Did-we-Fragen",
   'seen.we': "Bei einer geteilten Frage seht ihr beide die Antworten des anderen auf diese Frage.",
   'seen.familyTitle': "Familie",
   'seen.family': 'Bei Familienfragen sieht die ganze Familie, wer jede Nacht geantwortet hat.',

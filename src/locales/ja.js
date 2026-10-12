@@ -427,7 +427,7 @@ export const ja = {
   'seen.signedOut': "サインインしていません。このスマホの外には何も送られません。",
   'seen.friendsTitle': "友だち",
   'seen.friends': "名前。ストリークを共有しているときは、ストリークと今夜終えたかどうか。自分の質問や答えは見えません。",
-  'seen.weTitle': "共有の質問",
+  'seen.weTitle': "Did we の質問",
   'seen.we': "共有している質問では、その質問へのお互いの答えが見えます。",
   'seen.familyTitle': "家族",
   'seen.family': "家族の質問では、毎晩だれが答えたかを家族全員が見られます。",

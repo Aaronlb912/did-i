@@ -427,7 +427,7 @@ export const zh = {
   'seen.signedOut': "你没有登录。任何内容都不会离开这部手机。",
   'seen.friendsTitle': "朋友",
   'seen.friends': "你的名字。共享连续记录时，还有连续记录和今晚是否完成。永远看不到你自己的问题或回答。",
-  'seen.weTitle': "共享的问题",
+  'seen.weTitle': "Did we 问题",
   'seen.we': "在共享的问题上，你们都能看到对方对这个问题的回答。",
   'seen.familyTitle': "家人",
   'seen.family': "在家庭问题上，全家人都能看到每晚谁回答了。",

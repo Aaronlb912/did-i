@@ -437,7 +437,7 @@ export const en = {
   'seen.signedOut': "You are not signed in. Nothing leaves this phone.",
   'seen.friendsTitle': "Friends",
   'seen.friends': "Your name. Your streak and whether you finished tonight, when your streak is shared. Never your own questions or answers.",
-  'seen.weTitle': "Did we's",
+  'seen.weTitle': "Did we questions",
   'seen.we': "On a question you share, you both see each other’s answers to that question.",
   'seen.familyTitle': "Family",
   'seen.family': "On family questions, everyone in the family sees who answered each night.",

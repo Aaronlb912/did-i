@@ -440,7 +440,7 @@ export const es = {
   'seen.signedOut': "No has iniciado sesión. Nada sale de este teléfono.",
   'seen.friendsTitle': "Amigos",
   'seen.friends': "Tu nombre. Tu racha y si terminaste esta noche, cuando tu racha está compartida. Nunca tus propias preguntas ni respuestas.",
-  'seen.weTitle': "Preguntas compartidas",
+  'seen.weTitle': "Preguntas Did we",
   'seen.we': "En una pregunta compartida, los dos ven las respuestas del otro a esa pregunta.",
   'seen.familyTitle': "Familia",
   'seen.family': "En las preguntas de familia, toda la familia ve quién respondió cada noche.",

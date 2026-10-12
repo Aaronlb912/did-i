@@ -442,7 +442,7 @@ export const fr = {
   'seen.signedOut': "Tu n'es pas connecté. Rien ne quitte ce téléphone.",
   'seen.friendsTitle': "Amis",
   'seen.friends': "Ton nom. Ta série et si tu as fini ce soir, quand ta série est partagée. Jamais tes propres questions ni tes réponses.",
-  'seen.weTitle': "Questions partagées",
+  'seen.weTitle': "Questions Did we",
   'seen.we': "Sur une question partagée, vous voyez tous les deux les réponses de l'autre à cette question.",
   'seen.familyTitle': "Famille",
   'seen.family': "Sur les questions de famille, toute la famille voit qui a répondu chaque soir.",
