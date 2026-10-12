@@ -75,7 +75,12 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('cheer', 'leaves', 2, 0, '2026-11-06'), ('cheer', 'lantern', 2, 0, '2026-11-06'),
   ('buddy', 'fox', 5, 0, '2026-11-06'),
   ('look', 'maple', 2, 0, '2026-11-06'), ('look', 'fig', 2, 0, '2026-11-06'),
-  ('look', 'oat', 0, 30, '2026-11-06')
+  ('look', 'oat', 0, 30, '2026-11-06'),
+  -- Drop 2026-11-20.
+  ('cheer', 'gift', 2, 0, '2026-11-20'), ('cheer', 'popcorn', 2, 0, '2026-11-20'),
+  ('buddy', 'otter', 5, 0, '2026-11-20'),
+  ('look', 'cranberry', 2, 0, '2026-11-20'), ('look', 'saffron', 2, 0, '2026-11-20'),
+  ('look', 'pine', 0, 30, '2026-11-20')
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from;
 
@@ -119,7 +124,9 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_unt
   ('accessory', 'icecream', 0, 25, '2026-10-23', null),
   ('accessory', 'glasses3d', 0, 40, '2026-10-23', null),
   ('accessory', 'rainbow', 0, 40, '2026-10-23', null),
-  ('accessory', 'bubbles', 0, 15, '2026-10-23', null)
+  ('accessory', 'bubbles', 0, 15, '2026-10-23', null),
+  ('accessory', 'pinwheel', 0, 25, '2026-11-20', null),
+  ('accessory', 'goggles', 0, 40, '2026-11-20', null)
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 

@@ -1,7 +1,7 @@
 # Shop drops
 
 Every two weeks the shop gets a batch: **2 gem looks, 1 coin look, 2 cheers,
-1 buddy, 2 buddy accessories**. Batches are built ahead and ship dated, so
+1 buddy, 2 buddy accessories, 3 card frames**. Batches are built ahead and ship dated, so
 they appear on their day with no store build.
 
 Drop days are every other **Friday**, starting **2026-10-09**
@@ -20,6 +20,11 @@ built ahead.
   `insert ... on conflict (kind, item_id) do update set live_from = excluded.live_from`.
   Then `npm run db:apply supabase/shop-catalog.sql` and `npm run db:audit`.
   Gem items are client-side (purse) and need no SQL.
+- `supabase/gifts.sql` `gift_catalog`: every look, cheer, buddy and accessory
+  at the same price and date.
+- `supabase/shop-drops.sql`: add the drop day to `shop_drop_days` (the
+  morning push for people who asked). check.mjs fails if a `from` date is
+  missing there.
 - `scripts/check.mjs` fails if a coin look or cheer is missing from
   `shop_catalog`, or an id repeats.
 
@@ -79,6 +84,27 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
   draw behind the buddy, the rest in front.
 - Seasonal sets go out ahead of their season (October, December, New Year)
   with an `until` date; after it they leave the shop and owners keep them.
+
+**Frame** (`frame.<id>.name`, `.desc`, `.f1` to `.f3`, and `.short` if the name is long)
+- Three per drop: one coin frame (still, 30 to 120 coins by how rich it is),
+  one gem frame (a living frame, 3 gems) and one special (seasonal, earned
+  or an event gift; never sold).
+- `src/lib/frames.js`: `coin(id, coins, { from })`, `gem(id, 3, { from })`
+  or `season(id, 'MM-DD', 'MM-DD', { from })`. `from` keeps it out of the
+  shop, All frames and the Collection count until the drop day
+  (`frameLive`, `shownFrames(today)`).
+- Drawing in `native/components/frames/` (`FRAME_ART`, `FRAME_IDS` in
+  geometry.js). Living gem frames read `f.p` (answered, total, skipped,
+  evening, remind, buddy) and `f.pull`; tiles (`f.still`) stay still.
+- `supabase/shop-catalog.sql`: `('frame', id, coins, gems, 'YYYY-MM-DD')`
+  for coin and gem frames. Gem frame gifts are priced from there, so
+  `gift_catalog` needs nothing. `supabase/friends-week.sql`: add the id to
+  the `frame_on` check.
+- Design first: a temporary showroom page next to Gold leaf, Aurora,
+  Tonight's moon and the closest frame of the same kind, dark and light,
+  three looks, card and tile. A separate reviewer grades it from screenshots
+  before any app code; up to 2 redesign rounds. Keep the sketch in
+  `docs/ideas/`.
 
 ## Coming soon
 

@@ -49,6 +49,7 @@ import {
   NeonHeartOver,
   StormOver,
 } from './art-living.jsx'
+import { BedtimeOver, CountdownOver, LinkedOver } from './art-drop.jsx'
 
 const { withTiming } = Reanimated
 
@@ -1655,6 +1656,9 @@ export const FRAME_ART = {
   sunny: { over: SunnyOver, animated: true },
   royal: { over: RoyalOver },
   wrapped: { over: WrappedOver },
+  linked: { over: LinkedOver },
+  bedtime: { over: BedtimeOver, animated: true },
+  countdown: { over: CountdownOver, animated: true },
 }
 
 const styles = StyleSheet.create({

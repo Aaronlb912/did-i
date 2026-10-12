@@ -61,7 +61,21 @@ export function AccessoryChip({ id, buddyId = 'ant' }) {
     </span>
   )
 }
-import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from './cheer-pops.js'
+import {
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+} from './cheer-pops.js'
 
 export function LookChip({ id }) {
   return (
@@ -83,6 +97,36 @@ export function CheerChip({ id, stage = 1 }) {
           <path d={ROCKET_FINS} fill="var(--di-on)" />
           <path d={ROCKET_BODY} fill="var(--di-ink)" />
           <circle cx="12" cy="12.5" r="2.4" fill="var(--di-on)" />
+        </svg>
+      </span>
+    )
+  }
+  if (id === 'gift') {
+    return (
+      <span className="di-cheer-chip" data-cheer="gift" data-stage={n} aria-hidden="true">
+        <svg viewBox={GIFT_VIEW}>
+          <path d={GIFT_BOX} fill="var(--di-on)" />
+          <path d={GIFT_SHADE} fill="rgba(0, 0, 0, 0.22)" />
+          <path d={GIFT_BAND} fill="var(--di-ink)" />
+          <path d={GIFT_LID} fill="var(--di-on)" />
+          <path d={GIFT_LID_BAND} fill="var(--di-ink)" />
+          <path d={GIFT_BOW} fill="var(--di-ink)" />
+          <circle cx="20" cy="11.5" r="2.4" fill="var(--di-ink)" />
+        </svg>
+      </span>
+    )
+  }
+  if (id === 'popcorn') {
+    return (
+      <span className="di-cheer-chip" data-cheer="popcorn" data-stage={n} aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d={KERNEL_HULL} fill="var(--di-pop-hull)" />
+          {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+            <circle key={i} cx={cx} cy={cy} r={r} fill="var(--di-pop-puff)" stroke="var(--di-pop-edge)" strokeWidth="1.2" />
+          ))}
+          {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+            <circle key={`in-${i}`} cx={cx} cy={cy} r={r - 0.9} fill={i === 1 ? 'var(--di-pop-butter)' : 'var(--di-pop-puff)'} />
+          ))}
         </svg>
       </span>
     )

@@ -1,7 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { allClearTonight, boardDate } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { FRAMES, FRAME_IDS, frameById, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
+import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -39,6 +39,8 @@ const ALL_CHEERS = [
   { id: 'sun', gems: CHEER_GEMS, from: '2026-10-23' },
   { id: 'leaves', gems: CHEER_GEMS, from: '2026-11-06' },
   { id: 'lantern', gems: CHEER_GEMS, from: '2026-11-06' },
+  { id: 'gift', gems: CHEER_GEMS, from: '2026-11-20' },
+  { id: 'popcorn', gems: CHEER_GEMS, from: '2026-11-20' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -53,6 +55,7 @@ const ALL_BUDDIES = [
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
+  { id: 'otter', gems: BUDDY_GEMS, from: '2026-11-20' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
 ]
@@ -82,6 +85,9 @@ const ALL_LOOKS = [
   { id: 'maple', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
   { id: 'fig', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
   { id: 'oat', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-06' },
+  { id: 'cranberry', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
+  { id: 'saffron', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
+  { id: 'pine', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-20' },
 ]
 
 // Cheers that are never sold, only given out by hand as a gift (see gifts.sql).
@@ -225,6 +231,10 @@ export const GEM_LOOK_IDS = [
   'indigo',
   'sky',
   'orchid',
+  'maple',
+  'fig',
+  'cranberry',
+  'saffron',
 ]
 
 export function isGemLook(id) {
@@ -885,7 +895,7 @@ export function giftItems() {
     cheers: CHEERS.filter((item) => item.gems > 0),
     buddies: BUDDIES.filter((item) => item.gems > 0),
     accessories: accessoriesForSale(boardDate(new Date())),
-    frames: FRAMES.filter((item) => item.kind === 'gem'),
+    frames: FRAMES.filter((item) => item.kind === 'gem' && frameLive(item, boardDate(new Date()))),
   }
 }
 

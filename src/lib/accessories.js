@@ -25,6 +25,7 @@ const AT = {
   fox: { ex: [19.8, 28.2], ey: 27.5, er: 3.5, crown: 18, neck: 37, side: 14 },
   // The bee's antennae stand tall, so head items sit up between their tips.
   hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
+  otter: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 15 },
 }
 
 const INK = '#2d241c'
@@ -358,6 +359,53 @@ const DRAW = {
       h('circle', { cx: x - r * 0.35, cy: y - r * 0.35, r: r * 0.3, fill: '#ffffff' }),
     )
   }),
+  // A pinwheel on a stick: four colored blades, each with a folded flap.
+  pinwheel: (h, a) => {
+    const [x, y] = hand(a)
+    const cx = x + 0.5
+    const cy = y - 15
+    const s = 5.4
+    const turn = (px, py, k) => {
+      const th = ((k * 90 + 12) * Math.PI) / 180
+      return `${(cx + px * Math.cos(th) - py * Math.sin(th)).toFixed(2)} ${(cy + px * Math.sin(th) + py * Math.cos(th)).toFixed(2)}`
+    }
+    const blades = ['#e2463c', '#f5c542', '#4a9be8', '#7cc65a']
+    return [
+      h('path', { d: box(x - 0.55, cy, 1.1, y + 3 - cy, 0.5), fill: '#9a6538' }),
+      ...blades.map((fill, k) => h('path', { d: `M${turn(0, 0, k)} L${turn(0, -s, k)} L${turn(s, -s, k)} Z`, fill })),
+      ...blades.map((fill, k) => h('path', { d: `M${turn(0, 0, k)} L${turn(s, -s, k)} L${turn(s * 0.55, -s * 0.12, k)} Z`, fill: shade(fill, 0.8) })),
+      h('circle', { cx, cy, r: 1.4, fill: CREAM }),
+      h('circle', { cx, cy, r: 0.55, fill: INK }),
+    ]
+  },
+  // Ski goggles: one wide mirrored lens with a nose notch, on a strap.
+  goggles: (h, a, t) => {
+    const [l, r] = a.ex
+    const s = Math.min(a.er + 1.2, 6.4)
+    const x0 = l - s - 1.2
+    const x1 = r + s + 1.2
+    const y0 = a.ey - s * 0.95
+    const y1 = a.ey + s * 0.95
+    const reach = Math.max(a.side + 2, x1 - 24 + 2.5)
+    const lens = (i, n) => {
+      const X0 = x0 + i
+      const X1 = x1 - i
+      const Y0 = y0 + i
+      const Y1 = y1 - i
+      const R = (Y1 - Y0) * 0.42
+      return `M${X0 + R} ${Y0} H${X1 - R} Q${X1} ${Y0} ${X1} ${Y0 + R} V${Y1 - R} Q${X1} ${Y1} ${X1 - R} ${Y1} H${24 + n} Q24 ${Y1 - n * 1.1} ${24 - n} ${Y1} H${X0 + R} Q${X0} ${Y1} ${X0} ${Y1 - R} V${Y0 + R} Q${X0} ${Y0} ${X0 + R} ${Y0} Z`
+    }
+    const band = (y1 - y0) / 2 - 1.2
+    return [
+      h('path', { d: box(24 - reach, a.ey - 1.5, reach * 2, 3, 1), fill: t }),
+      h('path', { d: `M${24 - reach + 0.8} ${a.ey} H${24 + reach - 0.8}`, stroke: shade(t), strokeWidth: 0.7, fill: 'none' }),
+      h('path', { d: lens(0, 2.6), fill: '#2b2f38' }),
+      h('path', { d: lens(1.2, 1.6), fill: '#ff7a3d' }),
+      h('path', { d: box(x0 + 1.2, y0 + 1.2, x1 - x0 - 2.4, band, band * 0.8), fill: '#ffc94a' }),
+      h('path', { d: `M${l + s * 0.15} ${y0 + 1.9} L${l - s * 0.45} ${y1 - 2.1}`, stroke: '#ffffff', strokeWidth: 1.2, strokeLinecap: 'round', opacity: 0.75, fill: 'none' }),
+      h('path', { d: `M${l + s * 0.6} ${y0 + 1.9} L${l} ${y1 - 2.1}`, stroke: '#ffffff', strokeWidth: 0.6, strokeLinecap: 'round', opacity: 0.6, fill: 'none' }),
+    ]
+  },
   raincloud: (h, a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [
@@ -419,6 +467,8 @@ const ALL_ACCESSORIES = [
   { id: 'glasses3d', slot: 'eyes', tier: 'rare', from: '2026-10-23' },
   { id: 'rainbow', slot: 'back', tier: 'rare', from: '2026-10-23' },
   { id: 'bubbles', slot: 'around', tier: 'common', from: '2026-10-23' },
+  { id: 'pinwheel', slot: 'held', tier: 'standard', from: '2026-11-20' },
+  { id: 'goggles', slot: 'eyes', tier: 'rare', from: '2026-11-20' },
 ].map((item) => ({ ...item, coins: ACCESSORY_TIERS[item.tier] }))
 
 export const ACCESSORIES = ALL_ACCESSORIES

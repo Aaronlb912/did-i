@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW, STAR_PATH, holdFor, popsFor } from './cheer-pops.js'
+import {
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_SHINE,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  KERNEL_SHINE,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+  STAR_PATH,
+  holdFor,
+  popsFor,
+} from './cheer-pops.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -119,6 +138,42 @@ function Lantern({ delay, size, rise, swing }) {
         <path className="di-lantern-rib" d="M11 7 C8 15 8 25 11 33 M21 7 C24 15 24 25 21 33 M16 6 V34" />
         <rect className="di-lantern-cap" x="11" y="34" width="10" height="4" rx="1.5" />
         <path className="di-lantern-tassel" d="M16 38 V43" />
+      </svg>
+    </b>
+  )
+}
+
+function Gift({ delay, size, swing }) {
+  return (
+    <b className="di-gift" style={{ '--sz': size, '--swing': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox={GIFT_VIEW} aria-hidden="true" focusable="false">
+        <path className="di-gift-box" d={GIFT_BOX} />
+        <path className="di-gift-shade" d={GIFT_SHADE} />
+        <path className="di-gift-band" d={GIFT_BAND} />
+        <g className="di-gift-lid" style={{ animationDelay: delay }}>
+          <path className="di-gift-box" d={GIFT_LID} />
+          <path className="di-gift-shine" d={GIFT_SHINE} />
+          <path className="di-gift-band" d={GIFT_LID_BAND} />
+          <path className="di-gift-band" d={GIFT_BOW} />
+          <circle className="di-gift-band" cx="20" cy="11.5" r="2.4" />
+        </g>
+      </svg>
+    </b>
+  )
+}
+
+function Kernel({ delay, x, y, fall, rot, size, tone }) {
+  return (
+    <b className="di-kernel" data-tone={tone} style={{ '--cx': x, '--cy': y, '--fall': fall, '--rot': rot, '--sz': size, animationDelay: delay }}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path className="di-kernel-hull" d={KERNEL_HULL} />
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <circle key={i} className="di-kernel-puff" cx={cx} cy={cy} r={r} />
+        ))}
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <circle key={`in-${i}`} className={i === 1 ? 'di-kernel-fill is-butter' : 'di-kernel-fill'} cx={cx} cy={cy} r={r - 0.9} />
+        ))}
+        <ellipse className="di-kernel-shine" cx={KERNEL_SHINE[0]} cy={KERNEL_SHINE[1]} rx={KERNEL_SHINE[2]} ry={KERNEL_SHINE[3]} />
       </svg>
     </b>
   )
@@ -257,6 +312,12 @@ function renderBit(burst, pop, bit, screen = false) {
   }
   if (bit.lantern) {
     return <Lantern key={key} delay={delay} size={bit.size} rise={bit.rise} swing={bit.swing} />
+  }
+  if (bit.gift) {
+    return <Gift key={key} delay={delay} size={bit.size} swing={bit.swing} />
+  }
+  if (bit.kernel) {
+    return <Kernel key={key} delay={delay} x={bit.x} y={bit.y} fall={bit.fall} rot={bit.rot} size={bit.size} tone={bit.tone} />
   }
   if (bit.sparkFlash) {
     return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />

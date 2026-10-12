@@ -20,6 +20,7 @@ const AT = {
   penguin: { ex: [19.8, 28.2], ey: 26.5, er: 3.5, crown: 17, neck: 36.8, side: 14 },
   fox: { ex: [19.8, 28.2], ey: 27.5, er: 3.5, crown: 18, neck: 37, side: 14 },
   hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
+  otter: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 15 },
 }
 
 const INK = '#2d241c'
@@ -358,6 +359,42 @@ const SHAPES = {
     ['e', 24 + dx, a.ey + dy, r, r, '#bfe6ff'],
     ['e', 24 + dx - r * 0.35, a.ey + dy - r * 0.35, r * 0.3, r * 0.3, '#ffffff'],
   ]),
+  // Blades as turned bars round a pin, close to the drawn pinwheel.
+  pinwheel: (a) => {
+    const [x, y] = hand(a)
+    const cx = x + 0.5
+    const cy = y - 15
+    const s = 5.4
+    const blades = ['#e2463c', '#f5c542', '#4a9be8', '#7cc65a']
+    return [
+      ['r', x - 0.55, cy, 1.1, y + 3 - cy, '#9a6538', 0.5],
+      ...blades.map((c, k) => {
+        const th = ((k * 90 + 12 + 22) * Math.PI) / 180
+        const bx = cx + Math.sin(th) * s * 0.55
+        const by = cy - Math.cos(th) * s * 0.55
+        return ['r', bx - s * 0.5, by - s * 0.3, s, s * 0.6, c, 0.6, k * 90 + 12 + 22]
+      }),
+      ['e', cx, cy, 1.4, 1.4, CREAM],
+      ['e', cx, cy, 0.55, 0.55, INK],
+    ]
+  },
+  goggles: (a, t) => {
+    const [l, r] = a.ex
+    const s = Math.min(a.er + 1.2, 6.4)
+    const x0 = l - s - 1.2
+    const x1 = r + s + 1.2
+    const y0 = a.ey - s * 0.95
+    const y1 = a.ey + s * 0.95
+    const reach = Math.max(a.side + 2, x1 - 24 + 2.5)
+    const band = (y1 - y0) / 2 - 1.2
+    return [
+      ['r', 24 - reach, a.ey - 1.5, reach * 2, 3, t, 1],
+      ['r', x0, y0, x1 - x0, y1 - y0, '#2b2f38', (y1 - y0) * 0.42],
+      ['r', x0 + 1.2, y0 + 1.2, x1 - x0 - 2.4, y1 - y0 - 2.4, '#ff7a3d', (y1 - y0 - 2.4) * 0.42],
+      ['r', x0 + 1.2, y0 + 1.2, x1 - x0 - 2.4, band, '#ffc94a', band * 0.8],
+      ['l', l + s * 0.15, y0 + 1.9, l - s * 0.45, y1 - 2.1, '#ffffff', 1.2],
+    ]
+  },
   raincloud: (a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [

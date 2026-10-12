@@ -43,6 +43,12 @@ insert into public.shop_catalog (kind, item_id, live_from) values
   ('cheer_stage', 'leaves', '2026-11-06'), ('cheer_stage', 'lantern', '2026-11-06')
 on conflict (kind, item_id) do update set live_from = excluded.live_from;
 
+-- Drop 2026-11-20.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'pine', '2026-11-20'),
+  ('cheer_stage', 'gift', '2026-11-20'), ('cheer_stage', 'popcorn', '2026-11-20')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
 -- Buddy accessories. Each row carries its own coin price, so buy_with_coins
 -- charges what the shop shows (src/lib/accessories.js, a test keeps them equal).
 alter table public.shop_catalog add column if not exists coins integer
@@ -101,7 +107,9 @@ insert into public.shop_catalog (kind, item_id, coins, live_from) values
   ('accessory', 'icecream', 25, '2026-10-23'),
   ('accessory', 'glasses3d', 40, '2026-10-23'),
   ('accessory', 'rainbow', 40, '2026-10-23'),
-  ('accessory', 'bubbles', 15, '2026-10-23')
+  ('accessory', 'bubbles', 15, '2026-10-23'),
+  ('accessory', 'pinwheel', 25, '2026-11-20'),
+  ('accessory', 'goggles', 40, '2026-11-20')
 on conflict (kind, item_id) do update set coins = excluded.coins, live_from = excluded.live_from;
 
 -- Card frames (src/lib/frames.js, a test keeps prices equal). Still frames
@@ -155,7 +163,9 @@ insert into public.shop_catalog (kind, item_id, coins, gems, live_from) values
   ('frame', 'swipe', null, 3, '2026-10-07'),
   ('frame', 'galaxy', null, 3, '2026-10-07'),
   ('frame', 'neonheart', null, 3, '2026-10-07'),
-  ('frame', 'storm', null, 3, '2026-10-07')
+  ('frame', 'storm', null, 3, '2026-10-07'),
+  ('frame', 'linked', 90, null, '2026-11-20'),
+  ('frame', 'bedtime', null, 3, '2026-11-20')
 on conflict (kind, item_id) do update
   set coins = excluded.coins, gems = excluded.gems, live_from = excluded.live_from;
 

@@ -4833,8 +4833,15 @@ await testAsync('frames: still frames cost coins, animated cost gems, and the se
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(root, 'supabase/shop-catalog.sql'), 'utf8')
   const rows = [...sql.matchAll(/\('frame', '([a-z]+)', (null|\d+), (null|\d+),/g)]
-  const sold = F.FRAMES.filter((frame) => F.frameForSale(frame.id))
+  // Every frame ever sold, dated drops included.
+  const sold = F.FRAMES.filter((frame) => F.frameForSale(frame.id, '2099-12-31'))
   assert.equal(rows.length, sold.length, 'every sold frame is in shop_catalog')
+  // A dated frame stays out of the shop until its drop day.
+  for (const frame of F.FRAMES.filter((item) => item.from)) {
+    const eve = new Date(Date.parse(`${frame.from}T12:00:00Z`) - 86400000).toISOString().slice(0, 10)
+    assert.ok(!F.shownFrames(eve).includes(frame) && !F.frameForSale(frame.id, eve), `${frame.id} is hidden before ${frame.from}`)
+    assert.ok(F.shownFrames(frame.from).includes(frame), `${frame.id} shows on ${frame.from}`)
+  }
   for (const [, id, coins, gems] of rows) {
     const frame = F.frameById(id)
     assert.equal(coins === 'null' ? 0 : Number(coins), frame.coins, `${id} coins`)
@@ -4920,8 +4927,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 59)
-  assert.equal(new Set(ids).size, 59)
+  assert.equal(ids.length, 62)
+  assert.equal(new Set(ids).size, 62)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])

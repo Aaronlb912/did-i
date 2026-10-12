@@ -13,6 +13,7 @@ const COAT = {
   penguin: { body: '#344157', belly: '#f7f5f0', ear: '#344157' },
   fox: { body: '#e8743b', belly: '#fff6ea', ear: '#e8743b' },
   hive: { body: '#f6c443', belly: '#2b2018', ear: '#dff3ff' },
+  otter: { body: '#a06a40', belly: '#f1dcc0', ear: '#8a5a36' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -71,6 +72,22 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
         <View style={spot(box, 22.3, 31.4, 3.4, 2.4, pupil)} />
         <View style={spot(box, 12.5, 42.2, 9, 5.6, '#3a2a22')} />
         <View style={spot(box, 26.5, 42.2, 9, 5.6, '#3a2a22')} />
+      </View>
+    )
+  }
+  if (id === 'otter') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 7, 18.4, 8, 7.2, coat.ear)} />
+        <View style={spot(box, 33, 18.4, 8, 7.2, coat.ear)} />
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 14, 25.5, 20, 17, coat.belly)} />
+        <View style={spot(box, 15.7, 23.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 27.7, 23.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 21.4, 29.6, 5.2, 3.8, pupil)} />
+        <View style={spot(box, 19, 38, 10, 5, '#f6b8c4')} />
+        <View style={spot(box, 12.5, 40.8, 9, 6.4, coat.ear)} />
+        <View style={spot(box, 26.5, 40.8, 9, 6.4, coat.ear)} />
       </View>
     )
   }
@@ -181,6 +198,10 @@ const EYES = {
     [[28.2, 27.5, 2.2, 2.8, DARK], [28.9, 26.6, 0.7, 0.9, ...SHINE]],
   ],
   hive: [
+    [[18, 27, 2.3, 3.1, DARK], [18.8, 26, 0.7, 0.9, ...SHINE]],
+    [[30, 27, 2.3, 3.1, DARK], [30.8, 26, 0.7, 0.9, ...SHINE]],
+  ],
+  otter: [
     [[18, 27, 2.3, 3.1, DARK], [18.8, 26, 0.7, 0.9, ...SHINE]],
     [[30, 27, 2.3, 3.1, DARK], [30.8, 26, 0.7, 0.9, ...SHINE]],
   ],
@@ -441,6 +462,25 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="33.5" cy="31.8" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
         <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#3a2a22" />
+      </Svg>
+    )
+  }
+
+  if (id === 'otter') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="11" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <Ellipse cx="37" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#a06a40" />
+        <Ellipse cx="24" cy="34" rx="10" ry="8.5" fill="#f1dcc0" />
+        {eyes ? <EyesInline parts={parts} id="otter" /> : null}
+        <Ellipse cx="24" cy="31.5" rx="2.6" ry="1.9" fill="#2b2018" />
+        <Path d="M21.5 34 Q24 36.2 26.5 34" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <Path d="M17 33 L11 32 M31 33 L37 32" fill="none" stroke="#7a5038" strokeWidth="0.7" strokeLinecap="round" />
+        <Path d="M19 41 L24 37 L29 41 Q24 44 19 41 Z" fill="#f6b8c4" stroke="#d98aa0" strokeWidth="0.8" strokeLinejoin="round" />
+        <Path d="M24 37.8 V42.4 M24 37.8 L21.4 41.7 M24 37.8 L26.6 41.7" fill="none" stroke="#d98aa0" strokeWidth="0.6" strokeLinecap="round" />
+        <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+        <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
       </Svg>
     )
   }

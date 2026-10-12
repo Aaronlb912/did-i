@@ -4,7 +4,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { svgParts } from '../lib/svg-parts.js'
 import { takeCheerAim } from '../lib/cheer-origin.js'
 import {
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_SHINE,
+  GIFT_TOP,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  KERNEL_SHINE,
   LAUNCH_FLY_MS,
+  POPCORN_COLORS,
   ROCKET_BODY,
   ROCKET_FINS,
   ROCKET_FLAME,
@@ -1611,6 +1624,158 @@ function SunGlow({ delay, size, color }) {
   )
 }
 
+// A gift box pops in, shakes twice and its lid flies off, like the web .di-gift.
+const GIFT_T = [0, 0.12, 0.2, 0.26, 0.3, 0.34, 0.38, 0.42, 0.46, 0.5, 0.55, 0.6, 0.82, 1]
+const GIFT_SCALE = [0.2, 1.15, 0.95, 1, 1, 1, 1, 1, 1, 1.04, 0.99, 1, 1, 0.9]
+const GIFT_TILT = [0, 0, 0, 0, -8, 7, -5, 3, 0, 0, 0, 0, 0, 0]
+const LID_T = [0, 0.5, 0.62, 0.78, 1]
+
+function useLinear(delay, duration) {
+  const value = useMemo(() => new Animated.Value(0), [])
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(value, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: true }),
+    ])
+    anim.start()
+    return () => anim.stop()
+  }, [delay, duration, value])
+  return value
+}
+
+function Gift({ delay, size, swing, colors }) {
+  const progress = useLinear(delay, 1700)
+  const parts = svgParts()
+  const w = remPx(size || '2.6')
+  const h = w * 1.1
+  const dir = swing < 0 ? -1 : 1
+  const scale = progress.interpolate({ inputRange: GIFT_T, outputRange: GIFT_SCALE })
+  const rotate = progress.interpolate({ inputRange: GIFT_T, outputRange: GIFT_TILT.map((d) => `${d}deg`) })
+  const translateY = progress.interpolate({ inputRange: [0, 0.82, 1], outputRange: [0, 0, remPx('0.4')] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.82, 1], outputRange: [0, 1, 1, 0] })
+  // The lid with its bow is about 0.75 of the box wide and 0.29 tall (the web
+  // fill-box), so these match the web percentages.
+  const lidW = w * 0.75
+  const lidH = h * 0.29
+  const lidX = progress.interpolate({ inputRange: LID_T, outputRange: [0, 0, 0.2 * lidW * dir, 0.55 * lidW * dir, 0.85 * lidW * dir] })
+  const lidY = progress.interpolate({ inputRange: LID_T, outputRange: [0, 0, -1.9 * lidH, -2.9 * lidH, -2.4 * lidH] })
+  const lidSpin = progress.interpolate({ inputRange: LID_T, outputRange: ['0deg', '0deg', `${20 * dir}deg`, `${45 * dir}deg`, `${75 * dir}deg`] })
+  const lidFade = progress.interpolate({ inputRange: [0, 0.78, 1], outputRange: [1, 1, 0] })
+  const band = { fill: colors.ink, stroke: colors.onDeep, strokeWidth: 0.8, strokeOpacity: 0.7 }
+  let box = null
+  let lid = null
+  if (parts) {
+    const { Svg, Path, Circle } = parts
+    box = (
+      <Svg width={w} height={h} viewBox={GIFT_VIEW}>
+        <Path d={GIFT_BOX} fill={colors.on} />
+        <Path d={GIFT_SHADE} fill="#000" fillOpacity={0.22} />
+        <Path d={GIFT_BAND} {...band} />
+      </Svg>
+    )
+    lid = (
+      <Svg width={w} height={h} viewBox={GIFT_VIEW}>
+        <Path d={GIFT_LID} fill={colors.on} />
+        <Path d={GIFT_SHINE} stroke="#fff" strokeOpacity={0.4} strokeWidth={1.4} strokeLinecap="round" fill="none" />
+        <Path d={GIFT_LID_BAND} {...band} />
+        <Path d={GIFT_BOW} {...band} />
+        <Circle cx={20} cy={11.5} r={2.4} {...band} />
+      </Svg>
+    )
+  } else {
+    box = <View style={{ position: 'absolute', left: w * 0.18, top: h * 0.41, width: w * 0.64, height: h * 0.52, borderRadius: 3, backgroundColor: colors.on }} />
+  }
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: -h * GIFT_TOP,
+        width: w,
+        height: h,
+        opacity,
+        transformOrigin: '50% 70%',
+        transform: [{ translateY }, { rotate }, { scale }],
+      }}
+    >
+      {box}
+      {lid ? (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: w,
+            height: h,
+            opacity: lidFade,
+            transformOrigin: '50% 33%',
+            transform: [{ translateX: lidX }, { translateY: lidY }, { rotate: lidSpin }],
+          }}
+        >
+          {lid}
+        </Animated.View>
+      ) : null}
+    </Animated.View>
+  )
+}
+
+// A popcorn kernel: same path as the web .di-kernel, the pop is a squash and bounce.
+const KERNEL_T = [0, 0.05, 0.14, 0.3, 0.55, 0.8, 1]
+const KERNEL_POP_T = [0, 0.08, 0.15, 0.21, 0.27, 0.33, 1]
+
+function KernelArt({ px, butter }) {
+  const parts = svgParts()
+  if (!parts) {
+    return <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: POPCORN_COLORS.puff, borderWidth: 1, borderColor: POPCORN_COLORS.edge }} />
+  }
+  const { Svg, Path, Circle, Ellipse } = parts
+  return (
+    <Svg width={px} height={px} viewBox="0 0 24 24">
+      <Path d={KERNEL_HULL} fill={POPCORN_COLORS.hull} />
+      {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+        <Circle key={i} cx={cx} cy={cy} r={r} fill={POPCORN_COLORS.puff} stroke={POPCORN_COLORS.edge} strokeWidth={1.2} />
+      ))}
+      {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+        <Circle key={`in-${i}`} cx={cx} cy={cy} r={r - 0.9} fill={butter && i === 1 ? POPCORN_COLORS.butter : POPCORN_COLORS.puff} />
+      ))}
+      <Ellipse cx={KERNEL_SHINE[0]} cy={KERNEL_SHINE[1]} rx={KERNEL_SHINE[2]} ry={KERNEL_SHINE[3]} fill="#fff" fillOpacity={0.85} />
+    </Svg>
+  )
+}
+
+function Kernel({ delay, x, y, fall, rot, size, tone }) {
+  const progress = useLinear(delay, 1600)
+  const px = remPx(size || '1')
+  const cx = remPx(x)
+  const cy = remPx(y)
+  const end = remPx(fall)
+  const down = (k) => cy + (end - cy) * k
+  const deg = Number.parseFloat(rot) || 0
+  const translateX = progress.interpolate({ inputRange: KERNEL_T, outputRange: [0, cx * 0.1, cx * 0.25, cx * 0.6, cx * 0.8, cx * 0.93, cx] })
+  const translateY = progress.interpolate({ inputRange: KERNEL_T, outputRange: [0, cy * 0.2, cy * 0.6, cy, down(0.13), down(0.51), end] })
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${deg}deg`] })
+  const scaleX = progress.interpolate({ inputRange: KERNEL_POP_T, outputRange: [0.3, 0.3, 1.3, 0.9, 1.04, 1, 1] })
+  const scaleY = progress.interpolate({ inputRange: KERNEL_POP_T, outputRange: [0.3, 0.3, 1.12, 1.06, 1.04, 1, 1] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.05, 0.8, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        opacity,
+        transform: [{ translateX }, { translateY }, { rotate }, { scaleX }, { scaleY }],
+      }}
+    >
+      <KernelArt px={px} butter={tone === 'butter'} />
+    </Animated.View>
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -1752,6 +1917,12 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   }
   if (bit.lantern) {
     return <Lantern delay={delay} size={bit.size} rise={bit.rise} swing={bit.swing} colors={colors} />
+  }
+  if (bit.gift) {
+    return <Gift delay={delay} size={bit.size} swing={bit.swing} colors={colors} />
+  }
+  if (bit.kernel) {
+    return <Kernel delay={delay} x={bit.x} y={bit.y} fall={bit.fall} rot={bit.rot} size={bit.size} tone={bit.tone} />
   }
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />
   return <Pip delay={delay} color={on} />

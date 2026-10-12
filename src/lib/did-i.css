@@ -38,6 +38,11 @@
   --di-person-4: #ffd166;
   --di-person-5: #8fb8ff;
   --di-person-6: #c49bff;
+  /* Popcorn cheer: the same snack in every look. */
+  --di-pop-puff: #fff6e2;
+  --di-pop-edge: #d4ad62;
+  --di-pop-butter: #ffdf7e;
+  --di-pop-hull: #c98a2c;
   --di-display: 'Inter', ui-sans-serif, system-ui, 'Segoe UI Variable Display', 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
   --di-ui: 'Inter', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -174,6 +179,23 @@
   --di-on-deep: #928878;
   --di-late: #cbb087;
   --di-veil: rgba(3, 3, 3, 0.6);
+}
+
+.di-hall[data-look='pine'],
+.di-cheer[data-look='pine'] {
+  --di-bg: #080c0b;
+  --di-panel: #0f1614;
+  --di-panel-2: #151e1b;
+  --di-panel-3: #1c2723;
+  --di-line: #2a3a35;
+  --di-line-soft: #1f2c28;
+  --di-ink: #e6f2ec;
+  --di-ink-soft: #93aaa1;
+  --di-ink-dim: #728780;
+  --di-on: #8fd1b5;
+  --di-on-deep: #5a8f7a;
+  --di-late: #c7b27c;
+  --di-veil: rgba(2, 5, 4, 0.6);
 }
 
 .di-hall[data-look='glow'],
@@ -420,6 +442,40 @@
   --di-gem-spill: rgba(212, 107, 163, 0.16);
 }
 
+.di-hall[data-look='cranberry'],
+.di-cheer[data-look='cranberry'] {
+  --di-bg: #110809;
+  --di-panel: #1b0f11;
+  --di-panel-2: #241418;
+  --di-panel-3: #2e1a1e;
+  --di-line: #44262c;
+  --di-line-soft: #321c21;
+  --di-on: #ff4f6a;
+  --di-on-deep: #c4243f;
+  --di-gem-bg: #110809;
+  --di-gem-ring: rgba(255, 79, 106, 0.32);
+  --di-gem-halo: rgba(255, 79, 106, 0.13);
+  --di-gem-halo-deep: rgba(196, 36, 63, 0.06);
+  --di-gem-spill: rgba(255, 79, 106, 0.16);
+}
+
+.di-hall[data-look='saffron'],
+.di-cheer[data-look='saffron'] {
+  --di-bg: #110e07;
+  --di-panel: #1b160c;
+  --di-panel-2: #241d10;
+  --di-panel-3: #2e2515;
+  --di-line: #45381f;
+  --di-line-soft: #332a17;
+  --di-on: #ffc23d;
+  --di-on-deep: #d1901a;
+  --di-gem-bg: #110e07;
+  --di-gem-ring: rgba(255, 194, 61, 0.32);
+  --di-gem-halo: rgba(255, 194, 61, 0.13);
+  --di-gem-halo-deep: rgba(209, 144, 26, 0.06);
+  --di-gem-spill: rgba(255, 194, 61, 0.16);
+}
+
 .di-hall[data-look='orchid'],
 .di-cheer[data-look='orchid'] {
   --di-bg: #0f0a12;
@@ -451,7 +507,9 @@
 .di-hall[data-look='sky'],
 .di-hall[data-look='orchid'],
 .di-hall[data-look='maple'],
-.di-hall[data-look='fig'] {
+.di-hall[data-look='fig'],
+.di-hall[data-look='cranberry'],
+.di-hall[data-look='saffron'] {
   position: relative;
   box-shadow: none;
 }
@@ -470,7 +528,9 @@
 .di-hall[data-look='sky']::after,
 .di-hall[data-look='orchid']::after,
 .di-hall[data-look='maple']::after,
-.di-hall[data-look='fig']::after {
+.di-hall[data-look='fig']::after,
+.di-hall[data-look='cranberry']::after,
+.di-hall[data-look='saffron']::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -548,6 +608,20 @@ html:has(.di-hall[data-look='fig']) body {
     var(--di-gem-bg, #0d0b0c);
 }
 
+html:has(.di-hall[data-look='cranberry']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(255, 79, 106, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(196, 36, 63, 0.06), transparent 50%),
+    var(--di-gem-bg, #100b0c);
+}
+
+html:has(.di-hall[data-look='saffron']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(255, 194, 61, 0.09), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(209, 144, 26, 0.06), transparent 50%),
+    var(--di-gem-bg, #0f0d08);
+}
+
 html:has(.di-hall[data-look='orchid']) body {
   background:
     radial-gradient(125% 85% at 50% -8%, rgba(221, 123, 255, 0.09), transparent 55%),
@@ -616,7 +690,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   .di-face-slot
   > :is(.di-face, .di-empty, .di-wait, .di-hole-plate),
@@ -635,7 +711,9 @@ html:has(.di-hall[data-look='wine']) body {
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   .di-buddy-preview-card {
   position: relative;
@@ -800,6 +878,24 @@ html[data-theme='light'] .di-hall[data-look='oat'],
   --di-on-deep: #6f6557;
   --di-late: #9c8158;
   --di-veil: rgba(18, 16, 13, 0.38);
+}
+
+html[data-theme='light'] .di-hall[data-look='pine'],
+.di-hall[data-theme='light'][data-look='pine'],
+.di-cheer[data-theme='light'][data-look='pine'] {
+  --di-bg: #e3ece8;
+  --di-panel: #f3faf7;
+  --di-panel-2: #e9f2ee;
+  --di-panel-3: #dbe7e2;
+  --di-line: #bcd0c8;
+  --di-line-soft: #ccdcd5;
+  --di-ink: #0b1411;
+  --di-ink-soft: #45584f;
+  --di-ink-dim: #5c6e66;
+  --di-on: #2c6b55;
+  --di-on-deep: #5c8a78;
+  --di-late: #8f7a45;
+  --di-veil: rgba(11, 20, 17, 0.38);
 }
 
 html[data-theme='light'] .di-hall[data-look='glow'],
@@ -1061,6 +1157,42 @@ html[data-theme='light'] .di-hall[data-look='fig'],
   --di-gem-spill: rgba(148, 59, 106, 0.08);
 }
 
+html[data-theme='light'] .di-hall[data-look='cranberry'],
+.di-hall[data-theme='light'][data-look='cranberry'],
+.di-cheer[data-theme='light'][data-look='cranberry'] {
+  --di-bg: #f6e5e8;
+  --di-panel: #fff5f6;
+  --di-panel-2: #f9e9ec;
+  --di-panel-3: #f2dade;
+  --di-line: #e3bcc3;
+  --di-line-soft: #ecd0d5;
+  --di-on: #c0213e;
+  --di-on-deep: #8a1329;
+  --di-gem-bg: #f6e5e8;
+  --di-gem-ring: rgba(192, 33, 62, 0.22);
+  --di-gem-halo: rgba(192, 33, 62, 0.07);
+  --di-gem-halo-deep: rgba(138, 19, 41, 0.035);
+  --di-gem-spill: rgba(192, 33, 62, 0.08);
+}
+
+html[data-theme='light'] .di-hall[data-look='saffron'],
+.di-hall[data-theme='light'][data-look='saffron'],
+.di-cheer[data-theme='light'][data-look='saffron'] {
+  --di-bg: #f7efdc;
+  --di-panel: #fffaf0;
+  --di-panel-2: #f9f1e0;
+  --di-panel-3: #f1e5cc;
+  --di-line: #e2cfa3;
+  --di-line-soft: #ebdcba;
+  --di-on: #9a6200;
+  --di-on-deep: #6e4600;
+  --di-gem-bg: #f7efdc;
+  --di-gem-ring: rgba(154, 98, 0, 0.22);
+  --di-gem-halo: rgba(154, 98, 0, 0.07);
+  --di-gem-halo-deep: rgba(110, 70, 0, 0.035);
+  --di-gem-spill: rgba(154, 98, 0, 0.08);
+}
+
 html[data-theme='light'] .di-hall[data-look='orchid'],
 .di-hall[data-theme='light'][data-look='orchid'],
 .di-cheer[data-theme='light'][data-look='orchid'] {
@@ -1154,6 +1286,22 @@ html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='fig']) body
     radial-gradient(125% 85% at 50% -8%, rgba(148, 59, 106, 0.06), transparent 55%),
     radial-gradient(110% 75% at 50% 108%, rgba(148, 59, 106, 0.04), transparent 50%),
     var(--di-gem-bg, #eae3e7);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='cranberry']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='cranberry']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(192, 33, 62, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(192, 33, 62, 0.04), transparent 50%),
+    var(--di-gem-bg, #ece2e4);
+}
+
+html[data-theme='light']:has(.di-hall[data-look='saffron']) body,
+html[data-theme='light']:has(.di-hall[data-theme='light'][data-look='saffron']) body {
+  background:
+    radial-gradient(125% 85% at 50% -8%, rgba(154, 98, 0, 0.06), transparent 55%),
+    radial-gradient(110% 75% at 50% 108%, rgba(154, 98, 0, 0.04), transparent 50%),
+    var(--di-gem-bg, #eee8da);
 }
 
 html[data-theme='light']:has(.di-hall[data-look='orchid']) body,
@@ -5178,6 +5326,22 @@ button.di-refer-rung {
     inset 0 0 0.5rem rgba(161, 68, 118, 0.14);
 }
 
+.di-look-chip[data-look='cranberry'] {
+  --chip-on: #ff4f6a;
+  --chip-bg: #160a0c;
+  box-shadow:
+    0 0 0.35rem rgba(255, 79, 106, 0.5),
+    inset 0 0 0.5rem rgba(196, 36, 63, 0.14);
+}
+
+.di-look-chip[data-look='saffron'] {
+  --chip-on: #ffc23d;
+  --chip-bg: #161107;
+  box-shadow:
+    0 0 0.35rem rgba(255, 194, 61, 0.5),
+    inset 0 0 0.5rem rgba(209, 144, 26, 0.14);
+}
+
 .di-look-chip[data-look='sky'] i {
   box-shadow: 0 0 0.25rem rgba(74, 168, 255, 0.72);
 }
@@ -5188,6 +5352,14 @@ button.di-refer-rung {
 
 .di-look-chip[data-look='fig'] i {
   box-shadow: 0 0 0.25rem rgba(212, 107, 163, 0.72);
+}
+
+.di-look-chip[data-look='cranberry'] i {
+  box-shadow: 0 0 0.25rem rgba(255, 79, 106, 0.72);
+}
+
+.di-look-chip[data-look='saffron'] i {
+  box-shadow: 0 0 0.25rem rgba(255, 194, 61, 0.72);
 }
 
 .di-look-chip[data-look='orchid'] {
@@ -5218,6 +5390,12 @@ button.di-refer-rung {
   --chip-on: #f0e6d8;
   --chip-bg: #141311;
   box-shadow: inset 0 0 0.5rem rgba(240, 230, 216, 0.1);
+}
+
+.di-look-chip[data-look='pine'] {
+  --chip-on: #8fd1b5;
+  --chip-bg: #0f1614;
+  box-shadow: inset 0 0 0.5rem rgba(143, 209, 181, 0.1);
 }
 
 .di-cheer-chip[data-cheer='spark'] {
@@ -5386,6 +5564,13 @@ button.di-refer-rung {
 .di-cheer-chip[data-cheer='launch'] svg {
   width: 1.1rem;
   height: 1.5rem;
+}
+
+.di-cheer-chip[data-cheer='gift'] svg,
+.di-cheer-chip[data-cheer='popcorn'] svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  overflow: visible;
 }
 
 .di-cheer-chip[data-cheer='medal'],
@@ -7287,6 +7472,217 @@ button.di-refer-rung {
   opacity: 0.7;
 }
 
+/* Gift: the box pops in, shakes twice, and the lid flies off. The open top
+   sits on the pop's anchor (GIFT_TOP). */
+.di-gift {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: calc(var(--sz) * 1.1);
+  margin: calc(var(--sz) * -0.45) 0 0 calc(var(--sz) / -2);
+  opacity: 0;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 0.2rem 0.5rem color-mix(in srgb, #000 30%, transparent));
+  animation: di-gift 1.7s linear forwards;
+}
+
+.di-gift svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.di-gift-box {
+  fill: var(--di-on);
+}
+
+.di-gift-shade {
+  fill: color-mix(in srgb, #000 22%, transparent);
+}
+
+.di-gift-band {
+  fill: var(--di-ink);
+  stroke: color-mix(in srgb, var(--di-on-deep) 70%, transparent);
+  stroke-width: 0.8;
+}
+
+.di-gift-shine {
+  fill: none;
+  stroke: color-mix(in srgb, #fff 40%, transparent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.di-gift-lid {
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+  animation: di-gift-lid 1.7s linear forwards;
+}
+
+@keyframes di-gift {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  20% {
+    transform: scale(0.95);
+  }
+  26% {
+    transform: scale(1) rotate(0deg);
+  }
+  30% {
+    transform: rotate(-8deg);
+  }
+  34% {
+    transform: rotate(7deg);
+  }
+  38% {
+    transform: rotate(-5deg);
+  }
+  42% {
+    transform: rotate(3deg);
+  }
+  46% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: scale(1.06, 0.92);
+  }
+  55% {
+    transform: scale(0.98, 1.04);
+  }
+  60% {
+    transform: scale(1);
+  }
+  82% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0.4rem) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes di-gift-lid {
+  0%,
+  50% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  62% {
+    transform: translate(calc(var(--swing) * 20%), -190%) rotate(calc(var(--swing) * 20deg));
+  }
+  78% {
+    transform: translate(calc(var(--swing) * 55%), -290%) rotate(calc(var(--swing) * 45deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--swing) * 85%), -240%) rotate(calc(var(--swing) * 75deg));
+    opacity: 0;
+  }
+}
+
+/* Popcorn: a seed bursts into a puff (squash, bounce), flies up and tumbles
+   down. The flight is on the <b>, the pop on the svg. */
+.di-kernel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  opacity: 0;
+  animation: di-kernel 1.6s linear forwards;
+}
+
+.di-kernel svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: scale(0.3);
+  animation: di-kernel-pop 1.6s linear forwards;
+}
+
+.di-kernel-hull {
+  fill: var(--di-pop-hull);
+}
+
+.di-kernel-puff {
+  fill: var(--di-pop-puff);
+  stroke: var(--di-pop-edge);
+  stroke-width: 1.2;
+}
+
+.di-kernel-fill {
+  fill: var(--di-pop-puff);
+}
+
+.di-kernel[data-tone='butter'] .is-butter {
+  fill: var(--di-pop-butter);
+}
+
+.di-kernel-shine {
+  fill: #fff;
+  opacity: 0.85;
+}
+
+@keyframes di-kernel {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  14% {
+    transform: translate(calc(var(--cx) * 0.25), calc(var(--cy) * 0.6)) rotate(calc(var(--rot) * 0.1));
+  }
+  30% {
+    transform: translate(calc(var(--cx) * 0.6), var(--cy)) rotate(calc(var(--rot) * 0.3));
+  }
+  55% {
+    transform: translate(calc(var(--cx) * 0.8), calc(var(--cy) + (var(--fall) - var(--cy)) * 0.13))
+      rotate(calc(var(--rot) * 0.55));
+  }
+  80% {
+    transform: translate(calc(var(--cx) * 0.93), calc(var(--cy) + (var(--fall) - var(--cy)) * 0.51))
+      rotate(calc(var(--rot) * 0.8));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--cx), var(--fall)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+@keyframes di-kernel-pop {
+  0%,
+  8% {
+    transform: scale(0.3);
+  }
+  15% {
+    transform: scale(1.3, 1.12);
+  }
+  21% {
+    transform: scale(0.9, 1.06);
+  }
+  27% {
+    transform: scale(1.04);
+  }
+  33%,
+  100% {
+    transform: scale(1);
+  }
+}
+
 @keyframes di-lantern {
   0% {
     transform: translateY(0.6rem) rotate(0deg) scale(0.7);
@@ -8739,6 +9135,8 @@ button.di-refer-rung {
 .di-hall[data-reduce-motion][data-look='orchid']::after,
 .di-hall[data-reduce-motion][data-look='maple']::after,
 .di-hall[data-reduce-motion][data-look='fig']::after,
+.di-hall[data-reduce-motion][data-look='cranberry']::after,
+.di-hall[data-reduce-motion][data-look='saffron']::after,
 html[data-reduce-motion] .di-hall[data-look='glow']::after,
 html[data-reduce-motion] .di-hall[data-look='ember']::after,
 html[data-reduce-motion] .di-hall[data-look='frost']::after,
@@ -8753,7 +9151,9 @@ html[data-reduce-motion] .di-hall[data-look='indigo']::after,
 html[data-reduce-motion] .di-hall[data-look='sky']::after,
 html[data-reduce-motion] .di-hall[data-look='orchid']::after,
 html[data-reduce-motion] .di-hall[data-look='maple']::after,
-html[data-reduce-motion] .di-hall[data-look='fig']::after {
+html[data-reduce-motion] .di-hall[data-look='fig']::after,
+html[data-reduce-motion] .di-hall[data-look='cranberry']::after,
+html[data-reduce-motion] .di-hall[data-look='saffron']::after {
   animation: none;
 }
 
@@ -8772,7 +9172,9 @@ html[data-reduce-motion] .di-hall[data-look='fig']::after {
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   :is(
     .di-face,
@@ -8800,7 +9202,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   :is(
     .di-face,
@@ -8831,7 +9235,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   :is(
     .di-face,
@@ -8859,7 +9265,9 @@ html[data-reduce-motion] .di-hall:is(
     [data-look='sky'],
     [data-look='orchid'],
     [data-look='maple'],
-    [data-look='fig'] 
+    [data-look='fig'],
+    [data-look='cranberry'],
+    [data-look='saffron'] 
   )
   :is(
     .di-face,

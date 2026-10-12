@@ -101,6 +101,9 @@ function cleanPrefs(raw) {
         'maple',
         'fig',
         'oat',
+        'cranberry',
+        'saffron',
+        'pine',
       ].includes(id)
     ) {
       next.widgetLookId = id

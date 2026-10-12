@@ -300,6 +300,35 @@ export function BuddyArt({ id, className = '' }) {
     )
   }
 
+  if (id === 'otter') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <ellipse cx="11" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <ellipse cx="37" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <ellipse cx="24" cy="31" rx="15" ry="14" fill="#a06a40" />
+        <ellipse cx="24" cy="34" rx="10" ry="8.5" fill="#f1dcc0" />
+        <ellipse cx="18" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="30" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="18.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="30.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="24" cy="31.5" rx="2.6" ry="1.9" fill="#2b2018" />
+        <path d="M21.5 34 Q24 36.2 26.5 34" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <path d="M17 33 L11 32 M31 33 L37 32" fill="none" stroke="#7a5038" strokeWidth="0.7" strokeLinecap="round" />
+        <path d="M19 41 L24 37 L29 41 Q24 44 19 41 Z" fill="#f6b8c4" stroke="#d98aa0" strokeWidth="0.8" strokeLinejoin="round" />
+        <path d="M24 37.8 V42.4 M24 37.8 L21.4 41.7 M24 37.8 L26.6 41.7" fill="none" stroke="#d98aa0" strokeWidth="0.6" strokeLinecap="round" />
+        <ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+        <ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+      </svg>
+    )
+  }
+
   // Never sold: earned by bringing 15 friends (src/lib/purse.js REFER_BUDDY).
   if (id === 'hive') {
     return (

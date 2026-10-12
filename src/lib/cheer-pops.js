@@ -88,6 +88,8 @@ const CHEER_KINDS = [
   'sun',
   'leaves',
   'lantern',
+  'gift',
+  'popcorn',
 ]
 
 const GAP_MS = {
@@ -110,6 +112,8 @@ const GAP_MS = {
   sun: 130,
   leaves: 110,
   lantern: 160,
+  gift: 150,
+  popcorn: 100,
 }
 
 const BASE_HOLD = {
@@ -132,6 +136,8 @@ const BASE_HOLD = {
   sun: 1800,
   leaves: 1800,
   lantern: 1900,
+  gift: 2200,
+  popcorn: 1900,
 }
 
 function stageN(stage) {
@@ -414,6 +420,29 @@ export const ROCKET_FLAME = 'M9 25 L12 31 L15 25 Z'
 export const STAR_PATH = 'M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z'
 export const LAUNCH_FLY_MS = 820
 
+// Gift and popcorn shapes, shared so web and phone draw the same thing.
+// The gift's open top (y 18 of 44) sits on the pop's anchor.
+export const GIFT_VIEW = '0 0 40 44'
+export const GIFT_TOP = 18 / 44
+export const GIFT_BOX = 'M9.5 18 H30.5 Q33 18 33 20.5 V38.5 Q33 41 30.5 41 H9.5 Q7 41 7 38.5 V20.5 Q7 18 9.5 18 Z'
+export const GIFT_SHADE = 'M26 18 H30.5 Q33 18 33 20.5 V38.5 Q33 41 30.5 41 H26 Z'
+export const GIFT_BAND = 'M17.5 18 H22.5 V41 H17.5 Z'
+export const GIFT_LID = 'M7 12 H33 Q35 12 35 14 V17 Q35 19 33 19 H7 Q5 19 5 17 V14 Q5 12 7 12 Z'
+export const GIFT_LID_BAND = 'M17.5 12 H22.5 V19 H17.5 Z'
+export const GIFT_BOW = 'M20 11.5 C15 3.5 8.5 5.5 10.8 10 C12 12.2 16 12.4 20 11.5 Z M20 11.5 C25 3.5 31.5 5.5 29.2 10 C28 12.2 24 12.4 20 11.5 Z'
+export const GIFT_SHINE = 'M8.5 14.2 H18'
+// Four puffs and a hull; [cx, cy, r] in a 24 box.
+export const KERNEL_PUFFS = [
+  [8.8, 12.2, 5.3],
+  [15.3, 11.2, 5.1],
+  [12, 6.9, 4.7],
+  [12.4, 15.1, 4.9],
+]
+export const KERNEL_HULL = 'M8.6 17.4 Q12 23.6 15.9 17.5 Q12.2 19.7 8.6 17.4 Z'
+export const KERNEL_SHINE = [10.6, 5.6, 1.7, 1.1]
+// The same snack in every look; did-i.css has them as --di-pop-*.
+export const POPCORN_COLORS = { puff: '#fff6e2', edge: '#d4ad62', butter: '#ffdf7e', hull: '#c98a2c' }
+
 function launchBits(pop, stage) {
   const level = burstLevel(pop, stage)
   const mul = stageMul(stage)
@@ -548,6 +577,88 @@ function lanternBits(pop, stage) {
   return bits
 }
 
+// A gift box pops in, shakes twice, and its lid flies off. Stars and paper
+// burst out of the open top. The box's opening sits on the pop's anchor.
+function giftBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const mul = stageMul(stage)
+  // Capped so an edge pop's 1.15 overshoot stays on a 390px screen.
+  const size = Math.min(3.6, (2.4 + level * 0.12) * mul)
+  const bits = [
+    { id: 'gift-glow', sunGlow: true, delay: '820ms', size: `${(size * 1.9).toFixed(2)}rem` },
+    { id: 'gift', gift: true, delay: '0ms', size: `${size.toFixed(2)}rem`, swing: pop % 2 ? -1 : 1 },
+  ]
+  const reach = Math.min(5, (2.2 + n * 0.5) * mul)
+  const peak = Math.min(4.5, (2.6 + n * 0.4) * mul)
+  const fall = Math.min(9, (3.5 + n * 1.1) * mul)
+  const paper = Math.min(12, 5 + level)
+  for (let i = 0; i < paper; i += 1) {
+    const side = paper === 1 ? 0 : i / (paper - 1) - 0.5
+    const angle = side * 1.8 + (((i * 7) % 5) - 2) * 0.05
+    bits.push({
+      id: `paper-${i}`,
+      confetti: true,
+      x: `${(Math.sin(angle) * reach).toFixed(2)}rem`,
+      y: `${(-peak * (0.7 + ((i * 5) % 7) / 20)).toFixed(2)}rem`,
+      fall: `${(fall * (0.75 + ((i * 3) % 5) * 0.08)).toFixed(2)}rem`,
+      rot: `${(i % 2 ? 1 : -1) * (300 + ((i * 53) % 240))}deg`,
+      size: `${((0.4 + (i % 3) * 0.08) * Math.min(mul, 1.4)).toFixed(2)}rem`,
+      fat: i % 3 === 0,
+      tone: CONFETTI_TONES[(i * 3) % CONFETTI_TONES.length],
+      delay: `${860 + ((i * 29) % 90)}ms`,
+    })
+  }
+  const stars = Math.min(7, level + 2)
+  for (let i = 0; i < stars; i += 1) {
+    const angle = (-155 + (i / Math.max(1, stars - 1)) * 130) * (Math.PI / 180)
+    const far = size * (0.7 + (i % 2) * 0.3)
+    bits.push({
+      id: `star-${i}`,
+      glint: true,
+      x: `${(Math.cos(angle) * far).toFixed(2)}rem`,
+      y: `${(Math.sin(angle) * far).toFixed(2)}rem`,
+      size: `${((0.55 + (i % 3) * 0.14) * Math.min(mul, 1.5)).toFixed(2)}rem`,
+      tone: CONFETTI_TONES[(i + 1) % CONFETTI_TONES.length],
+      delay: `${880 + i * 60}ms`,
+    })
+  }
+  return bits
+}
+
+// Kernels pop: each starts as a small seed, bursts into a puff with a
+// squash and a bounce, flies up and tumbles down. Butter on some.
+function popcornBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const mul = stageMul(stage)
+  const count = Math.min(13, 6 + level)
+  const reach = Math.min(6, (2.8 + n * 0.6) * mul)
+  const peak = Math.min(5.5, (3.6 + n * 0.45) * mul)
+  const fall = Math.min(12, (4.5 + n * 1.3) * mul)
+  // Lean the spray toward the middle so edge pops stay on screen.
+  const ox = Number.parseFloat(ORIGINS[n - 1][pop]?.[0]) || 50
+  const lean = ((50 - ox) / 50) * reach * 0.6
+  const piece = Math.max(1, Math.min(mul, 1.45))
+  const bits = [{ id: 'puff', puff: true, delay: '0ms', size: `${1.1 * mul}rem` }]
+  for (let i = 0; i < count; i += 1) {
+    const side = count === 1 ? 0 : i / (count - 1) - 0.5
+    const angle = side * 2 + (((i * 7) % 5) - 2) * 0.06
+    bits.push({
+      id: `kernel-${i}`,
+      kernel: true,
+      x: `${(Math.sin(angle) * reach + lean).toFixed(2)}rem`,
+      y: `${(-peak * (0.55 + ((i * 5) % 7) / 14)).toFixed(2)}rem`,
+      fall: `${(fall * (0.8 + ((i * 3) % 5) * 0.07)).toFixed(2)}rem`,
+      rot: `${(i % 2 ? 1 : -1) * (120 + ((i * 47) % 200))}deg`,
+      size: `${((0.95 + (i % 3) * 0.18) * piece).toFixed(2)}rem`,
+      tone: i % 3 === 1 ? 'butter' : 'plain',
+      delay: `${(i * 70 + ((i * 37) % 60)) % 520}ms`,
+    })
+  }
+  return bits
+}
+
 // Rises with a bounce while a crown of rays grows out and turns.
 function sunBits(pop, stage) {
   const level = burstLevel(pop, stage)
@@ -593,6 +704,8 @@ const BURST_BUILDERS = {
   sun: sunBits,
   leaves: leavesBits,
   lantern: lanternBits,
+  gift: giftBits,
+  popcorn: popcornBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {

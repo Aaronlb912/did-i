@@ -20,7 +20,22 @@ import { BuddyArt, BuddyPlain } from './BuddyArt.jsx'
 import { AccessoryLayer } from './Accessories.jsx'
 import { accessoryById, eyeLine, wornLayers } from '../../src/lib/accessories.js'
 import { svgParts } from '../lib/svg-parts.js'
-import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from '../../src/lib/cheer-pops.js'
+import {
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  POPCORN_COLORS,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+} from '../../src/lib/cheer-pops.js'
 import { Slot } from './Slot.jsx'
 import { fonts } from '../theme.js'
 
@@ -70,9 +85,12 @@ const LOOK_META = {
   sky: { on: '#4aa8ff' },
   maple: { on: '#fa774f' },
   fig: { on: '#d46ba3' },
+  cranberry: { on: '#ff4f6a' },
+  saffron: { on: '#ffc23d' },
   orchid: { on: '#dd7bff' },
   chalk: { on: '#ecebe6', bg: '#181817', glow: 'rgba(236, 235, 230, 0.3)' },
   oat: { on: '#f0e6d8', bg: '#141311', glow: 'rgba(240, 230, 216, 0.3)' },
+  pine: { on: '#8fd1b5', bg: '#0f1614', glow: 'rgba(143, 209, 181, 0.3)' },
 }
 
 function rem(n) {
@@ -607,6 +625,48 @@ function LaunchChip({ on, onDeep, ink }) {
   )
 }
 
+// A gift box with its bow, like the web chip.
+function GiftChip({ on, ink }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle } = parts
+  const h = rem(1.5)
+  return (
+    <View style={styles.center}>
+      <Svg width={h * (40 / 44)} height={h} viewBox={GIFT_VIEW}>
+        <Path d={GIFT_BOX} fill={on} />
+        <Path d={GIFT_SHADE} fill="#000" fillOpacity={0.22} />
+        <Path d={GIFT_BAND} fill={ink} />
+        <Path d={GIFT_LID} fill={on} />
+        <Path d={GIFT_LID_BAND} fill={ink} />
+        <Path d={GIFT_BOW} fill={ink} />
+        <Circle cx={20} cy={11.5} r={2.4} fill={ink} />
+      </Svg>
+    </View>
+  )
+}
+
+// One popped kernel, buttered, like the web chip.
+function PopcornChip({ on }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle } = parts
+  const h = rem(1.5)
+  return (
+    <View style={styles.center}>
+      <Svg width={h} height={h} viewBox="0 0 24 24">
+        <Path d={KERNEL_HULL} fill={POPCORN_COLORS.hull} />
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <Circle key={i} cx={cx} cy={cy} r={r} fill={POPCORN_COLORS.puff} stroke={POPCORN_COLORS.edge} strokeWidth={1.2} />
+        ))}
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <Circle key={`in-${i}`} cx={cx} cy={cy} r={r - 0.9} fill={i === 1 ? POPCORN_COLORS.butter : POPCORN_COLORS.puff} />
+        ))}
+      </Svg>
+    </View>
+  )
+}
+
 function MedalChip({ on, onDeep, late }) {
   const strap = { position: 'absolute', top: rem(0.32), width: rem(0.22), height: rem(0.8), borderRadius: 1 }
   const disc = rem(0.95)
@@ -784,6 +844,12 @@ export function CheerChip({ id, stage = 1, colors }) {
       break
     case 'lantern':
       art = <LanternChip on={on} onDeep={onDeep} />
+      break
+    case 'gift':
+      art = <GiftChip on={on} ink={ink} />
+      break
+    case 'popcorn':
+      art = <PopcornChip on={on} />
       break
     default: {
       const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))
