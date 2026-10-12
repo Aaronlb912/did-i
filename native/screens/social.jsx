@@ -820,7 +820,7 @@ export function PeopleScreen({ book, onChange }) {
       </View>
 
       {tab === 'friends' && links.asked.length ? (
-        <Reveal key="asks" style={styles.tabBody}>
+        <Reveal key="asks" layout={false} style={styles.tabBody}>
           <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
           {links.asked.map((row) => (
             <PersonCard
@@ -842,7 +842,7 @@ export function PeopleScreen({ book, onChange }) {
       ) : null}
 
       {tab === 'friends' ? (
-        <Reveal key="friends" style={styles.tabBody}>
+        <Reveal key="friends" layout={false} style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.friends')}
@@ -890,7 +890,7 @@ export function PeopleScreen({ book, onChange }) {
       ) : null}
 
       {tab === 'families' ? (
-        <Reveal key="families" style={styles.tabBody}>
+        <Reveal key="families" layout={false} style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -931,7 +931,7 @@ export function PeopleScreen({ book, onChange }) {
       ) : null}
 
       {tab === 'we' ? (
-        <Reveal key="we" style={styles.tabBody}>
+        <Reveal key="we" layout={false} style={styles.tabBody}>
       {/* The tab already says Did we; no second header. */}
       <WeHomeList book={book} onChange={onChange} />
         </Reveal>
@@ -939,7 +939,7 @@ export function PeopleScreen({ book, onChange }) {
 
       {/* You: only on the Friends tab, so it does not repeat on every tab. */}
       {tab === 'friends' ? (
-        <Reveal key="you" style={styles.tabBody}>
+        <Reveal key="you" layout={false} style={styles.tabBody}>
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}

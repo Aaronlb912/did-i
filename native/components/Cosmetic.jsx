@@ -898,6 +898,8 @@ function useMyOutfit() {
   return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
 }
 
+const TALL_EARS = new Set(['rabbit', 'fox'])
+
 export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)
   const mine = useMyOutfit()
@@ -912,7 +914,10 @@ export function BuddyHang({ id, inline = false, alive = false, worn = null, tone
   // lower then, so it fits on the card.
   const drop = !inline && (outfit.head || outfit.around || outfit.back === 'butterfly' || outfit.back === 'bee')
     ? styles.buddyDropped
-    : null
+    // Long ears reach the top of the drawing: hang just low enough to keep them.
+    : !inline && TALL_EARS.has(id)
+      ? styles.buddyTallEars
+      : null
   return (
     <Animated.View style={[inline ? styles.buddyInline : styles.buddyHang, lift, drop, styles.buddySway, life.idle]} pointerEvents="none" renderToHardwareTextureAndroid={Boolean(life.idle)} shouldRasterizeIOS={Boolean(life.idle)}>
       <Slot fallback={<BuddyPlain id={id} width={width} height={height} />}>
@@ -1023,6 +1028,7 @@ const styles = StyleSheet.create({
   buddyInline: { alignItems: 'center', justifyContent: 'center' },
   buddyOwl: { marginTop: -6 },
   buddyDropped: { top: 6 },
+  buddyTallEars: { top: 0 },
   // A hanging buddy sways from its top.
   buddySway: { transformOrigin: 'top' },
 })

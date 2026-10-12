@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
+import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
 import { needsEnter } from '../src/lib/session.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -100,10 +101,15 @@ function useNativeRoute() {
 /** One route's page, fed the shelf the whole app shares. */
 function RouteBody({ route }) {
   const props = useContext(ScreenProps)
+  // The page itself slides in, so the blocks on it skip their own fade on
+  // that first frame; running both at once stuttered on iPhone. Anything that
+  // opens or loads in later still fades in.
   return (
-    <ScreenRoute.Provider value={route}>
-      <ScreenRouter route={route} {...props} />
-    </ScreenRoute.Provider>
+    <LayoutAnimationConfig skipEntering>
+      <ScreenRoute.Provider value={route}>
+        <ScreenRouter route={route} {...props} />
+      </ScreenRoute.Provider>
+    </LayoutAnimationConfig>
   )
 }
 
