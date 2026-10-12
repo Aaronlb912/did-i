@@ -222,7 +222,7 @@ export function useWeAnswer(reload, book) {
   async function answer(card, status) {
     const mine = weMine(card)
     const out = await run(card.id, () => weAnswer(card.id, mine?.status === status ? null : status))
-    if (out.miss || !out.done || card.done) return
+    if (out.miss || !out.finished) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
     const paid = await weClaim(card.id)

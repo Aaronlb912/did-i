@@ -29,6 +29,7 @@ function bad(error) {
   if (/enough nudges tonight/i.test(text)) return { miss: 'we.missNudgeCap' }
   if (/too many reports/i.test(text)) return { miss: 'we.missReports' }
   if (/night is closed/i.test(text)) return { miss: 'we.missClosed' }
+  if (/ask has closed/i.test(text)) return { miss: 'we.askClosed' }
   if (/only the person who made/i.test(text)) return { miss: 'we.missOwner' }
   if (/schema cache|PGRST202/i.test(text) || error?.code === 'PGRST202') return { miss: 'we.missNotReady' }
   return { miss: 'people.reach' }
@@ -93,11 +94,12 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
     want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
     want_goal: goal || null,
     ask: ask || [],
+    want_starts: tonightIso(),
   })
   if (error) return bad(error)
   const extras = await saveExtras(db, data, { askAfter, remind, note })
-  if (folder || topics) await weFile(data, folder, topics)
-  return { miss: extras.miss, id: data }
+  const filed = folder || topics ? await weFile(data, folder, topics) : { miss: '' }
+  return { miss: extras.miss || filed.miss, id: data }
 }
 
 export async function weEdit(card, { question, mode, shows, cadence, weekdays, goal, askAfter, remind, note }) {
@@ -248,7 +250,7 @@ export const weLeave = (card) => call('we_leave', { card })
 // Only the maker can close it; the server checks.
 export const weClose = (card) => call('we_close', { card })
 // A paused card (nobody answered 3 nights) asks again from tonight.
-export const weRestart = (card) => call('we_restart', { card })
+export const weRestart = (card) => call('we_restart', { card, want_night: tonightIso() })
 
 // Paused cards you are on, for the line with a restart button.
 export function wePausedCards(cards) {
@@ -259,10 +261,11 @@ export const reportWe = (card, why = '') => call('report_we', { card, why })
 export const weNudge = (card, other, night = tonightIso()) => call('we_nudge', { card, other, on_night: night })
 
 // status: 'did', 'nope', or null to take an answer back. Comes back with
-// done: whether the card is now done together.
+// done: whether the card is now done together, and finished: whether this
+// answer is the one that made it done (the server says 2).
 export async function weAnswer(card, status, night = tonightIso()) {
   const out = await call('we_answer', { card, on_night: night, want_status: status })
-  return { miss: out.miss, done: Boolean(out.data) }
+  return { miss: out.miss, done: Number(out.data) > 0, finished: Number(out.data) === 2 }
 }
 
 export async function weClaim(card, night = tonightIso()) {

@@ -613,10 +613,21 @@ const LOOKS = {
 
 export const LOOK_IDS = Object.keys(LOOKS)
 
+// Looks whose cleared color is a red or orange close to the missed red.
+const MISS_RING_LOOKS = new Set(['clay', 'maple', 'ember', 'rose', 'wine'])
+
+// A missed night's dot. On a look where cleared is near the missed red, missed
+// is a ring (faint fill) so the two never read alike. Other tones stay a fill.
+export function missDot(colors, tone = colors.miss) {
+  if (!colors.missRing || tone !== colors.miss) return { backgroundColor: tone }
+  return { backgroundColor: `${tone}33`, borderWidth: 1.5, borderColor: tone }
+}
+
 export function hallColors(look = 'lime', theme = 'dark') {
   const base = theme === 'light' ? LIGHT : DARK
   const patch = (LOOKS[look] || LOOKS.lime)[theme === 'light' ? 'light' : 'dark'] || {}
   const colors = { ...base, ...patch }
+  if (MISS_RING_LOOKS.has(look)) colors.missRing = true
   if (isGemLook(look)) {
     colors.gemLook = look
     colors.gemAccent = colors.on

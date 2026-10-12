@@ -99,6 +99,7 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
 import { checkOnFits, followCheckOn } from '../../src/lib/check-on.js'
 import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
+import { missDot } from '../palette.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -145,7 +146,7 @@ function stateDot(kind, colors) {
   if (kind === 'nope' || kind === 'pastNope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
   if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
   if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.openRing || colors.open || colors.on }
-  if (kind === 'missed') return { backgroundColor: colors.miss, borderColor: colors.miss }
+  if (kind === 'missed') return { ...missDot(colors), borderColor: colors.miss }
   return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 

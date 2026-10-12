@@ -47,7 +47,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
 import { weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
-import { boardDate } from '../../src/lib/recurrence.js'
+import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -531,6 +531,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       setMiss(tMiss(out.miss))
       return
     }
+    // Made, but the time, note or folder did not save.
+    if (out.miss) confirmMiss(tMiss(out.miss))
     if (track) {
       const tracked = await weTrackAmount(out.id, true, unit.trim())
       if (tracked.miss) confirmMiss(t('weAmount.trackLater'))
@@ -1117,7 +1119,9 @@ function WeCardPage({ book, cardId, onChange }) {
         const amount = readAmount(raw)
         if (Number.isNaN(amount)) return setMiss(t('weAmount.bad'))
         publishSheet(null)
-        const out = await wePutAmount(card.id, amount)
+        // Before 9am the did may be last night's: put the amount on that night.
+        const night = weMine(card)?.status === 'did' ? boardDate() : graceNightIso() || boardDate()
+        const out = await wePutAmount(card.id, amount, night)
         if (out.miss) return setMiss(tMiss(out.miss))
         setMiss('')
         confirmDone(t('confirm.saved'))

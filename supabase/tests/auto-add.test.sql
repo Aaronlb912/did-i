@@ -107,6 +107,20 @@ begin
     raise exception 'FAIL: claim after the switch gave % rows (%)', n, q;
   end if;
 
+  -- The two step way: reading what waits keeps nothing; keep does.
+  execute 'reset role';
+  insert into public.sends (from_id, to_id, kind, question) values (c, a, 'todo', 'family two');
+  execute 'set local role authenticated';
+  select count(*), min(question) into n, q from public.auto_sends_waiting();
+  if n <> 1 or q <> 'family two' then
+    raise exception 'FAIL: waiting gave % rows (%)', n, q;
+  end if;
+  select count(*) into n from public.sends where to_id = a and state = 'sent';
+  if n <> 1 then raise exception 'FAIL: reading what waits kept it'; end if;
+  perform public.keep_auto_sends(array(select send_id from public.auto_sends_waiting()));
+  select count(*) into n from public.auto_sends_waiting();
+  if n <> 0 then raise exception 'FAIL: % still waiting after keep', n; end if;
+
   -- a cannot turn on someone who is not a friend.
   begin
     insert into public.auto_adds (owner_id, friend_id) values (a, d);
@@ -148,6 +162,13 @@ begin
   begin
     perform public.claim_auto_sends();
     raise exception 'FAIL: anon ran claim_auto_sends';
+  exception when insufficient_privilege then
+    null;
+  end;
+
+  begin
+    perform public.keep_auto_sends(array[gen_random_uuid()]);
+    raise exception 'FAIL: anon ran keep_auto_sends';
   exception when insufficient_privilege then
     null;
   end;

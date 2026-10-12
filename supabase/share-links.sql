@@ -34,8 +34,35 @@ $$;
 
 revoke all on function public.link_befriend(uuid) from public, anon, authenticated;
 
--- Add whoever made a Did you link. False for a Did I link, an ended link,
--- your own link, or a block.
+-- A public link is open to anyone, so adding its maker is a request they
+-- answer, not a friendship on the spot. If they already asked you, that is a
+-- yes both ways. Not callable on its own; only the link functions use it.
+create or replace function public.link_ask_friend(other uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := (select auth.uid());
+begin
+  if me is null or other is null or other = me or public.blocked_with(other) then
+    return false;
+  end if;
+  if exists (select 1 from public.friend_links f
+             where f.from_id = other and f.to_id = me and f.state = 'asked') then
+    return public.link_befriend(other);
+  end if;
+  insert into public.friend_links (from_id, to_id, state) values (me, other, 'asked')
+  on conflict (from_id, to_id) do nothing;
+  return true;
+end;
+$$;
+
+revoke all on function public.link_ask_friend(uuid) from public, anon, authenticated;
+
+-- Ask whoever made a Did you link to be friends. False for a Did I link, an
+-- ended link, your own link, or a block.
 create or replace function public.befriend_by_link(code text)
 returns boolean
 language plpgsql
@@ -49,8 +76,7 @@ begin
   if (select auth.uid()) is null then return false; end if;
   select l.made_by into maker from public.did_you_links l
   where l.code = lower(btrim(coalesce(befriend_by_link.code, ''))) and not l.ended;
-  if maker is null then return false; end if;
-  return public.link_befriend(maker);
+  return public.link_ask_friend(maker);
 end;
 $$;
 
@@ -206,7 +232,7 @@ begin
   perform pg_advisory_xact_lock(hashtext('we_card:' || link.card_id::text));
   select m.state into was from public.we_members m where m.card_id = link.card_id and m.user_id = me;
   if was = 'in' then
-    if add_friend then perform public.link_befriend(link.made_by); end if;
+    if add_friend then perform public.link_ask_friend(link.made_by); end if;
     return jsonb_build_object('card', link.card_id, 'already', true);
   end if;
   -- Nobody already on the card can be someone you blocked, or who blocked you.
@@ -226,6 +252,8 @@ begin
      >= public.we_max_members() then
     return jsonb_build_object('miss', 'full');
   end if;
+  -- Keep whose turn the nights around now were before someone new joins.
+  perform public.we_pin_turns(link.card_id, current_date - 1, current_date + 1);
   insert into public.we_members (card_id, user_id, state, turn, asked_by, joined_at)
   values (
     link.card_id, me, 'in',
@@ -235,6 +263,8 @@ begin
   on conflict (card_id, user_id) do update
     set state = 'in', joined_at = now(), asked_by = excluded.asked_by, said_no_at = null;
   update public.we_links set uses = uses + 1 where we_links.code = link.code;
+  -- A new member can undo a done night on an all-of-us card.
+  perform public.we_resettle(link.card_id);
   -- Tell the maker someone joined.
   if link.made_by <> me and public.push_wanted(link.made_by, 'friends') then
     insert into public.push_queue (to_id, title, body, go)
@@ -246,7 +276,7 @@ begin
       '/tonight'
     from public.we_cards c where c.id = link.card_id;
   end if;
-  if add_friend then perform public.link_befriend(link.made_by); end if;
+  if add_friend then perform public.link_ask_friend(link.made_by); end if;
   return jsonb_build_object('card', link.card_id);
 end;
 $$;
@@ -266,6 +296,9 @@ declare
 begin
   select l.* into link from public.did_you_links l where l.code = new.code;
   if link.made_by is null or link.made_by = new.user_id
+     or exists (select 1 from public.blocks b
+                where (b.blocker = link.made_by and b.blocked = new.user_id)
+                   or (b.blocker = new.user_id and b.blocked = link.made_by))
      or not public.push_wanted(link.made_by, 'friends') then
     return new;
   end if;

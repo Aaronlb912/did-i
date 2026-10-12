@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
+import { Platform } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { soundsTogether } from '../../src/lib/did-we.js'
 import { t } from '../../src/lib/i18n.js'
 import { LeadPicker } from '../components/LeadPicker.jsx'
+import { SheetHost } from '../components/SheetHost.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { HangScreen, Pill } from './questions.jsx'
 import { WeNewScreen } from './we.jsx'
@@ -67,6 +69,9 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
           {...shared}
         />
       )}
+      {/* Add is a native sheet on iPhone and covers the app-wide SheetHost.
+          Did I mounts its own; Did we and Did you need one too, or When opens behind. */}
+      {Platform.OS === 'ios' && mode !== 'i' ? <SheetHost /> : null}
       {picking ? (
         <LeadPicker
           value={mode}

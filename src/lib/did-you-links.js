@@ -154,7 +154,11 @@ export async function makeDidYouLink(question) {
   const text = String(question || '').trim()
   if (!text) return { code: '', miss: 'blank' }
   const { data, error } = await db.rpc('make_did_you_link', { question: text })
-  if (error) return { code: '', miss: /too many/i.test(error.message || '') ? 'linkCap' : error.message || 'people.reach' }
+  if (error) {
+    const text = error.message || ''
+    // Server words are English; only our own keys reach the screen.
+    return { code: '', miss: /too many/i.test(text) ? 'linkCap' : /sign in first/i.test(text) ? 'people.outTitle' : 'people.reach' }
+  }
   return { code: cleanCode(data), miss: '' }
 }
 

@@ -7,6 +7,7 @@ import { shortLabel } from '../../src/lib/board-json.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
+import { missDot } from '../palette.js'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -145,14 +146,16 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                 <View
                   style={[
                     styles.day,
-                    fill
+                    cell.state === 'missed'
+                      ? missDot(colors)
+                      : fill
                       ? { backgroundColor: fill }
                       : cell.state === 'open'
                         ? { borderWidth: 1, borderColor: colors.open || colors.line }
                         : null,
                   ]}
                 >
-                  <Text style={[styles.dayText, { color: fill ? colors.bg : cell.state ? colors.ink : colors.inkDim }]}>
+                  <Text style={[styles.dayText, { color: fill && !(cell.state === 'missed' && colors.missRing) ? colors.bg : cell.state ? colors.ink : colors.inkDim }]}>
                     {cell.day}
                   </Text>
                 </View>
@@ -170,7 +173,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           ...(gentle ? [] : [{ id: 'missed', color: colors.miss, label: t('later.missed') }]),
         ].map((item) => (
           <View key={item.id} style={styles.keyItem}>
-            <View style={[styles.keyDot, { backgroundColor: item.color }]} />
+            <View style={[styles.keyDot, item.id === 'missed' ? missDot(colors) : { backgroundColor: item.color }]} />
             <Text style={[styles.keyText, { color: colors.inkSoft }]}>{item.label}</Text>
           </View>
         ))}

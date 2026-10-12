@@ -16,6 +16,7 @@ declare
   night date := current_date;
   n integer;
   i integer;
+  cards uuid[];
 begin
   insert into auth.users (id, email, aud, role)
   values
@@ -80,10 +81,12 @@ begin
   update public.we_members set state = 'in', joined_at = now() where user_id = c and state = 'asked';
   insert into public.we_answers (card_id, user_id, night, status)
   select m.card_id, a, night, 'did' from public.we_members m where m.user_id = c and m.state = 'in';
+  -- Read before switching to a: members only see their own member rows.
+  select array_agg(m.card_id) into cards from public.we_members m where m.user_id = c and m.state = 'in';
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   n := 0;
-  for other in select m.card_id from public.we_members m where m.user_id = c and m.state = 'in' loop
+  foreach other in array cards loop
     begin
       perform public.we_nudge(other, c, night);
       n := n + 1;

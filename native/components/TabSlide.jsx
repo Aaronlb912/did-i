@@ -16,9 +16,12 @@ export function TabSlide({ index, children }) {
   const focused = useIsFocused()
   const reduce = useReduceMotion()
   const { width } = useWindowDimensions()
-  const x = useSharedValue(0)
-  const fade = useSharedValue(1)
-  const was = useRef(focused)
+  // A later tab is only built the first time you open it, already focused, so
+  // it starts off to its side and slides in like every switch after.
+  const late = index > 0 && focused && !reduce
+  const x = useSharedValue(late ? width * 0.22 : 0)
+  const fade = useSharedValue(late ? 0.35 : 1)
+  const was = useRef(late ? false : focused)
 
   // Set up while the tab is hidden, not on the first frame it shows: moving it
   // after it was already drawn in place was a one-frame blink. With two tabs a

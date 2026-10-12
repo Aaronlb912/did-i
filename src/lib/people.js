@@ -38,6 +38,15 @@ function bad(error) {
   return { miss: error?.message || 'people.reach' }
 }
 
+// Server text is English; show our own words for the ones we know.
+export function sendMiss(error) {
+  const text = String(error?.message || error || '')
+  if (/too many waiting/i.test(text)) return 'sent.missWaiting'
+  if (/too many today/i.test(text)) return 'sent.missToday'
+  if (/sign in first/i.test(text)) return 'people.outTitle'
+  return 'people.reach'
+}
+
 // A family join code is six. An invite code is ten. Same alphabet.
 export const FAMILY_CODE_LEN = 6
 export const INVITE_CODE_LEN = 10
@@ -451,7 +460,7 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDid
     kind: 'todo',
     question: text,
     note: String(note || '').trim(),
-    due_on: dueOn || isoDate(new Date()),
+    due_on: dueOn || boardDate(),
     ...(repeat ? { repeat } : {}),
     // Only an every so often ask carries the sender's last Did (shared-every.sql).
     ...(repeat.startsWith('every:') && /^\d{4}-\d{2}-\d{2}$/.test(String(lastDidOn || '')) ? { last_did_on: lastDidOn } : {}),
@@ -459,7 +468,7 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDid
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { miss: 'already' }
     if (/too many repeats/i.test(error.message)) return { miss: 'people.missRepeats' }
-    return { miss: error.message }
+    return { miss: sendMiss(error) }
   }
   return { miss: '' }
 }
@@ -927,8 +936,10 @@ export async function sendsWith(otherId) {
 export async function takeBack(id) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const { error } = await db.from('sends').delete().eq('id', id).eq('state', 'sent')
-  return error ? bad(error) : { miss: '' }
+  const { data, error } = await db.from('sends').delete().eq('id', id).eq('state', 'sent').select('id')
+  if (error) return bad(error)
+  // Nothing went: they answered it first.
+  return data?.length ? { miss: '' } : { miss: 'sent.editAnswered' }
 }
 
 // New words for a Did you you sent. Only while they have not answered it;
@@ -974,11 +985,18 @@ export async function answerSend(id, keep) {
     // Already answered on another phone is fine.
     return error && error.code !== '23505' ? bad(error) : { miss: '' }
   }
-  const { error } = await db
+  const { data, error } = await db
     .from('sends')
     .update({ state: keep ? 'kept' : 'passed' })
     .eq('id', id)
-  return error ? bad(error) : { miss: '' }
+    .eq('state', 'sent')
+    .select('id')
+  if (error) return bad(error)
+  if (data?.length) return { miss: '' }
+  // Nothing changed. Still there: another phone answered it, which is fine.
+  // Gone: they took it back.
+  const { data: still } = await db.from('sends').select('id').eq('id', id).maybeSingle()
+  return still ? { miss: '' } : { miss: 'sent.gone' }
 }
 
 // Blocking ---------------------------------------------------------------
@@ -1469,10 +1487,57 @@ function pulseEmit(next) {
   for (const fn of pulse.subs) fn(next)
 }
 
-async function claimAutoSends(db) {
-  const { data, error } = await db.rpc('claim_auto_sends')
+// Auto added sends already on this phone's shelf but not yet kept on the
+// server, so a phone that closed between the two steps does not add them twice.
+const AUTO_ADDED_KEY = 'did-i-auto-added'
+
+function readAutoAdded() {
+  try {
+    const list = JSON.parse(localStorage.getItem(AUTO_ADDED_KEY) || '[]')
+    return new Set(Array.isArray(list) ? list : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function writeAutoAdded(ids) {
+  try {
+    localStorage.setItem(AUTO_ADDED_KEY, JSON.stringify([...ids].slice(-200)))
+  } catch {
+    // Without storage a rare close in between can add one twice; nothing is lost.
+  }
+}
+
+async function autoSendsWaiting(db) {
+  const { data, error } = await db.rpc('auto_sends_waiting')
   if (error) return []
-  return (data || []).filter((row) => String(row.question || '').trim())
+  return data || []
+}
+
+// Shelf first, then kept on the server: a failure in between leaves the send
+// waiting for the next look instead of losing it.
+async function addAutoSends(db, adder) {
+  const waiting = await autoSendsWaiting(db)
+  if (!waiting.length) return
+  const added = readAutoAdded()
+  const fresh = waiting.filter((row) => !added.has(row.send_id) && String(row.question || '').trim())
+  if (fresh.length) {
+    let senders = new Map()
+    try {
+      senders = await peopleByIds(db)
+    } catch {
+      // Names are a nice to have; the questions still go on tonight.
+    }
+    // Nobody chose these for tonight, so they are optional (see normalizeLamp).
+    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, person: senders.get(row.sender_id) })))
+    for (const row of fresh) added.add(row.send_id)
+    writeAutoAdded(added)
+  }
+  const ids = waiting.map((row) => row.send_id)
+  const { error } = await db.rpc('keep_auto_sends', { ids })
+  if (error) return
+  for (const id of ids) added.delete(id)
+  writeAutoAdded(added)
 }
 
 async function pulseLook() {
@@ -1484,14 +1549,7 @@ async function pulseLook() {
     pulse.at = Date.now()
     // Only claim while something is there to put the questions on tonight.
     const adder = pulse.adder
-    const claimed = adder ? await claimAutoSends(db) : []
-    // Straight onto tonight before anything else can fail; the server has
-    // already marked these kept.
-    // Nobody chose these for tonight, so they are optional (see normalizeLamp).
-    if (claimed.length) {
-      const senders = await peopleByIds(db)
-      adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, person: senders.get(row.sender_id) })))
-    }
+    if (adder) await addAutoSends(db, adder)
     const fromDidI = adder ? await claimDidITonight(db, user) : []
     if (fromDidI.length) adder(fromDidI)
     const [waiting, asks] = await Promise.all([

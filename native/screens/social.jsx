@@ -820,7 +820,7 @@ export function PeopleScreen({ book, onChange }) {
       </View>
 
       {tab === 'friends' && links.asked.length ? (
-        <>
+        <Reveal key="asks" style={styles.tabBody}>
           <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
           {links.asked.map((row) => (
             <PersonCard
@@ -838,11 +838,11 @@ export function PeopleScreen({ book, onChange }) {
               }
             />
           ))}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'friends' ? (
-        <>
+        <Reveal key="friends" style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.friends')}
@@ -886,11 +886,11 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'families' ? (
-        <>
+        <Reveal key="families" style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -927,19 +927,19 @@ export function PeopleScreen({ book, onChange }) {
         </EmptyCard>
       )}
       {families.length ? null : <JoinFamilyCard colors={colors} />}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'we' ? (
-        <>
+        <Reveal key="we" style={styles.tabBody}>
       {/* The tab already says Did we; no second header. */}
       <WeHomeList book={book} onChange={onChange} />
-        </>
+        </Reveal>
       ) : null}
 
       {/* You: only on the Friends tab, so it does not repeat on every tab. */}
       {tab === 'friends' ? (
-        <>
+        <Reveal key="you" style={styles.tabBody}>
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}
@@ -987,7 +987,7 @@ export function PeopleScreen({ book, onChange }) {
         onPress={() => goHash('/people/connect')}
       />
 
-        </>
+        </Reveal>
       ) : null}
       {links.sent.length ? (
         <Meta colors={colors}>
@@ -2367,7 +2367,10 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     setMiss('')
     const { miss: why } = await answerSend(row.id, keep)
     answering.current.delete(row.id)
-    if (why) return setMiss(tMiss(why))
+    if (why) {
+      setMiss(tMiss(why))
+      return why === 'sent.gone' ? load() : undefined
+    }
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
@@ -2714,6 +2717,8 @@ function askShown(question) {
 }
 
 const styles = StyleSheet.create({
+  // A tab body: the page gap does not reach inside a wrapper, so it keeps its own.
+  tabBody: { gap: 12 },
   // The 180 preview tile is 216 tall around a ~143 tall card; the box fits the
   // card plus frame overhang so the sheet has no empty band under it.
   cardBig: { width: '100%', height: 184, alignItems: 'center', justifyContent: 'center' },

@@ -3,7 +3,7 @@ import { t } from './i18n.js'
 // Cards from other people that ride the Tonight swipe after your own:
 // open family questions, then Did you asks due tonight. They never count
 // toward your own streak or night.
-export function peopleTonightItems({ familyRows = [], asks = [], night, gone = [] }) {
+export function peopleTonightItems({ familyRows = [], asks = [], night, gone = [], now = Date.now() }) {
   const out = []
   for (const row of familyRows) {
     if (row.answer) continue
@@ -11,11 +11,22 @@ export function peopleTonightItems({ familyRows = [], asks = [], night, gone = [
   }
   for (const row of asks) {
     if (row.appSend || row.kind !== 'todo' || row.state !== 'sent') continue
-    if (row.due_on && night && row.due_on > night) continue
+    if (row.due_on && night && row.due_on > night && !justSentAhead(row, night, now)) continue
     out.push({ key: `ask:${row.id}`, kind: 'ask', title: row.question, row })
   }
   const skip = new Set(gone)
   return out.filter((item) => !skip.has(item.key))
+}
+
+// A send defaults to the sender's night. A sender a timezone ahead can
+// stamp tomorrow on an ask made for tonight here, so one day ahead still
+// shows while the send is under a day old.
+function justSentAhead(row, night, now) {
+  const made = Date.parse(row.made_at || '')
+  if (!made || now - made > 24 * 60 * 60 * 1000) return false
+  const next = new Date(`${night}T12:00:00Z`)
+  next.setUTCDate(next.getUTCDate() + 1)
+  return row.due_on <= next.toISOString().slice(0, 10)
 }
 
 // The small chip next to your own count: what other people put on tonight,
