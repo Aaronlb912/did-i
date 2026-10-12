@@ -6264,6 +6264,12 @@ await testAsync('did we look: status line, face overflow, done rule, dots', asyn
   for (const key of ['we.ofDid', 'we.doneAll', 'we.yourTurnShort', 'we.rule.most', 'we.emptyFriend', 'we.newButton']) assert.ok(en.includes(`'${key}':`), key)
 })
 
+test('card frame art draws over a card that sets its own zIndex (First light in Collection)', () => {
+  const src = readSrc('native/components/frames/CardFrame.jsx')
+  assert.ok(src.includes('style={[styles.fill, styles.over]}'), 'Over layer uses styles.over')
+  assert.match(src, /over: \{ zIndex: \d+, elevation: \d+ \}/)
+})
+
 test('the watch app target exists and CI builds it without signing', () => {
   const read = (p) => readFileSync(path.join(checkRoot, p), 'utf8')
   const target = JSON.parse(read('targets/watch/expo-target.config.json'))

@@ -108,7 +108,7 @@ function FrameBody({
       ) : null}
       {children}
       {f && Over ? (
-        <View pointerEvents="none" style={styles.fill}>
+        <View pointerEvents="none" style={[styles.fill, styles.over]}>
           <Over f={f} />
         </View>
       ) : null}
@@ -118,4 +118,8 @@ function FrameBody({
 
 const styles = StyleSheet.create({
   fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  // Over always draws on top, even over a card that sets its own zIndex (a gem
+  // look's card in Collection did, and hid First light's moon behind it).
+  // elevation does the same on Android, where a raised card draws above later siblings.
+  over: { zIndex: 12, elevation: 12 },
 })
