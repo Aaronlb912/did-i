@@ -1,7 +1,7 @@
 # Shop drops
 
 Every two weeks the shop gets a batch: **2 gem looks, 1 coin look, 2 cheers,
-1 buddy, 2 buddy accessories, 3 card frames**. Batches are built ahead and ship dated, so
+1 buddy, 4 buddy accessories, 3 card frames** (4 accessories from the 2026-12-04 drop on). Batches are built ahead and ship dated, so
 they appear on their day with no store build.
 
 Drop days are every other **Friday**, starting **2026-10-09**

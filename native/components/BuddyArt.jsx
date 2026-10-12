@@ -160,11 +160,9 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
   if (id === 'turtle') {
     return (
       <View style={{ width, height }}>
-        <View style={spot(box, 5, 33, 7.6, 9, coat.ear)} />
-        <View style={spot(box, 35.4, 33, 7.6, 9, coat.ear)} />
         <View style={spot(box, 12.5, 43, 9, 6, coat.ear)} />
         <View style={spot(box, 26.5, 43, 9, 6, coat.ear)} />
-        <View style={spot(box, 8, 26, 32, 22, '#7d5a2e')} />
+        <View style={spot(box, 8, 26, 32, 22, '#6e4f27')} />
         <View style={spot(box, 9.4, 26.6, 29.2, 19.6, coat.belly)} />
         <View style={spot(box, 20.5, 35.4, 7, 8, '#c99f62', 2)} />
         <View style={spot(box, 12.8, 15, 22.4, 20, coat.body)} />
@@ -669,15 +667,13 @@ function BuddyDrawing({ id, width, height, eyes }) {
   if (id === 'turtle') {
     return (
       <Svg width={width} height={height} viewBox="0 0 48 58">
-        <Ellipse cx="8.8" cy="37.5" rx="3.2" ry="4.8" fill="#8fd27a" transform="rotate(-38 8.8 37.5)" />
-        <Ellipse cx="39.2" cy="37.5" rx="3.2" ry="4.8" fill="#8fd27a" transform="rotate(38 39.2 37.5)" />
         <Ellipse cx="17" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
         <Ellipse cx="31" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
-        <Ellipse cx="24" cy="37" rx="16" ry="11" fill="#7d5a2e" />
-        <Ellipse cx="24" cy="36.4" rx="14.6" ry="9.8" fill="#a0753e" />
-        <Polygon points="24,35.4 27.4,37.4 27.4,41.4 24,43.4 20.6,41.4 20.6,37.4" fill="#c99f62" />
-        <Polygon points="14.2,34.6 16.8,36.1 16.8,39.1 14.2,40.6 11.6,39.1 11.6,36.1" fill="#c99f62" />
-        <Polygon points="33.8,34.6 36.4,36.1 36.4,39.1 33.8,40.6 31.2,39.1 31.2,36.1" fill="#c99f62" />
+        <Path d="M7.5 42 C7.5 28 14.5 23 24 23 C33.5 23 40.5 28 40.5 42 Q24 47 7.5 42 Z" fill="#6e4f27" />
+        <Path d="M9.6 40.8 C9.6 29.5 15.6 25.2 24 25.2 C32.4 25.2 38.4 29.5 38.4 40.8 Q24 45 9.6 40.8 Z" fill="#a0753e" />
+        <Path d="M18.6 35.5 H29.4 L31 41.6 Q24 43.8 17 41.6 Z M11.3 39.8 C11.2 34 12.8 30.2 16.2 28.4 L17.2 35 L15.6 41.1 Q13 40.8 11.3 39.8 Z M36.7 39.8 C36.8 34 35.2 30.2 31.8 28.4 L30.8 35 L32.4 41.1 Q35 40.8 36.7 39.8 Z" fill="#c99f62" />
+        <Path d="M8.4 41.8 Q24 46.6 39.6 41.8" fill="none" stroke="#e2c58c" strokeWidth="1.5" strokeLinecap="round" />
+        <Ellipse cx="13.2" cy="33.5" rx="1.1" ry="2.8" fill="#ffffff" opacity="0.3" transform="rotate(22 13.2 33.5)" />
         <Ellipse cx="24" cy="25" rx="11.2" ry="10" fill="#9edb86" />
         {eyes ? <EyesInline parts={parts} id="turtle" /> : null}
         <Path d="M21.8 29.4 Q24 31.2 26.2 29.4" fill="none" stroke="#2f5a28" strokeWidth="1" strokeLinecap="round" />

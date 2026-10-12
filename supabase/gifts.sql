@@ -154,14 +154,24 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_unt
   ('accessory', 'goggles', 0, 40, '2026-11-20', null),
   ('accessory', 'earmuffs', 0, 25, '2026-12-04', null),
   ('accessory', 'snowglobe', 0, 40, '2026-12-04', null),
+  ('accessory', 'icewings', 0, 25, '2026-12-04', null),
+  ('accessory', 'holly', 0, 15, '2026-12-04', null),
   ('accessory', 'fairylights', 0, 40, '2026-12-18', null),
   ('accessory', 'candycane', 0, 15, '2026-12-18', null),
+  ('accessory', 'elfhat', 0, 25, '2026-12-18', null),
+  ('accessory', 'peppermint', 0, 15, '2026-12-18', null),
   ('accessory', 'pixelshades', 0, 40, '2027-01-01', null),
   ('accessory', 'streamers', 0, 25, '2027-01-01', null),
+  ('accessory', 'tiara', 0, 25, '2027-01-01', null),
+  ('accessory', 'horn', 0, 15, '2027-01-01', null),
   ('accessory', 'propeller', 0, 40, '2027-01-15', null),
   ('accessory', 'kite', 0, 25, '2027-01-15', null),
+  ('accessory', 'cateye', 0, 25, '2027-01-15', null),
+  ('accessory', 'planes', 0, 15, '2027-01-15', null),
   ('accessory', 'dragonfly', 0, 40, '2027-01-29', null),
-  ('accessory', 'orbit', 0, 15, '2027-01-29', null)
+  ('accessory', 'orbit', 0, 15, '2027-01-29', null),
+  ('accessory', 'boppers', 0, 15, '2027-01-29', null),
+  ('accessory', 'lantern', 0, 25, '2027-01-29', null)
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 

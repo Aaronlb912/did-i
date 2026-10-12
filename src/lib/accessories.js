@@ -76,6 +76,16 @@ const box = (x, y, w, hgt, r = 0) => {
 export const STREAMERS = [[-21, -18, 86, '#f07ac0', 3.5], [19, -20, 94, '#4a9be8', 3.5], [-22, 4, 96, GOLD, 3], [20, 2, 82, '#7cc65a', 3]]
 // A few bits of confetti between them: offset, colour, turn.
 export const CONFETTI = [[-11, -21, '#4a9be8', 30], [24, -9, '#f07ac0', -20], [-25, -6, '#7cc65a', 55]]
+// Ice wing outline (outward from the body, y from the wing's middle).
+export const ICE_WING = [[0, -2], [6, -12], [9, -9], [15, -14.5], [13, -4.5], [17.5, -2], [10.5, 2], [12, 6.5], [4.5, 3.2], [0, 2.5]]
+// Holly sprigs: offset from the eyes, size, turn.
+export const HOLLY = [[-19, -9, 1, -15], [19, -3, 0.9, 20], [-17, 10, 0.8, 10]]
+// Paper planes: offset from the eyes, turn, size, flipped to face left.
+export const PLANES = [[-18, -7, -22, 1.2, false], [17, -14, -22, 1, true]]
+// Party horn fringe: from (across the bell) to (spread), colour.
+export const HORN_FRINGE = [[-2.6, -4.6, '#4a9be8'], [-0.9, -1.4, '#f07ac0'], [0.9, 1.4, '#7cc65a'], [2.6, 4.6, '#4a9be8']]
+// A bopper's spring, zigzagging up from the band (x out from the middle, y from the band).
+export const BOPPER_SPRING = [[3.5, -2.4], [4.6, -4], [3.6, -5.2], [5, -6.6], [4, -7.8], [5.6, -9.4], [5.2, -10.6]]
 // A curly ribbon (a looped cycloid) falling along `ang` degrees.
 export const curl = (x0, y0, ang, steps, turns) => {
   const c = Math.cos((ang * Math.PI) / 180)
@@ -634,6 +644,126 @@ const DRAW = {
       h('circle', { cx: mx + 0.7, cy: my - 1.3, r: 0.35, fill: '#cbc2aa' }),
     ]
   },
+  // Ice wings: jagged shards of ice, a paler inner shard and white facet lines.
+  icewings: (h, a) => {
+    const y = mid(a) - 2
+    const x0 = a.side - 3
+    return [-1, 1].map((d) => {
+      const X = (v) => (24 + d * (x0 + v)).toFixed(2)
+      const P = (pts) => 'M' + pts.map(([u, v]) => `${X(u)} ${(y + v).toFixed(2)}`).join(' L') + ' Z'
+      return h('g', null,
+        h('path', { fill: '#a9d8f5', d: P(ICE_WING) }),
+        h('path', { fill: '#e3f4ff', d: P([[1, -1], [6, -9.5], [8.6, -7.2], [12.5, -11.5], [10.6, -3.4], [1, 0.5]]) }),
+        h('path', { fill: 'none', stroke: '#ffffff', strokeWidth: 0.6, strokeLinecap: 'round', d: [[6, -11], [14.6, -13.6], [16.4, -2], [11.6, 5.6]].map(([u, v]) => `M${X(0.6)} ${y} L${X(u)} ${y + v}`).join(' ') }),
+      )
+    })
+  },
+  // Holly sprigs: two spiky leaves and three red berries each.
+  holly: (h, a) => HOLLY.map(([dx, dy, k, turn]) => {
+    const leaf = 'M0 0 L-1.8 -2 L-3.2 -1 L-4.8 -2.8 L-5.8 -1.2 L-7.8 -1.8 L-7 0.3 L-5.4 1.3 L-3.6 0.7 L-2.3 1.8 Z'
+    return h('g', { transform: `translate(${24 + dx} ${a.ey + dy}) rotate(${turn}) scale(${k})` },
+      h('path', { d: leaf, fill: '#2f8a4a' }),
+      h('g', { transform: 'scale(-1 1)' }, h('path', { d: leaf, fill: '#3fa45c' })),
+      h('path', { d: 'M-0.6 0 L-6.4 -0.4 M0.6 0 L6.4 -0.4', fill: 'none', stroke: '#1f5e3c', strokeWidth: 0.4 }),
+      ...[[0, 0.6], [-1.3, 1.8], [1.3, 1.8]].map(([bx, by]) => h('circle', { cx: bx, cy: by, r: 1.15, fill: '#d83a3a' })),
+      h('circle', { cx: -0.35, cy: 0.25, r: 0.35, fill: '#ffffff', opacity: 0.8 }),
+    )
+  }),
+  // An elf hat: green, flopping to one side, a bell at the tip, a zigzag cuff.
+  elfhat: (h, a) => onHead(h, a, a.crown + 1, (y) => [
+    h('path', { d: `M15.5 ${y} C16 ${y - 6} 20 ${y - 10} 25 ${y - 11.2} C28.5 ${y - 12} 32 ${y - 11.2} 34.5 ${y - 8.5} C31 ${y - 9.5} 29 ${y - 7.5} 31.5 ${y} Z`, fill: '#3f9e6a' }),
+    h('path', { d: `M24 ${y - 10.9} C27.5 ${y - 11.6} 31 ${y - 10.8} 33.4 ${y - 9}`, fill: 'none', stroke: '#2f7a50', strokeWidth: 0.7 }),
+    h('path', { d: `M14.5 ${y + 1.6} V${y - 1.6} L17 ${y - 3.6} L19.5 ${y - 1.6} L22 ${y - 3.6} L24.5 ${y - 1.6} L27 ${y - 3.6} L29.5 ${y - 1.6} L32 ${y - 3.6} L33.5 ${y - 1.6} V${y + 1.6} Z`, fill: '#e2463c' }),
+    h('circle', { cx: 35, cy: y - 7.8, r: 1.7, fill: GOLD }),
+    h('path', { d: `M34.2 ${y - 7.2} H35.8`, fill: 'none', stroke: shade(GOLD, 0.6), strokeWidth: 0.5 }),
+  ]),
+  // Peppermint glasses: round lenses swirled red and white like the candy.
+  peppermint: (h, a) => {
+    const [l, r] = a.ex
+    const R = Math.min(a.er + 0.8, (r - l) / 2 - 0.4)
+    const lens = (c) => [
+      h('circle', { cx: c, cy: a.ey, r: R, fill: '#ffffff' }),
+      ...[0, 120, 240].map((deg) => {
+        const P = (th, rr) => `${(c + Math.cos((th * Math.PI) / 180) * rr).toFixed(2)} ${(a.ey + Math.sin((th * Math.PI) / 180) * rr).toFixed(2)}`
+        return h('path', { d: `M${c} ${a.ey} Q${P(deg + 10, R * 0.75)} ${P(deg + 40, R - 0.3)} L${P(deg + 85, R - 0.3)} Q${P(deg + 50, R * 0.55)} ${c} ${a.ey} Z`, fill: '#e2463c' })
+      }),
+      h('circle', { cx: c, cy: a.ey, r: R, fill: 'none', stroke: '#c8303a', strokeWidth: 0.8 }),
+    ]
+    return [
+      h('path', { d: `M${l + R} ${a.ey - 0.6} Q24 ${a.ey - 2.2} ${r - R} ${a.ey - 0.6}`, fill: 'none', stroke: '#c8303a', strokeWidth: 1.1 }),
+      ...lens(l),
+      ...lens(r),
+    ]
+  },
+  // A silver tiara: three arches over a thin band, a pink gem in the middle.
+  tiara: (h, a) => onHead(h, a, a.crown + 1, (y) => [
+    h('path', { d: `M17 ${y - 1} Q18.8 ${y - 5} 20.8 ${y - 1.6} Q24 ${y - 9} 27.2 ${y - 1.6} Q29.2 ${y - 5} 31 ${y - 1}`, fill: 'none', stroke: '#d9dde6', strokeWidth: 1.2, strokeLinejoin: 'round' }),
+    h('path', { d: box(16.6, y - 1.8, 14.8, 1.8, 0.9), fill: '#c3c9d6' }),
+    h('path', { d: `M24 ${y - 7.4} L25.3 ${y - 5.4} L24 ${y - 3.4} L22.7 ${y - 5.4} Z`, fill: '#f07ac0' }),
+    h('circle', { cx: 18.8, cy: y - 3.1, r: 0.65, fill: '#7fd6ff' }),
+    h('circle', { cx: 29.2, cy: y - 3.1, r: 0.65, fill: '#7fd6ff' }),
+    h('path', { d: `M23.6 ${y - 6} L24 ${y - 6.8}`, fill: 'none', stroke: '#ffffff', strokeWidth: 0.45, strokeLinecap: 'round' }),
+  ]),
+  // A party horn: a striped cone with a paper fringe at the wide end.
+  horn: (h, a) => {
+    const [x, y] = hand(a)
+    return [h('g', { transform: `rotate(18 ${x} ${y})` },
+      h('path', { d: box(x - 0.9, y - 1, 1.8, 2.6, 0.6), fill: '#3a3f4b' }),
+      h('path', { d: `M${x - 0.8} ${y - 0.8} L${x + 0.8} ${y - 0.8} L${x + 3} ${y - 12} L${x - 3} ${y - 12} Z`, fill: GOLD }),
+      h('path', { d: `M${x - 1.2} ${y - 3.2} L${x + 1.6} ${y - 5.4} M${x - 1.8} ${y - 6.8} L${x + 2.2} ${y - 9.6} M${x - 2.6} ${y - 10.4} L${x + 1} ${y - 12}`, fill: 'none', stroke: '#e2463c', strokeWidth: 0.9 }),
+      h('ellipse', { cx: x, cy: y - 12, rx: 3.1, ry: 1.1, fill: shade(GOLD, 0.8) }),
+      ...HORN_FRINGE.map(([u, v, c]) => h('path', { d: `M${x + u} ${y - 12.6} L${x + v} ${y - 16}`, fill: 'none', stroke: c, strokeWidth: 0.8, strokeLinecap: 'round' })),
+    )]
+  },
+  // Cat-eye glasses: dark lenses, frames that sweep up to a point with a gem.
+  cateye: (h, a, t) => {
+    const l = a.ex[0]
+    const s = Math.min(a.er + 0.9, (a.ex[1] - a.ex[0]) / 2 - 0.3)
+    const y = a.ey
+    const frame = `M${l + s} ${y - s * 0.4} Q${l + s} ${y + s * 0.95} ${l} ${y + s * 0.85} Q${l - s} ${y + s * 0.8} ${l - s * 1.05} ${y} Q${l - s * 1.3} ${y - s * 0.8} ${l - s * 1.6} ${y - s * 1.3} Q${l - s * 0.4} ${y - s * 1.05} ${l} ${y - s * 0.9} Q${l + s * 0.9} ${y - s * 0.9} ${l + s} ${y - s * 0.4} Z`
+    const side = (mirror) => h('g', mirror ? { transform: 'translate(48 0) scale(-1 1)' } : null,
+      h('path', { d: frame, fill: t }),
+      h('ellipse', { cx: l, cy: y, rx: s * 0.74, ry: s * 0.6, fill: '#22252c' }),
+      h('path', { d: box(l - s * 0.5, y - s * 0.4, s * 0.55, 0.7, 0.35), fill: '#ffffff', opacity: 0.5 }),
+      h('circle', { cx: l - s * 1.25, cy: y - s * 0.95, r: 0.6, fill: '#ffffff' }),
+    )
+    return [
+      h('path', { d: `M${l + s} ${y - 0.6} L${48 - l - s} ${y - 0.6}`, fill: 'none', stroke: t, strokeWidth: 1.1 }),
+      side(false),
+      side(true),
+    ]
+  },
+  // Two paper planes climbing, a dotted trail behind each.
+  planes: (h, a) => PLANES.map(([dx, dy, turn, k, flip]) =>
+    h('g', { transform: `translate(${24 + dx} ${a.ey + dy}) scale(${flip ? -k : k} ${k}) rotate(${turn})` },
+      h('path', { d: 'M4.2 0 L-4 -2.8 L-1.6 0 Z', fill: '#ffffff' }),
+      h('path', { d: 'M4.2 0 L-1.6 0 L-3.2 2.2 Z', fill: '#cdd6e4' }),
+      h('path', { d: 'M4.2 0 L-1.6 0', fill: 'none', stroke: '#8f9db3', strokeWidth: 0.4 }),
+      ...[[-5.6, 0.6, 0.5], [-7.6, 1.4, 0.4]].map(([cx, cy, r]) => h('circle', { cx, cy, r, fill: '#8fb6dc' })),
+    )),
+  // Head boppers: a headband with two springs and a star on each.
+  boppers: (h, a, t) => onHead(h, a, a.crown + 1, (y) => [
+    ...[-1, 1].map((d) => h('path', { d: BOPPER_SPRING.map(([u, v], i) => `${i ? 'L' : 'M'}${24 + d * u} ${y + v}`).join(' '), fill: 'none', stroke: '#3a3f4b', strokeWidth: 0.7, strokeLinejoin: 'round' })),
+    h('path', { d: `M15.5 ${y + 1.5} Q24 ${y - 5.5} 32.5 ${y + 1.5}`, fill: 'none', stroke: t, strokeWidth: 1.5, strokeLinecap: 'round' }),
+    h('polygon', { points: star(18.8, y - 12, 2.6), fill: GOLD }),
+    h('polygon', { points: star(29.2, y - 12, 2.6), fill: '#f07ac0' }),
+  ]),
+  // A red paper lantern on a stick: gold caps, ribs and a tassel.
+  lantern: (h, a) => {
+    const [x, y] = hand(a)
+    const cx = x + 1
+    const cy = y - 9.5
+    return [
+      h('path', { d: `M${x - 2} ${y + 2} L${cx} ${y - 20}`, fill: 'none', stroke: '#9a6538', strokeWidth: 0.9, strokeLinecap: 'round' }),
+      h('path', { d: `M${cx} ${y - 19.6} V${cy - 5.6}`, fill: 'none', stroke: '#6b4a32', strokeWidth: 0.5 }),
+      h('path', { d: `M${cx - 0.9} ${cy + 4.6} V${cy + 8} M${cx} ${cy + 4.6} V${cy + 8.6} M${cx + 0.9} ${cy + 4.6} V${cy + 8}`, fill: 'none', stroke: GOLD, strokeWidth: 0.6 }),
+      h('ellipse', { cx, cy, rx: 4.6, ry: 4.6, fill: '#e2463c' }),
+      h('path', { d: `M${cx} ${cy - 4.4} V${cy + 4.4} M${cx - 2.3} ${cy - 3.9} Q${cx - 3.4} ${cy} ${cx - 2.3} ${cy + 3.9} M${cx + 2.3} ${cy - 3.9} Q${cx + 3.4} ${cy} ${cx + 2.3} ${cy + 3.9}`, fill: 'none', stroke: '#b23030', strokeWidth: 0.5 }),
+      h('path', { d: box(cx - 2.6, cy - 5.6, 5.2, 1.6, 0.5), fill: GOLD }),
+      h('path', { d: box(cx - 2.6, cy + 3.9, 5.2, 1.6, 0.5), fill: GOLD }),
+      h('ellipse', { cx: cx - 2, cy: cy - 1.2, rx: 0.8, ry: 1.6, fill: '#ffffff', opacity: 0.35 }),
+    ]
+  },
   raincloud: (h, a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [
@@ -707,6 +837,16 @@ const ALL_ACCESSORIES = [
   { id: 'kite', slot: 'held', tier: 'standard', from: '2027-01-15' },
   { id: 'dragonfly', slot: 'back', tier: 'rare', from: '2027-01-29' },
   { id: 'orbit', slot: 'around', tier: 'common', from: '2027-01-29' },
+  { id: 'icewings', slot: 'back', tier: 'standard', from: '2026-12-04' },
+  { id: 'holly', slot: 'around', tier: 'common', from: '2026-12-04' },
+  { id: 'elfhat', slot: 'head', tier: 'standard', from: '2026-12-18' },
+  { id: 'peppermint', slot: 'eyes', tier: 'common', from: '2026-12-18' },
+  { id: 'tiara', slot: 'head', tier: 'standard', from: '2027-01-01' },
+  { id: 'horn', slot: 'held', tier: 'common', from: '2027-01-01' },
+  { id: 'cateye', slot: 'eyes', tier: 'standard', from: '2027-01-15' },
+  { id: 'planes', slot: 'around', tier: 'common', from: '2027-01-15' },
+  { id: 'boppers', slot: 'head', tier: 'common', from: '2027-01-29' },
+  { id: 'lantern', slot: 'held', tier: 'standard', from: '2027-01-29' },
 ].map((item) => ({ ...item, coins: ACCESSORY_TIERS[item.tier] }))
 
 export const ACCESSORIES = ALL_ACCESSORIES

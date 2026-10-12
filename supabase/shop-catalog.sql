@@ -142,14 +142,24 @@ insert into public.shop_catalog (kind, item_id, coins, live_from) values
   ('accessory', 'goggles', 40, '2026-11-20'),
   ('accessory', 'earmuffs', 25, '2026-12-04'),
   ('accessory', 'snowglobe', 40, '2026-12-04'),
+  ('accessory', 'icewings', 25, '2026-12-04'),
+  ('accessory', 'holly', 15, '2026-12-04'),
   ('accessory', 'fairylights', 40, '2026-12-18'),
   ('accessory', 'candycane', 15, '2026-12-18'),
+  ('accessory', 'elfhat', 25, '2026-12-18'),
+  ('accessory', 'peppermint', 15, '2026-12-18'),
   ('accessory', 'pixelshades', 40, '2027-01-01'),
   ('accessory', 'streamers', 25, '2027-01-01'),
+  ('accessory', 'tiara', 25, '2027-01-01'),
+  ('accessory', 'horn', 15, '2027-01-01'),
   ('accessory', 'propeller', 40, '2027-01-15'),
   ('accessory', 'kite', 25, '2027-01-15'),
+  ('accessory', 'cateye', 25, '2027-01-15'),
+  ('accessory', 'planes', 15, '2027-01-15'),
   ('accessory', 'dragonfly', 40, '2027-01-29'),
-  ('accessory', 'orbit', 15, '2027-01-29')
+  ('accessory', 'orbit', 15, '2027-01-29'),
+  ('accessory', 'boppers', 15, '2027-01-29'),
+  ('accessory', 'lantern', 25, '2027-01-29')
 on conflict (kind, item_id) do update set coins = excluded.coins, live_from = excluded.live_from;
 
 -- Card frames (src/lib/frames.js, a test keeps prices equal). Still frames

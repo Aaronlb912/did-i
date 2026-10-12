@@ -7,7 +7,7 @@
 //   l  [x1, y1, x2, y2, colour, width]
 //   r  [x, y, w, h, fill, corner radius, rotate]  rounded rectangle
 //   o  [cx, cy, rx, ry, colour, line width]       ring
-import { CONFETTI, STREAMERS, accessoryById, curl, orbitRing, wornLayers } from './accessories.js'
+import { BOPPER_SPRING, CONFETTI, HOLLY, HORN_FRINGE, PLANES, STREAMERS, accessoryById, curl, orbitRing, wornLayers } from './accessories.js'
 
 const AT = {
   cat: { ex: [18, 30], ey: 28, er: 3.6, crown: 17, neck: 37, side: 13 },
@@ -582,6 +582,127 @@ const SHAPES = {
       ['e', mx - 0.9, my - 0.6, 0.7, 0.7, '#cbc2aa'],
       ['e', mx + 0.9, my + 0.8, 0.5, 0.5, '#cbc2aa'],
       ['e', mx + 0.7, my - 1.3, 0.35, 0.35, '#cbc2aa'],
+    ]
+  },
+  // Shards as triangles over an oval, with the facet lines.
+  icewings: (a) => {
+    const y = mid(a) - 2
+    const x0 = a.side - 3
+    return [-1, 1].flatMap((d) => {
+      const X = (v) => 24 + d * (x0 + v)
+      return [
+        ['e', X(8.5), y - 1, 8.5, 4, '#a9d8f5', d * -12],
+        ['t', X(6.5), y - 4, 3, 8, '#a9d8f5'],
+        ['t', X(13.5), y - 3.5, 3, 11, '#a9d8f5'],
+        ['t', X(10.5), y + 1, 2.4, -5.5, '#a9d8f5'],
+        ['t', X(7), y - 2, 2.4, 6.5, '#e3f4ff'],
+        ...[[6, -11], [14.6, -13.6], [16.4, -2], [11.6, 5.6]].map(([u, v]) => ['l', X(0.6), y, X(u), y + v, '#ffffff', 0.6]),
+      ]
+    })
+  },
+  // Leaves as pointed ovals, berries as dots.
+  holly: (a) => HOLLY.flatMap(([dx, dy, k, turn]) => {
+    const th = (turn * Math.PI) / 180
+    const P = (u, v) => [24 + dx + (u * Math.cos(th) - v * Math.sin(th)) * k, a.ey + dy + (u * Math.sin(th) + v * Math.cos(th)) * k]
+    return [
+      ['e', ...P(-3.8, -0.4), 3.9 * k, 1.6 * k, '#2f8a4a', turn - 6],
+      ['e', ...P(3.8, -0.4), 3.9 * k, 1.6 * k, '#3fa45c', turn + 6],
+      ...[[0, 0.6], [-1.3, 1.8], [1.3, 1.8]].map(([u, v]) => ['e', ...P(u, v), 1.15 * k, 1.15 * k, '#d83a3a']),
+    ]
+  }),
+  elfhat: (a) => onHead(a, a.crown + 1, (y) => [
+    ['e', 23.5, y - 2.6, 8.2, 5.6, '#3f9e6a'],
+    ['r', 26.5, y - 11.4, 4.2, 7.5, '#3f9e6a', 2, 55],
+    ['r', 14.5, y - 1.6, 19, 3.2, '#e2463c', 0.4],
+    ...[17, 22, 27, 32].map((x) => ['t', x, y - 1.5, 2.4, 2.1, '#e2463c']),
+    ['e', 35, y - 7.8, 1.7, 1.7, GOLD],
+  ]),
+  peppermint: (a) => {
+    const [l, r] = a.ex
+    const R = Math.min(a.er + 0.8, (r - l) / 2 - 0.4)
+    return [
+      ['l', l + R, a.ey - 0.8, r - R, a.ey - 0.8, '#c8303a', 1.1],
+      ...[l, r].flatMap((c) => [
+        ['e', c, a.ey, R, R, '#ffffff'],
+        ...[25, 145, 265].map((deg) => ['e', c + Math.cos((deg * Math.PI) / 180) * R * 0.5, a.ey + Math.sin((deg * Math.PI) / 180) * R * 0.5, R * 0.5, R * 0.24, '#e2463c', deg + 20]),
+        ['o', c, a.ey, R, R, '#c8303a', 0.8],
+      ]),
+    ]
+  },
+  tiara: (a) => onHead(a, a.crown + 1, (y) => [
+    ['t', 18.9, y - 1.4, 1.9, 3.6, '#d9dde6'],
+    ['t', 24, y - 1.4, 3.2, 7.4, '#d9dde6'],
+    ['t', 29.1, y - 1.4, 1.9, 3.6, '#d9dde6'],
+    ['r', 16.6, y - 1.8, 14.8, 1.8, '#c3c9d6', 0.9],
+    ['e', 24, y - 5.4, 1.1, 1.8, '#f07ac0'],
+    ['e', 18.8, y - 3.1, 0.65, 0.65, '#7fd6ff'],
+    ['e', 29.2, y - 3.1, 0.65, 0.65, '#7fd6ff'],
+  ]),
+  // The cone as a turned bar; the fringe as lines.
+  horn: (a) => {
+    const [x, y] = hand(a)
+    const th = (18 * Math.PI) / 180
+    const P = (u, v) => [x + u * Math.cos(th) - v * Math.sin(th), y + u * Math.sin(th) + v * Math.cos(th)]
+    const [cx, cy] = P(0, -6.4)
+    return [
+      ['r', ...P(-0.9, -1), 1.8, 2.6, '#3a3f4b', 0.6, 18],
+      ['r', cx - 1.9, cy - 5.6, 3.8, 11.2, GOLD, 1.2, 18],
+      ['l', ...P(-1.2, -3.2), ...P(1.6, -5.4), '#e2463c', 0.9],
+      ['l', ...P(-1.8, -6.8), ...P(2.2, -9.6), '#e2463c', 0.9],
+      ['e', ...P(0, -12), 3.1, 1.1, shade(GOLD, 0.8), 18],
+      ...HORN_FRINGE.map(([u, v, c]) => ['l', ...P(u, -12.6), ...P(v, -16), c, 0.8]),
+    ]
+  },
+  cateye: (a, t) => {
+    const l = a.ex[0]
+    const s = Math.min(a.er + 0.9, (a.ex[1] - a.ex[0]) / 2 - 0.3)
+    const y = a.ey
+    return [
+      ['l', l + s, y - 0.6, 48 - l - s, y - 0.6, t, 1.1],
+      ...[1, -1].flatMap((d) => {
+        const X = (v) => 24 + d * (v - 24)
+        return [
+          ['e', X(l), y, s, s * 0.88, t],
+          ['e', X(l - s * 1.05), y - s * 0.75, s * 0.75, s * 0.32, t, d * 40],
+          ['e', X(l), y, s * 0.74, s * 0.6, '#22252c'],
+          ['e', X(l - s * 1.25), y - s * 0.95, 0.6, 0.6, '#ffffff'],
+        ]
+      }),
+    ]
+  },
+  planes: (a) => PLANES.flatMap(([dx, dy, turn, k, flip]) => {
+    const th = (turn * Math.PI) / 180
+    const f = flip ? -1 : 1
+    const P = (u, v) => [24 + dx + f * (u * Math.cos(th) - v * Math.sin(th)) * k, a.ey + dy + (u * Math.sin(th) + v * Math.cos(th)) * k]
+    return [
+      ['e', ...P(0.4, -1), 3.9 * k, 1.2 * k, '#ffffff', f * (turn + 18)],
+      ['e', ...P(0.6, 0.7), 3.4 * k, 0.9 * k, '#cdd6e4', f * (turn - 14)],
+      ['e', ...P(-5.6, 0.6), 0.5 * k, 0.5 * k, '#8fb6dc'],
+      ['e', ...P(-7.6, 1.4), 0.4 * k, 0.4 * k, '#8fb6dc'],
+    ]
+  }),
+  boppers: (a, t) => onHead(a, a.crown + 1, (y) => {
+    const band = (k) => [15.5 + 17 * k, (1 - k) ** 2 * (y + 1.5) + 2 * k * (1 - k) * (y - 5.5) + k * k * (y + 1.5)]
+    return [
+      ...[-1, 1].flatMap((d) => BOPPER_SPRING.slice(1).map(([u, v], i) => ['l', 24 + d * BOPPER_SPRING[i][0], y + BOPPER_SPRING[i][1], 24 + d * u, y + v, '#3a3f4b', 0.7])),
+      ...[0, 1, 2, 3].map((i) => ['l', ...band(i / 4), ...band((i + 1) / 4), t, 1.5]),
+      ...star(18.8, y - 12, 2.4, GOLD),
+      ...star(29.2, y - 12, 2.4, '#f07ac0'),
+    ]
+  }),
+  lantern: (a) => {
+    const [x, y] = hand(a)
+    const cx = x + 1
+    const cy = y - 9.5
+    return [
+      ['l', x - 2, y + 2, cx, y - 20, '#9a6538', 0.9],
+      ['l', cx, y - 19.6, cx, cy - 5.6, '#6b4a32', 0.5],
+      ...[-0.9, 0, 0.9].map((u) => ['l', cx + u, cy + 4.6, cx + u, cy + (u ? 8 : 8.6), GOLD, 0.6]),
+      ['e', cx, cy, 4.6, 4.6, '#e2463c'],
+      ['e', cx, cy, 2.4, 4.4, '#b23030'],
+      ['e', cx, cy, 1.8, 4.2, '#e2463c'],
+      ['r', cx - 2.6, cy - 5.6, 5.2, 1.6, GOLD, 0.5],
+      ['r', cx - 2.6, cy + 3.9, 5.2, 1.6, GOLD, 0.5],
     ]
   },
   raincloud: (a) => {
