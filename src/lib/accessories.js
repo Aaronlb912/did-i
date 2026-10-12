@@ -26,6 +26,11 @@ const AT = {
   // The bee's antennae stand tall, so head items sit up between their tips.
   hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
   otter: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 15 },
+  hedgehog: { ex: [18.5, 29.5], ey: 29, er: 3.6, crown: 16, neck: 40, side: 15 },
+  panda: { ex: [18.2, 29.8], ey: 28, er: 4.4, crown: 17, neck: 39, side: 14 },
+  duck: { ex: [18, 30], ey: 26, er: 3.7, crown: 17, neck: 40, side: 15 },
+  axolotl: { ex: [18, 30], ey: 26, er: 4, crown: 13, neck: 38, side: 14.5 },
+  turtle: { ex: [19.5, 28.5], ey: 25, er: 3.5, crown: 16, neck: 35, side: 11, back: 34 },
 }
 
 const INK = '#2d241c'
@@ -64,6 +69,45 @@ const heart = (cx, cy, s) =>
 const box = (x, y, w, hgt, r = 0) => {
   const q = Math.min(r, w / 2, hgt / 2)
   return `M${x + q} ${y} H${x + w - q} Q${x + w} ${y} ${x + w} ${y + q} V${y + hgt - q} Q${x + w} ${y + hgt} ${x + w - q} ${y + hgt} H${x + q} Q${x} ${y + hgt} ${x} ${y + hgt - q} V${y + q} Q${x} ${y} ${x + q} ${y} Z`
+}
+
+// Streamers: where each starts (from the eyes), which way it falls, its colour.
+// These three are shared with accessory-shapes.js.
+export const STREAMERS = [[-21, -18, 86, '#f07ac0', 3.5], [19, -20, 94, '#4a9be8', 3.5], [-22, 4, 96, GOLD, 3], [20, 2, 82, '#7cc65a', 3]]
+// A few bits of confetti between them: offset, colour, turn.
+export const CONFETTI = [[-11, -21, '#4a9be8', 30], [24, -9, '#f07ac0', -20], [-25, -6, '#7cc65a', 55]]
+// A curly ribbon (a looped cycloid) falling along `ang` degrees.
+export const curl = (x0, y0, ang, steps, turns) => {
+  const c = Math.cos((ang * Math.PI) / 180)
+  const s = Math.sin((ang * Math.PI) / 180)
+  const n = Math.round(steps * turns)
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const th = (i / steps) * Math.PI * 2
+    // The loops get smaller toward the end, like a curled ribbon.
+    const k = 1 - (0.45 * i) / n
+    const u = 0.55 * th + 1.1 * k * Math.sin(th)
+    const v = 2 * k * (1 - Math.cos(th)) * 0.9
+    return [x0 + u * c - v * s, y0 + u * s + v * c]
+  })
+}
+// The orbit ring: a tilted oval round the body. `arcs` gives the front half
+// and the two ends of the back half that show past the sides.
+export const orbitRing = (a) => {
+  const cy = a.neck + 1.5
+  // The turtle's shell (a wide buddy with a `back`) is wider than its side.
+  const body = a.back && a.side > 10 ? a.side + 5 : a.side
+  const rx = body + 7
+  const ry = 3.4
+  const tl = (-8 * Math.PI) / 180
+  const at = (t) => {
+    const X = Math.cos(t) * rx
+    const Y = Math.sin(t) * ry
+    return [24 + X * Math.cos(tl) - Y * Math.sin(tl), cy + X * Math.sin(tl) + Y * Math.cos(tl)]
+  }
+  const run = (t0, t1, n) => Array.from({ length: n + 1 }, (_, i) => at(t0 + ((t1 - t0) * i) / n))
+  const gap = Math.acos(Math.min(0.95, (body - 0.5) / rx))
+  const arcs = (n) => [run(Math.PI, Math.PI + gap, Math.max(2, Math.round(n / 6))), run(2 * Math.PI - gap, 2 * Math.PI, Math.max(2, Math.round(n / 6))), run(0, Math.PI, n)]
+  return { at, arcs }
 }
 
 const DRAW = {
@@ -406,6 +450,190 @@ const DRAW = {
       h('path', { d: `M${l + s * 0.6} ${y0 + 1.9} L${l} ${y1 - 2.1}`, stroke: '#ffffff', strokeWidth: 0.6, strokeLinecap: 'round', opacity: 0.6, fill: 'none' }),
     ]
   },
+  // Earmuffs: two fluffy muffs, each a ring of puffs, on a thin band. The
+  // scalloped edge is what tells them from the headphones.
+  earmuffs: (h, a, t) => {
+    const sx = a.side - 0.5
+    const my = a.ey - 2.5
+    const R = 4.8
+    const top = (a.hat?.y ?? a.crown) - 8
+    const muff = (cx) => [
+      ...Array.from({ length: 14 }, (_, i) => {
+        const th = (i * Math.PI) / 7
+        return h('circle', { cx: cx + Math.cos(th) * (R - 1.25), cy: my + Math.sin(th) * (R - 1.25), r: 1.3, fill: '#f4a6c6' })
+      }),
+      h('circle', { cx, cy: my, r: R - 1, fill: '#f4a6c6' }),
+      h('ellipse', { cx: cx - 1.1, cy: my - 1.2, rx: 1.4, ry: 1.1, fill: '#ffcfe1' }),
+    ]
+    return [
+      h('path', { d: `M${24 - sx} ${my - R + 1} C${24 - sx} ${top} ${24 + sx} ${top} ${24 + sx} ${my - R + 1}`, fill: 'none', stroke: t, strokeWidth: 1.3 }),
+      ...muff(24 - sx),
+      ...muff(24 + sx),
+    ]
+  },
+  // A snow globe on a red base: a tiny tree and snow inside the glass.
+  snowglobe: (h, a) => {
+    const [x, y] = hand(a)
+    const cx = x + 0.5
+    const R = 5.2
+    const gy = y - 9.2
+    const gx = Math.sqrt(R * R - 2.4 * 2.4)
+    return [
+      h('circle', { cx, cy: gy, r: R, fill: '#d3ecff' }),
+      h('path', { d: `M${cx - gx} ${gy + 2.4} Q${cx} ${gy + 1.2} ${cx + gx} ${gy + 2.4} A${R} ${R} 0 0 1 ${cx - gx} ${gy + 2.4} Z`, fill: '#ffffff' }),
+      h('path', { d: box(cx - 0.45, gy + 0.6, 0.9, 1.6, 0.2), fill: '#8a5a32' }),
+      h('path', { d: `M${cx} ${gy - 3.8} L${cx + 1.7} ${gy - 1} L${cx - 1.7} ${gy - 1} Z M${cx} ${gy - 2.4} L${cx + 2.4} ${gy + 1} L${cx - 2.4} ${gy + 1} Z`, fill: '#3f9e6a' }),
+      h('circle', { cx, cy: gy - 3.9, r: 0.6, fill: GOLD }),
+      ...[[-3, -2], [2.6, -2.8], [-2.2, 0.6], [3, 0.2], [-0.8, -4.4], [1.6, -4]].map(([dx, dy]) => h('circle', { cx: cx + dx, cy: gy + dy, r: 0.42, fill: '#ffffff' })),
+      h('path', { d: `M${cx - 3.7} ${gy - 1.2} A4 4 0 0 1 ${cx - 1.4} ${gy - 3.8}`, fill: 'none', stroke: '#ffffff', strokeWidth: 0.8, strokeLinecap: 'round', opacity: 0.85 }),
+      h('path', { d: `M${cx - 4.2} ${gy + R - 1.2} H${cx + 4.2} L${cx + 5.2} ${gy + R + 3.4} H${cx - 5.2} Z`, fill: '#b23a3a' }),
+      h('path', { d: box(cx - 4.6, gy + R + 0.4, 9.2, 1.1, 0.3), fill: GOLD }),
+    ]
+  },
+  // A string of lights draped over the buddy, bulbs hanging from the wire.
+  fairylights: (h, a) => {
+    const top = a.hat?.y ?? a.crown
+    const cy = a.ey + 1
+    const rx = a.side + 7
+    const ry = cy - top + 9
+    const n = 7
+    const pts = Array.from({ length: n }, (_, i) => {
+      const th = ((205 - (i * 230) / (n - 1)) * Math.PI) / 180
+      return [24 + Math.cos(th) * rx, cy - Math.sin(th) * ry, th]
+    })
+    const bulbs = ['#e2463c', '#f5c542', '#4a9be8', '#7cc65a', '#f07ac0']
+    let wire = `M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`
+    for (let i = 1; i < n; i += 1) {
+      wire += ` Q${((pts[i - 1][0] + pts[i][0]) / 2).toFixed(2)} ${((pts[i - 1][1] + pts[i][1]) / 2 + 3).toFixed(2)} ${pts[i][0].toFixed(2)} ${pts[i][1].toFixed(2)}`
+    }
+    return [
+      h('path', { d: wire, fill: 'none', stroke: '#2f5d3a', strokeWidth: 0.7 }),
+      ...pts.map(([px, py, th], i) => {
+        // Hang down, splayed outward on the sides.
+        const dx = Math.cos(th)
+        const dy = -Math.sin(th) + 1.2
+        const turn = (Math.atan2(-dx, dy) * 180) / Math.PI
+        return h('g', { transform: `translate(${px.toFixed(2)} ${py.toFixed(2)}) rotate(${turn.toFixed(1)})` },
+          h('path', { d: box(-0.85, -0.3, 1.7, 1.3, 0.3), fill: '#2f5d3a' }),
+          h('ellipse', { cx: 0, cy: 2.6, rx: 1.35, ry: 1.95, fill: bulbs[i % bulbs.length] }),
+          h('circle', { cx: -0.45, cy: 2.1, r: 0.45, fill: '#ffffff', opacity: 0.8 }),
+        )
+      }),
+    ]
+  },
+  // A striped candy cane, hook at the top.
+  candycane: (h, a) => {
+    const [x, y] = hand(a)
+    const r = 2.5
+    const top = y - 11.5
+    const cx = x + r
+    const cane = `M${x} ${y + 2.5} V${top} A${r} ${r} 0 0 1 ${x + r * 2} ${top} V${top + 2.4}`
+    const at = (deg, rr) => {
+      const th = (deg * Math.PI) / 180
+      return `${(cx + Math.cos(th) * rr).toFixed(2)} ${(top - Math.sin(th) * rr).toFixed(2)}`
+    }
+    const stripes = [
+      ...[0, 1, 2, 3, 4].map((i) => `M${x - 1} ${y + 0.6 - i * 2.6 + 0.75} L${x + 1} ${y + 0.6 - i * 2.6 - 0.75}`),
+      ...[150, 90, 30].map((deg) => `M${at(deg + 14, r - 1)} L${at(deg - 14, r + 1)}`),
+    ].join(' ')
+    return [
+      h('path', { d: cane, fill: 'none', stroke: '#c8303a', strokeWidth: 3.2, strokeLinecap: 'round' }),
+      h('path', { d: cane, fill: 'none', stroke: '#ffffff', strokeWidth: 2.1, strokeLinecap: 'round' }),
+      h('path', { d: stripes, fill: 'none', stroke: '#e2463c', strokeWidth: 0.95 }),
+    ]
+  },
+  // 8-bit shades: square pixels, a stepped lens edge and two white glints.
+  pixelshades: (h, a) => {
+    const [l, r] = a.ex
+    const half = Math.min(a.er + 1.2, (r - l) / 2 - 0.6)
+    const p = (half * 2) / 5
+    const y0 = a.ey - p * 1.7
+    const px = (x, y, w, ht, fill = '#141518') => h('path', { d: box(x, y, w + 0.04, ht + 0.04), fill })
+    return [
+      px(l - half - p, y0, r - l + half * 2 + p * 2, p),
+      ...[l, r].flatMap((c) => {
+        const x0 = c - half
+        return [
+          px(x0, y0 + p, p * 5, p),
+          px(x0 + p, y0 + p * 2, p * 4, p),
+          px(x0 + p * 2, y0 + p * 3, p * 3, p),
+          px(x0 + p, y0 + p, p, p, '#ffffff'),
+          px(x0 + p * 2, y0 + p * 2, p, p, '#ffffff'),
+        ]
+      }),
+    ]
+  },
+  // Curly party streamers: corkscrew ribbons on both sides.
+  streamers: (h, a) => [
+    ...STREAMERS.map(([dx, dy, ang, c, turns]) => {
+      const pts = curl(24 + dx, a.ey + dy, ang, 20, turns)
+      return h('path', { d: 'M' + pts.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L'), fill: 'none', stroke: c, strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' })
+    }),
+    ...CONFETTI.map(([dx, dy, c, turn]) => h('path', { d: box(24 + dx - 1.1, a.ey + dy - 0.6, 2.2, 1.2, 0.3), fill: c, transform: `rotate(${turn} ${24 + dx} ${a.ey + dy})` })),
+  ],
+  // A striped beanie with a propeller on top.
+  propeller: (h, a, t) => onHead(h, a, a.crown + 1, (y) => {
+    const gore = (w) => `M24 ${y - 6.75} C${24 - w * 0.75} ${y - 6.2} ${24 - w} ${y - 3} ${24 - w} ${y} L${24 + w} ${y} C${24 + w} ${y - 3} ${24 + w * 0.75} ${y - 6.2} 24 ${y - 6.75} Z`
+    return [
+      h('path', { d: `M15 ${y} C15 ${y - 9} 33 ${y - 9} 33 ${y} Z`, fill: '#4a9be8' }),
+      h('path', { d: gore(4.4), fill: GOLD }),
+      h('path', { d: gore(1.7), fill: '#e2463c' }),
+      h('path', { d: box(14.5, y - 1.8, 19, 3, 1.5), fill: t }),
+      h('path', { d: box(23.3, y - 10.4, 1.4, 4, 0.5), fill: '#3a3f4b' }),
+      h('g', { transform: `rotate(-8 24 ${y - 10.4})` },
+        h('ellipse', { cx: 19.6, cy: y - 10.4, rx: 4.2, ry: 1.25, fill: '#e2463c' }),
+        h('ellipse', { cx: 28.4, cy: y - 10.4, rx: 4.2, ry: 1.25, fill: '#e2463c' }),
+      ),
+      h('circle', { cx: 24, cy: y - 10.4, r: 1.3, fill: GOLD }),
+    ]
+  }),
+  // A diamond kite on its string, with a bow tail.
+  kite: (h, a) => {
+    const [x, y] = hand(a)
+    const kx = x + 4.5
+    const ky = y - 23
+    const w = 4.6
+    const up = 4.8
+    const dn = 8
+    const bow = (bx, by, fill) => h('path', { d: `M${bx} ${by} L${bx - 1.9} ${by - 1.1} L${bx - 1.9} ${by + 1.1} Z M${bx} ${by} L${bx + 1.9} ${by - 1.1} L${bx + 1.9} ${by + 1.1} Z`, fill })
+    return [
+      h('path', { d: `M${x} ${y} Q${kx + 2} ${y - 4} ${kx} ${ky}`, fill: 'none', stroke: '#7d8696', strokeWidth: 0.5 }),
+      h('path', { d: `M${kx} ${ky + dn} Q${kx - 3.4} ${ky + dn + 2.4} ${kx - 1.8} ${ky + dn + 4.8} Q${kx - 0.4} ${ky + dn + 7.2} ${kx - 3} ${ky + dn + 9}`, fill: 'none', stroke: '#3a3f4b', strokeWidth: 0.6 }),
+      h('path', { d: `M${kx} ${ky - up} L${kx + w} ${ky} L${kx - w} ${ky} Z`, fill: '#e2463c' }),
+      h('path', { d: `M${kx} ${ky - up} L${kx + w} ${ky} L${kx} ${ky} Z`, fill: shade('#e2463c', 0.84) }),
+      h('path', { d: `M${kx - w} ${ky} L${kx + w} ${ky} L${kx} ${ky + dn} Z`, fill: GOLD }),
+      h('path', { d: `M${kx} ${ky} L${kx + w} ${ky} L${kx} ${ky + dn} Z`, fill: shade(GOLD, 0.84) }),
+      h('path', { d: `M${kx} ${ky - up} V${ky + dn} M${kx - w} ${ky} H${kx + w}`, fill: 'none', stroke: '#6b4a32', strokeWidth: 0.55 }),
+      bow(kx - 2.2, ky + dn + 2.6, '#4a9be8'),
+      bow(kx - 1.2, ky + dn + 6.6, '#f07ac0'),
+    ]
+  },
+  // Dragonfly wings: two pairs, long and narrow, veined, a dark spot near
+  // each tip. Clear, not colored like the fairy or butterfly.
+  dragonfly: (h, a) => {
+    const y = mid(a) - 3
+    const x0 = a.side - 4
+    const wing = (L, w, dy, ang) => [-1, 1].map((d) => h('g', { transform: `translate(${24 + d * x0} ${y + dy}) scale(${d} 1) rotate(${ang})` },
+      h('path', { d: `M0 -0.7 C${L * 0.3} ${-w * 1.05} ${L * 0.7} ${-w * 1.1} ${L - 0.6} ${-w * 0.55} Q${L + 0.5} ${-w * 0.05} ${L - 0.8} ${w * 0.45} C${L * 0.6} ${w * 0.95} ${L * 0.25} ${w * 0.7} 0 0.7 Z`, fill: '#e6f4ff', fillOpacity: 0.85, stroke: '#8fb6dc', strokeWidth: 0.45 }),
+      h('path', { d: `M0.4 -0.5 C${L * 0.3} ${-w * 0.95} ${L * 0.7} ${-w} ${L - 0.6} ${-w * 0.55}`, fill: 'none', stroke: '#5f84ad', strokeWidth: 0.6 }),
+      h('path', { d: [`M0.4 0 Q${L * 0.5} ${-w * 0.2} ${L - 1} ${-w * 0.05}`, ...[0.22, 0.4, 0.58, 0.74].map((f) => `M${L * f} ${-w * 0.8} L${L * f + 0.5} ${w * 0.62}`)].join(' '), fill: 'none', stroke: '#8fb6dc', strokeWidth: 0.35 }),
+      h('ellipse', { cx: L * 0.84, cy: -w * 0.68, rx: 1.1, ry: 0.45, fill: '#3a4a63' }),
+    ))
+    return [...wing(15.5, 2.3, 1.6, 12), ...wing(18, 2.6, -1.6, -14)]
+  },
+  // A tiny moon on a tilted ring. The back of the ring hides behind the body.
+  orbit: (h, a) => {
+    const ring = orbitRing(a)
+    const [mx, my] = ring.at(Math.PI - 0.5)
+    const line = (pts) => 'M' + pts.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')
+    return [
+      h('path', { d: ring.arcs(24).map(line).join(' '), fill: 'none', stroke: GOLD, strokeWidth: 1 }),
+      h('circle', { cx: mx, cy: my, r: 2.8, fill: '#ece6d6' }),
+      h('circle', { cx: mx - 0.9, cy: my - 0.6, r: 0.7, fill: '#cbc2aa' }),
+      h('circle', { cx: mx + 0.9, cy: my + 0.8, r: 0.5, fill: '#cbc2aa' }),
+      h('circle', { cx: mx + 0.7, cy: my - 1.3, r: 0.35, fill: '#cbc2aa' }),
+    ]
+  },
   raincloud: (h, a) => {
     const y = (a.hat?.y ?? a.crown) - 9
     return [
@@ -469,6 +697,16 @@ const ALL_ACCESSORIES = [
   { id: 'bubbles', slot: 'around', tier: 'common', from: '2026-10-23' },
   { id: 'pinwheel', slot: 'held', tier: 'standard', from: '2026-11-20' },
   { id: 'goggles', slot: 'eyes', tier: 'rare', from: '2026-11-20' },
+  { id: 'earmuffs', slot: 'head', tier: 'standard', from: '2026-12-04' },
+  { id: 'snowglobe', slot: 'held', tier: 'rare', from: '2026-12-04' },
+  { id: 'fairylights', slot: 'around', tier: 'rare', from: '2026-12-18' },
+  { id: 'candycane', slot: 'held', tier: 'common', from: '2026-12-18' },
+  { id: 'pixelshades', slot: 'eyes', tier: 'rare', from: '2027-01-01' },
+  { id: 'streamers', slot: 'around', tier: 'standard', from: '2027-01-01' },
+  { id: 'propeller', slot: 'head', tier: 'rare', from: '2027-01-15' },
+  { id: 'kite', slot: 'held', tier: 'standard', from: '2027-01-15' },
+  { id: 'dragonfly', slot: 'back', tier: 'rare', from: '2027-01-29' },
+  { id: 'orbit', slot: 'around', tier: 'common', from: '2027-01-29' },
 ].map((item) => ({ ...item, coins: ACCESSORY_TIERS[item.tier] }))
 
 export const ACCESSORIES = ALL_ACCESSORIES

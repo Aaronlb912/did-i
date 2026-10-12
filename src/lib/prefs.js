@@ -104,6 +104,21 @@ function cleanPrefs(raw) {
         'cranberry',
         'saffron',
         'pine',
+        'iris',
+        'lagoon',
+        'cocoa',
+        'emerald',
+        'candy',
+        'denim',
+        'magenta',
+        'copper',
+        'lilac',
+        'lemon',
+        'peacock',
+        'rosewood',
+        'sunset',
+        'twilight',
+        'fog',
       ].includes(id)
     ) {
       next.widgetLookId = id

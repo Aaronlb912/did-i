@@ -41,6 +41,16 @@ const ALL_CHEERS = [
   { id: 'lantern', gems: CHEER_GEMS, from: '2026-11-06' },
   { id: 'gift', gems: CHEER_GEMS, from: '2026-11-20' },
   { id: 'popcorn', gems: CHEER_GEMS, from: '2026-11-20' },
+  { id: 'snowflake', gems: CHEER_GEMS, from: '2026-12-04' },
+  { id: 'bell', gems: CHEER_GEMS, from: '2026-12-04' },
+  { id: 'disco', gems: CHEER_GEMS, from: '2026-12-18' },
+  { id: 'ribbon', gems: CHEER_GEMS, from: '2026-12-18' },
+  { id: 'clink', gems: CHEER_GEMS, from: '2027-01-01' },
+  { id: 'balldrop', gems: CHEER_GEMS, from: '2027-01-01' },
+  { id: 'bolt', gems: CHEER_GEMS, from: '2027-01-15' },
+  { id: 'splat', gems: CHEER_GEMS, from: '2027-01-15' },
+  { id: 'butterfly', gems: CHEER_GEMS, from: '2027-01-29' },
+  { id: 'bounce', gems: CHEER_GEMS, from: '2027-01-29' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -56,6 +66,11 @@ const ALL_BUDDIES = [
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
   { id: 'otter', gems: BUDDY_GEMS, from: '2026-11-20' },
+  { id: 'hedgehog', gems: BUDDY_GEMS, from: '2026-12-04' },
+  { id: 'panda', gems: BUDDY_GEMS, from: '2026-12-18' },
+  { id: 'duck', gems: BUDDY_GEMS, from: '2027-01-01' },
+  { id: 'axolotl', gems: BUDDY_GEMS, from: '2027-01-15' },
+  { id: 'turtle', gems: BUDDY_GEMS, from: '2027-01-29' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
 ]
@@ -88,6 +103,21 @@ const ALL_LOOKS = [
   { id: 'cranberry', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
   { id: 'saffron', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
   { id: 'pine', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-20' },
+  { id: 'iris', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-04' },
+  { id: 'lagoon', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-04' },
+  { id: 'cocoa', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-12-04' },
+  { id: 'emerald', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-18' },
+  { id: 'candy', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-18' },
+  { id: 'denim', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-12-18' },
+  { id: 'magenta', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-01' },
+  { id: 'copper', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-01' },
+  { id: 'lilac', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-01' },
+  { id: 'lemon', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-15' },
+  { id: 'peacock', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-15' },
+  { id: 'rosewood', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-15' },
+  { id: 'sunset', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-29' },
+  { id: 'twilight', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-29' },
+  { id: 'fog', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-29' },
 ]
 
 // Cheers that are never sold, only given out by hand as a gift (see gifts.sql).
@@ -235,6 +265,16 @@ export const GEM_LOOK_IDS = [
   'fig',
   'cranberry',
   'saffron',
+  'iris',
+  'lagoon',
+  'emerald',
+  'candy',
+  'magenta',
+  'copper',
+  'lemon',
+  'peacock',
+  'sunset',
+  'twilight',
 ]
 
 export function isGemLook(id) {

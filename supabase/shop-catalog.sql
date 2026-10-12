@@ -49,6 +49,36 @@ insert into public.shop_catalog (kind, item_id, live_from) values
   ('cheer_stage', 'gift', '2026-11-20'), ('cheer_stage', 'popcorn', '2026-11-20')
 on conflict (kind, item_id) do update set live_from = excluded.live_from;
 
+-- Drop 2026-12-04.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'cocoa', '2026-12-04'),
+  ('cheer_stage', 'snowflake', '2026-12-04'), ('cheer_stage', 'bell', '2026-12-04')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
+-- Drop 2026-12-18.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'denim', '2026-12-18'),
+  ('cheer_stage', 'disco', '2026-12-18'), ('cheer_stage', 'ribbon', '2026-12-18')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
+-- Drop 2027-01-01.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'lilac', '2027-01-01'),
+  ('cheer_stage', 'clink', '2027-01-01'), ('cheer_stage', 'balldrop', '2027-01-01')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
+-- Drop 2027-01-15.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'rosewood', '2027-01-15'),
+  ('cheer_stage', 'bolt', '2027-01-15'), ('cheer_stage', 'splat', '2027-01-15')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
+-- Drop 2027-01-29.
+insert into public.shop_catalog (kind, item_id, live_from) values
+  ('look', 'fog', '2027-01-29'),
+  ('cheer_stage', 'butterfly', '2027-01-29'), ('cheer_stage', 'bounce', '2027-01-29')
+on conflict (kind, item_id) do update set live_from = excluded.live_from;
+
 -- Buddy accessories. Each row carries its own coin price, so buy_with_coins
 -- charges what the shop shows (src/lib/accessories.js, a test keeps them equal).
 alter table public.shop_catalog add column if not exists coins integer
@@ -109,7 +139,17 @@ insert into public.shop_catalog (kind, item_id, coins, live_from) values
   ('accessory', 'rainbow', 40, '2026-10-23'),
   ('accessory', 'bubbles', 15, '2026-10-23'),
   ('accessory', 'pinwheel', 25, '2026-11-20'),
-  ('accessory', 'goggles', 40, '2026-11-20')
+  ('accessory', 'goggles', 40, '2026-11-20'),
+  ('accessory', 'earmuffs', 25, '2026-12-04'),
+  ('accessory', 'snowglobe', 40, '2026-12-04'),
+  ('accessory', 'fairylights', 40, '2026-12-18'),
+  ('accessory', 'candycane', 15, '2026-12-18'),
+  ('accessory', 'pixelshades', 40, '2027-01-01'),
+  ('accessory', 'streamers', 25, '2027-01-01'),
+  ('accessory', 'propeller', 40, '2027-01-15'),
+  ('accessory', 'kite', 25, '2027-01-15'),
+  ('accessory', 'dragonfly', 40, '2027-01-29'),
+  ('accessory', 'orbit', 15, '2027-01-29')
 on conflict (kind, item_id) do update set coins = excluded.coins, live_from = excluded.live_from;
 
 -- Card frames (src/lib/frames.js, a test keeps prices equal). Still frames

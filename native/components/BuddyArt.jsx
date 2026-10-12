@@ -14,6 +14,11 @@ const COAT = {
   fox: { body: '#e8743b', belly: '#fff6ea', ear: '#e8743b' },
   hive: { body: '#f6c443', belly: '#2b2018', ear: '#dff3ff' },
   otter: { body: '#a06a40', belly: '#f1dcc0', ear: '#8a5a36' },
+  hedgehog: { body: '#8f6a52', belly: '#f3d9b6', ear: '#7a5a46' },
+  panda: { body: '#f4f1ea', belly: '#f4f1ea', ear: '#2f2c33' },
+  duck: { body: '#ffd34d', belly: '#fff1b8', ear: '#ff9a3c' },
+  axolotl: { body: '#ffc2d4', belly: '#ffe6ee', ear: '#ff6f91' },
+  turtle: { body: '#9edb86', belly: '#a0753e', ear: '#8fd27a' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -88,6 +93,83 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
         <View style={spot(box, 19, 38, 10, 5, '#f6b8c4')} />
         <View style={spot(box, 12.5, 40.8, 9, 6.4, coat.ear)} />
         <View style={spot(box, 26.5, 40.8, 9, 6.4, coat.ear)} />
+      </View>
+    )
+  }
+  if (id === 'hedgehog') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 6, 13.5, 36, 32, coat.ear)} />
+        <View style={spot(box, 12, 23.5, 24, 21, coat.belly)} />
+        <View style={spot(box, 16.3, 26.1, 4.4, 5.8, pupil)} />
+        <View style={spot(box, 27.3, 26.1, 4.4, 5.8, pupil)} />
+        <View style={spot(box, 21.8, 31.4, 4.4, 3.2, pupil)} />
+        <View style={spot(box, 12.5, 42.2, 9, 5.6, '#c48f72')} />
+        <View style={spot(box, 26.5, 42.2, 9, 5.6, '#c48f72')} />
+      </View>
+    )
+  }
+  if (id === 'panda') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 7.7, 14.9, 9.6, 9.2, coat.ear)} />
+        <View style={spot(box, 30.7, 14.9, 9.6, 9.2, coat.ear)} />
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 14.1, 23.3, 7.8, 9.8, coat.ear)} />
+        <View style={spot(box, 26.1, 23.3, 7.8, 9.8, coat.ear)} />
+        <View style={spot(box, 18, 25.4, 2, 2.2, '#ffffff')} />
+        <View style={spot(box, 29.2, 25.4, 2, 2.2, '#ffffff')} />
+        <View style={spot(box, 21.9, 31.9, 4.2, 3, coat.ear)} />
+        <View style={spot(box, 12.5, 42.2, 9, 5.6, coat.ear)} />
+        <View style={spot(box, 26.5, 42.2, 9, 5.6, coat.ear)} />
+      </View>
+    )
+  }
+  if (id === 'duck') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 24.5, 8, 5, 10, coat.body)} />
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 15, 29.5, 18, 13, coat.belly)} />
+        <View style={spot(box, 15.7, 22.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 27.7, 22.9, 4.6, 6.2, pupil)} />
+        <View style={spot(box, 18.5, 29, 11, 4.5, coat.ear)} />
+        <View style={spot(box, 13, 43, 9, 4, coat.ear, 1.5)} />
+        <View style={spot(box, 26, 43, 9, 4, coat.ear, 1.5)} />
+      </View>
+    )
+  }
+  if (id === 'axolotl') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 0.5, 15, 9, 5, coat.ear)} />
+        <View style={spot(box, 0, 22.5, 9, 5, coat.ear)} />
+        <View style={spot(box, 2, 29, 8, 5, coat.ear)} />
+        <View style={spot(box, 38.5, 15, 9, 5, coat.ear)} />
+        <View style={spot(box, 39, 22.5, 9, 5, coat.ear)} />
+        <View style={spot(box, 38, 29, 8, 5, coat.ear)} />
+        <View style={spot(box, 15.5, 37, 17, 12, coat.body)} />
+        <View style={spot(box, 8.5, 12.5, 31, 27, coat.body)} />
+        <View style={spot(box, 15.3, 22.8, 5.4, 6.4, '#1f1a1e')} />
+        <View style={spot(box, 27.3, 22.8, 5.4, 6.4, '#1f1a1e')} />
+        <View style={spot(box, 16, 46.5, 6, 4, '#f2a4bd')} />
+        <View style={spot(box, 26, 46.5, 6, 4, '#f2a4bd')} />
+      </View>
+    )
+  }
+  if (id === 'turtle') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 5, 33, 7.6, 9, coat.ear)} />
+        <View style={spot(box, 35.4, 33, 7.6, 9, coat.ear)} />
+        <View style={spot(box, 12.5, 43, 9, 6, coat.ear)} />
+        <View style={spot(box, 26.5, 43, 9, 6, coat.ear)} />
+        <View style={spot(box, 8, 26, 32, 22, '#7d5a2e')} />
+        <View style={spot(box, 9.4, 26.6, 29.2, 19.6, coat.belly)} />
+        <View style={spot(box, 20.5, 35.4, 7, 8, '#c99f62', 2)} />
+        <View style={spot(box, 12.8, 15, 22.4, 20, coat.body)} />
+        <View style={spot(box, 17.3, 22.2, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 26.3, 22.2, 4.4, 5.6, pupil)} />
       </View>
     )
   }
@@ -204,6 +286,27 @@ const EYES = {
   otter: [
     [[18, 27, 2.3, 3.1, DARK], [18.8, 26, 0.7, 0.9, ...SHINE]],
     [[30, 27, 2.3, 3.1, DARK], [30.8, 26, 0.7, 0.9, ...SHINE]],
+  ],
+  hedgehog: [
+    [[18.5, 29, 2.2, 2.9, DARK], [19.2, 28, 0.7, 0.9, ...SHINE]],
+    [[29.5, 29, 2.2, 2.9, DARK], [30.2, 28, 0.7, 0.9, ...SHINE]],
+  ],
+  // Dark eyes on dark patches: a bigger shine keeps them reading.
+  panda: [
+    [[18.4, 27.6, 1.9, 2.3, '#0f0d11'], [19.1, 26.7, 0.75, 0.95, '#ffffff', 0.95]],
+    [[29.6, 27.6, 1.9, 2.3, '#0f0d11'], [30.3, 26.7, 0.75, 0.95, '#ffffff', 0.95]],
+  ],
+  duck: [
+    [[18, 26, 2.3, 3.1, DARK], [18.8, 25, 0.7, 0.9, ...SHINE]],
+    [[30, 26, 2.3, 3.1, DARK], [30.8, 25, 0.7, 0.9, ...SHINE]],
+  ],
+  axolotl: [
+    [[18, 26, 2.7, 3.19, '#1f1a1e'], [18.81, 24.92, 0.86, 1.03, '#ffffff', 0.95]],
+    [[30, 26, 2.7, 3.19, '#1f1a1e'], [30.81, 24.92, 0.86, 1.03, '#ffffff', 0.95]],
+  ],
+  turtle: [
+    [[19.5, 25, 2.2, 2.8, DARK], [20.2, 24.1, 0.7, 0.9, ...SHINE]],
+    [[28.5, 25, 2.2, 2.8, DARK], [29.2, 24.1, 0.7, 0.9, ...SHINE]],
   ],
 }
 
@@ -481,6 +584,105 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Path d="M24 37.8 V42.4 M24 37.8 L21.4 41.7 M24 37.8 L26.6 41.7" fill="none" stroke="#d98aa0" strokeWidth="0.6" strokeLinecap="round" />
         <Ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
         <Ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+      </Svg>
+    )
+  }
+
+  if (id === 'hedgehog') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Polygon points="9.97,34.75 5.71,32.95 9.42,30.22 6.07,27.07 10.52,25.79 8.43,21.63 13.12,21.93 12.53,17.23 16.94,19.09 17.93,14.39 21.56,17.59 24,13.4 26.44,17.59 30.07,14.39 31.06,19.09 35.47,17.23 34.88,21.93 39.57,21.63 37.48,25.79 41.93,27.07 38.58,30.22 42.29,32.95 38.03,34.75" fill="#7a5a46" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#8f6a52" />
+        <Path d="M16 21.5 L14.6 19.4 M20.3 19.4 L19.6 17.1 M24 18.8 V16.4 M27.7 19.4 L28.4 17.1 M32 21.5 L33.4 19.4" fill="none" stroke="#b08a6c" strokeWidth="0.9" strokeLinecap="round" />
+        <Ellipse cx="13.6" cy="25" rx="2.6" ry="2.4" fill="#e8b89a" />
+        <Ellipse cx="34.4" cy="25" rx="2.6" ry="2.4" fill="#e8b89a" />
+        <Ellipse cx="24" cy="34" rx="12" ry="10.5" fill="#f3d9b6" />
+        {eyes ? <EyesInline parts={parts} id="hedgehog" /> : null}
+        <Ellipse cx="24" cy="33" rx="2.2" ry="1.6" fill="#2b2018" />
+        <Path d="M22 35.4 Q24 37 26 35.4" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <Ellipse cx="14.8" cy="33.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="33.2" cy="33.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#c48f72" />
+        <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#c48f72" />
+      </Svg>
+    )
+  }
+
+  if (id === 'panda') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="12.5" cy="19.5" rx="4.8" ry="4.6" fill="#2f2c33" />
+        <Ellipse cx="35.5" cy="19.5" rx="4.8" ry="4.6" fill="#2f2c33" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#f4f1ea" />
+        <Ellipse cx="11" cy="38.5" rx="3.6" ry="5.4" fill="#2f2c33" transform="rotate(28 11 38.5)" />
+        <Ellipse cx="37" cy="38.5" rx="3.6" ry="5.4" fill="#2f2c33" transform="rotate(-28 37 38.5)" />
+        <Ellipse cx="18" cy="28.2" rx="3.9" ry="4.9" fill="#2f2c33" transform="rotate(32 18 28.2)" />
+        <Ellipse cx="30" cy="28.2" rx="3.9" ry="4.9" fill="#2f2c33" transform="rotate(-32 30 28.2)" />
+        {eyes ? <EyesInline parts={parts} id="panda" /> : null}
+        <Ellipse cx="24" cy="33.4" rx="2.1" ry="1.5" fill="#2f2c33" />
+        <Path d="M22 35.4 Q24 37 26 35.4" fill="none" stroke="#2f2c33" strokeWidth="1" strokeLinecap="round" />
+        <Ellipse cx="13.6" cy="34" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="34.4" cy="34" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#2f2c33" />
+        <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#2f2c33" />
+      </Svg>
+    )
+  }
+
+  if (id === 'duck') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Path d="M24 17 Q22 11 25 8 Q25 12 28 13 Q27 9 30 8 Q29 13 27 17 Z" fill="#ffd34d" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#ffd34d" />
+        <Path d="M9.5 33 Q5.5 35 6.5 39 Q10.5 39 12.5 36 Z M38.5 33 Q42.5 35 41.5 39 Q37.5 39 35.5 36 Z" fill="#f3bd2e" />
+        <Ellipse cx="24" cy="36" rx="9" ry="6.5" fill="#fff1b8" />
+        {eyes ? <EyesInline parts={parts} id="duck" /> : null}
+        <Path d="M18.5 31 Q24 28 29.5 31 Q24 35.5 18.5 31 Z" fill="#ff9a3c" stroke="#e07a22" strokeWidth="0.8" strokeLinejoin="round" />
+        <Ellipse cx="13.5" cy="31" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <Ellipse cx="34.5" cy="31" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <Path d="M13 43 H22 L20 47 H15 Z M26 43 H35 L33 47 H28 Z" fill="#ff9a3c" />
+      </Svg>
+    )
+  }
+
+  // The gills stay still: the shop sway turns the whole buddy, not its parts.
+  if (id === 'axolotl') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="24" cy="43" rx="8.5" ry="6" fill="#ffc2d4" />
+        <Ellipse cx="24" cy="44" rx="5" ry="3.6" fill="#ffe6ee" />
+        <Path d="M31 44 Q37 44 39 40 Q39.5 44 36 46 Q34 47 31 46.5 Z" fill="#f2a4bd" />
+        <Path d="M9.5 19.75 C5.82 21.09 2.18 18.99 2.23 15.55 C5.18 13.79 8.82 15.89 9.5 19.75 Z M9 25 C6.22 27.9 1.76 27.75 0.08 24.69 C1.97 21.75 6.43 21.91 9 25 Z M9.5 30.25 C8.82 34.01 5.35 35.86 2.55 33.95 C2.53 30.56 6.01 28.71 9.5 30.25 Z M38.5 19.75 C39.18 15.89 42.82 13.79 45.77 15.55 C45.82 18.99 42.18 21.09 38.5 19.75 Z M39 25 C41.57 21.91 46.03 21.75 47.92 24.69 C46.24 27.75 41.78 27.9 39 25 Z M38.5 30.25 C41.99 28.71 45.47 30.56 45.45 33.95 C42.65 35.86 39.18 34.01 38.5 30.25 Z" fill="#ff6f91" />
+        <Path d="M8.46 19.15 L3.78 16.45 M7.8 24.96 L1.88 24.75 M8.44 30.81 L4.14 33.1 M39.54 19.15 L44.22 16.45 M40.2 24.96 L46.12 24.75 M39.56 30.81 L43.86 33.1" fill="none" stroke="#e2426e" strokeWidth="1" strokeLinecap="round" opacity="0.75" />
+        <Ellipse cx="24" cy="26" rx="15.5" ry="13.5" fill="#ffc2d4" />
+        <Ellipse cx="24" cy="30.5" rx="10" ry="6.5" fill="#ffe6ee" opacity="0.6" />
+        {eyes ? <EyesInline parts={parts} id="axolotl" /> : null}
+        <Path d="M21 31 Q22.5 32.65 24 31 Q25.5 32.65 27 31" fill="none" stroke="#2d1a20" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round" />
+        <Ellipse cx="12.5" cy="31" rx="2.3" ry="1.4" fill="#ff6f91" opacity="0.55" />
+        <Ellipse cx="35.5" cy="31" rx="2.3" ry="1.4" fill="#ff6f91" opacity="0.55" />
+        <Ellipse cx="19" cy="48.5" rx="3" ry="2" fill="#f2a4bd" />
+        <Ellipse cx="29" cy="48.5" rx="3" ry="2" fill="#f2a4bd" />
+      </Svg>
+    )
+  }
+
+  if (id === 'turtle') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="8.8" cy="37.5" rx="3.2" ry="4.8" fill="#8fd27a" transform="rotate(-38 8.8 37.5)" />
+        <Ellipse cx="39.2" cy="37.5" rx="3.2" ry="4.8" fill="#8fd27a" transform="rotate(38 39.2 37.5)" />
+        <Ellipse cx="17" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
+        <Ellipse cx="31" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
+        <Ellipse cx="24" cy="37" rx="16" ry="11" fill="#7d5a2e" />
+        <Ellipse cx="24" cy="36.4" rx="14.6" ry="9.8" fill="#a0753e" />
+        <Polygon points="24,35.4 27.4,37.4 27.4,41.4 24,43.4 20.6,41.4 20.6,37.4" fill="#c99f62" />
+        <Polygon points="14.2,34.6 16.8,36.1 16.8,39.1 14.2,40.6 11.6,39.1 11.6,36.1" fill="#c99f62" />
+        <Polygon points="33.8,34.6 36.4,36.1 36.4,39.1 33.8,40.6 31.2,39.1 31.2,36.1" fill="#c99f62" />
+        <Ellipse cx="24" cy="25" rx="11.2" ry="10" fill="#9edb86" />
+        {eyes ? <EyesInline parts={parts} id="turtle" /> : null}
+        <Path d="M21.8 29.4 Q24 31.2 26.2 29.4" fill="none" stroke="#2f5a28" strokeWidth="1" strokeLinecap="round" />
+        <Ellipse cx="15.8" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="32.2" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
       </Svg>
     )
   }

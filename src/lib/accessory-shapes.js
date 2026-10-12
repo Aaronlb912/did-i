@@ -7,7 +7,7 @@
 //   l  [x1, y1, x2, y2, colour, width]
 //   r  [x, y, w, h, fill, corner radius, rotate]  rounded rectangle
 //   o  [cx, cy, rx, ry, colour, line width]       ring
-import { accessoryById, wornLayers } from './accessories.js'
+import { CONFETTI, STREAMERS, accessoryById, curl, orbitRing, wornLayers } from './accessories.js'
 
 const AT = {
   cat: { ex: [18, 30], ey: 28, er: 3.6, crown: 17, neck: 37, side: 13 },
@@ -21,6 +21,11 @@ const AT = {
   fox: { ex: [19.8, 28.2], ey: 27.5, er: 3.5, crown: 18, neck: 37, side: 14 },
   hive: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 14, hat: { y: 10, scale: 1 } },
   otter: { ex: [18, 30], ey: 27, er: 3.7, crown: 17, neck: 40, side: 15 },
+  hedgehog: { ex: [18.5, 29.5], ey: 29, er: 3.6, crown: 16, neck: 40, side: 15 },
+  panda: { ex: [18.2, 29.8], ey: 28, er: 4.4, crown: 17, neck: 39, side: 14 },
+  duck: { ex: [18, 30], ey: 26, er: 3.7, crown: 17, neck: 40, side: 15 },
+  axolotl: { ex: [18, 30], ey: 26, er: 4, crown: 13, neck: 38, side: 14.5 },
+  turtle: { ex: [19.5, 28.5], ey: 25, er: 3.5, crown: 16, neck: 35, side: 11, back: 34 },
 }
 
 const INK = '#2d241c'
@@ -393,6 +398,190 @@ const SHAPES = {
       ['r', x0 + 1.2, y0 + 1.2, x1 - x0 - 2.4, y1 - y0 - 2.4, '#ff7a3d', (y1 - y0 - 2.4) * 0.42],
       ['r', x0 + 1.2, y0 + 1.2, x1 - x0 - 2.4, band, '#ffc94a', band * 0.8],
       ['l', l + s * 0.15, y0 + 1.9, l - s * 0.45, y1 - 2.1, '#ffffff', 1.2],
+    ]
+  },
+  // Puffs round each muff give the same scalloped edge; the band's curve is
+  // four straight pieces.
+  earmuffs: (a, t) => {
+    const sx = a.side - 0.5
+    const my = a.ey - 2.5
+    const R = 4.8
+    const top = (a.hat?.y ?? a.crown) - 8
+    const y0 = my - R + 1
+    const bez = (k) => {
+      const u = 1 - k
+      return [24 - sx + 2 * sx * (3 * u * k * k + k * k * k), (u * u * u + k * k * k) * y0 + 3 * u * k * top]
+    }
+    const muff = (cx) => [
+      ...Array.from({ length: 10 }, (_, i) => {
+        const th = (i * Math.PI) / 5
+        return ['e', cx + Math.cos(th) * (R - 1.3), my + Math.sin(th) * (R - 1.3), 1.45, 1.45, '#f4a6c6']
+      }),
+      ['e', cx, my, R - 1, R - 1, '#f4a6c6'],
+      ['e', cx - 1.1, my - 1.2, 1.4, 1.1, '#ffcfe1'],
+    ]
+    return [
+      ...[0, 1, 2, 3, 4, 5].map((i) => ['l', ...bez(i / 6), ...bez((i + 1) / 6), t, 1.3]),
+      ...muff(24 - sx),
+      ...muff(24 + sx),
+    ]
+  },
+  snowglobe: (a) => {
+    const [x, y] = hand(a)
+    const cx = x + 0.5
+    const R = 5.2
+    const gy = y - 9.2
+    return [
+      ['e', cx, gy, R, R, '#d3ecff'],
+      ['e', cx, gy + 3.3, 3.9, 1.7, '#ffffff'],
+      ['r', cx - 0.45, gy + 0.6, 0.9, 1.6, '#8a5a32', 0.2],
+      ['t', cx, gy - 1, 1.7, 2.8, '#3f9e6a'],
+      ['t', cx, gy + 1, 2.4, 3.4, '#3f9e6a'],
+      ['e', cx, gy - 3.9, 0.6, 0.6, GOLD],
+      ...[[-3, -2], [2.6, -2.8], [-2.2, 0.6], [3, 0.2], [-0.8, -4.4], [1.6, -4]].map(([dx, dy]) => ['e', cx + dx, gy + dy, 0.42, 0.42, '#ffffff']),
+      ['l', cx - 3.7, gy - 1.2, cx - 1.4, gy - 3.8, '#ffffff', 0.8],
+      ['r', cx - 4.7, gy + R - 1.2, 9.4, 4.6, '#b23a3a', 1],
+      ['r', cx - 4.6, gy + R + 0.4, 9.2, 1.1, GOLD, 0.3],
+    ]
+  },
+  fairylights: (a) => {
+    const top = a.hat?.y ?? a.crown
+    const cy = a.ey + 1
+    const rx = a.side + 7
+    const ry = cy - top + 9
+    const n = 7
+    const pts = Array.from({ length: n }, (_, i) => {
+      const th = ((205 - (i * 230) / (n - 1)) * Math.PI) / 180
+      return [24 + Math.cos(th) * rx, cy - Math.sin(th) * ry, th]
+    })
+    const bulbs = ['#e2463c', '#f5c542', '#4a9be8', '#7cc65a', '#f07ac0']
+    return [
+      ...pts.slice(1).flatMap(([x2, y2], i) => {
+        const [x1, y1] = pts[i]
+        const mx = (x1 + x2) / 2
+        const my = (y1 + y2) / 2 + 1.5
+        return [['l', x1, y1, mx, my, '#2f5d3a', 0.7], ['l', mx, my, x2, y2, '#2f5d3a', 0.7]]
+      }),
+      ...pts.flatMap(([px, py, th], i) => {
+        const dx = Math.cos(th)
+        const dy = -Math.sin(th) + 1.2
+        const len = Math.hypot(dx, dy)
+        const ux = dx / len
+        const uy = dy / len
+        const turn = (Math.atan2(-dx, dy) * 180) / Math.PI
+        return [
+          ['r', px + ux * 0.35 - 0.85, py + uy * 0.35 - 0.65, 1.7, 1.3, '#2f5d3a', 0.3, turn],
+          ['e', px + ux * 2.6, py + uy * 2.6, 1.35, 1.95, bulbs[i % bulbs.length], turn],
+        ]
+      }),
+    ]
+  },
+  candycane: (a) => {
+    const [x, y] = hand(a)
+    const r = 2.5
+    const top = y - 11.5
+    const cx = x + r
+    const P = (deg, rr = r) => [cx + Math.cos((deg * Math.PI) / 180) * rr, top - Math.sin((deg * Math.PI) / 180) * rr]
+    const path = [[x, y + 2.5], [x, top], P(135), P(90), P(45), [x + r * 2, top], [x + r * 2, top + 2.4]]
+    const tube = (c, w) => [
+      ...path.slice(1).map((p, i) => ['l', ...path[i], ...p, c, w]),
+      ...path.slice(1, -1).map(([px, py]) => ['e', px, py, w / 2, w / 2, c]),
+    ]
+    return [
+      ...tube('#c8303a', 3.2),
+      ...tube('#ffffff', 2.1),
+      ...[0, 1, 2, 3, 4].map((i) => ['l', x - 1, y + 0.6 - i * 2.6 + 0.75, x + 1, y + 0.6 - i * 2.6 - 0.75, '#e2463c', 0.95]),
+      ...[150, 90, 30].map((deg) => ['l', ...P(deg + 14, r - 1), ...P(deg - 14, r + 1), '#e2463c', 0.95]),
+    ]
+  },
+  pixelshades: (a) => {
+    const [l, r] = a.ex
+    const half = Math.min(a.er + 1.2, (r - l) / 2 - 0.6)
+    const p = (half * 2) / 5
+    const y0 = a.ey - p * 1.7
+    const px = (x, y, w, ht, fill = '#141518') => ['r', x, y, w + 0.04, ht + 0.04, fill, 0]
+    return [
+      px(l - half - p, y0, r - l + half * 2 + p * 2, p),
+      ...[l, r].flatMap((c) => {
+        const x0 = c - half
+        return [
+          px(x0, y0 + p, p * 5, p),
+          px(x0 + p, y0 + p * 2, p * 4, p),
+          px(x0 + p * 2, y0 + p * 3, p * 3, p),
+          px(x0 + p, y0 + p, p, p, '#ffffff'),
+          px(x0 + p * 2, y0 + p * 2, p, p, '#ffffff'),
+        ]
+      }),
+    ]
+  },
+  // Fewer points per loop than the drawing; they are tiny on the widget.
+  streamers: (a) => [
+    ...STREAMERS.flatMap(([dx, dy, ang, c, turns]) => {
+      const pts = curl(24 + dx, a.ey + dy, ang, 5, turns)
+      return pts.slice(1).map((p, i) => ['l', ...pts[i], ...p, c, 1.5])
+    }),
+    ...CONFETTI.map(([dx, dy, c, turn]) => ['r', 24 + dx - 1.1, a.ey + dy - 0.6, 2.2, 1.2, c, 0.3, turn]),
+  ],
+  propeller: (a, t) => onHead(a, a.crown + 1, (y) => {
+    const hub = y - 10.4
+    const tl = (-8 * Math.PI) / 180
+    return [
+      ['r', 15, y - 6.75, 18, 8, '#4a9be8', 4],
+      ['e', 24, y - 2.7, 4.4, 4.05, GOLD],
+      ['e', 24, y - 2.7, 1.7, 4.05, '#e2463c'],
+      ['r', 14.5, y - 1.8, 19, 3, t, 1.5],
+      ['r', 23.3, hub, 1.4, 4, '#3a3f4b', 0.5],
+      ['e', 24 - 4.4 * Math.cos(tl), hub - 4.4 * Math.sin(tl), 4.2, 1.25, '#e2463c', -8],
+      ['e', 24 + 4.4 * Math.cos(tl), hub + 4.4 * Math.sin(tl), 4.2, 1.25, '#e2463c', -8],
+      ['e', 24, hub, 1.3, 1.3, GOLD],
+    ]
+  }),
+  kite: (a) => {
+    const [x, y] = hand(a)
+    const kx = x + 4.5
+    const ky = y - 23
+    const w = 4.6
+    const up = 4.8
+    const dn = 8
+    // The string's curve in three pieces.
+    const s = (k) => [(1 - k) ** 2 * x + 2 * k * (1 - k) * (kx + 2) + k * k * kx, (1 - k) ** 2 * y + 2 * k * (1 - k) * (y - 4) + k * k * ky]
+    const tail = [[kx, ky + dn], [kx - 2.2, ky + dn + 2.6], [kx - 1.2, ky + dn + 6.6], [kx - 3, ky + dn + 9]]
+    const bow = (bx, by, c) => [['e', bx - 1.1, by, 1.1, 0.75, c], ['e', bx + 1.1, by, 1.1, 0.75, c]]
+    return [
+      ...[0, 1, 2].map((i) => ['l', ...s(i / 3), ...s((i + 1) / 3), '#7d8696', 0.5]),
+      ...tail.slice(1).map((p, i) => ['l', ...tail[i], ...p, '#3a3f4b', 0.6]),
+      ['t', kx, ky, w, up, '#e2463c'],
+      ['t', kx, ky, w, -dn, GOLD],
+      ['l', kx, ky - up, kx, ky + dn, '#6b4a32', 0.55],
+      ['l', kx - w, ky, kx + w, ky, '#6b4a32', 0.55],
+      ...bow(kx - 2.2, ky + dn + 2.6, '#4a9be8'),
+      ...bow(kx - 1.2, ky + dn + 6.6, '#f07ac0'),
+    ]
+  },
+  dragonfly: (a) => {
+    const y = mid(a) - 3
+    const x0 = a.side - 4
+    const wing = (L, w, dy, ang) => [-1, 1].flatMap((d) => {
+      const th = (ang * Math.PI) / 180
+      const P = (u, v) => [24 + d * (x0 + u * Math.cos(th) - v * Math.sin(th)), y + dy + u * Math.sin(th) + v * Math.cos(th)]
+      return [
+        ['e', ...P(L / 2, -w * 0.1), L / 2, w * 0.85, '#e6f4ff', d * ang, 0.9],
+        ['l', ...P(0.5, -w * 0.55), ...P(L * 0.8, -w * 0.8), '#5f84ad', 0.5],
+        ['l', ...P(0.4, -0.1), ...P(L - 1, -w * 0.1), '#8fb6dc', 0.4],
+        ['e', ...P(L * 0.84, -w * 0.68), 1.1, 0.45, '#3a4a63', d * ang],
+      ]
+    })
+    return [...wing(15.5, 2.3, 1.6, 12), ...wing(18, 2.6, -1.6, -14)]
+  },
+  orbit: (a) => {
+    const ring = orbitRing(a)
+    const [mx, my] = ring.at(Math.PI - 0.5)
+    return [
+      ...ring.arcs(12).flatMap((pts) => pts.slice(1).map((p, i) => ['l', ...pts[i], ...p, GOLD, 1])),
+      ['e', mx, my, 2.8, 2.8, '#ece6d6'],
+      ['e', mx - 0.9, my - 0.6, 0.7, 0.7, '#cbc2aa'],
+      ['e', mx + 0.9, my + 0.8, 0.5, 0.5, '#cbc2aa'],
+      ['e', mx + 0.7, my - 1.3, 0.35, 0.35, '#cbc2aa'],
     ]
   },
   raincloud: (a) => {

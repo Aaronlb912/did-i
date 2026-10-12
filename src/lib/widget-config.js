@@ -32,6 +32,21 @@ const LOOK_IDS = new Set([
   'cranberry',
   'saffron',
   'pine',
+  'iris',
+  'lagoon',
+  'cocoa',
+  'emerald',
+  'candy',
+  'denim',
+  'magenta',
+  'copper',
+  'lilac',
+  'lemon',
+  'peacock',
+  'rosewood',
+  'sunset',
+  'twilight',
+  'fog',
 ])
 
 export function readWidgetSettings() {

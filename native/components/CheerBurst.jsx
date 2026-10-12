@@ -4,6 +4,28 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { svgParts } from '../lib/svg-parts.js'
 import { takeCheerAim } from '../lib/cheer-origin.js'
 import {
+  BALL_STRIPE,
+  BELL_BODY,
+  BELL_LIP,
+  BELL_SHADE,
+  BELL_SHINE,
+  BELL_VIEW,
+  BOLT_PATH,
+  BOLT_TIP,
+  BOLT_VIEW,
+  BOUNCE_KEYS,
+  BOW_INNER,
+  BOW_KNOT,
+  BOW_LOOPS,
+  BOW_TAILS,
+  BUTTERFLY_DOTS,
+  BUTTERFLY_FEELERS,
+  BUTTERFLY_FLAPS,
+  BUTTERFLY_VIEW,
+  CLINK_COLORS,
+  CRACKLE_PATH,
+  DISCO_COLORS,
+  DISCO_LATS,
   GIFT_BAND,
   GIFT_BOW,
   GIFT_BOX,
@@ -17,7 +39,29 @@ import {
   KERNEL_PUFFS,
   KERNEL_SHINE,
   LAUNCH_FLY_MS,
+  MUG_BAND,
+  MUG_BASE,
+  MUG_BODY,
+  MUG_COCOA,
+  MUG_CX,
+  MUG_FOAM,
+  MUG_HANDLE,
+  MUG_SHINE,
+  MUG_VIEW,
   POPCORN_COLORS,
+  RIBBON_SWIRL,
+  RIBBON_TOP,
+  RIBBON_VIEW,
+  SNOW_CORE,
+  SNOW_PATH,
+  SOUND_ARC,
+  SPLAT_DRIPS,
+  SPLAT_PATH,
+  SPLAT_VIEW,
+  WING_LOW_L,
+  WING_LOW_R,
+  WING_UP_L,
+  WING_UP_R,
   ROCKET_BODY,
   ROCKET_FINS,
   ROCKET_FLAME,
@@ -1776,6 +1820,680 @@ function Kernel({ delay, x, y, fall, rot, size, tone }) {
   )
 }
 
+// Winter drop cheers. Each keyframe table matches its web @keyframes in did-i.css.
+function paintColor(tone, colors) {
+  return tone === 'warm' ? colors.miss : confettiColor(tone, colors)
+}
+
+function degs(values, dir = 1) {
+  return values.map((d) => `${d * dir}deg`)
+}
+
+// Snowflake: spins in, overshoots, flashes and bursts (web .di-flake).
+const FLAKE_T = [0, 0.08, 0.3, 0.38, 0.44, 0.48, 0.52, 0.6, 1]
+
+function Snowflake({ delay, x, y, size, turn, color }) {
+  const progress = useLinear(delay, 1500)
+  const px = remPx(size || '2.6')
+  const dir = turn < 0 ? -1 : 1
+  const rotate = progress.interpolate({ inputRange: FLAKE_T, outputRange: degs([-200, -143, 12, -5, 0, 0, 0, 0, 0], dir) })
+  const scale = progress.interpolate({ inputRange: FLAKE_T, outputRange: [0.2, 0.45, 1.12, 0.95, 1, 1.08, 1.25, 1.45, 1.45] })
+  const opacity = progress.interpolate({ inputRange: FLAKE_T, outputRange: [0, 1, 1, 1, 1, 1, 1, 0, 0] })
+  const flash = progress.interpolate({ inputRange: [0, 0.42, 0.48, 0.62, 1], outputRange: [0, 0, 0.55, 0, 0] })
+  const flashScale = progress.interpolate({ inputRange: [0, 0.42, 0.48, 0.62, 1], outputRange: [0.5, 0.5, 1.1, 1.6, 1.6] })
+  const parts = svgParts()
+  let art = <View style={{ width: px, height: px, borderRadius: px / 2, borderWidth: 2, borderColor: color }} />
+  if (parts) {
+    const { Svg, Path } = parts
+    art = (
+      <Svg width={px} height={px} viewBox="0 0 24 24">
+        <Path d={SNOW_PATH} stroke={color} strokeWidth={1.7} strokeLinecap="round" fill="none" />
+        <Path d={SNOW_CORE} stroke={color} strokeWidth={1.7} strokeLinejoin="round" fill="none" />
+      </Svg>
+    )
+  }
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: remPx(x || '0') - px / 2,
+        top: remPx(y || '0') - px / 2,
+        width: px,
+        height: px,
+        opacity,
+        shadowColor: color,
+        shadowOpacity: 0.6,
+        shadowRadius: 6,
+        transform: [{ rotate }, { scale }],
+      }}
+    >
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: -px * 0.05,
+          top: -px * 0.05,
+          width: px * 1.1,
+          height: px * 1.1,
+          borderRadius: px * 0.55,
+          backgroundColor: color,
+          opacity: flash,
+          transform: [{ scale: flashScale }],
+        }}
+      />
+      {art}
+    </Animated.View>
+  )
+}
+
+function IceDust({ delay, x, y, size, color }) {
+  const progress = useLinear(delay, 750)
+  const px = remPx(size || '0.3')
+  const dx = remPx(x)
+  const dy = remPx(y)
+  const translateX = progress.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, dx * 0.8, dx] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, dy * 0.8, dy + remPx('0.6')] })
+  const scale = progress.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0.4, 1, 0.3] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.7, 0.8, 1], outputRange: [0, 1, 0.5, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -px / 2,
+        top: -px / 2,
+        width: px,
+        height: px,
+        borderRadius: 1,
+        backgroundColor: color,
+        opacity,
+        transform: [{ translateX }, { translateY }, { rotate: '45deg' }, { scale }],
+      }}
+    />
+  )
+}
+
+// Bell: swings in from its knob and rings with a bounce (web .di-bell).
+const BELL_T = [0, 0.1, 0.18, 0.27, 0.29, 0.34, 0.41, 0.43, 0.48, 0.55, 0.57, 0.62, 0.7, 0.78, 0.86, 1]
+const BELL_TILT = [-50, -30, 22, -12, -11, 10, -9, -8, 7, -6, -5, 4, -2, 0, 0, 0]
+const BELL_SCALE = [0.6, 0.85, 1.05, 1, 1.07, 1, 1, 1.06, 1, 1, 1.05, 1, 1, 1, 1, 0.9]
+const CLAPPER_TILT = [0, 0, -14, 10, 8, -12, 10, 8, -9, 8, 6, -5, 3, 0, 0, 0]
+
+function Bell({ delay, size, swing, colors }) {
+  const progress = useLinear(delay, 1600)
+  const w = remPx(size || '2.6')
+  const h = w * 1.1
+  const dir = swing < 0 ? -1 : 1
+  const rotate = progress.interpolate({ inputRange: BELL_T, outputRange: degs(BELL_TILT, dir) })
+  const scale = progress.interpolate({ inputRange: BELL_T, outputRange: BELL_SCALE })
+  const clapper = progress.interpolate({ inputRange: BELL_T, outputRange: degs(CLAPPER_TILT, dir) })
+  const translateY = progress.interpolate({ inputRange: [0, 0.1, 0.18, 1], outputRange: [-remPx('0.6'), -remPx('0.3'), 0, 0] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.86, 1], outputRange: [0, 1, 1, 0] })
+  const parts = svgParts()
+  let body = <View style={{ position: 'absolute', left: w * 0.2, top: h * 0.14, width: w * 0.6, height: h * 0.72, borderTopLeftRadius: w * 0.3, borderTopRightRadius: w * 0.3, backgroundColor: colors.on }} />
+  let ringer = null
+  if (parts) {
+    const { Svg, Path, Circle } = parts
+    body = (
+      <Svg width={w} height={h} viewBox={BELL_VIEW}>
+        <Path d={BELL_BODY} fill={colors.on} />
+        <Path d={BELL_SHADE} fill="#000" fillOpacity={0.2} />
+        <Path d={BELL_LIP} fill={colors.onDeep} />
+        <Path d={BELL_SHINE} stroke="#fff" strokeOpacity={0.45} strokeWidth={1.6} strokeLinecap="round" fill="none" />
+        <Circle cx={20} cy={4} r={2.4} stroke={colors.onDeep} strokeWidth={1.6} fill="none" />
+      </Svg>
+    )
+    ringer = (
+      <Svg width={w} height={h} viewBox={BELL_VIEW}>
+        <Path d="M20 30 V37" stroke={colors.onDeep} strokeWidth={2} strokeLinecap="round" />
+        <Circle cx={20} cy={40} r={3} fill={colors.onDeep} />
+      </Svg>
+    )
+  }
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: -w / 2,
+        top: -h / 2,
+        width: w,
+        height: h,
+        opacity,
+        transformOrigin: '50% 9%',
+        transform: [{ translateY }, { rotate }, { scale }],
+      }}
+    >
+      {ringer ? (
+        <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transformOrigin: '50% 13.6%', transform: [{ rotate: clapper }] }}>
+          {ringer}
+        </Animated.View>
+      ) : null}
+      {body}
+    </Animated.View>
+  )
+}
+
+function SoundArc({ delay, x, y, size, turn, color }) {
+  const progress = useLinear(delay, 550)
+  const h = remPx(size || '1.2')
+  const w = h / 2
+  const dir = turn < 0 ? -1 : 1
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, dir * h * 0.5] })
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.15] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] })
+  const parts = svgParts()
+  if (!parts) return null
+  const { Svg, Path } = parts
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: remPx(x) - w / 2, top: remPx(y) - h / 2, width: w, height: h, opacity, transform: [{ translateX }, { scale }] }}
+    >
+      <View style={{ width: w, height: h, transform: [{ scaleX: dir }] }}>
+        <Svg width={w} height={h} viewBox="0 0 12 24">
+          <Path d={SOUND_ARC} stroke={color} strokeWidth={2} strokeLinecap="round" fill="none" />
+        </Svg>
+      </View>
+    </Animated.View>
+  )
+}
+
+// Disco: drops in on its line, bobs and turns; the tiles slide past
+// inside the round mask, like the web background-position turn.
+const DISCO_T = [0, 0.18, 0.26, 0.32, 0.38, 0.84, 1]
+const DISCO_TILES = [DISCO_COLORS.hi, DISCO_COLORS.mid, DISCO_COLORS.lo, DISCO_COLORS.mid]
+
+function Disco({ delay, size, turn, colors }) {
+  const progress = useLinear(delay, 1800)
+  const px = remPx(size || '2.4')
+  const dir = turn < 0 ? -1 : 1
+  const tile = px / 8
+  const translateY = progress.interpolate({ inputRange: DISCO_T, outputRange: [-2.6, 0.22, -0.08, 0.03, 0, 0, -1.8].map((k) => k * px) })
+  const opacity = progress.interpolate({ inputRange: [0, 0.06, 0.84, 1], outputRange: [0, 1, 1, 0] })
+  const slide = progress.interpolate({ inputRange: [0, 1], outputRange: dir > 0 ? [0, -1.5 * px] : [-1.5 * px, 0] })
+  const parts = svgParts()
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity, transform: [{ translateY }] }}>
+      <View style={{ position: 'absolute', left: -1, top: -px / 2 - 640 + 1, width: 2, height: 640, backgroundColor: colors.inkSoft, opacity: 0.7 }} />
+      <View
+        style={{
+          position: 'absolute',
+          left: -px / 2,
+          top: -px / 2,
+          width: px,
+          height: px,
+          borderRadius: px / 2,
+          overflow: 'hidden',
+          backgroundColor: DISCO_COLORS.mid,
+          shadowColor: colors.on,
+          shadowOpacity: 0.5,
+          shadowRadius: 8,
+        }}
+      >
+        <Animated.View style={{ position: 'absolute', left: 0, top: 0, height: px, flexDirection: 'row', transform: [{ translateX: slide }] }}>
+          {Array.from({ length: 20 }, (_, i) => (
+            <View key={i} style={{ width: tile, height: px, backgroundColor: DISCO_TILES[i % 4], borderRightWidth: Math.max(1, tile * 0.12), borderColor: DISCO_COLORS.line }} />
+          ))}
+        </Animated.View>
+        {parts ? (
+          <parts.Svg width={px} height={px} viewBox="0 0 24 24" style={{ position: 'absolute', left: 0, top: 0 }}>
+            <parts.Path d={DISCO_LATS} stroke={DISCO_COLORS.line} strokeWidth={0.8} fill="none" />
+          </parts.Svg>
+        ) : null}
+        <View style={{ position: 'absolute', left: 0, top: 0, width: px, height: px, borderRadius: px / 2, borderWidth: px * 0.09, borderColor: 'rgba(0, 0, 0, 0.28)' }} />
+        <View style={{ position: 'absolute', left: px * 0.22, top: px * 0.18, width: px * 0.18, height: px * 0.18, borderRadius: px * 0.09, backgroundColor: 'rgba(255, 255, 255, 0.8)' }} />
+      </View>
+    </Animated.View>
+  )
+}
+
+function DiscoSpot({ delay, rot, turn, len, size, color }) {
+  const progress = useLinear(delay, 1100)
+  const px = remPx(size || '0.7')
+  const far = remPx(len)
+  const from = Number.parseFloat(rot) || 0
+  const sweep = Number(turn) || 0
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${from + sweep}deg`] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [-far * 0.25, -far * 0.85, -far] })
+  const scale = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.4, 1, 1.1] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.15, 0.75, 1], outputRange: [0, 0.9, 0.85, 0] })
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, transform: [{ rotate }] }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: -px / 2,
+          top: -px / 2,
+          width: px,
+          height: px,
+          borderRadius: px / 2,
+          backgroundColor: color,
+          opacity,
+          shadowColor: color,
+          shadowOpacity: 0.8,
+          shadowRadius: px * 0.3,
+          transform: [{ translateY }, { scale }],
+        }}
+      />
+    </Animated.View>
+  )
+}
+
+// Ribbon: a swirl spins in, then pulls into a bow (web .di-ribbon).
+const SWIRL_T = [0, 0.12, 0.3, 0.42, 0.5, 1]
+const BOW_T = [0, 0.4, 0.47, 0.53, 0.58, 0.64, 0.86, 1]
+
+function Ribbon({ delay, size, turn, colors }) {
+  const progress = useLinear(delay, 1600)
+  const px = remPx(size || '3')
+  const dir = turn < 0 ? -1 : 1
+  const swirlTurn = progress.interpolate({ inputRange: SWIRL_T, outputRange: degs([-220, -120, -20, 40, 90, 90], dir) })
+  const swirlScale = progress.interpolate({ inputRange: SWIRL_T, outputRange: [0.3, 0.7, 0.92, 0.6, 0.2, 0.2] })
+  const swirlFade = progress.interpolate({ inputRange: SWIRL_T, outputRange: [0, 1, 1, 1, 0, 0] })
+  const bowScale = progress.interpolate({ inputRange: BOW_T, outputRange: [0, 0, 1.6, 1.2, 1.42, 1.35, 1.35, 1.25] })
+  const bowTurn = progress.interpolate({ inputRange: BOW_T, outputRange: degs([0, 0, -8, 6, -3, 0, 0, 0], dir) })
+  const bowFade = progress.interpolate({ inputRange: [0, 0.4, 0.47, 0.86, 1], outputRange: [0, 0, 1, 1, 0] })
+  const parts = svgParts()
+  if (!parts) return <Bloom delay={delay} size={size} color={colors.on} />
+  const { Svg, Path } = parts
+  const layer = { position: 'absolute', left: 0, top: 0, width: px, height: px, transformOrigin: '50% 46%' }
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: -px / 2, top: -px * RIBBON_TOP, width: px, height: px }}>
+      <Animated.View style={[layer, { opacity: swirlFade, transform: [{ rotate: swirlTurn }, { scale: swirlScale }] }]}>
+        <Svg width={px} height={px} viewBox={RIBBON_VIEW}>
+          <Path d={RIBBON_SWIRL} stroke={colors.on} strokeWidth={4.5} strokeLinecap="round" fill="none" />
+          <Path d={RIBBON_SWIRL} stroke={colors.onDeep} strokeOpacity={0.55} strokeWidth={1.2} strokeLinecap="round" fill="none" />
+        </Svg>
+      </Animated.View>
+      <Animated.View style={[layer, { opacity: bowFade, transform: [{ rotate: bowTurn }, { scale: bowScale }] }]}>
+        <Svg width={px} height={px} viewBox={RIBBON_VIEW}>
+          <Path d={BOW_TAILS} fill={colors.on} />
+          <Path d={BOW_LOOPS} fill={colors.on} />
+          <Path d={BOW_INNER} fill={colors.onDeep} fillOpacity={0.55} />
+          <Path d={BOW_KNOT} fill={colors.onDeep} />
+        </Svg>
+      </Animated.View>
+    </View>
+  )
+}
+
+// Clink: a cocoa mug swings in and touches rims with its partner (web .di-cup).
+const CUP_T = [0, 0.14, 0.26, 0.3, 0.36, 0.44, 0.52, 0.86, 1]
+const CUP_X = [1.9, 1, 0.47, 0.47, 0.66, 0.5, 0.55, 0.55, 0.7]
+const CUP_TILT = [-25, -5, 18, 18, 4, 14, 10, 10, 0]
+const CUP_Y = [0.4, 0, 0, 0, 0, 0, 0, 0, 0.25]
+
+function Cup({ delay, side, size, colors }) {
+  const progress = useLinear(delay, 1600)
+  const px = remPx(size || '2.2')
+  const dir = side === 'left' ? -1 : 1
+  const cup = dir < 0 ? colors.on : colors.late
+  const translateX = progress.interpolate({ inputRange: CUP_T, outputRange: CUP_X.map((k) => k * px * dir) })
+  const translateY = progress.interpolate({ inputRange: CUP_T, outputRange: CUP_Y.map((k) => k * px) })
+  const rotate = progress.interpolate({ inputRange: CUP_T, outputRange: degs(CUP_TILT, -dir) })
+  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.86, 1], outputRange: [0, 1, 1, 0] })
+  const parts = svgParts()
+  let art = <View style={{ position: 'absolute', left: px * 0.16, top: px * 0.28, width: px * 0.56, height: px * 0.66, borderRadius: px * 0.12, backgroundColor: cup }} />
+  if (parts) {
+    const { Svg, Path, Circle, Ellipse } = parts
+    art = (
+      <Svg width={px} height={px} viewBox={MUG_VIEW}>
+        <Path d={MUG_HANDLE} stroke={cup} strokeWidth={3.2} strokeLinecap="round" fill="none" />
+        <Path d={MUG_BODY} fill={cup} />
+        <Path d={MUG_BAND} fill="#000" fillOpacity={0.18} />
+        <Path d={MUG_SHINE} stroke="#fff" strokeOpacity={0.35} strokeWidth={1.6} strokeLinecap="round" fill="none" />
+        <Ellipse cx={MUG_COCOA[0]} cy={MUG_COCOA[1]} rx={MUG_COCOA[2]} ry={MUG_COCOA[3]} fill={CLINK_COLORS.cocoa} stroke={cup} strokeWidth={1.2} />
+        {MUG_FOAM.map(([cx, cy, r], i) => (
+          <Circle key={i} cx={cx} cy={cy} r={r} fill={CLINK_COLORS.foam} />
+        ))}
+      </Svg>
+    )
+  }
+  // A zero-size pivot at the mug's base; the left mug is the right one mirrored.
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity, transform: [{ translateX }, { translateY }, { rotate }] }}>
+      <View
+        style={{
+          position: 'absolute',
+          left: -px * (dir < 0 ? 1 - MUG_CX : MUG_CX),
+          top: -px * MUG_BASE,
+          width: px,
+          height: px,
+          transform: dir < 0 ? [{ scaleX: -1 }] : undefined,
+        }}
+      >
+        {art}
+      </View>
+    </Animated.View>
+  )
+}
+
+function Fizz({ delay, x, y, rise, size, color }) {
+  const progress = useLinear(delay, 900)
+  const px = remPx(size || '0.4')
+  const up = remPx(rise)
+  const t = [0, 0.15, 0.4, 0.7, 0.85, 1]
+  const translateX = progress.interpolate({ inputRange: t, outputRange: [0, remPx('0.1'), remPx('0.25'), -remPx('0.2'), 0, 0] })
+  const translateY = progress.interpolate({ inputRange: t, outputRange: [0, up * 0.15, up * 0.45, up * 0.8, up * 0.92, up] })
+  const scale = progress.interpolate({ inputRange: t, outputRange: [0.3, 1, 1, 1, 1, 1.5] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.15, 0.85, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: remPx(x) - px / 2,
+        top: remPx(y) - px / 2,
+        width: px,
+        height: px,
+        borderRadius: px / 2,
+        borderWidth: 1.5,
+        borderColor: color,
+        opacity,
+        transform: [{ translateX }, { translateY }, { scale }],
+      }}
+    />
+  )
+}
+
+// Ball drop: the pole, then a glowing ball that slides down it and flashes.
+function Pole({ delay, size, fall, color }) {
+  const progress = useLinear(delay, 1700)
+  const px = remPx(size || '1.6')
+  const drop = remPx(fall)
+  const opacity = progress.interpolate({ inputRange: [0, 0.08, 0.86, 1], outputRange: [0, 0.8, 0.8, 0] })
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity }}>
+      <View style={{ position: 'absolute', left: -1, top: -drop - px * 0.7, width: 2, height: drop + px * 1.5, borderRadius: 1, backgroundColor: color }} />
+      <View style={{ position: 'absolute', left: -px * 0.45, top: px * 0.73, width: px * 0.9, height: px * 0.14, borderRadius: px * 0.07, backgroundColor: color }} />
+    </Animated.View>
+  )
+}
+
+const DROP_T = [0, 0.08, 0.3, 0.42, 0.46, 0.5, 0.56, 0.62, 0.86, 1]
+
+function DropBall({ delay, size, fall, colors }) {
+  const progress = useLinear(delay, 1700)
+  const px = remPx(size || '1.6')
+  const drop = remPx(fall)
+  const translateY = progress.interpolate({ inputRange: DROP_T, outputRange: [-drop, -drop, -drop * 0.4, -drop * 0.08, 0, 0, 0, 0, 0, 0] })
+  const scale = progress.interpolate({ inputRange: DROP_T, outputRange: [0.6, 1, 1, 1, 1, 1.18, 0.96, 1, 1, 0.9] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.08, 0.86, 1], outputRange: [0, 1, 1, 0] })
+  const halo = progress.interpolate({ inputRange: [0, 0.46, 0.5, 0.7, 1], outputRange: [0.12, 0.15, 0.45, 0.2, 0] })
+  const flash = progress.interpolate({ inputRange: [0, 0.45, 0.48, 0.62, 1], outputRange: [0, 0, 0.45, 0, 0] })
+  const flashScale = progress.interpolate({ inputRange: [0, 0.45, 0.48, 0.62, 1], outputRange: [0.4, 0.4, 1, 1.3, 1.3] })
+  const round = (d) => ({ position: 'absolute', left: -d / 2, top: -d / 2, width: d, height: d, borderRadius: d / 2 })
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity, transform: [{ translateY }, { scale }] }}>
+      <Animated.View style={[round(px * 2.8), { backgroundColor: colors.on, opacity: flash, transform: [{ scale: flashScale }] }]} />
+      <Animated.View style={[round(px * 1.8), { backgroundColor: colors.on, opacity: halo }]} />
+      <View
+        style={[
+          round(px),
+          { backgroundColor: colors.on, borderWidth: Math.max(1.5, px * 0.06), borderColor: colors.onDeep, shadowColor: colors.on, shadowOpacity: 0.7, shadowRadius: px * 0.3 },
+        ]}
+      >
+        <View style={{ position: 'absolute', left: px * 0.2, top: px * 0.16, width: px * 0.24, height: px * 0.2, borderRadius: px * 0.12, backgroundColor: 'rgba(255, 255, 255, 0.6)' }} />
+      </View>
+    </Animated.View>
+  )
+}
+
+function Beam({ delay, rot, len, size, color }) {
+  const progress = useLinear(delay, 700)
+  const px = remPx(size || '1.6')
+  const h = remPx(len)
+  const w = Math.max(2, px * 0.07)
+  const scaleY = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 1.1, 0.6] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 0, -h * 0.6] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [1, 1, 0] })
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, transform: [{ rotate: `${Number.parseFloat(rot) || 0}deg` }] }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: -w / 2,
+          top: -px * 0.65 - h,
+          width: w,
+          height: h,
+          borderRadius: w / 2,
+          backgroundColor: color,
+          opacity,
+          transformOrigin: 'bottom',
+          transform: [{ translateY }, { scaleY }],
+        }}
+      />
+    </View>
+  )
+}
+
+// Bolt: a window slides down over the still bolt to draw it top to bottom
+// (the web clip-path), then it flickers.
+function Bolt({ delay, size, colors }) {
+  const progress = useLinear(delay, 1200)
+  const w = remPx(size || '2')
+  const h = w * 2
+  const tipX = w * BOLT_TIP[0]
+  const wipe = progress.interpolate({ inputRange: [0, 0.1, 1], outputRange: [-h, 0, 0] })
+  const hold = progress.interpolate({ inputRange: [0, 0.1, 1], outputRange: [h, 0, 0] })
+  const flicker = progress.interpolate({ inputRange: [0, 0.1, 0.14, 0.18, 0.22, 0.26, 0.7, 1], outputRange: [1, 1, 0.35, 1, 0.5, 1, 1, 0] })
+  const flash = progress.interpolate({ inputRange: [0, 0.1, 0.35, 1], outputRange: [0, 0.5, 0, 0] })
+  const flashScale = progress.interpolate({ inputRange: [0, 0.1, 0.35, 1], outputRange: [0.3, 1, 1.4, 1.4] })
+  const f = w * 2.2
+  const parts = svgParts()
+  const art = parts ? (
+    <parts.Svg width={w} height={h} viewBox={BOLT_VIEW}>
+      <parts.Path d={BOLT_PATH} fill={colors.on} stroke={colors.ink} strokeOpacity={0.5} strokeWidth={1} strokeLinejoin="round" />
+    </parts.Svg>
+  ) : (
+    <View style={{ position: 'absolute', left: tipX - 2, top: 0, width: 4, height: h, backgroundColor: colors.on }} />
+  )
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: -tipX, top: -h, width: w, height: h }}>
+      <Animated.View
+        style={{ position: 'absolute', left: tipX - f / 2, top: h - f / 2, width: f, height: f, borderRadius: f / 2, backgroundColor: colors.on, opacity: flash, transform: [{ scale: flashScale }] }}
+      />
+      <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, opacity: flicker, shadowColor: colors.on, shadowOpacity: 0.8, shadowRadius: 6 }}>
+        <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, overflow: 'hidden', transform: [{ translateY: wipe }] }}>
+          <Animated.View style={{ width: w, height: h, transform: [{ translateY: hold }] }}>{art}</Animated.View>
+        </Animated.View>
+      </Animated.View>
+    </View>
+  )
+}
+
+function Crackle({ delay, rot, len, size, color }) {
+  const progress = useLinear(delay, 450)
+  const px = remPx(size || '0.8')
+  const h = px * (9 / 14)
+  const far = remPx(len)
+  const translateX = progress.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, far * 0.5, far] })
+  const scale = progress.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0.3, 1, 0.8] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.2, 0.4, 0.55, 1], outputRange: [0, 1, 0.3, 1, 0] })
+  const parts = svgParts()
+  if (!parts) return null
+  const { Svg, Path } = parts
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, transform: [{ rotate: `${Number.parseFloat(rot) || 0}deg` }] }}>
+      <Animated.View style={{ position: 'absolute', left: 0, top: -h / 2, width: px, height: h, opacity, transformOrigin: '0% 50%', transform: [{ translateX }, { scale }] }}>
+        <Svg width={px} height={h} viewBox="0 0 14 9">
+          <Path d={CRACKLE_PATH} stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Svg>
+      </Animated.View>
+    </View>
+  )
+}
+
+// Splat: a blob flies in from its throw angle, splats with an overshoot and
+// drips (web .di-splat).
+const SPLAT_T = [0, 0.23, 0.24, 0.29, 0.34, 0.39, 0.44, 1]
+
+function Splat({ delay, x, y, rot, len, size, color }) {
+  const progress = useLinear(delay, 1600)
+  const px = remPx(size || '2.6')
+  const angle = ((Number.parseFloat(rot) || 0) * Math.PI) / 180
+  const far = remPx(len)
+  const bx = Math.cos(angle) * far
+  const by = Math.sin(angle) * far
+  const blob = px * 0.55
+  const blobX = progress.interpolate({ inputRange: [0, 0.24, 1], outputRange: [bx, 0, 0] })
+  const blobY = progress.interpolate({ inputRange: [0, 0.24, 1], outputRange: [by, 0, 0] })
+  const blobScale = progress.interpolate({ inputRange: [0, 0.24, 1], outputRange: [0.35, 1.1, 1.1] })
+  const blobFade = progress.interpolate({ inputRange: [0, 0.06, 0.24, 0.25, 1], outputRange: [0, 1, 1, 0, 0] })
+  const scale = progress.interpolate({ inputRange: SPLAT_T, outputRange: [0.3, 0.3, 0.35, 1.18, 0.94, 1.03, 1, 1] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.23, 0.24, 0.86, 1], outputRange: [0, 0, 1, 1, 0] })
+  const drip = progress.interpolate({ inputRange: [0, 0.3, 0.85, 1], outputRange: [0, 0, 1, 1] })
+  const dripFade = progress.interpolate({ inputRange: [0, 0.86, 1], outputRange: [1, 1, 0] })
+  const parts = svgParts()
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: remPx(x), top: remPx(y) }}>
+      <Animated.View
+        style={{ position: 'absolute', left: -blob / 2, top: -blob / 2, width: blob, height: blob, borderRadius: blob / 2, backgroundColor: color, opacity: blobFade, transform: [{ translateX: blobX }, { translateY: blobY }, { scale: blobScale }] }}
+      />
+      {SPLAT_DRIPS.map(([dx, top, dw, dl], i) => (
+        <Animated.View
+          key={i}
+          style={{
+            position: 'absolute',
+            left: px * (dx / 40 - 0.5) - (px * dw) / 80,
+            top: px * (top / 40 - 0.5),
+            width: (px * dw) / 40,
+            height: (px * dl) / 40,
+            borderRadius: (px * dw) / 80,
+            backgroundColor: color,
+            opacity: dripFade,
+            transformOrigin: 'top',
+            transform: [{ scaleY: drip }],
+          }}
+        />
+      ))}
+      <Animated.View style={{ position: 'absolute', left: -px / 2, top: -px / 2, width: px, height: px, opacity, transform: [{ scale }] }}>
+        {parts ? (
+          <parts.Svg width={px} height={px} viewBox={SPLAT_VIEW}>
+            <parts.Path d={SPLAT_PATH} fill={color} />
+            <parts.Ellipse cx={15} cy={15} rx={3.2} ry={2} fill="#fff" fillOpacity={0.3} />
+          </parts.Svg>
+        ) : (
+          <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: color }} />
+        )}
+      </Animated.View>
+    </View>
+  )
+}
+
+function SplatDot({ delay, x, y, size, color }) {
+  const progress = useLinear(delay, 1200)
+  const px = remPx(size || '0.3')
+  const dx = remPx(x)
+  const dy = remPx(y)
+  const translateX = progress.interpolate({ inputRange: [0, 0.15, 1], outputRange: [dx * 0.5, dx, dx] })
+  const translateY = progress.interpolate({ inputRange: [0, 0.15, 1], outputRange: [dy * 0.5, dy, dy] })
+  const scale = progress.interpolate({ inputRange: [0, 0.15, 0.25, 1], outputRange: [0, 1.25, 1, 1] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.05, 0.8, 1], outputRange: [0, 1, 1, 0] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: -px / 2, top: -px / 2, width: px, height: px, borderRadius: px / 2, backgroundColor: color, opacity, transform: [{ translateX }, { translateY }, { scale }] }}
+    />
+  )
+}
+
+// Butterfly: flutters up on a wavy path; each wing beats about the body.
+const FLY_T = [0, 0.12, 0.3, 0.5, 0.7, 0.85, 1]
+const FLAP_T = Array.from({ length: BUTTERFLY_FLAPS * 2 + 1 }, (_, i) => i / (BUTTERFLY_FLAPS * 2))
+const FLAP_X = FLAP_T.map((_, i) => (i % 2 ? 0.25 : 1))
+
+function Butterfly({ delay, x, y, size, turn, color, ink }) {
+  const progress = useLinear(delay, 1800)
+  const w = remPx(size || '2')
+  const h = w * 0.8
+  const bx = remPx(x)
+  const by = remPx(y)
+  const dir = turn < 0 ? -1 : 1
+  const wob = remPx('0.5') * dir
+  const translateX = progress.interpolate({
+    inputRange: FLY_T,
+    outputRange: [0, bx * 0.08 + wob, bx * 0.25 - wob, bx * 0.45 + wob, bx * 0.68 - wob * 0.8, bx * 0.85 + wob * 0.5, bx],
+  })
+  const translateY = progress.interpolate({
+    inputRange: FLY_T,
+    outputRange: [0, by * 0.12, by * 0.28 + remPx('0.2'), by * 0.5, by * 0.66 + remPx('0.15'), by * 0.82, by],
+  })
+  const rotate = progress.interpolate({ inputRange: FLY_T, outputRange: degs([0, 10, -8, 8, -6, 6, 0], dir) })
+  const scale = progress.interpolate({ inputRange: FLY_T, outputRange: [0.2, 1.05, 1, 1, 1, 0.95, 0.8] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.12, 0.85, 1], outputRange: [0, 1, 1, 0] })
+  const flap = progress.interpolate({ inputRange: FLAP_T, outputRange: FLAP_X })
+  const parts = svgParts()
+  if (!parts) return <Pip delay={delay} color={color} />
+  const { Svg, Path, Circle, Ellipse } = parts
+  const wing = (up, low, dot) => (
+    <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: [{ scaleX: flap }] }}>
+      <Svg width={w} height={h} viewBox={BUTTERFLY_VIEW}>
+        <Path d={up} fill={color} />
+        <Path d={low} fill={color} />
+        <Path d={low} fill="#000" fillOpacity={0.22} />
+        <Circle cx={dot[0]} cy={dot[1]} r={dot[2]} fill="#fff" fillOpacity={0.7} />
+      </Svg>
+    </Animated.View>
+  )
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: -w / 2, top: -h / 2, width: w, height: h, opacity, transform: [{ translateX }, { translateY }, { rotate }, { scale }] }}
+    >
+      {wing(WING_UP_L, WING_LOW_L, BUTTERFLY_DOTS[0])}
+      {wing(WING_UP_R, WING_LOW_R, BUTTERFLY_DOTS[1])}
+      <Svg width={w} height={h} viewBox={BUTTERFLY_VIEW} style={{ position: 'absolute', left: 0, top: 0 }}>
+        <Ellipse cx={20} cy={17} rx={1.6} ry={7} fill={ink} />
+        <Path d={BUTTERFLY_FEELERS} stroke={ink} strokeWidth={1} strokeLinecap="round" fill="none" />
+      </Svg>
+    </Animated.View>
+  )
+}
+
+// Rubber ball: drops and bounces lower each time, squashing on landing.
+const HOP_T = BOUNCE_KEYS.map((k) => k[0])
+
+function RubberBall({ delay, x, len, fall, size, color, ink }) {
+  const progress = useLinear(delay, 1700)
+  const px = remPx(size || '1.6')
+  const high = remPx(fall)
+  const roll = remPx(len)
+  const spin = (roll / (Math.PI * px)) * 360
+  const rollX = progress.interpolate({ inputRange: [0, 0.8, 1], outputRange: [0, roll, roll] })
+  const translateY = progress.interpolate({ inputRange: HOP_T, outputRange: BOUNCE_KEYS.map((k) => k[1] * high) })
+  const scaleX = progress.interpolate({ inputRange: HOP_T, outputRange: BOUNCE_KEYS.map((k) => k[2]) })
+  const scaleY = progress.interpolate({ inputRange: HOP_T, outputRange: BOUNCE_KEYS.map((k) => k[3]) })
+  const shadow = progress.interpolate({ inputRange: HOP_T, outputRange: BOUNCE_KEYS.map((k) => 0.35 + 0.65 * (1 + k[1])) })
+  const rotate = progress.interpolate({ inputRange: [0, 0.8, 1], outputRange: ['0deg', `${spin}deg`, `${spin}deg`] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.05, 0.86, 1], outputRange: [0, 1, 1, 0] })
+  const shade = progress.interpolate({ inputRange: [0, 0.05, 0.86, 1], outputRange: [0, 0.2, 0.2, 0] })
+  const parts = svgParts()
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: remPx(x), top: 0, transform: [{ translateX: rollX }] }}>
+      <Animated.View
+        style={{ position: 'absolute', left: -px * 0.45, top: -px * 0.11, width: px * 0.9, height: px * 0.22, borderRadius: px * 0.45, backgroundColor: ink, opacity: shade, transform: [{ scale: shadow }] }}
+      />
+      <Animated.View
+        style={{ position: 'absolute', left: -px / 2, top: -px, width: px, height: px, opacity, transformOrigin: 'bottom', transform: [{ translateY }, { scaleX }, { scaleY }] }}
+      >
+        <Animated.View style={{ width: px, height: px, transform: [{ rotate }] }}>
+          {parts ? (
+            <parts.Svg width={px} height={px} viewBox="0 0 24 24">
+              <parts.Circle cx={12} cy={12} r={11} fill={color} />
+              <parts.Path d={BALL_STRIPE} fill="#000" fillOpacity={0.2} />
+            </parts.Svg>
+          ) : (
+            <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: color }} />
+          )}
+        </Animated.View>
+        <View style={{ position: 'absolute', left: px * 0.22, top: px * 0.18, width: px * 0.26, height: px * 0.16, borderRadius: px * 0.13, backgroundColor: 'rgba(255, 255, 255, 0.5)', transform: [{ rotate: '-25deg' }] }} />
+      </Animated.View>
+    </Animated.View>
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -1923,6 +2641,46 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   }
   if (bit.kernel) {
     return <Kernel delay={delay} x={bit.x} y={bit.y} fall={bit.fall} rot={bit.rot} size={bit.size} tone={bit.tone} />
+  }
+  if (bit.snowflake) {
+    return <Snowflake delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} color={on} />
+  }
+  if (bit.iceDust) {
+    return <IceDust delay={delay} x={bit.x} y={bit.y} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.bell) return <Bell delay={delay} size={bit.size} swing={bit.swing} colors={colors} />
+  if (bit.soundArc) {
+    return <SoundArc delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.disco) return <Disco delay={delay} size={bit.size} turn={bit.turn} colors={colors} />
+  if (bit.discoSpot) {
+    return <DiscoSpot delay={delay} rot={bit.rot} turn={bit.turn} len={bit.len} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.ribbon) return <Ribbon delay={delay} size={bit.size} turn={bit.turn} colors={colors} />
+  if (bit.cup) return <Cup delay={delay} side={bit.side} size={bit.size} colors={colors} />
+  if (bit.fizz) {
+    return <Fizz delay={delay} x={bit.x} y={bit.y} rise={bit.rise} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.pole) return <Pole delay={delay} size={bit.size} fall={bit.fall} color={colors.inkSoft || colors.ink} />
+  if (bit.dropBall) return <DropBall delay={delay} size={bit.size} fall={bit.fall} colors={colors} />
+  if (bit.beam) {
+    return <Beam delay={delay} rot={bit.rot} len={bit.len} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.bolt) return <Bolt delay={delay} size={bit.size} colors={colors} />
+  if (bit.crackle) {
+    return <Crackle delay={delay} rot={bit.rot} len={bit.len} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.splat) {
+    return <Splat delay={delay} x={bit.x} y={bit.y} rot={bit.rot} len={bit.len} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.splatDot) {
+    return <SplatDot delay={delay} x={bit.x} y={bit.y} size={bit.size} color={paintColor(bit.tone, colors)} />
+  }
+  if (bit.butterfly) {
+    return <Butterfly delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} color={paintColor(bit.tone, colors)} ink={colors.ink} />
+  }
+  if (bit.rubberBall) {
+    return <RubberBall delay={delay} x={bit.x} len={bit.len} fall={bit.fall} size={bit.size} color={paintColor(bit.tone, colors)} ink={colors.ink} />
   }
   if (bit.plane) return <Plane delay={delay} from={bit.from} hop={bit.hop} colors={colors} stageW={stageW} stageH={stageH} />
   return <Pip delay={delay} color={on} />

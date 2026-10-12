@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frames Drop Dec 18</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace;--halo:#16203a}
+body.light{color-scheme:light;--bg:#e9ece4;--panel:#f7f8f4;--ink:#171a14;--soft:#4c5446;--dim:#7a8274;--line:#d3d8cb;--gold:#9a6b10;--halo:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--halo) 0,transparent 60%),var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:34px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+h2{font:800 clamp(26px,4vw,34px)/1.1 var(--display);margin:0}
+h3{margin:0;font:800 24px/1.1 var(--display)}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+section.opt{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;display:grid;gap:14px}
+.tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px;max-width:78ch}
+.feat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font:600 12.5px/1.4 var(--mono);color:var(--ink)}
+.feat li::before{content:"· ";color:var(--gold)}
+.row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start}
+.stage{border-radius:20px;padding:6px;display:grid;justify-items:center;gap:2px}
+.cap{font:700 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--soft);text-align:center;padding-bottom:8px}
+.fw{position:relative;flex:none}
+.fw>.lay{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;box-sizing:border-box;overflow:hidden}
+.card .k{font:700 11px/1 var(--mono);letter-spacing:.16em}
+.card .q{font:800 27px/1.12 var(--ui);margin-top:14px;max-width:92%}
+.card .s{font:600 14px/1.3 var(--ui);margin-top:10px}
+.card .pills{position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:12px}
+.card .pill{flex:1;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--ui)}
+.card .chip{position:absolute;right:20px;top:18px;font:700 11px/1 var(--ui);padding:6px 9px;border-radius:999px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{width:120px;height:144px;border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tile .fw{position:absolute}
+.tl{font:600 10px/1.2 var(--mono);color:var(--soft);text-align:center;margin-top:4px;max-width:120px}
+.tilecol{display:grid;justify-items:center}
+.cmp{display:grid;gap:10px}
+.cmp h4{margin:0;font:800 18px/1.1 var(--display)}
+.review{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:8px 18px;font-size:13.5px;color:var(--soft)}
+.review b{color:var(--ink)}
+/* motion */
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+.blink.slow{animation-duration:6.8s}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.1px)}}
+.breathe{animation:breathe 4.8s ease-in-out infinite}
+@keyframes zz{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:.95}50%{transform:translate(2px,-10px) scale(.95)}100%{transform:translate(-4px,-20px) scale(1.1);opacity:0}}
+.zz{transform-box:fill-box;transform-origin:center;animation:zz 4.8s ease-out infinite}
+@keyframes lamp{0%,100%{opacity:.82}50%{opacity:1}}
+.lamp{animation:lamp 5.5s ease-in-out infinite}
+@keyframes swish{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg)}}
+.swish{transform-box:fill-box;transform-origin:100% 100%;animation:swish 3.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 3.4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+.tw{animation:tw 2.8s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 7s linear infinite}
+@keyframes sweep{0%,20%{transform:translateX(-70%)}60%,100%{transform:translateX(70%)}}
+.sweep{animation:sweep 4.5s ease-in-out infinite}
+@keyframes fall{from{transform:translateY(-30px)}to{transform:translateY(420px)}}
+.fall{animation:fall linear infinite}
+@keyframes breatheO{0%,100%{opacity:.6}50%{opacity:1}}
+.breatheO{animation:breatheO 7s ease-in-out infinite}
+@keyframes wave{0%,62%,100%{transform:rotate(0)}70%{transform:rotate(-16deg)}78%{transform:rotate(4deg)}86%{transform:rotate(-12deg)}94%{transform:rotate(0)}}
+.wave{transform-box:fill-box;transform-origin:0 100%;animation:wave 4.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-.6px)}}
+.bob{animation:bob 4.2s ease-in-out infinite}
+@keyframes flake{0%{transform:translate(0,0);opacity:0}10%{opacity:1}50%{transform:translate(2px,160px)}90%{opacity:1}100%{transform:translate(-1px,330px);opacity:0}}
+.flake{animation:flake linear infinite}
+@keyframes glowS{0%,100%{opacity:.78}50%{opacity:1}}
+.glowS{animation:glowS 6s ease-in-out infinite}
+@keyframes shim{0%,100%{transform:scaleX(.96)}50%{transform:scaleX(1.04)}}
+.shim{animation:shim 7s ease-in-out infinite}
+.still .flake,body.nomotion .flake{display:none}
+@media (prefers-reduced-motion:reduce){.flake{display:none}}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame drop · 2026-12-18</span>
+ <h1>Gingerbread, Snowman, Solstice</h1>
+ <p class="lede">Three new frames: a still gingerbread border for coins, a snowman you build as you answer for gems, and the longest night for the solstice. Each sits around the card and never on the text. Switch theme, look and motion to check them.</p>
+</header>
+
+<div class="controls" role="group" aria-label="Preview">
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+ <div class="seg" id="look"><button aria-pressed="true" data-v="lime"><i style="background:#c9f24d"></i>Lime</button><button aria-pressed="false" data-v="sky"><i style="background:#4aa8ff"></i>Sky</button><button aria-pressed="false" data-v="maple"><i style="background:#fa774f"></i>Maple</button></div>
+ <div class="seg" id="motion"><button aria-pressed="true" data-v="on">Motion</button><button aria-pressed="false" data-v="off">Still</button></div>
+</div>
+
+<div id="out" style="display:grid;gap:34px"></div>
+<p class="notes">Port notes: every new drawing uses only Path, Circle, Ellipse, Rect, Line, LinearGradient, RadialGradient and ClipPath, in card space like art.jsx (0,0 is the card's top-left; art reaches at most 24 px out). Motion here is CSS; in the app it becomes Mover worklets on the frame clock and stops for still tiles, reduced motion and low power.</p>
+</div>
+
+<script>
+const PAD=48;
+const fx=n=>Math.round(n*100)/100;
+let N=0;const uid=p=>p+(++N);
+function rrPath(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return `M${fx(x)} ${fx(y+h-r)}L${fx(x)} ${fx(y+r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+r)} ${fx(y)}L${fx(x+w-r)} ${fx(y)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w)} ${fx(y+r)}L${fx(x+w)} ${fx(y+h-r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w-r)} ${fx(y+h)}L${fx(x+r)} ${fx(y+h)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x)} ${fx(y+h-r)}Z`}
+function rrLength(w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return 2*(w-2*r)+2*(h-2*r)+2*Math.PI*r}
+// Same as geometry.js rrPointAt: starts at the bottom of the left edge, clockwise.
+function rrPointAt(x,y,w,h,r,d){r=Math.max(0,Math.min(r,w/2,h/2));const sv=h-2*r,sh=w-2*r,arc=Math.PI*r/2,L=rrLength(w,h,r);let s=((d%L)+L)%L;
+ const out=(px,py,ang)=>({x:px,y:py,ang,nx:Math.sin(ang),ny:-Math.cos(ang)});const onArc=(cx,cy,from,k)=>{const th=from+(r?k/r:0);return out(cx+r*Math.cos(th),cy+r*Math.sin(th),th+Math.PI/2)};
+ if(s<sv)return out(x,y+h-r-s,-Math.PI/2);s-=sv;if(s<arc)return onArc(x+r,y+r,Math.PI,s);s-=arc;if(s<sh)return out(x+r+s,y,0);s-=sh;if(s<arc)return onArc(x+w-r,y+r,-Math.PI/2,s);s-=arc;
+ if(s<sv)return out(x+w,y+r+s,Math.PI/2);s-=sv;if(s<arc)return onArc(x+w-r,y+h-r,0,s);s-=arc;if(s<sh)return out(x+w-r-s,y+h,Math.PI);s-=sh;return onArc(x+r,y+h-r,Math.PI/2,Math.min(s,arc))}
+const ring=(f,o)=>rrPath(-o,-o,f.w+2*o,f.h+2*o,Math.max(0,f.R+o));
+const band=(f,a,b)=>`${ring(f,b)} ${ring(f,a)}`;
+function spots(f,o,n,t0=0){const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o);return Array.from({length:n},(_,i)=>rrPointAt(-o,-o,W,H,f.R+o,((t0+i/n)%1)*L))}
+const seeded=s=>{let x=s;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+function openTopPath(w,h,r,gap){const m=w/2;return `M${m-gap} 0L${r} 0A${r} ${r} 0 0 0 0 ${r}L0 ${h-r}A${r} ${r} 0 0 0 ${r} ${h}L${w-r} ${h}A${r} ${r} 0 0 0 ${w} ${h-r}L${w} ${r}A${r} ${r} 0 0 0 ${w-r} 0L${m+gap} 0`}
+/* ================= NEW 1: GINGER (coin, still) ================= */
+// Gingerbread: thin cookie sides, a thick ledge under the card with a scalloped edge and a heart cookie.
+// Piped icing zigzag near the outer edge, icing scallops along the card edge,
+// candy buttons glued on with a dab of icing, peppermints in the corners and a heart cookie under the card.
+const GUM=[['#ff6b5c','#c8261c','#7a1410'],['#7fd46a','#2f9a4a','#145a28'],['#ffe07a','#e0a21c','#8a5a08']];
+function gumdrop(id,x,y,s,k){const c=GUM[k%3];
+ return `<g transform="translate(${fx(x)} ${fx(y)})"><ellipse cy="${fx(s*.8)}" rx="${fx(s*1.15)}" ry="${fx(s*.38)}" fill="#fffaf0"/>
+ <path d="M${-s} ${fx(s*.7)}C${-s} ${fx(-s*.35)} ${fx(-s*.55)} ${-s} 0 ${-s}C${fx(s*.55)} ${-s} ${s} ${fx(-s*.35)} ${s} ${fx(s*.7)}Q0 ${fx(s*1.05)} ${-s} ${fx(s*.7)}Z" fill="url(#${id}g${k%3})" stroke="${c[2]}" stroke-width=".55"/>
+ <path d="M${fx(-s*.62)} ${fx(-s*.1)}Q${fx(-s*.5)} ${fx(-s*.7)} ${fx(-s*.05)} ${fx(-s*.8)}" fill="none" stroke="#ffffff" stroke-opacity=".8" stroke-width="${fx(s*.22)}" stroke-linecap="round"/>
+ <path d="M${fx(s*.3)} ${fx(-s*.2)}h.01M${fx(-s*.1)} ${fx(s*.3)}h.01M${fx(s*.55)} ${fx(s*.35)}h.01" stroke="#ffffff" stroke-opacity=".75" stroke-width=".8" stroke-linecap="round"/></g>`}
+function candyDot(id,x,y,r,k){return `<circle cx="${fx(x)}" cy="${fx(y+.4)}" r="${fx(r+.7)}" fill="#fffaf0"/><circle cx="${fx(x)}" cy="${fx(y)}" r="${r}" fill="url(#${id}g${k%3})" stroke="${GUM[k%3][2]}" stroke-width=".45"/><ellipse cx="${fx(x-r*.35)}" cy="${fx(y-r*.4)}" rx="${fx(r*.38)}" ry="${fx(r*.24)}" fill="#ffffff" opacity=".8" transform="rotate(-30 ${fx(x-r*.35)} ${fx(y-r*.4)})"/>`}
+function peppermint(id,x,y,r){let sw='';for(let k=0;k<6;k++){const a=k*Math.PI/3,b=a+.62,c=a+1.05;
+  sw+=`M0 0L${fx(r*Math.cos(a))} ${fx(r*Math.sin(a))}A${r} ${r} 0 0 1 ${fx(r*Math.cos(b))} ${fx(r*Math.sin(b))}Q${fx(r*.45*Math.cos(c))} ${fx(r*.45*Math.sin(c))} 0 0Z`}
+ return `<g transform="translate(${fx(x)} ${fx(y)})"><circle r="${fx(r+1.1)}" fill="#fffaf0"/><circle cy=".5" r="${r}" fill="#000" fill-opacity=".25"/><circle r="${r}" fill="url(#${id}pm)"/><path d="${sw}" fill="#e0342a"/><circle r="${fx(r*.22)}" fill="#ffffff"/><circle r="${r}" fill="none" stroke="#a8221a" stroke-width=".55"/>
+ <path d="M${fx(-r*.7)} ${fx(-r*.25)}A${fx(r*.75)} ${fx(r*.75)} 0 0 1 ${fx(-r*.1)} ${fx(-r*.74)}" fill="none" stroke="#ffffff" stroke-width="${fx(r*.2)}" stroke-linecap="round" opacity=".9"/></g>`}
+function inRR(x,y,X,Y,W,H,r){if(x<X||x>X+W||y<Y||y>Y+H)return false;const cx=Math.min(Math.max(x,X+r),X+W-r),cy=Math.min(Math.max(y,Y+r),Y+H-r);return (x-cx)**2+(y-cy)**2<=r*r}
+const dotD=(x,y,r)=>`M${fx(x-r)} ${fx(y)}a${r} ${r} 0 1 0 ${fx(2*r)} 0a${r} ${r} 0 1 0 ${fx(-2*r)} 0`;
+const sparkD=(x,y,s)=>`M${fx(x)} ${fx(y-s)}Q${fx(x)} ${fx(y)} ${fx(x+s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y+s)}Q${fx(x)} ${fx(y)} ${fx(x-s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y-s)}Z`;
+
+function gingerOver(f){
+ const {w,h,R}=f,id=uid('gn'),L=f.c.light;
+ // Thin cookie sides (6 px over the top, 7 at the sides) and a thick ledge under the card
+ // whose lower edge is baked in scallops, reaching 18 px.
+ const X0=-7,Y0=-6,X1=w+7,Y1=h+13,r=R+6,a0=X1-r,a1=X0+r,ns=Math.max(8,Math.round((a0-a1)/10)),s=(a0-a1)/ns/2;
+ let scal='',pipe='',pdots='';
+ for(let i=0;i<ns;i++){const xr=a0-2*s*i,xl=xr-2*s,xc=xr-s;scal+=`A${fx(s)} ${fx(s)} 0 0 1 ${fx(xl)} ${Y1}`;
+  pipe+=`M${fx(xc+s-2.6)} ${Y1}A${fx(s-2.6)} ${fx(s-2.6)} 0 0 1 ${fx(xc-s+2.6)} ${Y1}`;if(i)pdots+=dotD(xr,Y1+.6,1.25)}
+ const outer=`M${X0} ${Y1-r}L${X0} ${Y0+r}A${r} ${r} 0 0 1 ${X0+r} ${Y0}L${X1-r} ${Y0}A${r} ${r} 0 0 1 ${X1} ${Y0+r}L${X1} ${Y1-r}A${r} ${r} 0 0 1 ${fx(a0)} ${Y1}${scal}A${r} ${r} 0 0 1 ${X0} ${Y1-r}Z`;
+ const cookie=`${outer} ${ring(f,1)}`;
+ const rnd=seeded(31);let dk='',lt='';
+ for(let i=0;i<900&&(dk.length+lt.length)<9000;i++){const x=X0+rnd()*(X1-X0),y=Y0+rnd()*(Y1+4-Y0);if(!inRR(x,y,X0,Y0,X1-X0,Y1-Y0+3,r)||inRR(x,y,-1.5,-1.5,w+3,h+3,R+1.5))continue;const rr=fx(.3+rnd()*.45);if(i%3)dk+=dotD(x,y,rr);else lt+=dotD(x,y,rr)}
+ // Icing scallops along the card edge, heavier than a line.
+ const iAt=(o,d)=>rrPointAt(-o,-o,w+2*o,h+2*o,R+o,d),LS=rrLength(w+3.2,h+3.2,R+1.6),nsc=Math.round(LS/10);let sc='',sd='';
+ for(let i=0;i<nsc;i++){const a=iAt(1.6,i*LS/nsc),m=iAt(1.6,(i+.5)*LS/nsc),b=iAt(1.6,(i+1)*LS/nsc);sc+=`${i?'':`M${fx(a.x)} ${fx(a.y)}`}Q${fx(m.x+m.nx*4.6)} ${fx(m.y+m.ny*4.6)} ${fx(b.x)} ${fx(b.y)}`;sd+=dotD(a.x+a.nx*.5,a.y+a.ny*.5,1.15)}
+ // Candy buttons sit proud of the band.
+ let candy='';const cc=o=>R-(R+o)*Math.SQRT1_2;
+ for(let y=R+30,i=0;y<h-R-6;y+=50,i++)candy+=gumdrop(id,-3.8,y,3.8,i)+gumdrop(id,w+3.8,y,3.8,i+1);
+ const nt=Math.max(3,Math.round((w-2*R)/46));for(let i=0;i<nt;i++){const x=R+8+(w-2*R-16)*(i+.5)/nt;candy+=candyDot(id,x,-3.2,2.6,i)}
+ const xs=[];for(let x=R+6;x<=w-R-6;x+=36)if(Math.abs(x-w/2)>36)xs.push(x);
+ xs.forEach((x,i)=>{candy+=gumdrop(id,x,h+6.6,4.6,i+2)});
+ candy+=peppermint(id,cc(3.2),cc(3.2),4.6)+peppermint(id,w-cc(3.2),cc(3.2),4.6)+peppermint(id,cc(7),h-cc(7)+1,6.4)+peppermint(id,w-cc(7),h-cc(7)+1,6.4);
+ // The centerpiece: a big heart cookie, piped round, with a candy in the middle.
+ const HP='M0 6C-10 -1 -9.6 -9 -4.8 -9C-2.2 -9 -.7 -7.4 0 -6C.7 -7.4 2.2 -9 4.8 -9C9.6 -9 10 -1 0 6Z';
+ const heart=`<g transform="translate(${w/2} ${h+5.6}) scale(2.4)"><path d="${HP}" transform="translate(.35 .9)" fill="#000" fill-opacity="${L?.2:.45}"/><path d="${HP}" fill="url(#${id}hc)" stroke="#5e2a0c" stroke-width=".45"/>
+  <path d="${HP}" transform="scale(.8) translate(0 -.7)" fill="none" stroke="#4a1e06" stroke-opacity=".4" stroke-width=".95" transform-origin="0 0"/>
+  <path d="${HP}" transform="translate(0 -.95) scale(.8)" fill="none" stroke="#fffaf0" stroke-width=".85" stroke-linejoin="round"/>
+  <path d="${dotD(-4.6,-5.6,.42)}${dotD(4.6,-5.6,.42)}${dotD(-3.3,.2,.36)}${dotD(3.3,.2,.36)}${dotD(0,3,.36)}" fill="#fffaf0"/>
+  <circle cy="-2" r="2.1" fill="url(#${id}g0)" stroke="#7a1410" stroke-width=".25"/><ellipse cx="-.7" cy="-2.8" rx=".75" ry=".45" fill="#fff" opacity=".9"/>
+  <path d="M-7.6 -5.6Q-6.6 -8 -4.2 -8.2" fill="none" stroke="#f6c58a" stroke-width=".5" stroke-linecap="round"/></g>`;
+ return `<defs>
+  <linearGradient id="${id}ck" x1="0" y1="${Y0}" x2="0" y2="${Y1+5}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#c97c3a"/><stop offset=".6" stop-color="#b56a2c"/><stop offset="1" stop-color="#93501f"/></linearGradient>
+  <linearGradient id="${id}hl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd29a" stop-opacity=".9"/><stop offset=".5" stop-color="#ffd29a" stop-opacity=".25"/><stop offset="1" stop-color="#ffd29a" stop-opacity="0"/></linearGradient>
+  <radialGradient id="${id}hc" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#e0974e"/><stop offset=".7" stop-color="#b8682c"/><stop offset="1" stop-color="#94501e"/></radialGradient>
+  <radialGradient id="${id}pm" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e0d8"/></radialGradient>
+  ${GUM.map((c,i)=>`<radialGradient id="${id}g${i}" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></radialGradient>`).join('')}</defs>
+ <path d="${outer} ${ring(f,4)}" fill-rule="evenodd" transform="translate(0 2.2)" fill="#000" fill-opacity="${L?.15:.4}"/>
+ <path d="${cookie}" fill-rule="evenodd" fill="url(#${id}ck)"/>
+ <path d="${dk}" fill="#5e2c0c" fill-opacity=".38"/><path d="${lt}" fill="#f6c58a" fill-opacity=".4"/>
+ <path d="${outer}" fill="none" stroke="url(#${id}hl)" stroke-width="1.2" transform="translate(.5 .7)"/>
+ <path d="${outer}" fill="none" stroke="#6a3010" stroke-width="1"/>
+ <path d="${ring(f,1.3)}" fill="none" stroke="#5e2a0c" stroke-opacity=".7" stroke-width="1"/>
+ <path d="${pipe}" transform="translate(.3 .7)" fill="none" stroke="#4a1e06" stroke-opacity=".45" stroke-width="2.2" stroke-linecap="round"/>
+ <path d="${pipe}" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round"/><path d="${pdots}" fill="#fffaf0"/>
+ <path d="${sc}" transform="translate(.3 .7)" fill="none" stroke="#4a1e06" stroke-opacity=".45" stroke-width="2.2"/>
+ <path d="${sc}" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round"/>
+ <path d="${sd}" fill="#fffaf0"/>
+ ${candy}${heart}`;
+}
+
+/* ================= NEW 2: SNOWMAN (gem, living) ================= */
+// A snowbank wraps the bottom of the card and curls up both corners. The snowman is built
+// in the bottom-left corner as tonight's questions are answered: base; then middle and head
+// with coal eyes; then buttons, smile and stick arms; at all clear hat, carrot and a wave.
+// Each Not yet leaves a pair of boot prints in the bank.
+function snowmanOver(f){
+ const {w,h,R}=f,id=uid('sm'),P=f.p,total=P.total||0,ans=Math.min(total,P.answered||0),skip=Math.min(6,P.skipped||0);
+ const done=f.still||(total>0&&ans>=total),st=done?4:total?Math.min(3,Math.ceil(3*ans/total)):0;
+ const L=f.c.light,anim=!f.still,EDGE=L?'#9fb0c8':'#8ea3c0';
+ // A point u (0 at the left tip, 1 at the right tip) on the ring o px out, round the bottom.
+ const e=16,ref=[e,Math.PI*(R+8)/2,w-2*R,Math.PI*(R+8)/2,e],tot=ref.reduce((a,b)=>a+b,0);
+ const bp=(u,o)=>{let k=Math.max(0,Math.min(1,u))*tot,i=0;while(i<4&&k>ref[i]){k-=ref[i];i++}const q=k/ref[i],ro=R+o;
+  if(i===0)return {x:-o,y:h-R-e+e*q,nx:-1,ny:0};
+  if(i===1){const t=Math.PI-q*Math.PI/2;return {x:R+ro*Math.cos(t),y:h-R+ro*Math.sin(t),nx:Math.cos(t),ny:Math.sin(t)}}
+  if(i===2)return {x:R+(w-2*R)*q,y:h+o,nx:0,ny:1};
+  if(i===3){const t=Math.PI/2-q*Math.PI/2;return {x:w-R+ro*Math.cos(t),y:h-R+ro*Math.sin(t),nx:Math.cos(t),ny:Math.sin(t)}}
+  return {x:w+o,y:h-R-e*q,nx:1,ny:0}};
+ const sm=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v)};
+ const bank=(extra,seed)=>{const N=90,inn=[],out=[],U0=.085;for(let i=0;i<=N;i++){const u=U0+(1-U0)*i/N,t=5+12*sm((u-U0)/.08)*sm((1-u)/.15)+extra+1.1*Math.sin(u*47+seed)*sm(u/.1)*sm((1-u)/.1);inn.push(bp(u,1));out.push(bp(u,Math.min(18.6,t)))}
+  const cap=(a,b)=>`Q${fx((a.x+b.x)/2)} ${fx(Math.min(a.y,b.y)-4.5)} ${fx(b.x)} ${fx(b.y)}`;const ro=out.slice().reverse();return `M${inn.map(p=>fx(p.x)+' '+fx(p.y)).join('L')}${cap(inn[N],out[N])}L${ro.map(p=>fx(p.x)+' '+fx(p.y)).join('L')}${cap(out[0],inn[0])}Z`};
+ const back=bank(1.4,1.7),front=bank(0,0);
+ let rimLine='';for(let i=0;i<=60;i++){const p=bp(.1+.88*i/60,2.6);rimLine+=(i?'L':'M')+fx(p.x)+' '+fx(p.y)}
+ // A fir cluster in the bottom-right corner: far, middle and near trees.
+ const fir=(tx,tb,k,tone)=>{const C=[['#6f9f8e','#4a7a6a','#e6eef8','#3a6a5a'],['#4a8e6a','#2c5e45','#f0f5fc','#1f4a37'],['#3f8a64','#1f4f39','#f7faff','#173a2a']][tone];
+  const tier=(y,hw,ht)=>`<path d="M${fx(tx)} ${fx(y-ht)}L${fx(tx+hw)} ${fx(y)}Q${fx(tx)} ${fx(y+2*k)} ${fx(tx-hw)} ${fx(y)}Z" fill="${C[0]}" stroke="${C[3]}" stroke-width=".6" stroke-linejoin="round"/><path d="M${fx(tx)} ${fx(y-ht)}L${fx(tx+hw)} ${fx(y)}Q${fx(tx+hw*.4)} ${fx(y+1.4*k)} ${fx(tx+hw*.1)} ${fx(y+1.2*k)}Z" fill="${C[1]}"/><path d="M${fx(tx-hw*.95)} ${fx(y-.3)}Q${fx(tx-hw*.4)} ${fx(y-2.8*k)} ${fx(tx)} ${fx(y-1.5*k)}Q${fx(tx+hw*.5)} ${fx(y-3*k)} ${fx(tx+hw*.95)} ${fx(y-.3)}Q${fx(tx)} ${fx(y+1.4*k)} ${fx(tx-hw*.95)} ${fx(y-.3)}Z" fill="${C[2]}"/><path d="M${fx(tx-hw*.2)} ${fx(y-ht*.72)}L${fx(tx)} ${fx(y-ht)}L${fx(tx+hw*.18)} ${fx(y-ht*.74)}Z" fill="${C[2]}"/>`;
+  return `<rect x="${fx(tx-1.6*k)}" y="${fx(tb-4*k)}" width="${fx(3.2*k)}" height="${fx(6*k)}" fill="#6b4226"/>${tier(tb-3*k,9.4*k,11*k)}${tier(tb-11*k,7.6*k,10*k)}${tier(tb-19*k,5.6*k,9.4*k)}`};
+ const trees=fir(w+15.5,h+6,.72,0)+fir(w+1.5,h+12,.92,1)+fir(w+9.5,h+18,1.24,2)+`<path d="M${w+9.5} ${fx(h+18-28.4*1.24-2.6)}l1 2 2.2.3-1.6 1.55.4 2.2-2-1.05-2 1.05.4-2.2-1.6-1.55 2.2-.3z" fill="#ffe08a" stroke="#c99a2a" stroke-width=".4"/>`;
+ // Snowman parts.
+ const sx=-5,B={x:sx,y:h+5,r:11},M={x:sx+.6,y:h-10.6,r:8.2},Hd={x:sx+.2,y:h-23.6,r:6.2};
+ const ball=b=>`<circle cx="${fx(b.x)}" cy="${fx(b.y)}" r="${b.r}" fill="url(#${id}sb)" stroke="${EDGE}" stroke-width=".8"/><path d="M${fx(b.x-b.r*.62)} ${fx(b.y-b.r*.38)}A${fx(b.r*.72)} ${fx(b.r*.72)} 0 0 1 ${fx(b.x-b.r*.05)} ${fx(b.y-b.r*.72)}" fill="none" stroke="#ffffff" stroke-width="${fx(b.r*.16)}" stroke-linecap="round" opacity=".9"/>`;
+ const seat=up=>`<ellipse cx="${fx(up.x)}" cy="${fx(up.y+up.r-1)}" rx="${fx(up.r*.86)}" ry="2" fill="#9fb3d0" opacity=".6"/>`;
+ const coal=(x,y,r)=>`<circle cx="${fx(x)}" cy="${fx(y)}" r="${r}" fill="#1d2128"/><circle cx="${fx(x-r*.35)}" cy="${fx(y-r*.35)}" r="${fx(r*.32)}" fill="#7b8290"/>`;
+ const hx=Hd.x,hy=Hd.y;
+ const eyes=st>=2?coal(hx-2.3,hy-1.2,1)+coal(hx+2.1,hy-1.3,1):'';
+ const smile=st>=3?[-2.6,-1.3,0,1.3,2.6].map(d=>`<circle cx="${fx(hx+d)}" cy="${fx(hy+3.5-Math.abs(d)*.34)}" r=".52" fill="#1d2128"/>`).join('')+[-4.2,-.4,3.4].map(d=>coal(M.x,M.y+d,1)).join(''):'';
+ const nose=st>=4?`<path d="M${fx(hx+.4)} ${fx(hy-.2)}L${fx(hx+7.6)} ${fx(hy+1.6)}L${fx(hx+.5)} ${fx(hy+1.7)}Z" fill="url(#${id}cr)" stroke="#a8480c" stroke-width=".45" stroke-linejoin="round"/><path d="M${fx(hx+2.4)} ${fx(hy+.4)}l.3 .9M${fx(hx+4.4)} ${fx(hy+.9)}l.25 .7" stroke="#a8480c" stroke-width=".4"/>`:'';
+ const armL=`M${fx(M.x-6.6)} ${fx(M.y-1.6)}L${fx(M.x-18)} ${fx(M.y-9.4)}M${fx(M.x-14.4)} ${fx(M.y-7)}L${fx(M.x-16.2)} ${fx(M.y-12.2)}M${fx(M.x-16.6)} ${fx(M.y-8.4)}L${fx(M.x-21)} ${fx(M.y-9)}`;
+ const armR=st>=4?'M0 0L9.6 -8.4M7 -6.1L7.8 -11M9.6 -8.4L13.6 -8.6':'M0 0L10.4 3.4M7 2.3L9.6 -1.2M10.4 3.4L13.4 6';
+ const arms=st>=3?`<path d="${armL}" fill="none" stroke="#5a3a20" stroke-width="1.5" stroke-linecap="round"/><g transform="translate(${fx(M.x+6.8)} ${fx(M.y-1.8)})"><g class="${anim&&st>=4?'wave':''}"><path d="${armR}" fill="none" stroke="#5a3a20" stroke-width="1.5" stroke-linecap="round"/></g></g>`:'';
+ const hat=st>=4?`<g transform="rotate(-9 ${fx(hx)} ${fx(hy-6)})"><ellipse cx="${fx(hx)}" cy="${fx(hy-5.6)}" rx="7.6" ry="1.7" fill="#1d2128"/><rect x="${fx(hx-4.6)}" y="${fx(hy-14.4)}" width="9.2" height="8.8" rx="1.2" fill="url(#${id}ht)"/><rect x="${fx(hx-4.6)}" y="${fx(hy-8.4)}" width="9.2" height="2" fill="#c8302a"/>
+  <path d="M${fx(hx-3.4)} ${fx(hy-13.4)}V${fx(hy-9)}" stroke="#ffffff" stroke-opacity=".28" stroke-width=".9" stroke-linecap="round"/><ellipse cx="${fx(hx)}" cy="${fx(hy-14.4)}" rx="4.6" ry=".9" fill="#3a3f4a"/>
+  <path d="M${fx(hx+2.6)} ${fx(hy-7.4)}q2.6 -2.4 4.4 -.6q-2.2 1.6 -4.4 .6zM${fx(hx+2.6)} ${fx(hy-7.4)}q1.2 -3.4 3.6 -3.6q-.6 2.6 -3.6 3.6z" fill="#2f8a4a" stroke="#174a28" stroke-width=".35"/><circle cx="${fx(hx+2.4)}" cy="${fx(hy-7.2)}" r=".9" fill="#e0342a"/><circle cx="${fx(hx+3.4)}" cy="${fx(hy-6.6)}" r=".8" fill="#e0342a"/></g>`:'';
+ const start=st===0?`<path d="M34 ${h+11.4}Q24 ${h+12.6} 12 ${h+12}" fill="none" stroke="#a9bbd6" stroke-width="2.8" stroke-linecap="round"/><circle cx="38" cy="${h+8.8}" r="4.8" fill="url(#${id}sb)" stroke="${EDGE}" stroke-width=".7"/><path d="M35.4 ${h+7}A3 3 0 0 1 37.8 ${h+5.6}" fill="none" stroke="#fff" stroke-width=".8" stroke-linecap="round"/>`:'';
+ const mound=`<path d="M${sx-17} ${h+17.6}Q${sx-12} ${h+12.4} ${sx} ${h+13.2}Q${sx+12} ${h+12.6} ${sx+17} ${h+17.6}Z" fill="url(#${id}dr)" stroke="${EDGE}" stroke-width=".7"/>`;
+ // Boot prints pressed into the bank: a dark hollow with a lit lower lip.
+ let prints='';for(let i=0;i<skip;i++){const x=44+i*16,y=h+(i%2?12.4:8.6);
+  prints+=`<g transform="translate(${x} ${fx(y)}) rotate(-5)"><ellipse cy=".7" rx="3.5" ry="1.9" fill="#ffffff" opacity=".9"/><ellipse rx="3.3" ry="1.75" fill="#5b739a"/><ellipse cx=".3" cy="-.5" rx="2.4" ry=".9" fill="#3f5478" opacity=".7"/><ellipse cx="-5" cy=".6" rx="1.9" ry="1.6" fill="#ffffff" opacity=".9"/><ellipse cx="-5" rx="1.75" ry="1.5" fill="#5b739a"/><ellipse cx="-5" cy="-.45" rx="1.2" ry=".7" fill="#3f5478" opacity=".7"/></g>`}
+ const glow=`<circle cx="${sx+2}" cy="${h-4}" r="${done?42:30}" fill="url(#${id}${done?'gw':'gc'})"/>`;
+ const sparks=(done?[[sx-15,h-28,2.2,0],[sx+16,h-32,1.7,1.1],[w-14,h+3,1.6,2]]:[[sx+16,h+1,1.3,0]]).map(([x,y,s,dl])=>`<path class="${anim?'tw':''}" style="animation-delay:${dl}s" d="${sparkD(x,y,s)}" fill="${L?'#7d9cc8':'#e8f2ff'}"/>`).join('');
+ // Flakes in the side gaps: a still dusting always, and falling ones on the live card.
+ const rnd=seeded(77);let dust='',fl='';
+ for(let i=0;i<16;i++){const left=i%2===0,x=left?-17+rnd()*12:w+5+rnd()*12,y=R+8+rnd()*(h-R-60),r=fx(.6+rnd()*1.1);dust+=dotD(x,y,r)}
+ if(anim)for(let i=0;i<10;i++){const left=i%2===0,x=left?-17+rnd()*12:w+5+rnd()*12,r=.7+rnd()*1.2;fl+=`<circle class="flake" style="animation-duration:${(7+rnd()*5).toFixed(1)}s;animation-delay:${-(rnd()*12).toFixed(1)}s" cx="${fx(x)}" cy="${R}" r="${fx(r)}" fill="${f.c.snow}" opacity="${fx(.45+r/4)}"/>`}
+ const big=f.still&&w<=220;
+ return `<defs>
+  <radialGradient id="${id}sb" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef3fa"/><stop offset="1" stop-color="#c6d4e8"/></radialGradient>
+  <linearGradient id="${id}dr" x1="0" y1="${h-R}" x2="0" y2="${h+19}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef3fa"/><stop offset="1" stop-color="#cbd9ec"/></linearGradient>
+  <linearGradient id="${id}bk" x1="0" y1="${h-R}" x2="0" y2="${h+20}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dbe6f4"/><stop offset="1" stop-color="#a9bcd8"/></linearGradient>
+  <linearGradient id="${id}cr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffa04a"/><stop offset="1" stop-color="#e8641a"/></linearGradient>
+  <linearGradient id="${id}ht" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a3f4a"/><stop offset=".4" stop-color="#22262e"/><stop offset="1" stop-color="#121418"/></linearGradient>
+  <radialGradient id="${id}gc"><stop offset="0" stop-color="#cfe4ff" stop-opacity="${L?.55:.35}"/><stop offset="1" stop-color="#cfe4ff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}gw"><stop offset="0" stop-color="#ffd98a" stop-opacity="${L?.6:.45}"/><stop offset=".5" stop-color="#ffc25a" stop-opacity="${L?.22:.16}"/><stop offset="1" stop-color="#ffc25a" stop-opacity="0"/></radialGradient></defs>
+ ${glow}
+ <path d="${dust}" fill="${L?'#a9bcd8':'#e8f0ff'}" fill-opacity="${L?.9:.75}"/>
+ <path d="${back}" fill="url(#${id}bk)" stroke="${EDGE}" stroke-width=".6"/>
+ <path d="${front}" transform="translate(0 1.2)" fill="#5f7aa3" fill-opacity="${L?.2:.35}"/>
+ <path d="${front}" fill="url(#${id}dr)" stroke="${EDGE}" stroke-width=".8"/>
+ <path d="${rimLine}" fill="none" stroke="#b3c4dc" stroke-width="1.4" stroke-opacity=".8"/>
+ ${prints}${start}${trees}
+ <g class="${anim&&done?'bob':''}" ${big?`transform="translate(${sx} ${h+17}) scale(1.4) translate(${-sx} ${-h-17})"`:''}>
+ ${st>=1?ball(B):''}${st>=2?seat(M)+ball(M)+seat(Hd)+ball(Hd):''}
+ ${arms}${eyes}${smile}${nose}${hat}
+ ${st>=1?mound:''}
+ </g>
+ ${sparks}${fl}`;
+}
+
+/* ================= NEW 3: SOLSTICE (season, Dec 20 to 22, kept after) ================= */
+// The longest night turning toward light. Only a thin dark line runs over the top; the night
+// fades in down the sides and deepens to dawn under the card, where the sun sits between
+// the uprights of a trilithon in a ring of standing stones. The sun's height in the gap and
+// the width of its glow follow the length of the day: lowest on Dec 21, highest on Jun 21.
+function dayLight(dt){const y=2026,d=(Date.UTC(y,dt.m-1,dt.d)-Date.UTC(y,11,21))/864e5;return (1-Math.cos(2*Math.PI*(((d%365)+365)%365)/365))/2}
+const mixHex=(a,b,t)=>'#'+[0,2,4].map(i=>Math.round(parseInt(a.substr(1+i,2),16)*(1-t)+parseInt(b.substr(1+i,2),16)*t).toString(16).padStart(2,'0')).join('');
+function solsticeOver(f){
+ const {w,h,R}=f,id=uid('so'),L=f.c.light,anim=!f.still;
+ const T=2,S=12,B=20,ro=R+8,OW=w+2*S,OH=h+T+B,outer=rrPath(-S,-T,OW,OH,ro);
+ const light=dayLight(f.p.date||{m:12,d:21});
+ const cx=w/2,gY=x=>{const u=Math.max(-1,Math.min(1,(x-cx)/(w/2+14)));return h+17.6-6.5*u*u+.8*Math.sin(u*13)*u*u};
+ let hill=`M${-S-2} ${h+B+2}`;for(let i=0;i<=48;i++){const x=-S-2+(OW+4)*i/48;hill+=`L${fx(x)} ${fx(gY(x))}`}hill+=`L${w+S+2} ${h+B+2}Z`;
+ const rw=70+130*light;let rim='';for(let i=0;i<=40;i++){const x=cx-150+300*i/40;rim+=(i?'L':'M')+fx(x)+' '+fx(gY(x)-.2)}
+ // A few stars on the lower sides only, where the night shows.
+ const rnd=seeded(9);let st='';const tw=[];
+ for(let i=0;i<40;i++){const left=i%2===0,x=left?-S+2+rnd()*(S-3):w+1+rnd()*(S-3),y=h*.5+rnd()*(h*.5-30),r=fx(.35+rnd()*.55);if(i%7===3)tw.push([x,y,1.5+rnd(),(rnd()*3).toFixed(2)]);else st+=dotD(x,y,r)}
+ const twinkles=tw.map(([x,y,s,dl])=>`<path class="${anim?'tw':''}" style="animation-delay:${dl}s" d="${sparkD(x,y,s)}" fill="#fff6dc"/>`).join('');
+ // Standing stones, about twice the old size; height 0 is a fallen stone.
+ const LEFT=[[33,7,17,-.03],[49,6.2,19,.02],[66,15,0,0],[83,7,14,.12],[104,5.6,11,0],[124,6.4,9,-.14],[143,4.6,7,.06]];
+ const RIGHT=[[33,7,16.6,.03],[50,7.4,18,0],[67,5.6,14.5,-.1],[88,13,0,0],[106,6,11,.06],[126,5.4,8.6,0],[144,4.6,6.6,-.1]];
+ const stone=(x,wd,ht,lean)=>{const g=gY(x)+1,a=x-wd/2,b=x+wd/2,side=x<cx?1:-1,op=Math.max(.2,1-Math.abs(x-cx)/(w/2));
+  if(!ht)return `<path d="M${fx(a)} ${fx(g+.4)}L${fx(a+.8)} ${fx(g-4)}Q${fx(x)} ${fx(g-5.2)} ${fx(b-.8)} ${fx(g-3.8)}L${fx(b)} ${fx(g+.4)}Z" fill="url(#${id}st)"/><path d="M${fx(a+1.2)} ${fx(g-4.1)}Q${fx(x)} ${fx(g-5.2)} ${fx(b-1.2)} ${fx(g-3.9)}" fill="none" stroke="#ffc46a" stroke-opacity="${fx(op*.7)}" stroke-width=".7"/>`;
+  return `<g transform="rotate(${fx(lean*57.3)} ${fx(x)} ${fx(g)})"><path d="M${fx(a)} ${fx(g)}L${fx(a+.4)} ${fx(g-ht+2)}Q${fx(a+.8)} ${fx(g-ht)} ${fx(x)} ${fx(g-ht-.4)}Q${fx(b-.6)} ${fx(g-ht)} ${fx(b-.3)} ${fx(g-ht+1.8)}L${fx(b)} ${fx(g)}Z" fill="url(#${id}st)"/>
+  <path d="M${fx(side>0?b-.7:a+.7)} ${fx(g-.8)}L${fx(side>0?b-.8:a+.8)} ${fx(g-ht+2)}" stroke="#ffc46a" stroke-opacity="${fx(op*.95)}" stroke-width="1" stroke-linecap="round"/></g>`};
+ let stones='';LEFT.forEach(([d,wd,ht,ln])=>{if(d<w/2+2)stones+=stone(cx-d,wd,ht,ln)});RIGHT.forEach(([d,wd,ht,ln])=>{if(d<w/2+2)stones+=stone(cx+d,wd,ht,ln)});
+ // The trilithon, about 2.5 times the old one: the sun sits in its gap.
+ const gC=gY(cx)+1,uL=cx-12.6,uR=cx+12.6,uw=7.6,top=h-6.4;
+ const upr=x=>`M${fx(x-uw/2-.3)} ${fx(gC)}L${fx(x-uw/2)} ${fx(top)}H${fx(x+uw/2)}L${fx(x+uw/2+.3)} ${fx(gC)}Z`;
+ const tri=`<path d="${upr(uL)}${upr(uR)}" fill="url(#${id}st)"/>
+  <path d="M${fx(cx-21)} ${fx(top+.4)}L${fx(cx-20.2)} ${fx(top-4.6)}Q${cx} ${fx(top-5.6)} ${fx(cx+20.2)} ${fx(top-4.6)}L${fx(cx+21)} ${fx(top+.4)}Z" fill="url(#${id}st)"/>
+  <path d="M${fx(uL+uw/2-.5)} ${fx(gC-.8)}V${fx(top+1)}M${fx(uR-uw/2+.5)} ${fx(gC-.8)}V${fx(top+1)}" stroke="#ffd98a" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M${fx(uL+uw/2)} ${fx(top+.8)}H${fx(uR-uw/2)}" stroke="#ffb46a" stroke-opacity="${fx(.35+.5*light)}" stroke-width=".9"/>`;
+ const sy=gC-2.2-11.5*light,sr=7.2;
+ const sun=`<g class="${anim?'glowS':''}"><ellipse cx="${cx}" cy="${fx(sy)}" rx="${fx(60+120*light)}" ry="${fx(24+14*light)}" fill="url(#${id}sg)"/><circle cx="${cx}" cy="${fx(sy)}" r="${fx(16+6*light)}" fill="url(#${id}sg)"/></g>`;
+ const disk=`<circle cx="${cx}" cy="${fx(sy)}" r="${sr}" fill="url(#${id}sn)"/><circle cx="${fx(cx-2.2)}" cy="${fx(sy-2.2)}" r="2" fill="#ffffff" opacity=".55"/>`;
+ const hw=34+120*light;
+ const streak=`<g class="${anim?'shim':''}" style="transform-origin:${cx}px ${fx(gC)}px"><ellipse cx="${cx}" cy="${fx(gC-3.4)}" rx="${fx(hw)}" ry="2.4" fill="url(#${id}hz)"/></g>`;
+ const warm=mixHex('#9a4a5c','#f0a455',light),mid=mixHex('#3a2a60','#7a4a72',light);
+ return `<defs>
+  <linearGradient id="${id}sk" x1="0" y1="${-T}" x2="0" y2="${h+B}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0f1740" stop-opacity="0"/><stop offset=".42" stop-color="#0f1740" stop-opacity="0"/><stop offset=".7" stop-color="#121a48" stop-opacity=".85"/><stop offset=".86" stop-color="#1b2152"/><stop offset=".94" stop-color="${mid}"/><stop offset="1" stop-color="${warm}"/></linearGradient>
+  <linearGradient id="${id}in" x1="0" y1="0" x2="0" y2="${h}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${L?'#1b2456':'#3a4690'}"/><stop offset=".6" stop-color="#7a6ab0"/><stop offset="1" stop-color="#ffcf7a"/></linearGradient>
+  <linearGradient id="${id}st" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262a4a"/><stop offset="1" stop-color="#090b1a"/></linearGradient>
+  <linearGradient id="${id}gr" x1="0" y1="${h+8}" x2="0" y2="${h+B}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#151834"/><stop offset="1" stop-color="#05060f"/></linearGradient>
+  <linearGradient id="${id}rm" x1="${fx(cx-rw)}" y1="0" x2="${fx(cx+rw)}" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffc46a" stop-opacity="0"/><stop offset=".5" stop-color="#ffd98a" stop-opacity=".95"/><stop offset="1" stop-color="#ffc46a" stop-opacity="0"/></linearGradient>
+  <linearGradient id="${id}hz" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff9a5a" stop-opacity="0"/><stop offset=".3" stop-color="#ffb46a" stop-opacity=".55"/><stop offset=".5" stop-color="#ffe2a0" stop-opacity=".95"/><stop offset=".7" stop-color="#ffb46a" stop-opacity=".55"/><stop offset="1" stop-color="#ff9a5a" stop-opacity="0"/></linearGradient>
+  <radialGradient id="${id}sg"><stop offset="0" stop-color="#ffd98a" stop-opacity=".95"/><stop offset=".3" stop-color="#ff9e5a" stop-opacity=".45"/><stop offset=".65" stop-color="#c0507a" stop-opacity=".14"/><stop offset="1" stop-color="#c0507a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}sn" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#fffbe8"/><stop offset=".55" stop-color="#ffdc8a"/><stop offset="1" stop-color="#ff9a4a"/></radialGradient>
+  <clipPath id="${id}cp"><path d="${outer} ${ring(f,1)}" clip-rule="evenodd"/></clipPath>
+  <clipPath id="${id}ab"><path d="M${fx(cx-30)} ${h-30}L${fx(cx+30)} ${h-30}${[0,1,2,3,4,5,6].map(i=>{const x=cx+30-10*i;return `L${fx(x)} ${fx(gY(x))}`}).join('')}Z"/></clipPath></defs>
+ <path d="${outer} ${ring(f,1)}" fill-rule="evenodd" fill="url(#${id}sk)"/>
+ <path d="${ring(f,1.4)}" fill="none" stroke="url(#${id}in)" stroke-width="1.8"/>
+ <g clip-path="url(#${id}cp)">
+  <path d="${st}" fill="#e8ecff" fill-opacity=".85"/>
+  ${sun}${streak}
+ </g>
+ <g clip-path="url(#${id}ab)">${disk}</g>
+ <g clip-path="url(#${id}cp)">
+  <path d="${hill}" fill="url(#${id}gr)"/>
+  <path d="${rim}" fill="none" stroke="url(#${id}rm)" stroke-width="1"/>
+ </g>
+ ${stones}${tri}${twinkles}`;
+}
+
+/* ================= Closest existing frames, rough redraws from art.jsx ================= */
+function comicUnder(f){return `<defs><pattern id="ht${f.w}" patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="#ff5a36"/><circle cx="4" cy="4" r="2" fill="#ffd23f"/></pattern></defs><path d="${rrPath(-11,-11,f.w+22,f.h+22,f.R+4)}" fill="url(#ht${f.w})" stroke="#111" stroke-width="4"/>`}
+function comicOver(f){const BURST=[[50,0],[61,22],[85,10],[78,35],[100,42],[80,58],[95,80],[70,76],[62,100],[48,80],[30,98],[28,74],[4,82],[18,60],[0,44],[22,36],[12,12],[36,22]],d='M'+BURST.map(([x,y])=>`${x*.92-46} ${y*.92-46}`).join('L')+'Z';
+ return `<path d="${ring(f,2)}" fill="none" stroke="#111" stroke-width="4"/><g transform="translate(${f.w-20} 22) rotate(12)"><path d="${d}" fill="#ffe14a" stroke="#111" stroke-width="2" stroke-linejoin="round"/><text y="9" font-size="24" font-weight="900" text-anchor="middle" fill="#111" font-family="system-ui">DID!</text></g>`}
+function bouquet(id){return [[40,8,0],[64,30,40],[18,40,80]].map(([x,y,r])=>`<ellipse cx="${x}" cy="${y}" rx="15" ry="6" fill="url(#${id}l)" transform="rotate(${r} ${x} ${y})"/>`).join('')+[[22,22,11],[46,16,8],[16,48,8],[38,38,6]].map(([x,y,s])=>`<g transform="translate(${x} ${y})">${[0,72,144,216,288].map(r=>`<ellipse rx="${s}" ry="${fx(s*.62)}" cx="${fx(s*.8)}" fill="url(#${id}p)" transform="rotate(${r})"/>`).join('')}<circle r="${fx(s*.42)}" fill="#ffd86b"/></g>`).join('')}
+function flowersOver(f){const id=uid('fl');return `<defs><radialGradient id="${id}p"><stop offset="0" stop-color="#fff0f6"/><stop offset=".6" stop-color="#f7b3cc"/><stop offset="1" stop-color="#e77aa4"/></radialGradient><linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be27f"/><stop offset="1" stop-color="#3f8a3a"/></linearGradient></defs><path d="${ring(f,.5)}" fill="none" stroke="rgba(242,167,195,.45)"/><g transform="translate(-20 -20) scale(1.2)">${bouquet(id)}</g><g transform="translate(${f.w+20} ${f.h+20}) rotate(180) scale(1.2)">${bouquet(id)}</g>`}
+function quiltOver(f){const Q=['#e9a07b','#7fb2d6','#f2d17a','#a5c98b'],k=10,c=[[-14,-14],[f.w+14-2*k,-14],[-14,f.h+14-2*k],[f.w+14-2*k,f.h+14-2*k]];
+ return `<path d="${ring(f,6)}" fill="none" stroke="#e8dcc7" stroke-width="1.6" stroke-dasharray="6 4"/>`+c.map(([x,y],ci)=>[0,1,2,3].map(n=>`<rect x="${x+(n%2)*k}" y="${y+Math.floor(n/2)*k}" width="${k}" height="${k}" fill="${Q[(n+ci)%4]}" stroke="${f.c.bg}"/>`).join('')).join('')}
+function globeOver(f){const id=uid('gb'),rnd=seeded(12);let fl='';for(let i=0;i<22;i++){const x=-14+rnd()*(f.w+28);let y=-14+rnd()*(f.h+26);if(x>2&&x<f.w-2&&y>2&&y<f.h-2)continue;fl+=`<circle cx="${fx(x)}" cy="${fx(y)}" r="${fx(1+rnd()*1.2)}" fill="#fff"/>`}
+ for(let i=0;i<14;i++){const left=i%2,x=left?-6-rnd()*10:f.w+6+rnd()*10;fl+=`<circle cx="${fx(x)}" cy="${fx(rnd()*f.h)}" r="${fx(1+rnd()*1.2)}" fill="#fff"/>`}
+ return `<defs><radialGradient id="${id}" cx=".3" cy=".25" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".6" stop-color="#9fd3ff" stop-opacity=".04"/><stop offset="1" stop-color="#9fd3ff" stop-opacity=".14"/></radialGradient></defs>
+ <path d="${rrPath(-18,-18,f.w+36,f.h+26,f.R+18)} ${rrPath(0,0,f.w,f.h,f.R)}" fill-rule="evenodd" fill="url(#${id})"/><path d="${rrPath(-18,-18,f.w+36,f.h+26,f.R+18)}" fill="none" stroke="#cfe8ff" stroke-opacity=".6" stroke-width="1.5"/>
+ <path d="M${f.R*.4} -14 Q${f.w*.25} -20 ${f.w*.45} -17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+ <path d="M-22 ${f.h+8} H${f.w+22} L${f.w+14} ${f.h+22} H-14Z" fill="#7a4a2a" stroke="#4a2a14"/><rect x="-22" y="${f.h+6}" width="${f.w+44}" height="4" rx="2" fill="#a06a40"/>${fl}`}
+function constOver(f){const rnd=seeded(5),n=24,sky=f.c.light?'#3b5fa8':'#bcd4ff';const pts=spots(f,0,n).map((p,i)=>{const off=(rnd()-.5)*16;return {x:p.x+p.nx*Math.abs(off)*.6,y:p.y+p.ny*Math.abs(off)*.6,r:.8+rnd()*1.6}});
+ return `<path d="${ring(f,.5)}" fill="none" stroke="${f.c.light?sky:'rgba(170,200,255,.4)'}"/><path d="M${pts.map(s=>fx(s.x)+' '+fx(s.y)).join('L')}Z" fill="none" stroke="${sky}" stroke-opacity=".35"/>`+pts.map(s=>`<circle cx="${fx(s.x)}" cy="${fx(s.y)}" r="${fx(s.r)}" fill="${sky}"/>`).join('')}
+function duskOver(f){const id=uid('dk'),o=18,T=.55,at=(d,t)=>{const W=f.w+2*d,H=f.h+2*d,r=f.R+d,L=rrLength(W,H,r),top=(H-2*r)+Math.PI*r/2+(W-2*r)/2;return rrPointAt(-d,-d,W,H,r,((t%1+1)%1*L+top)%L)};
+ let ticks='';for(let i=0;i<12;i++){const a=at(o,i/12),b=at(o-4,i/12);ticks+=`<line x1="${fx(a.x)}" y1="${fx(a.y)}" x2="${fx(b.x)}" y2="${fx(b.y)}" stroke="#fff" stroke-opacity="${i%3?.22:.55}" stroke-width="${i%3?1:1.5}" stroke-linecap="round"/>`}
+ const rnd=seeded(51);let st='';for(let i=0;i<30;i++){const p=at(3+rnd()*12,rnd());st+=`<circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="${fx(.5+rnd()*.9)}" fill="#fff" opacity=".7"/>`}
+ const now=at(9,T);return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232a66"/><stop offset="1" stop-color="#3d2f6e"/></linearGradient></defs><path d="${band(f,0,o)}" fill-rule="evenodd" fill="url(#${id})"/>${ticks}${st}<path d="${ring(f,o)}" fill="none" stroke="#fff" stroke-opacity=".14"/><path d="${ring(f,1.5)}" fill="none" stroke="#e8c877" stroke-opacity=".7"/>
+ <circle cx="${fx(now.x)}" cy="${fx(now.y)}" r="11" fill="#fff4cf" opacity=".12"/><circle cx="${fx(now.x)}" cy="${fx(now.y)}" r="6" fill="#fff4cf"/><circle cx="${fx(now.x+3.3)}" cy="${fx(now.y-2.4)}" r="5.2" fill="#2a2d68"/>`}
+
+/* ================= Existing frames, recreated roughly from art.jsx ================= */
+/* ================= NEW 2: BEDTIME (gem, living) ================= */
+// Orange tabby head in the 48x58 buddy space; eye state: open 0..1 lid, or shut.
+function catHead(lid,asleep,blinkCls){
+ const eye=(cx)=>{if(asleep)return `<path d="M${cx-2.4} 28.4 Q${cx} 30.6 ${cx+2.4} 28.4" fill="none" stroke="#2b2018" stroke-width="1.15" stroke-linecap="round"/>`;
+  if(lid<.15)return `<g class="${blinkCls}"><ellipse cx="${cx}" cy="28" rx="2.2" ry="3" fill="#2b2018"/><ellipse cx="${cx+.8}" cy="27" rx=".7" ry=".85" fill="#fff"/></g>`;
+  // Half-lidded and relaxed: a soft lid arc over the lower part of the eye, no brow angle.
+  const top=25.4+5.2*lid,ry=Math.max(.9,31-top);
+  return `<g class="${blinkCls}"><path d="M${cx-2.3} ${fx(top)}A2.3 ${fx(ry)} 0 0 0 ${cx+2.3} ${fx(top)}Z" fill="#2b2018"/>${lid<.55?`<circle cx="${cx+.9}" cy="${fx(top+ry*.42)}" r=".55" fill="#fff"/>`:''}<path d="M${cx-2.8} ${fx(top+.5)}Q${cx} ${fx(top-1.2)} ${cx+2.8} ${fx(top+.5)}" fill="#f0a64a" stroke="#9a5e2a" stroke-width=".7" stroke-linecap="round"/></g>`};
+ return `<path d="M10 19 L14 7.5 L19.5 18Z M28.5 18 L34 7.5 L38 19Z" fill="#f0a64a" stroke="#c9762a" stroke-width=".8" stroke-linejoin="round"/><path d="M11.6 17.4 L14 10.4 L17 17.4Z M31 17.4 L34 10.4 L36.4 17.4Z" fill="#ffd4a8"/>
+ <ellipse cx="24" cy="30" rx="15" ry="13.6" fill="url(#CATG)" stroke="#c9762a" stroke-width=".8"/>
+ <path d="M20.6 17.6 l1 4 M24 17 v4.6 M27.4 17.6 l-1 4" stroke="#cf7d2c" stroke-width="1.5" stroke-linecap="round"/>
+ <path d="M9.6 27 l3.4 .8 M9.4 30.4 l3.4 0 M38.4 27 l-3.4 .8 M38.6 30.4 l-3.4 0" stroke="#cf7d2c" stroke-width="1.3" stroke-linecap="round"/>
+ <ellipse cx="24" cy="34" rx="9.6" ry="7.2" fill="#ffe8c8" opacity=".9"/>
+ ${eye(18)}${eye(30)}
+ <ellipse cx="13.6" cy="33" rx="2.6" ry="1.6" fill="#f08a7a" opacity="${asleep?.7:.45}"/><ellipse cx="34.4" cy="33" rx="2.6" ry="1.6" fill="#f08a7a" opacity="${asleep?.7:.45}"/>
+ <path d="M22.4 31.4 L25.6 31.4 L24 33.4Z" fill="#e07a8a"/>${!asleep&&lid>=.3?`<path d="M24 33.4 v.8" stroke="#7a4a1c" stroke-width=".8"/><ellipse cx="24" cy="35.7" rx="1.15" ry="1.35" fill="#9a3c42" stroke="#7a4a1c" stroke-width=".5"/><ellipse cx="24" cy="36.3" rx=".65" ry=".5" fill="#f08a9a"/>`:`<path d="M24 33.4 v1 M21.8 35 q1.1 1 2.2 0 q1.1 1 2.2 0" fill="none" stroke="#7a4a1c" stroke-width=".8" stroke-linecap="round"/>`}
+ <path d="M14 34 l-7 -1.4 M14 36 l-7 1 M34 34 l7 -1.4 M34 36 l7 1" stroke="#7a5a44" stroke-width=".7" stroke-linecap="round" opacity=".8"/>`;
+}
+function crescent(cx,cy,r,dx,dy,r2){// lit part of a circle r minus an offset circle r2: two arcs
+ const d=Math.hypot(dx,dy),a=(r*r-r2*r2+d*d)/(2*d),hh=Math.sqrt(Math.max(0,r*r-a*a)),ux=dx/d,uy=dy/d,mx=cx+a*ux,my=cy+a*uy;
+ const p1=[mx-hh*uy,my+hh*ux],p2=[mx+hh*uy,my-hh*ux];
+ return `M${fx(p1[0])} ${fx(p1[1])}A${r} ${r} 0 1 1 ${fx(p2[0])} ${fx(p2[1])}A${r2} ${r2} 0 0 0 ${fx(p1[0])} ${fx(p1[1])}Z`}
+function star5(cx,cy,R1,R2){let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R2:R1;d+=(i?'L':'M')+fx(cx+rr*Math.cos(a))+' '+fx(cy+rr*Math.sin(a))}return d+'Z'}
+
+// A point on the top piece of the ring o px out: from 8 px below the top-left
+// corner, round the top, to 8 px below the top-right corner. u in 0..1 maps
+// piece by piece, so the same u lines up on rings of different o.
+function topAt(f,o,u){const r=f.R+o,arc=Math.PI*r/2,sh=f.w-2*f.R,sv=f.h-2*f.R,e=8;
+ const ref=[e,Math.PI*(f.R+12)/2,sh,Math.PI*(f.R+12)/2,e],seg=[e,arc,sh,arc,e],tot=ref.reduce((a,b)=>a+b,0);
+ let k=u*tot,d=sv-e;for(let i=0;i<5;i++){if(k<=ref[i]||i===4){d+=seg[i]*Math.min(1,k/ref[i]);break}k-=ref[i];d+=seg[i]}
+ return rrPointAt(-o,-o,f.w+2*o,f.h+2*o,r,d)}
+
+function bedtimeOver(f){
+ const {w,h,R}=f,id=uid('bt'),P=f.p,total=P.total||0,ans=Math.min(total,P.answered||0);
+ const asleep=f.still||(total>0&&ans>=total);
+ const r=asleep?1:total?ans/total:0;
+ const lid=asleep?1:r>0?Math.min(.75,.5+.2*r+.15*(P.evening||0)):Math.min(.12,.3*(P.evening||0));
+ const lift=asleep?1:r*.85;
+ const L=f.c.light,anim=!f.still;
+ const FAB1='#6170c4',FAB2='#2f3a7a',CREAM='#efe3c4',INK='#1d255a';
+
+ /* --- Canopy: a gathered valance round the top, 6 to 19 px out, scalloped hem --- */
+ const N=56,outer=[],inner=[];for(let i=0;i<=N;i++){outer.push(topAt(f,19,i/N));inner.push(topAt(f,6,i/N))}
+ const val=`M${outer.map(p=>fx(p.x)+' '+fx(p.y)).join('L')}L${inner.slice().reverse().map(p=>fx(p.x)+' '+fx(p.y)).join('L')}Z`;
+ const piping=`M${outer.map(p=>fx(p.x-p.nx*1.4)+' '+fx(p.y-p.ny*1.4)).join('L')}`;
+ const SC=28;let scal='',scalIn='';for(let i=0;i<SC;i++){const p=topAt(f,5.4,(i+.5)/SC);scal+=`<circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="3.7" fill="${CREAM}"/>`;scalIn+=`<circle cx="${fx(p.x+p.nx*.5)}" cy="${fx(p.y+p.ny*.5)}" r="3.3" fill="url(#${id}fb)"/>`}
+ let pleats='';for(let i=1;i<SC;i++){const a=topAt(f,7,i/SC),b=topAt(f,17.4,i/SC);pleats+=`<path d="M${fx(a.x)} ${fx(a.y)}L${fx(b.x)} ${fx(b.y)}" stroke="${INK}" stroke-opacity=".35" stroke-width="1.1"/>`;const c=topAt(f,7,(i+.18)/SC),d=topAt(f,17.4,(i+.18)/SC);pleats+=`<path d="M${fx(c.x)} ${fx(c.y)}L${fx(d.x)} ${fx(d.y)}" stroke="#ffffff" stroke-opacity=".13" stroke-width="1"/>`}
+ let vstars='';for(let i=0;i<SC;i+=2){const p=topAt(f,12.4,(i+1)/SC);vstars+=`<path d="M${fx(p.x)} ${fx(p.y-1.8)}Q${fx(p.x)} ${fx(p.y)} ${fx(p.x+1.8)} ${fx(p.y)}Q${fx(p.x)} ${fx(p.y)} ${fx(p.x)} ${fx(p.y+1.8)}Q${fx(p.x)} ${fx(p.y)} ${fx(p.x-1.8)} ${fx(p.y)}Q${fx(p.x)} ${fx(p.y)} ${fx(p.x)} ${fx(p.y-1.8)}Z" fill="#ffd77a" opacity=".8"/>`}
+ // Tassels hang from the two ends of the valance.
+ const tassel=(x,y)=>`<path d="M${x} ${y}V${y+4}" stroke="#d9b45a" stroke-width=".8"/><circle cx="${x}" cy="${y+4.8}" r="1.6" fill="#e9c46a" stroke="#9a7420" stroke-width=".5"/><path d="M${x-1.8} ${y+6}L${x-2.2} ${y+11}H${x+2.2}L${x+1.8} ${y+6}Z" fill="#e9c46a" stroke="#9a7420" stroke-width=".5"/><path d="M${x-.8} ${y+7}V${y+10.6}M${x+.8} ${y+7}V${y+10.6}" stroke="#9a7420" stroke-width=".4"/>`;
+ const vL=topAt(f,12.5,0),vR=topAt(f,12.5,1);
+
+ /* --- Curtains tied back on each side, between the card and the posts --- */
+ const tY=R+Math.round(h*.3);
+ const curtain=(m)=>{const X=x=>fx(m?w-x:x);const top=R+6;
+  return `<path d="M${X(-2.4)} ${top}L${X(-13.6)} ${top}C${X(-13.6)} ${tY-22} ${X(-11)} ${tY-5} ${X(-10.2)} ${tY}C${X(-11)} ${tY+11} ${X(-15)} ${tY+22} ${X(-13.4)} ${tY+34}Q${X(-9.4)} ${tY+38.5} ${X(-5)} ${tY+33}C${X(-5.4)} ${tY+20} ${X(-6.2)} ${tY+8} ${X(-6)} ${tY}C${X(-4.8)} ${tY-6} ${X(-2.4)} ${tY-24} ${X(-2.4)} ${top}Z" fill="url(#${id}ct)" stroke="${INK}" stroke-opacity=".6" stroke-width=".7"/>
+  <path d="M${X(-5.2)} ${top}Q${X(-5.6)} ${tY-14} ${X(-7.2)} ${tY-1}M${X(-8.4)} ${top}Q${X(-8.4)} ${tY-14} ${X(-8.2)} ${tY-1}M${X(-11.4)} ${top}Q${X(-11)} ${tY-14} ${X(-9.2)} ${tY-1}M${X(-8)} ${tY+3}Q${X(-8.6)} ${tY+18} ${X(-9.6)} ${tY+34}M${X(-10.4)} ${tY+3}Q${X(-12)} ${tY+18} ${X(-12.2)} ${tY+33}" fill="none" stroke="${INK}" stroke-opacity=".45" stroke-width=".8"/>
+  <path d="M${X(-3.4)} ${top+2}Q${X(-3.8)} ${tY-16} ${X(-6.4)} ${tY-2}" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="1"/>
+  <path d="M${X(-11.4)} ${tY-1.6}Q${X(-8.1)} ${tY-3} ${X(-4.8)} ${tY-1.6}L${X(-4.8)} ${tY+1.6}Q${X(-8.1)} ${tY+.2} ${X(-11.4)} ${tY+1.6}Z" fill="${CREAM}" stroke="#b9a57c" stroke-width=".5"/>
+  <ellipse cx="${X(-6.2)}" cy="${tY-2}" rx="2.2" ry="1.4" fill="${CREAM}" stroke="#b9a57c" stroke-width=".5" transform="rotate(${m?25:-25} ${X(-6.2)} ${tY-2})"/><ellipse cx="${X(-6.2)}" cy="${tY+2.2}" rx="2.2" ry="1.4" fill="${CREAM}" stroke="#b9a57c" stroke-width=".5" transform="rotate(${m?-25:25} ${X(-6.2)} ${tY+2.2})"/><circle cx="${X(-5.6)}" cy="${tY}" r="1.1" fill="#e2d2a8"/>`};
+
+ /* --- Posts, footboard (left) and headboard (right) --- */
+ // Turned bedposts from the floor up to the curtain tie-backs, topped with a ball finial.
+ const post=(x)=>{const c=x+3.8,top=tY+8,knobs=[top+26,(top+h)/2+10,h-40];
+  return `<rect x="${x}" y="${top}" width="7.6" height="${fx(h+21-top)}" rx="3.2" fill="url(#${id}wd)" stroke="#5a3a1e" stroke-width=".7"/>
+  <path d="M${x+1.8} ${top+4}V${h+16}" stroke="#f3c48e" stroke-opacity=".6" stroke-width="1.1" stroke-linecap="round"/>
+  ${knobs.map(y=>`<ellipse cx="${c}" cy="${fx(y)}" rx="5.4" ry="2.6" fill="url(#${id}wd)" stroke="#5a3a1e" stroke-width=".6"/><path d="M${c-3.8} ${fx(y-1)}Q${c-1} ${fx(y-2.4)} ${c+1.6} ${fx(y-1.8)}" fill="none" stroke="#f6cf9c" stroke-opacity=".8" stroke-width=".8" stroke-linecap="round"/>`).join('')}
+  <ellipse cx="${c}" cy="${top}" rx="4.6" ry="1.8" fill="#7a4e2c"/><circle cx="${c}" cy="${top-4.4}" r="4.6" fill="url(#${id}kn)" stroke="#5a3a1e" stroke-width=".7"/><circle cx="${c-1.6}" cy="${top-6}" r="1.3" fill="#ffe2b8" opacity=".85"/>
+  <rect x="${x-.6}" y="${h+19}" width="8.8" height="5" rx="1.4" fill="#6e4526"/>`};
+ const panel=(x0,x1,top,moon)=>{const m=(x0+x1)/2;return `<path d="M${x0} ${h+18}V${top+7}Q${x0} ${top} ${m} ${top}Q${x1} ${top} ${x1} ${top+7}V${h+18}Z" fill="#000" fill-opacity="${L?.12:.32}" transform="translate(1.2 1.6)"/>
+  <path d="M${x0} ${h+18}V${top+7}Q${x0} ${top} ${m} ${top}Q${x1} ${top} ${x1} ${top+7}V${h+18}Z" fill="url(#${id}wd)" stroke="#5a3a1e" stroke-width=".8"/>
+  <path d="M${x0+2.4} ${h+4}V${top+8}Q${x0+2.4} ${top+2.6} ${m} ${top+2.6}Q${x1-2.4} ${top+2.6} ${x1-2.4} ${top+8}V${h+4}" fill="none" stroke="#5a3a1e" stroke-opacity=".55" stroke-width=".8"/>
+  <path d="M${x0+1.1} ${top+8}Q${x0+1.3} ${top+1.1} ${m-1} ${top+.9}" fill="none" stroke="#f6cf9c" stroke-opacity=".85" stroke-width="1" stroke-linecap="round"/>
+  ${moon?`<path d="${crescent(m,top+11,3.4,1.9,-1.2,2.8)}" fill="#5a3a1e" opacity=".8"/>`:''}`};
+ const lPost=-22,rPost=w+14.4;
+
+ /* --- Mattress, rail and blanket along the bottom --- */
+ // The blanket is tucked up under the buddy's chin at the right end.
+ const yb=h-2,yChin=h+8-2*lift,yHump=h-4-7*lift,BR=w+18;
+ const topEdge=`M-4 ${yb}L${w-96} ${yb}C${w-80} ${yb} ${w-66} ${fx(yHump)} ${w-48} ${fx(yHump)}C${w-32} ${fx(yHump)} ${w-20} ${fx(yChin)} ${w-6} ${fx(yChin)}C${w+1} ${fx(yChin)} ${w+6} ${fx(yChin+.5)} ${BR} ${fx(yChin+.5)}`;
+ let hem='';const step=(BR+4)/Math.round((BR+4)/22);for(let x=BR;x>-4+.1;x-=step){const x2=Math.max(-4,x-step);hem+=`Q${fx((x+x2)/2)} ${h+15} ${fx(x2)} ${h+12}`}
+ const blanket=`${topEdge}Q${BR+3} ${fx((yChin+h+12)/2)} ${BR} ${h+12}${hem}Z`;
+ let quilt='';for(let x=-80;x<w+40;x+=10){quilt+=`M${x} ${h-16}l32 32M${x+32} ${h-16}l-32 32`}
+ const n=Math.min(10,Math.max(1,total||4)),x0=16,x1=w-118;let stars='';
+ for(let i=0;i<n;i++){const sx=n===1?(x0+x1)/2:x0+(x1-x0)*i/(n-1),sy=h+6,on=asleep||i<ans;
+  stars+=on?`<circle cx="${fx(sx)}" cy="${sy}" r="5.5" fill="url(#${id}sg)"/><path d="${star5(sx,sy,3.3,1.4)}" fill="#ffd77a" stroke="#c98e1c" stroke-width=".5"/>`:`<path d="${star5(sx,sy,3.1,1.35)}" fill="none" stroke="#e9e3ff" stroke-opacity=".55" stroke-width=".8" stroke-dasharray="1.2 .9"/>`}
+ const folds=[[w-140,5],[w-196,-4],[70,4],[26,-3]].map(([x,b])=>`<path d="M${x} ${h}q${b} 6 ${-b*.4} 12" fill="none" stroke="${INK}" stroke-opacity=".5" stroke-width="1.2" stroke-linecap="round"/><path d="M${x+2} ${h+1}q${b} 6 ${-b*.4} 11" fill="none" stroke="#ffffff" stroke-opacity=".1" stroke-width="1"/>`).join('');
+ const mattress=`<rect x="-4" y="${h+6}" width="${BR+4}" height="12" rx="4" fill="url(#${id}mt)" stroke="#b9ab88" stroke-width=".7"/><path d="M-1 ${h+15.6}H${w+2}" stroke="#cdbf9c" stroke-width=".7" stroke-dasharray="2.4 1.8"/>
+  <rect x="-17" y="${h+17.6}" width="${w+34}" height="3.8" rx="1.6" fill="url(#${id}wd)" stroke="#5a3a1e" stroke-width=".6"/>`;
+
+ /* --- Buddy --- */
+ // Low and to the right, clear of the Did button; the blanket covers the chin.
+ const hx=w+5,hy=h+1;
+ const head=`<g transform="translate(${hx} ${hy}) rotate(-8) scale(.86) translate(-24 -31)">${catHead(lid,asleep,anim?(r>0?'blink slow':'blink'):'')}</g>`;
+ const pillow=`<g transform="translate(${w+8} ${h-5}) rotate(-12)"><rect x="-17" y="-10" width="34" height="20" rx="9" fill="#000" fill-opacity="${L?.1:.3}" transform="translate(1 2)"/><rect x="-17" y="-10" width="34" height="20" rx="9" fill="url(#${id}pl)" stroke="#aab5d0" stroke-width=".8"/><path d="M-12 -2.6Q0 .4 12 -2.6" fill="none" stroke="#c3cce2" stroke-width=".9"/><path d="M-13 -6.6Q-6 -8.8 1 -8.6" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round"/></g>`;
+ const paws=lift<.5?[w-5,w-14].map(x=>`<ellipse cx="${x}" cy="${fx(yChin+.6)}" rx="4.2" ry="2.9" fill="#f0a64a" stroke="#c9762a" stroke-width=".7"/><path d="M${x-1.5} ${fx(yChin+1.6)}v-1.3M${x+1.5} ${fx(yChin+1.6)}v-1.3" stroke="#c9762a" stroke-width=".6" stroke-linecap="round"/>`).join(''):'';
+
+ /* --- Moon night-light on the footboard: off while questions are left, warm when all are in --- */
+ const lx=-10,ly=h-37,glowA=asleep?1:.2*r;
+ const lamp=`${glowA>0?`<g class="${anim&&asleep?'lamp':''}" opacity="${fx(glowA)}"><circle cx="${lx}" cy="${ly}" r="24" fill="url(#${id}lg)"/></g>`:''}
+  <rect x="${lx-2.6}" y="${ly+5}" width="5.2" height="3.4" rx="1.2" fill="#d9dde8" stroke="#8d95ab" stroke-width=".6"/>
+  <path d="${crescent(lx,ly,5.6,3,-2,4.7)}" fill="${asleep?'url(#'+id+'mn)':'#e6e2d2'}" stroke="${asleep?'#e0a83a':'#a9a28a'}" stroke-width=".7"/>${asleep?`<circle cx="${lx-3}" cy="${ly+.6}" r=".9" fill="#fff8e0"/>`:''}`;
+ // Small Zs drift up and left from above the headboard into the gap between the card and the post.
+ // They zig-zag a little so they read as drifting, not a column. Light mode inks them indigo with a pale edge.
+ const zIn=L?'#34418f':'#fff3d2',zOut=L?'#ffffff':'#1d255a';
+ const zs=asleep?[[w+8.2,h-56,3.2,0],[w+4.6,h-69,3.8,1.6],[w+8.8,h-83,4.4,3.2]].map(([x,y,s,dl],i)=>{const d=`M${x} ${y}h${s}l${-s} ${fx(s*1.1)}h${s}`;return `<g class="${anim?'zz':''}" style="animation-delay:${dl}s" opacity="${anim?1:.95-i*.2}"><path d="${d}" fill="none" stroke="${zOut}" stroke-opacity=".75" stroke-width="${2.6+i*.2}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${zIn}" stroke-width="${1.3+i*.2}" stroke-linecap="round" stroke-linejoin="round"/></g>`}).join(''):'';
+
+ return `<defs>
+  <linearGradient id="${id}fb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${FAB1}"/><stop offset="1" stop-color="#3b4690"/></linearGradient>
+  <linearGradient id="${id}vl" x1="0" y1="-20" x2="0" y2="${R+10}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6d7bd0"/><stop offset="1" stop-color="#36418a"/></linearGradient>
+  <linearGradient id="${id}ct" x1="0" y1="${R}" x2="0" y2="${tY+40}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5a68bd"/><stop offset="1" stop-color="#3a4590"/></linearGradient>
+  <linearGradient id="${id}bl" x1="0" y1="${h-12}" x2="0" y2="${h+15}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${FAB1}"/><stop offset="1" stop-color="${FAB2}"/></linearGradient>
+  <linearGradient id="${id}mt" x1="0" y1="${h+6}" x2="0" y2="${h+18}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbf7ec"/><stop offset="1" stop-color="#e2d7bd"/></linearGradient>
+  <linearGradient id="${id}pl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6deef"/></linearGradient>
+  <linearGradient id="${id}wd" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c58a54"/><stop offset=".5" stop-color="#a06a3c"/><stop offset="1" stop-color="#6e4526"/></linearGradient>
+  <radialGradient id="${id}lg"><stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/><stop offset=".4" stop-color="#ffc25a" stop-opacity=".28"/><stop offset="1" stop-color="#ffc25a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}mn" cx=".3" cy=".4" r=".8"><stop offset="0" stop-color="#fff6d6"/><stop offset="1" stop-color="#ffc85a"/></radialGradient>
+  <radialGradient id="${id}kn" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#e3a86e"/><stop offset="1" stop-color="#7a4e2c"/></radialGradient>
+  <radialGradient id="${id}sg"><stop offset="0" stop-color="#ffd77a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd77a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="CATG" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#f7b864"/><stop offset="1" stop-color="#e8963a"/></radialGradient>
+  <clipPath id="${id}cp"><path d="${blanket}"/></clipPath></defs>
+ ${post(lPost)}${post(rPost)}
+ ${curtain(false)}${curtain(true)}
+ <path d="${val}" fill="#000" fill-opacity="${L?.1:.3}" transform="translate(0 1.8)"/>
+ ${scal}${scalIn}
+ <path d="${val}" fill="url(#${id}vl)"/>${pleats}${vstars}
+ <path d="${piping}" fill="none" stroke="${CREAM}" stroke-width="1.8"/><path d="${val}" fill="none" stroke="${INK}" stroke-opacity=".6" stroke-width=".7"/>
+ ${tassel(fx(vL.x),fx(vL.y+4))}${tassel(fx(vR.x),fx(vR.y+4))}
+ ${panel(-20.5,-3.5,h-32,false)}${panel(w+3,w+20.5,h-48,true)}
+ ${mattress}${pillow}
+ <g class="${anim&&asleep?'breathe':''}">${head}</g>
+ <path d="${blanket}" transform="translate(0 1.6)" fill="#000" fill-opacity="${L?.12:.3}"/>
+ <g class="${anim&&asleep?'breathe':''}">
+  <path d="${blanket}" fill="url(#${id}bl)"/>
+  <g clip-path="url(#${id}cp)">
+   <path d="${quilt}" stroke="#d9dfff" stroke-opacity=".2" stroke-width=".7" stroke-dasharray="1.6 1.2"/>
+   ${glowA>0?`<circle cx="${lx+8}" cy="${h+4}" r="40" fill="url(#${id}lg)" opacity="${fx(glowA*.75)}"/>`:''}
+   ${folds}${stars}
+   <path d="${topEdge}" fill="none" stroke="#f6f1e4" stroke-width="9"/>
+   <path d="${topEdge}" transform="translate(0 5)" fill="none" stroke="#141a46" stroke-opacity=".35" stroke-width="1.6"/>
+   <path d="${topEdge}" transform="translate(0 2.3)" fill="none" stroke="#b9ad92" stroke-width=".6" stroke-dasharray="2 2"/>
+   <path d="M${w+5} ${h+12}${hem}" transform="translate(0 -1.6)" fill="none" stroke="${CREAM}" stroke-opacity=".7" stroke-width=".7" stroke-dasharray="2 2"/>
+  </g>
+  <path d="${blanket}" fill="none" stroke="#232c66" stroke-width=".9"/>
+  ${paws}
+ </g>
+ ${lamp}${zs}`;
+}
+function goldUnder(f){const id=uid('gd');let halo='';for(let i=0;i<3;i++){const k=-10-1-i*2;halo+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="#e2b75a" stroke-width="2" stroke-opacity="${fx(.18*Math.pow(1-i/3,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5414"/><stop offset=".22" stop-color="#f8dc8a"/><stop offset=".4" stop-color="#b8892b"/><stop offset=".52" stop-color="#fff1c2"/><stop offset=".66" stop-color="#a87a24"/><stop offset=".84" stop-color="#f3d27a"/><stop offset="1" stop-color="#7a5414"/></linearGradient></defs>${halo}<path d="${ring(f,10)}" fill="url(#${id})"/><path d="${ring(f,9.5)}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`}
+function goldHtml(f){const o=10;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="sweep" style="position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 44%,rgba(255,255,255,.6) 50%,transparent 56%)"></div></div>`}
+function goldOver(f){const id='gg'+uid('');const art=`<path d="M6 58 C6 26 26 6 58 6" fill="none" stroke="url(#${id})" stroke-width="3"/><path d="M14 54 C16 32 32 16 54 14" fill="none" stroke="url(#${id})" stroke-width="1.6"/><path d="M6 22 q10 -2 12 -12 q2 10 12 12 q-10 2 -12 12 q-2 -10 -12 -12z" fill="url(#${id})"/><circle cx="34" cy="34" r="3" fill="url(#${id})"/><path d="M40 8 q6 4 4 10 M8 40 q4 6 10 4" fill="none" stroke="url(#${id})" stroke-width="1.4"/>`;
+ const off=-14;return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>`+[[off,off,0],[f.w-off,off,90],[f.w-off,f.h-off,180],[off,f.h-off,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')}
+function auroraUnder(f){const id=uid('au');let h='';const steps=f.still?3:15;for(let i=0;i<steps;i++){const k=-3-1-i*2;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-opacity="${fx(.42*Math.pow(1-i/steps,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46f0c0"/><stop offset=".35" stop-color="#6aa8ff"/><stop offset=".7" stop-color="#c38bff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient></defs><g class="breatheO">${h}</g>`}
+function auroraHtml(f){const o=3,D=Math.hypot(f.w,f.h)+20;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="spin" style="position:absolute;width:${D}px;height:${D}px;left:${(f.w+2*o-D)/2}px;top:${(f.h+2*o-D)/2}px;background:conic-gradient(#46f0c0,#6aa8ff,#c38bff,#ff7ad9,#46f0c0)"></div></div>`}
+function litPath(p,r){const waxing=p<.5,k=Math.cos(2*Math.PI*p),rx=Math.abs(k)*r,cres=Math.abs(p-.5)>.25;
+ return `M0 ${-r}A${r} ${r} 0 0 ${waxing?1:0} 0 ${r}A${fx(rx)} ${r} 0 0 ${waxing?(cres?0:1):(cres?1:0)} 0 ${-r}Z`}
+function moonDisc(p,r,id){return `<circle r="${r}" fill="#262c3a"/><path d="${litPath(p,r)}" fill="url(#${id})"/><circle r="${r}" fill="none" stroke="rgba(241,230,196,.35)" stroke-width=".8"/>`}
+function moonOver(f){const id=uid('mn'),p=.62;let week='';for(let i=0;i<7;i++){const q=(p-.0339*(6-i)+1)%1,t=i===6;week+=`<g transform="translate(${fx(f.w*(.12+i*.127))} ${f.h+1})">${t?`<circle r="12" fill="none" stroke="rgba(241,230,196,.6)"/>`:''}${moonDisc(q,t?8:6.5,id)}</g>`}
+ return `<defs><radialGradient id="${id}" cx=".4" cy=".35" r=".6"><stop offset="0" stop-color="#fffaf0"/><stop offset=".7" stop-color="#f1e6c4"/><stop offset="1" stop-color="#d8c99a"/></radialGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#f1e6c4" stop-opacity=".43"/><stop offset="1" stop-color="#f1e6c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${openTopPath(f.w,f.h,f.R,34)}" fill="none" stroke="rgba(241,230,196,.55)" stroke-width="1.5"/><g transform="translate(${f.w/2} -2)"><circle r="44" fill="url(#${id}h)"/>${moonDisc(p,20,id)}<circle r="5" cx="-6" cy="4" fill="rgba(0,0,0,.08)"/><circle r="3" cx="7" cy="-7" fill="rgba(0,0,0,.07)"/></g>${week}`}
+function ropeOver(f){return `<path d="${ring(f,7)}" fill="none" stroke="#c99b62" stroke-width="7"/><path d="${ring(f,7)}" fill="none" stroke="#8a5f35" stroke-width="7" stroke-dasharray="6 6"/><path d="${ring(f,7)}" fill="none" stroke="#f0d3a6" stroke-opacity=".5" stroke-width="2" stroke-dasharray="6 6" stroke-dashoffset="3"/>`}
+function trainOver(f){const o=12,pid=uid('tp'),ties=spots(f,o,46).map(t=>`<rect x="${fx(t.x-1.5)}" y="${fx(t.y-6)}" width="3" height="12" rx="1" fill="#6b4a2e" transform="rotate(${fx(t.ang*180/Math.PI)} ${fx(t.x)} ${fx(t.y)})"/>`).join('');
+ const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o),dur=L/26;
+ const cars=[[0,'engine'],[26,'blue'],[50,'buddy']].map(([gap,k])=>{const body=k==='engine'?`<rect x="-11" y="-7" width="22" height="13" rx="3" fill="#ef6a5b"/><rect x="2" y="-12" width="8" height="7" rx="1.5" fill="#c94a3c"/><rect x="-9" y="-11" width="5" height="5" fill="#333"/>`:`<rect x="-9" y="-6" width="18" height="11" rx="2.5" fill="${k==='blue'?'#7bd3ff':'#ffd166'}"/>`+(k==='buddy'?`<g transform="translate(-7 -16) scale(.3)">${catHead(0,false,'')}</g>`:'');
+  const wheels=`<circle cx="-5" cy="6" r="2.8" fill="#222"/><circle cx="5" cy="6" r="2.8" fill="#222"/>`;
+  if(f.still){const p=rrPointAt(-o,-o,W,H,f.R+o,L*.45-gap);return `<g transform="translate(${fx(p.x)} ${fx(p.y)}) rotate(${fx(p.ang*180/Math.PI)})">${body}${wheels}</g>`}
+  return `<g>${body}${wheels}<animateMotion dur="${fx(dur)}s" begin="${-fx(dur*.45-gap/26)}s" repeatCount="indefinite" rotate="auto"><mpath href="#${pid}"/></animateMotion></g>`}).join('');
+ return `<path id="${pid}" d="${ring(f,o)}" fill="none"/>${ties}<path d="${ring(f,o+3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/><path d="${ring(f,o-3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/>${cars}`}
+const BULBS=['#ffd166','#ff6b9a','#7bd3ff','#9be36b','#c79bff'];
+function lightsOver(f){const q=Math.max(6,Math.min(8,f.p.total||6)),n=q*2,pins=spots(f,12,n,.5/n);let out=`<path d="${ring(f,12)}" fill="none" stroke="#6b7060" stroke-width="1.4"/>`;
+ pins.forEach((p,i)=>{const k=Math.floor(i/2),on=k<(f.p.answered||0),bx=p.x+p.nx*6,by=p.y+p.ny*6,deg=fx(p.ang*180/Math.PI),col=BULBS[k%5];
+  out+=`<line x1="${fx(p.x)}" y1="${fx(p.y)}" x2="${fx(bx)}" y2="${fx(by)}" stroke="#6b7060" stroke-width="1.2"/><rect x="${fx(p.x+p.nx*3-2.2)}" y="${fx(p.y+p.ny*3-2.2)}" width="4.4" height="4.4" rx="1" fill="#8a8f9c" transform="rotate(${deg} ${fx(p.x+p.nx*3)} ${fx(p.y+p.ny*3)})"/>`+
+  (on?`<circle cx="${fx(bx)}" cy="${fx(by)}" r="9" fill="${col}" opacity=".3"/><ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="${col}" stroke="#fff" stroke-width=".8"/>`:`<ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="#363b47" stroke="#5a606e" stroke-width=".8"/>`)});return out}
+function snowOver(f){const sx=(f.w+8)/300,cap='M0 18 Q10 6 22 14 Q34 2 48 12 Q62 0 78 12 Q92 4 108 13 Q124 2 140 12 Q156 4 172 12 Q188 0 204 12 Q220 4 236 13 Q252 2 268 12 Q284 4 300 14 L300 26 L0 26 Z';
+ const rnd=seeded(52);let fl='';if(!f.still)for(let i=0;i<22;i++){const r=.8+rnd()*2.2;fl+=`<circle class="fall" style="animation-duration:${(6+rnd()*6).toFixed(1)}s;animation-delay:${-(rnd()*10).toFixed(1)}s" cx="${fx(rnd()*f.w)}" cy="0" r="${fx(r)}" fill="${f.c.snow}" opacity="${fx(.5+r/5)}"/>`}
+ return `<path d="${ring(f,.5)}" fill="none" stroke="rgba(220,235,255,.5)"/><g transform="translate(-4 -10) scale(${fx(sx)} 1)"><path d="${cap}" fill="#f4f8ff"/><path d="M0 22 L300 22" stroke="#dbe6f5" stroke-width="2"/></g>${fl}`}
+
+const FR={
+ ginger:{name:'Gingerbread',kind:'Coin · 110 coins · still',over:gingerOver},
+ snowman:{name:'Snowman',kind:'Gem · 3 gems · living',over:snowmanOver},
+ solstice:{name:'Solstice',kind:'Seasonal · free Dec 20 to 22 · kept after',over:solsticeOver},
+ gold:{name:'Gold leaf',under:goldUnder,html:goldHtml,over:goldOver},
+ aurora:{name:'Aurora',under:auroraUnder,html:auroraHtml},
+ moon:{name:"Tonight's moon",over:moonOver},
+ comic:{name:'Comic',under:comicUnder,over:comicOver},
+ flowers:{name:'Flowers',over:flowersOver},
+ quilt:{name:'Quilt',over:quiltOver},
+ bedtime:{name:'Bedtime',over:bedtimeOver},
+ globe:{name:'Snow Globe',over:globeOver},
+ const:{name:'Constellation',over:constOver},
+ dusk:{name:'Night Sky Clock',over:duskOver},
+ snow:{name:'Snow',over:snowOver},
+};
+
+/* ================= Page ================= */
+const LOOKS={
+ lime:{dark:{bg:'#0e1014',card:'#16191f',line:'#2b3140',on:'#c9f24d',onInk:'#101208',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#242935'},
+       light:{bg:'#eef1e6',card:'#ffffff',line:'#cfd4c4',on:'#567510',onInk:'#ffffff',ink:'#1a1d16',soft:'#4a5240',dim:'#697060',miss:'#c44536',chip:'#e8ebdf'}},
+ sky:{dark:{bg:'#0a0d14',card:'#10151f',line:'#253247',on:'#4aa8ff',onInk:'#06121f',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#1b2433'},
+      light:{bg:'#e7eff9',card:'#f6faff',line:'#b7cce6',on:'#1766c2',onInk:'#ffffff',ink:'#141a22',soft:'#4a5566',dim:'#6a7486',miss:'#c44536',chip:'#dbe7f5'}},
+ maple:{dark:{bg:'#140c0a',card:'#1f1410',line:'#462d26',on:'#fa774f',onInk:'#1a0904',ink:'#f8f0ec',soft:'#b3a19a',dim:'#8a7770',miss:'#ff6f61',chip:'#32211c'},
+        light:{bg:'#f9ebe7',card:'#fff8f6',line:'#e5c3b8',on:'#be411b',onInk:'#ffffff',ink:'#22140f',soft:'#5e4a42',dim:'#806a62',miss:'#c44536',chip:'#f4e1dc'}}};
+let THEME='dark',LOOK='lime';
+
+function bigCard(pal,f){const P=f.p,all=P.total>0&&P.answered>=P.total;
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:1px solid ${pal.line};color:${pal.ink};padding:22px">
+ <span class="k" style="color:${pal.on}">${all?'ALL DONE TONIGHT':`TONIGHT · ${Math.min(P.total,P.answered+(P.skipped||0)+1)} OF ${P.total}`}</span><span class="chip" style="background:${pal.chip};color:${pal.soft}">Health</span>
+ <div class="q">${all?'That was the last one. Sleep well.':P.q||'Did I take my vitamins?'}</div>
+ <div class="s" style="color:${pal.soft}">6 night streak</div>
+ ${all?'':`<div class="pills"><span class="pill" style="border:1px solid ${pal.line};color:${pal.ink}">Nope</span><span class="pill" style="background:${pal.on};color:${pal.onInk}">Did</span></div>`}</div>`}
+function miniCard(pal,f,id){const wk=[1,1,1,1,0,1,1];
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:2px solid ${pal.line}">
+ <div style="position:absolute;left:24px;top:28px;width:58px;height:10px;border-radius:5px;background:${pal.on}"></div>
+ <div style="position:absolute;left:24px;top:54px;width:160px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ <div style="position:absolute;left:24px;top:80px;width:104px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ ${id==='moon'?'':`<div style="position:absolute;left:24px;right:24px;bottom:30px;display:flex;justify-content:space-between">${wk.map(o=>`<i style="width:16px;height:16px;border-radius:50%;background:${o?pal.on:pal.miss}"></i>`).join('')}</div>`}</div>`}
+
+function framed(id,{theme=THEME,look=LOOK,zoom=1,mini=false,still=false,p={}}={}){
+ const pal=LOOKS[look][theme],light=theme==='light';
+ const w=mini?220:300,h=mini?264:340,R=mini?30:24;
+ const f={w,h,R,still,c:{light,accent:pal.on,card:pal.card,bg:pal.bg,ink:pal.ink,snow:light?pal.dim:'#ffffff'},p:{answered:2,total:4,skipped:0,evening:.5,date:{m:12,d:21},...p}};
+ const F=FR[id],svg=s=>`<svg class="lay" viewBox="${-PAD} ${-PAD} ${w+2*PAD} ${h+2*PAD}" width="${w+2*PAD}" height="${h+2*PAD}" aria-hidden="true">${s}</svg>`;
+ return `<div class="fw ${still?'still':''}" style="width:${w+2*PAD}px;height:${h+2*PAD}px;zoom:${zoom}">${F.under?svg(F.under(f)):''}${F.html?F.html(f):''}${mini?miniCard(pal,f,id):bigCard(pal,f)}${F.over?svg(F.over(f)):''}</div>`}
+function stage(id,cap,opts){const pal=LOOKS[opts.look||LOOK][opts.theme||THEME];return `<div class="stage" style="background:${pal.bg}">${framed(id,opts)}<div class="cap">${cap}</div></div>`}
+function tile(id,theme,p={},label){const pal=LOOKS[LOOK][theme];const k=.36,W=316*k,H=360*k;
+ return `<div class="tilecol"><div class="tile" style="background:${pal.bg};border:1px solid ${pal.line}"><div style="position:absolute;left:${(120-W)/2}px;top:${(144-H)/2}px">${framed(id,{theme,mini:true,still:true,zoom:k,p})}</div></div><div class="tl">${label||FR[id].name}</div></div>`}
+
+const COPY={
+ ginger:{desc:'A gingerbread border with piped icing and candy buttons. Sweet, warm and still.',f:['Piped icing all the way round','Candy buttons and peppermints','A heart cookie under your card']},
+ snowman:{desc:"Build a snowman as you answer tonight's questions. He gets his hat when you're all clear.",f:['A new snowball as you answer','Hat and carrot when all clear','Not yet leaves footprints in the snow']},
+ solstice:{desc:'The longest night of the year. The sun rises through the stones, and the light grows a little each day.',f:['The sun rises through the stones','The light grows each day until June','Free December 20 to 22, yours to keep']},
+};
+const REVIEW={
+ ginger:[['Want it?','Yes. A cosy December coin frame that reads at once as a cookie: baked brown, white piping, candy. Fun without moving.'],
+  ['Different?','Comic is a halftone slab with a DID! burst, Flowers puts bouquets on two corners, Quilt is a dashed ring with patch corners. Gingerbread is thin cookie sides with candy on them and a thick baked ledge under the card with a scalloped edge and a big heart cookie in the middle.'],
+  ['Finish','Baked gradient with dark and light speckle, a lit outer edge, a dark baked rim, a piped wave with a soft shadow, icing scallops with dots where they meet, glossy gumdrops with sugar, enamel candy dots, peppermint swirls on the corners, a heart cookie with piped edge and a candy center.'],
+  ['Tile','Thin brown sides, a scalloped ledge and the heart cookie at the bottom middle, peppermints on the corners.'],
+  ['Corners and text','Band 6 px over the top, 7 on the sides, a ledge to 18 under. The heart reaches 16 px up into the empty strip under the buttons (they end 20 px above the bottom); nothing covers text.'],
+  ['Looks and themes','Fixed cookie colors, no accent. Lighter shadow in light mode.'],['Motion','None. Coin frame.'],['Copy','Short, plain, no em dashes.']],
+ snowman:[['Want it?','Yes. You build something every night and finish it by finishing tonight. The hat at all clear is a small payoff.'],
+  ['Different?','Bedtime is a whole canopy bed with your buddy; Snow Globe is glass and a base with flakes; Snow is a cap on top. Snowman keeps the top clear, wraps the bottom in a snowbank that curls up both corners, and builds a figure in the corner from your answers.'],
+  ['Finish','Shaded snowballs with highlights and contact shadows, a back drift and a front drift with a blue rim and shadow, a fir with snow on each tier and a gold star, a smaller far tree, a coal face, a carrot with ridges, stick arms, a top hat with a red band and a holly sprig, sparkles and a glow that turns warm at all clear.'],
+  ['Tile','The finished snowman drawn larger, the snowbank, three firs and a still snow dusting down both sides.'],
+  ['Corners and text','All art below the card or in the side gap. The snowman stands 5 px left of the card and overlaps only the empty bottom-left corner, clear of Nope. Top reach 0.'],
+  ['Looks and themes','Snow, coal and fir colors are fixed. Snow gets a blue rim so it reads on white; sparkles turn blue in light mode.'],
+  ['Motion','A few flakes fall in the side gaps only. At all clear the right arm waves every 4 s and the snowman breathes 0.6 px. Each new ball pops in. Less motion: no flakes, no wave.'],['Copy','Short, plain, no em dashes.']],
+ solstice:[['Want it?','Yes. Free for three nights around the longest night, and it keeps changing all year: the light along the horizon grows each day to June and shrinks after.'],
+  ['Different?',"Night Sky Clock moves a moon round a sky band with hour ticks by evening. Constellation is stars joined by lines. Tonight's moon has a big moon on top. Snow has a snow cap. Solstice has no ring of night: a thin dark line over the top, night fading in down the sides, and a sunrise through tall standing stones under the card."],
+  ['Finish','Night band from deep blue at the top to rose at the bottom, stars thinning toward dawn, a few twinkles, a gold inner line that brightens toward the bottom, hills with a gold rim, stones with sun-side edges lit, two fallen stones, a trilithon framing the sun, a glow and a horizon streak.'],
+  ['Tile','Thin top, dark sides fading in, and a rose and gold strip with the trilithon at the bottom. Weakest on a dark tile.'],
+  ['Corners and text','2 px over the top, 12 on the sides, 20 under. The trilithon lintel rises 11 px into the empty strip under the buttons; nothing covers text.'],
+  ['Looks and themes','Own night colors on both themes; light mode gets a darker outer edge so the band holds on white.'],
+  ['Motion','The sun glow breathes on 6 s, the horizon streak swells on 7 s, a few stars twinkle. Nothing moves around the card.'],['Copy','Short, plain, no em dashes.']]};
+
+function section(id,cards,tiles){const C=COPY[id];return `<section class="opt"><span class="tag">${FR[id].kind}</span><h3>${FR[id].name}</h3><p>${C.desc}</p><ul class="feat">${C.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+ <div class="row">${cards}</div>
+ <div class="tiles">${tiles||(tile(id,'dark',{answered:4,total:4},'Dark tile')+tile(id,'light',{answered:4,total:4},'Light tile'))}</div>
+ ${REVIEW[id].length?`<div class="review">${REVIEW[id].map(([a,b])=>`<div><b>${a}</b> ${b}</div>`).join('')}</div>`:''}</section>`}
+
+function render(){
+ const z=.8,other=THEME==='dark'?'light':'dark';
+ const out=[];
+ out.push(section('ginger',stage('ginger','Around the card',{zoom:z})+stage('ginger','Other theme',{zoom:z,theme:other})+stage('ginger','Maple look',{zoom:z,look:'maple'})));
+ out.push(section('snowman',
+  stage('snowman','0 of 4 · a snowball',{zoom:z,p:{answered:0,total:4}})+
+  stage('snowman','2 of 4, 1 Not yet',{zoom:z,p:{answered:2,total:4,skipped:1}})+
+  stage('snowman','3 of 4 · head on',{zoom:z,p:{answered:3,total:4}})+
+  stage('snowman','All clear, 2 Not yet earlier',{zoom:z,p:{answered:4,total:4,skipped:2}})));
+ out.push(section('solstice',
+  stage('solstice','December 21 · shortest day',{zoom:z,p:{date:{m:12,d:21}}})+
+  stage('solstice','March 20 · the light has grown',{zoom:z,p:{date:{m:3,d:20}}})+
+  stage('solstice','June 21 · longest day',{zoom:z,p:{date:{m:6,d:21}}}),
+  tile('solstice','dark',{date:{m:12,d:21}},'Dark tile')+tile('solstice','light',{date:{m:12,d:21}},'Light tile')));
+ const cz=.46,sets=[['ginger',['comic','flowers','quilt'],{}],['snowman',['bedtime','globe'],{answered:4,total:4,skipped:2}],['solstice',['dusk','const','snow'],{answered:4,total:4}]];
+ out.push(`<section class="opt"><span class="tag">Side by side</span><h3>Next to the best frames</h3><p>Each new frame next to its closest relatives and the three showpieces: Gold leaf, Aurora and Tonight's moon. Same card, same look, same theme.</p>
+ ${sets.map(([id,near,p])=>`<div class="cmp"><h4>${FR[id].name}</h4><div class="row">${[id,...near,'gold','aurora','moon'].map(k=>stage(k,FR[k].name+(near.includes(k)?' (closest)':''),{zoom:cz,p})).join('')}</div></div>`).join('')}</section>`);
+ const all=['ginger','snowman','solstice','comic','flowers','quilt','bedtime','globe','dusk','const','snow','gold','aurora','moon'];
+ out.push(`<section class="opt"><span class="tag">Tiles</span><h3>All frames, still</h3><p>The shop and Collection draw a 220 by 264 mini card and scale it to the tile, with no motion. Top row dark, bottom row light.</p>
+ <div class="tiles">${all.map(k=>tile(k,'dark',{answered:4,total:4})).join('')}</div>
+ <div class="tiles">${all.map(k=>tile(k,'light',{answered:4,total:4})).join('')}</div></section>`);
+ document.getElementById('out').innerHTML=out.join('');
+}
+function seg(id,fn){const s=document.getElementById(id);s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);render()})}
+seg('theme',v=>{THEME=v;document.body.classList.toggle('light',v==='light')});
+seg('look',v=>LOOK=v);
+seg('motion',v=>document.body.classList.toggle('nomotion',v==='off'));
+const q=new URLSearchParams(location.search);if(q.get('theme')==='light'){THEME='light';document.body.classList.add('light');document.querySelectorAll('#theme button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='light'))}
+if(q.get('look')&&LOOKS[q.get('look')]){LOOK=q.get('look');document.querySelectorAll('#look button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===LOOK))}
+if(q.has('nomo')){document.body.classList.add('nomotion');document.querySelectorAll('#motion button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='off'))}
+// ?solo=snowman&z=3&a=4&t=4&sk=2&m=12&d=21&crop=x,y,w,h draws one card big, for close checks.
+if(q.get('solo')){const id=q.get('solo'),z=+(q.get('z')||2);document.querySelector('header').remove();document.querySelector('.controls').remove();
+ const opts={zoom:1,still:q.has('still'),mini:q.has('mini'),theme:q.get('theme')||'dark',p:{answered:+(q.get('a')??4),total:+(q.get('t')??4),skipped:+(q.get('sk')??0),evening:+(q.get('e')??.5),date:{m:+(q.get('m')||12),d:+(q.get('d')||21)}}};
+ const c=(q.get('crop')||'0,0,396,436').split(',').map(Number),pal=LOOKS[LOOK][opts.theme];
+ document.body.innerHTML=`<div style="width:${c[2]*z}px;height:${c[3]*z}px;overflow:hidden;position:relative;background:${pal.bg}"><div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(${z}) translate(${-c[0]}px,${-c[1]}px)">${framed(id,opts)}</div></div>`;if(q.has('nomo'))document.body.classList.add('nomotion')}
+else render();
+</script>
+</body></html>

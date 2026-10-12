@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frames Drop Jan 15</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace;--halo:#16203a}
+body.light{color-scheme:light;--bg:#e9ece4;--panel:#f7f8f4;--ink:#171a14;--soft:#4c5446;--dim:#7a8274;--line:#d3d8cb;--gold:#9a6b10;--halo:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--halo) 0,transparent 60%),var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:34px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+h3{margin:0;font:800 24px/1.1 var(--display)}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+section.opt{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;display:grid;gap:14px}
+.tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px;max-width:78ch}
+.feat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font:600 12.5px/1.4 var(--mono);color:var(--ink)}
+.feat li::before{content:"· ";color:var(--gold)}
+.row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start}
+.stage{border-radius:20px;padding:6px;display:grid;justify-items:center;gap:2px}
+.cap{font:700 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--soft);text-align:center;padding-bottom:8px}
+.fw{position:relative;flex:none}
+.fw>.lay{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;box-sizing:border-box;overflow:hidden}
+.card .k{font:700 11px/1 var(--mono);letter-spacing:.16em}
+.card .q{font:800 27px/1.12 var(--ui);margin-top:14px;max-width:92%}
+.card .s{font:600 14px/1.3 var(--ui);margin-top:10px}
+.card .pills{position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:12px}
+.card .pill{flex:1;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--ui)}
+.card .chip{position:absolute;right:20px;top:18px;font:700 11px/1 var(--ui);padding:6px 9px;border-radius:999px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{width:120px;height:144px;border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tile .fw{position:absolute}
+.tl{font:600 10px/1.2 var(--mono);color:var(--soft);text-align:center;margin-top:4px;max-width:120px}
+.tilecol{display:grid;justify-items:center}
+.cmp{display:grid;gap:10px}
+.cmp h4{margin:0;font:800 18px/1.1 var(--display)}
+.review{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:8px 18px;font-size:13.5px;color:var(--soft)}
+.review b{color:var(--ink)}
+/* motion: shared */
+@keyframes sweep{0%,20%{transform:translateX(-70%)}60%,100%{transform:translateX(70%)}}
+.sweep{animation:sweep 4.5s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 7s linear infinite}
+@keyframes breatheO{0%,100%{opacity:.6}50%{opacity:1}}
+.breatheO{animation:breatheO 7s ease-in-out infinite}
+/* aquarium */
+@keyframes swim{0%,100%{transform:translateX(0)}50%{transform:translateX(var(--d))}}
+.swim{animation:swim var(--t,9s) ease-in-out infinite}
+@keyframes turn{0%,49.9%{transform:scaleX(1)}50%,99.9%{transform:scaleX(-1)}100%{transform:scaleX(1)}}
+.turn{transform-box:fill-box;transform-origin:center;animation:turn var(--t,9s) step-end infinite}
+@keyframes bob{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--bx,0px),-1.4px)}}
+.bob{animation:bob var(--b,3.2s) ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 5.5s ease-in-out infinite}
+@keyframes rise{0%{transform:translate(0,0);opacity:0}12%{opacity:.95}85%{opacity:.9}100%{transform:translate(var(--dx,0px),var(--dy));opacity:0}}
+.rise{animation:rise var(--t,5s) linear infinite}
+@keyframes wob{0%,100%{transform:translateX(-.9px)}50%{transform:translateX(.9px)}}
+.wob{animation:wob 1.3s ease-in-out infinite}
+@keyframes heart{0%{transform:translateY(0) scale(.6);opacity:0}12%{opacity:1;transform:translateY(-14px) scale(1)}80%{opacity:.95}100%{transform:translateY(var(--dy)) scale(1.05);opacity:0}}
+.heart{transform-box:fill-box;transform-origin:center;animation:heart 7s ease-out infinite}
+@keyframes heartGo{0%{transform:translate(0,0) scale(.4);opacity:0}10%{transform:translate(0,-1px) scale(1);opacity:1}38%{transform:translate(var(--hx),0) scale(1)}92%{opacity:.95}100%{transform:translate(var(--hx),var(--hy)) scale(1.05);opacity:0}}
+.heartGo{animation:heartGo 8s ease-in-out infinite}
+@keyframes bow{0%,100%{opacity:.35}50%{opacity:1}}
+.bow{animation:bow 1.2s ease-in-out infinite}
+@keyframes ripple{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.25);opacity:0}}
+.ripple{transform-box:fill-box;transform-origin:center;animation:ripple 1.6s ease-out infinite}
+@keyframes lampA{0%,100%{opacity:.75}50%{opacity:1}}
+.lampA{animation:lampA 6s ease-in-out infinite}
+/* stones */
+@keyframes flick{0%,100%{opacity:.86}27%{opacity:1}52%{opacity:.8}76%{opacity:.96}}
+.flick{animation:flick 3.6s ease-in-out infinite}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame drop · 2027-01-15</span>
+ <h1>Origami, Aquarium, Stepping stones</h1>
+ <p class="lede">Three new frames: a still folded paper rim with cranes for coins, a living fish tank for gems, and a stone path earned at a 21-night streak. Each sits around the card and never on the text. Switch theme, look and motion to check them.</p>
+</header>
+
+<div class="controls" role="group" aria-label="Preview">
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+ <div class="seg" id="look"><button aria-pressed="true" data-v="lime"><i style="background:#c9f24d"></i>Lime</button><button aria-pressed="false" data-v="sky"><i style="background:#4aa8ff"></i>Sky</button><button aria-pressed="false" data-v="maple"><i style="background:#fa774f"></i>Maple</button></div>
+ <div class="seg" id="motion"><button aria-pressed="true" data-v="on">Motion</button><button aria-pressed="false" data-v="off">Still</button></div>
+</div>
+
+<div id="out" style="display:grid;gap:34px"></div>
+<p class="notes">Port notes: every new drawing uses only Path, Circle, Ellipse, Rect, Line, LinearGradient, RadialGradient and ClipPath, in card space like art.jsx (0,0 is the card's top-left). Nothing goes more than 8 px above the card; sides reach 18 px and the bottom 20 px. Motion here is CSS; in the app it becomes Particle and Moving worklets on the frame clock and stops for still tiles, reduced motion and low power.</p>
+</div>
+
+<script>
+const PAD=48;
+const fx=n=>Math.round(n*100)/100;
+let N=0;const uid=p=>p+(++N);
+function rrPath(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return `M${fx(x)} ${fx(y+h-r)}L${fx(x)} ${fx(y+r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+r)} ${fx(y)}L${fx(x+w-r)} ${fx(y)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w)} ${fx(y+r)}L${fx(x+w)} ${fx(y+h-r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w-r)} ${fx(y+h)}L${fx(x+r)} ${fx(y+h)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x)} ${fx(y+h-r)}Z`}
+function rrLength(w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return 2*(w-2*r)+2*(h-2*r)+2*Math.PI*r}
+function rrPointAt(x,y,w,h,r,d){r=Math.max(0,Math.min(r,w/2,h/2));const sv=h-2*r,sh=w-2*r,arc=Math.PI*r/2,L=rrLength(w,h,r);let s=((d%L)+L)%L;
+ const out=(px,py,ang)=>({x:px,y:py,ang,nx:Math.sin(ang),ny:-Math.cos(ang)});const onArc=(cx,cy,from,k)=>{const th=from+(r?k/r:0);return out(cx+r*Math.cos(th),cy+r*Math.sin(th),th+Math.PI/2)};
+ if(s<sv)return out(x,y+h-r-s,-Math.PI/2);s-=sv;if(s<arc)return onArc(x+r,y+r,Math.PI,s);s-=arc;if(s<sh)return out(x+r+s,y,0);s-=sh;if(s<arc)return onArc(x+w-r,y+r,-Math.PI/2,s);s-=arc;
+ if(s<sv)return out(x+w,y+r+s,Math.PI/2);s-=sv;if(s<arc)return onArc(x+w-r,y+h-r,0,s);s-=arc;if(s<sh)return out(x+w-r-s,y+h,Math.PI);s-=sh;return onArc(x+r,y+h-r,Math.PI/2,Math.min(s,arc))}
+const ring=(f,o)=>rrPath(-o,-o,f.w+2*o,f.h+2*o,Math.max(0,f.R+o));
+function spots(f,o,n,t0=0){const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o);return Array.from({length:n},(_,i)=>rrPointAt(-o,-o,W,H,f.R+o,((t0+i/n)%1)*L))}
+const seeded=s=>{let x=s;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+function openTopPath(w,h,r,gap){const m=w/2;return `M${m-gap} 0L${r} 0A${r} ${r} 0 0 0 0 ${r}L0 ${h-r}A${r} ${r} 0 0 0 ${r} ${h}L${w-r} ${h}A${r} ${r} 0 0 0 ${w} ${h-r}L${w} ${r}A${r} ${r} 0 0 0 ${w-r} 0L${m+gap} 0`}
+function star5(cx,cy,R1,R2){let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R2:R1;d+=(i?'L':'M')+fx(cx+rr*Math.cos(a))+' '+fx(cy+rr*Math.sin(a))}return d+'Z'}
+const hexRgb=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
+const mix=(a,b,t)=>{t=Math.max(0,Math.min(1,t));const A=hexRgb(a),B=hexRgb(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('')};
+
+/* ---- A rounded box with its own reach per side (top is kept within 8 px). ---- */
+// x from -l to w+r, y from -t to h+b. Pieces, clockwise from the bottom of the left edge:
+// 0 left edge up, 1 top-left arc, 2 top, 3 top-right arc, 4 right edge down, 5 bottom-right arc, 6 bottom right to left, 7 bottom-left arc.
+// boxAt(B,u) takes u in 0..8 (piece + fraction), so the same u lines up on boxes of different reach.
+function box(f,l,t,r,b,rad){return {x:-l,y:-t,W:f.w+l+r,H:f.h+t+b,r:rad}}
+const boxD=B=>rrPath(B.x,B.y,B.W,B.H,B.r);
+function boxLens(B){const sv=B.H-2*B.r,sh=B.W-2*B.r,a=Math.PI*B.r/2;return [sv,a,sh,a,sv,a,sh,a]}
+const boxLen=B=>boxLens(B).reduce((a,b)=>a+b,0);
+function boxAt(B,u){u=((u%8)+8)%8;let k=Math.floor(u),t=u-k;if(k>7){k=7;t=1}
+ const {x,y,W,H,r}=B,P=(px,py,nx,ny)=>({x:px,y:py,nx,ny}),A=(cx,cy,th)=>P(cx+r*Math.cos(th),cy+r*Math.sin(th),Math.cos(th),Math.sin(th)),q=Math.PI/2;
+ switch(k){case 0:return P(x,y+H-r-t*(H-2*r),-1,0);case 1:return A(x+r,y+r,Math.PI+t*q);case 2:return P(x+r+t*(W-2*r),y,0,-1);case 3:return A(x+W-r,y+r,-q+t*q);
+  case 4:return P(x+W,y+r+t*(H-2*r),1,0);case 5:return A(x+W-r,y+H-r,t*q);case 6:return P(x+W-r-t*(W-2*r),y+H,0,1);default:return A(x+r,y+H-r,q+t*q)}}
+function uOf(B,d){const L=boxLens(B),T=L.reduce((a,b)=>a+b,0);d=((d%T)+T)%T;for(let k=0;k<8;k++){if(d<=L[k])return k+(L[k]?d/L[k]:0);d-=L[k]}return 0}
+const lerpBox=(A,B,s)=>({x:A.x+(B.x-A.x)*s,y:A.y+(B.y-A.y)*s,W:A.W+(B.W-A.W)*s,H:A.H+(B.H-A.H)*s,r:A.r+(B.r-A.r)*s});
+
+/* ================= NEW 1: ORIGAMI (coin, still) ================= */
+// A strip of indigo paper pleated round the card. Each pleat is a slanted panel; panels that
+// face the light (top left) are lighter, and every other one is the shaded side of the fold.
+// The white back of the paper shows as a thin lip at the card edge. Three cranes at the corners.
+const CRANE_PAL={red:['#ff9a83','#e0503f','#9e2d26'],gold:['#ffe9a8','#e6b445','#9c6e18'],white:['#ffffff','#e4ddcd','#aaa18e']};
+function crane(x,y,s,flip,pal,sh){const [a,b,d]=CRANE_PAL[pal];
+ return `<g transform="translate(${fx(x)} ${fx(y)}) scale(${flip?-s:s} ${s})">
+  <ellipse cx="1" cy="7.4" rx="12" ry="2" fill="#000" fill-opacity="${sh}"/>
+  <path d="M-3.5 0L-8.4 -13.6L2.5 0Z" fill="${d}"/>
+  <path d="M-6.5 .8L-12.5 -10L-3.4 -.2Z" fill="${a}"/><path d="M-6.5 .8L-12.5 -10L-4.6 2Z" fill="${b}"/>
+  <path d="M6.5 .8L12 -10.5L3.4 -.2Z" fill="${a}"/><path d="M6.5 .8L12 -10.5L4.6 2Z" fill="${b}"/>
+  <path d="M12 -10.5L15.2 -8.1L11 -8.6Z" fill="${d}"/>
+  <path d="M-7 .2L0 -.2L0 6.4Z" fill="${b}"/><path d="M0 -.2L7 .2L0 6.4Z" fill="${d}"/>
+  <path d="M-6 .2L-1.4 -17.2L1.2 .2Z" fill="${a}"/><path d="M1.2 .2L-1.4 -17.2L6.2 .2Z" fill="${b}"/>
+  <path d="M1.2 .2L-1.4 -17.2M-6.5 .8L-12.5 -10M6.5 .8L12 -10.5" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width=".45"/>
+  <path d="M-7 .2L0 6.4L7 .2M-6 .2L-1.4 -17.2L6.2 .2" fill="none" stroke="${d}" stroke-width=".5" stroke-linejoin="round"/>
+ </g>`}
+function origamiOver(f){
+ const id=uid('og'),L=f.c.light,{w,h}=f;
+ const I=box(f,2.4,2.4,2.4,2.4,f.R+2.4),O=box(f,14,7.5,14,15,f.R+11),M=lerpBox(I,O,.5),In=lerpBox(I,O,.84);
+ const LITE='#8597e8',MID='#4256a6',DEEP='#1c2662';
+ // Stations: whole pleats per piece, so corners always land on a crease. Even count so the notches pair up.
+ const ml=boxLens(M),tile=f.still&&f.w<=220,cnt=ml.map(l=>Math.max(1,Math.round(l/(tile?17:12))));if(cnt.reduce((a,b)=>a+b,0)%2)cnt[6]++;
+ const st=[];cnt.forEach((n,k)=>{for(let j=0;j<n;j++)st.push(k+j/n)});const n=st.length,U=i=>st[((i%n)+n)%n]+8*Math.floor(i/n);
+ // Accordion: creases run straight out from the card. Mountain folds (even) reach the outer edge,
+ // valley folds (odd) stop short, so the outer edge zigzags. Lit panels are drawn wider than shaded ones.
+ const V=i=>i%2?U(i)+.16*(U(i+1)-U(i)):U(i);
+ const A=[],Ot=[];for(let i=0;i<=n;i++){A.push(boxAt(I,V(i)));Ot.push(boxAt(i%2?In:O,V(i)))}
+ let panels='',hi='',lo='',fleck='';
+ for(let i=0;i<n;i++){const a0=A[i],a1=A[i+1],o0=Ot[i],o1=Ot[i+1],nm=boxAt(M,(U(i)+U(i+1))/2),lit=.5+.5*(nm.nx*-.6+nm.ny*-.8);
+  const col=i%2?mix(DEEP,MID,.05+.6*lit):mix(MID,LITE,.25+.75*lit);
+  panels+=`<path d="M${fx(a0.x)} ${fx(a0.y)}L${fx(a1.x)} ${fx(a1.y)}L${fx(o1.x)} ${fx(o1.y)}L${fx(o0.x)} ${fx(o0.y)}Z" fill="${col}"/>`;
+  if(i%2===0)hi+=`M${fx(a0.x)} ${fx(a0.y)}L${fx(o0.x)} ${fx(o0.y)}`;else lo+=`M${fx(a0.x)} ${fx(a0.y)}L${fx(o0.x)} ${fx(o0.y)}`;
+  if(i%6===2)fleck+=`M${fx((a0.x+a1.x+o0.x+o1.x)/4)} ${fx((a0.y+a1.y+o0.y+o1.y)/4)}h.01`}
+ const edge='M'+Ot.map(p=>fx(p.x)+' '+fx(p.y)).join('L')+'Z';
+ const base=edge+' M'+A.slice().reverse().map(p=>fx(p.x)+' '+fx(p.y)).join('L')+'Z';
+ // Top-left: the paper corner is folded back as a dog-ear, showing the cream back with a crisp fold line.
+ const ear=`<defs><clipPath id="${id}ec"><path d="${boxD(O)}"/></clipPath><linearGradient id="${id}eg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#d9ccb0"/></linearGradient></defs>`+
+  `<g clip-path="url(#${id}ec)"><path d="M-14 -7.5L16 -7.5L-14 18Z" fill="${DEEP}" opacity=".55"/><path d="M16 -7.5L-14 18L-3.6 -.4Z" fill="#000" fill-opacity=".28" transform="translate(1.4 1.6)"/><path d="M16 -7.5L-14 18L-3.6 -.4Z" fill="url(#${id}eg)" stroke="#a8987a" stroke-width=".5" stroke-linejoin="round"/><path d="M16 -7.5L-14 18" stroke="#ffffff" stroke-width=".8"/><path d="M-3.6 -.4L4 -2.6M-3.6 -.4L-6 7" stroke="#b9ab8e" stroke-opacity=".7" stroke-width=".45"/></g>`;
+ return `<path d="${boxD(O)}" fill="none" stroke="#000" stroke-opacity="${L?.1:.32}" stroke-width="4" transform="translate(.6 1.8)"/>
+  <path d="${ring(f,3)} ${ring(f,.3)}" fill-rule="evenodd" fill="#f4ecdb"/>
+  <path d="${ring(f,2.9)}" fill="none" stroke="#b9ab8e" stroke-width=".6"/><path d="${ring(f,.9)}" fill="none" stroke="#fffaf0" stroke-width=".7"/>
+  <path d="${base}" fill-rule="evenodd" fill="${MID}"/>
+  ${panels}
+  <path d="${hi}" fill="none" stroke="#d9e0ff" stroke-opacity=".75" stroke-width=".7"/>
+  <path d="${lo}" fill="none" stroke="#0e1440" stroke-opacity=".55" stroke-width=".7"/>
+  <path d="${fleck}" fill="none" stroke="#f3d68a" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="${edge}" fill="none" stroke="${DEEP}" stroke-width=".8" stroke-linejoin="round"/>
+  ${ear}
+  ${crane(-5,h+8,1.2,false,'red',L?.16:.35)}
+  ${crane(w+5,h+8,1.2,true,'white',L?.16:.35)}
+  ${crane(w+5,2.4,.6,true,'gold',0)}`;
+}
+
+/* ================= NEW 2: AQUARIUM (gem, living) ================= */
+const SPEC=[
+ {n:'clown',b1:'#ffb25e',b2:'#ef5f1c',fin:'#f07a2a',edge:'#5a2408',band:'#ffffff'},
+ {n:'tang',b1:'#fff27e',b2:'#ffc014',fin:'#f6ad00',edge:'#7a5600',band:null},
+ {n:'blue',b1:'#7aa6ff',b2:'#2552d6',fin:'#ffd23f',edge:'#0d1a4e',band:'#0d1a4e'},
+ {n:'pink',b1:'#ffb3d2',b2:'#ee4f8e',fin:'#d63f7c',edge:'#6a1636',band:null}];
+// A fish facing right, about 29 by 12 at scale 1, centred on its body.
+// Waiting fish keep a faded version of their own colors, so the same fish lights up later.
+const DIMTO='#5f7f8a';
+function fishSvg(id,k,dim){const s=SPEC[k%4],fin=dim?mix(s.fin,DIMTO,.62):s.fin,edge=dim?'#34505a':s.edge,body=dim?`url(#${id}d${k%4})`:`url(#${id}f${k%4})`;
+ const band=dim?'':s.band==='#ffffff'?`<path d="M-1.4 -4.7Q.3 0 -1.4 4.7M3.6 -3.6Q5 0 3.6 3.6" fill="none" stroke="#ffffff" stroke-width="1.6"/><path d="M-1.4 -4.7Q.3 0 -1.4 4.7" fill="none" stroke="${s.edge}" stroke-opacity=".5" stroke-width=".4" transform="translate(-1 0)"/>`:s.band?`<path d="M-5 -1.6Q-1 -3.4 4.6 -2.2Q0 -.4 -3.8 1.6Z" fill="${s.band}" opacity=".85"/>`:'';
+ return `<path d="M-8.6 0L-14 -5Q-12.4 0 -14 5Z" fill="${fin}" stroke="${edge}" stroke-width=".45" stroke-linejoin="round"/>
+  <path d="M-3.4 -4.1Q.2 -8.4 4 -3.8Z" fill="${fin}" stroke="${edge}" stroke-width=".4"/><path d="M-2 3.9Q.4 7 2.6 3.8Z" fill="${fin}" stroke="${edge}" stroke-width=".4"/>
+  <path d="M-9.4 0C-7 -5.6 2.8 -6.2 8.2 -1.1C8.9 -.4 8.9 .4 8.2 1.1C2.8 6.2 -7 5.6 -9.4 0Z" fill="${body}" stroke="${edge}" stroke-width=".5"/>
+  ${band}
+  <path d="M-5.6 -2.6Q-1 -4.8 3.6 -3.4" fill="none" stroke="#ffffff" stroke-opacity="${dim?.25:.6}" stroke-width=".8" stroke-linecap="round"/>
+  <path d="M.6 .6Q-1.8 2.2 -1 3.3Q1.4 2.6 .6 .6Z" fill="${fin}" opacity=".85"/>
+  <circle cx="4.9" cy="-1.1" r="1.55" fill="#ffffff"/><circle cx="5.25" cy="-1.05" r=".85" fill="#14181c"/><circle cx="4.85" cy="-1.5" r=".32" fill="#ffffff"/>`}
+function ribbonPath(x0,y0,len,wd,amp,ph){const n=14,Lp=[],Rp=[];for(let i=0;i<=n;i++){const t=i/n,y=y0-len*t,x=x0+Math.sin(t*4.6+ph)*amp*t,ww=wd*(1-t*.8)/2;Lp.push([x-ww,y]);Rp.push([x+ww,y])}
+ return 'M'+Lp.map(p=>fx(p[0])+' '+fx(p[1])).join('L')+'Q'+fx(x0+Math.sin(4.6+ph)*amp)+' '+fx(y0-len-3)+' '+Rp.reverse().map(p=>fx(p[0])+' '+fx(p[1])).join('L')+'Z'}
+function ribbonMid(x0,y0,len,amp,ph){let d='';for(let i=0;i<=12;i++){const t=i/12;d+=(i?'L':'M')+fx(x0+Math.sin(t*4.6+ph)*amp*t)+' '+fx(y0-len*t*.92)}return d}
+const tank=f=>box(f,18,7.5,18,20,f.R+12);
+function aquariumUnder(f){
+ const id=uid('aqu'),{w,h}=f,L=f.c.light,T=tank(f),anim=!f.still;
+ const W1=L?'#b4ecf4':'#3aa9c2',W2=L?'#5bbad0':'#0f4f68',W3=L?'#3a9cb8':'#0a3346';
+ return `<defs><linearGradient id="${id}w" x1="0" y1="-8" x2="0" y2="${h+20}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${W1}"/><stop offset=".45" stop-color="${W2}"/><stop offset="1" stop-color="${W3}"/></linearGradient>
+  <radialGradient id="${id}lg" cx=".5" cy="0" r="1"><stop offset="0" stop-color="#fff8e0" stop-opacity=".9"/><stop offset=".45" stop-color="#d8f8ff" stop-opacity=".3"/><stop offset="1" stop-color="#bff3ff" stop-opacity="0"/></radialGradient>
+  <clipPath id="${id}cp"><path d="${boxD(T)}"/></clipPath></defs>
+  <path d="${boxD(T)}" fill="url(#${id}w)"/>
+  <g clip-path="url(#${id}cp)">
+   <g class="${anim?'lampA':''}"><ellipse cx="${w/2}" cy="-6" rx="${fx(w*.7)}" ry="64" fill="url(#${id}lg)"/></g>
+   <path d="${ribbonPath(-4,h+17,h*.62,7,3,1.2)}" fill="${L?'#2f7f72':'#0a3a34'}" opacity=".5"/>
+   <path d="${ribbonPath(w+5,h+17,h*.48,7,-3,2.4)}" fill="${L?'#2f7f72':'#0a3a34'}" opacity=".45"/>
+  </g>`}
+function aquariumOver(f){
+ const id=uid('aq'),{w,h}=f,L=f.c.light,T=tank(f),anim=!f.still,P=f.p;
+ const total=Math.max(1,Math.min(8,P.total||4)),ans=f.still?total:Math.min(total,P.answered||0),done=f.still||(P.total>0&&ans>=total);
+ const pull=done?0:(P.pull||0),dir=Math.sign(pull),dart=dir*Math.min(10,Math.abs(pull)*.12);
+ const sc=1,lane=h+8.6,sandY=h+16.4;
+ const defs=`<defs>${SPEC.map((s,i)=>`<linearGradient id="${id}f${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.b1}"/><stop offset="1" stop-color="${s.b2}"/></linearGradient>`).join('')}
+  <linearGradient id="${id}sd" x1="0" y1="${h+11}" x2="0" y2="${h+21}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${L?'#f1dfae':'#e0c68a'}"/><stop offset="1" stop-color="${L?'#cfa962':'#9a7a44'}"/></linearGradient>
+  <linearGradient id="${id}kp" x1="0" y1="${h+14}" x2="0" y2="${fx(h*.3)}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2f8a4a"/><stop offset="1" stop-color="#7fe08a"/></linearGradient>
+  <linearGradient id="${id}ry" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8e0" stop-opacity="${L?.85:.75}"/><stop offset="1" stop-color="#f2fdff" stop-opacity="0"/></linearGradient>
+  ${SPEC.map((s,i)=>`<radialGradient id="${id}g${i}"><stop offset="0" stop-color="${s.b1}" stop-opacity=".55"/><stop offset="1" stop-color="${s.b1}" stop-opacity="0"/></radialGradient>`).join('')}
+  <radialGradient id="${id}hg"><stop offset="0" stop-color="#ffd6e6" stop-opacity=".6"/><stop offset="1" stop-color="#ffd6e6" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}bb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset=".45" stop-color="#e6fbff" stop-opacity=".22"/><stop offset="1" stop-color="#e6fbff" stop-opacity=".55"/></radialGradient>
+  <clipPath id="${id}cp"><path d="${boxD(T)}"/></clipPath></defs>`;
+ /* sand: a low bed under the fish lane that rises into the bottom corners */
+ let top=[];for(let x=-22;x<=w+22;x+=8){const e=Math.min(1,Math.max(0,Math.max(10-x,x-(w-10)))/30);top.push([x,sandY-e*5+Math.sin(x*.06)*.5])}
+ const sandTop='M'+top.map(p=>fx(p[0])+' '+fx(p[1])).join('L'),sand=`${sandTop}L${w+24} ${h+28}L-24 ${h+28}Z`;
+ const rnd=seeded(7);let grain='';for(let i=0;i<40;i++)grain+=`M${fx(-16+rnd()*(w+32))} ${fx(sandY+1.2+rnd()*2.6)}h.01`;
+ const PEB=['#8d9cae','#c78a62','#6f9070','#ece3d2','#a8708a'];let peb='';const r2=seeded(19);
+ for(let i=0;i<9;i++){const x=6+r2()*(w-12),y=sandY+1.6+r2()*1.4,rx=1.3+r2()*1.1;peb+=`<ellipse cx="${fx(x)}" cy="${fx(y)}" rx="${fx(rx)}" ry="${fx(rx*.6)}" fill="${PEB[i%5]}" stroke="#000" stroke-opacity=".25" stroke-width=".35"/>`}
+ /* plants */
+ const kelp=[[-9.5,h*.66,9,2.6,0],[-5.5,h*.42,7.6,-2.2,1.7],[-13.6,h*.3,6.4,2,3.1]].map(([x,len,wd,amp,ph],i)=>`<g class="${anim?'sway':''}" style="animation-delay:${-i*1.7}s;animation-duration:${5.2+i*.9}s"><path d="${ribbonPath(x,h+17,len,wd,amp,ph)}" fill="url(#${id}kp)" stroke="#1f5e34" stroke-width=".5"/><path d="${ribbonMid(x,h+17,len,amp,ph)}" fill="none" stroke="#1f6a38" stroke-opacity=".7" stroke-width=".6"/></g>`).join('');
+ let leaves='',stem='';const sx=w+9.5,sl=h*.38;for(let i=0;i<=10;i++){const t=i/10,y=h+12-sl*t,x=sx+Math.sin(t*4)*2.2;stem+=(i?'L':'M')+fx(x)+' '+fx(y);if(i>0&&i<10){const sz=3.6-t*1.4;leaves+=`<ellipse cx="${fx(x-sz*.9)}" cy="${fx(y)}" rx="${fx(sz)}" ry="${fx(sz*.5)}" transform="rotate(-24 ${fx(x)} ${fx(y)})" fill="#8ad66a" stroke="#3f7f2e" stroke-width=".4"/><ellipse cx="${fx(x+sz*.9)}" cy="${fx(y-1.2)}" rx="${fx(sz)}" ry="${fx(sz*.5)}" transform="rotate(24 ${fx(x)} ${fx(y-1.2)})" fill="#6cc052" stroke="#3f7f2e" stroke-width=".4"/>`}}
+ const rplant=`<g class="${anim?'sway':''}" style="animation-delay:-2.4s;animation-duration:6.4s"><path d="${stem}" fill="none" stroke="#3f7f2e" stroke-width="1.1"/>${leaves}</g>`;
+ const sword=`<g class="${anim?'sway':''}" style="animation-duration:7s;animation-delay:-1s">`+[[6,22],[20,24],[34,16],[-4,14]].map(([a,len],i)=>`<path transform="translate(${w+6} ${h+16}) rotate(${a})" d="M0 0C-3 ${-len*.35} -2.6 ${-len*.75} 0 ${-len}C2.6 ${-len*.75} 3 ${-len*.35} 0 0Z" fill="${i%2?'#58b04e':'#7ccd5c'}" stroke="#2f6e2c" stroke-width=".45"/>`).join('')+'</g>';
+ /* lamp: a lid with a warm strip under it and light rays down both side bands */
+ const lid=`<rect x="20" y="-8" width="${w-40}" height="2.6" rx="1.3" fill="${L?'#4d5f69':'#22313a'}"/><rect x="${w/2-46}" y="-5.6" width="92" height="1.4" rx=".7" fill="#fff6d8"/><path d="M24 -7.3H${w-24}" stroke="#ffffff" stroke-opacity=".35" stroke-width=".6"/>`;
+ const ray=(x0,x1,x2,x3,y)=>`<path d="M${fx(x0)} -4.5L${fx(x1)} -4.5L${fx(x2)} ${fx(y)}L${fx(x3)} ${fx(y)}Z" fill="url(#${id}ry)"/>`;
+ const rays=`<g class="${anim?'lampA':''}">${ray(-16,-8,-3,-14,h*.62)}${ray(-6,-2,-1,-6,h*.4)}${ray(w+8,w+16,w+14,w+3,h*.56)}${ray(w+2,w+6,w+6,w+1,h*.36)}</g>`;
+ /* bubbles up the left side */
+ const bubble=(x,y,r)=>`<circle cx="${fx(x)}" cy="${fx(y)}" r="${fx(r)}" fill="url(#${id}bb)" stroke="#eafcff" stroke-opacity=".9" stroke-width=".5"/>`;
+ const r3=seeded(41);let bub=`<ellipse cx="-6" cy="${sandY-.6}" rx="3.4" ry="1.6" fill="#9aa7b0" stroke="#5b6870" stroke-width=".5"/>`;
+ for(let i=0;i<7;i++){const r=.9+r3()*1.2,t=4.2+r3()*2.2,x=-6+(r3()-.5)*2.4;
+  if(anim)bub+=`<g class="rise" style="--dy:${-(h+18)}px;--dx:${fx((r3()-.5)*5)}px;--t:${fx(t)}s;animation-delay:${fx(-i*t/7)}s"><g class="wob">${bubble(x,sandY-2,r)}</g></g>`;
+  else bub+=bubble(x+(r3()-.5)*2,sandY-2-(i+.5)/7*(h*.7),r)}
+ /* fish: one slot per question along the bottom band */
+ const slotX=i=>fx(16+(w-32)*(i+.5)/total);
+ const lineCol=L?'#0d3a4a':'#dff6ff';
+ let fish='';
+ for(let i=0;i<total;i++){const lit=i<ans,face=done?(slotX(i)<w/2?1:-1):dir?dir:(i%2?-1:1),x=+slotX(i)+(lit?dart:0),s=SPEC[i%4];
+  if(lit)fish+=`<g transform="translate(${fx(x)} ${lane})"><circle r="15" fill="url(#${id}g${i%4})"/><g class="${anim?'bob':''}" style="--b:${2.8+i*.35}s;--bx:${i%2?-2:2}px;animation-delay:${-i*.6}s"><g transform="scale(${face*sc} ${sc})">${fishSvg(id,i,false)}</g></g></g>`;
+  else fish+=`<g transform="translate(${fx(x)} ${lane}) scale(${face*sc} ${sc})" opacity=".32"><path d="M-8.6 0L-14 -5Q-12.4 0 -14 5ZM-3.4 -4.1Q.2 -8.4 4 -3.8M-9.4 0C-7 -5.6 2.8 -6.2 8.2 -1.1C8.9 -.4 8.9 .4 8.2 1.1C2.8 6.2 -7 5.6 -9.4 0Z" fill="none" stroke="${lineCol}" stroke-width="1" stroke-linejoin="round"/><circle cx="4.9" cy="-1.1" r="1.2" fill="none" stroke="${lineCol}" stroke-width=".8"/></g>`}
+ /* tonight done: a big bubble heart is born at the bottom middle and rises up the right side */
+ let heart='';if(done){let hb='';const hn=16;for(let i=0;i<hn;i++){const t=i/hn*Math.PI*2,x=16*Math.pow(Math.sin(t),3),y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));hb+=bubble(x*.48,y*.48+1,i%4===0?1.7:1.3)}
+  const hx=anim?w/2:w+9,hy=anim?lane-1:h*.48;
+  heart=`<g transform="translate(${fx(hx)} ${fx(hy)})"><g class="${anim?'heartGo':''}" style="--hx:${fx(w/2+9)}px;--hy:${fx(-h*.62)}px"><circle r="15" fill="url(#${id}hg)"/>${hb}</g></g>`}
+ /* swipe: three bows in the glass on that side, inside the tank */
+ let bows='';if(dir){const xc=dir>0?w+7:-7,y=h*.45;for(let k=0;k<3;k++){const x0=xc+dir*(k*3-3);bows+=`<path class="${anim?'bow':''}" style="animation-delay:${-k*.4}s" d="M${fx(x0)} ${fx(y-24-k*7)}Q${fx(x0+dir*6)} ${fx(y)} ${fx(x0)} ${fx(y+24+k*7)}" fill="none" stroke="#f2fdff" stroke-opacity="${fx(.85-k*.22)}" stroke-width="1.2" stroke-linecap="round"/>`}}
+ let surf='M-17 -4.4';for(let x=-17;x<w+17;x+=10)surf+=`Q${x+2.5} -5.4 ${x+5} -4.4T${x+10} -4.4`;
+ return `${defs}
+  <path d="${boxD(T)}" fill="none" stroke="#000" stroke-opacity="${L?.12:.35}" stroke-width="4" transform="translate(0 2)"/>
+  <g clip-path="url(#${id}cp)">
+   ${rays}
+   <path d="${sand}" fill="url(#${id}sd)"/><path d="${grain}" fill="none" stroke="#6e5328" stroke-opacity=".5" stroke-width=".9" stroke-linecap="round"/>
+   <path d="${sandTop}" fill="none" stroke="#fff4d6" stroke-opacity=".6" stroke-width=".7"/>${peb}
+   ${kelp}${rplant}${sword}
+   ${fish}${bub}${heart}${bows}
+   <path d="${surf}" fill="none" stroke="#effdff" stroke-opacity=".85" stroke-width=".8"/>
+  </g>
+  <path d="${boxD(T)}" fill="none" stroke="${L?'#3f5864':'#1a2a33'}" stroke-width="2.2"/>
+  <path d="${boxD(lerpBox(T,box(f,0,0,0,0,f.R),.07))}" fill="none" stroke="#c9f4ff" stroke-opacity=".55" stroke-width=".8"/>
+  <path d="M-15.2 ${fx(h*.12)}V${fx(h*.5)}M${w+15.2} ${fx(h*.2)}v34" fill="none" stroke="#ffffff" stroke-opacity=".38" stroke-width="1.3" stroke-linecap="round"/>
+  ${lid}`;
+}
+
+/* ================= NEW 3: STEPPING STONES (earned, 21-night streak) ================= */
+// A bed of raked gravel round the card with 21 stepping stones in it, one per night, and a stone
+// lantern after every seventh. A lantern lights for each full week of the streak you are on.
+const STONE_G=[['#cfd1cd','#8f9290','#5a5d5c'],['#d3c8b4','#9a8d78','#62574a'],['#bcc4cc','#828c97','#525b66']];
+function blob(rnd,a,b){const k=8,P=[];for(let j=0;j<k;j++){const t=j/k*Math.PI*2,r=.8+rnd()*.28;P.push([a*r*Math.cos(t),b*r*Math.sin(t)])}
+ const m=(p,q)=>[(p[0]+q[0])/2,(p[1]+q[1])/2];let d=`M${fx(m(P[k-1],P[0])[0])} ${fx(m(P[k-1],P[0])[1])}`;
+ for(let j=0;j<k;j++){const c=P[j],e=m(P[j],P[(j+1)%k]);d+=`Q${fx(c[0])} ${fx(c[1])} ${fx(e[0])} ${fx(e[1])}`}return d+'Z'}
+function lanternSvg(id,lit,L){const st=L?'#a29b8d':'#8b877f',dk=L?'#7a7366':'#5f5b55',rf=L?'#8a8274':'#6d6961';
+ return `<path d="M-4.8 0H4.8L3.9 -2.2H-3.9Z" fill="${dk}"/><rect x="-1.5" y="-6.4" width="3" height="4.4" fill="${st}"/><rect x="-4.3" y="-7.7" width="8.6" height="1.5" rx=".5" fill="${st}"/>
+  <rect x="-3.3" y="-12" width="6.6" height="4.5" rx=".6" fill="${st}" stroke="${dk}" stroke-width=".4"/><rect x="-2" y="-11.2" width="4" height="3" rx=".4" fill="${lit?`url(#${id}wn)`:'#26272a'}"/>
+  <path d="M-6.4 -11.7Q-3.2 -12.3 -2.5 -14.6H2.5Q3.2 -12.3 6.4 -11.7Z" fill="${rf}" stroke="${dk}" stroke-width=".4" stroke-linejoin="round"/><path d="M-5 -12Q-2.6 -12.6 -2 -14.2" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width=".5"/>
+  <circle cy="-15.5" r="1.1" fill="${rf}"/>`}
+function stonesOver(f){
+ const id=uid('ss'),{w,h}=f,L=f.c.light,anim=!f.still,streak=f.still?21:(f.p.streak??21),lit=Math.min(3,Math.floor(streak/7)),tile=f.still&&f.w<=220;
+ const I=box(f,.6,.6,.6,.6,f.R+.6),O=box(f,11,7.5,11,12,f.R+9),M=lerpBox(I,O,.5);
+ const G1=L?'#e3ddcf':'#3d4046',G2=L?'#cdc5b3':'#2a2c31',GL=L?'#a59c88':'#1b1d21',GH=L?'#fbf8f1':'#565a62';
+ let rakeD='',rakeH='';[.25,.5,.75].forEach(s=>{const B=lerpBox(I,O,s);rakeD+=boxD(B)+' ';rakeH+=rrPath(B.x,B.y+.7,B.W,B.H,B.r)+' '});
+ const Lm=boxLen(M),lens=boxLens(M),dbc=lens.slice(0,6).reduce((a,b)=>a+b,0)+lens[6]/2,rnd=seeded(21);
+ let clear='',grooves='',shadows='',stones='',hl='',moss='',lan='',pools='';
+ // Slots run clockwise from the bottom middle: 7 stones, a lantern, 7 stones, a lantern, 7 stones, a lantern.
+ const isLan=k=>k===7||k===15||k===23;let li=0;
+ for(let k=0;k<24;k++){const u=uOf(M,dbc+(k-23)*Lm/24),c=boxAt(M,u),n=c,side=Math.abs(n.nx)>.7;
+  if(isLan(k)){const on=li<lit;li++;const s=side?1.4:1.15,lx=c.x+n.nx*(side?4.5:0),by=side?c.y+11:h+18.4,wy=by-9.6*s;
+   if(on)pools+=`<g class="${anim?'flick':''}" style="animation-delay:${-li*1.1}s"><ellipse cx="${fx(lx)}" cy="${fx(side?by-6:by-4)}" rx="${side?16:34}" ry="${side?34:14}" fill="url(#${id}pl)"/></g>`;
+   lan+=`<g transform="translate(${fx(lx)} ${fx(by)})"><ellipse cx="1" cy="-.2" rx="${fx(6*s)}" ry="1.7" fill="#000" fill-opacity="${L?.2:.45}"/>${on?`<circle cy="${fx(-9.6*s)}" r="${fx(9*s)}" fill="url(#${id}lg)"/>`:''}<g transform="scale(${s})">${lanternSvg(id,on,L)}</g></g>`;continue}
+  // One stone shape everywhere: a flat slab seen from above, long side along the path.
+  const num=k-(k>7)-(k>15)+1,walked=num<=streak,a=6.6+rnd()*1,b=3.3,ang=fx(Math.atan2(n.ny,n.nx)*180/Math.PI+90),d=blob(rnd,a,b),T=`translate(${fx(c.x)} ${fx(c.y)}) rotate(${ang})`;
+  clear+=`<ellipse transform="${T}" rx="${fx(a+2)}" ry="${fx(b+1.8)}" fill="${G1}"/>`;
+  grooves+=`<ellipse transform="${T}" rx="${fx(a+2.4)}" ry="${fx(b+2.1)}" fill="none" stroke="${GL}" stroke-opacity=".7" stroke-width=".6"/><ellipse transform="${T}" rx="${fx(a+4.4)}" ry="${fx(b+4)}" fill="none" stroke="${GL}" stroke-opacity=".45" stroke-width=".55"/>`;
+  shadows+=`<path transform="translate(${fx(c.x+.6)} ${fx(c.y+1.1)}) rotate(${ang})" d="${d}" fill="#000" fill-opacity="${L?.2:.45}"/>`;
+  stones+=`<path transform="${T}" d="${d}" fill="url(#${id}${walked?'w':'u'})" stroke="${walked?'#7a5a30':(L?'#8d9096':'#3a3d42')}" stroke-width=".5" opacity="${walked?1:(L?.6:.7)}"/>`;
+  if(walked)hl+=`<path transform="${T}" d="M${fx(-a*.6)} ${fx(-b*.1)}Q${fx(-a*.5)} ${fx(-b*.75)} ${fx(a*.2)} ${fx(-b*.8)}" fill="none" stroke="#fff4d8" stroke-opacity=".6" stroke-width=".7" stroke-linecap="round"/>`;
+  if(k%5===2){moss+=`<g transform="${T}"><circle cx="${fx(a*.72)}" cy="${fx(b*.5)}" r="1.3" fill="#6e9a3e"/><circle cx="${fx(a*.72-1.4)}" cy="${fx(b*.5+.6)}" r="1" fill="#88b44c"/></g>`}
+ }
+ const bandD=boxD(O)+' '+boxD(I);
+ return `<defs><radialGradient id="${id}w" cx=".38" cy=".3" r=".85"><stop offset="0" stop-color="#f6e4bf"/><stop offset=".6" stop-color="#cfa96c"/><stop offset="1" stop-color="#93703f"/></radialGradient>
+  <radialGradient id="${id}u" cx=".38" cy=".3" r=".85"><stop offset="0" stop-color="${L?'#c3c6ca':'#6f747b'}"/><stop offset="1" stop-color="${L?'#9a9ea4':'#45494f'}"/></radialGradient>
+  <linearGradient id="${id}gv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${G1}"/><stop offset="1" stop-color="${G2}"/></linearGradient>
+  <linearGradient id="${id}wn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6cf"/><stop offset="1" stop-color="#ffb04a"/></linearGradient>
+  <radialGradient id="${id}lg"><stop offset="0" stop-color="#ffd27a" stop-opacity=".8"/><stop offset="1" stop-color="#ffb84a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}pl"><stop offset="0" stop-color="#ffc45c" stop-opacity="${tile?.95:(L?.75:.7)}"/><stop offset=".55" stop-color="#ffab3d" stop-opacity="${tile?.45:(L?.3:.28)}"/><stop offset="1" stop-color="#ffab3d" stop-opacity="0"/></radialGradient>
+  <clipPath id="${id}cp"><path d="${bandD}" clip-rule="evenodd"/></clipPath></defs>
+  <path d="${boxD(O)}" fill="none" stroke="#000" stroke-opacity="${L?.1:.32}" stroke-width="3.5" transform="translate(0 1.6)"/>
+  <path d="${bandD}" fill-rule="evenodd" fill="url(#${id}gv)"/>
+  <g clip-path="url(#${id}cp)">
+   <path d="${rakeH}" fill="none" stroke="${GH}" stroke-opacity=".7" stroke-width=".6"/>
+   <path d="${rakeD}" fill="none" stroke="${GL}" stroke-opacity=".75" stroke-width=".7"/>
+   ${clear}${grooves}${pools}${shadows}${stones}${hl}${moss}
+  </g>
+  <path d="${boxD(O)}" fill="none" stroke="${L?'#8a826f':'#5c5f66'}" stroke-width="1.6"/><path d="${boxD(lerpBox(O,I,.04))}" fill="none" stroke="${GH}" stroke-opacity=".5" stroke-width=".6"/>
+  <path d="${boxD(I)}" fill="none" stroke="${L?'#8a826f':'#16181b'}" stroke-width=".9"/>
+  ${lan}`;
+}
+
+/* ================= Existing frames, recreated roughly from art.jsx ================= */
+function goldUnder(f){const id=uid('gd');let halo='';for(let i=0;i<3;i++){const k=-10-1-i*2;halo+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="#e2b75a" stroke-width="2" stroke-opacity="${fx(.18*Math.pow(1-i/3,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5414"/><stop offset=".22" stop-color="#f8dc8a"/><stop offset=".4" stop-color="#b8892b"/><stop offset=".52" stop-color="#fff1c2"/><stop offset=".66" stop-color="#a87a24"/><stop offset=".84" stop-color="#f3d27a"/><stop offset="1" stop-color="#7a5414"/></linearGradient></defs>${halo}<path d="${ring(f,10)}" fill="url(#${id})"/><path d="${ring(f,9.5)}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`}
+function goldHtml(f){const o=10;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="sweep" style="position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 44%,rgba(255,255,255,.6) 50%,transparent 56%)"></div></div>`}
+function goldOver(f){const id='gg'+uid('');const art=`<path d="M6 58 C6 26 26 6 58 6" fill="none" stroke="url(#${id})" stroke-width="3"/><path d="M14 54 C16 32 32 16 54 14" fill="none" stroke="url(#${id})" stroke-width="1.6"/><path d="M6 22 q10 -2 12 -12 q2 10 12 12 q-10 2 -12 12 q-2 -10 -12 -12z" fill="url(#${id})"/><circle cx="34" cy="34" r="3" fill="url(#${id})"/><path d="M40 8 q6 4 4 10 M8 40 q4 6 10 4" fill="none" stroke="url(#${id})" stroke-width="1.4"/>`;
+ const off=-14;return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>`+[[off,off,0],[f.w-off,off,90],[f.w-off,f.h-off,180],[off,f.h-off,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')}
+function auroraUnder(f){const id=uid('au');let h='';const steps=f.still?3:15;for(let i=0;i<steps;i++){const k=-3-1-i*2;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-opacity="${fx(.42*Math.pow(1-i/steps,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46f0c0"/><stop offset=".35" stop-color="#6aa8ff"/><stop offset=".7" stop-color="#c38bff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient></defs><g class="breatheO">${h}</g>`}
+function auroraHtml(f){const o=3,D=Math.hypot(f.w,f.h)+20;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="spin" style="position:absolute;width:${D}px;height:${D}px;left:${(f.w+2*o-D)/2}px;top:${(f.h+2*o-D)/2}px;background:conic-gradient(#46f0c0,#6aa8ff,#c38bff,#ff7ad9,#46f0c0)"></div></div>`}
+function litPath(p,r){const waxing=p<.5,k=Math.cos(2*Math.PI*p),rx=Math.abs(k)*r,cres=Math.abs(p-.5)>.25;
+ return `M0 ${-r}A${r} ${r} 0 0 ${waxing?1:0} 0 ${r}A${fx(rx)} ${r} 0 0 ${waxing?(cres?0:1):(cres?1:0)} 0 ${-r}Z`}
+function moonDisc(p,r,id){return `<circle r="${r}" fill="#262c3a"/><path d="${litPath(p,r)}" fill="url(#${id})"/><circle r="${r}" fill="none" stroke="rgba(241,230,196,.35)" stroke-width=".8"/>`}
+function moonOver(f){const id=uid('mn'),p=.62;let week='';for(let i=0;i<7;i++){const q=(p-.0339*(6-i)+1)%1,t=i===6;week+=`<g transform="translate(${fx(f.w*(.12+i*.127))} ${f.h+1})">${t?`<circle r="12" fill="none" stroke="rgba(241,230,196,.6)"/>`:''}${moonDisc(q,t?8:6.5,id)}</g>`}
+ return `<defs><radialGradient id="${id}" cx=".4" cy=".35" r=".6"><stop offset="0" stop-color="#fffaf0"/><stop offset=".7" stop-color="#f1e6c4"/><stop offset="1" stop-color="#d8c99a"/></radialGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#f1e6c4" stop-opacity=".43"/><stop offset="1" stop-color="#f1e6c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${openTopPath(f.w,f.h,f.R,34)}" fill="none" stroke="rgba(241,230,196,.55)" stroke-width="1.5"/><g transform="translate(${f.w/2} -2)"><circle r="44" fill="url(#${id}h)"/>${moonDisc(p,20,id)}<circle r="5" cx="-6" cy="4" fill="rgba(0,0,0,.08)"/><circle r="3" cx="7" cy="-7" fill="rgba(0,0,0,.07)"/></g>${week}`}
+const TAPE=[[0,8],[4,0],[8,10],[12,0],[16,8],[20,0],[100,0],[96,10],[100,20],[96,30],[100,40],[96,50],[100,60],[96,70],[100,80],[96,90],[100,100],[0,100],[4,90],[0,80],[4,70],[0,60],[4,50],[0,40],[4,30],[0,20]];
+const TAPE_D='M'+TAPE.map(([x,y])=>`${x*96/100} ${y*28/100}`).join('L')+'Z';
+function washiOver(f){const id=uid('wa');return `<defs><pattern id="${id}a" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(45)"><rect width="7" height="14" fill="#f2a7c3"/><rect x="7" width="7" height="14" fill="#ffd3e2"/></pattern><pattern id="${id}b" patternUnits="userSpaceOnUse" width="10" height="10"><rect width="10" height="10" fill="#8fb6dc"/><circle cx="5" cy="5" r="2" fill="#fff"/></pattern></defs>
+ <g transform="translate(26 2) rotate(-38) translate(-48 -14)" opacity=".88"><path d="${TAPE_D}" fill="url(#${id}a)"/></g><g transform="translate(${f.w-26} ${f.h-4}) rotate(-38) translate(-48 -14)" opacity=".88"><path d="${TAPE_D}" fill="url(#${id}b)"/></g>`}
+function notebookOver(f){let lo='';for(let y=f.R+6;y<f.h-f.R-2;y+=16)lo+=`<ellipse cx="-6" cy="${y}" rx="6" ry="3.6" fill="none" stroke="#c7ced8" stroke-width="1.8"/>`;
+ return `<path d="${ring(f,6)}" fill="none" stroke="#7aa7e0" stroke-width="2"/><line x1="-13" y1="-6" x2="-13" y2="${f.h+6}" stroke="#ef6a5b" stroke-opacity=".6" stroke-width="1.2"/>${lo}`}
+function postageOver(f){const x=f.w-26,y=-12;return `<path d="${ring(f,10)}" fill="none" stroke="#d9c6a3" stroke-width="5" stroke-linecap="round" stroke-dasharray=".1 8"/><path d="${ring(f,4)}" fill="none" stroke="#d9c6a3" stroke-width="1.5"/><circle cx="${x+6}" cy="${y+4}" r="11" fill="none" stroke="${f.c.ink}" stroke-opacity=".45" stroke-width="1.2"/>${[0,1,2].map(i=>`<path d="M${x-24} ${y+i*5} q6 -4 12 0 t12 0 t12 0" fill="none" stroke="${f.c.ink}" stroke-opacity=".45" stroke-width="1.2"/>`).join('')}`}
+function catHead(){return `<ellipse cx="24" cy="30" rx="15" ry="13.6" fill="#f0a64a"/><circle cx="18" cy="28" r="2" fill="#2b2018"/><circle cx="30" cy="28" r="2" fill="#2b2018"/><path d="M10 19 L14 7.5 L19.5 18Z M28.5 18 L34 7.5 L38 19Z" fill="#f0a64a"/>`}
+function trainOver(f){const o=12,ties=spots(f,o,46).map(t=>`<rect x="${fx(t.x-1.5)}" y="${fx(t.y-6)}" width="3" height="12" rx="1" fill="#6b4a2e" transform="rotate(${fx(t.ang*180/Math.PI)} ${fx(t.x)} ${fx(t.y)})"/>`).join('');
+ const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o);
+ const cars=[[0,'engine'],[26,'blue'],[50,'buddy']].map(([gap,k])=>{const body=k==='engine'?`<rect x="-11" y="-7" width="22" height="13" rx="3" fill="#ef6a5b"/><rect x="2" y="-12" width="8" height="7" rx="1.5" fill="#c94a3c"/>`:`<rect x="-9" y="-6" width="18" height="11" rx="2.5" fill="${k==='blue'?'#7bd3ff':'#ffd166'}"/>`+(k==='buddy'?`<g transform="translate(-7 -16) scale(.3)">${catHead()}</g>`:'');
+  const p=rrPointAt(-o,-o,W,H,f.R+o,L*.45-gap);return `<g transform="translate(${fx(p.x)} ${fx(p.y)}) rotate(${fx(p.ang*180/Math.PI)})">${body}<circle cx="-5" cy="6" r="2.8" fill="#222"/><circle cx="5" cy="6" r="2.8" fill="#222"/></g>`}).join('');
+ return `${ties}<path d="${ring(f,o+3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/><path d="${ring(f,o-3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/>${cars}`}
+const BULBS=['#ffd166','#ff6b9a','#7bd3ff','#9be36b','#c79bff'];
+function lightsOver(f){const q=Math.max(6,Math.min(8,f.p.total||6)),n=q*2,pins=spots(f,12,n,.5/n);let out=`<path d="${ring(f,12)}" fill="none" stroke="#6b7060" stroke-width="1.4"/>`;
+ pins.forEach((p,i)=>{const k=Math.floor(i/2),on=k<(f.p.answered||0),bx=p.x+p.nx*6,by=p.y+p.ny*6,deg=fx(p.ang*180/Math.PI),col=BULBS[k%5];
+  out+=`<line x1="${fx(p.x)}" y1="${fx(p.y)}" x2="${fx(bx)}" y2="${fx(by)}" stroke="#6b7060" stroke-width="1.2"/>`+
+  (on?`<circle cx="${fx(bx)}" cy="${fx(by)}" r="9" fill="${col}" opacity=".3"/><ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="${col}" stroke="#fff" stroke-width=".8"/>`:`<ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="#363b47" stroke="#5a606e" stroke-width=".8"/>`)});return out}
+function globeOver(f){const id=uid('gl'),rnd=seeded(12);let fl='';for(let i=0;i<22;i++){let x=-14+rnd()*(f.w+28),y=-14+rnd()*(f.h+26);if(x>2&&x<f.w-2&&y>2&&y<f.h-2)x=x<f.w/2?-8:f.w+8;fl+=`<circle cx="${fx(x)}" cy="${fx(y)}" r="${fx(1+rnd()*1.2)}" fill="#fff"/>`}
+ return `<defs><radialGradient id="${id}" cx=".3" cy=".25" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".6" stop-color="#9fd3ff" stop-opacity=".04"/><stop offset="1" stop-color="#9fd3ff" stop-opacity=".14"/></radialGradient></defs>
+ <path d="${rrPath(-18,-18,f.w+36,f.h+26,f.R+18)} ${rrPath(0,0,f.w,f.h,f.R)}" fill-rule="evenodd" fill="url(#${id})"/><path d="${rrPath(-18,-18,f.w+36,f.h+26,f.R+18)}" fill="none" stroke="#cfe8ff" stroke-opacity=".6" stroke-width="1.5"/>
+ <path d="M${f.R*.4} -14 Q${f.w*.25} -20 ${f.w*.45} -17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/><path d="M-22 ${f.h+8} H${f.w+22} L${f.w+14} ${f.h+22} H-14Z" fill="#7a4a2a" stroke="#4a2a14"/>${fl}`}
+function vineOver(f){const id=uid('vn'),n=Math.round(rrLength(f.w,f.h,f.R)*.62/18);let lv='';
+ for(let i=1;i<n;i++){const p=rrPointAt(0,0,f.w,f.h,f.R,f.h-f.R-40+i*18),s=i%2?1:-1,a=fx(p.ang*180/Math.PI+s*40);lv+=`<ellipse cx="${fx(p.x+p.nx*4)}" cy="${fx(p.y+p.ny*4)}" rx="8" ry="3.8" fill="url(#${id})" transform="rotate(${a} ${fx(p.x+p.nx*4)} ${fx(p.y+p.ny*4)})"/>`}
+ const L=rrLength(f.w,f.h,f.R);return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6e889"/><stop offset="1" stop-color="#3c8636"/></linearGradient></defs><path d="${rrPath(0,0,f.w,f.h,f.R)}" fill="none" stroke="#3f7a35" stroke-width="3.2" stroke-dasharray="${fx(L*.62)} ${fx(L)}"/>${lv}`}
+function weekOver(f){let s='';for(let i=0;i<7;i++){const x=f.w*(.14+i*.12);s+=`<circle cx="${fx(x)}" cy="${f.h+10}" r="8" fill="#ffd34d" opacity=".25"/><path d="${star5(x,f.h+10,6,2.6)}" fill="#ffd34d" stroke="#b07d10" stroke-width=".6"/>`}return s}
+
+const FR={
+ origami:{name:'Origami',kind:'Coin · 90 coins · still',over:origamiOver},
+ aquarium:{name:'Aquarium',kind:'Gem · 3 gems · living',under:aquariumUnder,over:aquariumOver},
+ stones:{name:'Stepping stones',kind:'Earned · 21-night streak · never sold',over:stonesOver},
+ gold:{name:'Gold leaf',under:goldUnder,html:goldHtml,over:goldOver},
+ aurora:{name:'Aurora',under:auroraUnder,html:auroraHtml},
+ moon:{name:"Tonight's moon",over:moonOver},
+ washi:{name:'Washi',over:washiOver},
+ notebook:{name:'Notebook',over:notebookOver},
+ postage:{name:'Postage',over:postageOver},
+ train:{name:'Buddy Train',over:trainOver},
+ lights:{name:'String Lights',over:lightsOver},
+ globe:{name:'Snow globe',over:globeOver},
+ vine:{name:'Growing vine',over:vineOver},
+ gems:{name:'Week stars',over:weekOver},
+};
+
+/* ================= Page ================= */
+const LOOKS={
+ lime:{dark:{bg:'#0e1014',card:'#16191f',line:'#2b3140',on:'#c9f24d',onInk:'#101208',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#242935'},
+       light:{bg:'#eef1e6',card:'#ffffff',line:'#cfd4c4',on:'#567510',onInk:'#ffffff',ink:'#1a1d16',soft:'#4a5240',dim:'#697060',miss:'#c44536',chip:'#e8ebdf'}},
+ sky:{dark:{bg:'#0a0d14',card:'#10151f',line:'#253247',on:'#4aa8ff',onInk:'#06121f',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#1b2433'},
+      light:{bg:'#e7eff9',card:'#f6faff',line:'#b7cce6',on:'#1766c2',onInk:'#ffffff',ink:'#141a22',soft:'#4a5566',dim:'#6a7486',miss:'#c44536',chip:'#dbe7f5'}},
+ maple:{dark:{bg:'#140c0a',card:'#1f1410',line:'#462d26',on:'#fa774f',onInk:'#1a0904',ink:'#f8f0ec',soft:'#b3a19a',dim:'#8a7770',miss:'#ff6f61',chip:'#32211c'},
+        light:{bg:'#f9ebe7',card:'#fff8f6',line:'#e5c3b8',on:'#be411b',onInk:'#ffffff',ink:'#22140f',soft:'#5e4a42',dim:'#806a62',miss:'#c44536',chip:'#f4e1dc'}}};
+let THEME='dark',LOOK='lime';
+
+function bigCard(pal,f){const P=f.p,all=P.total>0&&P.answered>=P.total;
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:1px solid ${pal.line};color:${pal.ink};padding:22px">
+ <span class="k" style="color:${pal.on}">${all?'ALL DONE TONIGHT':`TONIGHT · ${P.answered+1} OF ${P.total}`}</span><span class="chip" style="background:${pal.chip};color:${pal.soft}">Health</span>
+ <div class="q">${all?'That was the last one. Sleep well.':P.q||'Did I take my vitamins?'}</div>
+ <div class="s" style="color:${pal.soft}">${P.streak??21} night streak</div>
+ ${all?'':`<div class="pills"><span class="pill" style="border:1px solid ${pal.line};color:${pal.ink}">Nope</span><span class="pill" style="background:${pal.on};color:${pal.onInk}">Did</span></div>`}</div>`}
+function miniCard(pal,f,id){const wk=[1,1,1,1,0,1,1];
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:2px solid ${pal.line}">
+ <div style="position:absolute;left:24px;top:28px;width:58px;height:10px;border-radius:5px;background:${pal.on}"></div>
+ <div style="position:absolute;left:24px;top:54px;width:160px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ <div style="position:absolute;left:24px;top:80px;width:104px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ ${id==='moon'?'':`<div style="position:absolute;left:24px;right:24px;bottom:30px;display:flex;justify-content:space-between">${wk.map(o=>`<i style="width:16px;height:16px;border-radius:50%;background:${o?pal.on:pal.miss}"></i>`).join('')}</div>`}</div>`}
+
+function framed(id,{theme=THEME,look=LOOK,zoom=1,mini=false,still=false,p={}}={}){
+ const pal=LOOKS[look][theme],light=theme==='light';
+ const w=mini?220:300,h=mini?264:340,R=mini?30:24;
+ const f={w,h,R,still,c:{light,accent:pal.on,card:pal.card,bg:pal.bg,ink:pal.ink},p:{answered:2,total:4,skipped:0,evening:.5,streak:21,pull:0,...p}};
+ const F=FR[id],svg=s=>`<svg class="lay" viewBox="${-PAD} ${-PAD} ${w+2*PAD} ${h+2*PAD}" width="${w+2*PAD}" height="${h+2*PAD}" aria-hidden="true">${s}</svg>`;
+ return `<div class="fw ${still?'still':''}" style="width:${w+2*PAD}px;height:${h+2*PAD}px;zoom:${zoom}">${F.under?svg(F.under(f)):''}${F.html?F.html(f):''}${mini?miniCard(pal,f,id):bigCard(pal,f)}${F.over?svg(F.over(f)):''}</div>`}
+function stage(id,cap,opts){const pal=LOOKS[opts.look||LOOK][opts.theme||THEME];return `<div class="stage" style="background:${pal.bg}">${framed(id,opts)}<div class="cap">${cap}</div></div>`}
+function tile(id,theme,p={},label){const pal=LOOKS[LOOK][theme];const k=.36,W=316*k,H=360*k;
+ return `<div class="tilecol"><div class="tile" style="background:${pal.bg};border:1px solid ${pal.line}"><div style="position:absolute;left:${(120-W)/2}px;top:${(144-H)/2}px">${framed(id,{theme,mini:true,still:true,zoom:k,p})}</div></div><div class="tl">${label||FR[id].name}</div></div>`}
+
+const COPY={
+ origami:{desc:'Folded paper round your card, with three paper cranes in the corners. Still and quiet.',f:['Crisp folds that catch the light','Three paper cranes','Stays still']},
+ aquarium:{desc:'Your card sits in a little fish tank. Each question brings a fish, and it lights up and swims once you answer.',f:['A fish for each question','Fish dart toward your swipe','A bubble heart when tonight is done']},
+ stones:{desc:'21 stepping stones in raked gravel round your card, one for each night. A lantern lights for every week of your streak.',f:['Earned at a 21-night streak','A lantern lights each week','Never sold']},
+};
+const REVIEW={
+ origami:[['Want it?','Yes. It looks made by hand: real pleats that catch the light and three folded cranes. A calm, crafted coin frame that is not a line or a pattern.'],
+  ['Different?','Closest are Washi (two tape strips), Notebook (spiral and margin) and Postage (perforated edge and postmark). Origami is the only paper frame with folds and depth: lit and shaded pleats, a notched folded edge, the white back of the paper at the card edge, and 3D cranes.'],
+  ['Finish','Indigo paper in about 120 pleats. Each pleat is shaded by which way it faces the light, mountain folds carry a pale crease and valley folds a dark one. Gold flecks in the paper, a cream lip, a soft drop shadow. Cranes are faceted in two or three tones with crease lines.'],
+  ['Tile','Reads as a pleated blue rim with a red crane bottom left, a gold one top right and a white one bottom right.'],
+  ['Corners and text','Pleats run from 2 to 14 px out on the sides, 15 at the bottom, 7.5 at the top. Corners land on a crease and follow the card radius. Cranes sit outside the card corners; the gold one stays under 8 px above the card.'],
+  ['Looks and themes','Indigo, cream, red and gold are fixed and read on dark and light. No accent color, so it suits every look.'],
+  ['Motion','None. Coin frame.'],['Copy','Short, plain, no em dashes.']],
+ aquarium:[['Want it?','Yes. A tiny tank you fill each night: every question is a fish that wakes up when you answer, they chase your swipe, and they make a bubble heart when you finish.'],
+  ['Different?','Closest are String Lights (a bulb per question), Buddy Train (a train round the card) and Snow globe (glass and snow, the swipe shakes it). Aquarium is a whole scene with water, sand and plants, and its fish carry tonight, the swipe and the finish.'],
+  ['Finish','Water in three depths with light rays from a lamp under the lid, back plants in shadow, sand with grain, pebbles, a shell and coral, swaying kelp and a round-leaf stem, an air stone, bubbles with a highlight, a glass rim with reflections. Four kinds of fish with gradients, fins, eyes and a soft glow.'],
+  ['Tile','The done scene: fish gathered in the corner and a bubble heart on the right side. Water and sand read at tile size.'],
+  ['Corners and text','The tank reaches 18 px at the sides, 20 at the bottom and 8 at the top (the lid). It follows the card corners. All fish swim below the card or in the side glass, never over it.'],
+  ['Looks and themes','Water, sand and fish do not use the accent. Light mode uses paler water and a lighter rim; dim fish are drawn lighter so they still show.'],
+  ['Motion','Answered fish swim slow laps under the card and turn at each end. Waiting fish hover by the plants. Bubbles rise, plants sway, the lamp breathes. A swipe sends ripples on that side and the fish dart that way. When done, the fish gather and a bubble heart rises every 7 s.'],['Copy','Short, plain, no em dashes.']],
+ stones:[['Want to earn it?','Yes. Three weeks is the point where a habit sticks, and this frame says so: a path of 21 stones you walked, and three lanterns that stay lit as long as your streak holds.'],
+  ['Different?','Closest earned frames are Growing vine (streak 3, leaves along the edge) and Week stars (streak 7, gold stars). Stepping stones is a calm garden bed: raked gravel, real stones and lanterns. It is the only earned frame between 7 and 30 nights.'],
+  ['Finish','Gravel with four raked lines that curve round every stone, 21 stones in three tones with lit tops, highlights, edges and shadows, moss on some, stone lanterns with a roof, firebox and base, and a warm glow on the gravel when lit.'],
+  ['Tile','Shows all three lanterns lit. Grey band, darker stones and three warm spots read clearly at tile size.'],
+  ['Corners and text','Bed runs from the card edge to 15 px out on the sides, 18 at the bottom and 7.5 at the top. Corners follow the card. Lanterns sit on the left and right sides and bottom middle.'],
+  ['Looks and themes','Gravel is pale on light and slate on dark; stones and lanterns are fixed. No accent color.'],
+  ['Motion','Lit lanterns flicker softly on a 3.6 s loop, each a little out of step. Nothing else moves.'],['Copy','Short, plain, no em dashes.']]};
+
+function section(id,cards,tiles){const C=COPY[id];return `<section class="opt"><span class="tag">${FR[id].kind}</span><h3>${FR[id].name}</h3><p>${C.desc}</p><ul class="feat">${C.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+ <div class="row">${cards}</div>
+ <div class="tiles">${tiles||tile(id,'dark',{},'Dark tile')+tile(id,'light',{},'Light tile')}</div>
+ <div class="review">${REVIEW[id].map(([a,b])=>`<div><b>${a}</b> ${b}</div>`).join('')}</div></section>`}
+
+function render(){
+ const z=.8,other=THEME==='dark'?'light':'dark';
+ const out=[];
+ out.push(section('origami',stage('origami','Around the card',{zoom:z})+stage('origami','Other theme',{zoom:z,theme:other})+stage('origami','Sky look',{zoom:z,look:'sky'})));
+ out.push(section('aquarium',
+  stage('aquarium','0 of 4 · fish waiting',{zoom:z,p:{answered:0,total:4}})+
+  stage('aquarium','2 of 4 · two swimming',{zoom:z,p:{answered:2,total:4}})+
+  stage('aquarium','Swipe right',{zoom:z,p:{answered:2,total:4,pull:90}})+
+  stage('aquarium','All 4 · bubble heart',{zoom:z,p:{answered:4,total:4}})));
+ out.push(section('stones',
+  stage('stones','Streak 21 · three lanterns',{zoom:z,p:{streak:21}})+
+  stage('stones','Streak 9 · one lantern',{zoom:z,p:{streak:9}})+
+  stage('stones','Other theme · streak 16',{zoom:z,theme:other,p:{streak:16}})));
+ const cz=.46,sets=[['origami',['washi','notebook','postage'],{}],['aquarium',['lights','train','globe'],{answered:4,total:4}],['stones',['vine','gems'],{streak:21}]];
+ out.push(`<section class="opt"><span class="tag">Side by side</span><h3>Next to the best frames</h3><p>Each new frame next to its closest relatives and the three showpieces: Gold leaf, Aurora and Tonight's moon. Same card, same look, same theme.</p>
+ ${sets.map(([id,near,p])=>`<div class="cmp"><h4>${FR[id].name}</h4><div class="row">${[id,...near,'gold','aurora','moon'].map(k=>stage(k,FR[k].name+(near.includes(k)?' (closest)':''),{zoom:cz,p})).join('')}</div></div>`).join('')}</section>`);
+ const all=['origami','aquarium','stones','washi','postage','lights','globe','vine','gold','aurora','moon'];
+ out.push(`<section class="opt" id="alltiles"><span class="tag">Tiles</span><h3>All frames, still</h3><p>The shop and Collection draw a 220 by 264 mini card and scale it to the tile, with no motion. Top row dark, bottom row light.</p>
+ <div class="tiles">${all.map(k=>tile(k,'dark',{answered:4,total:4})).join('')}</div>
+ <div class="tiles">${all.map(k=>tile(k,'light',{answered:4,total:4})).join('')}</div></section>`);
+ // ?sec=3 shows one section only (for screenshots).
+ const sec=new URLSearchParams(location.search).get('sec');
+ document.getElementById('out').innerHTML=sec===null?out.join(''):out[+sec];if(sec!==null){document.querySelector('header').style.display='none';document.querySelector('.controls').style.display='none'}
+}
+function seg(id,fn){const s=document.getElementById(id);s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);render()})}
+seg('theme',v=>{THEME=v;document.body.classList.toggle('light',v==='light')});
+seg('look',v=>LOOK=v);
+seg('motion',v=>document.body.classList.toggle('nomotion',v==='off'));
+const q=new URLSearchParams(location.search);if(q.get('theme')==='light'){THEME='light';document.body.classList.add('light');document.querySelectorAll('#theme button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='light'))}
+if(q.get('look')&&LOOKS[q.get('look')]){LOOK=q.get('look');document.querySelectorAll('#look button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===LOOK))}
+if(q.has('nomo'))document.body.classList.add('nomotion');
+// ?solo=aquarium&z=3&a=4&t=4&pl=90&s=21&crop=x,y,w,h draws one card big, for close checks.
+if(q.get('solo')){const id=q.get('solo'),z=+(q.get('z')||2);document.querySelector('header').remove();document.querySelector('.controls').remove();
+ const opts={zoom:1,still:q.has('still'),mini:q.has('mini'),theme:q.get('theme')||'dark',p:{answered:+(q.get('a')??2),total:+(q.get('t')??4),pull:+(q.get('pl')||0),streak:+(q.get('s')??21)}};
+ const c=(q.get('crop')||'0,0,396,436').split(',').map(Number),pal=LOOKS[LOOK][opts.theme];
+ document.body.innerHTML=`<div style="width:${c[2]*z}px;height:${c[3]*z}px;overflow:hidden;position:relative;background:${pal.bg}"><div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(${z}) translate(${-c[0]}px,${-c[1]}px)">${framed(id,opts)}</div></div>`;if(q.has('nomo'))document.body.classList.add('nomotion')}
+else render();
+</script>
+</body></html>

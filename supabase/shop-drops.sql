@@ -18,7 +18,12 @@ insert into public.shop_drop_days (day) values
   ('2026-10-09'),
   ('2026-10-23'),
   ('2026-11-06'),
-  ('2026-11-20')
+  ('2026-11-20'),
+  ('2026-12-04'),
+  ('2026-12-18'),
+  ('2027-01-01'),
+  ('2027-01-15'),
+  ('2027-01-29')
 on conflict do nothing;
 
 -- One row per person per drop: the cap, so a rerun never sends twice.
