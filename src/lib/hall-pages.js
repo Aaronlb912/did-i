@@ -17,7 +17,7 @@ import {
   waitingTonight,
 } from './recurrence.js'
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
-import { t } from './i18n.js'
+import { localePack, t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
 import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
@@ -766,6 +766,17 @@ function weekdayList(locale, style) {
   const code = locale === 'zh' ? 'zh-CN' : locale || 'en'
   const key = `${code}:${style}`
   let names = weekdayNames.get(key)
+  if (!names && style === 'narrow') {
+    // Hermes on Android has no CJK date names, so initials come from the
+    // locale's own short day names (hang.day.N): Mon -> M, 月 -> 月.
+    const pack = localePack(locale)
+    names = [0, 1, 2, 3, 4, 5, 6].map((day) => Array.from(String(pack[`hang.day.${day}`] || ''))[0] || '')
+    if (names.every(Boolean)) {
+      weekdayNames.set(key, names)
+      return names
+    }
+    names = null
+  }
   if (!names) {
     names = []
     // 2026-10-04 is a Sunday, so index 0 is Sunday like getDay().

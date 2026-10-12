@@ -454,6 +454,11 @@ function inHandOrder(rows) {
 
 const SEARCH_FROM = 10
 
+// Chinese and Japanese labels take a full-width colon.
+function labelColon() {
+  return /[぀-ヿ一-鿿]/.test(t('hang.tag')) ? '：' : ': '
+}
+
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
@@ -2490,12 +2495,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             <Text style={[styles.summaryChev, { color: colors.inkDim }]}>›</Text>
           </View>
           <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
-            {`${t('hang.tag')}: ${lampBook.title}`}
+            {`${t('hang.tag')}${labelColon()}${lampBook.title}`}
           </Text>
           {topics ? (
             <>
               <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
-                {`${t('hang.kind')}: ${topics}`}
+                {`${t('hang.kind')}${labelColon()}${topics}`}
               </Text>
               <Text style={[styles.hintLine, { color: colors.inkDim }]}>{t('hang.topicsHint')}</Text>
             </>

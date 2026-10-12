@@ -333,6 +333,12 @@ test('times follow the clock setting, 12 or 24 hour', () => {
   }
 })
 
+test('weekday initials come from the language file, so Chinese and Japanese work on Hermes', () => {
+  assert.deepEqual([0, 1, 2].map((d) => weekdayName(`2026-10-0${4 + d}`, 'narrow', 'zh')), ['日', '一', '二'])
+  assert.deepEqual([0, 1].map((d) => weekdayName(`2026-10-0${4 + d}`, 'narrow', 'ja')), ['日', '月'])
+  assert.equal(weekdayName('2026-10-05', 'narrow', 'en'), 'M')
+})
+
 test('an idea you already have stays hidden in any language, whatever its case', () => {
   const book = { lamps: [{ id: 'a', question: 'Did I take my meds?', short: 'meds' }] }
   try {
