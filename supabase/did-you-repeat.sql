@@ -45,6 +45,57 @@ revoke all on function public.claim_auto_sends() from public;
 revoke all on function public.claim_auto_sends() from anon;
 grant execute on function public.claim_auto_sends() to authenticated;
 
+-- The same sends in two steps, so none is lost: the phone reads what is
+-- waiting, puts it on its shelf, then says keep. claim_auto_sends marked them
+-- kept first, and a phone that closed before saving lost them for good.
+-- claim_auto_sends stays for older app versions.
+create or replace function public.auto_sends_waiting()
+returns table (send_id uuid, sender_id uuid, question text, note text, from_family boolean, repeat text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select s.id, s.from_id, s.question, s.note, public.shares_family(s.from_id), s.repeat
+  from public.sends s
+  where s.to_id = (select auth.uid())
+    and s.state = 'sent'
+    and s.kind = 'todo'
+    and s.repeat = ''
+    and not public.blocked_with(s.from_id)
+    and (
+      public.shares_family(s.from_id)
+      or (
+        public.are_friends(s.from_id)
+        and exists (
+          select 1 from public.auto_adds a
+          where a.owner_id = s.to_id and a.friend_id = s.from_id
+        )
+      )
+    )
+  limit 100;
+$$;
+
+revoke all on function public.auto_sends_waiting() from public, anon;
+grant execute on function public.auto_sends_waiting() to authenticated;
+
+create or replace function public.keep_auto_sends(ids uuid[])
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.sends s
+  set state = 'kept'
+  where s.id = any (ids[1:100])
+    and s.to_id = (select auth.uid())
+    and s.state = 'sent'
+    and s.kind = 'todo';
+$$;
+
+revoke all on function public.keep_auto_sends(uuid[]) from public, anon;
+grant execute on function public.keep_auto_sends(uuid[]) to authenticated;
+
 -- Three repeating Did yous to one person a day at most, ten to everyone.
 create or replace function public.cap_repeat_sends()
 returns trigger

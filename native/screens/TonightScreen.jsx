@@ -469,7 +469,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // After your own and Did we: family questions, then Did you asks. A swiped
   // card leaves at once; a failed save brings it back with a toast.
   // People cards have no undo, so a family answer says it was saved instead.
-  const peopleAnswer = async (key, save, reload, kind) => {
+  const peopleAnswer = async (key, save, reload, kind, refresh) => {
     setPeopleGone((keys) => [...keys, key])
     feelTap(kind === 'skip' ? 'skip' : 'did')
     let why = ''
@@ -477,6 +477,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       why = (await save()).miss
     } catch {
       why = 'off'
+    }
+    if (why === 'sent.gone') {
+      // Taken back before you answered: the card stays gone, say why.
+      showToast({ id: `people-miss:${key}`, kind: 'error', text: t('sent.gone'), ms: 5200 })
+      // Only refresh: the success steps (keep, confirm) must not run.
+      refresh?.()
+      return
     }
     if (why) {
       setPeopleGone((keys) => keys.filter((k) => k !== key))
@@ -502,6 +509,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             family.reload()
           },
           status,
+          family.reload,
         )
       return {
         ...item,
@@ -517,7 +525,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         if (keep && row.kind === 'todo' && onKeep) onKeep(row)
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
-      }, keep ? 'yes' : 'skip')
+      }, keep ? 'yes' : 'skip', loadAsks)
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
@@ -1131,7 +1139,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <SwipeFlyHost style={styles.slot}>
         {stack.bodyKind === 'hall' && stack.nightDone && !pullWait ? (
           <Slot>
-            <NightSky colors={colors} />
+            <DoneIn style={StyleSheet.absoluteFill}>
+              <NightSky colors={colors} />
+            </DoneIn>
           </Slot>
         ) : null}
         {doneFace ? (
@@ -1144,7 +1154,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
             <View onLayout={onPickLayout} style={[styles.pickBox, pickMinH ? { minHeight: pickMinH } : null]}>
-              {face}
+              {/* Loading to the real card eases in, never a hard swap. */}
+              <DoneIn key={pullWait ? 'wait' : 'card'} style={styles.pickBox}>
+                {face}
+              </DoneIn>
             </View>
           </Slot>
         )}
@@ -1222,7 +1235,7 @@ function DoneScroll({ fade, children }) {
   )
 }
 
-function DoneIn({ children }) {
+function DoneIn({ children, style: box }) {
   const reduce = useReduceMotion()
   const grow = useSharedValue(reduce ? 1 : 0)
   useEffect(() => {
@@ -1233,8 +1246,8 @@ function DoneIn({ children }) {
     opacity: 0.6 + grow.value * 0.4,
     transform: [{ scale: 0.97 + grow.value * 0.03 }],
   }))
-  if (reduce) return children
-  return <Animated.View style={style}>{children}</Animated.View>
+  if (reduce) return box ? <View style={box}>{children}</View> : children
+  return <Animated.View style={[box, style]}>{children}</Animated.View>
 }
 
 const styles = StyleSheet.create({

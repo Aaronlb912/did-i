@@ -141,13 +141,19 @@ begin
   select count(*) into n from public.we_answers where user_id <> a;
   if n <> 0 then raise exception 'FAIL: a read % answers that were not a''s', n; end if;
 
+  -- a reads only a's own member rows, never b's or c's.
+  select count(*) into n from public.we_members where user_id <> a;
+  if n <> 0 then raise exception 'FAIL: a read % member rows that were not a''s', n; end if;
+
   -- All card: b said nope, so a's did does not finish it.
-  ok := public.we_answer(card, night, 'did');
+  ok := public.we_answer(card, night, 'did') > 0;
   if ok then raise exception 'FAIL: an all card finished with a nope on it'; end if;
 
   -- Any card: one did is enough.
-  ok := public.we_answer(anycard, night, 'did');
-  if not ok then raise exception 'FAIL: an any card did not finish on one did'; end if;
+  n := public.we_answer(anycard, night, 'did');
+  if n <> 2 then raise exception 'FAIL: an any card did not say this did finished it: %', n; end if;
+  n := public.we_answer(anycard, night, 'did');
+  if n <> 1 then raise exception 'FAIL: a repeat did said it finished again: %', n; end if;
   select x->'finish' into j from jsonb_array_elements(public.we_tonight(night)) x where x->>'id' = anycard::text;
   if j->>'by' is distinct from a::text then
     raise exception 'FAIL: the finish did not say who finished it: %', j;
@@ -160,7 +166,7 @@ begin
   turn_next := public.we_turn(turncard, night + 1);
   execute 'set local role authenticated';
   if turn_now is null then raise exception 'FAIL: no turn tonight'; end if;
-  ok := public.we_answer(turncard, night, 'did');
+  ok := public.we_answer(turncard, night, 'did') > 0;
   if ok <> (turn_now = a) then
     raise exception 'FAIL: turns card ignored whose turn it was';
   end if;
@@ -229,7 +235,13 @@ begin
   if n <> 0 then raise exception 'FAIL: an expired ask still showed'; end if;
   select count(*) into n from public.we_cards where id = countcard;
   if n <> 0 then raise exception 'FAIL: an expired ask could still read the card'; end if;
-  perform public.we_reply(countcard, true);
+  begin
+    perform public.we_reply(countcard, true);
+    raise exception 'FAIL: said yes to an expired ask without an error';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    if sqlerrm not like '%ask has closed%' then raise exception 'FAIL: wrong error for a closed ask: %', sqlerrm; end if;
+  end;
   execute 'reset role';
   if (select state from public.we_members where card_id = countcard and user_id = b) <> 'asked' then
     raise exception 'FAIL: joined on an expired ask';
@@ -326,6 +338,61 @@ begin
     raise exception 'FAIL: tonight still paused after restart';
   end if;
   execute 'reset role';
+
+  -- An all card with only the maker on it is not done together.
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  card := public.we_make('Did we nap?', 'all', 'waiting', 'daily', '{}', null, '{}');
+  if public.we_answer(card, night, 'did') <> 0 then raise exception 'FAIL: an all card finished with one person'; end if;
+
+  -- The maker's night sets the start, kept to a day either side.
+  card := public.we_make('Did we plan?', 'all', 'waiting', 'daily', '{}', null, '{}', night - 30);
+  execute 'reset role';
+  if (select starts_on from public.we_cards where id = card) <> current_date - 1 then
+    raise exception 'FAIL: a far start was not clamped';
+  end if;
+
+  -- A closed card takes no answers.
+  update public.we_cards set archived = true where id = card;
+  execute 'set local role authenticated';
+  begin
+    perform public.we_answer(card, night, 'did');
+    raise exception 'FAIL: answered a closed card';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  execute 'reset role';
+
+  -- A turn kept for a night stays when someone new joins.
+  turncard := public.we_make('Did we cook?', 'turns', 'all', 'daily', '{}', null, '{}');
+  update public.we_cards set starts_on = night - 1 where id = turncard;
+  -- Turns are kept once two people take them; one alone keeps nothing.
+  perform public.we_pin_turns(turncard, night, night);
+  if exists (select 1 from public.we_turns t where t.card_id = turncard) then
+    raise exception 'FAIL: kept a turn with one person on the card';
+  end if;
+  insert into public.we_members (card_id, user_id, state, turn, joined_at) values (turncard, b, 'in', 5, now())
+  on conflict (card_id, user_id) do update set state = 'in', turn = 5;
+  perform public.we_pin_turns(turncard, night, night);
+  turn_now := public.we_turn(turncard, night);
+  -- The order changes (as a new join would): tonight stays with who had it.
+  update public.we_members set turn = -1 where card_id = turncard and user_id <> turn_now;
+  if public.we_turn(turncard, night) is distinct from turn_now then
+    raise exception 'FAIL: tonight''s turn moved when someone joined';
+  end if;
+
+  -- Leaving settles tonight again: a stale done night goes.
+  card := public.we_make('Did we tidy?', 'any', 'waiting', 'daily', '{}', null, '{}');
+  insert into public.we_members (card_id, user_id, state, joined_at) values (card, b, 'in', now());
+  insert into public.we_answers (card_id, user_id, night, status) values (card, b, night, 'did');
+  insert into public.we_done (card_id, night) values (card, night);
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.we_leave(card);
+  execute 'reset role';
+  if exists (select 1 from public.we_done d where d.card_id = card and d.night = test_night) then
+    raise exception 'FAIL: done stayed after the only did left';
+  end if;
 
   raise exception 'SQL TESTS PASSED';
 end;

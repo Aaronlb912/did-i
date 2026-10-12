@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, boardDate, openFloorIso, periodPassed } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
+import { missDot } from '../palette.js'
 
 function jewelColor(state, colors) {
   if (state === 'yes') return colors.on
@@ -51,7 +52,9 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = 
               styles.dot,
               state === 'hole'
                 ? { borderColor: tonight ? colors.inkSoft : colors.line, borderWidth: tonight ? 2 : 1.5 }
-                : { backgroundColor: jewelColor(state, colors) },
+                : state === 'skip'
+                  ? missDot(colors)
+                  : { backgroundColor: jewelColor(state, colors) },
             ]}
           />
         )

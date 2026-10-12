@@ -61,7 +61,8 @@ begin
   select count(*) into n from public.friend_links where (from_id = a and to_id = b) or (from_id = b and to_id = a);
   if n <> 0 then raise exception 'FAIL: joining without add made a friend'; end if;
 
-  -- Joining again with add makes them friends both ways.
+  -- Joining again with add asks Ann to be friends; a public link never
+  -- makes a friend on the spot.
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   out := public.we_join_link(code, true);
@@ -69,9 +70,10 @@ begin
   execute 'reset role';
   select count(*) into n from public.push_queue where to_id = a and body like '%joined your Did we%';
   if n <> 1 then raise exception 'FAIL: an already join queued another push'; end if;
-  select count(*) into n from public.friend_links
-  where state = 'ok' and ((from_id = a and to_id = b) or (from_id = b and to_id = a));
-  if n <> 2 then raise exception 'FAIL: add did not make friends both ways'; end if;
+  select count(*) into n from public.friend_links where from_id = b and to_id = a and state = 'asked';
+  if n <> 1 then raise exception 'FAIL: add did not ask Ann to be friends'; end if;
+  select count(*) into n from public.friend_links where state = 'ok' and a in (from_id, to_id) and b in (from_id, to_id);
+  if n <> 0 then raise exception 'FAIL: a link made friends without Ann saying yes'; end if;
 
   -- Cal blocked Bea, who is on the card: Cal cannot join and is not told why beyond blocked.
   insert into public.blocks (blocker, blocked) values (c, b);
@@ -118,9 +120,18 @@ begin
   execute 'set local role authenticated';
   if not public.befriend_by_link(dcode) then raise exception 'FAIL: befriend by Did you link failed'; end if;
   execute 'reset role';
+  select count(*) into n from public.friend_links where from_id = c and to_id = a and state = 'asked';
+  if n <> 1 then raise exception 'FAIL: Did you link did not ask Ann to be friends'; end if;
+  -- Ann asked Cal first: then the link is a yes both ways.
+  delete from public.friend_links where from_id = c and to_id = a;
+  insert into public.friend_links (from_id, to_id, state) values (a, c, 'asked');
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.befriend_by_link(dcode);
+  execute 'reset role';
   select count(*) into n from public.friend_links
   where state = 'ok' and ((from_id = a and to_id = c) or (from_id = c and to_id = a));
-  if n <> 2 then raise exception 'FAIL: Did you link did not make friends both ways'; end if;
+  if n <> 2 then raise exception 'FAIL: an ask both ways did not make friends'; end if;
 
   -- Cal keeps the Did you link: Ann hears. Ann keeping her own stays quiet.
   insert into public.did_you_link_claims (code, user_id) values (dcode, c);

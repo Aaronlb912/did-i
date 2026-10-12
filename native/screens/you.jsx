@@ -178,16 +178,16 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
             {people === null ? (
               <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.loadingPeople')}</Text>
             ) : people.length ? (
-              <View style={styles.pillRow} accessibilityRole="radiogroup">
+              <Reveal key="people" layout={false} style={styles.pillRow} accessibilityRole="radiogroup">
                 {people.map((p) => (
                   <Pill key={p.id} label={p.name} on={to === p.id} onPress={() => setTo(p.id)} colors={colors} radio />
                 ))}
-              </View>
+              </Reveal>
             ) : (
-              <>
+              <Reveal key="none" layout={false} style={styles.noneBody}>
                 <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.noPeople')}</Text>
                 <Pill label={t('we.findPeople')} onPress={() => goHash('/people')} colors={colors} />
-              </>
+              </Reveal>
             )}
           </HangFold>
           <HangFold
@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
   sheetBody: { gap: 10, paddingBottom: 4 },
   settings: { marginTop: 4 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  noneBody: { gap: 8, alignItems: 'flex-start' },
   dayRow: { marginTop: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 13 },

@@ -122,6 +122,7 @@ import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 import { leaveAccount } from '../lib/leave-account.js'
+import { missDot } from '../palette.js'
 
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
@@ -731,7 +732,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
         {gentle ? null : (
           <>
-            <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, missDot(colors)]} />
             <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
           </>
         )}
@@ -788,6 +789,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
     // A night a freeze kept: a ring, as in the history legend.
     if (state === 'freeze') return { borderWidth: 1.5, borderColor: colors.freeze }
+    if (state === 'hole') return missDot(colors, cellColor(state))
     return { backgroundColor: cellColor(state) }
   }
 

@@ -322,7 +322,8 @@ export function useWeAnswer(reload, book) {
       feelTap(next === 'nope' ? 'skip' : 'did')
       confirmDone(t('tonight.weSaved'))
     }
-    if (!out.done || card.done) return
+    // Only the answer that finished it cheers; card.done may be stale.
+    if (!out.finished) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
     const paid = await weClaim(card.id, night || undefined)

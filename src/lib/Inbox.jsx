@@ -39,7 +39,10 @@ export function Inbox({ book, now, onKeep }) {
 
   async function answer(row, keep) {
     const { miss: why } = await answerSend(row.id, keep)
-    if (why) return setMiss(why)
+    if (why) {
+      setMiss(why)
+      return why === 'sent.gone' ? load() : undefined
+    }
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     return load()

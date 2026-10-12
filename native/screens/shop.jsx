@@ -1,3 +1,4 @@
+import { holdFor } from '../../src/lib/cheer-pops.js'
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -88,9 +89,8 @@ import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
-import { useIsFocused } from '@react-navigation/native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, openFrameSheet } from './frames.jsx'
-import { openCoinsHow } from '../components/NightSheets.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -804,7 +804,7 @@ function previewBody(type, item, purse) {
     const short = tag.coins - purse.coins
     return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: COINS_PER_NIGHT_CAP })}`
   }
-  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}\n${t('shop.earnGems')}`
+  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
   return base
 }
 
@@ -841,13 +841,24 @@ function CheerPlay({ id, coat, colors, stage = 1 }) {
 }
 
 function CheerSheetPreview({ id, coat, colors }) {
-  // Opening the sheet plays it once; Play runs it again.
+  // The cheer plays on a loop while the sheet is open (owner call), as it
+  // used to; Play still runs it at once.
   useEffect(() => {
-    if (!motionOff()) fireCheer(id, 1, coat, undefined, true)
+    if (motionOff()) return undefined
+    const play = () => fireCheer(id, 1, coat, undefined, true)
+    play()
+    const timer = setInterval(play, holdFor(id, 1) + 260)
+    return () => clearInterval(timer)
   }, [id, coat])
+  // No Play button: the loop is the preview (owner call). With less motion
+  // there is no loop, so the still chip shows instead.
+  if (!motionOff()) return null
   return (
     <View style={styles.cheerSheetPreview}>
-      <CheerPlay id={id} coat={coat} colors={colors} />
+      <View style={styles.cheerStill}>
+        <CheerChip id={id} stage={1} colors={colors} />
+        <Text style={[styles.shopNote, styles.cheerStillText, { color: colors.inkDim }]}>{t('shop.cheerStill')}</Text>
+      </View>
     </View>
   )
 }
@@ -873,9 +884,6 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     title: name,
     body,
     ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
-    ...(short
-      ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish)) }
-      : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -1021,7 +1029,26 @@ function useTileTap(book, onChange, colors, coat, purse) {
   return onTile
 }
 
+// True once the page has finished sliding in (or shortly after, if no slide
+// reports). Heavy rows wait for it, so building them never stutters the slide.
+function useOpened() {
+  const nav = useNavigation()
+  const [opened, setOpened] = useState(false)
+  useEffect(() => {
+    const off = nav.addListener('transitionEnd', (e) => {
+      if (!e?.data?.closing) setOpened(true)
+    })
+    const fallback = setTimeout(() => setOpened(true), 600)
+    return () => {
+      off()
+      clearTimeout(fallback)
+    }
+  }, [nav])
+  return opened
+}
+
 export function ShopScreen({ book, onChange }) {
+  const opened = useOpened()
   const colors = useShopColors(book)
   const prefs = usePrefs()
   const purse = normalizePurse(book)
@@ -1071,6 +1098,8 @@ export function ShopScreen({ book, onChange }) {
         }}
       />
 
+      {opened ? (
+      <Reveal layout={false} style={styles.shopBelow}>
       <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
       {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
@@ -1096,6 +1125,8 @@ export function ShopScreen({ book, onChange }) {
           onPress={() => goHash('/kit')}
         />
       </View>
+      </Reveal>
+      ) : null}
     </BoardShell>
   )
 }
@@ -2284,6 +2315,8 @@ const styles = StyleSheet.create({
   cheerStill: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cheerStillText: { flex: 1 },
   cheerSheetPreview: { alignItems: 'center', paddingVertical: 8 },
+  // Rows that wait for the slide: the page gap does not reach inside the wrapper.
+  shopBelow: { gap: 12 },
   shopName: { fontFamily: fonts.uiSemi, fontSize: 15 },
   shopNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   infoDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -2633,7 +2666,7 @@ export function GiftScreen({ book, onChange, toId }) {
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
     const short = !canAfford(item, purse)
     const need = item.gems
-      ? `${t('shop.needMoreGems', { n: item.gems - purse.gems })}\n${t('shop.earnGems')}`
+      ? t('shop.needMoreGems', { n: item.gems - purse.gems })
       : `${t('shop.needMoreCoins', { n: (item.coins || 0) - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
     publishSheet({
       preview: giftArt(type, item.id, colors, coat, BARE, t('gift.preview')),
@@ -2652,9 +2685,6 @@ export function GiftScreen({ book, onChange, toId }) {
               goHash('/gems')
             },
           }
-        : {}),
-      ...(short && !item.gems
-        ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openPick(type, item)) }
         : {}),
       closeLabel: t('settings.neverMind'),
       colors,

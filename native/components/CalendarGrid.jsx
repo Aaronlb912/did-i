@@ -11,6 +11,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
+import { missDot } from '../palette.js'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -184,7 +185,9 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                       ? { backgroundColor: colors.on }
                       : night.freeze
                         ? { borderWidth: 1.5, borderColor: colors.freeze }
-                        : { backgroundColor: night.miss ? missTone : colors.open },
+                        : night.miss
+                          ? missDot(colors, missTone)
+                          : { backgroundColor: colors.open },
                   ]}
                 />
               )}
@@ -287,6 +290,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                           backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? missTone : colors.open,
                           borderColor: night.isToday ? colors.ink : 'transparent',
                         },
+                        !night.empty && !night.on && night.miss && !night.isToday ? missDot(colors, missTone) : null,
                       ]}
                     />
                   </Pressable>

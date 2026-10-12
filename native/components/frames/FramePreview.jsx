@@ -6,6 +6,7 @@
 import { memo, useEffect, useState } from 'react'
 import { InteractionManager, StyleSheet, View } from 'react-native'
 import { CardFrame } from './CardFrame.jsx'
+import { missDot } from '../../palette.js'
 
 const BASE_W = 220
 const BASE_H = 264
@@ -60,7 +61,7 @@ function MiniCard({ colors, weekLit, dots = true }) {
       <View style={[styles.title, styles.short, { backgroundColor: colors.ink }]} />
       <View style={[styles.dots, !dots && styles.noDots]}>
         {weekLit.map((on, i) => (
-          <View key={i} style={[styles.dot, { backgroundColor: on ? colors.on : colors.miss || colors.line }]} />
+          <View key={i} style={[styles.dot, on ? { backgroundColor: colors.on } : colors.miss ? missDot(colors) : { backgroundColor: colors.line }]} />
         ))}
       </View>
     </View>
