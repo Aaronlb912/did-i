@@ -1391,9 +1391,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   function askPack(pack) {
     publishSheet({
       kicker: pack.title,
-      title: t('pack.sureTitle', { n: pack.items.length }),
+      title: pack.items.length === 1 ? t('pack.sureTitleOne') : t('pack.sureTitle', { n: pack.items.length }),
       body: pack.items.map((item) => item.question).join('\n'),
-      goLabel: t('pack.sureGo'),
+      goLabel: pack.items.length === 1 ? t('pack.sureGoOne') : t('pack.sureGo'),
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
@@ -1401,7 +1401,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         publishSheet(null)
         const added = addPack(book, pack, clock)
         onChange(commitBook(added.book, clock))
-        setPackUndo({ label: t('pack.added', { n: added.ids.length }), ids: added.ids })
+        setPackUndo({ label: added.ids.length === 1 ? t('pack.addedOne') : t('pack.added', { n: added.ids.length }), ids: added.ids })
       },
     })
   }

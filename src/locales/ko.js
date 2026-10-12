@@ -2494,6 +2494,9 @@ export const ko = {
   'pack.bedtime': '잠들기 전',
   'pack.meds': '약',
   'pack.sureTitle': '질문 {n}개를 추가할까요?',
+  'pack.sureTitleOne': '질문 1개를 추가할까요?',
+  'pack.sureGoOne': '추가하기',
+  'pack.addedOne': '질문 1개를 추가했어요',
   'pack.sureGo': '추가하기',
   'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',

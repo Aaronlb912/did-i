@@ -2492,6 +2492,9 @@ export const ja = {
   'pack.bedtime': '寝る前',
   'pack.meds': '薬',
   'pack.sureTitle': '{n} 個の質問を追加しますか？',
+  'pack.sureTitleOne': '質問を1つ追加しますか？',
+  'pack.sureGoOne': '追加する',
+  'pack.addedOne': '質問を1つ追加しました',
   'pack.sureGo': '追加する',
   'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',

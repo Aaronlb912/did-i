@@ -2542,6 +2542,9 @@ export const en = {
   'pack.bedtime': 'Bedtime',
   'pack.meds': 'Meds',
   'pack.sureTitle': 'Add {n} questions?',
+  'pack.sureTitleOne': 'Add 1 question?',
+  'pack.sureGoOne': 'Add it',
+  'pack.addedOne': '1 question added',
   'pack.sureGo': 'Add them',
   'pack.added': '{n} questions added',
   'note.title': 'Notes',

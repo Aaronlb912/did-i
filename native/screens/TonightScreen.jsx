@@ -1231,7 +1231,8 @@ function DoneIn({ children }) {
     if (!reduce) grow.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
   }, [grow, reduce])
   const style = useAnimatedStyle(() => ({
-    opacity: 0.2 + grow.value * 0.8,
+    // Starts mostly visible, so a stalled frame never leaves the card unreadable.
+    opacity: 0.6 + grow.value * 0.4,
     transform: [{ scale: 0.97 + grow.value * 0.03 }],
   }))
   if (reduce) return children

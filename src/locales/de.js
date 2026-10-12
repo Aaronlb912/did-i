@@ -2565,6 +2565,9 @@ export const de = {
   'pack.bedtime': 'Schlafenszeit',
   'pack.meds': 'Medikamente',
   'pack.sureTitle': '{n} Fragen hinzufügen?',
+  'pack.sureTitleOne': '1 Frage hinzufügen?',
+  'pack.sureGoOne': 'Hinzufügen',
+  'pack.addedOne': '1 Frage hinzugefügt',
   'pack.sureGo': 'Hinzufügen',
   'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',

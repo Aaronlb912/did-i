@@ -2481,6 +2481,9 @@ export const zh = {
   'pack.bedtime': '睡前',
   'pack.meds': '吃药',
   'pack.sureTitle': '添加 {n} 个问题？',
+  'pack.sureTitleOne': '添加 1 个问题？',
+  'pack.sureGoOne': '添加',
+  'pack.addedOne': '已添加 1 个问题',
   'pack.sureGo': '添加',
   'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',

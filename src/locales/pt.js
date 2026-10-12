@@ -2547,6 +2547,9 @@ export const pt = {
   'pack.bedtime': 'Hora de dormir',
   'pack.meds': 'Remédios',
   'pack.sureTitle': 'Adicionar {n} perguntas?',
+  'pack.sureTitleOne': 'Adicionar 1 pergunta?',
+  'pack.sureGoOne': 'Adicionar',
+  'pack.addedOne': '1 pergunta adicionada',
   'pack.sureGo': 'Adicionar',
   'pack.added': '{n} perguntas adicionadas',
   'note.title': 'Notas',
