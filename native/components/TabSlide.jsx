@@ -16,9 +16,10 @@ export function TabSlide({ index, children }) {
   const focused = useIsFocused()
   const reduce = useReduceMotion()
   const { width } = useWindowDimensions()
-  // A later tab is only built the first time you open it, already focused, so
-  // it starts off to its side and slides in like every switch after.
-  const late = index > 0 && focused && !reduce
+  // A later tab is only built the first time you open it. Android builds it
+  // already focused; the iPhone tab bar builds it hidden, then focuses it. Either
+  // way it starts off to its side and slides in like every switch after.
+  const late = index > 0 && !reduce
   const x = useSharedValue(late ? width * 0.22 : 0)
   const fade = useSharedValue(late ? 0.35 : 1)
   const was = useRef(late ? false : focused)

@@ -1,3 +1,4 @@
+import { holdFor } from '../../src/lib/cheer-pops.js'
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -803,7 +804,7 @@ function previewBody(type, item, purse) {
     const short = tag.coins - purse.coins
     return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: COINS_PER_NIGHT_CAP })}`
   }
-  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}\n${t('shop.earnGems')}`
+  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
   return base
 }
 
@@ -840,9 +841,14 @@ function CheerPlay({ id, coat, colors, stage = 1 }) {
 }
 
 function CheerSheetPreview({ id, coat, colors }) {
-  // Opening the sheet plays it once; Play runs it again.
+  // The cheer plays on a loop while the sheet is open (owner call), as it
+  // used to; Play still runs it at once.
   useEffect(() => {
-    if (!motionOff()) fireCheer(id, 1, coat, undefined, true)
+    if (motionOff()) return undefined
+    const play = () => fireCheer(id, 1, coat, undefined, true)
+    play()
+    const timer = setInterval(play, holdFor(id, 1) + 260)
+    return () => clearInterval(timer)
   }, [id, coat])
   return (
     <View style={styles.cheerSheetPreview}>
@@ -2629,7 +2635,7 @@ export function GiftScreen({ book, onChange, toId }) {
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
     const short = !canAfford(item, purse)
     const need = item.gems
-      ? `${t('shop.needMoreGems', { n: item.gems - purse.gems })}\n${t('shop.earnGems')}`
+      ? t('shop.needMoreGems', { n: item.gems - purse.gems })
       : `${t('shop.needMoreCoins', { n: (item.coins || 0) - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
     publishSheet({
       preview: giftArt(type, item.id, colors, coat, BARE, t('gift.preview')),
