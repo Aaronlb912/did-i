@@ -684,7 +684,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (!chosen.length) return
     publishSheet({
       title: t('questions.bulkDeleteTitle'),
-      body: t('questions.bulkDeleteBody', { n: chosen.length }),
+      body: chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length }),
       goLabel: t('lamp.delete'),
       danger: true,
       closeLabel: t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep'),

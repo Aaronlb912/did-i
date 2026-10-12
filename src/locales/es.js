@@ -161,7 +161,7 @@ export const es = {
   'settings.accountOffSub': 'Todo está solo en este teléfono.',
   'settings.lookRowSub': 'Tema, idioma, widget',
   'settings.remindersRowSub': 'Horas de aviso, horas de silencio',
-  'settings.nightsRowSub': 'Modo suave, carpetas, calendario',
+  'settings.nightsRowSub': 'Modo suave, carpetas, historial',
   'settings.privacyRowSub': 'Lo que ven los demás, informes de fallos',
   'settings.helpRowSub': 'Cómo funciona Did I, comentarios',
   'settings.accountOnSub': '{email}. Cierra sesión aquí.',
@@ -1974,6 +1974,7 @@ export const es = {
   'questions.pickDone': 'Listo',
   'questions.pickedN': '{n} elegidas',
   'questions.bulkDeleteTitle': '¿Borrar lo que elegiste?',
+  'questions.bulkDeleteBodyOne': '1 elegida. Sus respuestas se van también. Puedes deshacer unos segundos.',
   'questions.bulkDeleteBody':
     '{n} elegidas. Sus respuestas se van también. Puedes deshacer unos segundos.',
   'questions.bulkDeleted': "{n} preguntas borradas",

@@ -795,10 +795,13 @@ test('adding a folder keeps the default for new questions where it was', () => {
   assert.notEqual(putBook(shelf, { ...emptyBoard(), title: 'Gym' }).currentId, 'b1')
 })
 
-test('a folder you just made stays visible until you move away', () => {
-  const shelf = { currentId: 'new', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }, { id: 'new', title: 'Gym', lamps: [], answers: [] }] }
-  assert.equal(parkEmptyTags(shelf).boards.find((item) => item.id === 'new').archived, false)
-  assert.equal(parkEmptyTags({ ...shelf, currentId: 'b1' }).boards.find((item) => item.id === 'new').archived, true)
+test('a folder you just made stays listed even though it is not current', () => {
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }] }
+  const added = parkEmptyTags(addBook(shelf, { ...emptyBoard(), title: 'Gym' }))
+  assert.equal(added.currentId, 'b1')
+  assert.equal(added.boards.filter((item) => !item.archived).length, 2)
+  const stale = { ...shelf, boards: [...shelf.boards, { id: 'old', title: 'Z', lamps: [], answers: [], archived: true }] }
+  assert.equal(parkEmptyTags(stale).boards.find((item) => item.id === 'old').archived, false)
 })
 
 test('So far and Every answer count every folder', () => {

@@ -162,7 +162,7 @@ export const fr = {
   'settings.accountOffSub': 'Tout est seulement sur ce téléphone.',
   'settings.lookRowSub': 'Thème, langue, widget',
   'settings.remindersRowSub': 'Heures de rappel, heures calmes',
-  'settings.nightsRowSub': 'Mode doux, dossiers, calendrier',
+  'settings.nightsRowSub': 'Mode doux, dossiers, historique',
   'settings.privacyRowSub': 'Ce que voient les autres, rapports de plantage',
   'settings.helpRowSub': 'Fonctionnement de Did I, avis',
   'settings.accountOnSub': '{email}. Se déconnecter ici.',
@@ -1978,6 +1978,7 @@ export const fr = {
   'questions.pickDone': 'Terminé',
   'questions.pickedN': '{n} choisies',
   'questions.bulkDeleteTitle': 'Supprimer ce que tu as choisi ?',
+  'questions.bulkDeleteBodyOne': '1 choisie. Ses réponses partent aussi. Tu peux annuler quelques secondes.',
   'questions.bulkDeleteBody':
     '{n} choisies. Leurs réponses partent aussi. Tu peux annuler quelques secondes.',
   'questions.bulkDeleted': "{n} questions supprimées",

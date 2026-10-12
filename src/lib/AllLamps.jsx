@@ -297,7 +297,7 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
             <h2 id="di-bulk-drop" className="di-buy-title">
               {t('questions.bulkDeleteTitle')}
             </h2>
-            <p className="di-detail-meta">{t('questions.bulkDeleteBody', { n: chosen.length })}</p>
+            <p className="di-detail-meta">{chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length })}</p>
             <div className="di-hang-actions">
               <button className="di-did di-did-small" type="button" onClick={() => apply('delete')}>
                 {t('lamp.delete')}

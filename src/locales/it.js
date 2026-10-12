@@ -160,7 +160,7 @@ export const it = {
   'settings.accountOffSub': 'Tutto è solo su questo telefono.',
   'settings.lookRowSub': 'Tema, lingua, widget',
   'settings.remindersRowSub': 'Orari dei promemoria, ore di silenzio',
-  'settings.nightsRowSub': 'Modalità gentile, cartelle, calendario',
+  'settings.nightsRowSub': 'Modalità gentile, cartelle, cronologia',
   'settings.privacyRowSub': 'Cosa vedono gli altri, report di arresto',
   'settings.helpRowSub': 'Come funziona Did I, feedback',
   'settings.accountOnSub': '{email}. Esci da qui.',
@@ -1968,6 +1968,7 @@ export const it = {
   'questions.pickDone': 'Fatto',
   'questions.pickedN': '{n} scelte',
   'questions.bulkDeleteTitle': 'Eliminare quello che hai scelto?',
+  'questions.bulkDeleteBodyOne': '1 scelta. Anche le sue risposte se ne vanno. Puoi annullare per qualche secondo.',
   'questions.bulkDeleteBody':
     '{n} scelte. Anche le risposte se ne vanno. Puoi annullare per qualche secondo.',
   'questions.bulkDeleted': "{n} domande eliminate",

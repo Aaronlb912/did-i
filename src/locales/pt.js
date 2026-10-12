@@ -160,7 +160,7 @@ export const pt = {
   'settings.accountOffSub': 'Tudo está só neste telefone.',
   'settings.lookRowSub': 'Tema, idioma, widget',
   'settings.remindersRowSub': 'Horários de lembrete, horas de silêncio',
-  'settings.nightsRowSub': 'Modo suave, pastas, calendário',
+  'settings.nightsRowSub': 'Modo suave, pastas, histórico',
   'settings.privacyRowSub': 'O que os outros veem, relatórios de falhas',
   'settings.helpRowSub': 'Como o Did I funciona, feedback',
   'settings.accountOnSub': '{email}. Saia da conta aqui.',
@@ -1970,6 +1970,7 @@ export const pt = {
   'questions.pickDone': 'Feito',
   'questions.pickedN': '{n} escolhidas',
   'questions.bulkDeleteTitle': 'Apagar o que escolheste?',
+  'questions.bulkDeleteBodyOne': '1 escolhida. As respostas vão também. Podes desfazer durante uns segundos.',
   'questions.bulkDeleteBody':
     '{n} escolhidas. As respostas vão também. Podes desfazer durante uns segundos.',
   'questions.bulkDeleted': "{n} perguntas apagadas",

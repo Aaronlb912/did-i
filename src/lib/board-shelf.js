@@ -62,13 +62,10 @@ export function enterLand(home = '/') {
   return hallEmpty(readShelf()) ? '/first' : home
 }
 
-// Empty folders hide, except the one you're on: a folder you just made
-// stays until you add to it or move away.
+// Empty folders stay listed. Adding a folder no longer makes it current, so
+// hiding empty non-current ones hid every folder you just made.
 export function parkEmptyTags(shelf) {
-  const boards = (shelf.boards || []).map((book) => ({
-    ...book,
-    archived: liveLampCount(book) === 0 && book.id !== shelf.currentId,
-  }))
+  const boards = (shelf.boards || []).map((book) => ({ ...book, archived: false }))
   const live = boards.filter((book) => !book.archived)
   if (!boards.length) return shelf
   if (!live.length) {

@@ -162,7 +162,7 @@ export const de = {
   'settings.accountOffSub': 'Alles ist nur auf diesem Handy.',
   'settings.lookRowSub': 'Design, Sprache, Widget',
   'settings.remindersRowSub': 'Erinnerungszeiten, Ruhezeiten',
-  'settings.nightsRowSub': 'Sanfter Modus, Ordner, Kalender',
+  'settings.nightsRowSub': 'Sanfter Modus, Ordner, Verlauf',
   'settings.privacyRowSub': 'Was andere sehen, Absturzberichte',
   'settings.helpRowSub': 'So funktioniert Did I, Feedback',
   'settings.accountOnSub': '{email}. Hier abmelden.',
@@ -1984,6 +1984,7 @@ export const de = {
   'questions.pickDone': 'Fertig',
   'questions.pickedN': '{n} ausgewählt',
   'questions.bulkDeleteTitle': 'Ausgewähltes löschen?',
+  'questions.bulkDeleteBodyOne': '1 ausgewählt. Seine Antworten gehen mit. Ein paar Sekunden lang kannst du es rückgängig machen.',
   'questions.bulkDeleteBody':
     '{n} ausgewählt. Ihre Antworten gehen mit. Ein paar Sekunden lang kannst du es rückgängig machen.',
   'questions.bulkDeleted': "{n} Fragen gelöscht",

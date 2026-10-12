@@ -1175,7 +1175,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
-      {boards?.length > 1 && book ? (
+      {live.length > 1 && book ? (
         <KeyButton
           colors={colors}
           label={t('boards.removeNamed', { title: book.title })}
