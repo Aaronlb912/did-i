@@ -9,6 +9,7 @@ import * as Reanimated from 'react-native-reanimated'
 import { rrLength, rrPath, rrPointAt } from './geometry.js'
 import { Moving, Particle, SvgLayer, svgAll } from './runtime.jsx'
 import { BuddyArt } from '../BuddyArt.jsx'
+import { FREE_BUDDY } from '../../../src/lib/purse.js'
 
 const r2 = (n) => Math.round(n * 100) / 100
 
@@ -574,6 +575,10 @@ export function CountdownOver({ f }) {
 const CREAM = '#efe3c4'
 const INK = '#1d255a'
 const HEAD_K = 0.86
+// The canopy's top band, px outside the card. Cards sit about 8 px below what
+// is above them on Home, so the band stays inside that gap.
+const V_OUT = 8
+const V_IN = 2
 
 /** A point on the top piece of the ring o px out: from 8 px below the top-left corner, round the top, to 8 px below the top-right one. */
 function topAt(f, o, u) {
@@ -620,37 +625,37 @@ function bedLayout(f) {
   const outer = []
   const inner = []
   for (let i = 0; i <= N; i++) {
-    outer.push(topAt(f, 19, i / N))
-    inner.push(topAt(f, 6, i / N))
+    outer.push(topAt(f, V_OUT, i / N))
+    inner.push(topAt(f, V_IN, i / N))
   }
   const valance = `M${outer.map((p) => `${r2(p.x)} ${r2(p.y)}`).join('L')}L${inner
     .slice()
     .reverse()
     .map((p) => `${r2(p.x)} ${r2(p.y)}`)
     .join('L')}Z`
-  const piping = `M${outer.map((p) => `${r2(p.x - p.nx * 1.4)} ${r2(p.y - p.ny * 1.4)}`).join('L')}`
+  const piping = `M${outer.map((p) => `${r2(p.x - p.nx * 1)} ${r2(p.y - p.ny * 1)}`).join('L')}`
   const scallops = []
   for (let i = 0; i < SC; i++) {
-    const p = topAt(f, 5.4, (i + 0.5) / SC)
-    scallops.push({ x: r2(p.x), y: r2(p.y), ix: r2(p.x + p.nx * 0.5), iy: r2(p.y + p.ny * 0.5) })
+    const p = topAt(f, V_IN - 0.4, (i + 0.5) / SC)
+    scallops.push({ x: r2(p.x), y: r2(p.y), ix: r2(p.x + p.nx * 0.4), iy: r2(p.y + p.ny * 0.4) })
   }
   let pleatDark = ''
   let pleatLight = ''
   for (let i = 1; i < SC; i++) {
-    const a = topAt(f, 7, i / SC)
-    const b = topAt(f, 17.4, i / SC)
+    const a = topAt(f, V_IN + 0.8, i / SC)
+    const b = topAt(f, V_OUT - 1.2, i / SC)
     pleatDark += `M${r2(a.x)} ${r2(a.y)}L${r2(b.x)} ${r2(b.y)}`
-    const c = topAt(f, 7, (i + 0.18) / SC)
-    const d = topAt(f, 17.4, (i + 0.18) / SC)
+    const c = topAt(f, V_IN + 0.8, (i + 0.18) / SC)
+    const d = topAt(f, V_OUT - 1.2, (i + 0.18) / SC)
     pleatLight += `M${r2(c.x)} ${r2(c.y)}L${r2(d.x)} ${r2(d.y)}`
   }
   let vStars = ''
   for (let i = 0; i < SC; i += 2) {
-    const p = topAt(f, 12.4, (i + 1) / SC)
-    vStars += sparkD(p.x, p.y, 1.8)
+    const p = topAt(f, (V_IN + V_OUT) / 2, (i + 1) / SC)
+    vStars += sparkD(p.x, p.y, 1.3)
   }
-  const vL = topAt(f, 12.5, 0)
-  const vR = topAt(f, 12.5, 1)
+  const vL = topAt(f, (V_IN + V_OUT) / 2, 0)
+  const vR = topAt(f, (V_IN + V_OUT) / 2, 1)
   const tY = R + Math.round(h * 0.3)
   const curtain = (m) => {
     const X = (x) => r2(m ? w - x : x)
@@ -747,7 +752,7 @@ export function BedtimeOver({ f }) {
   const r = asleep ? 1 : total ? ans / total : 0
   const lift = asleep ? 1 : r * 0.85
   const evening = Number(f.p.evening) || 0
-  const buddy = f.p.buddy || 'cat'
+  const buddy = f.p.buddy || FREE_BUDDY
 
   // Blinks while awake, heavy lids once answers come in, shut when asleep.
   const base = asleep ? 1 : r > 0 ? Math.min(0.6, 0.4 + 0.15 * r + 0.1 * evening) : 0
@@ -818,7 +823,7 @@ export function BedtimeOver({ f }) {
             <S.Stop offset="0" stopColor="#6170c4" />
             <S.Stop offset="1" stopColor="#3b4690" />
           </S.LinearGradient>
-          <S.LinearGradient id="btVl" x1="0" y1="-20" x2="0" y2={R + 10} gradientUnits="userSpaceOnUse">
+          <S.LinearGradient id="btVl" x1="0" y1={-V_OUT} x2="0" y2={R + 4} gradientUnits="userSpaceOnUse">
             <S.Stop offset="0" stopColor="#6d7bd0" />
             <S.Stop offset="1" stopColor="#36418a" />
           </S.LinearGradient>
@@ -859,10 +864,10 @@ export function BedtimeOver({ f }) {
         ))}
         <S.Path d={lay.valance} fill="#000000" fillOpacity={L ? 0.1 : 0.3} transform="translate(0 1.8)" />
         {lay.scallops.map((p, i) => (
-          <S.Circle key={`c${i}`} cx={p.x} cy={p.y} r={3.7} fill={CREAM} />
+          <S.Circle key={`c${i}`} cx={p.x} cy={p.y} r={2.7} fill={CREAM} />
         ))}
         {lay.scallops.map((p, i) => (
-          <S.Circle key={`f${i}`} cx={p.ix} cy={p.iy} r={3.3} fill="url(#btFb)" />
+          <S.Circle key={`f${i}`} cx={p.ix} cy={p.iy} r={2.4} fill="url(#btFb)" />
         ))}
         <S.Path d={lay.valance} fill="url(#btVl)" />
         <S.Path d={lay.pleatDark} stroke={INK} strokeOpacity={0.35} strokeWidth={1.1} />
