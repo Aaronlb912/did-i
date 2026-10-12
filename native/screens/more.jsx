@@ -1037,6 +1037,10 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setAddMiss('')
   }
   const live = (boards || []).filter((item) => !item.archived)
+  // Empty folders parked once the list is crowded: kept behind one row, so
+  // they can still be opened (which brings one back) or removed.
+  const parked = (boards || []).filter((item) => item.archived)
+  const [showParked, setShowParked] = useState(false)
 
   useEffect(() => {
     setTitleDraft(book?.title || '')
@@ -1122,6 +1126,33 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         )
       })}
       </SetCard>
+      {parked.length ? (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="folder"
+            label={t('hang.tagLater')}
+            sub={showParked ? t('hang.tagLaterHint') : undefined}
+            value={showParked ? '▾' : `${parked.length} ▸`}
+            plain
+            last={!showParked}
+            onPress={() => setShowParked((open) => !open)}
+          />
+          {showParked
+            ? parked.map((item, at) => (
+                <SetRow
+                  key={item.id}
+                  colors={colors}
+                  icon="folder"
+                  label={item.title}
+                  chevron
+                  last={at === parked.length - 1}
+                  onPress={() => onSelect?.(item.id)}
+                />
+              ))
+            : null}
+        </SetCard>
+      ) : null}
       <View style={styles.dataGap} />
       {adding ? (
         <View ref={addRef} collapsable={false} style={styles.tagName}>
