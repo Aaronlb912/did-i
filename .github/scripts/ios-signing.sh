@@ -43,6 +43,7 @@ install_profile_b64() {
   local env_prefix="$2"
   local tmp="${RUNNER_TEMP}/profile.mobileprovision"
   local decoded="${RUNNER_TEMP}/profile-decoded.plist"
+  echo "Installing profile for ${env_prefix} (${#b64} chars)"
   echo -n "${b64}" | base64 --decode > "${tmp}"
   security cms -D -i "${tmp}" > "${decoded}"
   local uuid name app_id bundle
