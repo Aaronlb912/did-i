@@ -24,7 +24,6 @@ import {
   wornFrame,
 } from '../../src/lib/frames.js'
 import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { openCoinsHow } from '../components/NightSheets.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
@@ -327,7 +326,6 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     body: shortCoins
       ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
       : `${priceLine}${seasonLine}`,
-    ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => reopen(book)) } : {}),
     // Gem frames point at Get gems, like coin frames point at How coins work.
     // When short, the main button already goes there.
     ...(!owned && frame.gems && purse.gems >= frame.gems

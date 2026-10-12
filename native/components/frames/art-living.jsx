@@ -447,86 +447,95 @@ export function GardenOver({ f }) {
 
 // Night Sky Clock: the border is the evening, sunset at the hills to deep
 // night; the sun or moon sits at the hour and a bell at your reminder.
-function skyColor(t) {
-  const c = [
-    [255, 179, 71],
-    [255, 107, 138],
-    [122, 79, 179],
-    [34, 48, 107],
-    [11, 18, 54],
-  ]
-  const k = Math.min(0.999, Math.max(0, t)) * 4
+// Night Sky Clock: one sky round the card that darkens as the evening goes,
+// hour ticks like a dial, the sun easing into the moon at the hour, and a
+// bell at your reminder. No line between day and night anywhere on the band.
+const DUSK_TOP = [[70, 62, 128], [34, 38, 88], [14, 18, 48], [7, 10, 30]]
+const DUSK_BOT = [[160, 98, 146], [70, 56, 118], [24, 30, 74], [11, 15, 42]]
+function duskMix(stops, t) {
+  const k = Math.min(0.999, Math.max(0, t)) * (stops.length - 1)
   const i = Math.floor(k)
   const q = k - i
-  const a = c[i]
-  const b = c[i + 1]
-  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * q)).join(',')})`
+  return `rgb(${stops[i].map((v, j) => Math.round(v + (stops[i + 1][j] - v) * q)).join(',')})`
 }
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
 export function DuskOver({ f }) {
   const S = svgAll()
-  const o = 11
-  const T = Math.min(1, Math.max(0, Number(f.p.evening) || 0))
-  const start = 0
-  const at = (t) => {
-    const W = f.w + 2 * o
-    const H = f.h + 2 * o
-    return rrPointAt(-o, -o, W, H, f.R + o, (((t + start) % 1) * rrLength(W, H, f.R + o)))
+  const o = 18
+  const mid = o / 2
+  const T = clamp01(Number(f.p.evening) || 0)
+  // A fraction round a ring d px out, clockwise from top center.
+  const at = (d, t) => {
+    const W = f.w + 2 * d
+    const H = f.h + 2 * d
+    const r = Math.max(0, f.R + d)
+    const L = rrLength(W, H, r)
+    const top = (H - 2 * r) + (Math.PI * r) / 2 + (W - 2 * r) / 2
+    return rrPointAt(-d, -d, W, H, r, ((((t % 1) + 1) % 1) * L + top) % L)
   }
-  // The band is drawn as joined pieces, each a quad between the inner and
-  // outer edge, so the colors meet without seams or ragged corners.
-  const N = 120
-  const quad = (i) => {
-    const a = at(i / N)
-    const b = at(Math.min(0.9999, (i + 1.15) / N))
-    const e = 9
-    return `M${a.x - a.nx * e} ${a.y - a.ny * e}L${a.x + a.nx * e} ${a.y + a.ny * e}L${b.x + b.nx * e} ${b.y + b.ny * e}L${b.x - b.nx * e} ${b.y - b.ny * e}Z`
-  }
-  const segs = Array.from({ length: N }, (_, i) => [quad(i), skyColor(i / N)])
-  const sun = at(T)
-  const bell = at(Math.min(1, Math.max(0, Number(f.p.remind) || 0.57)))
-  // Hills over the bottom left corner, where night meets sunset.
-  const hill = { x: -o + 10, y: f.h + o - 4 }
+  const top = duskMix(DUSK_TOP, T)
+  const bot = duskMix(DUSK_BOT, T)
+  // A soft glow trailing the moon, fading to nothing, instead of a filled arc.
+  const glow = Array.from({ length: 40 }, (_, i) => {
+    const k = 1 - i / 40
+    return { p: at(mid, T - (i / 40) * Math.min(T, 0.45)), a: k * k * 0.06 }
+  })
+  const ticks = Array.from({ length: 12 }, (_, h) => ({ a: at(o, h / 12), b: at(o - 4, h / 12), big: h % 3 === 0 }))
+  // Stars come in one at a time as the night goes on, a little sooner behind the moon.
   const stars = useMemo(() => {
-    const r = seeded(4)
-    return Array.from({ length: 22 }, () => r()).filter((t) => t < T - 0.04).map((t) => {
-      const p = at(t)
-      return { x: p.x + (r() - 0.5) * 12, y: p.y + (r() - 0.5) * 12, r: 0.6 + r() * 0.8, sp: 1 + r() * 2, ph: r() * 6 }
-    })
+    const r = seeded(51)
+    const out = []
+    for (let i = 0; i < 46; i++) {
+      const t = r()
+      const d = 3 + r() * 12
+      const size = 0.5 + r() * 0.9
+      const gate = r()
+      const behind = (((T - t) % 1) + 1) % 1
+      const show = clamp01((T * 1.4 - gate * 0.9) * 3 + (behind < T ? 0.4 : 0))
+      if (show <= 0.05) continue
+      const p = at(d, t)
+      out.push({ x: p.x, y: p.y, r: size, sp: 1 + r() * 2, ph: r() * 6, col: `rgba(255,255,255,${show.toFixed(2)})` })
+    }
+    return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [T, f.w, f.h])
+  const now = at(mid, T)
+  const bell = at(mid, clamp01(Number(f.p.remind) || 0.57))
+  // Before dark the marker is a low sun that softens into the moon.
+  const sun = clamp01((0.4 - T) / 0.2)
   return (
     <>
       <Layer f={f}>
-        {segs.map(([d, c], i) => (
-          <S.Path key={i} d={d} fill={c} />
+        <S.Defs>
+          <S.LinearGradient id="duskSky" x1="0" y1="0" x2="0" y2="1">
+            <S.Stop offset="0" stopColor={top} />
+            <S.Stop offset="1" stopColor={bot} />
+          </S.LinearGradient>
+        </S.Defs>
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#duskSky)" />
+        {glow.map((g, i) => (
+          <S.Circle key={i} cx={g.p.x} cy={g.p.y} r={o * 0.7} fill="#b9a8ff" opacity={g.a} />
         ))}
-        <S.Path d={ring(f, o + 9)} fill="none" stroke="#ffffff" strokeOpacity={0.18} strokeWidth={1} />
-        <S.Path d={ring(f, o - 9)} fill="none" stroke="#000000" strokeOpacity={0.25} strokeWidth={1} />
+        {ticks.map((k, i) => (
+          <S.Line key={i} x1={k.a.x} y1={k.a.y} x2={k.b.x} y2={k.b.y} stroke="#ffffff" strokeOpacity={k.big ? 0.55 : 0.22} strokeWidth={k.big ? 1.5 : 1} strokeLinecap="round" />
+        ))}
+        <S.Path d={ring(f, o)} fill="none" stroke="#ffffff" strokeOpacity={0.14} strokeWidth={1} />
+        <S.Path d={ring(f, 1.5)} fill="none" stroke="#e8c877" strokeOpacity={0.7} strokeWidth={1} />
       </Layer>
       <Star f={f} items={stars} />
       <Layer f={f}>
-        {T < 0.55 ? (
-          <S.G>
-            <S.Circle cx={sun.x} cy={sun.y} r={14} fill="#ffd166" opacity={0.25} />
-            <S.Circle cx={sun.x} cy={sun.y} r={8} fill="#ffd166" />
-          </S.G>
-        ) : (
-          <S.G>
-            <S.Circle cx={sun.x} cy={sun.y} r={7.5} fill="#fff4cf" />
-            <S.Circle cx={sun.x + 4} cy={sun.y - 3} r={6.5} fill={skyColor(T)} />
-          </S.G>
-        )}
-        <S.Path
-          d={`M${hill.x - 30} ${f.h + 20} Q${hill.x - 18} ${hill.y - 10} ${hill.x - 6} ${hill.y} Q${hill.x + 4} ${hill.y - 14} ${hill.x + 16} ${hill.y - 2} Q${hill.x + 26} ${hill.y - 8} ${hill.x + 36} ${f.h + 20}Z`}
-          fill="#141a2e"
-          stroke="#2a3352"
-          strokeWidth={1}
-        />
-        <S.Rect x={hill.x + 4} y={hill.y - 6} width={6} height={5} fill="#ffd166" />
-        <S.G transform={`translate(${bell.x} ${bell.y})`}>
+        <S.Circle cx={bell.x} cy={bell.y} r={8} fill={top} stroke="#f2c45a" strokeOpacity={0.8} strokeWidth={1} />
+        <S.G transform={`translate(${bell.x} ${bell.y + 0.5}) scale(0.75)`}>
           <S.Path d="M-5 3 Q-5 -6 0 -6 Q5 -6 5 3 Z" fill="#f2c45a" stroke="#7a5a12" strokeWidth={0.8} />
           <S.Circle cy={4.5} r={1.6} fill="#f2c45a" />
         </S.G>
+        <S.Circle cx={now.x} cy={now.y} r={13} fill="#ffd9a0" opacity={0.18 * sun + 0.1} />
+        <S.G opacity={1 - sun}>
+          <S.Circle cx={now.x} cy={now.y} r={11} fill="#fff4cf" opacity={0.12} />
+          <S.Circle cx={now.x} cy={now.y} r={6} fill="#fff4cf" />
+          <S.Circle cx={now.x + 3.3} cy={now.y - 2.4} r={5.2} fill={top} />
+        </S.G>
+        <S.Circle cx={now.x} cy={now.y} r={6.5} fill="#ffd166" opacity={sun} />
       </Layer>
     </>
   )

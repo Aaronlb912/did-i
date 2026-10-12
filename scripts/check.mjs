@@ -220,6 +220,14 @@ test('tonight people cards: open family rows, then Did you asks due tonight, min
   })
   assert.deepEqual(items.map((item) => item.key), ['fam:f1:a:2026-10-08', 'ask:1'])
   assert.deepEqual(items.map((item) => item.kind), ['family', 'ask'])
+  // A sender a timezone ahead stamps tomorrow: a fresh one still shows, an old one waits.
+  const now = Date.parse('2026-10-08T22:00:00Z')
+  const ahead = peopleTonightItems({
+    asks: [ask('6', { due_on: '2026-10-09', made_at: '2026-10-08T21:00:00Z' }), ask('7', { due_on: '2026-10-09', made_at: '2026-10-06T21:00:00Z' }), ask('8', { due_on: '2026-10-10', made_at: '2026-10-08T21:00:00Z' })],
+    night: '2026-10-08',
+    now,
+  })
+  assert.deepEqual(ahead.map((item) => item.key), ['ask:6'])
   const left = peopleTonightItems({ familyRows: [fam('a')], asks: [ask('1')], night: '2026-10-08', gone: ['ask:1'] })
   assert.deepEqual(left.map((item) => item.key), ['fam:f1:a:2026-10-08'])
 })
@@ -5952,7 +5960,7 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   assert.ok(!lines.includes(t('why.missed')), 'no streak broke line')
   assert.ok(lines.some((line) => line.includes('Water')), 'still names what was left')
   writePrefs({ gentle: false })
-  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle \? colors\.miss/)
+  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle\s*\?\s*missDot\(colors\)/)
   assert.match(readSrc('native/components/WeekStrip.jsx'), /night\.miss && !gentle \? colors\.miss/)
   assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
   const month = readSrc('native/components/LampMonth.jsx')

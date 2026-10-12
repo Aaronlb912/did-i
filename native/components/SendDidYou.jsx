@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, tMiss } from "../../src/lib/i18n.js";
-import { listFriends, personName, sendDidI } from "../../src/lib/people.js";
+import { listFriends, personName, sendDidI, sendMiss } from "../../src/lib/people.js";
 import { repeatFrom, repeatLabel, senderLastDid } from "../../src/lib/send-repeat.js";
 import { HangCard } from "./HangCard.jsx";
 import { PickSheet } from "./PickSheet.jsx";
@@ -55,6 +55,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   const [note, setNote] = useState("");
   const [miss, setMiss] = useState("");
   const [busy, setBusy] = useState(false);
+  // State lags a fast double tap; this does not, so one tap sends once.
+  const inFlight = useRef(false);
   const [said, setSaid] = useState("");
   const [cadence, setCadence] = useState("once");
   const [days, setDays] = useState([]);
@@ -75,7 +77,10 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       setMiss(t("we.missDays"));
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
+    // A throw (offline) must not leave the button stuck busy.
     const { miss: why } = await sendDidI(
       person.user_id,
       question,
@@ -83,7 +88,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       undefined,
       repeatFrom(cadence, days, everyDays),
       cadence === "every" ? senderLastDid(book, question, boardDate(new Date())) : "",
-    );
+    ).catch(() => ({ miss: "people.reach" }));
+    inFlight.current = false;
     setBusy(false);
     if (why === "already") return setMiss(t("people.sendAlready"));
     if (why) return setMiss(tMiss(why));
@@ -98,16 +104,24 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       setMiss(t("people.sendBlank"));
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setMiss("");
     setBusy(true);
-    const { code, miss: why } = await makeDidYouLink(question);
+    const { code, miss: why } = await makeDidYouLink(question).catch(() => ({ miss: "people.reach" }));
     setBusy(false);
-    if (why === "linkCap") return setMiss(t("didYouLink.cap"));
-    if (why || !code) return setMiss(tMiss(why || "people.reach"));
+    if (why || !code) {
+      inFlight.current = false;
+      if (why === "linkCap") return setMiss(t("didYouLink.cap"));
+      // A key from makeDidYouLink (sign in first) shows as is; raw server text is mapped.
+      return setMiss(tMiss(String(why).includes(".") ? why : sendMiss(why)));
+    }
     const how = await passAlong(
       sharedDidYouLine(question, code, t('people.sendWhat')),
       t("didYouLink.share"),
-    );
+    ).finally(() => {
+      inFlight.current = false;
+    });
     if (how === "copied") setSaid(t("didYouLink.copied"));
     else if (how === "shared") confirmDone(t("confirm.shared"));
   }

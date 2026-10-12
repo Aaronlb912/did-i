@@ -18,6 +18,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { svgParts } from '../lib/svg-parts.js'
 import { RollNumber } from './RollNumber.jsx'
 import { fonts } from '../theme.js'
+import { missDot } from '../palette.js'
 
 // The night-cleared moment, about 1.2 s: the last card flies, the cheer
 // bursts from it and the meter fills to the end and glows (0 ms), the done
@@ -160,7 +161,11 @@ export function NightWeek({ nights, colors, onNight }) {
                 // empty on the light card too, not as a missing dot.
                 night.empty
                   ? { borderWidth: 1.5, borderColor: colors.line }
-                  : { backgroundColor: night.on ? colors.on : night.miss && !gentle ? colors.miss : colors.open },
+                  : night.on
+                    ? { backgroundColor: colors.on }
+                    : night.miss && !gentle
+                      ? missDot(colors)
+                      : { backgroundColor: colors.open },
               ]}
             />
           </View>

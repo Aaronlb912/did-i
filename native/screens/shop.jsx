@@ -90,7 +90,6 @@ import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
 import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, openFrameSheet } from './frames.jsx'
-import { openCoinsHow } from '../components/NightSheets.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -873,9 +872,6 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     title: name,
     body,
     ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
-    ...(short
-      ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish)) }
-      : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -2652,9 +2648,6 @@ export function GiftScreen({ book, onChange, toId }) {
               goHash('/gems')
             },
           }
-        : {}),
-      ...(short && !item.gems
-        ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => openPick(type, item)) }
         : {}),
       closeLabel: t('settings.neverMind'),
       colors,
