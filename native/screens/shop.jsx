@@ -850,9 +850,15 @@ function CheerSheetPreview({ id, coat, colors }) {
     const timer = setInterval(play, holdFor(id, 1) + 260)
     return () => clearInterval(timer)
   }, [id, coat])
+  // No Play button: the loop is the preview (owner call). With less motion
+  // there is no loop, so the still chip shows instead.
+  if (!motionOff()) return null
   return (
     <View style={styles.cheerSheetPreview}>
-      <CheerPlay id={id} coat={coat} colors={colors} />
+      <View style={styles.cheerStill}>
+        <CheerChip id={id} stage={1} colors={colors} />
+        <Text style={[styles.shopNote, styles.cheerStillText, { color: colors.inkDim }]}>{t('shop.cheerStill')}</Text>
+      </View>
     </View>
   )
 }
