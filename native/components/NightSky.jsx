@@ -47,7 +47,7 @@ export function NightSky({ colors }) {
           {STARS.map((star, index) => (
             <Star key={index} star={star} index={index} tick={tick} box={box} color={colors.on} />
           ))}
-          <Moon tick={tick} width={box.width} colors={colors} />
+          <Moon tick={tick} width={box.width} height={box.height} colors={colors} />
         </>
       ) : null}
     </View>
@@ -71,7 +71,7 @@ function Star({ star, index, tick, box, color }) {
   )
 }
 
-function Moon({ tick, width, colors }) {
+function Moon({ tick, width, height, colors }) {
   const parts = svgParts()
   // A lit moon is pale: soft ink on a dark sky, the card white on a light one.
   const light = useTheme() === 'light'
@@ -79,7 +79,8 @@ function Moon({ tick, width, colors }) {
   const path = useMemo(() => moonPath(moonPhase(new Date()), MOON_R), [])
   const moving = useAnimatedStyle(() => {
     const at = moonAt(tick.value, width, MOON_R * 2)
-    return { transform: [{ translateX: at.x }, { translateY: 10 + at.bob }] }
+    // Low in the sky, under the card: it never rises over the card's top edge (owner call).
+    return { transform: [{ translateX: at.x }, { translateY: Math.max(0, height - MOON_R * 2 - 10) + at.bob }] }
   })
   if (!parts) return null
   const { Svg, Circle, Path } = parts
