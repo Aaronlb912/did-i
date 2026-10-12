@@ -7,6 +7,7 @@ import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
+import { MenuIcon } from './MenuIcon.jsx'
 import { SetSwitch } from './SetBits.jsx'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
@@ -340,10 +341,16 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
     })
 
   if (quiet) {
+    // Just the pen: the done card stays light. Full 44pt tap target, named for screen readers.
     return (
-      <View style={styles.keys}>
-        <KeyButton colors={colors} label={`✎ ${label}`} onPress={openSheet} />
-      </View>
+      <Pressable
+        onPress={openSheet}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.pen, pressFx(pressed)]}
+      >
+        <MenuIcon name="pen" color={colors.inkSoft} size={20} stroke />
+      </Pressable>
     )
   }
   const note = answered.length === 1 ? answered[0].answer.note : ''
@@ -402,6 +409,7 @@ const styles = StyleSheet.create({
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quiet: { fontSize: 14 },
+  pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },
   seeAll: { alignSelf: 'flex-start', marginTop: 8 },
 })
