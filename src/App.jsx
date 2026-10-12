@@ -9,6 +9,7 @@ import {
   mergeSameTitles,
   parkEmptyTags,
   nextBoardTitle,
+  addBook,
   putBook,
   readShelf,
   selectBook,
@@ -303,7 +304,7 @@ export default function App() {
 
   function addBoard() {
     persist(
-      putBook(shelf, {
+      addBook(shelf, {
         ...emptyBoard(),
         title: nextBoardTitle(shelf.boards),
         keeperName: live.keeperName,

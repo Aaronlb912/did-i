@@ -8,6 +8,7 @@ import {
   mergeSameTitles,
   nextBoardTitle,
   parkEmptyTags,
+  addBook,
   putBook,
   readShelf,
   selectBook,
@@ -226,7 +227,7 @@ export function useAppShelf() {
   const switchBoard = useCallback((id) => persist(selectBook(shelf, id)), [persist, shelf])
   const addBoard = useCallback((name) => {
     persist(
-      putBook(shelf, {
+      addBook(shelf, {
         ...emptyBoard(),
         title: String(name || '').trim() || nextBoardTitle(shelf.boards),
         keeperName: live.keeperName,

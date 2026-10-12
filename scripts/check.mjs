@@ -91,6 +91,7 @@ import {
   mergeSameTitles,
   normalizeShelf,
   parkEmptyTags,
+  addBook,
   putBook,
   readShelf,
   writeShelf,
@@ -783,6 +784,15 @@ test('moving a question to a brand-new folder keeps coins', () => {
   const saved = spreadPurseFrom(shelf, current)
   assert.ok(saved.boards.every((item) => item.coins === 5), 'coins stay 5 on every folder')
   assert.ok(saved.boards.every((item) => item.gems === 2), 'gems too')
+})
+
+test('adding a folder keeps the default for new questions where it was', () => {
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }] }
+  const added = addBook(shelf, { ...emptyBoard(), title: 'Gym' })
+  assert.equal(added.boards.length, 2)
+  assert.equal(added.currentId, 'b1')
+  // putBook still switches, for the paths that move a question into a new folder.
+  assert.notEqual(putBook(shelf, { ...emptyBoard(), title: 'Gym' }).currentId, 'b1')
 })
 
 test('a folder you just made stays visible until you move away', () => {

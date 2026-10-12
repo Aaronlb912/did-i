@@ -204,6 +204,13 @@ export function mergeSameTitles(shelf) {
   return { ...shelf, currentId, boards }
 }
 
+// Adding a folder keeps the default for new questions where it was (owner call).
+export function addBook(shelf, book) {
+  const next = putBook(shelf, book)
+  const keep = next.boards.some((item) => item.id === shelf.currentId)
+  return keep ? { ...next, currentId: shelf.currentId } : next
+}
+
 export function putBook(shelf, book) {
   const next = normalizeBook(book)
   if (shelf.boards.some((item) => item.id === next.id)) {
