@@ -804,6 +804,17 @@ test('a folder you just made stays listed even though it is not current', () => 
   assert.equal(parkEmptyTags(stale).boards.find((item) => item.id === 'old').archived, false)
 })
 
+test('empty folders step aside only when the list is crowded', () => {
+  const full = (id) => ({ id, title: id, lamps: [lamp(`q-${id}`)], answers: [] })
+  const empty = (id) => ({ id, title: id, lamps: [], answers: [] })
+  const few = { currentId: 'b1', boards: [full('b1'), empty('e1'), empty('e2')] }
+  assert.equal(parkEmptyTags(few).boards.filter((item) => item.archived).length, 0)
+  const many = { currentId: 'b1', boards: [full('b1'), full('b2'), full('b3'), empty('e1'), empty('e2'), empty('e3'), empty('new')] }
+  const parked = parkEmptyTags(many)
+  assert.deepEqual(parked.boards.filter((item) => item.archived).map((item) => item.id), ['e1', 'e2', 'e3'])
+  assert.equal(parked.boards.find((item) => item.id === 'new').archived, false)
+})
+
 test('So far and Every answer count every folder', () => {
   const boards = [
     { id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [{ id: 'x', lampId: 'a', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00' }] },

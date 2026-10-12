@@ -62,10 +62,20 @@ export function enterLand(home = '/') {
   return hallEmpty(readShelf()) ? '/first' : home
 }
 
-// Empty folders stay listed. Adding a folder no longer makes it current, so
-// hiding empty non-current ones hid every folder you just made.
+// Past this many folders the list is crowded, and empty ones step aside.
+export const CROWDED_FOLDERS = 6
+
+// Empty folders stay listed until the list gets crowded. Then empty ones go,
+// except the current folder and the newest one (a folder you just made).
 export function parkEmptyTags(shelf) {
-  const boards = (shelf.boards || []).map((book) => ({ ...book, archived: false }))
+  const all = shelf.boards || []
+  const crowded = all.length > CROWDED_FOLDERS
+  const newest = all[all.length - 1]?.id
+  const empty = (book) => !(book.lamps || []).some((lamp) => !lamp.archived)
+  const boards = all.map((book) => ({
+    ...book,
+    archived: crowded && empty(book) && book.id !== shelf.currentId && book.id !== newest,
+  }))
   const live = boards.filter((book) => !book.archived)
   if (!boards.length) return shelf
   if (!live.length) {
