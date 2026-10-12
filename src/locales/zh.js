@@ -869,6 +869,7 @@ export const zh = {
   'lamp.delNoteN': '也会删除 {n} 条备注。',
   'lamp.delUndo': '几秒内可以撤销。',
   'lamp.keep': '保留',
+  'lamp.keepMany': '保留',
   'lamp.until': '不早于 {time}',
   'lamp.paused': '不再询问',
   'lamp.secManage': '管理',

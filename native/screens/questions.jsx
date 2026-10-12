@@ -687,7 +687,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       body: t('questions.bulkDeleteBody', { n: chosen.length }),
       goLabel: t('lamp.delete'),
       danger: true,
-      closeLabel: t('lamp.keep'),
+      closeLabel: t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep'),
       colors,
       onClose: () => publishSheet(null),
       onGo: () => {

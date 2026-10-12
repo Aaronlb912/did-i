@@ -889,6 +889,7 @@ export const pt = {
   'lamp.delNoteN': 'Também apaga {n} notas.',
   'lamp.delUndo': 'Dá para desfazer por alguns segundos.',
   'lamp.keep': 'Manter',
+  'lamp.keepMany': 'Manter',
   'lamp.until': 'não antes das {time}',
   'lamp.paused': 'já não pergunta',
   'lamp.secManage': 'Gerir',

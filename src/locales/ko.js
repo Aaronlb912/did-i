@@ -871,6 +871,7 @@ export const ko = {
   'lamp.delNoteN': '메모 {n}개도 삭제돼요.',
   'lamp.delUndo': '몇 초 동안은 되돌릴 수 있어요.',
   'lamp.keep': '남기기',
+  'lamp.keepMany': '남기기',
   'lamp.until': '{time}까지 묻지 않아요',
   'lamp.paused': '더 이상 묻지 않아요',
   'lamp.secManage': '관리',

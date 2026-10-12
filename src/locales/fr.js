@@ -893,6 +893,7 @@ export const fr = {
   'lamp.delNoteN': 'Cela supprime aussi {n} notes.',
   'lamp.delUndo': 'Tu peux annuler pendant quelques secondes.',
   'lamp.keep': 'Garder',
+  'lamp.keepMany': 'Garder',
   'lamp.until': 'pas avant {time}',
   'lamp.paused': 'plus demandée',
   'lamp.secManage': 'Gérer',

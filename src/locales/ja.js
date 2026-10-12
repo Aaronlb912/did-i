@@ -871,6 +871,7 @@ export const ja = {
   'lamp.delNoteN': 'メモ {n} 件も削除します。',
   'lamp.delUndo': '数秒なら元に戻せます。',
   'lamp.keep': '残す',
+  'lamp.keepMany': '残す',
   'lamp.until': '{time} まで聞かない',
   'lamp.paused': 'もう聞かない',
   'lamp.secManage': '管理',

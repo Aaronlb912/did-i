@@ -893,6 +893,7 @@ export const de = {
   'lamp.delNoteN': 'Auch {n} Notizen werden gelöscht.',
   'lamp.delUndo': 'Ein paar Sekunden lang kannst du es rückgängig machen.',
   'lamp.keep': 'Behalten',
+  'lamp.keepMany': 'Behalten',
   'lamp.until': 'nicht vor {time}',
   'lamp.paused': 'wird nicht mehr gefragt',
   'lamp.secManage': 'Verwalten',

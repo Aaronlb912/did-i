@@ -887,6 +887,7 @@ export const en = {
   'lamp.delNoteN': 'It also deletes {n} notes.',
   'lamp.delUndo': 'You can undo for a few seconds.',
   'lamp.keep': 'Keep it',
+  'lamp.keepMany': 'Keep them',
   'lamp.until': 'not until {time}',
   'lamp.paused': 'not being asked',
   'lamp.secManage': 'Manage',

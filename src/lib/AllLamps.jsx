@@ -303,7 +303,7 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
                 {t('lamp.delete')}
               </button>
               <button className="di-key" type="button" onClick={() => setConfirm(false)}>
-                {t('lamp.keep')}
+                {t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep')}
               </button>
             </div>
           </div>

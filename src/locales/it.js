@@ -888,6 +888,7 @@ export const it = {
   'lamp.delNoteN': 'Elimina anche {n} note.',
   'lamp.delUndo': 'Puoi annullare per qualche secondo.',
   'lamp.keep': 'Tienila',
+  'lamp.keepMany': 'Tienile',
   'lamp.until': 'non prima delle {time}',
   'lamp.paused': 'non chiede più',
   'lamp.secManage': 'Gestisci',

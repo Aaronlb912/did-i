@@ -891,6 +891,7 @@ export const es = {
   'lamp.delNoteN': 'También borra {n} notas.',
   'lamp.delUndo': 'Puedes deshacerlo durante unos segundos.',
   'lamp.keep': 'Dejarla',
+  'lamp.keepMany': 'Dejarlas',
   'lamp.until': 'no hasta las {time}',
   'lamp.paused': 'ya no se pregunta',
   'lamp.secManage': 'Gestionar',
