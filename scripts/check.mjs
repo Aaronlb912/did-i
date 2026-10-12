@@ -5419,8 +5419,7 @@ test('gentle mode tells the widgets to hide streak numbers, and the stack is unc
 test('gentle mode hides own streak counts on the phone, not what others see', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const read = (p) => readFileSync(path.join(root, p), 'utf8')
-  // The done card shows no streak count at all (Aaron, 2026-10-11), so gentle has nothing to hide there.
-  assert.ok(!/<StreakCount/.test(read('native/screens/TonightScreen.jsx')), 'done card has no streak line')
+  assert.match(read('native/screens/TonightScreen.jsx'), /stack\.streak > 0 && !gentle/)
   assert.match(read('native/components/StreakMoment.jsx'), /gentleOn\(\)/)
   assert.match(read('native/screens/questions.jsx'), /gentle \? null/)
   const more = read('native/screens/more.jsx')
