@@ -209,7 +209,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     return shell(
       t('settings.look'),
       <>
-      <SetCap colors={colors}>{t('settings.look')}</SetCap>
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
