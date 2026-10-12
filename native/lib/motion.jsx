@@ -57,6 +57,16 @@ export function Reveal({ children, style, layout = true, ...rest }) {
   )
 }
 
+// What sits below something that opens: it glides to its new place instead of jumping.
+export function Glide({ children, style, ...rest }) {
+  const off = motionOff()
+  return (
+    <Reanimated.View layout={off ? undefined : LinearTransition.duration(MOTION_MS)} style={style} {...rest}>
+      {children}
+    </Reanimated.View>
+  )
+}
+
 // Pressable style helper: a small scale on press, or a plain dim when motion is off.
 export function pressFx(pressed) {
   if (!pressed) return null

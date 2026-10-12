@@ -1,3 +1,4 @@
+import { DELETE_UNDO_MS } from './undo-times.js'
 import { useEffect, useMemo, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
@@ -22,7 +23,7 @@ import { usePrefs } from './prefs.js'
 import { rowKey, taggedLamps } from './tags.js'
 import { TagRail } from './TagRail.jsx'
 
-const UNDO_MS = 6000
+const UNDO_MS = DELETE_UNDO_MS
 
 export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen, now }) {
   usePrefs()
@@ -296,13 +297,13 @@ export function AllLamps({ book, boards = [], tagId = '', onTag, onChange, onCha
             <h2 id="di-bulk-drop" className="di-buy-title">
               {t('questions.bulkDeleteTitle')}
             </h2>
-            <p className="di-detail-meta">{t('questions.bulkDeleteBody', { n: chosen.length })}</p>
+            <p className="di-detail-meta">{chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length })}</p>
             <div className="di-hang-actions">
               <button className="di-did di-did-small" type="button" onClick={() => apply('delete')}>
                 {t('lamp.delete')}
               </button>
               <button className="di-key" type="button" onClick={() => setConfirm(false)}>
-                {t('lamp.keep')}
+                {t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep')}
               </button>
             </div>
           </div>

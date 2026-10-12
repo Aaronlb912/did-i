@@ -16,7 +16,8 @@ import {
 import { ownedLookIds, readWidgetSettings } from '../../src/lib/widget-config.js'
 import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
 import { pinWidget, showWidgetHow } from '../lib/widget-pin.js'
-import { useAccount } from '../../src/lib/account.js'
+import { signOutHere, useAccount } from '../../src/lib/account.js'
+import { leaveAccount } from '../lib/leave-account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
@@ -102,6 +103,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
 
   const [loading, setLoading] = useState(false)
+  const [outBusy, setOutBusy] = useState(false)
+
+  // Same sign out as the Account page, without the extra step there.
+  async function signOut() {
+    if (outBusy) return
+    setOutBusy(true)
+    await leaveAccount('out', signOutHere)
+    setOutBusy(false)
+  }
 
   async function pickFile() {
     if (loading) return
@@ -160,33 +170,19 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             sub={t('settings.loadCopySub')}
             chevron
             onPress={loading ? undefined : pickFile}
+          />
+          <SetRow
+            colors={colors}
+            icon="table"
+            tint={colors.on}
+            label={t('settings.sendCsv')}
+            sub={t('settings.sendCsvSub')}
+            chevron
+            onPress={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
             last
           />
         </SetCard>
         {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
-
-        <SetCap colors={colors}>{t('settings.privacyChoices')}</SetCap>
-        <SetCard colors={colors}>
-          <SetSwitch
-            colors={colors}
-            icon="shield"
-            tint={colors.late}
-            label={t('settings.diagnostics')}
-            sub={t('settings.diagnosticsSub')}
-            on={Boolean(prefs.shareDiagnostics)}
-            onPress={() => setShareDiagnostics(!prefs.shareDiagnostics)}
-          />
-          <SetRow
-            colors={colors}
-            icon="shield"
-            tint={colors.inkSoft}
-            label={t('settings.phonePrivacy')}
-            sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
-            chevron
-            last
-            onPress={() => Linking.openSettings()}
-          />
-        </SetCard>
 
         <SetCap colors={colors}>{t('settings.legal')}</SetCap>
         <SetCard colors={colors}>
@@ -202,86 +198,17 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     )
   }
 
-  return (
-    <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
+  // One Settings page per group; the first page lists the groups.
+  const shell = (title, kids) => (
+    <BoardShell book={book} title={title} date={date} colors={colors}>
+      {kids}
+    </BoardShell>
+  )
 
-      {account.email && syncFailed(sync) ? (
-        <Pressable accessibilityRole="button" onPress={() => pullAndMerge()} hitSlop={8}>
-          <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
-        </Pressable>
-      ) : null}
-      <SetCap colors={colors}>{t('settings.account')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="person"
-          tint={colors.on}
-          label={t('settings.account')}
-          sub={account.email ? t('settings.accountOnSub', { email: account.email }) : t('settings.accountOffSub')}
-          value={account.email ? '' : t('settings.accountOff')}
-          chevron
-          onPress={() => goHash('/account')}
-        />
-        <SetRow
-          colors={colors}
-          icon="people"
-          tint={colors.late}
-          label={t('people.kicker')}
-          sub={t('people.rowSub')}
-          chevron
-          onPress={() => goHash('/people')}
-        />
-        <SetRow
-          colors={colors}
-          icon="settings"
-          tint={colors.inkSoft}
-          label={t('settings.title')}
-          sub={t('settings.phoneSubOut')}
-          chevron
-          last
-          onPress={() => goHash('/settings/phone')}
-        />
-      </SetCard>
-
-      <SetCap colors={colors}>{t('settings.tonightCap')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="moon"
-          tint={colors.on}
-          label={t('settings.foldLine')}
-          sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
-        />
-        <SetChoice
-          colors={colors}
-          icon="clock"
-          tint={colors.on}
-          label={t('settings.clock')}
-          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
-          selected={prefs.clock}
-          onSelect={(id) => writePrefs({ clock: id })}
-        />
-        <SetRow
-          colors={colors}
-          icon="bell"
-          tint={colors.late}
-          label={t('settings.reminders')}
-          chevron
-          onPress={() => goHash('/pings')}
-        />
-        <SetRow
-          colors={colors}
-          icon="folder"
-          tint={colors.on}
-          label={t('tags.aria')}
-          sub={t('tags.openHint')}
-          chevron
-          onPress={() => goHash('/me')}
-          last
-        />
-      </SetCard>
-
-      <SetCap colors={colors}>{t('settings.look')}</SetCap>
+  if (page === 'look') {
+    return shell(
+      t('settings.look'),
+      <>
       <SetCard colors={colors}>
         <SetChoice
           colors={colors}
@@ -306,18 +233,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="motion"
           tint={colors.on}
           label={t('settings.lessMotion')}
+          last
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
-        />
-        <SetSwitch
-          colors={colors}
-          icon="moon"
-          tint={colors.on}
-          last
-          label={t('settings.gentle')}
-          sub={t('settings.gentleSub')}
-          on={prefs.gentle}
-          onPress={() => writePrefs({ gentle: !prefs.gentle })}
         />
       </SetCard>
 
@@ -370,6 +288,52 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => showWidgetHow(colors)}
         />
       </SetCard>
+      </>,
+    )
+  }
+
+  if (page === 'nights') {
+    return shell(
+      t('marks.section.nights'),
+      <>
+      <View style={styles.gap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="moon"
+          tint={colors.on}
+          label={t('settings.foldLine')}
+          sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
+        />
+        <SetChoice
+          colors={colors}
+          icon="clock"
+          tint={colors.on}
+          label={t('settings.clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="moon"
+          tint={colors.on}
+          label={t('settings.gentle')}
+          sub={t('settings.gentleSub')}
+          on={prefs.gentle}
+          onPress={() => writePrefs({ gentle: !prefs.gentle })}
+        />
+        <SetRow
+          colors={colors}
+          icon="folder"
+          tint={colors.on}
+          label={t('tags.aria')}
+          sub={t('tags.openHint')}
+          chevron
+          onPress={() => goHash('/me')}
+          last
+        />
+      </SetCard>
 
       <SetCap colors={colors}>{t('settings.history')}</SetCap>
       <SetCard colors={colors}>
@@ -385,7 +349,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="calendar"
           tint={colors.on}
-          label={t('home.calendar')}
+          label={t('settings.history')}
           sub={t('settings.calendarSub')}
           chevron
           onPress={() => goHash('/calendar')}
@@ -447,22 +411,53 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => goHash('/stats')}
         />
       </SetCard>
+      </>,
+    )
+  }
 
-      <SetCap colors={colors}>{t('settings.yourData')}</SetCap>
+  if (page === 'privacy') {
+    return shell(
+      t('settings.privacyChoices'),
+      <>
+      <View style={styles.gap} />
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
-          icon="table"
-          tint={colors.on}
-          label={t('settings.sendCsv')}
-          sub={t('settings.sendCsvSub')}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
           chevron
-          onPress={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="shield"
+          tint={colors.late}
+          label={t('settings.diagnostics')}
+          sub={t('settings.diagnosticsSub')}
+          on={Boolean(prefs.shareDiagnostics)}
+          onPress={() => setShareDiagnostics(!prefs.shareDiagnostics)}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
+          tint={colors.inkSoft}
+          label={t('settings.phonePrivacy')}
+          sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
+          chevron
           last
+          onPress={() => Linking.openSettings()}
         />
       </SetCard>
+      </>,
+    )
+  }
 
-      <SetCap colors={colors}>{t('settings.helpPrivacy')}</SetCap>
+  if (page === 'help') {
+    return shell(
+      t('settings.help'),
+      <>
+      <View style={styles.gap} />
       <SetCard colors={colors}>
         <SetRow
           colors={colors}
@@ -471,14 +466,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.howDidIWorks')}
           chevron
           onPress={() => goHash('/help')}
-        />
-        <SetRow
-          colors={colors}
-          icon="shield"
-          label={t('seen.title')}
-          sub={t('seen.sub')}
-          chevron
-          onPress={() => goHash('/settings/seen')}
         />
         <SetRow
           colors={colors}
@@ -511,11 +498,53 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => goHash('/settings/more')}
         />
       </SetCard>
+      </>,
+    )
+  }
+
+  const lookWords = [t(`theme.${prefs.theme}`), t(`lang.${prefs.locale}`)].join(' · ')
+  return (
+    <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
+      {account.email && syncFailed(sync) ? (
+        <Pressable accessibilityRole="button" onPress={() => pullAndMerge()} hitSlop={8}>
+          <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
+        </Pressable>
+      ) : null}
+      <View style={styles.gap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="person"
+          tint={colors.on}
+          label={t('settings.account')}
+          sub={account.email ? t('settings.accountOnSub', { email: account.email }) : t('settings.accountOffSub')}
+          value={account.email ? '' : t('settings.accountOff')}
+          chevron
+          onPress={() => goHash('/account')}
+        />
+        <SetRow colors={colors} icon="palette" tint={colors.late} label={t('settings.look')} sub={t('settings.lookRowSub')} value={lookWords} chevron onPress={() => goHash('/settings/look')} />
+        <SetRow colors={colors} icon="bell" tint={colors.late} label={t('settings.reminders')} sub={t('settings.remindersRowSub')} chevron onPress={() => goHash('/pings')} />
+        <SetRow colors={colors} icon="moon" tint={colors.on} label={t('marks.section.nights')} sub={t('settings.nightsRowSub')} chevron onPress={() => goHash('/settings/nights')} />
+        <SetRow colors={colors} icon="shield" tint={colors.inkSoft} label={t('settings.privacyChoices')} sub={t('settings.privacyRowSub')} chevron onPress={() => goHash('/settings/privacy')} />
+        <SetRow colors={colors} icon="help" tint={colors.on} label={t('settings.help')} sub={t('settings.helpRowSub')} chevron last onPress={() => goHash('/settings/help')} />
+      </SetCard>
+
+      {account.user ? (
+        <View style={styles.out}>
+          <KeyButton colors={colors} label={t('account.out')} onPress={signOut} />
+          <Text style={[styles.who, { color: colors.inkDim }]} numberOfLines={1}>
+            {t('account.who')} {account.email}
+          </Text>
+        </View>
+      ) : null}
     </BoardShell>
   )
 }
 
 const styles = StyleSheet.create({
+  gap: { height: 14 },
+  out: { marginTop: 24, gap: 8 },
+  who: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center' },
   version: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, marginBottom: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 14, marginHorizontal: 3, marginTop: 4 },
   syncMiss: { fontFamily: fonts.ui, fontSize: 12, marginHorizontal: 3, marginTop: 4 },

@@ -40,7 +40,7 @@ import {
   emptyBoard,
   prepQuestionRows,
 } from '../src/lib/board-json.js'
-import { PACKS, STARTERS, addPack, packList, starterBlank, starterList, undoPack } from '../src/lib/starters.js'
+import { PACKS, STARTERS, addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../src/lib/starters.js'
 import {
   FIRST_PICKS_MAX,
   answeredNights,
@@ -91,6 +91,7 @@ import {
   mergeSameTitles,
   normalizeShelf,
   parkEmptyTags,
+  addBook,
   putBook,
   readShelf,
   writeShelf,
@@ -130,7 +131,7 @@ import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from 
 import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
-import { dropToast, showToast, toastQueue } from '../native/lib/toast-queue.js'
+import { dropToast, nextToast, showToast, toastQueue, undoUp } from '../native/lib/toast-queue.js'
 import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
@@ -140,7 +141,7 @@ import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, weekdayName, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
@@ -333,6 +334,28 @@ test('times follow the clock setting, 12 or 24 hour', () => {
   }
 })
 
+test('weekday initials come from the language file, so Chinese and Japanese work on Hermes', () => {
+  assert.deepEqual([0, 1, 2].map((d) => weekdayName(`2026-10-0${4 + d}`, 'narrow', 'zh')), ['日', '一', '二'])
+  assert.deepEqual([0, 1].map((d) => weekdayName(`2026-10-0${4 + d}`, 'narrow', 'ja')), ['日', '月'])
+  assert.equal(weekdayName('2026-10-05', 'narrow', 'en'), 'M')
+})
+
+test('an idea you already have stays hidden in any language, whatever its case', () => {
+  const book = { lamps: [{ id: 'a', question: 'Did I take my meds?', short: 'meds' }] }
+  try {
+    for (const locale of ['en', 'ko', 'fr', 'es']) {
+      writePrefs({ locale })
+      assert.ok(!unusedStarters(book).some((s) => s.idea === 'pills'), `meds idea shown in ${locale}`)
+      assert.ok(!packList(book).some((p) => p.items.some((i) => i.idea === 'pills')), `meds pack item shown in ${locale}`)
+    }
+    const added = { lamps: [{ id: 'b', question: 'Did I スキンケアをした?', short: 'スキンケア' }] }
+    writePrefs({ locale: 'en' })
+    assert.ok(!unusedStarters(added).some((s) => s.idea === 'skin'), 'a skincare idea added in Japanese shows again in English')
+  } finally {
+    writePrefs({ locale: 'en' })
+  }
+})
+
 test('the first question finishes "Did I ___" once', () => {
   assert.equal(didQuestion('lock the back door'), 'Did I lock the back door?')
   assert.equal(didQuestion('  Lock the   back door??  '), 'Did I lock the back door?')
@@ -344,6 +367,29 @@ test('the first question finishes "Did I ___" once', () => {
   assert.equal(didQuestion('McDonald run'), 'Did I McDonald run?')
   for (const starter of STARTERS) {
     assert.equal(didQuestion(starterBlank(starter)), starter.question, starter.short)
+  }
+})
+
+test('the account page intro reads in the language, past the shop names', () => {
+  // coins, gems and cheers stay English across the app; questions and streak do not here.
+  for (const [lang, strings] of Object.entries({ zh, ja, ko })) {
+    const left = (strings['account.outBody'].match(/[A-Za-z]+/g) || []).filter((w) => !['coins', 'gems', 'cheers'].includes(w))
+    assert.deepEqual(left, [], `${lang} account.outBody`)
+  }
+})
+
+test('idea questions read "Did I ___?" in every language, so the chip fills the lead', () => {
+  // The form shows a fixed "Did I" lead and the chip as the words after it.
+  const subject = { de: /^(habe|hab) ich\b/i, fr: /^(ai-je|me suis-je)\b/i, es: /^¿/, it: /^ho\b/i, pt: /^eu\b/i, zh: /^我/, ja: /^私/, ko: /^나/ }
+  for (const [lang, strings] of Object.entries({ en, es, fr, de, pt, it, zh, ja, ko })) {
+    for (const key of Object.keys(en).filter((k) => /^ideas\.\w+\.question$/.test(k))) {
+      const question = strings[key]
+      assert.ok(question.startsWith('Did I '), `${lang} ${key} starts with Did I`)
+      const blank = starterBlank({ question })
+      assert.ok(blank && !/[?？]$/.test(blank), `${lang} ${key} chip has no ?`)
+      assert.ok(!/^did i\b/i.test(blank) && !subject[lang]?.test(blank), `${lang} ${key} chip does not repeat the lead`)
+      assert.equal(didQuestion(blank), question, `${lang} ${key} saves the same shape as a typed one`)
+    }
   }
 })
 
@@ -740,10 +786,33 @@ test('moving a question to a brand-new folder keeps coins', () => {
   assert.ok(saved.boards.every((item) => item.gems === 2), 'gems too')
 })
 
-test('a folder you just made stays visible until you move away', () => {
-  const shelf = { currentId: 'new', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }, { id: 'new', title: 'Gym', lamps: [], answers: [] }] }
-  assert.equal(parkEmptyTags(shelf).boards.find((item) => item.id === 'new').archived, false)
-  assert.equal(parkEmptyTags({ ...shelf, currentId: 'b1' }).boards.find((item) => item.id === 'new').archived, true)
+test('adding a folder keeps the default for new questions where it was', () => {
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }] }
+  const added = addBook(shelf, { ...emptyBoard(), title: 'Gym' })
+  assert.equal(added.boards.length, 2)
+  assert.equal(added.currentId, 'b1')
+  // putBook still switches, for the paths that move a question into a new folder.
+  assert.notEqual(putBook(shelf, { ...emptyBoard(), title: 'Gym' }).currentId, 'b1')
+})
+
+test('a folder you just made stays listed even though it is not current', () => {
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', title: 'Tag', lamps: [lamp('a')], answers: [] }] }
+  const added = parkEmptyTags(addBook(shelf, { ...emptyBoard(), title: 'Gym' }))
+  assert.equal(added.currentId, 'b1')
+  assert.equal(added.boards.filter((item) => !item.archived).length, 2)
+  const stale = { ...shelf, boards: [...shelf.boards, { id: 'old', title: 'Z', lamps: [], answers: [], archived: true }] }
+  assert.equal(parkEmptyTags(stale).boards.find((item) => item.id === 'old').archived, false)
+})
+
+test('empty folders step aside only when the list is crowded', () => {
+  const full = (id) => ({ id, title: id, lamps: [lamp(`q-${id}`)], answers: [] })
+  const empty = (id) => ({ id, title: id, lamps: [], answers: [] })
+  const few = { currentId: 'b1', boards: [full('b1'), empty('e1'), empty('e2')] }
+  assert.equal(parkEmptyTags(few).boards.filter((item) => item.archived).length, 0)
+  const many = { currentId: 'b1', boards: [full('b1'), full('b2'), full('b3'), empty('e1'), empty('e2'), empty('e3'), empty('new')] }
+  const parked = parkEmptyTags(many)
+  assert.deepEqual(parked.boards.filter((item) => item.archived).map((item) => item.id), ['e1', 'e2', 'e3'])
+  assert.equal(parked.boards.find((item) => item.id === 'new').archived, false)
 })
 
 test('So far and Every answer count every folder', () => {
@@ -1100,6 +1169,54 @@ test('the week recap counts cleared nights, dids and the best run', () => {
   assert.equal(isRecapNight(''), false)
   const text = recapShareText(recap)
   assert.ok(text.includes('5') && text.includes('3') && !text.includes('{'), 'share text is filled in')
+  // Gentle mode: no streak numbers in the recap line or the share text.
+  const best = t('recap.best', { n: 3 })
+  assert.ok(recapLine(recap).includes(best), 'recap line has the best streak')
+  assert.ok(!recapLine(recap, true).includes(best) && recapLine(recap, true).includes(t('recap.dids', { n: 2 })), 'gentle recap line has no best streak')
+  const gentleText = recapShareText(recap, true)
+  assert.ok(!gentleText.includes('3') && !gentleText.includes('{'), 'gentle share text has no best streak')
+  // Shared outside the app, so every language names Did I.
+  for (const [code, table] of Object.entries({ en, es, fr, de, pt, it, zh, ja, ko })) {
+    for (const key of ['recap.share', 'recap.shareGentle']) assert.ok(table[key].includes('Did I'), `${code} ${key} names Did I`)
+  }
+})
+
+test('an achievement never takes the undo toast spot while an undo is up', () => {
+  for (const item of toastQueue()) dropToast(item.id)
+  showToast({ id: 'mark:t', kind: 'mark', mark: { id: 'first' }, ms: 5200 })
+  assert.equal(nextToast().id, 'mark:t')
+  showToast({ id: 'undo:t', kind: 'undo', rev: 1, label: 'x', hint: 'y', until: Date.now() + 5000, total: 5000 })
+  assert.equal(nextToast().id, 'undo:t', 'undo shows first')
+  assert.equal(undoUp(), true, 'marks wait while the undo is up')
+  assert.equal(typeof toastQueue()[0].onShown, 'function', 'a plain undo gets a clock that starts when shown')
+  dropToast('undo:t')
+  assert.equal(undoUp(), false)
+  assert.equal(nextToast().id, 'mark:t', 'the mark comes after')
+  dropToast('mark:t')
+  const shell = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'native/AppShell.jsx'), 'utf8')
+  assert.ok(/marksHeld \|\| undoUp\(/.test(shell), 'AppShell holds new marks while an undo is up')
+})
+
+test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const times = readFileSync(path.join(root, 'src/lib/undo-times.js'), 'utf8')
+  assert.ok(/ANSWER_UNDO_MS = 5000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
+  for (const file of ['src/lib/useTonightStack.js', 'src/lib/AllLamps.jsx', 'native/screens/questions.jsx', 'native/components/LampManage.jsx', 'native/components/NightNotes.jsx', 'native/screens/more.jsx']) {
+    const src = readFileSync(path.join(root, file), 'utf8')
+    assert.ok(src.includes('undo-times.js'), `${file} reads undo-times.js`)
+    assert.ok(!/UNDO_MS = \d|until: now \+ \d|useUndoToast\([^)]*\}, \d{4}\)/.test(src), `${file} has no undo time of its own`)
+  }
+})
+
+test('weekday initials follow the app language, not English', () => {
+  // 2026-10-06 is a Tuesday: T in English, D (Dienstag) in German.
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'en'), 'T')
+  assert.equal(weekdayName('2026-10-06', 'narrow', 'de'), 'D')
+  assert.equal(weekdayName('2026-10-06', 'long', 'de'), 'Dienstag')
+  assert.equal(weekdayName('', 'narrow', 'de'), '')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'native/components/DoneCard.jsx'), 'utf8')
+  assert.ok(!src.includes('night.weekday.slice'), 'the done card draws initials from weekdayName')
 })
 
 test('a question deleted on one phone stays deleted when an older phone syncs', () => {
@@ -1439,6 +1556,25 @@ test('no new strings are left in English in other languages', () => {
     const allowed = new Set(englishOk[code] || [])
     const fresh = englishLeft(pack, en).filter((key) => !allowed.has(key))
     assert.deepEqual(fresh, [], `${code} has new English text; translate it in src/locales/${code}.js`)
+  }
+})
+
+// Chinese, Japanese and Korean keep only product and brand words in English.
+test('zh, ja and ko have no stray English words', () => {
+  const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
+    'Safari Chrome Siri Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
+    'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS').toLowerCase().split(' '))
+  const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
+    key === 'site.door.title' || key === 'site.read.p5' || mayMatchEnglish(key)
+  for (const [code, table] of Object.entries({ zh, ja, ko })) {
+    const stray = []
+    for (const [key, value] of Object.entries(table)) {
+      if (skip(key)) continue
+      const text = value.replace(/\{\w+\}/g, ' ').replace(/\S*[@.\/]\w\S*/g, ' ')
+      const words = (text.match(/[A-Za-z][A-Za-z'-]*/g) || []).filter((word) => !keep.has(word.toLowerCase()))
+      if (words.length) stray.push(`${key}: ${words.join(' ')}`)
+    }
+    assert.deepEqual(stray, [], `${code} has English words; translate them in src/locales/${code}.js`)
   }
 })
 
@@ -4546,7 +4682,12 @@ test('the error log keeps no personal content and is capped', async () => {
 test('a sheet that pops up on Tonight catches the next tap', () => {
   const sheet = readFileSync(path.join(checkRoot, 'native/components/SheetHost.jsx'), 'utf8')
   assert.ok(!sheet.includes("pointerEvents={live ? 'auto' : 'none'}"), 'the veil never lets a tap through to Did or Nope')
-  assert.ok(sheet.includes('if (live) sheet.onClose?.()'))
+  assert.ok(sheet.includes('if (live) once(sheet, sheet.onClose)'))
+  // A double tap on Done runs the close once, not twice (a toggle would reopen it).
+  assert.ok(sheet.includes('fired.current === of'), 'a sheet acts on its first Done or close only')
+  assert.ok(!/onPress=\{\(\) => sheet\.on(Go|Close)/.test(sheet), 'every sheet button goes through once')
+  // A closing sheet drops the keyboard while its text box is still mounted.
+  assert.ok(sheet.includes('if (wasOpen.current) Keyboard.dismiss()'), 'closing a sheet drops the keyboard')
 })
 
 test('an achievement toasts once per phone, even when it is earned again', () => {

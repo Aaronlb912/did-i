@@ -1,3 +1,4 @@
+import { ANSWER_UNDO_MS } from './undo-times.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
@@ -32,7 +33,7 @@ import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
 import { onWeNights, weNight } from './we-nights.js'
 
 // How long an answer can be taken back.
-export const UNDO_MS = 6000
+export const UNDO_MS = ANSWER_UNDO_MS
 
 export const FINISH_FACE = '__finish__'
 

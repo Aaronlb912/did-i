@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   Animated,
@@ -12,7 +13,6 @@ import {
   StyleSheet,
   Text,
   View,
-  findNodeHandle,
 } from 'react-native'
 import { checkPings } from '../../src/lib/notify.js'
 import {
@@ -60,12 +60,15 @@ import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
-import { SetCap, SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
-import { LampManage } from '../components/LampManage.jsx'
+import { PickSheet } from '../components/PickSheet.jsx'
+import Reanimated, { FadeIn } from 'react-native-reanimated'
+import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
+import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
+import { LampManage, lampActions } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -94,8 +97,8 @@ import { useWeTonight } from '../../src/lib/did-we.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { EditPen } from '../components/SwipeFace.jsx'
-import { followCheckOn } from '../../src/lib/check-on.js'
-import { pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
+import { checkOnFits, followCheckOn } from '../../src/lib/check-on.js'
+import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -365,7 +368,7 @@ export function SearchBox({ value, onChange, colors, placeholder = t('questions.
   )
 }
 
-const UNDO_MS = 6000
+const UNDO_MS = DELETE_UNDO_MS
 
 // A row that opens another screen.
 function GoRow({ label, note, lit = false, top = false, onPress, colors }) {
@@ -451,6 +454,11 @@ function inHandOrder(rows) {
 
 const SEARCH_FROM = 10
 
+// Chinese and Japanese labels take a full-width colon.
+function labelColon() {
+  return /[぀-ヿ一-鿿]/.test(t('hang.tag')) ? '：' : ': '
+}
+
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
   const { colors, clock, dateIso } = useHall(book)
   const shelf = boards.length ? boards : [book]
@@ -464,11 +472,14 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const [topicPicks, setTopicPicks] = useState([])
   const [picking, setPicking] = useLayoutState(false)
   const [ordering, setOrdering] = useLayoutState(false)
+  const [pickBarH, setPickBarH] = useState(0)
   const friends = useFromFriends(allRows, dateIso)
   const [picked, setPicked] = useState(() => new Set())
   const [undo, setUndo] = useState(null)
   // The undo toast joins the one line above the tab bar. Shake undo is off.
-  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'))
+  // Its clock starts over once the toast is on screen, like an answer's.
+  const [undoSeen, setUndoSeen] = useState(0)
+  useUndoToast('questions', undo, takeBack, UNDO_MS, t('tonight.undoTap'), () => setUndoSeen(Date.now()))
   useShakeUndo(Boolean(undo), takeBack)
   const topics = shelfTopics(shelf)
   const picks = topicPicks.filter((pick) => topics.includes(pick))
@@ -570,7 +581,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (!undo) return undefined
     const timer = setTimeout(() => setUndo(null), UNDO_MS)
     return () => clearTimeout(timer)
-  }, [undo])
+  }, [undo, undoSeen])
 
   function pick(row) {
     feelTap()
@@ -673,10 +684,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (!chosen.length) return
     publishSheet({
       title: t('questions.bulkDeleteTitle'),
-      body: t('questions.bulkDeleteBody', { n: chosen.length }),
+      body: chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length }),
       goLabel: t('lamp.delete'),
       danger: true,
-      closeLabel: t('lamp.keep'),
+      closeLabel: t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep'),
       colors,
       onClose: () => publishSheet(null),
       onGo: () => {
@@ -878,7 +889,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           />
         )}
         {/* Room so the floating Select bar never covers the last rows. */}
-        {picking ? <View style={styles.pickRoom} /> : null}
+        {picking ? <View style={[styles.pickRoom, pickBarH ? { height: pickBarH + 24 } : null]} /> : null}
       </BoardShell>
           {/* Pinned Reorder bar: Never mind puts the order back, Done keeps it. */}
           {ordering ? (
@@ -925,7 +936,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             </Animated.View>
           ) : null}
           {picking ? (
-            <Reveal style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}>
+            <Reveal
+              onLayout={(e) => setPickBarH(Math.ceil(e.nativeEvent.layout.height))}
+              style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}
+            >
               <View style={styles.pickActions}>
                 <KeyButton
                   colors={colors}
@@ -1219,6 +1233,66 @@ export function TopicPick({ value, known, onChange, colors }) {
   )
 }
 
+const EVERY_N_MAX = 999
+const STEP_NIGHTS = 7
+
+// Every few days: − n + and the next week with the nights it asks lit.
+function EveryNStep({ draft, dateIso, onChange, colors }) {
+  const reduce = useReduceMotion()
+  const n = Number(draft.everyN) || 0
+  const step = (by) => onChange(String(Math.min(EVERY_N_MAX, Math.max(2, (n || 2) + by))))
+  const shown = { ...draft, cadence: 'every_n', archived: false }
+  const nights = Array.from({ length: STEP_NIGHTS }, (_, at) => {
+    const iso = addDaysIso(dateIso, at)
+    const day = new Date(`${iso}T12:00:00`).getDay()
+    return { iso, label: at ? t(`hang.day.${day}`) : t('home.tonight'), on: isDueOn(shown, iso) }
+  })
+  return (
+    <View style={styles.stepWrap}>
+      <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.everyNDays')}</Text>
+      <View style={styles.stepRow}>
+        <Pressable
+          onPress={() => step(-1)}
+          disabled={n <= 2}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('hang.everyNDays')} −`}
+          style={[styles.stepBtn, { borderColor: colors.line, backgroundColor: colors.panel2, opacity: n <= 2 ? 0.5 : 1 }]}
+        >
+          <Text style={[styles.stepGlyph, { color: colors.ink }]}>−</Text>
+        </Pressable>
+        <Reanimated.Text key={n} entering={reduce ? undefined : FadeIn.duration(150)} style={[styles.stepNum, { color: colors.ink }]} accessibilityLiveRegion="polite">
+          {n || '–'}
+        </Reanimated.Text>
+        <Pressable
+          onPress={() => step(1)}
+          disabled={n >= EVERY_N_MAX}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('hang.everyNDays')} +`}
+          style={[styles.stepBtn, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
+        >
+          <Text style={[styles.stepGlyph, { color: colors.ink }]}>+</Text>
+        </Pressable>
+      </View>
+      <View style={styles.stepNights}>
+        {nights.map((night) => (
+          <View key={night.iso} style={styles.stepNight}>
+            <View
+              style={[
+                styles.stepDot,
+                night.on ? { backgroundColor: colors.on, borderColor: colors.on } : { borderColor: colors.line },
+              ]}
+            />
+            <Text style={[styles.stepDay, { color: night.on ? colors.ink : colors.inkDim }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              {/* Shrinks to fit at large text sizes, so Tonight never cuts to Tonig.. */}
+              {night.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
 function FoldInput({ label, colors, multiline, ...props }) {
   return (
     <View style={styles.foldField}>
@@ -1287,6 +1361,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     foldNext = ''
     return first
   })
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [ideasOpen, setIdeasOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [topicsOn, setTopicsOn] = useState(false)
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
   const [shake, setShake] = useState(0)
@@ -1296,17 +1374,17 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const fresh = !hang.editing && !copySource
   const starters = fresh ? unusedStarters(book, clock) : []
   const picked = starters.find((starter) => starter.question === draft.question) || null
-  // Packs help someone getting started; once a folder has a few questions they
-  // would just be in the way every time, so they go.
-  const fewSoFar = (book?.lamps || []).filter((lamp) => !lamp.archived).length < 3
-  const packs = fresh && fewSoFar ? packList(book) : []
+  // Packs sit behind Need an idea?, so they never get in the way; each one
+  // lists only the questions this folder lacks.
+  const packs = fresh ? packList(book) : []
   const [packUndo, setPackUndo] = useState(null)
-  useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'))
+  const [packSeen, setPackSeen] = useState(0)
+  useUndoToast('pack', packUndo, takePackBack, UNDO_MS, t('tonight.undoTap'), () => setPackSeen(Date.now()))
   useEffect(() => {
     if (!packUndo) return undefined
     const timer = setTimeout(() => setPackUndo(null), UNDO_MS)
     return () => clearTimeout(timer)
-  }, [packUndo])
+  }, [packUndo, packSeen])
 
   function takePackBack() {
     if (!packUndo) return
@@ -1318,9 +1396,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   function askPack(pack) {
     publishSheet({
       kicker: pack.title,
-      title: t('pack.sureTitle', { n: pack.items.length }),
+      title: pack.items.length === 1 ? t('pack.sureTitleOne') : t('pack.sureTitle', { n: pack.items.length }),
       body: pack.items.map((item) => item.question).join('\n'),
-      goLabel: t('pack.sureGo'),
+      goLabel: pack.items.length === 1 ? t('pack.sureGoOne') : t('pack.sureGo'),
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
@@ -1328,7 +1406,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         publishSheet(null)
         const added = addPack(book, pack, clock)
         onChange(commitBook(added.book, clock))
-        setPackUndo({ label: t('pack.added', { n: added.ids.length }), ids: added.ids })
+        setPackUndo({ label: added.ids.length === 1 ? t('pack.addedOne') : t('pack.added', { n: added.ids.length }), ids: added.ids })
       },
     })
   }
@@ -1347,7 +1425,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const shortAuto = !shortTyped && !String(draft.short || '').trim()
   const shortShown = shortAuto ? autoShort(draft.question) : draft.short
   const scrollHandle = useRef(null)
+  const whenScroll = useRef(null)
+  const timeDetail = useRef(null)
+  const whenDetail = useRef(null)
+  const whenPicked = useRef(false)
   const picksH = useRef(0)
+  const picksRef = useRef(null)
+  const relift = useRef(null)
 
   useEffect(() => () => clearTimeout(leave.current), [])
 
@@ -1390,21 +1474,52 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     if (!focused) return undefined
     const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
     let timer = null
+    // Scrolls just enough that the ideas end above the keyboard, but never so
+    // far that the question itself goes under the header.
     const lift = () => {
+      clearTimeout(timer)
       timer = setTimeout(() => {
         const scroller = scrollHandle.current
-        const field = findNodeHandle(inputRef.current)
-        if (!scroller?.scrollResponderScrollNativeHandleToKeyboard || !field) return
-        scroller.scrollResponderScrollNativeHandleToKeyboard(field, picksH.current + 16, true)
+        const picks = picksRef.current
+        const field = inputRef.current
+        const keyTop = Keyboard.metrics?.()?.screenY
+        const inner = scroller?.getInnerViewRef?.()
+        if (!scroller?.scrollTo || !inner || !picks?.measureLayout || !field?.measureInWindow || !keyTop) return
+        picks.measureLayout(
+          inner,
+          (_x, top) => {
+            picks.measureInWindow((_px, picksTop, _pw, picksH) => {
+              field.measureInWindow((_fx, fieldTop) => {
+                scroller.measureInWindow?.((_sx, viewTop) => {
+                  const now = top - (picksTop - viewTop)
+                  const need = picksTop + picksH + 16 - keyTop
+                  if (need <= 0) return
+                  const room = Math.max(0, fieldTop - viewTop - 8)
+                  scroller.scrollTo({ y: now + Math.min(need, room), animated: !reduce })
+                })
+              })
+            })
+          },
+          () => {},
+        )
       }, Platform.OS === 'ios' ? 300 : 60)
     }
     const sub = Keyboard.addListener(event, lift)
     if (Keyboard.isVisible?.()) lift()
+    // The ideas can lay out after the keyboard is up, so lift again when they do.
+    relift.current = () => Keyboard.isVisible?.() && lift()
     return () => {
+      relift.current = null
       clearTimeout(timer)
       sub.remove()
     }
-  }, [focused])
+  }, [focused, reduce])
+
+  // The time sits in When, so asking for it opens When with the time open.
+  function openTime() {
+    setTimeOpen(true)
+    if (open !== 'when') fold('when')
+  }
 
   function fold(id) {
     if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
@@ -1414,8 +1529,21 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   // An opened section that ends below the screen scrolls up just enough to
   // show it, keeping its top row in sight.
-  function showFold(node) {
-    const scroller = scrollHandle.current
+  function showWhenDetail() {
+    if (!whenPicked.current) return
+    whenPicked.current = false
+    // After the details fade in, so it measures where they settle.
+    setTimeout(() => showFold(whenDetail.current, whenScroll.current), reduce ? 0 : 260)
+  }
+
+  // The time pickers open at the foot of the When sheet: bring them into view,
+  // so the first tap meant for them never lands on Done.
+  function showTimeDetail() {
+    // Also when At a time adds the hour and minute pickers below.
+    setTimeout(() => showFold(timeDetail.current, whenScroll.current), reduce ? 0 : 260)
+  }
+
+  function showFold(node, scroller = scrollHandle.current) {
     const inner = scroller?.getInnerViewRef?.()
     if (!scroller?.scrollTo || !inner || !node?.measureLayout) return
     node.measureLayout(
@@ -1496,8 +1624,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         inputRef.current?.focus()
       } else if (SCHEDULE_MISSES.has(problem) && open !== 'when') {
         fold('when')
-      } else if (problem === 'hang.miss.askAfter' && open !== 'time') {
-        fold('time')
+      } else if (problem === 'hang.miss.askAfter') {
+        openTime()
+      } else if (!SCHEDULE_MISSES.has(problem) && !moreOpen) {
+        setMoreOpen(true)
       }
       return
     }
@@ -1540,13 +1670,40 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     )
   }
 
-  // The rows below already say when it repeats, so the card keeps to the extras.
-  const meta = [
-    timeLabel(draft.askAfter),
-    hang.priority === 'high' ? t('hang.metaHigh') : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // The card keeps to the extras; the line under it says when it repeats.
+  const whenWords = [whenLine(draft), draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')].join(' · ')
+  const meta = [whenWords, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
+  // Topics stay out of the way until someone uses them.
+  const topicsShown = topicsOn || topicCount > 0 || shelfTopics(boards.length ? boards : [book]).length > 0
+  // Shown in the main rows, and in When next to the time while that is open.
+  const reminderRow = (last) =>
+    hang.priority === 'low' ? (
+      <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.remindLowNote')} value={t('hang.remindOff')} last={last} />
+    ) : phone.quiet ? (
+      <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last={last} />
+    ) : (
+      <SetSwitch
+        label={t('hang.reminder')}
+        sub={reminderLine(draft)}
+        icon="bell"
+        last={last}
+        // With no time it cannot buzz, so it reads off; turning it on opens the time.
+        on={hang.notifyOn && Boolean(draft.askAfter)}
+        onPress={() => {
+          playClick()
+          if (!draft.askAfter) {
+            hang.change('notify', true)
+            openTime()
+            return
+          }
+          hang.change('notify', !hang.notifyOn)
+        }}
+        colors={colors}
+      />
+    )
+  // The row only shows when opening it adds something: packs, or ideas the
+  // typed words have hidden. Once open it stays, so it can close again.
+  const ideasShown = fresh && (ideasOpen || packs.length > 0 || (starters.length > 0 && Boolean(blank.trim()) && !picked))
 
   return (
     <>
@@ -1569,6 +1726,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         blank={blank}
         onBlank={changeBlank}
         meta={meta}
+        metaAction={{ label: t('checkOn.change'), a11y: `${t('hang.when')}: ${whenWords}`, onPress: () => fold('when') }}
         wave={wave}
         stamp={stamp}
         shake={shake}
@@ -1584,79 +1742,28 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       />
       {below}
 
-      <View
-        onLayout={(event) => {
-          picksH.current = event.nativeEvent.layout.height
-        }}
-      >
-        <IdeaPicks
-          label={t('first.picks')}
-          starters={blank.trim() && !picked ? [] : starters}
-          picked={picked}
-          onPick={pickIdea}
-          tilt={wobble.tilt}
-          colors={colors}
-        />
-        {packs.length && !blank.trim() ? (
-          <View style={styles.packs}>
-            <SetCap colors={colors}>{t('pack.label')}</SetCap>
-            {/* One row per pack: what it adds is right there, so it never reads as another idea chip. */}
-            <SetCard colors={colors}>
-              {packs.map((pack, at) => (
-                <SetRow
-                  key={pack.id}
-                  colors={colors}
-                  label={pack.title}
-                  sub={pack.items.map((item) => shortLabel(item)).join(', ')}
-                  value={pack.items.length === 1 ? t('pack.countOne') : t('pack.count', { n: pack.items.length })}
-                  chevron
-                  last={at === packs.length - 1}
-                  onPress={() => askPack(pack)}
-                />
-              ))}
-            </SetCard>
-          </View>
-        ) : null}
-      </View>
-
-      <FoldInput
-        label={t('hang.short')}
-        value={shortShown}
-        onChangeText={(value) => {
-          setShortTyped(true)
-          hang.change('short', value)
-        }}
-        placeholder={t('hang.shortPh')}
-        // A name saved under an older, longer limit still fits, so it can be
-        // edited and shortened instead of locking the field.
-        maxLength={shortRoom}
-        colors={colors}
-      />
-
-      <View style={styles.settings}>
-        <SetCap colors={colors}>{t('hang.secSchedule')}</SetCap>
-        <SetCard colors={colors}>
-          <HangFold
-            label={t('hang.when')}
-            value={whenLine(draft)}
-            icon="calendar"
-            open={open === 'when'}
-            onToggle={() => fold('when')}
-            onShown={showFold}
-            colors={colors}
-          >
-            <View style={styles.pillRow}>
-              {SCHEDULES.map((item) => (
-                <Pill
-                  key={item.id}
-                  label={t(item.labelKey)}
-                  on={schedule === item.id}
-                  onPress={() => hang.changeSchedule(item.id)}
-                  colors={colors}
-                />
-              ))}
-            </View>
-
+      <PickSheet open={open === 'when'} scrollRef={whenScroll} title={t('hang.whenAsk')} onClose={() => open === 'when' && fold('when')} colors={colors}>
+          <SetCard colors={colors}>
+            <View style={styles.whenBody}>
+              <ScheduleTiles label={t('hang.when')}>
+                {SCHEDULES.map((item) => (
+                  <ScheduleTile
+                    key={item.id}
+                    label={t(item.labelKey)}
+                    // Picked weekdays name the days on the tile, so today's preselected day shows at once.
+                    sub={item.id === 'weekly' && schedule === 'weekly' && (draft.weekdays || []).length ? whenLine(draft) : t(`hang.tileSub.${item.id}`)}
+                    on={schedule === item.id}
+                    onPress={() => {
+                      whenPicked.current = true
+                      hang.changeSchedule(item.id)
+                    }}
+                    colors={colors}
+                  />
+                ))}
+              </ScheduleTiles>
+            <Reveal key={schedule}>
+            {/* A picked schedule's options open below the tiles; the sheet scrolls them into view. */}
+            <View ref={whenDetail} style={styles.whenDetail} onLayout={showWhenDetail}>
             {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
             {SCHEDULE_MISSES.has(hang.miss) ? (
               <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -1742,15 +1849,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
             {schedule === 'every_n' ? (
               <>
-                <FoldInput
-                  label={t('hang.everyNDays')}
-                  value={String(draft.everyN || '')}
-                  onChangeText={(value) => hang.change('everyN', value.replace(/\D/g, ''))}
-                  keyboardType="number-pad"
-                  placeholder="3"
-                  maxLength={3}
-                  colors={colors}
-                />
+                <EveryNStep draft={draft} dateIso={dateIso} onChange={(value) => hang.change('everyN', value)} colors={colors} />
                 <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.startingOn')}</Text>
                 <HangMonthCal
                   mode="date"
@@ -1762,47 +1861,117 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 />
               </>
             ) : null}
+            </View>
+            </Reveal>
+            </View>
 
-          </HangFold>
-
-          <HangFold
-            label={t('hang.timeRow')}
-            value={draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')}
-            icon="clock"
-            open={open === 'time'}
-            onToggle={() => fold('time')}
-            onShown={showFold}
-            colors={colors}
-          >
-            <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
-            <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
-          </HangFold>
-
-          {hang.priority === 'low' ? (
-            <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.remindLowNote')} value={t('hang.remindOff')} last />
-          ) : phone.quiet ? (
-            <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last />
-          ) : (
-            <SetSwitch
-              label={t('hang.reminder')}
-              sub={reminderLine(draft)}
-              icon="bell"
-              last
-              // With no time it cannot buzz, so it reads off; turning it on opens the time.
-              on={hang.notifyOn && Boolean(draft.askAfter)}
-              onPress={() => {
-                playClick()
-                if (!draft.askAfter) {
-                  hang.change('notify', true)
-                  if (open !== 'time') fold('time')
-                  return
-                }
-                hang.change('notify', !hang.notifyOn)
+            <Glide>
+            <HangFold
+              label={t('hang.timeRow')}
+              value={draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')}
+              icon="clock"
+              open={timeOpen}
+              onToggle={() => {
+                if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+                setTimeOpen((was) => !was)
               }}
               colors={colors}
+            >
+              <View ref={timeDetail} onLayout={showTimeDetail}>
+              <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
+              <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              </View>
+            </HangFold>
+          {reminderRow(true)}
+            </Glide>
+          </SetCard>
+      </PickSheet>
+
+      <Glide
+        ref={picksRef}
+        style={styles.settings}
+        onLayout={(event) => {
+          const h = event.nativeEvent.layout.height
+          if (Math.abs(h - picksH.current) < 1) return
+          picksH.current = h
+          relift.current?.()
+        }}
+      >
+        <SetCard colors={colors}>
+          {reminderRow(false)}
+          {ideasShown ? (
+            <SetRow
+              colors={colors}
+              icon="help"
+              label={t('first.picks')}
+              chevron={!ideasOpen}
+              plain
+              onPress={() => {
+                if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+                setIdeasOpen((was) => !was)
+              }}
             />
-          )}
+          ) : null}
+          <SetRow
+            colors={colors}
+            icon="note"
+            label={moreOpen ? t('hang.less') : t('hang.more')}
+            value={moreOpen ? '' : tagName}
+            chevron={!moreOpen}
+            plain
+            last
+            onPress={() => {
+              if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+              setMoreOpen((was) => !was)
+            }}
+          />
         </SetCard>
+
+        {/* The row above already asks Need an idea?, so the chips need no second heading. */}
+        <IdeaPicks
+          starters={ideasOpen ? starters : blank.trim() && !picked ? [] : starters}
+          picked={picked}
+          onPick={pickIdea}
+          tilt={wobble.tilt}
+          colors={colors}
+        />
+        {ideasOpen && packs.length > 0 ? (
+          <View style={styles.packs}>
+            <SetCap colors={colors}>{t('pack.label')}</SetCap>
+            {/* One row per pack: what it adds is right there, so it never reads as another idea chip. */}
+            <SetCard colors={colors}>
+              {packs.map((pack, at) => (
+                <SetRow
+                  key={pack.id}
+                  colors={colors}
+                  label={pack.title}
+                  sub={pack.items.map((item) => shortLabel(item)).join(', ')}
+                  value={pack.items.length === 1 ? t('pack.countOne') : t('pack.count', { n: pack.items.length })}
+                  chevron
+                  last={at === packs.length - 1}
+                  onPress={() => askPack(pack)}
+                />
+              ))}
+            </SetCard>
+          </View>
+        ) : null}
+      </Glide>
+
+      {moreOpen ? (
+        <Reveal>
+      <FoldInput
+        label={t('hang.short')}
+        value={shortShown}
+        onChangeText={(value) => {
+          setShortTyped(true)
+          hang.change('short', value)
+        }}
+        placeholder={t('hang.shortPh')}
+        // A name saved under an older, longer limit still fits, so it can be
+        // edited and shortened instead of locking the field.
+        maxLength={shortRoom}
+        colors={colors}
+      />
 
         <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
         <SetCard colors={colors}>
@@ -1891,6 +2060,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             </Text>
           </HangFold>
 
+          {topicsShown ? (
+          <Reveal key="topics">
           <HangFold
             label={t('hang.kind')}
             value={topicCount ? topicsOf({ kind: draft.kind }).map(topicLabel).join(', ') : t('hang.detailsNone')}
@@ -1907,6 +2078,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               colors={colors}
             />
           </HangFold>
+          </Reveal>
+          ) : (
+            <SetRow
+              colors={colors}
+              icon="tag"
+              label={t('hang.topicAdd')}
+              onPress={() => {
+                setTopicsOn(true)
+                fold('topics')
+              }}
+            />
+          )}
 
           <HangFold
             label={t('hang.details')}
@@ -1951,8 +2134,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             ) : null}
           </HangFold>
         </SetCard>
-      </View>
-
+        </Reveal>
+      ) : null}
       {hang.miss && !SCHEDULE_MISSES.has(hang.miss) ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {t(hang.miss)}
@@ -2000,6 +2183,64 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   }, [lampBook, lamp, dateIso])
   const gentle = usePrefs().gentle === true
   const phone = usePhoneQuiet()
+  const account = useAccount()
+  const reduce = useReduceMotion()
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [checkOpen, setCheckOpen] = useState(false)
+  const [notePick, setNotePick] = useState(0)
+  // Add a note needs an answered night without a note yet.
+  const canNote = useMemo(() => lampNights(lampBook, lamp).some((row) => !row.answer.note), [lampBook, lamp])
+
+  function flip(set) {
+    if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+    set((was) => !was)
+  }
+
+  // Close the menu first, so a sheet it opens is not under it.
+  function menuGo(run) {
+    publishSheet(null)
+    setTimeout(run, 250)
+  }
+
+  // The ⋯ menu: the app's centered sheet, which fades and rises in.
+  function openMenu() {
+    publishSheet({
+      title: t('lamp.secManage'),
+      content: (
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="pen" label={t('hang.edit')} chevron onPress={() => menuGo(() => goHash('/hang', { id: lamp.id }))} />
+          <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} plain onPress={() => menuGo(() => goHash('/hang', { copy: lamp.id }))} />
+          {canNote ? (
+          <SetRow
+            colors={colors}
+            icon="note"
+            label={t('note.add')}
+            plain
+            onPress={() =>
+              menuGo(() => {
+                setNotesOpen(true)
+                setNotePick((n) => n + 1)
+              })
+            }
+          />          ) : null}
+
+          <SetRow
+            colors={colors}
+            icon={lamp.archived ? 'play' : 'pause'}
+            label={lamp.archived ? t('lamp.askAgain') : t('lamp.stop')}
+            sub={lamp.archived ? t('lamp.askAgainSub') : t('lamp.stopSub')}
+            plain
+            onPress={() => menuGo(actions.togglePause)}
+          />
+          <SetRow colors={colors} icon="trash" label={t('lamp.delete')} sub={t('lamp.deleteSub')} danger last onPress={() => menuGo(actions.askDelete)} />
+        </SetCard>
+      ),
+      closeLabel: t('settings.neverMind'),
+      onClose: () => publishSheet(null),
+      colors,
+    })
+  }
 
   function change(next) {
     onChange(commitBook(next, clock))
@@ -2025,6 +2266,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const priority = lamp.priority || 'normal'
   const topics = topicsOf(lamp).map(topicLabel).join(', ')
   const notes = String(lamp.notes || '').trim()
+  const notedCount = (lampBook.answers || []).filter((item) => item.lampId === lamp.id && String(item.note || '').trim()).length
+  const checkFits = !lamp.fromName && Boolean(account.user) && checkOnFits(lamp)
+  const actions = lampActions({ book: lampBook, lamp, colors, onChange: change })
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
@@ -2034,7 +2278,14 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   ].join(' · ')
 
   return (
-    <BoardShell book={lampBook} title={t('lamp.kicker')} noTitle date={shellDate(lampBook, clock)} colors={colors}>
+    <BoardShell
+      book={lampBook}
+      title={t('lamp.kicker')}
+      noTitle
+      date={shellDate(lampBook, clock)}
+      colors={colors}
+      rightAction={{ label: '⋯', onPress: openMenu }}
+    >
       <View style={[...faceCardStyle(colors), styles.lampCard, lamp.archived && { opacity: 0.75 }]}>
         <EditPen onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
         <Text style={[faceCardStyles.kicker, { color: colors.on }]} numberOfLines={1}>
@@ -2100,6 +2351,34 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       </View>
       )}
 
+      <View style={styles.settings} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="chart"
+          label={t('settings.history')}
+          value={every ? '' : t('lamp.didOf', { did: record.did, n: record.asked })}
+          chevron={!historyOpen}
+          plain
+          onPress={() => flip(setHistoryOpen)}
+        />
+        <SetRow
+          colors={colors}
+          icon="pen"
+          label={t('note.title')}
+          value={notedCount ? String(notedCount) : ''}
+          chevron={!notesOpen}
+          plain
+          last={!checkFits}
+          onPress={() => flip(setNotesOpen)}
+        />
+        {checkFits ? (
+          <SetRow colors={colors} icon="people" label={t('checkOn.title')} chevron={!checkOpen} plain last onPress={() => flip(setCheckOpen)} />
+        ) : null}
+      </SetCard>
+
+      {historyOpen ? (
+      <Reveal>
       {weeks.length > 1 ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.trend')}</Text>
@@ -2186,8 +2465,20 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           </View>
         ))}
       </View>
+      </Reveal>
+      ) : null}
 
-      <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} />
+      {notesOpen ? (
+        <Reveal>
+          <NightNotes book={lampBook} lamp={lamp} colors={colors} onChange={change} pickSignal={notePick} />
+        </Reveal>
+      ) : null}
+      {checkOpen && !lamp.fromName ? (
+        <Reveal>
+          <CheckOnCard lamp={lamp} colors={colors} />
+        </Reveal>
+      ) : null}
+      <Glide>
 
       <SetCard colors={colors}>
         {/* The whole card opens Edit question, like the pen at the top. */}
@@ -2204,12 +2495,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             <Text style={[styles.summaryChev, { color: colors.inkDim }]}>›</Text>
           </View>
           <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
-            {`${t('hang.tag')}: ${lampBook.title}`}
+            {`${t('hang.tag')}${labelColon()}${lampBook.title}`}
           </Text>
           {topics ? (
             <>
               <Text style={[styles.summary, { color: colors.inkSoft }]} numberOfLines={1}>
-                {`${t('hang.kind')}: ${topics}`}
+                {`${t('hang.kind')}${labelColon()}${topics}`}
               </Text>
               <Text style={[styles.hintLine, { color: colors.inkDim }]}>{t('hang.topicsHint')}</Text>
             </>
@@ -2221,14 +2512,10 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           ) : null}
         </Pressable>
       </SetCard>
-      {lamp.fromName ? null : <CheckOnCard lamp={lamp} colors={colors} />}
-      <LampManage
-        book={lampBook}
-        lamp={lamp}
-        colors={colors}
-        onChange={change}
-        onDuplicate={() => goHash('/hang', { copy: lamp.id })}
-      />
+      <View style={styles.editBtn}>
+        <DidButton label={t('hang.edit')} onPress={() => goHash('/hang', { id: lamp.id })} colors={colors} />
+      </View>
+      </Glide>
     </BoardShell>
   )
 }
@@ -2346,6 +2633,18 @@ const styles = StyleSheet.create({
   summaryChev: { fontFamily: fonts.ui, fontSize: 22, paddingTop: 8, paddingRight: 14 },
   summary: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, paddingHorizontal: 16, paddingTop: 12 },
   settings: { marginTop: 4 },
+  editBtn: { marginTop: 16, marginBottom: 8 },
+  whenBody: { padding: 16, gap: 12 },
+  whenDetail: { gap: 12 },
+  stepWrap: { gap: 8 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
+  stepBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  stepGlyph: { fontFamily: fonts.uiSemi, fontSize: 22, lineHeight: 26 },
+  stepNum: { fontFamily: fonts.display, fontSize: 28, fontWeight: '700', minWidth: 48, textAlign: 'center' },
+  stepNights: { flexDirection: 'row', justifyContent: 'space-between' },
+  stepNight: { flex: 1, alignItems: 'center', gap: 4 },
+  stepDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
+  stepDay: { fontFamily: fonts.ui, fontSize: 11, alignSelf: 'stretch', textAlign: 'center' },
   goRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   goText: { flex: 1, gap: 2 },
   goLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },

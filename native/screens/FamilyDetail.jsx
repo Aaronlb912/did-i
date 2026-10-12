@@ -39,6 +39,9 @@ import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/Perso
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
+import { HangCard } from '../components/HangCard.jsx'
+import { PickSheet } from '../components/PickSheet.jsx'
+import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { goHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
@@ -77,6 +80,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [draft, setDraft] = useState('')
   const [forId, setForId] = useState(EVERYONE)
   const [howOften, setHowOften] = useState('daily')
+  const [whenOpen, setWhenOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const howWords = t((HOW_OFTEN.find((item) => item.id === howOften) || HOW_OFTEN[0]).labelKey)
   const [lastDids, setLastDids] = useState(() => new Map())
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
@@ -426,7 +432,19 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       )}
 
       <Cap colors={colors}>{fam.parent ? t('family.assign') : t('family.addYours')}</Cap>
-      <Field colors={colors} label={t('family.what')} value={draft} onChangeText={setDraft} placeholder={t('family.whatPh')} />
+      <HangCard
+        tag={fam.name}
+        lead={false}
+        blank={draft}
+        onBlank={setDraft}
+        placeholder={t('family.whatPh')}
+        meta={howWords}
+        metaAction={{ label: t('checkOn.change'), a11y: `${t('we.when')}: ${howWords}`, onPress: () => setWhenOpen(true) }}
+        focused={focused}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        colors={colors}
+      />
       {fam.parent ? (
         <>
           <Text style={[styles.cap, { color: colors.inkDim }]}>{t('family.forWhoLabel')}</Text>
@@ -444,14 +462,27 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           />
         </>
       ) : null}
-      <Text style={[styles.cap, { color: colors.inkDim }]}>{t('we.when')}</Text>
-      <ChipRow
-        colors={colors}
-        value={howOften}
-        onPick={setHowOften}
-        items={HOW_OFTEN.map((item) => ({ id: item.id, label: t(item.labelKey) }))}
-      />
-      {howOften !== 'daily' ? <Meta colors={colors}>{t('family.everyHint')}</Meta> : null}
+      <PickSheet open={whenOpen} title={t('hang.whenAsk')} onClose={() => setWhenOpen(false)} colors={colors}>
+        <View style={styles.whenBody}>
+          <ScheduleTiles label={t('we.when')}>
+            {HOW_OFTEN.map((item) => (
+              <ScheduleTile
+                key={item.id}
+                label={t(item.labelKey)}
+                sub={t(item.id === 'daily' ? 'hang.tileSub.daily' : 'hang.tileSub.every')}
+                on={howOften === item.id}
+                onPress={() => setHowOften(item.id)}
+                colors={colors}
+              />
+            ))}
+          </ScheduleTiles>
+          {howOften !== 'daily' ? (
+            <Reveal>
+              <Meta colors={colors}>{t('family.everyHint')}</Meta>
+            </Reveal>
+          ) : null}
+        </View>
+      </PickSheet>
       <DidButton colors={colors} label={t('family.put')} onPress={add} />
       <Meta colors={colors}>{fam.parent ? t('family.assignHint') : t('family.kidHint')}</Meta>
 
@@ -616,6 +647,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 }
 
 const styles = StyleSheet.create({
+  whenBody: { gap: 10 },
   cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 8 },
   title: { fontFamily: fonts.display, fontSize: 24, fontWeight: '700' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

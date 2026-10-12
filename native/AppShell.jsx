@@ -35,7 +35,7 @@ import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
-import { showToast } from './lib/toast-queue.js'
+import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
@@ -186,7 +186,9 @@ export function AppShell() {
   const app = useAppShelf()
   const marksHeld = useMarksHeld()
   // A new mark joins the toast line once the night's celebration is over.
-  const mark = marksHeld ? null : app.markNote
+  // It also waits while an undo is up, so a tap on Undo never lands on it.
+  const toasts = useToastQueue()
+  const mark = marksHeld || undoUp(toasts) ? null : app.markNote
   const clearMark = app.clearMark
   useEffect(() => {
     if (!mark) return

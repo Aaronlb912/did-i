@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
+  Keyboard,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
 import { useUndoToast } from '../lib/toast-queue.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -118,6 +121,7 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
+import { leaveAccount } from '../lib/leave-account.js'
 
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
@@ -146,7 +150,7 @@ function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -156,6 +160,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       showAdd={showAdd}
       back={locked ? false : undefined}
       showCogs={!locked}
+      scrollHandle={scrollHandle}
     >
       {children}
     </BoardShell>
@@ -397,6 +402,7 @@ export function LaterScreen({ book, now }) {
 
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
@@ -412,7 +418,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
+      {gentle ? null : <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>}
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -454,7 +460,7 @@ export function RecentScreen() {
   useUndoToast('recent', undo, () => {
     restoreNotices(undo?.list)
     setUndo(null)
-  }, 6000)
+  }, DELETE_UNDO_MS)
   function clearAll() {
     setUndo({ label: t('recent.cleared'), list: clearNotices() })
   }
@@ -1002,6 +1008,9 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const [addMiss, setAddMiss] = useState('')
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
+  const reduce = useReduceMotion()
+  const scrollHandle = useRef(null)
+  const addRef = useRef(null)
   const renameDirty = Boolean(titleDraft.trim()) && titleDraft.trim() !== (book?.title || '')
 
   function saveName() {
@@ -1028,13 +1037,54 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setAddMiss('')
   }
   const live = (boards || []).filter((item) => !item.archived)
+  // Empty folders parked once the list is crowded: kept behind one row, so
+  // they can still be opened (which brings one back) or removed.
+  const parked = (boards || []).filter((item) => item.archived)
+  const [showParked, setShowParked] = useState(false)
 
   useEffect(() => {
     setTitleDraft(book?.title || '')
   }, [book?.title, book?.id])
 
+  // The keyboard covers Add and Cancel. Once it is up, scroll so they sit above it.
+  useEffect(() => {
+    if (!adding) return undefined
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    let timer = null
+    const lift = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const scroller = scrollHandle.current
+        const block = addRef.current
+        const keyTop = Keyboard.metrics?.()?.screenY
+        const inner = scroller?.getInnerViewRef?.()
+        if (!scroller?.scrollTo || !inner || !block?.measureLayout || !keyTop) return
+        block.measureLayout(
+          inner,
+          (_x, top) => {
+            block.measureInWindow((_bx, blockTop, _bw, blockH) => {
+              scroller.measureInWindow?.((_sx, viewTop) => {
+                const now = top - (blockTop - viewTop)
+                const need = blockTop + blockH + 16 - keyTop
+                if (need <= 0) return
+                scroller.scrollTo({ y: now + need, animated: !reduce })
+              })
+            })
+          },
+          () => {},
+        )
+      }, Platform.OS === 'ios' ? 300 : 60)
+    }
+    const sub = Keyboard.addListener(event, lift)
+    if (Keyboard.isVisible?.()) lift()
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+  }, [adding, reduce])
+
   return (
-    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
+    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd scrollHandle={scrollHandle}>
       <SetCard colors={colors}>
       {live.map((item, at) => {
         const left = leftoverOn(boards, new Date(), item.id)
@@ -1076,9 +1126,36 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         )
       })}
       </SetCard>
+      {parked.length ? (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="folder"
+            label={t('hang.tagLater')}
+            sub={showParked ? t('hang.tagLaterHint') : undefined}
+            value={showParked ? '▾' : `${parked.length} ▸`}
+            plain
+            last={!showParked}
+            onPress={() => setShowParked((open) => !open)}
+          />
+          {showParked
+            ? parked.map((item, at) => (
+                <SetRow
+                  key={item.id}
+                  colors={colors}
+                  icon="folder"
+                  label={item.title}
+                  chevron
+                  last={at === parked.length - 1}
+                  onPress={() => onSelect?.(item.id)}
+                />
+              ))
+            : null}
+        </SetCard>
+      ) : null}
       <View style={styles.dataGap} />
       {adding ? (
-        <View style={styles.tagName}>
+        <View ref={addRef} collapsable={false} style={styles.tagName}>
           <Field
             colors={colors}
             label={t('boards.addName')}
@@ -1129,7 +1206,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
-      {boards?.length > 1 && book ? (
+      {live.length > 1 && book ? (
         <KeyButton
           colors={colors}
           label={t('boards.removeNamed', { title: book.title })}
@@ -1884,6 +1961,37 @@ function PhoneLockSection({ colors }) {
   )
 }
 
+// Name and note for this phone, and People: they sat on the first Settings
+// page before it was grouped, so they live with the account now.
+function AccountLinks({ colors }) {
+  return (
+    <>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="settings"
+          tint={colors.inkSoft}
+          label={t('settings.title')}
+          sub={t('settings.phoneSubOut')}
+          chevron
+          onPress={() => goHash('/settings/phone')}
+        />
+        <SetRow
+          colors={colors}
+          icon="people"
+          tint={colors.late}
+          label={t('people.kicker')}
+          sub={t('people.rowSub')}
+          chevron
+          last
+          onPress={() => goHash('/people')}
+        />
+      </SetCard>
+    </>
+  )
+}
+
 function AccountSignedOut({ on }) {
   const colors = useHallColors()
   const auth = useAuthSignIn({})
@@ -1893,6 +2001,7 @@ function AccountSignedOut({ on }) {
       <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
         <Meta colors={colors}>{t('account.offTester')}</Meta>
+        <AccountLinks colors={colors} />
       </ScreenShell>
     )
   }
@@ -1911,6 +2020,7 @@ function AccountSignedOut({ on }) {
       <View style={[styles.lockPanel, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
         <PhoneLockSection colors={colors} />
       </View>
+      <AccountLinks colors={colors} />
     </ScreenShell>
   )
 }
@@ -2046,18 +2156,7 @@ function AccountSignedIn({ book, email, onChange }) {
   async function leave(kind, run) {
     if (busy) return
     setBusy(kind)
-    try {
-      const out = await run()
-      if (out?.miss) {
-        confirmMiss(tMiss(out.miss))
-        setBusy('')
-        return
-      }
-      confirmDone(t(kind === 'delete' ? 'confirm.deleted' : 'confirm.signedOut'))
-      signedOutSync()
-    } catch {
-      confirmMiss(t('confirm.miss'))
-    }
+    await leaveAccount(kind, run)
     setBusy('')
   }
 
@@ -2246,6 +2345,43 @@ function AccountSignedIn({ book, email, onChange }) {
       </SetCard>
       {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
 
+      <AccountLinks colors={colors} />
+
+      <PhoneLockSection colors={colors} />
+
+      <View style={styles.dataGap} />
+      {/* Sign out stays in plain sight; the rarer ways to leave sit in the fold below. */}
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="logout"
+          label={t('account.out')}
+          last
+          onPress={busy ? undefined : () => leave('out', signOutHere)}
+        />
+      </SetCard>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('seen.title')}
+          sub={t('seen.sub')}
+          chevron
+          onPress={() => goHash('/settings/seen')}
+        />
+        <SetRow
+          colors={colors}
+          icon="shield"
+          label={t('account.privacyRow')}
+          sub={t('account.privacySub')}
+          chevron={!dataOpen}
+          last
+          onPress={() => setDataOpen((open) => !open)}
+        />
+      </SetCard>
+      {dataOpen ? (
+        <Reveal>
       <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
@@ -2313,42 +2449,6 @@ function AccountSignedIn({ book, email, onChange }) {
         />
         </SetCard>
       ) : null}
-
-      <PhoneLockSection colors={colors} />
-
-      <View style={styles.dataGap} />
-      {/* Sign out stays in plain sight; the rarer ways to leave sit in the fold below. */}
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="logout"
-          label={t('account.out')}
-          last
-          onPress={busy ? undefined : () => leave('out', signOutHere)}
-        />
-      </SetCard>
-      <View style={styles.dataGap} />
-      <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="shield"
-          label={t('seen.title')}
-          sub={t('seen.sub')}
-          chevron
-          onPress={() => goHash('/settings/seen')}
-        />
-        <SetRow
-          colors={colors}
-          icon="shield"
-          label={t('account.privacyRow')}
-          sub={t('account.privacySub')}
-          chevron={!dataOpen}
-          last
-          onPress={() => setDataOpen((open) => !open)}
-        />
-      </SetCard>
-      {dataOpen ? (
-        <Reveal>
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />

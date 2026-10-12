@@ -4,14 +4,14 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { svgParts } from '../lib/svg-parts.js'
-import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../lib/night-sky.js'
+import { SKY_FPS, SKY_RUN_MS, STARS, moonAt, moonPath, moonPhase, starAt } from '../lib/night-sky.js'
 
 const MOON_R = 20
 
 /**
  * A quiet night behind the done card: a few stars drift and twinkle while
  * tonight's moon phase crosses slowly, stepping a handful of times a second.
- * Off with Less motion and the phone's Reduce Motion.
+ * It holds still after SKY_RUN_MS. Off with Less motion and the phone's Reduce Motion.
  */
 export function NightSky({ colors }) {
   const reduce = useReduceMotion()
@@ -23,7 +23,11 @@ export function NightSky({ colors }) {
     const timer = setInterval(() => {
       if (AppState.currentState === 'active') tick.value += 1
     }, 1000 / SKY_FPS)
-    return () => clearInterval(timer)
+    const stop = setTimeout(() => clearInterval(timer), SKY_RUN_MS)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(stop)
+    }
   }, [reduce, tick])
 
   if (reduce) return null
@@ -43,7 +47,7 @@ export function NightSky({ colors }) {
           {STARS.map((star, index) => (
             <Star key={index} star={star} index={index} tick={tick} box={box} color={colors.on} />
           ))}
-          <Moon tick={tick} width={box.width} colors={colors} />
+          <Moon tick={tick} width={box.width} height={box.height} colors={colors} />
         </>
       ) : null}
     </View>
@@ -67,7 +71,7 @@ function Star({ star, index, tick, box, color }) {
   )
 }
 
-function Moon({ tick, width, colors }) {
+function Moon({ tick, width, height, colors }) {
   const parts = svgParts()
   // A lit moon is pale: soft ink on a dark sky, the card white on a light one.
   const light = useTheme() === 'light'
@@ -75,7 +79,8 @@ function Moon({ tick, width, colors }) {
   const path = useMemo(() => moonPath(moonPhase(new Date()), MOON_R), [])
   const moving = useAnimatedStyle(() => {
     const at = moonAt(tick.value, width, MOON_R * 2)
-    return { transform: [{ translateX: at.x }, { translateY: 10 + at.bob }] }
+    // Low in the sky, under the card: it never rises over the card's top edge (owner call).
+    return { transform: [{ translateX: at.x }, { translateY: Math.max(0, height - MOON_R * 2 - 10) + at.bob }] }
   })
   if (!parts) return null
   const { Svg, Circle, Path } = parts

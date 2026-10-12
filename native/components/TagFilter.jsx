@@ -15,9 +15,10 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const [at, setAt] = useState(null)
   const button = useRef(null)
   const { height } = useWindowDimensions()
-  // Every folder, empty (parked) ones too, the same list the Move sheet shows.
-  const live = boards || []
   const ids = tagIdsOf(tagId)
+  // Parked folders (empty, once the list is crowded) step aside here too,
+  // unless one is picked right now. Your folders still lists them.
+  const live = (boards || []).filter((book) => !book.archived || ids.includes(book.id))
   const showTopics = Boolean(onTopics) && topics.length > 0
   const showFolders = live.length >= 2
   // One folder: nothing to pick, but the menu still names it above the

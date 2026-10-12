@@ -19,6 +19,7 @@ import {
   isRecapNight,
   markGraceExplained,
   markWeekRecapSeen,
+  recapLine,
   recapShareText,
   tomorrowPreview,
   weekRecap,
@@ -29,7 +30,6 @@ import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
@@ -632,14 +632,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     publishSheet({
       kicker: t('recap.lastWeek'),
       title: t('recap.cleared', { cleared: recap.cleared, n: recap.nights }),
-      body: `${t('recap.dids', { n: recap.dids })} · ${t('recap.best', { n: recap.best })}`,
+      body: recapLine(recap, gentle),
       goLabel: t('recap.shareBtn'),
       closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
       onGo: async () => {
         publishSheet(null)
-        const how = await passAlong(recapShareText(recap), t('recap.lastWeek'))
+        const how = await passAlong(recapShareText(recap, gentle), t('recap.lastWeek'))
         if (how === 'copied') confirmDone(t('recap.copied'))
         else if (!how) confirmMiss(t('confirm.shareMiss'))
       },
@@ -799,7 +799,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             ) : null}
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
-          {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           {wish ? (
             <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
@@ -1136,15 +1135,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           </Slot>
         ) : null}
         {doneFace ? (
-          <ScrollView
-            style={styles.doneScroll}
-            contentContainerStyle={styles.doneScrollIn}
-            showsVerticalScrollIndicator={false}
-          >
+          <DoneScroll fade={colors.bg}>
             <Slot>
               <DoneIn>{face}</DoneIn>
             </Slot>
-          </ScrollView>
+          </DoneScroll>
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
@@ -1180,7 +1175,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       </SwipeFlyHost>
       {answerBar}
       {/* Toasts show in this room, so they never cover a card and nothing jumps. */}
-      <View style={styles.toastRoom} pointerEvents="none" />
+      {/* The done card has no answer buttons to keep clear, so it takes this room too. */}
+      {doneFace ? null : <View style={styles.toastRoom} pointerEvents="none" />}
     </View>
     </View>
     </MastMenuRoot>
@@ -1194,6 +1190,38 @@ const frameStyles = StyleSheet.create({
 
 // The done card settles in: a short fade and a small scale, no confetti.
 // Reduced motion shows it as it is.
+const DONE_FADE = [0.2, 0.45, 0.7, 0.9]
+
+// The done card scrolls when it is taller than the room. With more below, the
+// bottom edge fades out instead of stopping at a hard line, so it reads as "scroll".
+function DoneScroll({ fade, children }) {
+  const [box, setBox] = useState(0)
+  const [inner, setInner] = useState(0)
+  const [y, setY] = useState(0)
+  const more = inner - box - y > 4
+  return (
+    <View style={styles.doneScroll}>
+      <ScrollView
+        contentContainerStyle={styles.doneScrollIn}
+        showsVerticalScrollIndicator={inner > box + 4}
+        scrollEventThrottle={32}
+        onScroll={(e) => setY(e.nativeEvent.contentOffset.y)}
+        onLayout={(e) => setBox(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_, h) => setInner(h)}
+      >
+        {children}
+      </ScrollView>
+      {more ? (
+        <View pointerEvents="none" style={styles.doneFade}>
+          {DONE_FADE.map((opacity) => (
+            <View key={opacity} style={[styles.doneFadeStep, { backgroundColor: fade, opacity }]} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
 function DoneIn({ children }) {
   const reduce = useReduceMotion()
   const grow = useSharedValue(reduce ? 1 : 0)
@@ -1201,7 +1229,8 @@ function DoneIn({ children }) {
     if (!reduce) grow.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
   }, [grow, reduce])
   const style = useAnimatedStyle(() => ({
-    opacity: 0.2 + grow.value * 0.8,
+    // Starts mostly visible, so a stalled frame never leaves the card unreadable.
+    opacity: 0.6 + grow.value * 0.4,
     transform: [{ scale: 0.97 + grow.value * 0.03 }],
   }))
   if (reduce) return children
@@ -1262,6 +1291,8 @@ const styles = StyleSheet.create({
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
   pickBox: { flex: 1, justifyContent: 'center' },
-  doneScroll: { flexGrow: 0, flexShrink: 1 },
+  doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
+  doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
+  doneFadeStep: { flex: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

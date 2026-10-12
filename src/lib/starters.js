@@ -1,6 +1,6 @@
 import { blankLamp } from './board-json.js'
 import { hangInto, takeDown } from './board-ops.js'
-import { t } from './i18n.js'
+import { loadedPacks, t } from './i18n.js'
 import { boardDate, isDueOn } from './recurrence.js'
 
 export const STARTERS = [
@@ -31,21 +31,35 @@ export function starterList() {
   }))
 }
 
+// Folds case, the "Did I" lead and the end mark, so "Meds" matches "meds".
+function plain(text) {
+  return String(text || '').toLowerCase().replace(/^did i\s+/, '').replace(/\s*[?？]+$/, '').trim()
+}
+
+// True when a question on the shelf is this idea in any loaded language: a
+// question keeps the words it was added in after a language switch.
+export function ideaTaken(hung, idea) {
+  const words = new Set(
+    loadedPacks()
+      .flatMap((pack) => [pack[`ideas.${idea}.question`], pack[`ideas.${idea}.start`]])
+      .map(plain)
+      .filter(Boolean),
+  )
+  return hung.some((lamp) => words.has(plain(lamp.short)) || words.has(plain(lamp.question)))
+}
+
 // The words that fill "Did I ___": "take my meds".
 export function starterBlank(starter) {
   return String(starter?.question || '')
     .replace(/^did i\s+/i, '')
-    .replace(/\?+$/, '')
+    .replace(/\s*[?？]+$/, '')
     .trim()
 }
 
 export function unusedStarters(book, now = new Date(), dueNow = false) {
   const hung = (book.lamps || []).filter((lamp) => !lamp.archived)
   const dateIso = boardDate(now, book?.dayFoldHour)
-  return starterList().filter(
-    (starter) =>
-      !hung.some((lamp) => lamp.short === starter.short || lamp.question === starter.question),
-  ).filter((starter) => {
+  return starterList().filter((starter) => !ideaTaken(hung, starter.idea)).filter((starter) => {
     if (!dueNow) return true
     return isDueOn({ ...blankLamp(now), ...starter }, dateIso)
   })
@@ -106,7 +120,7 @@ export function packList(book) {
         question: t(`ideas.${item.idea}.question`),
         short: t(`ideas.${item.idea}.start`),
       }))
-      .filter((item) => !hung.some((lamp) => lamp.short === item.short || lamp.question === item.question)),
+      .filter((item) => !ideaTaken(hung, item.idea)),
   })).filter((pack) => pack.items.length)
 }
 

@@ -1,5 +1,6 @@
 import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { t } from '../../src/lib/i18n.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
@@ -17,9 +18,8 @@ function deleteNote(book, lamp) {
 
 // Stop asking and Delete, shared by the question page and its edit page.
 // `onPaused` lets the edit page keep its unsaved draft in step with the pause.
-export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
-  if (!lamp) return null
-
+// The question page's ⋯ menu uses the same two actions.
+export function lampActions({ book, lamp, colors, onChange, onPaused }) {
   function togglePause() {
     const next = toggleArchive(book, lamp)
     onChange(next)
@@ -37,8 +37,8 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
       rev: now,
       label: t('confirm.questionPaused'),
       hint: t('tonight.undoTap'),
-      until: now + 6000,
-      total: 6000,
+      until: now + DELETE_UNDO_MS,
+      total: DELETE_UNDO_MS,
       onPress: () => {
         onChange(before)
         onPaused?.(false)
@@ -69,8 +69,8 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
           rev: now,
           label: t('confirm.questionRemoved'),
           hint: t('tonight.undoTap'),
-          until: now + 6000,
-          total: 6000,
+          until: now + DELETE_UNDO_MS,
+          total: DELETE_UNDO_MS,
           // Clears the delete's tombstone too, or sync would drop it again.
           onPress: () => onChange(undoBulkLamps([after], [before], [{ lampId: lamp.id }])[0] || before),
         })
@@ -78,6 +78,12 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
     })
   }
 
+  return { togglePause, askDelete }
+}
+
+export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
+  if (!lamp) return null
+  const { togglePause, askDelete } = lampActions({ book, lamp, colors, onChange, onPaused })
   return (
     <>
       <SetCap colors={colors}>{t('lamp.secManage')}</SetCap>

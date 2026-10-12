@@ -197,10 +197,11 @@ export function ScreenRouter({
       />
     )
   }
-  if (path === '/settings' || path === '/settings/more') {
+  const settingsPage = { '/settings/more': 'more', '/settings/look': 'look', '/settings/nights': 'nights', '/settings/privacy': 'privacy', '/settings/help': 'help' }[path]
+  if (path === '/settings' || settingsPage) {
     return (
       <ProfileScreen
-        page={path === '/settings/more' ? 'more' : ''}
+        page={settingsPage || ''}
         book={book}
         onChange={change}
         onImport={onImport}
