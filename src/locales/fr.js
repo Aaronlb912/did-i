@@ -1408,7 +1408,7 @@ export const fr = {
     'Ce n’est pas une liste de tâches ni un calendrier. Mets la question que tu te repasses après coup. Prends-en une ici, ou écris la tienne qui commence par Did I.',
   'ideas.use': 'Utiliser celle-ci',
   'ideas.writeOwn': 'Écris la tienne',
-  'ideas.help': 'Aide',
+  'ideas.help': 'Aide',
   'wait.kicker': 'Pas encore',
   'wait.after': 'Après {time}.',
   'wait.later': 'plus tard',
@@ -2452,7 +2452,7 @@ export const fr = {
   'enter.eraseGo': 'Effacer et recommencer',
   'enter.eraseBody': 'Tu n’es pas connecté, donc le PIN n’existe que sur ce téléphone. Pour l’enlever, efface Did I sur ce téléphone : questions, réponses, pièces et looks. Irréversible.',
   'enter.forgotTitle': 'Tu as oublié ton PIN ?',
-  'enter.forgot': 'PIN oublié ?',
+  'enter.forgot': 'PIN oublié ?',
   'clock.pm': '{h} h {m} du soir',
   'clock.am': '{h} h {m} du matin',
   'shop.teasedBody': 'Pas encore sorti. En vente le {date}.',
@@ -2665,7 +2665,7 @@ export const fr = {
   'pack.sureGoOne': 'L’ajouter',
   'pack.addedOne': '1 question ajoutée',
   'pack.sureGo': 'Les ajouter',
-  'pack.added': '{n} questions ajoutées',
+  'pack.added': '{n} questions ajoutées',
   'note.title': 'Notes du soir',
   'note.hint': 'Touche une nuit pour ajouter une note.',
   'note.ph': 'Ajoute une courte note',
@@ -2953,13 +2953,6 @@ export const fr = {
   "frames.sec.gem": "Cadres en gemmes",
   "frames.sec.season": "De saison",
   "frames.earnHint": "Gagnés avec les séries, les gels et les cadeaux. Une fois gagnés, ils restent à toi.",
-  "frames.rarity.common": "Commun",
-  "frames.rarity.rare": "Précieux",
-  "frames.rarity.epic": "Épique",
-  "frames.rarity.legendary": "Légendaire",
-  "frames.rarity.earned": "Gagné",
-  "frames.rarity.seasonal": "De saison",
-  "frames.rarity.free": "Gratuit",
   "frames.wear": "Porter",
   "frames.claim": "Récupérer",
   "frames.free": "Gratuit",
@@ -3099,7 +3092,7 @@ export const fr = {
   "frame.aurora.desc": "Des aurores tournent lentement autour de ta carte et répandent une douce lueur.",
   "frame.aurora.f1": "Toujours en mouvement",
   "frame.aurora.f2": "La lueur déborde du bord",
-  "frame.aurora.f3": "Le cadre le plus rare de la boutique",
+  "frame.aurora.f3": "Les couleurs se fondent les unes dans les autres",
   "frame.ticket.name": "Billet",
   "frame.ticket.desc": "Un ticket d’entrée : un bord chaud, une ligne pointillée déchirée et une encoche de chaque côté.",
   "frame.ticket.f1": "Encoches des deux côtés",

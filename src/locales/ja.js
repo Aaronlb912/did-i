@@ -1378,7 +1378,7 @@ export const ja = {
   'ideas.body': 'やることリストでもカレンダーでもない。あとから何度も聞く質問を置く。ここから選ぶか、Did I で始まる文を自分で書く。',
   'ideas.use': 'これを使う',
   'ideas.writeOwn': '自分で書く',
-  'ideas.help': 'ヘルプ',
+  'ideas.help': 'ヘルプ',
   'wait.kicker': 'まだ',
   'wait.after': '{time} 以降。',
   'wait.later': 'あとで',
@@ -2383,7 +2383,7 @@ export const ja = {
   'enter.eraseGo': '消して最初から',
   'enter.eraseBody': 'ログインしていないので、PINはこのスマホにだけあります。外すには、このスマホのDid Iを消します（質問、回答、コイン、ルック）。元に戻せません。',
   'enter.forgotTitle': 'PINを忘れましたか？',
-  'enter.forgot': 'PINを忘れた？',
+  'enter.forgot': 'PINを忘れた？',
   'clock.pm': '午後{h}:{m}',
   'clock.am': '午前{h}:{m}',
   'shop.teasedBody': 'まだ発売前です。{date}に発売。',
@@ -2596,7 +2596,7 @@ export const ja = {
   'pack.sureGoOne': '追加する',
   'pack.addedOne': '質問を1つ追加しました',
   'pack.sureGo': '追加する',
-  'pack.added': '{n} 個の質問を追加しました',
+  'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',
   'note.hint': '夜をタップしてメモを追加。',
   'note.ph': '短いメモを追加',
@@ -2884,13 +2884,6 @@ export const ja = {
   "frames.sec.gem": "ジェムのフレーム",
   "frames.sec.season": "季節",
   "frames.earnHint": "連続記録、フリーズ、ギフトで手に入ります。一度手に入れればずっとあなたのもの。",
-  "frames.rarity.common": "ふつう",
-  "frames.rarity.rare": "レア",
-  "frames.rarity.epic": "エピック",
-  "frames.rarity.legendary": "レジェンド",
-  "frames.rarity.earned": "獲得",
-  "frames.rarity.seasonal": "季節",
-  "frames.rarity.free": "無料",
   "frames.wear": "付ける",
   "frames.claim": "もらう",
   "frames.free": "無料",
@@ -3030,7 +3023,7 @@ export const ja = {
   "frame.aurora.desc": "オーロラがカードのまわりをゆっくり回り、後ろにやわらかな光を落とします。",
   "frame.aurora.f1": "いつも動いている",
   "frame.aurora.f2": "光が縁からあふれる",
-  "frame.aurora.f3": "ショップでいちばん珍しい",
+  "frame.aurora.f3": "色がゆっくり溶け合います",
   "frame.ticket.name": "チケット",
   "frame.ticket.desc": "入場券の半券。あたたかな縁、破れた点線、両側の切り込み。",
   "frame.ticket.f1": "両側に切り込み",

@@ -1403,7 +1403,7 @@ export const pt = {
     'Isto não é uma lista de tarefas nem um calendário. Põe a pergunta que repetires depois do facto. Usa uma destas, ou escreve a tua que começa por Did I.',
   'ideas.use': 'Usar esta',
   'ideas.writeOwn': 'Escreve a tua',
-  'ideas.help': 'Ajuda',
+  'ideas.help': 'Ajuda',
   'wait.kicker': 'Ainda não',
   'wait.after': 'Depois de {time}.',
   'wait.later': 'mais tarde',
@@ -2438,7 +2438,7 @@ export const pt = {
   'enter.eraseGo': 'Apagar e começar de novo',
   'enter.eraseBody': 'Você não entrou na conta, então o PIN só existe neste celular. Para tirar, apague o Did I neste celular: perguntas, respostas, moedas e looks. Não dá para desfazer.',
   'enter.forgotTitle': 'Esqueceu seu PIN?',
-  'enter.forgot': 'Esqueceu o PIN?',
+  'enter.forgot': 'Esqueceu o PIN?',
   'clock.pm': '{h}:{m} da tarde',
   'clock.am': '{h}:{m} da manhã',
   'shop.teasedBody': 'Ainda não saiu. Fica à venda em {date}.',
@@ -2651,7 +2651,7 @@ export const pt = {
   'pack.sureGoOne': 'Adicionar',
   'pack.addedOne': '1 pergunta adicionada',
   'pack.sureGo': 'Adicionar',
-  'pack.added': '{n} perguntas adicionadas',
+  'pack.added': '{n} perguntas adicionadas',
   'note.title': 'Notas',
   'note.hint': 'Toque numa noite para adicionar uma nota.',
   'note.ph': 'Adicione uma nota curta',
@@ -2939,13 +2939,6 @@ export const pt = {
   "frames.sec.gem": "Molduras com gemas",
   "frames.sec.season": "Da estação",
   "frames.earnHint": "Ganham-se com sequências, congelamentos e presentes. Depois de ganhos, ficam teus.",
-  "frames.rarity.common": "Comum",
-  "frames.rarity.rare": "Rara",
-  "frames.rarity.epic": "Épica",
-  "frames.rarity.legendary": "Lendária",
-  "frames.rarity.earned": "Conquistada",
-  "frames.rarity.seasonal": "Da estação",
-  "frames.rarity.free": "Grátis",
   "frames.wear": "Usar",
   "frames.claim": "Pegar",
   "frames.free": "Grátis",
@@ -3085,7 +3078,7 @@ export const pt = {
   "frame.aurora.desc": "Luzes do norte giram devagar em volta do cartão e deixam um brilho suave atrás.",
   "frame.aurora.f1": "Sempre em movimento",
   "frame.aurora.f2": "O brilho passa da borda",
-  "frame.aurora.f3": "A moldura mais rara da loja",
+  "frame.aurora.f3": "As cores fundem-se umas nas outras",
   "frame.ticket.name": "Bilhete",
   "frame.ticket.desc": "Um talão de entrada: um rebordo quente, uma linha picotada rasgada e um entalhe de cada lado.",
   "frame.ticket.f1": "Entalhes dos dois lados",
