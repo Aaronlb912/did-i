@@ -473,18 +473,9 @@ export function SnowmanOver({ f }) {
             <S.Stop offset="1" stopColor="#a9bcd8" />
           </S.LinearGradient>
           <S.RadialGradient id="smGl" cx="0.5" cy="0.5" r="0.5">
-            {done ? (
-              <>
-                <S.Stop offset="0" stopColor="#ffd98a" stopOpacity={L ? 0.6 : 0.45} />
-                <S.Stop offset="0.5" stopColor="#ffc25a" stopOpacity={L ? 0.22 : 0.16} />
-                <S.Stop offset="1" stopColor="#ffc25a" stopOpacity={0} />
-              </>
-            ) : (
-              <>
-                <S.Stop offset="0" stopColor="#cfe4ff" stopOpacity={L ? 0.55 : 0.35} />
-                <S.Stop offset="1" stopColor="#cfe4ff" stopOpacity={0} />
-              </>
-            )}
+            <S.Stop offset="0" stopColor={done ? '#ffd98a' : '#cfe4ff'} stopOpacity={done ? (L ? 0.6 : 0.45) : L ? 0.55 : 0.35} />
+            <S.Stop offset="0.5" stopColor={done ? '#ffc25a' : '#cfe4ff'} stopOpacity={done ? (L ? 0.22 : 0.16) : L ? 0.275 : 0.175} />
+            <S.Stop offset="1" stopColor={done ? '#ffc25a' : '#cfe4ff'} stopOpacity={0} />
           </S.RadialGradient>
         </S.Defs>
         <S.Circle cx={sx + 2} cy={h - 4} r={done ? 42 : 30} fill="url(#smGl)" />
@@ -520,6 +511,19 @@ export function SnowmanOver({ f }) {
       </Layer>
       <Moving clock={f.clock} fn={bob} style={FILL}>
         <Layer f={f}>
+          {/* Its own Svg, so it needs its own gradients: Android does not reach across. */}
+          <S.Defs>
+            <S.RadialGradient id="smSb" cx="0.36" cy="0.3" r="0.8">
+              <S.Stop offset="0" stopColor="#ffffff" />
+              <S.Stop offset="0.55" stopColor="#eef3fa" />
+              <S.Stop offset="1" stopColor="#c6d4e8" />
+            </S.RadialGradient>
+            <S.LinearGradient id="smDr" x1="0" y1={h - f.R} x2="0" y2={h + 19} gradientUnits="userSpaceOnUse">
+              <S.Stop offset="0" stopColor="#ffffff" />
+              <S.Stop offset="0.55" stopColor="#eef3fa" />
+              <S.Stop offset="1" stopColor="#cbd9ec" />
+            </S.LinearGradient>
+          </S.Defs>
           <S.G transform={grow}>
             {st >= 1 ? <Ball S={S} b={B} edge={EDGE} /> : null}
             {st >= 2 ? (
