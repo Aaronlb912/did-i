@@ -209,11 +209,7 @@ function FrameFacts({ frame, owned, colors }) {
                   : t('frames.howStreak', { n: frame.need })}
           </Text>
         </View>
-      ) : (
-        <View style={[styles.rarity, { borderColor: colors.on }]}>
-          <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
-        </View>
-      )}
+      ) : null}
       <Text style={[styles.desc, { color: colors.ink }]}>{t(frameText(frame.id, 'desc'))}</Text>
       {['f1', 'f2', 'f3'].map((key) => (
         <Text key={key} style={[styles.fact, { color: colors.inkSoft }]}>
@@ -609,7 +605,6 @@ const styles = StyleSheet.create({
   miniTitle: { fontSize: 22, lineHeight: 28, textAlign: 'center' },
   miniCardRoomy: { paddingHorizontal: 54, paddingVertical: 50 },
   facts: { gap: 6, paddingBottom: 4 },
-  rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },
   desc: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   fact: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },

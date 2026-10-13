@@ -1412,7 +1412,7 @@ export const de = {
     'Das ist keine To-do-Liste und kein Kalender. Stell die Frage, die du dir hinterher stellst. Nimm eine davon, oder schreib deinen Satz, der mit Did I anfängt.',
   'ideas.use': 'Diese nehmen',
   'ideas.writeOwn': 'Eigene schreiben',
-  'ideas.help': 'Hilfe',
+  'ideas.help': 'Hilfe',
   'wait.kicker': 'Noch nicht',
   'wait.after': 'Nach {time}.',
   'wait.later': 'später',
@@ -2456,7 +2456,7 @@ export const de = {
   'enter.eraseGo': 'Löschen und neu anfangen',
   'enter.eraseBody': 'Du bist nicht angemeldet, also gibt es die PIN nur auf diesem Handy. Um sie zu entfernen, lösch Did I auf diesem Handy: Fragen, Antworten, Münzen und Looks. Das geht nicht rückgängig.',
   'enter.forgotTitle': 'PIN vergessen?',
-  'enter.forgot': 'PIN vergessen?',
+  'enter.forgot': 'PIN vergessen?',
   'clock.pm': '{h}:{m} nachm.',
   'clock.am': '{h}:{m} vorm.',
   'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
@@ -2669,7 +2669,7 @@ export const de = {
   'pack.sureGoOne': 'Hinzufügen',
   'pack.addedOne': '1 Frage hinzugefügt',
   'pack.sureGo': 'Hinzufügen',
-  'pack.added': '{n} Fragen hinzugefügt',
+  'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',
   'note.hint': 'Tippe auf eine Nacht für eine Notiz.',
   'note.ph': 'Kurze Notiz hinzufügen',
@@ -2956,13 +2956,6 @@ export const de = {
   "frames.sec.gem": "Edelsteinrahmen",
   "frames.sec.season": "Saison",
   "frames.earnHint": "Verdient mit Serien, Freezes und Geschenken. Einmal verdient, bleiben sie dir.",
-  "frames.rarity.common": "Gewöhnlich",
-  "frames.rarity.rare": "Selten",
-  "frames.rarity.epic": "Episch",
-  "frames.rarity.legendary": "Legendär",
-  "frames.rarity.earned": "Verdient",
-  "frames.rarity.seasonal": "Saison",
-  "frames.rarity.free": "Gratis",
   "frames.wear": "Tragen",
   "frames.claim": "Holen",
   "frames.free": "Gratis",
@@ -3102,7 +3095,7 @@ export const de = {
   "frame.aurora.desc": "Nordlichter drehen sich langsam um deine Karte und werfen einen sanften Schein.",
   "frame.aurora.f1": "Immer in Bewegung",
   "frame.aurora.f2": "Der Schein reicht über den Rand",
-  "frame.aurora.f3": "Der seltenste Rahmen im Shop",
+  "frame.aurora.f3": "Die Farben gehen ineinander über",
   "frame.ticket.name": "Eintrittskarte",
   "frame.ticket.desc": "Ein Abschnitt zum Einlass: ein warmer Rand, eine gerissene Punktlinie und eine Kerbe an jeder Seite.",
   "frame.ticket.f1": "Kerben an beiden Seiten",

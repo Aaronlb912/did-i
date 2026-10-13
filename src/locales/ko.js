@@ -1378,7 +1378,7 @@ export const ko = {
     '할 일 목록도 캘린더도 아니에요. 나중에 또 묻는 질문을 두는 곳이에요. 여기서 고르거나 Did I로 시작하는 문장을 직접 쓰세요.',
   'ideas.use': '이거 쓰기',
   'ideas.writeOwn': '직접 쓰기',
-  'ideas.help': '도움말',
+  'ideas.help': '도움말',
   'wait.kicker': '아직',
   'wait.after': '{time} 이후.',
   'wait.later': '나중에',
@@ -2385,7 +2385,7 @@ export const ko = {
   'enter.eraseGo': '지우고 새로 시작',
   'enter.eraseBody': '로그인하지 않아서 PIN은 이 휴대폰에만 있어요. PIN을 없애려면 이 휴대폰의 Did I를 지워야 해요: 질문, 답, 코인, 룩. 되돌릴 수 없어요.',
   'enter.forgotTitle': 'PIN을 잊었나요?',
-  'enter.forgot': 'PIN을 잊었나요?',
+  'enter.forgot': 'PIN을 잊었나요?',
   'clock.pm': '오후 {h}:{m}',
   'clock.am': '오전 {h}:{m}',
   'shop.teasedBody': '아직 나오지 않았어요. {date}에 판매 시작.',
@@ -2598,7 +2598,7 @@ export const ko = {
   'pack.sureGoOne': '추가하기',
   'pack.addedOne': '질문 1개를 추가했어요',
   'pack.sureGo': '추가하기',
-  'pack.added': '질문 {n}개 추가됨',
+  'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',
   'note.hint': '밤을 탭해 메모를 추가하세요.',
   'note.ph': '짧은 메모 추가',
@@ -2886,13 +2886,6 @@ export const ko = {
   "frames.sec.gem": "젬 프레임",
   "frames.sec.season": "시즌",
   "frames.earnHint": "연속 기록, 프리즈, 선물로 얻어요. 한 번 얻으면 계속 내 거예요.",
-  "frames.rarity.common": "일반",
-  "frames.rarity.rare": "레어",
-  "frames.rarity.epic": "에픽",
-  "frames.rarity.legendary": "레전더리",
-  "frames.rarity.earned": "획득",
-  "frames.rarity.seasonal": "시즌",
-  "frames.rarity.free": "무료",
   "frames.wear": "착용",
   "frames.claim": "받기",
   "frames.free": "무료",
@@ -3032,7 +3025,7 @@ export const ko = {
   "frame.aurora.desc": "오로라가 카드 둘레를 천천히 돌며 뒤로 은은한 빛을 흘려요.",
   "frame.aurora.f1": "늘 움직여요",
   "frame.aurora.f2": "빛이 테두리 밖으로 번져요",
-  "frame.aurora.f3": "상점에서 가장 희귀한 프레임",
+  "frame.aurora.f3": "색이 서로 부드럽게 섞여요",
   "frame.ticket.name": "티켓",
   "frame.ticket.desc": "입장권 반쪽. 따뜻한 테두리, 찢어진 점선, 양쪽에 홈.",
   "frame.ticket.f1": "양쪽에 홈",

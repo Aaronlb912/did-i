@@ -1400,7 +1400,7 @@ export const en = {
     'This is not a to-do list and not a calendar. Put the question you keep asking after the fact. Use one of these, or write your own sentence that starts with Did I.',
   'ideas.use': 'Use this',
   'ideas.writeOwn': 'Write your own',
-  'ideas.help': 'Help',
+  'ideas.help': 'Help',
   'wait.kicker': 'Not yet',
   'wait.after': 'After {time}.',
   'wait.later': 'later',
@@ -2433,7 +2433,7 @@ export const en = {
   'enter.eraseGo': 'Erase and start over',
   'enter.eraseBody': 'You are not signed in, so the PIN only lives on this phone. To remove it, erase Did I on this phone: questions, answers, coins and looks. This cannot be undone.',
   'enter.forgotTitle': 'Forgot your PIN?',
-  'enter.forgot': 'Forgot PIN?',
+  'enter.forgot': 'Forgot PIN?',
   'clock.pm': '{h}:{m} PM',
   'clock.am': '{h}:{m} AM',
   'shop.teasedBody': 'Not out yet. It goes on sale {date}.',
@@ -2646,7 +2646,7 @@ export const en = {
   'pack.sureGoOne': 'Add it',
   'pack.addedOne': '1 question added',
   'pack.sureGo': 'Add them',
-  'pack.added': '{n} questions added',
+  'pack.added': '{n} questions added',
   'note.title': 'Notes',
   'note.hint': 'Tap a night to add a note.',
   'note.ph': 'Add a short note',
@@ -2934,13 +2934,6 @@ export const en = {
   "frames.sec.gem": "Gem frames",
   "frames.sec.season": "Seasonal",
   "frames.earnHint": "Earn these with streaks, freezes and gifts. Once earned, they stay yours.",
-  "frames.rarity.common": "Common",
-  "frames.rarity.rare": "Rare",
-  "frames.rarity.epic": "Epic",
-  "frames.rarity.legendary": "Legendary",
-  "frames.rarity.earned": "Earned",
-  "frames.rarity.seasonal": "Seasonal",
-  "frames.rarity.free": "Free",
   "frames.wear": "Wear",
   "frames.claim": "Claim",
   "frames.free": "Free",
@@ -3080,7 +3073,7 @@ export const en = {
   "frame.aurora.desc": "Northern lights slowly turn around your card and spill a soft glow behind it.",
   "frame.aurora.f1": "Always moving",
   "frame.aurora.f2": "Glow spills past the edge",
-  "frame.aurora.f3": "The rarest frame in the shop",
+  "frame.aurora.f3": "Colors fade into each other",
   "frame.ticket.name": "Ticket",
   "frame.ticket.desc": "An admit-one stub: a warm edge, a torn dotted line inside it, and a notch bitten out of each side.",
   "frame.ticket.f1": "Notches on both sides",

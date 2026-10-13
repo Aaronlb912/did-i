@@ -1402,7 +1402,7 @@ export const it = {
     'Non è una lista di cose da fare né un calendario. Metti la domanda che ti ripeti dopo. Usa una di queste, o scrivi la tua che inizia con Did I.',
   'ideas.use': 'Usa questa',
   'ideas.writeOwn': 'Scrivi la tua',
-  'ideas.help': 'Aiuto',
+  'ideas.help': 'Aiuto',
   'wait.kicker': 'Non ancora',
   'wait.after': 'Dopo {time}.',
   'wait.later': 'dopo',
@@ -2436,7 +2436,7 @@ export const it = {
   'enter.eraseGo': 'Cancella e ricomincia',
   'enter.eraseBody': 'Non hai effettuato l’accesso, quindi il PIN esiste solo su questo telefono. Per toglierlo, cancella Did I su questo telefono: domande, risposte, monete e look. Non si può annullare.',
   'enter.forgotTitle': 'Hai dimenticato il PIN?',
-  'enter.forgot': 'PIN dimenticato?',
+  'enter.forgot': 'PIN dimenticato?',
   'clock.pm': '{h}:{m} di sera',
   'clock.am': '{h}:{m} di mattina',
   'shop.teasedBody': 'Non è ancora uscito. In vendita dal {date}.',
@@ -2649,7 +2649,7 @@ export const it = {
   'pack.sureGoOne': 'Aggiungila',
   'pack.addedOne': '1 domanda aggiunta',
   'pack.sureGo': 'Aggiungile',
-  'pack.added': '{n} domande aggiunte',
+  'pack.added': '{n} domande aggiunte',
   'note.title': 'Note',
   'note.hint': 'Tocca una notte per aggiungere una nota.',
   'note.ph': 'Aggiungi una breve nota',
@@ -2937,13 +2937,6 @@ export const it = {
   "frames.sec.gem": "Cornici a gemme",
   "frames.sec.season": "Di stagione",
   "frames.earnHint": "Si guadagnano con serie, congelamenti e regali. Una volta presi, restano tuoi.",
-  "frames.rarity.common": "Comune",
-  "frames.rarity.rare": "Rara",
-  "frames.rarity.epic": "Epica",
-  "frames.rarity.legendary": "Leggendaria",
-  "frames.rarity.earned": "Guadagnata",
-  "frames.rarity.seasonal": "Di stagione",
-  "frames.rarity.free": "Gratis",
   "frames.wear": "Indossa",
   "frames.claim": "Prendi",
   "frames.free": "Gratis",
@@ -3083,7 +3076,7 @@ export const it = {
   "frame.aurora.desc": "Luci del nord girano piano intorno alla carta e spargono un bagliore tenue.",
   "frame.aurora.f1": "Sempre in movimento",
   "frame.aurora.f2": "Il bagliore va oltre il bordo",
-  "frame.aurora.f3": "La cornice più rara del negozio",
+  "frame.aurora.f3": "I colori sfumano l’uno nell’altro",
   "frame.ticket.name": "Biglietto",
   "frame.ticket.desc": "Un tagliando d’ingresso: un bordo caldo, una linea tratteggiata strappata e una tacca su ogni lato.",
   "frame.ticket.f1": "Tacche ai due lati",

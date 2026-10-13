@@ -1375,7 +1375,7 @@ export const zh = {
   'ideas.body': '这不是待办清单，也不是日历。放你事后总问的那个问题。用下面其中一个，或自己写以 Did I 开头的句子。',
   'ideas.use': '用这个',
   'ideas.writeOwn': '自己写',
-  'ideas.help': '帮助',
+  'ideas.help': '帮助',
   'wait.kicker': '还没',
   'wait.after': '{time} 之后。',
   'wait.later': '稍后',
@@ -2372,7 +2372,7 @@ export const zh = {
   'enter.eraseGo': '清除并重新开始',
   'enter.eraseBody': '你没有登录，所以 PIN 只保存在这台手机上。要移除它，需要清除这台手机上的 Did I：问题、回答、金币和外观。无法撤销。',
   'enter.forgotTitle': '忘记 PIN 了？',
-  'enter.forgot': '忘记 PIN？',
+  'enter.forgot': '忘记 PIN？',
   'clock.pm': '下午{h}:{m}',
   'clock.am': '上午{h}:{m}',
   'shop.teasedBody': '还没上架。{date} 开售。',
@@ -2585,7 +2585,7 @@ export const zh = {
   'pack.sureGoOne': '添加',
   'pack.addedOne': '已添加 1 个问题',
   'pack.sureGo': '添加',
-  'pack.added': '已添加 {n} 个问题',
+  'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',
   'note.hint': '点一个晚上来添加备注。',
   'note.ph': '添加一条简短备注',
@@ -2873,13 +2873,6 @@ export const zh = {
   "frames.sec.gem": "宝石边框",
   "frames.sec.season": "季节",
   "frames.earnHint": "通过连续记录、冻结和送礼获得。获得后永久属于你。",
-  "frames.rarity.common": "普通",
-  "frames.rarity.rare": "稀有",
-  "frames.rarity.epic": "史诗",
-  "frames.rarity.legendary": "传奇",
-  "frames.rarity.earned": "获得",
-  "frames.rarity.seasonal": "季节",
-  "frames.rarity.free": "免费",
   "frames.wear": "佩戴",
   "frames.claim": "领取",
   "frames.free": "免费",
@@ -3019,7 +3012,7 @@ export const zh = {
   "frame.aurora.desc": "极光缓缓绕着卡片流转，在背后洒下柔光。",
   "frame.aurora.f1": "一直流动",
   "frame.aurora.f2": "光晕溢出边缘",
-  "frame.aurora.f3": "商店里最稀有的边框",
+  "frame.aurora.f3": "色彩彼此交融",
   "frame.ticket.name": "票根",
   "frame.ticket.desc": "一张入场票根：暖色的边，里面一条撕开的虚线，两侧各一个缺口。",
   "frame.ticket.f1": "两侧缺口",

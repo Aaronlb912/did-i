@@ -1405,7 +1405,7 @@ export const es = {
     'Esto no es una lista de tareas ni un calendario. Pon la pregunta que repites después del hecho. Usa una de estas, o escribe la tuya empezando con Did I.',
   'ideas.use': 'Usar esta',
   'ideas.writeOwn': 'Escribe la tuya',
-  'ideas.help': 'Ayuda',
+  'ideas.help': 'Ayuda',
   'wait.kicker': 'Todavía no',
   'wait.after': 'Después de {time}.',
   'wait.later': 'luego',
@@ -2446,7 +2446,7 @@ export const es = {
   'enter.eraseGo': 'Borrar y empezar de nuevo',
   'enter.eraseBody': 'No has iniciado sesión, así que el PIN solo existe en este teléfono. Para quitarlo, borra Did I en este teléfono: preguntas, respuestas, monedas y looks. No se puede deshacer.',
   'enter.forgotTitle': '¿Olvidaste tu PIN?',
-  'enter.forgot': '¿Olvidaste el PIN?',
+  'enter.forgot': '¿Olvidaste el PIN?',
   'clock.pm': '{h}:{m} p. m.',
   'clock.am': '{h}:{m} a. m.',
   'shop.teasedBody': 'Aún no ha salido. Sale a la venta el {date}.',
@@ -2659,7 +2659,7 @@ export const es = {
   'pack.sureGoOne': 'Añadirla',
   'pack.addedOne': '1 pregunta añadida',
   'pack.sureGo': 'Añadirlas',
-  'pack.added': '{n} preguntas añadidas',
+  'pack.added': '{n} preguntas añadidas',
   'note.title': 'Notas',
   'note.hint': 'Toca una noche para añadir una nota.',
   'note.ph': 'Añade una nota corta',
@@ -2947,13 +2947,6 @@ export const es = {
   "frames.sec.gem": "Marcos con gemas",
   "frames.sec.season": "De temporada",
   "frames.earnHint": "Se ganan con rachas, congelaciones y regalos. Una vez ganados, son tuyos.",
-  "frames.rarity.common": "Común",
-  "frames.rarity.rare": "Rara",
-  "frames.rarity.epic": "Épica",
-  "frames.rarity.legendary": "Legendaria",
-  "frames.rarity.earned": "Ganado",
-  "frames.rarity.seasonal": "De temporada",
-  "frames.rarity.free": "Gratis",
   "frames.wear": "Usar",
   "frames.claim": "Reclamar",
   "frames.free": "Gratis",
@@ -3093,7 +3086,7 @@ export const es = {
   "frame.aurora.desc": "Luces del norte giran despacio alrededor de tu tarjeta y dejan un brillo suave detrás.",
   "frame.aurora.f1": "Siempre en movimiento",
   "frame.aurora.f2": "El brillo pasa del borde",
-  "frame.aurora.f3": "El marco más raro de la tienda",
+  "frame.aurora.f3": "Los colores se funden entre sí",
   "frame.ticket.name": "Entrada",
   "frame.ticket.desc": "Un resguardo de entrada: un borde cálido, una línea de puntos rasgada y una muesca a cada lado.",
   "frame.ticket.f1": "Muescas a ambos lados",
