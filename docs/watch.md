@@ -34,6 +34,18 @@ saves the answer, the same way a widget tap is saved.
   phone in its language (`widget.tonight.*` and `watch.*` keys, sent with the
   cards; the watch fills `{n}`, `{a}`, `{b}`). Before the first cards arrive
   the watch shows English fallbacks (`String(localized:)`).
+- Look, buddy, streak: with the cards the phone also sends `colors` (the
+  look's dark colours: accent, ink, soft, card, card2, line, bg), `buddy`
+  (`parts` from `src/lib/buddy-parts.js` plus worn `behind`/`front` from
+  `wornShapes`, the widget part format), `streak` (`shelfStreak`, 0 in gentle
+  mode), `streakLabel`/`streakOneLabel` and `cheer` (look tones for the burst).
+  All optional: cards from an older phone build draw in the lime palette with
+  no buddy. `buddy-parts.js` is a copy of the widget's `BUDDY` table;
+  `npm test` checks they match.
+- Screens: a ring just inside the screen edge fills as questions are
+  answered; buddy, folder and "a of b", the question, then Not yet and Did.
+  Done: buddy over a moon with the streak. The answer that finishes the
+  night plays a success haptic and a short burst (no burst with Reduce Motion).
 
 ## CI
 
