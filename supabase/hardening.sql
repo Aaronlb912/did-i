@@ -289,9 +289,10 @@ begin
   if made_today > 30 then
     raise exception 'too many today';
   end if;
-  -- Yesterday and older no longer count.
+  -- Yesterday and older no longer count. All of the sender's old rows go, so
+  -- a friend they stopped sending to does not leave a row behind for good.
   delete from public.send_counts
-  where from_id = new.from_id and to_id = new.to_id and day < current_date;
+  where from_id = new.from_id and day < current_date;
   return new;
 end;
 $$;

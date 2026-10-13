@@ -394,6 +394,49 @@ begin
     raise exception 'FAIL: done stayed after the only did left';
   end if;
 
+  -- Marking a night done is server only: a stranger cannot call we_settle.
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.we_settle(card, night);
+    raise exception 'FAIL: a stranger called we_settle';
+  exception when insufficient_privilege then
+    null;
+  end;
+  execute 'reset role';
+
+  -- Someone leaving finishes an all card for the others, and is not credited.
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  card := public.we_make('Did we stretch?', 'all', 'waiting', 'daily', '{}', null, '{}');
+  execute 'reset role';
+  insert into public.we_members (card_id, user_id, state, joined_at) values (card, b, 'in', now()), (card, c, 'in', now());
+  insert into public.we_answers (card_id, user_id, night, status) values (card, a, night, 'did'), (card, b, night, 'did');
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.we_leave(card);
+  execute 'reset role';
+  if not exists (select 1 from public.we_done x where x.card_id = card and x.night = test_night) then
+    raise exception 'FAIL: the leave did not finish the card for the two who did';
+  end if;
+  if exists (select 1 from public.we_done x where x.card_id = card and x.night = test_night and x.finisher is not null) then
+    raise exception 'FAIL: the person who left was credited with the finish';
+  end if;
+
+  -- Taking an answer back still works after the card was closed.
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  card := public.we_make('Did we sweep?', 'any', 'waiting', 'daily', '{}', null, '{}');
+  perform public.we_answer(card, night, 'did');
+  execute 'reset role';
+  update public.we_cards set archived = true where id = card;
+  execute 'set local role authenticated';
+  perform public.we_answer(card, night, null);
+  execute 'reset role';
+  if exists (select 1 from public.we_answers x where x.card_id = card and x.user_id = a and x.night = test_night) then
+    raise exception 'FAIL: could not take an answer back on a closed card';
+  end if;
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;
