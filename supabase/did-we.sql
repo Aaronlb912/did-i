@@ -365,10 +365,18 @@ declare
   q text;
 begin
   if now_done and not was_done then
+    -- The finisher is whoever said the Did that finished it. A join, leave or
+    -- edit that tips the night over credits nobody.
     insert into public.we_done (card_id, night, finisher, finisher_cheer)
-    select card, on_night, (select auth.uid()), left(coalesce(p.badge_cheer, ''), 24)
-    from (select 1) one
-    left join public.profiles p on p.user_id = (select auth.uid())
+    select card, on_night, f.who, left(coalesce(p.badge_cheer, ''), 24)
+    from (
+      select case when exists (
+        select 1 from public.we_answers a
+        where a.card_id = card and a.night = on_night
+          and a.user_id = (select auth.uid()) and a.status = 'did'
+      ) then (select auth.uid()) end as who
+    ) f
+    left join public.profiles p on p.user_id = f.who
     on conflict do nothing;
     select question into q from public.we_cards where id = card;
     insert into public.push_queue (to_id, title, body, go)
@@ -382,7 +390,9 @@ begin
 end;
 $$;
 
-revoke all on function public.we_settle(uuid, date) from public;
+-- Server only: Supabase gives anon and authenticated execute on new functions,
+-- so revoking from public alone left anyone able to mark a card done.
+revoke all on function public.we_settle(uuid, date) from public, anon, authenticated;
 
 -- After a join, a leave or an edit: settle every night that can still be
 -- open somewhere (yesterday through tomorrow), so done is not left stale.
@@ -555,6 +565,8 @@ begin
         where not c.archived) >= public.we_max_cards() then
       raise exception 'too many shared questions';
     end if;
+    -- Same lock as we_answer, so a join and an answer never settle at once.
+    perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
     perform public.we_pin_turns(card, current_date - 1, current_date + 1);
     update public.we_members
     set state = 'in', joined_at = now()
@@ -587,6 +599,7 @@ declare
   who uuid := (select auth.uid());
   heir uuid;
 begin
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
   perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_members set state = 'left'
   where card_id = card and user_id = who and state = 'in';
@@ -627,6 +640,7 @@ security definer
 set search_path = public
 as $$
 begin
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
   perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_cards
   set question = btrim(want_question),
@@ -744,6 +758,9 @@ begin
   if not exists (select 1 from public.we_members where card_id = card and user_id = who and state = 'in') then
     raise exception 'not on this card';
   end if;
+  -- One change to a card at a time: two people answering in the same moment
+  -- would each count only their own Did, and the night would stay not done.
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
   -- Tonight or the night before in any time zone. No reaching back to fill
   -- in a streak.
   if on_night < current_date - 2 then
@@ -763,8 +780,9 @@ begin
   ) then
     raise exception 'that night is closed';
   end if;
-  -- A closed card, or a night it is not asked, takes no answers.
-  if not exists (
+  -- A closed card, or a night it is not asked, takes no new answers. Taking
+  -- one back (want_status null) still works after the card changed.
+  if want_status is not null and not exists (
     select 1 from public.we_cards c
     where c.id = card and not c.archived
       and public.we_due(c.starts_on, c.cadence, c.weekdays, on_night)
