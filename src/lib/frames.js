@@ -25,7 +25,7 @@ export const FREE_FRAME = 'first'
 
 const coin = (id, coins, extra = {}) => ({ id, kind: 'coin', price: { coins }, coins, gems: 0, animated: false, season: null, earn: null, ...extra })
 const gem = (id, gems, extra = {}) => ({ id, kind: 'gem', price: { gems }, coins: 0, gems, animated: true, season: null, earn: null, ...extra })
-const earned = (id, earn, need) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need })
+const earned = (id, earn, need, extra = {}) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need, ...extra })
 const season = (id, from, until, extra = {}) => ({ id, kind: 'season', price: null, coins: 0, gems: 0, animated: true, season: { from, until }, earn: null, ...extra })
 
 const RAW = [
@@ -95,6 +95,26 @@ const RAW = [
   coin('linked', 90, { from: '2026-11-20' }),
   gem('bedtime', 3, { from: '2026-11-20' }),
   season('countdown', '12-01', '12-24', { from: '2026-11-20' }),
+  // Drop 2026-12-04.
+  coin('knit', 100, { from: '2026-12-04' }),
+  gem('window', 3, { from: '2026-12-04' }),
+  earned('candles', 'streak', 14, { from: '2026-12-04' }),
+  // Drop 2026-12-18.
+  coin('ginger', 110, { from: '2026-12-18' }),
+  gem('snowman', 3, { from: '2026-12-18' }),
+  season('solstice', '12-20', '12-22', { from: '2026-12-18' }),
+  // Drop 2027-01-01.
+  coin('mosaic', 120, { from: '2027-01-01' }),
+  gem('domino', 3, { from: '2027-01-01' }),
+  season('fresh', '01-01', '01-07', { from: '2027-01-01' }),
+  // Drop 2027-01-15.
+  coin('origami', 90, { from: '2027-01-15' }),
+  gem('aquarium', 3, { from: '2027-01-15' }),
+  earned('books', 'streak', 21, { from: '2027-01-15' }),
+  // Drop 2027-01-29.
+  coin('lace', 90, { from: '2027-01-29' }),
+  gem('boats', 3, { from: '2027-01-29' }),
+  season('thaw', '02-20', '03-05', { from: '2027-01-29' }),
   // Did I's birthday: hidden until APP_LAUNCH is set.
   LAUNCH_MD ? season('bday', LAUNCH_MD, addDays(LAUNCH_MD, 6), { firstYear: Number(APP_LAUNCH.slice(0, 4)) + 1 }) : season('bday', '01-01', '01-01', { hidden: true }),
 ]

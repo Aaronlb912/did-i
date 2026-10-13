@@ -215,7 +215,17 @@ insert into public.shop_catalog (kind, item_id, coins, gems, live_from) values
   ('frame', 'neonheart', null, 3, '2026-10-07'),
   ('frame', 'storm', null, 3, '2026-10-07'),
   ('frame', 'linked', 90, null, '2026-11-20'),
-  ('frame', 'bedtime', null, 3, '2026-11-20')
+  ('frame', 'bedtime', null, 3, '2026-11-20'),
+  ('frame', 'knit', 100, null, '2026-12-04'),
+  ('frame', 'window', null, 3, '2026-12-04'),
+  ('frame', 'ginger', 110, null, '2026-12-18'),
+  ('frame', 'snowman', null, 3, '2026-12-18'),
+  ('frame', 'mosaic', 120, null, '2027-01-01'),
+  ('frame', 'domino', null, 3, '2027-01-01'),
+  ('frame', 'origami', 90, null, '2027-01-15'),
+  ('frame', 'aquarium', null, 3, '2027-01-15'),
+  ('frame', 'lace', 90, null, '2027-01-29'),
+  ('frame', 'boats', null, 3, '2027-01-29')
 on conflict (kind, item_id) do update
   set coins = excluded.coins, gems = excluded.gems, live_from = excluded.live_from;
 

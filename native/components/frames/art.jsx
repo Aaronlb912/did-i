@@ -50,6 +50,11 @@ import {
   StormOver,
 } from './art-living.jsx'
 import { BedtimeOver, CountdownOver, LinkedOver } from './art-drop.jsx'
+import { CandlesOver, KnitOver, WindowOver } from './art-2026-12-04.jsx'
+import { GingerOver, SnowmanOver, SolsticeOver } from './art-2026-12-18.jsx'
+import { DominoOver, FreshOver, FreshUnder, MosaicOver } from './art-2027-01-01.jsx'
+import { AquariumOver, AquariumUnder, BooksOver, OrigamiOver } from './art-2027-01-15.jsx'
+import { BoatsOver, LaceUnder, ThawOver } from './art-2027-01-29.jsx'
 
 const { withTiming } = Reanimated
 
@@ -1659,6 +1664,21 @@ export const FRAME_ART = {
   linked: { over: LinkedOver },
   bedtime: { over: BedtimeOver, animated: true },
   countdown: { over: CountdownOver, animated: true },
+  knit: { over: KnitOver },
+  window: { over: WindowOver, animated: true },
+  candles: { over: CandlesOver, animated: true },
+  ginger: { over: GingerOver },
+  snowman: { over: SnowmanOver, animated: true },
+  solstice: { over: SolsticeOver, animated: true },
+  mosaic: { over: MosaicOver },
+  domino: { over: DominoOver, animated: true },
+  fresh: { under: FreshUnder, over: FreshOver, animated: true },
+  origami: { over: OrigamiOver },
+  aquarium: { under: AquariumUnder, over: AquariumOver, animated: true },
+  books: { over: BooksOver },
+  lace: { under: LaceUnder },
+  boats: { over: BoatsOver, animated: true },
+  thaw: { over: ThawOver, animated: true },
 }
 
 const styles = StyleSheet.create({

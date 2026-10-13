@@ -226,7 +226,8 @@ function windowOver(f){
  let far='';{const r=seeded(23);
   // a low row of distant roofs along the bottom
   let x=GX,roof=`M${GX} ${h+17}L${GX} ${h+9}`;while(x<GX+GW){const wd=14+r()*16,ht=4+r()*5,pk=r()<.5;roof+=pk?`L${fx(x+wd*.15)} ${fx(h+10-ht)}L${fx(x+wd*.5)} ${fx(h+7-ht)}L${fx(x+wd*.85)} ${fx(h+10-ht)}`:`L${fx(x)} ${fx(h+10-ht)}L${fx(x+wd)} ${fx(h+10-ht)}`;x+=wd}
-  roof+=`L${GX+GW} ${h+9}L${GX+GW} ${h+17}Z`;far+=`<path d="${roof}" fill="#0a1430"/>`;
+  roof+=`L${GX+GW} ${h+9}L${GX+GW} ${h+17}Z`;far+=`<path d="${roof}" fill="#0a1430"/><path d="${roof}" fill="none" stroke="#dfe9f8" stroke-opacity=".8" stroke-width="1.3" transform="translate(0 .5)"/><path d="M${GX} ${h+14.5}Q${w*.3} ${h+11.5} ${w/2} ${h+13.5}T${GX+GW} ${h+13}V${h+17}H${GX}Z" fill="#b9cbe6"/>`;
+  {const my2=h*.78-ev*h*.55,mx=w+9;far+=`<circle cx="${mx}" cy="${fx(my2)}" r="26" fill="url(#${id}mg)"/><circle cx="${mx}" cy="${fx(my2)}" r="6.4" fill="#fdf6dc"/><circle cx="${mx+2.8}" cy="${fx(my2-1.6)}" r="5.4" fill="#1d3466"/>`}
   for(let i=0;i<9;i++){const lx=GX+8+r()*(GW-16);far+=`<rect x="${fx(lx)}" y="${fx(h+9.5+r()*3)}" width="1.6" height="2" rx=".3" fill="#ffcf6a" opacity="${fx(.6+r()*.4)}"/>`}
   // a few lit windows far off up the sides, and stars
   for(let i=0;i<10;i++){const left=i%2===0,yy=R+20+r()*(h-2*R-40),xx=left?GX+3+r()*10:w+4+r()*10;far+=`<rect x="${fx(xx)}" y="${fx(yy)}" width="1.5" height="1.9" rx=".3" fill="#ffcf6a" opacity="${fx(.45+r()*.45)}"/>`;if(r()<.6)far+=`<rect x="${fx(xx+2.4)}" y="${fx(yy)}" width="1.5" height="1.9" rx=".3" fill="#ffcf6a" opacity="${fx(.35+r()*.4)}"/>`}
@@ -235,10 +236,10 @@ function windowOver(f){
   flakes+=`<circle class="${anim?'snowf':''}" style="animation-duration:${(5+r()*5).toFixed(1)}s;animation-delay:${-(r()*9).toFixed(1)}s" cx="${fx(q[0])}" cy="${fx(q[1])}" r="${fx(rr)}" fill="#ffffff" opacity="${fx(.55+rr/4)}"/>`}}
  const night=`<path d="${glass} ${card}" fill-rule="evenodd" fill="${G}"/>${far}${flakes}`;
  /* frost: filled translucent masses from each corner, jagged toward the card, with a second lighter layer and a lit edge */
- const Rf=26+150*ev,dC=[sv+arc/2,sv+arc*1.5+sh,2*sv+arc*2.5+sh,2*sv+arc*3.5+2*sh];
+ const Rf=24+56*ev,dC=[sv+arc/2,sv+arc*1.5+sh,2*sv+arc*2.5+sh,2*sv+arc*3.5+2*sh];
  let frost='',frost2='',edge='',facets='',glints=[];
- dC.forEach((dc,ci)=>{const reach=Rf,maxD=ci<2?24:26,inner=[],outerP=[],inner2=[];let k=0;
-  for(let s=-reach;s<=reach+1e-6;s+=1.8,k++){const p=E(dc+s),t=Math.abs(s)/reach,base=maxD*Math.pow(1-t,.75),jag=(k%2?1:.62)*(.85+.3*Math.sin(s*.7+ci));
+ dC.forEach((dc,ci)=>{const reach=Rf,maxD=ci<2?17:19,inner=[],outerP=[],inner2=[];let k=0;
+  for(let s=-reach;s<=reach+1e-6;s+=1.8,k++){const p=E(dc+s),t=Math.abs(s)/reach,base=maxD*Math.pow(1-t,.75),jag=.72+.28*Math.abs(Math.sin(s*.55+ci));
    const dep=base*jag;outerP.push(off(p,24));inner.push(off(p,24-dep));inner2.push(off(p,24-dep*.62));
    if(k%3===0&&dep>4){const a=off(p,24-dep+1),b=off(p,24-dep*.45);facets+=`M${P2(a)}L${P2(b)}`}}
   frost+='M'+outerP.map(P2).join('L')+'L'+inner.slice().reverse().map(P2).join('L')+'Z';
@@ -253,7 +254,7 @@ function windowOver(f){
   // a drip runs down from the wipe's lowest point
   const pts=[];for(let s=-11.5;s<=11.5;s+=1.2){const p=E(dm+s);pts.push(off(p,O+bend*Math.sin((s/11.5)*Math.PI*.5)+6*Math.sqrt(Math.max(0,1-Math.pow(Math.abs(s/11.5),2.4)))))}
   const low=pts.reduce((a,b)=>b[1]>a[1]?b:a),x=low[0]+(i%2?1:-1),y0=low[1]-1.5,y1=y0+4.5+(i%3);
-  const g=`<path d="M${fx(x)} ${fx(y0)}V${fx(y1)}" stroke="#ffffff" stroke-opacity=".35" stroke-width="2.6" stroke-linecap="round"/><path d="M${fx(x)} ${fx(y0)}V${fx(y1)}" stroke="#13244a" stroke-width="1.4" stroke-linecap="round"/><circle cx="${fx(x)}" cy="${fx(y1+.3)}" r="1.5" fill="#13244a" stroke="#ffffff" stroke-opacity=".5" stroke-width=".5"/><circle cx="${fx(x-.5)}" cy="${fx(y1-.2)}" r=".45" fill="#fff"/>`;
+  const g=`<path d="M${fx(x)} ${fx(y0)}V${fx(y1)}" stroke="#ffffff" stroke-opacity=".35" stroke-width="2.6" stroke-linecap="round"/><path d="M${fx(x)} ${fx(y0)}V${fx(y1)}" stroke="#2a4a86" stroke-width="1.2" stroke-linecap="round"/><circle cx="${fx(x)}" cy="${fx(y1+.3)}" r="1.5" fill="#13244a" stroke="#ffffff" stroke-opacity=".5" stroke-width=".5"/><circle cx="${fx(x-.5)}" cy="${fx(y1-.2)}" r=".45" fill="#fff"/>`;
   if(i===ans-1&&anim&&!done)dripsNew+=`<g class="drip">${g}</g>`;else drips+=g}
  /* heart drawn in the fog, left side, about 18 px, when tonight is done */
  const heart='M0 7C-2.4 5 -8 1.2 -8 -3C-8 -6.4 -5.4 -8 -3 -8C-1.4 -8 0 -7 0 -5.4C0 -7 1.4 -8 3 -8C5.4 -8 8 -6.4 8 -3C8 1.2 2.4 5 0 7Z';
@@ -273,7 +274,7 @@ function windowOver(f){
   <circle cx="${lx}" cy="${ly-3.6}" r=".7" fill="#6e4c12"/><circle cx="${lx}" cy="${ly+3.6}" r=".7" fill="#6e4c12"/>
   <path d="M${lx} ${ly}L${lx-5.5} ${ly-1.6}" stroke="#6e4c12" stroke-width="2.6" stroke-linecap="round"/><path d="M${lx} ${ly}L${lx-5.5} ${ly-1.6}" stroke="url(#${id}br)" stroke-width="1.6" stroke-linecap="round"/>
   <circle cx="${lx}" cy="${ly}" r="2.3" fill="url(#${id}br)" stroke="#6e4c12" stroke-width=".6"/><circle cx="${lx-.7}" cy="${ly-.7}" r=".7" fill="#fff8e0"/><path d="M${lx-2.4} ${ly-5.6}V${ly+5}" stroke="#fff1c2" stroke-opacity=".8" stroke-width=".7" stroke-linecap="round"/>`;
- const glowRings=done?[[.8,.75],[2.4,.55],[4,.38],[5.6,.25],[7.2,.15],[8.8,.08]].map(([o,a])=>`<path d="${ring(f,o)}" fill="none" stroke="#ffb95a" stroke-opacity="${a}" stroke-width="1.9"/>`).join(''):'';
+ const warm=total?ans/total:0,glowRings=[[-8,h*.3],[w+8,h*.62],[w*.3,h+9],[w*.72,h+9],[-8,h*.8]].slice(0,done?5:Math.round(warm*4)).map(([x,y])=>`<ellipse cx="${fx(x)}" cy="${fx(y)}" rx="${done?30:22}" ry="${done?52:38}" fill="url(#${id}wl)" opacity="${done?.85:.5}"/>`).join('');
  const fogA=LT?.26:.2;
  return `<defs>
   <linearGradient id="${id}g" x1="0" y1="${GY}" x2="0" y2="${GY+GH}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0b1834"/><stop offset=".6" stop-color="#152a55"/><stop offset="1" stop-color="#22407a"/></linearGradient>
@@ -283,6 +284,7 @@ function windowOver(f){
   <linearGradient id="${id}br" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset=".45" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a5a14"/></linearGradient>
   <linearGradient id="${id}sn" x1="0" y1="${sy-8}" x2="0" y2="${sy+3.6}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d8ec"/></linearGradient>
   <linearGradient id="${id}ic" x1="0" y1="${sy+3}" x2="0" y2="${sy+7}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#bfe0f5" stop-opacity=".6"/></linearGradient>
+  <radialGradient id="${id}mg"><stop offset="0" stop-color="#fff4d0" stop-opacity=".75"/><stop offset=".35" stop-color="#c9dcff" stop-opacity=".28"/><stop offset="1" stop-color="#c9dcff" stop-opacity="0"/></radialGradient>
   <radialGradient id="${id}wl"><stop offset="0" stop-color="#ffc870" stop-opacity=".8"/><stop offset=".5" stop-color="#ffb04a" stop-opacity=".35"/><stop offset="1" stop-color="#ffb04a" stop-opacity="0"/></radialGradient>
   <clipPath id="${id}c"><path d="${glass} ${card}" clip-rule="evenodd"/></clipPath>
   <clipPath id="${id}w"><path d="${wipes||'M0 0Z'}"/></clipPath></defs>
@@ -297,10 +299,10 @@ function windowOver(f){
   <path d="${edge}" fill="none" stroke="#ffffff" stroke-opacity=".9" stroke-width=".8" stroke-linejoin="round"/>
   <path d="${wipes}" fill="none" stroke="#f4f8ff" stroke-opacity=".18" stroke-width="7"/>
   <path d="${wipes}" fill="none" stroke="#f4f8ff" stroke-opacity=".3" stroke-width="3.4"/>
-  <g clip-path="url(#${id}w)">${night}<path d="M${GX} ${GY+60}L${GX+60} ${GY}" stroke="#fff" stroke-opacity=".08" stroke-width="30"/></g>
+  <g clip-path="url(#${id}w)">${night}<path d="${wipes}" fill="#a9c4ee" fill-opacity=".26"/><path d="${wipes}" fill="none" stroke="#ffd9a0" stroke-opacity=".35" stroke-width="3"/><path d="M${GX} ${GY+60}L${GX+60} ${GY}" stroke="#fff" stroke-opacity=".08" stroke-width="30"/></g>
   ${drips}${dripsNew}
-  ${done?`<g transform="translate(${hx} ${hy})"><path d="${heart}" fill="none" stroke="#f4f8ff" stroke-opacity=".45" stroke-width="5" stroke-linejoin="round"/><path d="${heart}" fill="none" stroke="${G}" stroke-width="2.4" stroke-linejoin="round"/><path d="M1.6 6V10.5" stroke="#13244a" stroke-width="1.3" stroke-linecap="round"/><circle cx="1.6" cy="10.8" r="1.3" fill="#13244a"/></g>`:''}
-  ${done?`<g class="${anim?'lamp':''}">${glowRings}</g>`:''}
+  ${done?`<g transform="translate(${hx} ${hy})"><path d="${heart}" fill="none" stroke="#f4f8ff" stroke-opacity=".45" stroke-width="5" stroke-linejoin="round"/><path d="${heart}" fill="none" stroke="#ffd79a" stroke-width="2.2" stroke-linejoin="round"/><path d="M1.6 6V10.5" stroke="#13244a" stroke-width="1.3" stroke-linecap="round"/><circle cx="1.6" cy="10.8" r="1.3" fill="#13244a"/></g>`:''}
+  <g class="${anim&&done?'lamp':''}">${glowRings}</g>
   ${anim?glints.map((g,i)=>`<path class="tw" style="animation-delay:${(i*.41%3.2).toFixed(2)}s" d="M${fx(g[0])} ${fx(g[1]-2.4)}Q${fx(g[0])} ${fx(g[1])} ${fx(g[0]+2.4)} ${fx(g[1])}Q${fx(g[0])} ${fx(g[1])} ${fx(g[0])} ${fx(g[1]+2.4)}Q${fx(g[0])} ${fx(g[1])} ${fx(g[0]-2.4)} ${fx(g[1])}Q${fx(g[0])} ${fx(g[1])} ${fx(g[0])} ${fx(g[1]-2.4)}Z" fill="#ffffff"/>`).join(''):''}
  </g>
  <path d="${sash} ${glass}" fill-rule="evenodd" fill="url(#${id}s)"/>
@@ -332,7 +334,7 @@ function candlesOver(f){
  const n=7,top=R+24,bot=h-12,step=(bot-top)/(n-1),RO=6,rail=ring(f,RO);
  const AMB=LT?'#ff9426':'#ffcf6a';
  let glows='',wash='',arms='',cups='',candles='',flames='',plates='',smoke='',shadows='',spill='';
- const cx=-15,CW=5.6,rr=seeded(19);
+ const cx=-15,CW=6.4,rr=seeded(19);
  for(let j=0;j<14;j++){const side=j%2,k=Math.floor(j/2),y=bot-k*step,lit=j<streak,hc=12.5+rr()*8.5,m=x=>side?fx(w-x):fx(x);
   const tt=y-hc,bx=cx-CW/2,X0=side?w-bx-CW:bx;
   arms+=`M${m(-RO-1.5)} ${fx(y+8)}C${m(-RO-4.5)} ${fx(y+12)} ${m(cx+.5)} ${fx(y+10.5)} ${m(cx)} ${fx(y+2.6)}`;
@@ -348,9 +350,9 @@ function candlesOver(f){
   candles+=`<ellipse cx="${m(cx)}" cy="${fx(tt+.45)}" rx="${CW/2-.1}" ry=".9" fill="${lit?'#ffe9b8':'#d9cfba'}" stroke="${lit?'#c9b48a':'#9a8e76'}" stroke-width=".35"/>`;
   candles+=`<path d="M${m(cx)} ${fx(tt+.3)}Q${m(cx+.15)} ${fx(tt-1.4)} ${m(cx+(lit?.25:1))} ${fx(tt-(lit?2.6:2.2))}" fill="none" stroke="#2e2219" stroke-width=".8" stroke-linecap="round"/>`;
   if(lit){const fxx=side?w-cx:cx,fy=tt-1.3;
-   spill+=`<ellipse cx="${side?w:0}" cy="${fx(fy-3)}" rx="8" ry="24" fill="url(#${id}gl)" opacity=".45"/>`;
-   wash+=`<ellipse cx="${m(-RO)}" cy="${fx(y-2)}" rx="7" ry="22" fill="url(#${id}gl)" opacity="${LT?.7:.6}"/>`;
-   glows+=`<circle cx="${fx(fxx)}" cy="${fx(fy-4.5)}" r="${full?12.5:11}" fill="url(#${id}gl)" class="${anim?'glowb':''}" style="animation-delay:${(j*.37%2.6).toFixed(2)}s"/>`;
+   spill+=`<ellipse cx="${side?w:0}" cy="${fx(fy-3)}" rx="16" ry="30" fill="url(#${id}gl)" opacity=".7"/>`;
+   wash+=`<ellipse cx="${m(-RO)}" cy="${fx(y-2)}" rx="9" ry="26" fill="url(#${id}gl)" opacity="${LT?.8:.75}"/>`;
+   glows+=`<circle cx="${fx(fxx)}" cy="${fx(fy-4.5)}" r="${full?18:15}" fill="url(#${id}gl)" class="${anim?'glowb':''}" style="animation-delay:${(j*.37%2.6).toFixed(2)}s"/>`;
    flames+=`<g class="${anim?'flick':''}" style="animation-delay:${(j*.29%1.9).toFixed(2)}s;animation-duration:${(1.6+(j%5)*.18).toFixed(2)}s"><path d="M${fx(fxx)} ${fx(fy+.7)}C${fx(fxx-3.2)} ${fx(fy-.7)} ${fx(fxx-2.7)} ${fx(fy-6)} ${fx(fxx+.25)} ${fx(fy-11.2)}C${fx(fxx+2.7)} ${fx(fy-6)} ${fx(fxx+3.2)} ${fx(fy-.7)} ${fx(fxx)} ${fx(fy+.7)}Z" fill="url(#${id}fl)"${LT?' stroke="#e07a1a" stroke-opacity=".5" stroke-width=".4"':''}/><path d="M${fx(fxx)} ${fx(fy+.2)}C${fx(fxx-1.6)} ${fx(fy-.7)} ${fx(fxx-1.3)} ${fx(fy-3.8)} ${fx(fxx+.1)} ${fx(fy-6.6)}C${fx(fxx+1.3)} ${fx(fy-3.8)} ${fx(fxx+1.6)} ${fx(fy-.7)} ${fx(fxx)} ${fx(fy+.2)}Z" fill="#fffbe8"/><ellipse cx="${fx(fxx)}" cy="${fx(fy-.2)}" rx="1.1" ry=".8" fill="#6aa8ff" opacity=".75"/></g>`}
   else{const sx0=side?w-cx-(side?1:-1):cx+1,s0=tt-2.4;
    smoke+=`<path class="${anim?'smoke':''}" style="animation-delay:${(j*.53%4).toFixed(2)}s" d="M${fx(sx0)} ${fx(s0)}C${fx(sx0+2)} ${fx(s0-2.5)} ${fx(sx0-2)} ${fx(s0-5)} ${fx(sx0+.5)} ${fx(s0-7.5)}C${fx(sx0+2.2)} ${fx(s0-9.2)} ${fx(sx0)} ${fx(s0-10.8)} ${fx(sx0+1.2)} ${fx(s0-12)}"/>`}}

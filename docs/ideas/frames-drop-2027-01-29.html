@@ -73,6 +73,8 @@ section.opt{background:var(--panel);border:1px solid var(--line);border-radius:2
 @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 4.4s ease-in-out infinite}
 .still *,body.nomotion *{animation:none!important}
+/* As ported: waves, gulls, stars, glints and flowers hold still in the app. */
+.driftL,.driftR,.flap,.tw,.sway{animation:none!important}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 .notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
 </style></head>
@@ -450,14 +452,14 @@ const REVIEW={
   ['Tile','Shows the done harbor: boats lined up to a lit lighthouse on dusk water.'],
   ['Corners and text','Nothing at the top beyond a 1.6 px line. Water and boats sit below the card (sails reach 2 px over the bottom edge in the corners only), the lighthouse in the right gap to 19 px. The lamp glow is clipped to outside the card.'],
   ['Looks and themes','Water, paper and wood colors are fixed and carry their own contrast. Gulls are dark ink in light mode, pale in dark.'],
-  ['Motion','Waves drift in opposite directions on 5.6 s and 8.4 s loops (one wavelength, so they loop clean), boats bob 1 px and 2.6 degrees, gulls flap, the lamp breathes when done. The swipe raises the waves and tilts the boats toward the drag.'],['Copy','Short, plain, no em dashes.']],
+  ['Motion','Boats bob 1 px and 2.6 degrees, the lamps breathe. The swipe raises the near wave and tilts the boats toward the drag. Waves, gulls and stars hold still.'],['Copy','Short, plain, no em dashes.']],
  thaw:[['Want it?','Yes. Free at the end of winter, with a reason to look each day: one more flower, a bit less snow. It fills the gap between Hearts and Clover.'],
   ['Different?','Closest is Snow (a snow cap on top and falling flakes, all December). Thaw is the opposite: snow going away by date, icicles dripping, ground and grass showing, snowdrops and crocuses coming up. Garden grows by streak; Thaw grows by day.'],
   ['Finish','Shaded snow mounds with blue shadows, melting into puddles with highlights, earth and grass under it, snowdrops with a green cap and three petals, crocuses in purple and yellow with an orange tip, snow on the two top corners with a cool outline, icicles with a blue rim and a hanging drop, glints. The bank has a blue shadow and one outline; where snow has gone the soil is dark and wet, with meltwater puddles that have a highlight. Flowers come up in clusters at mixed heights, the second one behind the snow. Day one is a lone bud with a soft glow.'],
   ['Tile','Shows the current day. Outside the window it shows full thaw: 14 flowers, little snow.'],
   ['Corners and text','The corner snow follows the card radius and reaches 6.4 px at the top. Icicles hang in the side gaps. Flowers and snow sit below the card; only the corner drifts and the side flowers rise into the side gaps.'],
   ['Looks and themes','Snow, earth and flowers do not use the accent. Snow gets a darker blue edge in light mode so it reads on pale pages.'],
-  ['Motion','Flowers sway 3 degrees on a 4.4 s loop, four icicles drip in turn, glints twinkle. All loop cleanly.'],['Copy','Short, plain, no em dashes.']]};
+  ['Motion','Four icicles drip in turn. Flowers and glints hold still.'],['Copy','Short, plain, no em dashes.']]};
 
 function section(id,cards,tiles){const C=COPY[id];return `<section class="opt"><span class="tag">${FR[id].kind}</span><h3>${FR[id].name}</h3><p>${C.desc}</p><ul class="feat">${C.f.map(x=>`<li>${x}</li>`).join('')}</ul>
  <div class="row">${cards}</div>

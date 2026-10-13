@@ -303,7 +303,7 @@ function dominoOver(f){
  const rays=spots2.filter(([,,k])=>k%2===0).map(([x,y])=>four(x,y,2.6)).join('');
  const bits=done?spots2.filter(([,,k])=>k%2===1).map(([x,y,k],i)=>`<circle class="${anim?'tw':''}" style="animation-delay:${fx(i*.4)}s" cx="${fx(x)}" cy="${fx(y)}" r="${i%2?1:1.3}" fill="${DCOL[k%DCOL.length]}"/>`).join(''):''; // Soft mat under the run.
  let mat='';for(let t=0;t<=run;t+=6)mat+=(t?'L':'M')+(p=>fx(p.x)+' '+fx(p.y))(rrPointAt(-o,-o,W,H,r,dS-t));
- const glint=done&&anim?`<path d="${mat}" fill="none" stroke="#fff6d2" stroke-opacity=".5" stroke-width="11" stroke-linecap="round" stroke-dasharray="18 ${fx(run+60)}"><animate attributeName="stroke-dashoffset" values="20;${-fx(run)};${-fx(run)}" keyTimes="0;.7;1" dur="6s" repeatCount="indefinite"/></path>`:'';
+ const glint=false?`<path d="${mat}" fill="none" stroke="#fff6d2" stroke-opacity=".5" stroke-width="11" stroke-linecap="round" stroke-dasharray="18 ${fx(run+60)}"><animate attributeName="stroke-dashoffset" values="20;${-fx(run)};${-fx(run)}" keyTimes="0;.7;1" dur="6s" repeatCount="indefinite"/></path>`:'';
  return `<defs><radialGradient id="${id}gl"><stop offset="0" stop-color="#ffe58a" stop-opacity=".95"/><stop offset=".5" stop-color="#ffc94a" stop-opacity=".35"/><stop offset="1" stop-color="#ffc94a" stop-opacity="0"/></radialGradient>
   <radialGradient id="${id}st" cx=".38" cy=".35" r=".7"><stop offset="0" stop-color="#fff6cc"/><stop offset=".55" stop-color="#ffd34d"/><stop offset="1" stop-color="#d99a16"/></radialGradient>
   <radialGradient id="${id}wt"><stop offset="0" stop-color="#ffc94a" stop-opacity=".9"/><stop offset=".45" stop-color="#ffb443" stop-opacity=".45"/><stop offset="1" stop-color="#ffb443" stop-opacity="0"/></radialGradient><radialGradient id="${id}mb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e6f6ff"/><stop offset=".5" stop-color="#7cc8f2"/><stop offset="1" stop-color="#2a74b0"/></radialGradient>
@@ -326,7 +326,7 @@ function dominoOver(f){
  <path d="${chl}" fill="#fff" fill-opacity=".5"/>
  ${T.t}${animated}
  ${marble}
- <g clip-path="url(#${id}out)">
+ <g>
   ${done?`<circle class="${anim?'pulse':''}" cx="${sx}" cy="${sy}" r="17" fill="url(#${id}gl)"/><path class="${anim?'tw':''}" d="${rays}" fill="#fff3b0"/>`:''}
  </g>
  <circle cx="${sx}" cy="${fx(sy+.8)}" r="7.6" fill="#000" fill-opacity="${L?.12:.35}"/>
@@ -350,7 +350,7 @@ function freshUnder(f){
  return `<defs><linearGradient id="rbg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8f2620"/><stop offset=".45" stop-color="#d9493e"/><stop offset="1" stop-color="#a42d25"/></linearGradient></defs>
  <path d="${rrPath(K*DX+1,K*DY+2.4,w,h,R)}" fill="#000" fill-opacity="${L?.12:.42}"/>
  ${st}
- <g class="${anim?'sway':''}"><path d="${rb}" fill="#000" fill-opacity=".25" transform="translate(.8 1)"/><path d="${rb}" fill="url(#rbg)"/><path d="M${bx-1.4} ${h}V${h+16}" stroke="#ff9a8e" stroke-opacity=".55" stroke-width=".7"/></g>`;
+ <g><path d="${rb}" fill="#000" fill-opacity=".25" transform="translate(.8 1)"/><path d="${rb}" fill="url(#rbg)"/><path d="M${bx-1.4} ${h}V${h+16}" stroke="#ff9a8e" stroke-opacity=".55" stroke-width=".7"/></g>`;
 }
 function freshOver(f){
  const {w,h,R}=f,L=f.c.light,id=uid('fp'),anim=!f.still;
@@ -385,7 +385,7 @@ function freshOver(f){
   <radialGradient id="${id}m" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff4cc"/><stop offset=".45" stop-color="#ddb04e"/><stop offset="1" stop-color="#8a5a14"/></radialGradient></defs>
  <path d="${rag}" fill="#000" fill-opacity=".22" transform="translate(.4 .9)"/>
  <path d="${rag}" fill="#f3ecdb" stroke="#c8b994" stroke-width=".4"/>
- <g class="${anim?'flap':''}"><path d="${flap}" fill="#000" fill-opacity=".22" transform="translate(.6 1.1)"/><path d="${flap}" fill="#f7f1e3" stroke="#c8b994" stroke-width=".45"/>${digits(31,fx0+7.4,fy+3.2,'#c8352c',.78)}</g>
+ <g><path d="${flap}" fill="#000" fill-opacity=".22" transform="translate(.6 1.1)"/><path d="${flap}" fill="#f7f1e3" stroke="#c8b994" stroke-width=".45"/>${digits(31,fx0+7.4,fy+3.2,'#c8352c',.78)}</g>
  <path d="${bind}" fill="#000" fill-opacity="${L?.16:.38}" transform="translate(.3 1.5)"/>
  <path d="${bind}" fill="url(#${id}b)" stroke="#6e1a15" stroke-width=".6"/>
  <path d="${weave}" stroke="#fff" stroke-opacity=".08" stroke-width=".7"/>

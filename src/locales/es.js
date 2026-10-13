@@ -1405,7 +1405,7 @@ export const es = {
     'Esto no es una lista de tareas ni un calendario. Pon la pregunta que repites después del hecho. Usa una de estas, o escribe la tuya empezando con Did I.',
   'ideas.use': 'Usar esta',
   'ideas.writeOwn': 'Escribe la tuya',
-  'ideas.help': 'Ayuda',
+  'ideas.help': 'Ayuda',
   'wait.kicker': 'Todavía no',
   'wait.after': 'Después de {time}.',
   'wait.later': 'luego',
@@ -2446,7 +2446,7 @@ export const es = {
   'enter.eraseGo': 'Borrar y empezar de nuevo',
   'enter.eraseBody': 'No has iniciado sesión, así que el PIN solo existe en este teléfono. Para quitarlo, borra Did I en este teléfono: preguntas, respuestas, monedas y looks. No se puede deshacer.',
   'enter.forgotTitle': '¿Olvidaste tu PIN?',
-  'enter.forgot': '¿Olvidaste el PIN?',
+  'enter.forgot': '¿Olvidaste el PIN?',
   'clock.pm': '{h}:{m} p. m.',
   'clock.am': '{h}:{m} a. m.',
   'shop.teasedBody': 'Aún no ha salido. Sale a la venta el {date}.',
@@ -2659,7 +2659,7 @@ export const es = {
   'pack.sureGoOne': 'Añadirla',
   'pack.addedOne': '1 pregunta añadida',
   'pack.sureGo': 'Añadirlas',
-  'pack.added': '{n} preguntas añadidas',
+  'pack.added': '{n} preguntas añadidas',
   'note.title': 'Notas',
   'note.hint': 'Toca una noche para añadir una nota.',
   'note.ph': 'Añade una nota corta',
@@ -3384,6 +3384,83 @@ export const es = {
   "frame.countdown.f1": "Una puerta nueva cada día de diciembre",
   "frame.countdown.f2": "Una sorpresa detrás de cada una",
   "frame.countdown.f3": "Gratis hasta el 24 de diciembre, tuyo para siempre",
+  "frame.knit.name": "Punto de ochos",
+  "frame.knit.desc": "Un jersey crema de punto de ochos alrededor de tu tarjeta, con un cuello de canalé arriba. Suave, cálido y quieto.",
+  "frame.knit.f1": "Ochos gruesos a los lados",
+  "frame.knit.f2": "Un cuello de canalé arriba",
+  "frame.knit.f3": "Se queda quieto",
+  "frame.window.name": "Ventana de invierno",
+  "frame.window.desc": "Tu tarjeta está detrás de una ventana helada. La escarcha avanza a lo largo de la noche y cada respuesta limpia un hueco.",
+  "frame.window.f1": "Cada respuesta limpia la escarcha",
+  "frame.window.f2": "La escarcha crece durante la noche",
+  "frame.window.f3": "Un corazón y luz cálida al terminar",
+  "frame.candles.name": "Luz de velas",
+  "frame.candles.desc": "Velas a los lados de tu tarjeta. Se enciende una más por cada noche de tu racha, hasta 14.",
+  "frame.candles.f1": "Una vela por cada noche de racha",
+  "frame.candles.f2": "Con las 14 encendidas, el latón brilla",
+  "frame.candles.f3": "Se gana con una racha de 14 noches, tuyo para siempre",
+  "frame.ginger.name": "Jengibre",
+  "frame.ginger.desc": "Un borde de galleta de jengibre con glaseado y botones de caramelo. Dulce, cálido y quieto.",
+  "frame.ginger.f1": "Glaseado alrededor de todo el borde",
+  "frame.ginger.f2": "Botones de caramelo y caramelos de menta",
+  "frame.ginger.f3": "Una galleta de corazón bajo tu tarjeta",
+  "frame.snowman.name": "Muñeco de nieve",
+  "frame.snowman.short": "Muñeco",
+  "frame.snowman.desc": "Haz un muñeco de nieve mientras respondes las preguntas de esta noche. Cuando terminas todas, se pone el sombrero.",
+  "frame.snowman.f1": "Una bola de nieve nueva al responder",
+  "frame.snowman.f2": "Sombrero y zanahoria al terminar",
+  "frame.snowman.f3": "«Aún no» deja huellas en la nieve",
+  "frame.solstice.name": "Solsticio",
+  "frame.solstice.desc": "La noche más larga del año. El sol sale entre las piedras y la luz crece un poco cada día.",
+  "frame.solstice.f1": "El sol sale entre las piedras",
+  "frame.solstice.f2": "La luz crece cada día hasta junio",
+  "frame.solstice.f3": "Gratis del 20 al 22 de diciembre, para siempre tuyo",
+  "frame.mosaic.name": "Mosaico",
+  "frame.mosaic.desc": "Pequeños azulejos esmaltados puestos a mano alrededor de tu tarjeta, con algunos dorados que atrapan la luz.",
+  "frame.mosaic.f1": "Azulejos puestos a mano",
+  "frame.mosaic.f2": "Azulejos dorados que brillan",
+  "frame.mosaic.f3": "Se queda quieto",
+  "frame.domino.name": "Fila de dominós",
+  "frame.domino.desc": "Una fila de dominós rodea tu tarjeta. Cada respuesta tumba el siguiente tramo, y la estrella del final se enciende cuando terminas esta noche.",
+  "frame.domino.f1": "Cae un tramo por respuesta",
+  "frame.domino.f2": "Aún no deja uno inclinado",
+  "frame.domino.f3": "La estrella se enciende al terminar",
+  "frame.fresh.name": "Página nueva",
+  "frame.fresh.desc": "Tu tarjeta como la primera hoja de un bloc nuevo, con el año pasado arrancado y un poco de confeti que quedó.",
+  "frame.fresh.f1": "Un montón de hojas nuevas",
+  "frame.fresh.f2": "El año pasado, arrancado",
+  "frame.fresh.f3": "Gratis del 1 al 7 de enero, tuyo para siempre",
+  "frame.origami.name": "Papiroflexia",
+  "frame.origami.desc": "Papel plegado alrededor de tu tarjeta, con tres grullas de papel en las esquinas. Quieto y tranquilo.",
+  "frame.origami.f1": "Pliegues nítidos que atrapan la luz",
+  "frame.origami.f2": "Tres grullas de papel",
+  "frame.origami.f3": "Se queda quieta",
+  "frame.aquarium.name": "Acuario",
+  "frame.aquarium.desc": "Tu tarjeta está en una pequeña pecera. Cada pregunta trae un pez, que se ilumina y nada cuando respondes.",
+  "frame.aquarium.f1": "Un pez por cada pregunta",
+  "frame.aquarium.f2": "Los peces van hacia donde deslizas",
+  "frame.aquarium.f3": "Un corazón de burbujas al terminar la noche",
+  "frame.books.name": "Estantería",
+  "frame.books.desc": "La repisa bajo tu tarjeta suma un libro por cada noche de tu racha. La planta crece con ella y a las 21 noches se enciende la lámpara.",
+  "frame.books.f1": "Un libro por cada noche",
+  "frame.books.f2": "La lámpara se enciende a las 21",
+  "frame.books.f3": "Se gana con una racha de 21 noches",
+  "frame.lace.name": "Encaje",
+  "frame.lace.desc": "Tu tarjeta descansa sobre un tapete de encaje de papel, con pétalos recortados y una sombra suave. Quieto, cálido y tranquilo.",
+  "frame.lace.f1": "Pétalos recortados por todo el borde",
+  "frame.lace.f2": "Abanicos de encaje a los lados y abajo",
+  "frame.lace.f3": "Quieto, así va con cualquier tarjeta",
+  "frame.boats.name": "Barcos de papel",
+  "frame.boats.short": "Barcos",
+  "frame.boats.desc": "Un barco de papel por cada pregunta de esta noche. Cada uno zarpa cuando respondes, y todos llegan al faro cuando terminas esta noche.",
+  "frame.boats.f1": "Un barco zarpa por cada respuesta",
+  "frame.boats.f2": "Los barcos de Aún no esperan en el muelle",
+  "frame.boats.f3": "El faro se enciende cuando terminas",
+  "frame.thaw.name": "Deshielo",
+  "frame.thaw.desc": "El final del invierno se derrite alrededor de tu tarjeta. Cada día se va un poco más de nieve y sale una flor más.",
+  "frame.thaw.f1": "Una flor más cada día",
+  "frame.thaw.f2": "Los carámbanos gotean mientras se derrite la nieve",
+  "frame.thaw.f3": "Gratis del 20 feb al 5 mar, y te lo quedas",
   "ideas.pills.kind": "Medicinas",
   "ideas.pills.question": "Did I me tomé las medicinas?",
   "ideas.pills.body": "Las tomaste, o ibas a hacerlo. A las 11 ya no lo sabes.",
