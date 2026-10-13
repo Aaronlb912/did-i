@@ -20,7 +20,53 @@ import { BuddyArt, BuddyPlain } from './BuddyArt.jsx'
 import { AccessoryLayer } from './Accessories.jsx'
 import { accessoryById, eyeLine, wornLayers } from '../../src/lib/accessories.js'
 import { svgParts } from '../lib/svg-parts.js'
-import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW } from '../../src/lib/cheer-pops.js'
+import {
+  BALL_STRIPE,
+  BELL_BODY,
+  BELL_LIP,
+  BELL_SHADE,
+  BELL_VIEW,
+  BOLT_PATH,
+  BOLT_VIEW,
+  BOW_INNER,
+  BOW_KNOT,
+  BOW_LOOPS,
+  BOW_TAILS,
+  BUTTERFLY_FEELERS,
+  BUTTERFLY_VIEW,
+  CLINK_COLORS,
+  DISCO_COLORS,
+  DISCO_GRID,
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  MUG_BASE,
+  MUG_BODY,
+  MUG_COCOA,
+  MUG_CX,
+  MUG_HANDLE,
+  MUG_VIEW,
+  POPCORN_COLORS,
+  RIBBON_VIEW,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+  SNOW_CORE,
+  SNOW_PATH,
+  SPLAT_PATH,
+  SPLAT_VIEW,
+  WING_LOW_L,
+  WING_LOW_R,
+  WING_UP_L,
+  WING_UP_R,
+} from '../../src/lib/cheer-pops.js'
 import { Slot } from './Slot.jsx'
 import { fonts } from '../theme.js'
 
@@ -70,9 +116,27 @@ const LOOK_META = {
   sky: { on: '#4aa8ff' },
   maple: { on: '#fa774f' },
   fig: { on: '#d46ba3' },
+  cranberry: { on: '#ff4f6a' },
+  saffron: { on: '#ffc23d' },
+  iris: { on: '#8f6bff' },
+  lagoon: { on: '#1ed6d0' },
+  emerald: { on: '#36d462' },
+  candy: { on: '#ff8cc6' },
+  magenta: { on: '#f24ff0' },
+  copper: { on: '#f5a484' },
+  lemon: { on: '#fdee2c' },
+  peacock: { on: '#22b8e0' },
+  sunset: { on: '#fe8782' },
+  twilight: { on: '#c084e8' },
   orchid: { on: '#dd7bff' },
   chalk: { on: '#ecebe6', bg: '#181817', glow: 'rgba(236, 235, 230, 0.3)' },
   oat: { on: '#f0e6d8', bg: '#141311', glow: 'rgba(240, 230, 216, 0.3)' },
+  pine: { on: '#8fd1b5', bg: '#0f1614', glow: 'rgba(143, 209, 181, 0.3)' },
+  cocoa: { on: '#cfa577', bg: '#18130f', glow: 'rgba(207, 165, 119, 0.3)' },
+  denim: { on: '#8895b9', bg: '#12141a', glow: 'rgba(125, 147, 196, 0.3)' },
+  lilac: { on: '#c7b2dc', bg: '#161318', glow: 'rgba(194, 169, 220, 0.3)' },
+  rosewood: { on: '#c7918c', bg: '#191212', glow: 'rgba(204, 143, 138, 0.3)' },
+  fog: { on: '#b9c2cc', bg: '#121517', glow: 'rgba(179, 192, 205, 0.3)' },
 }
 
 function rem(n) {
@@ -607,6 +671,178 @@ function LaunchChip({ on, onDeep, ink }) {
   )
 }
 
+// A gift box with its bow, like the web chip.
+function GiftChip({ on, ink }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle } = parts
+  const h = rem(1.5)
+  return (
+    <View style={styles.center}>
+      <Svg width={h * (40 / 44)} height={h} viewBox={GIFT_VIEW}>
+        <Path d={GIFT_BOX} fill={on} />
+        <Path d={GIFT_SHADE} fill="#000" fillOpacity={0.22} />
+        <Path d={GIFT_BAND} fill={ink} />
+        <Path d={GIFT_LID} fill={on} />
+        <Path d={GIFT_LID_BAND} fill={ink} />
+        <Path d={GIFT_BOW} fill={ink} />
+        <Circle cx={20} cy={11.5} r={2.4} fill={ink} />
+      </Svg>
+    </View>
+  )
+}
+
+// One popped kernel, buttered, like the web chip.
+function PopcornChip({ on }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle } = parts
+  const h = rem(1.5)
+  return (
+    <View style={styles.center}>
+      <Svg width={h} height={h} viewBox="0 0 24 24">
+        <Path d={KERNEL_HULL} fill={POPCORN_COLORS.hull} />
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <Circle key={i} cx={cx} cy={cy} r={r} fill={POPCORN_COLORS.puff} stroke={POPCORN_COLORS.edge} strokeWidth={1.2} />
+        ))}
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <Circle key={`in-${i}`} cx={cx} cy={cy} r={r - 0.9} fill={i === 1 ? POPCORN_COLORS.butter : POPCORN_COLORS.puff} />
+        ))}
+      </Svg>
+    </View>
+  )
+}
+
+// Chips for the winter drop cheers, like the web chips: the shapes the cheers draw.
+function WinterChip({ id, on, onDeep, ink, inkSoft, late }) {
+  const parts = svgParts()
+  if (!parts) return <DefaultChip n={1} on={on} />
+  const { Svg, Path, Circle, Ellipse } = parts
+  const h = rem(1.5)
+  let art = null
+  switch (id) {
+    case 'snowflake':
+      art = (
+        <Svg width={h} height={h} viewBox="0 0 24 24">
+          <Path d={SNOW_PATH} stroke={on} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <Path d={SNOW_CORE} stroke={on} strokeWidth={2} strokeLinejoin="round" fill="none" />
+        </Svg>
+      )
+      break
+    case 'bell':
+      art = (
+        <Svg width={h * (40 / 44)} height={h} viewBox={BELL_VIEW}>
+          <Circle cx={20} cy={40} r={3} fill={onDeep} />
+          <Path d={BELL_BODY} fill={on} />
+          <Path d={BELL_SHADE} fill="#000" fillOpacity={0.2} />
+          <Path d={BELL_LIP} fill={onDeep} />
+          <Circle cx={20} cy={4} r={2.4} stroke={onDeep} strokeWidth={1.6} fill="none" />
+        </Svg>
+      )
+      break
+    case 'disco':
+      art = (
+        <Svg width={h} height={h} viewBox="0 0 24 24">
+          <Circle cx={12} cy={12} r={10} fill={DISCO_COLORS.mid} />
+          <Path d={DISCO_GRID} stroke={DISCO_COLORS.line} strokeWidth={0.9} fill="none" />
+          <Circle cx={8.5} cy={7.5} r={2} fill={DISCO_COLORS.hi} />
+        </Svg>
+      )
+      break
+    case 'ribbon':
+      art = (
+        <Svg width={h} height={h} viewBox={RIBBON_VIEW}>
+          <Path d={BOW_TAILS} fill={on} />
+          <Path d={BOW_LOOPS} fill={on} />
+          <Path d={BOW_INNER} fill={onDeep} fillOpacity={0.55} />
+          <Path d={BOW_KNOT} fill={onDeep} />
+        </Svg>
+      )
+      break
+    case 'clink': {
+      // No G in svgParts: each mug is its own svg, turned on its base.
+      const m = rem(0.95)
+      const mug = (fill, flip, tilt, cx) => {
+        const mid = flip < 0 ? 1 - MUG_CX : MUG_CX
+        return (
+          <View
+            style={{
+              position: 'absolute',
+              left: cx - m * mid,
+              top: CHIP / 2 + m * 0.45 - m * MUG_BASE,
+              width: m,
+              height: m,
+              transformOrigin: `${mid * 100}% ${MUG_BASE * 100}%`,
+              transform: [{ rotate: `${tilt}deg` }, { scaleX: flip }],
+            }}
+          >
+            <Svg width={m} height={m} viewBox={MUG_VIEW}>
+              <Path d={MUG_HANDLE} stroke={fill} strokeWidth={3.2} strokeLinecap="round" fill="none" />
+              <Path d={MUG_BODY} fill={fill} />
+              <Ellipse cx={MUG_COCOA[0]} cy={MUG_COCOA[1]} rx={MUG_COCOA[2]} ry={MUG_COCOA[3]} fill={CLINK_COLORS.cocoa} stroke={fill} strokeWidth={1.2} />
+            </Svg>
+          </View>
+        )
+      }
+      return (
+        <View style={styles.chipBox}>
+          {mug(on, -1, 12, CHIP / 2 - m * 0.3)}
+          {mug(late, 1, -12, CHIP / 2 + m * 0.3)}
+        </View>
+      )
+    }
+    case 'balldrop':
+      art = (
+        <Svg width={h} height={h} viewBox="0 0 24 24">
+          <Path d="M12 1 V21 M7 22 H17" stroke={inkSoft} strokeWidth={1.8} strokeLinecap="round" fill="none" />
+          <Circle cx={12} cy={12} r={6} fill={on} stroke={onDeep} strokeWidth={1.2} />
+          <Circle cx={10} cy={10} r={1.5} fill="#fff" fillOpacity={0.6} />
+        </Svg>
+      )
+      break
+    case 'bolt':
+      art = (
+        <Svg width={h / 2} height={h} viewBox={BOLT_VIEW}>
+          <Path d={BOLT_PATH} fill={on} />
+        </Svg>
+      )
+      break
+    case 'splat':
+      art = (
+        <Svg width={h} height={h} viewBox={SPLAT_VIEW}>
+          <Path d={SPLAT_PATH} fill={on} />
+          <Circle cx={36} cy={33} r={2} fill={on} />
+          <Circle cx={4} cy={31} r={1.5} fill={on} />
+        </Svg>
+      )
+      break
+    case 'butterfly':
+      art = (
+        <Svg width={h} height={h * 0.8} viewBox={BUTTERFLY_VIEW}>
+          <Path d={WING_UP_L} fill={on} />
+          <Path d={WING_UP_R} fill={on} />
+          <Path d={WING_LOW_L} fill={onDeep} />
+          <Path d={WING_LOW_R} fill={onDeep} />
+          <Ellipse cx={20} cy={17} rx={1.6} ry={7} fill={ink} />
+          <Path d={BUTTERFLY_FEELERS} stroke={ink} strokeWidth={1} strokeLinecap="round" fill="none" />
+        </Svg>
+      )
+      break
+    case 'bounce':
+      art = (
+        <Svg width={h * (24 / 28)} height={h} viewBox="0 0 24 28">
+          <Ellipse cx={12} cy={26} rx={7} ry={1.6} fill={ink} fillOpacity={0.25} />
+          <Circle cx={12} cy={12} r={11} fill={on} />
+          <Path d={BALL_STRIPE} fill="#000" fillOpacity={0.2} />
+        </Svg>
+      )
+      break
+    default:
+      return <DefaultChip n={1} on={on} />
+  }
+  return <View style={styles.center}>{art}</View>
+}
+
 function MedalChip({ on, onDeep, late }) {
   const strap = { position: 'absolute', top: rem(0.32), width: rem(0.22), height: rem(0.8), borderRadius: 1 }
   const disc = rem(0.95)
@@ -785,6 +1021,24 @@ export function CheerChip({ id, stage = 1, colors }) {
     case 'lantern':
       art = <LanternChip on={on} onDeep={onDeep} />
       break
+    case 'gift':
+      art = <GiftChip on={on} ink={ink} />
+      break
+    case 'popcorn':
+      art = <PopcornChip on={on} />
+      break
+    case 'snowflake':
+    case 'bell':
+    case 'disco':
+    case 'ribbon':
+    case 'clink':
+    case 'balldrop':
+    case 'bolt':
+    case 'splat':
+    case 'butterfly':
+    case 'bounce':
+      art = <WinterChip id={id} on={on} onDeep={onDeep} ink={ink} inkSoft={colors?.inkSoft || ink} late={colors?.late || '#6fb7ff'} />
+      break
     default: {
       const n = Math.min(5, Math.max(1, Math.floor(Number(stage) || 1)))
       art = <DefaultChip n={n} on={on} />
@@ -898,7 +1152,7 @@ function useMyOutfit() {
   return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
 }
 
-const TALL_EARS = new Set(['rabbit', 'fox'])
+const TALL_EARS = new Set(['rabbit', 'fox', 'duck'])
 
 export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)

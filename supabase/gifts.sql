@@ -75,7 +75,37 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('cheer', 'leaves', 2, 0, '2026-11-06'), ('cheer', 'lantern', 2, 0, '2026-11-06'),
   ('buddy', 'fox', 5, 0, '2026-11-06'),
   ('look', 'maple', 2, 0, '2026-11-06'), ('look', 'fig', 2, 0, '2026-11-06'),
-  ('look', 'oat', 0, 30, '2026-11-06')
+  ('look', 'oat', 0, 30, '2026-11-06'),
+  -- Drop 2026-11-20.
+  ('cheer', 'gift', 2, 0, '2026-11-20'), ('cheer', 'popcorn', 2, 0, '2026-11-20'),
+  ('buddy', 'otter', 5, 0, '2026-11-20'),
+  ('look', 'cranberry', 2, 0, '2026-11-20'), ('look', 'saffron', 2, 0, '2026-11-20'),
+  ('look', 'pine', 0, 30, '2026-11-20'),
+  -- Drop 2026-12-04.
+  ('cheer', 'snowflake', 2, 0, '2026-12-04'), ('cheer', 'bell', 2, 0, '2026-12-04'),
+  ('buddy', 'hedgehog', 5, 0, '2026-12-04'),
+  ('look', 'iris', 2, 0, '2026-12-04'), ('look', 'lagoon', 2, 0, '2026-12-04'),
+  ('look', 'cocoa', 0, 30, '2026-12-04'),
+  -- Drop 2026-12-18.
+  ('cheer', 'disco', 2, 0, '2026-12-18'), ('cheer', 'ribbon', 2, 0, '2026-12-18'),
+  ('buddy', 'panda', 5, 0, '2026-12-18'),
+  ('look', 'emerald', 2, 0, '2026-12-18'), ('look', 'candy', 2, 0, '2026-12-18'),
+  ('look', 'denim', 0, 30, '2026-12-18'),
+  -- Drop 2027-01-01.
+  ('cheer', 'clink', 2, 0, '2027-01-01'), ('cheer', 'balldrop', 2, 0, '2027-01-01'),
+  ('buddy', 'duck', 5, 0, '2027-01-01'),
+  ('look', 'magenta', 2, 0, '2027-01-01'), ('look', 'copper', 2, 0, '2027-01-01'),
+  ('look', 'lilac', 0, 30, '2027-01-01'),
+  -- Drop 2027-01-15.
+  ('cheer', 'bolt', 2, 0, '2027-01-15'), ('cheer', 'splat', 2, 0, '2027-01-15'),
+  ('buddy', 'axolotl', 5, 0, '2027-01-15'),
+  ('look', 'lemon', 2, 0, '2027-01-15'), ('look', 'peacock', 2, 0, '2027-01-15'),
+  ('look', 'rosewood', 0, 30, '2027-01-15'),
+  -- Drop 2027-01-29.
+  ('cheer', 'butterfly', 2, 0, '2027-01-29'), ('cheer', 'bounce', 2, 0, '2027-01-29'),
+  ('buddy', 'turtle', 5, 0, '2027-01-29'),
+  ('look', 'sunset', 2, 0, '2027-01-29'), ('look', 'twilight', 2, 0, '2027-01-29'),
+  ('look', 'fog', 0, 30, '2027-01-29')
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from;
 
@@ -119,7 +149,29 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_unt
   ('accessory', 'icecream', 0, 25, '2026-10-23', null),
   ('accessory', 'glasses3d', 0, 40, '2026-10-23', null),
   ('accessory', 'rainbow', 0, 40, '2026-10-23', null),
-  ('accessory', 'bubbles', 0, 15, '2026-10-23', null)
+  ('accessory', 'bubbles', 0, 15, '2026-10-23', null),
+  ('accessory', 'pinwheel', 0, 25, '2026-11-20', null),
+  ('accessory', 'goggles', 0, 40, '2026-11-20', null),
+  ('accessory', 'earmuffs', 0, 25, '2026-12-04', null),
+  ('accessory', 'snowglobe', 0, 40, '2026-12-04', null),
+  ('accessory', 'icewings', 0, 25, '2026-12-04', null),
+  ('accessory', 'holly', 0, 15, '2026-12-04', null),
+  ('accessory', 'fairylights', 0, 40, '2026-12-18', null),
+  ('accessory', 'candycane', 0, 15, '2026-12-18', null),
+  ('accessory', 'elfhat', 0, 25, '2026-12-18', null),
+  ('accessory', 'peppermint', 0, 15, '2026-12-18', null),
+  ('accessory', 'pixelshades', 0, 40, '2027-01-01', null),
+  ('accessory', 'streamers', 0, 25, '2027-01-01', null),
+  ('accessory', 'tiara', 0, 25, '2027-01-01', null),
+  ('accessory', 'horn', 0, 15, '2027-01-01', null),
+  ('accessory', 'propeller', 0, 40, '2027-01-15', null),
+  ('accessory', 'kite', 0, 25, '2027-01-15', null),
+  ('accessory', 'cateye', 0, 25, '2027-01-15', null),
+  ('accessory', 'planes', 0, 15, '2027-01-15', null),
+  ('accessory', 'dragonfly', 0, 40, '2027-01-29', null),
+  ('accessory', 'orbit', 0, 15, '2027-01-29', null),
+  ('accessory', 'boppers', 0, 15, '2027-01-29', null),
+  ('accessory', 'lantern', 0, 25, '2027-01-29', null)
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from, live_until = excluded.live_until;
 

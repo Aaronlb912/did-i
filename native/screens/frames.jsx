@@ -19,7 +19,7 @@ import {
   framesOwned,
   seasonNextText,
   seasonOpen,
-  SHOWN_FRAMES,
+  shownFrames,
   wearFrame,
   wornFrame,
 } from '../../src/lib/frames.js'
@@ -380,7 +380,7 @@ const SALE_RANK = { season: 0, coin: 1, gem: 2 }
 // What you can buy or claim now. Owned frames are worn from the Collection.
 function shopOrder(purse, ctx) {
   const owned = framesOwned(purse, ctx)
-  const forSale = SHOWN_FRAMES
+  const forSale = shownFrames(ctx.today)
     .filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
     .sort((a, b) => SALE_RANK[a.kind] - SALE_RANK[b.kind] || byPrice(a, b))
   return { forSale }
@@ -425,15 +425,15 @@ function allFramesLists(purse, ctx) {
   const owned = framesOwned(purse, ctx)
   const open = (f) => !owned.has(f.id) && (f.kind !== 'season' || seasonOpen(f, ctx.today))
   const sections = SECTIONS.map((sec) => {
-    const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind && open(f))
+    const list = shownFrames(ctx.today).filter((f) => f.kind === sec.kind && open(f))
     if (sec.kind === 'coin' || sec.kind === 'gem') list.sort(byPrice)
     return { ...sec, list }
   }).filter((sec) => sec.list.length)
   // The soonest season that is not on now, for the line under the list.
-  const next = SHOWN_FRAMES.filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
+  const next = shownFrames(ctx.today).filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
     .map((f) => ({ f, on: seasonNextText(f, ctx.today) }))
     .sort((a, b) => a.on.localeCompare(b.on))[0]
-  const mineCount = SHOWN_FRAMES.filter((f) => owned.has(f.id)).length
+  const mineCount = shownFrames(ctx.today).filter((f) => owned.has(f.id)).length
   return { sections, next, mineCount }
 }
 
@@ -522,8 +522,8 @@ export function FramesCollection({ book, colors, onChange }) {
   const purse = normalizePurse(book)
   const owned = framesOwned(purse, ctx)
   const worn = wornFrame(purse, ctx)
-  const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
-  const locked = SHOWN_FRAMES.filter((f) => f.kind === 'earned' && !owned.has(f.id))
+  const mine = shownFrames(ctx.today).filter((f) => owned.has(f.id))
+  const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
   function wear(id) {
     const next = wearFrame(book, id === worn ? '' : id, ctx)
     if (next.miss) return confirmMiss(frameMiss(next))
@@ -574,7 +574,8 @@ export function framesOwnedCount(book) {
   const purse = normalizePurse(book)
   const ctx = frameCtxFor(readShelf().boards)
   const owned = framesOwned(purse, ctx)
-  return { n: SHOWN_FRAMES.filter((f) => owned.has(f.id)).length, of: SHOWN_FRAMES.length, worn: wornFrame(purse, ctx) }
+  const shown = shownFrames(ctx.today)
+  return { n: shown.filter((f) => owned.has(f.id)).length, of: shown.length, worn: wornFrame(purse, ctx) }
 }
 
 const styles = StyleSheet.create({

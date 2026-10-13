@@ -47,7 +47,10 @@
     "web.nav.menu",
     "widget.tonight.did",
     "widget.settings.cap",
-    "we.question"
+    "we.question",
+    "frame.solstice.name",
+    "frame.origami.name",
+    "frame.aquarium.name"
   ],
   "de": [
     "shop.cog",
@@ -101,7 +104,9 @@
     "device.browser",
     "web.nav.feedback",
     "widget.tonight.did",
-    "widget.settings.cap"
+    "widget.settings.cap",
+    "frame.origami.name",
+    "frame.aquarium.name"
   ],
   "pt": [
     "title.shopBuddies",
@@ -135,7 +140,8 @@
     "map.calendar.kicker",
     "web.nav.menu",
     "widget.tonight.did",
-    "widget.settings.cap"
+    "widget.settings.cap",
+    "frame.origami.name"
   ],
   "it": [
     "nav.home",
@@ -190,7 +196,8 @@
     "web.nav.menu",
     "web.press.color.lime",
     "widget.tonight.did",
-    "widget.settings.cap"
+    "widget.settings.cap",
+    "frame.origami.name"
   ],
   "zh": [
     "title.shopBuddies",
