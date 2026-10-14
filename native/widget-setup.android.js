@@ -17,6 +17,7 @@ import {
   TOGETHER_WIDGET_NAME,
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
+import { resendWatchCards } from './watch-sync.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   androidWidgetCardStamp,
@@ -63,6 +64,8 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)
   }
   const tappedShelf = clicked || applied
+  // A tap may have come from the watch: send it the cards again either way.
+  if (tappedShelf) resendWatchCards()
   const later = await androidWidgetCardStamp()
   const shelf = readShelf()
   const props = await tonightPropsForWidget(shelf)

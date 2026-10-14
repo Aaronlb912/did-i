@@ -127,4 +127,76 @@ The main app and widget profiles do not need to be remade for this.
   watch).
 - Adding or editing questions, tags, shop, cheers, family or streak screens.
 - Notifications built for the watch (it mirrors iPhone notifications as usual).
-- Android Wear.
+
+# Wear OS app
+
+Same screens as the Apple Watch app, for Android watches. Built, not yet
+run on a real watch or a Wear emulator.
+
+## How it is built
+
+- Module: `android/wear`, its own Gradle build (not in `android/settings.gradle`,
+  so the React Native build is untouched). Kotlin, Compose for Wear OS,
+  minSdk 30, AGP and Kotlin pinned to the phone build's versions.
+  Build: `android/gradlew -p android/wear assembleDebug` (Windows:
+  `cd android; .\gradlew.bat -p wear assembleDebug`).
+- Package `com.aaronbryant.didi`, the same as the phone app, so Play pairs
+  them in one listing. Manifest: `android.hardware.type.watch` and
+  `com.google.android.wearable.standalone=false` (needs the phone).
+  `versionCode` is 1,000,000,000 + the run number so it never clashes with
+  the phone bundle in the same release.
+- Sync uses the Wearable Data Layer (`play-services-wearable` on both sides):
+  - Phone to watch: `native/widget-sync.js` sends the Tonight widget props
+    through `native/watch-sync.js` (same `watchCardsFromProps` as iOS; on
+    Android `openPhoneLabel` is `watch.openPhoneAndroid`). `WatchModule`
+    (`android/app/.../watch/`, React module `DidIWatch`) puts the JSON in a
+    data item at `/didi/cards` (urgent). The item stays, so a watch that
+    connects later still gets it. The watch's `CardsListenerService` stores it
+    (also when the watch app is closed) and the app re-reads it on resume.
+  - Watch to phone: a message at `/didi/tap` when the phone is connected,
+    else a data item under `/didi/tap/`, which the Data Layer delivers when
+    the phone is back. The phone's `WatchTapService` saves either one with
+    `WidgetTapStore.commit` and `WidgetCardStore.advance`, the same as a home
+    screen widget tap, before any JS runs. Then: if the app is running it
+    emits `onWatchTap` and `NativeApp.jsx` takes the queue
+    (`applyPendingAndroidWidgetTap`); otherwise the widget headless task, or
+    the next app open, takes it. The cards go back to the watch afterwards.
+  - The watch keeps its own taps for 10 minutes and shows them answered over
+    any cards that still show them open, so a tap does not flicker back while
+    the phone catches up. A tap the phone refused shows open again after that.
+- Screens (`MainActivity.kt`, mirrors `DidIWatchApp.swift`): ring at the edge
+  (an arc on round screens, a rounded square on square ones), buddy from shape
+  parts (`drawPart`, same math as `BuddyPartView`), "folder · a of b", the
+  question, Not yet (small, clock) and Did (large, check). Done: buddy over a
+  moon with the streak or "N not yet". The answer that finishes the night
+  plays a confirm haptic and the burst in cheer colours; animations off
+  (animator duration scale 0) means no burst and no ring animation.
+- Tile (`DidITileService.kt`): "N left tonight" or "All done" with a ring;
+  tap opens the app. Updated when cards arrive or a tap is made.
+- Strings: from the phone like the Apple Watch. Before the first cards the
+  watch shows English fallbacks from `android/wear/src/main/res/values/strings.xml`.
+
+## CI
+
+- `.github/workflows/wear-check.yml`: builds the wear debug APK on pull
+  requests that touch `android/wear/**`, no secrets.
+- `.github/workflows/android-apk.yml`: with the release keystore secrets set,
+  also builds `did-i-wear-aab` (signed with the same upload key).
+
+## Play Console steps before the first Wear release
+
+1. Play Console > the Did I app > Test and release > Advanced settings >
+   Form factors > add **Wear OS**, and opt in.
+2. Store listing > Wear OS: at least one Wear screenshot (square, 384x384 or
+   larger, no device frame), and the Wear OS listing text if asked.
+3. Upload `did-i-wear-aab` in the same release as the phone AAB (Internal
+   testing first). The Wear OS track may need its own release on newer
+   consoles: pick the Wear OS form factor in the track dropdown.
+4. Wear OS app review runs separately from the phone review; the first one
+   checks the quality guidelines (round screens, black background, no cut-off text).
+
+## Not yet on Wear OS
+
+- Not run on a watch or Wear emulator yet (no Wear system image installed).
+- No complication (only the tile).
+- No Wear screenshots.

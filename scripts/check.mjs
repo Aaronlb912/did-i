@@ -6305,9 +6305,21 @@ test('the watch app target exists and CI builds it without signing', () => {
   assert.ok(wf.includes('DidIWatchWidget.appex'), 'CI checks the complication is embedded in the watch app')
   assert.ok(read('.github/scripts/ios-apply-manual-signing.rb').includes(comp.bundleIdentifier))
   assert.ok(read('.github/scripts/ios-signing.sh').includes('IOS_WATCH_WIDGET_PROVISIONING_PROFILE'))
-  // Watch sync: iOS only, and the cards ride the Tonight widget push.
+  // Watch sync: Apple Watch and Wear OS, and the cards ride the Tonight widget push.
   assert.ok(read('native/widget-sync.js').includes('sendWatchCards(props, shelf)'))
-  assert.ok(read('native/watch-sync.js').includes("Platform.OS !== 'ios'"))
+  assert.ok(read('native/watch-sync.js').includes("Platform.OS === 'ios'"))
+  assert.ok(read('native/watch-sync.js').includes('NativeModules.DidIWatch'))
+  // Wear OS: same package, needs the phone, taps saved natively like a widget tap.
+  const wearGradle = read('android/wear/build.gradle')
+  assert.ok(wearGradle.includes("applicationId 'com.aaronbryant.didi'"))
+  assert.ok(/minSdk 30\b/.test(wearGradle))
+  const wearManifest = read('android/wear/src/main/AndroidManifest.xml')
+  assert.ok(wearManifest.includes('android.hardware.type.watch'))
+  assert.ok(/wearable\.standalone" android:value="false"/.test(wearManifest))
+  assert.ok(read('android/app/src/main/AndroidManifest.xml').includes('.watch.WatchTapService'))
+  const wearTap = read('android/app/src/main/java/com/aaronbryant/didi/watch/WatchTapService.java')
+  assert.ok(wearTap.indexOf('WidgetTapStore.commit') < wearTap.indexOf('tellJs(context)'), 'watch tap is on disk before JS hears of it')
+  assert.ok(read('.github/workflows/wear-check.yml').includes('-p wear'))
   // Watch words come from the phone in its language; the watch fills the numbers.
   for (const key of ['watch.allDone', 'watch.notYet', 'watch.count', 'watch.openPhone']) {
     assert.ok(read('native/watch-sync.js').includes(`'${key}'`), `${key} is sent to the watch`)

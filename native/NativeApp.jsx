@@ -82,6 +82,12 @@ export function NativeApp() {
           const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
           resendWatchCards()
           syncTonightWidget(shelf || readShelf()).catch(() => {})
+        }, async () => {
+          // Wear OS: the tap is already in the widget tap queue (WatchTapService).
+          const { applyPendingAndroidWidgetTap } = await import('./widget-tap.android.js')
+          const shelf = await applyPendingAndroidWidgetTap()
+          resendWatchCards()
+          syncTonightWidget(shelf || readShelf()).catch(() => {})
         })
       }
       preparePush({

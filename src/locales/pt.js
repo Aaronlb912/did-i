@@ -2024,6 +2024,7 @@ export const pt = {
   'watch.notYet': "{n} ainda não",
   'watch.count': "{a} de {b}",
   'watch.openPhone': "Abra o Did I no seu iPhone",
+  'watch.openPhoneAndroid': "Abra o Did I no seu celular",
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Pasta',
   'widget.settings.tagSub': 'A pasta que o widget do ecrã principal segue.',

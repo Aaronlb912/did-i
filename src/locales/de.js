@@ -2033,6 +2033,7 @@ export const de = {
   'watch.notYet': "{n} noch nicht",
   'watch.count': "{a} von {b}",
   'watch.openPhone': "Öffne Did I auf deinem iPhone",
+  'watch.openPhoneAndroid': "Öffne Did I auf deinem Handy",
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Ordner',
   'widget.settings.tagSub': 'Welchem Ordner das Widget auf dem Homescreen folgt.',

@@ -2022,6 +2022,7 @@ export const it = {
   'watch.notYet': "{n} non ancora",
   'watch.count': "{a} di {b}",
   'watch.openPhone': "Apri Did I sul tuo iPhone",
+  'watch.openPhoneAndroid': "Apri Did I sul tuo telefono",
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Cartella',
   'widget.settings.tagSub': 'La cartella che segue il widget della schermata Home.',

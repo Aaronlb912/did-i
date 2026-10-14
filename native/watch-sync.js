@@ -1,17 +1,20 @@
-import { Platform } from 'react-native'
+import { DeviceEventEmitter, NativeModules, Platform } from 'react-native'
 import { requireOptionalNativeModule } from 'expo'
 import { t } from '../src/lib/i18n.js'
 import { hallColors } from './palette.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { shelfStreak } from '../src/lib/hall-feel.js'
 
-// Apple Watch (modules/didi-watch, targets/watch). The iPhone sends the same
-// cards the Tonight widget gets; the watch sends taps back. Android, web and
-// iPhones without a paired watch: nothing happens.
+// Apple Watch (modules/didi-watch, targets/watch) and Wear OS (android/wear,
+// WatchModule in android/app). The phone sends the same cards the Tonight
+// widget gets; the watch sends taps back. Web and phones without a watch:
+// nothing happens.
 let watchMod
 function watch() {
-  if (Platform.OS !== 'ios') return null
-  if (watchMod === undefined) watchMod = requireOptionalNativeModule('DidIWatch') || null
+  if (watchMod !== undefined) return watchMod
+  if (Platform.OS === 'ios') watchMod = requireOptionalNativeModule('DidIWatch') || null
+  else if (Platform.OS === 'android') watchMod = NativeModules.DidIWatch || null
+  else watchMod = null
   return watchMod
 }
 
@@ -52,7 +55,7 @@ export function watchCardsFromProps(props, shelf = null) {
     allDoneLabel: t('watch.allDone'),
     notYetLabel: t('watch.notYet', { n: '{n}' }),
     countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
-    openPhoneLabel: t('watch.openPhone'),
+    openPhoneLabel: t(Platform.OS === 'android' ? 'watch.openPhoneAndroid' : 'watch.openPhone'),
     colors,
     // Base shapes plus worn accessories, in the widget's part format.
     buddy: parts ? { parts, behind: shapes?.behind || [], front: shapes?.front || [] } : null,
@@ -83,7 +86,14 @@ export function sendWatchCards(props, shelf = null) {
 }
 
 // onTap({ id, answer: 'did' | 'nope', night, dateIso, at }). Returns a stop function.
-export function listenForWatchTaps(onTap) {
+// Android: WatchTapService already saved the tap in the widget tap queue, so
+// onQueued() takes that queue instead (no tap is applied twice).
+export function listenForWatchTaps(onTap, onQueued) {
+  if (Platform.OS === 'android') {
+    if (!watch() || !onQueued) return () => {}
+    const sub = DeviceEventEmitter.addListener('onWatchTap', () => onQueued())
+    return () => sub?.remove?.()
+  }
   const mod = watch()
   if (!mod?.addListener) return () => {}
   const sub = mod.addListener('onWatchTap', (tap) => onTap(tap))
