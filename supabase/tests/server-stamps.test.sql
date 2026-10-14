@@ -22,7 +22,7 @@ begin
   -- Reports: 20 backdated rows still count, and the 21st is refused.
   for i in 1..20 loop
     insert into public.reports (from_id, about_id, reason, made_at, status, handled_by, handled_at)
-    values (a, b, 'test ' || i, now() - interval '7 days', 'done', a, now());
+    values (a, b, 'test ' || i, now() - interval '7 days', 'dismissed', a, now());
   end loop;
   begin
     insert into public.reports (from_id, about_id, reason, made_at)
@@ -58,7 +58,9 @@ begin
 
   -- The owner (not an app caller) can still set times, for admin fixes.
   insert into public.reports (from_id, about_id, reason, made_at)
-  values (a, b, 'owner', now() - interval '7 days');
+  values (b, a, 'owner', now() - interval '7 days');
+  select made_at into at from public.reports where from_id = b and reason = 'owner';
+  if at > now() - interval '6 days' then raise exception 'FAIL: owner could not backdate'; end if;
 
   raise exception 'SQL TESTS PASSED';
 end;

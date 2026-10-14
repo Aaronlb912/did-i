@@ -7,11 +7,11 @@
 -- these. Triggers fire in name order, so the stamps are named a_* to run
 -- before the cap_* triggers count.
 
--- Reports: the cap itself stamps the row first.
-create or replace function public.cap_reports()
+-- Reports: stamped by a trigger that runs as the caller (cap_reports is
+-- security definer, so inside it current_user is always the owner).
+create or replace function public.stamp_report()
 returns trigger
 language plpgsql
-security definer
 set search_path = public
 as $$
 begin
@@ -21,6 +21,24 @@ begin
     new.handled_at := null;
     new.handled_by := null;
   end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.stamp_report() from public;
+
+drop trigger if exists a_stamp_report on public.reports;
+create trigger a_stamp_report
+  before insert on public.reports
+  for each row execute function public.stamp_report();
+
+create or replace function public.cap_reports()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
   if (select count(*) from public.reports r
       where r.from_id = new.from_id and r.made_at > now() - interval '1 day') >= 20 then
     raise exception 'too many reports today';
