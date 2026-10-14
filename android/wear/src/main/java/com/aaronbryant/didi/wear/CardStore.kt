@@ -174,7 +174,7 @@ object CardStore {
     try {
       TileService.getUpdater(context).requestUpdate(DidITileService::class.java)
     } catch (e: Exception) {
-      // No tile added.
+      android.util.Log.w("DidI", "tile update failed", e)
     }
   }
 }
