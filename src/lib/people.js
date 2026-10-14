@@ -987,11 +987,13 @@ export async function answerSend(id, keep) {
   if (String(id).startsWith('app:')) {
     const user = await me()
     if (!user) return { miss: 'off' }
-    const { error } = await db
-      .from('app_send_answers')
-      .insert({ app_send_id: String(id).slice(4), user_id: user.id, state: keep ? 'kept' : 'passed' })
-    // Already answered on another phone is fine.
-    return error && error.code !== '23505' ? bad(error) : { miss: '' }
+    // A second answer (kept, then added) updates the same row.
+    const { data, error } = await db.rpc('set_app_send_answer', {
+      send_id: String(id).slice(4),
+      answer: keep ? 'kept' : 'passed',
+    })
+    if (error) return bad(error)
+    return data ? { miss: '' } : { miss: 'sent.gone' }
   }
   const { data, error } = await db
     .from('sends')
