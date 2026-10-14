@@ -7,7 +7,7 @@ import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widg
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { readShelf } from '../src/lib/board-shelf.js'
-import { isoDate } from '../src/lib/recurrence.js'
+import { boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 import { sendWatchCards } from './watch-sync.js'
@@ -188,7 +188,7 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
       midnight.setHours(24, 0, 0, 0)
       const tomorrow = enrichTogetherWidgetProps(
         readShelf(),
-        buildTogetherWidgetProps(people, isoDate(midnight)),
+        buildTogetherWidgetProps(people, boardDate(midnight)),
       )
       if (api.updateTimeline) {
         await api.updateTimeline([

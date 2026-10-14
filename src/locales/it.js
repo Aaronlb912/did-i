@@ -1019,7 +1019,7 @@ export const it = {
   'people.streakN': "streak di {n} giorni",
   'people.sendShort': 'Invia',
   'people.drop': 'Rimuovi',
-  'friend.goneBody': "I Did you che hai tenuto restano nel tuo Oggi. Riaggiungi {name} quando vuoi con l’ID amico o un link.",
+  'friend.goneBody': "I Did you che hai tenuto restano nel tuo Oggi. Riaggiungilo quando vuoi con l’ID amico o un link.",
   'friend.goneTitle': 'Tu e {name} non siete più amici',
   'people.dropOnly': 'Rimuovi e basta',
   'people.dropLeave': 'Rimuovi e lascia {n} domande condivise',

@@ -42,7 +42,7 @@ object CardStore {
     latest = next
     val write = Runnable {
       if (finished) justFinished.value = true
-      cards.value = next
+      cards.value = latest
     }
     if (Looper.myLooper() == Looper.getMainLooper()) write.run() else main.post(write)
   }

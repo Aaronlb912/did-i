@@ -33,6 +33,8 @@ export async function bootNative() {
     .catch(() => {})
   AppState.addEventListener('change', (next) => {
     setAppForeground(next === 'active')
+    // The app may be killed in the background before the 500ms debounce fires.
+    if (next !== 'active') flushNativePings()
   })
 }
 
@@ -147,17 +149,21 @@ export function scheduleNativePings(books, now) {
     waiters.push({ resolve, reject })
     pingNext = { books, now, waiters }
     clearTimeout(pingTimer)
-    pingTimer = setTimeout(() => {
-      const job = pingNext
-      pingNext = null
-      pingChain = pingChain
-        .then(() => schedulePingsNow(job.books, job.now || new Date()))
-        .then(
-          () => job.waiters.forEach((w) => w.resolve()),
-          (error) => job.waiters.forEach((w) => w.reject(error)),
-        )
-    }, 500)
+    pingTimer = setTimeout(flushNativePings, 500)
   })
+}
+
+function flushNativePings() {
+  clearTimeout(pingTimer)
+  const job = pingNext
+  if (!job) return
+  pingNext = null
+  pingChain = pingChain
+    .then(() => schedulePingsNow(job.books, job.now || new Date()))
+    .then(
+      () => job.waiters.forEach((w) => w.resolve()),
+      (error) => job.waiters.forEach((w) => w.reject(error)),
+    )
 }
 
 // Takes one board or every board on the shelf; each tag's questions ping.

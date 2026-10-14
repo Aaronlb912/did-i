@@ -229,8 +229,9 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
 
   // Recent taps (id, answer, night, at), like CardStore.kt on Wear OS.
   static let tapsKey = "didi.watch.taps"
-  // How long a tap stays on the watch while the phone has not caught up.
-  static let tapHoldMs: Double = 10 * 60 * 1000
+  // How long a tap stays on the watch at most. save() drops it sooner, once
+  // the phone's cards show it answered or no longer carry that card.
+  static let tapHoldMs: Double = 24 * 60 * 60 * 1000
 
   private func recentTaps(now: Double) -> [[String: Any]] {
     let all = defaults.array(forKey: CardStore.tapsKey) as? [[String: Any]] ?? []

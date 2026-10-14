@@ -1024,7 +1024,7 @@ export const fr = {
   'people.streakN': "streak de {n} jours",
   'people.sendShort': 'Envoyer',
   'people.drop': 'Retirer',
-  'friend.goneBody': "Les Did you gardés restent sur ton Aujourd’hui. Rajoute {name} quand tu veux avec son ID ami ou un lien.",
+  'friend.goneBody': "Les Did you gardés restent sur ton Aujourd’hui. Rajoute-le quand tu veux avec son ID ami ou un lien.",
   'friend.goneTitle': '{name} et toi n’êtes plus amis',
   'people.dropOnly': 'Retirer seulement',
   'people.dropLeave': 'Retirer et quitter {n} questions partagées',

@@ -1129,9 +1129,10 @@ test('a note on one night rides the answer, is capped, and survives two phones s
   // An older row without the note does not wipe it.
   const stale = [{ ...rows[0], note: '', note_at: '' }]
   assert.equal(applyAnswers(fresh, stale).changed, 0)
-  // The row sent up carries the note stamp.
-  assert.equal(answersToSend(fresh, true)[0].e, noted.answers[0].noteAt)
-  assert.equal(answersToSend(fresh, true)[0].a, answer.answeredAt)
+  // The row sent up carries the note stamp, zoned, since the server reads a
+  // time with no zone as UTC.
+  assert.equal(answersToSend(fresh, true)[0].e, new Date(noted.answers[0].noteAt).toISOString())
+  assert.equal(answersToSend(fresh, true)[0].a, new Date(answer.answeredAt).toISOString())
 })
 
 test('answer times compare by time: old zoneless rows against new UTC ones', () => {
@@ -1580,6 +1581,20 @@ test('no new strings are left in English in other languages', () => {
     const fresh = englishLeft(pack, en).filter((key) => !allowed.has(key))
     assert.deepEqual(fresh, [], `${code} has new English text; translate it in src/locales/${code}.js`)
   }
+})
+
+// A translation can only use {placeholders} the English string is given.
+test('locale placeholders match English', () => {
+  const holes = (text) => String(text).match(/\{\w+\}/g) || []
+  const bad = []
+  for (const [code, pack] of Object.entries({ es, fr, de, pt, it, zh, ja, ko })) {
+    for (const [key, value] of Object.entries(pack)) {
+      const mine = new Set(holes(en[key]))
+      const extra = holes(value).filter((hole) => !mine.has(hole))
+      if (extra.length) bad.push(`${code} ${key}: ${extra.join(' ')}`)
+    }
+  }
+  assert.deepEqual(bad, [])
 })
 
 // Chinese, Japanese and Korean keep only product and brand words in English.

@@ -165,6 +165,7 @@ export async function restoreGemPurchases() {
   if (!linked) return { gems: 0, miss: 'setup' }
   const api = iapApi(mod)
   let gems = 0
+  let failed = 0
   try {
     const open = (await api.getAvailablePurchases?.()) || []
     for (const purchase of open) {
@@ -176,6 +177,7 @@ export async function restoreGemPurchases() {
         gems += out.gems || 0
       } catch {
         // The next restore or connect tries it again.
+        failed += 1
       }
     }
   } catch (error) {
@@ -183,6 +185,7 @@ export async function restoreGemPurchases() {
   }
   const claimed = await claimAndCredit()
   if (claimed.miss && !gems) return { gems: 0, miss: claimed.miss }
+  if (failed && !gems && !claimed.gems) return { gems: 0, miss: 'store' }
   return { gems: gems + claimed.gems, miss: '' }
 }
 

@@ -51,6 +51,9 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     didSet { UserDefaults.standard.set(pending, forKey: WatchBridge.pendingKey) }
   }
   private let lock = NSLock()
+  // sendMessage can land and the transferUserInfo fallback still arrive, so
+  // the same tap (id, night, at) may come twice. Main queue only.
+  private var recentTapKeys: [String] = []
 
   func activate() {
     guard WCSession.isSupported() else { return }
@@ -96,7 +99,11 @@ final class WatchBridge: NSObject, WCSessionDelegate {
       "night": info["night"] as? String ?? "",
       "at": info["at"] as? Double ?? 0,
     ]
+    let key = "\(id)|\(info["night"] as? String ?? "")|\(info["at"] as? Double ?? 0)"
     DispatchQueue.main.async {
+      if self.recentTapKeys.contains(key) { return }
+      self.recentTapKeys.append(key)
+      if self.recentTapKeys.count > 50 { self.recentTapKeys.removeFirst() }
       if self.listening, let onTap = self.onTap {
         onTap(tap)
         return

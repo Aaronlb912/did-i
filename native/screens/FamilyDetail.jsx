@@ -221,7 +221,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       onPress: () =>
         publishSheet({
           title: t('family.removeTitle', { name }),
-          body: t('family.removeBody'),
+          body: t('family.removeBody', { name }),
           goLabel: t('family.remove'),
           closeLabel: t('settings.neverMind'),
           colors,
