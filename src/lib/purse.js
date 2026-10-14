@@ -1,5 +1,5 @@
 import { accountSessionOn } from './session-id.js'
-import { allClearTonight, boardDate } from './recurrence.js'
+import { allClearTonight, boardDate, stampDay } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
 import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
 
@@ -519,7 +519,7 @@ function tapsPaidTonight(book, clock) {
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late') return false
     const period = String(answer.periodKey || '')
-    const at = String(answer.answeredAt || '')
+    const at = stampDay(answer.answeredAt)
     return period === today || period.startsWith(today) || at.startsWith(today)
   }).length
 }

@@ -10,6 +10,20 @@ export function isoDate(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+// Answer times: new ones are UTC ("...Z"), old ones are zoneless local
+// wall clock. Date.parse reads both right, so compare and bucket by these,
+// never by the raw string.
+export function stampMs(value) {
+  const ms = Date.parse(String(value || ''))
+  return Number.isNaN(ms) ? 0 : ms
+}
+
+// The phone's local day an answer time falls on.
+export function stampDay(value) {
+  const ms = stampMs(value)
+  return ms ? isoDate(new Date(ms)) : String(value || '').slice(0, 10)
+}
+
 export function parseIsoDate(value) {
   const raw = String(value == null ? '' : value).trim()
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)

@@ -69,16 +69,15 @@ export function NativeApp() {
         goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : '')
       },
     })
+    let alive = true
+    let stopWatch = () => {}
     afterNativeBridgeReady(async () => {
       installQuickActions()
-      if (nativeWidgetsEnabled()) {
-        // Who is done tonight, for the Together widget, on open and on return.
-        refreshTogether().catch(() => {})
-        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
-        await initWidgetsOnLaunch(readShelf()).catch(() => {})
-        // Did or Not yet on the Apple Watch: saved like a widget tap, then
-        // the watch gets the cards again (also when the phone said no).
-        listenForWatchTaps((tap) => {
+      // Did or Not yet on the watch: saved like a widget tap, then the watch
+      // gets the cards again (also when the phone said no). Listening first,
+      // so a tap made during launch is not missed. No watch module: a no-op.
+      if (alive) {
+        stopWatch = listenForWatchTaps((tap) => {
           const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
           resendWatchCards()
           syncTonightWidget(shelf || readShelf()).catch(() => {})
@@ -89,6 +88,12 @@ export function NativeApp() {
           resendWatchCards()
           syncTonightWidget(shelf || readShelf()).catch(() => {})
         })
+      }
+      if (nativeWidgetsEnabled()) {
+        // Who is done tonight, for the Together widget, on open and on return.
+        refreshTogether().catch(() => {})
+        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
+        await initWidgetsOnLaunch(readShelf()).catch(() => {})
       }
       preparePush({
         onGo: (where) => goFromPush(where),
@@ -116,7 +121,11 @@ export function NativeApp() {
         },
       }).catch(() => {})
     })
-    return stop
+    return () => {
+      alive = false
+      stop?.()
+      stopWatch()
+    }
   }, [launchReady])
 
   return (

@@ -147,7 +147,8 @@ export function useAppShelf() {
       }).catch(reportRejection('weekly-gem'))
     }
     const after = currentBook(written)
-    if (after) scheduleNativePings(after).catch(reportRejection('schedule-pings'))
+    // Every board, the same as armLampPings: one board would cancel the rest.
+    if (written?.boards?.length) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {

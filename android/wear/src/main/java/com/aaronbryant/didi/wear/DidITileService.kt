@@ -27,7 +27,7 @@ class DidITileService : TileService() {
     val total = cards?.items?.size ?: 0
     val left = cards?.openCards?.size ?: 0
     val line = when {
-      cards == null || total == 0 -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
+      cards == null || total == 0 || cards.stale -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
       left > 0 -> fill(cards.leftLabel, "n" to left) ?: getString(R.string.left_n, left)
       else -> cards.allDoneLabel.orNull() ?: getString(R.string.all_done)
     }

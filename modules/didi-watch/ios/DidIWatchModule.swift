@@ -45,7 +45,11 @@ final class WatchBridge: NSObject, WCSessionDelegate {
   var onTap: (([String: Any]) -> Void)?
   var listening = false
   private var lastJson: String?
-  private var pending: [[String: Any]] = []
+  // Kept in UserDefaults so taps survive the app being killed before JS listens.
+  private static let pendingKey = "didi.watch.pendingTaps"
+  private var pending: [[String: Any]] = UserDefaults.standard.array(forKey: WatchBridge.pendingKey) as? [[String: Any]] ?? [] {
+    didSet { UserDefaults.standard.set(pending, forKey: WatchBridge.pendingKey) }
+  }
   private let lock = NSLock()
 
   func activate() {

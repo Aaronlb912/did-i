@@ -505,9 +505,9 @@ export function downloadBook(book) {
   window.setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
+// UTC. Rows saved before this are zoneless local time; read them with stampMs.
 export function answeredAtIso(now = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0')
-  return `${isoDate(now)}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  return now.toISOString()
 }
 
 export function addUnlock(book, id) {
