@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { HangMonthCal } from './HangMonthCal.jsx'
 import { HangSelect } from './HangSelect.jsx'
 import { HangTimeSelect } from './HangTimeSelect.jsx'
@@ -47,6 +47,13 @@ export function HangLamp({
     tagTitle,
     onTagTitle,
   })
+  // Cancel asks first when there are changes, like the phone.
+  const [startSnap] = useState(() => JSON.stringify([hang.draft, hang.tagTitle]))
+  const dirty = JSON.stringify([hang.draft, hang.tagTitle]) !== startSnap
+  function cancel() {
+    if (dirty && !window.confirm(hang.editing ? t('hang.discardTitle') : t('hang.discardNewTitle'))) return
+    onCancel?.()
+  }
   // A name saved under an older, longer limit still fits, so it can be edited.
   const shortRoom = Math.max(SHORT_MAX, String(lamp?.short || '').length)
   const miss = missOut || hang.miss
@@ -399,7 +406,7 @@ export function HangLamp({
         <button className="di-did di-did-small" type="button" onClick={() => submit()}>
           {hang.editing ? t('hang.save') : t('hang.add')}
         </button>
-        <button className="di-skip" type="button" onClick={onCancel}>
+        <button className="di-skip" type="button" onClick={cancel}>
           {t('hang.cancel')}
         </button>
       </div>

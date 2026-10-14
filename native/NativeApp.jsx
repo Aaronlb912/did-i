@@ -62,7 +62,8 @@ export function NativeApp() {
       onBack() {
         const shelf = readShelf()
         const book = currentBook(shelf)
-        const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
+        // Every folder, not only the open one.
+        const empty = shelf.boards.every((item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0)
         return goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {

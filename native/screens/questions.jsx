@@ -106,7 +106,14 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
   const colors = useHallColors(book)
-  const clock = useMemo(() => new Date(), [])
+  // Fresh when the app comes back, so a page left open overnight shows today.
+  const [clock, setClock] = useState(() => new Date())
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setClock(new Date())
+    })
+    return () => sub.remove()
+  }, [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
 }
@@ -1634,7 +1641,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       return
     }
     Keyboard.dismiss()
-    const target = bookForTag(boards, book, hang.tagTitle)
+    // A blank folder name on an edit keeps the question where it is.
+    const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
@@ -2180,8 +2188,11 @@ function ShareAnswersSwitch({ lamp, lampBook, change, colors }) {
           const { miss } = await setSendShare(lamp.sendId, on)
           setBusy(false)
           if (miss) return confirmMiss(t(miss))
-          const { shareOff: _off, ...rest } = lamp
-          change(hangInto(lampBook, on ? rest : { ...rest, shareOff: true }, true))
+          // Built from the shelf as it is now, not as it was at the tap.
+          const liveBook = findBookHoldingLamp(readShelf().boards, lamp.id) || lampBook
+          const liveLamp = (liveBook.lamps || []).find((row) => row.id === lamp.id) || lamp
+          const { shareOff: _off, ...rest } = liveLamp
+          change(hangInto(liveBook, on ? rest : { ...rest, shareOff: true }, true))
           confirmDone(t(on ? 'lamp.shareOnDone' : 'lamp.shareOffDone', { name }))
         }}
       />

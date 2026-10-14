@@ -1,5 +1,5 @@
 import { accountSessionOn } from './session-id.js'
-import { allClearTonight, boardDate, stampDay } from './recurrence.js'
+import { addDaysIso, allClearTonight, boardDate, periodNight, stampDay } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
 import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
 
@@ -568,12 +568,23 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
 // Signed in, the server owns the balance: a tap does not add coins here, it
 // leaves them for the save to credit (credit_night_coins). Without this the
 // save never saw the count go up and no account earned night coins.
-let earnedForServer = 0
+// Kept per answered night, so a late answer for last night pays last night.
+let earnedForServer = {}
 
+// { nightIso: coins }. A failed credit hands its coins back with
+// returnEarnedCoins; the server caps each night, so a retry cannot double pay.
 export function takeEarnedCoins() {
-  const n = earnedForServer
-  earnedForServer = 0
-  return n
+  const out = earnedForServer
+  earnedForServer = {}
+  return out
+}
+
+export function returnEarnedCoins(night, n, clock = new Date()) {
+  if (!night || !(n > 0)) return
+  // The server takes yesterday or today (payTap); an older night would be refused forever.
+  const today = boardDate(clock)
+  if (night < addDaysIso(today, -1) || night > today) night = today
+  earnedForServer[night] = (earnedForServer[night] || 0) + n
 }
 
 export function payTap(before, after, row, status, clock = new Date()) {
@@ -585,7 +596,12 @@ export function payTap(before, after, row, status, clock = new Date()) {
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock)
-    if (accountSessionOn()) earnedForServer += earned
+    if (accountSessionOn()) {
+      // The server takes yesterday or today; a week or month key maps further back.
+      const today = boardDate(clock)
+      const night = periodNight(row?.lamp, row?.periodKey)
+      returnEarnedCoins(night || today, earned, clock)
+    }
     else coins += earned
   }
   return { ...after, ...purse, coins }

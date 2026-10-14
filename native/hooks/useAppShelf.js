@@ -14,27 +14,26 @@ import {
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { hangInto, takeDown } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
-import { boardDate, isoDate } from '../../src/lib/recurrence.js'
+import { isoDate } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
-import { cloudSetUp } from '../../src/lib/cloud.js'
 import { accountSessionOn } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
-  mergePurses,
   spreadPurseFrom,
   weeklyGemBump,
+  returnEarnedCoins,
   takeEarnedCoins,
 } from '../../src/lib/purse.js'
 import {
@@ -84,6 +83,10 @@ function firstShelf() {
 
 export function useAppShelf() {
   const [shelf, setShelf] = useState(firstShelf)
+  // The latest shelf, for saves that run after a delay (undo toasts, sheets):
+  // building from the render-time shelf would drop edits made since.
+  const shelfRef = useRef(shelf)
+  shelfRef.current = shelf
   // Marks unlocked together wait their turn instead of only the first showing.
   const [marks, setMarks] = useState([])
   // The General folder's name follows the app language. Reading the shelf
@@ -105,9 +108,9 @@ export function useAppShelf() {
   )
 
   const persist = useCallback((nextShelf) => {
+    const shelf = shelfRef.current
     const now = new Date()
     const before = currentBook(shelf)
-    const coinsBefore = mergePurses(shelf.boards).coins
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
@@ -120,18 +123,22 @@ export function useAppShelf() {
     const written = writeShelf(spreadPurseFrom(drafted, current))
     const miss = maybeStreakMiss(written.boards, now)
     if (miss) queueStreakMoment(miss, miss.dateIso)
+    shelfRef.current = written
     setShelf(written)
     pushSoon(written)
-    const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
-    const coinsAfter = mergePurses(written.boards).coins
-    const earned = Math.max(0, coinsAfter - coinsBefore) + takeEarnedCoins()
-    if (cloudSetUp() && earned > 0) {
-      creditNightCoins(boardDate(now, fold), earned).then((bal) => {
-        if (bal == null) return
+    // Signed in, taps queue their coins (payTap); signed out, the phone keeps them.
+    // Crediting without a session failed, re-queued, and paid twice on sign-in.
+    for (const [night, earned] of accountSessionOn() ? Object.entries(takeEarnedCoins()) : []) {
+      creditNightCoins(night, earned).then((bal) => {
+        // Not paid: keep the coins for the next save to try again.
+        if (bal == null) return returnEarnedCoins(night, earned)
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      }).catch(reportRejection('night-coins'))
+      }).catch((err) => {
+        returnEarnedCoins(night, earned)
+        reportRejection('night-coins')(err)
+      })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
@@ -158,28 +165,28 @@ export function useAppShelf() {
       if (toasts.length) setMarks((queue) => [...queue, ...toasts.filter((mark) => !queue.some((item) => item.id === mark.id))])
     }
     return { written, before, after }
-  }, [shelf])
+  }, [])
 
   const change = useCallback(
     (next) => {
-      persist(putBook(shelf, { ...next, id: next.id || book.id }))
+      persist(putBook(shelfRef.current, { ...next, id: next.id || book.id }))
     },
-    [book, persist, shelf],
+    [book, persist],
   )
 
   // Several folders at once, for example a bulk edit on Questions.
   const changeBooks = useCallback(
     (books) => {
       if (!books.length) return
-      persist(books.reduce((next, one) => putBook(next, one), shelf))
+      persist(books.reduce((next, one) => putBook(next, one), shelfRef.current))
     },
-    [persist, shelf],
+    [persist],
   )
 
   const saveLamp = useCallback(
     (target, lamp, fromBook, clock = new Date()) => {
       const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
-      let next = shelf
+      let next = shelfRef.current
       let dest = target
       if (source && source.id !== target.id) {
         const answers = (source.answers || []).filter((item) => item.lampId === lamp.id)
@@ -336,14 +343,14 @@ export function useAppShelf() {
 
   const importShelf = useCallback((next) => persist(next), [persist])
 
+  // Clear this folder goes the delete path: the shared purse stays, and other
+  // phones get gone marks instead of bringing the questions back.
   const startEmpty = useCallback(() => {
-    change({
-      ...emptyBoard(),
-      id: live.id,
-      title: live.title,
-      keeperName: live.keeperName,
-    })
-  }, [change, live.id, live.keeperName, live.title])
+    const now = currentBook(shelfRef.current) || live
+    const picks = (now.lamps || []).map((lamp) => ({ boardId: now.id, lampId: lamp.id }))
+    const [cleared] = bulkLamps([now], picks, 'delete')
+    change({ ...(cleared || now), answers: [] })
+  }, [change, live])
 
   const sendCopy = useCallback(async () => {
     try {

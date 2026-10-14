@@ -136,6 +136,7 @@ public final class WidgetCardStore {
         String footer = card.optString("footer");
         String question = "";
         String leadId = "";
+        String nextNight = "";
         // Items can come from different tags now, so the header follows
         // whichever question is showing, not one fixed tag.
         String tagTitle = card.optString("tagTitle");
@@ -153,6 +154,7 @@ public final class WidgetCardStore {
             if (question.isEmpty()) question = nextLead.optString("label").trim();
             if (question.isEmpty()) return null;
             leadId = nextLead.optString("lampId");
+            nextNight = nextLead.optString("periodKey");
             String nextTag = nextLead.optString("tag").trim();
             if (!nextTag.isEmpty()) tagTitle = nextTag;
         }
@@ -160,6 +162,7 @@ public final class WidgetCardStore {
         JSONObject next = new JSONObject(card.toString());
         next.put("items", nextItems);
         next.put("leadLampId", leadId);
+        next.put("leadNight", nextNight);
         next.put("question", question);
         next.put("tagTitle", tagTitle);
         next.put("left", left);
@@ -310,6 +313,9 @@ public final class WidgetCardStore {
 
     private static JSONObject leadItem(JSONObject card, JSONArray items) {
         String id = card.optString("leadLampId").trim();
+        // Two cards can share a lampId (last night and tonight); leadNight
+        // picks one. Cards saved before it existed match on lampId alone.
+        String night = card.optString("leadNight").trim();
         boolean hasOpen = false;
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
@@ -326,14 +332,19 @@ public final class WidgetCardStore {
             String status = item.optString("status");
             if ("open".equals(status)) {
                 if (firstOpen == null) firstOpen = item;
-                if (!id.isEmpty() && id.equals(item.optString("lampId"))) return item;
+                if (isLead(item, id, night)) return item;
             } else if (!hasOpen && "skip".equals(status)) {
                 if (firstSkip == null) firstSkip = item;
-                if (!id.isEmpty() && id.equals(item.optString("lampId"))) return item;
+                if (isLead(item, id, night)) return item;
             }
         }
         if (firstOpen != null) return firstOpen;
         return firstSkip;
+    }
+
+    private static boolean isLead(JSONObject item, String id, String night) {
+        if (id.isEmpty() || !id.equals(item.optString("lampId"))) return false;
+        return night.isEmpty() || night.equals(item.optString("periodKey"));
     }
 
     private static boolean pendingStillOpen(Context context, JSONObject incoming) {

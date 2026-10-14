@@ -2351,6 +2351,7 @@ export const it = {
   'gift.needAccount': 'Accedi per mandare regali.',
   'gift.nobody': 'Puoi mandare regali ad amici e famiglia. Questa persona non è tra loro.',
   'gift.cap': 'Basta regali per oggi. Riprova domani.',
+  'gift.retry': 'Riprova',
   'gift.notFriend': 'Puoi mandare regali solo ad amici e famiglia.',
   'gift.needCoins': 'Ti servono più monete per questo.',
   'gift.gone': 'Questo ora non è nel negozio.',

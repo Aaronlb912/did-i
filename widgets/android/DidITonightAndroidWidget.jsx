@@ -359,10 +359,14 @@ function leadItem(p) {
   const items = p.items || []
   const hasOpen = items.some((item) => item.status === 'open')
   const id = String(p.leadLampId || '').trim()
+  // leadNight picks between last night's and tonight's card for one question.
+  const night = String(p.leadNight || '').trim()
   if (id) {
     const hit = items.find(
       (item) =>
-        item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+        item.lampId === id &&
+        (!night || String(item.periodKey || '') === night) &&
+        (item.status === 'open' || (!hasOpen && item.status === 'skip')),
     )
     if (hit) return hit
   }

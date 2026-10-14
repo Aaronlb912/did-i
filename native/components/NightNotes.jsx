@@ -19,6 +19,12 @@ import { showToast } from '../lib/toast-queue.js'
 
 // Clears a note, with Undo in the toast like other removals. Undo writes the
 // note back onto the folder as it is then, so nothing done since is lost.
+// The folder as saved now. A sheet stays open while answers and edits land,
+// so saving onto the book it opened with would drop them.
+function liveBook(book) {
+  return (readShelf().boards || []).find((item) => item.id === book?.id) || book
+}
+
 function removeNote(book, lampId, periodKey, note, onChange) {
   const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const amount = typeof was?.amount === 'number' ? was.amount : ''
@@ -226,10 +232,10 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       share: shareProps(lamp, answer),
       colors,
       onSave: (draft, count) => {
-        onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft, undefined, count))
+        onChange(setAnswerNote(liveBook(book), lamp.id, answer.periodKey, draft, undefined, count))
         confirmDone(t('note.saved'))
       },
-      onRemove: () => removeNote(book, lamp.id, answer.periodKey, answer.note, onChange),
+      onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
     })
   }
 
@@ -319,13 +325,13 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   const close = () => publishSheet(null)
   const save = (row, draft, count) => {
-    onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft, undefined, count))
+    onChange(setAnswerNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, undefined, count))
     close()
     confirmDone(t('note.saved'))
   }
   const remove = (row) => {
     close()
-    removeNote(bookOf(row), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
+    removeNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
   }
   // One card with a note already: say Edit note, not Add a note.
   const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')

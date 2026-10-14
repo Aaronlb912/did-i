@@ -1259,9 +1259,17 @@ test('a question deleted on one phone stays deleted when an older phone syncs', 
   const merged = mergeShelves(one, back, '2026-09-30T11:00', '2026-09-30T12:00')
   assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['x', 'y'])
   // Moving a question to another tag only takes it off the first one.
-  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [] }] }
-  const both = mergeShelves(moved, older, '2026-09-30', '2026-09-29')
-  assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [{ lampId: 'y', periodKey: '2026-09-30', status: 'yes', answeredAt: '2026-09-30T10:00:00Z' }] }] }
+  for (const both of [mergeShelves(moved, older, '2026-09-30', '2026-09-29'), mergeShelves(older, moved, '2026-09-29', '2026-09-30')]) {
+    assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+    // Its answers go with it, including the ones the older phone kept in b1.
+    assert.deepEqual(both.boards[1].answers.map((item) => item.periodKey).sort(), ['2026-09-29', '2026-09-30'])
+    assert.equal(both.boards[0].answers.length, 0)
+  }
+  // A row pulled from the server with the old board_id lands in the new home.
+  const pulledRow = [{ lamp_id: 'y', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: '2026-10-01T10:00:00Z' }]
+  const applied = applyAnswers(normalizeShelf(moved), pulledRow).shelf
+  assert.ok(applied.boards[1].answers.some((item) => item.periodKey === '2026-10-01'))
 })
 
 test('a question deleted while the launch sync is out stays deleted', () => {
@@ -1358,6 +1366,7 @@ test('signed in, the server list is the whole accessory list, like coin looks', 
   const next = normalizePurse(applyCoinCatalogToBook(book, { coins: 5, looks: [], cheerStages: {}, accessories: ['beanie'] }))
   assert.deepEqual(next.accessories, ['beanie'])
   assert.deepEqual(next.worn, {}, 'an accessory the server does not have comes off')
+  assert.equal(applyCoinCatalogToBook(book, { coins: 0, looks: [], cheerStages: {}, accessories: [] }).coins, 0, 'a server balance of 0 is kept')
 })
 
 test('the document that goes up carries no answers', () => {
@@ -1957,6 +1966,24 @@ test('widget props list every tag and merge answers onto the right one', () => {
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
+test('stale widget props never undo a newer answer for tonight', () => {
+  const book = {
+    id: 'tag-a',
+    title: 'A',
+    lamps: [{ id: 'l1', question: 'One?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const clock = new Date(2026, 8, 20, 21, 0)
+  const shelf = writeShelf({ currentId: 'tag-a', boards: [book] })
+  const props = buildTonightWidgetProps(shelf, clock)
+  const did = mergeWidgetPropsIntoShelf(shelf, { items: props.items.map((item) => ({ ...item, status: 'yes' })) }, clock)
+  const stale = mergeWidgetPropsIntoShelf(did, { items: props.items.map((item) => ({ ...item, status: 'skip' })) }, clock)
+  assert.equal(stale, did, 'a stale nope does not replace a did from the web')
+  const nope = mergeWidgetPropsIntoShelf(shelf, { items: props.items.map((item) => ({ ...item, status: 'skip' })) }, clock)
+  const turned = mergeWidgetPropsIntoShelf(nope, { items: props.items.map((item) => ({ ...item, status: 'yes' })) }, clock)
+  assert.notEqual(turned.boards[0].answers.find((row) => row.lampId === 'l1')?.status, 'skip', 'a nope can still turn into a did')
+})
+
 test('every coin look on sale passes the client check before the buy is sent', () => {
   const coinLooks = LOOKS.filter((item) => item.coins > 0)
   assert.ok(coinLooks.length > 0, 'there are coin looks to buy')
@@ -2258,7 +2285,7 @@ test('the tonight widget can draw a question without the app', () => {
   const peekedDrawn = JSON.stringify(fn(peeked, env))
   assert.ok(peekedDrawn.includes('"text":"Work"') && peekedDrawn.includes('Did I send the memo?'))
   assert.equal(findPress(fn(peeked, env), 'next:memo')().leadLampId, 'door', 'Next wraps around')
-  const answered = findPress(mixedTree, 'did:door')()
+  const answered = findPress(mixedTree, 'did:door|n')()
   assert.equal(answered.tagTitle, 'Work', 'the header follows the next question after a tap')
   assert.ok(!JSON.stringify(fn(answered, env)).includes('next:'), 'no Next with one question left')
 
@@ -2878,11 +2905,13 @@ test('a signed-in did leaves its coins for the server, signed out pays the phone
   })
   assert.equal(run.status, 0, run.stderr)
   // Paid once (the same night again is not paid twice), nothing on the phone.
-  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: 2, after: 0 })
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: { '2026-10-02': 2 }, after: {} })
   // The save hands what taps earned to the server.
   const shelfHook = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
   assert.match(shelfHook, /takeEarnedCoins\(\)/)
-  assert.match(shelfHook, /creditNightCoins\(boardDate\(now, fold\), earned\)/)
+  assert.match(shelfHook, /creditNightCoins\(night, earned\)/)
+  // A failed credit keeps the coins for the next save.
+  assert.match(shelfHook, /returnEarnedCoins\(night, earned\)/)
 
   // Signed out (this process has no cloud keys), the phone keeps the coins.
   const book = { id: 'b', lamps: [lamp('a')], answers: [], coins: 0 }
@@ -4321,12 +4350,12 @@ function widgetDraws(p) {
 test('the widget lead mirror matches both widget files', () => {
   const ios = readFileSync(path.join(checkRoot, 'widgets/DidITonightWidget.tsx'), 'utf8')
   const android = readFileSync(path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
-  const pick = "item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip'))"
+  const pick = "item.lampId === id && (!night || String(item.periodKey || '') === night) && (item.status === 'open' || (!hasOpen && item.status === 'skip'))"
   for (const src of [ios, android]) {
     assert.ok(src.replace(/\s+/g, ' ').includes(pick), 'leadItem still prefers leadLampId the same way')
     assert.ok(/items\.find\(\(item\) => item\.status === 'open'\)\s*\|\|\s*items\.find\(\(item\) => item\.status === 'skip'\)/.test(src), 'leadItem falls back open then nope')
   }
-  assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId)'))
+  assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId, props?.leadNight)'))
   assert.ok(ios.includes("String(props?.question || '').trim() || lead?.label || footer"))
   assert.ok(ios.includes('{lead ? questionText : footer}'), 'iOS draws a question only with a lead')
   assert.ok(ios.includes('const buttons = lead ?'))
@@ -6423,6 +6452,85 @@ await testAsync('a kept Did you shares its last week of answers with the sender,
   const sql = readFileSync(path.join(checkRoot, 'supabase/send-answers.sql'), 'utf8')
   assert.match(sql, /revoke all on public\.send_answers from anon, authenticated;/)
   assert.ok(sql.includes('not public.blocked_with(s.to_id)') && sql.includes('not public.blocked_with(s.from_id)'), 'blocking stops both ways')
+})
+
+await testAsync('an ios widget tap on the last night card answers last night, not tonight', async () => {
+  const { recordWidgetAnswer, buildTonightWidgetProps } = await import('../src/lib/widget-tonight.js')
+  const { writeWidgetTonightProps } = await import('../src/lib/widget-store.js')
+  const fri = '2026-10-02'
+  const sat3am = new Date(2026, 9, 3, 3, 0)
+  const fresh = () => writeShelf({
+    currentId: 'grace-tap',
+    boards: [{
+      id: 'grace-tap',
+      title: 'Home',
+      lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+      answers: [],
+    }],
+  })
+  const shelf = fresh()
+  const props = buildTonightWidgetProps(shelf, sat3am)
+  const doors = props.items.filter((item) => item.lampId === 'door')
+  assert.equal(doors.length, 2, 'last night and tonight both show')
+  assert.equal(props.items[0].periodKey, fri, 'last night leads before 5am')
+  const answers = () => readShelf().boards.find((b) => b.id === 'grace-tap').answers
+  // New targets carry the night.
+  assert.ok(recordWidgetAnswer('door', 'did', sat3am, fri))
+  assert.deepEqual(answers().map((a) => a.periodKey), [fri])
+  // Old targets carry none; the stored lead picks the night.
+  fresh()
+  writeWidgetTonightProps(props)
+  const next = recordWidgetAnswer('door', 'did', sat3am)
+  assert.ok(next)
+  assert.deepEqual(answers().map((a) => a.periodKey), [fri])
+  // A card from a night that has closed does not write.
+  fresh()
+  assert.equal(recordWidgetAnswer('door', 'did', new Date(2026, 9, 3, 10, 0), fri), null)
+  assert.equal(answers().length, 0)
+})
+
+await testAsync('widget lead follows its night when one question shows twice', async () => {
+  const { advanceTonightCard, buildTonightWidgetProps, peekNextTonightCard, tonightWidgetKey } = await import('../src/lib/widget-tonight.js')
+  const fri = '2026-10-02'
+  const sat = '2026-10-03'
+  const sat3am = new Date(2026, 9, 3, 3, 0)
+  const shelf = writeShelf({
+    currentId: 'grace-lead',
+    boards: [{
+      id: 'grace-lead',
+      title: 'Home',
+      lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+      answers: [],
+    }],
+  })
+  const props = buildTonightWidgetProps(shelf, sat3am)
+  assert.equal(props.leadNight, fri)
+  const peeked = peekNextTonightCard(props)
+  assert.equal(peeked.leadLampId, 'door')
+  assert.equal(peeked.leadNight, sat, 'Next moves to the tonight copy')
+  const tapped = advanceTonightCard(peeked, 'door', 'did', sat)
+  assert.ok(tapped, 'the tap lands on the card Next showed')
+  assert.equal(tapped.items.find((i) => i.periodKey === sat).status, 'yes')
+  assert.equal(tapped.items.find((i) => i.periodKey === fri).status, 'open')
+  // Old props without leadNight still pick by lampId.
+  const { leadNight, ...old } = props
+  assert.ok(advanceTonightCard(old, 'door', 'did', fri))
+  // A rename from another device redraws.
+  const renamed = { ...props, items: props.items.map((i) => ({ ...i, question: 'Front door?' })) }
+  assert.notEqual(tonightWidgetKey(renamed), tonightWidgetKey(props))
+})
+
+await testAsync('an ios widget tap on a Did we card is saved as a Did we answer', async () => {
+  const { recordWidgetAnswer } = await import('../src/lib/widget-tonight.js')
+  const { weNightStatus } = await import('../src/lib/we-nights.js')
+  const now = new Date(2026, 9, 3, 21, 0)
+  assert.ok(recordWidgetAnswer('we:card-1', 'did', now, '2026-10-03'))
+  assert.equal(weNightStatus('2026-10-03', 'card-1'), 'did')
+})
+
+await testAsync('a late watch tap keeps the time it was tapped', async () => {
+  const src = readFileSync(path.join(checkRoot, 'android/app/src/main/java/com/aaronbryant/didi/watch/WatchTapService.java'), 'utf8')
+  assert.ok(src.includes("WidgetTapStore.commit(context, id, answer, night, at)"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

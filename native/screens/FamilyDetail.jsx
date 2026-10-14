@@ -42,7 +42,7 @@ import { Reveal } from '../lib/motion.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { sharedLastLine } from '../../src/lib/every-copy.js'
@@ -100,6 +100,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       return
     }
     const row = await readFamily(familyId)
+    if (row?.miss) {
+      setMiss(row.miss)
+      setReady(true)
+      return
+    }
     setFam(row)
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)
@@ -156,20 +161,21 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   }
 
   async function tap(lamp, status) {
-    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, night, status)
-    if (why) return setMiss(why)
+    // The night at tap time: the page may have been open across the fold.
+    const tapNight = boardDate(new Date(), fam.fold_hour)
+    const out = await once(`tap:${lamp.id}`, () => answerFamilyLamp(fam.id, lamp.id, tapNight, status))
+    if (!out) return undefined
+    if (out.miss) return setMiss(out.miss)
     return load()
   }
 
   async function add() {
     if (!draft.trim()) return setMiss(t('family.blank'))
-    const { miss: why } = await addFamilyLamp(
-      fam.id,
-      fam.tag?.id,
-      draft,
-      forId === EVERYONE ? null : forId,
-      howOften === 'daily' ? 0 : Number(howOften),
+    const out = await once(`family-add:${fam.id}`, () =>
+      addFamilyLamp(fam.id, fam.tag?.id, draft, forId === EVERYONE ? null : forId, howOften === 'daily' ? 0 : Number(howOften)),
     )
+    if (!out) return undefined
+    const { miss: why } = out
     if (why === 'notag') return setMiss(t('family.noTag'))
     if (why) return setMiss(why)
     setDraft('')
@@ -340,7 +346,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       onPress={async () => {
                         setMiss('')
                         setSaid('')
-                        const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn))
+                        if (!sent) return undefined
                         const known = friendCheerMissKey(sent.miss)
                         if (known) return setMiss(t(known.key, known.vars))
                         if (sent.miss) return setMiss(tMiss(sent.miss))
@@ -416,11 +423,22 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <KeyButton
                     colors={colors}
                     label={t('family.remove')}
-                    onPress={async () => {
-                      const { miss: why } = await dropFamilyLamp(lamp.id)
-                      if (why) setMiss(why)
-                      load()
-                    }}
+                    onPress={() =>
+                      publishSheet({
+                        title: t('lamp.deleteTitle'),
+                        body: lamp.question,
+                        goLabel: t('family.remove'),
+                        closeLabel: t('settings.neverMind'),
+                        colors,
+                        onClose: () => publishSheet(null),
+                        onGo: async () => {
+                          publishSheet(null)
+                          const { miss: why } = (await once(`drop-lamp:${lamp.id}`, () => dropFamilyLamp(lamp.id))) || {}
+                          if (why) setMiss(why)
+                          load()
+                        },
+                      })
+                    }
                   />
                 </View>
               ) : null}
@@ -532,7 +550,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
               if (why) return setMiss(why)
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
-              goHash('/people')
+              swapHash('/people')
             },
           })
         }

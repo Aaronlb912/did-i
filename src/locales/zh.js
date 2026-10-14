@@ -2301,6 +2301,7 @@ export const zh = {
   'gift.needAccount': '登录后才能送礼物。',
   'gift.nobody': '礼物只能送给朋友和家人。这个人不在其中。',
   'gift.cap': '今天送的礼物够多了，明天再试。',
+  'gift.retry': '再试一次',
   'gift.notFriend': '礼物只能送给朋友和家人。',
   'gift.needCoins': '这个需要更多金币。',
   'gift.gone': '商店里现在没有这个。',

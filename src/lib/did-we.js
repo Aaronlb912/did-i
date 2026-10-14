@@ -538,8 +538,10 @@ function loadShared(force, userId) {
   if (inflight) return inflight
   if (!force && Date.now() - loadedAt < 3000) return Promise.resolve(shared)
   inflight = Promise.all([weTonight(), refreshWeNights().catch(() => {})])
-    .then(([next]) => {
+    .then(([got]) => {
       if (sharedFor !== userId) return EMPTY
+      // A failed load keeps the cards already on screen and says so (miss).
+      const next = got.miss ? { ...got, cards: shared.cards || [] } : got
       shareMyBuddy(next.cards)
       shared = next
       loadedAt = Date.now()

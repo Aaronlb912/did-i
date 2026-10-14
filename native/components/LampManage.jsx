@@ -1,4 +1,5 @@
 import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
@@ -6,6 +7,11 @@ import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { confirmDone } from '../lib/confirm.js'
 import { showToast } from '../lib/toast-queue.js'
+
+// The folder as saved now: an undo runs seconds later, after other edits.
+function liveBook(book) {
+  return (readShelf().boards || []).find((item) => item.id === book.id)
+}
 
 function deleteNote(book, lamp) {
   const mine = (book.answers || []).filter((item) => item.lampId === lamp.id)
@@ -29,7 +35,6 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
       return
     }
     // Pausing can be taken back for a few seconds, like an answer.
-    const before = book
     const now = Date.now()
     showToast({
       id: 'undo:pause',
@@ -40,7 +45,9 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
       until: now + DELETE_UNDO_MS,
       total: DELETE_UNDO_MS,
       onPress: () => {
-        onChange(before)
+        const live = liveBook(book) || next
+        const paused = (live.lamps || []).find((item) => item.id === lamp.id)
+        if (paused?.archived) onChange(toggleArchive(live, paused))
         onPaused?.(false)
       },
     })
@@ -72,7 +79,7 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
           until: now + DELETE_UNDO_MS,
           total: DELETE_UNDO_MS,
           // Clears the delete's tombstone too, or sync would drop it again.
-          onPress: () => onChange(undoBulkLamps([after], [before], [{ lampId: lamp.id }])[0] || before),
+          onPress: () => onChange(undoBulkLamps([liveBook(book) || after], [before], [{ lampId: lamp.id }])[0] || before),
         })
       },
     })

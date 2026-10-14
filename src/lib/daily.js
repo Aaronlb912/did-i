@@ -13,6 +13,15 @@ import {
 
 const CLOSE_CAP = 400
 
+// The auto-close nope is stamped at the start of its night so a real tap
+// from any device wins every newer-wins compare.
+function nightStart(dateIso) {
+  const date = parseIsoDate(dateIso)
+  if (!date) return new Date()
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 export function nightEnd(dateIso) {
   const date = parseIsoDate(dateIso)
   if (!date) return new Date()
@@ -61,14 +70,14 @@ export function closePastNights(book, now = new Date()) {
     const rows = catchUpRows(next, now).filter((row) => row.dateIso !== grace)
     if (!rows.length) break
     for (const row of rows) {
-      next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
+      next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
       changed = true
     }
   }
   for (const row of closeOnceRows(next, now)) {
     if (row.dateIso === graceNightIso(now)) continue
     if (answerFor(next, row.lamp.id, row.periodKey)) continue
-    next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
+    next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
     changed = true
   }
   // A one-time question whose day (or due date) is behind us is done

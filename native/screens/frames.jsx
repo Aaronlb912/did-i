@@ -141,6 +141,14 @@ function weekFor(frame, owned, ctx) {
 const CORNER_ART = new Set(['frost'])
 
 // What is left after a buy, so spending the last gem is never a surprise.
+// A buy awaits the server, and the book it was handed is from the tap. Put
+// the bought purse on the folder as it is now, so answers made meanwhile stay.
+export function onLiveBook(out) {
+  if (!out?.book) return out
+  const live = readShelf().boards.find((item) => item.id === out.book.id)
+  return live ? { ...out, book: { ...live, ...normalizePurse(out.book) } } : out
+}
+
 export function leftAfter(purse, item) {
   if (item.gems) {
     const n = purse.gems - item.gems
@@ -270,7 +278,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
             title: frameName(id),
             body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
-              const next = await buyFrame(book, id)
+              const next = onLiveBook(await buyFrame(book, id))
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
               if (next.miss === SIGN_IN_MISS) return askSignIn(colors)
               if (next.miss) return confirmMiss(frameMiss(next))

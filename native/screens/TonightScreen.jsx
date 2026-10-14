@@ -88,7 +88,7 @@ import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
+import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -211,7 +211,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const loadAsks = useCallback(async () => {
     if (!account.user) return setAsks([])
     try {
-      setAsks(await listInbox())
+      const rows = await listInbox()
+      // A failed read keeps the cards we had.
+      if (!rows.miss) setAsks(rows)
     } catch {
       // Offline: the cards wait for the next look.
     }
@@ -227,7 +229,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
   useEffect(() => {
-    if (!account.user) return
+    // A failed load kept old cards: leave the widget line and reminders as they were.
+    if (!account.user || we.miss) return
     if (saveWeWidgetLine(we.cards)) syncTonightWidget(readShelf()).catch(() => {})
     // Did we reminders ride along with your own; set them again when they change.
     if (saveWeReminders(we.cards)) armLampPings(readShelf().boards).catch(() => {})
@@ -236,6 +239,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (earned.length) onChange({ ...book, unlocked: [...(book.unlocked || []), ...earned] })
     // Someone else's did finished a card: play their cheer here, once.
     const [first, ...more] = takeWeFinishes(we.cards)
+    // Streak coins are claimed by each member; a repeat claim pays nothing.
+    if (first) {
+      Promise.all([first, ...more].map((done) => weClaim(done.card.id).catch(() => ({ coins: 0 })))).then((paid) => {
+        const coins = paid.reduce((sum, out) => sum + (out.coins || 0), 0)
+        if (coins <= 0) return
+        showToast({ id: 'we-coins', kind: 'we', text: t('we.coins', { n: coins }), ms: 3600 })
+        pullAndMerge().catch(() => {})
+      })
+    }
     if (!first) {
       // You and someone else both said did: a small moment, once a night.
       const both = takeWeBoth(we.cards)
@@ -335,6 +347,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
+  const answerButtons = useAnswerButtons()
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
   // The first answer while the hint is up means the swipe is learned.
   const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
@@ -360,7 +373,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // New people see Did and Nope buttons and a swipe hint until they have
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
-  const answerButtons = useAnswerButtons()
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {

@@ -41,6 +41,7 @@ import {
   giftItems,
   shopTag,
   stampPurse,
+  mergeGift,
   wearGift,
   wearBuddy,
   wearCheer,
@@ -90,7 +91,7 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, openFrameSheet } from './frames.jsx'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, onLiveBook, openFrameSheet } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -895,7 +896,8 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
 // shop and Collection's wishlist share it.
 function useTileTap(book, onChange, colors, coat, purse) {
   // The preview already shows the price, so its Buy is the confirm step.
-  function done(type, item, next, bought) {
+  function done(type, item, out, bought) {
+    const next = onLiveBook(out)
     if (shortOnGems(next, colors)) return
     if (next.miss) {
       openTilePreview(type, item, purse, colors, coat, tileAction(type, item), shopMiss(next), wishFor(type, item))
@@ -1138,7 +1140,8 @@ export function ShopLooksScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id, bought = false) {
+  function take(out, id, bought = false) {
+    const next = onLiveBook(out)
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -1247,7 +1250,8 @@ export function ShopCheersScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id, bought = false) {
+  function take(out, id, bought = false) {
+    const next = onLiveBook(out)
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -1357,7 +1361,8 @@ export function ShopBuddiesScreen({ book, onChange }) {
   const [miss, setMiss] = useState(NO_MISS)
   const [confirm, setConfirm] = useState(null)
 
-  function take(next, id, bought = false) {
+  function take(out, id, bought = false) {
+    const next = onLiveBook(out)
     if (shortOnGems(next, colors)) {
       setMiss(NO_MISS)
       setConfirm(null)
@@ -1525,7 +1530,8 @@ export function ShopAccessoriesScreen({ book, onChange }) {
     (item) => (!slotPick || item.slot === slotPick) && (!notOwned || !purse.accessories.includes(item.id)),
   )
 
-  function take(next, id, bought = false) {
+  function take(out, id, bought = false) {
+    const next = onLiveBook(out)
     setMiss({ id, text: shopMiss(next) })
     if (next.miss) {
       setConfirm(null)
@@ -1752,6 +1758,9 @@ function useGemStream(gems, balanceRef) {
     noteBuy: (packId) => {
       bought.current = { packId, at: Date.now() }
     },
+    dropBuy: () => {
+      bought.current = null
+    },
     packRef: (packId) => (node) => {
       if (node) packArts.current.set(packId, node)
       else packArts.current.delete(packId)
@@ -1838,6 +1847,7 @@ export function GemShopScreen({ book }) {
     try {
       out = await startGemPurchase(packId)
     } catch {
+      stream.dropBuy()
       setBanner('')
       gemNotice(t('gems.storeError'))
       return
@@ -1849,11 +1859,14 @@ export function GemShopScreen({ book }) {
       return
     }
     if (out.miss) {
+      stream.dropBuy()
       setBanner('')
       // The store's own code, so one failed buy can be told from another.
       gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss))
       return
     }
+    // Cancelled or failed: no gems are coming, so a later rise is not this buy.
+    if (!out.pending) stream.dropBuy()
     setBanner(out.pending ? t('gems.pending') : '')
   }
 
@@ -2607,6 +2620,8 @@ export function GiftScreen({ book, onChange, toId }) {
   const [tab, setTab] = useState('looks')
   const [note, setNote] = useState('')
   const [person, setPerson] = useState(undefined)
+  const [lost, setLost] = useState(false)
+  const [tries, setTries] = useState(0)
   const [sent, setSent] = useState('')
   const [busy, setBusy] = useState(false)
   const items = giftItems()
@@ -2615,11 +2630,17 @@ export function GiftScreen({ book, onChange, toId }) {
 
   useEffect(() => {
     let alive = true
-    readKnownPerson(toId).then((row) => alive && setPerson(row))
+    setLost(false)
+    readKnownPerson(toId).then((row) => {
+      if (!alive) return
+      // undefined = the lookup failed, null = not someone you know.
+      if (row === undefined) setLost(true)
+      else setPerson(row)
+    })
     return () => {
       alive = false
     }
-  }, [toId])
+  }, [toId, tries])
 
   const name = person ? personName(person) || t('people.someone') : ''
 
@@ -2655,7 +2676,8 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     publishSheet(null)
-    onChange(stampPurse(book, { ...purse, gems: out.gems, coins: out.coins }))
+    const live = readShelf().boards.find((row) => row.id === book.id) || book
+    onChange(stampPurse(live, { ...normalizePurse(live), gems: out.gems, coins: out.coins }))
     setNote('')
     setSent(t('gift.sent', { item: tileName(type, item.id), name }))
   }
@@ -2697,6 +2719,14 @@ export function GiftScreen({ book, onChange, toId }) {
       <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
         <Meta colors={colors}>{t('gift.needAccount')}</Meta>
         <DidButton colors={colors} label={t('we.signIn')} onPress={() => goHash('/account')} />
+      </BoardShell>
+    )
+  }
+  if (lost) {
+    return (
+      <BoardShell book={book} title={t('gift.title')} date={shellDate(book)} colors={colors}>
+        <Meta colors={colors}>{t('people.reach')}</Meta>
+        <DidButton colors={colors} label={t('gift.retry')} onPress={() => setTries((n) => n + 1)} />
       </BoardShell>
     )
   }
@@ -2777,7 +2807,7 @@ function showGift(gift, getBook, onChange, colors) {
     quote: gift.note || '',
     goLabel: t('gift.equip'),
     onGo: () => {
-      onChange(wearGift(getBook(), type, gift.item_id))
+      onChange(wearGift(mergeGift(getBook(), gift).book, type, gift.item_id))
       done()
     },
     moreLabel: t('gift.viewKit'),
@@ -2795,8 +2825,9 @@ function showGift(gift, getBook, onChange, colors) {
               goLabel: t('gift.reportGo'),
               closeLabel: t('settings.neverMind'),
               colors,
-              onGo: () => {
-                reportGift(gift.id).catch(() => {})
+              onGo: async () => {
+                const { miss } = await reportGift(gift.id).catch(() => ({ miss: 'people.reach' }))
+                if (miss) return confirmMiss(tMiss(miss))
                 done()
                 confirmDone(t('confirm.reported'))
               },

@@ -39,7 +39,9 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
     let live = true;
     listFriends()
       .then((out) => {
-        if (live) setFriends(out.friends);
+        if (!live) return;
+        setFriends(out.friends);
+        setLoadMiss(out.miss ? t("people.reach") : "");
       })
       .catch(() => {
         if (live) {

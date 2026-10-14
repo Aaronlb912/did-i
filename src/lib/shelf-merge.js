@@ -52,6 +52,8 @@ function foldPurse(winner, loser) {
     looks: unionList(win.looks, lose.looks),
     accessories: unionList(win.accessories, lose.accessories),
     worn: win.worn,
+    buddies: unionList(win.buddies, lose.buddies),
+    buddyOn: win.buddyOn || lose.buddyOn,
     frames: unionList(win.frames, lose.frames),
     frame: win.frame,
     cheerOn: win.cheerOn,
@@ -122,5 +124,35 @@ export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '
   }
 
   // normalizeShelf folds tags that ended up with the same name on both phones.
-  return normalizeShelf({ ...winner, currentId: winner.currentId, boards, goneTags })
+  return normalizeShelf({ ...winner, currentId: winner.currentId, boards: followMovedAnswers(boards, [...winner.boards, ...loser.boards]), goneTags })
+}
+
+// A question moved to another folder on one phone is gone from the old
+// folder there. Its answers, wherever either phone kept them, go with it.
+function followMovedAnswers(boards, sources) {
+  const homeOf = new Map()
+  boards.forEach((book, index) => {
+    for (const lamp of book.lamps || []) homeOf.set(lamp.id, index)
+  })
+  const moved = new Map()
+  sources.forEach((book) => {
+    for (const answer of book.answers || []) {
+      const home = homeOf.get(answer.lampId)
+      if (home === undefined || boards[home].id === book.id) continue
+      if (!moved.has(home)) moved.set(home, [])
+      moved.get(home).push(answer)
+    }
+  })
+  if (!moved.size) return boards
+  return boards.map((book, index) => {
+    if (!moved.has(index)) return book
+    const answers = new Map()
+    for (const answer of book.answers || []) answers.set(answerKey(answer), answer)
+    for (const answer of moved.get(index)) {
+      const key = answerKey(answer)
+      const prev = answers.get(key)
+      answers.set(key, prev ? laterAnswer(prev, answer) : answer)
+    }
+    return { ...book, answers: [...answers.values()] }
+  })
 }

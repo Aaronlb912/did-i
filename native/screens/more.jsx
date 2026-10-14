@@ -346,7 +346,9 @@ export function HelpScreen() {
           label={t('feedback.send')}
           onPress={() => {
             const url = feedbackMailto()
-            if (url) Linking.openURL(url)
+            // No mail app (or no address): say so instead of a dead tap.
+            if (!url) return confirmMiss(t('confirm.miss'))
+            return Linking.openURL(url).catch(() => confirmMiss(t('confirm.miss')))
           }}
         />
       </HelpFold>
@@ -1018,6 +1020,11 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   function saveName() {
     const title = titleDraft.trim()
     if (!title || title === book?.title) return
+    // Same name as another folder: saving would merge the two.
+    if ((boards || []).some((item) => item.id !== book?.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+      confirmMiss(t('boards.addSame'))
+      return
+    }
     setTitleDraft(title)
     onChange({ ...book, title })
     confirmDone(t('settings.saved'))
@@ -1426,7 +1433,8 @@ export function WelcomeScreen({ book }) {
 
   function finish() {
     markWelcomeSeen()
-    const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
+    // Every folder, not only the open one: questions in another folder count.
+    const empty = readShelf().boards.every((item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0)
     goHash(empty ? '/first' : '/tonight')
   }
 
@@ -1470,7 +1478,11 @@ export function FirstNightScreen({ book, onChange, now }) {
     playClick()
   }
 
+  // A second tap on Done before the page leaves would add the picks again.
+  const finished = useRef(false)
   function finish() {
+    if (finished.current) return
+    finished.current = true
     const own =
       question && !picks.some((item) => item.question === question)
         ? { question, short: shortFromQuestion(question, 24) }
@@ -2115,6 +2127,8 @@ function AccountSignedIn({ book, email, onChange }) {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      // null = the list didn't load: keep the saved one.
+      if (!rows) return confirmMiss(t('confirm.miss'))
       setDevices(rows)
       setDevicesIn(true)
     })
@@ -2237,8 +2251,10 @@ function AccountSignedIn({ book, email, onChange }) {
       yes: t('account.forgetYes'),
       go: async () => {
         try {
-          await forgetDevice(row.device_key)
-          setDevices(await listDevices())
+          const out = await forgetDevice(row.device_key)
+          if (out?.miss) return confirmMiss(t('confirm.miss'))
+          const rows = await listDevices()
+          if (rows) setDevices(rows)
           confirmDone(t('confirm.phoneForgot'))
         } catch {
           confirmMiss(t('confirm.miss'))
@@ -2417,7 +2433,8 @@ function AccountSignedIn({ book, email, onChange }) {
           onClose={() => setRenaming(null)}
           onSaved={async () => {
             setRenaming(null)
-            setDevices(await listDevices())
+            const rows = await listDevices()
+            if (rows) setDevices(rows)
           }}
         />
       ) : null}
@@ -2439,8 +2456,10 @@ function AccountSignedIn({ book, email, onChange }) {
               yes: t('account.forgetYes'),
               go: async () => {
                 try {
-                  await forgetOtherDevices()
-                  setDevices(await listDevices())
+                  const out = await forgetOtherDevices()
+                  if (out?.miss) return confirmMiss(t('confirm.miss'))
+                  const rows = await listDevices()
+                  if (rows) setDevices(rows)
                   confirmDone(t('confirm.phonesForgot'))
                 } catch {
                   confirmMiss(t('confirm.miss'))

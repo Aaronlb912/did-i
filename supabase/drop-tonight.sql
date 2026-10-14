@@ -77,6 +77,16 @@ begin
   delete from public.shelves where user_id = me;
   delete from public.profiles where user_id = me;
   delete from public.devices where user_id = me;
+  -- Photo files stay public until removed. Supabase may block direct deletes
+  -- on storage.objects (storage.protect_delete); then the app's Storage API
+  -- call is the only way, so a refusal here must not stop the account delete.
+  begin
+    perform set_config('storage.allow_delete_query', 'true', true);
+    delete from storage.objects
+    where bucket_id = 'avatars' and (storage.foldername(name))[1] = me::text;
+  exception when others then
+    raise warning 'delete_me: avatar files left for %: %', me, sqlerrm;
+  end;
   delete from auth.users where id = me;
 end;
 $$;

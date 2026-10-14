@@ -155,10 +155,11 @@ export function People({ book, onChange, now }) {
       ])
       setMine(who)
       await syncDisplayName(book.keeperName)
-      setLinks(friendRows)
-      setFamilies(famRows)
+      // A failed list keeps the rows we had and says so.
+      if (!friendRows.miss) setLinks(friendRows)
+      if (!famRows.miss) setFamilies(famRows)
       setWaiting(count)
-      setMiss('')
+      setMiss(friendRows.miss || famRows.miss ? 'people.reach' : '')
     } catch {
       setMiss('people.reach')
     }

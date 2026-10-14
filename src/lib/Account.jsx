@@ -284,12 +284,15 @@ function SignedIn({ book, email, onChange }) {
   // Until the list comes back, say nothing rather than "only this phone".
   const [devicesIn, setDevicesIn] = useState(false)
   const [note, setNote] = useState(null)
+  const [leaving, setLeaving] = useState(false)
+  const missNote = () => setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
   const here = deviceKey()
 
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      if (!rows) return missNote()
       setDevices(rows)
       setDevicesIn(true)
     })
@@ -375,8 +378,11 @@ function SignedIn({ book, email, onChange }) {
                 row.device_key === here
                   ? undefined
                   : async () => {
-                      await forgetDevice(row.device_key)
-                      setDevices(await listDevices())
+                      const out = await forgetDevice(row.device_key).catch(() => ({ miss: true }))
+                      if (out?.miss) return missNote()
+                      const rows = await listDevices()
+                      if (rows) setDevices(rows)
+                      else missNote()
                     }
               }
             />
@@ -398,8 +404,16 @@ function SignedIn({ book, email, onChange }) {
         <SetRow
           label={t('account.out')}
           onClick={async () => {
-            await signOutHere()
-            signedOutSync()
+            if (leaving) return
+            setLeaving(true)
+            try {
+              await signOutHere()
+              signedOutSync()
+            } catch {
+              missNote()
+            } finally {
+              setLeaving(false)
+            }
           }}
         />
         <SetRow
@@ -433,7 +447,9 @@ function SignedIn({ book, email, onChange }) {
               body: t('account.deleteBody'),
               yes: t('account.deleteYes'),
               go: async () => {
-                await deleteAccount()
+                // A failed delete leaves the account; say so instead of signing out here.
+                const out = await deleteAccount().catch(() => ({ miss: 'off' }))
+                if (out?.miss) return missNote()
                 signedOutSync()
               },
             })

@@ -2365,6 +2365,7 @@ export const de = {
   'gift.nobody':
     'Du kannst Freunden und Familie Geschenke senden. Diese Person gehört nicht dazu.',
   'gift.cap': 'Das sind genug Geschenke für heute. Versuch es morgen.',
+  'gift.retry': 'Erneut versuchen',
   'gift.notFriend': 'Geschenke gehen nur an Freunde und Familie.',
   'gift.needCoins': 'Dafür brauchst du mehr Coins.',
   'gift.gone': 'Das gibt es gerade nicht im Shop.',
