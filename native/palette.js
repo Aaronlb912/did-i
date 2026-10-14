@@ -26,9 +26,9 @@ const DARK = {
   weDeep: '#7d63d6',
   weSoft: 'rgba(182, 156, 255, 0.12)',
   veil: 'rgba(8, 10, 14, 0.55)',
-  // The done card's daytime sky: a warm sun and the glow around it.
-  sun: '#ffc857',
-  sunGlow: 'rgba(255, 176, 87, 0.16)',
+  // The done card's daytime sky: a pale sun, as quiet as the moon, and a faint glow.
+  sun: '#d8c9a6',
+  sunGlow: 'rgba(216, 201, 166, 0.07)',
   // Per-person badge tints (PersonAvatar), picked by a hash of their id.
   person1: '#ff9f6b',
   person2: '#6fd0c4',
@@ -60,8 +60,8 @@ const LIGHT = {
   weDeep: '#4f3799',
   weSoft: 'rgba(107, 79, 200, 0.08)',
   veil: 'rgba(26, 29, 22, 0.4)',
-  sun: '#e89a1c',
-  sunGlow: 'rgba(255, 186, 74, 0.22)',
+  sun: '#c9a86a',
+  sunGlow: 'rgba(201, 168, 106, 0.1)',
   person1: '#b8572a',
   person2: '#1f7f74',
   person3: '#a83a72',
