@@ -1570,7 +1570,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                     colors={colors}
                     disabled={cheersLeft < 1}
                     label={t('friends.cheerUse')}
-                    onPress={() => cheer(row.person)}
+                    onPress={() => once(`cheer:${row.person.user_id}`, () => cheer(row.person))}
                   />
                 </>
               }

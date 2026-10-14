@@ -51,6 +51,7 @@ const files = [
   'supabase/send-answers.sql',
   'supabase/consent-guards.sql',
   'supabase/app-send-answer-upsert.sql',
+  'supabase/server-stamps.sql',
   'supabase/drop-tonight.sql',
 ]
 

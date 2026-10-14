@@ -1358,6 +1358,7 @@ test('signed in, the server list is the whole accessory list, like coin looks', 
   const next = normalizePurse(applyCoinCatalogToBook(book, { coins: 5, looks: [], cheerStages: {}, accessories: ['beanie'] }))
   assert.deepEqual(next.accessories, ['beanie'])
   assert.deepEqual(next.worn, {}, 'an accessory the server does not have comes off')
+  assert.equal(applyCoinCatalogToBook(book, { coins: 0, looks: [], cheerStages: {}, accessories: [] }).coins, 0, 'a server balance of 0 is kept')
 })
 
 test('the document that goes up carries no answers', () => {
@@ -2258,7 +2259,7 @@ test('the tonight widget can draw a question without the app', () => {
   const peekedDrawn = JSON.stringify(fn(peeked, env))
   assert.ok(peekedDrawn.includes('"text":"Work"') && peekedDrawn.includes('Did I send the memo?'))
   assert.equal(findPress(fn(peeked, env), 'next:memo')().leadLampId, 'door', 'Next wraps around')
-  const answered = findPress(mixedTree, 'did:door')()
+  const answered = findPress(mixedTree, 'did:door|n')()
   assert.equal(answered.tagTitle, 'Work', 'the header follows the next question after a tap')
   assert.ok(!JSON.stringify(fn(answered, env)).includes('next:'), 'no Next with one question left')
 
@@ -2878,11 +2879,13 @@ test('a signed-in did leaves its coins for the server, signed out pays the phone
   })
   assert.equal(run.status, 0, run.stderr)
   // Paid once (the same night again is not paid twice), nothing on the phone.
-  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: 2, after: 0 })
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: { '2026-10-02': 2 }, after: {} })
   // The save hands what taps earned to the server.
   const shelfHook = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
   assert.match(shelfHook, /takeEarnedCoins\(\)/)
-  assert.match(shelfHook, /creditNightCoins\(boardDate\(now, fold\), earned\)/)
+  assert.match(shelfHook, /creditNightCoins\(night, earned\)/)
+  // A failed credit keeps the coins for the next save.
+  assert.match(shelfHook, /returnEarnedCoins\(night, earned\)/)
 
   // Signed out (this process has no cloud keys), the phone keeps the coins.
   const book = { id: 'b', lamps: [lamp('a')], answers: [], coins: 0 }
@@ -6423,6 +6426,41 @@ await testAsync('a kept Did you shares its last week of answers with the sender,
   const sql = readFileSync(path.join(checkRoot, 'supabase/send-answers.sql'), 'utf8')
   assert.match(sql, /revoke all on public\.send_answers from anon, authenticated;/)
   assert.ok(sql.includes('not public.blocked_with(s.to_id)') && sql.includes('not public.blocked_with(s.from_id)'), 'blocking stops both ways')
+})
+
+await testAsync('an ios widget tap on the last night card answers last night, not tonight', async () => {
+  const { recordWidgetAnswer, buildTonightWidgetProps } = await import('../src/lib/widget-tonight.js')
+  const { writeWidgetTonightProps } = await import('../src/lib/widget-store.js')
+  const fri = '2026-10-02'
+  const sat3am = new Date(2026, 9, 3, 3, 0)
+  const fresh = () => writeShelf({
+    currentId: 'grace-tap',
+    boards: [{
+      id: 'grace-tap',
+      title: 'Home',
+      lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+      answers: [],
+    }],
+  })
+  const shelf = fresh()
+  const props = buildTonightWidgetProps(shelf, sat3am)
+  const doors = props.items.filter((item) => item.lampId === 'door')
+  assert.equal(doors.length, 2, 'last night and tonight both show')
+  assert.equal(props.items[0].periodKey, fri, 'last night leads before 5am')
+  const answers = () => readShelf().boards.find((b) => b.id === 'grace-tap').answers
+  // New targets carry the night.
+  assert.ok(recordWidgetAnswer('door', 'did', sat3am, fri))
+  assert.deepEqual(answers().map((a) => a.periodKey), [fri])
+  // Old targets carry none; the stored lead picks the night.
+  fresh()
+  writeWidgetTonightProps(props)
+  const next = recordWidgetAnswer('door', 'did', sat3am)
+  assert.ok(next)
+  assert.deepEqual(answers().map((a) => a.periodKey), [fri])
+  // A card from a night that has closed does not write.
+  fresh()
+  assert.equal(recordWidgetAnswer('door', 'did', new Date(2026, 9, 3, 10, 0), fri), null)
+  assert.equal(answers().length, 0)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

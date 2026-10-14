@@ -89,6 +89,11 @@ export function Family({ book, onChange, now, familyId }) {
       return
     }
     const row = await readFamily(familyId)
+    if (row?.miss) {
+      setMiss(row.miss)
+      setReady(true)
+      return
+    }
     setFam(row)
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)

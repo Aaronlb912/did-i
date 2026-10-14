@@ -150,6 +150,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const didLabel = String(props?.didLabel || 'Did')
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
+  const leadNight = String(lead?.periodKey || '')
+  // The night rides along so a "Last night" card answers last night.
+  const leadTarget = leadNight ? leadId + '|' + leadNight : leadId
   const sinceText = lead
     ? String(lead.since || (lead.lampId === props?.leadLampId ? props?.sinceLine : '') || '').trim()
     : ''
@@ -646,7 +649,9 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
 
   function afterTap(kind: 'did' | 'nope') {
     const status: TonightItem['status'] = kind === 'did' ? 'yes' : 'skip'
-    const nextItems = items.map((item) => (item.lampId === leadId ? { ...item, status } : item))
+    const nextItems = items.map((item) =>
+      item.lampId === leadId && String(item.periodKey || '') === leadNight ? { ...item, status } : item,
+    )
     const nextLead = leadItem(nextItems, '')
     const nextLeft = stackLeft(nextItems)
     const nextQuestion = nextLead ? String(nextLead.question || nextLead.label || '') : ''
@@ -798,7 +803,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     <HStack spacing={compact ? 4 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
       <Button
         label={nopeLabel}
-        target={'nope:' + leadId}
+        target={'nope:' + leadTarget}
         onPress={() => afterTap('nope')}
         modifiers={[
           buttonStyle('borderedProminent'),
@@ -814,7 +819,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       />
       <Button
         label={didLabel}
-        target={'did:' + leadId}
+        target={'did:' + leadTarget}
         onPress={() => afterTap('did')}
         modifiers={[
           buttonStyle('borderedProminent'),

@@ -2795,8 +2795,9 @@ function showGift(gift, getBook, onChange, colors) {
               goLabel: t('gift.reportGo'),
               closeLabel: t('settings.neverMind'),
               colors,
-              onGo: () => {
-                reportGift(gift.id).catch(() => {})
+              onGo: async () => {
+                const { miss } = await reportGift(gift.id).catch(() => ({ miss: 'people.reach' }))
+                if (miss) return confirmMiss(tMiss(miss))
                 done()
                 confirmDone(t('confirm.reported'))
               },

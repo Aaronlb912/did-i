@@ -35,6 +35,7 @@ import {
   mergePurses,
   spreadPurseFrom,
   weeklyGemBump,
+  returnEarnedCoins,
   takeEarnedCoins,
 } from '../../src/lib/purse.js'
 import {
@@ -124,14 +125,21 @@ export function useAppShelf() {
     pushSoon(written)
     const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
     const coinsAfter = mergePurses(written.boards).coins
-    const earned = Math.max(0, coinsAfter - coinsBefore) + takeEarnedCoins()
-    if (cloudSetUp() && earned > 0) {
-      creditNightCoins(boardDate(now, fold), earned).then((bal) => {
-        if (bal == null) return
+    const byNight = takeEarnedCoins()
+    const tonight = boardDate(now, fold)
+    const delta = Math.max(0, coinsAfter - coinsBefore)
+    if (delta > 0) byNight[tonight] = (byNight[tonight] || 0) + delta
+    for (const [night, earned] of cloudSetUp() ? Object.entries(byNight) : []) {
+      creditNightCoins(night, earned).then((bal) => {
+        // Not paid: keep the coins for the next save to try again.
+        if (bal == null) return returnEarnedCoins(night, earned)
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      }).catch(reportRejection('night-coins'))
+      }).catch((err) => {
+        returnEarnedCoins(night, earned)
+        reportRejection('night-coins')(err)
+      })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {

@@ -100,6 +100,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       return
     }
     const row = await readFamily(familyId)
+    if (row?.miss) {
+      setMiss(row.miss)
+      setReady(true)
+      return
+    }
     setFam(row)
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)
@@ -156,8 +161,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   }
 
   async function tap(lamp, status) {
-    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, night, status)
-    if (why) return setMiss(why)
+    const out = await once(`tap:${lamp.id}`, () => answerFamilyLamp(fam.id, lamp.id, night, status))
+    if (!out) return undefined
+    if (out.miss) return setMiss(out.miss)
     return load()
   }
 
@@ -340,7 +346,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       onPress={async () => {
                         setMiss('')
                         setSaid('')
-                        const sent = await cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn)
+                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn))
+                        if (!sent) return undefined
                         const known = friendCheerMissKey(sent.miss)
                         if (known) return setMiss(t(known.key, known.vars))
                         if (sent.miss) return setMiss(tMiss(sent.miss))
@@ -416,11 +423,22 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <KeyButton
                     colors={colors}
                     label={t('family.remove')}
-                    onPress={async () => {
-                      const { miss: why } = await dropFamilyLamp(lamp.id)
-                      if (why) setMiss(why)
-                      load()
-                    }}
+                    onPress={() =>
+                      publishSheet({
+                        title: t('lamp.deleteTitle'),
+                        body: lamp.question,
+                        goLabel: t('family.remove'),
+                        closeLabel: t('settings.neverMind'),
+                        colors,
+                        onClose: () => publishSheet(null),
+                        onGo: async () => {
+                          publishSheet(null)
+                          const { miss: why } = (await once(`drop-lamp:${lamp.id}`, () => dropFamilyLamp(lamp.id))) || {}
+                          if (why) setMiss(why)
+                          load()
+                        },
+                      })
+                    }
                   />
                 </View>
               ) : null}
