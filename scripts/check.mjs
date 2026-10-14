@@ -2911,7 +2911,7 @@ test('a signed-in did leaves its coins for the server, signed out pays the phone
   assert.match(shelfHook, /takeEarnedCoins\(\)/)
   assert.match(shelfHook, /creditNightCoins\(night, earned\)/)
   // A failed credit keeps the coins for the next save.
-  assert.match(shelfHook, /returnEarnedCoins\(night, earned\)/)
+  assert.match(shelfHook, /returnEarnedCoins\(night, earned, new Date\(\), taken\.gen\)/)
 
   // Signed out (this process has no cloud keys), the phone keeps the coins.
   const book = { id: 'b', lamps: [lamp('a')], answers: [], coins: 0 }
