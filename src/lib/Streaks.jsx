@@ -2,16 +2,17 @@ import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { shortLabel } from './board-json.js'
 import { streakLength } from './achievements.js'
-import { hallHeat } from './hall-feel.js'
+import { hallHeat, shelfStreak } from './hall-feel.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { nextStreakGoal } from './hall-pages.js'
 import { boardDate, formatBoardDate, isEvery } from './recurrence.js'
 
-export function Streaks({ book, now }) {
+export function Streaks({ book, boards, now }) {
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
-  const heat = hallHeat(book, clock)
+  // Every folder, like the phone and the streak on Tonight.
+  const heat = boards ? shelfStreak(boards, clock) : hallHeat(book, clock)
   const lamps = (book.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp))
   const rows = lamps
     .map((lamp) => ({ lamp, n: streakLength(book, lamp, clock) }))

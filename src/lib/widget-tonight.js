@@ -94,6 +94,8 @@ function applyItemStatus(book, item, status, clock = new Date()) {
   }
   if (!row) return book
   if (rowStatus(row) === status) return book
+  // Never undo a newer answer from the web or another phone: only a nope turns into a did.
+  if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return book
   if (status === 'yes') return putAnswer(book, row, didStatusForRow(row), tapClock(row, clock))
   if (status === 'skip') return putAnswer(book, row, 'skip', tapClock(row, clock))
   return book
@@ -450,7 +452,7 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const tappedAt = tapAt > 0 ? new Date(tapAt) : null
   if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
-  const nextBook = putAnswer(book, row, status, tappedAt || tapClock(row, clock))
+  const nextBook = putAnswer(book, row, status === 'yes' ? didStatusForRow(row) : status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   noteMilestone('widget_used')
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))

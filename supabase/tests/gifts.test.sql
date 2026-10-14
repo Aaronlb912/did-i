@@ -117,6 +117,8 @@ begin
   end if;
 
   -- b claims, returns the rain cheer as a double; a gets 2 gems back once.
+  -- b already had rain, so it can go back (readthrough-5.sql).
+  update public.profiles set gem_cosmetics = '{"cheers": ["rain"]}'::jsonb where user_id = b;
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   select g.id into gift from public.claim_gifts() g where g.item_id = 'rain';

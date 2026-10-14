@@ -41,6 +41,7 @@ import {
   giftItems,
   shopTag,
   stampPurse,
+  mergeGift,
   wearGift,
   wearBuddy,
   wearCheer,
@@ -2777,7 +2778,7 @@ function showGift(gift, getBook, onChange, colors) {
     quote: gift.note || '',
     goLabel: t('gift.equip'),
     onGo: () => {
-      onChange(wearGift(getBook(), type, gift.item_id))
+      onChange(wearGift(mergeGift(getBook(), gift).book, type, gift.item_id))
       done()
     },
     moreLabel: t('gift.viewKit'),

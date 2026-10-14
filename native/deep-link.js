@@ -15,7 +15,7 @@ export function routeFromDeepLink(url) {
   if (!url) return null
   try {
     // https://did-i.app/i/CODE through a universal link or App Link.
-    const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim())
+    const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim().split(/[?#]/)[0])
     if (webInvite) return { invite: webInvite[1] }
     // A Did you link: did-i.app/d/CODE, or didi://d/CODE from its page.
     const didYou = readDidYouLink(url)

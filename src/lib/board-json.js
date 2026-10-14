@@ -459,6 +459,10 @@ export function missLamp(lamp) {
       if (start && dueBy < start) return 'hang.miss.dueByBefore'
     } else if (!/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.onceOn))) {
       return 'hang.miss.onceOn'
+    } else {
+      // A day before the question existed would never be asked.
+      const start = asString(lamp.createdOn).trim() || isoDate(new Date())
+      if (lamp.onceOn < start) return 'hang.miss.onceOn'
     }
   }
   if (lamp.cadence === 'every_n') {

@@ -3,6 +3,7 @@ import {
   addDaysIso,
   allClearTonight,
   boardDate,
+  countedTonightRows,
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
@@ -111,8 +112,9 @@ function nightMarks(books, iso, today, tagId = '') {
   let dueCount = 0
   let clear = true
   for (const book of books) {
-    // A deadline still days away is optional, so it does not break the night.
-    const due = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    // The streak's rows: a deadline days away, an optional or every so often
+    // question, or a One Did I never break the night.
+    const due = at ? countedTonightRows(dueOnNight(book, iso, at)) : []
     dueCount += due.length
     // Only a did fills the dot, the same rule as the streak: a nope night is
     // not a cleared night.
@@ -146,7 +148,7 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   const at = noonOn(iso)
   let due = 0
   for (const book of books) {
-    const rows = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    const rows = at ? countedTonightRows(dueOnNight(book, iso, at)) : []
     due += rows.length
     for (const row of rows) {
       if (rowDoneTonight(row)) continue
@@ -362,9 +364,12 @@ function nightMarksMany(books, isos, today, tagId = '') {
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)
         if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
-        if (!mustSwipeDeadline(lamp, iso)) continue
+        // Same rows as countedTonightRows.
+        const done = status === 'yes' || status === 'late'
+        if (lamp.fromDidI) continue
+        if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
         dueCount += 1
-        if (status !== 'yes' && status !== 'late') clear = false
+        if (!done) clear = false
       }
     }
     const we = weNight(iso, tagId)
