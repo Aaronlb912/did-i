@@ -49,8 +49,8 @@ const files = [
   'supabase/admin.sql',
   'supabase/admin-mail.sql',
   'supabase/send-answers.sql',
-  'supabase/drop-tonight.sql',
   'supabase/consent-guards.sql',
+  'supabase/drop-tonight.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
