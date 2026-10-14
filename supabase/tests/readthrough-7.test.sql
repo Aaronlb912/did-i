@@ -92,7 +92,7 @@ begin
     if sqlerrm <> 'too many family folders' then raise; end if;
   end;
   insert into public.family_answers (family_id, lamp_id, user_id, period_key)
-  values (fam, lamp, a, '2026-10-14'), (fam, lamp, a, '2026-10'), (fam, lamp, a, 'once:' || lamp);
+  values (fam, lamp, a, '2026-10-14'), (fam, lamp, a, '2026-10'), (fam, lamp, a, 'once:abc123');
   begin
     insert into public.family_answers (family_id, lamp_id, user_id, period_key)
     values (fam, lamp, a, 'junk');
