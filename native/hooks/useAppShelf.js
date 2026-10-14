@@ -21,18 +21,16 @@ import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
-import { boardDate, isoDate } from '../../src/lib/recurrence.js'
+import { isoDate } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
-import { cloudSetUp } from '../../src/lib/cloud.js'
 import { accountSessionOn } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
-  mergePurses,
   spreadPurseFrom,
   weeklyGemBump,
   returnEarnedCoins,
@@ -108,7 +106,6 @@ export function useAppShelf() {
   const persist = useCallback((nextShelf) => {
     const now = new Date()
     const before = currentBook(shelf)
-    const coinsBefore = mergePurses(shelf.boards).coins
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
@@ -123,13 +120,9 @@ export function useAppShelf() {
     if (miss) queueStreakMoment(miss, miss.dateIso)
     setShelf(written)
     pushSoon(written)
-    const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
-    const coinsAfter = mergePurses(written.boards).coins
-    const byNight = takeEarnedCoins()
-    const tonight = boardDate(now, fold)
-    const delta = Math.max(0, coinsAfter - coinsBefore)
-    if (delta > 0) byNight[tonight] = (byNight[tonight] || 0) + delta
-    for (const [night, earned] of cloudSetUp() ? Object.entries(byNight) : []) {
+    // Signed in, taps queue their coins (payTap); signed out, the phone keeps them.
+    // Crediting without a session failed, re-queued, and paid twice on sign-in.
+    for (const [night, earned] of accountSessionOn() ? Object.entries(takeEarnedCoins()) : []) {
       creditNightCoins(night, earned).then((bal) => {
         // Not paid: keep the coins for the next save to try again.
         if (bal == null) return returnEarnedCoins(night, earned)
