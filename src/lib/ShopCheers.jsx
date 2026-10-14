@@ -3,7 +3,6 @@ import { BoardShell } from './BoardShell.jsx'
 import { CheerChip } from './Cosmetic.jsx'
 import { buyCheerStageWithCoins, buyWithGems } from './coin-shop.js'
 import {
-  CHEERS,
   CHEER_GEMS,
   CHEER_STAGE_COIN,
   CHEER_STAGE_COINS,
@@ -11,6 +10,7 @@ import {
   cheerStageOf,
   cheerText,
   fireCheer,
+  liveCheers,
   nextCheerStage,
   normalizePurse,
 } from './purse.js'
@@ -52,7 +52,7 @@ export function ShopCheers({ book, onChange, now }) {
         <p className="di-set-note">{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</p>
 
         <div className="di-set-card di-shop-card">
-          {CHEERS.map((item) => {
+          {liveCheers().map((item) => {
             const have = purse.cheers.includes(item.id)
             const stage = cheerStageOf(book, item.id)
             const next = have ? nextCheerStage(stage) : 0

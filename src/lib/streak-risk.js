@@ -4,18 +4,20 @@ import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './re
 
 export const STREAK_RISK_HOUR = 21
 
-export function streakAtRisk(book, now = new Date()) {
+// heat: the streak to protect. Callers pass shelfStreak, which carries a
+// streak across a frozen night; this one book's hallHeat (the fallback) stops there.
+export function streakAtRisk(book, now = new Date(), heat) {
   if (!book) return false
-  const heat = hallHeat(book, now)
-  if (heat <= 0) return false
+  const going = heat === undefined ? hallHeat(book, now) : Number(heat) || 0
+  if (going <= 0) return false
   const we = weNight(boardDate(now, book.dayFoldHour))
   if (we.due && !we.clear) return true
   if (allClearTonight(book, now)) return false
   return countedTonightRows(dueTonight(book, now)).length > 0
 }
 
-export function streakRiskFire(book, now = new Date()) {
-  if (!streakAtRisk(book, now)) return null
+export function streakRiskFire(book, now = new Date(), heat) {
+  if (!streakAtRisk(book, now, heat)) return null
   const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
   const at = new Date(year, month - 1, day, STREAK_RISK_HOUR, 0, 0, 0)
@@ -31,8 +33,8 @@ export function streakRiskFire(book, now = new Date()) {
 
 // Midnight, while tonight is still open and a streak is going: the grace
 // period for the previous night has started and runs until 9am.
-export function graceRiskFire(book, now = new Date()) {
-  if (!streakAtRisk(book, now)) return null
+export function graceRiskFire(book, now = new Date(), heat) {
+  if (!streakAtRisk(book, now, heat)) return null
   const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
   const at = new Date(year, month - 1, day + 1, 0, 0, 0, 0)

@@ -14,6 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
@@ -253,7 +254,8 @@ async function schedulePingsNow(books, now = new Date()) {
     notes.length = Math.min(notes.length, PING_CAP)
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
-    const risk = streakPings ? list.map((item) => streakRiskFire(item, now)).find(Boolean) : null
+    const heat = streakPings ? shelfStreak(list, now) : null
+    const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -265,7 +267,7 @@ async function schedulePingsNow(books, now = new Date()) {
         trigger: when(new Date(risk.at)),
       })
     }
-    const grace = streakPings ? list.map((item) => graceRiskFire(item, now)).find(Boolean) : null
+    const grace = streakPings ? list.map((item) => graceRiskFire(item, now, heat)).find(Boolean) : null
     if (grace) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),

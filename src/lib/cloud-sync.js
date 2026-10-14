@@ -24,7 +24,7 @@ import { pushSendAnswers } from './send-answers.js'
 import { shelfStreak } from './hall-feel.js'
 import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
-import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
+import { claimGifts, claimInvites, onGiftsWaiting, readMine } from './people.js'
 import { clearGifts, queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
@@ -392,17 +392,15 @@ async function pullAndMergeOnce() {
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // The account's questions are on the phone now; Tonight can draw them.
     if (state.firstPull) setState({ firstPull: false })
-    // Gifts go straight into the collection. One already owned goes back to
-    // the giver; the rest wait for the pop-up.
+    // Gifts go straight into the collection; the rest wait for the pop-up.
+    // claim_gifts (readthrough-8.sql) already sent back the ones the account
+    // owned, so one this phone already has is just not shown again.
     const { gifts } = await claimGifts()
     if (gifts.length) {
       const fresh = []
       let boards = written.boards
       for (const gift of gifts) {
-        if (boards.some((book) => mergeGift(book, gift).had)) {
-          await returnGift(gift.id).catch(() => {})
-          continue
-        }
+        if (boards.some((book) => mergeGift(book, gift).had)) continue
         boards = boards.map((book) => mergeGift(book, gift).book)
         fresh.push(gift)
       }

@@ -32,12 +32,18 @@ export function PeopleRefer({ book, onChange, now }) {
   const [joined, setJoined] = useState(0)
   const [gemsPaid, setGemsPaid] = useState(0)
   const [said, setSaid] = useState('')
+  const [miss, setMiss] = useState('')
 
   const load = useCallback(async () => {
     if (!account.user) return
-    const [code, who] = await Promise.all([myInvite(), readMine()])
-    setInvite(code)
-    setGemsPaid(Number(who?.invite_gems_paid) || 0)
+    try {
+      const [code, who] = await Promise.all([myInvite(), readMine()])
+      setInvite(code)
+      setGemsPaid(Number(who?.invite_gems_paid) || 0)
+      setMiss('')
+    } catch {
+      setMiss(t('people.reach'))
+    }
   }, [account.user])
 
   const payOut = useCallback(async () => {
@@ -123,6 +129,11 @@ export function PeopleRefer({ book, onChange, now }) {
 
       <InviteCodeSection book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
 
+      {miss ? (
+        <p className="di-miss" role="alert">
+          {miss}
+        </p>
+      ) : null}
       {said ? <p className="di-set-note">{said}</p> : null}
     </>,
   )

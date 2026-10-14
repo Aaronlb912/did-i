@@ -32,7 +32,10 @@ export function Inbox({ book, now, onKeep }) {
     const inbox = await listInbox()
     // A failed read keeps the rows we had and says so.
     if (inbox.miss) setMiss('people.reach')
-    else setRows(inbox)
+    else {
+      setRows(inbox)
+      setMiss((was) => (was === 'people.reach' ? '' : was))
+    }
     setReady(true)
   }, [account.user])
 
@@ -41,11 +44,13 @@ export function Inbox({ book, now, onKeep }) {
   }, [load])
 
   async function answer(row, keep) {
-    const { miss: why } = await answerSend(row.id, keep)
+    const { miss: why, already } = await answerSend(row.id, keep)
     if (why) {
       setMiss(why)
       return why === 'sent.gone' ? load() : undefined
     }
+    // Already answered on another device: that one added it, so do not add twice.
+    if (already) return load()
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     return load()

@@ -855,6 +855,16 @@ export const ACCESSORY_IDS = new Set(ALL_ACCESSORIES.map((item) => item.id))
 // What the shop sells today. Same rule as purse.js isLive, plus an end date.
 export function accessoryOnSale(item, today) {
   if (!item) return false
+  // Seasonal rows come back every year: from its first day on, the month and
+  // day decide (until stays exclusive; a window may wrap the new year).
+  if (item.tier === 'seasonal' && item.from && item.until) {
+    const day = String(today || '')
+    if (day < item.from) return false
+    const md = day.slice(5, 10)
+    const from = item.from.slice(5, 10)
+    const until = item.until.slice(5, 10)
+    return from < until ? md >= from && md < until : md >= from || md < until
+  }
   return (!item.from || item.from <= today) && (!item.until || today < item.until)
 }
 

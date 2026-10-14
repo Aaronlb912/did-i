@@ -135,6 +135,24 @@ export function isReferBuddy(id) {
 }
 export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
 
+// The consts above are fixed when the app loads. An app left open past a
+// drop day needs these, which read the date when called.
+export function liveLooks(today = boardDate(new Date())) {
+  return ALL_LOOKS.filter((item) => isLive(item, today))
+}
+export function liveCheers(today = boardDate(new Date())) {
+  return ALL_CHEERS.filter((item) => isLive(item, today))
+}
+export function liveBuddies(today = boardDate(new Date())) {
+  return ALL_BUDDIES.filter((item) => isLive(item, today))
+}
+export function shopBuddies(today = boardDate(new Date())) {
+  return liveBuddies(today).filter((item) => !item.refer)
+}
+export function ownableCheers(today = boardDate(new Date())) {
+  return [...liveCheers(today), ...SPECIAL_CHEERS]
+}
+
 // A drop shows as "Coming" for the week before its day, then goes on sale.
 // Anything further out stays hidden.
 export const TEASE_DAYS = 7
@@ -181,7 +199,7 @@ export function dropSlides(today = boardDate(new Date())) {
   if (coming) {
     slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date) })
   }
-  const dates = [...new Set([...LOOKS, ...CHEERS, ...BUDDIES].map((item) => item.from).filter(Boolean))]
+  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today)].map((item) => item.from).filter(Boolean))]
     .filter((date) => date <= today)
     .sort()
     .reverse()
@@ -282,26 +300,29 @@ export function isGemLook(id) {
 }
 
 export function recentLooks(count = 2) {
-  const drop = newestDrop(LOOKS)
+  const looks = liveLooks()
+  const drop = newestDrop(looks)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  const gem = LOOKS.filter((item) => item.gems > 0)
+  const gem = looks.filter((item) => item.gems > 0)
   if (gem.length) return gem.slice(0, Math.min(n, gem.length))
-  return LOOKS.slice(-n)
+  return looks.slice(-n)
 }
 
 export function recentCheers(count = 2) {
-  const drop = newestDrop(CHEERS)
+  const cheers = liveCheers()
+  const drop = newestDrop(cheers)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return CHEERS.slice(-n)
+  return cheers.slice(-n)
 }
 
 export function recentBuddies(count = 2) {
-  const drop = newestDrop(SHOP_BUDDIES)
+  const buddies = shopBuddies()
+  const drop = newestDrop(buddies)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return SHOP_BUDDIES.slice(-n)
+  return buddies.slice(-n)
 }
 
 export const FRIEND_CHEER_GEMS = 1
@@ -312,9 +333,11 @@ export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
 export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
-const CHEER_IDS = new Set(OWNABLE_CHEERS.map((item) => item.id))
-const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
-const BUDDY_IDS = new Set(BUDDIES.map((item) => item.id))
+// Every id that can be owned, released or not, so a purse loaded before a
+// drop day (or a gift of a new item) keeps what it has.
+const CHEER_IDS = new Set([...ALL_CHEERS, ...SPECIAL_CHEERS].map((item) => item.id))
+const LOOK_IDS = new Set(ALL_LOOKS.map((item) => item.id))
+const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
 
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
@@ -798,7 +821,7 @@ export function spendGems(book, gems) {
 }
 
 export function buyLook(book, id) {
-  const look = LOOKS.find((item) => item.id === id)
+  const look = liveLooks().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!look) return { book, miss: 'shop.miss.lookGone' }
   if (purse.looks.includes(id)) {
@@ -827,10 +850,10 @@ export function buyLook(book, id) {
 
 // Signed out, an accessory is bought and kept on this phone. Signed in, the
 // server takes the coins (coin-shop.js). Buying one puts it on.
-export function buyAccessory(book, id) {
+export function buyAccessory(book, id, today = boardDate(new Date())) {
   const item = accessoryById(id)
   const purse = normalizePurse(book)
-  if (!item || !isLive(item)) return { book, miss: 'shop.miss.accessoryGone' }
+  if (!item || !accessoryOnSale(item, today)) return { book, miss: 'shop.miss.accessoryGone' }
   if (purse.accessories.includes(id)) return wearAccessory(book, id)
   if (purse.coins < item.coins) return { book, miss: 'shop.miss.needCoins', missN: item.coins }
   const accessories = [...purse.accessories, id]
@@ -897,7 +920,7 @@ export function buyCheerStage(book, id) {
 }
 
 export function buyBuddy(book, id) {
-  const buddy = SHOP_BUDDIES.find((item) => item.id === id)
+  const buddy = shopBuddies().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!buddy) return { book, miss: 'shop.miss.buddyGone' }
   if (purse.buddies.includes(id)) {
@@ -932,7 +955,7 @@ export function wearCheer(book, id) {
 }
 
 export function buyCheer(book, id) {
-  const cheer = CHEERS.find((item) => item.id === id)
+  const cheer = liveCheers().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!cheer) return { book, miss: 'shop.miss.cheerGone' }
   if (purse.cheers.includes(id)) {
@@ -959,9 +982,9 @@ export function buyCheer(book, id) {
 // shop_catalog. Coin, earned, seasonal and free frames are not gifts.
 export function giftItems() {
   return {
-    looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
-    cheers: CHEERS.filter((item) => item.gems > 0),
-    buddies: BUDDIES.filter((item) => item.gems > 0),
+    looks: liveLooks().filter((item) => item.gems > 0 || item.coins > 0),
+    cheers: liveCheers().filter((item) => item.gems > 0),
+    buddies: liveBuddies().filter((item) => item.gems > 0),
     accessories: accessoriesForSale(boardDate(new Date())),
     frames: FRAMES.filter((item) => item.kind === 'gem' && frameLive(item, boardDate(new Date()))),
   }
@@ -1083,7 +1106,7 @@ export function wishGoal(purse, today = boardDate(new Date())) {
 
 // A shop row: on sale today, not in a coming drop, not owned.
 export function shopRow(type, list, purse, today = boardDate(new Date())) {
-  return list.filter((item) => isLive(item, today) && !shopTag(purse, type, item).owned)
+  return list.filter((item) => (type === 'accessory' ? accessoryOnSale(item, today) : isLive(item, today)) && !shopTag(purse, type, item).owned)
 }
 
 // Owned items go to the end of an All page.

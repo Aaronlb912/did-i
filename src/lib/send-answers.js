@@ -110,7 +110,8 @@ function clockAt(at) {
 // or '' when there is nothing to say. A Not yet only counts for today.
 export function sendAnswerLine(rows, tonight = boardDate()) {
   const list = rows || []
-  const now = list.find((row) => row.night === tonight)
+  // Their night can run ahead of ours across time zones; that still reads as today.
+  const now = list.find((row) => row.night >= tonight)
   if (now?.answer === 'did') {
     const time = clockAt(now.at)
     return time ? t('sent.didTonightAt', { time }) : t('sent.didTonight')

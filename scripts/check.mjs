@@ -1335,7 +1335,7 @@ test('every item the shop sells is in the server gift catalog at the same price 
   }
 })
 
-test('every accessory can be given, at its shop price and dates', async () => {
+await testAsync('every accessory can be given, at its shop price and dates', async () => {
   const { ACCESSORIES } = await import('../src/lib/accessories.js')
   const sql = readFileSync(new URL('../supabase/gifts.sql', import.meta.url), 'utf8')
   const rows = new Map(
@@ -1349,7 +1349,7 @@ test('every accessory can be given, at its shop price and dates', async () => {
   }
 })
 
-test('a seasonal accessory is sold only in its season, and kept after', async () => {
+await testAsync('a seasonal accessory is sold only in its season, and kept after', async () => {
   const { accessoryOnSale, accessoryById } = await import('../src/lib/accessories.js')
   const { normalizePurse } = await import('../src/lib/purse.js')
   const witch = accessoryById('witch')
@@ -1359,7 +1359,7 @@ test('a seasonal accessory is sold only in its season, and kept after', async ()
   assert.deepEqual(normalizePurse({ accessories: ['witch'], worn: { head: 'witch' } }).worn, { head: 'witch' })
 })
 
-test('signed in, the server list is the whole accessory list, like coin looks', async () => {
+await testAsync('signed in, the server list is the whole accessory list, like coin looks', async () => {
   const { applyCoinCatalogToBook } = await import('../src/lib/wallet.js')
   const { normalizePurse } = await import('../src/lib/purse.js')
   const book = { coins: 5, accessories: ['crown', 'beanie'], worn: { head: 'crown' }, buddyOn: 'ant' }
@@ -1726,7 +1726,7 @@ test('a noped tonight question still counts as open on the widget', () => {
   assert.equal(props.question, 'A?')
 })
 
-test('the widget holds back a question until its ask time, like the stack', async () => {
+await testAsync('the widget holds back a question until its ask time, like the stack', async () => {
   const { widgetAskTimes } = await import('../src/lib/widget-config.js')
   const book = {
     id: 't1',
@@ -1746,7 +1746,7 @@ test('the widget holds back a question until its ask time, like the stack', asyn
   assert.equal(later.leadLampId, 'late')
 })
 
-test('the widget says all clear when tonight is done, even with open-only on', async () => {
+await testAsync('the widget says all clear when tonight is done, even with open-only on', async () => {
   const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
   const before = readPrefs()
   const book = {
@@ -1769,7 +1769,7 @@ test('the widget says all clear when tonight is done, even with open-only on', a
   }
 })
 
-test('a kept did you stays marked with who sent it, so Questions can show it apart', async () => {
+await testAsync('a kept did you stays marked with who sent it, so Questions can show it apart', async () => {
   const { keptLamp } = await import('../src/lib/send-repeat.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')
   const kept = normalizeLamp(keptLamp({ question: 'Did you call grandma?', person: { display_name: '  Sam  ' } }))
@@ -1780,7 +1780,7 @@ test('a kept did you stays marked with who sent it, so Questions can show it apa
   assert.equal(own.fromName, undefined)
 })
 
-test('a one-time question stops asking once its day is behind us', async () => {
+await testAsync('a one-time question stops asking once its day is behind us', async () => {
   const { closePastNights } = await import('../src/lib/daily.js')
   const lamp = (id, extra) => ({ id, question: `${id}?`, archived: false, createdOn: '2026-09-20', ...extra })
   const book = {
@@ -1800,7 +1800,7 @@ test('a one-time question stops asking once its day is behind us', async () => {
   assert.deepEqual(off, { past: true, today: false, dueGone: true, daily: false })
 })
 
-test('a phone moves to its stable id once and hands back the old key', async () => {
+await testAsync('a phone moves to its stable id once and hands back the old key', async () => {
   const { deviceKey, takeOldDeviceKey } = await import('../src/lib/account.js')
   const before = localStorage.getItem('did-i-device')
   try {
@@ -1817,7 +1817,7 @@ test('a phone moves to its stable id once and hands back the old key', async () 
   }
 })
 
-test('the dots legend seen flag rides in the synced prefs', async () => {
+await testAsync('the dots legend seen flag rides in the synced prefs', async () => {
   const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
   const before = readPrefs()
   try {
@@ -1829,7 +1829,7 @@ test('the dots legend seen flag rides in the synced prefs', async () => {
   }
 })
 
-test('the update prompt compares x.y.z and never locks out on a bad row', async () => {
+await testAsync('the update prompt compares x.y.z and never locks out on a bad row', async () => {
   const { updateState, versionBelow } = await import('../src/lib/app-update.js')
   assert.equal(versionBelow('1.2.0', '1.10.0'), true)
   assert.equal(versionBelow('1.10.0', '1.2.0'), false)
@@ -1841,7 +1841,7 @@ test('the update prompt compares x.y.z and never locks out on a bad row', async 
   assert.equal(updateState('1.2.0', null), '')
 })
 
-test('tonight orders questions by ask time, untimed ones first, priority breaking ties', async () => {
+await testAsync('tonight orders questions by ask time, untimed ones first, priority breaking ties', async () => {
   const { byAskTime } = await import('../src/lib/board-json.js')
   const row = (id, askAfter, priority) => ({ lamp: { id, askAfter, priority } })
   const order = byAskTime([
@@ -1853,7 +1853,7 @@ test('tonight orders questions by ask time, untimed ones first, priority breakin
   assert.deepEqual(order, ['anyHigh', 'anyLow', 'eight', 'nine'])
 })
 
-test('a hand-set question order beats priority, survives normalize, and spans folders', async () => {
+await testAsync('a hand-set question order beats priority, survives normalize, and spans folders', async () => {
   const { byAskTime, normalizeLamp, setLampOrder } = await import('../src/lib/board-json.js')
   const row = (id, askAfter, priority, order) => ({ lamp: { id, askAfter, priority, ...(order == null ? {} : { order }) } })
   const order = byAskTime([
@@ -1874,7 +1874,7 @@ test('a hand-set question order beats priority, survives normalize, and spans fo
   assert.equal(setLampOrder(next, ['z', 'x', 'y'])[0], next[0], 'an unchanged folder keeps its object')
 })
 
-test('every accessory the shop shows is sold by the server at the same price', async () => {
+await testAsync('every accessory the shop shows is sold by the server at the same price', async () => {
   const { ACCESSORIES } = await import('../src/lib/accessories.js')
   const sql = readFileSync(new URL('../supabase/shop-catalog.sql', import.meta.url), 'utf8')
   const rows = new Map([...sql.matchAll(/\('accessory', '(\w+)', (\d+)[,)]/g)].map((m) => [m[1], Number(m[2])]))
@@ -1882,7 +1882,7 @@ test('every accessory the shop shows is sold by the server at the same price', a
   assert.equal(rows.size, ACCESSORIES.length)
 })
 
-test('an accessory costs coins once, goes on, and comes off with a second tap', async () => {
+await testAsync('an accessory costs coins once, goes on, and comes off with a second tap', async () => {
   const { buyAccessory, wearAccessory, normalizePurse } = await import('../src/lib/purse.js')
   const book = { coins: 20, accessories: [], worn: {} }
   assert.equal(buyAccessory(book, 'crown').miss, 'shop.miss.needCoins')
@@ -1894,7 +1894,7 @@ test('an accessory costs coins once, goes on, and comes off with a second tap', 
   assert.deepEqual(normalizePurse({ worn: { head: 'beanie' } }).worn, {}, 'only owned items are worn')
 })
 
-test('a night pays 2 a Did on up to 3 questions', async () => {
+await testAsync('a night pays 2 a Did on up to 3 questions', async () => {
   const { putAnswer } = await import('../src/lib/board-ops.js')
   const { dueTonight } = await import('../src/lib/recurrence.js')
   const clock = new Date('2026-09-23T21:00:00')
@@ -3790,7 +3790,7 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfStreak([lastNightOpen], clock), 1, 'a missed night before tonight is a break')
 })
 
-test('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
+await testAsync('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
   const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
   localStorage.removeItem('did-i-streak-seen')
   const clock = new Date(2026, 8, 30, 16, 0)
@@ -3811,7 +3811,7 @@ test('"Streak broke" shows only for a missed past night, never for tonight reope
   localStorage.removeItem('did-i-streak-seen')
 })
 
-test('the 9 PM warning fires while tonight is open on a live streak, and friends see the real streak', async () => {
+await testAsync('the 9 PM warning fires while tonight is open on a live streak, and friends see the real streak', async () => {
   const { streakRiskFire } = await import('../src/lib/streak-risk.js')
   const clock = new Date(2026, 8, 30, 16, 0)
   const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-09-20' })
@@ -4109,7 +4109,7 @@ test('with no accessibility module, the phone keeps its motion', () => {
 
 const checkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-test('friend and family QR codes hold a didi link the scanner reads back', async () => {
+await testAsync('friend and family QR codes hold a didi link the scanner reads back', async () => {
   const { friendQrLink, familyQrLink, readQrLink, scanFromText } = await import('../src/lib/qr-links.js')
   assert.equal(friendQrLink('1234 5678 9012'), 'https://did-i.app/f/123456789012')
   assert.equal(friendQrLink('123'), '', 'a short ID makes no code')
@@ -4125,7 +4125,7 @@ test('friend and family QR codes hold a didi link the scanner reads back', async
   assert.ok(create(friendQrLink('123456789012'), { errorCorrectionLevel: 'M' }).modules.size >= 21)
 })
 
-test('a Did you link reads back from the page, the Open button, a copied line and the Play referrer', async () => {
+await testAsync('a Did you link reads back from the page, the Open button, a copied line and the Play referrer', async () => {
   const { didYouLink, readDidYouLink, didYouFromText, sharedDidYouLine } = await import('../src/lib/did-you-links.js')
   assert.equal(didYouLink('ABCDEFGH23'), 'https://did-i.app/d/abcdefgh23')
   assert.equal(didYouLink('short'), '', 'a short code makes no link')
@@ -4139,7 +4139,7 @@ test('a Did you link reads back from the page, the Open button, a copied line an
   assert.equal(sharedDidYouLine('get this test?', 'abcdefgh23'), 'Did you get this test? https://did-i.app/d/abcdefgh23', 'the Did you lead comes back')
 })
 
-test('a sent Did you edits only while it waits, a stopped link says so', async () => {
+await testAsync('a sent Did you edits only while it waits, a stopped link says so', async () => {
   const { canEditSent, cleanSentEdit, deadLinkKey } = await import('../src/lib/did-you-links.js')
   assert.equal(canEditSent({ kind: 'todo', state: 'sent' }), true)
   assert.equal(canEditSent({ kind: 'todo', state: 'kept' }), false, 'answered: no edit')
@@ -4157,7 +4157,7 @@ test('a sent Did you edits only while it waits, a stopped link says so', async (
   assert.ok(/edit_send[\s\S]*s\.from_id = me and s\.state = 'sent'/.test(hard), 'only the sender edits, only while it waits')
 })
 
-test('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {
+await testAsync('did-i.app/d/CODE is a site page, and the phone routes it to the add sheet', async () => {
   const { didYouCodeFromPath, scanFromPath } = await import('../src/site/path.js')
   assert.equal(didYouCodeFromPath('/d/ABCDEFGH23'), 'abcdefgh23')
   assert.equal(didYouCodeFromPath('/d/abc'), '')
@@ -4243,7 +4243,7 @@ test('web first run: a welcome with Get started and sign in', () => {
   for (const key of ['auth.getStarted', 'auth.haveAccount', 'legal.signInLead']) assert.ok(welcome.includes(`t('${key}')`), key)
 })
 
-test('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
+await testAsync('a Did we link is the same /d/ path with a 12 letter code, and its preview names the sender', async () => {
   const { isWeLinkCode, readDidYouLink, didYouFromText, sharedDidYouLine } = await import('../src/lib/did-you-links.js')
   const { didYouCodeFromPath } = await import('../src/site/path.js')
   const { linkPreviewText, withLinkPreview } = await import('../src/lib/link-preview.js')
@@ -4272,7 +4272,7 @@ test('a Did we link is the same /d/ path with a 12 letter code, and its preview 
   assert.equal(vercel.rewrites[0].source, '/d/:code', 'link pages go through the preview before the catch-all')
 })
 
-test('a question from Did I for one night never makes or breaks a streak', async () => {
+await testAsync('a question from Did I for one night never makes or breaks a streak', async () => {
   const { keptLamp } = await import('../src/lib/send-repeat.js')
   const clock = new Date(2026, 8, 28, 21, 0)
   const nights = []
@@ -4309,7 +4309,7 @@ test('reminders carry Did and Nope buttons that save through the widget tap path
   assert.ok(app.includes('applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())'))
 })
 
-test('a spoken answer finds the right open question, or none', async () => {
+await testAsync('a spoken answer finds the right open question, or none', async () => {
   const { matchSpoken, spokenAnswer } = await import('../src/lib/voice-answer.js')
   const rows = [
     { lamp: { id: 'a', question: 'Did I stretch tonight?' } },
@@ -4592,7 +4592,7 @@ test('every t() key the app uses is in English', () => {
   assert.deepEqual([...missing], [])
 })
 
-test('a Did we not due tonight names its next night, same rule as we_due', async () => {
+await testAsync('a Did we not due tonight names its next night, same rule as we_due', async () => {
   const { weNextDue, weNextLabel } = await import('../src/lib/we-next.js')
   // 2026-10-05 is a Monday; Saturday is 6.
   const sat = { cadence: 'weekly', weekdays: [6], startsOn: '2026-01-01' }
@@ -4679,7 +4679,7 @@ test('every Settings row moved under More is still on a route, phone and web', (
 })
 
 
-test('the widget redraws at midnight and when last night\'s grace ends', async () => {
+await testAsync('the widget redraws at midnight and when last night\'s grace ends', async () => {
   const { widgetRedrawTimes } = await import('../src/lib/widget-config.js')
   const { boardDate } = await import('../src/lib/recurrence.js')
   const book = {
@@ -4701,7 +4701,7 @@ test('the widget redraws at midnight and when last night\'s grace ends', async (
   assert.ok(times.every((d) => d > now))
 })
 
-test('a widget card from an earlier night does not win after midnight', async () => {
+await testAsync('a widget card from an earlier night does not win after midnight', async () => {
   const { preferStoredTonightProps, tonightWidgetKey } = await import('../src/lib/widget-tonight.js')
   const stored = {
     items: [{ lampId: 'a', periodKey: '2026-09-23', status: 'open' }, { lampId: 'b', periodKey: '2026-09-23', status: 'open' }],
@@ -4723,7 +4723,7 @@ test('a widget card from an earlier night does not win after midnight', async ()
   assert.equal(tonightWidgetKey(built), tonightWidgetKey({ ...built, updatedAt: 1 }))
 })
 
-test('the sync line says synced just now, or saved on this phone after a miss', async () => {
+await testAsync('the sync line says synced just now, or saved on this phone after a miss', async () => {
   const { syncLine, syncFailed } = await import('../src/lib/sync-line.js')
   const now = Date.parse('2026-10-05T12:00:00Z')
   assert.equal(syncLine({ how: 'saved', at: '2026-10-05T11:59:30Z' }, now).key, 'account.syncJust')
@@ -4739,7 +4739,7 @@ test('the sync line says synced just now, or saved on this phone after a miss', 
   for (const key of ['account.syncJust', 'account.syncLocal', 'settings.syncMiss', 'pings.test', 'pings.testOff']) assert.ok(en[key], key)
 })
 
-test('the error log keeps no personal content and is capped', async () => {
+await testAsync('the error log keeps no personal content and is capped', async () => {
   const { errorCode } = await import('../src/lib/app-errors.js')
   assert.equal(errorCode(new Error('FetchError: could not reach did I walk the dog')), 'FetchError:')
   assert.equal(errorCode({ code: 'PGRST301', message: 'secret' }), 'PGRST301')
@@ -5402,7 +5402,7 @@ test('friends: one color per person, and the product names take a plural', () =>
   assert.ok(order.indexOf('friends-week.sql') > order.indexOf('avatars.sql'), 'friends-week redefines known_people after avatars')
 })
 
-test('usage milestones stay anonymous and write-only', async () => {
+await testAsync('usage milestones stay anonymous and write-only', async () => {
   const sql = readFileSync(new URL('../supabase/milestones.sql', import.meta.url), 'utf8')
   assert.match(sql, /alter table public\.milestones enable row level security/)
   assert.match(sql, /revoke all on public\.milestones from anon, authenticated/)
@@ -5430,7 +5430,7 @@ test('a shelf sync never lowers the server coin or gem balance', () => {
   assert.doesNotMatch(body, /updates+public.profiles/i)
 })
 
-test('earned frames use the best streak ever, not just tonight', async () => {
+await testAsync('earned frames use the best streak ever, not just tonight', async () => {
   const { bestShelfStreak, shelfStreak } = await import('../src/lib/hall-feel.js')
   const day = (n) => `2026-09-${String(n).padStart(2, '0')}`
   const yes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
@@ -5447,7 +5447,7 @@ test('earned frames use the best streak ever, not just tonight', async () => {
   assert.equal(bestShelfStreak([], now), 0)
 })
 
-test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', async () => {
+await testAsync('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', async () => {
   const { readdirSync, statSync } = await import('node:fs')
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const bad = []
@@ -5464,7 +5464,7 @@ test('no mangled characters (UTF-8 saved as Windows-1252) in app code or copy', 
   assert.deepEqual(bad, [], 'files with mangled characters')
 })
 
-test('gentle mode is off by default and only true when set', async () => {
+await testAsync('gentle mode is off by default and only true when set', async () => {
   const { readPrefs, writePrefs, gentleOn } = await import('../src/lib/prefs.js')
   const before = readPrefs()
   try {
@@ -5479,7 +5479,7 @@ test('gentle mode is off by default and only true when set', async () => {
   }
 })
 
-test('gentle mode tells the widgets to hide streak numbers, and the stack is unchanged', async () => {
+await testAsync('gentle mode tells the widgets to hide streak numbers, and the stack is unchanged', async () => {
   const { writePrefs } = await import('../src/lib/prefs.js')
   const book = {
     id: 't1',
@@ -5587,7 +5587,7 @@ await testAsync('check on me: due only past the time, on an asked night, unanswe
   assert.equal(checkOnFits({ cadence: 'daily', archived: true }), false)
 })
 
-test('check-on: monthly, once, deadline and every-so-often nights', async () => {
+await testAsync('check-on: monthly, once, deadline and every-so-often nights', async () => {
   const { checkOnDue, checkOnFits, checkOnKind, checkOnShape, checkOnWhen } = await import('../src/lib/check-on.js')
   const base = { at_minute: 1320, sent_on: null, days: [] }
   const at = (night, more = {}) => ({ night, minute: 1330, weekday: 2, answered: false, ...more })
@@ -5920,7 +5920,7 @@ await testAsync('shared notes sync across devices, and Did we group notes', asyn
   assert.doesNotMatch(part.replace(/\(select auth\.uid\(\)\)/g, ''), /auth\.uid\(\)/, 'no bare auth.uid()')
 })
 
-test('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks', async () => {
+await testAsync('gaps-1: past Did we notes, note cheers, web amounts, family check-on asks', async () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const read = (file) => readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n')
   // Past Did nights that can take a note: inside 14 nights, before tonight, Did only, newest first, no repeats.
@@ -6079,7 +6079,7 @@ test('web Friends: your private friend note, view, edit, remove, one read for th
   assert.doesNotMatch(web, /readFriendNote\(/, 'no read per friend')
 })
 
-test('an ended Did you link is refused, says so, and can be reported', async () => {
+await testAsync('an ended Did you link is refused, says so, and can be reported', async () => {
   const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
   const sql = read('supabase/did-you-links.sql')
   // Ended: no lookup, no add count, and the preview and page can tell.
@@ -6102,7 +6102,7 @@ test('an ended Did you link is refused, says so, and can be reported', async () 
   assert.match(read('src/lib/did-you-links.js'), /report_did_you_link/)
 })
 
-test('link previews pick the visitor language, question as written', async () => {
+await testAsync('link previews pick the visitor language, question as written', async () => {
   const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
   const { PREVIEW_LANGS, endedPreviewText, linkPreviewText, previewLang } = await import('../src/lib/link-preview.js')
   assert.deepEqual([...PREVIEW_LANGS].sort(), readdirSync(path.join(checkRoot, 'src/locales')).map((f) => f.replace('.js', '')).sort())
@@ -6572,6 +6572,135 @@ test('pulse, sign out mid sync, and device keys keep their guards', () => {
   assert.ok(sync.includes("if (run !== syncRun) throw new Error('account.signedOut')"), 'land stops after sign out')
   assert.ok(sync.includes('if (run !== syncRun) return null'), 'a dropped pull sets no miss')
   assert.ok(sync.indexOf('takeOldDeviceKey()') < sync.indexOf("from('devices').upsert"), 'old device row goes first')
+})
+
+await testAsync('readthrough 8: a due-by Did counts on its own night only, not the whole window', async () => {
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const { yearMonths } = await import('../src/lib/hall-pages.js')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const by = { id: 'by', question: 'Taxes?', cadence: 'once', onceWhen: 'by', dueBy: '2026-10-05', createdOn: '2026-09-20' }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [by], answers: [{ lampId: 'by', periodKey: 'once:by', status: 'yes', answeredAt: '2026-09-28T22:00:00' }] }
+  assert.equal(streakOf([book], clock), 1, 'one Did is one night, not ten')
+  const sept = yearMonths([book], 2026, clock)[8].nights.filter((n) => !n.pad)
+  assert.equal(sept.find((n) => n.iso === '2026-09-28').on, true)
+  assert.equal(sept.find((n) => n.iso === '2026-09-25').on, false, 'nights before the tap are not filled')
+})
+
+await testAsync('readthrough 8: a missed one-time question still breaks its night after it is archived', async () => {
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const { yearMonths } = await import('../src/lib/hall-pages.js')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const nights = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29']
+  const daily = { id: 'a', question: 'Read?', cadence: 'daily', createdOn: '2026-09-24' }
+  const once = { id: 'o', question: 'Call?', cadence: 'once', onceOn: '2026-09-27', createdOn: '2026-09-24', archived: true }
+  const answers = [
+    ...nights.map((n) => ({ lampId: 'a', periodKey: n, status: 'yes', answeredAt: `${n}T21:00:00` })),
+    { lampId: 'o', periodKey: 'once:o', status: 'skip', answeredAt: '2026-09-27T00:00:00' },
+  ]
+  const book = { id: 'b', dayFoldHour: 0, lamps: [daily, once], answers }
+  assert.equal(streakOf([book], clock), 2, 'the missed night still ends the run')
+  const sept = yearMonths([book], 2026, clock)[8].nights.filter((n) => !n.pad)
+  assert.equal(sept.find((n) => n.iso === '2026-09-27').miss, true, 'the year view still shows the miss')
+  const stopped = { ...book, answers: answers.filter((a) => a.lampId === 'a') }
+  assert.equal(streakOf([stopped], clock), 6, 'stopped before its day with no answer: not held against you')
+})
+
+await testAsync('readthrough 8: the 9 PM warning fires when last night was frozen', async () => {
+  const { streakRiskFire } = await import('../src/lib/streak-risk.js')
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const answers = []
+  for (let d = 15; d <= 28; d += 1) {
+    const n = `2026-09-${d}`
+    answers.push({ lampId: 'a', periodKey: n, status: 'yes', answeredAt: `${n}T21:00:00` })
+  }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [{ id: 'a', question: 'Read?', cadence: 'daily', createdOn: '2026-09-15' }], answers }
+  const heat = streakOf([book], clock)
+  assert.equal(heat, 14, 'the freeze carries the streak over last night')
+  assert.ok(streakRiskFire(book, clock, heat), 'a frozen streak still gets the warning')
+  const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
+  assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
+})
+
+await testAsync('readthrough 8: shop lists, seasonal accessories, beta refs and send answers', async () => {
+  const { LOOKS, liveLooks, mergeGift, normalizePurse } = await import('../src/lib/purse.js')
+  const future = liveLooks('2099-01-01').find((item) => !LOOKS.includes(item))
+  if (future) {
+    assert.ok(!liveLooks('2000-01-01').includes(future), 'not live before its day')
+    assert.equal(mergeGift({}, { kind: 'look', item_id: future.id }).known, true, 'a gift of a new look is kept')
+    assert.ok(normalizePurse({ looks: [future.id] }).looks.includes(future.id), 'an owned new look is kept')
+  }
+  const { accessoryOnSale, accessoryById } = await import('../src/lib/accessories.js')
+  const witch = accessoryById('witch')
+  assert.ok(accessoryOnSale(witch, '2027-10-15'), 'seasonal comes back next year')
+  assert.ok(!accessoryOnSale(witch, '2027-11-01'))
+  const sparkler = accessoryById('sparkler')
+  assert.ok(accessoryOnSale(sparkler, '2028-01-03'), 'a window across new year')
+  assert.ok(!accessoryOnSale(sparkler, '2027-01-10'))
+  const { betaRefFrom } = await import('../src/lib/invite-link.js')
+  assert.equal(betaRefFrom('?ref=src=post:fall'), 'src=post:fall')
+  const { sendAnswerLine } = await import('../src/lib/send-answers.js')
+  assert.equal(sendAnswerLine([{ night: '2026-10-15', answer: 'nope' }], '2026-10-14'), t('sent.notYetTonight'), 'their night ahead of ours is still today')
+})
+
+test('readthrough 8: web guards for sign out, inbox, family and Did we hooks', () => {
+  const src = (f) => readFileSync(path.join(checkRoot, f), 'utf8')
+  const account = src('src/lib/account.js')
+  for (const fn of ['signOutHere', 'signOutEverywhere']) {
+    const body = account.slice(account.indexOf(`export async function ${fn}`))
+    assert.ok(body.indexOf('dropPushToken()') < body.indexOf('db.auth.signOut'), `${fn} drops the push token first`)
+  }
+  assert.ok(!/^import .*push\.js/m.test(account), 'account.js loads push.js late (static import is a cycle on the phone)')
+  assert.ok(account.includes("import('./push.js')"), 'push.js is a dynamic import')
+  assert.ok(src('src/lib/Inbox.jsx').includes('if (already) return load()'), 'inbox does not add twice')
+  assert.ok(src('src/lib/Family.jsx').includes('answerFamilyLamp(fam.id, lamp.id, boardDate(new Date(), fam.fold_hour), status)'))
+  const we = src('src/lib/DidWe.jsx')
+  const home = we.slice(we.indexOf('export function WeHome'))
+  assert.ok(home.indexOf('useWeTotals(') < home.indexOf('return <'), 'useWeTotals runs before any early return')
+  assert.ok(src('src/lib/people.js').includes("made_on: boardDate(),"), 'family questions send made_on')
+})
+
+await testAsync('readthrough 8 review: one-time nights, archived once rules, seasonal accessories', async () => {
+  const { onceDoneNight } = await import('../src/lib/recurrence.js')
+  const { ACCESSORIES } = await import('../src/lib/accessories.js')
+  const { buyAccessory } = await import('../src/lib/purse.js')
+  // Regex kept its backslashes: a due-by Did counts on the night it was tapped.
+  const by = { id: 'o', cadence: 'once', onceWhen: 'by', dueBy: '2026-09-27', createdOn: '2026-09-20' }
+  const at = (d, h) => new Date(2026, 8, d, h, 0).toISOString()
+  assert.equal(onceDoneNight(by, { status: 'yes', answeredAt: at(24, 21) }), '2026-09-24')
+  assert.equal(onceDoneNight(by, { status: 'yes' }), '2026-09-27')
+  assert.equal(onceDoneNight({ ...by, onceWhen: 'on', onceOn: '2026-09-27' }, { status: 'yes', answeredAt: at(24, 21) }), '')
+  // A grace tap after the last night counts on the last night.
+  assert.equal(onceDoneNight(by, { status: 'yes', answeredAt: at(28, 1) }), '2026-09-27')
+
+  const nights = []
+  for (let d = 10; d <= 29; d += 1) nights.push(`2026-09-${String(d).padStart(2, '0')}`)
+  const daily = { id: 'a', question: 'Read?', cadence: 'daily', createdOn: '2026-09-10' }
+  const done = nights.map((n) => ({ lampId: 'a', periodKey: n, status: 'yes', answeredAt: `${n}T21:00:00` }))
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const night = (book, iso) => yearMonths([book], 2026, clock)[8].nights.find((n) => n.iso === iso)
+  // A paused due-by question with a Not yet is not a miss.
+  const paused = { id: 'y', question: 'Taxes?', cadence: 'once', onceWhen: 'by', dueBy: '2026-09-25', createdOn: '2026-09-12', archived: true }
+  const b1 = { id: 'b', dayFoldHour: 0, lamps: [daily, paused], answers: [...done, { lampId: 'y', periodKey: 'once:y', status: 'skip', answeredAt: '2026-09-14T21:00:00' }] }
+  assert.equal(night(b1, '2026-09-25').miss, false)
+  assert.ok(shelfStreak([b1], clock) >= 20)
+  // A legacy one-time question with no day, auto-closed, does not break every night.
+  const legacy = { id: 'n', question: 'X?', cadence: 'once', onceWhen: 'on', onceOn: '', createdOn: '2026-09-10', archived: true }
+  const b2 = { id: 'b', dayFoldHour: 0, lamps: [daily, legacy], answers: [...done, { lampId: 'n', periodKey: 'once:n', status: 'skip', answeredAt: '2026-09-10T21:00:00' }] }
+  assert.equal(night(b2, '2026-09-22').miss, false)
+  assert.ok(shelfStreak([b2], clock) >= 20)
+  // A fixed-day Not yet still counts as that night's miss.
+  const fixed = { id: 'f', question: 'Call?', cadence: 'once', onceWhen: 'on', onceOn: '2026-09-22', createdOn: '2026-09-10', archived: true }
+  const b3 = { id: 'b', dayFoldHour: 0, lamps: [daily, fixed], answers: [...done, { lampId: 'f', periodKey: 'once:f', status: 'skip', answeredAt: '2026-09-22T21:00:00' }] }
+  assert.equal(night(b3, '2026-09-22').miss, true)
+
+  // Seasonal accessories come back every year, not just their first one.
+  const witch = ACCESSORIES.find((item) => item.id === 'witch')
+  assert.equal(validateCoinItem('accessory', 'witch', '2027-10-15'), true)
+  assert.equal(validateCoinItem('accessory', 'witch', '2027-07-15'), false)
+  assert.deepEqual(shopRow('accessory', [witch], normalizePurse({}), '2027-10-15').map((item) => item.id), ['witch'])
+  assert.equal(buyAccessory({ coins: 100 }, 'witch', '2027-10-15').miss || '', '')
+  assert.equal(buyAccessory({ coins: 100 }, 'witch', '2027-07-15').miss, 'shop.miss.accessoryGone')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

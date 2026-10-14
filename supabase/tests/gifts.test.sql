@@ -116,24 +116,22 @@ begin
     raise exception 'FAIL: gifted coin look missing from the coin catalog';
   end if;
 
-  -- b claims, returns the rain cheer as a double; a gets 2 gems back once.
-  -- b already had rain, so it can go back (readthrough-5.sql).
+  -- b already had rain, so claiming refunds it on the server and the
+  -- double is not handed to the phone (readthrough-8.sql). A second
+  -- return_gift pays nothing more.
   update public.profiles set gem_cosmetics = '{"cheers": ["rain"]}'::jsonb where user_id = b;
-  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
-  execute 'set local role authenticated';
-  select g.id into gift from public.claim_gifts() g where g.item_id = 'rain';
-  if gift is null then
-    raise exception 'FAIL: b did not get the rain cheer';
-  end if;
-  execute 'reset role';
   select gem_balance into n from public.profiles where user_id = a;
+  select g.id into gift from public.cheer_gifts g where g.to_id = b and g.cheer_id = 'rain' and g.claimed_at is null limit 1;
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
-  perform public.return_gift(gift);
+  if exists (select 1 from public.claim_gifts() g where g.item_id = 'rain') then
+    raise exception 'FAIL: a double was handed to the phone';
+  end if;
   perform public.return_gift(gift);
   execute 'reset role';
-  if (select gem_balance from public.profiles where user_id = a) <> n + 2 then
-    raise exception 'FAIL: returning a double should pay back 2 gems once';
+  -- Rain (owned) and the two extra tape copies go back: 2 + 2 + 2 gems.
+  if (select gem_balance from public.profiles where user_id = a) <> n + 6 then
+    raise exception 'FAIL: doubles should pay back 6 gems once';
   end if;
 
   -- Somebody else cannot return it.

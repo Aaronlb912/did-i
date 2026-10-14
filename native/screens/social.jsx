@@ -2388,12 +2388,13 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
     setMiss('')
-    const { miss: why } = await answerSend(row.id, keep)
+    const { miss: why, already } = await answerSend(row.id, keep)
     answering.current.delete(row.id)
     if (why) {
       setMiss(tMiss(why))
       return why === 'sent.gone' ? load() : undefined
     }
+    if (already) return load()
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))

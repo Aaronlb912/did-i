@@ -1028,7 +1028,7 @@ export async function answerSend(id, keep) {
   // Nothing changed. Still there: another phone answered it, which is fine.
   // Gone: they took it back.
   const { data: still } = await db.from('sends').select('id').eq('id', id).maybeSingle()
-  return still ? { miss: '' } : { miss: 'sent.gone' }
+  return still ? { miss: '', already: true } : { miss: 'sent.gone' }
 }
 
 // Blocking ---------------------------------------------------------------
@@ -1088,7 +1088,8 @@ export function inviteGemsDue(joined, invitesPaid, gemsPaid) {
 export async function myInvite() {
   const db = cloud()
   if (!db) return ''
-  const { data } = await db.rpc('my_invite')
+  const { data, error } = await db.rpc('my_invite')
+  if (error) throw error
   return data || ''
 }
 
@@ -1324,6 +1325,8 @@ export async function addFamilyLamp(familyId, tagId, question, forId, everyDays 
     question: text,
     for_id: forId || null,
     made_by: user.id,
+    // The app's night, the same date the family readers compare made_on to.
+    made_on: boardDate(),
     ...(Number(everyDays) >= 1 ? { cadence: 'every', every_days: Math.min(365, Math.round(Number(everyDays))) } : {}),
   })
   return error ? bad(error) : { miss: '' }

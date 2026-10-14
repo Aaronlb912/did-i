@@ -65,9 +65,13 @@ object CardStore {
     val now = System.currentTimeMillis()
     val taps = recentTaps(context, now)
     val items = incoming.optJSONArray("items") ?: JSONArray()
+    // Sent by the phone after it had the tap: the phone's word wins (an undo).
+    val builtAt = incoming.optLong("at", 0L)
     val keep = JSONArray()
     for (t in 0 until taps.length()) {
       val tap = taps.optJSONObject(t) ?: continue
+      val sentAt = tap.optLong("sentAt", 0L)
+      if (sentAt > 0L && builtAt > sentAt) continue
       var stillOpen = false
       for (i in 0 until items.length()) {
         val item = items.optJSONObject(i) ?: continue
@@ -172,7 +176,10 @@ object CardStore {
       } catch (e: Exception) {
         false
       }
-      if (sent) return@launch
+      if (sent) {
+        markSent(context, tap)
+        return@launch
+      }
       try {
         val key = "${tap.optString("id")}-${tap.optString("night")}-${tap.optLong("at")}".replace("/", "_")
         val request = PutDataMapRequest.create("$TAP_PATH/$key")
@@ -182,6 +189,21 @@ object CardStore {
         // No Play services on the watch: the answer stays on the watch only.
       }
     }
+  }
+
+  // The phone has this tap now; cards it sends later may undo it.
+  @Synchronized
+  private fun markSent(context: Context, tap: JSONObject) {
+    val all = try { JSONArray(prefs(context).getString(KEY_TAPS, "[]")) } catch (e: Exception) { return }
+    for (i in 0 until all.length()) {
+      val item = all.optJSONObject(i) ?: continue
+      if (item.optString("id") == tap.optString("id") && item.optString("night") == tap.optString("night") &&
+        item.optLong("at") == tap.optLong("at")
+      ) {
+        item.put("sentAt", System.currentTimeMillis())
+      }
+    }
+    prefs(context).edit().putString(KEY_TAPS, all.toString()).apply()
   }
 
   fun updateTile(context: Context) {

@@ -21,7 +21,7 @@ import {
 } from './cloud-sync.js'
 import { t, tMiss } from './i18n.js'
 import { uses24h } from './prefs.js'
-import { CHEERS, LOOKS, normalizePurse } from './purse.js'
+import { liveCheers, liveLooks, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
 import { AuthAppleSignIn } from './AuthAppleSignIn.jsx'
@@ -304,8 +304,8 @@ function SignedIn({ book, email, onChange }) {
     }
   }, [book.keeperName, sync.at])
 
-  const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
-  const cheerName = CHEERS.find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
+  const lookName = liveLooks().find((item) => item.id === purse.lookOn)?.name || purse.lookOn
+  const cheerName = liveCheers().find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
 
   async function download() {
     const all = await exportAll()

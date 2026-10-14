@@ -538,13 +538,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onNope: save('skip'),
       }
     }
-    const save = (keep) => () =>
-      peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
+    const save = (keep) => () => {
+      let already = false
+      const send = async () => {
+        const res = await answerSend(row.id, keep)
+        already = !!res?.already
+        return res
+      }
+      return peopleAnswer(item.key, send, () => {
+        // Answered elsewhere already: no second keep or toast.
+        if (already) return loadAsks()
         // Like Keep in the inbox: a kept ask joins your own questions.
         if (keep && row.kind === 'todo' && onKeep) onKeep(row)
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
       }, keep ? 'yes' : 'skip', loadAsks)
+    }
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
@@ -1235,6 +1244,9 @@ function DoneScroll({ fade, children }) {
     <View style={styles.doneScroll}>
       <ScrollView
         contentContainerStyle={styles.doneScrollIn}
+        scrollEnabled={inner > box + 4}
+        bounces={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={inner > box + 4}
         scrollEventThrottle={32}
         onScroll={(e) => setY(e.nativeEvent.contentOffset.y)}

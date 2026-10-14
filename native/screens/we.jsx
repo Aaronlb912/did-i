@@ -855,8 +855,12 @@ function WeCardPage({ book, cardId, onChange }) {
 
   async function load() {
     const out = await weTonight()
-    // A failed read keeps the card we show and says so.
-    if (out.miss) return setMiss(tMiss(out.miss))
+    // A failed read keeps the card we show and says so. Nothing shown yet:
+    // show the miss view, not loading forever.
+    if (out.miss) {
+      setCard((shown) => (shown === undefined ? null : shown))
+      return setMiss(tMiss(out.miss))
+    }
     setMiss('')
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)

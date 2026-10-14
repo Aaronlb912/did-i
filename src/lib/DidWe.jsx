@@ -900,17 +900,18 @@ export function WeHome({ book, onChange, link = '' }) {
   const { cards, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
+  // Hooks run before any early return so their order never changes.
+  const mine = cards.filter((card) => card.myState === 'in')
+  const sums = useWeTotals(mine.map((card) => card.id))
   if (link && account.ready && !account.user) {
     saveWebWeLink(link)
     return <NeedAccount book={book} note={t('weLink.webSignIn')} />
   }
   if (link && account.user) return <WeLinkJoin book={book} code={link} />
   if (account.ready && !account.user) return <NeedAccount book={book} />
-  const mine = cards.filter((card) => card.myState === 'in')
   const month = new Date().toISOString().slice(0, 7)
   const nights = mine.reduce((sum, card) => sum + weMonth(card, month).done, 0)
   const longest = mine.map((card) => ({ card, n: weStreak(card) })).sort((a, b) => b.n - a.n)[0]
-  const sums = useWeTotals(mine.map((card) => card.id))
 
   return (
     <Shell book={book} title={t('we.title')}>

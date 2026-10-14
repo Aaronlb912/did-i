@@ -25,7 +25,7 @@ export function betaLinkFor(referrer) {
 export function betaRefFrom(search) {
   try {
     const ref = new URLSearchParams(search || '').get('ref') || ''
-    return /^[a-z]+=[A-Za-z0-9_-]{1,64}(&[a-z]+=[A-Za-z0-9_-]{1,64})?$/.test(ref) ? ref : ''
+    return /^[a-z]+=[A-Za-z0-9_:-]{1,64}(&[a-z]+=[A-Za-z0-9_:-]{1,64})?$/.test(ref) ? ref : ''
   } catch {
     return ''
   }

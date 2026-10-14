@@ -2,7 +2,7 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
-import { SHOP_BUDDIES, CHEERS, FREE_BUDDY, LOOKS, mergePurses } from './purse.js'
+import { shopBuddies, liveCheers, FREE_BUDDY, liveLooks, mergePurses } from './purse.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -284,11 +284,11 @@ export function shelfStats(boards, now = new Date()) {
   // What you bought or were given; the free ones everyone starts with do not count.
   s.looks = purse.looks.filter((id) => id !== 'lime').length
   // Every one in the shop now, not just as many as there are.
-  s.looksAll = LOOKS.every((item) => purse.looks.includes(item.id))
+  s.looksAll = liveLooks().every((item) => purse.looks.includes(item.id))
   s.cheers = purse.cheers.filter((id) => id !== 'lime').length
-  s.cheersAll = CHEERS.every((item) => purse.cheers.includes(item.id))
+  s.cheersAll = liveCheers().every((item) => purse.cheers.includes(item.id))
   s.buddies = purse.buddies.filter((id) => id !== FREE_BUDDY).length
-  s.buddiesAll = SHOP_BUDDIES.every((item) => purse.buddies.includes(item.id))
+  s.buddiesAll = shopBuddies().every((item) => purse.buddies.includes(item.id))
   s.plays = purse.cheerUses
   s.coins = purse.coins
   return s
