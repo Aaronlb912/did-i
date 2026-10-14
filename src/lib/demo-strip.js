@@ -1,7 +1,7 @@
 import { emptyBoard, normalizeBook } from './board-json.js'
 
 // Sample boards that used to load from the app. They must not ride along after
-// sign-in. Marketing-only landing-demo.js never writes here.
+// sign-in.
 
 export const DEMO_KEEPER = 'Jordan Hale'
 

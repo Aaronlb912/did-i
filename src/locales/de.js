@@ -1412,7 +1412,7 @@ export const de = {
     'Das ist keine To-do-Liste und kein Kalender. Stell die Frage, die du dir hinterher stellst. Nimm eine davon, oder schreib deinen Satz, der mit Did I anfängt.',
   'ideas.use': 'Diese nehmen',
   'ideas.writeOwn': 'Eigene schreiben',
-  'ideas.help': 'Hilfe',
+  'ideas.help': 'Hilfe',
   'wait.kicker': 'Noch nicht',
   'wait.after': 'Nach {time}.',
   'wait.later': 'später',
@@ -1885,7 +1885,6 @@ export const de = {
   'web.nav.terms': 'Nutzung',
   'web.nav.feedback': 'Feedback',
   'web.nav.menu': 'Menü',
-  'web.footer.copy': 'Did I. Die offene Frage für heute Nacht.',
   'web.nav.press': 'Presse',
   'web.press.title': 'Presse & Marke',
   'web.press.lead': 'Presseanfragen per E-Mail an',
@@ -1903,52 +1902,82 @@ export const de = {
   'web.press.color.ink': 'Tinte',
   'web.press.color.soft': 'Sanft',
   'web.press.color.miss': 'Verpasst',
-  'web.landing.kicker': 'Did I',
-  'web.landing.title': 'Dran denken. Dann wissen, dass du es getan hast',
-  'web.landing.lead':
-    'Ich habe unterwegs ins Bett dieselben Checks wiederholt. Tür, Herd, Pillen. Did I stellt eine Frage auf dein Handy. Nach rechts wischen, wenn erledigt. Nach links, wenn nicht. Teile es mit Freunden und Familie.',
-  'web.landing.b1': 'Wische in Heute Nacht. Start zeigt, was noch offen ist.',
-  'web.landing.b2': 'Schick Fragen an Freunde. Teile Aufgaben mit der Familie.',
-  'web.landing.together.kicker': 'Freunde und Familie',
-  'web.landing.together.title': 'Gemeinsam besser',
-  'web.landing.together.lead':
-    'Did I ist für die Menschen, mit denen du lebst, und die, um die du dir Sorgen machst.',
-  'web.landing.together.one.title': 'Frag einen Freund',
-  'web.landing.together.one.line':
-    'Schick „Hast du Oma zurückgerufen?" einmal oder jeden Abend. Es landet im Posteingang, und sie entscheiden, ob sie es behalten.',
-  'web.landing.together.two.title': 'Teile eine Familie',
-  'web.landing.together.two.line':
-    'Gründe eine Familie und teile den Code. „Hast du die Katze gefüttert?“ erscheint bei allen.',
-  'web.landing.together.three.title': 'Feuert euch an',
-  'web.landing.together.three.line':
-    'Sieh, wer heute fertig ist, und schick einen Jubel, wenn ein Freund fertig wird.',
-  'web.landing.b3': 'Installiere es auf dein Handy. Funktioniert ohne Netz.',
-  'web.landing.b4':
-    'Melde dich an, und deine Fragen, Münzen, Gems und deine Serie kommen mit aufs neue Handy.',
-  'web.landing.phoneKicker': 'Heute Nacht',
-  'web.landing.demo1': 'Habe ich die Pflanzen gegossen?',
-  'web.landing.demo2': 'Habe ich Mama zurückgeschrieben?',
-  'web.landing.demo3': 'Habe ich genug Wasser getrunken?',
-  'web.landing.demo4': 'Habe ich die Mülltonnen rausgestellt?',
-  'web.landing.float1': 'Schlüssel',
-  'web.landing.float2': 'Pillen',
-  'web.landing.float3': 'Laden',
-  'web.landing.stepsTitle': 'So läuft es',
-  'web.landing.step1.num': '1',
-  'web.landing.step1.title': 'Eine Frage nach der anderen',
-  'web.landing.step1.line':
-    'Nicht die ganze Liste. Nur die, die du im Kopf hast, wenn du ins Bett gehst.',
-  'web.landing.step2.num': '2',
-  'web.landing.step2.title': 'Nach rechts oder links wischen',
-  'web.landing.step2.line':
-    'Erledigt? Rechts. Heute Nacht nicht? Links. Das ist die Antwort für heute Nacht.',
-  'web.landing.step3.num': '3',
-  'web.landing.step3.title': 'Start zeigt, was offen ist',
-  'web.landing.step3.line':
-    'Der Rest wartet auf eine andere Nacht. Keine Liste zum Antippen. Deine Streak bleibt ehrlich.',
-  'web.landing.band': 'Wenn es mehr als eine Frage ist',
-  'web.landing.closeTitle': 'Hör auf, im Kreis zu laufen',
-  'web.landing.closeLead': 'Kostenlos für iPhone und Android.',
+  'web.landing.strip.tonight': "Heute Abend",
+  'web.landing.strip.vol': "Das Tagesprotokoll / Bd. 01",
+  'web.landing.hero.kicker': "Für volle Köpfe",
+  'web.landing.hero.title': "Dran denken. Dann wissen,",
+  'web.landing.hero.titleEm': "dass du es getan hast.",
+  'web.landing.hero.lead': "Manche Köpfe sind schon weiter, bevor die Sache fertig ist. Später beginnt die Schleife: Habe ich gegessen, habe ich die Garage zugemacht? Did I fragt dich zur Zeit, die du wählst: morgens, nachmittags oder abends. Oder geh am Ende des Tages alles durch, eine Frage nach der anderen, sonst nichts auf dem Bildschirm. Nach rechts wischen, wenn ja, nach links, wenn nicht. Dann kann dein Kopf loslassen.",
+  'web.landing.hero.c1': "Eine Sache auf dem Schirm",
+  'web.landing.hero.c2': "Fragt, wann du willst",
+  'web.landing.hero.c3': "Kein schlechtes Gewissen",
+  'web.landing.hero.c4': "Kostenlos",
+  'web.landing.phone.aria': "Der Abend-Bildschirm in Did I, eine Frage wird nach rechts gewischt",
+  'web.landing.phone.q1': "Wecker stellen",
+  'web.landing.phone.f1': "Morgen",
+  'web.landing.phone.q2': "Mittagessen",
+  'web.landing.phone.f2': "Ich",
+  'web.landing.phone.q3': "Handy laden",
+  'web.landing.phone.f3': "Zuhause",
+  'web.landing.phone.card': "Habe ich die Garage zugemacht?",
+  'web.landing.log.kicker': "Was im Weg steht",
+  'web.landing.log.count': "4 Einträge",
+  'web.landing.log.title': "Was im Weg steht, und was Did I dagegen tut",
+  'web.landing.e1.kicker': "01 / Die Schleife",
+  'web.landing.e1.title': "„Ich weiß, dass ich es getan habe. Ich erinnere mich nur nicht daran.“",
+  'web.landing.e1.p1': "Schreib jede Frage einmal auf und wähle, wann sie kommt: täglich, alle paar Tage, nur einmal oder ab und zu, nachdem du es getan hast. Gib ihr eine Zeit, etwa morgens, oder geh am Abend alles durch. Sie erscheint jedes Mal gleich, eine nach der anderen, damit du weißt, was kommt. Erledigt? Nach rechts wischen. Noch nicht? Nach links.",
+  'web.landing.e1.p2': "Keine lange Liste, die dich anstarrt. Start zeigt nur, was noch offen ist.",
+  'web.landing.e1.r1': "Habe ich zu Mittag gegessen?",
+  'web.landing.e1.r2': "Habe ich den Wecker gestellt?",
+  'web.landing.e1.r3': "Habe ich auf die Mail geantwortet?",
+  'web.landing.e1.open': "Noch offen",
+  'web.landing.e1.capTitle': "Beleg A / Start",
+  'web.landing.e1.cap': "Zwei beantwortet, eine noch offen. Ordner halten alles sortiert, nichts geht verloren.",
+  'web.landing.e2.kicker': "02 / Aus den Augen, aus dem Sinn",
+  'web.landing.e2.title': "„Wenn ich es nicht sehe, gibt es das nicht.“",
+  'web.landing.e2.p1': "Gib einer Frage eine Zeit, dann meldet sich Did I genau dann, jedes Mal. Ein Widget zeigt die nächste Frage auf dem Homescreen, wo du sie wirklich siehst, und du antwortest direkt dort.",
+  'web.landing.e2.p2': "Auf der Apple Watch antwortest du am Handgelenk. Ein Ring füllt sich, und dein Begleiter ist dabei.",
+  'web.landing.e2.widgetMeta': "Heute Abend · 2 übrig",
+  'web.landing.e2.widgetQ': "Habe ich das Ladegerät eingepackt?",
+  'web.landing.e2.watchMeta': "Ich · 2 von 3",
+  'web.landing.e2.watchQ': "Habe ich Wasser getrunken?",
+  'web.landing.e2.capTitle': "Beleg B / Widget und Apple Watch",
+  'web.landing.e2.cap': "Antworte, ohne die App zu öffnen und dich in etwas anderem zu verlieren.",
+  'web.landing.e3.kicker': "03 / Unterstützung",
+  'web.landing.e3.title': "„Es hilft, wenn jemand nachfragt.“",
+  'web.landing.e3.p1': "Lass die Menschen um dich helfen, ohne zu nerven. Schick einer Freundin eine Frage, einmal oder täglich. Sie landet im Posteingang, und sie entscheidet, ob sie bleibt. Gründe eine Familie, teile den Code, und „Warst du mit dem Hund draußen?“ erscheint bei allen.",
+  'web.landing.e3.p2': "Did we ist für Dinge, die ihr zusammen macht: wähle, wer dabei ist und wann es zählt, und haltet gemeinsam eine Serie. Sieh, wer heute fertig ist, und schick einen Jubel, wenn jemand fertig wird.",
+  'web.landing.e3.r1': "Haben wir den Garten gegossen?",
+  'web.landing.e3.s1': "Beide",
+  'web.landing.e3.r2': "Warst du mit dem Hund draußen?",
+  'web.landing.e3.s2': "Wartet",
+  'web.landing.e3.r3': "Hast du den Zahnarzt gebucht?",
+  'web.landing.e3.capTitle': "Beleg C / Freunde und Familie",
+  'web.landing.e3.cap': "Did you, Familienfragen und Did we, Seite an Seite.",
+  'web.landing.e4.kicker': "04 / Druck",
+  'web.landing.e4.title': "„Die meisten Apps geben mir ein schlechtes Gefühl, wenn ich einen Tag verpasse.“",
+  'web.landing.e4.p1': "Noch nicht ist eine gute Antwort. Nichts blinkt rot, nichts schimpft. Serien gibt es, wenn sie helfen. Wenn dich die Zahl stresst, schalte den sanften Modus ein: Die Zahlen verschwinden, deine Tage zählen trotzdem.",
+  'web.landing.e4.days': "M D M D F S S",
+  'web.landing.e4.gentle': "Sanfter Modus",
+  'web.landing.e4.gentleLine': "Serienzahlen ausblenden. Abende zählen weiter.",
+  'web.landing.e4.capTitle': "Beleg D / Einstellungen",
+  'web.landing.e4.cap': "Die Woche bleibt. Der Druck geht.",
+  'web.landing.keep.kicker': "Was du behältst",
+  'web.landing.keep.title': "Ruhe, so wie du sie magst.",
+  'web.landing.keep.l1': "Dunkel oder hell, und ruhigere Bewegung, wenn dein Handy weniger will.",
+  'web.landing.keep.l2': "Funktioniert ohne Netz. Antworten werden gespeichert und später synchronisiert.",
+  'web.landing.keep.l3': "Melde dich an, und deine Fragen, Münzen, Edelsteine und Serie ziehen mit aufs neue Handy.",
+  'web.landing.keep.l4': "Gestalte es mit Looks, Jubeln und einem Begleiter aus dem Shop, oder schenk einem Freund etwas davon.",
+  'web.landing.keep.l5': "Für iPhone und Apple Watch. Android ist in der Beta.",
+  'web.landing.receipt.aria': "Beispieltag",
+  'web.landing.receipt.title': "Did I / Heute",
+  'web.landing.receipt.questions': "Fragen",
+  'web.landing.receipt.streak': "Serie",
+  'web.landing.receipt.streakVal': "12 Abende in Folge",
+  'web.landing.receipt.price': "Preis",
+  'web.landing.end.kicker': "Morgens, mittags oder abends",
+  'web.landing.end.title': "Dran denken. Dann wissen, dass du es getan hast.",
+  'web.landing.end.lead': "Kostenlos für iPhone. Android ist als Beta auf Google Play.",
   'web.nav.download': 'App laden',
   'web.download.kicker': 'Herunterladen',
   'web.download.title': 'Did I auf dein Handy',
@@ -1959,6 +1988,13 @@ export const de = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'Kostenlos im App Store.',
+  'web.download.i1': "Widgets auf dem Homescreen. Antworte, ohne die App zu öffnen.",
+  'web.download.i2': "Apple Watch. Antworte am Handgelenk.",
+  'web.download.i3': "Erinnerungen zur Zeit, die du wählst.",
+  'web.download.a1': "Ein Widget auf dem Homescreen. Direkt dort antworten.",
+  'web.download.a3': "Funktioniert ohne Netz. Antworten werden gespeichert und später synchronisiert.",
+  'web.download.stepsTitle': "In 3 Schritten zur Beta",
+  'web.download.close': "Kostenlos. Melde dich an, und deine Fragen, Münzen, Edelsteine und Serie ziehen mit aufs neue Handy.",
   'web.beta.kicker': 'Android-Beta',
   'web.beta.title': 'Hilf beim Testen von Did I',
   'web.beta.lead': 'Did I ist bei Google Play im Test. Mach bei der Beta mit, nutze die App zwei Wochen und sag uns, wie du sie findest.',
@@ -1982,12 +2018,6 @@ export const de = {
   'web.store.apple': 'Im App Store laden',
   'web.store.play': 'Bei Google Play holen',
   'web.store.androidBeta': 'Der Android-Beta beitreten',
-  'web.landing.chip1': 'Pflanzen gießen',
-  'web.landing.chip2': 'Mama zurückschreiben',
-  'web.landing.chip3': 'Genug Wasser trinken',
-  'web.landing.tag1': 'Zuhause',
-  'web.landing.tag2': 'Familie',
-  'web.landing.tag3': 'Gesundheit',
   'widget.tonight.tagFallback': 'Heute Nacht',
   'widget.tonight.empty': 'Noch keine Fragen',
   'widget.tonight.nextAt': 'Nächste Frage um {time}',
@@ -2314,14 +2344,6 @@ export const de = {
   'help.coins': 'Münzen und Edelsteine',
   "help.coinsP": "Münzen gibt es fürs Antworten jede Nacht und für gemeinsame Serien. Edelsteine gibt es jede Woche, fürs Einladen, oder du kaufst sie. Beides gibst du im Shop für Looks, Jubel, Buddies, Accessoires und Rahmen aus.",
   'help.shopGo': 'Shop öffnen',
-  'web.landing.together.we.title': 'Gemeinsam machen',
-  'web.landing.together.we.line':
-    'Waren wir mit dem Hund draußen? Wähle Freunde oder Familie, wann es zählt, und haltet gemeinsam eine Serie.',
-  'web.landing.b5':
-    'Widgets auf dem Startbildschirm und Erinnerungen zur Uhrzeit deiner Wahl.',
-  'web.landing.b6': 'Ordner und Themen halten eine lange Liste ordentlich.',
-  'web.landing.b7':
-    'Mach es hübsch mit Looks, Cheers und einem Buddy aus dem Shop, oder schenk einem Freund einen.',
   'legal.privacy.together.title': 'Did we, Wiederholungen und Meldungen',
   'legal.privacy.together.body':
     'Did we. Wenn du eine gemeinsame Frage startest oder ihr beitrittst, sehen die anderen darauf deinen Anzeigenamen, deinen Buddy (den du aus dem Shop trägst), ob du beigetreten bist, und deine Antworten für jede Nacht, soweit es die Person erlaubt, der die Karte gehört: jede Antwort, nur wer noch fehlt, oder nur eine Zahl. Sie sehen auch die Frage, ihren Plan und die gemeinsame Serie. Wir speichern die Karte, wer wann gefragt wurde, Antworten, Stupser und wann eine Anfrage abgelehnt wurde, damit dieselbe Anfrage nicht sofort wiederkommt.\n\nWiederholte Did you. Ein Did you kann sich wiederholen (jede Nacht oder an manchen Nächten). Es wartet immer in deinem Posteingang, bis du es behältst, auch von der Familie. Einmal behalten, ist es eine Frage in deiner eigenen Liste, die du ändern oder entfernen kannst.\n\nMelden und blockieren. Wenn du ein Did we oder ein Did you meldest, speichern wir eine Meldung mit der Frage und blockieren die Person: Du verlässt gemeinsame Karten, und ihre Anfragen und Did you hören auf. Sie erfährt es nicht. Niemand prüft Meldungen einzeln; das Blockieren schützt dich. Wir sehen uns Meldungen eventuell an, wenn uns etwas gemeldet wird.\n\nGrenzen. Damit niemand nervt, begrenzen die Server neue Karten, Stupser, wiederholte Did you und Meldungen pro Person und Tag.',
@@ -2456,7 +2478,7 @@ export const de = {
   'enter.eraseGo': 'Löschen und neu anfangen',
   'enter.eraseBody': 'Du bist nicht angemeldet, also gibt es die PIN nur auf diesem Handy. Um sie zu entfernen, lösch Did I auf diesem Handy: Fragen, Antworten, Münzen und Looks. Das geht nicht rückgängig.',
   'enter.forgotTitle': 'PIN vergessen?',
-  'enter.forgot': 'PIN vergessen?',
+  'enter.forgot': 'PIN vergessen?',
   'clock.pm': '{h}:{m} nachm.',
   'clock.am': '{h}:{m} vorm.',
   'shop.teasedBody': 'Noch nicht da. Ab {date} im Verkauf.',
@@ -2669,7 +2691,7 @@ export const de = {
   'pack.sureGoOne': 'Hinzufügen',
   'pack.addedOne': '1 Frage hinzugefügt',
   'pack.sureGo': 'Hinzufügen',
-  'pack.added': '{n} Fragen hinzugefügt',
+  'pack.added': '{n} Fragen hinzugefügt',
   'note.title': 'Notizen',
   'note.hint': 'Tippe auf eine Nacht für eine Notiz.',
   'note.ph': 'Kurze Notiz hinzufügen',
