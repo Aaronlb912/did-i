@@ -79,7 +79,9 @@ export function sendWatchCards(props, shelf = null) {
     const key = JSON.stringify({ ...cards, updatedAt: 0 })
     if (key === lastSent) return
     lastSent = key
-    mod.sendCards(JSON.stringify(cards))
+    // at: when the phone sent these. The watch drops a delivered tap that is
+    // older, so an undo on the phone shows there too.
+    mod.sendCards(JSON.stringify({ ...cards, at: Date.now() }))
   } catch {
     // No watch is fine.
   }

@@ -61,7 +61,8 @@ export function DidYouLinkHost({ colors, onKeep }) {
   const userId = account.user?.id || ''
   const [tick, setTick] = useState(0)
   const keep = useRef(onKeep)
-  const askedSignIn = useRef(false)
+  // The Did we code we last asked to sign in for, so a new one is asked too.
+  const askedSignIn = useRef('')
   keep.current = onKeep
 
   useEffect(() => onPendingDidYou(() => setTick((n) => n + 1)), [])
@@ -78,8 +79,8 @@ export function DidYouLinkHost({ colors, onKeep }) {
     const we = isWeLinkCode(code)
     if (we && !userId) {
       // Kept until they sign in. Asked once; Not now lets the link go.
-      if (askedSignIn.current) return undefined
-      askedSignIn.current = true
+      if (askedSignIn.current === code) return undefined
+      askedSignIn.current = code
       publishSheet({
         title: t('people.outTitle'),
         body: t('weLink.signIn'),

@@ -2,16 +2,13 @@ import { useState } from 'react'
 import { BoardShell } from './BoardShell.jsx'
 import { LookChip } from './Cosmetic.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
-import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, LOOKS, buyLook, isGemLook, lookText, normalizePurse } from './purse.js'
+import { LOOK_COIN_PRICE, LOOK_GEM_PRICE, buyLook, isGemLook, liveLooks, lookText, normalizePurse } from './purse.js'
 import { goHash } from '../site/hash.js'
 import { BuyConfirm, LookPreviewCard, NO_MISS, ShopPurse, coinLine, gemLine, gateConfirm, shopMiss, shortGemConfirm, signInConfirm } from './shop-bits.jsx'
 import { accountSessionOn } from './session-id.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
-
-const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
-const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
 
 export function ShopLooks({ book, onChange, now }) {
   usePrefs()
@@ -110,10 +107,10 @@ export function ShopLooks({ book, onChange, now }) {
         {peekLook && isGemLook(peekLook) ? <LookPreviewCard /> : null}
 
         <p className="di-set-cap">{t('shop.looksCoins')}</p>
-        <div className="di-set-card di-shop-card">{COIN_LOOKS.map(lookRow)}</div>
+        <div className="di-set-card di-shop-card">{liveLooks().filter((item) => item.coins > 0).map(lookRow)}</div>
 
         <p className="di-set-cap">{t('shop.looksGems')}</p>
-        <div className="di-set-card di-shop-card">{GEM_LOOKS.map(lookRow)}</div>
+        <div className="di-set-card di-shop-card">{liveLooks().filter((item) => item.gems > 0).map(lookRow)}</div>
 
       </section>
       <BuyConfirm

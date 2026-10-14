@@ -151,9 +151,28 @@ export async function signInReviewer(email, password) {
   return { miss: bad === 'often' ? bad : 'reviewerBad', user: null }
 }
 
+// This device's push token, dropped before sign out. Loaded late: a static
+// import makes a cycle on the phone (Metro swaps in native/shim/push.js).
+// Capped at 3s and failures ignored, so sign out never stalls.
+export async function dropPushToken(ms = 3000) {
+  let timer
+  try {
+    await Promise.race([
+      import('./push.js').then(({ dropToken }) => dropToken()),
+      new Promise((resolve) => { timer = setTimeout(resolve, ms) }),
+    ])
+  } catch {
+    // ignore
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function signOutHere() {
   const db = cloud()
   if (!db) return
+  // This device's push token goes first, while the session can still write it.
+  await dropPushToken()
   // signOut() defaults to global, which would end the session on every other device.
   await db.auth.signOut({ scope: 'local' })
   // The home screen widget must not keep showing this account's people.
@@ -167,6 +186,7 @@ export async function signOutHere() {
 export async function signOutEverywhere() {
   const db = cloud()
   if (!db) return
+  await dropPushToken()
   // The server has to end the other sessions; if it could not, say so.
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) throw error

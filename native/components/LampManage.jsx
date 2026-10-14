@@ -15,12 +15,22 @@ function liveBook(book) {
 }
 
 // A deleted, paused or stopped question stops its friend check-on too.
+// It waits out the undo toast, and skips a question that came back by then.
+// Most questions have no check-on, so a network miss stays quiet.
 export function stopCheckOns(lampIds) {
-  for (const id of [].concat(lampIds)) {
-    dropCheckOn(id)
-      .then((out) => out.miss && confirmMiss(tMiss(out.miss)))
-      .catch(() => confirmMiss(t('people.reach')))
-  }
+  const ids = [].concat(lampIds).map(String)
+  setTimeout(() => {
+    const live = new Map()
+    for (const book of readShelf().boards || []) {
+      for (const lamp of book.lamps || []) live.set(String(lamp.id), lamp)
+    }
+    const drop = ids.filter((id) => !live.has(id) || live.get(id).archived)
+    for (const id of drop) {
+      dropCheckOn(id)
+        .then((out) => out.miss && out.miss !== 'people.reach' && confirmMiss(tMiss(out.miss)))
+        .catch(() => {})
+    }
+  }, DELETE_UNDO_MS + 500)
 }
 
 function deleteNote(book, lamp) {

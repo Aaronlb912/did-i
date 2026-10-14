@@ -311,6 +311,33 @@ export function dueTonight(book, now = new Date()) {
   return lamps
 }
 
+// A one-time question with a window (due by, or no day at all) is due every
+// night of it, but its one answer is shared by all of them. A Did counts on
+// the night it was tapped only, so it cannot clear the other nights too.
+// '' when that rule does not apply (fixed day, or not done).
+export function onceDoneNight(lamp, answer) {
+  if (lamp?.cadence !== 'once') return ''
+  if (answer?.status !== 'yes' && answer?.status !== 'late') return ''
+  if (lamp.onceWhen !== 'by' && /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.onceOn || '').trim())) return ''
+  const at = new Date(String(answer.answeredAt || ''))
+  if (answer.answeredAt && !Number.isNaN(at.getTime())) {
+    const night = boardDate(at)
+    // A grace tap after the last night counts on the last night.
+    const dueBy = lamp.onceWhen === 'by' ? String(lamp.dueBy || '').trim() : ''
+    return /^\d{4}-\d{2}-\d{2}$/.test(dueBy) && night > dueBy ? dueBy : night
+  }
+  const day = String(lamp.dueBy || lamp.createdOn || '').slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : ''
+}
+
+// Whether an archived one-time question still counts on past nights: a Did,
+// or a Not yet on a fixed-day question. Shared by the streak walk and marks.
+export function oncePastCounts(lamp, answer) {
+  if (lamp?.cadence !== 'once' || !answer) return false
+  if (answer.status === 'yes' || answer.status === 'late') return true
+  return lamp.onceWhen !== 'by' && /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.onceOn || '').trim())
+}
+
 export function askAfterPassed(lamp, now = new Date()) {
   const after = String(lamp?.askAfter || '').trim()
   if (!after) return true

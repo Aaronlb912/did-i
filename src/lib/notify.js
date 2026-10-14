@@ -5,6 +5,7 @@ import { boardDate, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 import { afterQuiet, gentleOn, pingOn } from './prefs.js'
 import { streakRiskFire } from './streak-risk.js'
+import { shelfStreak } from './hall-feel.js'
 
 const timers = []
 
@@ -94,7 +95,7 @@ export async function armLampPings(book, now = new Date()) {
   if (isNativeHall()) return
   const reg = await readyWorker()
   const fires = pingOn('reminders') ? [...upcomingPings(book, now)] : []
-  const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
+  const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now, shelfStreak([book], now)) : null
   if (risk) {
     fires.push({ ...risk, question: t('streak.riskBody', { time: clockWords('09:00') }) })
   }

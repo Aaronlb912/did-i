@@ -14,13 +14,13 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
-  BUDDIES,
-  SHOP_BUDDIES,
+  liveBuddies,
+  shopBuddies,
   BUDDY_GEMS,
   buyCheerStage,
   buyLook,
-  CHEERS,
-  OWNABLE_CHEERS,
+  liveCheers,
+  ownableCheers,
   CHEER_GEMS,
   CHEER_STAGE_COIN,
   CHEER_STAGE_COINS,
@@ -31,7 +31,7 @@ import {
   buddyText,
   LOOK_COIN_PRICE,
   LOOK_GEM_PRICE,
-  LOOKS,
+  liveLooks,
   lookText,
   fireCheer,
   nextCheerStage,
@@ -102,8 +102,8 @@ import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { motionOff, pressFx, Reveal } from '../lib/motion.jsx'
 
-const COIN_LOOKS = LOOKS.filter((item) => item.coins > 0)
-const GEM_LOOKS = LOOKS.filter((item) => item.gems > 0)
+const coinLooks = () => liveLooks().filter((item) => item.coins > 0)
+const gemLooks = () => liveLooks().filter((item) => item.gems > 0)
 const STAGES = [1, 2, 3, 4, 5]
 
 // The three packs worth a tall card; the rest stay a compact list.
@@ -1058,9 +1058,9 @@ export function ShopScreen({ book, onChange }) {
   const slides = dropSlides()
   const accessoryList = accessoriesForSale(boardDate(new Date()))
   const rows = [
-    { type: 'look', list: LOOKS, cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
-    { type: 'cheer', list: CHEERS, cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
-    { type: 'buddy', list: SHOP_BUDDIES, cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
+    { type: 'look', list: liveLooks(), cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
+    { type: 'cheer', list: liveCheers(), cap: t('shop.cheers'), allLabel: t('shop.allCheers'), path: '/shop/cheers' },
+    { type: 'buddy', list: shopBuddies(), cap: t('shop.buddies'), allLabel: t('shop.allBuddies'), path: '/shop/buddies' },
     { type: 'accessory', list: accessoryList, cap: t('shop.accessories'), allLabel: t('shop.allAccessories'), path: '/shop/accessories' },
   ]
   // Nothing left to buy anywhere: one line, not four empty rows.
@@ -1224,10 +1224,10 @@ export function ShopLooksScreen({ book, onChange }) {
       <LookStage id={peekLook || purse.lookOn} />
 
       <Cap colors={colors}>{t('shop.looksCoins')}</Cap>
-      {ownedLast('look', COIN_LOOKS, purse).map(lookRow)}
+      {ownedLast('look', coinLooks(), purse).map(lookRow)}
 
       <Cap colors={colors}>{t('shop.looksGems')}</Cap>
-      {ownedLast('look', GEM_LOOKS, purse).map(lookRow)}
+      {ownedLast('look', gemLooks(), purse).map(lookRow)}
 
       <BuyConfirm
         confirm={confirm}
@@ -1276,7 +1276,7 @@ export function ShopCheersScreen({ book, onChange }) {
     <BoardShell book={book} title={t('shop.cheers')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</Meta>
 
-      {ownedLast('cheer', CHEERS, purse).map((item) => {
+      {ownedLast('cheer', liveCheers(), purse).map((item) => {
         const have = purse.cheers.includes(item.id)
         const stage = cheerStageOf(book, item.id)
         const next = have ? nextCheerStage(stage) : 0
@@ -1390,7 +1390,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
 
       {peekBuddy ? <BuddyPreviewCard id={peekBuddy} colors={colors} /> : null}
 
-      {ownedLast('buddy', SHOP_BUDDIES, purse).map((item) => {
+      {ownedLast('buddy', shopBuddies(), purse).map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
         const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
@@ -2006,9 +2006,9 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const coat = activeLook(book)
   const purse = normalizePurse(book)
   // Shop order, always: a tile never moves under your finger when you wear it.
-  const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
-  const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
-  const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
+  const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
+  const buddies = liveBuddies().filter((item) => purse.buddies.includes(item.id))
+  const cheers = ownableCheers().filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const wished = wishRows(purse)
@@ -2054,10 +2054,10 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const firstWorn = ACCESSORY_SLOTS.map((slot) => purse.worn[slot]).find(Boolean)
   const offChip = <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
   const kinds = {
-    looks: { art: <LookChip id={purse.lookOn} colors={colors} plain={tab !== 'looks'} />, n: looks.length, of: LOOKS.length },
+    looks: { art: <LookChip id={purse.lookOn} colors={colors} plain={tab !== 'looks'} />, n: looks.length, of: liveLooks().length },
     frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
-    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, CHEERS.length) },
-    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: BUDDIES.length },
+    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, liveCheers().length) },
+    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: liveBuddies().length },
     accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
     wish: { art: <Text style={[styles.kindHeart, { color: colors.on }]}>♥</Text>, count: t('kit.wishN', { n: wished.length }) },
   }

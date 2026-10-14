@@ -227,7 +227,7 @@ begin
     'family_lamps|question_len|length(question) between 1 and 200',
     'family_lamps|short_len|length(short) <= 60',
     'family_lamps|once_when_ok|once_when in (''on'', ''by'')',
-    'family_answers|period_len|length(period_key) <= 24',
+    'family_answers|period_len|length(period_key) <= 72',
     'sends|question_len|length(question) <= 200',
     'sends|note_len|length(note) <= 280',
     'devices|label_len|length(device_key) <= 80 and length(label) <= 80 and length(platform) <= 40'

@@ -1,4 +1,4 @@
-import { freezeState, hallHeat, shelfStreak } from './hall-feel.js'
+import { dueThatNight, freezeState, hallHeat, shelfStreak } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
@@ -10,6 +10,8 @@ import {
   isDueOn,
   isEvery,
   isoDate,
+  onceDoneNight,
+  oncePastCounts,
   parseIsoDate,
   periodKeyFor,
   periodNight,
@@ -69,8 +71,9 @@ function noonOn(iso) {
 }
 
 // A question you added on Friday was not something you missed on Monday.
+// The streak's own rows for a night, so the calendar and the streak agree.
 function dueOnNight(book, iso, at) {
-  return dueTonight(book, at).filter((row) => !isEvery(row.lamp) && (!row.lamp.createdOn || row.lamp.createdOn <= iso))
+  return dueThatNight(book, iso, at)
 }
 
 // The first night anything happened: the oldest question's made date or the
@@ -327,13 +330,18 @@ function yearIndex(book) {
   if (found) return found
   const byLamp = new Map()
   const onceDone = new Set()
+  // The answer row behind each once:<id> key, for the night it was tapped.
+  const onceAnswer = new Map()
   for (const answer of rows) {
     let nights = byLamp.get(answer.lampId)
     if (!nights) byLamp.set(answer.lampId, (nights = new Map()))
-    if (!nights.has(answer.periodKey)) nights.set(answer.periodKey, answer.status)
+    if (!nights.has(answer.periodKey)) {
+      nights.set(answer.periodKey, answer.status)
+      if (String(answer.periodKey).startsWith('once:')) onceAnswer.set(answer.lampId, answer)
+    }
     if (answer.status === 'yes' || answer.status === 'skip' || answer.status === 'late') onceDone.add(answer.lampId)
   }
-  found = { byLamp, onceDone }
+  found = { byLamp, onceDone, onceAnswer }
   yearIndexMemo.set(rows, found)
   return found
 }
@@ -342,11 +350,20 @@ function yearIndex(book) {
 // rebuilding the due list per book per night. Daily questions (most of them)
 // skip the date parse.
 function nightMarksMany(books, isos, today, tagId = '') {
-  const prepped = books.map((book) => ({
-    start: startNight(book),
-    lamps: (book.lamps || []).filter((lamp) => !lamp.archived),
-    index: yearIndex(book),
-  }))
+  const prepped = books.map((book) => {
+    const index = yearIndex(book)
+    // Answered one-time questions are archived once their day passes; their
+    // night still counts (same rule as the streak walk in hall-feel.js).
+    const lamps = []
+    const doneOn = new Map()
+    for (const lamp of book.lamps || []) {
+      const onceKey = lamp.cadence === 'once' ? `once:${lamp.id}` : ''
+      if (lamp.archived && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
+      lamps.push(lamp.archived ? { ...lamp, archived: false } : lamp)
+      if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
+    }
+    return { start: startNight(book), lamps, index, doneOn }
+  })
   const out = new Map()
   for (const iso of isos) {
     if (iso > today) {
@@ -367,6 +384,8 @@ function nightMarksMany(books, isos, today, tagId = '') {
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
         if (lamp.fromDidI) continue
+        const doneOn = done ? book.doneOn.get(lamp.id) : ''
+        if (doneOn && doneOn !== iso) continue
         if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
         dueCount += 1
         if (!done) clear = false

@@ -54,8 +54,9 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     },
     { key: 'more', section: true, label: t('mast.menu') },
     { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
-    // Recent: achievements and Did we moments, in full. Its count is the unseen ones.
-    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
+    // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
+    // plus Did you asks still in the inbox so the row is not blank while they wait.
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent + (signedIn ? inbox : 0), icon: 'bell' },
     { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
   ]
 }

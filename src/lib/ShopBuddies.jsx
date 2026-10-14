@@ -3,7 +3,7 @@ import { previewSample } from './board-shelf.js'
 import { BoardShell } from './BoardShell.jsx'
 import { BuddyChip, BuddyHang } from './Cosmetic.jsx'
 import { buyWithGems } from './coin-shop.js'
-import { SHOP_BUDDIES, BUDDY_GEMS, buddyText, buyBuddy, normalizePurse } from './purse.js'
+import { BUDDY_GEMS, buddyText, buyBuddy, normalizePurse, shopBuddies } from './purse.js'
 import { goHash } from '../site/hash.js'
 import { BuyConfirm, ShopPurse, gemLine, gateConfirm, shopMiss, shortGemConfirm, signInConfirm } from './shop-bits.jsx'
 import { accountSessionOn } from './session-id.js'
@@ -105,7 +105,7 @@ export function ShopBuddies({ book, onChange, now }) {
           </div>
         ) : null}
 
-        <div className="di-set-card di-shop-card">{SHOP_BUDDIES.map(buddyRow)}</div>
+        <div className="di-set-card di-shop-card">{shopBuddies().map(buddyRow)}</div>
 
         {miss ? (
           <p className="di-miss" role="alert">

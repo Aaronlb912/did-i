@@ -242,10 +242,14 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
   private func save(_ json: String) {
     guard var next = CardStore.decode(json) else { return }
     let taps = recentTaps(now: Date().timeIntervalSince1970 * 1000)
+    // When the phone sent these. A tap it already had is older: its word wins (an undo).
+    let raw = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any]
+    let builtAt = (raw?["at"] as? Double) ?? 0
     var keep: [[String: Any]] = []
     for tap in taps {
       guard let id = tap["id"] as? String, let night = tap["night"] as? String,
             let answer = tap["answer"] as? String else { continue }
+      if let sentAt = tap["sentAt"] as? Double, sentAt > 0, builtAt > sentAt { continue }
       var stillOpen = false
       for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && next.items[i].status == "open" {
         next.items[i].status = answer
@@ -299,19 +303,41 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
       "dateIso": card.dateIso,
       "at": now,
     ]
-    defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
-    guard WCSession.isSupported() else { return }
+    guard WCSession.isSupported() else {
+      defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
+      return
+    }
     // A message wakes the iPhone app in the background, so the answer lands at
     // once. transferUserInfo only arrives when the phone app next opens, so it
     // is the fallback when the phone is out of reach or the message fails.
+    // sentAt: sent by message, so later cards from the phone may undo it.
+    // transferUserInfo has no sentAt and keeps the 24h hold.
     let session = WCSession.default
     if session.activationState == .activated && session.isReachable {
+      var held = tap
+      held["sentAt"] = now
+      defaults.set(recentTaps(now: now) + [held], forKey: CardStore.tapsKey)
       session.sendMessage(tap, replyHandler: nil) { _ in
+        DispatchQueue.main.async { self.clearSentAt(tap) }
         WCSession.default.transferUserInfo(tap)
       }
     } else {
+      defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
       session.transferUserInfo(tap)
     }
+  }
+
+  // The message failed: hold the tap until the phone's cards show it.
+  private func clearSentAt(_ tap: [String: Any]) {
+    let all = defaults.array(forKey: CardStore.tapsKey) as? [[String: Any]] ?? []
+    let next = all.map { item -> [String: Any] in
+      guard item["id"] as? String == tap["id"] as? String, item["night"] as? String == tap["night"] as? String,
+            item["at"] as? Double == tap["at"] as? Double else { return item }
+      var item = item
+      item.removeValue(forKey: "sentAt")
+      return item
+    }
+    defaults.set(next, forKey: CardStore.tapsKey)
   }
 
   func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {

@@ -73,6 +73,19 @@ begin
       where family_id = fam and user_id = heir;
     end if;
   end loop;
+  -- Gifts sent to me and not opened go back to the givers (same as
+  -- gifts_on_block in gifts.sql).
+  with gone as (
+    delete from public.cheer_gifts g
+    where g.to_id = me and g.claimed_at is null
+    returning g.from_id, g.gems, g.coins
+  )
+  update public.profiles p
+  set gem_balance = least(p.gem_balance + s.gems, 9999),
+      coin_balance = least(p.coin_balance + s.coins, 9999)
+  from (select from_id, sum(gems) as gems, sum(coins) as coins
+        from gone where from_id is not null and from_id <> me group by from_id) s
+  where p.user_id = s.from_id;
   delete from public.family_members where user_id = me;
   delete from public.shelves where user_id = me;
   delete from public.profiles where user_id = me;

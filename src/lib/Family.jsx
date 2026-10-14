@@ -159,7 +159,8 @@ export function Family({ book, onChange, now, familyId }) {
   }
 
   async function tap(lamp, status) {
-    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, night, status)
+    // The night at tap time, so a page left open past the fold answers tonight.
+    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, boardDate(new Date(), fam.fold_hour), status)
     if (why) return setMiss(why)
     return load()
   }
