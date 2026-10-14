@@ -6,6 +6,7 @@ import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { sharedEveryDue } from './every-copy.js'
+import { readSendAnswers } from './send-answers.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { noteMilestone } from './milestones.js'
 
@@ -905,8 +906,13 @@ export async function listSent() {
     .order('made_at', { ascending: false })
     .limit(100)
   if (!data?.length) return []
-  const who = await peopleByIds(db)
-  return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id } }))
+  // How they answered the kept ones, in the same pass (one call).
+  const [who, answers] = await Promise.all([peopleByIds(db), readSendAnswers(keptIds(data))])
+  return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id }, answers: answers.get(row.id) || [] }))
+}
+
+function keptIds(rows) {
+  return rows.filter((row) => row.state === 'kept' && row.kind === 'todo').map((row) => row.id)
 }
 
 // Did yous between you and one friend, both ways, newest first.
@@ -925,8 +931,10 @@ export async function sendsWith(otherId) {
     .limit(100)
   if (error) return { ...empty, ...bad(error) }
   const rows = data || []
+  const mine = rows.filter((row) => row.from_id === user.id)
+  const answers = await readSendAnswers(keptIds(mine))
   return {
-    mine: rows.filter((row) => row.from_id === user.id),
+    mine: mine.map((row) => ({ ...row, answers: answers.get(row.id) || [] })),
     theirs: rows.filter((row) => row.from_id === otherId),
     miss: '',
   }
@@ -1529,7 +1537,7 @@ async function addAutoSends(db, adder) {
       // Names are a nice to have; the questions still go on tonight.
     }
     // Nobody chose these for tonight, so they are optional (see normalizeLamp).
-    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, person: senders.get(row.sender_id) })))
+    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, sendId: row.send_id, person: senders.get(row.sender_id) })))
     for (const row of fresh) added.add(row.send_id)
     writeAutoAdded(added)
   }

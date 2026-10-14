@@ -73,7 +73,8 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { SheetHost, publishSheet } from '../components/SheetHost.jsx'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { setSendShare } from '../../src/lib/send-answers.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
@@ -2159,6 +2160,35 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   )
 }
 
+// A kept Did you: its sender sees your answers until you turn it off here.
+function ShareAnswersSwitch({ lamp, lampBook, change, colors }) {
+  const [busy, setBusy] = useState(false)
+  const name = lamp.fromName || t('people.someone')
+  return (
+    <SetCard colors={colors}>
+      <SetSwitch
+        label={t('lamp.shareAnswers')}
+        sub={t(lamp.shareOff ? 'lamp.shareOffLine' : 'lamp.shareOnLine', { name })}
+        icon="eye"
+        last
+        on={!lamp.shareOff}
+        colors={colors}
+        onPress={async () => {
+          if (busy) return
+          const on = Boolean(lamp.shareOff)
+          setBusy(true)
+          const { miss } = await setSendShare(lamp.sendId, on)
+          setBusy(false)
+          if (miss) return confirmMiss(t(miss))
+          const { shareOff: _off, ...rest } = lamp
+          change(hangInto(lampBook, on ? rest : { ...rest, shareOff: true }, true))
+          confirmDone(t(on ? 'lamp.shareOnDone' : 'lamp.shareOffDone', { name }))
+        }}
+      />
+    </SetCard>
+  )
+}
+
 export function LampScreen({ book, boards = [], onChange, route }) {
   const lampId = route?.id || ''
   const shelf = boards.length ? boards : [book]
@@ -2325,6 +2355,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           />
         </>
       ) : null}
+
+      {lamp.sendId ? <ShareAnswersSwitch lamp={lamp} lampBook={lampBook} change={change} colors={colors} /> : null}
 
       {every ? (
         <View style={styles.tiles}>

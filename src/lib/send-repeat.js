@@ -59,6 +59,10 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
     base.fromDidYou = true
     const name = String(item?.person?.display_name || item?.person?.handle || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     if (name) base.fromName = name
+    // The send it came from (inbox rows carry id, auto adds sendId), so the
+    // sender can see its answers. A Did you link or Did I has none.
+    const sendId = String(item?.sendId || item?.id || '').toLowerCase()
+    if (!item?.fromDidI && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(sendId)) base.sendId = sendId
   }
   const { cadence, weekdays, everyDays } = readRepeat(typeof item === 'string' ? '' : item.repeat)
   if (cadence === 'once') return { ...base, cadence: 'once', onceOn: night }

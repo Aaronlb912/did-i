@@ -427,7 +427,7 @@ export function dueClearTonight(rows) {
 }
 
 // Dates read in the app's language, not always English.
-function dateTag() {
+export function dateTag() {
   const code = readPrefs().locale
   if (code === 'zh') return 'zh-CN'
   return !code || code === 'en' ? 'en-US' : code

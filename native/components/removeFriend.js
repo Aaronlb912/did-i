@@ -16,7 +16,8 @@ function forgetSender(name) {
     const lamps = (book.lamps || []).map((lamp) => {
       if (!lamp.fromDidYou || lamp.fromName !== name) return lamp
       touched = true
-      const { fromName, ...rest } = lamp
+      // The server stops their view already; the "sees your answers" line goes too.
+      const { fromName, sendId, shareOff, ...rest } = lamp
       return rest
     })
     if (!touched) return book
