@@ -1,5 +1,5 @@
 import { accountSessionOn } from './session-id.js'
-import { SHOP_BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
+import { SHOP_BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, nextCheerStage, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
@@ -48,9 +48,13 @@ async function buyLookWithCoinsRaw(book, id) {
 
 async function buyCheerStageWithCoinsRaw(book, id) {
   if (accountSessionOn()) {
+    const shown = nextCheerStage(normalizePurse(book).cheerStages[id] || 1)
     const remote = await purchaseWithCoins('cheer_stage', id)
     if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
-    return { book: applyPurchaseToBook(book, remote), miss: '' }
+    // The server counts bought stages; the phone also counts uses. Keep the stage that was paid for.
+    const next = applyPurchaseToBook(book, remote)
+    const stage = Math.max(Number(next.cheerStages?.[id]) || 1, shown)
+    return { book: { ...next, cheerStages: { ...next.cheerStages, [id]: stage } }, miss: '' }
   }
   return buyCheerStage(book, id)
 }

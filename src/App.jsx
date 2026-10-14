@@ -16,7 +16,7 @@ import {
   writeShelf,
 } from './lib/board-shelf.js'
 import { commitBook } from './lib/achievements.js'
-import { hangInto, takeDown } from './lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown } from './lib/board-ops.js'
 import { blankLamp } from './lib/board-json.js'
 import { keptLamp } from './lib/send-repeat.js'
 import { boardDate, isoDate } from './lib/recurrence.js'
@@ -523,13 +523,12 @@ export default function App() {
     pingLabel,
     onAskPings: pingLabel ? askPings : undefined,
     onImport: (next) => persist(next),
-    onStartEmpty: () =>
-      change({
-        ...emptyBoard(),
-        id: live.id,
-        title: live.title,
-        keeperName: live.keeperName,
-      }),
+    // The delete path: the shared purse stays and other phones get gone marks.
+    onStartEmpty: () => {
+      const picks = (live.lamps || []).map((lamp) => ({ boardId: live.id, lampId: lamp.id }))
+      const [cleared] = bulkLamps([live], picks, 'delete')
+      change({ ...(cleared || live), answers: [] })
+    },
     onSendCopy: sendCopy,
   }
 
@@ -673,9 +672,9 @@ export default function App() {
       <Calendar book={live} boards={shelf.boards} tagId={tagId} />
     )
   } else if (path === '/streaks') {
-    inner = <Streaks book={live} />
+    inner = <Streaks book={live} boards={shelf.boards} />
   } else if (path === '/stats') {
-    inner = <StatsPage book={live} />
+    inner = <StatsPage book={live} boards={shelf.boards} />
   } else if (path === '/feed') {
     inner = <Feed book={live} />
   } else if (path === '/pings') {

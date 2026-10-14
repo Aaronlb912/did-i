@@ -1958,6 +1958,24 @@ test('widget props list every tag and merge answers onto the right one', () => {
   assert.equal(merged.boards.find((row) => row.id === 'tag-b')?.answers?.[0]?.lampId, 'l2')
 })
 
+test('stale widget props never undo a newer answer for tonight', () => {
+  const book = {
+    id: 'tag-a',
+    title: 'A',
+    lamps: [{ id: 'l1', question: 'One?', cadence: 'daily', archived: false }],
+    answers: [],
+  }
+  const clock = new Date(2026, 8, 20, 21, 0)
+  const shelf = writeShelf({ currentId: 'tag-a', boards: [book] })
+  const props = buildTonightWidgetProps(shelf, clock)
+  const did = mergeWidgetPropsIntoShelf(shelf, { items: props.items.map((item) => ({ ...item, status: 'yes' })) }, clock)
+  const stale = mergeWidgetPropsIntoShelf(did, { items: props.items.map((item) => ({ ...item, status: 'skip' })) }, clock)
+  assert.equal(stale, did, 'a stale nope does not replace a did from the web')
+  const nope = mergeWidgetPropsIntoShelf(shelf, { items: props.items.map((item) => ({ ...item, status: 'skip' })) }, clock)
+  const turned = mergeWidgetPropsIntoShelf(nope, { items: props.items.map((item) => ({ ...item, status: 'yes' })) }, clock)
+  assert.notEqual(turned.boards[0].answers.find((row) => row.lampId === 'l1')?.status, 'skip', 'a nope can still turn into a did')
+})
+
 test('every coin look on sale passes the client check before the buy is sent', () => {
   const coinLooks = LOOKS.filter((item) => item.coins > 0)
   assert.ok(coinLooks.length > 0, 'there are coin looks to buy')

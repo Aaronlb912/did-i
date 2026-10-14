@@ -35,7 +35,7 @@ export function didYouLink(code) {
 
 // The code from the page link or the didi://d/CODE link its Open button uses.
 export function readDidYouLink(text) {
-  const hit = /^(?:https:\/\/(?:www\.)?did-i\.app\/d\/|didi(?:-dev)?:\/\/d\/)([a-z0-9]{12}|[a-z0-9]{10})\/?$/i.exec(String(text || '').trim())
+  const hit = /^(?:https:\/\/(?:www\.)?did-i\.app\/d\/|didi(?:-dev)?:\/\/d\/)([a-z0-9]{12}|[a-z0-9]{10})\/?$/i.exec(String(text || '').trim().split(/[?#]/)[0])
   return hit ? hit[1].toLowerCase() : ''
 }
 

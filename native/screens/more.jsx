@@ -1018,6 +1018,11 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   function saveName() {
     const title = titleDraft.trim()
     if (!title || title === book?.title) return
+    // Same name as another folder: saving would merge the two.
+    if ((boards || []).some((item) => item.id !== book?.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+      confirmMiss(t('boards.addSame'))
+      return
+    }
     setTitleDraft(title)
     onChange({ ...book, title })
     confirmDone(t('settings.saved'))
@@ -1470,7 +1475,11 @@ export function FirstNightScreen({ book, onChange, now }) {
     playClick()
   }
 
+  // A second tap on Done before the page leaves would add the picks again.
+  const finished = useRef(false)
   function finish() {
+    if (finished.current) return
+    finished.current = true
     const own =
       question && !picks.some((item) => item.question === question)
         ? { question, short: shortFromQuestion(question, 24) }

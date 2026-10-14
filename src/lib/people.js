@@ -1146,6 +1146,8 @@ export async function joinFamily(code) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
     return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
   }
+  // A wrong code comes back as null, so the miss still counts toward the limit.
+  if (!data) return { miss: 'nofamily' }
   return { miss: '', id: data }
 }
 

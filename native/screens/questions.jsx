@@ -106,7 +106,14 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
   const colors = useHallColors(book)
-  const clock = useMemo(() => new Date(), [])
+  // Fresh when the app comes back, so a page left open overnight shows today.
+  const [clock, setClock] = useState(() => new Date())
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setClock(new Date())
+    })
+    return () => sub.remove()
+  }, [])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
 }
@@ -1634,7 +1641,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       return
     }
     Keyboard.dismiss()
-    const target = bookForTag(boards, book, hang.tagTitle)
+    // A blank folder name on an edit keeps the question where it is.
+    const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)

@@ -5095,8 +5095,13 @@ button.di-refer-rung {
   font-weight: 700;
 }
 
-.di-hang-cal-day:hover:not(.is-pad) {
+.di-hang-cal-day:hover:not(.is-pad):not(:disabled) {
   background: var(--di-panel-2);
+}
+
+.di-hang-cal-day:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .di-hang-cal-foot {

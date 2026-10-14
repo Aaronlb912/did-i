@@ -210,7 +210,7 @@ async function schedulePingsNow(books, now = new Date()) {
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
           notes.push({
-            identifier: String(notifyId(row.lamp.id, row.periodKey)),
+            identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
             content: {
               title: 'Did I',
               body: row.lamp.question,
