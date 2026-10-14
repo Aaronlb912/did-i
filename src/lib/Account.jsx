@@ -292,6 +292,7 @@ function SignedIn({ book, email, onChange }) {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      if (!rows) return missNote()
       setDevices(rows)
       setDevicesIn(true)
     })
@@ -377,8 +378,11 @@ function SignedIn({ book, email, onChange }) {
                 row.device_key === here
                   ? undefined
                   : async () => {
-                      await forgetDevice(row.device_key)
-                      setDevices(await listDevices())
+                      const out = await forgetDevice(row.device_key).catch(() => ({ miss: true }))
+                      if (out?.miss) return missNote()
+                      const rows = await listDevices()
+                      if (rows) setDevices(rows)
+                      else missNote()
                     }
               }
             />

@@ -2344,6 +2344,7 @@ export const en = {
   'gift.nobody':
     'You can send gifts to your friends and family. This person is not one of them.',
   'gift.cap': 'That is enough gifts for today. Try again tomorrow.',
+  'gift.retry': 'Try again',
   'gift.notFriend': 'You can only send gifts to friends and family.',
   'gift.needCoins': 'You need more coins for this one.',
   'gift.gone': 'This one is not in the shop right now.',

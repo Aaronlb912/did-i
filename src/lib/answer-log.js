@@ -125,7 +125,7 @@ export function applyAnswers(shelf, rows) {
   for (const row of rows) {
     if (dead.has(row.lamp_id)) continue
     const book =
-      boards.find((item) => item.id === row.board_id) || homeOf.get(row.lamp_id) || boards[0]
+      homeOf.get(row.lamp_id) || boards.find((item) => item.id === row.board_id) || boards[0]
     if (!book) continue
     const at = book.answers.findIndex(
       (item) => item.lampId === row.lamp_id && item.periodKey === row.period_key,
@@ -155,20 +155,25 @@ export async function pullAnswers(shelf) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }
   const since = read(SEEN)
-  let query = db
-    .from('answer_log')
-    // '*' so this read works before and after note_at is added (answers.sql).
-    .select('*')
-    .order('updated_at', { ascending: true })
-    .limit(5000)
-  // Greater-or-equal on purpose. A batch written in one statement shares
-  // a timestamp, and skipping past it would drop the rest of the batch.
-  // Re-reading the boundary costs a few rows; applying one twice is free.
-  if (since) query = query.gte('updated_at', since)
-
-  const { data, error } = await query
-  if (error) return { shelf, changed: 0, miss: error.message }
-  const next = applyAnswers(shelf, data || [])
+  const PAGE = 5000
+  const data = []
+  for (let from = 0; ; from += PAGE) {
+    let query = db
+      .from('answer_log')
+      // '*' so this read works before and after note_at is added (answers.sql).
+      .select('*')
+      .order('updated_at', { ascending: true })
+      .range(from, from + PAGE - 1)
+    // Greater-or-equal on purpose. A batch written in one statement shares
+    // a timestamp, and skipping past it would drop the rest of the batch.
+    // Re-reading the boundary costs a few rows; applying one twice is free.
+    if (since) query = query.gte('updated_at', since)
+    const { data: page, error } = await query
+    if (error) return { shelf, changed: 0, miss: error.message }
+    data.push(...(page || []))
+    if (!page || page.length < PAGE) break
+  }
+  const next = applyAnswers(shelf, data)
   if (data?.length) write(SEEN, data[data.length - 1].updated_at)
   return { ...next, miss: '' }
 }

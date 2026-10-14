@@ -109,7 +109,7 @@ export function Family({ book, onChange, now, familyId }) {
         listFriends().catch(() => null),
       ])
       // Friends' asks are on the Friends list; here only the rest of the family.
-      if (askRows) {
+      if (askRows && !friendRows?.miss) {
         const friendIds = new Set((friendRows?.friends || []).map((one) => one.person.user_id))
         for (const id of friendIds) askRows.delete(id)
         setCheckOns(askRows)

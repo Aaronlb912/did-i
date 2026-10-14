@@ -61,16 +61,19 @@ public class WatchTapService extends WearableListenerService {
         String id;
         String answer;
         String night;
+        long at;
         try {
             JSONObject tap = new JSONObject(raw);
             id = tap.optString("id").trim();
             answer = tap.optString("answer").trim();
             night = tap.optString("night").trim();
+            // When it was tapped on the watch; a late delivery keeps that time.
+            at = tap.optLong("at", 0L);
         } catch (Exception error) {
             return;
         }
         if (!"did".equals(answer) && !"nope".equals(answer)) return;
-        if (!WidgetTapStore.commit(context, id, answer, night)) return;
+        if (!WidgetTapStore.commit(context, id, answer, night, at)) return;
         try {
             WidgetCardStore.advance(context, id, answer, night);
         } catch (Exception ignored) {

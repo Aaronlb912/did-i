@@ -1259,9 +1259,17 @@ test('a question deleted on one phone stays deleted when an older phone syncs', 
   const merged = mergeShelves(one, back, '2026-09-30T11:00', '2026-09-30T12:00')
   assert.deepEqual(merged.boards[0].lamps.map((item) => item.id).sort(), ['x', 'y'])
   // Moving a question to another tag only takes it off the first one.
-  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [] }] }
-  const both = mergeShelves(moved, older, '2026-09-30', '2026-09-29')
-  assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+  const moved = { currentId: 'b1', boards: [takeDown(older.boards[0], lamp('y')), { id: 'b2', title: 'Other', lamps: [lamp('y')], answers: [{ lampId: 'y', periodKey: '2026-09-30', status: 'yes', answeredAt: '2026-09-30T10:00:00Z' }] }] }
+  for (const both of [mergeShelves(moved, older, '2026-09-30', '2026-09-29'), mergeShelves(older, moved, '2026-09-29', '2026-09-30')]) {
+    assert.deepEqual(both.boards.map((book) => book.lamps.map((item) => item.id)), [['x'], ['y']])
+    // Its answers go with it, including the ones the older phone kept in b1.
+    assert.deepEqual(both.boards[1].answers.map((item) => item.periodKey).sort(), ['2026-09-29', '2026-09-30'])
+    assert.equal(both.boards[0].answers.length, 0)
+  }
+  // A row pulled from the server with the old board_id lands in the new home.
+  const pulledRow = [{ lamp_id: 'y', period_key: '2026-10-01', board_id: 'b1', status: 'yes', answered_at: '2026-10-01T10:00:00Z' }]
+  const applied = applyAnswers(normalizeShelf(moved), pulledRow).shelf
+  assert.ok(applied.boards[1].answers.some((item) => item.periodKey === '2026-10-01'))
 })
 
 test('a question deleted while the launch sync is out stays deleted', () => {
@@ -4342,12 +4350,12 @@ function widgetDraws(p) {
 test('the widget lead mirror matches both widget files', () => {
   const ios = readFileSync(path.join(checkRoot, 'widgets/DidITonightWidget.tsx'), 'utf8')
   const android = readFileSync(path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx'), 'utf8')
-  const pick = "item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip'))"
+  const pick = "item.lampId === id && (!night || String(item.periodKey || '') === night) && (item.status === 'open' || (!hasOpen && item.status === 'skip'))"
   for (const src of [ios, android]) {
     assert.ok(src.replace(/\s+/g, ' ').includes(pick), 'leadItem still prefers leadLampId the same way')
     assert.ok(/items\.find\(\(item\) => item\.status === 'open'\)\s*\|\|\s*items\.find\(\(item\) => item\.status === 'skip'\)/.test(src), 'leadItem falls back open then nope')
   }
-  assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId)'))
+  assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId, props?.leadNight)'))
   assert.ok(ios.includes("String(props?.question || '').trim() || lead?.label || footer"))
   assert.ok(ios.includes('{lead ? questionText : footer}'), 'iOS draws a question only with a lead')
   assert.ok(ios.includes('const buttons = lead ?'))
@@ -6479,6 +6487,50 @@ await testAsync('an ios widget tap on the last night card answers last night, no
   fresh()
   assert.equal(recordWidgetAnswer('door', 'did', new Date(2026, 9, 3, 10, 0), fri), null)
   assert.equal(answers().length, 0)
+})
+
+await testAsync('widget lead follows its night when one question shows twice', async () => {
+  const { advanceTonightCard, buildTonightWidgetProps, peekNextTonightCard, tonightWidgetKey } = await import('../src/lib/widget-tonight.js')
+  const fri = '2026-10-02'
+  const sat = '2026-10-03'
+  const sat3am = new Date(2026, 9, 3, 3, 0)
+  const shelf = writeShelf({
+    currentId: 'grace-lead',
+    boards: [{
+      id: 'grace-lead',
+      title: 'Home',
+      lamps: [{ id: 'door', question: 'Door?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+      answers: [],
+    }],
+  })
+  const props = buildTonightWidgetProps(shelf, sat3am)
+  assert.equal(props.leadNight, fri)
+  const peeked = peekNextTonightCard(props)
+  assert.equal(peeked.leadLampId, 'door')
+  assert.equal(peeked.leadNight, sat, 'Next moves to the tonight copy')
+  const tapped = advanceTonightCard(peeked, 'door', 'did', sat)
+  assert.ok(tapped, 'the tap lands on the card Next showed')
+  assert.equal(tapped.items.find((i) => i.periodKey === sat).status, 'yes')
+  assert.equal(tapped.items.find((i) => i.periodKey === fri).status, 'open')
+  // Old props without leadNight still pick by lampId.
+  const { leadNight, ...old } = props
+  assert.ok(advanceTonightCard(old, 'door', 'did', fri))
+  // A rename from another device redraws.
+  const renamed = { ...props, items: props.items.map((i) => ({ ...i, question: 'Front door?' })) }
+  assert.notEqual(tonightWidgetKey(renamed), tonightWidgetKey(props))
+})
+
+await testAsync('an ios widget tap on a Did we card is saved as a Did we answer', async () => {
+  const { recordWidgetAnswer } = await import('../src/lib/widget-tonight.js')
+  const { weNightStatus } = await import('../src/lib/we-nights.js')
+  const now = new Date(2026, 9, 3, 21, 0)
+  assert.ok(recordWidgetAnswer('we:card-1', 'did', now, '2026-10-03'))
+  assert.equal(weNightStatus('2026-10-03', 'card-1'), 'did')
+})
+
+await testAsync('a late watch tap keeps the time it was tapped', async () => {
+  const src = readFileSync(path.join(checkRoot, 'android/app/src/main/java/com/aaronbryant/didi/watch/WatchTapService.java'), 'utf8')
+  assert.ok(src.includes("WidgetTapStore.commit(context, id, answer, night, at)"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

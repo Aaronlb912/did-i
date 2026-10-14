@@ -39,7 +39,9 @@ export function Sent({ book, now }) {
       return
     }
     const [sent, made] = await Promise.all([listSent(), myDidYouLinks().catch(() => [])])
-    setRows(sent)
+    // A failed read keeps the rows we had and says so.
+    if (sent.miss) setMiss('people.reach')
+    else setRows(sent)
     setLinks(made)
     setReady(true)
   }, [account.user])

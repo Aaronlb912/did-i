@@ -354,6 +354,8 @@ export function AppShell() {
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <SignInScreen
           onDone={() => {
+            // A scanned code waiting on sign in stays where it is.
+            if (readRoute().path === '/people/connect') return
             const shelf = readShelf()
             const empty = shelf.boards.every(
               (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,

@@ -1,4 +1,5 @@
 import { clockWords } from '../../src/lib/hall-pages.js'
+import { confirmMiss } from '../lib/confirm.js'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
@@ -476,7 +477,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           chevron
           onPress={() => {
             const url = feedbackMailto()
-            if (url) Linking.openURL(url)
+            // No mail app (or no address): say so instead of a dead tap.
+            if (!url) return confirmMiss(t('confirm.miss'))
+            return Linking.openURL(url).catch(() => confirmMiss(t('confirm.miss')))
           }}
         />
         <SetRow

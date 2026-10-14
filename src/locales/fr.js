@@ -2361,6 +2361,7 @@ export const fr = {
   'gift.nobody':
     'Vous pouvez offrir des cadeaux à vos amis et à votre famille. Cette personne n’en fait pas partie.',
   'gift.cap': 'Assez de cadeaux pour aujourd’hui. Réessayez demain.',
+  'gift.retry': 'Réessayer',
   'gift.notFriend': 'Les cadeaux ne vont qu’aux amis et à la famille.',
   'gift.needCoins': 'Il vous faut plus de pièces pour celui-ci.',
   'gift.gone': 'Celui-ci n’est pas en boutique en ce moment.',

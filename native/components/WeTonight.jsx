@@ -311,7 +311,8 @@ export function useWeAnswer(reload, book) {
   // `night` answers a later night early; tonight when left out.
   async function answer(card, status, night) {
     const mine = weMine(card)
-    const next = mine?.status === status ? null : status
+    // mine is tonight's answer; another night's tap only sets, never clears.
+    const next = night ? status : mine?.status === status ? null : status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
     if (out?.miss) {

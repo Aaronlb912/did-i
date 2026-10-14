@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
+import { clearNotices, markNoticesSeen } from './notices.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
@@ -136,6 +137,10 @@ export function signedOutSync() {
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
   clearWeNights()
+  // Recent notices and your photo belong to the account that left.
+  clearNotices()
+  markNoticesSeen(0)
+  noteAvatar('')
   const shelf = clearLocalShelf()
   keepProfileName('')
   writeLastUser('')
@@ -360,10 +365,12 @@ async function pullAndMergeOnce() {
     // A delete or a tap made on this phone while the pull was out would be
     // written over by the older shelf the pull started from. When the phone
     // saved since, fold its newest copy in first (its gone list included).
+    // `next` was built from the copy saved at seenAt, so that is its stamp
+    // in the compare; `at` (upload time) would let it beat newer local edits.
     let seenAt = readSavedAt()
     const land = (next, at) => {
       const nowAt = readSavedAt()
-      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, at) : next
+      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, seenAt) : next
       const out = writeShelf(base, at)
       seenAt = readSavedAt()
       return out
@@ -578,7 +585,9 @@ export async function listDevices() {
   const named = await pick('device_key, label, platform, last_seen_at, model, name')
   if (!named.error) return named.data || []
   // Older database: no model or name yet.
-  const { data } = await pick('device_key, label, platform, last_seen_at')
+  const { data, error } = await pick('device_key, label, platform, last_seen_at')
+  // null, not [], so a screen can tell a failed load from no phones.
+  if (error) return null
   return data || []
 }
 
@@ -602,7 +611,8 @@ export async function forgetOtherDevices() {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').delete().eq('user_id', user.id).neq('device_key', deviceKey())
+  const { error } = await db.from('devices').delete().eq('user_id', user.id).neq('device_key', deviceKey())
+  if (error) return { miss: error.message }
 }
 
 export async function forgetDevice(key) {
@@ -610,7 +620,8 @@ export async function forgetDevice(key) {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
+  const { error } = await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
+  if (error) return { miss: error.message }
 }
 
 // Your display name from the last profile load, so Account and Friends show
@@ -667,7 +678,7 @@ export async function saveProfile(patch) {
 export async function exportAll() {
   const shelf = readShelf()
   const profile = await loadProfile()
-  const devices = await listDevices()
+  const devices = (await listDevices()) || []
   const social = await exportSocial().catch(() => ({}))
   return {
     kind: 'did-i-account',

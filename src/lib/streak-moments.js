@@ -65,11 +65,16 @@ export function markStreakSeen(kind, dateIso) {
 
 export function queueStreakMoment(detail, dateIso) {
   if (!detail?.kind || streakSeen(detail.kind, dateIso)) return
+  let stored = false
   try {
     sessionStorage.setItem(PENDING, JSON.stringify({ ...detail, dateIso }))
+    stored = true
   } catch {
-    fireStreakMoment(detail)
+    // No storage: the event below is the only way it shows.
   }
+  // A host already on screen (a miss found on resume) shows it now; it stays
+  // pending until closed (marked seen). A queued hit waits for the next open.
+  if (detail.kind !== 'hit' || !stored) fireStreakMoment({ ...detail, dateIso })
 }
 
 export function takePendingStreakMoment() {

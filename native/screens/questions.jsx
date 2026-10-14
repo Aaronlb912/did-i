@@ -2188,8 +2188,11 @@ function ShareAnswersSwitch({ lamp, lampBook, change, colors }) {
           const { miss } = await setSendShare(lamp.sendId, on)
           setBusy(false)
           if (miss) return confirmMiss(t(miss))
-          const { shareOff: _off, ...rest } = lamp
-          change(hangInto(lampBook, on ? rest : { ...rest, shareOff: true }, true))
+          // Built from the shelf as it is now, not as it was at the tap.
+          const liveBook = findBookHoldingLamp(readShelf().boards, lamp.id) || lampBook
+          const liveLamp = (liveBook.lamps || []).find((row) => row.id === lamp.id) || lamp
+          const { shareOff: _off, ...rest } = liveLamp
+          change(hangInto(liveBook, on ? rest : { ...rest, shareOff: true }, true))
           confirmDone(t(on ? 'lamp.shareOnDone' : 'lamp.shareOffDone', { name }))
         }}
       />

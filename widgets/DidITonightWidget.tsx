@@ -60,6 +60,9 @@ export type DidITonightWidgetProps = {
   // The showing question's "Last time" line (every so often only), or ''.
   sinceLine?: string
   leadLampId?: string
+  // The lead's night, so a question shown twice (last night and tonight)
+  // points at one card. Older props have none and match on lampId alone.
+  leadNight?: string
   items: TonightItem[]
   left: number
   footer: string
@@ -96,13 +99,16 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     line: '#2b3140',
   }
 
-  function leadItem(items: TonightItem[], leadLampId?: string) {
+  function leadItem(items: TonightItem[], leadLampId?: string, leadNight?: string) {
     const hasOpen = items.some((item) => item.status === 'open')
     const id = String(leadLampId || '').trim()
+    const night = String(leadNight || '').trim()
     if (id) {
       const hit = items.find(
         (item) =>
-          item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+          item.lampId === id &&
+          (!night || String(item.periodKey || '') === night) &&
+          (item.status === 'open' || (!hasOpen && item.status === 'skip')),
       )
       if (hit) return hit
     }
@@ -145,7 +151,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const fill = containerRelativeFrame({ axes: 'both', alignment: 'topLeading' })
   const grow = frame({ maxWidth: 10000, maxHeight: 10000 })
 
-  const lead = leadItem(items, props?.leadLampId)
+  const lead = leadItem(items, props?.leadLampId, props?.leadNight)
   const questionText = String(props?.question || '').trim() || lead?.label || footer
   const didLabel = String(props?.didLabel || 'Did')
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
@@ -662,6 +668,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       ...props,
       items: nextItems,
       leadLampId: nextLead ? nextLead.lampId : '',
+      leadNight: nextLead ? String(nextLead.periodKey || '') : '',
       question: nextQuestion,
       tagTitle: String(nextLead?.tag || '').trim() || tagTitle,
       sinceLine: String(nextLead?.since || ''),
@@ -687,6 +694,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     return {
       ...props,
       leadLampId: next.lampId,
+      leadNight: String(next.periodKey || ''),
       question: String(next.question || next.label || ''),
       tagTitle: String(next.tag || '').trim() || tagTitle,
       sinceLine: String(next.since || ''),

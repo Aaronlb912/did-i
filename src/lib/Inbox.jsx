@@ -29,7 +29,10 @@ export function Inbox({ book, now, onKeep }) {
     }
     // Family did yous and allowed friends go onto tonight first.
     await refreshPeople()
-    setRows(await listInbox())
+    const inbox = await listInbox()
+    // A failed read keeps the rows we had and says so.
+    if (inbox.miss) setMiss('people.reach')
+    else setRows(inbox)
     setReady(true)
   }, [account.user])
 
