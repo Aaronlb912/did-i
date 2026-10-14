@@ -21,7 +21,7 @@ begin
 
   -- 1. Gem purchases credit once.
   insert into public.gem_purchases (user_id, pack_id, gems, cents, store, store_ref)
-  values (a, 'p', 10, 99, 'test', 'r1-' || a), (a, 'p', 5, 99, 'test', 'r2-' || a);
+  values (a, 'pack', 10, 99, 'test', 'r1-' || a), (a, 'pack', 5, 99, 'test', 'r2-' || a);
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   select gems into n from public.claim_gem_purchases();

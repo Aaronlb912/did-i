@@ -105,7 +105,7 @@ begin
   execute 'reset role';
 
   -- 4. Did we: Did, undo, Did sends one push.
-  insert into public.we_cards (made_by, question, starts_on) values (a, 'Did we test?', night - 1)
+  insert into public.we_cards (made_by, question, starts_on, mode) values (a, 'Did we test?', night - 1, 'any')
   returning id into card;
   insert into public.we_members (card_id, user_id, state) values (card, a, 'in');
   delete from public.push_queue where to_id in (a, b);
