@@ -23,7 +23,7 @@ function layout({ preheader, title, body, footer }) {
 <h1 class="ink" style="margin:0 0 12px;font:800 24px/1.2 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${INK}">${title}</h1>
 ${body}
 </td></tr>
-<tr><td class="soft" style="padding:18px 8px 0;font:400 13px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${SOFT}">${footer}<br><br>Did I · one question at a time, every night · <a href="https://did-i.app" style="color:${SOFT}">did-i.app</a></td></tr>
+<tr><td class="soft" style="padding:18px 8px 0;font:400 13px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${SOFT}">${footer}<br><br>Did I · for people who forget to open habit trackers · <a href="https://did-i.app" style="color:${SOFT}">did-i.app</a></td></tr>
 </table></td></tr></table></body></html>`
 }
 
@@ -56,7 +56,7 @@ export const TEMPLATES = {
   },
   invite: {
     subject: "You're invited to Did I",
-    html: layout({ preheader: 'One question at a time, every night.', title: "You're invited to Did I", body: p('Did I asks you one question at a time each night. Tap Did or Nope, keep your streak, and see how your week went.') + button('{{ .ConfirmationURL }}', 'Accept invite'), footer: "If you weren't expecting this, you can ignore it." }),
+    html: layout({ preheader: 'For people who forget to open habit trackers.', title: "You're invited to Did I", body: p('Did I brings the question to you, one at a time, at the time you set. Swipe Did or Not yet, keep your streak, and see how your week went.') + button('{{ .ConfirmationURL }}', 'Accept invite'), footer: "If you weren't expecting this, you can ignore it." }),
   },
   email_changed_notification: {
     subject: 'Your Did I email was changed',

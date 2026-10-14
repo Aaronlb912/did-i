@@ -4,22 +4,48 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useTheme } from '../../src/lib/prefs.js'
 import { svgParts } from '../lib/svg-parts.js'
-import { SKY_FPS, SKY_RUN_MS, STARS, moonAt, moonPath, moonPhase, starAt } from '../lib/night-sky.js'
+import { SKY_FPS, SKY_RUN_MS, STARS, isDaytime, moonAt, moonPath, moonPhase, starAt, sunAt } from '../lib/night-sky.js'
 
 const MOON_R = 20
+const SUN_R = 20
+
+/**
+ * The phone's local time, read again once a minute while the screen is open
+ * and on return to the app. Held still under Reduce Motion.
+ */
+export function useSkyClock() {
+  const reduce = useReduceMotion()
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    if (reduce) return undefined
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') setNow(new Date())
+    }, 60000)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setNow(new Date())
+    })
+    return () => {
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [reduce])
+  return now
+}
 
 /**
  * A quiet night behind the done card: a few stars drift and twinkle while
  * tonight's moon phase crosses slowly, stepping a handful of times a second.
  * It holds still after SKY_RUN_MS. Off with Less motion and the phone's Reduce Motion.
+ * By day (DAY_START_HOUR to DAY_END_HOUR, local) a sun sits on its arc instead.
  */
-export function NightSky({ colors }) {
+export function NightSky({ colors, now }) {
   const reduce = useReduceMotion()
+  const day = isDaytime(now)
   const [box, setBox] = useState({ width: 0, height: 0 })
   const tick = useSharedValue(0)
 
   useEffect(() => {
-    if (reduce) return undefined
+    if (reduce || day) return undefined
     const timer = setInterval(() => {
       if (AppState.currentState === 'active') tick.value += 1
     }, 1000 / SKY_FPS)
@@ -28,9 +54,9 @@ export function NightSky({ colors }) {
       clearInterval(timer)
       clearTimeout(stop)
     }
-  }, [reduce, tick])
+  }, [reduce, day, tick])
 
-  if (reduce) return null
+  if (reduce && !day) return null
   return (
     <View
       pointerEvents="none"
@@ -42,7 +68,9 @@ export function NightSky({ colors }) {
         setBox({ width, height })
       }}
     >
-      {box.width > 0 ? (
+      {box.width > 0 && day ? (
+        <Sun now={now} width={box.width} height={box.height} colors={colors} />
+      ) : box.width > 0 ? (
         <>
           {STARS.map((star, index) => (
             <Star key={index} star={star} index={index} tick={tick} box={box} color={colors.on} />
@@ -93,6 +121,32 @@ function Moon({ tick, width, height, colors }) {
         <Path d={path} fill={lit} opacity={light ? 1 : 0.7} />
       </Svg>
     </Animated.View>
+  )
+}
+
+function Sun({ now, width, height, colors }) {
+  const parts = svgParts()
+  if (!parts) return null
+  const { Svg, Circle, Line } = parts
+  const glow = SUN_R * 3
+  const at = sunAt(now, width, height, SUN_R * 2)
+  const size = glow * 2
+  const rays = Array.from({ length: 8 }, (_, i) => {
+    const a = (i * Math.PI) / 4
+    return { x1: glow + Math.cos(a) * (SUN_R * 0.62), y1: glow + Math.sin(a) * (SUN_R * 0.62), x2: glow + Math.cos(a) * (SUN_R * 0.88), y2: glow + Math.sin(a) * (SUN_R * 0.88) }
+  })
+  return (
+    <View style={[styles.moon, { transform: [{ translateX: at.x + SUN_R - glow }, { translateY: at.y + SUN_R - glow }] }]}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* A warm haze around the sun, the daytime stand-in for the stars. */}
+        <Circle cx={glow} cy={glow} r={glow} fill={colors.sunGlow} />
+        <Circle cx={glow} cy={glow} r={SUN_R - 0.5} fill={colors.bg} stroke={colors.sun} strokeOpacity={0.45} />
+        <Circle cx={glow} cy={glow} r={SUN_R * 0.42} fill={colors.sun} />
+        {rays.map((ray, i) => (
+          <Line key={i} {...ray} stroke={colors.sun} strokeWidth={2} strokeLinecap="round" />
+        ))}
+      </Svg>
+    </View>
   )
 }
 

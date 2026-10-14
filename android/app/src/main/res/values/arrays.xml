@@ -3,6 +3,7 @@
 <resources>
   <string-array name="answer_did_queries">
     <item>I did $question</item>
+    <item>I did $question today</item>
     <item>I did $question tonight</item>
     <item>mark $question done</item>
     <item>yes to $question</item>

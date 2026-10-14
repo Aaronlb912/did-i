@@ -65,7 +65,7 @@ const DidITogetherWidget = (props: DidITogetherWidgetProps, environment: WidgetE
   }
 
   const people = Array.isArray(props?.people) ? props.people : []
-  const title = String(props?.title || 'Together tonight')
+  const title = String(props?.title || 'Together today')
   const countLine = String(props?.countLine || '')
   const emptyLabel = String(props?.emptyLabel || 'Add friends or family in Did I.')
   const openUri = String(props?.openUri || 'didi://open/friends')
