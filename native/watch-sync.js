@@ -1,6 +1,9 @@
 import { Platform } from 'react-native'
 import { requireOptionalNativeModule } from 'expo'
 import { t } from '../src/lib/i18n.js'
+import { hallColors } from './palette.js'
+import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
+import { shelfStreak } from '../src/lib/hall-feel.js'
 
 // Apple Watch (modules/didi-watch, targets/watch). The iPhone sends the same
 // cards the Tonight widget gets; the watch sends taps back. Android, web and
@@ -13,7 +16,21 @@ function watch() {
 }
 
 // Only what the watch draws. Did we cards open the app, so they stay off it.
-export function watchCardsFromProps(props) {
+// shelf is optional: without it the watch shows no streak.
+export function watchCardsFromProps(props, shelf = null) {
+  // The watch screen is black, so it always takes the look's dark colours.
+  const look = hallColors(props?.colors?.look || 'lime', 'dark')
+  const colors = {
+    accent: look.on,
+    ink: look.ink,
+    soft: look.inkSoft,
+    card: look.panel,
+    card2: look.panel2,
+    line: look.line,
+    bg: '#000000',
+  }
+  const parts = BUDDY_PARTS[String(props?.buddyId || '')] || null
+  const shapes = parts ? props?.buddyShapes : null
   const items = (Array.isArray(props?.items) ? props.items : [])
     .filter((item) => item?.lampId && !String(item.lampId).startsWith('we:'))
     .map((item) => ({
@@ -36,17 +53,26 @@ export function watchCardsFromProps(props) {
     notYetLabel: t('watch.notYet', { n: '{n}' }),
     countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
     openPhoneLabel: t('watch.openPhone'),
+    colors,
+    // Base shapes plus worn accessories, in the widget's part format.
+    buddy: parts ? { parts, behind: shapes?.behind || [], front: shapes?.front || [] } : null,
+    // Gentle mode: no streak numbers, same as the widgets.
+    streak: !props?.gentle && shelf ? shelfStreak(shelf.boards || []) : 0,
+    streakLabel: t('tonight.streakMany', { n: '{n}' }),
+    streakOneLabel: t('tonight.streakOne'),
+    // The look tones the phone's confetti uses (CheerBurst: on, gold, blue, ink).
+    cheer: [look.on, look.onDeep, look.late, look.ink].filter(Boolean),
     updatedAt: Number(props?.updatedAt) || Date.now(),
   }
 }
 
 let lastSent = ''
 
-export function sendWatchCards(props) {
+export function sendWatchCards(props, shelf = null) {
   const mod = watch()
   if (!mod?.sendCards) return
   try {
-    const cards = watchCardsFromProps(props)
+    const cards = watchCardsFromProps(props, shelf)
     const key = JSON.stringify({ ...cards, updatedAt: 0 })
     if (key === lastSent) return
     lastSent = key

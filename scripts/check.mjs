@@ -6306,7 +6306,7 @@ test('the watch app target exists and CI builds it without signing', () => {
   assert.ok(read('.github/scripts/ios-apply-manual-signing.rb').includes(comp.bundleIdentifier))
   assert.ok(read('.github/scripts/ios-signing.sh').includes('IOS_WATCH_WIDGET_PROVISIONING_PROFILE'))
   // Watch sync: iOS only, and the cards ride the Tonight widget push.
-  assert.ok(read('native/widget-sync.js').includes('sendWatchCards(props)'))
+  assert.ok(read('native/widget-sync.js').includes('sendWatchCards(props, shelf)'))
   assert.ok(read('native/watch-sync.js').includes("Platform.OS !== 'ios'"))
   // Watch words come from the phone in its language; the watch fills the numbers.
   for (const key of ['watch.allDone', 'watch.notYet', 'watch.count', 'watch.openPhone']) {
@@ -6314,6 +6314,26 @@ test('the watch app target exists and CI builds it without signing', () => {
   }
   assert.ok(read('targets/watch/DidIWatchApp.swift').includes('notYetLabel'))
   assert.ok(read('targets/watch-widget/DidIWatchWidget.swift').includes('countLabel'))
+})
+
+await testAsync('the watch buddy table matches the widget BUDDY table', async () => {
+  const src = readFileSync(path.join(checkRoot, 'widgets/DidITonightWidget.tsx'), 'utf8')
+  const m = src.match(/const BUDDY: Record<string, \(string \| number\)\[\]\[\]> = (\{[\s\S]*?\r?\n {2}\})\r?\n/)
+  assert.ok(m, 'found the BUDDY table in the widget')
+  const fromWidget = new Function(`return ${m[1]}`)()
+  const { BUDDY_PARTS } = await import(pathToFileURL(path.join(checkRoot, 'src/lib/buddy-parts.js')).href)
+  assert.deepEqual(BUDDY_PARTS, fromWidget, 'src/lib/buddy-parts.js is a copy of the widget table')
+})
+
+test('watch cards carry look colours, buddy, streak and cheer', () => {
+  const src = readFileSync(path.join(checkRoot, 'native/watch-sync.js'), 'utf8')
+  for (const key of ['colors,', 'buddy:', 'streak:', 'streakLabel:', 'cheer:', "'tonight.streakMany'"]) {
+    assert.ok(src.includes(key), `${key} is sent to the watch`)
+  }
+  const swift = readFileSync(path.join(checkRoot, 'targets/watch/DidIWatchApp.swift'), 'utf8')
+  for (const key of ['var colors: WatchColors?', 'var buddy: WatchBuddy?', 'var streak: Int?', 'var cheer: [String]?']) {
+    assert.ok(swift.includes(key), `watch decodes ${key} as optional`)
+  }
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

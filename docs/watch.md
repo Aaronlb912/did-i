@@ -27,13 +27,27 @@ saves the answer, the same way a widget tap is saved.
 - Sync: `modules/didi-watch` (iOS only Expo module) activates `WCSession`.
   `native/widget-sync.js` sends the Tonight widget props through
   `native/watch-sync.js` (`updateApplicationContext`). A watch tap comes
-  back with `transferUserInfo`; `native/NativeApp.jsx` saves it with
+  back with `sendMessage` when the phone is in reach (this wakes the iPhone
+  app, so it saves at once), else `transferUserInfo`, which only arrives when
+  the iPhone app next runs. `native/NativeApp.jsx` saves it with
   `applyWidgetTapOnce` (same as a widget tap) and sends the cards again.
   Did we cards stay off the watch.
 - Watch strings: every word on the watch and the complication comes from the
   phone in its language (`widget.tonight.*` and `watch.*` keys, sent with the
   cards; the watch fills `{n}`, `{a}`, `{b}`). Before the first cards arrive
   the watch shows English fallbacks (`String(localized:)`).
+- Look, buddy, streak: with the cards the phone also sends `colors` (the
+  look's dark colours: accent, ink, soft, card, card2, line, bg), `buddy`
+  (`parts` from `src/lib/buddy-parts.js` plus worn `behind`/`front` from
+  `wornShapes`, the widget part format), `streak` (`shelfStreak`, 0 in gentle
+  mode), `streakLabel`/`streakOneLabel` and `cheer` (look tones for the burst).
+  All optional: cards from an older phone build draw in the lime palette with
+  no buddy. `buddy-parts.js` is a copy of the widget's `BUDDY` table;
+  `npm test` checks they match.
+- Screens: a ring just inside the screen edge fills as questions are
+  answered; buddy, folder and "a of b", the question, then Not yet and Did.
+  Done: buddy over a moon with the streak. The answer that finishes the
+  night plays a success haptic and a short burst (no burst with Reduce Motion).
 
 ## CI
 

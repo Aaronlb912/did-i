@@ -100,7 +100,7 @@ export async function syncTonightWidget(shelf) {
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
     // Same cards to the Apple Watch, when one is paired (native/watch-sync.js).
-    sendWatchCards(props)
+    sendWatchCards(props, shelf)
     try {
       const api = await tonightWidgetApi()
       if (!api) return
