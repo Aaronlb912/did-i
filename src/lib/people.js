@@ -863,12 +863,20 @@ async function claimDidITonight(db, user) {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   const waiting = (await appSendsWaiting(db, user, 'tonight')).filter((row) => row.night >= isoDate(yesterday))
-  const added = []
-  for (const row of waiting) {
-    const { error } = await db.from('app_send_answers').insert({ app_send_id: row.id, user_id: user.id, state: 'added' })
-    if (!error) added.push({ question: row.question, night: row.night, fromDidI: true, person: DID_I_PERSON })
-  }
-  return added
+  if (!waiting.length) return []
+  // One write; a row another phone already wrote is skipped and not returned.
+  const { data, error } = await db
+    .from('app_send_answers')
+    .upsert(waiting.map((row) => ({ app_send_id: row.id, user_id: user.id, state: 'added' })), {
+      onConflict: 'app_send_id,user_id',
+      ignoreDuplicates: true,
+    })
+    .select('app_send_id')
+  if (error) return []
+  const won = new Set((data || []).map((row) => row.app_send_id))
+  return waiting
+    .filter((row) => won.has(row.id))
+    .map((row) => ({ question: row.question, night: row.night, fromDidI: true, person: DID_I_PERSON }))
 }
 
 export async function friendAskCount() {
@@ -1200,6 +1208,8 @@ export async function readFamily(familyId) {
     db.from('family_members').select('user_id, role, joined_at').eq('family_id', familyId),
     db.from('family_tags').select('id, title, look').eq('family_id', familyId).order('made_at'),
   ])
+  // A failed read is not a gone family: the screen keeps what it had.
+  if (famRow.error || memberRows.error || tagRows.error) return { miss: 'people.reach' }
   if (!famRow.data) return null
   const who = await peopleByIds(db)
   const members = (memberRows.data || [])

@@ -57,7 +57,7 @@ export function applyCoinCatalogToShelf(shelf, payload) {
 export function applyCoinCatalogToBook(book, cat, opts = {}) {
   const purse = normalizePurse(book)
   const catalog = cat && typeof cat === 'object' ? cat : normalizeCoinCatalog(cat)
-  const coins = catalog.coins || purse.coins
+  const coins = Number.isFinite(catalog.coins) ? catalog.coins : purse.coins
   const gemLooks = purse.looks.filter((id) => id === 'lime' || isGemLook(id))
   const looks = [...new Set(['lime', ...gemLooks, ...catalog.looks])]
   const cheerStages = { ...purse.cheerStages }

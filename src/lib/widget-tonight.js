@@ -509,24 +509,29 @@ export function applyWidgetTapsOnce(taps, clock = new Date()) {
   return { shelf, failed }
 }
 
-export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
+// `night` comes from the tapped card (did:<lampId>|<periodKey>). Old targets
+// carry none; then the stored open item for that lamp picks the night, so a
+// "Last night" card answers last night, not tonight.
+export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '') {
   const status = kind === 'did' || kind === 'yes' ? 'yes' : kind === 'nope' || kind === 'skip' ? 'skip' : ''
   if (!status || !lampId) return null
   const shelf = readShelf()
   const book = findBookHoldingLamp(shelf.boards, lampId)
   if (!book) return null
-  const stored = readWidgetTonightProps()
-  const storedLead = stored?.items?.find(
-    (item) => item.lampId === lampId && item.status === 'open',
-  )
+  let key = String(night || '').trim()
+  if (!key) {
+    const stored = readWidgetTonightProps()
+    const storedLead = stored?.items?.find((item) => item.lampId === lampId && item.status === 'open')
+    key = String(storedLead?.periodKey || '')
+  }
   const rows = dueTonight(book, clock)
   const row =
-    rows.find(
-      (r) =>
-        r.lamp.id === lampId &&
-        (!storedLead?.periodKey || r.periodKey === storedLead.periodKey),
-    ) || rows.find((r) => r.lamp.id === lampId)
+    rows.find((r) => r.lamp.id === lampId && (!key || r.periodKey === key)) ||
+    (key ? rowForStoredNight(book, lampId, key, clock) : null) ||
+    rows.find((r) => r.lamp.id === lampId)
   if (!row) return null
+  // A card left over from a night that has closed must not write to it.
+  if (!rows.includes(row) && periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) return null
   const finalStatus = status === 'yes' ? didStatusForRow(row) : status
   const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
@@ -534,7 +539,9 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date()) {
   const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
   const props = buildTonightWidgetProps(nextShelf, clock)
   const items = props.items.map((item) =>
-    item.lampId === lampId ? { ...item, status } : item,
+    item.lampId === lampId && String(item.periodKey || '') === String(row.periodKey || '')
+      ? { ...item, status }
+      : item,
   )
   writeWidgetTonightProps({ ...props, items })
   publishShelf(nextShelf)
