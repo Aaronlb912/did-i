@@ -63,3 +63,26 @@ export function moonPath(phase, r) {
   const rx = Math.abs(k) * r
   return `M ${r} 0 A ${r} ${r} 0 0 ${sweep} ${r} ${2 * r} A ${rx} ${r} 0 0 ${inner} ${r} 0 Z`
 }
+
+// Daytime on the phone's own clock: the sun shows from 6:00 until 18:00.
+export const DAY_START_HOUR = 6
+export const DAY_END_HOUR = 18
+
+/** True while the sun is up by local time. */
+export function isDaytime(date = new Date()) {
+  const hour = date.getHours()
+  return hour >= DAY_START_HOUR && hour < DAY_END_HOUR
+}
+
+/**
+ * The sun's top-left on its arc across the sky box: low left at 6:00, high
+ * in the middle at noon, low right at 18:00.
+ */
+export function sunAt(date, width, height, size) {
+  const minutes = date.getHours() * 60 + date.getMinutes()
+  const span = (DAY_END_HOUR - DAY_START_HOUR) * 60
+  const f = Math.min(1, Math.max(0, (minutes - DAY_START_HOUR * 60) / span))
+  const low = Math.max(0, height - size - 10)
+  const lift = Math.min(low, height * 0.7)
+  return { x: f * Math.max(0, width - size), y: low - Math.sin(Math.PI * f) * lift }
+}

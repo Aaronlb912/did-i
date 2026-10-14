@@ -42,7 +42,7 @@ export function sendAnswerRows(shelf, now = new Date()) {
         night,
         answer: answer.status === 'skip' ? 'nope' : 'did',
         // A bad time fails the whole call on the server, every sync.
-        ...(answer.answeredAt && !Number.isNaN(Date.parse(answer.answeredAt)) ? { at: answer.answeredAt } : {}),
+        ...(answer.answeredAt && !Number.isNaN(Date.parse(answer.answeredAt)) ? { at: new Date(answer.answeredAt).toISOString() } : {}),
       })
     }
   }

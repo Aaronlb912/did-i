@@ -168,7 +168,7 @@ export function renderDidITogetherAndroidWidget(props, widgetInfo) {
           }}
         >
           <TextWidget
-            text={String(p.title || 'Together tonight').toUpperCase()}
+            text={String(p.title || 'Together today').toUpperCase()}
             style={{ fontSize: 11, fontWeight: '700', color: C.on, textAlign: 'center', width: 'match_parent' }}
             maxLines={1}
           />

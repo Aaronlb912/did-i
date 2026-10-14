@@ -1,6 +1,7 @@
 import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { answerStamp } from './board-ops.js'
+import { stampMs } from './recurrence.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
 // Two phones can both be right. Questions and answers always combine.
@@ -22,7 +23,7 @@ function answerKey(answer) {
 function laterAnswer(a, b) {
   const left = answerStamp(a)
   const right = answerStamp(b)
-  if (left && right) return right > left ? b : a
+  if (left && right) return stampMs(right) > stampMs(left) ? b : a
   return right && !left ? b : a
 }
 

@@ -132,6 +132,24 @@ struct WatchCards: Codable, Equatable {
   var cheer: [String]?
 }
 
+extension WatchCards {
+  // From a past night: the newest card's dateIso is before yesterday on the
+  // watch's calendar. Tonight (boardDate) is always today or, before the day
+  // fold, yesterday, so this never hides tonight's cards.
+  var stale: Bool {
+    guard let newest = items.map({ $0.dateIso }).max(), newest.count == 10 else { return false }
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .current
+    guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else { return false }
+    let f = DateFormatter()
+    f.calendar = calendar
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = .current
+    f.dateFormat = "yyyy-MM-dd"
+    return newest < f.string(from: yesterday)
+  }
+}
+
 // "{n} left" from the phone, with the number put in.
 func fill(_ template: String?, _ vars: [String: Int]) -> String? {
   guard var text = nonEmpty(template) else { return nil }
@@ -209,11 +227,41 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
     return try? JSONDecoder().decode(WatchCards.self, from: data)
   }
 
+  // Recent taps (id, answer, night, at), like CardStore.kt on Wear OS.
+  static let tapsKey = "didi.watch.taps"
+  // How long a tap stays on the watch at most. save() drops it sooner, once
+  // the phone's cards show it answered or no longer carry that card.
+  static let tapHoldMs: Double = 24 * 60 * 60 * 1000
+
+  private func recentTaps(now: Double) -> [[String: Any]] {
+    let all = defaults.array(forKey: CardStore.tapsKey) as? [[String: Any]] ?? []
+    return all.filter { now - (($0["at"] as? Double) ?? 0) < CardStore.tapHoldMs }
+  }
+
+  // Cards from the phone. Taps the phone has not taken yet stay answered.
   private func save(_ json: String) {
-    guard let next = CardStore.decode(json) else { return }
-    defaults.set(json, forKey: CardStore.key)
+    guard var next = CardStore.decode(json) else { return }
+    let taps = recentTaps(now: Date().timeIntervalSince1970 * 1000)
+    var keep: [[String: Any]] = []
+    for tap in taps {
+      guard let id = tap["id"] as? String, let night = tap["night"] as? String,
+            let answer = tap["answer"] as? String else { continue }
+      var stillOpen = false
+      for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && next.items[i].status == "open" {
+        next.items[i].status = answer
+        stillOpen = true
+      }
+      if stillOpen { keep.append(tap) }
+    }
+    defaults.set(keep, forKey: CardStore.tapsKey)
+    if let data = try? JSONEncoder().encode(next), let stored = String(data: data, encoding: .utf8) {
+      defaults.set(stored, forKey: CardStore.key)
+    } else {
+      defaults.set(json, forKey: CardStore.key)
+    }
+    let ready = next
     DispatchQueue.main.async {
-      self.cards = next
+      self.cards = ready
       WidgetCenter.shared.reloadAllTimelines()
     }
   }
@@ -243,14 +291,16 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
     }
     cards = current
     WidgetCenter.shared.reloadAllTimelines()
-    guard WCSession.isSupported() else { return }
+    let now = Date().timeIntervalSince1970 * 1000
     let tap: [String: Any] = [
       "id": card.id,
       "answer": answer,
       "night": card.night,
       "dateIso": card.dateIso,
-      "at": Date().timeIntervalSince1970 * 1000,
+      "at": now,
     ]
+    defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
+    guard WCSession.isSupported() else { return }
     // A message wakes the iPhone app in the background, so the answer lands at
     // once. transferUserInfo only arrives when the phone app next opens, so it
     // is the fallback when the phone is out of reach or the message fails.
@@ -284,6 +334,8 @@ struct ContentView: View {
     if let cards = store.cards {
       if cards.items.isEmpty {
         MessageView(title: "Did I", text: nonEmpty(cards.emptyLabel) ?? String(localized: "Open Did I on your iPhone"))
+      } else if cards.stale {
+        MessageView(title: "Did I", text: nonEmpty(cards.openPhoneLabel) ?? String(localized: "Open Did I on your iPhone"))
       } else if let card = store.openCards.first {
         CardView(card: card)
       } else {
@@ -300,14 +352,14 @@ struct ContentView: View {
           DoneView(
             title: nonEmpty(cards.allDoneLabel) ?? String(localized: "All done"),
             text: streak == 1
-              ? (nonEmpty(cards.streakOneLabel) ?? fill(cards.streakLabel, ["n": 1]) ?? String(localized: "1 night in a row"))
-              : (fill(cards.streakLabel, ["n": streak]) ?? String(localized: "\(streak) nights in a row")),
+              ? (nonEmpty(cards.streakOneLabel) ?? fill(cards.streakLabel, ["n": 1]) ?? String(localized: "1 day in a row"))
+              : (fill(cards.streakLabel, ["n": streak]) ?? String(localized: "\(streak) days in a row")),
             accentText: true
           )
         } else {
           DoneView(
             title: nonEmpty(cards.allDoneLabel) ?? String(localized: "All done"),
-            text: nonEmpty(cards.clearLabel) ?? String(localized: "Nothing left tonight"),
+            text: nonEmpty(cards.clearLabel) ?? String(localized: "Nothing left today"),
             accentText: false
           )
         }

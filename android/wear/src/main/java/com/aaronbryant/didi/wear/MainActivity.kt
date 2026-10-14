@@ -99,6 +99,7 @@ fun WatchApp() {
   Box(Modifier.fillMaxSize().background(cards?.palette?.bg ?: Color.Black)) {
     when {
       cards == null -> MessageView(stringResource(R.string.app_name), openPhone)
+      cards.stale -> MessageView(stringResource(R.string.app_name), openPhone)
       cards.items.isEmpty() -> MessageView(stringResource(R.string.app_name), cards.emptyLabel.orNull() ?: openPhone)
       cards.openCards.isNotEmpty() -> CardView(cards, cards.openCards.first())
       else -> {

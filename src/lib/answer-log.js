@@ -2,6 +2,7 @@ import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
 import { answerStamp } from './board-ops.js'
 import { answeredAtIso, cleanAmount } from './board-json.js'
+import { stampMs } from './recurrence.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -11,6 +12,9 @@ import { answeredAtIso, cleanAmount } from './board-json.js'
 const MARK = 'did-i-answers-sent'
 const SEEN = 'did-i-answers-seen'
 const CHUNK = 500
+// Set once every answer has been resent with a zoned time. Older apps sent
+// local times with no zone, which the server reads as UTC.
+const ZONED = 'did-i-answers-zoned'
 
 function read(key) {
   try {
@@ -33,6 +37,11 @@ export function forgetAnswerMarks() {
   write(SEEN, '')
 }
 
+function zoned(value) {
+  const ms = stampMs(value)
+  return ms ? new Date(ms).toISOString() : value || ''
+}
+
 function rowsOf(shelf) {
   const out = []
   for (const book of shelf?.boards || []) {
@@ -43,9 +52,9 @@ function rowsOf(shelf) {
         l: answer.lampId,
         p: answer.periodKey,
         s: answer.status || 'yes',
-        a: answer.answeredAt || '',
+        a: zoned(answer.answeredAt),
         n: answer.note || '',
-        e: answer.noteAt || '',
+        e: zoned(answer.noteAt),
         // Always sent, null when there is none, so the server can tell a
         // cleared amount from an older app that never sends one.
         m: cleanAmount(answer.amount),
@@ -59,28 +68,40 @@ function rowsOf(shelf) {
 export function answersToSend(shelf, all = false) {
   const mark = all ? '' : read(MARK)
   const rows = rowsOf(shelf)
-  return mark ? rows.filter((row) => rowStamp(row) > mark) : rows
+  const since = stampMs(mark)
+  return since ? rows.filter((row) => stampMs(rowStamp(row)) > since) : rows
 }
 
 // The tap or the note, whichever changed last.
 function rowStamp(row) {
-  return row.e > row.a ? row.e : row.a
+  return stampMs(row.e) > stampMs(row.a) ? row.e : row.a
 }
 
 export async function pushAnswers(shelf, all = false) {
   const db = cloud()
   if (!db) return { sent: 0, miss: '' }
-  const rows = answersToSend(shelf, all)
-  if (!rows.length) return { sent: 0, miss: '' }
+  const fresh = !read(ZONED)
+  const rows = answersToSend(shelf, all || fresh)
+  if (!rows.length) {
+    if (fresh) write(ZONED, '1')
+    return { sent: 0, miss: '' }
+  }
 
   let newest = read(MARK)
+  // A row stamped in the future (another phone with a fast clock) must not
+  // push the mark past answers this phone has yet to make.
+  const now = Date.now()
   for (let at = 0; at < rows.length; at += CHUNK) {
     const slice = rows.slice(at, at + CHUNK)
     const { error } = await db.rpc('put_answers', { rows: slice })
     if (error) return { sent: at, miss: error.message }
-    for (const row of slice) if (rowStamp(row) > newest) newest = rowStamp(row)
+    for (const row of slice) {
+      const ms = Math.min(stampMs(rowStamp(row)), now)
+      if (ms > stampMs(newest)) newest = new Date(ms).toISOString()
+    }
   }
   write(MARK, newest)
+  if (fresh) write(ZONED, '1')
   return { sent: rows.length, miss: '' }
 }
 
@@ -111,7 +132,7 @@ export function applyAnswers(shelf, rows) {
     )
     const mine = at >= 0 ? book.answers[at] : null
     const theirs = { answeredAt: row.answered_at || '', noteAt: row.note_at || '' }
-    if (mine && answerStamp(mine) >= answerStamp(theirs)) continue
+    if (mine && stampMs(answerStamp(mine)) >= stampMs(answerStamp(theirs))) continue
     const next = {
       id: mine?.id || `ans-${row.lamp_id}-${row.period_key}`,
       lampId: row.lamp_id,
@@ -163,12 +184,27 @@ export async function takeBackAnswer(book, lampId, periodKey) {
   const before = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const row = before ? rowsOf({ boards: [{ ...book, answers: [before] }] }) : []
   const once = async () => {
+    // Stamps may be old zoneless strings or UTC ISO, so the server can't
+    // compare them as text. Read, compare in JS, then delete by key. A tap
+    // landing between the read and the delete would be lost; rare enough.
+    const { data, error: readError } = await db
+      .from('answer_log')
+      .select('answered_at, note_at')
+      .eq('lamp_id', lampId)
+      .eq('period_key', periodKey)
+      .maybeSingle()
+    if (readError) throw new Error(readError.message)
+    if (!data) {
+      if (row.length) await db.rpc('put_answers', { rows: row })
+      return
+    }
+    const at = Math.max(stampMs(data.answered_at) || 0, stampMs(data.note_at) || 0)
+    if (at > stampMs(now)) return
     const { error } = await db
       .from('answer_log')
       .delete()
       .eq('lamp_id', lampId)
       .eq('period_key', periodKey)
-      .lte('answered_at', now)
     if (error) throw new Error(error.message)
     if (row.length) await db.rpc('put_answers', { rows: row })
   }

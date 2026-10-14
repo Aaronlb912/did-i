@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: 'Did I',
         short_name: 'Did I',
-        description: 'Remember it. Then remember doing it.',
+        description: 'For people who forget to open habit trackers.',
         theme_color: '#0e1014',
         background_color: '#0e1014',
         display: 'standalone',

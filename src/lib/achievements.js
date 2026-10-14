@@ -10,6 +10,7 @@ import {
   countedTonightRows,
   dueTonight,
   parseIsoDate,
+  stampDay,
 } from './recurrence.js'
 
 // The first fourteen, each with its own words (mark.<id>.name / line / how).
@@ -252,7 +253,7 @@ export function shelfStats(boards, now = new Date()) {
     const perLamp = new Map()
     const onceDone = new Set()
     for (const answer of book.answers || []) {
-      if (String(answer.answeredAt || '').slice(0, 10) !== today) olderAnswers += 1
+      if (stampDay(answer.answeredAt) !== today) olderAnswers += 1
       if (answer.status === 'skip') s.nopes += 1
       if (answer.status === 'late') s.lates += 1
       if (!isDid(answer)) continue

@@ -1,3 +1,5 @@
+import { stampDay } from './recurrence.js'
+
 // Every answer as CSV, one row per tap, for a spreadsheet.
 const WORDS = { yes: 'did', late: 'late', skip: 'nope' }
 
@@ -15,7 +17,7 @@ export function answersCsv(shelf) {
     for (const answer of book.answers || []) {
       const lamp = lamps.get(answer.lampId)
       rows.push([
-        String(answer.periodKey || String(answer.answeredAt || '').slice(0, 10)),
+        String(answer.periodKey || stampDay(answer.answeredAt)),
         lamp?.question || '',
         lamp?.short || '',
         WORDS[answer.status] || String(answer.status || ''),

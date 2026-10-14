@@ -4,7 +4,7 @@
 // shows as done today. Kept apart from people.js so the widget task does
 // not load the network code.
 import { t } from './i18n.js'
-import { isoDate } from './recurrence.js'
+import { boardDate } from './recurrence.js'
 
 const KEY = 'did-i-together-widget'
 export const TOGETHER_WIDGET_NAME = 'DidITogether'
@@ -52,7 +52,7 @@ function say(key, english, vars) {
   return english.replace(/\{(\w+)\}/g, (_, name) => (vars?.[name] == null ? '' : String(vars[name])))
 }
 
-export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso = isoDate(new Date())) {
+export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso = boardDate(new Date())) {
   const rows = (people || []).map((p) => ({
     id: String(p.id || ''),
     name: String(p.name || ''),
@@ -66,7 +66,7 @@ export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso 
   const done = rows.filter((r) => r.done).length
   return {
     people: rows,
-    title: say('together.widgetTitle', 'Together tonight'),
+    title: say('together.widgetTitle', 'Together today'),
     // Same words as the Friends page when nobody is done yet.
     countLine: !rows.length
       ? ''

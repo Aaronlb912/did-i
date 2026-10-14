@@ -165,19 +165,27 @@ export async function restoreGemPurchases() {
   if (!linked) return { gems: 0, miss: 'setup' }
   const api = iapApi(mod)
   let gems = 0
+  let failed = 0
   try {
     const open = (await api.getAvailablePurchases?.()) || []
     for (const purchase of open) {
       const id = String(purchase?.productId || purchase?.id || '')
       if (!GEM_PACKS.some((row) => row.storeId === id)) continue
-      const out = await creditPurchase(purchase)
-      gems += out.gems || 0
+      // One bad purchase must not stop the rest from being credited.
+      try {
+        const out = await creditPurchase(purchase)
+        gems += out.gems || 0
+      } catch {
+        // The next restore or connect tries it again.
+        failed += 1
+      }
     }
   } catch (error) {
     return { gems, miss: 'store', code: String(error?.code || error?.message || '').slice(0, 120) }
   }
   const claimed = await claimAndCredit()
   if (claimed.miss && !gems) return { gems: 0, miss: claimed.miss }
+  if (failed && !gems && !claimed.gems) return { gems: 0, miss: 'store' }
   return { gems: gems + claimed.gems, miss: '' }
 }
 
@@ -189,7 +197,12 @@ async function retryUnfinished(api) {
     const open = await api.getAvailablePurchases()
     for (const purchase of open || []) {
       const id = String(purchase?.productId || purchase?.id || '')
-      if (GEM_PACKS.some((row) => row.storeId === id)) await creditPurchase(purchase)
+      if (!GEM_PACKS.some((row) => row.storeId === id)) continue
+      try {
+        await creditPurchase(purchase)
+      } catch {
+        // Keep going; this one is tried again next connect.
+      }
     }
   } catch {
     // Next connect tries again.
@@ -314,7 +327,9 @@ export async function buyGemPack(packId) {
     } catch (error) {
       // Play answered the buy's own lookup with nothing though the same pack
       // loaded at start. A stale billing connection does that; reconnect once.
-      if (Platform.OS !== 'android' || error?.code === api.ErrorCode?.UserCancelled) throw error
+      // Anything else (a decline, a pending card) is not retried.
+      const empty = error?.isEmptyProductList || /failed to query product/i.test(String(error?.message || ''))
+      if (Platform.OS !== 'android' || !empty || error?.code === api.ErrorCode?.UserCancelled) throw error
       try {
         await api.endConnection?.()
       } catch {

@@ -18,7 +18,7 @@ Attached: a recording on an iPhone running the latest iOS. It starts at launch a
 - Account deletion: Account > Delete my account > Delete it.
 
 **2. Purpose and audience**
-Did I is a nightly check-in for the small things people forget they did, such as "Did I take my meds?", "Did I text them back?" or "Did I drink enough water?". It asks one question at a time and you swipe to answer. It is for adults and teens who second-guess themselves, especially people with ADHD. The value is knowing for sure that you did something, without a long to-do list.
+Did I is for people who forget to open habit trackers. It brings the question to you, on a widget, a watch or a reminder at the time you set, for the small things people forget they did, such as "Did I take my meds?", "Did I text them back?" or "Did I drink enough water?". It asks one question at a time and you swipe to answer. It is for adults and teens who second-guess themselves. The value is knowing for sure that you did something, without a long to-do list.
 
 **3. How to use it**
 - Sign in: the app opens on a welcome screen. Tap "Reviewer sign-in" at the bottom. An email and password form opens. The email and password are in the Notes field. You can also use the app without an account.

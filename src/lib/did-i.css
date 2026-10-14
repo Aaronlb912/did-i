@@ -32,6 +32,8 @@
   --di-we-deep: #7d63d6;
   --di-we-soft: rgba(182, 156, 255, 0.12);
   --di-veil: rgba(8, 10, 14, 0.55);
+  --di-sun: #ffc857;
+  --di-sun-glow: rgba(255, 176, 87, 0.16);
   --di-person-1: #ff9f6b;
   --di-person-2: #6fd0c4;
   --di-person-3: #f27fb5;
@@ -1140,6 +1142,8 @@ html[data-theme='light'] .di-hall,
   --di-we-deep: #4f3799;
   --di-we-soft: rgba(107, 79, 200, 0.08);
   --di-veil: rgba(26, 29, 22, 0.4);
+  --di-sun: #e89a1c;
+  --di-sun-glow: rgba(255, 186, 74, 0.22);
   --di-person-1: #b8572a;
   --di-person-2: #1f7f74;
   --di-person-3: #a83a72;

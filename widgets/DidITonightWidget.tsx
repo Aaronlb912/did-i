@@ -120,7 +120,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   }
 
   const items = Array.isArray(props?.items) ? props.items.filter((item) => item && typeof item === 'object') : []
-  const tagTitle = String(props?.tagTitle || 'Tonight')
+  const tagTitle = String(props?.tagTitle || 'Today')
   const footer = String(props?.footer || 'No questions yet')
   const left = Number(props?.left) || 0
   const openUri = String(props?.openUri || 'didi://tonight')
@@ -650,7 +650,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const nextLead = leadItem(nextItems, '')
     const nextLeft = stackLeft(nextItems)
     const nextQuestion = nextLead ? String(nextLead.question || nextLead.label || '') : ''
-    const clearLine = String(props?.clearLabel || props?.footer || 'All clear for tonight')
+    const clearLine = String(props?.clearLabel || props?.footer || 'All clear for today')
     const emptyLine = String(props?.emptyLabel || 'No questions yet')
     const nextFooter = nextLead ? footer : nextLeft === 0 ? (nextItems.length ? clearLine : emptyLine) : footer
     return {

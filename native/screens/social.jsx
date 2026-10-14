@@ -2023,7 +2023,7 @@ export function FriendScreen({ book, onChange, route }) {
   if (gone) {
     return (
       <ScreenShell title={shownName} colors={colors}>
-        <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody')}>
+        <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody', { name })}>
           <DidButton colors={colors} small label={t('people.seeAll')} onPress={() => goHash('/friends')} />
         </EmptyCard>
       </ScreenShell>

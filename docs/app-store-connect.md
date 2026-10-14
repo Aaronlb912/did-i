@@ -24,7 +24,7 @@ First IAP ships with the **1.0** app version submission. IAP review screenshot c
 
 | Field | Value |
 |-------|--------|
-| Subtitle | One question at a time. |
+| Subtitle | Habits that come to you |
 | Promotional text | From `web.landing.lead` in `src/locales/en.js` (147 chars). |
 | Support URL | `https://did-i.app/download` |
 | Privacy URL | `https://did-i.app/privacy` |
@@ -40,10 +40,10 @@ Paste when 1.2 (Did we) ships. Same text for both stores. Keep it plain; no
 em dashes. Do not paste before 1.2 is live: it describes Did we.
 
 **Promotional text (App Store, 170 max):**
-Did I take my meds? Did we walk the dog? One question at a time, just for you or shared with the people you live with.
+For people who forget to open habit trackers. Did I brings the question to you: a widget, your watch, or a reminder at the time you set. Swipe Did or Not yet.
 
 **Short description (Google Play, 80 max):**
-One question at a time. Swipe did or not yet. Share with friends and family.
+For people who forget to open habit trackers. One question, one swipe.
 
 **Keywords (App Store, 100 max):**
 habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,together,widget,gifts
@@ -52,27 +52,31 @@ habits,chores,reminders,streak,checklist,pills,door,family,friends,shared,togeth
 
 Did I take my meds? Did I text them back? Did I drink enough water?
 
-Did I asks you one question at a time, at night, on your phone. Swipe right if you did. Swipe left if you didn't. That's the whole answer for tonight.
+For people who forget to open habit trackers.
 
-TONIGHT
-- One question at a time, not a whole to-do list.
-- Home shows what's still open. Everything else waits for another night.
-- Streaks stay honest: a nope is a nope.
+Did I brings the question to you. It shows on your home screen widget, on your watch, or as a reminder at the time you set. You never have to remember to open an app. Swipe right for Did. Swipe left for Not yet.
+
+Ask at any time of day, or check them all at the end of the day.
+
+ONE QUESTION AT A TIME
+- One question, not a whole to-do list.
+- Widgets on iPhone and Android, and a watch app.
+- Home shows what's still open today.
+- Streaks stay honest: Not yet means not yet.
 
 YOUR QUESTIONS
-- Every night, some nights, once, by a date, or every few days.
-- A reminder at the time you pick.
-- Folders and topics keep a long list tidy.
-- Home screen widgets on iPhone and Android.
+- Every day, some days, once, by a date, or every few days.
+- A reminder at the time you pick, morning, noon or night.
+- Folders keep a long list tidy.
 
 FRIENDS AND FAMILY
-- Did you: ask a friend "Did you call Grandma back?", once or every night. It waits in their inbox until they keep it.
+- Did you: ask a friend "Did you call Grandma back?", once or every day. It waits in their inbox until they keep it.
 - Did we: answer a question together. "Did we walk the dog?" Pick friends or family, pick when it counts (everyone, anyone, most, or take turns), and keep a shared streak.
-- Share a family: one tag everyone can add to.
+- Share a family: one folder everyone can add to.
 - Cheer each other on when someone finishes.
 
 MAKE IT YOURS
-- Earn coins every night and from shared streaks. Get gems each week.
+- Earn coins every day and from shared streaks. Get gems each week.
 - Looks, cheers and buddies in the shop.
 - Send a look, cheer or buddy to a friend or family member as a gift, with a short note.
 
@@ -123,27 +127,27 @@ Local-only use (no account) does not send data to you; the label still covers si
 
 ## Search and screenshots (written 2026-10-07)
 
-Tagline: "Remember it. Then remember doing it." (changed 2026-10-08: it covers both jobs, the nudge to do it and the check that you did). Positioning: a habit tracker you answer one question at a time. Lead with the
+Tagline: "For people who forget to open habit trackers." (changed 2026-10-14). Positioning: Did I brings the question to you (widget, watch, a reminder at the time you set), one question at a time, swipe Did or Not yet. Questions come at any time of day, or all at the end of the day. Never say "one question a night". Never mention ADHD or autism. Lead with the
 "did I?" feeling, not with habits. Category: Productivity primary, Lifestyle
 secondary (Play: Productivity). Apple indexes the name, subtitle and keywords
-together, so no word below repeats another field.
+together, so no word below repeats another field. `adhd` sits in keywords only, which users never see.
 
 | Field | Value | Length |
 |-------|-------|--------|
-| Subtitle (30) | Habit tracker & daily check-in | 30 |
-| Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,meds,vitamins,adhd,forgetful,family | 100 |
-| Play short description (80) | Remember it. Then remember doing it. One question a night, one swipe. | 69 |
-| Promotional text (170) | Remember it. Then remember doing it. Did I take my meds? Text them back? Swipe once a night and your home screen remembers. | 123 |
+| Subtitle (30) | Habits that come to you | 23 |
+| Keywords (100) | pills,medication,reminder,routine,checklist,streak,widget,chores,forgetful,family,watch,adhd | 92 |
+| Play short description (80) | For people who forget to open habit trackers. One question, one swipe. | 70 |
+| Promotional text (170) | For people who forget to open habit trackers. Did I brings the question to you: a widget, your watch, or a reminder at the time you set. Swipe Did or Not yet. | 158 |
 
 Screenshot captions, in order. Big line on top, small line under it, then the screen.
 
 | # | Big line | Small line | Screen |
 |---|----------|------------|--------|
-| 1 | Remember it. Then remember doing it. | One question at a time, every night. | Home with a question card |
+| 1 | For people who forget to open habit trackers. | The question comes to you. | Home with a question card |
 | 2 | Swipe right for Did. | Left for Not yet. That's the whole app. | The card mid-swipe with the Did bar |
-| 3 | Your home screen remembers. | Widgets show what's done tonight. | Home screen with the widgets |
+| 3 | No app to remember. | Widgets and your watch ask for you. | Home screen with the widgets |
 | 4 | Meds, water, texting back. | Ask yourself anything. | Questions list |
-| 5 | Streaks that stay honest. | Every night on one calendar. | Streak and calendar |
+| 5 | Streaks that stay honest. | Every day on one calendar. | Streak and calendar |
 | 6 | Did we feed the dog? | Share questions with the people you live with. | Did we or family |
 | 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing Galaxy or Neon Heart |
 

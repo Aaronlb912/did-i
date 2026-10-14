@@ -1,6 +1,7 @@
 package com.aaronbryant.didi.wear
 
 import androidx.compose.ui.graphics.Color
+import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -54,6 +55,14 @@ data class WatchCards(
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
   val answered: Int get() = items.count { it.status != "open" }
   val palette: Palette get() = Palette(colors)
+  // From a past night: the newest card's dateIso is before yesterday on the
+  // watch's calendar. Tonight (boardDate) is always today or, before the day
+  // fold, yesterday, so this never hides tonight's cards.
+  val stale: Boolean get() {
+    val newest = items.maxOfOrNull { it.dateIso } ?: return false
+    if (newest.length != 10) return false
+    return newest < LocalDate.now().minusDays(1).toString()
+  }
 
   companion object {
     fun parse(raw: String?): WatchCards? {

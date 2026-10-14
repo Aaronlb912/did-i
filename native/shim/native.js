@@ -33,6 +33,8 @@ export async function bootNative() {
     .catch(() => {})
   AppState.addEventListener('change', (next) => {
     setAppForeground(next === 'active')
+    // The app may be killed in the background before the 500ms debounce fires.
+    if (next !== 'active') flushNativePings()
   })
 }
 
@@ -135,8 +137,37 @@ const PING_DAYS = 7
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
 
+// Calls bunch up (a tap and armLampPings land together). The last call in
+// a 500ms window wins, and runs only after the one before it finishes, so a
+// cancel-all never lands in the middle of another run's schedule.
+let pingChain = Promise.resolve()
+let pingTimer = null
+let pingNext = null
+export function scheduleNativePings(books, now) {
+  return new Promise((resolve, reject) => {
+    const waiters = pingNext ? pingNext.waiters : []
+    waiters.push({ resolve, reject })
+    pingNext = { books, now, waiters }
+    clearTimeout(pingTimer)
+    pingTimer = setTimeout(flushNativePings, 500)
+  })
+}
+
+function flushNativePings() {
+  clearTimeout(pingTimer)
+  const job = pingNext
+  if (!job) return
+  pingNext = null
+  pingChain = pingChain
+    .then(() => schedulePingsNow(job.books, job.now || new Date()))
+    .then(
+      () => job.waiters.forEach((w) => w.resolve()),
+      (error) => job.waiters.forEach((w) => w.reject(error)),
+    )
+}
+
 // Takes one board or every board on the shelf; each tag's questions ping.
-export async function scheduleNativePings(books, now = new Date()) {
+async function schedulePingsNow(books, now = new Date()) {
   const list = (Array.isArray(books) ? books : [books]).filter(Boolean)
   if (!list.length) return
   try {
