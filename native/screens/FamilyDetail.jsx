@@ -18,6 +18,7 @@ import {
   listFamilyLamps,
   personName,
   readFamily,
+  refreshPeople,
   buyCheers,
   cheerFamily,
   doneTonight,
@@ -186,6 +187,15 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
   if (!ready) {
     return <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
+  }
+
+  if (!fam && miss) {
+    return (
+      <>
+        <Text style={{ color: colors.miss }}>{tMiss(miss)}</Text>
+        <DidButton colors={colors} label={t('gift.retry')} onPress={() => { setMiss(''); load() }} />
+      </>
+    )
   }
 
   if (!fam) {
@@ -550,6 +560,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
               if (why) return setMiss(why)
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
+              refreshPeople()
               swapHash('/people')
             },
           })

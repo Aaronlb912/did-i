@@ -1853,6 +1853,7 @@ export function GemShopScreen({ book }) {
       return
     }
     if (out.miss === 'signin') {
+      stream.dropBuy()
       setBanner('')
       publishSheet(null)
       goHash('/account')
@@ -2676,8 +2677,9 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     publishSheet(null)
-    const live = readShelf().boards.find((row) => row.id === book.id) || book
-    onChange(stampPurse(live, { ...normalizePurse(live), gems: out.gems, coins: out.coins }))
+    // The gift went; a folder removed meanwhile is not written back.
+    const live = readShelf().boards.find((row) => row.id === book.id)
+    if (live) onChange(stampPurse(live, { ...normalizePurse(live), gems: out.gems, coins: out.coins }))
     setNote('')
     setSent(t('gift.sent', { item: tileName(type, item.id), name }))
   }

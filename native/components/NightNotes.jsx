@@ -25,6 +25,19 @@ function liveBook(book) {
   return (readShelf().boards || []).find((item) => item.id === book?.id) || book
 }
 
+// "Note saved" only when the note landed: the answer may have been undone
+// or removed while the sheet was open, and then nothing was written.
+function saveNote(book, lampId, periodKey, draft, count, onChange) {
+  const next = setAnswerNote(book, lampId, periodKey, draft, undefined, count)
+  const there = (book?.answers || []).some((item) => item.lampId === lampId && item.periodKey === periodKey)
+  if (!there) {
+    confirmMiss()
+    return
+  }
+  if (next !== book) onChange(next)
+  confirmDone(t('note.saved'))
+}
+
 function removeNote(book, lampId, periodKey, note, onChange) {
   const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const amount = typeof was?.amount === 'number' ? was.amount : ''
@@ -205,8 +218,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     share: shareProps(lamp, answer),
     colors,
     onSave: (draft, count) => {
-      onChange(setAnswerNote(live() || book, lampId, periodKey, draft, undefined, count))
-      confirmDone(t('note.saved'))
+      saveNote(live(), lampId, periodKey, draft, count, onChange)
     },
     onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
   })
@@ -232,8 +244,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       share: shareProps(lamp, answer),
       colors,
       onSave: (draft, count) => {
-        onChange(setAnswerNote(liveBook(book), lamp.id, answer.periodKey, draft, undefined, count))
-        confirmDone(t('note.saved'))
+        saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange)
       },
       onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
     })

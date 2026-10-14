@@ -146,7 +146,9 @@ const CORNER_ART = new Set(['frost'])
 export function onLiveBook(out) {
   if (!out?.book) return out
   const live = readShelf().boards.find((item) => item.id === out.book.id)
-  return live ? { ...out, book: { ...live, ...normalizePurse(out.book) } } : out
+  // The folder was removed meanwhile: say so, and write nothing back.
+  if (!live) return { ...out, miss: out.miss || 'confirm.miss' }
+  return { ...out, book: { ...live, ...normalizePurse(out.book) } }
 }
 
 export function leftAfter(purse, item) {
@@ -443,14 +445,16 @@ function allFramesLists(purse, ctx) {
 
 export function ShopFramesScreen({ book, onChange }) {
   const colors = useLookColors(activeLook(book), true)
-  const ctx = useFrameCtx(book)
+  const shelfCtx = useFrameCtx(book)
+  // Wrapped counts gifts you sent; ask the account once per visit.
+  const [giftsSent, setGiftsSent] = useState(shelfCtx.giftsSent)
+  useEffect(() => {
+    refreshGiftsSent().then((n) => { if (typeof n === 'number') setGiftsSent(n) }).catch(() => {})
+  }, [])
+  const ctx = { ...shelfCtx, giftsSent }
   const purse = normalizePurse(book)
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
   const lists = allFramesLists(purse, ctx)
-  // Wrapped counts gifts you sent; ask the account once per visit.
-  useEffect(() => {
-    refreshGiftsSent().catch(() => {})
-  }, [])
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>

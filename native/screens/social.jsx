@@ -1263,7 +1263,7 @@ export function PeopleConnectScreen({ book, route }) {
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
       <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
-      <DidButton colors={colors} label={t('people.makeFamily')} onPress={newFamily} />
+      <DidButton colors={colors} label={t('people.makeFamily')} onPress={() => once('make-family', newFamily)} />
       <JoinFamilyCard colors={colors} bare />
 
       <Miss colors={colors}>{miss}</Miss>
@@ -1961,7 +1961,8 @@ export function FriendScreen({ book, onChange, route }) {
     if (typeof serverCheers === 'number') setStock(serverCheers)
     setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
-    setPerson(who)
+    // A failed or nameless read keeps the name and photo we already show.
+    setPerson((was) => (!who?.miss && personName(who) ? who : was?.user_id ? was : who))
     // A failed read keeps the did yous we had and says so.
     if (both.miss) setLoadMiss(t('people.reach'))
     else {
@@ -2163,6 +2164,7 @@ export function FriendScreen({ book, onChange, route }) {
                   onMiss: setSaid,
                   onDone: (words) => {
                     confirmDone(words)
+                    refreshPeople()
                     swapHash('/friends')
                   },
                 }),
@@ -2187,6 +2189,7 @@ export function FriendScreen({ book, onChange, route }) {
                           const { miss: why } = await blockPerson(otherId, 'photo')
                           if (why) return setSaid(tMiss(why))
                           confirmDone(t('confirm.blocked', { name }))
+                          refreshPeople()
                           return swapHash('/friends')
                         },
                       }),
@@ -2204,6 +2207,7 @@ export function FriendScreen({ book, onChange, route }) {
           onDone={(why) => {
             if (why) return setSaid(tMiss(why))
             confirmDone(t('confirm.blocked', { name }))
+            refreshPeople()
             return swapHash('/friends')
           }}
         />
@@ -2264,11 +2268,12 @@ export function FriendScreen({ book, onChange, route }) {
               <KeyButton
                 colors={colors}
                 label={t('sent.takeBack')}
-                onPress={async () => {
+                onPress={() => once(`take-back:${send.id}`, async () => {
                   const { miss: why } = await takeBack(send.id)
                   setSaid(why ? tMiss(why) : '')
+                  if (!why) confirmDone(t('confirm.takenBack'))
                   load()
-                }}
+                })}
               />
             ) : null}
           </PersonRow>
@@ -2654,13 +2659,13 @@ export function SentScreen({ book, onChange }) {
             <KeyButton
               colors={colors}
               label={t('sent.takeBack')}
-              onPress={async () => {
+              onPress={() => once(`take-back:${row.id}`, async () => {
                 setMiss('')
                 const { miss: why } = await takeBack(row.id)
                 if (why) setMiss(tMiss(why))
                 else confirmDone(t('confirm.takenBack'))
                 load()
-              }}
+              })}
             />
           ) : null}
           </View>

@@ -38,7 +38,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
     } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
       const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status
       state =
-        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : iso === dateIso ? 'open' : gentle ? '' : 'missed'
+        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
     }
     cells.push({ iso, day: d, state })
   }

@@ -2911,7 +2911,7 @@ test('a signed-in did leaves its coins for the server, signed out pays the phone
   assert.match(shelfHook, /takeEarnedCoins\(\)/)
   assert.match(shelfHook, /creditNightCoins\(night, earned\)/)
   // A failed credit keeps the coins for the next save.
-  assert.match(shelfHook, /returnEarnedCoins\(night, earned\)/)
+  assert.match(shelfHook, /returnEarnedCoins\(night, earned, new Date\(\), taken\.gen\)/)
 
   // Signed out (this process has no cloud keys), the phone keeps the coins.
   const book = { id: 'b', lamps: [lamp('a')], answers: [], coins: 0 }
@@ -6044,7 +6044,7 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   assert.match(readSrc('native/components/WeekStrip.jsx'), /night\.miss && !gentle \? colors\.miss/)
   assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
   const month = readSrc('native/components/LampMonth.jsx')
-  assert.match(month, /iso === dateIso \? 'open' : gentle \? '' : 'missed'/)
+  assert.match(month, /nightOpen\(iso\) \? 'open' : gentle \? '' : 'missed'/)
   assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
   const list = readSrc('native/screens/questions.jsx')
   assert.match(list, /earlierStates\(earlier, gentle\)/)
@@ -6531,6 +6531,47 @@ await testAsync('an ios widget tap on a Did we card is saved as a Did we answer'
 await testAsync('a late watch tap keeps the time it was tapped', async () => {
   const src = readFileSync(path.join(checkRoot, 'android/app/src/main/java/com/aaronbryant/didi/watch/WatchTapService.java'), 'utf8')
   assert.ok(src.includes("WidgetTapStore.commit(context, id, answer, night, at)"))
+})
+
+await testAsync('an old widget Not yet does not undo a saved Did we', async () => {
+  const { recordWidgetAnswer } = await import('../src/lib/widget-tonight.js')
+  const { weNightStatus } = await import('../src/lib/we-nights.js')
+  const now = new Date(2026, 9, 3, 21, 30)
+  recordWidgetAnswer('we:card-1', 'nope', now, '2026-10-03')
+  assert.equal(weNightStatus('2026-10-03', 'card-1'), 'did')
+})
+
+await testAsync('coins handed back after sign out are dropped', async () => {
+  const { dropEarnedCoins, returnEarnedCoins, takeEarnedCoins } = await import('../src/lib/purse.js')
+  const clock = new Date(2026, 9, 3, 21, 0)
+  takeEarnedCoins()
+  returnEarnedCoins('2026-10-03', 2, clock)
+  const taken = takeEarnedCoins()
+  assert.deepEqual(Object.entries(taken), [['2026-10-03', 2]])
+  dropEarnedCoins()
+  returnEarnedCoins('2026-10-03', 2, clock, taken.gen)
+  assert.deepEqual(takeEarnedCoins(), {})
+  const fresh = takeEarnedCoins()
+  returnEarnedCoins('2026-10-03', 1, clock, fresh.gen)
+  assert.deepEqual({ ...takeEarnedCoins() }, { '2026-10-03': 1 })
+})
+
+test('a missed due-by question is stamped at its start, so an earlier Did wins', () => {
+  const lamp = { id: 'by1', question: 'Taxes?', cadence: 'once', onceWhen: 'by', dueBy: '2026-10-05', createdOn: '2026-10-01' }
+  const book = { id: 'b', lamps: [lamp], answers: [] }
+  const out = closePastNights(book, new Date(2026, 9, 7, 12, 0))
+  const row = (out.answers || []).find((item) => item.lampId === 'by1')
+  assert.ok(row, 'the missed question gets a Not yet')
+  assert.ok(String(row.answeredAt).startsWith('2026-10-01'), `stamped at the start: ${row.answeredAt}`)
+})
+
+test('pulse, sign out mid sync, and device keys keep their guards', () => {
+  const people = readFileSync(path.join(checkRoot, 'src/lib/people.js'), 'utf8')
+  assert.ok(people.includes('const claimed = adder ? await addAutoSends(db, adder) : []'), 'pulseLook defines claimed')
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(sync.includes("if (run !== syncRun) throw new Error('account.signedOut')"), 'land stops after sign out')
+  assert.ok(sync.includes('if (run !== syncRun) return null'), 'a dropped pull sets no miss')
+  assert.ok(sync.indexOf('takeOldDeviceKey()') < sync.indexOf("from('devices').upsert"), 'old device row goes first')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

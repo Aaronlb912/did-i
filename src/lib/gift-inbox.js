@@ -40,6 +40,12 @@ export function doneGift(id) {
   write(read().filter((item) => item.id !== id))
 }
 
+// Sign out: the gifts belong to the account that left. Listeners drop any
+// gift they were holding.
+export function clearGifts() {
+  write([])
+}
+
 export function onGift(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)

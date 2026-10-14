@@ -26,7 +26,7 @@ object CardStore {
   private const val KEY_CARDS = "cards"
   private const val KEY_TAPS = "taps"
   // How long a tap stays on the watch while the phone has not caught up.
-  private const val TAP_HOLD_MS = 10 * 60 * 1000L
+  private const val TAP_HOLD_MS = 24 * 60 * 60 * 1000L
 
   val cards = mutableStateOf<WatchCards?>(null)
   // Set by the answer that finishes the night; the done screen plays the burst once.
