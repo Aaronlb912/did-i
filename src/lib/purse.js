@@ -579,8 +579,11 @@ export function takeEarnedCoins() {
   return out
 }
 
-export function returnEarnedCoins(night, n) {
+export function returnEarnedCoins(night, n, clock = new Date()) {
   if (!night || !(n > 0)) return
+  // The server takes yesterday or today (payTap); an older night would be refused forever.
+  const today = boardDate(clock)
+  if (night < addDaysIso(today, -1) || night > today) night = today
   earnedForServer[night] = (earnedForServer[night] || 0) + n
 }
 
@@ -597,7 +600,7 @@ export function payTap(before, after, row, status, clock = new Date()) {
       // The server takes yesterday or today; a week or month key maps further back.
       const today = boardDate(clock)
       const night = periodNight(row?.lamp, row?.periodKey)
-      returnEarnedCoins(night && night >= addDaysIso(today, -1) && night <= today ? night : today, earned)
+      returnEarnedCoins(night || today, earned, clock)
     }
     else coins += earned
   }

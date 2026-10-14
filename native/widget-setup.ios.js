@@ -21,7 +21,9 @@ export function installWidgetSetup() {
     const did = /^did:(.+)$/.exec(target)
     const nope = /^nope:(.+)$/.exec(target)
     // Targets are <lampId> or, from newer cards, <lampId>|<periodKey>.
-    const [tapLamp, tapNight = ''] = String((did || nope)?.[1] || '').split('|')
+    const tapTarget = String((did || nope)?.[1] || '')
+    const cut = tapTarget.lastIndexOf('|')
+    const [tapLamp, tapNight] = cut < 0 ? [tapTarget, ''] : [tapTarget.slice(0, cut), tapTarget.slice(cut + 1)]
     if (did) {
       const next = recordWidgetAnswer(tapLamp, 'did', new Date(), tapNight)
       if (next) syncTonightWidget(next)
