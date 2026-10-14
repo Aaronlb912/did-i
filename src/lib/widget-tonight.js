@@ -115,14 +115,19 @@ function widgetStackLeft(items) {
   return list.filter((item) => item.status === 'skip').length
 }
 
-function widgetLeadFromItems(items, leadLampId = '') {
+// leadNight picks between two cards for one question (last night's grace
+// copy and tonight's). Props saved before it existed match on lampId alone.
+function widgetLeadFromItems(items, leadLampId = '', leadNight = '') {
   const list = Array.isArray(items) ? items : []
   const hasOpen = list.some((item) => item.status === 'open')
   const id = String(leadLampId || '').trim()
+  const night = String(leadNight || '').trim()
   if (id) {
     const hit = list.find(
       (item) =>
-        item.lampId === id && (item.status === 'open' || (!hasOpen && item.status === 'skip')),
+        item.lampId === id &&
+        (!night || String(item.periodKey || '') === night) &&
+        (item.status === 'open' || (!hasOpen && item.status === 'skip')),
     )
     if (hit) return hit
   }
@@ -138,8 +143,17 @@ function widgetOpenCount(props) {
 // night, and how each is answered. Two shelves with the same key draw the
 // same card, so a sync that changes nothing tonight skips the redraw.
 export function tonightWidgetKey(props) {
-  const items = (props?.items || []).map((item) => `${item.lampId}|${item.periodKey}|${item.status}`)
-  return [props?.leadLampId || '', props?.left ?? '', props?.footer || '', ...items].join('\n')
+  const items = (props?.items || []).map(
+    (item) => `${item.lampId}|${item.periodKey}|${item.status}|${item.question || item.label || ''}|${item.tag || ''}`,
+  )
+  const look = [
+    props?.question || '',
+    props?.tagTitle || '',
+    props?.buddyId || '',
+    JSON.stringify(props?.buddyWorn || {}),
+    JSON.stringify(props?.colors || {}),
+  ]
+  return [props?.leadLampId || '', props?.leadNight || '', props?.left ?? '', props?.footer || '', ...look, ...items].join('\n')
 }
 
 export function preferStoredTonightProps(built, stored) {
@@ -159,13 +173,18 @@ export function preferStoredTonightProps(built, stored) {
   if (stale || widgetOpenCount(stored) <= widgetOpenCount(built)) {
     // Keep the question the person browsed to with Next while it is still open.
     const kept = String(stored.leadLampId || '').trim()
-    const hit = kept && kept !== built.leadLampId
-      ? browsableItems(built.items).find((item) => item.lampId === kept)
+    const keptNight = String(stored.leadNight || '').trim()
+    const moved = kept && (kept !== built.leadLampId || (keptNight && keptNight !== built.leadNight))
+    const hit = moved
+      ? browsableItems(built.items).find(
+          (item) => item.lampId === kept && (!keptNight || String(item.periodKey || '') === keptNight),
+        )
       : null
     if (!hit) return built
     return {
       ...built,
       leadLampId: hit.lampId,
+      leadNight: String(hit.periodKey || ''),
       question: hit.question || hit.label || built.question,
       tagTitle: hit.tag || built.tagTitle,
       sinceLine: sinceFor(hit),
@@ -175,9 +194,10 @@ export function preferStoredTonightProps(built, stored) {
     ...built,
     items: stored.items,
     leadLampId: stored.leadLampId || built.leadLampId,
+    leadNight: stored.leadLampId ? stored.leadNight || '' : built.leadNight,
     question: stored.question || built.question,
     tagTitle: stored.tagTitle || built.tagTitle,
-    sinceLine: sinceFor(widgetLeadFromItems(stored.items, stored.leadLampId)),
+    sinceLine: sinceFor(widgetLeadFromItems(stored.items, stored.leadLampId, stored.leadNight)),
     left: stored.left ?? built.left,
     footer: stored.footer || built.footer,
     openUri: stored.openUri || built.openUri,
@@ -260,6 +280,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     question,
     sinceLine: lead?.book ? lastTimeLine(lead.book, lead.lamp, lead.dateIso) : '',
     leadLampId: lead?.lamp.id || weItem?.lampId || '',
+    leadNight: String(lead?.periodKey || weItem?.periodKey || ''),
     items,
     left,
     footer,
@@ -288,7 +309,7 @@ export function browsableItems(items) {
 }
 
 function leadCardItem(props) {
-  return widgetLeadFromItems(props?.items, props?.leadLampId)
+  return widgetLeadFromItems(props?.items, props?.leadLampId, props?.leadNight)
 }
 
 // The Android card steps forward from the snapshot it already has.
@@ -322,6 +343,7 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
       ...props,
       items,
       leadLampId: '',
+      leadNight: '',
       question: '',
       sinceLine: '',
       left,
@@ -334,6 +356,7 @@ export function advanceTonightCard(props, lampId, kind, night = '') {
     ...props,
     items,
     leadLampId: nextLead.lampId,
+    leadNight: String(nextLead.periodKey || ''),
     question,
     tagTitle: nextLead.tag || props.tagTitle,
     sinceLine: sinceFor(nextLead),
@@ -359,7 +382,7 @@ export function peekNextTonightCard(props, dir = 1) {
   const next = pool[(from + step + pool.length) % pool.length]
   const question = String(next.question || next.label || '').trim()
   if (!question) return null
-  return { ...props, leadLampId: next.lampId, question, tagTitle: next.tag || props.tagTitle, sinceLine: sinceFor(next) }
+  return { ...props, leadLampId: next.lampId, leadNight: String(next.periodKey || ''), question, tagTitle: next.tag || props.tagTitle, sinceLine: sinceFor(next) }
 }
 
 // Each item answers on whichever tag its own lamp lives on, since the card
@@ -370,6 +393,15 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
   let changed = false
   for (const item of props.items) {
     if (item.status === 'open') continue
+    if (String(item.lampId || '').startsWith(WE_ITEM)) {
+      // A Did we answered on the iOS widget: saved once, not on every merge.
+      const card = item.lampId.slice(WE_ITEM.length)
+      const has = weNightStatus(item.periodKey, card)
+      if (has !== 'did' && has !== (item.status === 'yes' ? 'did' : 'nope')) {
+        applyWeTap(card, item.status, clock, item.periodKey)
+      }
+      continue
+    }
     const book = findBookHoldingLamp(boards, item.lampId)
     if (!book) continue
     const nextBook = applyItemStatus(book, item, item.status, clock)
@@ -517,6 +549,9 @@ export function applyWidgetTapsOnce(taps, clock = new Date()) {
 export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '') {
   const status = kind === 'did' || kind === 'yes' ? 'yes' : kind === 'nope' || kind === 'skip' ? 'skip' : ''
   if (!status || !lampId) return null
+  if (String(lampId).startsWith(WE_ITEM)) {
+    return applyWeTap(String(lampId).slice(WE_ITEM.length), status, clock, night)
+  }
   const shelf = readShelf()
   const book = findBookHoldingLamp(shelf.boards, lampId)
   if (!book) return null

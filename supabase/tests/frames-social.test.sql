@@ -23,6 +23,8 @@ begin
   update public.profiles set gem_balance = 10, coin_balance = 200 where user_id = a;
   -- a and b are friends; c is a stranger to both.
   insert into public.friend_links (from_id, to_id, state) values (a, b, 'ok');
+  -- Bea owns the gem look and frame she wears.
+  update public.profiles set gem_cosmetics = '{"looks":["plum"],"frames":["aurora"],"cheers":[],"buddies":[]}' where user_id = b;
 
   -- Bea writes her look and frame like the phone does on sync.
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);

@@ -2311,6 +2311,7 @@ export const ko = {
   'gift.needAccount': '선물을 보내려면 로그인하세요.',
   'gift.nobody': '선물은 친구와 가족에게 보낼 수 있어요. 이 사람은 해당하지 않아요.',
   'gift.cap': '오늘은 선물이 충분해요. 내일 다시 보내 주세요.',
+  'gift.retry': '다시 시도',
   'gift.notFriend': '선물은 친구와 가족에게만 보낼 수 있어요.',
   'gift.needCoins': '이건 코인이 더 필요해요.',
   'gift.gone': '지금은 상점에 없어요.',

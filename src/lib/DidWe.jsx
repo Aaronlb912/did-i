@@ -594,7 +594,7 @@ function WeNewForm({ book, start = '', withId = '' }) {
     if (draft.cadence === 'weekly' && !draft.weekdays.length) return setMiss(t('we.missDays'))
     setBusy(true)
     const out = await weMake({ ...draft, ask: picked })
-    if (out.miss) {
+    if (out.miss && !out.id) {
       setBusy(false)
       return setMiss(tMiss(out.miss))
     }
@@ -608,6 +608,11 @@ function WeNewForm({ book, start = '', withId = '' }) {
       }
     }
     setBusy(false)
+    // Made, but the time, note or folder did not save: say so, offer the card.
+    if (out.miss) {
+      setMadeId(out.id)
+      return setMiss(tMiss(out.miss))
+    }
     goHash('/we', { id: out.id })
   }
 

@@ -1377,7 +1377,7 @@ export function WeHomeScreen({ book, onChange }) {
 export function WeHomeList({ book, onChange }) {
   const account = useAccount()
   const colors = useHallColors(book)
-  const { cards, loaded, reload } = useWeTonight(account.user)
+  const { cards, loaded, reload, miss: loadMiss } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
 
@@ -1397,8 +1397,7 @@ export function WeHomeList({ book, onChange }) {
   }, [ids])
   const tonight = mine.filter((card) => card.due)
   const later = mine.filter((card) => !card.due)
-  const month = new Date().toISOString().slice(0, 7)
-  const nightsTogether = mine.reduce((sum, card) => sum + weMonth(card, month).done, 0)
+  const nightsTogether = mine.reduce((sum, card) => sum + weMonth(card).done, 0)
   const longest = mine
     .map((card) => ({ card, streak: weStreak(card) }))
     .sort((a, b) => b.streak - a.streak)[0]
@@ -1453,7 +1452,8 @@ export function WeHomeList({ book, onChange }) {
       <WeAsks colors={colors} />
 
       {!loaded ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
-      {loaded && !mine.length ? (
+      {loadMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{t('people.reach')}</Text> : null}
+      {loaded && !loadMiss && !mine.length ? (
         <View style={[styles.weEmpty, { borderColor: colors.we, backgroundColor: colors.panel }]}>
           <MenuIcon name="together" color={colors.we} size={36} stroke />
           <Text style={[styles.weEmptyTitle, { color: colors.ink }]}>{t('we.emptyFriend')}</Text>

@@ -3,6 +3,7 @@
 // your own questions. Only your swipe counts: did is done; nope or no answer
 // leaves the night open, the same as one of your own questions.
 import { cloud, cloudSetUp } from './cloud.js'
+import { readSavedAt } from './saved-at.js'
 import { tagIdsOf } from './tags.js'
 
 const KEY = 'did-i-we-nights'
@@ -65,6 +66,33 @@ export function clearWeNights() {
   setWeNightRows([])
 }
 
+// Rows carry the folder's title (my_we_nights), the filter carries folder
+// ids. Lowercase titles of the picked folders, or null for every folder.
+// Cached on the shelf's saved stamp, which moves on every shelf write.
+let titleCache = { key: '', titles: null }
+function pickedTitles(tagId) {
+  const ids = tagIdsOf(tagId)
+  if (!ids.length) return null
+  const key = `${readSavedAt()}|${ids.join(',')}`
+  if (titleCache.key === key) return titleCache.titles
+  let boards = []
+  try {
+    boards = JSON.parse(globalThis.localStorage?.getItem('did-i-shelf') || 'null')?.boards || []
+  } catch {
+    boards = []
+  }
+  const titles = boards
+    .filter((book) => ids.includes(book?.id))
+    .map((book) => String(book.title || '').trim().toLowerCase())
+    .filter(Boolean)
+  titleCache = { key, titles }
+  return titles
+}
+
+function inPicked(row, titles) {
+  return !titles || (!!row.folder && titles.includes(String(row.folder).trim().toLowerCase()))
+}
+
 function index() {
   if (byNight) return byNight
   byNight = new Map()
@@ -81,8 +109,8 @@ function index() {
 // { due, done, clear } for a night. With a tag picked, only Did wes filed
 // under it count; with none, all of them do.
 export function weNight(nightIso, tagId = '') {
-  const ids = tagIdsOf(tagId)
-  const list = (index().get(nightIso) || []).filter((row) => !ids.length || (row.folder && ids.includes(row.folder)))
+  const titles = pickedTitles(tagId)
+  const list = (index().get(nightIso) || []).filter((row) => inPicked(row, titles))
   const due = list.length
   const done = list.filter((row) => row.status === 'did').length
   return { due, done, clear: due > 0 && done === due }
@@ -119,11 +147,11 @@ export function weOpenOn(nightIso) {
 // Every Did we card due for you on any of these nights, same tag rule as
 // weNight, in first-seen order. For the Seven nights grid's Did we rows.
 export function weCardsOn(nightIsos, tagId = '') {
-  const ids = tagIdsOf(tagId)
+  const titles = pickedTitles(tagId)
   const out = []
   for (const iso of nightIsos || []) {
     for (const row of index().get(iso) || []) {
-      if (ids.length && !(row.folder && ids.includes(row.folder))) continue
+      if (!inPicked(row, titles)) continue
       if (!out.includes(row.card)) out.push(row.card)
     }
   }
@@ -139,9 +167,9 @@ export function weCardState(nightIso, card) {
 
 // Did we card ids not yet did on a night, with the same tag rule as weNight.
 export function weOpenIds(nightIso, tagId = '') {
-  const ids = tagIdsOf(tagId)
+  const titles = pickedTitles(tagId)
   return (index().get(nightIso) || [])
-    .filter((row) => !ids.length || (row.folder && ids.includes(row.folder)))
+    .filter((row) => inPicked(row, titles))
     .filter((row) => row.status !== 'did')
     .map((row) => row.card)
 }

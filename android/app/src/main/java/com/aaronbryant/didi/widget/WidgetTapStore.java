@@ -23,6 +23,14 @@ public final class WidgetTapStore {
     private WidgetTapStore() {}
 
     public static synchronized boolean commit(Context context, String lampId, String kind, String night) {
+        return commit(context, lampId, kind, night, 0L);
+    }
+
+    // at: when the tap happened (ms), for taps that arrive late (a watch
+    // reconnecting). 0 or a future time means now.
+    public static synchronized boolean commit(Context context, String lampId, String kind, String night, long at) {
+        long now = System.currentTimeMillis();
+        long tappedAt = at > 0 && at <= now ? at : now;
         String lamp = clip(lampId);
         String mark = "did".equals(kind) || "nope".equals(kind) ? kind : "";
         if (lamp.isEmpty() || mark.isEmpty()) return false;
@@ -36,7 +44,7 @@ public final class WidgetTapStore {
                     // Did after Not yet wins; anything else keeps the first mark.
                     if (!"did".equals(mark) || !"nope".equals(existing.optString("kind"))) return true;
                     existing.put("kind", mark);
-                    existing.put("at", System.currentTimeMillis());
+                    existing.put("at", tappedAt);
                     return prefs(context).edit().putString(KEY, rows.toString()).commit();
                 }
             }
@@ -47,7 +55,7 @@ public final class WidgetTapStore {
             row.put("kind", mark);
             row.put("night", storedNight);
             // When it was tapped, so JS can drop a tap on a card whose night already turned.
-            row.put("at", System.currentTimeMillis());
+            row.put("at", tappedAt);
             rows.put(row);
             return prefs(context).edit().putString(KEY, rows.toString()).commit();
         } catch (JSONException error) {

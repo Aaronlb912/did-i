@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useReduceMotion } from '../lib/useReduceMotion.js'
 import { t } from '../lib/i18n.js'
+import { PLAY_URL, betaRefFrom } from '../lib/invite-link.js'
 import { MarketingShell } from './MarketingShell.jsx'
 import { PlayIcon } from './StoreButtons.jsx'
 
@@ -35,7 +36,7 @@ function Step({ kicker, title, note, tip, href, label, icon = null }) {
         {icon}
         {label}
       </a>
-      <p className="di-beta-tip">{tip}</p>
+      {tip ? <p className="di-beta-tip">{tip}</p> : null}
     </article>
   )
 }
@@ -43,6 +44,9 @@ function Step({ kicker, title, note, tip, href, label, icon = null }) {
 export function Beta() {
   const still = useReduceMotion()
   const cut = usePhoneWidth() ? 'demo-vertical' : 'demo'
+  // What Play's install referrer carried (an invite, a QR code) rides back
+  // into the app through Play's own install link.
+  const ref = typeof window !== 'undefined' ? betaRefFrom(window.location.search) : ''
   return (
     <MarketingShell path="/beta">
       <div className="di-download">
@@ -70,6 +74,17 @@ export function Beta() {
             label={t('web.beta.step2Button')}
             icon={<PlayIcon />}
           />
+          {ref ? (
+            <Step
+              kicker={t('web.beta.step3Kicker')}
+              title={t('web.beta.step3')}
+              note={t('web.beta.step3Note')}
+              tip=""
+              href={`${PLAY_URL}&referrer=${encodeURIComponent(ref)}`}
+              label={t('web.beta.step3Button')}
+              icon={<PlayIcon />}
+            />
+          ) : null}
         </div>
 
         <p className="di-detail-meta di-beta-fine">{t('web.beta.fine')}</p>

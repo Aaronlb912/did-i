@@ -71,6 +71,8 @@ export function DidYouLinkHost({ colors, onKeep }) {
   }, [userId])
 
   useEffect(() => {
+    // Until the session is read, signed in looks like signed out.
+    if (!account.ready) return undefined
     const code = peekPendingDidYou()
     if (!code) return undefined
     const we = isWeLinkCode(code)
@@ -245,7 +247,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
       alive = false
     }
     // colors only styles the sheet.
-  }, [tick, userId])
+  }, [tick, userId, account.ready])
 
   return null
 }

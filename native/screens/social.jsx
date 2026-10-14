@@ -106,7 +106,7 @@ import {
 import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { FRAME_IDS, frameText } from '../../src/lib/frames.js'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { useNoted } from '../hooks/useNoted.js'
@@ -730,11 +730,12 @@ export function PeopleScreen({ book, onChange }) {
       ])
       setMine(who)
       await syncDisplayName(book.keeperName)
-      setLinks(friendRows)
-      setFamilies(famRows)
+      // A failed list keeps the rows we had and says so.
+      if (!friendRows.miss) setLinks(friendRows)
+      if (!famRows.miss) setFamilies(famRows)
       setWaiting(count)
       setWeWaiting(weCount)
-      setMiss('')
+      setMiss(friendRows.miss || famRows.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }
@@ -1302,11 +1303,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
         readFriendCheers(),
         listAutoAdds(),
       ])
-      setLinks(friendRows)
+      if (!friendRows.miss) setLinks(friendRows)
       setBlocks(blockRows)
       setAutoAdds(autoRows)
       if (typeof serverCheers === 'number') setStock(serverCheers)
-      setMiss('')
+      setMiss(friendRows.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }
@@ -1680,13 +1681,17 @@ function FamilyListScreen({ colors }) {
   const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [], KEEP)
   const [pop, setPop] = useState(false)
   const [ready, setReady] = useKept(`families.ready:${account.user?.id}`, false, KEEP)
+  const [miss, setMiss] = useState('')
 
   const load = useCallback(async () => {
     if (!account.user) {
       setReady(true)
       return
     }
-    setFamilies(await listFamilies())
+    const rows = await listFamilies()
+    // A failed read keeps the families we had and says so.
+    if (!rows.miss) setFamilies(rows)
+    setMiss(rows.miss ? t('people.reach') : '')
     setReady(true)
   }, [account.user])
 
@@ -1709,6 +1714,7 @@ function FamilyListScreen({ colors }) {
   return (
     <ScreenShell title={t('people.families')} colors={colors}>
       <OfflineLine colors={colors} />
+      <Miss colors={colors}>{miss}</Miss>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -1937,6 +1943,7 @@ export function FriendScreen({ book, onChange, route }) {
   const [week, setWeek] = useKept(`friend.week:${account.user?.id}:${otherId}`, [], KEEP)
   // Notes they chose to share in the last few nights.
   const [notes, setNotes] = useState([])
+  const [loadMiss, setLoadMiss] = useState('')
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
@@ -1955,7 +1962,12 @@ export function FriendScreen({ book, onChange, route }) {
     setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
     setPerson(who)
-    setSends(both)
+    // A failed read keeps the did yous we had and says so.
+    if (both.miss) setLoadMiss(t('people.reach'))
+    else {
+      setSends(both)
+      setLoadMiss('')
+    }
     setGone(linked === false)
     setReady(true)
   }, [account.user, otherId])
@@ -2151,7 +2163,7 @@ export function FriendScreen({ book, onChange, route }) {
                   onMiss: setSaid,
                   onDone: (words) => {
                     confirmDone(words)
-                    goHash('/friends')
+                    swapHash('/friends')
                   },
                 }),
             },
@@ -2175,7 +2187,7 @@ export function FriendScreen({ book, onChange, route }) {
                           const { miss: why } = await blockPerson(otherId, 'photo')
                           if (why) return setSaid(tMiss(why))
                           confirmDone(t('confirm.blocked', { name }))
-                          return goHash('/friends')
+                          return swapHash('/friends')
                         },
                       }),
                   },
@@ -2192,12 +2204,13 @@ export function FriendScreen({ book, onChange, route }) {
           onDone={(why) => {
             if (why) return setSaid(tMiss(why))
             confirmDone(t('confirm.blocked', { name }))
-            return goHash('/friends')
+            return swapHash('/friends')
           }}
         />
       ) : null}
 
       {!ready ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
+      <Miss colors={colors}>{loadMiss}</Miss>
       {ready ? (
       <View style={styles.friendTabs}>
         <KitSegment
@@ -2341,7 +2354,10 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     try {
       // Family did yous and allowed friends go onto tonight first.
       await refreshPeople()
-      setRows(await listInbox())
+      const inbox = await listInbox()
+      // A failed read keeps the rows we had.
+      if (inbox.miss) throw new Error(inbox.miss)
+      setRows(inbox)
       setMiss('')
     } catch {
       setMiss(t('people.reach'))
@@ -2541,9 +2557,9 @@ export function SentScreen({ book, onChange }) {
     }
     try {
       const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
-      setRows(sent)
+      if (!sent.miss) setRows(sent)
       setLinks(made)
-      setMiss('')
+      setMiss(sent.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }

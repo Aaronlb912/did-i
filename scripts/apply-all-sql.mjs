@@ -53,6 +53,7 @@ const files = [
   'supabase/app-send-answer-upsert.sql',
   'supabase/server-stamps.sql',
   'supabase/readthrough-5.sql',
+  'supabase/readthrough-6.sql',
   'supabase/drop-tonight.sql',
 ]
 
