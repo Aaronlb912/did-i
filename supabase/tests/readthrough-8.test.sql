@@ -186,7 +186,7 @@ begin
     raise exception 'FAIL: bee not live';
   end if;
 
-  -- 2, 5. delete_me: unopened gifts go back; family questions keep working
+  -- 2, 5. delete_me: unopened gifts are not refunded; family questions keep working
   -- (made_by goes to null through the foreign key).
   insert into public.family_members (family_id, user_id, role) values (fam, b, 'kid') on conflict do nothing;
   update public.profiles set coin_balance = 0 where user_id = c;
@@ -198,7 +198,8 @@ begin
   execute 'reset role';
   if exists (select 1 from auth.users where id = a) then raise exception 'FAIL: account not deleted'; end if;
   select coin_balance into n from public.profiles where user_id = c;
-  if n <> 15 then raise exception 'FAIL: giver got % back on delete, wanted 15', n; end if;
+  -- Deleting an account refunds nobody.
+  if n <> 0 then raise exception 'FAIL: giver got % back on delete, wanted 0', n; end if;
 
   -- A client update still can not change made_by.
   if not exists (select 1 from public.family_lamps where family_id = fam and made_by is null) then

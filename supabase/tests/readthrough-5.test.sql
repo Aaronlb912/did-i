@@ -67,7 +67,9 @@ begin
   select g.id into gift from public.claim_gifts() g where g.item_id = 'tape';
   perform public.return_gift(gift);
   execute 'reset role';
-  if (select gem_balance from public.profiles where user_id = a) <> bal then
+  -- The rain double is refunded at claim (readthrough-8.sql); tape is new, so
+  -- its return pays nothing.
+  if (select gem_balance from public.profiles where user_id = a) <> bal + 2 then
     raise exception 'FAIL: a new item was returned and refunded';
   end if;
   if not (select public.gem_owned_normalize(gem_cosmetics)->'cheers' @> '["tape"]'::jsonb

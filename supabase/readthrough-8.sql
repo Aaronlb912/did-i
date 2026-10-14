@@ -13,6 +13,10 @@ create table if not exists public.check_on_pushed (
   primary key (owner_id, lamp_id, night)
 );
 
+alter table public.check_on_pushed drop constraint if exists check_on_pushed_lamp_len;
+alter table public.check_on_pushed add constraint check_on_pushed_lamp_len
+  check (length(lamp_id) between 1 and 80);
+
 alter table public.check_on_pushed enable row level security;
 -- Only the job writes and reads it. No policies, no grants.
 revoke all on public.check_on_pushed from public, anon, authenticated;
