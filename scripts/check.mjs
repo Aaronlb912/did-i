@@ -6348,6 +6348,39 @@ test('watch cards carry look colours, buddy, streak and cheer', () => {
   }
 })
 
+await testAsync('a kept Did you shares its last week of answers with the sender, unless turned off', async () => {
+  const { keptLamp } = await import(pathToFileURL(path.join(checkRoot, 'src/lib/send-repeat.js')).href)
+  const { normalizeLamp } = await import(pathToFileURL(path.join(checkRoot, 'src/lib/board-json.js')).href)
+  const { sendAnswerRows, sendAnswerLine } = await import(pathToFileURL(path.join(checkRoot, 'src/lib/send-answers.js')).href)
+  const { boardDate, addDaysIso } = await import(pathToFileURL(path.join(checkRoot, 'src/lib/recurrence.js')).href)
+  const sid = '0b9a3f4e-1c2d-4e5f-8a9b-0c1d2e3f4a5b'
+  const lamp = normalizeLamp(keptLamp({ id: sid, question: 'Did you read?', repeat: 'daily', person: { display_name: 'Sam' } }))
+  assert.equal(lamp.sendId, sid, 'an inbox keep remembers its send')
+  assert.equal(normalizeLamp(keptLamp({ question: 'Did you read?' })).sendId, undefined, 'a link keep has no send')
+  assert.equal(normalizeLamp(keptLamp({ id: 'app:x', question: 'Did you read?' })).sendId, undefined, 'a Did I has no send')
+  const tonight = boardDate()
+  const book = {
+    lamps: [lamp, { ...lamp, id: 'mine', sendId: undefined }],
+    answers: [
+      { lampId: lamp.id, periodKey: tonight, status: 'skip' },
+      { lampId: lamp.id, periodKey: addDaysIso(tonight, -1), status: 'yes', answeredAt: '2026-01-01T22:41:00Z' },
+      { lampId: lamp.id, periodKey: addDaysIso(tonight, -30), status: 'yes' },
+      { lampId: 'mine', periodKey: tonight, status: 'yes' },
+    ],
+  }
+  const out = sendAnswerRows({ boards: [book] })
+  assert.deepEqual(out.ids, [sid])
+  assert.deepEqual(out.rows.map((row) => row.answer), ['did', 'nope'], 'only this week, only the kept Did you')
+  const off = sendAnswerRows({ boards: [{ ...book, lamps: [{ ...lamp, shareOff: true }] }] })
+  assert.equal(off.ids.length, 0, 'sharing off sends nothing')
+  assert.match(sendAnswerLine([{ night: tonight, answer: 'nope' }], tonight), /Not yet/)
+  assert.match(sendAnswerLine([{ night: addDaysIso(tonight, -1), answer: 'did' }], tonight), /Did yesterday/)
+  assert.equal(sendAnswerLine([{ night: addDaysIso(tonight, -1), answer: 'nope' }], tonight), '', 'an old Not yet says nothing')
+  const sql = readFileSync(path.join(checkRoot, 'supabase/send-answers.sql'), 'utf8')
+  assert.match(sql, /revoke all on public\.send_answers from anon, authenticated;/)
+  assert.ok(sql.includes('not public.blocked_with(s.to_id)') && sql.includes('not public.blocked_with(s.from_id)'), 'blocking stops both ways')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

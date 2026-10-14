@@ -10,6 +10,8 @@ import { findBookHoldingLamp } from './board-shelf.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
+import { setSendShare } from './send-answers.js'
+import { SetCard, SetSwitch } from './set-bits.jsx'
 
 export function LampPage({ book, boards = [], onChange, now, lampId }) {
   usePrefs()
@@ -19,11 +21,26 @@ export function LampPage({ book, boards = [], onChange, now, lampId }) {
   const dateIso = boardDate(clock, lampBook.dayFoldHour)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const [confirmGone, setConfirmGone] = useState(false)
+  const [shareBusy, setShareBusy] = useState(false)
+  const [shareMiss, setShareMiss] = useState('')
 
   useBackDismiss(confirmGone, () => setConfirmGone(false))
 
   function change(next) {
     onChange(commitBook(next, clock))
+  }
+
+  // The sender sees your answers to a Did you you kept, until you turn it off.
+  async function flipShare() {
+    if (shareBusy || !lamp?.sendId) return
+    const on = Boolean(lamp.shareOff)
+    setShareBusy(true)
+    setShareMiss('')
+    const { miss } = await setSendShare(lamp.sendId, on)
+    setShareBusy(false)
+    if (miss) return setShareMiss(t(miss))
+    const { shareOff: _off, ...rest } = lamp
+    change(hangInto(lampBook, on ? rest : { ...rest, shareOff: true }, true))
   }
 
   if (!lamp) {
@@ -84,6 +101,19 @@ export function LampPage({ book, boards = [], onChange, now, lampId }) {
               {t('lamp.makeCount')}
             </button>
           </div>
+        </div>
+      ) : null}
+      {lamp.sendId ? (
+        <div className="di-page di-set">
+          <SetCard>
+            <SetSwitch
+              label={t('lamp.shareAnswers')}
+              sub={t(lamp.shareOff ? 'lamp.shareOffLine' : 'lamp.shareOnLine', { name: lamp.fromName || t('people.someone') })}
+              on={!lamp.shareOff}
+              onClick={flipShare}
+            />
+          </SetCard>
+          {shareMiss ? <p className="di-set-note" role="alert">{shareMiss}</p> : null}
         </div>
       ) : null}
     </BoardShell>

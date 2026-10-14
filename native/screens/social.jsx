@@ -6,6 +6,7 @@ import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
 import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from '../../src/lib/did-you-links.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
+import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_GEMS_CAP,
@@ -379,8 +380,9 @@ function keepSentHidden(uid, list) {
   }
 }
 
-function sentState(state, name) {
-  if (state === 'kept') return t('sent.kept')
+function sentState(state, name, answers) {
+  // Kept: how they answered it lately, when they share that.
+  if (state === 'kept') return sendAnswerLine(answers) || t('sent.kept')
   if (state === 'passed') return t('sent.passed')
   // On a friend's own page the line has no "To {name}" before it, so it names them.
   if (name !== undefined) return name ? t('sent.waitingName', { name }) : t('sent.waitingNone')
@@ -2243,7 +2245,7 @@ export function FriendScreen({ book, onChange, route }) {
             key={send.id}
             colors={colors}
             title={askShown(send.question)}
-            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), sentState(send.state, personName(person) || '')].filter(Boolean).join(' · ')}
+            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), sentState(send.state, personName(person) || '', send.answers)].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
               <KeyButton
@@ -2621,7 +2623,7 @@ export function SentScreen({ book, onChange }) {
           <View style={[styles.personCopy, styles.personCopyFlex]}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
-              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state)]
+              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state, undefined, row.answers)]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>

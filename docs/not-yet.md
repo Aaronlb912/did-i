@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Did you answers for the sender (branch `did-you-answers`)
+
+- **Built:** a kept Did you remembers its send (`sendId` on the question). Each sync copies the last 7 nights of Did / Not yet for those questions to `send_answers` (`supabase/send-answers.sql`, `src/lib/send-answers.js`); taking an answer back drops it on the next sync. The sender's Sent list (web and phone) and the friend page show "Did today 10:41 PM", "Not yet today", "Did yesterday" or "Did {day}" in place of "kept it". The keeper sees "{name} sees your answers to this" with a Share my answers switch on the question's page; off deletes what the sender could see. Blocking, unfriending or leaving the family deletes what was shared, and so does deleting the question. Gentle mode does not hide it (it is not a streak).
+- **Supabase not applied yet.** Run `supabase/send-answers.sql` (in `db:apply:all`), then `npm run db:test supabase/tests/send-answers.test.sql`. Until then the reads fail quietly and Sent shows "kept it" as before.
+- **Not done:** Did yous kept before this ship have no `sendId`, so they never share (no backfill: the shelf does not know which send they came from). Only the last 7 nights are shared, and offline answers go with the next sync. A phone on an older build keeps Did yous without `sendId`. Not tried on a phone.
+- **Follow-ups:** a small 7-night run on Sent for repeating Did yous (rows are already returned); a push to the sender on Did (needs a quiet-hours check).
+
 ## Wear OS (branch `wear-os`)
 
 - **Built:** `android/wear` (Compose for Wear OS) shows tonight's cards with the ring, buddy, Not yet and Did, the done screen and a tile; taps save on the phone like a widget tap (`WatchTapService`, `WatchModule`). See docs/watch.md, Wear OS app. CI: wear-check.yml; android-apk.yml builds `did-i-wear-aab` with the release key.

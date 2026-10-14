@@ -19,6 +19,7 @@ import {
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
+import { pushSendAnswers } from './send-answers.js'
 import { shelfStreak } from './hall-feel.js'
 import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
@@ -205,6 +206,7 @@ async function putPrefs(db, user, shelf) {
   if (!error) {
     markCleared(db, user, mark)
     markCard(db, user, doc)
+    pushSendAnswers(db, user, doc)
   }
   return error || null
 }

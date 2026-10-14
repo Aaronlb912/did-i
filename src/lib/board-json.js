@@ -38,6 +38,7 @@ export function slotFromAskAfter(askAfter) {
   return 'night'
 }
 const STATUSES = ['yes', 'skip', 'late']
+const SEND_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PRIORITIES = ['high', 'normal', 'low']
 
 export function lampPriority(lamp) {
@@ -252,6 +253,10 @@ export function normalizeLamp(raw) {
     ...(asBool(lamp.fromDidYou) && asString(lamp.fromName).trim()
       ? { fromName: asString(lamp.fromName).trim().slice(0, 40) }
       : {}),
+    // The send it was kept from, so its sender can see the answers
+    // (send-answers.js); shareOff when the keeper turned that off.
+    ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.sendId)) ? { sendId: asString(lamp.sendId).toLowerCase() } : {}),
+    ...(asBool(lamp.fromDidYou) && asBool(lamp.shareOff) ? { shareOff: true } : {}),
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
