@@ -64,7 +64,8 @@ let lastTonightKey = ''
 
 export function syncTonightWidgetIfChanged(shelf) {
   if (Platform.OS === 'web' || !nativeWidgetsEnabled()) return Promise.resolve()
-  const key = tonightWidgetKey(buildTonightWidgetProps(shelf))
+  // Built from the enriched props, so a look or theme change redraws.
+  const key = tonightWidgetKey(enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf)))
   if (key === lastTonightKey) return Promise.resolve()
   return syncTonightWidget(shelf)
 }
@@ -95,8 +96,8 @@ export async function syncTonightWidget(shelf) {
     return
   }
   const built = buildTonightWidgetProps(shelf)
-  lastTonightKey = tonightWidgetKey(built)
   const props = enrichTonightWidgetProps(shelf, built)
+  lastTonightKey = tonightWidgetKey(props)
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
     // Same cards to the Apple Watch, when one is paired (native/watch-sync.js).

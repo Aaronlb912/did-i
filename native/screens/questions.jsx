@@ -64,7 +64,7 @@ import { PickSheet } from '../components/PickSheet.jsx'
 import Reanimated, { FadeIn } from 'react-native-reanimated'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
-import { LampManage, lampActions } from '../components/LampManage.jsx'
+import { LampManage, lampActions, stopCheckOns } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -90,7 +90,7 @@ import {
   Page,
   Row,
 } from '../components/ui.jsx'
-import { behindPath, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
+import { behindPath, canGoBack, goBack, goHash, onRoute, readRoute, swapHash } from '../navigation/hash.js'
 import { useAccount } from '../../src/lib/account.js'
 import { CheckOnCard } from '../components/CheckOnCard.jsx'
 import { usePeoplePulse } from '../../src/lib/people.js'
@@ -606,8 +606,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   function apply(kind) {
     if (!chosen.length || !onChangeBooks) return
     const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
-    const before = shelf.filter((item) => lampPicks.some((one) => one.boardId === item.id))
-    onChangeBooks(bulkLamps(shelf, lampPicks, kind).map((item) => commitBook(item, clock)))
+    // The shelf as saved now: the sheet may have sat open while other edits landed.
+    const books = readShelf().boards || shelf
+    const before = books.filter((item) => lampPicks.some((one) => one.boardId === item.id))
+    onChangeBooks(bulkLamps(books, lampPicks, kind).map((item) => commitBook(item, clock)))
+    if (kind === 'delete' || kind === 'stop') stopCheckOns(lampPicks.map((one) => one.lampId))
     const n = lampPicks.length
     const label =
       kind === 'delete'
@@ -642,7 +645,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (!chosen.length || !onChangeBooks) return
     const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
     const moving = lampPicks.filter((one) => one.boardId !== targetId)
-    const changed = moveLamps(shelf, moving, targetId)
+    const changed = moveLamps(readShelf().boards || shelf, moving, targetId)
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
     const folder = folders.find((item) => item.id === targetId)?.title || ''
     // Undo moves each one back to the folder it came from.
@@ -1413,7 +1416,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       onClose: () => publishSheet(null),
       onGo: () => {
         publishSheet(null)
-        const added = addPack(book, pack, clock)
+        const added = addPack((readShelf().boards || []).find((item) => item.id === book.id) || book, pack, clock)
         onChange(commitBook(added.book, clock))
         setPackUndo({ label: added.ids.length === 1 ? t('pack.addedOne') : t('pack.added', { n: added.ids.length }), ids: added.ids })
       },
@@ -1447,11 +1450,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const [startSnap] = useState(() => JSON.stringify([draft, hang.tagTitle]))
   const dirty = JSON.stringify([draft, hang.tagTitle]) !== startSnap
   const leaveRef = useRef(null)
+  // Set once Add has saved or Cancel was chosen: the back that leaves is ours, not one to ask about.
+  const leaving = useRef(false)
   // Phone back asks first when there are changes, on Add as well as Edit.
   // First back closes an open section; then, with changes, it asks.
   useEffect(() => {
     if (!dirty && !open) return undefined
     function onBack(event) {
+      if (leaving.current) return
       event?.preventDefault?.()
       if (open) fold(open)
       else leaveRef.current?.()
@@ -1459,6 +1465,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     window.addEventListener('did-i-back', onBack)
     // Android back reaches the stack before did-i-back, so take it here first.
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (leaving.current) return false
       onBack()
       return true
     })
@@ -1615,7 +1622,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   function cancel() {
     if (existing) swapHash('/lamp', { id: existing.id })
     else if (copySource) swapHash('/lamp', { id: copySource.id })
-    else goHash('/lamps')
+    else {
+      // A fresh Add goes back to where it was opened from.
+      leaving.current = true
+      if (canGoBack()) goBack()
+      else goHash('/lamps')
+    }
   }
 
   function save() {
@@ -1660,6 +1672,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
     const landsTonight = isDueOn(next, dateIso) || everyDueOn(target, next, dateIso)
     setStamp(landsTonight ? t('hang.landTonight') : t('hang.landAdded'))
+    leaving.current = true
     setWave((count) => count + 1)
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
@@ -1671,7 +1684,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       () => {
         if (from === '/lamps') goHash('/lamps')
         else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', landsTonight ? { face: next.id } : '')
-        else if (from && !wasEmpty) goBack()
+        else if (from && !wasEmpty && canGoBack()) goBack()
         else goHash(wasEmpty ? '/tonight' : '/lamps')
         confirmDone(t('confirm.questionAdded'))
         offerPingPrimer(newTime, colors)

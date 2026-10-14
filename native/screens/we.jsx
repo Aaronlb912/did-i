@@ -51,7 +51,7 @@ import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
-import { canGoBack, goBack, goHash } from '../navigation/hash.js'
+import { canGoBack, goBack, goHash, swapHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
@@ -549,7 +549,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       confirmDone(`${who} ${t('confirm.weStartsOnYes')}`)
     }
     justMade = out.id
-    feel.land(t('lead.sent'), () => goHash('/we', { id: out.id }))
+    feel.land(t('lead.sent'), () => swapHash('/we', { id: out.id }))
   }
 
   return (
@@ -855,7 +855,9 @@ function WeCardPage({ book, cardId, onChange }) {
 
   async function load() {
     const out = await weTonight()
-    if (out.miss) setMiss(tMiss(out.miss))
+    // A failed read keeps the card we show and says so.
+    if (out.miss) return setMiss(tMiss(out.miss))
+    setMiss('')
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)
     if (found?.myState === 'in') {
@@ -1210,7 +1212,7 @@ function WeCardPage({ book, cardId, onChange }) {
               colors={colors}
               label={t('we.earlyUndo')}
               disabled={ans.busy === card.id}
-              onPress={() => ans.answer(early.card, weMine(early.card).status, early.night)}
+              onPress={() => ans.answer(early.card, null, early.night)}
             />
           </View>
         ) : (

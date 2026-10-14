@@ -238,6 +238,8 @@ export async function personById(id) {
   const db = cloud()
   if (!db || !id) return { user_id: id }
   const who = await peopleByIds(db)
+  // A failed read carries miss and no name, so callers keep what they had.
+  if (who.miss) return { user_id: id, miss: who.miss }
   return who.get(id) || { user_id: id }
 }
 
@@ -301,6 +303,7 @@ export async function listFriends() {
   if (error || !data) return { ...empty, miss: 'people.reach' }
 
   const who = await peopleByIds(db)
+  if (who.miss) return { ...empty, miss: who.miss }
   // known_people only covers friends and family; people still asking come from here.
   if (data.some((row) => row.to_id === user.id && row.state !== 'ok')) {
     const { data: askers } = await db.rpc('friend_askers')
@@ -846,6 +849,7 @@ export async function listInbox() {
   if (error) return Object.assign(apps, { miss: 'people.reach' })
   if (!data?.length) return apps
   const who = await peopleByIds(db)
+  if (who.miss) return Object.assign(apps, { miss: who.miss })
   return [...apps, ...data.map((row) => ({ ...row, person: who.get(row.from_id) || { user_id: row.from_id } }))]
 }
 
@@ -925,6 +929,7 @@ export async function listSent() {
   if (!data?.length) return []
   // How they answered the kept ones, in the same pass (one call).
   const [who, answers] = await Promise.all([peopleByIds(db), readSendAnswers(keptIds(data))])
+  if (who.miss) return Object.assign([], { miss: who.miss })
   return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id }, answers: answers.get(row.id) || [] }))
 }
 
@@ -1224,6 +1229,7 @@ export async function readFamily(familyId) {
   if (famRow.error || memberRows.error || tagRows.error) return { miss: 'people.reach' }
   if (!famRow.data) return null
   const who = await peopleByIds(db)
+  if (who.miss) return { miss: who.miss }
   const members = (memberRows.data || [])
     .map((row) => ({
       ...row,
@@ -1550,7 +1556,7 @@ async function autoSendsWaiting(db) {
 // waiting for the next look instead of losing it.
 async function addAutoSends(db, adder) {
   const waiting = await autoSendsWaiting(db)
-  if (!waiting.length) return
+  if (!waiting.length) return []
   const added = readAutoAdded()
   const fresh = waiting.filter((row) => !added.has(row.send_id) && String(row.question || '').trim())
   if (fresh.length) {
@@ -1567,9 +1573,10 @@ async function addAutoSends(db, adder) {
   }
   const ids = waiting.map((row) => row.send_id)
   const { error } = await db.rpc('keep_auto_sends', { ids })
-  if (error) return
+  if (error) return fresh
   for (const id of ids) added.delete(id)
   writeAutoAdded(added)
+  return fresh
 }
 
 async function pulseLook() {
@@ -1581,7 +1588,7 @@ async function pulseLook() {
     pulse.at = Date.now()
     // Only claim while something is there to put the questions on tonight.
     const adder = pulse.adder
-    if (adder) await addAutoSends(db, adder)
+    const claimed = adder ? await addAutoSends(db, adder) : []
     const fromDidI = adder ? await claimDidITonight(db, user) : []
     if (fromDidI.length) adder(fromDidI)
     const [waiting, asks] = await Promise.all([

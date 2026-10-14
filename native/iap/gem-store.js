@@ -93,8 +93,20 @@ export function storePrice(packId) {
   return prices.get(sku) || prices.get(pack.storeId) || ''
 }
 
+// The account id a buy was made for (set on the buy since 1.x). Older buys
+// carry none and credit whoever is signed in, as before.
+function buyOwner(purchase) {
+  return String(purchase?.appAccountToken || purchase?.obfuscatedAccountIdAndroid || '').toLowerCase()
+}
+
 async function creditPurchase(purchase) {
   const mod = await loadIap()
+  const owner = buyOwner(purchase)
+  // Bought on another account on this phone: leave it open for that account.
+  if (owner) {
+    const user = await readUser()
+    if (user && owner !== String(user.id).toLowerCase()) return { miss: 'other' }
+  }
   const out = await submitGemPurchase(purchase)
   // A test buy from an account not on the server's list never credits. Close
   // it with the store anyway, or Play keeps it open and blocks that pack.
@@ -260,7 +272,7 @@ async function connectStore() {
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
-      else if (out?.miss) creditMissToast()
+      else if (out?.miss && out.miss !== 'other') creditMissToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return
@@ -300,11 +312,14 @@ export async function buyGemPack(packId) {
     if (!liveSku.has(pack.id)) return { miss: 'store', code: 'not-listed' }
   }
   const sku = liveSku.get(pack.id) || pack.storeId
+  // Tie the buy to this account, so another account on the phone never
+  // gets its gems. Apple wants a UUID; Supabase user ids are one.
+  const userId = (await readUser())?.id || null
   const ask = () =>
     api.requestPurchase({
       request: {
-        apple: { sku },
-        google: { skus: [sku] },
+        apple: { sku, appAccountToken: userId },
+        google: { skus: [sku], obfuscatedAccountId: userId },
       },
       type: 'in-app',
     })

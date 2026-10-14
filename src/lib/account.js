@@ -4,7 +4,8 @@ import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
 import { forgetAccountCaches } from './account-cache.js'
-import { takeEarnedCoins } from './purse.js'
+import { dropEarnedCoins } from './purse.js'
+import { clearGifts } from './gift-inbox.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -158,8 +159,9 @@ export async function signOutHere() {
   // The home screen widget must not keep showing this account's people.
   saveTogetherPeople([])
   forgetAccountCaches()
+  clearGifts()
   // Coins queued for this account must not be credited to the next one.
-  takeEarnedCoins()
+  dropEarnedCoins()
 }
 
 export async function signOutEverywhere() {
@@ -170,8 +172,9 @@ export async function signOutEverywhere() {
   if (error) throw error
   saveTogetherPeople([])
   forgetAccountCaches()
+  clearGifts()
   // Coins queued for this account must not be credited to the next one.
-  takeEarnedCoins()
+  dropEarnedCoins()
 }
 
 export async function deleteAccount() {
@@ -184,8 +187,9 @@ export async function deleteAccount() {
   await db.auth.signOut()
   saveTogetherPeople([])
   forgetAccountCaches()
+  clearGifts()
   // Coins queued for this account must not be credited to the next one.
-  takeEarnedCoins()
+  dropEarnedCoins()
   return { miss: '' }
 }
 

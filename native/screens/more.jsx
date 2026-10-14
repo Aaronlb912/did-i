@@ -1659,7 +1659,10 @@ function PingKinds({ colors, on }) {
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     // Signed out there are no pushes, so the switch only has to hold here.
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ pingsOff: was })
+      // Undo only this switch; another tap may have saved since.
+      const now = readPrefs().pingsOff
+      const wasOff = was.includes(kind)
+      writePrefs({ pingsOff: wasOff ? (now.includes(kind) ? now : [...now, kind]) : now.filter((k) => k !== kind) })
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1672,7 +1675,11 @@ function PingKinds({ colors, on }) {
     armLampPings(readShelf().boards).catch(() => {})
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ quietOn: was.quietOn, quietFrom: was.quietFrom, quietTo: was.quietTo })
+      // Undo only what this save changed, and only if nothing changed it since.
+      const now = readPrefs()
+      const back = {}
+      for (const key of Object.keys(patch)) if (now[key] === patch[key]) back[key] = was[key]
+      writePrefs(back)
       armLampPings(readShelf().boards).catch(() => {})
       setMiss(t('pings.kindsMiss'))
     }

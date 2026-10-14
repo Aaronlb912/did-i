@@ -198,6 +198,27 @@ export function Family({ book, onChange, now, familyId }) {
 
   if (!ready) return shell(<p className="di-set-note">{t('family.loading')}</p>)
 
+  // Could not read the family: say so and offer a retry, not "gone".
+  if (!fam && miss) {
+    return shell(
+      <>
+        <p className="di-set-note">{tMiss(miss)}</p>
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="button" onClick={() => {
+              setMiss('')
+              setReady(false)
+              load()
+            }}>
+            {t('gift.retry')}
+          </button>
+          <button className="di-key" type="button" onClick={() => goHash('/people')}>
+            {t('family.back')}
+          </button>
+        </div>
+      </>,
+    )
+  }
+
   if (!fam) {
     return shell(
       <>

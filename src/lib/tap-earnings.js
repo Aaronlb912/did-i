@@ -15,14 +15,15 @@ export function settleTapEarnings(before, after, clock = new Date(), onShelf) {
   const bumped = weeklyGemBump(after, before, clock, { accountSync: account })
   const shelf = bumped === after ? after : writeShelf(bumped)
   if (!account) return shelf
-  for (const [night, earned] of Object.entries(takeEarnedCoins())) {
+  const taken = takeEarnedCoins()
+  for (const [night, earned] of Object.entries(taken)) {
     creditNightCoins(night, earned)
       .then((balance) => {
         // Not paid: keep the coins for the next save to try again.
-        if (balance == null) return returnEarnedCoins(night, earned)
+        if (balance == null) return returnEarnedCoins(night, earned, clock, taken.gen)
         onShelf?.(writeShelf(applyCoinBalanceToShelf(readShelf(), balance)))
       })
-      .catch(() => returnEarnedCoins(night, earned))
+      .catch(() => returnEarnedCoins(night, earned, clock, taken.gen))
   }
   if (shelf.gemWeek && shelf.gemWeek !== (before?.gemWeek || '')) {
     grantWeeklyGem(shelf.gemWeek)

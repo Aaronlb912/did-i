@@ -1,16 +1,26 @@
 import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { t } from '../../src/lib/i18n.js'
+import { t, tMiss } from '../../src/lib/i18n.js'
+import { dropCheckOn } from '../../src/lib/check-on.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { publishSheet } from './SheetHost.jsx'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { showToast } from '../lib/toast-queue.js'
 
 // The folder as saved now: an undo runs seconds later, after other edits.
 function liveBook(book) {
   return (readShelf().boards || []).find((item) => item.id === book.id)
+}
+
+// A deleted, paused or stopped question stops its friend check-on too.
+export function stopCheckOns(lampIds) {
+  for (const id of [].concat(lampIds)) {
+    dropCheckOn(id)
+      .then((out) => out.miss && confirmMiss(tMiss(out.miss)))
+      .catch(() => confirmMiss(t('people.reach')))
+  }
 }
 
 function deleteNote(book, lamp) {
@@ -30,6 +40,7 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
     const next = toggleArchive(book, lamp)
     onChange(next)
     onPaused?.(!lamp.archived)
+    if (!lamp.archived) stopCheckOns(lamp.id)
     if (lamp.archived) {
       confirmDone(t('confirm.questionResumed'))
       return
@@ -66,9 +77,10 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
         publishSheet(null)
         // Like Select's delete, it can be taken back for a few seconds.
         const before = book
-        const after = takeDown(book, lamp)
+        const after = takeDown(liveBook(book) || book, lamp)
         const now = Date.now()
         onChange(after)
+        stopCheckOns(lamp.id)
         goHash('/lamps')
         showToast({
           id: 'undo:delete',

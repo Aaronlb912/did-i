@@ -161,7 +161,7 @@ run on a real watch or a Wear emulator.
     emits `onWatchTap` and `NativeApp.jsx` takes the queue
     (`applyPendingAndroidWidgetTap`); otherwise the widget headless task, or
     the next app open, takes it. The cards go back to the watch afterwards.
-  - The watch keeps its own taps for 10 minutes and shows them answered over
+  - The watch keeps its own taps for 24 hours and shows them answered over
     any cards that still show them open, so a tap does not flicker back while
     the phone catches up. A tap the phone refused shows open again after that.
 - Screens (`MainActivity.kt`, mirrors `DidIWatchApp.swift`): ring at the edge

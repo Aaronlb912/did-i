@@ -570,17 +570,29 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
 // save never saw the count go up and no account earned night coins.
 // Kept per answered night, so a late answer for last night pays last night.
 let earnedForServer = {}
+// Bumped on sign out. A credit that fails after it hands back coins taken
+// for the old account; returnEarnedCoins drops them by this stamp.
+let earnedGen = 0
 
 // { nightIso: coins }. A failed credit hands its coins back with
 // returnEarnedCoins; the server caps each night, so a retry cannot double pay.
+// out.gen (not enumerable) goes back with returnEarnedCoins.
 export function takeEarnedCoins() {
   const out = earnedForServer
   earnedForServer = {}
+  Object.defineProperty(out, 'gen', { value: earnedGen })
   return out
 }
 
-export function returnEarnedCoins(night, n, clock = new Date()) {
+// Sign out: forget the queue, and refuse coins a credit still out hands back.
+export function dropEarnedCoins() {
+  earnedGen += 1
+  earnedForServer = {}
+}
+
+export function returnEarnedCoins(night, n, clock = new Date(), gen) {
   if (!night || !(n > 0)) return
+  if (gen != null && gen !== earnedGen) return
   // The server takes yesterday or today (payTap); an older night would be refused forever.
   const today = boardDate(clock)
   if (night < addDaysIso(today, -1) || night > today) night = today

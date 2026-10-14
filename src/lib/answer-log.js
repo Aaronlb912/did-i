@@ -155,9 +155,15 @@ export async function pullAnswers(shelf) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }
   const since = read(SEEN)
-  const PAGE = 5000
+  // Supabase caps a read at 1000 rows by default; a bigger page would come
+  // back short and look like the end.
+  const PAGE = 1000
   const data = []
-  for (let from = 0; ; from += PAGE) {
+  // Paged by stamp, not offset: rows written while paging would shift an
+  // offset and skip some. Offset only steps past a page that is all one stamp.
+  let cursor = since
+  let from = 0
+  for (;;) {
     let query = db
       .from('answer_log')
       // '*' so this read works before and after note_at is added (answers.sql).
@@ -167,11 +173,18 @@ export async function pullAnswers(shelf) {
     // Greater-or-equal on purpose. A batch written in one statement shares
     // a timestamp, and skipping past it would drop the rest of the batch.
     // Re-reading the boundary costs a few rows; applying one twice is free.
-    if (since) query = query.gte('updated_at', since)
+    if (cursor) query = query.gte('updated_at', cursor)
     const { data: page, error } = await query
     if (error) return { shelf, changed: 0, miss: error.message }
     data.push(...(page || []))
     if (!page || page.length < PAGE) break
+    const last = page[page.length - 1].updated_at
+    if (last !== cursor) {
+      cursor = last
+      from = 0
+    } else {
+      from += PAGE
+    }
   }
   const next = applyAnswers(shelf, data)
   if (data?.length) write(SEEN, data[data.length - 1].updated_at)

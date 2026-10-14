@@ -251,8 +251,9 @@ async function schedulePingsNow(books, now = new Date()) {
     }
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
-    const book = list[0]
-    const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
+    // Any folder's streak can be at risk, not only the first one's.
+    const streakPings = pingOn('streakRisk') && !gentleOn()
+    const risk = streakPings ? list.map((item) => streakRiskFire(item, now)).find(Boolean) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -264,7 +265,7 @@ async function schedulePingsNow(books, now = new Date()) {
         trigger: when(new Date(risk.at)),
       })
     }
-    const grace = pingOn('streakRisk') && !gentleOn() ? graceRiskFire(book, now) : null
+    const grace = streakPings ? list.map((item) => graceRiskFire(item, now)).find(Boolean) : null
     if (grace) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),

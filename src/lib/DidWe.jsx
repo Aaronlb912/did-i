@@ -3,7 +3,7 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from './social-amounts.js'
 import { BoardShell } from './BoardShell.jsx'
-import { pullAndMerge } from './cloud-sync.js'
+import { pullAndMerge, SHELF_IN } from './cloud-sync.js'
 import {
   WE_GOALS,
   useWeTonight,
@@ -221,7 +221,14 @@ export function useWeAnswer(reload, book) {
 
   async function answer(card, status) {
     const mine = weMine(card)
-    const out = await run(card.id, () => weAnswer(card.id, mine?.status === status ? null : status))
+    const takeBack = mine?.status === status
+    const out = await run(card.id, () => weAnswer(card.id, takeBack ? null : status))
+    if (takeBack && !out.miss) {
+      // The widget still shows the old answer and would put it back on the
+      // next merge. Fresh nights, then the shelf event redraws it (native).
+      await refreshWeNights().catch(() => {})
+      window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: readShelf() }))
+    }
     if (out.miss || !out.finished) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))

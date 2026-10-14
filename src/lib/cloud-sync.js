@@ -25,10 +25,10 @@ import { shelfStreak } from './hall-feel.js'
 import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
 import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
-import { queueGifts } from './gift-inbox.js'
+import { clearGifts, queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGift, mergePurses } from './purse.js'
+import { applyInvitePayout, dropEarnedCoins, mergeGift, mergePurses } from './purse.js'
 import { FRAME_IDS } from './frames.js'
 import {
   applyCoinCatalogToShelf,
@@ -133,7 +133,14 @@ function writeLastUser(id) {
   writeAccountUserId(id)
 }
 
+// Bumped on sign out so a pull already out drops its result instead of
+// merging the old account's shelf into the cleared one.
+let syncRun = 0
+
 export function signedOutSync() {
+  syncRun += 1
+  clearGifts()
+  dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
   clearWeNights()
@@ -337,6 +344,7 @@ function reconcileLocalShelfFromWidget() {
 async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
+  const run = syncRun
   try {
     const user = await me()
     if (!user) {
@@ -369,6 +377,7 @@ async function pullAndMergeOnce() {
     // in the compare; `at` (upload time) would let it beat newer local edits.
     let seenAt = readSavedAt()
     const land = (next, at) => {
+      if (run !== syncRun) throw new Error('account.signedOut')
       const nowAt = readSavedAt()
       const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, seenAt) : next
       const out = writeShelf(base, at)
@@ -470,6 +479,7 @@ async function pullAndMergeOnce() {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return written
   } catch (error) {
+    if (run !== syncRun) return null
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
     recordAppError('sync', error).catch(() => {})
     return null
@@ -554,15 +564,16 @@ export async function touchDevice() {
     platform: devicePlatform(),
     last_seen_at: new Date().toISOString(),
   }
-  const model = deviceModel()
-  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
-  // Before supabase/device-names.sql is applied there is no model column.
-  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
   // This phone moved to its stable id: its old row is the same phone.
+  // Gone first, so a failed upsert never leaves it counted twice.
   const old = takeOldDeviceKey()
   if (old && old !== deviceKey()) {
     await db.from('devices').delete().eq('user_id', user.id).eq('device_key', old)
   }
+  const model = deviceModel()
+  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
+  // Before supabase/device-names.sql is applied there is no model column.
+  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
 }
 
 // Phones seen in the last 90 days. The server removes older rows when a

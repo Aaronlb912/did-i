@@ -208,10 +208,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const family = useFamilyTonight(account.user)
   const [asks, setAsks] = useState([])
   const [peopleGone, setPeopleGone] = useState([])
+  // A read that lands after a sign out or account switch is the old account's.
+  const userIdRef = useRef(account.user?.id)
+  userIdRef.current = account.user?.id
   const loadAsks = useCallback(async () => {
     if (!account.user) return setAsks([])
+    const who = account.user.id
     try {
       const rows = await listInbox()
+      if (userIdRef.current !== who) return
       // A failed read keeps the cards we had.
       if (!rows.miss) setAsks(rows)
     } catch {

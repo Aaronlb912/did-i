@@ -54,6 +54,7 @@ const files = [
   'supabase/server-stamps.sql',
   'supabase/readthrough-5.sql',
   'supabase/readthrough-6.sql',
+  'supabase/readthrough-7.sql',
   'supabase/drop-tonight.sql',
 ]
 

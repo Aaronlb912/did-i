@@ -8,7 +8,7 @@ import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 
 // The scanner came with 1.3.0. Older builds hide the Scan button.
 export function canScan() {
@@ -47,7 +47,7 @@ export function ScanScreen() {
       return
     }
     done.current = true
-    goHash('/people/connect', { id: found.friend ? `friend:${found.friend}` : `family:${found.family}` })
+    swapHash('/people/connect', { id: found.friend ? `friend:${found.friend}` : `family:${found.family}` })
   }
 
   let body

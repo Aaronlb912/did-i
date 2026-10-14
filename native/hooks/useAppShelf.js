@@ -27,7 +27,7 @@ import {
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
-import { accountSessionOn } from '../../src/lib/session-id.js'
+import { accountSessionOn, readAccountUserId } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
@@ -128,20 +128,26 @@ export function useAppShelf() {
     pushSoon(written)
     // Signed in, taps queue their coins (payTap); signed out, the phone keeps them.
     // Crediting without a session failed, re-queued, and paid twice on sign-in.
-    for (const [night, earned] of accountSessionOn() ? Object.entries(takeEarnedCoins()) : []) {
+    // A reply that lands after a sign out or account switch belongs to the old account.
+    const who = readAccountUserId()
+    const sameAccount = () => readAccountUserId() === who
+    const taken = accountSessionOn() ? takeEarnedCoins() : {}
+    for (const [night, earned] of Object.entries(taken)) {
       creditNightCoins(night, earned).then((bal) => {
+        if (!sameAccount()) return
         // Not paid: keep the coins for the next save to try again.
-        if (bal == null) return returnEarnedCoins(night, earned)
+        if (bal == null) return returnEarnedCoins(night, earned, new Date(), taken.gen)
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
       }).catch((err) => {
-        returnEarnedCoins(night, earned)
+        returnEarnedCoins(night, earned, new Date(), taken.gen)
         reportRejection('night-coins')(err)
       })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
+        if (!sameAccount()) return
         // Not granted: forget the week so the next cleared night asks again.
         if (bal == null) {
           const now = readShelf()
@@ -210,47 +216,49 @@ export function useAppShelf() {
       const clock = new Date()
       const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
       if (!lamps.length) return []
-      let dest = live
+      const latest = shelfRef.current
+      let dest = currentBook(latest) || live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)
       }
-      persist(putBook(shelf, commitBook(dest, clock)))
+      persist(putBook(latest, commitBook(dest, clock)))
       // The new questions' ids, so a link can open Tonight right on them.
       return lamps.map((lamp) => lamp.id)
     },
-    [live, persist, shelf],
+    [live, persist],
   )
 
   const setTag = useCallback(
     (id) => {
       const first = tagIdsOf(id)[0]
-      if (first) persist(selectBook(shelf, first))
+      if (first) persist(selectBook(shelfRef.current, first))
       const path = route.path
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
       goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face: route.face, keepFocus: true })
     },
-    [persist, route.face, route.path, shelf],
+    [persist, route.face, route.path],
   )
 
-  const switchBoard = useCallback((id) => persist(selectBook(shelf, id)), [persist, shelf])
+  const switchBoard = useCallback((id) => persist(selectBook(shelfRef.current, id)), [persist])
   const addBoard = useCallback((name) => {
+    const latest = shelfRef.current
     persist(
-      addBook(shelf, {
+      addBook(latest, {
         ...emptyBoard(),
-        title: String(name || '').trim() || nextBoardTitle(shelf.boards),
+        title: String(name || '').trim() || nextBoardTitle(latest.boards),
         keeperName: live.keeperName,
       }),
     )
-  }, [live.keeperName, persist, shelf])
+  }, [live.keeperName, persist])
   const removeBoard = useCallback(
     (id) => {
-      persist(dropBook(shelf, id))
+      persist(dropBook(shelfRef.current, id))
       if (tagIdsOf(route.tag).includes(id)) {
         const rest = joinTagIds(tagIdsOf(route.tag).filter((other) => other !== id))
         goHash(route.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
       }
     },
-    [persist, route.path, route.tag, shelf, tagId],
+    [persist, route.path, route.tag],
   )
 
   useEffect(() => {

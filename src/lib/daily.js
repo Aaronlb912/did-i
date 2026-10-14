@@ -77,7 +77,11 @@ export function closePastNights(book, now = new Date()) {
   for (const row of closeOnceRows(next, now)) {
     if (row.dateIso === graceNightIso(now)) continue
     if (answerFor(next, row.lamp.id, row.periodKey)) continue
-    next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
+    // A 'by' question spans created..due. Stamped at the window's start, a
+    // Did tapped on any earlier day in it still wins a merge.
+    const lamp = row.lamp
+    const at = lamp.onceWhen === 'by' ? String(lamp.createdOn || '').slice(0, 10) || row.dateIso : row.dateIso
+    next = putAnswer(next, row, 'skip', nightStart(at))
     changed = true
   }
   // A one-time question whose day (or due date) is behind us is done

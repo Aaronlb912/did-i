@@ -398,7 +398,10 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
       const card = item.lampId.slice(WE_ITEM.length)
       const has = weNightStatus(item.periodKey, card)
       if (has !== 'did' && has !== (item.status === 'yes' ? 'did' : 'nope')) {
-        applyWeTap(card, item.status, clock, item.periodKey)
+        // Tap time inside the item's own night (noon), so a card from last
+        // night still lands on last night instead of being dropped.
+        const noon = new Date(`${item.periodKey}T12:00:00`).getTime()
+        applyWeTap(card, item.status, clock, item.periodKey, Number.isFinite(noon) ? noon : 0)
       }
       continue
     }
@@ -451,6 +454,8 @@ function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
   const tappedAt = tapAt > 0 ? new Date(tapAt) : clock
   const night = cardNight || boardDate(tappedAt)
   if (night !== boardDate(tappedAt)) return null
+  // A Did already saved for that night is not turned into Not yet by an old card.
+  if (status !== 'yes' && weNightStatus(night, card) === 'did') return null
   markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
   const shelf = readShelf()
   const previous = readWidgetTonightProps()
