@@ -14,7 +14,9 @@ export function isoDate(date) {
 // wall clock. Date.parse reads both right, so compare and bucket by these,
 // never by the raw string.
 export function stampMs(value) {
-  const ms = Date.parse(String(value || ''))
+  const raw = String(value || '')
+  if (!/^\d{4}-\d\d-\d\dT/.test(raw)) return 0
+  const ms = Date.parse(raw)
   return Number.isNaN(ms) ? 0 : ms
 }
 

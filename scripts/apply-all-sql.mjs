@@ -50,6 +50,7 @@ const files = [
   'supabase/admin-mail.sql',
   'supabase/send-answers.sql',
   'supabase/consent-guards.sql',
+  'supabase/app-send-answer-upsert.sql',
   'supabase/drop-tonight.sql',
 ]
 

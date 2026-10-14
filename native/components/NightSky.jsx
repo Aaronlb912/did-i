@@ -128,22 +128,22 @@ function Sun({ now, width, height, colors }) {
   const parts = svgParts()
   if (!parts) return null
   const { Svg, Circle, Line } = parts
-  const glow = SUN_R * 3
-  const at = sunAt(now, width, height, SUN_R * 2)
+  const glow = SUN_R * 1.6
+  // Placed by the glow's box, so the glow is never cut flat at the sky's edges.
   const size = glow * 2
+  const at = sunAt(now, width, height, size)
   const rays = Array.from({ length: 8 }, (_, i) => {
     const a = (i * Math.PI) / 4
-    return { x1: glow + Math.cos(a) * (SUN_R * 0.62), y1: glow + Math.sin(a) * (SUN_R * 0.62), x2: glow + Math.cos(a) * (SUN_R * 0.88), y2: glow + Math.sin(a) * (SUN_R * 0.88) }
+    return { x1: glow + Math.cos(a) * (SUN_R * 0.66), y1: glow + Math.sin(a) * (SUN_R * 0.66), x2: glow + Math.cos(a) * (SUN_R * 0.8), y2: glow + Math.sin(a) * (SUN_R * 0.8) }
   })
   return (
-    <View style={[styles.moon, { transform: [{ translateX: at.x + SUN_R - glow }, { translateY: at.y + SUN_R - glow }] }]}>
+    <View style={[styles.moon, { transform: [{ translateX: at.x }, { translateY: at.y }] }]}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* A warm haze around the sun, the daytime stand-in for the stars. */}
+        {/* As quiet as the moon: a faint glow, a pale core, faint short rays. */}
         <Circle cx={glow} cy={glow} r={glow} fill={colors.sunGlow} />
-        <Circle cx={glow} cy={glow} r={SUN_R - 0.5} fill={colors.bg} stroke={colors.sun} strokeOpacity={0.45} />
-        <Circle cx={glow} cy={glow} r={SUN_R * 0.42} fill={colors.sun} />
+        <Circle cx={glow} cy={glow} r={SUN_R * 0.46} fill={colors.sun} opacity={0.8} />
         {rays.map((ray, i) => (
-          <Line key={i} {...ray} stroke={colors.sun} strokeWidth={2} strokeLinecap="round" />
+          <Line key={i} {...ray} stroke={colors.sun} strokeOpacity={0.35} strokeWidth={1.5} strokeLinecap="round" />
         ))}
       </Svg>
     </View>

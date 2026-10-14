@@ -12,6 +12,9 @@ import { stampMs } from './recurrence.js'
 const MARK = 'did-i-answers-sent'
 const SEEN = 'did-i-answers-seen'
 const CHUNK = 500
+// Set once every answer has been resent with a zoned time. Older apps sent
+// local times with no zone, which the server reads as UTC.
+const ZONED = 'did-i-answers-zoned'
 
 function read(key) {
   try {
@@ -34,6 +37,11 @@ export function forgetAnswerMarks() {
   write(SEEN, '')
 }
 
+function zoned(value) {
+  const ms = stampMs(value)
+  return ms ? new Date(ms).toISOString() : value || ''
+}
+
 function rowsOf(shelf) {
   const out = []
   for (const book of shelf?.boards || []) {
@@ -44,9 +52,9 @@ function rowsOf(shelf) {
         l: answer.lampId,
         p: answer.periodKey,
         s: answer.status || 'yes',
-        a: answer.answeredAt || '',
+        a: zoned(answer.answeredAt),
         n: answer.note || '',
-        e: answer.noteAt || '',
+        e: zoned(answer.noteAt),
         // Always sent, null when there is none, so the server can tell a
         // cleared amount from an older app that never sends one.
         m: cleanAmount(answer.amount),
@@ -72,8 +80,12 @@ function rowStamp(row) {
 export async function pushAnswers(shelf, all = false) {
   const db = cloud()
   if (!db) return { sent: 0, miss: '' }
-  const rows = answersToSend(shelf, all)
-  if (!rows.length) return { sent: 0, miss: '' }
+  const fresh = !read(ZONED)
+  const rows = answersToSend(shelf, all || fresh)
+  if (!rows.length) {
+    if (fresh) write(ZONED, '1')
+    return { sent: 0, miss: '' }
+  }
 
   let newest = read(MARK)
   // A row stamped in the future (another phone with a fast clock) must not
@@ -89,6 +101,7 @@ export async function pushAnswers(shelf, all = false) {
     }
   }
   write(MARK, newest)
+  if (fresh) write(ZONED, '1')
   return { sent: rows.length, miss: '' }
 }
 
