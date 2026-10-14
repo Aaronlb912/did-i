@@ -251,8 +251,17 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
       "dateIso": card.dateIso,
       "at": Date().timeIntervalSince1970 * 1000,
     ]
-    // Queued and delivered even when the phone is away or the app is closed.
-    WCSession.default.transferUserInfo(tap)
+    // A message wakes the iPhone app in the background, so the answer lands at
+    // once. transferUserInfo only arrives when the phone app next opens, so it
+    // is the fallback when the phone is out of reach or the message fails.
+    let session = WCSession.default
+    if session.activationState == .activated && session.isReachable {
+      session.sendMessage(tap, replyHandler: nil) { _ in
+        WCSession.default.transferUserInfo(tap)
+      }
+    } else {
+      session.transferUserInfo(tap)
+    }
   }
 
   func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {

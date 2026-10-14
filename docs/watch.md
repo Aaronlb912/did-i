@@ -27,7 +27,9 @@ saves the answer, the same way a widget tap is saved.
 - Sync: `modules/didi-watch` (iOS only Expo module) activates `WCSession`.
   `native/widget-sync.js` sends the Tonight widget props through
   `native/watch-sync.js` (`updateApplicationContext`). A watch tap comes
-  back with `transferUserInfo`; `native/NativeApp.jsx` saves it with
+  back with `sendMessage` when the phone is in reach (this wakes the iPhone
+  app, so it saves at once), else `transferUserInfo`, which only arrives when
+  the iPhone app next runs. `native/NativeApp.jsx` saves it with
   `applyWidgetTapOnce` (same as a widget tap) and sends the cards again.
   Did we cards stay off the watch.
 - Watch strings: every word on the watch and the complication comes from the
