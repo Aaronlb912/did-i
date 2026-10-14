@@ -1378,7 +1378,7 @@ export const ja = {
   'ideas.body': 'やることリストでもカレンダーでもない。あとから何度も聞く質問を置く。ここから選ぶか、Did I で始まる文を自分で書く。',
   'ideas.use': 'これを使う',
   'ideas.writeOwn': '自分で書く',
-  'ideas.help': 'ヘルプ',
+  'ideas.help': 'ヘルプ',
   'wait.kicker': 'まだ',
   'wait.after': '{time} 以降。',
   'wait.later': 'あとで',
@@ -1840,7 +1840,6 @@ export const ja = {
   'web.nav.terms': '利用規約',
   'web.nav.feedback': 'フィードバック',
   'web.nav.menu': 'メニュー',
-  'web.footer.copy': 'Did I。今夜、まだ答えていない質問。',
   'web.nav.press': 'プレス',
   'web.press.title': 'プレスとブランド',
   'web.press.lead': '取材のご連絡は',
@@ -1858,44 +1857,82 @@ export const ja = {
   'web.press.color.ink': 'インク',
   'web.press.color.soft': 'ソフト',
   'web.press.color.miss': 'ミス',
-  'web.landing.kicker': 'Did I',
-  'web.landing.title': '忘れずにやる。やったことも忘れない',
-  'web.landing.lead':
-    '寝る前に同じ確認を何度も繰り返していました。ドア、コンロ、薬。Did I はスマホに質問を1つだけ出します。やったなら右スワイプ。今夜はなら左。友だちや家族とも共有できます。',
-  'web.landing.b1': '「今夜」でスワイプ。ホームにまだ開いているものが出ます。',
-  'web.landing.b2': '友だちに質問を送ろう。家族と家事を共有しよう。',
-  'web.landing.together.kicker': '友だちと家族',
-  'web.landing.together.title': 'みんなで使える',
-  'web.landing.together.lead': 'Did I は、一緒に暮らす人や気にかけている人のためのアプリです。',
-  'web.landing.together.one.title': '友だちに聞く',
-  'web.landing.together.one.line': '「おばあちゃんに電話した？」を一度だけ、または毎晩送れます。相手の受信箱に届き、受け取るかは相手が決めます。',
-  'web.landing.together.two.title': '家族で共有',
-  'web.landing.together.two.line': '家族を作ってコードを共有。「猫にごはんあげた？」が全員に表示されます。',
-  'web.landing.together.three.title': '応援し合う',
-  'web.landing.together.three.line': '今夜終わった人がわかり、友だちが終えたら応援を送れます。',
-  'web.landing.b3': 'スマホにインストール。圏外でも使えます。',
-  'web.landing.b4': 'サインインすれば、質問・コイン・ジェム・連続記録が新しいスマホに引き継がれます。',
-  'web.landing.phoneKicker': '今夜',
-  'web.landing.demo1': '植物に水、あげた？',
-  'web.landing.demo2': 'お母さんに返信した？',
-  'web.landing.demo3': '水、ちゃんと飲んだ？',
-  'web.landing.demo4': 'ゴミ、出した？',
-  'web.landing.float1': '鍵',
-  'web.landing.float2': '薬',
-  'web.landing.float3': '充電',
-  'web.landing.stepsTitle': '使い方',
-  'web.landing.step1.num': '1',
-  'web.landing.step1.title': '一度に一つの質問',
-  'web.landing.step1.line': '全部のやることではありません。寝る前に頭から離れない、あの一つだけ。',
-  'web.landing.step2.num': '2',
-  'web.landing.step2.title': '右または左にスワイプ',
-  'web.landing.step2.line': 'やった？右。今夜はなし？左。それが今夜の答えです。',
-  'web.landing.step3.num': '3',
-  'web.landing.step3.title': 'ホームに残りが出る',
-  'web.landing.step3.line': '他は別の夜まで待ちます。リストをタップしなくていい。ストリークは正直なまま。',
-  'web.landing.band': '一つ以上になったら',
-  'web.landing.closeTitle': '同じ心配をぐるぐるしない',
-  'web.landing.closeLead': 'iPhoneとAndroidで無料。',
+  'web.landing.strip.tonight': "今夜",
+  'web.landing.strip.vol': "毎日の記録 / 第1号",
+  'web.landing.hero.kicker': "忙しい頭のために",
+  'web.landing.hero.title': "忘れずにやる。そして",
+  'web.landing.hero.titleEm': "やったことも覚えておく。",
+  'web.landing.hero.lead': "終わる前に次へ移ってしまう頭もあります。そしてあとでループが始まります。お昼食べた？ガレージ閉めた？ Did I は朝、昼、夜、選んだ時間に聞いてきます。一日の終わりにまとめて確認してもOK。画面には質問がひとつだけ。やったら右、まだなら左にスワイプ。それで頭が手放せます。",
+  'web.landing.hero.c1': "画面にはひとつだけ",
+  'web.landing.hero.c2': "選んだ時間に聞く",
+  'web.landing.hero.c3': "忘れても責めない",
+  'web.landing.hero.c4': "無料",
+  'web.landing.phone.aria': "Did I の今夜の画面。質問が右にスワイプされています",
+  'web.landing.phone.q1': "アラーム設定",
+  'web.landing.phone.f1': "朝",
+  'web.landing.phone.q2': "お昼ごはん",
+  'web.landing.phone.f2': "自分",
+  'web.landing.phone.q3': "スマホの充電",
+  'web.landing.phone.f3': "家",
+  'web.landing.phone.card': "ガレージ、閉めた？",
+  'web.landing.log.kicker': "邪魔になるもの",
+  'web.landing.log.count': "4 項目",
+  'web.landing.log.title': "邪魔になるものと、Did I がそれにどう応えるか",
+  'web.landing.e1.kicker': "01 / ループ",
+  'web.landing.e1.title': "「やったのはわかってる。やった記憶がないだけ。」",
+  'web.landing.e1.p1': "質問は一度書くだけ。出るタイミングを選べます。毎日、数日ごと、一回だけ、またはやってからしばらく後。朝など時間を決めても、夜の終わりにまとめて確認してもOK。毎回同じ形で、ひとつずつ出るので、次に何が来るかわかります。やった？右へ。まだ？左へ。",
+  'web.landing.e1.p2': "長いリストに見つめられることはありません。ホームには残っているものだけ。",
+  'web.landing.e1.r1': "お昼、食べた？",
+  'web.landing.e1.r2': "アラーム、設定した？",
+  'web.landing.e1.r3': "あのメール、返信した？",
+  'web.landing.e1.open': "未回答",
+  'web.landing.e1.capTitle': "展示 1 / ホーム",
+  'web.landing.e1.cap': "2つ回答済み、1つ未回答。フォルダで整理するので、なくしません。",
+  'web.landing.e2.kicker': "02 / 見えないと忘れる",
+  'web.landing.e2.title': "「見えないものは、ないのと同じ。」",
+  'web.landing.e2.p1': "質問に時間を決めれば、そのたびに Did I が知らせます。ウィジェットなら次の質問がホーム画面にあり、ちゃんと目に入って、その場で答えられます。",
+  'web.landing.e2.p2': "Apple Watch なら手首で回答。進むとリングが埋まり、相棒も一緒です。",
+  'web.landing.e2.widgetMeta': "今夜 · 残り2",
+  'web.landing.e2.widgetQ': "充電器、入れた？",
+  'web.landing.e2.watchMeta': "自分 · 2/3",
+  'web.landing.e2.watchQ': "水、飲んだ？",
+  'web.landing.e2.capTitle': "展示 2 / ウィジェットと Apple Watch",
+  'web.landing.e2.cap': "アプリを開いて別のことに気を取られずに答えられます。",
+  'web.landing.e3.kicker': "03 / サポート",
+  'web.landing.e3.title': "「誰かが気にかけてくれると助かる。」",
+  'web.landing.e3.p1': "身近な人に、うるさくせず手伝ってもらいましょう。友だちに質問を一度、または毎日送れます。受信箱に届き、残すかは相手が選びます。家族を作ってコードを共有すれば、「犬の散歩、行った？」が全員に表示されます。",
+  'web.landing.e3.p2': "Did we は一緒にやること用。参加する人といつ数えるかを選んで、みんなで連続記録を続けます。今日終わった人がわかり、終わった人にエールを送れます。",
+  'web.landing.e3.r1': "庭に水、あげた？",
+  'web.landing.e3.s1': "2人とも",
+  'web.landing.e3.r2': "犬の散歩、行った？",
+  'web.landing.e3.s2': "待ち",
+  'web.landing.e3.r3': "歯医者、予約した？",
+  'web.landing.e3.capTitle': "展示 3 / 友だちと家族",
+  'web.landing.e3.cap': "Did you、家族の質問、Did we を並べて。",
+  'web.landing.e4.kicker': "04 / プレッシャー",
+  'web.landing.e4.title': "「たいていのアプリは、1日抜けると責めてくる。」",
+  'web.landing.e4.p1': "まだ、も立派な答えです。赤く光ることも、叱られることもありません。連続記録は役立つなら使えばOK。数字がストレスならやさしいモードに。数字は隠れて、日々はちゃんと数えられます。",
+  'web.landing.e4.days': "月 火 水 木 金 土 日",
+  'web.landing.e4.gentle': "やさしいモード",
+  'web.landing.e4.gentleLine': "連続記録の数字を隠す。夜はちゃんと数える。",
+  'web.landing.e4.capTitle': "展示 4 / 設定",
+  'web.landing.e4.cap': "一週間は残る。プレッシャーは消える。",
+  'web.landing.keep.kicker': "手に入るもの",
+  'web.landing.keep.title': "好きなかたちの、落ち着き。",
+  'web.landing.keep.l1': "ダークかライト。端末が控えめを望めば動きも穏やかに。",
+  'web.landing.keep.l2': "電波がなくても動きます。答えは保存され、あとで同期。",
+  'web.landing.keep.l3': "サインインすれば、質問、コイン、ジェム、連続記録が新しいスマホにも引き継がれます。",
+  'web.landing.keep.l4': "ショップの見た目、エール、相棒で飾ったり、友だちにギフトで贈ったり。",
+  'web.landing.keep.l5': "iPhone と Apple Watch に対応。Android はベータ版です。",
+  'web.landing.receipt.aria': "一日の例",
+  'web.landing.receipt.title': "Did I / 今日",
+  'web.landing.receipt.questions': "質問",
+  'web.landing.receipt.streak': "連続記録",
+  'web.landing.receipt.streakVal': "12夜連続",
+  'web.landing.receipt.price': "価格",
+  'web.landing.end.kicker': "朝でも昼でも夜でも",
+  'web.landing.end.title': "忘れずにやる。そして、やったことも覚えておく。",
+  'web.landing.end.lead': "iPhone は無料。Android は Google Play でベータ版です。",
   'web.nav.download': 'アプリを入手',
   'web.download.kicker': 'ダウンロード',
   'web.download.title': 'スマホで Did I',
@@ -1906,6 +1943,13 @@ export const ja = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'App Storeで無料。',
+  'web.download.i1': "ホーム画面にウィジェット。アプリを開かずに答えられます。",
+  'web.download.i2': "Apple Watch。手首で答えられます。",
+  'web.download.i3': "選んだ時間にリマインダー。",
+  'web.download.a1': "ホーム画面のウィジェット。その場で答えられます。",
+  'web.download.a3': "電波がなくても動きます。答えは保存され、あとで同期。",
+  'web.download.stepsTitle': "3ステップでベータに参加",
+  'web.download.close': "無料。サインインすれば、質問、コイン、ジェム、連続記録が新しいスマホにも引き継がれます。",
   'web.beta.kicker': 'Android ベータ',
   'web.beta.title': 'Did I のテストに参加',
   'web.beta.lead': 'Did I は Google Play でテスト中です。ベータに参加して 2 週間使い、感想を聞かせてください。',
@@ -1929,12 +1973,6 @@ export const ja = {
   'web.store.apple': 'App Storeでダウンロード',
   'web.store.play': 'Google Playで手に入れよう',
   'web.store.androidBeta': 'Androidベータに参加',
-  'web.landing.chip1': '植物に水やり',
-  'web.landing.chip2': 'お母さんに返信',
-  'web.landing.chip3': '水を飲む',
-  'web.landing.tag1': '家',
-  'web.landing.tag2': '家族',
-  'web.landing.tag3': '健康',
   'widget.tonight.tagFallback': '今夜',
   'widget.tonight.empty': 'まだ質問がありません',
   'widget.tonight.nextAt': '次の質問は {time}',
@@ -2248,11 +2286,6 @@ export const ja = {
   'help.coins': 'コインとジェム',
   "help.coinsP": "コインは毎晩答えることと、共有の連続記録でもらえます。ジェムは毎週もらえるほか、人を招待するともらえ、購入もできます。どちらもショップで見た目、応援、バディ、アクセサリー、フレームに使えます。",
   'help.shopGo': 'ショップを開く',
-  'web.landing.together.we.title': 'いっしょに',
-  'web.landing.together.we.line': '「犬の散歩した？」友だちや家族を選び、いつ達成とするかを決めて、連続記録を一緒に続けます。',
-  'web.landing.b5': 'ホーム画面のウィジェットと、選んだ時間のリマインダー。',
-  'web.landing.b6': 'フォルダとトピックで長いリストもすっきり。',
-  'web.landing.b7': 'ショップのルック、チアー、バディで飾ったり、友だちにギフトとして贈ったりできます。',
   'legal.privacy.together.title': 'Did we、繰り返し、報告',
   'legal.privacy.together.body':
     'Did we。共有の質問を始めたり参加したりすると、ほかの参加者にはあなたの表示名、Buddy (ショップで身につけているもの)、参加したかどうか、毎晩の答えが、カードの持ち主が許す範囲で見えます: すべての答え、まだの人だけ、または人数だけ。質問、スケジュール、共有の連続記録も見えます。同じ誘いがすぐに戻ってこないよう、カード、誰をいつ誘ったか、答え、催促、誘いが断られた日時を保存します。\n\n繰り返す Did you。Did you は繰り返しにできます (毎晩または一部の夜)。家族からでも、受け取るまで必ず受信箱で待ちます。受け取ったら、あなた自身のリストの質問になり、変更や削除ができます。\n\n報告とブロック。Did we や Did you を報告すると、質問とともに報告を保存し、その人をブロックします: 共有カードから抜け、その人からの誘いと Did you は止まります。相手には知らされません。報告を一件ずつ確認する人はいません。あなたを守るのはブロックです。知らせを受けた場合は報告を確認することがあります。\n\n上限。しつこさを防ぐため、新しいカード、催促、繰り返す Did you、報告には1人あたり1日の上限があります。',
@@ -2383,7 +2416,7 @@ export const ja = {
   'enter.eraseGo': '消して最初から',
   'enter.eraseBody': 'ログインしていないので、PINはこのスマホにだけあります。外すには、このスマホのDid Iを消します（質問、回答、コイン、ルック）。元に戻せません。',
   'enter.forgotTitle': 'PINを忘れましたか？',
-  'enter.forgot': 'PINを忘れた？',
+  'enter.forgot': 'PINを忘れた？',
   'clock.pm': '午後{h}:{m}',
   'clock.am': '午前{h}:{m}',
   'shop.teasedBody': 'まだ発売前です。{date}に発売。',
@@ -2596,7 +2629,7 @@ export const ja = {
   'pack.sureGoOne': '追加する',
   'pack.addedOne': '質問を1つ追加しました',
   'pack.sureGo': '追加する',
-  'pack.added': '{n} 個の質問を追加しました',
+  'pack.added': '{n} 個の質問を追加しました',
   'note.title': 'メモ',
   'note.hint': '夜をタップしてメモを追加。',
   'note.ph': '短いメモを追加',

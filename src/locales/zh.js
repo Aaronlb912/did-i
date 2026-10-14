@@ -1375,7 +1375,7 @@ export const zh = {
   'ideas.body': '这不是待办清单，也不是日历。放你事后总问的那个问题。用下面其中一个，或自己写以 Did I 开头的句子。',
   'ideas.use': '用这个',
   'ideas.writeOwn': '自己写',
-  'ideas.help': '帮助',
+  'ideas.help': '帮助',
   'wait.kicker': '还没',
   'wait.after': '{time} 之后。',
   'wait.later': '稍后',
@@ -1833,7 +1833,6 @@ export const zh = {
   'web.nav.terms': '条款',
   'web.nav.feedback': '反馈',
   'web.nav.menu': '菜单',
-  'web.footer.copy': 'Did I。今晚还没回答的问题。',
   'web.nav.press': '媒体',
   'web.press.title': '媒体与品牌',
   'web.press.lead': '媒体联系请发邮件至',
@@ -1851,43 +1850,82 @@ export const zh = {
   'web.press.color.ink': '墨色',
   'web.press.color.soft': '柔灰',
   'web.press.color.miss': '错过',
-  'web.landing.kicker': 'Did I',
-  'web.landing.title': '记得去做，也记得做过',
-  'web.landing.lead': '上床前我总在脑子里重复同样的检查。门、炉子、药。Did I 在手机上只放一个问题。做了就右滑。今晚没做就左滑。和朋友、家人一起用。',
-  'web.landing.b1': '在「今晚」里滑动。首页显示还没关上的项。',
-  'web.landing.b2': '给朋友发问题，和家人分担家务。',
-  'web.landing.together.kicker': '朋友和家人',
-  'web.landing.together.title': '一起用更好',
-  'web.landing.together.lead': 'Did I 适合和你一起生活的人，以及你牵挂的人。',
-  'web.landing.together.one.title': '问问朋友',
-  'web.landing.together.one.line': '发送“你给奶奶回电话了吗？”，一次或每晚都行。它会进入对方的收件箱，由对方决定是否保留。',
-  'web.landing.together.two.title': '共享家庭',
-  'web.landing.together.two.line': '创建家庭并分享代码。“你喂猫了吗？”会显示给所有人。',
-  'web.landing.together.three.title': '互相加油',
-  'web.landing.together.three.line': '看看今晚谁已完成，朋友完成时送上鼓励。',
-  'web.landing.b3': '装到手机上。没信号也能用。',
-  'web.landing.b4': '登录后，你的问题、金币、宝石和连续记录会跟着你到新手机。',
-  'web.landing.phoneKicker': '今晚',
-  'web.landing.demo1': '我浇花了吗？',
-  'web.landing.demo2': '我回妈妈消息了吗？',
-  'web.landing.demo3': '我喝够水了吗？',
-  'web.landing.demo4': '我把垃圾拿出去了吗？',
-  'web.landing.float1': '钥匙',
-  'web.landing.float2': '药',
-  'web.landing.float3': '充电',
-  'web.landing.stepsTitle': '怎么用',
-  'web.landing.step1.num': '1',
-  'web.landing.step1.title': '一次一个问题',
-  'web.landing.step1.line': '不是整张待办清单。只是上床前还在想的那一件。',
-  'web.landing.step2.num': '2',
-  'web.landing.step2.title': '左滑或右滑',
-  'web.landing.step2.line': '做了？右滑。今晚不做？左滑。这就是今晚的答案。',
-  'web.landing.step3.num': '3',
-  'web.landing.step3.title': '首页显示还剩什么',
-  'web.landing.step3.line': '其他的等另一个晚上。不用点清单。连续记录保持真实。',
-  'web.landing.band': '不止一个问题的时候',
-  'web.landing.closeTitle': '别再绕同一个担心打转',
-  'web.landing.closeLead': 'iPhone 和 Android 免费。',
+  'web.landing.strip.tonight': "今晚",
+  'web.landing.strip.vol': "每日记录 / 第1期",
+  'web.landing.hero.kicker': "给忙碌的大脑",
+  'web.landing.hero.title': "记得去做，",
+  'web.landing.hero.titleEm': "也记得做过。",
+  'web.landing.hero.lead': "有些大脑在事情做完前就跳走了。之后循环开始：我吃午饭了吗？车库关了吗？Did I 会在你选的时间问你：早上、下午或晚上。也可以在一天结束时逐个确认，屏幕上只有一个问题。做了就右滑，没做就左滑。然后脑子就能放下了。",
+  'web.landing.hero.c1': "屏幕上只有一件事",
+  'web.landing.hero.c2': "在你选的时间提问",
+  'web.landing.hero.c3': "错过也不内疚",
+  'web.landing.hero.c4': "免费",
+  'web.landing.phone.aria': "Did I 的今晚页面，一个问题正被右滑",
+  'web.landing.phone.q1': "设闹钟",
+  'web.landing.phone.f1': "早上",
+  'web.landing.phone.q2': "吃午饭",
+  'web.landing.phone.f2': "我",
+  'web.landing.phone.q3': "给手机充电",
+  'web.landing.phone.f3': "家",
+  'web.landing.phone.card': "我关车库了吗？",
+  'web.landing.log.kicker': "妨碍你的事",
+  'web.landing.log.count': "4 条记录",
+  'web.landing.log.title': "妨碍你的事，以及 Did I 怎么帮你",
+  'web.landing.e1.kicker': "01 / 循环",
+  'web.landing.e1.title': "“我知道我做了，只是不记得做过。”",
+  'web.landing.e1.p1': "每个问题只写一次，再选它何时出现：每天、每隔几天、只一次，或做完后隔一阵。可以给它定个时间，比如早上，也可以留到晚上一起过一遍。每次都一样，一次一个，你总知道接下来是什么。做了？右滑。还没？左滑。",
+  'web.landing.e1.p2': "没有长长的清单盯着你。首页只显示还没完成的事。",
+  'web.landing.e1.r1': "我吃午饭了吗？",
+  'web.landing.e1.r2': "我设闹钟了吗？",
+  'web.landing.e1.r3': "我回那封邮件了吗？",
+  'web.landing.e1.open': "还没完成",
+  'web.landing.e1.capTitle': "展示 1 / 首页",
+  'web.landing.e1.cap': "两个已答，一个未完成。文件夹帮你分类，什么都不会丢。",
+  'web.landing.e2.kicker': "02 / 眼不见，心不想",
+  'web.landing.e2.title': "“看不见的，就等于不存在。”",
+  'web.landing.e2.p1': "给问题定个时间，Did I 每次都会准时提醒你。小组件把下一个问题放在主屏幕上，你真的会看到，还能直接回答。",
+  'web.landing.e2.p2': "在 Apple Watch 上，抬手就能回答。圆环随进度填满，你的小伙伴也一起。",
+  'web.landing.e2.widgetMeta': "今晚 · 还剩 2 个",
+  'web.landing.e2.widgetQ': "我带充电器了吗？",
+  'web.landing.e2.watchMeta': "我 · 2/3",
+  'web.landing.e2.watchQ': "我喝水了吗？",
+  'web.landing.e2.capTitle': "展示 2 / 小组件和 Apple Watch",
+  'web.landing.e2.cap': "不用打开应用，也不会被别的事吸走。",
+  'web.landing.e3.kicker': "03 / 支持",
+  'web.landing.e3.title': "“有人问一声，会有帮助。”",
+  'web.landing.e3.p1': "让身边的人帮忙，而不是唠叨。给朋友发一个问题，一次或每天。它会进到对方的收件箱，由对方决定是否保留。创建家庭并分享代码，“你遛狗了吗？”就会出现在每个人那里。",
+  'web.landing.e3.p2': "Did we 用于一起做的事：选好谁参与、何时算数，一起保持连续记录。看看今天谁完成了，有人完成时送上鼓励。",
+  'web.landing.e3.r1': "我们浇花园了吗？",
+  'web.landing.e3.s1': "两人都做了",
+  'web.landing.e3.r2': "你遛狗了吗？",
+  'web.landing.e3.s2': "等待中",
+  'web.landing.e3.r3': "你约牙医了吗？",
+  'web.landing.e3.capTitle': "展示 3 / 朋友和家人",
+  'web.landing.e3.cap': "Did you、家庭问题和 Did we，并排展示。",
+  'web.landing.e4.kicker': "04 / 压力",
+  'web.landing.e4.title': "“大多数应用在我漏掉一天时让我内疚。”",
+  'web.landing.e4.p1': "还没，也是个好答案。没有红色闪烁，也没有责备。连续记录有帮助就用。如果数字让你有压力，打开温和模式：数字会隐藏，日子照样算数。",
+  'web.landing.e4.days': "一 二 三 四 五 六 日",
+  'web.landing.e4.gentle': "温和模式",
+  'web.landing.e4.gentleLine': "隐藏连续记录数字，每晚照样算数。",
+  'web.landing.e4.capTitle': "展示 4 / 设置",
+  'web.landing.e4.cap': "一周还在，压力没了。",
+  'web.landing.keep.kicker': "你会得到",
+  'web.landing.keep.title': "你喜欢的那种平静。",
+  'web.landing.keep.l1': "深色或浅色，手机要求少动画时就更安静。",
+  'web.landing.keep.l2': "没信号也能用。答案会保存，稍后同步。",
+  'web.landing.keep.l3': "登录后，你的问题、金币、宝石和连续记录都会跟到新手机上。",
+  'web.landing.keep.l4': "用商店里的外观、鼓励和小伙伴装扮它，或送给朋友当礼物。",
+  'web.landing.keep.l5': "支持 iPhone 和 Apple Watch。Android 版在测试中。",
+  'web.landing.receipt.aria': "示例一天",
+  'web.landing.receipt.title': "Did I / 今天",
+  'web.landing.receipt.questions': "问题",
+  'web.landing.receipt.streak': "连续记录",
+  'web.landing.receipt.streakVal': "连续 12 晚",
+  'web.landing.receipt.price': "价格",
+  'web.landing.end.kicker': "早上、中午或晚上",
+  'web.landing.end.title': "记得去做，也记得做过。",
+  'web.landing.end.lead': "iPhone 版免费。Android 版正在 Google Play 测试。",
   'web.nav.download': '下载应用',
   'web.download.kicker': '下载',
   'web.download.title': '在手机上使用 Did I',
@@ -1898,6 +1936,13 @@ export const zh = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'App Store 免费。',
+  'web.download.i1': "主屏幕小组件，不用打开应用就能回答。",
+  'web.download.i2': "Apple Watch，抬手就能回答。",
+  'web.download.i3': "在你选的时间提醒你。",
+  'web.download.a1': "主屏幕小组件，直接在上面回答。",
+  'web.download.a3': "没信号也能用。答案会保存，稍后同步。",
+  'web.download.stepsTitle': "3 步加入测试版",
+  'web.download.close': "免费。登录后，你的问题、金币、宝石和连续记录都会跟到新手机上。",
   'web.beta.kicker': 'Android 测试版',
   'web.beta.title': '帮忙测试 Did I',
   'web.beta.lead': 'Did I 正在 Google Play 上测试。加入测试版，用两周，告诉我们你的想法。',
@@ -1921,12 +1966,6 @@ export const zh = {
   'web.store.apple': '在 App Store 下载',
   'web.store.play': '在 Google Play 获取',
   'web.store.androidBeta': '加入 Android 测试版',
-  'web.landing.chip1': '浇花',
-  'web.landing.chip2': '回妈妈消息',
-  'web.landing.chip3': '喝水',
-  'web.landing.tag1': '家',
-  'web.landing.tag2': '家人',
-  'web.landing.tag3': '健康',
   'widget.tonight.tagFallback': '今晚',
   'widget.tonight.empty': '还没有问题',
   'widget.tonight.nextAt': '下一个问题：{time}',
@@ -2237,11 +2276,6 @@ export const zh = {
   'help.coins': '金币和宝石',
   "help.coinsP": "金币来自每晚回答和共同的连续记录。宝石每周都有，邀请别人也能得到，也可以购买。两者都能在商店里换外观、加油、伙伴、配饰和相框。",
   'help.shopGo': '打开商店',
-  'web.landing.together.we.title': '一起做',
-  'web.landing.together.we.line': '我们遛狗了吗？选择朋友或家人，决定什么时候算完成，一起保持连续记录。',
-  'web.landing.b5': '主屏幕小组件，以及在你选的时间提醒。',
-  'web.landing.b6': '文件夹和话题让长列表井井有条。',
-  'web.landing.b7': '用商店里的外观、欢呼和小伙伴打扮一下，也可以当作礼物送给朋友。',
   'legal.privacy.together.title': 'Did we、重复和举报',
   'legal.privacy.together.body':
     'Did we。当你发起或加入一个共享问题时，其他成员能看到你的显示名称、你的Buddy（你在商店里佩戴的那个）、你是否已加入，以及你每晚的回答，范围由卡片主人决定：每个回答、只显示还没完成的人，或只显示人数。他们也能看到问题、安排和共享的连续记录。我们会保存卡片、邀请了谁以及何时邀请、回答、提醒，以及邀请被拒绝的时间，这样同一个邀请不会马上再来。\n\n重复的 Did you。Did you 可以设为重复（每晚或某些晚上）。即使来自家人，它也总是在你的收件箱里等你保留。保留后，它就是你自己列表里的问题，你可以修改或删除。\n\n举报和屏蔽。举报 Did we 或 Did you 会保存一条带有问题内容的举报，并屏蔽对方：你会离开共享的卡片，对方的邀请和 Did you 也会停止。对方不会收到通知。没有人逐条审核举报；保护你的是屏蔽。如果有人向我们反映，我们可能会查看举报。\n\n上限。为防止打扰，服务器会限制每人每天的新卡片、提醒、重复的 Did you 和举报数量。',
@@ -2372,7 +2406,7 @@ export const zh = {
   'enter.eraseGo': '清除并重新开始',
   'enter.eraseBody': '你没有登录，所以 PIN 只保存在这台手机上。要移除它，需要清除这台手机上的 Did I：问题、回答、金币和外观。无法撤销。',
   'enter.forgotTitle': '忘记 PIN 了？',
-  'enter.forgot': '忘记 PIN？',
+  'enter.forgot': '忘记 PIN？',
   'clock.pm': '下午{h}:{m}',
   'clock.am': '上午{h}:{m}',
   'shop.teasedBody': '还没上架。{date} 开售。',
@@ -2585,7 +2619,7 @@ export const zh = {
   'pack.sureGoOne': '添加',
   'pack.addedOne': '已添加 1 个问题',
   'pack.sureGo': '添加',
-  'pack.added': '已添加 {n} 个问题',
+  'pack.added': '已添加 {n} 个问题',
   'note.title': '备注',
   'note.hint': '点一个晚上来添加备注。',
   'note.ph': '添加一条简短备注',

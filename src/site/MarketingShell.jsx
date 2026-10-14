@@ -44,6 +44,11 @@ export function MarketingShell({ children, path, wide = false }) {
         <a className="di-site-brand" href="/">
           Did I
         </a>
+        {here !== '/download' ? (
+          <a href="/download" className="di-site-download di-site-quick">
+            {t('web.nav.download')}
+          </a>
+        ) : null}
         <button
           type="button"
           className="di-site-burger"
@@ -85,7 +90,7 @@ export function MarketingShell({ children, path, wide = false }) {
       <main className={wide ? 'di-door di-door-wide' : 'di-door'}>{children}</main>
       <footer className="di-site-foot">
         <p>
-          {t('web.footer.copy')}
+          {t('tonight.didI')}. {t('web.landing.end.title')}
           {email ? (
             <>
               {' '}

@@ -1378,7 +1378,7 @@ export const ko = {
     '할 일 목록도 캘린더도 아니에요. 나중에 또 묻는 질문을 두는 곳이에요. 여기서 고르거나 Did I로 시작하는 문장을 직접 쓰세요.',
   'ideas.use': '이거 쓰기',
   'ideas.writeOwn': '직접 쓰기',
-  'ideas.help': '도움말',
+  'ideas.help': '도움말',
   'wait.kicker': '아직',
   'wait.after': '{time} 이후.',
   'wait.later': '나중에',
@@ -1842,7 +1842,6 @@ export const ko = {
   'web.nav.terms': '약관',
   'web.nav.feedback': '의견',
   'web.nav.menu': '메뉴',
-  'web.footer.copy': 'Did I. 오늘 밤 아직 답하지 않은 질문.',
   'web.nav.press': '보도자료',
   'web.press.title': '보도자료와 브랜드',
   'web.press.lead': '취재 문의는',
@@ -1860,44 +1859,82 @@ export const ko = {
   'web.press.color.ink': '잉크',
   'web.press.color.soft': '소프트',
   'web.press.color.miss': '놓침',
-  'web.landing.kicker': 'Did I',
-  'web.landing.title': '잊지 말고 하고, 한 것도 기억하세요',
-  'web.landing.lead':
-    '잠자리에 가면서 같은 확인을 계속 반복했어요. 문, 가스, 약. Did I는 폰에 질문 하나만 띄웁니다. 했으면 오른쪽으로 스와이프. 오늘 밤 아니면 왼쪽. 친구, 가족과 함께 쓰세요.',
-  'web.landing.b1': '오늘 밤에서 스와이프. 홈에 아직 열린 것이 보여요.',
-  'web.landing.b2': '친구에게 질문을 보내고, 가족과 집안일을 나누세요.',
-  'web.landing.together.kicker': '친구와 가족',
-  'web.landing.together.title': '함께라서 더 좋아요',
-  'web.landing.together.lead': 'Did I는 함께 사는 사람, 마음 쓰이는 사람을 위한 앱이에요.',
-  'web.landing.together.one.title': '친구에게 묻기',
-  'web.landing.together.one.line': '"할머니께 다시 전화했어?"를 한 번 또는 매일 밤 보내세요. 받은함에 도착하고, 받을지는 상대가 정해요.',
-  'web.landing.together.two.title': '가족과 함께',
-  'web.landing.together.two.line': '가족을 만들고 코드를 공유하세요. "고양이 밥 줬어?"가 모두에게 보여요.',
-  'web.landing.together.three.title': '서로 응원하기',
-  'web.landing.together.three.line': '오늘 밤 누가 끝냈는지 보고, 친구가 끝내면 응원을 보내세요.',
-  'web.landing.b3': '폰에 설치하세요. 신호 없어도 됩니다.',
-  'web.landing.b4': '로그인하면 질문, 코인, 젬, 연속 기록이 새 폰으로 따라와요.',
-  'web.landing.phoneKicker': '오늘 밤',
-  'web.landing.demo1': '화분에 물 줬나요?',
-  'web.landing.demo2': '엄마한테 답장했나요?',
-  'web.landing.demo3': '물 충분히 마셨나요?',
-  'web.landing.demo4': '쓰레기 내놨나요?',
-  'web.landing.float1': '열쇠',
-  'web.landing.float2': '약',
-  'web.landing.float3': '충전',
-  'web.landing.stepsTitle': '어떻게 쓰나요',
-  'web.landing.step1.num': '1',
-  'web.landing.step1.title': '한 번에 질문 하나',
-  'web.landing.step1.line': '할 일 전체가 아니에요. 잠자리에 가면서 계속 떠오르는 그 하나만.',
-  'web.landing.step2.num': '2',
-  'web.landing.step2.title': '오른쪽 또는 왼쪽으로 스와이프',
-  'web.landing.step2.line': '했나요? 오른쪽. 오늘 밤이 아닌가요? 왼쪽. 그게 오늘 밤의 답이에요.',
-  'web.landing.step3.num': '3',
-  'web.landing.step3.title': '홈에 남은 것 표시',
-  'web.landing.step3.line': '나머지는 다른 밤을 기다려요. 목록을 누를 필요 없어요. 연속 기록은 정직하게 유지돼요.',
-  'web.landing.band': '질문이 하나 이상일 때',
-  'web.landing.closeTitle': '같은 걱정을 빙빙 돌지 마세요',
-  'web.landing.closeLead': 'iPhone과 Android에서 무료.',
+  'web.landing.strip.tonight': "오늘 밤",
+  'web.landing.strip.vol': "하루 기록 / 제1호",
+  'web.landing.hero.kicker': "바쁜 머리를 위해",
+  'web.landing.hero.title': "잊지 말고 하고,",
+  'web.landing.hero.titleEm': "한 것도 기억하세요.",
+  'web.landing.hero.lead': "일을 끝내기 전에 다음으로 넘어가는 머리도 있어요. 그러면 나중에 고리가 시작돼요. 점심 먹었나? 차고 닫았나? Did I는 아침, 오후, 밤 중 고른 시간에 물어봐요. 하루 끝에 한 번에 하나씩 확인해도 돼요. 화면엔 질문 하나뿐이에요. 했으면 오른쪽, 안 했으면 왼쪽으로 밀어요. 그러면 머리가 놓아줄 수 있어요.",
+  'web.landing.hero.c1': "화면엔 하나만",
+  'web.landing.hero.c2': "고른 때에 물어봐요",
+  'web.landing.hero.c3': "놓쳐도 죄책감 없이",
+  'web.landing.hero.c4': "무료",
+  'web.landing.phone.aria': "Did I의 오늘 밤 화면, 질문을 오른쪽으로 미는 모습",
+  'web.landing.phone.q1': "알람 맞추기",
+  'web.landing.phone.f1': "아침",
+  'web.landing.phone.q2': "점심 먹기",
+  'web.landing.phone.f2': "나",
+  'web.landing.phone.q3': "휴대폰 충전",
+  'web.landing.phone.f3': "집",
+  'web.landing.phone.card': "차고 닫았나요?",
+  'web.landing.log.kicker': "방해가 되는 것",
+  'web.landing.log.count': "항목 4개",
+  'web.landing.log.title': "방해가 되는 것들, 그리고 Did I가 하는 일",
+  'web.landing.e1.kicker': "01 / 고리",
+  'web.landing.e1.title': "“한 건 알아요. 한 기억이 안 날 뿐이에요.”",
+  'web.landing.e1.p1': "질문은 한 번만 쓰고, 언제 나올지 고르세요. 매일, 며칠마다, 한 번만, 또는 한 뒤 가끔씩. 아침처럼 시간을 정하거나, 밤 끝에 한꺼번에 확인해도 돼요. 매번 같은 모습으로 하나씩 나와서 다음이 뭔지 늘 알 수 있어요. 했나요? 오른쪽으로. 아직요? 왼쪽으로.",
+  'web.landing.e1.p2': "긴 목록이 당신을 노려보지 않아요. 홈에는 아직 남은 것만 보여요.",
+  'web.landing.e1.r1': "점심 먹었나요?",
+  'web.landing.e1.r2': "알람 맞췄나요?",
+  'web.landing.e1.r3': "그 메일 답장했나요?",
+  'web.landing.e1.open': "아직 남음",
+  'web.landing.e1.capTitle': "자료 1 / 홈",
+  'web.landing.e1.cap': "2개는 답했고 1개는 남았어요. 폴더로 정리해서 잃어버리지 않아요.",
+  'web.landing.e2.kicker': "02 / 안 보이면 잊어요",
+  'web.landing.e2.title': "“안 보이면 없는 거예요.”",
+  'web.landing.e2.p1': "질문에 시간을 정하면 그때마다 Did I가 알려줘요. 위젯은 다음 질문을 홈 화면에 띄워서 정말 눈에 보이고, 바로 거기서 답할 수 있어요.",
+  'web.landing.e2.p2': "Apple Watch에서는 손목으로 답해요. 진행할수록 링이 차고, 친구 캐릭터도 함께해요.",
+  'web.landing.e2.widgetMeta': "오늘 밤 · 2개 남음",
+  'web.landing.e2.widgetQ': "충전기 챙겼나요?",
+  'web.landing.e2.watchMeta': "나 · 2/3",
+  'web.landing.e2.watchQ': "물 마셨나요?",
+  'web.landing.e2.capTitle': "자료 2 / 위젯과 Apple Watch",
+  'web.landing.e2.cap': "앱을 열었다가 다른 데 빠지지 않고 답할 수 있어요.",
+  'web.landing.e3.kicker': "03 / 도움",
+  'web.landing.e3.title': "“누가 챙겨주면 도움이 돼요.”",
+  'web.landing.e3.p1': "가까운 사람이 잔소리 없이 도와줄 수 있어요. 친구에게 질문을 한 번 또는 매일 보내세요. 받은 편지함에 도착하고, 받을지는 친구가 정해요. 가족을 만들고 코드를 공유하면 “강아지 산책시켰나요?”가 모두에게 보여요.",
+  'web.landing.e3.p2': "Did we는 함께 하는 일을 위한 거예요. 누가 참여할지, 언제 셀지 고르고 함께 연속 기록을 이어가요. 오늘 누가 끝냈는지 보고, 끝낸 사람에게 응원을 보내세요.",
+  'web.landing.e3.r1': "정원에 물 줬나요?",
+  'web.landing.e3.s1': "둘 다 함",
+  'web.landing.e3.r2': "강아지 산책시켰나요?",
+  'web.landing.e3.s2': "기다리는 중",
+  'web.landing.e3.r3': "치과 예약했나요?",
+  'web.landing.e3.capTitle': "자료 3 / 친구와 가족",
+  'web.landing.e3.cap': "Did you, 가족 질문, Did we를 나란히.",
+  'web.landing.e4.kicker': "04 / 부담",
+  'web.landing.e4.title': "“대부분의 앱은 하루 놓치면 기분 나쁘게 해요.”",
+  'web.landing.e4.p1': "아직도 괜찮은 답이에요. 빨갛게 깜빡이지도, 혼내지도 않아요. 연속 기록은 도움이 될 때만 쓰세요. 숫자가 부담되면 부드러운 모드를 켜세요. 숫자는 숨고, 날들은 그대로 세져요.",
+  'web.landing.e4.days': "월 화 수 목 금 토 일",
+  'web.landing.e4.gentle': "부드러운 모드",
+  'web.landing.e4.gentleLine': "연속 기록 숫자를 숨겨요. 밤은 계속 세져요.",
+  'web.landing.e4.capTitle': "자료 4 / 설정",
+  'web.landing.e4.cap': "한 주는 남고, 부담은 사라져요.",
+  'web.landing.keep.kicker': "누리는 것",
+  'web.landing.keep.title': "원하는 방식의 차분함.",
+  'web.landing.keep.l1': "다크 또는 라이트. 휴대폰이 원하면 움직임도 차분하게.",
+  'web.landing.keep.l2': "신호가 없어도 돼요. 답은 저장되고 나중에 동기화돼요.",
+  'web.landing.keep.l3': "로그인하면 질문, 코인, 젬, 연속 기록이 새 휴대폰으로 따라와요.",
+  'web.landing.keep.l4': "상점의 테마, 응원, 친구 캐릭터로 꾸미거나, 친구에게 선물해요.",
+  'web.landing.keep.l5': "iPhone과 Apple Watch에서 써요. Android는 베타예요.",
+  'web.landing.receipt.aria': "하루 예시",
+  'web.landing.receipt.title': "Did I / 오늘",
+  'web.landing.receipt.questions': "질문",
+  'web.landing.receipt.streak': "연속 기록",
+  'web.landing.receipt.streakVal': "12일 밤 연속",
+  'web.landing.receipt.price': "가격",
+  'web.landing.end.kicker': "아침, 낮, 밤 언제든",
+  'web.landing.end.title': "잊지 말고 하고, 한 것도 기억하세요.",
+  'web.landing.end.lead': "iPhone에서 무료. Android는 Google Play에서 베타예요.",
   'web.nav.download': '앱 다운로드',
   'web.download.kicker': '다운로드',
   'web.download.title': '내 폰에 Did I',
@@ -1908,6 +1945,13 @@ export const ko = {
   'web.download.iphoneKicker': 'iPhone',
   'web.download.iphone': 'App Store',
   'web.download.iphoneNote': 'App Store에서 무료.',
+  'web.download.i1': "홈 화면 위젯. 앱을 열지 않고 답해요.",
+  'web.download.i2': "Apple Watch. 손목으로 답해요.",
+  'web.download.i3': "고른 시간에 알림.",
+  'web.download.a1': "홈 화면 위젯. 바로 거기서 답해요.",
+  'web.download.a3': "신호가 없어도 돼요. 답은 저장되고 나중에 동기화돼요.",
+  'web.download.stepsTitle': "3단계로 베타 참여",
+  'web.download.close': "무료. 로그인하면 질문, 코인, 젬, 연속 기록이 새 휴대폰으로 따라와요.",
   'web.beta.kicker': 'Android 베타',
   'web.beta.title': 'Did I 테스트 돕기',
   'web.beta.lead': 'Did I는 Google Play에서 테스트 중이에요. 베타에 참여해 2주 동안 써 보고 어떤지 알려 주세요.',
@@ -1931,12 +1975,6 @@ export const ko = {
   'web.store.apple': 'App Store에서 다운로드',
   'web.store.play': 'Google Play에서 받기',
   'web.store.androidBeta': 'Android 베타 참여하기',
-  'web.landing.chip1': '화분에 물 주기',
-  'web.landing.chip2': '엄마한테 답장',
-  'web.landing.chip3': '물 마시기',
-  'web.landing.tag1': '집',
-  'web.landing.tag2': '가족',
-  'web.landing.tag3': '건강',
   'widget.tonight.tagFallback': '오늘 밤',
   'widget.tonight.empty': '아직 질문이 없어요',
   'widget.tonight.nextAt': '다음 질문은 {time}에',
@@ -2250,11 +2288,6 @@ export const ko = {
   'help.coins': '코인과 보석',
   "help.coinsP": "코인은 매일 밤 답하거나 공유 연속 기록으로 받아요. 보석은 매주 받고, 사람을 초대하거나 구매할 수 있어요. 둘 다 상점에서 룩, 응원, 버디, 액세서리, 프레임에 써요.",
   'help.shopGo': '상점 열기',
-  'web.landing.together.we.title': '함께 하기',
-  'web.landing.together.we.line': '강아지 산책했어요? 친구나 가족을 고르고, 언제 인정할지 정하고, 함께 연속 기록을 이어가요.',
-  'web.landing.b5': '홈 화면 위젯과 원하는 시간에 오는 알림.',
-  'web.landing.b6': '폴더와 주제로 긴 목록도 깔끔하게.',
-  'web.landing.b7': '상점의 룩, 치어, 버디로 꾸며 보세요. 친구에게 선물로 보낼 수도 있어요.',
   'legal.privacy.together.title': 'Did we, 반복, 신고',
   'legal.privacy.together.body':
     'Did we. 함께하는 질문을 만들거나 참여하면, 다른 참여자들은 카드 주인이 허용하는 범위에서 내 표시 이름, Buddy(상점에서 착용한 것), 참여 여부, 매일 밤의 답을 볼 수 있어요: 모든 답, 아직 안 한 사람만, 또는 숫자만. 질문, 일정, 함께하는 연속 기록도 보여요. 같은 요청이 바로 다시 오지 않도록 카드, 누구를 언제 초대했는지, 답, 재촉, 요청을 거절한 시각을 저장해요.\n\n반복되는 Did you. Did you는 반복할 수 있어요(매일 밤 또는 일부 밤). 가족이 보냈더라도 내가 받을 때까지 항상 받은편지함에서 기다려요. 받으면 내 목록의 질문이 되고, 바꾸거나 지울 수 있어요.\n\n신고와 차단. Did we나 Did you를 신고하면 질문과 함께 신고를 저장하고 그 사람을 차단해요: 함께하는 카드에서 나가고, 그 사람의 요청과 Did you가 멈춰요. 상대에게 알리지 않아요. 신고를 하나하나 검토하는 사람은 없고, 차단이 나를 지켜요. 누군가 알려 오면 신고를 살펴볼 수 있어요.\n\n한도. 괴롭힘을 막기 위해 서버가 새 카드, 재촉, 반복 Did you, 신고를 사람당 하루 한도로 제한해요.',
@@ -2385,7 +2418,7 @@ export const ko = {
   'enter.eraseGo': '지우고 새로 시작',
   'enter.eraseBody': '로그인하지 않아서 PIN은 이 휴대폰에만 있어요. PIN을 없애려면 이 휴대폰의 Did I를 지워야 해요: 질문, 답, 코인, 룩. 되돌릴 수 없어요.',
   'enter.forgotTitle': 'PIN을 잊었나요?',
-  'enter.forgot': 'PIN을 잊었나요?',
+  'enter.forgot': 'PIN을 잊었나요?',
   'clock.pm': '오후 {h}:{m}',
   'clock.am': '오전 {h}:{m}',
   'shop.teasedBody': '아직 나오지 않았어요. {date}에 판매 시작.',
@@ -2598,7 +2631,7 @@ export const ko = {
   'pack.sureGoOne': '추가하기',
   'pack.addedOne': '질문 1개를 추가했어요',
   'pack.sureGo': '추가하기',
-  'pack.added': '질문 {n}개 추가됨',
+  'pack.added': '질문 {n}개 추가됨',
   'note.title': '메모',
   'note.hint': '밤을 탭해 메모를 추가하세요.',
   'note.ph': '짧은 메모 추가',

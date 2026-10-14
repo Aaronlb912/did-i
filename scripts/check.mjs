@@ -1570,7 +1570,7 @@ test('no new strings are left in English in other languages', () => {
 // Chinese, Japanese and Korean keep only product and brand words in English.
 test('zh, ja and ko have no stray English words', () => {
   const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
-    'Safari Chrome Siri Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
+    'Safari Chrome Siri Watch Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
     'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS').toLowerCase().split(' '))
   const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
     key === 'site.door.title' || key === 'site.read.p5' || mayMatchEnglish(key)
