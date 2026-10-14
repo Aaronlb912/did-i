@@ -66,7 +66,7 @@ export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso 
   const done = rows.filter((r) => r.done).length
   return {
     people: rows,
-    title: say('together.widgetTitle', 'Together tonight'),
+    title: say('together.widgetTitle', 'Together today'),
     // Same words as the Friends page when nobody is done yet.
     countLine: !rows.length
       ? ''

@@ -132,7 +132,7 @@ import { rollColumns, rollStops } from '../native/lib/roll-digits.js'
 import { aimCheer, takeCheerAim } from '../native/lib/cheer-origin.js'
 import { streakParts } from '../src/lib/streak-copy.js'
 import { dropToast, nextToast, showToast, toastQueue, undoUp } from '../native/lib/toast-queue.js'
-import { SKY_FPS, STARS, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
+import { SKY_FPS, STARS, isDaytime, sunAt, moonAt, moonPath, moonPhase, starAt } from '../native/lib/night-sky.js'
 import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
 import { phoneMatchMedia } from '../native/lib/reduce-media.js'
@@ -1134,6 +1134,21 @@ test('a note on one night rides the answer, is capped, and survives two phones s
   assert.equal(answersToSend(fresh, true)[0].a, answer.answeredAt)
 })
 
+test('answer times compare by time: old zoneless rows against new UTC ones', () => {
+  // An old row written at 22:00 local, and a UTC row one hour later.
+  const old = new Date(2026, 9, 14, 22, 0, 0)
+  const pad = (n) => String(n).padStart(2, '0')
+  const zoneless = `2026-10-14T22:00:00`
+  const utc = new Date(old.getTime() + 3600_000).toISOString()
+  const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [{ id: 'a1', lampId: 'l1', periodKey: '2026-10-14', status: 'skip', answeredAt: zoneless }] }
+  const row = { lamp_id: 'l1', period_key: '2026-10-14', board_id: 'b1', status: 'yes', answered_at: utc, note: '' }
+  assert.equal(applyAnswers({ boards: [book] }, [row]).changed, 1)
+  // The other way: a newer zoneless answer here keeps out an older UTC row.
+  const older = { ...row, answered_at: new Date(old.getTime() - 3600_000).toISOString() }
+  assert.equal(applyAnswers({ boards: [book] }, [older]).changed, 0)
+  assert.equal(pad(new Date(utc).getHours()), '23')
+})
+
 test('a question pack adds only what is missing, and undo takes them off for good', () => {
   for (const pack of PACKS) {
     assert.equal(pack.items.length, 3, `${pack.id} adds 3`)
@@ -1570,7 +1585,7 @@ test('no new strings are left in English in other languages', () => {
 // Chinese, Japanese and Korean keep only product and brand words in English.
 test('zh, ja and ko have no stray English words', () => {
   const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
-    'Safari Chrome Siri Watch Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
+    'Safari Chrome Siri Watch Wear OS Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
     'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS').toLowerCase().split(' '))
   const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
     key === 'site.door.title' || key === 'site.read.p5' || mayMatchEnglish(key)
@@ -2565,7 +2580,7 @@ test('the android tonight widget stays inside its frame', () => {
     'the widget task does not prefer a stale snapshot over the shelf',
   )
   assert.ok(
-    taskBody.indexOf('renderWidget(') < taskBody.indexOf('later !== stamp'),
+    taskBody.includes('renderWidget(renderDidITonightAndroidWidget(props') && !taskBody.includes('later !== stamp'),
     'the widget task still draws after a native card advance',
   )
   const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
@@ -3293,7 +3308,7 @@ test('the cheer bursts from the card that was answered, once', () => {
   assert.equal(takeCheerAim(), null, 'a spot is used once')
   aimCheer(1, 2)
   assert.equal(takeCheerAim(Date.now() + 5000), null, 'a stale spot is dropped')
-  assert.deepEqual(streakParts(7), { before: '', after: ' nights in a row' })
+  assert.deepEqual(streakParts(7), { before: '', after: ' days in a row' })
   assert.equal(streakParts(1), null)
 })
 
@@ -3333,6 +3348,20 @@ test('a quiet night sky drifts a handful of frames per second', () => {
   assert.ok(moon.x >= 0 && moon.x + 40 <= 300, 'the moon starts in full view')
   const later = moonAt(100000, 300, 40)
   assert.ok(later.x >= -40 && later.x <= 300, 'and wraps inside the sky')
+})
+
+test('by day the sun rises left, peaks at noon and sets right', () => {
+  const at = (h, m = 0) => new Date(2026, 9, 14, h, m)
+  assert.equal(isDaytime(at(5, 59)), false)
+  assert.equal(isDaytime(at(6)), true)
+  assert.equal(isDaytime(at(17, 59)), true)
+  assert.equal(isDaytime(at(18)), false)
+  const morning = sunAt(at(7), 300, 200, 40)
+  const noon = sunAt(at(12), 300, 200, 40)
+  const evening = sunAt(at(17), 300, 200, 40)
+  assert.ok(morning.x < noon.x && noon.x < evening.x, 'it crosses left to right')
+  assert.ok(noon.y < morning.y && noon.y < evening.y && noon.y >= 0, 'it is highest at noon and stays in the sky')
+  assert.ok(evening.x + 40 <= 300 && morning.y + 40 <= 200, 'it stays in the box')
 })
 
 test('the collection badge counts what the shop has sold', () => {
@@ -3689,10 +3718,10 @@ test('a first cleared night is not "1 nights" and is not on fire yet', () => {
   assert.equal(one.title, en['streak.hitTitleClear'])
   assert.equal(one.body, en['streak.hitBodyOne'])
   assert.equal(streakHitCopy(2).title, en['streak.hitTitleClear'], 'two nights is not a fire yet')
-  assert.ok(streakHitCopy(2).body.startsWith('2 nights'))
+  assert.ok(streakHitCopy(2).body.startsWith('2 days'))
   assert.equal(streakHitCopy(3).title, en['streak.hitTitle'], 'three nights is')
-  assert.equal(streakNights(1), '1 night in a row')
-  assert.equal(streakNights(7), '7 nights in a row')
+  assert.equal(streakNights(1), '1 day in a row')
+  assert.equal(streakNights(7), '7 days in a row')
 })
 
 test('the streak keeps counting past the five the room shows', () => {
@@ -4149,7 +4178,7 @@ test('every action that changes data on the server says so on the phone', () => 
   assert.ok(/id: 'sync-miss'[^\n]*onPress: \(\) => pullAndMerge\(\)/.test(tonightSrc), 'the sync miss toast retries on tap')
   // After sign-in, loading rows until the first pull lands; never the done card.
   assert.ok(/if \(pullWait\) \{[\s\S]{0,300}<LateMeta/.test(tonightSrc), 'Tonight shows loading rows while the first pull is out')
-  assert.ok(tonightSrc.indexOf('if (pullWait)') < tonightSrc.indexOf("t('tonight.doneTitle')"), 'loading comes before the done card')
+  assert.ok(tonightSrc.indexOf('if (pullWait)') < tonightSrc.indexOf("'tonight.doneTitle'"), 'loading comes before the done card')
   const syncSrc = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(/firstPull: true/.test(syncSrc) && /pulling = null\s*\n?\s*if \(state\.firstPull\) setState\(\{ firstPull: false \}\)/.test(syncSrc.replace(/\r/g, '')), 'the first pull flag always clears')
 })
@@ -5755,7 +5784,7 @@ await testAsync('shared every so often: due across members, any Did resets it, c
   assert.equal(sharedLastLine(null, '2026-09-10', 'Sam'), en['every.never'])
   assert.equal(sharedLastLine(last, '2026-09-05', 'Sam'), 'Sam did it 2 days ago')
   assert.equal(sharedLastLine(last, '2026-09-04', 'Sam'), 'Sam did it 1 day ago')
-  assert.equal(sharedLastLine(last, '2026-09-03', 'Sam'), 'Sam did it tonight')
+  assert.equal(sharedLastLine(last, '2026-09-03', 'Sam'), 'Sam did it today')
   assert.equal(sharedLastLine(last, '2026-09-05', ''), 'Last time: 2 days ago')
   // Did you asks
   assert.equal(repeatFrom('every', [], 14), 'every:14')

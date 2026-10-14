@@ -12,9 +12,24 @@ struct CountEntry: TimelineEntry {
 }
 
 private struct StoredCards: Decodable {
-  struct Item: Decodable { let status: String }
+  struct Item: Decodable { let status: String; let dateIso: String? }
   let items: [Item]
   let countLabel: String?
+
+  // Same check as WatchCards.stale in targets/watch: the newest card is from
+  // before yesterday on the watch's calendar.
+  var stale: Bool {
+    guard let newest = items.compactMap({ $0.dateIso }).max(), newest.count == 10 else { return false }
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .current
+    guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else { return false }
+    let f = DateFormatter()
+    f.calendar = calendar
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = .current
+    f.dateFormat = "yyyy-MM-dd"
+    return newest < f.string(from: yesterday)
+  }
 }
 
 private func readCount() -> CountEntry {
@@ -24,6 +39,7 @@ private func readCount() -> CountEntry {
         let cards = try? JSONDecoder().decode(StoredCards.self, from: data) else {
     return CountEntry(date: Date(), answered: 0, total: 0)
   }
+  if cards.stale { return CountEntry(date: Date(), answered: 0, total: 0) }
   let answered = cards.items.filter { $0.status != "open" }.count
   return CountEntry(date: Date(), answered: answered, total: cards.items.count, countLabel: cards.countLabel)
 }
@@ -94,7 +110,7 @@ struct DidIWatchWidget: Widget {
         .containerBackground(.clear, for: .widget)
     }
     .configurationDisplayName("Did I")
-    .description(String(localized: "Questions answered tonight"))
+    .description(String(localized: "Questions answered today"))
     .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
   }
 }

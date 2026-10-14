@@ -2,6 +2,8 @@ package com.aaronbryant.didi.wear
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.runtime.mutableStateOf
 import androidx.wear.tiles.TileService
 import com.google.android.gms.wearable.DataMapItem
@@ -31,16 +33,29 @@ object CardStore {
   val justFinished = mutableStateOf(false)
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-  private var loaded = false
+  @Volatile private var loaded = false
+  // The newest cards for any thread; cards (Compose state) follows on the main thread.
+  @Volatile private var latest: WatchCards? = null
+  private val main = Handler(Looper.getMainLooper())
+
+  private fun publish(next: WatchCards?, finished: Boolean = false) {
+    latest = next
+    val write = Runnable {
+      if (finished) justFinished.value = true
+      cards.value = next
+    }
+    if (Looper.myLooper() == Looper.getMainLooper()) write.run() else main.post(write)
+  }
 
   private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+  @Synchronized
   fun load(context: Context): WatchCards? {
     if (!loaded) {
+      publish(WatchCards.parse(prefs(context).getString(KEY_CARDS, null)))
       loaded = true
-      cards.value = WatchCards.parse(prefs(context).getString(KEY_CARDS, null))
     }
-    return cards.value
+    return latest
   }
 
   // Cards from the phone. Taps the phone has not taken yet stay answered.
@@ -68,8 +83,8 @@ object CardStore {
     val json = incoming.toString()
     val next = WatchCards.parse(json) ?: return
     prefs(context).edit().putString(KEY_CARDS, json).putString(KEY_TAPS, keep.toString()).apply()
+    publish(next)
     loaded = true
-    cards.value = next
     updateTile(context)
   }
 
@@ -106,7 +121,7 @@ object CardStore {
   /** @return true when this answer finished the night (all Did). */
   @Synchronized
   fun answer(context: Context, card: WatchCard, did: Boolean): Boolean {
-    val current = cards.value ?: return false
+    val current = latest ?: return false
     val answer = if (did) "did" else "nope"
     val items = current.items.map {
       if (it.id == card.id && it.night == card.night) it.copy(status = answer) else it
@@ -131,8 +146,7 @@ object CardStore {
       .putString(KEY_TAPS, recentTaps(context, now).put(tap).toString())
       .apply()
     val finished = did && items.isNotEmpty() && items.all { it.status == "did" }
-    if (finished) justFinished.value = true
-    cards.value = next
+    publish(next, finished)
     updateTile(context)
     send(context.applicationContext, tap)
     return finished

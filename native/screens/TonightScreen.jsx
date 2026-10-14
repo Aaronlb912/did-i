@@ -77,7 +77,8 @@ import { fonts } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
-import { NightSky } from '../components/NightSky.jsx'
+import { NightSky, useSkyClock } from '../components/NightSky.jsx'
+import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
 import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
@@ -184,6 +185,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
+  const skyNow = useSkyClock()
   const account = useAccount()
   const [together, setTogether] = useState(() => readTogetherPeople())
   useEffect(() => onTogetherSaved(() => setTogether(readTogetherPeople())), [])
@@ -766,7 +768,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-            {nightOne ? t('nightOne.title') : t('tonight.doneTitle')}
+            {nightOne ? t('nightOne.title') : t(isDaytime(skyNow) ? 'tonight.doneTitle' : 'tonight.doneTitleNight')}
           </Text>
           {nightOne ? (
             <>
@@ -1140,7 +1142,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {stack.bodyKind === 'hall' && stack.nightDone && !pullWait ? (
           <Slot>
             <DoneIn style={StyleSheet.absoluteFill}>
-              <NightSky colors={colors} />
+              <NightSky colors={colors} now={skyNow} />
             </DoneIn>
           </Slot>
         ) : null}

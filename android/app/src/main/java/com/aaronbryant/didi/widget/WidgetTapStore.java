@@ -11,7 +11,7 @@ import org.json.JSONObject;
  * Tonight taps made before JS runs, oldest first. commit() returns only after
  * the queue is on disk. The widget task and the next app open both take it;
  * the lock keeps one of them. A second tap for the same lamp and night keeps
- * the first mark.
+ * the first mark, except a Did after a Not yet replaces it.
  */
 public final class WidgetTapStore {
     public static final String PREFS = "did-i-widget-tap";
@@ -33,10 +33,15 @@ public final class WidgetTapStore {
                 JSONObject existing = rows.optJSONObject(i);
                 if (existing == null) continue;
                 if (lamp.equals(existing.optString("lampId")) && storedNight.equals(clip(existing.optString("night")))) {
-                    return true;
+                    // Did after Not yet wins; anything else keeps the first mark.
+                    if (!"did".equals(mark) || !"nope".equals(existing.optString("kind"))) return true;
+                    existing.put("kind", mark);
+                    existing.put("at", System.currentTimeMillis());
+                    return prefs(context).edit().putString(KEY, rows.toString()).commit();
                 }
             }
-            if (rows.length() >= MAX_ROWS) return false;
+            // Full: drop the oldest so the newest tap still counts.
+            while (rows.length() >= MAX_ROWS) rows.remove(0);
             JSONObject row = new JSONObject();
             row.put("lampId", lamp);
             row.put("kind", mark);

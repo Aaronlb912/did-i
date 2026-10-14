@@ -13,6 +13,7 @@ import {
   periodKeyFor,
   periodNight,
   rowDoneTonight,
+  stampMs,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
@@ -468,7 +469,7 @@ export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7) 
 export function shelfFeedRows(boards, tagId = '') {
   return scopedBooks(boards, tagId)
     .flatMap((book) => feedRows(book))
-    .sort((a, b) => String(b.answer.answeredAt).localeCompare(String(a.answer.answeredAt)))
+    .sort((a, b) => stampMs(b.answer.answeredAt) - stampMs(a.answer.answeredAt))
 }
 
 // Every note across the folders in view, newest first. Notes on deleted questions drop out.
@@ -584,7 +585,7 @@ export function nextStreakGoal(n) {
 export function feedRows(book) {
   const lamps = book.lamps || []
   return [...(book.answers || [])]
-    .sort((a, b) => String(b.answeredAt).localeCompare(String(a.answeredAt)))
+    .sort((a, b) => stampMs(b.answeredAt) - stampMs(a.answeredAt))
     .map((answer) => ({
       answer,
       lamp: lamps.find((item) => item.id === answer.lampId) || null,
@@ -624,6 +625,8 @@ export function bySlot(rows) {
 
 export function tapWhen(answeredAt, now = new Date()) {
   const raw = String(answeredAt || '')
+  // A zoned (UTC) time goes through the phone's clock first.
+  if (/(Z|[+-]\d\d:?\d\d)$/i.test(raw)) return stampWhen(raw, now)
   const [datePart, timePart] = raw.split('T')
   if (!datePart) return ''
   const clock = timePart ? clockWords(timePart) : ''
