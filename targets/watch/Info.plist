@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleShortVersionString</key>
-	<string>1.3.3</string>
+	<string>1.3.4</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
