@@ -2027,6 +2027,7 @@ export const es = {
   'watch.notYet': "{n} aún no",
   'watch.count': "{a} de {b}",
   'watch.openPhone': "Abre Did I en tu iPhone",
+  'watch.openPhoneAndroid': "Abre Did I en tu teléfono",
   'widget.settings.cap': 'Widget de inicio',
   'widget.settings.tag': 'Carpeta',
   'widget.settings.tagSub': 'Qué carpeta usa el widget en la pantalla de inicio.',

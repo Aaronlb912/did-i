@@ -78,5 +78,16 @@
         <action android:name="com.aaronbryant.didi.WIDGET_TAP"/>
       </intent-filter>
     </receiver>
+    <!-- Did or Not yet from the Wear OS watch app (android/wear). -->
+    <service android:name=".watch.WatchTapService" android:exported="true">
+      <intent-filter>
+        <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED"/>
+        <data android:scheme="wear" android:host="*" android:pathPrefix="/didi/tap"/>
+      </intent-filter>
+      <intent-filter>
+        <action android:name="com.google.android.gms.wearable.DATA_CHANGED"/>
+        <data android:scheme="wear" android:host="*" android:pathPrefix="/didi/tap"/>
+      </intent-filter>
+    </service>
   </application>
 </manifest>

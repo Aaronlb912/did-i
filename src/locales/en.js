@@ -2021,6 +2021,7 @@ export const en = {
   'watch.notYet': "{n} not yet",
   'watch.count': "{a} of {b}",
   'watch.openPhone': "Open Did I on your iPhone",
+  'watch.openPhoneAndroid': "Open Did I on your phone",
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Folder',
   'widget.settings.tagSub': 'Which folder the home screen widget follows.',

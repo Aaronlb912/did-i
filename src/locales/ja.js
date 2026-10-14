@@ -1988,6 +1988,7 @@ export const ja = {
   'watch.notYet': "まだ {n} 個",
   'watch.count': "{b} 個中 {a} 個",
   'watch.openPhone': "iPhone で Did I を開いてね",
+  'watch.openPhoneAndroid': "スマホで Did I を開いてね",
   'widget.settings.cap': 'ウィジェット',
   'widget.settings.tag': 'フォルダ',
   'widget.settings.tagSub': 'ホーム画面のウィジェットが表示するフォルダ。',

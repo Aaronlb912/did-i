@@ -1990,6 +1990,7 @@ export const ko = {
   'watch.notYet': "아직 {n}개",
   'watch.count': "{b}개 중 {a}개",
   'watch.openPhone': "iPhone에서 Did I를 열어 주세요",
+  'watch.openPhoneAndroid': "휴대폰에서 Did I를 열어 주세요",
   'widget.settings.cap': '위젯',
   'widget.settings.tag': '폴더',
   'widget.settings.tagSub': '홈 화면 위젯이 따라가는 폴더.',

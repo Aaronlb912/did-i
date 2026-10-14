@@ -190,6 +190,25 @@ jobs:
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
+      # The Wear OS app goes to Play as its own bundle in the same listing
+      # (same package, versionCode 1,000,000,000 + run number).
+      - name: Bundle Wear OS AAB (Play)
+        if: ${{ !inputs.dev_client && steps.signing.outputs.mode == 'release' }}
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew -p wear bundleRelease --no-scan -x lint
+
+      - name: Upload Wear OS AAB
+        if: ${{ !inputs.dev_client && steps.signing.outputs.mode == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: did-i-wear-aab
+          path: android/wear/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
       - name: Summarize
         if: ${{ !inputs.dev_client }}
         run: |

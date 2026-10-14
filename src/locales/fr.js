@@ -2030,6 +2030,7 @@ export const fr = {
   'watch.notYet': "{n} pas encore",
   'watch.count': "{a} sur {b}",
   'watch.openPhone': "Ouvre Did I sur ton iPhone",
+  'watch.openPhoneAndroid': "Ouvre Did I sur ton téléphone",
   'widget.settings.cap': 'Widget',
   'widget.settings.tag': 'Dossier',
   'widget.settings.tagSub': 'Le dossier que suit le widget de l’écran d’accueil.',

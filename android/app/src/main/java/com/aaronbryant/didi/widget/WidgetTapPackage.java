@@ -2,6 +2,7 @@ package com.aaronbryant.didi.widget;
 
 import androidx.annotation.Nullable;
 
+import com.aaronbryant.didi.watch.WatchModule;
 import com.facebook.react.BaseReactPackage;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -16,6 +17,7 @@ public class WidgetTapPackage extends BaseReactPackage {
     @Override
     public NativeModule getModule(String name, ReactApplicationContext reactContext) {
         if (WidgetTapModule.NAME.equals(name)) return new WidgetTapModule(reactContext);
+        if (WatchModule.NAME.equals(name)) return new WatchModule(reactContext);
         return null;
     }
 
@@ -33,6 +35,10 @@ public class WidgetTapPackage extends BaseReactPackage {
                     false,
                     false
                 )
+            );
+            info.put(
+                WatchModule.NAME,
+                new ReactModuleInfo(WatchModule.NAME, WatchModule.NAME, false, false, false, false)
             );
             return info;
         };

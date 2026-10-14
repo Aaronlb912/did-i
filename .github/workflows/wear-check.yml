@@ -1,0 +1,53 @@
+name: Wear OS check
+
+# Proves the Wear OS app (android/wear) still compiles. Debug build only: no
+# secrets, no upload. The phone side (WatchTapService, WatchModule) builds in
+# android-apk.yml.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'android/wear/**'
+      - 'android/gradle/**'
+      - 'android/gradlew'
+      - '.github/workflows/wear-check.yml'
+
+concurrency:
+  group: wear-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Assemble Wear OS debug APK
+        working-directory: android
+        run: |
+          set -euo pipefail
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
+          ./gradlew -p wear assembleDebug --no-daemon -x lint
+
+      - name: Upload Wear OS debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: did-i-wear-debug
+          path: android/wear/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

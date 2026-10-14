@@ -123,6 +123,8 @@ export async function syncTonightWidget(shelf) {
     return
   }
   if (Platform.OS === 'android') {
+    // Same cards to the Wear OS app, when one is paired (native/watch-sync.js).
+    sendWatchCards(props, shelf)
     try {
       const widgetMod = await import('react-native-android-widget')
       const requestWidgetUpdate = widgetMod?.requestWidgetUpdate

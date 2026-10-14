@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Wear OS (branch `wear-os`)
+
+- **Built:** `android/wear` (Compose for Wear OS) shows tonight's cards with the ring, buddy, Not yet and Did, the done screen and a tile; taps save on the phone like a widget tap (`WatchTapService`, `WatchModule`). See docs/watch.md, Wear OS app. CI: wear-check.yml; android-apk.yml builds `did-i-wear-aab` with the release key.
+- **Not done:** never run on a Wear emulator or real watch; Play Console Wear OS form factor opt-in and Wear screenshots; no complication (tile only). A tap the phone refuses shows open again on the watch only when cards arrive more than 10 minutes later. English-only fallback words before the first cards.
+
 ## Apple Watch (branches `watch-1`, `watch-2`)
 
 - **Built:** steps 1 to 3. Watch app in `targets/watch` shows tonight's cards one at a time with Did and Not yet, a done state and "Open Did I on your iPhone" when it has no cards; taps go back to the phone and save like a widget tap (`modules/didi-watch`, `native/watch-sync.js`). Complication "1 of 3" in `targets/watch-widget`. Opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.

@@ -175,6 +175,8 @@ dependencies {
     // Already in the app through react-native-android-widget. The native tap
     // paint uses it to draw the buddy.
     implementation "com.caverock:androidsvg-aar:1.4"
+    // Wear OS watch app (android/wear): cards out, taps back.
+    implementation "com.google.android.gms:play-services-wearable:19.0.0"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
