@@ -1597,7 +1597,8 @@ async function pulseLook() {
     const claimed = adder ? await addAutoSends(db, adder) : []
     const fromDidI = adder ? await claimDidITonight(db, user) : []
     if (fromDidI.length) adder(fromDidI)
-    const [waiting, asks] = await Promise.all([
+    // Did I's own did yous sit in the inbox too (listInbox), so they count.
+    const [waiting, asks, fromApp] = await Promise.all([
       db
         .from('sends')
         .select('id, from_id, kind, question', { count: 'exact' })
@@ -1606,6 +1607,7 @@ async function pulseLook() {
         .order('made_at', { ascending: false })
         .limit(20),
       friendAskCount(),
+      appSendsWaiting(db, user),
     ])
     const giftRows = await db
       .from('cheer_gifts')
@@ -1653,7 +1655,7 @@ async function pulseLook() {
         }
       }
     }
-    pulseEmit({ inbox: waiting.count ?? rows.length, asks, gifts, friends, families, news })
+    pulseEmit({ inbox: (waiting.count ?? rows.length) + fromApp.length, asks, gifts, friends, families, news })
   })()
     .catch(() => {})
     .finally(() => {

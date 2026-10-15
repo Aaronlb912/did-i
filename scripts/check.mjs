@@ -7730,6 +7730,13 @@ test('review 13: an early fatal error on a store launch stays in the app; on an 
   assert.equal(run({ isEmbeddedLaunch: false }), 1)
 })
 
+test('the menu badge counts Did I did yous, the same as the inbox lists them', () => {
+  const src = readFileSync(fileURLToPath(new URL('../src/lib/people.js', import.meta.url)), 'utf8')
+  const look = src.slice(src.indexOf('async function pulseLook'), src.indexOf('function pulseWatch'))
+  assert.match(look, /appSendsWaiting\(db, user\)/)
+  assert.match(look, /inbox: \(waiting\.count \?\? rows\.length\) \+ fromApp\.length/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
