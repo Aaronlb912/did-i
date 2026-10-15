@@ -4758,6 +4758,10 @@ await testAsync('the error log keeps no personal content and is capped', async (
   const push = readFileSync(path.join(checkRoot, 'supabase/functions/push/index.ts'), 'utf8')
   assert.ok(push.includes("from('app_errors')"), 'failed pushes are logged')
   assert.ok(!push.includes('user_id: row.to_id'), 'push errors carry no user id')
+  assert.ok(push.indexOf('await accessToken()') < push.indexOf("rpc('take_push_batch'"), 'the Firebase token is fetched before rows are marked sent')
+  assert.ok(push.indexOf('await apnsJwt()') < push.indexOf("rpc('take_push_batch'"), 'the Apple key is signed before rows are marked sent')
+  assert.ok(/try \{\s*why = apple/.test(push), 'one failed send skips only that token')
+  assert.ok(push.includes("console.error('push: send threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')"), 'a thrown send never logs the error text, which holds the token')
 })
 
 test('a sheet that pops up on Tonight catches the next tap', () => {
