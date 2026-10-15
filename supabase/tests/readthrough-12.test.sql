@@ -10,6 +10,9 @@ declare
   tag uuid;
   card uuid;
   card2 uuid;
+  card3 uuid;
+  lamp uuid;
+  lamp2 uuid;
   n integer;
   ok boolean;
   st text;
@@ -23,7 +26,9 @@ begin
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
   insert into public.profiles (user_id) values (a), (b), (c) on conflict (user_id) do nothing;
 
-  -- 1. A token signed in on a second account moves to it.
+  -- 1. A token signed in on a second account moves to it, and never sits on
+  -- two rows, even two of the same account's.
+  insert into public.devices (user_id, device_key, push_token) values (a, 'k0', 'tok12');
   insert into public.devices (user_id, device_key, push_token) values (a, 'k1', 'tok12');
   insert into public.devices (user_id, device_key, push_token) values (b, 'k2', 'tok12');
   select count(*) into n from public.devices where user_id = a and push_token is not null;
@@ -34,7 +39,9 @@ begin
   select count(*) into n from public.devices where user_id = b and push_token is not null;
   if n <> 0 then raise exception 'FAIL: an update did not move the token back'; end if;
   select count(*) into n from public.devices where user_id in (a, b);
-  if n <> 2 then raise exception 'FAIL: moving a token dropped a devices row'; end if;
+  if n <> 3 then raise exception 'FAIL: moving a token dropped a devices row'; end if;
+  select count(*) into n from public.devices where push_token = 'tok12';
+  if n <> 1 then raise exception 'FAIL: one token sits on % rows', n; end if;
 
   -- 2. known_people hides streak and done_on when share_streak is off.
   insert into public.friend_links (from_id, to_id, state) values (a, c, 'ok');
@@ -50,7 +57,10 @@ begin
   execute 'reset role';
   if s is distinct from 5 or d is distinct from current_date then raise exception 'FAIL: shared streak hidden'; end if;
 
-  -- 3. A gift landing mid-claim (after the had marking) waits for the next
+  -- 3. Caps: cap_cheer_gifts allows 5 in a day per recipient, cap_gifts_out
+  -- 10 out a day per giver; neither checks auth. Two gifts to b from fresh
+  -- givers stay under both.
+  -- A gift landing mid-claim (after the had marking) waits for the next
   -- claim, where it is a duplicate and paid back.
   execute $f$
     create function pg_temp.rt12_late() returns trigger
@@ -109,9 +119,15 @@ begin
   -- 5. Bea (kid) blocks Ann (parent).
   insert into public.families (id, name, code) values (fam, 'Test', upper(substr(md5(fam::text), 1, 6)));
   insert into public.family_members (family_id, user_id, role) values (fam, a, 'parent'), (fam, b, 'kid');
-  select id into tag from public.family_tags where family_id = fam limit 1;
+  -- A direct families insert has no folder; create_family (people.sql) adds one.
+  insert into public.family_tags (family_id, title) values (fam, 'Test') returning id into tag;
+  insert into public.family_lamps (family_id, tag_id, question, made_by, for_id)
+  values (fam, tag, 'Did you brush?', a, b) returning id into lamp;
   insert into public.we_members (card_id, user_id, state, asked_by, joined_at) values (card, c, 'in', a, now());
-  insert into public.push_queue (to_id, title, body) values (a, 'hi', 'waiting');
+  -- A waiting ask from Bea to Ann on a card only Bea is on.
+  insert into public.we_cards (id, made_by, question) values (gen_random_uuid(), b, 'Did we run?') returning id into card3;
+  insert into public.we_members (card_id, user_id, state, asked_by, joined_at) values (card3, b, 'in', b, now());
+  insert into public.we_members (card_id, user_id, state, asked_by, asked_at) values (card3, a, 'asked', b, now());
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   perform public.block_person(a, '');
@@ -123,6 +139,11 @@ begin
   select count(*) into n from public.we_members where card_id = card and state = 'in';
   if n <> 2 then raise exception 'FAIL: the others lost the card (% in)', n; end if;
   if (select archived from public.we_cards where id = card) then raise exception 'FAIL: card closed'; end if;
+  select state into st from public.we_members where card_id = card3 and user_id = a;
+  if st <> 'left' then raise exception 'FAIL: a waiting ask survived the block (%)', st; end if;
+  if (select said_no_at from public.we_members where card_id = card3 and user_id = a) is not null then
+    raise exception 'FAIL: the block counted as a no';
+  end if;
 
   -- 5a. Ann can not assign Bea a family question.
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -135,9 +156,27 @@ begin
     ok := true;
   end;
   if not ok then raise exception 'FAIL: blocked parent assigned a question'; end if;
-  -- Unassigned still works, and Bea still sees the family's questions.
+  -- Unassigned still works, and so does editing the words of a question
+  -- Bea already had; moving one to Bea does not.
   insert into public.family_lamps (family_id, tag_id, question, made_by)
-  values (fam, tag, 'Did we tidy?', a);
+  values (fam, tag, 'Did we tidy?', a) returning id into lamp2;
+  update public.family_lamps set question = 'Did you floss?' where id = lamp;
+  if not found then raise exception 'FAIL: an edit to an assigned question was refused'; end if;
+  ok := false;
+  begin
+    update public.family_lamps set for_id = b where id = lamp2;
+  exception when insufficient_privilege then
+    ok := true;
+  end;
+  if not ok then raise exception 'FAIL: blocked parent moved a question to the kid'; end if;
+  -- we_ask refuses the pair (we_can_ask checks blocked_with).
+  ok := false;
+  begin
+    perform public.we_ask(card, b);
+  exception when others then
+    ok := sqlerrm = 'can only ask friends or family';
+  end;
+  if not ok then raise exception 'FAIL: we_ask let a blocked pair through'; end if;
   execute 'reset role';
 
   -- 5c and 5d. Pushes across the block are dropped; server pushes are not.

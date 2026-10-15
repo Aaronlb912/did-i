@@ -8,7 +8,8 @@
 
 -- 1. One push token, one account. A phone that signs out offline keeps its
 -- devices row; when someone else signs in on it, the token moves to them so
--- the first account's pushes stop landing on the second person's phone.
+-- the first account's pushes stop landing on the second person's phone. Any
+-- other row, even the same account's, so one phone never gets a push twice.
 create index if not exists devices_push_token_idx on public.devices (push_token)
   where push_token is not null;
 
@@ -21,7 +22,8 @@ as $$
 begin
   if new.push_token is not null then
     update public.devices set push_token = null
-    where push_token = new.push_token and user_id <> new.user_id;
+    where push_token = new.push_token
+      and (user_id, device_key) is distinct from (new.user_id, new.device_key);
   end if;
   return new;
 end;
@@ -285,7 +287,9 @@ grant execute on function public.we_note_in(uuid, uuid) to authenticated;
 grant execute on function public.we_note_did(uuid, uuid, date) to authenticated;
 
 -- 5a. No family question for someone you have a block with, either way.
--- Insert from rls-subselect.sql, edit from consent-guards.sql, plus the block.
+-- Insert policy from rls-subselect.sql plus the block. Edits keep the
+-- consent-guards.sql policy; a trigger stops only a change of for_id to a
+-- blocked person, so edits to a question already assigned still work.
 drop policy if exists "add a family question" on public.family_lamps;
 create policy "add a family question" on public.family_lamps
   for insert with check (
@@ -303,8 +307,29 @@ create policy "edit a family question" on public.family_lamps
   with check (
     public.in_family(family_id)
     and (public.is_parent(family_id) or (select auth.uid()) = made_by)
-    and (for_id is null or not public.blocked_with(for_id))
   );
+
+create or replace function public.family_lamps_block_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.for_id is distinct from old.for_id and new.for_id is not null
+     and public.blocked_with(new.for_id) then
+    raise exception 'blocked' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.family_lamps_block_guard() from public, anon, authenticated;
+
+drop trigger if exists family_lamps_block_guard on public.family_lamps;
+create trigger family_lamps_block_guard
+  before update of for_id on public.family_lamps
+  for each row execute function public.family_lamps_block_guard();
 
 -- 5b. Block also leaves every Did we shared with that person (we_leave_shared
 -- from unfriend.sql: state 'left', the others keep the card and it resettles;
@@ -338,6 +363,15 @@ begin
   delete from public.push_queue
   where sent_at is null
     and ((from_id = other and to_id = me) or (from_id = me and to_id = other));
+
+  -- Waiting Did we asks between the two close both ways. said_no_at stays
+  -- null: a block is not a no.
+  update public.we_members m set state = 'left'
+  where m.state = 'asked'
+    and ((m.user_id = me and exists (select 1 from public.we_members o
+            where o.card_id = m.card_id and o.user_id = other and o.state in ('in', 'asked')))
+      or (m.user_id = other and exists (select 1 from public.we_members o
+            where o.card_id = m.card_id and o.user_id = me and o.state in ('in', 'asked'))));
 
   perform public.we_leave_shared(other);
 
