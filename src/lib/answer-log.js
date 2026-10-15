@@ -151,6 +151,29 @@ export function applyAnswers(shelf, rows) {
   return { shelf: { ...shelf, boards }, changed }
 }
 
+// An undo on another device ({ lamp, period, at, noteAt } rows gone from the
+// account). Only that exact answer (same stamp) is dropped: a newer one made
+// here, or the older answer the undo put back, stays. Running it twice is free.
+export function dropSentAnswers(shelf, gone) {
+  const upTo = new Map()
+  for (const row of Array.isArray(gone) ? gone : []) {
+    const at = stampMs(answerStamp({ answeredAt: row?.at || '', noteAt: row?.noteAt || '' }))
+    if (row?.lamp && row?.period && at) upTo.set(`${row.lamp}|${row.period}`, at)
+  }
+  if (!upTo.size) return { shelf, changed: 0 }
+  let changed = 0
+  const boards = (shelf.boards || []).map((book) => {
+    const answers = (book.answers || []).filter((item) => {
+      const went = upTo.get(`${item.lampId}|${item.periodKey}`)
+      const drop = Boolean(went) && stampMs(answerStamp(item)) === went
+      if (drop) changed += 1
+      return !drop
+    })
+    return answers.length === (book.answers || []).length ? book : { ...book, answers }
+  })
+  return { shelf: changed ? { ...shelf, boards } : shelf, changed }
+}
+
 export async function pullAnswers(shelf) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }
@@ -218,6 +241,9 @@ export async function takeBackAnswer(book, lampId, periodKey) {
     }
     const at = Math.max(stampMs(data.answered_at) || 0, stampMs(data.note_at) || 0)
     if (at > stampMs(now)) return
+    // Already the answer from before the tap (the second run): leave it, so
+    // other devices do not see it go and come back.
+    if (before && at === stampMs(answerStamp(before))) return
     const { error } = await db
       .from('answer_log')
       .delete()

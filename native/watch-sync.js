@@ -66,10 +66,25 @@ export function watchCardsFromProps(props, shelf = null) {
     // The look tones the phone's confetti uses (CheerBurst: on, gold, blue, ink).
     cheer: [look.on, look.onDeep, look.late, look.ink].filter(Boolean),
     updatedAt: Number(props?.updatedAt) || Date.now(),
+    // Watch taps (their at) this phone has saved or turned down. The watch
+    // keeps showing a tap until its at is here or the card shows an answer.
+    // Apple Watch only (Wear OS taps go through the widget tap queue). Left
+    // out while empty (a fresh start): the watch then uses its older rule and
+    // does not hold a tap the phone turned down before it restarted.
+    ...(Platform.OS === 'ios' && takenTaps.length ? { taken: [...takenTaps] } : {}),
   }
 }
 
 let lastSent = ''
+// Recent watch taps the phone has handled, by their at (ms). Memory only: after
+// a restart the watch just holds an unseen tap a while longer (24h at most).
+const takenTaps = []
+function noteTaken(at) {
+  const n = Number(at)
+  if (!n || takenTaps.includes(n)) return
+  takenTaps.push(n)
+  if (takenTaps.length > 50) takenTaps.shift()
+}
 
 export function sendWatchCards(props, shelf = null) {
   const mod = watch()
@@ -98,12 +113,23 @@ export function listenForWatchTaps(onTap, onQueued) {
   }
   const mod = watch()
   if (!mod?.addListener) return () => {}
-  const sub = mod.addListener('onWatchTap', (tap) => onTap(tap))
-  try {
-    for (const tap of mod.takePendingTaps?.() || []) onTap(tap)
-  } catch {
-    // Nothing queued.
+  // Newer builds save every tap natively and send an empty event; older ones
+  // send the tap itself. Either way, take the saved queue too.
+  const take = (tap) => {
+    const taps = []
+    try {
+      taps.push(...(mod.takePendingTaps?.() || []))
+    } catch {
+      // Nothing queued.
+    }
+    if (tap?.id) taps.push(tap)
+    for (const item of taps) {
+      noteTaken(item?.at)
+      onTap(item)
+    }
   }
+  const sub = mod.addListener('onWatchTap', take)
+  take(null)
   return () => sub?.remove?.()
 }
 

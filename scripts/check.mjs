@@ -62,7 +62,7 @@ import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
 import { emptyShake, shakeStep } from '../src/lib/shake-undo.js'
 import { NOTE_MAX, bulkLamps, hangInto, moveLamps, setAnswerNote, takeDown, undoBulkLamps } from '../src/lib/board-ops.js'
 
-import { answersToSend, applyAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
+import { answersToSend, applyAnswers, dropSentAnswers, shelfWithoutAnswers } from '../src/lib/answer-log.js'
 import {
   INVITE_CODE_LEN,
   INVITE_GEMS_CAP,
@@ -7728,6 +7728,42 @@ test('review 13: an early fatal error on a store launch stays in the app; on an 
   assert.equal(run({ isEmbeddedLaunch: true }), 0)
   assert.equal(run('missing'), 0)
   assert.equal(run({ isEmbeddedLaunch: false }), 1)
+})
+
+test('live undo: drops only the exact answer that went, twice is free', () => {
+  const a = { id: 'a1', lampId: 'x', periodKey: '2026-10-15', status: 'yes', answeredAt: '2026-10-15T20:00:00.000Z' }
+  const shelf = { currentId: 'b1', boards: [{ id: 'b1', answers: [a] }] }
+  const gone = [{ lamp: 'x', period: '2026-10-15', at: '2026-10-15T20:00:00.000Z', noteAt: '' }]
+  const once = dropSentAnswers(shelf, gone)
+  assert.equal(once.changed, 1)
+  assert.equal(once.shelf.boards[0].answers.length, 0)
+  assert.equal(dropSentAnswers(once.shelf, gone).changed, 0)
+  // A tap made here after the one that was undone stays.
+  const newer = { currentId: 'b1', boards: [{ id: 'b1', answers: [{ ...a, answeredAt: '2026-10-15T21:00:00.000Z' }] }] }
+  assert.equal(dropSentAnswers(newer, gone).changed, 0)
+  // Undo of a T1 tap puts the T0 answer back. The T0 row arrives first, then
+  // the T1 delete: the restored T0 answer must stay.
+  const t0 = { currentId: 'b1', boards: [{ id: 'b1', answers: [{ ...a, answeredAt: '2026-10-15T19:00:00.000Z' }] }] }
+  assert.equal(dropSentAnswers(t0, gone).changed, 0)
+  // Junk does nothing.
+  assert.equal(dropSentAnswers(shelf, [{ lamp: 'x' }, null]).changed, 0)
+  assert.equal(dropSentAnswers(shelf, 'nope').shelf, shelf)
+})
+
+test('live sql: realtime and social-live run before drop-tonight, deletes are not published', () => {
+  const order = readFileSync('scripts/apply-all-sql.mjs', 'utf8')
+  const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
+  assert.ok(files.indexOf('answers.sql') < files.indexOf('realtime.sql'))
+  assert.ok(files.indexOf('send-answers.sql') < files.indexOf('social-live.sql'))
+  assert.ok(files.indexOf('realtime.sql') < files.indexOf('social-live.sql'))
+  assert.match(readFileSync('supabase/realtime.sql', 'utf8'), /set \(publish = 'insert, update'\)/)
+  const live = readFileSync('supabase/social-live.sql', 'utf8')
+  assert.match(live, /create policy "didi own topic" on realtime\.messages\s+for select to authenticated/)
+  assert.ok(!/on realtime\.messages\s+for (insert|all)/.test(live), 'clients cannot send on the topics')
+  for (const fn of ['live_topic_mine', 'live_ping', 'live_we_answers', 'live_family_answers', 'live_send_answers', 'live_answer_gone', 'live_new_sends']) {
+    assert.match(live, new RegExp(`function public\\.${fn}\\([^)]*\\)\\s+returns [\\w ]+\\s+language \\w+\\s+(stable\\s+)?security definer\\s+set search_path = public`), fn)
+  }
+  assert.ok(existsSync('supabase/tests/social-live.test.sql') && existsSync('supabase/tests/realtime.test.sql'))
 })
 
 test('the menu badge counts Did I did yous, the same as the inbox lists them', () => {

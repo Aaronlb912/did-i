@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
+import { onSocialLive } from './social-live.js'
 import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
@@ -1445,17 +1446,32 @@ export async function familyTonight() {
 
 // The phone shell hands over an app-state hook. Check it first: the phone
 // also has a stand-in document whose listeners never fire.
-function onVisible(fn) {
+// kinds: also run when one of these live kinds comes in (social-live.js).
+function onVisible(fn, kinds = []) {
+  const stopLive = kinds.length
+    ? onSocialLive((seen) => {
+      if (kinds.some((kind) => seen.has(kind))) fn()
+    })
+    : () => {}
   const hook = globalThis.__didIOnVisible
-  if (typeof hook === 'function') return hook(fn)
+  if (typeof hook === 'function') {
+    const stop = hook(fn)
+    return () => {
+      stopLive()
+      stop?.()
+    }
+  }
   if (typeof document !== 'undefined') {
     function onShow() {
       if (!document.hidden) fn()
     }
     document.addEventListener('visibilitychange', onShow)
-    return () => document.removeEventListener('visibilitychange', onShow)
+    return () => {
+      stopLive()
+      document.removeEventListener('visibilitychange', onShow)
+    }
   }
-  return () => {}
+  return stopLive
 }
 
 // PostgREST says this when a function is not in the schema cache, which
@@ -1675,7 +1691,8 @@ function pulseWatch(user, fn) {
   fn(pulse.state)
   if (!pulse.stop) {
     const timer = setInterval(pulseLook, PULSE_MS)
-    const stopVisible = onVisible(pulseLook)
+    // A new Did you ask for you: the badge counts it now.
+    const stopVisible = onVisible(pulseLook, ['ask'])
     pulse.stop = () => {
       clearInterval(timer)
       stopVisible()
@@ -1799,7 +1816,7 @@ export function useFamilyTonight(user) {
 
   useEffect(() => {
     look()
-    return onVisible(look)
+    return onVisible(look, ['family'])
   }, [look])
 
   return { rows, reload: look }

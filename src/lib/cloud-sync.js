@@ -11,6 +11,8 @@ import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
+  applyAnswers,
+  dropSentAnswers,
   forgetAnswerMarks,
   pruneAnswers,
   pullAnswers,
@@ -40,6 +42,7 @@ import {
   readGemOwned,
 } from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
+import { noteSocialLive } from './social-live.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
 import { forgetTravelSkips } from './travel.js'
@@ -289,9 +292,13 @@ export function bindAuthSync() {
     if (session?.user) {
       armSyncForUser()
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
+      // Another account signed in: drop the old one's topics first.
+      if (live?.userId && live.userId !== session.user.id) stopLiveAnswers()
+      if (foregroundBound && isAppForeground()) startLiveAnswers()
       return
     }
     if (event === 'SIGNED_OUT') {
+      stopLiveAnswers()
       forgetAccountCaches()
       sessionMissing()
     }
@@ -308,12 +315,14 @@ export function bindForegroundSync() {
   if (db) {
     db.auth.getSession().then(({ data }) => {
       if (data?.session) armSyncForUser()
+      if (data?.session && isAppForeground()) startLiveAnswers()
     })
   }
 
   function onWake() {
     if (!isAppForeground()) return
     pullAndMerge()
+    startLiveAnswers()
   }
 
   // A gift arrived while the app is open: sync opens it. At most once a minute.
@@ -325,6 +334,7 @@ export function bindForegroundSync() {
   })
 
   function onSleep() {
+    stopLiveAnswers()
     reconcileLocalShelfFromWidget()
     flushPushSoon()
   }
@@ -340,6 +350,93 @@ export function bindForegroundSync() {
     if (on) onWake()
     else onSleep()
   })
+}
+
+// Answers made on another device of this account, while this one is open
+// (supabase/realtime.sql). Each row goes through applyAnswers, the same merge
+// a pull uses: a later answeredAt wins, so our own sends coming back and a
+// row seen twice change nothing. Nothing is sent back and no coins are paid.
+// A missed row (asleep, offline, a dropped socket) still comes with the next
+// pull on focus or launch.
+let live = null
+let liveRows = []
+let liveTimer = 0
+
+function applyLiveRows() {
+  liveTimer = 0
+  const rows = liveRows
+  liveRows = []
+  // A pull in flight lands the shelf it started from; fold these in after it.
+  if (pulling) {
+    pulling.finally(() => {
+      if (!live) return
+      liveRows.push(...rows)
+      if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 0)
+    })
+    return
+  }
+  // In order: an undo then the answer from before it is two steps.
+  let shelf = readShelf()
+  let changed = 0
+  for (const row of rows) {
+    const step = row.gone ? dropSentAnswers(shelf, row.gone) : applyAnswers(shelf, [row])
+    shelf = step.shelf
+    changed += step.changed
+  }
+  if (!changed) return
+  // Same saved stamp: only answers changed, and they travel on their own.
+  const written = writeShelf(shelf, readSavedAt())
+  window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
+}
+
+export async function startLiveAnswers() {
+  const db = cloud()
+  if (!db?.channel || live) return
+  live = { channel: null }
+  const mine = live
+  const user = await me().catch(() => null)
+  if (live !== mine) return
+  if (!user) {
+    live = null
+    return
+  }
+  mine.userId = user.id
+  const take = (row) => {
+    if (live !== mine || readLastUser() !== user.id) return
+    liveRows.push(row)
+    // One redraw for a batch sent in one go.
+    if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 50)
+  }
+  // Inserts and updates only: deletes are not published (realtime.sql).
+  const onRow = (change) => {
+    const row = change?.new
+    if (row?.lamp_id && row.user_id === user.id) take(row)
+  }
+  mine.channel = db
+    .channel(`answers:${user.id}:${Date.now()}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, onRow)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, onRow)
+    .subscribe()
+  // A private topic only this account may join (supabase/social-live.sql):
+  // your own undos, and which kind of someone else's answer you can see
+  // changed (the screens then read again the usual way).
+  mine.social = db
+    .channel(`didi:${user.id}`, { config: { private: true } })
+    .on('broadcast', { event: 'live' }, (msg) => {
+      if (live !== mine) return
+      const payload = msg?.payload || {}
+      if (payload.kind === 'undo') take({ gone: payload.gone })
+      else noteSocialLive(payload.kind)
+    })
+    .subscribe()
+}
+
+export function stopLiveAnswers() {
+  const old = live
+  live = null
+  liveRows = []
+  if (old?.channel) cloud()?.removeChannel(old.channel).catch(() => {})
+  if (old?.social) cloud()?.removeChannel(old.social).catch(() => {})
 }
 
 // Pull what the account has, fold it into what this phone has, then send
@@ -558,7 +655,7 @@ export function pushSoon(shelf) {
   }
   window.clearTimeout(timer)
   const doc = shelf
-  timer = window.setTimeout(() => pushNow(doc), 1500)
+  timer = window.setTimeout(() => pushNow(doc), 300)
 }
 
 export function flushPushSoon() {
