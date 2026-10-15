@@ -45,7 +45,7 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
+import { markWidgetTimelineRead, syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { runAfterLaunchReady } from '../lib/launch-ready.js'
@@ -333,7 +333,11 @@ export function useAppShelf() {
       setShelf(event.detail)
       // Answers from another phone (sync): the widget shows them too. After a
       // sign-in or sign-out it always redraws (new look, buddy, or nothing).
-      const redraw = takeAccountChanged() ? syncTonightWidget : syncTonightWidgetIfChanged
+      const changed = takeAccountChanged()
+      // The widget timeline holds the old account's taps: overwrite it, never
+      // read them into this shelf.
+      if (changed) markWidgetTimelineRead(true)
+      const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
     }
     window.addEventListener(SHELF_IN, onShelfIn)

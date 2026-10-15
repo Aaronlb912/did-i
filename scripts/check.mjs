@@ -4752,6 +4752,8 @@ await testAsync('iOS reads widget taps out of the timeline before writing it aga
   assert.ok(pullTry.indexOf('timelineRead = true') > pullTry.indexOf('await api.getTimeline()'), 'read marked after getTimeline')
   assert.ok(!pull.slice(pull.indexOf('} catch'), pull.indexOf('} catch') + 60).includes('timelineRead'), 'a failed read stays unread')
   assert.ok(!bridge.includes('markWidgetTimelineRead()'), 'the bridge does not mark it read on its own')
+  // A sign-in or sign-out overwrites the old account's timeline, never reads it in.
+  assert.ok(/if \(changed\) markWidgetTimelineRead\(true\)\r?\n\s+const redraw = changed \? syncTonightWidget/.test(shelfHook), 'account change skips the read')
   // After the read, the newest stored shelf is drawn, not the read's copy.
   const afterRead = body.slice(body.indexOf('await readTimeline()'), body.indexOf('const built'))
   assert.ok(afterRead.includes('shelf = readShelf()') && !afterRead.includes('shelf = (await'), 'sync redraws from readShelf()')
