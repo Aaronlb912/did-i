@@ -382,6 +382,28 @@ test('the other walks step over a travel-skipped night', () => {
   assert.equal(answerFor(closed, 'walk', '2026-10-15'), undefined)
 })
 
+test('travel skips on this phone belong to one account', () => {
+  const at = new Date('2026-10-16T06:00:00Z')
+  const put = (owner) => localStorage.setItem('did-i-zone-seen', JSON.stringify({ zone: LA, night: '2026-10-14', skips: [], owner }))
+  put('user-a')
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-a'), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-a'), ['2026-10-15'])
+  // Another account on the phone gets none of them.
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-b'), [])
+  // Sign out clears them but keeps the zone, so no new trip is read.
+  put('user-a')
+  travel.noteZone(at, TOKYO, 'user-a')
+  travel.forgetTravelSkips()
+  const kept = JSON.parse(localStorage.getItem('did-i-zone-seen'))
+  assert.deepEqual([kept.zone, kept.skips], [TOKYO, []])
+  assert.deepEqual(travel.noteZone(at, TOKYO, ''), [])
+  // Skips made signed out do not follow a later sign-in.
+  put('')
+  assert.deepEqual(travel.noteZone(at, TOKYO, ''), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-c'), [])
+  localStorage.removeItem('did-i-zone-seen')
+})
+
 test('travel-skipped nights union across phones and stay capped', () => {
   const left = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
   const right = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-09-02'])] }

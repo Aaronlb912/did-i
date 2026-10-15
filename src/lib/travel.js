@@ -1,4 +1,5 @@
 import { addDaysIso, isoDate } from './recurrence.js'
+import { readAccountUserId } from './session-id.js'
 import { deviceZone, wallClock } from './zone.js'
 
 // Flying west over the date line jumps the calendar: leave LA on the 14th,
@@ -63,10 +64,14 @@ function readSeen() {
 }
 
 // Notes the phone's zone and returns the travel-skipped nights it knows.
-export function noteZone(now = new Date(), zone = deviceZone()) {
-  const seen = readSeen()
-  const next = travelStep(seen, zone, now)
-  if (next.zone !== seen?.zone || next.night !== seen?.night || next.skipAt !== (Number(seen?.skipAt) || 0)) {
+// The skips belong to the account signed in when they were made ('' signed
+// out); another account on this phone starts with none.
+export function noteZone(now = new Date(), zone = deviceZone(), owner = readAccountUserId()) {
+  const stored = readSeen()
+  const mine = (stored?.owner || '') === owner
+  const seen = stored && !mine ? { ...stored, skips: [] } : stored
+  const next = { ...travelStep(seen, zone, now), owner }
+  if (!mine || next.zone !== seen?.zone || next.night !== seen?.night || next.skipAt !== (Number(seen?.skipAt) || 0)) {
     try {
       localStorage.setItem(SEEN_KEY, JSON.stringify(next))
     } catch {
@@ -74,6 +79,17 @@ export function noteZone(now = new Date(), zone = deviceZone()) {
     }
   }
   return next.skips
+}
+
+// Sign out: the skips go with the account; zone and night stay.
+export function forgetTravelSkips() {
+  const seen = readSeen()
+  if (!seen) return
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify({ ...seen, skips: [], owner: '' }))
+  } catch {
+    // ok
+  }
 }
 
 // Nights this folder has any answer on (any phone): never skipped.
