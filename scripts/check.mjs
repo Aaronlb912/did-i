@@ -4710,13 +4710,72 @@ await testAsync('the widget redraws at midnight and when last night\'s grace end
   const now = new Date('2026-09-23T19:00:00')
   const times = widgetRedrawTimes([book], now)
   assert.ok(times.length >= 2, `got ${times.length}`)
-  // Night turns come first, so the native cap of 12 never drops midnight.
+  // Night turns come first, so Android's alarm cap of 12 (WidgetAlarms) never
+  // drops midnight. The iPhone timeline uses widgetTimelineTimes (cap 30).
   const turn = times[0]
   assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
   assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
   assert.ok(times.some((d) => d.getHours() === 21 && d.getMinutes() === 0), 'ask times stay')
   assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
   assert.ok(times.every((d) => d > now))
+})
+
+await testAsync('the iPhone widget timeline reaches the next nights, a card per night, and taps still carry', async () => {
+  const { widgetTimelineTimes } = await import('../src/lib/widget-config.js')
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  const now = new Date('2026-09-23T19:00:00')
+  const times = widgetTimelineTimes([book], now)
+  assert.ok(times.length <= 30 && times.every((d) => d > now), `got ${times.length}`)
+  assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
+  for (const night of ['2026-09-23', '2026-09-24', '2026-09-25']) {
+    const ask = times.find((d) => boardDate(d) === night && d.getHours() === 21)
+    assert.ok(ask, `ask time on ${night}`)
+    const props = buildTonightWidgetProps(shelf, ask)
+    assert.equal(props.leadLampId, 'late', night)
+    assert.ok(props.items.some((item) => item.lampId === 'late' && item.periodKey === night && item.status === 'open'), night)
+  }
+  assert.ok(times.some((d) => boardDate(d) === '2026-09-26'), 'the third midnight turns over too')
+  // The native tap patch (patches/expo-widgets) closes lampId:periodKey in
+  // later entries; each later night keeps its own open card.
+  const entries = times.map((date) => ({ date, props: buildTonightWidgetProps(shelf, date) }))
+  const tapped = entries.findIndex((e) => boardDate(e.date) === '2026-09-23' && e.props.leadLampId === 'late')
+  assert.ok(tapped >= 0)
+  const later = entries.slice(tapped + 1)
+  assert.ok(later.some((e) => e.props.items.some((item) => item.lampId === 'late' && item.periodKey === '2026-09-24')), 'Thursday has its own card')
+  assert.ok(later.every((e) => e.props.items.every((item) => item.lampId !== 'late' || item.periodKey !== '2026-09-23' || item.status === 'open')), 'the tapped card is the one the patch closes')
+  const sync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
+  assert.ok(sync.includes('widgetTimelineTimes(boards'), 'iOS timeline uses the multi-night times')
+})
+
+await testAsync('iOS reads widget taps out of the timeline before writing it again', async () => {
+  const sync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
+  const bridge = readFileSync(path.join(checkRoot, 'native/widget-bridge.js'), 'utf8')
+  const shelfHook = readFileSync(path.join(checkRoot, 'native/hooks/useAppShelf.js'), 'utf8')
+  const body = sync.slice(sync.indexOf('export async function syncTonightWidget'))
+  assert.ok(body.indexOf('!timelineRead && readTimeline') < body.indexOf('updateTimeline'), 'sync waits for the read first')
+  assert.ok(/readTimeline\(\)\.catch\(/.test(body), 'a failed read does not block the write')
+  assert.ok(bridge.includes('setWidgetTimelineReader(() => beginWidgetRefresh())'))
+  assert.ok(bridge.includes("if (state !== 'active') markWidgetTimelineRead(false)"), 'leaving the app marks it unread')
+  // Only a getTimeline that worked marks it read; a failed one leaves it unread.
+  const pull = sync.slice(sync.indexOf('export async function pullWidgetTimelineIntoShelf'))
+  const pullTry = pull.slice(0, pull.indexOf('} catch'))
+  assert.ok(pullTry.indexOf('timelineRead = true') > pullTry.indexOf('await api.getTimeline()'), 'read marked after getTimeline')
+  assert.ok(!pull.slice(pull.indexOf('} catch'), pull.indexOf('} catch') + 60).includes('timelineRead'), 'a failed read stays unread')
+  assert.ok(!bridge.includes('markWidgetTimelineRead()'), 'the bridge does not mark it read on its own')
+  // A sign-in or sign-out overwrites the old account's timeline, never reads it in.
+  assert.ok(/if \(changed\) markWidgetTimelineRead\(true\)\r?\n\s+const redraw = changed \? syncTonightWidget/.test(shelfHook), 'account change skips the read')
+  // After the read, the newest stored shelf is drawn, not the read's copy.
+  const afterRead = body.slice(body.indexOf('await readTimeline()'), body.indexOf('const built'))
+  assert.ok(afterRead.includes('shelf = readShelf()') && !afterRead.includes('shelf = (await'), 'sync redraws from readShelf()')
+  assert.ok(shelfHook.includes('beginWidgetRefresh()') && !shelfHook.includes('refreshWidgetTimelineFromKit()'), 'cold start shares the one read')
 })
 
 await testAsync('a widget card from an earlier night does not win after midnight', async () => {
