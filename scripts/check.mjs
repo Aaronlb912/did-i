@@ -7766,6 +7766,13 @@ test('live sql: realtime and social-live run before drop-tonight, deletes are no
   assert.ok(existsSync('supabase/tests/social-live.test.sql') && existsSync('supabase/tests/realtime.test.sql'))
 })
 
+test('the menu badge counts Did I did yous, the same as the inbox lists them', () => {
+  const src = readFileSync(fileURLToPath(new URL('../src/lib/people.js', import.meta.url)), 'utf8')
+  const look = src.slice(src.indexOf('async function pulseLook'), src.indexOf('function pulseWatch'))
+  assert.match(look, /appSendsWaiting\(db, user\)/)
+  assert.match(look, /inbox: \(waiting\.count \?\? rows\.length\) \+ fromApp\.length/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
