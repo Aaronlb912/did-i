@@ -575,7 +575,15 @@ export async function saveBeforeSignOut(ms = 8000) {
     // No session: pushNow would wipe the shelf without asking. Ask instead.
     if (!(await me())) return false
     const sent = (async () => {
-      await flushPushSoon()
+      // iOS widget taps since the last open are only in the WidgetKit timeline;
+      // read them in (registered reader, a no-op off iOS) so they send too.
+      await awaitWidgetTimeline()
+      const shelf = readShelf()
+      const next = reconcileShelfFromWidget(shelf)
+      if (next !== shelf && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: next }))
+      const flushed = flushPushSoon()
+      if (flushed) await flushed
+      else if (next !== shelf) await pushNow(next)
       if (state.how === 'miss') await pushNow(readShelf())
       return state.how !== 'miss'
     })()
