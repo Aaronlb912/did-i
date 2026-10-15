@@ -1784,7 +1784,13 @@ export function useFamilyTonight(user) {
       return
     }
     const who = user.id
-    const next = await familyTonight()
+    let next
+    try {
+      next = await familyTonight()
+    } catch {
+      // Offline: keep the list we had.
+      return
+    }
     if (userIdRef.current !== who) return
     keep(next)
   }, [user, keep])

@@ -43,6 +43,8 @@ export function CheckOnCard({ lamp, colors }) {
     let live = true
     let started = false
     setLoaded(false)
+    setRow(null)
+    setMiss('')
     const read = () => {
       if (started) return
       started = true
