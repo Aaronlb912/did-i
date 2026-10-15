@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Animated, InteractionManager, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { inEnglish, t, tMiss } from '../../src/lib/i18n.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
@@ -15,6 +15,7 @@ import {
   stopCheckOn,
 } from '../../src/lib/check-on.js'
 import { confirmDone, once } from '../lib/confirm.js'
+import { useFadeIn } from '../lib/motion.jsx'
 import { fonts } from '../theme.js'
 import { DidButton, KeyButton, Meta } from './ui.jsx'
 
@@ -33,20 +34,38 @@ export function CheckOnCard({ lamp, colors }) {
   const [at, setAt] = useState(CHECK_ON_DEFAULT)
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // The body is laid out from the first frame and fades in once the read lands.
+  const [loaded, setLoaded] = useState(false)
+  const fade = useFadeIn(loaded)
 
   useEffect(() => {
     if (!fits) return undefined
     let live = true
-    Promise.all([readCheckOn(lamp.id), listKnownPeople().catch(() => [])])
-      .then(([mine, known]) => {
-        if (!live) return
-        setRow(mine.row)
-        setPeople(known)
-        if (mine.miss && mine.miss !== 'off' && mine.miss !== 'out') setMiss(tMiss(mine.miss))
-      })
-      .catch(() => live && setMiss(t('people.reach')))
+    let started = false
+    setLoaded(false)
+    setRow(null)
+    setMiss('')
+    const read = () => {
+      if (started) return
+      started = true
+      Promise.all([readCheckOn(lamp.id), listKnownPeople().catch(() => [])])
+        .then(([mine, known]) => {
+          if (!live) return
+          setRow(mine.row)
+          setPeople(known)
+          if (mine.miss && mine.miss !== 'off' && mine.miss !== 'out') setMiss(tMiss(mine.miss))
+        })
+        .catch(() => live && setMiss(t('people.reach')))
+        .finally(() => live && setLoaded(true))
+    }
+    // After the page has slid in, so the read and its redraw miss the transition.
+    // A looping animation (cheer, boot) never ends interactions, so a timer backs it up.
+    const task = InteractionManager.runAfterInteractions(read)
+    const timer = setTimeout(read, 600)
     return () => {
       live = false
+      task.cancel()
+      clearTimeout(timer)
     }
   }, [fits, lamp?.id])
 
@@ -87,6 +106,8 @@ export function CheckOnCard({ lamp, colors }) {
     <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('checkOn.title')}</Text>
       {whenLine ? <Meta colors={colors}>{whenLine}</Meta> : null}
+      {!open ? (
+      <Animated.View style={[styles.body, { opacity: fade }]} pointerEvents={loaded ? 'auto' : 'none'}>
       {!open && row ? (
         <>
           <Meta colors={colors}>{t('checkOn.isOn', { name: buddyName, time: minuteClock(row.at_minute) })}</Meta>
@@ -103,6 +124,8 @@ export function CheckOnCard({ lamp, colors }) {
             <KeyButton colors={colors} label={t('checkOn.start')} onPress={start} />
           </View>
         </>
+      ) : null}
+      </Animated.View>
       ) : null}
       {open ? (
         <>
@@ -163,6 +186,7 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 8, marginTop: 8 },
   title: { fontFamily: fonts.uiBold, fontSize: 15 },
   share: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18, borderWidth: 1, borderRadius: 12, padding: 10 },
+  body: { gap: 8 },
   keys: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   cap: { fontFamily: fonts.ui, fontSize: 12 },
   time: { fontFamily: fonts.uiBold, fontSize: 16, minWidth: 56, textAlign: 'center' },

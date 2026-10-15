@@ -1765,14 +1765,35 @@ export function useAutoAdd(user, add) {
 
 export function useFamilyTonight(user) {
   const [rows, setRows] = useState([])
+  // The same rows again (a wake with nothing new) keep the old array, so
+  // Tonight does not redraw for nothing.
+  const seen = useRef('[]')
+  const keep = useCallback((next) => {
+    const key = JSON.stringify(next)
+    if (key === seen.current) return
+    seen.current = key
+    setRows(next)
+  }, [])
+  // A read that lands after a sign out or account switch is the old account's.
+  const userIdRef = useRef(user?.id)
+  userIdRef.current = user?.id
 
   const look = useCallback(async () => {
     if (!cloudSetUp() || !user) {
-      setRows([])
+      keep([])
       return
     }
-    setRows(await familyTonight())
-  }, [user])
+    const who = user.id
+    let next
+    try {
+      next = await familyTonight()
+    } catch {
+      // Offline: keep the list we had.
+      return
+    }
+    if (userIdRef.current !== who) return
+    keep(next)
+  }, [user, keep])
 
   useEffect(() => {
     look()

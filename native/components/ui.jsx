@@ -1,9 +1,9 @@
 import { forwardRef, useEffect, useState } from 'react'
 import { FadeScroll } from './FadeScroll.jsx'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../src/lib/prefs.js'
-import { pressFx } from '../lib/motion.jsx'
+import { pressFx, useFadeIn } from '../lib/motion.jsx'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
 
@@ -61,14 +61,16 @@ export function LateMeta({ children, colors }) {
     const timer = setTimeout(() => setShow(true), 300)
     return () => clearTimeout(timer)
   }, [])
+  // Fades in rather than popping (reduced motion shows it at once).
+  const fade = useFadeIn(show)
   if (!show) return null
   // A soft, still skeleton in place of a blank screen. The words stay for screen readers.
   return (
-    <View accessible accessibilityRole="progressbar" accessibilityLabel={String(children || '')} style={styles.skel}>
+    <Animated.View accessible accessibilityRole="progressbar" accessibilityLabel={String(children || '')} style={[styles.skel, { opacity: fade }]}>
       {SKEL_ROWS.map((width, i) => (
         <View key={i} style={[styles.skelRow, { width, backgroundColor: colors.panel3 }]} />
       ))}
-    </View>
+    </Animated.View>
   )
 }
 
