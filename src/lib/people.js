@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
+import { onSocialLive } from './social-live.js'
 import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
@@ -1445,17 +1446,28 @@ export async function familyTonight() {
 
 // The phone shell hands over an app-state hook. Check it first: the phone
 // also has a stand-in document whose listeners never fire.
+// Also when someone else's answer this account can see changes (social-live.js).
 function onVisible(fn) {
+  const stopLive = onSocialLive(() => fn())
   const hook = globalThis.__didIOnVisible
-  if (typeof hook === 'function') return hook(fn)
+  if (typeof hook === 'function') {
+    const stop = hook(fn)
+    return () => {
+      stopLive()
+      stop?.()
+    }
+  }
   if (typeof document !== 'undefined') {
     function onShow() {
       if (!document.hidden) fn()
     }
     document.addEventListener('visibilitychange', onShow)
-    return () => document.removeEventListener('visibilitychange', onShow)
+    return () => {
+      stopLive()
+      document.removeEventListener('visibilitychange', onShow)
+    }
   }
-  return () => {}
+  return stopLive
 }
 
 // PostgREST says this when a function is not in the schema cache, which

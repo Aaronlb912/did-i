@@ -12,6 +12,7 @@ import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
   applyAnswers,
+  dropSentAnswers,
   forgetAnswerMarks,
   pruneAnswers,
   pullAnswers,
@@ -41,6 +42,7 @@ import {
   readGemOwned,
 } from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
+import { noteSocialLive } from './social-live.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
 import { forgetTravelSkips } from './travel.js'
@@ -371,7 +373,14 @@ function applyLiveRows() {
     })
     return
   }
-  const { shelf, changed } = applyAnswers(readShelf(), rows)
+  // In order: an undo then the answer from before it is two steps.
+  let shelf = readShelf()
+  let changed = 0
+  for (const row of rows) {
+    const step = row.gone ? dropSentAnswers(shelf, row.gone) : applyAnswers(shelf, [row])
+    shelf = step.shelf
+    changed += step.changed
+  }
   if (!changed) return
   // Same saved stamp: only answers changed, and they travel on their own.
   const written = writeShelf(shelf, readSavedAt())
@@ -389,15 +398,32 @@ export async function startLiveAnswers() {
     live = null
     return
   }
+  const take = (row) => {
+    if (live !== mine || readLastUser() !== user.id) return
+    liveRows.push(row)
+    // One redraw for a batch sent in one go.
+    if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 50)
+  }
+  // Inserts and updates only: deletes are not published (realtime.sql).
+  const onRow = (change) => {
+    const row = change?.new
+    if (row?.lamp_id && row.user_id === user.id) take(row)
+  }
   mine.channel = db
     .channel(`answers:${user.id}:${Date.now()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, (change) => {
-      const row = change?.new
-      // A delete (an undo) carries no row; the next pull settles it.
-      if (!row?.lamp_id || row.user_id !== user.id || readLastUser() !== user.id) return
-      liveRows.push(row)
-      // One redraw for a batch sent in one go.
-      if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 50)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, onRow)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, onRow)
+    .subscribe()
+  // A private topic only this account may join (supabase/social-live.sql):
+  // your own undos, and which kind of someone else's answer you can see
+  // changed (the screens then read again the usual way).
+  mine.social = db
+    .channel(`didi:${user.id}`, { config: { private: true } })
+    .on('broadcast', { event: 'live' }, (msg) => {
+      if (live !== mine) return
+      const payload = msg?.payload || {}
+      if (payload.kind === 'undo') take({ gone: payload.gone })
+      else noteSocialLive(payload.kind)
     })
     .subscribe()
 }
@@ -407,6 +433,7 @@ export function stopLiveAnswers() {
   live = null
   liveRows = []
   if (old?.channel) cloud()?.removeChannel(old.channel).catch(() => {})
+  if (old?.social) cloud()?.removeChannel(old.social).catch(() => {})
 }
 
 // Pull what the account has, fold it into what this phone has, then send

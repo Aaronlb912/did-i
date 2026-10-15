@@ -60,6 +60,7 @@ const files = [
   'supabase/readthrough-12.sql',
   'supabase/reviewer-flag.sql',
   'supabase/realtime.sql',
+  'supabase/social-live.sql',
   'supabase/drop-tonight.sql',
 ]
 

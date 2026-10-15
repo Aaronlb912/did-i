@@ -3,6 +3,7 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
 import { cloudSetUp } from './cloud.js'
+import { onSocialLive } from './social-live.js'
 import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from './did-you-links.js'
 import { t, tMiss } from './i18n.js'
 import { editSend, listSent, personName, takeBack } from './people.js'
@@ -52,6 +53,11 @@ export function Sent({ book, now }) {
   useEffect(() => {
     load()
   }, [load])
+
+  // The other person answered a Did you you sent: show it now.
+  useEffect(() => onSocialLive((kinds) => {
+    if (kinds.has('send')) load()
+  }), [load])
 
   async function saveEdit() {
     if (busy || !editing) return

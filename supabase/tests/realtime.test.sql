@@ -14,6 +14,11 @@ begin
     raise exception 'FAIL: answer_log is not in supabase_realtime';
   end if;
 
+  -- Deletes skip policies in Realtime, so they must not be published.
+  if (select pubdelete or pubtruncate from pg_publication where pubname = 'supabase_realtime') then
+    raise exception 'FAIL: supabase_realtime publishes deletes';
+  end if;
+
   -- Realtime sends only rows the listener can select: RLS must stay on.
   if not (select relrowsecurity from pg_class where oid = 'public.answer_log'::regclass) then
     raise exception 'FAIL: answer_log has RLS off';

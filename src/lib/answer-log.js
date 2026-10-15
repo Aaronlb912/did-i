@@ -151,6 +151,29 @@ export function applyAnswers(shelf, rows) {
   return { shelf: { ...shelf, boards }, changed }
 }
 
+// An undo on another device ({ lamp, period, at, noteAt } rows gone from the
+// account). Only the answer that went, or an older one, is dropped: one made
+// here later is newer and stays. Running it twice is free.
+export function dropSentAnswers(shelf, gone) {
+  const upTo = new Map()
+  for (const row of Array.isArray(gone) ? gone : []) {
+    const at = stampMs(answerStamp({ answeredAt: row?.at || '', noteAt: row?.noteAt || '' }))
+    if (row?.lamp && row?.period && at) upTo.set(`${row.lamp}|${row.period}`, at)
+  }
+  if (!upTo.size) return { shelf, changed: 0 }
+  let changed = 0
+  const boards = (shelf.boards || []).map((book) => {
+    const answers = (book.answers || []).filter((item) => {
+      const limit = upTo.get(`${item.lampId}|${item.periodKey}`)
+      const drop = Boolean(limit) && stampMs(answerStamp(item)) <= limit
+      if (drop) changed += 1
+      return !drop
+    })
+    return answers.length === (book.answers || []).length ? book : { ...book, answers }
+  })
+  return { shelf: changed ? { ...shelf, boards } : shelf, changed }
+}
+
 export async function pullAnswers(shelf) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }

@@ -19,6 +19,7 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
 import { Boundary } from './components/Boundary.jsx'
@@ -121,6 +122,8 @@ export function NativeApp() {
         // Who is done tonight, for the Together widget, on open and on return.
         refreshTogether().catch(() => {})
         globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
+        // Someone you are with answered while the app is open.
+        onSocialLive(() => refreshTogether().catch(() => {}))
         await initWidgetsOnLaunch(readShelf()).catch(() => {})
       }
     })

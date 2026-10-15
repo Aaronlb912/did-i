@@ -2,11 +2,15 @@
 -- Run after answers.sql. Safe to run again.
 --
 -- The app listens for changes to answer_log while it is open
--- (src/lib/cloud-sync.js, startLiveAnswers). Realtime only sends a row to a
--- listener whose select policy lets them read it, so "own answers"
--- (answers.sql) keeps each account to its own rows. Did we and Did you
--- answers are read through functions, not table policies, so they are not
--- sent this way.
+-- (src/lib/cloud-sync.js, startLiveAnswers). Realtime only sends an insert or
+-- update to a listener whose select policy lets them read it, so "own
+-- answers" (answers.sql) keeps each account to its own rows.
+--
+-- Deletes are not checked against policies by Realtime: their keys would go
+-- to every listener. So the publication sends inserts and updates only, and
+-- an undo reaches your other devices on your private topic instead
+-- (social-live.sql). Did we and Did you answers are read through functions,
+-- not table policies, so they are not sent this way either.
 
 do $$
 begin
@@ -21,3 +25,5 @@ begin
   end if;
 end;
 $$;
+
+alter publication supabase_realtime set (publish = 'insert, update');

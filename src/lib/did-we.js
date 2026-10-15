@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
+import { onSocialLive } from './social-live.js'
 import { readShelf } from './board-shelf.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
@@ -599,6 +600,11 @@ export function useWeTonight(user) {
     watchers.add(setState)
     return () => watchers.delete(setState)
   }, [user])
+
+  // Someone on a card answered while this is open: read again now.
+  useEffect(() => onSocialLive((kinds) => {
+    if (kinds.has('we')) look()
+  }), [look])
 
   useEffect(() => {
     look(false)
