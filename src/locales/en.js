@@ -60,6 +60,8 @@ export const en = {
   'title.into': 'Drop into React · Did I',
   'settings.kicker': 'Settings',
   'boot.fail': 'Did I could not open.',
+  'boot.retry': 'Try again',
+  'boot.retryFail': 'That did not work. Close Did I and open it again.',
   'settings.title': 'Name and note',
   'settings.phoneBody': 'Only on this phone. Your account name lives under Account.',
   'settings.save': 'Save',

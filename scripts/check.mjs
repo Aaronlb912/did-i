@@ -3436,6 +3436,24 @@ test('the boot screen and phone bootstrap keep the location guard', () => {
   assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
 })
 
+test('a bad OTA can roll back: early fatal errors reach the native handler, boot draws nothing, fail screen retries', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const guard = readFileSync(path.join(root, 'native/fatal-guard.cjs'), 'utf8')
+  const boot = readFileSync(path.join(root, 'native/Boot.jsx'), 'utf8')
+  const app = readFileSync(path.join(root, 'native/NativeApp.jsx'), 'utf8')
+  assert.match(guard, /isFatal && !__DEV__ && !global\.__didIReady/)
+  assert.match(guard, /\(!isFatal \|\| early\) && typeof prev === 'function'\) prev\(error, isFatal\)/)
+  assert.doesNotMatch(app, /__didIReady/)
+  assert.match(boot, /global\.__didIReady = true\s+setApp\(/)
+  assert.match(boot, /!mod\.isEmbeddedLaunch[\s\S]*getGlobalHandler\(\)\(error, true\)[\s\S]*setTimeout\(showFail, 3000\)\s+return \(\) => clearTimeout\(timer\)/)
+  assert.match(boot, /const showFail = [\s\S]*setFail\([\s\S]*SplashScreen\.hideAsync\(\)/)
+  assert.match(boot, /DevSettings\.reload\(\)/)
+  assert.match(boot, /reloadAsync\(\)\.catch\(\(\) => setRetryFailed\(true\)\)/)
+  assert.match(boot, /t\('boot\.retryFail'\)/)
+  assert.match(boot, /if \(!App\) return null/)
+  assert.match(boot, /t\('boot\.retry'\)/)
+})
+
 // Phone modules that only exist on a device, stood in for so the native shim
 // runs here. A stub is read when its module first loads.
 const phoneStubs = {

@@ -12,7 +12,11 @@ if (utils && typeof utils.setGlobalHandler === 'function') {
       stack: String((error && error.stack) || ''),
       isFatal: Boolean(isFatal),
     }
-    if (!isFatal && typeof prev === 'function') prev(error, isFatal)
+    // Before the first real screen, let a fatal error reach the native
+    // handler: expo-updates (ErrorRecovery) catches it there and rolls a
+    // bad OTA back. After that, keep the app up and show the error.
+    const early = isFatal && !__DEV__ && !global.__didIReady
+    if ((!isFatal || early) && typeof prev === 'function') prev(error, isFatal)
   })
 }
 
