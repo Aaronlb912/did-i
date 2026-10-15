@@ -203,10 +203,8 @@ function fromCron(req: Request) {
 
 Deno.serve(async (req) => {
   if (!fromCron(req)) return new Response('not allowed', { status: 401 })
-  const fcmReady = Boolean(project && clientEmail && privateKey)
-  const appleReady = Boolean(apnsKeyId && apnsTeam && apnsPem)
-  if (!fcmReady && !appleReady) {
-    return new Response('push is not set up yet', { status: 503 })
+  if (!project || !clientEmail || !privateKey) {
+    return new Response('firebase is not set up yet', { status: 503 })
   }
 
   // Get both credentials before take_push_batch marks rows sent. If either
@@ -214,8 +212,8 @@ Deno.serve(async (req) => {
   let bearer = ''
   let appleJwt = ''
   try {
-    if (fcmReady) bearer = await accessToken()
-    if (appleReady) appleJwt = await apnsJwt()
+    bearer = await accessToken()
+    if (apnsKeyId && apnsTeam && apnsPem) appleJwt = await apnsJwt()
   } catch (e) {
     return new Response(`push credentials failed: ${String(e).slice(0, 200)}`, { status: 503 })
   }
@@ -225,23 +223,9 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const { data: taken, error } = await db.rpc('take_push_batch', { how_many: 50 })
+  const { data: batch, error } = await db.rpc('take_push_batch', { how_many: 50 })
   if (error) return new Response(error.message, { status: 500 })
-  if (!taken?.length) return Response.json({ sent: 0 })
-
-  // take_push_batch cannot filter by platform. Without Firebase, a row with
-  // any Android token goes back in the queue whole (its Apple tokens too, so
-  // nobody gets the same push twice) and waits until Firebase is set up.
-  type Row = Record<string, unknown> & { id: number; tokens?: string[] }
-  let batch: Row[] = taken
-  if (!bearer) {
-    const hold = batch.filter((row) => (row.tokens ?? []).some((t) => !isAppleToken(t)))
-    if (hold.length) {
-      const { error: back } = await db.from('push_queue').update({ sent_at: null }).in('id', hold.map((r) => r.id))
-      if (back) console.error('push: could not requeue android rows', back.message)
-      batch = batch.filter((row) => !hold.includes(row))
-    }
-  }
+  if (!batch?.length) return Response.json({ sent: 0 })
 
   let sent = 0
   const dead: string[] = []
@@ -259,11 +243,14 @@ Deno.serve(async (req) => {
         continue
       }
       // One throw (a network drop) skips this token, not the rest of the batch.
+      // The row is already marked sent, so that push is lost, not retried. On
+      // purpose: a retry would resend to every other phone on the row.
       let why = ''
       try {
         why = apple ? await sendApple(token, row, appleJwt) : await send(token, row, bearer)
       } catch (e) {
-        console.error('push: send threw', apple ? 'ios' : 'android', String(e).slice(0, 200))
+        // Never String(e): a fetch error carries the URL, and the URL has the token.
+        console.error('push: send threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')
         trouble.threw = (trouble.threw ?? 0) + 1
         continue
       }

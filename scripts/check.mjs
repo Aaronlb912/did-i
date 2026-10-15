@@ -4761,7 +4761,7 @@ await testAsync('the error log keeps no personal content and is capped', async (
   assert.ok(push.indexOf('await accessToken()') < push.indexOf("rpc('take_push_batch'"), 'the Firebase token is fetched before rows are marked sent')
   assert.ok(push.indexOf('await apnsJwt()') < push.indexOf("rpc('take_push_batch'"), 'the Apple key is signed before rows are marked sent')
   assert.ok(/try \{\s*why = apple/.test(push), 'one failed send skips only that token')
-  assert.ok(push.includes('update({ sent_at: null })'), 'without Firebase, Android rows go back in the queue')
+  assert.ok(push.includes("console.error('push: send threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')"), 'a thrown send never logs the error text, which holds the token')
 })
 
 test('a sheet that pops up on Tonight catches the next tap', () => {
