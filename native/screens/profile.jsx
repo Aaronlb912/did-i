@@ -19,6 +19,7 @@ import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
 import { pinWidget, showWidgetHow } from '../lib/widget-pin.js'
 import { signOutHere, useAccount } from '../../src/lib/account.js'
 import { leaveAccount } from '../lib/leave-account.js'
+import { SureModal } from './more.jsx'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -106,13 +107,17 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
   const [loading, setLoading] = useState(false)
   const [outBusy, setOutBusy] = useState(false)
+  const [sure, setSure] = useState(null)
 
   // Same sign out as the Account page, without the extra step there.
-  async function signOut() {
+  async function signOut(force = false) {
     if (outBusy) return
     setOutBusy(true)
-    await leaveAccount('out', signOutHere)
+    const out = await leaveAccount('out', signOutHere, force)
     setOutBusy(false)
+    if (out === 'unsaved') {
+      setSure({ title: t('account.unsavedTitle'), body: t('account.unsavedBody'), yes: t('account.unsavedYes'), go: () => signOut(true) })
+    }
   }
 
   async function pickFile() {
@@ -538,12 +543,22 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       {account.user ? (
         <View style={styles.out}>
-          <KeyButton colors={colors} label={t('account.out')} onPress={signOut} />
+          <KeyButton colors={colors} label={t('account.out')} onPress={() => signOut()} />
           <Text style={[styles.who, { color: colors.inkDim }]} numberOfLines={1}>
             {t('account.who')} {account.email}
           </Text>
         </View>
       ) : null}
+      <SureModal
+        sure={sure}
+        colors={colors}
+        onClose={() => setSure(null)}
+        onGo={() => {
+          const go = sure?.go
+          setSure(null)
+          if (typeof go === 'function') go()
+        }}
+      />
     </BoardShell>
   )
 }

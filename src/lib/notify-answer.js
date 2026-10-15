@@ -17,8 +17,9 @@ export function askActions(t) {
 }
 
 // A button press on a reminder, or null for anything else (a plain tap opens
-// the app as before). `at` is when it was handled: an answer for a night that
-// has already turned is dropped by the tap path, never filed on an old night.
+// the app as before). `at` is when it was handled. A 23:59:58 tap handled
+// after midnight still files to `night` while grace holds it open; a night
+// that has truly closed is dropped by the tap path.
 export function notificationAnswer(response, now = Date.now()) {
   const action = String(response?.actionIdentifier || '')
   if (action !== 'did' && action !== 'nope') return null
@@ -29,4 +30,15 @@ export function notificationAnswer(response, now = Date.now()) {
   if (data.weId) return { kind: 'we', id: String(data.weId), action, night, at: now, noteId }
   if (data.lampId) return { kind: 'lamp', id: String(data.lampId), action, night, at: now, noteId }
   return null
+}
+
+// A cold launch hands the launching tap to the listener and to
+// getLastNotificationResponseAsync. True the first time a tap is seen.
+export function firstResponse(seen, response) {
+  const id = response?.notification?.request?.identifier
+  if (!id) return true
+  const key = `${id}|${response?.actionIdentifier || ''}`
+  if (seen.has(key)) return false
+  seen.add(key)
+  return true
 }

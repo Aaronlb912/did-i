@@ -31,11 +31,11 @@ enum DidIAnswerChoice: String, AppEnum {
   static let typeDisplayRepresentation: TypeDisplayRepresentation = "Answer"
   static let caseDisplayRepresentations: [DidIAnswerChoice: DisplayRepresentation] = [
     .did: "Did",
-    .nope: "Nope",
+    .nope: "Not yet",
   ]
 }
 
-// "Hey Siri, answer Did I." Siri asks which question and Did or Nope, then
+// "Hey Siri, answer Did I." Siri asks which question and Did or Not yet, then
 // opens didi://answer?q=...&a=did. The app matches the words to tonight's
 // open questions (src/lib/voice-answer.js) and saves it like a widget tap.
 struct DidIAnswerIntent: AppIntent {
@@ -46,7 +46,7 @@ struct DidIAnswerIntent: AppIntent {
   @Parameter(title: "Question", requestValueDialog: "Which question?")
   var question: String
 
-  @Parameter(title: "Answer", requestValueDialog: "Did you, or nope?")
+  @Parameter(title: "Answer", requestValueDialog: "Did you, or not yet?")
   var answer: DidIAnswerChoice
 
   @MainActor

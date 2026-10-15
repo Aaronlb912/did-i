@@ -171,8 +171,8 @@ function flushNativePings() {
 
 // Takes one board or every board on the shelf; each tag's questions ping.
 async function schedulePingsNow(books, now = new Date()) {
+  // An empty list still runs: it clears what an old account left scheduled.
   const list = (Array.isArray(books) ? books : [books]).filter(Boolean)
-  if (!list.length) return
   try {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return
@@ -206,22 +206,23 @@ async function schedulePingsNow(books, now = new Date()) {
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
         // Every open row, so a re-arm after the ask time still keeps the 21:00
         // late note. The ask note itself only goes to rows still waiting.
-        const rows = dueTonight(book, day).filter((row) => !row.answer)
+        // Not yet (status skip) is not done, so it keeps the late note too.
+        const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
         const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
         const [year, month, date] = boardDate(day).split('-').map(Number)
         for (const row of rows) {
           // Low priority stays quiet, like the web (src/lib/notify.js upcomingPings).
           if (!reminders || !lampBuzzes(row.lamp)) continue
+          // No time set: no ask note, but a high one still gets the late note.
           const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-          if (!match) continue
-          const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
+          const at = match ? new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0) : null
           const content = {
             title: 'Did I',
             body: row.lamp.question,
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
-          if (at.getTime() > now.getTime() && (!waiting || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,
@@ -231,7 +232,7 @@ async function schedulePingsNow(books, now = new Date()) {
           // A high one still open gets a last call at 21:00.
           if (!lampNudgesLate(row.lamp)) continue
           const late = new Date(year, month - 1, date, LATE_NUDGE_HOUR, 0, 0, 0)
-          if (late.getTime() <= now.getTime() || late.getTime() <= at.getTime()) continue
+          if (late.getTime() <= now.getTime() || (at && late.getTime() <= at.getTime())) continue
           // Quiet hours would push it to morning, which is no last call.
           if (afterQuiet(late).getTime() !== late.getTime()) continue
           notes.push({

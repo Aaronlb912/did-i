@@ -181,6 +181,21 @@ export function widgetRedrawTimes(boards, now) {
   })
 }
 
+// The iPhone timeline ends with .atEnd and no JS runs without the app, so it
+// has to reach a few nights ahead: each night's redraws, then the same again
+// from just after that night's turn. Capped, soonest kept.
+export function widgetTimelineTimes(boards, now, nights = 3, cap = 30) {
+  const all = new Map()
+  let from = now
+  for (let night = 0; night < nights; night += 1) {
+    for (const at of widgetRedrawTimes(boards, from)) all.set(at.getTime(), at)
+    const turn = nextChange((at) => boardDate(at), from)
+    if (!turn) break
+    from = new Date(turn.getTime() + 5000)
+  }
+  return [...all.values()].sort((a, b) => a - b).slice(0, cap)
+}
+
 /** Open rows ready to ask now come before waiting ones; priority orders each group. */
 export function rankWidgetOpen(open, now) {
   const ready = open.filter((row) => askAfterPassed(row.lamp, now))

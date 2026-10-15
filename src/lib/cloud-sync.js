@@ -139,6 +139,8 @@ let syncRun = 0
 
 export function signedOutSync() {
   syncRun += 1
+  // Every way out (here, everywhere, deleted, signed out elsewhere) lands here.
+  forgetAccountCaches()
   clearGifts()
   dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
@@ -464,6 +466,8 @@ async function pullAndMergeOnce() {
 
     const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
     if (bad) throw bad
+    // The shelf landed for this account: later pushes may send it.
+    writeLastUser(user.id)
 
     // Opening the app is the one moment worth reconciling in full: send
     // everything, then clear out answers whose question is gone.
@@ -503,11 +507,22 @@ export async function pushNow(shelf) {
   }
   setState({ how: 'busy', miss: '' })
   try {
-    const doc = shelf || readShelf()
+    let doc = shelf || readShelf()
     // Usually one answer. The document only moves because a tag or a
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
+    // No pull has landed for this account on this phone yet (the last user id
+    // is written only after one does), so the local shelf may be the empty one
+    // sign out left. Sending it would overwrite the account's questions.
+    // Pull instead (shared with any pull already running); a landed pull opens
+    // the gate, and only a failed one shows as a miss.
+    if (readLastUser() !== user.id) {
+      await pullAndMerge()
+      if (readLastUser() !== user.id) return
+      // Landed: send what is on the phone now, edits made during the pull too.
+      doc = readShelf()
+    }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
@@ -548,6 +563,38 @@ export function flushPushSoon() {
   window.clearTimeout(timer)
   timer = 0
   return pushNow(readShelf())
+}
+
+// Before signing out: send anything still waiting, then try once more if the
+// last send missed. False means some answers never reached the account, so
+// the caller asks before signedOutSync wipes them.
+export async function saveBeforeSignOut(ms = 8000) {
+  if (!cloudSetUp() || state.how === 'off' || state.how === 'out') return true
+  let timer
+  try {
+    // No session: pushNow would wipe the shelf without asking. Ask instead.
+    if (!(await me())) return false
+    const sent = (async () => {
+      // iOS widget taps since the last open are only in the WidgetKit timeline;
+      // read them in (registered reader, a no-op off iOS) so they send too.
+      await awaitWidgetTimeline()
+      const shelf = readShelf()
+      const next = reconcileShelfFromWidget(shelf)
+      if (next !== shelf && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: next }))
+      const flushed = flushPushSoon()
+      if (flushed) await flushed
+      else if (next !== shelf) await pushNow(next)
+      if (state.how === 'miss') await pushNow(readShelf())
+      return state.how !== 'miss'
+    })()
+    // A stalled network asks too, instead of spinning the button.
+    const late = new Promise((resolve) => { timer = setTimeout(() => resolve(false), ms) })
+    return await Promise.race([sent, late])
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export async function touchDevice() {
