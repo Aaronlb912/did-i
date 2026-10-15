@@ -655,7 +655,12 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
-  saveEarned()
+  // Not saveEarned: it leaves storage alone while the id is ''.
+  try {
+    localStorage.removeItem(EARNED_KEY)
+  } catch {
+    // ok
+  }
 }
 
 export function returnEarnedCoins(night, n, clock = new Date(), gen) {

@@ -7323,12 +7323,16 @@ test('review 13: a tap right after sign in, before the user id lands, keeps its 
   })
 })
 
-test('review 13: a sign out with no last user drops queued coins; the id landing loads the saved queue', async () => {
+await testAsync('review 13: a sign out with no last user drops queued coins; the id landing loads the saved queue', async () => {
   const { returnEarnedCoins, takeEarnedCoins } = await import('../src/lib/purse.js')
   const clock = new Date(2026, 9, 2, 20)
+  localStorage.removeItem('did-i-last-user')
+  localStorage.removeItem('did-i-earned-coins')
   takeEarnedCoins()
   // Queued while the id was '', then signed out before it landed.
-  localStorage.removeItem('did-i-last-user')
+  returnEarnedCoins('2026-10-02', 2, clock)
+  sessionMissing()
+  assert.deepEqual({ ...takeEarnedCoins() }, {}, 'no last user, no session: the queue empties')
   returnEarnedCoins('2026-10-02', 2, clock)
   sessionMissing()
   localStorage.setItem('did-i-last-user', 'user-b')
