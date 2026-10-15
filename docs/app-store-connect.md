@@ -185,10 +185,10 @@ three fields. Never name Android or Google Play.
 
 | Field | Value | Length |
 |-------|-------|--------|
-| Name (30) | Did I??? Habits with Friends | 28 |
-| Subtitle (30) | Reminders on widget and watch | 29 |
-| Keywords (100) | tracker,family,together,streak,routine,checklist,forgetful,meds,pills,chores,adhd,accountability | 96 |
-| Promotional text (170, change any time) | For people who forget to open habit trackers. Ask yourself, ask a friend, or answer together. Did I brings the question to your widget, watch or phone. | 154 |
+| Name (30) | Did I??? Habit Reminders | 24 |
+| Subtitle (30) | Solo or with family & friends | 29 |
+| Keywords (100) | tracker,together,streak,routine,checklist,forgetful,meds,pills,chores,adhd,shared,widget,watch | 94 |
+| Promotional text (170, change any time) | For people who forget to open habit trackers. Ask yourself, ask someone, or answer together. Did I brings the question to your widget, watch or phone. | 155 |
 
 Screenshots for the next version: same captions as above, new order, so the
 first three (the ones shown in search) are things the other apps don't do.
